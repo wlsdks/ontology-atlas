@@ -1919,6 +1919,37 @@ pub fn run() {
                                     pathWorkflow: card.getAttribute("data-path-workflow") || "",
                                   };
                                 });
+                              const topologyDimmedCards = Array.from(
+                                document.querySelectorAll('[data-skeleton-card][data-dimmed="true"]')
+                              )
+                                .map((card) => {
+                                  const style = getComputedStyle(card);
+                                  const rect = card.getBoundingClientRect();
+                                  const opacity = Number(style.opacity || "1");
+                                  return {
+                                    tier: Number(card.getAttribute("data-tier") || "3"),
+                                    opacity,
+                                    visible:
+                                      card.getAttribute("data-surface-hidden") !== "true" &&
+                                      style.display !== "none" &&
+                                      style.visibility !== "hidden" &&
+                                      Number.isFinite(opacity) &&
+                                      opacity > 0.01 &&
+                                      rect.width > 0 &&
+                                      rect.height > 0
+                                  };
+                                })
+                                .filter((card) => card.visible);
+                              const topologyDimAnchorCards = topologyDimmedCards.filter(
+                                (card) => card.tier <= 1
+                              );
+                              const topologyDimChipCards = topologyDimmedCards.filter(
+                                (card) => card.tier > 1
+                              );
+                              const topologyMinOpacity = (cards) =>
+                                cards.length
+                                  ? Math.min(...cards.map((card) => card.opacity))
+                                  : 0;
                               const topologyPathCandidateCards = topologyCards.filter((card) => card.pathRole === "candidate");
                               const topologyPathSourceCards = topologyCards.filter((card) => card.pathRole === "source");
                               const topologyPathTargetCards = topologyCards.filter((card) => card.pathRole === "target");
@@ -2074,6 +2105,20 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-visibility-fallback") === "true",
                                   topologySkeletonVisibilityFallbackCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-visibility-fallback-count") || "0"),
+                                  topologyDimOpacityContract:
+                                    skeletonCardsLayer?.getAttribute("data-dim-opacity-contract") || "",
+                                  topologyDimAnchorOpacity:
+                                    Number(skeletonCardsLayer?.getAttribute("data-dim-anchor-opacity") || "0"),
+                                  topologyDimChipOpacity:
+                                    Number(skeletonCardsLayer?.getAttribute("data-dim-chip-opacity") || "0"),
+                                  topologyDimAnchorVisibleCount:
+                                    topologyDimAnchorCards.length,
+                                  topologyDimChipVisibleCount:
+                                    topologyDimChipCards.length,
+                                  topologyDimAnchorMinOpacity:
+                                    topologyMinOpacity(topologyDimAnchorCards),
+                                  topologyDimChipMinOpacity:
+                                    topologyMinOpacity(topologyDimChipCards),
                                   topologySelectedDockCompanionCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-selected-dock-companion-count") || "0"),
                                   topologySelectedDockVisibleCompanionCount:

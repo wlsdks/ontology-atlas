@@ -1623,6 +1623,136 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     ).toHaveAttribute("data-dimmed", "true");
   });
 
+  it("선택 focus 의 dimmed context 카드는 지형 맥락을 읽을 수 있는 최소 opacity 를 유지한다", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (slug === "project:p") {
+          return {
+            left: 100,
+            top: 80,
+            right: 220,
+            bottom: 124,
+            width: 120,
+            height: 44,
+            x: 100,
+            y: 80,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "domain:d1") {
+          return {
+            left: 360,
+            top: 220,
+            right: 500,
+            bottom: 268,
+            width: 140,
+            height: 48,
+            x: 360,
+            y: 220,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "domain:d2") {
+          return {
+            left: 100,
+            top: 320,
+            right: 220,
+            bottom: 364,
+            width: 120,
+            height: 44,
+            x: 100,
+            y: 320,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "capability:c1") {
+          return {
+            left: 100,
+            top: 440,
+            right: 220,
+            bottom: 480,
+            width: 120,
+            height: 40,
+            x: 100,
+            y: 440,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 0,
+          top: 0,
+          right: 1000,
+          bottom: 700,
+          width: 1000,
+          height: 700,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      });
+    const graph = makeGraph();
+    try {
+      graph.addNode("domain:d2", {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: -10,
+        y: -5,
+        label: "Agent",
+      });
+      graph.addNode("capability:c1", {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: -20,
+        y: -5,
+        label: "Sync",
+      });
+      graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            { id: "domain:d2", title: "Agent", kind: "domain", tier: 1 as const },
+            { id: "capability:c1", title: "Sync", kind: "capability", tier: 2 as const },
+          ]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const projectCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
+      const domainCard = screen.getByText("Agent").closest("[data-skeleton-card]");
+      const capabilityCard = screen.getByText("Sync").closest("[data-skeleton-card]");
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+
+      await waitFor(() => {
+        expect(layer).toHaveAttribute("data-dim-opacity-contract", "readable-context-geography");
+        expect(layer).toHaveAttribute("data-dim-anchor-opacity", "0.34");
+        expect(layer).toHaveAttribute("data-dim-chip-opacity", "0.18");
+        expect(projectCard).toHaveStyle({ opacity: "0.34" });
+        expect(domainCard).toHaveStyle({ opacity: "0.34" });
+        expect(capabilityCard).toHaveStyle({ opacity: "0.18" });
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("선택의 자식 카드로 SVG 커넥터 path 를 그린다 (MindNode S-커브)", () => {
     const graph = makeGraph();
     graph.addNode("capability:c1", {

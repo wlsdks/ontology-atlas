@@ -1593,6 +1593,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySkeletonMode: true,
       topologyCardsReady: true,
       topologyCardCount: 21,
+      topologyDimOpacityContract: "readable-context-geography",
+      topologyDimAnchorOpacity: 0.34,
+      topologyDimChipOpacity: 0.18,
+      topologyDimAnchorVisibleCount: 3,
+      topologyDimChipVisibleCount: 4,
+      topologyDimAnchorMinOpacity: 0.34,
+      topologyDimChipMinOpacity: 0.18,
       topologySelectedNodePopoverVisible: true,
       topologySelectedNodeId: "domain:views",
       topologySelectedNodeKind: "domain",
@@ -1694,6 +1701,27 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     /camera motion coordinate proof was incomplete/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({ topologyDimOpacityContract: "muted-background" }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /dimmed Relief context opacity contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({ topologyDimAnchorMinOpacity: 0.25 }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /dimmed Relief anchor opacity/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({ topologyDimChipMinOpacity: 0.12 }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /dimmed Relief chip opacity/,
   );
   assert.match(
     validateWebviewVerifyPayload(

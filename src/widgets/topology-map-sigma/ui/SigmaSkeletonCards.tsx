@@ -140,12 +140,12 @@ const TIER_DOT_EM: Record<SkeletonCardModel['tier'], string> = {
 
 /**
  * dim 잉크 2단계 (디자이너 패널 합의): 방향 감각용 상위 anchor(project/
- * domain)는 0.25, 하위 칩은 dot+실루엣 수준 0.12. 펼친 열과 *겹치는* dim
+ * domain)는 0.34, 하위 칩은 dot+실루엣 수준 0.18. 펼친 열과 *겹치는* dim
  * 카드는 0 — "포커스 콘텐츠와 고스트 콘텐츠의 텍스트 충돌"은 디자이너
  * 제품에서 절대 허용되지 않는 픽셀이다.
  */
-const DIM_ANCHOR_OPACITY = '0.25';
-const DIM_CHIP_OPACITY = '0.12';
+const DIM_ANCHOR_OPACITY = '0.34';
+const DIM_CHIP_OPACITY = '0.18';
 /** 펼친 열 카드 주변 충돌 판정 패딩(px). */
 const COLLISION_PAD = 24;
 const ANALYSIS_PANEL_TRAILING_PAD = 12;
@@ -2085,6 +2085,9 @@ export function SigmaSkeletonCards({
     }
     container.dataset.visibleCardCount = String(reportedVisibleCardCount);
     container.dataset.totalCardCount = String(orderedEls.length);
+    container.dataset.dimAnchorOpacity = DIM_ANCHOR_OPACITY;
+    container.dataset.dimChipOpacity = DIM_CHIP_OPACITY;
+    container.dataset.dimOpacityContract = 'readable-context-geography';
     const lastVisibilityStats = lastVisibilityStatsRef.current;
     if (
       !lastVisibilityStats ||
@@ -2569,6 +2572,9 @@ export function SigmaSkeletonCards({
       data-selected-dock-companion-visible="false"
       data-click-focus-relationship-context="none"
       data-click-focus-relationship-context-source="none"
+      data-dim-anchor-opacity={DIM_ANCHOR_OPACITY}
+      data-dim-chip-opacity={DIM_CHIP_OPACITY}
+      data-dim-opacity-contract="readable-context-geography"
       className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-100 transition-opacity duration-150 ease-out data-[skeleton-cards-ready=false]:opacity-0 motion-reduce:transition-none"
     >
       {/* 펼친 가지 커넥터 — 수평 접선 S-커브, 카드 경계 트림. 인디고는

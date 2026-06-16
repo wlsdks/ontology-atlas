@@ -2489,6 +2489,34 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologySelectedNodePopoverVisible === true &&
       payload.markers.topologyFocusClusterVisible === true &&
       Number(payload.markers.topologyFocusClusterSize) >= 2;
+    const hasDimOpacityProof =
+      payload.markers.topologyDimOpacityContract !== undefined ||
+      payload.markers.topologyDimAnchorOpacity !== undefined ||
+      payload.markers.topologyDimChipOpacity !== undefined ||
+      Array.isArray(payload.markers.topologyCardRawSample);
+    if (selectedFocusContext && hasDimOpacityProof) {
+      const dimAnchorOpacity = Number(payload.markers.topologyDimAnchorOpacity || 0);
+      const dimChipOpacity = Number(payload.markers.topologyDimChipOpacity || 0);
+      const dimAnchorVisibleCount = Number(payload.markers.topologyDimAnchorVisibleCount || 0);
+      const dimChipVisibleCount = Number(payload.markers.topologyDimChipVisibleCount || 0);
+      const dimAnchorMinOpacity = Number(payload.markers.topologyDimAnchorMinOpacity || 0);
+      const dimChipMinOpacity = Number(payload.markers.topologyDimChipMinOpacity || 0);
+      if (payload.markers.topologyDimOpacityContract !== "readable-context-geography") {
+        return `WebView dimmed Relief context opacity contract was ${payload.markers.topologyDimOpacityContract || "missing"}`;
+      }
+      if (!(dimAnchorOpacity >= 0.34)) {
+        return `WebView dimmed Relief anchor opacity token was ${payload.markers.topologyDimAnchorOpacity ?? "missing"}`;
+      }
+      if (!(dimChipOpacity >= 0.18)) {
+        return `WebView dimmed Relief chip opacity token was ${payload.markers.topologyDimChipOpacity ?? "missing"}`;
+      }
+      if (dimAnchorVisibleCount > 0 && !(dimAnchorMinOpacity >= 0.34)) {
+        return `WebView dimmed Relief anchor opacity was ${payload.markers.topologyDimAnchorMinOpacity ?? "missing"}`;
+      }
+      if (dimChipVisibleCount > 0 && !(dimChipMinOpacity >= 0.18)) {
+        return `WebView dimmed Relief chip opacity was ${payload.markers.topologyDimChipMinOpacity ?? "missing"}`;
+      }
+    }
     const minimumTopologyCardCount = topologyDragDone ? 1 : selectedFocusContext ? 2 : 8;
     if (
       !Number.isFinite(payload.markers.topologyCardCount) ||
