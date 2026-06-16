@@ -30,10 +30,10 @@ export interface SafeAreaCameraFitInput {
 export interface SafeAreaCameraFit {
   /** camera.ratio 에 곱할 배수 (>1 = 줌아웃). */
   ratioScale: number;
-  /** bbox 중심 (viewport px) — 이 점이 safeCenter 에 오도록 팬한다. */
+  /** bbox 중심 (viewport px) — 이 점이 safeTarget 에 오도록 팬한다. */
   bboxCenter: { x: number; y: number };
   /** safe rect 의 중심 (viewport px). */
-  safeCenter: { x: number; y: number };
+  safeTarget: { x: number; y: number };
 }
 
 const DEFAULT_MIN_ZOOM_IN_SCALE = 0.55;
@@ -47,6 +47,10 @@ const BASE_BOTTOM_INSET = 136;
 const BASE_LEFT_HUD_INSET = 640;
 const MAX_LEFT_HUD_VIEWPORT_RATIO = 0.46;
 const COMPACT_SELECTED_RIGHT_INSET = 320;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
 
 export interface SkeletonSafeInsetOptions {
   /**
@@ -67,7 +71,8 @@ export interface SelectedFocusCameraFitInput {
 
 export interface SelectedFocusCameraFit {
   targetRatio: number;
-  safeCenter: { x: number; y: number };
+  /** 선택 노드가 이동 후 놓일 viewport px. safe rect 안의 가장 가까운 읽기 지점이다. */
+  safeTarget: { x: number; y: number };
 }
 
 export interface SelectedFocusCameraMotionProof {
@@ -153,7 +158,7 @@ export function resolveSafeAreaCameraFit({
       x: (bbox.minX + bbox.maxX) / 2,
       y: (bbox.minY + bbox.maxY) / 2,
     },
-    safeCenter: {
+    safeTarget: {
       x: insets.left + safeWidth / 2,
       y: insets.top + safeHeight / 2,
     },
@@ -188,24 +193,24 @@ export function resolveSelectedFocusCameraFit({
 
   return {
     targetRatio: Math.min(currentRatio, readingRatio),
-    safeCenter: {
-      x: insets.left + safeWidth / 2,
-      y: insets.top + safeHeight / 2,
+    safeTarget: {
+      x: clamp(selectedViewport.x, left, right),
+      y: clamp(selectedViewport.y, top, bottom),
     },
   };
 }
 
 export function resolveSelectedFocusCameraMotionProof({
   selectedViewport,
-  safeCenter,
+  safeTarget,
 }: {
   selectedViewport: { x: number; y: number };
-  safeCenter: { x: number; y: number };
+  safeTarget: { x: number; y: number };
 }): SelectedFocusCameraMotionProof {
   return {
     intent: 'selected-focus-safe-rect',
     distancePx: Math.round(
-      Math.hypot(safeCenter.x - selectedViewport.x, safeCenter.y - selectedViewport.y),
+      Math.hypot(safeTarget.x - selectedViewport.x, safeTarget.y - selectedViewport.y),
     ),
     targetInsideSafeRect: true,
   };

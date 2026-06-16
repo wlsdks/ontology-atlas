@@ -1594,6 +1594,9 @@ export function validateWebviewVerifyPayload(payload, {
       if (!Number.isFinite(cameraMotionDistancePx) || cameraMotionDistancePx < 16) {
         return `WebView Relief selected node camera motion distance was ${payload.markers.topologyCameraMotionDistancePx || "missing"}px`;
       }
+      if (cameraMotionDistancePx > 220) {
+        return `WebView Relief selected node camera motion was excessive (${cameraMotionDistancePx}px)`;
+      }
       if (payload.markers.topologyCameraMotionTargetInsideSafeRect !== true) {
         return "WebView Relief selected node camera motion safe target was not confirmed";
       }

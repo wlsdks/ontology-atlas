@@ -561,8 +561,8 @@ function SigmaTopologyImpl({
       const nodeFramed = renderer.viewportToFramedGraph(selectedViewport);
       const camera = renderer.getCamera();
       const state = camera.getState();
-      // safe rect 중심(상단 chrome/우측 팝오버 inset 반영)으로 팬하되,
-      // 이미 읽기 안전영역 안에 있으면 카메라를 건드리지 않는다.
+      // safe rect 안의 가장 가까운 읽기 지점으로 팬하되, 이미 읽기
+      // 안전영역 안에 있으면 카메라를 건드리지 않는다.
       const selectedFanoutRows =
         skeletonCardsRef.current?.reduce((max, card) => {
           if (card.dock?.parentId !== selected) return max;
@@ -580,7 +580,7 @@ function SigmaTopologyImpl({
       if (!focusFit) return true;
       const motionProof = resolveSelectedFocusCameraMotionProof({
         selectedViewport,
-        safeCenter: focusFit.safeCenter,
+        safeTarget: focusFit.safeTarget,
       });
       if (containerRef.current) {
         containerRef.current.dataset.cameraMotionIntent = motionProof.intent;
@@ -606,7 +606,7 @@ function SigmaTopologyImpl({
         );
       }
       const va = renderer.viewportToFramedGraph({ x: width / 2, y: height / 2 });
-      const vb = renderer.viewportToFramedGraph(focusFit.safeCenter);
+      const vb = renderer.viewportToFramedGraph(focusFit.safeTarget);
       // 클릭 = 중앙 + 약한 줌인(읽기 배율 0.8 고정 — 곱연산이면 클릭마다
       // 누적 줌인됨), 바깥 클릭 = 선택 해제 → overview fit 이 줌아웃.
       const k2 = state.ratio > 0 ? focusFit.targetRatio / state.ratio : 1;
@@ -650,7 +650,7 @@ function SigmaTopologyImpl({
     // 기준 framed 거리로 환산(framedPerPx ∝ ratio)해 카메라를 평행이동.
     const centerFramed = renderer.viewportToFramedGraph(fit.bboxCenter);
     const va = renderer.viewportToFramedGraph({ x: width / 2, y: height / 2 });
-    const vb = renderer.viewportToFramedGraph(fit.safeCenter);
+    const vb = renderer.viewportToFramedGraph(fit.safeTarget);
     const k = state.ratio > 0 ? newRatio / state.ratio : 1;
     camera.animate(
       {

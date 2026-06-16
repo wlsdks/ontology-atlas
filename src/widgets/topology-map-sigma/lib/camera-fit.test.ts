@@ -100,7 +100,7 @@ describe('resolveSafeAreaCameraFit — 골격 확장 카메라 fit (chrome 세�
     });
     expect(fit.bboxCenter).toEqual({ x: 200, y: 150 });
     // safe rect = y 200~800 → 중심 y 500.
-    expect(fit.safeCenter).toEqual({ x: 500, y: 500 });
+    expect(fit.safeTarget).toEqual({ x: 500, y: 500 });
   });
 
   it('degenerate bbox(점 1개)·0 safe rect 에도 유한값', () => {
@@ -121,13 +121,13 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
   });
 
   it('선택 노드가 이미 safe rect 안에 있으면 카메라를 움직이지 않는다', () => {
-    const safeCenter = {
+    const safeTarget = {
       x: insets.left + (viewport.width - insets.left - insets.right) / 2,
       y: insets.top + (viewport.height - insets.top - insets.bottom) / 2,
     };
     expect(
       resolveSelectedFocusCameraFit({
-        selectedViewport: safeCenter,
+        selectedViewport: safeTarget,
         viewport,
         insets,
         currentRatio: 1,
@@ -135,7 +135,7 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
     ).toBeNull();
   });
 
-  it('선택 노드가 support panel 밑이면 safe center로만 부드럽게 보정한다', () => {
+  it('선택 노드가 support panel 밑이면 가장 가까운 safe edge 까지만 보정한다', () => {
     const fit = resolveSelectedFocusCameraFit({
       selectedViewport: { x: insets.left - 40, y: insets.top + 120 },
       viewport,
@@ -144,9 +144,8 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
     });
     expect(fit).not.toBeNull();
     expect(fit?.targetRatio).toBe(0.8);
-    expect(fit?.safeCenter.x).toBeCloseTo(
-      insets.left + (viewport.width - insets.left - insets.right) / 2,
-    );
+    expect(fit?.safeTarget.x).toBeCloseTo(insets.left + 24);
+    expect(fit?.safeTarget.y).toBe(insets.top + 120);
   });
 
   it('이미 읽기 배율보다 줌인된 상태에서는 추가 줌아웃 없이 팬만 계산한다', () => {
@@ -157,12 +156,13 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
       currentRatio: 0.62,
     });
     expect(fit?.targetRatio).toBe(0.62);
+    expect(fit?.safeTarget.x).toBeCloseTo(viewport.width - insets.right - 24);
   });
 
   it('선택 카메라 보정의 의도와 이동 거리를 검증 가능한 proof 로 남긴다', () => {
     const proof = resolveSelectedFocusCameraMotionProof({
       selectedViewport: { x: 100, y: 200 },
-      safeCenter: { x: 220, y: 290 },
+      safeTarget: { x: 220, y: 290 },
     });
     expect(proof).toEqual({
       intent: 'selected-focus-safe-rect',
