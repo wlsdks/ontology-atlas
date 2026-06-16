@@ -1205,6 +1205,24 @@ if (
   );
 }
 
+const localizedTopologyPathStartScript =
+  pkg.scripts?.["desktop:verify-topology-path-start:ko"] ?? "";
+if (
+  localizedTopologyPathStartScript.includes('"/Applications/Ontology Atlas.app"') &&
+  localizedTopologyPathStartScript.includes("--require-window") &&
+  localizedTopologyPathStartScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
+  localizedTopologyPathStartScript.includes("--min-window-size=1360x840") &&
+  localizedTopologyPathStartScript.includes("--min-webview-size=1400x860") &&
+  localizedTopologyPathStartScript.includes("--require-webview-route='/ko/topology/?mode=path'") &&
+  localizedTopologyPathStartScript.includes("--webview-evidence=.tmp/ontology-atlas-path-start-ko.webview.json")
+) {
+  pass("desktop localized topology Path start proof script checks panel-owned Korean path guidance");
+} else {
+  fail(
+    "package.json must expose desktop:verify-topology-path-start:ko to verify installed Korean Relief Path start guidance with deterministic WebView evidence",
+  );
+}
+
 const localizedTopologyWideScript =
   pkg.scripts?.["desktop:verify-topology-wide:ko"] ?? "";
 if (
