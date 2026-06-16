@@ -1181,6 +1181,30 @@ if (
   );
 }
 
+const localizedTopologyDesignScript =
+  pkg.scripts?.["desktop:verify-topology-design:ko"] ?? "";
+if (
+  localizedTopologyDesignScript.includes('"/Applications/Ontology Atlas.app"') &&
+  localizedTopologyDesignScript.includes("--require-window") &&
+  localizedTopologyDesignScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
+  localizedTopologyDesignScript.includes("--min-window-size=1360x840") &&
+  localizedTopologyDesignScript.includes("--min-webview-size=1400x860") &&
+  localizedTopologyDesignScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
+  localizedTopologyDesignScript.includes("--webview-evidence=.tmp/ontology-atlas-design-selected-relation.webview.json") &&
+  localizedTopologyDesignScript.includes("--verify-topology-drag") &&
+  localizedTopologyDesignScript.includes("--require-webview-route='/ko/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes'") &&
+  localizedTopologyDesignScript.includes("--webview-evidence=.tmp/ontology-atlas-design-path-result.webview.json") &&
+  localizedTopologyDesignScript.includes("--require-webview-route='/ko/topology/?create=concept'") &&
+  localizedTopologyDesignScript.includes("--webview-evidence=.tmp/ontology-atlas-design-create-concept.webview.json") &&
+  localizedTopologyDesignScript.includes("--verify-topology-create-node")
+) {
+  pass("desktop localized topology design proof script checks selected relation, path result, and blocking composer states");
+} else {
+  fail(
+    "package.json must expose desktop:verify-topology-design:ko to verify installed Korean Relief selected relation, Path result, and Add Concept composer states with deterministic WebView evidence",
+  );
+}
+
 const agentDesignGateChecks = [
   [
     "AGENTS mandatory design gate",
