@@ -588,30 +588,6 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm package:check']);
   });
 
-  it('suggests CI workflow contract checks for local-first CI files', () => {
-    const result = suggestFocusedChecks([
-      '.github/workflows/ci.yml',
-      'scripts/check-ci-workflow.mjs',
-      'scripts/check-ci-workflow.test.mjs',
-      'package.json',
-    ]);
-
-    assert.deepEqual(result.commands.map((row) => row.command), [
-      'pnpm ci:workflow-check',
-      'pnpm exec node --test scripts/check-ci-workflow.test.mjs',
-      'pnpm desktop:check',
-      'pnpm test:dogfood:script-refs',
-      'pnpm test:mcp:package',
-    ]);
-    assert.deepEqual(result.commands[1].paths, [
-      '.github/workflows/ci.yml',
-      'scripts/check-ci-workflow.mjs',
-      'scripts/check-ci-workflow.test.mjs',
-      'package.json',
-    ]);
-    assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm package:check']);
-  });
-
   it('suggests docs contracts for GitHub community templates', () => {
     const result = suggestFocusedChecks([
       '.github/DISCUSSIONS-CATEGORIES.md',

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it } from 'node:test';
@@ -492,7 +492,6 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /Any\s+`docs\/\*\*\/\*\.md` change routes to `pnpm docs-vault:check`, because\s+the static docs vault indexes the whole docs tree/);
     assert.match(checksDoc, /Root `pnpm-lock\.yaml` and MCP\/CLI package lockfiles route to\s+`pnpm test:mcp:package` plus `pnpm package:check` escalation/);
     assert.match(checksDoc, /MCP lockfile\s+changes still show `pnpm dogfood:verify` as an escalation because they touch the\s+agent runtime package directly; CLI lockfile changes stay on package contracts/);
-    assert.match(checksDoc, /`pnpm ci:check` starts with `pnpm ci:workflow-check` and\s+`node --test scripts\/check-ci-workflow\.test\.mjs`, so the push\/PR gate proves\s+the workflow contract before running the broader local-first quality suite/);
     assert.match(checksDoc, /\| `pnpm package:check` \| Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget \|/);
     assert.match(checksDoc, /\| `pnpm bundle:check` \| Local-first static export bundle guard for the landing, download, docs, ontology, topology, and projects routes; run after `pnpm build` when `scripts\/check-bundle\.mjs` changed \|/);
     assert.match(checksDoc, /\| `pnpm design:ontology` \| Ontology workbench design drift guard for forbidden visual patterns across Workspace, ontology operation surfaces, and shared UI primitives plus Workspace execution, Browse\/Write\/Query, Builder write\/proof, Insights query cockpit, topology legend, Product Design OS designer-bench, public reference-permission contracts, and Relief\/Topology token anti-pattern contracts \|/);
@@ -613,6 +612,19 @@ describe('package contract helpers', () => {
       { filteredScripts: { './mcp': mcpPkg.scripts } },
     );
     assertPnpmScriptsExist(Object.values(pkg.scripts).join('\n'), pkg.scripts);
+  });
+
+  it('keeps push and PR GitHub CI disabled while preserving local verification scripts', () => {
+    const packageJson = JSON.parse(readFileSync('package.json', 'utf-8'));
+    const checksDoc = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');
+
+    assert.equal(existsSync('.github/workflows/ci.yml'), false);
+    assert.equal(existsSync('scripts/check-ci-workflow.mjs'), false);
+    assert.equal(existsSync('scripts/check-ci-workflow.test.mjs'), false);
+    assert.equal(packageJson.scripts['ci:check'], undefined);
+    assert.equal(packageJson.scripts['ci:workflow-check'], undefined);
+    assert.doesNotMatch(checksDoc, /ci:workflow-check|check-ci-workflow|push\/PR local-first CI gate|GitHub Actions workflow contract/);
+    assert.match(checksDoc, /Local verification remains operator-driven/);
   });
 
   it('keeps Firebase static hosting config local-first', () => {

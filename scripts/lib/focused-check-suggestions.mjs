@@ -7,24 +7,6 @@ const RULES = [
     matches: [/^\.mcp\.json(?:\.example)?$/, /^\.codex\/config\.toml$/],
   },
   {
-    command: 'pnpm ci:workflow-check',
-    reason: 'main/pull_request local-first CI workflow contract changed',
-    matches: [
-      /^\.github\/workflows\/ci\.yml$/,
-      /^scripts\/check-ci-workflow\.(?:mjs|test\.mjs)$/,
-      /^package\.json$/,
-    ],
-  },
-  {
-    command: 'pnpm exec node --test scripts/check-ci-workflow.test.mjs',
-    reason: 'direct CI workflow contract test for changed CI gate files',
-    matches: [
-      /^\.github\/workflows\/ci\.yml$/,
-      /^scripts\/check-ci-workflow\.(?:mjs|test\.mjs)$/,
-      /^package\.json$/,
-    ],
-  },
-  {
     command: 'pnpm docs-vault:check',
     reason: 'static docs-vault input or generated manifest changed',
     matches: [/^docs\/.+\.md$/, /^src\/entities\/docs-vault\/data\/manifest\.json$/],

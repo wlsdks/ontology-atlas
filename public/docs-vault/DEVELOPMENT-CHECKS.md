@@ -444,18 +444,12 @@ resolution changes are not left with a no-mapping advisor result. MCP lockfile
 changes still show `pnpm dogfood:verify` as an escalation because they touch the
 agent runtime package directly; CLI lockfile changes stay on package contracts
 unless the changed behavior itself needs installed-style dogfood verification.
-Changes to `.github/workflows/ci.yml`, `scripts/check-ci-workflow.mjs`, or the
-root package CI scripts first route to `pnpm ci:workflow-check` and
-`pnpm exec node --test scripts/check-ci-workflow.test.mjs`; escalate to
-`pnpm ci:check` when the quality-gate command set changes.
-`pnpm ci:check` starts with `pnpm ci:workflow-check` and
-`node --test scripts/check-ci-workflow.test.mjs`, so the push/PR gate proves
-the workflow contract before running the broader local-first quality suite.
+Local verification remains operator-driven. The repository intentionally does
+not ship a push/PR GitHub CI workflow; run the focused commands below before
+committing or publishing changes.
 
 | Command | Use when |
 |---|---|
-| `pnpm ci:check` | Push/PR local-first CI gate: workflow self-check, checker unit contract, docs-vault freshness, desktop readiness/contracts, TypeScript, lint, unit and contract tests, design surface guard, static build, and bundle guard |
-| `pnpm ci:workflow-check` | Main/pull_request GitHub Actions workflow contract for Node 24, Corepack pnpm, frozen install, and the package-level CI gate |
 | `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget |
 | `pnpm bundle:check` | Local-first static export bundle guard for the landing, download, docs, ontology, topology, and projects routes; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
 | `pnpm design:ontology` | Ontology workbench design drift guard for forbidden visual patterns across Workspace, ontology operation surfaces, and shared UI primitives plus Workspace execution, Browse/Write/Query, Builder write/proof, Insights query cockpit, topology legend, Product Design OS designer-bench, public reference-permission contracts, and Relief/Topology token anti-pattern contracts |
