@@ -56,6 +56,7 @@ function validateTopologyNodePopoverScrollFooterContract(markers) {
   if (markers.topologyNodePopoverFooterOverflowContract !== "no-horizontal-scroll") {
     return `WebView Relief selected node popover footer overflow contract was ${markers.topologyNodePopoverFooterOverflowContract || "missing"}`;
   }
+  const connectionListTop = Number(markers.topologyNodePopoverConnectionListTop || 0);
   const connectionListBottom = Number(markers.topologyNodePopoverConnectionListBottom || 0);
   const footerTop = Number(markers.topologyNodePopoverFooterTop || 0);
   const footerBottom = Number(markers.topologyNodePopoverFooterBottom || 0);
@@ -68,6 +69,15 @@ function validateTopologyNodePopoverScrollFooterContract(markers) {
     footerTop < connectionListBottom - 2
   ) {
     return `WebView Relief selected node popover footer overlapped the connection list (${footerTop || "missing"} top / ${connectionListBottom || "missing"} list bottom)`;
+  }
+  const connectionListHeight = connectionListBottom - connectionListTop;
+  if (
+    !Number.isFinite(connectionListHeight) ||
+    connectionListTop <= 0 ||
+    connectionListBottom <= 0 ||
+    connectionListHeight < 210
+  ) {
+    return `WebView Relief selected node popover connection list was too short (${Number.isFinite(connectionListHeight) ? connectionListHeight : "missing"}px)`;
   }
   if (
     !Number.isFinite(footerBottom) ||

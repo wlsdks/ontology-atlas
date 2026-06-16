@@ -239,7 +239,7 @@ export function TopologyNodePopover({
       data-hierarchy-contract="click-focus-detail-support"
       data-density="readable"
       data-size-policy="inspector-rail"
-      className={`flex max-h-[min(72vh,38rem)] min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_28px_rgba(0,0,0,0.28)] lg:w-[320px] lg:max-w-[320px] min-[1400px]:w-[286px] min-[1400px]:max-w-[286px] min-[1800px]:w-[340px] min-[1800px]:max-w-[340px] ${className ?? ""}`}
+      className={`flex max-h-[min(82vh,48rem)] min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_28px_rgba(0,0,0,0.28)] lg:w-[320px] lg:max-w-[320px] min-[1400px]:w-[286px] min-[1400px]:max-w-[286px] min-[1800px]:w-[340px] min-[1800px]:max-w-[340px] ${className ?? ""}`}
     >
       <header className="flex items-start justify-between gap-3 px-4 pt-4">
         <div className="min-w-0">
@@ -300,6 +300,7 @@ export function TopologyNodePopover({
       <div
         data-testid="topology-connections-section"
         data-overflow-contract="single-vertical-scroll-region"
+        data-readable-list-budget="relation-list-primary-scroll"
         className="mt-2.5 flex min-h-0 flex-1 flex-col overflow-hidden border-t border-[color:var(--color-divider)] px-4 py-3"
       >
         <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">

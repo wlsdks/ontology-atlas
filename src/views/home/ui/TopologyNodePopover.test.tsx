@@ -141,7 +141,21 @@ describe("TopologyNodePopover", () => {
     expect(popover.className).toContain("min-[1400px]:w-[286px]");
     expect(popover.className).toContain("min-[1400px]:max-w-[286px]");
     expect(popover.className).toContain("min-[1800px]:w-[340px]");
-    expect(popover.className).toContain("max-h-[min(72vh,38rem)]");
+    expect(popover.className).toContain("max-h-[min(82vh,48rem)]");
+  });
+
+  it("reserves enough 14-inch vertical budget for relation rows before scrolling", () => {
+    setup();
+    const popover = screen.getByTestId("topology-node-popover");
+    const section = screen.getByTestId("topology-connections-section");
+
+    expect(popover.className).toContain("max-h-[min(82vh,48rem)]");
+    expect(popover.className).not.toContain("max-h-[min(72vh,38rem)]");
+    expect(popover.className).not.toContain("max-h-[min(78vh,44rem)]");
+    expect(section).toHaveAttribute(
+      "data-readable-list-budget",
+      "relation-list-primary-scroll",
+    );
   });
 
   it("keeps the connection list in the only scrolling region so the footer cannot overlap it", () => {
