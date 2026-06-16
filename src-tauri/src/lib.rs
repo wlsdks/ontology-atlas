@@ -1708,6 +1708,15 @@ pub fn run() {
                                   return {
                                     slug: card.getAttribute("data-slug") || "",
                                     pathRole: card.getAttribute("data-path-role") || "",
+                                    pathRoleContract: card.getAttribute("data-path-role-contract") || "",
+                                    pathAttentionLayer: card.getAttribute("data-path-attention-layer") || "",
+                                    pathNextAction: card.getAttribute("data-path-next-action") || "",
+                                    pathAnchor: card.getAttribute("data-path-anchor") || "",
+                                    pathBadgeLabel:
+                                      card.getAttribute("data-path-badge-label") ||
+                                      card.querySelector("[data-path-card-badge]")?.getAttribute("data-path-card-badge-label") ||
+                                      card.querySelector("[data-path-card-badge]")?.textContent?.trim() ||
+                                      "",
                                     pathWorkflow: card.getAttribute("data-path-workflow") || "",
                                     visible:
                                       style.display !== "none" &&
@@ -1741,12 +1750,26 @@ pub fn run() {
                                     transform: style.transform,
                                     surfaceHidden: card.getAttribute("data-surface-hidden") || "",
                                     pathRole: card.getAttribute("data-path-role") || "",
+                                    pathRoleContract: card.getAttribute("data-path-role-contract") || "",
+                                    pathAttentionLayer: card.getAttribute("data-path-attention-layer") || "",
+                                    pathNextAction: card.getAttribute("data-path-next-action") || "",
+                                    pathAnchor: card.getAttribute("data-path-anchor") || "",
+                                    pathBadgeLabel:
+                                      card.getAttribute("data-path-badge-label") ||
+                                      card.querySelector("[data-path-card-badge]")?.getAttribute("data-path-card-badge-label") ||
+                                      card.querySelector("[data-path-card-badge]")?.textContent?.trim() ||
+                                      "",
                                     pathWorkflow: card.getAttribute("data-path-workflow") || "",
                                   };
                                 });
-                              const topologyPathCandidateCardCount = topologyCards.filter((card) => card.pathRole === "candidate").length;
-                              const topologyPathSourceCardCount = topologyCards.filter((card) => card.pathRole === "source").length;
-                              const topologyPathTargetCardCount = topologyCards.filter((card) => card.pathRole === "target").length;
+                              const topologyPathCandidateCards = topologyCards.filter((card) => card.pathRole === "candidate");
+                              const topologyPathSourceCards = topologyCards.filter((card) => card.pathRole === "source");
+                              const topologyPathTargetCards = topologyCards.filter((card) => card.pathRole === "target");
+                              const topologyPathCandidateCardCount = topologyPathCandidateCards.length;
+                              const topologyPathSourceCardCount = topologyPathSourceCards.length;
+                              const topologyPathTargetCardCount = topologyPathTargetCards.length;
+                              const topologyPathSourceCard = topologyPathSourceCards[0] || null;
+                              const topologyPathTargetCard = topologyPathTargetCards[0] || null;
                               let topologyCardOverlapCount = 0;
                               let topologyCardClippedCount = 0;
                               let topologyCardFixedSurfaceOverlapCount = 0;
@@ -1943,6 +1966,22 @@ pub fn run() {
                                   topologyPathCandidateCardCount,
                                   topologyPathSourceCardCount,
                                   topologyPathTargetCardCount,
+                                  topologyPathSourceCardSlug: topologyPathSourceCard?.slug || "",
+                                  topologyPathSourceCardRoleContract:
+                                    topologyPathSourceCard?.pathRoleContract || "",
+                                  topologyPathSourceCardAttentionLayer:
+                                    topologyPathSourceCard?.pathAttentionLayer || "",
+                                  topologyPathSourceCardNextAction:
+                                    topologyPathSourceCard?.pathNextAction || "",
+                                  topologyPathSourceCardAnchor:
+                                    topologyPathSourceCard?.pathAnchor || "",
+                                  topologyPathSourceCardBadgeLabel:
+                                    topologyPathSourceCard?.pathBadgeLabel || "",
+                                  topologyPathTargetCardSlug: topologyPathTargetCard?.slug || "",
+                                  topologyPathTargetCardRoleContract:
+                                    topologyPathTargetCard?.pathRoleContract || "",
+                                  topologyPathTargetCardBadgeLabel:
+                                    topologyPathTargetCard?.pathBadgeLabel || "",
                                   topologyAnalysisPanelVisible:
                                     Boolean(
                                       topologyAnalysisPanelRect &&

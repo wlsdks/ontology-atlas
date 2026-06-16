@@ -1842,7 +1842,21 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       const rerenderedSourceCard = screen.getByText("Atlas").closest("[data-skeleton-card]")!;
       const targetCard = screen.getByText("Views").closest("[data-skeleton-card]")!;
       expect(rerenderedSourceCard).toHaveAttribute("data-path-role", "source");
-      expect(screen.getByText("A")).toHaveAttribute("data-path-card-badge", "source");
+      expect(rerenderedSourceCard).toHaveAttribute(
+        "data-path-role-contract",
+        "source-anchor-visible",
+      );
+      expect(rerenderedSourceCard).toHaveAttribute("data-path-next-action", "pick-target");
+      expect(rerenderedSourceCard).toHaveAttribute(
+        "data-path-attention-layer",
+        "focus-path-state",
+      );
+      const sourceBadge = screen.getByText("A");
+      expect(sourceBadge).toHaveAttribute("data-path-card-badge", "source");
+      expect(sourceBadge).toHaveAttribute(
+        "data-path-card-badge-contract",
+        "endpoint-role-token",
+      );
 
       fireEvent.click(targetCard);
       expect(onPathSelectionChange).toHaveBeenLastCalledWith({

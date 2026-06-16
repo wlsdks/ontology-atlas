@@ -8,6 +8,7 @@ const VIEWPORTS = [
   { label: "desktop-2560", width: 2560, height: 1440 },
 ];
 const MBP14_FULLSCREEN = { label: "mbp14-fullscreen", width: 1512, height: 949 };
+const INSTALLED_APP_WEBVIEW = { label: "installed-app-webview", width: 1512, height: 917 };
 const COMPACT_VIEWPORT = { label: "compact-900", width: 900, height: 760 };
 const OUT = path.resolve("output/ui-audit/topology-drag");
 const OVERVIEW_DRAG_DELTA_TOLERANCE_PX = 48;
@@ -1249,11 +1250,46 @@ test("Relief selected Path route keeps path guidance primary on 14-inch fullscre
   await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
   await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
 
+  const sourceCard = page
+    .locator('[data-skeleton-card][data-slug="domain:views"][data-path-role="source"]')
+    .first();
+  await expect(sourceCard).toBeVisible();
+  await expect(sourceCard).toHaveAttribute(
+    "data-path-role-contract",
+    "source-anchor-visible",
+  );
+  await expect(sourceCard).toHaveAttribute("data-path-attention-layer", "focus-path-state");
+  await expect(sourceCard).toHaveAttribute("data-path-next-action", "pick-target");
+  await expect(sourceCard).toHaveAttribute("data-path-anchor", "source");
+  await expect(sourceCard.locator('[data-path-card-badge="source"]')).toHaveText("A");
+
   const panelRect = await rectOf(panel);
   expect(
     panelRect.width,
     "selected Path route rail should keep the 14-inch path width contract",
   ).toBeLessThanOrEqual(362);
+});
+
+test("Relief selected Path route keeps the source card visible in the installed app WebView size", async ({
+  page,
+}) => {
+  await openRelief(page, INSTALLED_APP_WEBVIEW, {
+    mode: "path",
+    selectedSlug: "domain:views",
+  });
+
+  const sourceCard = page
+    .locator('[data-skeleton-card][data-slug="domain:views"][data-path-role="source"]')
+    .first();
+  await expect(sourceCard).toBeVisible();
+  await expect(sourceCard).toHaveAttribute(
+    "data-path-role-contract",
+    "source-anchor-visible",
+  );
+  await expect(sourceCard).toHaveAttribute("data-path-next-action", "pick-target");
+  await expect(page.getByTestId("topology-node-popover")).toHaveCount(0);
+  await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
+  await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
 });
 
 test("Relief selected detail uses a compact top dock below tablet width", async ({

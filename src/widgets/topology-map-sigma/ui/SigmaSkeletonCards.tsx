@@ -1684,6 +1684,8 @@ export function SigmaSkeletonCards({
             : fixedSurfaceRects;
         const followsActiveDockDrag = el.dataset.dockDragFollow === 'true';
         const selected = el.dataset.selected === 'true';
+        const pathEndpoint =
+          el.dataset.pathRole === 'source' || el.dataset.pathRole === 'target';
         let clipped =
           visibleRect.left < 0 ||
           visibleRect.top < 0 ||
@@ -1693,7 +1695,9 @@ export function SigmaSkeletonCards({
           !lockedForDrag &&
           !followsActiveDockDrag &&
           (surfaceBlockers.some((surface) => rectsOverlap(rect, surface)) ||
-            (selected && el.dataset.graphAnchorSurfaceBlocked === 'true'));
+            (selected &&
+              !pathEndpoint &&
+              el.dataset.graphAnchorSurfaceBlocked === 'true'));
         if (
           dockParent &&
           !lockedForDrag &&
@@ -1745,7 +1749,8 @@ export function SigmaSkeletonCards({
         } else {
           delete el.dataset.dockFlipped;
         }
-        const protectSelectedCard = selected && selectedRelationEdgeId === null;
+        const protectSelectedCard =
+          (selected || pathEndpoint) && selectedRelationEdgeId === null;
         if (
           !lockedForDrag &&
           (blockedBySurface || (!protectSelectedCard && clipped))
@@ -1886,6 +1891,44 @@ export function SigmaSkeletonCards({
         if (fixedSurfaceRects.some((surface) => rectsOverlap(rect, surface))) {
           hideSkeletonCard(el);
         }
+      }
+    }
+    if (selectedRelationEdgeId === null) {
+      for (const el of orderedEls) {
+        if (
+          el.dataset.surfaceHidden !== 'true' ||
+          (el.dataset.pathRole !== 'source' && el.dataset.pathRole !== 'target')
+        ) {
+          continue;
+        }
+        if (!isElementInsideContainerViewport(el, containerRect)) continue;
+        const endpointBox = el.getBoundingClientRect();
+        const endpointRect = {
+          left: endpointBox.left - containerRect.left,
+          top: endpointBox.top - containerRect.top,
+          right: endpointBox.right - containerRect.left,
+          bottom: endpointBox.bottom - containerRect.top,
+        };
+        if (fixedSurfaceRects.some((surface) => rectsOverlap(endpointRect, surface))) {
+          continue;
+        }
+        for (const other of orderedEls) {
+          if (other === el || other.dataset.surfaceHidden === 'true') continue;
+          if (other.dataset.pathRole === 'source' || other.dataset.pathRole === 'target') {
+            continue;
+          }
+          const otherBox = other.getBoundingClientRect();
+          const otherRect = {
+            left: otherBox.left - containerRect.left,
+            top: otherBox.top - containerRect.top,
+            right: otherBox.right - containerRect.left,
+            bottom: otherBox.bottom - containerRect.top,
+          };
+          if (rectsOverlap(endpointRect, otherRect)) {
+            hideSkeletonCard(other);
+          }
+        }
+        showSkeletonCard(el);
       }
     }
     let visibleCardCount = 0;
@@ -2952,6 +2995,28 @@ export function SigmaSkeletonCards({
               : pathWorkflowActive
                 ? 'candidate'
                 : 'none';
+        const pathRoleContract =
+          pathRole === 'source'
+            ? 'source-anchor-visible'
+            : pathRole === 'target'
+              ? 'target-anchor-visible'
+              : pathRole === 'candidate'
+                ? 'candidate-selectable'
+                : 'none';
+        const pathNextAction =
+          pathRole === 'source'
+            ? resolvedPathTargetNodeId
+              ? 'review-path'
+              : 'pick-target'
+            : pathRole === 'target'
+              ? 'review-path'
+              : pathRole === 'candidate'
+                ? resolvedPathSourceNodeId
+                  ? 'choose-target'
+                  : 'choose-source'
+                : 'none';
+        const pathBadgeLabel =
+          pathRole === 'source' ? 'A' : pathRole === 'target' ? 'B' : '';
         const dimmed = ego !== null && !ego.slugs.has(nodeId);
         const dockParentNodeId = card.dock ? resolveNodeId(card.dock.parentId) : null;
         const dragging =
@@ -2988,6 +3053,13 @@ export function SigmaSkeletonCards({
             data-selected={selected ? 'true' : 'false'}
             data-path-workflow={pathWorkflowActive ? 'true' : 'false'}
             data-path-role={pathRole}
+            data-path-role-contract={pathRoleContract}
+            data-path-next-action={pathNextAction}
+            data-path-attention-layer={
+              pathWorkflowActive && pathRole !== 'none' ? 'focus-path-state' : undefined
+            }
+            data-path-anchor={pathRole === 'source' || pathRole === 'target' ? pathRole : undefined}
+            data-path-badge-label={pathBadgeLabel || undefined}
             data-dimmed={dimmed ? 'true' : 'false'}
             data-drag-cluster={dragging ? 'true' : 'false'}
             data-drag-cluster-role={dragRole}
@@ -3201,9 +3273,11 @@ export function SigmaSkeletonCards({
               <span
                 aria-hidden="true"
                 data-path-card-badge={pathRole}
+                data-path-card-badge-label={pathBadgeLabel}
+                data-path-card-badge-contract="endpoint-role-token"
                 className="relative ml-0.5 inline-flex h-[1.35em] min-w-[1.35em] shrink-0 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.16)] px-[0.28em] font-mono text-[0.66em] leading-none text-[color:var(--color-indigo-accent)]"
               >
-                {pathRole === 'source' ? 'A' : 'B'}
+                {pathBadgeLabel}
               </span>
             ) : null}
           </button>

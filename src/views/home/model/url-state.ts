@@ -64,6 +64,9 @@ export function parseHomeRouteState(
   const analysisMode = VALID_ANALYSIS_MODE.includes(modeParam as TopologyAnalysisMode)
     ? (modeParam as TopologyAnalysisMode)
     : DEFAULT_HOME_ROUTE_STATE.analysisMode;
+  const pathSourceSlug =
+    searchParams.get(HOME_QUERY_KEYS.pathSource) ??
+    (analysisMode === "path" ? selectedSlug : null);
 
   return {
     selectedSlug,
@@ -76,7 +79,7 @@ export function parseHomeRouteState(
       ? (pulseParam as HomePulseMode)
       : DEFAULT_HOME_ROUTE_STATE.pulseMode,
     analysisMode,
-    pathSourceSlug: searchParams.get(HOME_QUERY_KEYS.pathSource),
+    pathSourceSlug,
     pathTargetSlug: searchParams.get(HOME_QUERY_KEYS.pathTarget),
   };
 }

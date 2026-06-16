@@ -52,6 +52,29 @@ describe("parseHomeRouteState", () => {
       analysisMode: "focus",
     });
   });
+
+  it("treats a selected Path route as a fixed source when pathFrom is absent", () => {
+    const params = new URLSearchParams("mode=path&p=domain:views");
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      selectedSlug: "domain:views",
+      analysisMode: "path",
+      pathSourceSlug: "domain:views",
+      pathTargetSlug: null,
+    });
+  });
+
+  it("keeps explicit pathFrom ahead of the selected Path route param", () => {
+    const params = new URLSearchParams(
+      "mode=path&p=domain:views&pathFrom=domain:agent",
+    );
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      selectedSlug: "domain:views",
+      analysisMode: "path",
+      pathSourceSlug: "domain:agent",
+    });
+  });
 });
 
 describe("applyHomeRouteState", () => {

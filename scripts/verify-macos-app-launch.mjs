@@ -1102,6 +1102,40 @@ export function validateWebviewVerifyPayload(payload, {
   ) {
     return "WebView Path mode cards did not expose path selection roles";
   }
+  const expectedPathSourceParam = normalizeTopologySelectedParam(
+    webviewUrl.searchParams.get("pathFrom") ||
+      (webviewUrl.searchParams.get("mode") === "path"
+        ? webviewUrl.searchParams.get("p")
+        : ""),
+  );
+  if (
+    webviewPath.includes("/topology") &&
+    webviewUrl.searchParams.get("mode") === "path" &&
+    expectedPathSourceParam &&
+    payload.markers.topologySkeletonCardsActive === true
+  ) {
+    if (Number(payload.markers.topologyPathSourceCardCount || 0) < 1) {
+      return "WebView Path mode selected source card was not visible";
+    }
+    if (payload.markers.topologyPathSourceCardRoleContract !== "source-anchor-visible") {
+      return `WebView Path mode source card contract was ${payload.markers.topologyPathSourceCardRoleContract || "missing"}`;
+    }
+    if (payload.markers.topologyPathSourceCardAttentionLayer !== "focus-path-state") {
+      return `WebView Path mode source card attention layer was ${payload.markers.topologyPathSourceCardAttentionLayer || "missing"}`;
+    }
+    if (payload.markers.topologyPathSourceCardAnchor !== "source") {
+      return `WebView Path mode source card anchor was ${payload.markers.topologyPathSourceCardAnchor || "missing"}`;
+    }
+    if (payload.markers.topologyPathSourceCardBadgeLabel !== "A") {
+      return `WebView Path mode source card badge was ${payload.markers.topologyPathSourceCardBadgeLabel || "missing"}`;
+    }
+    const expectedSourceNextAction = webviewUrl.searchParams.get("pathTo")
+      ? "review-path"
+      : "pick-target";
+    if (payload.markers.topologyPathSourceCardNextAction !== expectedSourceNextAction) {
+      return `WebView Path mode source card next action was ${payload.markers.topologyPathSourceCardNextAction || "missing"}`;
+    }
+  }
   if (
     webviewPath.includes("/topology") &&
     webviewUrl.searchParams.get("mode") === "path" &&
