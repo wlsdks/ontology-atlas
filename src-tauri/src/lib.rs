@@ -1278,6 +1278,18 @@ pub fn run() {
                               const topologySelectedRelationCardMotionEasing =
                                 topologySelectedRelationCard?.getAttribute("data-motion-easing") ||
                                 "";
+                              const topologyCameraMotionState =
+                                sigmaViewport?.getAttribute("data-camera-motion-state") || "";
+                              const topologySelectedRelationCardMotionSyncState =
+                                topologySelectedRelationCard
+                                  ? topologyCameraMotionState === "settled"
+                                    ? "settled-with-camera"
+                                    : topologyCameraMotionState === "animating"
+                                      ? "co-present-with-camera-motion"
+                                      : topologyCameraMotionState === "reduced-motion"
+                                        ? "reduced-motion-ready"
+                                        : "camera-state-unknown"
+                                  : "";
                               const topologySelectedRelationAgentGate = document.querySelector('[data-testid="sigma-selected-edge-agent-gate"]');
                               const topologySelectedRelationAgentGateText =
                                 topologySelectedRelationAgentGate?.getAttribute("data-metric-value") ||
@@ -1740,7 +1752,7 @@ pub fn run() {
                                   topologyCameraMotionReduced:
                                     sigmaViewport?.getAttribute("data-camera-motion-reduced") === "true",
                                   topologyCameraMotionState:
-                                    sigmaViewport?.getAttribute("data-camera-motion-state") || "",
+                                    topologyCameraMotionState,
                                   topologyCameraMotionIntent:
                                     sigmaViewport?.getAttribute("data-camera-motion-intent") || "",
                                   topologyCameraMotionTargetPolicy:
@@ -2288,6 +2300,7 @@ pub fn run() {
                                   topologySelectedRelationCardMotionContract,
                                   topologySelectedRelationCardMotionDurationMs,
                                   topologySelectedRelationCardMotionEasing,
+                                  topologySelectedRelationCardMotionSyncState,
                                   topologySelectedRelationProofBandWidth:
                                     topologySelectedRelationProofBandRect?.width || 0,
                                   topologySelectedRelationProofBandHeight:

@@ -2715,6 +2715,14 @@ export function validateWebviewVerifyPayload(payload, {
         if (payload.markers.topologySelectedRelationCardMotionEasing !== "ease-out") {
           return `WebView reported malformed Relief selected relation inspector motion easing (${payload.markers.topologySelectedRelationCardMotionEasing || "missing"})`;
         }
+        if (
+          payload.markers.topologySelectedRelationCardMotionSyncState !==
+            "settled-with-camera" &&
+          payload.markers.topologySelectedRelationCardMotionSyncState !==
+            "reduced-motion-ready"
+        ) {
+          return `WebView reported malformed Relief selected relation inspector motion sync (${payload.markers.topologySelectedRelationCardMotionSyncState || "missing"})`;
+        }
         if (selectedRelationCardRect.top < 96) {
           return `WebView reported insufficient Relief selected relation card top chrome clearance (${selectedRelationCardRect.top}px)`;
         }
