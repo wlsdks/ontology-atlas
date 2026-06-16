@@ -64,6 +64,12 @@ import {
   computeBounceFactor,
 } from '../lib/reducer-anim';
 import {
+  SELECTED_FOCUS_CAMERA_DURATION_MS,
+  TOPOLOGY_CAMERA_EASING_NAME,
+  TOPOLOGY_CAMERA_MOTION_CONTRACT,
+  topologyCameraEaseOutQuart,
+} from '../lib/motion-tokens';
+import {
   AUDIT_ORPHAN_COLOR,
   AUDIT_PROMOTION_COLOR,
   AUDIT_STALE_COLOR,
@@ -142,10 +148,7 @@ const AUDIT_PROMOTION_MIN_FAN_IN = 4;
 // stale > orphan > promotion (stale 이 가장 수리 우선순위 높음).
 // Demo camera motion curve — cubic-bezier(0.22, 1, 0.36, 1) 근사치.
 // 토스·애플 감성의 "빠르게 출발해서 부드럽게 안착" — 기존 cubicInOut 의
-// 양 끝 대칭 감 대신 arrival 쪽을 더 길게 풀어 준다. easeOutQuart.
-const CAMERA_EASING_NAME = 'ease-out-quart';
-const SELECTED_FOCUS_CAMERA_DURATION_MS = 420;
-const CAMERA_EASING = (k: number) => 1 - Math.pow(1 - k, 4);
+// 양 끝 대칭 감 대신 arrival 쪽을 더 길게 풀어 준다.
 const ARRANGE_FEEDBACK_MS = 950;
 
 // vault / 빌드타임 dogfood 진실원에 ontology 노드가 0 인 경우 fallback —
@@ -496,8 +499,9 @@ function SigmaTopologyImpl({
       const viewport = containerRef.current;
       if (viewport) {
         viewport.dataset.cameraMotionTrigger = trigger;
+        viewport.dataset.cameraMotionContract = TOPOLOGY_CAMERA_MOTION_CONTRACT;
         viewport.dataset.cameraMotionDurationMs = String(duration);
-        viewport.dataset.cameraMotionEasing = CAMERA_EASING_NAME;
+        viewport.dataset.cameraMotionEasing = TOPOLOGY_CAMERA_EASING_NAME;
         viewport.dataset.cameraMotionReduced = reduceMotionRef.current
           ? 'true'
           : 'false';
@@ -516,7 +520,7 @@ function SigmaTopologyImpl({
           }, duration);
         }
       }
-      return { duration, easing: CAMERA_EASING };
+      return { duration, easing: topologyCameraEaseOutQuart };
     },
     [reduceMotionRef],
   );
@@ -2441,7 +2445,7 @@ function SigmaTopologyImpl({
           y: display.y,
           ratio: targetRatio,
         },
-        { duration: 520, easing: CAMERA_EASING },
+        { duration: 520, easing: topologyCameraEaseOutQuart },
       );
     });
     return () => cancelAnimationFrame(frame);
@@ -2476,7 +2480,7 @@ function SigmaTopologyImpl({
         y: sumY / count,
         ratio: minimal ? 1.1 : 0.75,
       },
-      { duration: 460, easing: CAMERA_EASING },
+      { duration: 460, easing: topologyCameraEaseOutQuart },
     );
   }, [activeCategory, graph, minimal]);
 
@@ -2515,7 +2519,7 @@ function SigmaTopologyImpl({
       if (count === 0 || !found) return;
       renderer.getCamera().animate(
         { x: targetX, y: targetY, ratio: count === 1 ? 0.45 : 0.8 },
-        { duration: 460, easing: CAMERA_EASING },
+        { duration: 460, easing: topologyCameraEaseOutQuart },
       );
     }, 220);
     return () => window.clearTimeout(handle);
@@ -2544,7 +2548,7 @@ function SigmaTopologyImpl({
     const camera = renderer.getCamera();
     camera.animate(
       { x: 0.5, y: 0.5, ratio: 1 },
-      { duration: 520, easing: CAMERA_EASING },
+      { duration: 520, easing: topologyCameraEaseOutQuart },
     );
   }, [fitViewToken, runSkeletonSafeFit]);
 
@@ -2567,7 +2571,7 @@ function SigmaTopologyImpl({
             y: display.y,
             ratio: minimal ? 1.1 : 0.5,
           },
-          { duration: 420, easing: CAMERA_EASING },
+          { duration: 420, easing: topologyCameraEaseOutQuart },
         );
         return;
       }
@@ -2593,7 +2597,7 @@ function SigmaTopologyImpl({
           y: hubSumY / hubCount,
           ratio: minimal ? 1.1 : 1,
         },
-        { duration: 420, easing: CAMERA_EASING },
+        { duration: 420, easing: topologyCameraEaseOutQuart },
       );
       return;
     }
@@ -2618,13 +2622,13 @@ function SigmaTopologyImpl({
           y: (minY + maxY) / 2,
           ratio: minimal ? 1.1 : 1,
         },
-        { duration: 420, easing: CAMERA_EASING },
+        { duration: 420, easing: topologyCameraEaseOutQuart },
       );
       return;
     }
     camera.animate(
       { x: 0.5, y: 0.5, ratio: 1 },
-      { duration: 420, easing: CAMERA_EASING },
+      { duration: 420, easing: topologyCameraEaseOutQuart },
     );
   }, [graph, minimal, selectedSlug, runSkeletonSafeFit]);
 
@@ -2721,8 +2725,9 @@ function SigmaTopologyImpl({
         data-skeleton-card-model-count={skeletonCards?.length ?? 0}
         data-kind-legend-state={suppressKindLegend ? 'collapsed-support-chrome' : 'visible-support-chrome'}
         data-camera-motion-trigger="idle"
+        data-camera-motion-contract={TOPOLOGY_CAMERA_MOTION_CONTRACT}
         data-camera-motion-duration-ms="0"
-        data-camera-motion-easing={CAMERA_EASING_NAME}
+        data-camera-motion-easing={TOPOLOGY_CAMERA_EASING_NAME}
         data-camera-motion-reduced={prefersReducedMotion ? 'true' : 'false'}
         data-camera-motion-state="idle"
         data-stage-pan-click-cancel-px={STAGE_PAN_CLICK_CANCEL_PX}

@@ -1554,6 +1554,12 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyCameraMotionTrigger !== "selected-focus-safe-fit") {
         return `WebView Relief selected node camera motion trigger was ${payload.markers.topologyCameraMotionTrigger || "missing"}`;
       }
+      if (
+        payload.markers.topologyCameraMotionContract !==
+        "purposeful-safe-fit-motion"
+      ) {
+        return `WebView Relief selected node camera motion contract was ${payload.markers.topologyCameraMotionContract || "missing"}`;
+      }
       if (payload.markers.topologyCameraMotionEasing !== "ease-out-quart") {
         return `WebView Relief selected node camera motion easing was ${payload.markers.topologyCameraMotionEasing || "missing"}`;
       }

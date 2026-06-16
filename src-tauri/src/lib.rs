@@ -1716,6 +1716,8 @@ pub fn run() {
                                     Number(sigmaViewport?.getAttribute("data-skeleton-card-model-count") || "0"),
                                   topologyCameraMotionTrigger:
                                     sigmaViewport?.getAttribute("data-camera-motion-trigger") || "",
+                                  topologyCameraMotionContract:
+                                    sigmaViewport?.getAttribute("data-camera-motion-contract") || "",
                                   topologyCameraMotionDurationMs:
                                     Number(sigmaViewport?.getAttribute("data-camera-motion-duration-ms") || "0"),
                                   topologyCameraMotionEasing:
