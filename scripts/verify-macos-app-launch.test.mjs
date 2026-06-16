@@ -8574,6 +8574,7 @@ test("selected relation card density contract keeps the relation inspector compa
   const baseMarkers = {
     topologySelectedRelationCardDensity: "compact",
     topologySelectedRelationCardDensityContract: "mini-relation-inspector",
+    topologySelectedRelationCardScaleContract: "density-fixed-no-ui-zoom",
     topologySelectedRelationCardWidth: 248,
     topologySelectedRelationCardHeight: 222,
     topologySelectedRelationProofBandHeight: 36,
@@ -8583,6 +8584,17 @@ test("selected relation card density contract keeps the relation inspector compa
   };
 
   assert.equal(validateSelectedRelationCardDensityContract(baseMarkers, 1512), null);
+  assert.equal(validateSelectedRelationCardDensityContract(baseMarkers, 1920), null);
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCardScaleContract: "zoomed-with-topology-ui",
+      },
+      1920,
+    ),
+    /scale contract/,
+  );
   assert.match(
     validateSelectedRelationCardDensityContract(
       {

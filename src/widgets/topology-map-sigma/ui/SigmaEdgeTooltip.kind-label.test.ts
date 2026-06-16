@@ -337,6 +337,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'selected-label-keeps-map-lane',
     );
     expect(selectedCard).toHaveAttribute(
+      'data-scale-contract',
+      'density-fixed-no-ui-zoom',
+    );
+    expect(selectedCard).toHaveAttribute(
       'data-width-token',
       '--topology-selected-relation-card-width',
     );
@@ -369,6 +373,7 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(selectedCard.className).toContain(
       'motion-safe:animate-[topology-relation-inspector-enter_180ms_ease-out_1]',
     );
+    expect(selectedCard.className).not.toContain('topology-ui-scale');
     expect(selectedCard.className).not.toContain('backdrop-blur');
     expect(proofBand).toHaveClass('grid-cols-2');
     expect(route).toHaveAttribute(

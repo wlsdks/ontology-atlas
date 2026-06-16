@@ -78,6 +78,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop localized topology wide proof script checks 1920 and 2560 selected relation density/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop localized topology focus no-op proof script checks already-safe selected focus motion/,
   );
   assert.match(

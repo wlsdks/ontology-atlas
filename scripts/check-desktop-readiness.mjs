@@ -1205,6 +1205,28 @@ if (
   );
 }
 
+const localizedTopologyWideScript =
+  pkg.scripts?.["desktop:verify-topology-wide:ko"] ?? "";
+if (
+  localizedTopologyWideScript.includes('"/Applications/Ontology Atlas.app"') &&
+  localizedTopologyWideScript.includes("--require-window") &&
+  localizedTopologyWideScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
+  localizedTopologyWideScript.includes("--webview-window-size=1920x1080") &&
+  localizedTopologyWideScript.includes("--min-webview-size=1920x1000") &&
+  localizedTopologyWideScript.includes("--webview-evidence=.tmp/ontology-atlas-design-wide-1920.webview.json") &&
+  localizedTopologyWideScript.includes("--webview-window-size=2560x1440") &&
+  localizedTopologyWideScript.includes("--min-webview-size=2400x1000") &&
+  localizedTopologyWideScript.includes("--webview-evidence=.tmp/ontology-atlas-design-wide-2560.webview.json") &&
+  localizedTopologyWideScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
+  localizedTopologyWideScript.includes("--verify-topology-drag")
+) {
+  pass("desktop localized topology wide proof script checks 1920 and 2560 selected relation density");
+} else {
+  fail(
+    "package.json must expose desktop:verify-topology-wide:ko to verify installed Korean Relief selected relation density at requested 1920x1080 and 2560x1440 WebView tiers with deterministic evidence",
+  );
+}
+
 const localizedTopologyFocusNoopScript =
   pkg.scripts?.["desktop:verify-topology-focus-noop:ko"] ?? "";
 if (

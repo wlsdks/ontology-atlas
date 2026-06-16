@@ -973,6 +973,12 @@ export function validateSelectedRelationCardDensityContract(markers, width) {
   ) {
     return `WebView reported malformed Relief selected relation card density contract (${markers?.topologySelectedRelationCardDensityContract || "missing"})`;
   }
+  if (
+    viewportWidth >= 1920 &&
+    markers?.topologySelectedRelationCardScaleContract !== "density-fixed-no-ui-zoom"
+  ) {
+    return `WebView reported malformed Relief selected relation card scale contract (${markers?.topologySelectedRelationCardScaleContract || "missing"})`;
+  }
 
   const cardWidth = Number(markers?.topologySelectedRelationCardWidth || 0);
   const cardHeight = Number(markers?.topologySelectedRelationCardHeight || 0);

@@ -1354,6 +1354,9 @@ pub fn run() {
                               const topologySelectedRelationCardMapClearanceContract =
                                 topologySelectedRelationCard?.getAttribute("data-map-clearance-contract") ||
                                 "";
+                              const topologySelectedRelationCardScaleContract =
+                                topologySelectedRelationCard?.getAttribute("data-scale-contract") ||
+                                "";
                               const topologySelectedRelationCardOverflowContract =
                                 topologySelectedRelationCard?.getAttribute("data-overflow-contract") ||
                                 "";
@@ -1383,6 +1386,8 @@ pub fn run() {
                                 topologySelectedRelationCard
                                   ? topologyCameraMotionState === "settled"
                                     ? "settled-with-camera"
+                                    : topologyCameraMotionState === "already-safe"
+                                      ? "settled-with-camera"
                                     : topologyCameraMotionState === "animating"
                                       ? "co-present-with-camera-motion"
                                       : topologyCameraMotionState === "reduced-motion"
@@ -2758,6 +2763,7 @@ pub fn run() {
                                   topologySelectedRelationCardDockContract,
                                   topologySelectedRelationCardAttentionLane,
                                   topologySelectedRelationCardMapClearanceContract,
+                                  topologySelectedRelationCardScaleContract,
                                   topologySelectedRelationCardMotionContract,
                                   topologySelectedRelationCardMotionDurationMs,
                                   topologySelectedRelationCardMotionEasing,
