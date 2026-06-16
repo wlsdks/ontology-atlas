@@ -1129,11 +1129,29 @@ export function validateWebviewVerifyPayload(payload, {
     if ((anchorPromptVisible || startPromptVisible) && promptLane !== "chrome-clear-path-lane") {
       return `WebView Path mode prompt lane was ${promptLane || "missing"}`;
     }
+    if (
+      (anchorPromptVisible || startPromptVisible) &&
+      payload.markers.topologyPathPromptClearanceContract !== "analysis-rail-clear-24"
+    ) {
+      return `WebView Path mode prompt clearance contract was ${payload.markers.topologyPathPromptClearanceContract || "missing"}`;
+    }
     if ((anchorPromptVisible || startPromptVisible) && Number(payload.width || 0) >= 900 && promptTop < 124) {
       return `WebView Path mode prompt competed with top chrome (${promptTop}px top)`;
     }
     if (promptLeft > 0 && panelRight > 0 && promptLeft < panelRight + 24) {
       return `WebView Path mode prompt overlapped the Relief analysis panel (${promptLeft}px left vs ${panelRight}px panel right)`;
+    }
+    if (
+      (anchorPromptVisible || startPromptVisible) &&
+      Number(payload.markers.topologyPathPromptPanelClearancePx || 0) < 24
+    ) {
+      return `WebView Path mode prompt reported insufficient analysis panel clearance (${payload.markers.topologyPathPromptPanelClearancePx ?? "missing"}px)`;
+    }
+    if (
+      (anchorPromptVisible || startPromptVisible) &&
+      Number(payload.markers.topologyPathPromptViewportRightClearancePx || 0) < 24
+    ) {
+      return `WebView Path mode prompt reported insufficient viewport right clearance (${payload.markers.topologyPathPromptViewportRightClearancePx ?? "missing"}px)`;
     }
     if (
       promptWidth > 680 ||

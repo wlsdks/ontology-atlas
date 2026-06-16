@@ -1424,6 +1424,23 @@ pub fn run() {
                                   topologyPathAnchorPromptRect.width > 0 &&
                                   topologyPathAnchorPromptRect.height > 0
                                 );
+                              const topologyVisiblePathPromptRect = topologyPathAnchorPromptVisible
+                                ? topologyPathAnchorPromptRect
+                                : topologyPathStartPromptVisible
+                                  ? topologyPathStartPromptRect
+                                  : null;
+                              const topologyPathPromptPanelClearancePx =
+                                topologyVisiblePathPromptRect && topologyAnalysisPanelRect
+                                  ? Math.round(topologyVisiblePathPromptRect.left - topologyAnalysisPanelRect.right)
+                                  : 0;
+                              const topologyPathPromptViewportRightClearancePx =
+                                topologyVisiblePathPromptRect
+                                  ? Math.round(window.innerWidth - topologyVisiblePathPromptRect.right)
+                                  : 0;
+                              const topologyPathPromptClearanceContract =
+                                topologyVisiblePathPromptRect
+                                  ? "analysis-rail-clear-24"
+                                  : "";
                               const topologyOverviewHandoffActions = document.querySelector('[data-testid="topology-overview-handoff-actions"]');
                               const topologyOverviewPrimaryCopyButton =
                                 topologyOverviewHandoffActions?.querySelector("button");
@@ -1900,6 +1917,9 @@ pub fn run() {
                                     topologyPathAnchorPromptRect?.width || 0,
                                   topologyPathAnchorPromptHeight:
                                     topologyPathAnchorPromptRect?.height || 0,
+                                  topologyPathPromptClearanceContract,
+                                  topologyPathPromptPanelClearancePx,
+                                  topologyPathPromptViewportRightClearancePx,
                                   topologyPathCandidateVisibilityText:
                                     topologyPathCandidateVisibility?.textContent?.trim() || "",
                                   topologyPathCandidateVisibilityVisible:
