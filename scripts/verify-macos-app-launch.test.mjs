@@ -700,6 +700,15 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
       contract: "blocking-surface-wins",
       count: 0,
       names: [],
+      dismissedSurfaceKinds: [
+        "context-menu",
+        "selected-relation",
+        "search-panel",
+        "path-prompt",
+        "node-popover",
+        "support-panel",
+      ],
+      blockingReason: "composer-open",
     },
     panel: {
       top: 142,
@@ -711,6 +720,12 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
       centerOffset: 0,
     },
     agentNextAction: "treat-add-concept-composer-as-current-work-surface",
+    agentHandoff: {
+      currentSurface: "topology-add-concept-composer",
+      mapState: "dimmed-and-interaction-blocked",
+      blockedUntil: "create-or-cancel",
+      nextActions: ["complete-create-node-form", "cancel-composer"],
+    },
   });
 });
 

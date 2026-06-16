@@ -4746,6 +4746,15 @@ function evidenceRoute(href) {
   }
 }
 
+const COMPOSER_DISMISSED_SURFACE_KINDS = [
+  "context-menu",
+  "selected-relation",
+  "search-panel",
+  "path-prompt",
+  "node-popover",
+  "support-panel",
+];
+
 export function buildWebviewEvidencePayload(payload, { capturedAt = new Date().toISOString() } = {}) {
   const markers = payload?.markers ?? {};
   const composerBlockingProof = markers.topologyCreateNodeOpen === true
@@ -4792,6 +4801,8 @@ export function buildWebviewEvidencePayload(payload, { capturedAt = new Date().t
         names: Array.isArray(markers.topologyTransientSurfaceNames)
           ? markers.topologyTransientSurfaceNames
           : [],
+        dismissedSurfaceKinds: COMPOSER_DISMISSED_SURFACE_KINDS,
+        blockingReason: "composer-open",
       },
       panel: {
         top: markerNumber(markers, "topologyCreateNodePanelTop"),
@@ -4803,6 +4814,12 @@ export function buildWebviewEvidencePayload(payload, { capturedAt = new Date().t
         centerOffset: markerNumber(markers, "topologyCreateNodePanelCenterOffset"),
       },
       agentNextAction: "treat-add-concept-composer-as-current-work-surface",
+      agentHandoff: {
+        currentSurface: "topology-add-concept-composer",
+        mapState: "dimmed-and-interaction-blocked",
+        blockedUntil: "create-or-cancel",
+        nextActions: ["complete-create-node-form", "cancel-composer"],
+      },
     }
     : null;
 
