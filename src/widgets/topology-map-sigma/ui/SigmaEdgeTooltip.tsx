@@ -413,6 +413,9 @@ export function SigmaSelectedEdgeCard({
       data-overflow-contract="no-horizontal-scroll"
       data-width-token="--topology-selected-relation-card-width"
       data-inset-token="--topology-selected-relation-card-inset"
+      data-copy-action-min-width-token="--topology-selected-relation-action-min-width"
+      data-copy-payload-min-height-token="--topology-selected-relation-copy-payload-min-height"
+      data-route-step-min-width-token="--topology-selected-relation-route-step-min-width"
       data-elevation-contract="solid-active-inspector-over-map"
       data-motion-contract={TOPOLOGY_RELATION_INSPECTOR_MOTION_CONTRACT}
       data-motion-duration-ms={TOPOLOGY_RELATION_INSPECTOR_DURATION_MS}
@@ -526,6 +529,7 @@ export function SigmaSelectedEdgeCard({
         data-relation-evidence-state={evidenceState}
         data-primary-copy-action={primaryCopyAction}
         data-route-density="readable-2x2"
+        data-route-step-min-width-token="--topology-selected-relation-route-step-min-width"
         data-overflow-contract="no-horizontal-scroll"
         className="grid grid-cols-2 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] max-[920px]:grid-cols-1"
       >
@@ -555,6 +559,7 @@ export function SigmaSelectedEdgeCard({
       </div>
       <div
         data-testid="sigma-selected-edge-copy-actions"
+        data-copy-action-min-width-token="--topology-selected-relation-action-min-width"
         data-overflow-contract="no-horizontal-scroll"
         className="flex min-w-0 flex-wrap items-center gap-1 overflow-hidden"
       >
@@ -590,8 +595,9 @@ export function SigmaSelectedEdgeCard({
         data-copy-payload-gate={agentGateKind}
         data-cli-fallback-command={cliFallbackCommand}
         data-copy-payload-call={primaryCopyPayloadCall}
+        data-min-height-token="--topology-selected-relation-copy-payload-min-height"
         data-overflow-contract="no-horizontal-scroll"
-        className="flex min-h-[37px] min-w-0 items-center gap-1 overflow-hidden rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(94,106,210,0.045)] px-1.5 py-0.5"
+        className="flex min-h-[var(--topology-selected-relation-copy-payload-min-height)] min-w-0 items-center gap-1 overflow-hidden rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(94,106,210,0.045)] px-1.5 py-0.5"
       >
         <div className="shrink-0 font-mono text-[8px] uppercase tracking-[0.12em] text-[color:rgba(139,151,255,0.84)]">
           {t('copyPayloadLabel')}
@@ -635,7 +641,7 @@ function RouteStep({
       data-route-step={kind}
       data-route-step-label={label}
       data-route-step-value={value}
-      className="min-w-0 border-r border-b border-[color:rgba(255,255,255,0.07)] px-2 py-1 even:border-r-0 [&:nth-child(n+3)]:border-b-0 max-[920px]:min-h-8 max-[920px]:border-b max-[920px]:border-r-0 max-[920px]:py-1.5 max-[920px]:last:border-b-0"
+      className="min-w-[var(--topology-selected-relation-route-step-min-width)] border-r border-b border-[color:rgba(255,255,255,0.07)] px-2 py-1 even:border-r-0 [&:nth-child(n+3)]:border-b-0 max-[920px]:min-h-8 max-[920px]:border-b max-[920px]:border-r-0 max-[920px]:py-1.5 max-[920px]:last:border-b-0"
     >
       <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {label}
@@ -694,7 +700,7 @@ function CopyButton({
       title={payloadCall}
       aria-label={primary ? `${label} · ${primaryBadge}` : label}
       onClick={onClick}
-      className={`inline-flex min-h-8 min-w-[96px] items-center justify-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.16),0_6px_18px_rgba(0,0,0,0.20)]' : ''} ${relationCopyButtonTone({
+      className={`inline-flex min-h-8 min-w-[var(--topology-selected-relation-action-min-width)] items-center justify-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.16),0_6px_18px_rgba(0,0,0,0.20)]' : ''} ${relationCopyButtonTone({
         gateKind,
         primary,
       })}`}

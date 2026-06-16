@@ -1054,6 +1054,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationAgentRouteClientWidth: 256,
       topologySelectedRelationAgentRouteScrollWidth: 256,
       topologySelectedRelationAgentRouteDensity: "readable-2x2",
+      topologySelectedRelationAgentRouteStepMinWidthToken:
+        "--topology-selected-relation-route-step-min-width",
       topologySelectedRelationAgentRouteOverflowContract: "no-horizontal-scroll",
       topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
       topologySelectedRelationPrimaryCopyActionText: "Copy explain",
@@ -1092,6 +1094,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCopyActionRailClientWidth: 256,
       topologySelectedRelationCopyActionRailScrollWidth: 256,
       topologySelectedRelationCopyActionRailOverflowContract: "no-horizontal-scroll",
+      topologySelectedRelationCopyActionRailMinWidthToken:
+        "--topology-selected-relation-action-min-width",
       topologySelectedRelationPrimaryCopyActionWidth: 124,
       topologySelectedRelationPrimaryCopyActionHeight: 31.84,
       topologySelectedRelationCopyPayloadTool: "query_ontology",
@@ -1115,6 +1119,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCopyPayloadClientWidth: 240,
       topologySelectedRelationCopyPayloadScrollWidth: 240,
       topologySelectedRelationCopyPayloadOverflowContract: "no-horizontal-scroll",
+      topologySelectedRelationCopyPayloadMinHeightToken:
+        "--topology-selected-relation-copy-payload-min-height",
       topologySelectedRelationCardLeft: 572,
       topologySelectedRelationCardTop: 96,
       topologySelectedRelationCardRight: 892,
@@ -1130,6 +1136,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardMotionContract: "active-relation-inspector-entry",
       topologySelectedRelationCardMotionDurationMs: 180,
       topologySelectedRelationCardMotionEasing: "ease-out",
+      topologySelectedRelationCardActionMinWidthToken:
+        "--topology-selected-relation-action-min-width",
+      topologySelectedRelationCardCopyPayloadMinHeightToken:
+        "--topology-selected-relation-copy-payload-min-height",
+      topologySelectedRelationCardRouteStepMinWidthToken:
+        "--topology-selected-relation-route-step-min-width",
+      topologySelectedRelationActionMinWidthTokenValue: "96px",
+      topologySelectedRelationCopyPayloadMinHeightTokenValue: "37px",
+      topologySelectedRelationRouteStepMinWidthTokenValue: "96px",
       topologySelectedRelationCardMotionSyncState: "settled-with-camera",
       topologySelectedRelationProofBandWidth: 338,
       topologySelectedRelationProofBandHeight: 54,

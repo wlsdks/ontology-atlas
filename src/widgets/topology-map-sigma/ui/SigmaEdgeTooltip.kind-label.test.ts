@@ -337,6 +337,18 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       '--topology-selected-relation-card-inset',
     );
     expect(selectedCard).toHaveAttribute(
+      'data-copy-action-min-width-token',
+      '--topology-selected-relation-action-min-width',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-copy-payload-min-height-token',
+      '--topology-selected-relation-copy-payload-min-height',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-route-step-min-width-token',
+      '--topology-selected-relation-route-step-min-width',
+    );
+    expect(selectedCard).toHaveAttribute(
       'data-elevation-contract',
       'solid-active-inspector-over-map',
     );
@@ -351,7 +363,24 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     expect(selectedCard.className).not.toContain('backdrop-blur');
     expect(proofBand).toHaveClass('grid-cols-2');
-    expect(copyPayload).toHaveClass('min-h-[37px]');
+    expect(route).toHaveAttribute(
+      'data-route-step-min-width-token',
+      '--topology-selected-relation-route-step-min-width',
+    );
+    expect(route.querySelector('[data-route-step="fact"]')?.className).toContain(
+      'min-w-[var(--topology-selected-relation-route-step-min-width)]',
+    );
+    expect(copyPayload).toHaveAttribute(
+      'data-min-height-token',
+      '--topology-selected-relation-copy-payload-min-height',
+    );
+    expect(copyPayload).toHaveClass(
+      'min-h-[var(--topology-selected-relation-copy-payload-min-height)]',
+    );
+    expect(copyActions).toHaveAttribute(
+      'data-copy-action-min-width-token',
+      '--topology-selected-relation-action-min-width',
+    );
     expect(copyActions).toHaveAttribute('data-overflow-contract', 'no-horizontal-scroll');
     expect(copyActions).toHaveClass('min-w-0');
     expect(copyActions).toHaveClass('overflow-hidden');

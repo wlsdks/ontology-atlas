@@ -1281,6 +1281,15 @@ pub fn run() {
                               const topologySelectedRelationCardMotionEasing =
                                 topologySelectedRelationCard?.getAttribute("data-motion-easing") ||
                                 "";
+                              const topologySelectedRelationCardStyle = topologySelectedRelationCard
+                                ? getComputedStyle(topologySelectedRelationCard)
+                                : null;
+                              const topologySelectedRelationActionMinWidthTokenValue =
+                                topologySelectedRelationCardStyle?.getPropertyValue("--topology-selected-relation-action-min-width").trim() || "";
+                              const topologySelectedRelationCopyPayloadMinHeightTokenValue =
+                                topologySelectedRelationCardStyle?.getPropertyValue("--topology-selected-relation-copy-payload-min-height").trim() || "";
+                              const topologySelectedRelationRouteStepMinWidthTokenValue =
+                                topologySelectedRelationCardStyle?.getPropertyValue("--topology-selected-relation-route-step-min-width").trim() || "";
                               const topologyCameraMotionState =
                                 sigmaViewport?.getAttribute("data-camera-motion-state") || "";
                               const topologySelectedRelationCardMotionSyncState =
@@ -2449,6 +2458,15 @@ pub fn run() {
                                   topologySelectedRelationCardMotionContract,
                                   topologySelectedRelationCardMotionDurationMs,
                                   topologySelectedRelationCardMotionEasing,
+                                  topologySelectedRelationCardActionMinWidthToken:
+                                    topologySelectedRelationCard?.getAttribute("data-copy-action-min-width-token") || "",
+                                  topologySelectedRelationCardCopyPayloadMinHeightToken:
+                                    topologySelectedRelationCard?.getAttribute("data-copy-payload-min-height-token") || "",
+                                  topologySelectedRelationCardRouteStepMinWidthToken:
+                                    topologySelectedRelationCard?.getAttribute("data-route-step-min-width-token") || "",
+                                  topologySelectedRelationActionMinWidthTokenValue,
+                                  topologySelectedRelationCopyPayloadMinHeightTokenValue,
+                                  topologySelectedRelationRouteStepMinWidthTokenValue,
                                   topologySelectedRelationCardMotionSyncState,
                                   topologySelectedRelationProofBandWidth:
                                     topologySelectedRelationProofBandRect?.width || 0,
@@ -2500,6 +2518,8 @@ pub fn run() {
                                     topologySelectedRelationAgentRoute?.scrollWidth || 0,
                                   topologySelectedRelationAgentRouteDensity:
                                     topologySelectedRelationAgentRoute?.getAttribute("data-route-density") || "",
+                                  topologySelectedRelationAgentRouteStepMinWidthToken:
+                                    topologySelectedRelationAgentRoute?.getAttribute("data-route-step-min-width-token") || "",
                                   topologySelectedRelationAgentRouteOverflowContract:
                                     topologySelectedRelationAgentRoute?.getAttribute("data-overflow-contract") || "",
                                   topologySelectedRelationAgentRouteSteps,
@@ -2531,6 +2551,8 @@ pub fn run() {
                                     topologySelectedRelationCopyActionRail?.scrollWidth || 0,
                                   topologySelectedRelationCopyActionRailOverflowContract:
                                     topologySelectedRelationCopyActionRail?.getAttribute("data-overflow-contract") || "",
+                                  topologySelectedRelationCopyActionRailMinWidthToken:
+                                    topologySelectedRelationCopyActionRail?.getAttribute("data-copy-action-min-width-token") || "",
                                   topologySelectedRelationPrimaryCopyActionWidth:
                                     topologySelectedRelationPrimaryCopyActionRect?.width || 0,
                                   topologySelectedRelationPrimaryCopyActionHeight:
@@ -2575,6 +2597,8 @@ pub fn run() {
                                     topologySelectedRelationCopyPayload?.scrollWidth || 0,
                                   topologySelectedRelationCopyPayloadOverflowContract:
                                     topologySelectedRelationCopyPayload?.getAttribute("data-overflow-contract") || "",
+                                  topologySelectedRelationCopyPayloadMinHeightToken:
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-min-height-token") || "",
                                   topologySelectedRelationHandleStripSource:
                                     topologySelectedRelationHandleStrip?.getAttribute("data-source-handle") || "",
                                   topologySelectedRelationHandleStripTarget:

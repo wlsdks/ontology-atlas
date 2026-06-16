@@ -144,6 +144,15 @@ names in component data markers and tests whenever a surface depends on
   that keeps the inspector out of the central relation path.
 - `--topology-selected-relation-card-top`: selected relation top offset that
   clears the first-row workspace chrome.
+- `--topology-selected-relation-action-min-width`: selected relation copy
+  action minimum width; keeps the recommended MCP/CLI action readable without
+  widening the inspector.
+- `--topology-selected-relation-copy-payload-min-height`: selected relation
+  payload strip minimum height; keeps the handoff command visible as one
+  compact proof row.
+- `--topology-selected-relation-route-step-min-width`: selected relation
+  fact/evidence/gate/action step minimum width; prevents cramped ontology
+  proof cells inside the compact inspector.
 
 Do not introduce a new panel width by writing a one-off `clamp(...)` in JSX.
 First name the product reason, add or reuse a `--topology-*` token, and update

@@ -2936,6 +2936,37 @@ export function validateWebviewVerifyPayload(payload, {
           return `WebView reported malformed Relief selected relation inspector motion easing (${payload.markers.topologySelectedRelationCardMotionEasing || "missing"})`;
         }
         if (
+          payload.markers.topologySelectedRelationCardActionMinWidthToken !==
+            "--topology-selected-relation-action-min-width" ||
+          payload.markers.topologySelectedRelationCopyActionRailMinWidthToken !==
+            "--topology-selected-relation-action-min-width"
+        ) {
+          return "WebView reported malformed Relief selected relation copy action width token";
+        }
+        if (
+          payload.markers.topologySelectedRelationCardCopyPayloadMinHeightToken !==
+            "--topology-selected-relation-copy-payload-min-height" ||
+          payload.markers.topologySelectedRelationCopyPayloadMinHeightToken !==
+            "--topology-selected-relation-copy-payload-min-height"
+        ) {
+          return "WebView reported malformed Relief selected relation copy payload height token";
+        }
+        if (
+          payload.markers.topologySelectedRelationCardRouteStepMinWidthToken !==
+            "--topology-selected-relation-route-step-min-width" ||
+          payload.markers.topologySelectedRelationAgentRouteStepMinWidthToken !==
+            "--topology-selected-relation-route-step-min-width"
+        ) {
+          return "WebView reported malformed Relief selected relation route step width token";
+        }
+        if (
+          payload.markers.topologySelectedRelationActionMinWidthTokenValue !== "96px" ||
+          payload.markers.topologySelectedRelationCopyPayloadMinHeightTokenValue !== "37px" ||
+          payload.markers.topologySelectedRelationRouteStepMinWidthTokenValue !== "96px"
+        ) {
+          return `WebView reported malformed Relief selected relation density token values (${payload.markers.topologySelectedRelationActionMinWidthTokenValue || "missing"} / ${payload.markers.topologySelectedRelationCopyPayloadMinHeightTokenValue || "missing"} / ${payload.markers.topologySelectedRelationRouteStepMinWidthTokenValue || "missing"})`;
+        }
+        if (
           payload.markers.topologySelectedRelationCardMotionSyncState !==
             "settled-with-camera" &&
           payload.markers.topologySelectedRelationCardMotionSyncState !==

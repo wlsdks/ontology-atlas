@@ -170,6 +170,9 @@
     --topology-selected-relation-card-width: clamp(264px, 18vw, 304px);
     --topology-selected-relation-card-inset: clamp(16px, 2vw, 32px);
     --topology-selected-relation-card-top: 104px;
+    --topology-selected-relation-action-min-width: 96px;
+    --topology-selected-relation-copy-payload-min-height: 37px;
+    --topology-selected-relation-route-step-min-width: 96px;
     --topology-motion-focus-duration: 180ms;
     --topology-motion-panel-duration: 180ms;
     --topology-motion-camera-duration: 420ms;
