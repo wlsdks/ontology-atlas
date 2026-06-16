@@ -4,6 +4,8 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 export const REQUIRED_CI_GATES = [
+  "pnpm ci:workflow-check",
+  "node --test scripts/check-ci-workflow.test.mjs",
   "pnpm docs-vault:check",
   "pnpm desktop:check",
   "pnpm test:desktop:check",
@@ -87,6 +89,11 @@ export function checkCiWorkflow(root = process.cwd()) {
   requireText(workflow, "corepack prepare pnpm@10.18.0 --activate", "CI workflow");
   requireText(workflow, "pnpm install --frozen-lockfile", "CI workflow");
   requireText(workflow, "pnpm ci:check", "CI workflow");
+  const selfCheckIndex = workflow.indexOf("node scripts/check-ci-workflow.mjs");
+  const ciCheckIndex = workflow.indexOf("pnpm ci:check");
+  if (selfCheckIndex < 0 || selfCheckIndex > ciCheckIndex) {
+    fail("CI workflow must run node scripts/check-ci-workflow.mjs before pnpm ci:check");
+  }
 
   for (const command of REQUIRED_CI_GATES) {
     requireText(ciScript, command, "ci:check script");

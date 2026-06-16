@@ -7,6 +7,7 @@ import test from "node:test";
 
 const script = resolve("scripts/check-ci-workflow.mjs");
 const ciCheck =
+  "pnpm ci:workflow-check && node --test scripts/check-ci-workflow.test.mjs && " +
   "pnpm docs-vault:check && pnpm desktop:check && pnpm test:desktop:check && " +
   "pnpm exec tsc --noEmit && pnpm lint && pnpm test:run && pnpm test:contracts && " +
   "pnpm design:ontology && pnpm build && pnpm bundle:check";
@@ -37,6 +38,8 @@ const workflow = [
   "        run: corepack prepare pnpm@10.18.0 --activate",
   "      - name: Install dependencies",
   "        run: pnpm install --frozen-lockfile",
+  "      - name: Check CI workflow contract",
+  "        run: node scripts/check-ci-workflow.mjs",
   "      - name: Local-first quality gates",
   "        run: pnpm ci:check",
   "",
@@ -106,12 +109,42 @@ test("CI workflow check fails when the workflow does not run the package gate", 
   });
 });
 
+test("CI workflow check fails when the workflow omits its self-check step", () => {
+  withProject(
+    {
+      workflow: workflow.replace(
+        [
+          "      - name: Check CI workflow contract",
+          "        run: node scripts/check-ci-workflow.mjs",
+          "",
+        ].join("\n"),
+        "",
+      ),
+    },
+    (root) => {
+      const result = runCheck(root);
+
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /must run node scripts\/check-ci-workflow\.mjs before pnpm ci:check/);
+    },
+  );
+});
+
 test("CI workflow check fails when ci:check omits desktop checker contracts", () => {
   withProject({ ciCheck: ciCheck.replace(" && pnpm test:desktop:check", "") }, (root) => {
     const result = runCheck(root);
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /ci:check script must include pnpm test:desktop:check/);
+  });
+});
+
+test("CI workflow check fails when ci:check omits the workflow checker test", () => {
+  withProject({ ciCheck: ciCheck.replace(" && node --test scripts/check-ci-workflow.test.mjs", "") }, (root) => {
+    const result = runCheck(root);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /ci:check script must include node --test scripts\/check-ci-workflow\.test\.mjs/);
   });
 });
 

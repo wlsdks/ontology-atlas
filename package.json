@@ -12,7 +12,7 @@
     "dev": "next dev",
     "dev:route-smoke": "node scripts/check-dev-locale-routes.mjs",
     "build": "pnpm docs-vault:build && next build",
-    "ci:check": "pnpm docs-vault:check && pnpm desktop:check && pnpm test:desktop:check && pnpm exec tsc --noEmit && pnpm lint && pnpm test:run && pnpm test:contracts && pnpm design:ontology && pnpm build && pnpm bundle:check",
+    "ci:check": "pnpm ci:workflow-check && node --test scripts/check-ci-workflow.test.mjs && pnpm docs-vault:check && pnpm desktop:check && pnpm test:desktop:check && pnpm exec tsc --noEmit && pnpm lint && pnpm test:run && pnpm test:contracts && pnpm design:ontology && pnpm build && pnpm bundle:check",
     "ci:workflow-check": "node scripts/check-ci-workflow.mjs",
     "desktop:check": "node scripts/check-desktop-readiness.mjs",
     "desktop:doctor": "node scripts/desktop-doctor.mjs",
