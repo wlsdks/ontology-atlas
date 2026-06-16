@@ -128,6 +128,7 @@ import { SigmaSkeletonCards, type SkeletonCardModel } from './SigmaSkeletonCards
 import {
   resolveSafeAreaCameraFit,
   resolveSelectedFocusCameraFit,
+  resolveSelectedFocusCameraMotionProof,
   resolveSkeletonSafeInsets,
 } from '../lib/camera-fit';
 import { SigmaNodeTooltip, type SigmaNodeTooltipData } from './SigmaNodeTooltip';
@@ -577,6 +578,33 @@ function SigmaTopologyImpl({
         currentRatio: state.ratio,
       });
       if (!focusFit) return true;
+      const motionProof = resolveSelectedFocusCameraMotionProof({
+        selectedViewport,
+        safeCenter: focusFit.safeCenter,
+      });
+      if (containerRef.current) {
+        containerRef.current.dataset.cameraMotionIntent = motionProof.intent;
+        containerRef.current.dataset.cameraMotionDistancePx = String(
+          motionProof.distancePx,
+        );
+        containerRef.current.dataset.cameraMotionTargetInsideSafeRect =
+          motionProof.targetInsideSafeRect ? 'true' : 'false';
+        containerRef.current.dataset.cameraMotionSafeInsetTop = String(
+          Math.round(insets.top),
+        );
+        containerRef.current.dataset.cameraMotionSafeInsetRight = String(
+          Math.round(insets.right),
+        );
+        containerRef.current.dataset.cameraMotionSafeInsetBottom = String(
+          Math.round(insets.bottom),
+        );
+        containerRef.current.dataset.cameraMotionSafeInsetLeft = String(
+          Math.round(insets.left),
+        );
+        containerRef.current.dataset.cameraMotionSelectedFanoutRows = String(
+          selectedFanoutRows,
+        );
+      }
       const va = renderer.viewportToFramedGraph({ x: width / 2, y: height / 2 });
       const vb = renderer.viewportToFramedGraph(focusFit.safeCenter);
       // 클릭 = 중앙 + 약한 줌인(읽기 배율 0.8 고정 — 곱연산이면 클릭마다

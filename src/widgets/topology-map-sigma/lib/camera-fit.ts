@@ -70,6 +70,12 @@ export interface SelectedFocusCameraFit {
   safeCenter: { x: number; y: number };
 }
 
+export interface SelectedFocusCameraMotionProof {
+  intent: 'selected-focus-safe-rect';
+  distancePx: number;
+  targetInsideSafeRect: boolean;
+}
+
 /**
  * 토폴로지 화면-크기 대응의 단일 기준 — 그래프 카드(폰트 calc), chrome
  * (.topology-ui-scale zoom), safe inset 이 전부 이 단계를 공유한다.
@@ -186,5 +192,21 @@ export function resolveSelectedFocusCameraFit({
       x: insets.left + safeWidth / 2,
       y: insets.top + safeHeight / 2,
     },
+  };
+}
+
+export function resolveSelectedFocusCameraMotionProof({
+  selectedViewport,
+  safeCenter,
+}: {
+  selectedViewport: { x: number; y: number };
+  safeCenter: { x: number; y: number };
+}): SelectedFocusCameraMotionProof {
+  return {
+    intent: 'selected-focus-safe-rect',
+    distancePx: Math.round(
+      Math.hypot(safeCenter.x - selectedViewport.x, safeCenter.y - selectedViewport.y),
+    ),
+    targetInsideSafeRect: true,
   };
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   resolveSafeAreaCameraFit,
   resolveSelectedFocusCameraFit,
+  resolveSelectedFocusCameraMotionProof,
   resolveSkeletonSafeInsets,
   resolveTopologyUiScale,
 } from './camera-fit';
@@ -156,5 +157,17 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
       currentRatio: 0.62,
     });
     expect(fit?.targetRatio).toBe(0.62);
+  });
+
+  it('선택 카메라 보정의 의도와 이동 거리를 검증 가능한 proof 로 남긴다', () => {
+    const proof = resolveSelectedFocusCameraMotionProof({
+      selectedViewport: { x: 100, y: 200 },
+      safeCenter: { x: 220, y: 290 },
+    });
+    expect(proof).toEqual({
+      intent: 'selected-focus-safe-rect',
+      distancePx: 150,
+      targetInsideSafeRect: true,
+    });
   });
 });

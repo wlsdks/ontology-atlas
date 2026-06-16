@@ -1734,6 +1734,22 @@ pub fn run() {
                                     sigmaViewport?.getAttribute("data-camera-motion-reduced") === "true",
                                   topologyCameraMotionState:
                                     sigmaViewport?.getAttribute("data-camera-motion-state") || "",
+                                  topologyCameraMotionIntent:
+                                    sigmaViewport?.getAttribute("data-camera-motion-intent") || "",
+                                  topologyCameraMotionDistancePx:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-distance-px") || "0"),
+                                  topologyCameraMotionTargetInsideSafeRect:
+                                    sigmaViewport?.getAttribute("data-camera-motion-target-inside-safe-rect") === "true",
+                                  topologyCameraMotionSafeInsetTop:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-safe-inset-top") || "0"),
+                                  topologyCameraMotionSafeInsetRight:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-safe-inset-right") || "0"),
+                                  topologyCameraMotionSafeInsetBottom:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-safe-inset-bottom") || "0"),
+                                  topologyCameraMotionSafeInsetLeft:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-safe-inset-left") || "0"),
+                                  topologyCameraMotionSelectedFanoutRows:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-selected-fanout-rows") || "0"),
                                   topologySkeletonLayerPresent: Boolean(skeletonCardsLayer),
                                   topologySkeletonLayerModelCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-skeleton-card-model-count") || "0"),

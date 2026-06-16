@@ -1585,6 +1585,30 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node camera motion state was ${payload.markers.topologyCameraMotionState || "missing"}`;
       }
+      if (payload.markers.topologyCameraMotionIntent !== "selected-focus-safe-rect") {
+        return `WebView Relief selected node camera motion intent was ${payload.markers.topologyCameraMotionIntent || "missing"}`;
+      }
+      const cameraMotionDistancePx = Number(
+        payload.markers.topologyCameraMotionDistancePx || 0,
+      );
+      if (!Number.isFinite(cameraMotionDistancePx) || cameraMotionDistancePx < 16) {
+        return `WebView Relief selected node camera motion distance was ${payload.markers.topologyCameraMotionDistancePx || "missing"}px`;
+      }
+      if (payload.markers.topologyCameraMotionTargetInsideSafeRect !== true) {
+        return "WebView Relief selected node camera motion safe target was not confirmed";
+      }
+      const cameraSafeInsets = [
+        payload.markers.topologyCameraMotionSafeInsetTop,
+        payload.markers.topologyCameraMotionSafeInsetRight,
+        payload.markers.topologyCameraMotionSafeInsetBottom,
+        payload.markers.topologyCameraMotionSafeInsetLeft,
+      ].map((value) => Number(value || 0));
+      if (
+        cameraSafeInsets.some((value) => !Number.isFinite(value) || value <= 0) ||
+        Number(payload.markers.topologyCameraMotionSelectedFanoutRows || 0) < 1
+      ) {
+        return "WebView Relief selected node camera motion safe rect proof was incomplete";
+      }
       if (!(focusClusterSize >= 2)) {
         return `WebView Relief selected node focus cluster was too small (${payload.markers.topologyFocusClusterSize ?? "missing"})`;
       }
