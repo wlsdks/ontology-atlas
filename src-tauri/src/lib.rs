@@ -1720,6 +1720,8 @@ pub fn run() {
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-row-agent-gate]");
                               const topologyNodePopoverRelationEvidenceGlyph =
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-evidence-glyph]");
+                              const topologyNodePopoverRelationTitle =
+                                topologyNodePopoverRelationRow?.querySelector("[data-relation-title]");
                               const topologyNodePopoverRelationRouteRail =
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-route]");
                               const topologyNodePopoverRelationRouteRailRect =
@@ -2650,6 +2652,10 @@ pub fn run() {
                                     topologyNodePopoverConnectionList?.clientWidth || 0,
                                   topologyNodePopoverConnectionListScrollWidth:
                                     topologyNodePopoverConnectionList?.scrollWidth || 0,
+                                  topologyNodePopoverConnectionListRowDensityContract:
+                                    topologyNodePopoverConnectionList?.getAttribute("data-row-density-contract") || "",
+                                  topologyNodePopoverConnectionListRowMinHitHeight:
+                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-row-min-hit-height") || "0"),
                                   topologyNodePopoverFooterVisible:
                                     Boolean(topologyNodePopoverFooterRect) &&
                                     topologyNodePopoverFooterRect.width > 0 &&
@@ -2674,10 +2680,20 @@ pub fn run() {
                                     topologyNodePopoverRelationRow?.getAttribute("data-overflow-contract") || "",
                                   topologyNodePopoverRelationRowWidth:
                                     topologyNodePopoverRelationRowRect?.width || 0,
+                                  topologyNodePopoverRelationRowHeight:
+                                    topologyNodePopoverRelationRowRect?.height || 0,
                                   topologyNodePopoverRelationRowClientWidth:
                                     topologyNodePopoverRelationRow?.clientWidth || 0,
                                   topologyNodePopoverRelationRowScrollWidth:
                                     topologyNodePopoverRelationRow?.scrollWidth || 0,
+                                  topologyNodePopoverRelationRowDensityContract:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-row-density-contract") || "",
+                                  topologyNodePopoverRelationRowMinHitHeight:
+                                    Number(topologyNodePopoverRelationRow?.getAttribute("data-row-min-hit-height") || "0"),
+                                  topologyNodePopoverRelationRowScanOrder:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-row-scan-order") || "",
+                                  topologyNodePopoverRelationTitlePrimaryScanTarget:
+                                    topologyNodePopoverRelationTitle?.getAttribute("data-primary-scan-target") || "",
                                   topologyNodePopoverRelationQuality:
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-quality") || "",
                                   topologyNodePopoverRelationType:
@@ -2705,6 +2721,8 @@ pub fn run() {
                                   topologyNodePopoverRelationFactRouteChips,
                                   topologyNodePopoverRelationRouteState:
                                     topologyNodePopoverRelationRouteRail?.getAttribute("data-relation-route-state") || "",
+                                  topologyNodePopoverRelationHandoffLane:
+                                    topologyNodePopoverRelationRouteRail?.getAttribute("data-handoff-lane") || "",
                                   topologyNodePopoverRelationRouteRailWidth:
                                     topologyNodePopoverRelationRouteRailRect?.width || 0,
                                   topologyNodePopoverRelationRouteRailScrollWidth:

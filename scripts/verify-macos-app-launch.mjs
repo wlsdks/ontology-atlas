@@ -2088,6 +2088,40 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node popover relation row overflow contract was ${payload.markers.topologyNodePopoverRelationRowOverflowContract || "missing"}`;
       }
+      if (
+        payload.markers.topologyNodePopoverConnectionListRowDensityContract !==
+        "agent-handoff-scan-list"
+      ) {
+        return `WebView Relief selected node popover connection list row density contract was ${payload.markers.topologyNodePopoverConnectionListRowDensityContract || "missing"}`;
+      }
+      if (
+        Number(payload.markers.topologyNodePopoverConnectionListRowMinHitHeight || 0) < 72
+      ) {
+        return `WebView Relief selected node popover connection list row hit height token was ${payload.markers.topologyNodePopoverConnectionListRowMinHitHeight ?? "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverRelationRowDensityContract !==
+        "agent-handoff-scan-row"
+      ) {
+        return `WebView Relief selected node popover relation row density contract was ${payload.markers.topologyNodePopoverRelationRowDensityContract || "missing"}`;
+      }
+      if (
+        Number(payload.markers.topologyNodePopoverRelationRowMinHitHeight || 0) < 72
+      ) {
+        return `WebView Relief selected node popover relation row hit height token was ${payload.markers.topologyNodePopoverRelationRowMinHitHeight ?? "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverRelationRowScanOrder !== "relation>title>direction>endpoint>handoff") {
+        return `WebView Relief selected node popover relation row scan order was ${payload.markers.topologyNodePopoverRelationRowScanOrder || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverRelationTitlePrimaryScanTarget !== "true") {
+        return `WebView Relief selected node popover relation title primary scan target was ${payload.markers.topologyNodePopoverRelationTitlePrimaryScanTarget || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverRelationHandoffLane !== "mcp-cli-next-action") {
+        return `WebView Relief selected node popover relation row handoff lane was ${payload.markers.topologyNodePopoverRelationHandoffLane || "missing"}`;
+      }
+      if (Number(payload.markers.topologyNodePopoverRelationRowHeight || 0) < 68) {
+        return `WebView Relief selected node popover relation row hit height was ${payload.markers.topologyNodePopoverRelationRowHeight ?? "missing"}px`;
+      }
       const relationRowClientWidth = Number(
         payload.markers.topologyNodePopoverRelationRowClientWidth || 0,
       );

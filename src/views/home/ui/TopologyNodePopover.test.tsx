@@ -181,6 +181,31 @@ describe("TopologyNodePopover", () => {
     expect(footer.closest('[data-testid="topology-connections-section"]')).toBeNull();
   });
 
+  it("gives relation rows a scan-friendly handoff density contract", () => {
+    setup();
+
+    const list = screen.getByTestId("topology-node-connection-list");
+    const relationRow = document.querySelector("[data-relation-row]");
+    const relationTitle = relationRow?.querySelector("[data-relation-title]");
+    const handoffLane = relationRow?.querySelector("[data-relation-route]");
+
+    expect(list).toHaveAttribute("data-row-density-contract", "agent-handoff-scan-list");
+    expect(list).toHaveAttribute("data-row-min-hit-height", "72");
+    expect(relationRow).toHaveAttribute("data-row-density-contract", "agent-handoff-scan-row");
+    expect(relationRow).toHaveAttribute("data-row-min-hit-height", "72");
+    expect(relationRow).toHaveAttribute(
+      "data-row-scan-order",
+      "relation>title>direction>endpoint>handoff",
+    );
+    expect(relationRow?.className).toContain("min-h-[72px]");
+    expect(relationRow?.className).toContain("gap-2");
+    expect(relationRow?.className).toContain("px-2");
+    expect(relationRow?.className).toContain("py-2");
+    expect(relationTitle).toHaveAttribute("data-primary-scan-target", "true");
+    expect(relationTitle?.className).toContain("text-[color:var(--color-text-primary)]");
+    expect(handoffLane).toHaveAttribute("data-handoff-lane", "mcp-cli-next-action");
+  });
+
   it("keeps the full-detail footer action compact when hidden relations exist", () => {
     setup({
       focus: focusModel({

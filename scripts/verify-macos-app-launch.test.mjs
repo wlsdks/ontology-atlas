@@ -1422,6 +1422,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverConnectionListBottom: 552,
       topologyNodePopoverConnectionListClientWidth: 254,
       topologyNodePopoverConnectionListScrollWidth: 254,
+      topologyNodePopoverConnectionListRowDensityContract: "agent-handoff-scan-list",
+      topologyNodePopoverConnectionListRowMinHitHeight: 72,
       topologyNodePopoverFooterVisible: true,
       topologyNodePopoverFooterContract: "fixed-outside-scroll-region",
       topologyNodePopoverFooterOverflowContract: "no-horizontal-scroll",
@@ -1433,8 +1435,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverFooterScrollWidth: 286,
       topologyNodePopoverRelationRowOverflowContract: "no-horizontal-scroll",
       topologyNodePopoverRelationRowWidth: 250,
+      topologyNodePopoverRelationRowHeight: 74,
       topologyNodePopoverRelationRowClientWidth: 250,
       topologyNodePopoverRelationRowScrollWidth: 250,
+      topologyNodePopoverRelationRowDensityContract: "agent-handoff-scan-row",
+      topologyNodePopoverRelationRowMinHitHeight: 72,
+      topologyNodePopoverRelationRowScanOrder: "relation>title>direction>endpoint>handoff",
+      topologyNodePopoverRelationTitlePrimaryScanTarget: "true",
+      topologyNodePopoverRelationHandoffLane: "mcp-cli-next-action",
       topologyNodePopoverRelationQuality: "strong",
       topologyNodePopoverRelationType: "contains",
       topologyNodePopoverRelationEvidenceState: "source-backed",
@@ -1944,6 +1952,33 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
     /selected node popover footer overflowed/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverConnectionListRowDensityContract: "dense-technical-list",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node popover connection list row density contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverRelationRowHeight: 54,
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node popover relation row hit height/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverRelationHandoffLane: "hidden-json-tail",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node popover relation row handoff lane/,
   );
   assert.match(
     validateWebviewVerifyPayload({

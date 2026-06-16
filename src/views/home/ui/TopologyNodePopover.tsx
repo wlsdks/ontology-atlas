@@ -368,7 +368,9 @@ export function TopologyNodePopover({
           <ul
             data-testid="topology-node-connection-list"
             data-overflow-contract="vertical-scroll-only"
-            className="flex min-h-0 flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto pr-1"
+            data-row-density-contract="agent-handoff-scan-list"
+            data-row-min-hit-height="72"
+            className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-x-hidden overflow-y-auto pr-1"
           >
             {visibleConnections.map((connection, index) => {
               const directionLabel =
@@ -443,8 +445,11 @@ export function TopologyNodePopover({
                     data-relation-handoff-payload-summary={relationHandoffPayloadSummary}
                     data-relation-handoff-payload-json={relationHandoffPayloadJson}
                     data-overflow-contract="no-horizontal-scroll"
+                    data-row-density-contract="agent-handoff-scan-row"
+                    data-row-min-hit-height="72"
+                    data-row-scan-order="relation>title>direction>endpoint>handoff"
                     onClick={() => onSelectConnection(connection.id)}
-                    className="group flex w-full min-w-0 items-stretch gap-1.5 overflow-hidden rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-1.5 py-1.5 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
+                    className="group flex min-h-[72px] w-full min-w-0 items-stretch gap-2 overflow-hidden rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-2 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
                   >
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-secondary)]">
                       {connection.direction === "outgoing" ? (
@@ -481,7 +486,11 @@ export function TopologyNodePopover({
                         >
                           {agentGateChipText}
                         </span>
-                        <span className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                        <span
+                          data-relation-title
+                          data-primary-scan-target="true"
+                          className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+                        >
                           {connection.title}
                         </span>
                       </span>
@@ -513,6 +522,7 @@ export function TopologyNodePopover({
                         aria-hidden="true"
                         data-relation-route
                         data-relation-route-state="compact-json-ready"
+                        data-handoff-lane="mcp-cli-next-action"
                         className="mt-0.5 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]"
                       >
                         <span data-relation-route-chip="fact" className="min-w-0 truncate">
