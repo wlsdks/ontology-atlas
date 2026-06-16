@@ -3340,9 +3340,16 @@ export function validateWebviewVerifyPayload(payload, {
         typeof payload.markers.topologySelectedRelationPrimaryCopyActionText === "string"
           ? payload.markers.topologySelectedRelationPrimaryCopyActionText.trim()
           : "";
-      const expectedCopyTextNeedle =
-        expectedPrimaryAction === "explain_relation" ? "explain" : "relation";
-      if (!primaryCopyText.toLowerCase().includes(expectedCopyTextNeedle)) {
+      const hrefLocale = payload.href.includes("/ko/") ? "ko" : "en";
+      const primaryCopyTextMatches =
+        expectedPrimaryAction === "explain_relation"
+          ? hrefLocale === "ko"
+            ? /관계\s*설명/.test(primaryCopyText)
+            : primaryCopyText.toLowerCase().includes("explain")
+          : hrefLocale === "ko"
+            ? /관계\s*(점검|사전\s*점검)/.test(primaryCopyText)
+            : primaryCopyText.toLowerCase().includes("relation");
+      if (!primaryCopyTextMatches) {
         return `WebView reported malformed Relief selected relation primary copy action text (${primaryCopyText || "empty"} vs ${expectedPrimaryAction})`;
       }
       const primaryCopyBadgeText =

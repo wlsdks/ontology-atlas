@@ -1348,6 +1348,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...selectedRelationPayload.markers,
         topologySelectedRelationLabelTypeLabel: "포함",
         topologySelectedRelationCardTypeLabel: "포함",
+        topologySelectedRelationPrimaryCopyActionText: "관계 설명 복사",
+        topologySelectedRelationPrimaryCopyBadgeText: "권장 다음 작업",
+        topologySelectedRelationCopyActions:
+          selectedRelationPayload.markers.topologySelectedRelationCopyActions.map((action) =>
+            action.kind === "explain_relation"
+              ? { ...action, text: "관계 설명 복사", recommendationLabel: "권장 다음 작업" }
+              : action.kind === "relation_check"
+                ? { ...action, text: "관계 점검 복사" }
+                : action,
+          ),
       },
     }, { expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus", requireTopologyDrag: true }),
     null,
