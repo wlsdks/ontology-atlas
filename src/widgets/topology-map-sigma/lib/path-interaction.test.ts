@@ -75,6 +75,25 @@ describe("resolvePathGraphNodeId", () => {
     );
   });
 
+  it("resolves graph-id deep links when the visible graph uses vault slugs", () => {
+    const vaultGraph = new Set([
+      "domains/views",
+      "capabilities/topology-analysis-modes",
+      "elements/topology-analysis-state",
+    ]);
+    const hasVaultNode = (nodeId: string) => vaultGraph.has(nodeId);
+
+    expect(resolvePathGraphNodeId("domain:views", hasVaultNode)).toBe(
+      "domains/views",
+    );
+    expect(
+      resolvePathGraphNodeId("capability:topology-analysis-modes", hasVaultNode),
+    ).toBe("capabilities/topology-analysis-modes");
+    expect(resolvePathGraphNodeId("element:topology-analysis-state", hasVaultNode)).toBe(
+      "elements/topology-analysis-state",
+    );
+  });
+
   it("returns null when the target cannot be resolved in the visible graph", () => {
     expect(resolvePathGraphNodeId("capabilities/missing", hasNode)).toBeNull();
   });

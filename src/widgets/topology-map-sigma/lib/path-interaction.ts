@@ -22,6 +22,10 @@ const VAULT_FOLDER_TO_GRAPH_KIND: Record<string, string> = {
   documents: "document",
 };
 
+const GRAPH_KIND_TO_VAULT_FOLDER: Record<string, string> = Object.fromEntries(
+  Object.entries(VAULT_FOLDER_TO_GRAPH_KIND).map(([folder, kind]) => [kind, folder]),
+);
+
 export function resolvePathGraphNodeId(
   candidate: string | null | undefined,
   hasNode: (nodeId: string) => boolean,
@@ -32,6 +36,17 @@ export function resolvePathGraphNodeId(
 
   const normalized = trimmed.replace(/^ontology\//, "");
   if (normalized !== trimmed && hasNode(normalized)) return normalized;
+
+  const colonIndex = normalized.indexOf(":");
+  if (colonIndex > 0) {
+    const kind = normalized.slice(0, colonIndex);
+    const tail = normalized.slice(colonIndex + 1).trim();
+    const folder = GRAPH_KIND_TO_VAULT_FOLDER[kind];
+    if (folder && tail) {
+      const vaultSlug = `${folder}/${tail}`;
+      if (hasNode(vaultSlug)) return vaultSlug;
+    }
+  }
 
   const slashIndex = normalized.indexOf("/");
   if (slashIndex > 0) {

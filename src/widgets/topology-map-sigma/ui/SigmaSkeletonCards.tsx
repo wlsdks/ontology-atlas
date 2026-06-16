@@ -1317,6 +1317,16 @@ export function SigmaSkeletonCards({
     () => cards.reduce((count, card) => count + (resolveNodeId(card.id) ? 1 : 0), 0),
     [cards, resolveNodeId],
   );
+  const pathSelectionSourceSlug = pathSelection?.sourceSlug ?? null;
+  const pathSelectionTargetSlug = pathSelection?.targetSlug ?? null;
+  const resolvedPathSourceNodeId = useMemo(
+    () => (pathSelectionSourceSlug ? resolveNodeId(pathSelectionSourceSlug) : null),
+    [pathSelectionSourceSlug, resolveNodeId],
+  );
+  const resolvedPathTargetNodeId = useMemo(
+    () => (pathSelectionTargetSlug ? resolveNodeId(pathSelectionTargetSlug) : null),
+    [pathSelectionTargetSlug, resolveNodeId],
+  );
 
   const buildVisibleCardTierByNodeId = useCallback(() => {
     const tierByNodeId = new Map<string, SkeletonCardModel['tier']>();
@@ -2935,9 +2945,9 @@ export function SigmaSkeletonCards({
         if (!nodeId) return null;
         const selected = selectedSlug === nodeId || selectedSlug === card.id;
         const pathRole =
-          pathSelection?.sourceSlug === nodeId
+          resolvedPathSourceNodeId === nodeId
             ? 'source'
-            : pathSelection?.targetSlug === nodeId
+            : resolvedPathTargetNodeId === nodeId
               ? 'target'
               : pathWorkflowActive
                 ? 'candidate'

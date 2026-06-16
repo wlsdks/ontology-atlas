@@ -946,6 +946,48 @@ function SigmaTopologyImpl({
     return buildProjectOntologyCounts(ontologyInsight.nodes);
   }, [ontologyInsight]);
 
+  const pathRestoreNodeIds = useMemo(() => {
+    if (!pathWorkflowActive || !showOntologyNodes || !ontologyInsight) return null;
+    const ontologyNodeIds = new Set(ontologyInsight.nodes.map((node) => node.id));
+    const source = resolvePathGraphNodeId(pathSelection?.sourceSlug, (nodeId) =>
+      ontologyNodeIds.has(nodeId),
+    );
+    const target = resolvePathGraphNodeId(pathSelection?.targetSlug, (nodeId) =>
+      ontologyNodeIds.has(nodeId),
+    );
+    if (!source || !target || source === target) return null;
+    const parent = new Map<string, string>();
+    const queue: string[] = [source];
+    parent.set(source, source);
+    let head = 0;
+    while (head < queue.length) {
+      const current = queue[head++];
+      if (current === target) break;
+      for (const edge of ontologyInsight.edges) {
+        const next =
+          edge.from === current ? edge.to : edge.to === current ? edge.from : null;
+        if (!next || parent.has(next) || !ontologyNodeIds.has(next)) continue;
+        parent.set(next, current);
+        queue.push(next);
+      }
+    }
+    if (!parent.has(target)) return null;
+    const path = new Set<string>();
+    let cursor = target;
+    while (cursor !== source) {
+      path.add(cursor);
+      cursor = parent.get(cursor) ?? source;
+    }
+    path.add(source);
+    return path;
+  }, [
+    ontologyInsight,
+    pathSelection?.sourceSlug,
+    pathSelection?.targetSlug,
+    pathWorkflowActive,
+    showOntologyNodes,
+  ]);
+
   // R13 #70 — runtime diff highlight. polling 으로 새로 들어오거나 갱신된
   // project slug 들을 5s 간 'recently changed' 로 마크 → buildGraph 가 그
   // slug 의 노드를 recentlyUpdated:true 로 빌드 → 기존 recent pulse 가
@@ -1027,14 +1069,18 @@ function SigmaTopologyImpl({
                 // 골격 진입 — 그래프를 골격 노드(project+domain+landmark)만으로
                 // 빌드. 전체 289 노드에 좌표를 덧칠하다 일부가 settle 좌표에 남아
                 // bbox 를 폭파시키던 문제를 *원천 제거*(Sigma autoRescale 은 모든
-                // 노드 bbox 로 fit 하므로 outlier 1개로 전체가 작아진다). 숨은
-                // 노드는 클릭 확장 때 추가(lazy). contains 백본만 엣지로.
-                nodes: ontologyInsight.nodes.filter((n) => skeletonLayout.has(n.id)),
+                // 노드 bbox 로 fit 하므로 outlier 1개로 전체가 작아진다). Path
+                // deep link 는 source-target route 노드만 추가해 URL 복원 증거를
+                // 유지하고, 나머지 숨은 노드는 클릭 확장 때 추가(lazy).
+                nodes: ontologyInsight.nodes.filter(
+                  (n) => skeletonLayout.has(n.id) || pathRestoreNodeIds?.has(n.id),
+                ),
                 edges: ontologyInsight.edges.filter(
                   (e) =>
-                    isContainmentRelation(e.type) &&
-                    skeletonLayout.has(e.from) &&
-                    skeletonLayout.has(e.to),
+                    (isContainmentRelation(e.type) &&
+                      skeletonLayout.has(e.from) &&
+                      skeletonLayout.has(e.to)) ||
+                    (pathRestoreNodeIds?.has(e.from) && pathRestoreNodeIds.has(e.to)),
                 ),
               }
             : {
@@ -1071,6 +1117,7 @@ function SigmaTopologyImpl({
     changedSlugs,
     showOntologyNodes,
     ontologyInsight,
+    pathRestoreNodeIds,
     minimal,
     skeletonMode,
     skeletonLayout,
@@ -1261,6 +1308,23 @@ function SigmaTopologyImpl({
       reason: formatPathRelationPreflightReason(sourceSlug, targetSlug),
     };
   }, [pathResultSlugs]);
+
+  const pathRestoreProbe = useMemo(() => {
+    if (!pathWorkflowActive) return null;
+    const source = resolvePathGraphNodeId(pathSelection?.sourceSlug, (nodeId) =>
+      graph.hasNode(nodeId),
+    );
+    const target = resolvePathGraphNodeId(pathSelection?.targetSlug, (nodeId) =>
+      graph.hasNode(nodeId),
+    );
+    const path = source && target && source !== target ? shortestPath(graph, source, target) : null;
+    return {
+      source,
+      target,
+      found: Boolean(path && path.length >= 2),
+      hopCount: path ? Math.max(0, path.length - 1) : 0,
+    };
+  }, [graph, pathSelection?.sourceSlug, pathSelection?.targetSlug, pathWorkflowActive]);
 
   const copyPathEvidence = useCallback(async () => {
     const postWriteSyncPacket = formatAgentPostChangeSyncPacket();
@@ -2743,6 +2807,16 @@ function SigmaTopologyImpl({
         className="pointer-events-none absolute inset-0"
         style={{ backgroundColor: 'var(--color-canvas)' }}
       />
+      {pathRestoreProbe ? (
+        <div
+          data-testid="topology-path-restore-probe"
+          data-source={pathRestoreProbe.source ?? ''}
+          data-target={pathRestoreProbe.target ?? ''}
+          data-found={pathRestoreProbe.found ? 'true' : 'false'}
+          data-hop-count={pathRestoreProbe.hopCount}
+          hidden
+        />
+      ) : null}
       <div
         ref={containerRef}
         data-testid="sigma-topology-viewport"

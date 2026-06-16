@@ -1404,6 +1404,7 @@ pub fn run() {
                                 topologyPathAnchorPrompt?.getBoundingClientRect();
                               const topologyPathCandidateVisibility = document.querySelector('[data-testid="topology-path-candidate-visibility"]');
                               const topologyPathAgentHandoff = document.querySelector('[data-testid="topology-path-agent-handoff"]');
+                              const topologyPathRestoreProbe = document.querySelector('[data-testid="topology-path-restore-probe"]');
                               const topologyPathResultBanner = document.querySelector('[data-testid="topology-path-result-banner"]');
                               const topologyPathResultBannerRect =
                                 topologyPathResultBanner?.getBoundingClientRect();
@@ -1966,6 +1967,14 @@ pub fn run() {
                                     topologyPathAgentHandoff?.getAttribute("data-mcp-action") || "",
                                   topologyPathAgentHandoffCliFallback:
                                     topologyPathAgentHandoff?.getAttribute("data-cli-fallback") || "",
+                                  topologyPathRestoreSource:
+                                    topologyPathRestoreProbe?.getAttribute("data-source") || "",
+                                  topologyPathRestoreTarget:
+                                    topologyPathRestoreProbe?.getAttribute("data-target") || "",
+                                  topologyPathRestoreFound:
+                                    topologyPathRestoreProbe?.getAttribute("data-found") || "",
+                                  topologyPathRestoreHopCount:
+                                    Number(topologyPathRestoreProbe?.getAttribute("data-hop-count") || 0),
                                   topologyPathResultBannerVisible:
                                     Boolean(
                                       topologyPathResultBannerRect &&
