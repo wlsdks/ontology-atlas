@@ -82,6 +82,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop app launch verifier writes Add Concept composer blocking proof into WebView evidence for agent handoff/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop localized topology design proof script checks selected relation, path result, and blocking composer states/,
   );
   assert.match(

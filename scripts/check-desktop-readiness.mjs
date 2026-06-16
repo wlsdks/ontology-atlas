@@ -303,6 +303,20 @@ if (
 }
 
 if (
+  verifyAppScript.includes("export function buildWebviewEvidencePayload") &&
+  verifyAppScript.includes("composerBlockingProof") &&
+  verifyAppScript.includes("topology-add-concept-composer-blocking") &&
+  verifyAppScript.includes("treat-add-concept-composer-as-current-work-surface") &&
+  verifyAppScript.includes("buildWebviewEvidencePayload(payload)")
+) {
+  pass("desktop app launch verifier writes Add Concept composer blocking proof into WebView evidence for agent handoff");
+} else {
+  fail(
+    "scripts/verify-macos-app-launch.mjs must enrich --webview-evidence with a composerBlockingProof object so installed-app Add Concept blocking proof is machine-readable for agents",
+  );
+}
+
+if (
   codexBuildRunScript.includes("pnpm desktop:build:app") &&
   codexBuildRunScript.includes("src-tauri/target/release/bundle/macos/Ontology Atlas.app") &&
   codexBuildRunScript.includes('DOGFOOD_APP_PATH="$APP_PATH"') &&

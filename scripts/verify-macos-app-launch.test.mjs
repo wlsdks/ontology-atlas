@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import * as verifier from "./verify-macos-app-launch.mjs";
 import {
   buildAccessibilityWindowProbeScript,
   buildAccessibilityTextProbeSwift,
@@ -611,6 +612,106 @@ test("WebView verification requires Add Concept backdrop when the composer is op
     ),
     /Korean Relief top search label/,
   );
+});
+
+test("WebView evidence summarizes Add Concept composer blocking proof for agent handoff", () => {
+  assert.equal(typeof verifier.buildWebviewEvidencePayload, "function");
+  const evidence = verifier.buildWebviewEvidencePayload(
+    {
+      href: "tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus",
+      width: 1512,
+      height: 917,
+      markers: {
+        topologyCreateNodeOpen: true,
+        topologyAttentionWinner: "blocking-composer",
+        topologyCreateNodePanelAttentionRole: "blocking-composer",
+        topologyCreateNodePanelPlacementContract: "centered-blocking-edit",
+        topologyCreateNodeSurfaceRole: "blocking-edit-surface",
+        topologyCreateNodeElevationContract: "solid-panel-over-dimmed-map",
+        topologyCreateNodeSizeContract: "bounded-centered-composer",
+        topologyCreateNodePanelRole: "dialog",
+        topologyCreateNodePanelAriaModal: "true",
+        topologyCreateNodeFocusInside: true,
+        topologyCreateNodeActiveElementTestId: "create-node-title",
+        topologyCreateNodeBackdropVisible: true,
+        topologyCreateNodeBackdropCoversViewport: true,
+        topologyCreateNodeBackdropPointerEvents: "auto",
+        topologyCreateNodeBackdropBackground: "oklab(0 0 0 / 0.68)",
+        topologyCreateNodeBackdropFilter: "none",
+        topologyBlockingComposerOverlayContract: "exclusive-blocking-composer",
+        topologyInteractiveOverlayCount: 1,
+        topologyInteractiveOverlayNames: ["topology-create-node-backdrop"],
+        topologyMapSurfaceBlockingEdit: true,
+        topologyMapSurfaceDemoted: true,
+        topologyMapSurfaceDimOpacity: 0.24,
+        topologyMapSurfacePointerEvents: "none",
+        topologyTransientSurfaceCount: 0,
+        topologyTransientSurfaceNames: [],
+        topologyTransientSurfaceContract: "blocking-surface-wins",
+        topologyCreateNodePanelTop: 142,
+        topologyCreateNodePanelBottom: 584,
+        topologyCreateNodePanelLeft: 476,
+        topologyCreateNodePanelRight: 1036,
+        topologyCreateNodePanelWidth: 560,
+        topologyCreateNodePanelHeight: 442,
+        topologyCreateNodePanelCenterOffset: 0,
+      },
+    },
+    { capturedAt: "2026-06-16T12:00:00.000Z" },
+  );
+
+  assert.equal(evidence.capturedAt, "2026-06-16T12:00:00.000Z");
+  assert.deepEqual(evidence.composerBlockingProof, {
+    proof: "topology-add-concept-composer-blocking",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aviews&mode=focus",
+    attention: {
+      winner: "blocking-composer",
+      panelRole: "blocking-composer",
+      placementContract: "centered-blocking-edit",
+      surfaceRole: "blocking-edit-surface",
+      elevationContract: "solid-panel-over-dimmed-map",
+      sizeContract: "bounded-centered-composer",
+      role: "dialog",
+      ariaModal: "true",
+      focusInside: true,
+      activeElementTestId: "create-node-title",
+    },
+    backdrop: {
+      visible: true,
+      coversViewport: true,
+      pointerEvents: "auto",
+      background: "oklab(0 0 0 / 0.68)",
+      dimAlpha: 0.68,
+      filter: "none",
+    },
+    map: {
+      blockingEdit: true,
+      demoted: true,
+      dimOpacity: 0.24,
+      pointerEvents: "none",
+    },
+    overlays: {
+      contract: "exclusive-blocking-composer",
+      count: 1,
+      names: ["topology-create-node-backdrop"],
+    },
+    transients: {
+      contract: "blocking-surface-wins",
+      count: 0,
+      names: [],
+    },
+    panel: {
+      top: 142,
+      bottom: 584,
+      left: 476,
+      right: 1036,
+      width: 560,
+      height: 442,
+      centerOffset: 0,
+    },
+    agentNextAction: "treat-add-concept-composer-as-current-work-surface",
+  });
 });
 
 test("WebView verification rejects stacked Relief transient surfaces", () => {

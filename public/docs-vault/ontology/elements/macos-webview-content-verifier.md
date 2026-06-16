@@ -52,6 +52,12 @@ The same Add Concept proof requires the Relief support panel to be suppressed
 while the blocking composer is open. The composer state should not push the
 overview panel below the 14-inch viewport or leave a clipped support rail behind
 the modal task.
+When `--webview-evidence` is provided, the saved JSON now includes a compact
+`composerBlockingProof` object beside the raw payload. It names the current
+route, attention winner, backdrop dim alpha, map demotion state, transient
+surface count, panel bounds, and the agent next action so a human or MCP/CLI
+agent can read the installed-app Add Concept proof without reverse-engineering
+DOM marker names.
 
 For selected relation inspection on wider topology viewports, the same WebView
 payload now requires `topologyAttentionWinner: active-relation-inspector` and

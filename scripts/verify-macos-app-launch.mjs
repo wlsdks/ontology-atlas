@@ -4722,19 +4722,103 @@ function printWindowDiagnostics({ executablePath, windows = null, captureRows = 
   );
 }
 
+function markerNumber(markers, key) {
+  const value = Number(markers?.[key]);
+  return Number.isFinite(value) ? value : null;
+}
+
+function extractBackdropAlpha(background) {
+  const value = String(background || "");
+  const alpha = Number(
+    value.match(/rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([0-9.]+)\s*\)/)?.[1] ||
+    value.match(/\/\s*([0-9.]+)\s*\)/)?.[1] ||
+    "0",
+  );
+  return Number.isFinite(alpha) ? alpha : null;
+}
+
+function evidenceRoute(href) {
+  try {
+    const url = new URL(href);
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return "";
+  }
+}
+
+export function buildWebviewEvidencePayload(payload, { capturedAt = new Date().toISOString() } = {}) {
+  const markers = payload?.markers ?? {};
+  const composerBlockingProof = markers.topologyCreateNodeOpen === true
+    ? {
+      proof: "topology-add-concept-composer-blocking",
+      status: "proved",
+      route: evidenceRoute(payload?.href),
+      attention: {
+        winner: markers.topologyAttentionWinner ?? null,
+        panelRole: markers.topologyCreateNodePanelAttentionRole ?? null,
+        placementContract: markers.topologyCreateNodePanelPlacementContract ?? null,
+        surfaceRole: markers.topologyCreateNodeSurfaceRole ?? null,
+        elevationContract: markers.topologyCreateNodeElevationContract ?? null,
+        sizeContract: markers.topologyCreateNodeSizeContract ?? null,
+        role: markers.topologyCreateNodePanelRole ?? null,
+        ariaModal: markers.topologyCreateNodePanelAriaModal ?? null,
+        focusInside: markers.topologyCreateNodeFocusInside === true,
+        activeElementTestId: markers.topologyCreateNodeActiveElementTestId ?? null,
+      },
+      backdrop: {
+        visible: markers.topologyCreateNodeBackdropVisible === true,
+        coversViewport: markers.topologyCreateNodeBackdropCoversViewport === true,
+        pointerEvents: markers.topologyCreateNodeBackdropPointerEvents ?? null,
+        background: markers.topologyCreateNodeBackdropBackground ?? null,
+        dimAlpha: extractBackdropAlpha(markers.topologyCreateNodeBackdropBackground),
+        filter: markers.topologyCreateNodeBackdropFilter ?? null,
+      },
+      map: {
+        blockingEdit: markers.topologyMapSurfaceBlockingEdit === true,
+        demoted: markers.topologyMapSurfaceDemoted === true,
+        dimOpacity: markerNumber(markers, "topologyMapSurfaceDimOpacity"),
+        pointerEvents: markers.topologyMapSurfacePointerEvents ?? null,
+      },
+      overlays: {
+        contract: markers.topologyBlockingComposerOverlayContract ?? null,
+        count: markerNumber(markers, "topologyInteractiveOverlayCount"),
+        names: Array.isArray(markers.topologyInteractiveOverlayNames)
+          ? markers.topologyInteractiveOverlayNames
+          : [],
+      },
+      transients: {
+        contract: markers.topologyTransientSurfaceContract ?? null,
+        count: markerNumber(markers, "topologyTransientSurfaceCount"),
+        names: Array.isArray(markers.topologyTransientSurfaceNames)
+          ? markers.topologyTransientSurfaceNames
+          : [],
+      },
+      panel: {
+        top: markerNumber(markers, "topologyCreateNodePanelTop"),
+        bottom: markerNumber(markers, "topologyCreateNodePanelBottom"),
+        left: markerNumber(markers, "topologyCreateNodePanelLeft"),
+        right: markerNumber(markers, "topologyCreateNodePanelRight"),
+        width: markerNumber(markers, "topologyCreateNodePanelWidth"),
+        height: markerNumber(markers, "topologyCreateNodePanelHeight"),
+        centerOffset: markerNumber(markers, "topologyCreateNodePanelCenterOffset"),
+      },
+      agentNextAction: "treat-add-concept-composer-as-current-work-surface",
+    }
+    : null;
+
+  return {
+    capturedAt,
+    payload,
+    composerBlockingProof,
+  };
+}
+
 function writeWebviewEvidence(payload, outPath) {
   if (!outPath) return;
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(
     outPath,
-    `${JSON.stringify(
-      {
-        capturedAt: new Date().toISOString(),
-        payload,
-      },
-      null,
-      2,
-    )}\n`,
+    `${JSON.stringify(buildWebviewEvidencePayload(payload), null, 2)}\n`,
   );
   console.log(`[desktop-app-verify:webview-evidence] saved ${path.resolve(outPath)}`);
 }
