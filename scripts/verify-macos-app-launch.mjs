@@ -2872,6 +2872,22 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation copy payload summary (${copyPayloadSummary || "empty"})`;
       }
+      const copyPayloadVisibleSummary =
+        typeof payload.markers.topologySelectedRelationCopyPayloadVisibleSummary === "string"
+          ? payload.markers.topologySelectedRelationCopyPayloadVisibleSummary.trim()
+          : "";
+      if (copyPayloadVisibleSummary !== `query_ontology · ${expectedPrimaryAction}`) {
+        return `WebView reported malformed Relief selected relation visible copy payload summary (${copyPayloadVisibleSummary || "empty"})`;
+      }
+      if (
+        copyPayloadVisibleSummary.includes(payload.markers.topologySelectedRelationCopyPayloadFrom) ||
+        copyPayloadVisibleSummary.includes(payload.markers.topologySelectedRelationCopyPayloadTo) ||
+        copyPayloadVisibleSummary.includes(payload.markers.topologySelectedRelationCopyPayloadType) ||
+        copyPayloadVisibleSummary.includes(payload.markers.topologySelectedRelationCardEvidenceState) ||
+        copyPayloadVisibleSummary.includes(payload.markers.topologySelectedRelationCardAgentGateKind)
+      ) {
+        return `WebView reported cramped Relief selected relation visible copy payload summary (${copyPayloadVisibleSummary})`;
+      }
       const copyPayloadCall =
         typeof payload.markers.topologySelectedRelationCopyPayloadCall === "string"
           ? payload.markers.topologySelectedRelationCopyPayloadCall.trim()

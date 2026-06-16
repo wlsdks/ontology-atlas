@@ -1100,6 +1100,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
       topologySelectedRelationCopyPayloadSummary:
         "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
+      topologySelectedRelationCopyPayloadVisibleSummary: "query_ontology · explain_relation",
       topologySelectedRelationCliFallbackCommand:
         "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       topologySelectedRelationCliFallbackSummary:
@@ -4248,6 +4249,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationCopyPayloadSummary:
           "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
+        topologySelectedRelationCopyPayloadVisibleSummary: "query_ontology · explain_relation",
         topologySelectedRelationCliFallbackCommand:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCliFallbackSummary:
@@ -4412,6 +4414,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationCopyPayloadSummary:
           "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
+        topologySelectedRelationCopyPayloadVisibleSummary: "query_ontology · explain_relation",
         topologySelectedRelationCliFallbackCommand:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCliFallbackSummary:

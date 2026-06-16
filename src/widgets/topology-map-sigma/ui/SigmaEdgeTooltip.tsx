@@ -358,6 +358,7 @@ export function SigmaSelectedEdgeCard({
     evidence: evidenceState,
     gate: agentGateKind,
   });
+  const primaryCopyPayloadVisibleSummary = `query_ontology · ${primaryCopyActionLabel}`;
   const ontologyHandleSummary = `${data.source} → ${data.target} · ${relationType}`;
   const preflightCopyPayload = {
     operation: 'relation_check',
@@ -591,10 +592,11 @@ export function SigmaSelectedEdgeCard({
         </div>
         <div
           data-copy-payload-summary={primaryCopyPayloadSummary}
+          data-copy-payload-visible-summary={primaryCopyPayloadVisibleSummary}
           title={primaryCopyPayloadSummary}
           className="min-w-0 flex-1 truncate font-mono text-[9px] leading-3 text-[color:var(--color-text-secondary)]"
         >
-          {primaryCopyPayloadSummary}
+          {primaryCopyPayloadVisibleSummary}
         </div>
         <div
           data-cli-fallback-summary={cliFallbackCommand}

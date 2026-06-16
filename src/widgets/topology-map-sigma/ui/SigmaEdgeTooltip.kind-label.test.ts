@@ -264,9 +264,18 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-copy-payload-call',
       'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
     );
-    expect(payload).toHaveTextContent(
+    const payloadSummary = payload.querySelector('[data-copy-payload-summary]');
+    expect(payloadSummary).toHaveAttribute(
+      'data-copy-payload-summary',
       'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready',
     );
+    expect(payloadSummary).toHaveAttribute(
+      'data-copy-payload-visible-summary',
+      'query_ontology · explain_relation',
+    );
+    expect(payload).toHaveTextContent('query_ontology · explain_relation');
+    expect(payload).not.toHaveTextContent('domain:views → capability:topology-analysis-modes');
+    expect(payload).not.toHaveTextContent('source-backed · handoff-ready');
     const cliFallback = payload.querySelector('[data-cli-fallback-summary]');
     expect(cliFallback).toHaveClass('sr-only');
     expect(cliFallback).toHaveAttribute(
