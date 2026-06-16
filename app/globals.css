@@ -173,6 +173,9 @@
     --topology-selected-relation-action-min-width: 86px;
     --topology-selected-relation-copy-payload-min-height: 30px;
     --topology-selected-relation-route-step-min-width: 48px;
+    --topology-drawer-relation-list-max-height: min(18rem, 44vh);
+    --topology-drawer-relation-row-min-height: 58px;
+    --topology-drawer-relation-chip-max-width: 8.5rem;
     --topology-motion-focus-duration: 180ms;
     --topology-motion-panel-duration: 180ms;
     --topology-motion-camera-duration: 420ms;

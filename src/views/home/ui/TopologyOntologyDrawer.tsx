@@ -648,6 +648,8 @@ export function TopologyOntologyDrawer({
         className={`rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 ${
           activeTab === "relations" ? "mt-4 block" : "hidden"
         }`}
+        data-testid="drawer-relations-section"
+        data-overflow-contract="contained-preview-list"
       >
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -701,48 +703,83 @@ export function TopologyOntologyDrawer({
           </p>
         ) : null}
         {model.previewRelations.length > 0 ? (
-          <details className="mt-2">
+          <details className="mt-2" data-testid="drawer-preview-relations" open>
             <summary className="cursor-pointer list-none font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
               {labels.collaboratorBriefPreviewRelations}
             </summary>
-            <ol className="mt-2 flex flex-col gap-1">
+            <ol
+              className="mt-2 flex max-h-[var(--topology-drawer-relation-list-max-height)] min-h-0 flex-col gap-1 overflow-x-hidden overflow-y-auto pr-1"
+              data-testid="drawer-preview-relation-list"
+              data-overflow-contract="vertical-scroll-only"
+            >
               {model.previewRelations.map((relation) => {
                 const relationTypeLabel =
                   labels.relationTypeLabels[relation.edge.type] ??
                   relation.edge.type;
+                const provenanceLabel =
+                  labels.collaboratorRelationProvenanceLabels[relation.provenance];
+                const relationRoute = `${relation.edge.from} > ${relation.edge.to}`;
 
                 return (
                   <li
                     key={relation.edge.id}
-                    className="grid min-w-0 grid-cols-[auto_1fr_auto] gap-2 border-t border-[color:var(--color-border-soft)] py-1.5 first:border-t-0"
+                    className="grid min-h-[var(--topology-drawer-relation-row-min-height)] min-w-0 gap-1.5 overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-2"
+                    data-testid="drawer-preview-relation-row"
+                    data-overflow-contract="no-horizontal-scroll"
+                    data-density="compact-two-line"
+                    data-relation-source-id={relation.edge.from}
+                    data-relation-target-id={relation.edge.to}
+                    data-relation-type={relation.edge.type}
+                    data-relation-provenance={relation.provenance}
+                    data-relation-handoff-tool="query_ontology"
+                    data-relation-handoff-operation="explain_relation"
+                    data-relation-handoff-route={relationRoute}
                   >
-                    <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                      {relation.direction === "outgoing"
-                        ? labels.outgoing
-                        : labels.incoming}
-                    </span>
-                    {onSelectNode && relation.other ? (
-                      <button
-                        type="button"
-                        onClick={() => onSelectNode(relation.other!.id)}
-                        className="min-w-0 truncate text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.5)]"
-                      >
-                        {relation.other.title}
-                      </button>
-                    ) : (
-                      <span className="min-w-0 truncate text-[11px] text-[color:var(--color-text-secondary)]">
-                        {relation.other?.title ?? relation.edge.id}
+                    <div className="flex min-w-0 items-start gap-2">
+                      <span className="shrink-0 rounded-sm border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                        {relation.direction === "outgoing"
+                          ? labels.outgoing
+                          : labels.incoming}
                       </span>
-                    )}
-                    <span className="flex shrink-0 flex-col items-end gap-1">
-                      <span className="rounded-sm border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
-                        {relationTypeLabel}
-                      </span>
-                      <span className="rounded-sm border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                        {labels.collaboratorRelationProvenanceLabels[
-                          relation.provenance
-                        ]}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        {onSelectNode && relation.other ? (
+                          <button
+                            type="button"
+                            onClick={() => onSelectNode(relation.other!.id)}
+                            className="block min-w-0 max-w-full truncate text-left text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.5)]"
+                          >
+                            {relation.other.title}
+                          </button>
+                        ) : (
+                          <span className="block min-w-0 max-w-full truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                            {relation.other?.title ?? relation.edge.id}
+                          </span>
+                        )}
+                        <span
+                          className="mt-1 flex min-w-0 flex-wrap items-center gap-1 overflow-hidden font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+                          data-testid="drawer-preview-relation-route"
+                          data-relation-route-state="compact-handoff-ready"
+                        >
+                          <span className="max-w-[var(--topology-drawer-relation-chip-max-width)] truncate rounded-sm border border-[color:var(--color-border-soft)] px-1.5 py-0.5">
+                            {relationTypeLabel}
+                          </span>
+                          <span className="max-w-[var(--topology-drawer-relation-chip-max-width)] truncate rounded-sm border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5">
+                            {provenanceLabel}
+                          </span>
+                          <span className="rounded-sm border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 text-[color:var(--color-text-secondary)]">
+                            MCP
+                          </span>
+                          <span className="min-w-0 max-w-full truncate normal-case text-[color:var(--color-text-quaternary)]">
+                            {relationRoute}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                    <span className="sr-only">
+                      {relationTypeLabel}
+                      {" · "}
+                      {provenanceLabel}
+                      {" · MCP explain_relation"}
                     </span>
                   </li>
                 );

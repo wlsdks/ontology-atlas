@@ -454,6 +454,69 @@ describe("TopologyOntologyDrawer", () => {
     expect(screen.getByText("Full note")).toBeInTheDocument();
   });
 
+  it("keeps relation preview rows token-bounded and handoff-readable", () => {
+    const selected = {
+      ...node("domain:views", "domain"),
+      title: "Views (Topology · Browse · Builder)",
+    };
+    const capability = {
+      ...node("capability:agent-graph-readiness"),
+      title: "Agent Graph Readiness With A Very Long Product Surface Name",
+    };
+
+    render(
+      <TopologyOntologyDrawer
+        node={selected}
+        nodes={[selected, capability]}
+        edges={[
+          edge(
+            "views->agent-readiness",
+            selected.id,
+            capability.id,
+            "contains",
+            { evidenceIds: ["docs/ontology/views.md"] },
+          ),
+        ]}
+        onClose={vi.fn()}
+        closeLabel="Close"
+        labels={labels}
+        onSelectNode={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Direct relations" }));
+
+    const section = screen.getByTestId("drawer-relations-section");
+    const preview = screen.getByTestId("drawer-preview-relations");
+    const list = screen.getByTestId("drawer-preview-relation-list");
+    const row = screen.getByTestId("drawer-preview-relation-row");
+    const route = screen.getByTestId("drawer-preview-relation-route");
+
+    expect(section).toHaveAttribute("data-overflow-contract", "contained-preview-list");
+    expect(preview).toHaveAttribute("open");
+    expect(list).toHaveAttribute("data-overflow-contract", "vertical-scroll-only");
+    expect(list).toHaveClass("max-h-[var(--topology-drawer-relation-list-max-height)]");
+    expect(list).toHaveClass("overflow-x-hidden");
+    expect(list).toHaveClass("overflow-y-auto");
+    expect(row).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+    expect(row).toHaveAttribute("data-density", "compact-two-line");
+    expect(row).toHaveAttribute("data-relation-source-id", "domain:views");
+    expect(row).toHaveAttribute("data-relation-target-id", "capability:agent-graph-readiness");
+    expect(row).toHaveAttribute("data-relation-type", "contains");
+    expect(row).toHaveAttribute("data-relation-provenance", "source_backed");
+    expect(row).toHaveAttribute("data-relation-handoff-tool", "query_ontology");
+    expect(row).toHaveAttribute("data-relation-handoff-operation", "explain_relation");
+    expect(row).toHaveAttribute(
+      "data-relation-handoff-route",
+      "domain:views > capability:agent-graph-readiness",
+    );
+    expect(route).toHaveAttribute("data-relation-route-state", "compact-handoff-ready");
+    expect(route).toHaveClass("flex-wrap");
+    expect(route).toHaveTextContent("Contains");
+    expect(route).toHaveTextContent("source-backed");
+    expect(route).toHaveTextContent("MCP");
+  });
+
   it("copies focused CLI, MCP, and sync-gate payloads from the topology drawer", async () => {
     copyTextMock.mockResolvedValue(true);
     const selected = node("capabilities/topology-ontology-inspection");
