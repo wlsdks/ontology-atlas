@@ -614,6 +614,16 @@ describe('package contract helpers', () => {
     assertPnpmScriptsExist(Object.values(pkg.scripts).join('\n'), pkg.scripts);
   });
 
+  it('keeps the installed Korean composer blocking proof paired with screenshot evidence', () => {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
+    const script = pkg.scripts?.['desktop:verify-topology-composer-blocking:ko'] ?? '';
+
+    assert.match(script, /--webview-evidence=\.tmp\/ontology-atlas-composer-blocking-ko\.webview\.json/);
+    assert.match(script, /--try-window-screenshot=\.tmp\/ontology-atlas-composer-blocking-ko\.png/);
+    assert.match(script, /--verify-topology-create-node/);
+    assert.match(script, /--verify-topology-drag/);
+  });
+
   it('keeps push and PR GitHub CI disabled while preserving local verification scripts', () => {
     const packageJson = JSON.parse(readFileSync('package.json', 'utf-8'));
     const checksDoc = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');

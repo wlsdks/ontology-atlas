@@ -1224,6 +1224,7 @@ if (
   localizedComposerBlockingScript.includes("--require-window") &&
   localizedComposerBlockingScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
   localizedComposerBlockingScript.includes("--min-window-size=1360x840") &&
+  localizedComposerBlockingScript.includes("--try-window-screenshot=.tmp/ontology-atlas-composer-blocking-ko.png") &&
   localizedComposerBlockingScript.includes("--webview-window-size=1512x917") &&
   localizedComposerBlockingScript.includes("--min-webview-size=1400x860") &&
   localizedComposerBlockingScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
@@ -1232,11 +1233,11 @@ if (
   localizedComposerBlockingScript.includes("--verify-topology-create-node")
 ) {
   pass(
-    "desktop localized topology composer blocking proof script checks relation focus, transient dismissal, dimmed map, and the installed Korean Add Concept composer",
+    "desktop localized topology composer blocking proof script checks relation focus, transient dismissal, dimmed map, screenshot evidence, and the installed Korean Add Concept composer",
   );
 } else {
   fail(
-    "package.json must expose desktop:verify-topology-composer-blocking:ko to verify the installed Korean Relief composer from a selected relation/focus route with drag evidence, transient dismissal, dimmed map markers, and WebView evidence",
+    "package.json must expose desktop:verify-topology-composer-blocking:ko to verify the installed Korean Relief composer from a selected relation/focus route with drag evidence, transient dismissal, dimmed map markers, best-effort screenshot evidence, and WebView evidence",
   );
 }
 

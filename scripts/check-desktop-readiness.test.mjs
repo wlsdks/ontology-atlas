@@ -78,7 +78,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop localized topology composer blocking proof script checks relation focus, transient dismissal, dimmed map, and the installed Korean Add Concept composer/,
+    /✓ desktop localized topology composer blocking proof script checks relation focus, transient dismissal, dimmed map, screenshot evidence, and the installed Korean Add Concept composer/,
   );
   assert.match(
     result.stdout,
