@@ -1267,6 +1267,9 @@ pub fn run() {
                               const topologySelectedRelationCardDensity =
                                 topologySelectedRelationCard?.getAttribute("data-card-density") ||
                                 "";
+                              const topologySelectedRelationCardOverflowContract =
+                                topologySelectedRelationCard?.getAttribute("data-overflow-contract") ||
+                                "";
                               const topologySelectedRelationCardElevationContract =
                                 topologySelectedRelationCard?.getAttribute("data-elevation-contract") ||
                                 "";
@@ -2437,6 +2440,11 @@ pub fn run() {
                                     topologySelectedRelationCardRect?.width || 0,
                                   topologySelectedRelationCardHeight:
                                     topologySelectedRelationCardRect?.height || 0,
+                                  topologySelectedRelationCardClientWidth:
+                                    topologySelectedRelationCard?.clientWidth || 0,
+                                  topologySelectedRelationCardScrollWidth:
+                                    topologySelectedRelationCard?.scrollWidth || 0,
+                                  topologySelectedRelationCardOverflowContract,
                                   topologySelectedRelationCardAgentGate,
                                   topologySelectedRelationCardAgentGateKind,
                                   topologySelectedRelationCardAgentDecision,
@@ -2539,6 +2547,8 @@ pub fn run() {
                                     topologySelectedRelationCopyPayload?.clientWidth || 0,
                                   topologySelectedRelationCopyPayloadScrollWidth:
                                     topologySelectedRelationCopyPayload?.scrollWidth || 0,
+                                  topologySelectedRelationCopyPayloadOverflowContract:
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-overflow-contract") || "",
                                   topologySelectedRelationHandleStripSource:
                                     topologySelectedRelationHandleStrip?.getAttribute("data-source-handle") || "",
                                   topologySelectedRelationHandleStripTarget:

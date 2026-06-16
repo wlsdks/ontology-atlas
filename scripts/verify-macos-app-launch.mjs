@@ -2821,6 +2821,26 @@ export function validateWebviewVerifyPayload(payload, {
           return `WebView reported malformed Relief selected relation card density (${payload.markers.topologySelectedRelationCardDensity || "missing"})`;
         }
         if (
+          payload.markers.topologySelectedRelationCardOverflowContract !==
+          "no-horizontal-scroll"
+        ) {
+          return `WebView reported malformed Relief selected relation card overflow contract (${payload.markers.topologySelectedRelationCardOverflowContract || "missing"})`;
+        }
+        const selectedRelationCardClientWidth = Number(
+          payload.markers.topologySelectedRelationCardClientWidth || 0,
+        );
+        const selectedRelationCardScrollWidth = Number(
+          payload.markers.topologySelectedRelationCardScrollWidth || 0,
+        );
+        if (
+          !Number.isFinite(selectedRelationCardClientWidth) ||
+          !Number.isFinite(selectedRelationCardScrollWidth) ||
+          selectedRelationCardClientWidth < selectedRelationMinCardWidth ||
+          selectedRelationCardScrollWidth - selectedRelationCardClientWidth > 2
+        ) {
+          return `WebView reported overflowing Relief selected relation card (${selectedRelationCardClientWidth} client / ${selectedRelationCardScrollWidth} scroll)`;
+        }
+        if (
           payload.markers.topologySelectedRelationCardElevationContract !==
           "solid-active-inspector-over-map"
         ) {
@@ -2953,6 +2973,12 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (payload.markers.topologySelectedRelationCopyPayloadTool !== "query_ontology") {
         return `WebView reported malformed Relief selected relation copy payload tool (${payload.markers.topologySelectedRelationCopyPayloadTool ?? "unknown marker"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationCopyPayloadOverflowContract !==
+        "no-horizontal-scroll"
+      ) {
+        return `WebView reported malformed Relief selected relation copy payload overflow contract (${payload.markers.topologySelectedRelationCopyPayloadOverflowContract || "missing"})`;
       }
       if (payload.markers.topologySelectedRelationCopyPayloadAction !== expectedPrimaryAction) {
         return `WebView reported mismatched Relief selected relation copy payload action (${payload.markers.topologySelectedRelationCopyPayloadAction ?? "unknown marker"} vs ${expectedPrimaryAction})`;
