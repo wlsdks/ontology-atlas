@@ -2051,6 +2051,15 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyDragClusterSize) >= 2)) {
         return `WebView Relief drag did not keep a linked card cluster (${payload.markers.topologyDragClusterSize ?? "missing"} active members)`;
       }
+      if (payload.markers.topologyDragSettleMotionContract !== "linked-cluster-drag-settle") {
+        return `WebView Relief drag settle motion contract was ${payload.markers.topologyDragSettleMotionContract || "missing"}`;
+      }
+      if (Number(payload.markers.topologyDragSettleMotionDurationMs || 0) !== 720) {
+        return `WebView Relief drag settle motion duration was ${payload.markers.topologyDragSettleMotionDurationMs || "missing"}ms`;
+      }
+      if (payload.markers.topologyDragSettleMotionEasing !== "ease-out") {
+        return `WebView Relief drag settle motion easing was ${payload.markers.topologyDragSettleMotionEasing || "missing"}`;
+      }
       if (!(Number(payload.markers.topologyDragConnectorCount) >= 1)) {
         return `WebView Relief drag did not report linked-cluster connectors (${payload.markers.topologyDragConnectorCount ?? "missing"} connectors)`;
       }

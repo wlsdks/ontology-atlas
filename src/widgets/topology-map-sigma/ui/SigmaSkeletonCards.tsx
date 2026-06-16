@@ -12,6 +12,11 @@ import type Graph from 'graphology';
 import { useTranslations } from 'next-intl';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
 import { resolveTopologyUiScale } from '../lib/camera-fit';
+import {
+  TOPOLOGY_DRAG_SETTLE_DURATION_MS,
+  TOPOLOGY_DRAG_SETTLE_EASING_NAME,
+  TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT,
+} from '../lib/motion-tokens';
 import { ontologyFillTone } from '../lib/ontology-tone';
 import { resolveRelationLabelGeometry } from '../lib/relation-label-geometry';
 import {
@@ -2392,6 +2397,9 @@ export function SigmaSkeletonCards({
       data-skeleton-card-model-count={cards.length}
       data-skeleton-card-resolved-count={resolvedCardCount}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
+      data-drag-settle-motion-contract={TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT}
+      data-drag-settle-motion-duration-ms={TOPOLOGY_DRAG_SETTLE_DURATION_MS}
+      data-drag-settle-motion-easing={TOPOLOGY_DRAG_SETTLE_EASING_NAME}
       data-focus-cluster-size={selectedFocusCluster?.size ?? 0}
       data-dragging-active={activeDragMotion ? 'true' : 'false'}
       data-selected-dock-companion-count="0"

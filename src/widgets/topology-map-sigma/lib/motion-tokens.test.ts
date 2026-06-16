@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   SELECTED_FOCUS_CAMERA_DURATION_MS,
+  TOPOLOGY_DRAG_SETTLE_DURATION_MS,
+  TOPOLOGY_DRAG_SETTLE_EASING_NAME,
+  TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT,
   TOPOLOGY_CAMERA_EASING_NAME,
   TOPOLOGY_CAMERA_MOTION_CONTRACT,
   topologyCameraEaseOutQuart,
@@ -11,6 +14,12 @@ describe('topology motion tokens', () => {
     expect(TOPOLOGY_CAMERA_MOTION_CONTRACT).toBe('purposeful-safe-fit-motion');
     expect(TOPOLOGY_CAMERA_EASING_NAME).toBe('ease-out-quart');
     expect(SELECTED_FOCUS_CAMERA_DURATION_MS).toBe(420);
+  });
+
+  it('names the linked drag settle motion contract explicitly', () => {
+    expect(TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT).toBe('linked-cluster-drag-settle');
+    expect(TOPOLOGY_DRAG_SETTLE_DURATION_MS).toBe(720);
+    expect(TOPOLOGY_DRAG_SETTLE_EASING_NAME).toBe('ease-out');
   });
 
   it('uses an ease-out curve that starts fast and settles at the target', () => {

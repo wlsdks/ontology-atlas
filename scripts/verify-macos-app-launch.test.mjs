@@ -1009,6 +1009,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyClickFocusRelationshipContext: "durable",
       topologyClickFocusRelationshipContextSource: "selected-dock-companions",
       topologyDragClusterSize: 2,
+      topologyDragSettleMotionContract: "linked-cluster-drag-settle",
+      topologyDragSettleMotionDurationMs: 720,
+      topologyDragSettleMotionEasing: "ease-out",
       topologyDragConnectorCount: 1,
       topologyUiScale: 1,
       topologySelectedRelationLabelAgentGateKind: "handoff-ready",
@@ -4098,6 +4101,37 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
     null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/",
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyCardsReady: true,
+          topologyCardCount: 21,
+          topologyCardOverlapCount: 0,
+          topologyCardClippedCount: 0,
+          topologyFixedSurfaceCount: 2,
+          topologyCardFixedSurfaceOverlapCount: 0,
+          topologyDragAttempted: true,
+          topologyDragReason: "done",
+          topologyDragFocusMoved: true,
+          topologyDragCompanionVisible: true,
+          topologyDragCompanionAligned: true,
+          topologyDragRelationLabelClicked: true,
+          topologyDragClusterSize: 6,
+          topologyDragConnectorDrawable: true,
+          topologyDragConnectorCount: 5,
+          topologyDragConnectorClearance: 12,
+          topologyDragSettleMotionContract: "legacy-drag-animation",
+        },
+      },
+      { expectedPath: "/en/topology/", requireTopologyDrag: true },
+    ),
+    /drag settle motion contract/,
   );
   assert.match(
     validateWebviewVerifyPayload({

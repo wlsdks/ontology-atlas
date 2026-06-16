@@ -2373,6 +2373,12 @@ pub fn run() {
                                   topologyDragClusterSize:
                                     Number(topologyDragVerification?.clusterSize || 0) ||
                                     Number(skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"),
+                                  topologyDragSettleMotionContract:
+                                    skeletonCardsLayer?.getAttribute("data-drag-settle-motion-contract") || "",
+                                  topologyDragSettleMotionDurationMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-drag-settle-motion-duration-ms") || "0"),
+                                  topologyDragSettleMotionEasing:
+                                    skeletonCardsLayer?.getAttribute("data-drag-settle-motion-easing") || "",
                                   topologyDragConnectorCount:
                                     Number(topologyDragVerification?.connectorCount || 0) ||
                                     topologyDragConnectorCount,
