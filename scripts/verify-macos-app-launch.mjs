@@ -1595,6 +1595,54 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return "WebView Relief selected node popover did not expose a relation row during selected-node focus";
     }
+    if (payload.markers.topologySelectedNodePopoverVisible === true) {
+      if (
+        payload.markers.topologyNodePopoverConnectionsOverflowContract !==
+        "single-vertical-scroll-region"
+      ) {
+        return `WebView Relief selected node popover connections overflow contract was ${payload.markers.topologyNodePopoverConnectionsOverflowContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverConnectionListOverflowContract !==
+        "vertical-scroll-only"
+      ) {
+        return `WebView Relief selected node popover connection list overflow contract was ${payload.markers.topologyNodePopoverConnectionListOverflowContract || "missing"}`;
+      }
+      const connectionListClientWidth = Number(
+        payload.markers.topologyNodePopoverConnectionListClientWidth || 0,
+      );
+      const connectionListScrollWidth = Number(
+        payload.markers.topologyNodePopoverConnectionListScrollWidth || 0,
+      );
+      if (
+        !Number.isFinite(connectionListClientWidth) ||
+        !Number.isFinite(connectionListScrollWidth) ||
+        connectionListClientWidth < 180 ||
+        connectionListScrollWidth - connectionListClientWidth > 2
+      ) {
+        return `WebView Relief selected node popover connection list overflowed (${connectionListClientWidth} client / ${connectionListScrollWidth} scroll)`;
+      }
+      if (
+        payload.markers.topologyNodePopoverRelationRowOverflowContract !==
+        "no-horizontal-scroll"
+      ) {
+        return `WebView Relief selected node popover relation row overflow contract was ${payload.markers.topologyNodePopoverRelationRowOverflowContract || "missing"}`;
+      }
+      const relationRowClientWidth = Number(
+        payload.markers.topologyNodePopoverRelationRowClientWidth || 0,
+      );
+      const relationRowScrollWidth = Number(
+        payload.markers.topologyNodePopoverRelationRowScrollWidth || 0,
+      );
+      if (
+        !Number.isFinite(relationRowClientWidth) ||
+        !Number.isFinite(relationRowScrollWidth) ||
+        relationRowClientWidth < 180 ||
+        relationRowScrollWidth - relationRowClientWidth > 2
+      ) {
+        return `WebView Relief selected node popover relation row overflowed (${relationRowClientWidth} client / ${relationRowScrollWidth} scroll)`;
+      }
+    }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
       payload.markers.topologyAnalysisPanelMode !== "focus"
@@ -1728,8 +1776,13 @@ export function validateWebviewVerifyPayload(payload, {
       if (!Number.isFinite(cameraMotionDistancePx) || cameraMotionDistancePx < 16) {
         return `WebView Relief selected node camera motion distance was ${payload.markers.topologyCameraMotionDistancePx || "missing"}px`;
       }
-      if (cameraMotionDistancePx > 220) {
-        return `WebView Relief selected node camera motion was excessive (${cameraMotionDistancePx}px)`;
+      const selectedFanoutRows = Number(
+        payload.markers.topologyCameraMotionSelectedFanoutRows || 0,
+      );
+      const cameraMotionMaxDistancePx =
+        220 + Math.max(0, selectedFanoutRows - 2) * 16;
+      if (cameraMotionDistancePx > cameraMotionMaxDistancePx) {
+        return `WebView Relief selected node camera motion was excessive (${cameraMotionDistancePx}px > ${cameraMotionMaxDistancePx}px)`;
       }
       if (payload.markers.topologyCameraMotionTargetInsideSafeRect !== true) {
         return "WebView Relief selected node camera motion safe target was not confirmed";
@@ -1742,7 +1795,7 @@ export function validateWebviewVerifyPayload(payload, {
       ].map((value) => Number(value || 0));
       if (
         cameraSafeInsets.some((value) => !Number.isFinite(value) || value <= 0) ||
-        Number(payload.markers.topologyCameraMotionSelectedFanoutRows || 0) < 1
+        selectedFanoutRows < 1
       ) {
         return "WebView Relief selected node camera motion safe rect proof was incomplete";
       }

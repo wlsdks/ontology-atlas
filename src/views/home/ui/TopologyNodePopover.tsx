@@ -297,6 +297,7 @@ export function TopologyNodePopover({
 
       <div
         data-testid="topology-connections-section"
+        data-overflow-contract="single-vertical-scroll-region"
         className="mt-2.5 flex min-h-0 flex-1 flex-col overflow-hidden border-t border-[color:var(--color-divider)] px-4 py-3"
       >
         <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
@@ -361,7 +362,11 @@ export function TopologyNodePopover({
           </p>
         ) : null}
         {visibleConnections.length > 0 ? (
-          <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-1">
+          <ul
+            data-testid="topology-node-connection-list"
+            data-overflow-contract="vertical-scroll-only"
+            className="flex min-h-0 flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto pr-1"
+          >
             {visibleConnections.map((connection, index) => {
               const directionLabel =
                 connection.direction === "outgoing" ? labels.dependsOn : labels.usedBy;
@@ -433,8 +438,9 @@ export function TopologyNodePopover({
                     data-relation-handoff-type={connection.relationType}
                     data-relation-handoff-payload-summary={relationHandoffPayloadSummary}
                     data-relation-handoff-payload-json={relationHandoffPayloadJson}
+                    data-overflow-contract="no-horizontal-scroll"
                     onClick={() => onSelectConnection(connection.id)}
-                    className="group flex w-full items-stretch gap-1.5 rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-1.5 py-1.5 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
+                    className="group flex w-full min-w-0 items-stretch gap-1.5 overflow-hidden rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-1.5 py-1.5 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
                   >
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-secondary)]">
                       {connection.direction === "outgoing" ? (

@@ -141,11 +141,18 @@ describe("TopologyNodePopover", () => {
 
   it("keeps the connection list in the only scrolling region so the footer cannot overlap it", () => {
     setup();
+    const section = screen.getByTestId("topology-connections-section");
     const list = screen.getByText("MCP SDK").closest("ul");
+    const row = document.querySelector("[data-relation-row]");
+    expect(section).toHaveAttribute("data-overflow-contract", "single-vertical-scroll-region");
+    expect(list).toHaveAttribute("data-testid", "topology-node-connection-list");
+    expect(list).toHaveAttribute("data-overflow-contract", "vertical-scroll-only");
     expect(list?.className).toContain("min-h-0");
     expect(list?.className).toContain("flex-1");
     expect(list?.className).toContain("overflow-y-auto");
+    expect(list?.className).toContain("overflow-x-hidden");
     expect(list?.className).not.toContain("max-h-40");
+    expect(row).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
   });
 
   it("can collapse into a low map chip without losing the selected node context", () => {
