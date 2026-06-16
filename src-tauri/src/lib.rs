@@ -1902,6 +1902,14 @@ pub fn run() {
                                     sigmaViewport?.getAttribute("data-camera-motion-intent") || "",
                                   topologyCameraMotionTargetPolicy:
                                     sigmaViewport?.getAttribute("data-camera-motion-target-policy") || "",
+                                  topologyCameraMotionSelectedViewportX:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-selected-viewport-x") || "0"),
+                                  topologyCameraMotionSelectedViewportY:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-selected-viewport-y") || "0"),
+                                  topologyCameraMotionSafeTargetX:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-safe-target-x") || "0"),
+                                  topologyCameraMotionSafeTargetY:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-safe-target-y") || "0"),
                                   topologyCameraMotionDistancePx:
                                     Number(sigmaViewport?.getAttribute("data-camera-motion-distance-px") || "0"),
                                   topologyCameraMotionTargetInsideSafeRect:

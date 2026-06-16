@@ -585,6 +585,18 @@ function SigmaTopologyImpl({
       if (containerRef.current) {
         containerRef.current.dataset.cameraMotionIntent = motionProof.intent;
         containerRef.current.dataset.cameraMotionTargetPolicy = motionProof.targetPolicy;
+        containerRef.current.dataset.cameraMotionSelectedViewportX = String(
+          motionProof.selectedViewport.x,
+        );
+        containerRef.current.dataset.cameraMotionSelectedViewportY = String(
+          motionProof.selectedViewport.y,
+        );
+        containerRef.current.dataset.cameraMotionSafeTargetX = String(
+          motionProof.safeTarget.x,
+        );
+        containerRef.current.dataset.cameraMotionSafeTargetY = String(
+          motionProof.safeTarget.y,
+        );
         containerRef.current.dataset.cameraMotionDistancePx = String(
           motionProof.distancePx,
         );

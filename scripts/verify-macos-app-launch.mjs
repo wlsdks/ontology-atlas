@@ -2007,6 +2007,8 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologySkeletonMode === true &&
       selectedNodeKind !== "element"
     ) {
+      const viewportWidth = Number(payload.width || 0);
+      const viewportHeight = Number(payload.height || 0);
       const focusClusterSize = Number(payload.markers.topologyFocusClusterSize || 0);
       const bodyText = String(payload.bodyText || "");
       const bodyFocusClusterVisible =
@@ -2089,11 +2091,42 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyCameraMotionTargetPolicy !== "nearest-safe-target") {
         return `WebView Relief selected node camera motion target policy was ${payload.markers.topologyCameraMotionTargetPolicy || "missing"}`;
       }
+      const cameraMotionSelectedViewportX = Number(
+        payload.markers.topologyCameraMotionSelectedViewportX || 0,
+      );
+      const cameraMotionSelectedViewportY = Number(
+        payload.markers.topologyCameraMotionSelectedViewportY || 0,
+      );
+      const cameraMotionSafeTargetX = Number(
+        payload.markers.topologyCameraMotionSafeTargetX || 0,
+      );
+      const cameraMotionSafeTargetY = Number(
+        payload.markers.topologyCameraMotionSafeTargetY || 0,
+      );
+      if (
+        [
+          cameraMotionSelectedViewportX,
+          cameraMotionSelectedViewportY,
+          cameraMotionSafeTargetX,
+          cameraMotionSafeTargetY,
+        ].some((value) => !Number.isFinite(value) || value <= 0)
+      ) {
+        return "WebView Relief selected node camera motion coordinate proof was incomplete";
+      }
       const cameraMotionDistancePx = Number(
         payload.markers.topologyCameraMotionDistancePx || 0,
       );
       if (!Number.isFinite(cameraMotionDistancePx) || cameraMotionDistancePx < 16) {
         return `WebView Relief selected node camera motion distance was ${payload.markers.topologyCameraMotionDistancePx || "missing"}px`;
+      }
+      const measuredCameraMotionDistance = Math.round(
+        Math.hypot(
+          cameraMotionSafeTargetX - cameraMotionSelectedViewportX,
+          cameraMotionSafeTargetY - cameraMotionSelectedViewportY,
+        ),
+      );
+      if (Math.abs(measuredCameraMotionDistance - cameraMotionDistancePx) > 2) {
+        return `WebView Relief selected node camera motion distance mismatched the coordinate proof (${cameraMotionDistancePx}px marker vs ${measuredCameraMotionDistance}px measured)`;
       }
       const selectedFanoutRows = Number(
         payload.markers.topologyCameraMotionSelectedFanoutRows || 0,
@@ -2118,6 +2151,17 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return "WebView Relief selected node camera motion safe rect proof was incomplete";
       }
+      const [safeInsetTop, safeInsetRight, safeInsetBottom, safeInsetLeft] = cameraSafeInsets;
+      const safeRight = viewportWidth - safeInsetRight;
+      const safeBottom = viewportHeight - safeInsetBottom;
+      if (
+        cameraMotionSafeTargetX < safeInsetLeft - 1 ||
+        cameraMotionSafeTargetX > safeRight + 1 ||
+        cameraMotionSafeTargetY < safeInsetTop - 1 ||
+        cameraMotionSafeTargetY > safeBottom + 1
+      ) {
+        return `WebView Relief selected node camera motion target was outside the computed safe rect (${cameraMotionSafeTargetX}, ${cameraMotionSafeTargetY} vs left ${safeInsetLeft}, top ${safeInsetTop}, right ${safeRight}, bottom ${safeBottom})`;
+      }
       if (!(focusClusterSize >= 2)) {
         return `WebView Relief selected node focus cluster was too small (${payload.markers.topologyFocusClusterSize ?? "missing"})`;
       }
@@ -2139,8 +2183,6 @@ export function validateWebviewVerifyPayload(payload, {
       const focusClusterTop = Number(payload.markers.topologyFocusClusterTop || 0);
       const focusClusterRight = Number(payload.markers.topologyFocusClusterRight || 0);
       const focusClusterBottom = Number(payload.markers.topologyFocusClusterBottom || 0);
-      const viewportWidth = Number(payload.width || 0);
-      const viewportHeight = Number(payload.height || 0);
       const canMeasureFocusGeometry =
         viewportWidth >= 1400 &&
         viewportHeight >= 800 &&

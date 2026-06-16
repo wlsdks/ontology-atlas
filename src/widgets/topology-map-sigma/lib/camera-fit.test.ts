@@ -167,6 +167,8 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
     expect(proof).toEqual({
       intent: 'selected-focus-safe-rect',
       targetPolicy: 'nearest-safe-target',
+      selectedViewport: { x: 100, y: 200 },
+      safeTarget: { x: 220, y: 290 },
       distancePx: 150,
       targetInsideSafeRect: true,
     });
