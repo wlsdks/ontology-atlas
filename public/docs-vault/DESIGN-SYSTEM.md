@@ -184,6 +184,10 @@ names in component data markers and tests whenever a surface depends on
   `--topology-relation-label-selected-shadow`: focus-level selected relation
   label treatment. A selected relation is the active ontology fact on the map,
   so its halo must be token-backed instead of embedded RGBA in the renderer.
+- `--topology-relation-stroke-*`: SVG relation line ink and width for selected,
+  strong, supported, weak, and review relations. Relation strokes are topology
+  facts, not ambient decoration; tune their contrast with tokens so the map can
+  become more legible without touching renderer logic.
 - `--topology-focus-hull-*`: selected focus/drag cluster hull treatment. The
   quiet focus outline and active drag hull must be token-backed so the map reads
   as a relationship boundary, not a second panel or an ungoverned glow.

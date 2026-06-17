@@ -749,8 +749,18 @@ for (const viewport of VIEWPORTS) {
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
     const legendRect = await kindLegendRectOrNull(page);
     expectCardsClear(await visibleCardRects(page), viewport, analysisRect, legendRect);
-    const overviewConnector = page.locator("[data-overview-connector-from]").first();
+    const overviewConnector = page
+      .locator('[data-overview-connector-from][data-relation-stroke-contract="quality-token"]')
+      .first();
     await expect(overviewConnector).toHaveAttribute("d", /^M /);
+    await expect(overviewConnector).toHaveAttribute(
+      "data-relation-stroke-token",
+      /--topology-relation-stroke-(strong|supported|weak|review|selected)/,
+    );
+    await expect(overviewConnector).toHaveAttribute(
+      "data-relation-stroke-width-token",
+      /--topology-relation-stroke-(strong|supported|weak|review|selected)-width/,
+    );
     const connector = await connectorVisualEvidence(overviewConnector);
     expect(
       connector.totalLength,
@@ -761,7 +771,9 @@ for (const viewport of VIEWPORTS) {
       `overview backbone connector should stay visible at ${viewport.label}`,
     ).toBeGreaterThan(0.8);
     const verticalConnector = page
-      .locator('[data-overview-connector-from][data-connector-axis="vertical"]')
+      .locator(
+        '[data-overview-connector-from][data-connector-axis="vertical"][data-relation-stroke-contract="quality-token"]',
+      )
       .first();
     await expect(verticalConnector).toHaveAttribute("d", /^M /);
     const vertical = await connectorVisualEvidence(verticalConnector);

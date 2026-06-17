@@ -314,12 +314,23 @@ function withAlpha(rgba: string, alpha: number): string {
 function relationConnectorTone(
   connector: Pick<RelationConnector, 'authored' | 'evidenceCount' | 'relationQuality'>,
   selected: boolean,
-): { dasharray?: string; opacity: number; stroke: string; strokeWidth: number } {
+): {
+  dasharray?: string;
+  haloWidth: string;
+  opacity: number;
+  stroke: string;
+  strokeToken: string;
+  strokeWidth: string;
+  strokeWidthToken: string;
+} {
   if (selected) {
     return {
+      haloWidth: 'var(--topology-relation-stroke-selected-halo-width)',
       opacity: 0.95,
-      stroke: 'rgba(139,151,255,0.92)',
-      strokeWidth: 2.2,
+      stroke: 'var(--topology-relation-stroke-selected)',
+      strokeToken: '--topology-relation-stroke-selected',
+      strokeWidth: 'var(--topology-relation-stroke-selected-width)',
+      strokeWidthToken: '--topology-relation-stroke-selected-width',
     };
   }
   const quality = connector.relationQuality ?? 'supported';
@@ -327,30 +338,42 @@ function relationConnectorTone(
   const evidenceBoost = hasEvidence ? 0.08 : 0;
   if (quality === 'strong') {
     return {
+      haloWidth: 'var(--topology-relation-stroke-selected-halo-width)',
       opacity: 0.72 + evidenceBoost,
-      stroke: 'rgba(139,151,255,0.50)',
-      strokeWidth: 1.34,
+      stroke: 'var(--topology-relation-stroke-strong)',
+      strokeToken: '--topology-relation-stroke-strong',
+      strokeWidth: 'var(--topology-relation-stroke-strong-width)',
+      strokeWidthToken: '--topology-relation-stroke-strong-width',
     };
   }
   if (quality === 'weak') {
     return {
+      haloWidth: 'var(--topology-relation-stroke-selected-halo-width)',
       opacity: 0.48 + evidenceBoost,
-      stroke: 'rgba(217,161,65,0.34)',
-      strokeWidth: 0.92,
+      stroke: 'var(--topology-relation-stroke-weak)',
+      strokeToken: '--topology-relation-stroke-weak',
+      strokeWidth: 'var(--topology-relation-stroke-weak-width)',
+      strokeWidthToken: '--topology-relation-stroke-weak-width',
     };
   }
   if (quality === 'review') {
     return {
       dasharray: '4 6',
+      haloWidth: 'var(--topology-relation-stroke-selected-halo-width)',
       opacity: 0.52,
-      stroke: 'rgba(226,105,105,0.38)',
-      strokeWidth: 1,
+      stroke: 'var(--topology-relation-stroke-review)',
+      strokeToken: '--topology-relation-stroke-review',
+      strokeWidth: 'var(--topology-relation-stroke-review-width)',
+      strokeWidthToken: '--topology-relation-stroke-review-width',
     };
   }
   return {
+    haloWidth: 'var(--topology-relation-stroke-selected-halo-width)',
     opacity: 0.56 + evidenceBoost,
-    stroke: 'rgba(72,184,203,0.34)',
-    strokeWidth: 1,
+    stroke: 'var(--topology-relation-stroke-supported)',
+    strokeToken: '--topology-relation-stroke-supported',
+    strokeWidth: 'var(--topology-relation-stroke-supported-width)',
+    strokeWidthToken: '--topology-relation-stroke-supported-width',
   };
 }
 
@@ -3279,11 +3302,12 @@ export function SigmaSkeletonCards({
                       data-selected-relation-halo="true"
                       data-selected-relation-halo-token="--topology-relation-label-selected-surface"
                       data-relation-quality={connector.relationQuality ?? 'supported'}
+                      data-relation-stroke-halo-width-token="--topology-relation-stroke-selected-halo-width"
                       className="pointer-events-none"
                       fill="none"
                       stroke="var(--topology-relation-label-selected-surface)"
                       strokeLinecap="round"
-                      strokeWidth={Math.max(6, tone.strokeWidth + 5)}
+                      strokeWidth={tone.haloWidth}
                       opacity={0.9}
                     />
                   ) : null}
@@ -3294,6 +3318,14 @@ export function SigmaSkeletonCards({
                     data-relation-kind={connector.kind}
                     data-relation-quality={connector.relationQuality ?? 'supported'}
                     data-relation-type={connector.relationType}
+                    data-relation-stroke-contract="quality-token"
+                    data-relation-stroke-token={tone.strokeToken}
+                    data-relation-stroke-width-token={tone.strokeWidthToken}
+                    data-relation-stroke-evidence-boost={
+                      (connector.evidenceCount ?? 0) > 0 || connector.authored === true
+                        ? 'true'
+                        : 'false'
+                    }
                     className="pointer-events-none"
                     fill="none"
                     stroke={tone.stroke}
@@ -3333,10 +3365,11 @@ export function SigmaSkeletonCards({
                     data-selected-relation-halo="true"
                     data-selected-relation-halo-token="--topology-relation-label-selected-surface"
                     data-relation-quality={connector.relationQuality ?? 'supported'}
+                    data-relation-stroke-halo-width-token="--topology-relation-stroke-selected-halo-width"
                     className="pointer-events-none topology-connector-path"
                     fill="none"
                     stroke="var(--topology-relation-label-selected-surface)"
-                    strokeWidth={Math.max(6, tone.strokeWidth + 5)}
+                    strokeWidth={tone.haloWidth}
                     opacity={0.9}
                   />
               ) : null}
@@ -3346,6 +3379,14 @@ export function SigmaSkeletonCards({
                 data-relation-kind={connector.kind}
                 data-relation-quality={connector.relationQuality ?? 'supported'}
                 data-relation-type={connector.relationType}
+                data-relation-stroke-contract="quality-token"
+                data-relation-stroke-token={tone.strokeToken}
+                data-relation-stroke-width-token={tone.strokeWidthToken}
+                data-relation-stroke-evidence-boost={
+                  (connector.evidenceCount ?? 0) > 0 || connector.authored === true
+                    ? 'true'
+                    : 'false'
+                }
                 className="pointer-events-none topology-connector-path"
                 fill="none"
                 stroke={tone.stroke}

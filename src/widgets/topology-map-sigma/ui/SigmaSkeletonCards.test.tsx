@@ -1593,8 +1593,19 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(hitPath).toBeInTheDocument();
     expect(hitPath).toHaveAttribute("data-relation-quality", "strong");
     expect(visiblePath).toHaveAttribute("data-relation-quality", "strong");
-    expect(visiblePath).toHaveAttribute("stroke", "rgba(139,151,255,0.50)");
-    expect(visiblePath).toHaveAttribute("stroke-width", "1.34");
+    expect(visiblePath).toHaveAttribute(
+      "data-relation-stroke-token",
+      "--topology-relation-stroke-strong",
+    );
+    expect(visiblePath).toHaveAttribute(
+      "data-relation-stroke-width-token",
+      "--topology-relation-stroke-strong-width",
+    );
+    expect(visiblePath).toHaveAttribute("stroke", "var(--topology-relation-stroke-strong)");
+    expect(visiblePath).toHaveAttribute(
+      "stroke-width",
+      "var(--topology-relation-stroke-strong-width)",
+    );
     fireEvent.click(hitPath!);
     expect(onRelationSelect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1653,7 +1664,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(visiblePaths).toHaveLength(2);
     expect(visiblePaths[0]).toHaveAttribute("data-relation-quality", "weak");
     expect(visiblePaths[1]).toHaveAttribute("data-relation-quality", "strong");
-    expect(visiblePaths[1]).toHaveAttribute("stroke-width", "1.34");
+    expect(visiblePaths[1]).toHaveAttribute(
+      "data-relation-stroke-width-token",
+      "--topology-relation-stroke-strong-width",
+    );
+    expect(visiblePaths[1]).toHaveAttribute(
+      "stroke-width",
+      "var(--topology-relation-stroke-strong-width)",
+    );
   });
 
   it("선택된 relation edge 는 visible connector 를 인디고로 강조한다", () => {
@@ -1683,18 +1701,36 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
 
     expect(selectedPath).toBeInTheDocument();
-    expect(selectedPath).toHaveAttribute("stroke", "rgba(139,151,255,0.92)");
-    expect(selectedPath).toHaveAttribute("stroke-width", "2.2");
+    expect(selectedPath).toHaveAttribute(
+      "data-relation-stroke-token",
+      "--topology-relation-stroke-selected",
+    );
+    expect(selectedPath).toHaveAttribute(
+      "data-relation-stroke-width-token",
+      "--topology-relation-stroke-selected-width",
+    );
+    expect(selectedPath).toHaveAttribute("stroke", "var(--topology-relation-stroke-selected)");
+    expect(selectedPath).toHaveAttribute(
+      "stroke-width",
+      "var(--topology-relation-stroke-selected-width)",
+    );
     expect(selectedHalo).toBeInTheDocument();
     expect(selectedHalo).toHaveAttribute(
       "data-selected-relation-halo-token",
       "--topology-relation-label-selected-surface",
     );
     expect(selectedHalo).toHaveAttribute(
+      "data-relation-stroke-halo-width-token",
+      "--topology-relation-stroke-selected-halo-width",
+    );
+    expect(selectedHalo).toHaveAttribute(
       "stroke",
       "var(--topology-relation-label-selected-surface)",
     );
-    expect(selectedHalo).toHaveAttribute("stroke-width", "7.2");
+    expect(selectedHalo).toHaveAttribute(
+      "stroke-width",
+      "var(--topology-relation-stroke-selected-halo-width)",
+    );
   });
 
   it("ego relation label badge 클릭도 relation selection data 를 전달한다", () => {
@@ -1796,6 +1832,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const visibleBadge = labelHit?.querySelector("[data-relation-label-visible-badge]");
     const svgLabel = container.querySelector('[data-connector-relation-label="true"]');
     const svgBadge = container.querySelector('[data-relation-label-bg^="ego:"]');
+    const connectorPath = container.querySelector(
+      'path[data-connector][data-relation-quality="weak"][data-relation-stroke-contract="quality-token"]',
+    );
     const skeletonLayer = container.querySelector('[data-testid="sigma-skeleton-cards"]');
 
     expect(labelHit).toHaveAttribute("data-relation-quality", "weak");
@@ -1862,6 +1901,19 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "R");
     expect(evidenceChip).toHaveTextContent("R");
+    expect(connectorPath).toHaveAttribute(
+      "data-relation-stroke-token",
+      "--topology-relation-stroke-weak",
+    );
+    expect(connectorPath).toHaveAttribute(
+      "data-relation-stroke-width-token",
+      "--topology-relation-stroke-weak-width",
+    );
+    expect(connectorPath).toHaveAttribute("stroke", "var(--topology-relation-stroke-weak)");
+    expect(connectorPath).toHaveAttribute(
+      "stroke-width",
+      "var(--topology-relation-stroke-weak-width)",
+    );
     expect(svgLabel).toHaveAttribute("opacity", "0");
     expect(svgLabel).toHaveAttribute("aria-hidden", "true");
     expect(svgBadge).toHaveAttribute("opacity", "0");
@@ -2373,7 +2425,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(connector).toBeInTheDocument();
       expect(connector).toHaveAttribute("data-relation-type", "contains");
       expect(connector).toHaveAttribute("data-relation-quality", "strong");
-      expect(connector).toHaveAttribute("stroke", "rgba(139,151,255,0.50)");
+      expect(connector).toHaveAttribute(
+        "data-relation-stroke-token",
+        "--topology-relation-stroke-strong",
+      );
+      expect(connector).toHaveAttribute("stroke", "var(--topology-relation-stroke-strong)");
       expect(connector).toHaveAttribute("data-connector-axis", "horizontal");
       expect(connector).toHaveAttribute("data-connector-clearance", "8");
       expect(connector?.getAttribute("d")).toContain("M 188 60");
