@@ -263,7 +263,9 @@ names in component data markers and tests whenever a surface depends on
   `--topology-utility-lane-shadow`: top utility chrome for search, auto
   arrange, docs, create, and review actions. These controls are support layer,
   so they use a quieter shared surface than selected-node or relation proof
-  inspectors.
+  inspectors. Individual utility actions must expose the same surface, border,
+  hover, active, shadow, and focus-ring token contract so top chrome reads as
+  one workbench control family.
 - `--topology-utility-lane-accent-surface` /
   `--topology-utility-lane-accent-border`: utility-lane accent actions such as
   create or review. They may signal actionability but must stay in the same

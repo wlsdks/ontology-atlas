@@ -1437,6 +1437,22 @@ for (const viewport of VIEWPORTS) {
       "data-search-lane-shadow-token",
       "--topology-utility-lane-shadow",
     );
+    const searchActions = searchLane.locator("[data-utility-action-token-contract]");
+    await expect(searchActions).toHaveCount(2);
+    for (let index = 0; index < 2; index += 1) {
+      await expect(searchActions.nth(index)).toHaveAttribute(
+        "data-utility-action-token-contract",
+        "support-surface-family",
+      );
+      await expect(searchActions.nth(index)).toHaveAttribute(
+        "data-utility-action-focus-ring-token",
+        "--topology-utility-lane-focus-ring",
+      );
+      await expect(searchActions.nth(index)).toHaveAttribute(
+        "data-utility-action-hover-surface-token",
+        "--topology-utility-lane-hover-surface",
+      );
+    }
     const controlsStack = page.getByTestId("topology-sigma-controls-stack");
     await expect(controlsStack).toBeVisible();
     await expect(controlsStack).toHaveAttribute("data-controls-density", "compact-focus");

@@ -66,8 +66,16 @@ export function SearchHint({
           }}
           data-testid="topology-auto-arrange"
           data-arranging={arranging ? 'true' : 'false'}
+          data-utility-action-token-contract="support-surface-family"
+          data-utility-action-surface-token="--topology-utility-lane-surface"
+          data-utility-action-border-token="--topology-utility-lane-border"
+          data-utility-action-hover-surface-token="--topology-utility-lane-hover-surface"
+          data-utility-action-active-surface-token="--topology-utility-lane-accent-surface"
+          data-utility-action-active-border-token="--topology-utility-lane-accent-border"
+          data-utility-action-shadow-token="--topology-utility-lane-shadow"
+          data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
           className={cn(
-            'hidden items-center justify-center gap-2 overflow-hidden text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] data-[arranging=true]:border-[color:rgba(139,151,255,0.44)] data-[arranging=true]:text-[color:var(--color-text-primary)] md:flex',
+            'hidden items-center justify-center gap-2 overflow-hidden text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--topology-utility-lane-hover-surface)] hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--topology-utility-lane-accent-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] data-[arranging=true]:border-[color:var(--topology-utility-lane-accent-border)] data-[arranging=true]:bg-[color:var(--topology-utility-lane-accent-surface)] data-[arranging=true]:text-[color:var(--color-text-primary)] md:flex',
             compact ? 'w-[var(--topology-utility-lane-compact-width)] px-0' : 'px-4',
             pillClass,
           )}
@@ -86,8 +94,15 @@ export function SearchHint({
           type="button"
           onClick={onOpenSearch}
           data-testid="topology-concept-search"
+          data-utility-action-token-contract="support-surface-family"
+          data-utility-action-surface-token="--topology-utility-lane-surface"
+          data-utility-action-border-token="--topology-utility-lane-border"
+          data-utility-action-hover-surface-token="--topology-utility-lane-hover-surface"
+          data-utility-action-active-surface-token="--topology-utility-lane-accent-surface"
+          data-utility-action-shadow-token="--topology-utility-lane-shadow"
+          data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
           className={cn(
-            'group flex items-center justify-center gap-2 overflow-hidden text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors active:bg-[color:rgba(94,106,210,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] md:gap-2.5 md:text-[color:var(--color-text-tertiary)] md:hover:text-[color:var(--color-text-primary)] md:active:bg-[color:var(--color-overlay-1)]',
+            'group flex items-center justify-center gap-2 overflow-hidden text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors active:bg-[color:var(--topology-utility-lane-accent-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] md:gap-2.5 md:text-[color:var(--color-text-tertiary)] md:hover:bg-[color:var(--topology-utility-lane-hover-surface)] md:hover:text-[color:var(--color-text-primary)]',
             compact
               ? 'w-[var(--topology-utility-lane-compact-width)] px-0'
               : 'px-3.5 md:min-w-[176px] md:pl-4 xl:min-w-[208px]',
