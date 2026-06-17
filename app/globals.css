@@ -166,6 +166,9 @@
     --topology-relation-label-selected-surface: rgba(139, 151, 255, 0.16);
     --topology-relation-label-selected-border: rgba(139, 151, 255, 0.92);
     --topology-relation-label-selected-shadow: 0 0 0 3px rgba(139, 151, 255, 0.12), 0 10px 24px rgba(0, 0, 0, 0.34);
+    --topology-relation-evidence-chip-surface: rgba(255, 255, 255, 0.055);
+    --topology-relation-evidence-chip-border: rgba(255, 255, 255, 0.10);
+    --topology-relation-evidence-chip-text: var(--color-text-secondary);
     --topology-edge-tooltip-surface: rgba(12, 14, 20, 0.96);
     --topology-edge-tooltip-border: rgba(139, 151, 255, 0.26);
     --topology-edge-tooltip-shadow: 0 10px 24px rgba(0, 0, 0, 0.36);
@@ -616,6 +619,9 @@
     --topology-relation-label-selected-surface: rgba(77, 86, 200, 0.12);
     --topology-relation-label-selected-border: rgba(77, 86, 200, 0.62);
     --topology-relation-label-selected-shadow: 0 0 0 3px rgba(77, 86, 200, 0.10), 0 10px 24px rgba(15, 23, 42, 0.16);
+    --topology-relation-evidence-chip-surface: rgba(15, 23, 42, 0.055);
+    --topology-relation-evidence-chip-border: rgba(15, 23, 42, 0.12);
+    --topology-relation-evidence-chip-text: var(--color-text-secondary);
     --topology-edge-tooltip-surface: rgba(255, 255, 255, 0.96);
     --topology-edge-tooltip-border: rgba(77, 86, 200, 0.24);
     --topology-edge-tooltip-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);

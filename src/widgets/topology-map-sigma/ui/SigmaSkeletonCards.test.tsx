@@ -1807,6 +1807,18 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(qualityDot).toBeInTheDocument();
     expect(qualityDot?.className).toContain("bg-amber-300");
+    expect(evidenceChip).toHaveAttribute(
+      "data-relation-evidence-chip-contract",
+      "proof-state-token",
+    );
+    expect(evidenceChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-relation-evidence-chip-surface",
+    );
+    expect(evidenceChip).toHaveAttribute(
+      "data-border-token",
+      "--topology-relation-evidence-chip-border",
+    );
     expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "R");
     expect(evidenceChip).toHaveTextContent("R");
     expect(svgLabel).toHaveAttribute("opacity", "0");
@@ -1841,6 +1853,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-evidence-state", "source-backed");
     expect(labelHit).toHaveAttribute("data-relation-evidence-count", "3");
     expect(labelHit).toHaveAttribute("aria-label", "contains relation · strong · 3 sources");
+    expect(evidenceChip).toHaveAttribute(
+      "data-relation-evidence-chip-contract",
+      "proof-state-token",
+    );
+    expect(evidenceChip).toHaveAttribute(
+      "data-text-token",
+      "--topology-relation-evidence-chip-text",
+    );
     expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "S3");
     expect(evidenceChip).toHaveTextContent("S3");
   });
@@ -1868,6 +1888,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
     const visibleBadge = labelHit?.querySelector("[data-relation-label-visible-badge]");
     const selectedOverlay = container.querySelector("[data-selected-relation-overlay]");
+    const selectedOverlayEvidenceChip = selectedOverlay?.querySelector(
+      "[data-relation-evidence-chip-contract]",
+    );
     const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
     const root = screen.getByTestId("sigma-skeleton-cards");
 
@@ -1888,6 +1911,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-selected-surface-token",
       "--topology-relation-label-selected-surface",
+    );
+    expect(selectedOverlayEvidenceChip).toHaveAttribute(
+      "data-relation-evidence-glyph",
+      "source-backed",
+    );
+    expect(selectedOverlayEvidenceChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-relation-evidence-chip-surface",
     );
     expect(labelHit).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(labelHit).toHaveAttribute("data-primary-copy-action", "explain_relation");

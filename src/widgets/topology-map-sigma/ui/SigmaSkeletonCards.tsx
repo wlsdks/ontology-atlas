@@ -3585,8 +3585,12 @@ export function SigmaSkeletonCards({
               {' '}
               <span
                 data-relation-evidence-glyph={evidenceState}
+                data-relation-evidence-chip-contract="proof-state-token"
                 data-relation-evidence-chip-text={evidenceChipText}
-                className="ml-1 inline-flex h-3.5 min-w-[1rem] shrink-0 items-center justify-center text-[8px] font-semibold leading-none tracking-normal text-[color:var(--color-text-tertiary)]"
+                data-surface-token="--topology-relation-evidence-chip-surface"
+                data-border-token="--topology-relation-evidence-chip-border"
+                data-text-token="--topology-relation-evidence-chip-text"
+                className="ml-1 inline-flex h-3.5 min-w-[1.2rem] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-relation-evidence-chip-border)] bg-[color:var(--topology-relation-evidence-chip-surface)] px-1 text-[8px] font-semibold leading-none tracking-normal text-[color:var(--topology-relation-evidence-chip-text)]"
               >
                 {evidenceChipText}
               </span>
@@ -3692,8 +3696,13 @@ export function SigmaSkeletonCards({
             {' '}
             <span
               aria-hidden="true"
+              data-relation-evidence-glyph={evidenceState}
+              data-relation-evidence-chip-contract="proof-state-token"
               data-relation-evidence-chip-text={evidenceChipText}
-              className="ml-1 inline-flex h-3.5 min-w-[1rem] shrink-0 items-center justify-center text-[8px] font-semibold leading-none tracking-normal text-[color:var(--color-text-tertiary)]"
+              data-surface-token="--topology-relation-evidence-chip-surface"
+              data-border-token="--topology-relation-evidence-chip-border"
+              data-text-token="--topology-relation-evidence-chip-text"
+              className="ml-1 inline-flex h-3.5 min-w-[1.2rem] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-relation-evidence-chip-border)] bg-[color:var(--topology-relation-evidence-chip-surface)] px-1 text-[8px] font-semibold leading-none tracking-normal text-[color:var(--topology-relation-evidence-chip-text)]"
             >
               {evidenceChipText}
             </span>
