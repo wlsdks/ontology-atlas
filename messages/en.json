@@ -508,6 +508,7 @@
       "cliFallbackLabel": "CLI fallback",
       "copyPayloadSummary": "{tool} · {action} · {source} → {target} · {type} · {evidence} · {gate}",
       "selectedCardRelationSummary": "{relations}f · {types}t",
+      "healthRepairAuditBadge": "repair",
       "copied": "Copied"
     }
   },

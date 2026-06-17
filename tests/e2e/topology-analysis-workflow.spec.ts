@@ -186,6 +186,14 @@ test.describe("topology analysis workflow", () => {
       "data-health-repair-audit-kind",
       await healthPanel.getAttribute("data-health-repair-target-kind") ?? "",
     );
+    await expect(auditTargetCard).toHaveAttribute(
+      "data-health-repair-audit-badge-contract",
+      "inline-card-state-label",
+    );
+    await expect(auditTargetCard).toHaveAttribute(
+      "data-health-repair-audit-badge",
+      "repair",
+    );
     const auditLegend = page.getByTestId("topology-audit-legend");
     await expect(auditLegend).toBeVisible();
     await expect(auditLegend).toHaveAttribute(
@@ -314,6 +322,12 @@ test.describe("topology analysis workflow", () => {
     ).toHaveAttribute(
       "data-health-repair-audit-contract",
       "panel-target-card-highlight",
+    );
+    await expect(
+      page.locator('[data-skeleton-card][data-health-repair-audit-target="true"]'),
+    ).toHaveAttribute(
+      "data-health-repair-audit-badge-contract",
+      "inline-card-state-label",
     );
     await expect(page.getByTestId("topology-audit-legend")).toBeHidden();
 
@@ -485,9 +499,7 @@ test.describe("topology analysis workflow", () => {
       /\/en\/ontology\/edit\/\?node=capabilities%2Ftopology-analysis-modes/,
     );
 
-    await page
-      .getByRole("button", { name: "Copy topology focus review brief" })
-      .click();
+    await page.getByTestId("topology-focus-primary-action").click();
     const copiedFocusBrief = await page.evaluate(
       () =>
         (
@@ -517,7 +529,7 @@ test.describe("topology analysis workflow", () => {
     expect(copiedFocusBrief).toContain('"operation": "health"');
     expect(copiedFocusBrief).toContain("ontology-atlas validate [vault]");
 
-    await page.getByText("Copy tools", { exact: true }).click();
+    await page.getByTestId("topology-focus-proof-summary").click();
     await page.getByRole("button", { name: "Copy topology focus MCP profile" }).click();
     const copiedProfile = await page.evaluate(
       () =>
@@ -628,7 +640,7 @@ test.describe("topology analysis workflow", () => {
       page.getByRole("button", { name: "Path", pressed: true }),
     ).toBeVisible();
     await expect(page.getByText(/^Showing the link from/)).toBeVisible();
-    await page.getByText("Actions", { exact: true }).click();
+    await page.getByTestId("topology-path-proof-summary").click();
     await expect(page.getByText("Shows the visible link between two nodes.")).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Copy topology path evidence" }),
@@ -690,7 +702,7 @@ test.describe("topology analysis workflow", () => {
     expect(copiedEvidence).toContain('"operation": "maintenance_plan"');
     expect(copiedEvidence).toContain("ontology-atlas validate [vault]");
 
-    await page.getByText("Copy tools", { exact: true }).click();
+    await page.getByTestId("topology-path-checks-summary").click();
     await expect(
       page.getByRole("button", { name: "Copy topology path MCP check" }),
     ).toBeVisible();
@@ -807,7 +819,7 @@ test.describe("topology analysis workflow", () => {
     ).toBeVisible();
   });
 
-  test("keeps the mobile path primer below the analysis bar", async ({ page }) => {
+  test("keeps the mobile path primer owned by the analysis bar", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/topology/?mode=path");
 
@@ -817,8 +829,12 @@ test.describe("topology analysis workflow", () => {
     const analysisBar = page.getByRole("region", {
       name: "Topology analysis mode",
     });
-    const primerBody = page.getByText(
-      "Click a source node, then click a target to highlight the shortest visible route. Shift+click also works outside Path mode.",
+    await expect(analysisBar).toHaveAttribute(
+      "data-path-guidance-owner",
+      "analysis-rail",
+    );
+    const primerBody = analysisBar.getByText(
+      "Choose a start node, then a target node.",
     );
 
     await expect(analysisBar).toBeVisible();
@@ -831,6 +847,9 @@ test.describe("topology analysis workflow", () => {
 
     expect(barBox, "analysis bar should have a layout box").not.toBeNull();
     expect(primerBox, "path primer should have a layout box").not.toBeNull();
-    expect(primerBox!.y).toBeGreaterThanOrEqual(barBox!.y + barBox!.height - 1);
+    expect(primerBox!.y).toBeGreaterThanOrEqual(barBox!.y);
+    expect(primerBox!.y + primerBox!.height).toBeLessThanOrEqual(
+      barBox!.y + barBox!.height + 1,
+    );
   });
 });

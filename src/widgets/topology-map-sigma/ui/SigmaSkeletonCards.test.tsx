@@ -224,6 +224,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "panel-target-card-highlight",
     );
     expect(auditTarget).toHaveAttribute("data-health-repair-audit-kind", "orphan");
+    expect(auditTarget).toHaveAttribute("data-health-repair-audit-badge", "repair");
+    expect(auditTarget).toHaveAttribute(
+      "data-health-repair-audit-badge-contract",
+      "inline-card-state-label",
+    );
+    expect(screen.getByTestId("sigma-health-repair-audit-badge")).toHaveTextContent(
+      "repair",
+    );
   });
 
   it("초기 배치 직후 overlay 를 ready 로 표시해 첫 화면 blank 를 막는다", () => {

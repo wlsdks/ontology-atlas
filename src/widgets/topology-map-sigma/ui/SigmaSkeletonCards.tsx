@@ -3813,6 +3813,12 @@ export function SigmaSkeletonCards({
             data-health-repair-audit-contract={
               healthRepairAuditTarget ? 'panel-target-card-highlight' : undefined
             }
+            data-health-repair-audit-badge={
+              healthRepairAuditTarget ? tEdgeTooltip('healthRepairAuditBadge') : undefined
+            }
+            data-health-repair-audit-badge-contract={
+              healthRepairAuditTarget ? 'inline-card-state-label' : undefined
+            }
             data-drag-cluster={dragging ? 'true' : 'false'}
             data-drag-cluster-role={dragRole}
             data-dragging-active={dragging && activeDragMotion ? 'true' : 'false'}
@@ -4025,6 +4031,15 @@ export function SigmaSkeletonCards({
             {card.count !== undefined ? (
               <span className="relative shrink-0 font-mono text-[0.72em] text-[color:var(--color-text-tertiary)]">
                 {card.count}
+              </span>
+            ) : null}
+            {healthRepairAuditTarget ? (
+              <span
+                data-testid="sigma-health-repair-audit-badge"
+                data-health-repair-audit-badge-contract="inline-card-state-label"
+                className="relative ml-0.5 inline-flex h-[1.45em] shrink-0 items-center rounded-full border border-[color:var(--topology-health-repair-card-border)] bg-[color:var(--topology-health-repair-card-wash)] px-[0.48em] font-mono text-[0.66em] leading-none text-[color:var(--color-indigo-accent)]"
+              >
+                {tEdgeTooltip('healthRepairAuditBadge')}
               </span>
             ) : null}
             {selected && selectedRelationSummary ? (

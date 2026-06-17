@@ -2319,6 +2319,12 @@ pub fn run() {
                                   topologyHealthRepairAuditTargetKind:
                                     topologyHealthRepairAuditCard?.getAttribute("data-health-repair-audit-kind") ||
                                     "",
+                                  topologyHealthRepairAuditTargetBadge:
+                                    topologyHealthRepairAuditCard?.getAttribute("data-health-repair-audit-badge") ||
+                                    "",
+                                  topologyHealthRepairAuditTargetBadgeContract:
+                                    topologyHealthRepairAuditCard?.getAttribute("data-health-repair-audit-badge-contract") ||
+                                    "",
                                   topologyCameraMotionTrigger:
                                     sigmaViewport?.getAttribute("data-camera-motion-trigger") || "",
                                   topologyCameraMotionContract:
