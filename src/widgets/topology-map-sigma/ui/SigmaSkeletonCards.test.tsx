@@ -194,6 +194,38 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(summary).toHaveTextContent("1f · 1t");
   });
 
+  it("health repair target 을 카드 표면의 audit target 으로 표시한다", () => {
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        healthRepairTarget={{ slug: "project:p", kind: "orphan" }}
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    expect(layer).toHaveAttribute(
+      "data-health-repair-audit-target-contract",
+      "panel-target-card-highlight",
+    );
+    expect(layer).toHaveAttribute(
+      "data-health-repair-audit-target-slug",
+      "project:p",
+    );
+    expect(layer).toHaveAttribute("data-health-repair-audit-target-kind", "orphan");
+
+    const auditTarget = screen.getByText("Atlas").closest("[data-skeleton-card]");
+    expect(auditTarget).toHaveAttribute("data-health-repair-audit-target", "true");
+    expect(auditTarget).toHaveAttribute(
+      "data-health-repair-audit-contract",
+      "panel-target-card-highlight",
+    );
+    expect(auditTarget).toHaveAttribute("data-health-repair-audit-kind", "orphan");
+  });
+
   it("초기 배치 직후 overlay 를 ready 로 표시해 첫 화면 blank 를 막는다", () => {
     render(
       <SigmaSkeletonCards

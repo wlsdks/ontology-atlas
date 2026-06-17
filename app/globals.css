@@ -142,6 +142,11 @@
     --topology-card-selected-wash: rgba(139, 151, 255, 0.12);
     --topology-card-selected-shadow: rgba(24, 28, 60, 0.62);
     --topology-card-shadow: rgba(0, 0, 0, 0.4);
+    --topology-health-repair-card-wash: rgba(139, 151, 255, 0.13);
+    --topology-health-repair-card-border: rgba(139, 151, 255, 0.42);
+    --topology-health-repair-card-border-strong: rgba(139, 151, 255, 0.58);
+    --topology-health-repair-card-outline: rgba(139, 151, 255, 0.24);
+    --topology-health-repair-card-shadow: rgba(35, 40, 88, 0.34);
     --topology-relation-summary-surface: rgba(139, 151, 255, 0.18);
     --topology-relation-summary-border: rgba(139, 151, 255, 0.42);
     --topology-relation-summary-text: rgba(222, 225, 255, 0.94);
@@ -505,6 +510,11 @@
     --topology-card-selected-wash: rgba(94, 106, 210, 0.10);
     --topology-card-selected-shadow: rgba(15, 23, 42, 0.18);
     --topology-card-shadow: rgba(15, 23, 42, 0.12);
+    --topology-health-repair-card-wash: rgba(94, 106, 210, 0.08);
+    --topology-health-repair-card-border: rgba(94, 106, 210, 0.36);
+    --topology-health-repair-card-border-strong: rgba(94, 106, 210, 0.48);
+    --topology-health-repair-card-outline: rgba(94, 106, 210, 0.18);
+    --topology-health-repair-card-shadow: rgba(15, 23, 42, 0.14);
     --topology-panel-border: rgba(15, 23, 42, 0.12);
     --topology-panel-primary-surface: rgba(255, 255, 255, 0.96);
     --topology-panel-support-surface: rgba(255, 255, 255, 0.99);

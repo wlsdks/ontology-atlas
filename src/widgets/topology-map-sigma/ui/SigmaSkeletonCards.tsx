@@ -93,6 +93,10 @@ interface SigmaSkeletonCardsProps {
   cards: readonly SkeletonCardModel[];
   selectedSlug?: string | null;
   selectedRelationEdgeId?: string | null;
+  healthRepairTarget?: {
+    slug: string;
+    kind: 'stale' | 'orphan' | 'promotion';
+  } | null;
   onSelect?: (slug: string) => void;
   pathWorkflowActive?: boolean;
   pathSelection?: {
@@ -1462,6 +1466,7 @@ export function SigmaSkeletonCards({
   cards,
   selectedSlug = null,
   selectedRelationEdgeId = null,
+  healthRepairTarget = null,
   onSelect,
   pathWorkflowActive = false,
   pathSelection = null,
@@ -1660,6 +1665,10 @@ export function SigmaSkeletonCards({
   const resolvedPathTargetNodeId = useMemo(
     () => (pathSelectionTargetSlug ? resolveNodeId(pathSelectionTargetSlug) : null),
     [pathSelectionTargetSlug, resolveNodeId],
+  );
+  const resolvedHealthRepairTargetNodeId = useMemo(
+    () => (healthRepairTarget?.slug ? resolveNodeId(healthRepairTarget.slug) : null),
+    [healthRepairTarget?.slug, resolveNodeId],
   );
 
   const buildVisibleCardTierByNodeId = useCallback(() => {
@@ -3147,6 +3156,17 @@ export function SigmaSkeletonCards({
       data-selected-relation-label-fact-route={selectedRelationLabelHandoff?.route}
       data-selected-relation-label-quality={selectedRelationLabelHandoff?.quality}
       data-selected-relation-label-evidence={selectedRelationLabelHandoff?.evidence}
+      data-health-repair-audit-target-contract={
+        resolvedHealthRepairTargetNodeId
+          ? 'panel-target-card-highlight'
+          : healthRepairTarget
+            ? 'panel-target-card-unresolved'
+            : 'none'
+      }
+      data-health-repair-audit-target-slug={
+        resolvedHealthRepairTargetNodeId ?? undefined
+      }
+      data-health-repair-audit-target-kind={healthRepairTarget?.kind}
       className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-100 transition-opacity duration-150 ease-out data-[skeleton-cards-ready=false]:opacity-0 motion-reduce:transition-none"
     >
       {/* 펼친 가지 커넥터 — 수평 접선 S-커브, 카드 경계 트림. 인디고는
@@ -3740,6 +3760,7 @@ export function SigmaSkeletonCards({
         const pathBadgeLabel =
           pathRole === 'source' ? 'A' : pathRole === 'target' ? 'B' : '';
         const dimmed = ego !== null && !ego.slugs.has(nodeId);
+        const healthRepairAuditTarget = resolvedHealthRepairTargetNodeId === nodeId;
         const dockParentNodeId = card.dock ? resolveNodeId(card.dock.parentId) : null;
         const dragging =
           activeDragCluster?.has(nodeId) ||
@@ -3783,6 +3804,15 @@ export function SigmaSkeletonCards({
             data-path-anchor={pathRole === 'source' || pathRole === 'target' ? pathRole : undefined}
             data-path-badge-label={pathBadgeLabel || undefined}
             data-dimmed={dimmed ? 'true' : 'false'}
+            data-health-repair-audit-target={
+              healthRepairAuditTarget ? 'true' : undefined
+            }
+            data-health-repair-audit-kind={
+              healthRepairAuditTarget ? healthRepairTarget?.kind : undefined
+            }
+            data-health-repair-audit-contract={
+              healthRepairAuditTarget ? 'panel-target-card-highlight' : undefined
+            }
             data-drag-cluster={dragging ? 'true' : 'false'}
             data-drag-cluster-role={dragRole}
             data-dragging-active={dragging && activeDragMotion ? 'true' : 'false'}
@@ -3928,15 +3958,23 @@ export function SigmaSkeletonCards({
                   card.tier <= 1 ? 'var(--topology-anchor-card-max-width, 14rem)' : '12rem',
                 '--card-border': selected
                   ? 'var(--topology-card-border-selected)'
+                  : healthRepairAuditTarget
+                    ? 'var(--topology-health-repair-card-border)'
                   : tintBorder,
                 '--card-border-hover': selected
                   ? 'var(--topology-card-border-selected-strong)'
+                  : healthRepairAuditTarget
+                    ? 'var(--topology-health-repair-card-border-strong)'
                   : tintBorderHover,
               } as React.CSSProperties
             }
             className={`pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
               selected
                 ? 'shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_14px_36px_var(--topology-card-selected-shadow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
+                : ''
+            } ${
+              healthRepairAuditTarget && !selected
+                ? 'shadow-[0_0_0_1px_var(--topology-health-repair-card-outline),0_12px_32px_var(--topology-health-repair-card-shadow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-health-repair-card-outline)]'
                 : ''
             } ${
               dragging
@@ -3963,6 +4001,8 @@ export function SigmaSkeletonCards({
               style={{
                 background: selected
                   ? `linear-gradient(0deg, var(--topology-card-selected-wash), var(--topology-card-selected-wash)), ${tintBg}`
+                  : healthRepairAuditTarget
+                    ? `linear-gradient(0deg, var(--topology-health-repair-card-wash), var(--topology-health-repair-card-wash)), ${tintBg}`
                   : dragging || dragSettled
                     ? `linear-gradient(0deg, rgba(139,151,255,${
                         activeDragMotion && dragging ? '0.12' : '0.08'

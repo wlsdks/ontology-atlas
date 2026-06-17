@@ -171,6 +171,21 @@ test.describe("topology analysis workflow", () => {
       "data-health-repair-map-target-kind",
       await healthPanel.getAttribute("data-health-repair-target-kind") ?? "",
     );
+    const auditTargetCard = page.locator(
+      '[data-skeleton-card][data-health-repair-audit-target="true"]',
+    );
+    await expect(auditTargetCard).toHaveAttribute(
+      "data-health-repair-audit-contract",
+      "panel-target-card-highlight",
+    );
+    await expect(auditTargetCard).toHaveAttribute(
+      "data-slug",
+      await healthPanel.getAttribute("data-health-repair-target-slug") ?? "",
+    );
+    await expect(auditTargetCard).toHaveAttribute(
+      "data-health-repair-audit-kind",
+      await healthPanel.getAttribute("data-health-repair-target-kind") ?? "",
+    );
     const auditLegend = page.getByTestId("topology-audit-legend");
     await expect(auditLegend).toBeVisible();
     await expect(auditLegend).toHaveAttribute(
@@ -293,6 +308,12 @@ test.describe("topology analysis workflow", () => {
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
       "data-health-repair-map-target-contract",
       "analysis-panel-target-to-audit-overlay",
+    );
+    await expect(
+      page.locator('[data-skeleton-card][data-health-repair-audit-target="true"]'),
+    ).toHaveAttribute(
+      "data-health-repair-audit-contract",
+      "panel-target-card-highlight",
     );
     await expect(page.getByTestId("topology-audit-legend")).toBeHidden();
 

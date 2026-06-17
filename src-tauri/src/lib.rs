@@ -1664,6 +1664,8 @@ pub fn run() {
                                 topologyHealthRepairOrder?.querySelector("a,button");
                               const topologyHealthRepairFirstActionRect =
                                 topologyHealthRepairFirstAction?.getBoundingClientRect();
+                              const topologyHealthRepairAuditCard =
+                                document.querySelector('[data-health-repair-audit-target="true"]');
                               const topologyPathStartPrompt = document.querySelector('[data-testid="topology-path-start-prompt"]');
                               const topologyPathAnchorPrompt = document.querySelector('[data-testid="topology-path-anchor-prompt"]');
                               const topologyPathStartPromptStyle = topologyPathStartPrompt
@@ -2309,6 +2311,14 @@ pub fn run() {
                                     sigmaViewport?.getAttribute("data-health-repair-map-target-slug") || "",
                                   topologyHealthRepairMapTargetKind:
                                     sigmaViewport?.getAttribute("data-health-repair-map-target-kind") || "",
+                                  topologyHealthRepairAuditTargetContract:
+                                    topologyHealthRepairAuditCard?.getAttribute("data-health-repair-audit-contract") ||
+                                    "",
+                                  topologyHealthRepairAuditTargetSlug:
+                                    topologyHealthRepairAuditCard?.getAttribute("data-slug") || "",
+                                  topologyHealthRepairAuditTargetKind:
+                                    topologyHealthRepairAuditCard?.getAttribute("data-health-repair-audit-kind") ||
+                                    "",
                                   topologyCameraMotionTrigger:
                                     sigmaViewport?.getAttribute("data-camera-motion-trigger") || "",
                                   topologyCameraMotionContract:

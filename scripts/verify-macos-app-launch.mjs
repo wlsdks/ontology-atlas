@@ -3575,6 +3575,20 @@ export function validateWebviewVerifyPayload(payload, {
         ) {
           return `WebView Relief health map target did not match the panel target (${payload.markers.topologyHealthRepairMapTargetKind || "missing"} ${payload.markers.topologyHealthRepairMapTargetSlug || "missing"})`;
         }
+        if (
+          payload.markers.topologyHealthRepairAuditTargetContract !==
+          "panel-target-card-highlight"
+        ) {
+          return `WebView Relief health audit target card contract was ${payload.markers.topologyHealthRepairAuditTargetContract || "missing"}`;
+        }
+        if (
+          payload.markers.topologyHealthRepairAuditTargetSlug !==
+            payload.markers.topologyHealthRepairTargetSlug ||
+          payload.markers.topologyHealthRepairAuditTargetKind !==
+            payload.markers.topologyHealthRepairTargetKind
+        ) {
+          return `WebView Relief health audit card did not match the panel target (${payload.markers.topologyHealthRepairAuditTargetKind || "missing"} ${payload.markers.topologyHealthRepairAuditTargetSlug || "missing"})`;
+        }
         if (payload.markers.topologyHealthRepairPrimaryAction !== "builder") {
           return `WebView Relief health repair primary action was ${payload.markers.topologyHealthRepairPrimaryAction || "missing"}`;
         }
