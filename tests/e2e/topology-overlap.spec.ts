@@ -2675,9 +2675,29 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-readable-row-contract",
     "at-least-one-full-relation-row",
   );
+  await expect(connectionList).toHaveAttribute(
+    "data-relation-list-surface-token",
+    "--topology-node-popover-relation-list-surface",
+  );
+  await expect(connectionList).toHaveAttribute(
+    "data-relation-list-border-token",
+    "--topology-node-popover-relation-list-border",
+  );
+  await expect(connectionList).toHaveAttribute(
+    "data-relation-row-divider-token",
+    "--topology-node-popover-relation-row-divider",
+  );
+  await expect(connectionList).toHaveAttribute(
+    "data-relation-row-hover-surface-token",
+    "--topology-node-popover-relation-row-hover-surface",
+  );
   await expect(connectionList).toBeVisible();
   const firstRelationRow = connectionList.locator("[data-relation-row]").first();
   await expect(firstRelationRow).toBeVisible();
+  await expect(firstRelationRow).toHaveAttribute(
+    "data-row-hover-surface-token",
+    "--topology-node-popover-relation-row-hover-surface",
+  );
   const firstRouteRail = firstRelationRow.locator("[data-relation-route]").first();
   await expect(firstRouteRail).toHaveAttribute(
     "data-relation-payload-layout",

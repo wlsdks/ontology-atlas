@@ -505,7 +505,11 @@ export function TopologyNodePopover({
             data-hidden-connection-count={hiddenConnectionCount}
             data-total-connection-count={total}
             data-row-surface-contract="flat-divider-rail"
-            className="flex min-h-[var(--topology-node-popover-relation-list-min-height)] flex-1 flex-col overflow-x-hidden overflow-y-auto rounded-md bg-[color:rgba(255,255,255,0.018)] ring-1 ring-[color:rgba(255,255,255,0.055)]"
+            data-relation-list-surface-token="--topology-node-popover-relation-list-surface"
+            data-relation-list-border-token="--topology-node-popover-relation-list-border"
+            data-relation-row-divider-token="--topology-node-popover-relation-row-divider"
+            data-relation-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
+            className="flex min-h-[var(--topology-node-popover-relation-list-min-height)] flex-1 flex-col overflow-x-hidden overflow-y-auto rounded-md bg-[color:var(--topology-node-popover-relation-list-surface)] ring-1 ring-[color:var(--topology-node-popover-relation-list-border)]"
           >
             {renderedConnections.map((connection, index) => {
               const directionLabel =
@@ -555,7 +559,7 @@ export function TopologyNodePopover({
               return (
                 <li
                   key={`${connection.id}-${connection.direction}-${index}`}
-                  className="border-b border-[color:rgba(255,255,255,0.055)] last:border-b-0"
+                  className="border-b border-[color:var(--topology-node-popover-relation-row-divider)] last:border-b-0"
                 >
                   <button
                     type="button"
@@ -590,8 +594,9 @@ export function TopologyNodePopover({
                     data-row-surface-contract="flat-divider-row"
                     data-row-min-hit-height="72"
                     data-row-scan-order="relation>title>direction>endpoint>handoff"
+                    data-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
                     onClick={() => onSelectConnection(connection.id)}
-                    className="group flex min-h-[72px] w-full min-w-0 items-stretch gap-2 overflow-hidden border border-transparent bg-transparent px-2 py-2 text-left transition-[background-color] hover:bg-[color:rgba(255,255,255,0.04)]"
+                    className="group flex min-h-[72px] w-full min-w-0 items-stretch gap-2 overflow-hidden border border-transparent bg-transparent px-2 py-2 text-left transition-[background-color] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)]"
                   >
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-secondary)]">
                       {connection.direction === "outgoing" ? (

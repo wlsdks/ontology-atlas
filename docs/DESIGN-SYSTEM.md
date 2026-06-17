@@ -233,6 +233,13 @@ names in component data markers and tests whenever a surface depends on
 - `--topology-node-popover-relation-section-min-height`: selected node
   inspector section budget that keeps the relation lenses, the first full row,
   and the fixed footer from competing for the same vertical layer.
+- `--topology-node-popover-relation-list-surface` /
+  `--topology-node-popover-relation-list-border` /
+  `--topology-node-popover-relation-row-divider` /
+  `--topology-node-popover-relation-row-hover-surface`: selected node
+  inspector relation list chrome. These keep row separators and hover feedback
+  in the same token family as the fixed footer, so relation rows remain a
+  readable handoff list instead of ad hoc translucent bands.
 - `--topology-node-popover-action-focus-ring` /
   `--topology-node-popover-context-surface` /
   `--topology-node-popover-context-border`: selected node inspector support

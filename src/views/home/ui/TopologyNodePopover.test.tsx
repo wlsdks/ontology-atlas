@@ -304,6 +304,28 @@ describe("TopologyNodePopover", () => {
     expect(list).toHaveAttribute("data-row-density-contract", "agent-handoff-scan-list");
     expect(list).toHaveAttribute("data-row-surface-contract", "flat-divider-rail");
     expect(list).toHaveAttribute(
+      "data-relation-list-surface-token",
+      "--topology-node-popover-relation-list-surface",
+    );
+    expect(list).toHaveAttribute(
+      "data-relation-list-border-token",
+      "--topology-node-popover-relation-list-border",
+    );
+    expect(list).toHaveAttribute(
+      "data-relation-row-divider-token",
+      "--topology-node-popover-relation-row-divider",
+    );
+    expect(list).toHaveAttribute(
+      "data-relation-row-hover-surface-token",
+      "--topology-node-popover-relation-row-hover-surface",
+    );
+    expect(list.className).toContain(
+      "bg-[color:var(--topology-node-popover-relation-list-surface)]",
+    );
+    expect(list.className).toContain(
+      "ring-[color:var(--topology-node-popover-relation-list-border)]",
+    );
+    expect(list).toHaveAttribute(
       "data-readable-row-contract",
       "at-least-one-full-relation-row",
     );
@@ -312,12 +334,19 @@ describe("TopologyNodePopover", () => {
     expect(relationRow).toHaveAttribute("data-row-surface-contract", "flat-divider-row");
     expect(relationRow).toHaveAttribute("data-row-min-hit-height", "72");
     expect(relationRow).toHaveAttribute(
+      "data-row-hover-surface-token",
+      "--topology-node-popover-relation-row-hover-surface",
+    );
+    expect(relationRow).toHaveAttribute(
       "data-row-scan-order",
       "relation>title>direction>endpoint>handoff",
     );
     expect(relationRow?.className).toContain("min-h-[72px]");
     expect(relationRow?.className).toContain("gap-2");
     expect(relationRow?.className).toContain("bg-transparent");
+    expect(relationRow?.className).toContain(
+      "hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)]",
+    );
     expect(relationRow?.className).toContain("px-2");
     expect(relationRow?.className).toContain("py-2");
     expect(relationTitle).toHaveAttribute("data-primary-scan-target", "true");
