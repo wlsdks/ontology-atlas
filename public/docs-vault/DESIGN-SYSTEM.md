@@ -239,6 +239,14 @@ names in component data markers and tests whenever a surface depends on
   `--topology-overview-notice-border`: overview first-read signal stack. These
   tokens keep relation progress, provenance, readiness, and the level-of-detail
   notice in one compact reading surface without hard-coded theme exceptions.
+- `--topology-overview-signal-neutral-surface` /
+  `--topology-overview-signal-neutral-border` /
+  `--topology-overview-signal-indigo-surface` /
+  `--topology-overview-signal-indigo-border` /
+  `--topology-overview-signal-cyan-surface` /
+  `--topology-overview-signal-cyan-border`: overview metric/provenance signal
+  card tones. Neutral is for quantitative progress, indigo for ontology/agent
+  command context, and cyan for supportive semantic facts.
 - `--topology-overview-handoff-divider` /
   `--topology-overview-handoff-primary-surface` /
   `--topology-overview-handoff-primary-border` /

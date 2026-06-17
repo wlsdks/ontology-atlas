@@ -358,6 +358,14 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-surface-token",
     "--topology-overview-signal-grid-surface",
   );
+  await expect(page.getByTestId("topology-overview-relation-progress")).toHaveAttribute(
+    "data-surface-token",
+    "--topology-overview-signal-neutral-surface",
+  );
+  await expect(page.getByTestId("topology-overview-relation-provenance")).toHaveAttribute(
+    "data-border-token",
+    "--topology-overview-signal-indigo-border",
+  );
   await expect(page.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
     "data-border-token",
     "--topology-overview-notice-border",

@@ -1806,21 +1806,38 @@ function OverviewSignalCard({
   compact?: boolean;
   tone?: "neutral" | "indigo" | "cyan";
 } & HTMLAttributes<HTMLDivElement>) {
-  const toneClass =
-    tone === "indigo"
-      ? "border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)]"
-      : tone === "cyan"
-        ? "border-[color:rgba(94,234,212,0.22)] bg-[color:rgba(94,234,212,0.045)]"
-        : "border-[color:rgba(255,255,255,0.065)] bg-[color:rgba(255,255,255,0.028)]";
+  const toneTokens = {
+    neutral: {
+      surface: "--topology-overview-signal-neutral-surface",
+      border: "--topology-overview-signal-neutral-border",
+    },
+    indigo: {
+      surface: "--topology-overview-signal-indigo-surface",
+      border: "--topology-overview-signal-indigo-border",
+    },
+    cyan: {
+      surface: "--topology-overview-signal-cyan-surface",
+      border: "--topology-overview-signal-cyan-border",
+    },
+  }[tone];
 
   return (
     <div
       {...attrs}
       data-overview-signal-card={tone}
       data-overview-signal-compact={compact ? "true" : "false"}
+      data-surface-token={toneTokens.surface}
+      data-border-token={toneTokens.border}
+      style={
+        {
+          ...attrs.style,
+          "--topology-overview-signal-card-surface": `var(${toneTokens.surface})`,
+          "--topology-overview-signal-card-border": `var(${toneTokens.border})`,
+        } as CSSProperties
+      }
       className={`grid min-w-0 ${
         compact ? "gap-0.5 rounded-md px-2.5 py-2" : "gap-1 rounded-md px-3 py-2"
-      } border ${toneClass} ${
+      } border border-[color:var(--topology-overview-signal-card-border)] bg-[color:var(--topology-overview-signal-card-surface)] ${
         attrs.className ?? ""
       }`}
     >

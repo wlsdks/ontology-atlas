@@ -839,6 +839,14 @@ describe("TopologyAnalysisBar", () => {
     expect(progress).toHaveTextContent("36/428");
     expect(progress).toHaveAttribute("data-overview-signal-compact", "true");
     expect(progress).toHaveAttribute("data-overview-signal-card", "neutral");
+    expect(progress).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-signal-neutral-surface",
+    );
+    expect(progress).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-signal-neutral-border",
+    );
 
     const notice = screen.getByText(
       "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
@@ -1598,6 +1606,10 @@ describe("TopologyAnalysisBar", () => {
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
     ).toHaveTextContent("source-backed 70 · authored 18 · needs review 0");
+    expect(screen.getByTestId("topology-overview-relation-provenance")).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-signal-indigo-surface",
+    );
     expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
       "Relation quality",
     );
