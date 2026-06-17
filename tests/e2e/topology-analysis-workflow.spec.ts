@@ -158,6 +158,19 @@ test.describe("topology analysis workflow", () => {
       "data-health-repair-target-kind",
       /stale|orphan|promotion/,
     );
+    const sigmaViewport = page.getByTestId("sigma-topology-viewport");
+    await expect(sigmaViewport).toHaveAttribute(
+      "data-health-repair-map-target-contract",
+      "analysis-panel-target-to-audit-overlay",
+    );
+    await expect(sigmaViewport).toHaveAttribute(
+      "data-health-repair-map-target-slug",
+      await healthPanel.getAttribute("data-health-repair-target-slug") ?? "",
+    );
+    await expect(sigmaViewport).toHaveAttribute(
+      "data-health-repair-map-target-kind",
+      await healthPanel.getAttribute("data-health-repair-target-kind") ?? "",
+    );
     const auditLegend = page.getByTestId("topology-audit-legend");
     await expect(auditLegend).toBeVisible();
     await expect(auditLegend).toHaveAttribute(
@@ -276,6 +289,10 @@ test.describe("topology analysis workflow", () => {
     await expect(healthPanel).toHaveAttribute(
       "data-health-repair-lane-contract",
       "target-to-builder-to-sync",
+    );
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-health-repair-map-target-contract",
+      "analysis-panel-target-to-audit-overlay",
     );
     await expect(page.getByTestId("topology-audit-legend")).toBeHidden();
 

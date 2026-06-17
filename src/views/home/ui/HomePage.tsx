@@ -2113,6 +2113,11 @@ export function HomePage() {
                       sourceSlug: pathSourceSlug,
                       targetSlug: pathTargetSlug,
                     }}
+                    healthRepairTarget={
+                      analysisMode === "health"
+                        ? topologyHealthSummary.actionTarget
+                        : null
+                    }
                     onPathSelectionChange={handlePathSelectionChange}
                     impactNodes={impactHighlightSet}
                   />

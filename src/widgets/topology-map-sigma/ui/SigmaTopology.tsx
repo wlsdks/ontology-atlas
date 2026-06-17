@@ -377,6 +377,11 @@ interface SigmaTopologyProps {
     sourceSlug: string | null;
     targetSlug: string | null;
   } | null;
+  /** Health mode가 현재 고치라고 제안한 단일 대상. overlay 집합과 패널 target을 연결하는 proof marker. */
+  healthRepairTarget?: {
+    slug: string;
+    kind: 'stale' | 'orphan' | 'promotion';
+  } | null;
   onPathSelectionChange?: (selection: {
     sourceSlug: string | null;
     targetSlug: string | null;
@@ -440,6 +445,7 @@ function SigmaTopologyImpl({
   showOntologyNodes = false,
   pathWorkflowActive = false,
   pathSelection = null,
+  healthRepairTarget = null,
   onPathSelectionChange,
   impactNodes,
   skeletonLayout = null,
@@ -2937,6 +2943,11 @@ function SigmaTopologyImpl({
         data-skeleton-cards-active={skeletonCardsActive ? 'true' : 'false'}
         data-skeleton-card-model-count={skeletonCards?.length ?? 0}
         data-kind-legend-state={suppressKindLegend ? 'collapsed-support-chrome' : 'visible-support-chrome'}
+        data-health-repair-map-target-contract={
+          healthRepairTarget ? 'analysis-panel-target-to-audit-overlay' : undefined
+        }
+        data-health-repair-map-target-slug={healthRepairTarget?.slug ?? undefined}
+        data-health-repair-map-target-kind={healthRepairTarget?.kind ?? undefined}
         data-camera-motion-trigger="idle"
         data-camera-motion-contract={TOPOLOGY_CAMERA_MOTION_CONTRACT}
         data-camera-motion-duration-ms="0"

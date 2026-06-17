@@ -2303,6 +2303,12 @@ pub fn run() {
                                     sigmaViewport?.getAttribute("data-skeleton-cards-active") === "true",
                                   topologySkeletonCardModelCount:
                                     Number(sigmaViewport?.getAttribute("data-skeleton-card-model-count") || "0"),
+                                  topologyHealthRepairMapTargetContract:
+                                    sigmaViewport?.getAttribute("data-health-repair-map-target-contract") || "",
+                                  topologyHealthRepairMapTargetSlug:
+                                    sigmaViewport?.getAttribute("data-health-repair-map-target-slug") || "",
+                                  topologyHealthRepairMapTargetKind:
+                                    sigmaViewport?.getAttribute("data-health-repair-map-target-kind") || "",
                                   topologyCameraMotionTrigger:
                                     sigmaViewport?.getAttribute("data-camera-motion-trigger") || "",
                                   topologyCameraMotionContract:
