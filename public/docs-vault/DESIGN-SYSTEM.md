@@ -313,6 +313,12 @@ names in component data markers and tests whenever a surface depends on
   selected-focus review order rail. Use one flat numbered rail with divider
   rows, not separate nested cards, so the support panel stays visually lighter
   than the map and selected-node inspector.
+- `--topology-command-secondary-surface` /
+  `--topology-command-secondary-border` /
+  `--topology-command-secondary-hover-border`: selected-focus secondary exits
+  and proof-copy actions. Ontology, Builder, MCP, impact, sync-gate, and
+  strengthen-command handoffs must stay secondary to the focus brief primary
+  action while remaining visible on compact widths.
 
 Selected node expanded detail uses
 `data-body-scroll-contract="content-scrolls-above-fixed-footer"` and

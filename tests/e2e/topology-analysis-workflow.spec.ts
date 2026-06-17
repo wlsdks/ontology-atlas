@@ -522,6 +522,27 @@ test.describe("topology analysis workflow", () => {
       "href",
       /\/en\/ontology\/edit\/\?node=capabilities%2Ftopology-analysis-modes/,
     );
+    const focusSecondaryActions = page.getByTestId("topology-focus-secondary-actions");
+    await expect(focusSecondaryActions).toHaveAttribute(
+      "data-focus-secondary-action-contract",
+      "ontology-builder-exits",
+    );
+    await expect(focusSecondaryActions).toHaveAttribute(
+      "data-command-secondary-surface-token",
+      "--topology-command-secondary-surface",
+    );
+    await expect(
+      focusSecondaryActions.locator('a[data-focus-secondary-action="ontology"]'),
+    ).toHaveAttribute(
+      "data-command-secondary-border-token",
+      "--topology-command-secondary-border",
+    );
+    await expect(
+      focusSecondaryActions.locator('a[data-focus-secondary-action="builder"]'),
+    ).toHaveAttribute(
+      "data-command-secondary-border-token",
+      "--topology-command-secondary-border",
+    );
 
     await page.getByTestId("topology-focus-primary-action").click();
     const copiedFocusBrief = await page.evaluate(
@@ -554,7 +575,18 @@ test.describe("topology analysis workflow", () => {
     expect(copiedFocusBrief).toContain("ontology-atlas validate [vault]");
 
     await page.getByTestId("topology-focus-proof-summary").click();
-    await page.getByRole("button", { name: "Copy topology focus MCP profile" }).click();
+    const focusMcpProfile = page.getByRole("button", {
+      name: "Copy topology focus MCP profile",
+    });
+    await expect(focusMcpProfile).toHaveAttribute(
+      "data-focus-proof-action",
+      "mcp-profile",
+    );
+    await expect(focusMcpProfile).toHaveAttribute(
+      "data-command-secondary-surface-token",
+      "--topology-command-secondary-surface",
+    );
+    await focusMcpProfile.click();
     const copiedProfile = await page.evaluate(
       () =>
         (

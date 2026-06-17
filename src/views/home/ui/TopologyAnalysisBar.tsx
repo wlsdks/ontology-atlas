@@ -1682,16 +1682,25 @@ export function TopologyAnalysisBar({
                 <>
                   <div
                     data-testid="topology-focus-secondary-actions"
+                    data-focus-secondary-action-contract="ontology-builder-exits"
+                    data-command-secondary-surface-token="--topology-command-secondary-surface"
+                    data-command-secondary-border-token="--topology-command-secondary-border"
                     className="mt-[var(--topology-command-spine-gap)] grid grid-cols-2 gap-1"
                   >
                     <Link
                       href={buildOntologyNodeHref(selectedSlug)}
+                      data-focus-secondary-action="ontology"
+                      data-command-secondary-surface-token="--topology-command-secondary-surface"
+                      data-command-secondary-border-token="--topology-command-secondary-border"
                       className="inline-flex min-h-8 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--topology-command-secondary-hover-border)] hover:text-[color:var(--color-text-primary)]"
                     >
                       <span className="truncate">{labels.focusOpenOntology}</span>
                     </Link>
                     <Link
                       href={buildTopologyHealthRepairHref(selectedSlug)}
+                      data-focus-secondary-action="builder"
+                      data-command-secondary-surface-token="--topology-command-secondary-surface"
+                      data-command-secondary-border-token="--topology-command-secondary-border"
                       className="inline-flex min-h-8 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--topology-command-secondary-hover-border)] hover:text-[color:var(--color-text-primary)]"
                     >
                       <span className="truncate">{labels.focusOpenBuilder}</span>
@@ -1716,6 +1725,9 @@ export function TopologyAnalysisBar({
                     </summary>
                     <div className="mt-1 grid gap-1">
                       <CompactCopyButton
+                        data-focus-proof-action="mcp-profile"
+                        data-command-secondary-surface-token="--topology-command-secondary-surface"
+                        data-command-secondary-border-token="--topology-command-secondary-border"
                         copied={focusMcpCopied}
                         label={labels.focusMcpCopy}
                         ariaLabel={
@@ -1724,8 +1736,12 @@ export function TopologyAnalysisBar({
                             : labels.focusMcpCopyAriaLabel
                         }
                         onClick={copyFocusMcpCheck}
+                        className="border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] hover:border-[color:var(--topology-command-secondary-hover-border)]"
                       />
                       <CompactCopyButton
+                        data-focus-proof-action="mcp-impact"
+                        data-command-secondary-surface-token="--topology-command-secondary-surface"
+                        data-command-secondary-border-token="--topology-command-secondary-border"
                         copied={focusMcpImpactCopied}
                         label={labels.focusMcpImpactCopy}
                         ariaLabel={
@@ -1734,8 +1750,12 @@ export function TopologyAnalysisBar({
                             : labels.focusMcpImpactCopyAriaLabel
                         }
                         onClick={copyFocusMcpImpactCheck}
+                        className="border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] hover:border-[color:var(--topology-command-secondary-hover-border)]"
                       />
                       <CompactCopyButton
+                        data-focus-proof-action="sync-gate"
+                        data-command-secondary-surface-token="--topology-command-secondary-surface"
+                        data-command-secondary-border-token="--topology-command-secondary-border"
                         copied={focusSyncGateCopied}
                         label={labels.focusSyncGateCopy}
                         ariaLabel={
@@ -1744,8 +1764,12 @@ export function TopologyAnalysisBar({
                             : labels.focusSyncGateCopyAriaLabel
                         }
                         onClick={copyFocusSyncGate}
+                        className="border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] hover:border-[color:var(--topology-command-secondary-hover-border)]"
                       />
                       <CompactCopyButton
+                        data-focus-proof-action="strengthen-command"
+                        data-command-secondary-surface-token="--topology-command-secondary-surface"
+                        data-command-secondary-border-token="--topology-command-secondary-border"
                         copied={focusEnhanceCopied}
                         label={labels.focusEnhanceCopy}
                         ariaLabel={
@@ -1754,6 +1778,7 @@ export function TopologyAnalysisBar({
                             : labels.focusEnhanceCopyAriaLabel
                         }
                         onClick={copyFocusEnhancementCommand}
+                        className="border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] hover:border-[color:var(--topology-command-secondary-hover-border)]"
                       />
                     </div>
                   </details>

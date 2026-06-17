@@ -495,10 +495,52 @@ describe("TopologyAnalysisBar", () => {
       "flat-numbered-row",
     );
     expect(screen.getByTestId("topology-focus-secondary-actions")).toBeVisible();
+    expect(screen.getByTestId("topology-focus-secondary-actions")).toHaveAttribute(
+      "data-focus-secondary-action-contract",
+      "ontology-builder-exits",
+    );
+    expect(screen.getByTestId("topology-focus-secondary-actions")).toHaveAttribute(
+      "data-command-secondary-surface-token",
+      "--topology-command-secondary-surface",
+    );
+    expect(screen.getByTestId("topology-focus-secondary-actions")).toHaveAttribute(
+      "data-command-secondary-border-token",
+      "--topology-command-secondary-border",
+    );
+    const ontologyExit = screen.getByRole("link", { name: "Open ontology" });
+    expect(ontologyExit).toHaveAttribute("data-focus-secondary-action", "ontology");
+    expect(ontologyExit).toHaveAttribute(
+      "data-command-secondary-surface-token",
+      "--topology-command-secondary-surface",
+    );
+    const builderExit = screen.getByRole("link", { name: "Open builder" });
+    expect(builderExit).toHaveAttribute("data-focus-secondary-action", "builder");
+    expect(builderExit).toHaveAttribute(
+      "data-command-secondary-border-token",
+      "--topology-command-secondary-border",
+    );
     expect(screen.getByTestId("topology-focus-agent-handoff")).toHaveAttribute(
       "data-handoff-contract",
       "mcp-cli-proof-disclosed",
     );
+    const focusProofActions = [
+      ["Copy focus MCP profile", "mcp-profile"],
+      ["Copy focus MCP impact", "mcp-impact"],
+      ["Copy focus post-change sync gate", "sync-gate"],
+      ["Copy selected concept strengthening command", "strengthen-command"],
+    ] as const;
+    for (const [name, proofAction] of focusProofActions) {
+      const button = screen.getByRole("button", { name });
+      expect(button).toHaveAttribute("data-focus-proof-action", proofAction);
+      expect(button).toHaveAttribute(
+        "data-command-secondary-surface-token",
+        "--topology-command-secondary-surface",
+      );
+      expect(button).toHaveAttribute(
+        "data-command-secondary-border-token",
+        "--topology-command-secondary-border",
+      );
+    }
   });
 
   it("keeps analysis modes reachable on mobile while preserving the desktop breakpoint", () => {
