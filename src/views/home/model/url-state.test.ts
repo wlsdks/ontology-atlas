@@ -76,6 +76,30 @@ describe("parseHomeRouteState", () => {
       pathSourceSlug: "domain:agent",
     });
   });
+
+  it("accepts short from/to aliases for shared Path deep links", () => {
+    const params = new URLSearchParams(
+      "mode=path&from=domain:views&to=capability:topology-analysis-modes",
+    );
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      analysisMode: "path",
+      pathSourceSlug: "domain:views",
+      pathTargetSlug: "capability:topology-analysis-modes",
+    });
+  });
+
+  it("keeps canonical pathFrom/pathTo ahead of short Path aliases", () => {
+    const params = new URLSearchParams(
+      "mode=path&pathFrom=domain:canonical&from=domain:alias&pathTo=capability:canonical&to=capability:alias",
+    );
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      analysisMode: "path",
+      pathSourceSlug: "domain:canonical",
+      pathTargetSlug: "capability:canonical",
+    });
+  });
 });
 
 describe("applyHomeRouteState", () => {
@@ -127,6 +151,27 @@ describe("applyHomeRouteState", () => {
     });
 
     expect(hidden.toString()).toBe("");
+  });
+
+  it("canonicalizes short Path aliases away when serializing route state", () => {
+    const params = applyHomeRouteState(
+      new URLSearchParams("mode=path&from=domain:old&to=capability:old"),
+      {
+        selectedSlug: null,
+        activeCategory: null,
+        focusedHubSlug: null,
+        impactMode: "none",
+        pulseMode: "all",
+        analysisMode: "path",
+        pathSourceSlug: "domain:views",
+        pathTargetSlug: "capability:topology-analysis-modes",
+        createNodeIntent: false,
+      },
+    );
+
+    expect(params.toString()).toBe(
+      "mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+    );
   });
 
   it("drops params when values match defaults", () => {

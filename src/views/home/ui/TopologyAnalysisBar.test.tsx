@@ -282,8 +282,14 @@ describe("TopologyAnalysisBar", () => {
     expect(panel).toHaveAttribute("data-panel-width-target", "overview-14-inch-compact");
     expect(panel).toHaveAttribute(
       "data-panel-width-contract",
-      "overview-support-max-360",
+      "overview-support-max-360-phone-utility-reserve",
     );
+    expect(panel).toHaveAttribute(
+      "data-panel-phone-utility-reserve-token",
+      "--topology-panel-phone-utility-rail-reserve",
+    );
+    expect(panel).toHaveAttribute("data-panel-layer-contract", "read-surface-above-map-cards");
+    expect(panel).toHaveAttribute("data-panel-z-index-token", "--topology-panel-read-layer-z-index");
   });
 
   it("promotes the panel to focus support when a node is selected from overview", () => {
@@ -417,6 +423,81 @@ describe("TopologyAnalysisBar", () => {
     expect(panel).toHaveAttribute(
       "data-panel-width-contract",
       "selected-focus-rail-max-320",
+    );
+    expect(panel).toHaveAttribute(
+      "data-command-spine-padding-token",
+      "--topology-command-spine-padding",
+    );
+    expect(panel).toHaveAttribute(
+      "data-command-primary-height-token",
+      "--topology-command-primary-min-height",
+    );
+    expect(panel).toHaveAttribute(
+      "data-panel-surface-token",
+      "--topology-panel-support-surface",
+    );
+    expect(panel).toHaveAttribute(
+      "data-command-spine-surface-token",
+      "--topology-command-spine-surface",
+    );
+    expect(panel).toHaveAttribute(
+      "data-command-spine-border-token",
+      "--topology-command-spine-border",
+    );
+    const commandSpine = screen.getByTestId("topology-focus-command-spine");
+    expect(commandSpine).toHaveAttribute(
+      "data-command-hierarchy",
+      "brief-primary-review-agent-proof",
+    );
+    expect(commandSpine).toHaveAttribute(
+      "data-tokenized-surface",
+      "topology-command-spine",
+    );
+    expect(commandSpine).toHaveAttribute(
+      "data-command-spine-surface-token",
+      "--topology-command-spine-surface",
+    );
+    expect(commandSpine).toHaveAttribute(
+      "data-command-spine-border-token",
+      "--topology-command-spine-border",
+    );
+    expect(commandSpine.className).toContain(
+      "p-[var(--topology-command-spine-padding)]",
+    );
+    const primaryAction = screen.getByTestId("topology-focus-primary-action");
+    expect(primaryAction).toHaveTextContent("Copy focus brief");
+    expect(primaryAction).toHaveAttribute(
+      "data-command-primary-surface-token",
+      "--topology-command-primary-surface",
+    );
+    expect(primaryAction).toHaveAttribute(
+      "data-command-primary-border-token",
+      "--topology-command-primary-border",
+    );
+    expect(primaryAction.className).toContain(
+      "min-h-[var(--topology-command-primary-min-height)]",
+    );
+    expect(screen.getByTestId("topology-focus-review-order")).toHaveClass("grid");
+    expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
+      "data-review-order-contract",
+      "flat-numbered-rail",
+    );
+    expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
+      "data-command-step-surface-token",
+      "--topology-command-step-surface",
+    );
+    expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
+      "data-command-step-border-token",
+      "--topology-command-step-border",
+    );
+    expect(screen.getByText("Read node profile").closest("li")).toHaveAttribute(
+      "data-command-step-contract",
+      "flat-numbered-row",
+    );
+    expect(screen.getByTestId("topology-focus-secondary-actions")).toBeVisible();
+    expect(screen.getByTestId("topology-focus-agent-handoff")).toHaveAttribute(
+      "data-handoff-contract",
+      "mcp-cli-proof-disclosed",
     );
   });
 
@@ -870,6 +951,10 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-selected-focus-rail", "true");
     expect(bar).toHaveAttribute("data-panel-width-target", "selected-focus-rail");
     expect(bar).toHaveAttribute(
+      "data-compact-focus-collapse-contract",
+      "selected-focus-support-hidden-under-md",
+    );
+    expect(bar).toHaveAttribute(
       "data-panel-width-css",
       "var(--topology-panel-selected-rail-width)",
     );
@@ -877,6 +962,7 @@ describe("TopologyAnalysisBar", () => {
       "data-panel-width-token",
       "--topology-panel-selected-rail-width",
     );
+    expect(bar.className).toContain("max-md:hidden");
     expect(bar).toHaveAttribute("data-attention-role", "support");
   });
 
@@ -1072,8 +1158,16 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-width-policy", "overview-support");
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-target", "overview-14-inch-compact");
-    expect(bar).toHaveAttribute("data-panel-width-css", "var(--topology-panel-overview-rail-width)");
-    expect(bar).toHaveAttribute("data-panel-width-token", "--topology-panel-overview-rail-width");
+    expect(bar).toHaveAttribute("data-panel-width-css", "var(--topology-panel-overview-responsive-width)");
+    expect(bar).toHaveAttribute("data-panel-width-token", "--topology-panel-overview-responsive-width");
+    expect(bar).toHaveAttribute(
+      "data-panel-phone-utility-reserve-token",
+      "--topology-panel-phone-utility-rail-reserve",
+    );
+    expect(bar).toHaveAttribute(
+      "data-panel-compact-scroll-end-reserve-token",
+      "--topology-analysis-panel-compact-scroll-end-reserve",
+    );
     expect(bar).toHaveAttribute("data-attention-role", "support");
     expect(bar).toHaveAttribute("data-panel-surface-token", "--topology-panel-support-surface");
     expect(bar).toHaveAttribute("data-panel-shadow-token", "--topology-panel-support-shadow");
@@ -1082,6 +1176,22 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-motion-token", "--topology-motion-panel-duration");
     expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
     expect(bar.className).toContain("overflow-hidden");
+    const body = screen.getByTestId("topology-analysis-panel-body");
+    expect(body).toHaveAttribute(
+      "data-panel-body-scroll-contract",
+      "compact-scrolls-above-bottom-tab",
+    );
+    expect(body).toHaveAttribute(
+      "data-panel-body-scroll-end-reserve-token",
+      "--topology-analysis-panel-compact-scroll-end-reserve",
+    );
+    expect(body.className).toContain(
+      "max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))]",
+    );
+    expect(body.className).toContain("max-md:overflow-y-auto");
+    expect(body.className).toContain(
+      "max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)]",
+    );
     const relationQuality = screen.getByTestId("topology-overview-relation-quality");
     expect(screen.getByTestId("topology-overview-signal-metric-row")).toHaveAttribute(
       "data-overview-signal-layout",
@@ -1089,12 +1199,19 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(relationQuality).toHaveAttribute("data-density", "scan-facts");
     expect(relationQuality).toHaveAttribute(
+      "data-proof-strip-contract",
+      "flat-no-nested-cards",
+    );
+    expect(relationQuality).toHaveAttribute(
       "aria-label",
       expect.stringContaining("Relation quality: strong 384"),
     );
     expect(
       within(relationQuality).getByTestId("topology-overview-relation-quality-strong"),
     ).toHaveTextContent("384");
+    expect(
+      within(relationQuality).getByTestId("topology-overview-relation-quality-strong"),
+    ).toHaveAttribute("data-proof-cell-contract", "flat-divider-cell");
     expect(
       within(relationQuality).getByTestId("topology-overview-relation-quality-weak"),
     ).toHaveTextContent("114");
@@ -1166,13 +1283,23 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-policy", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-target", "path-14-inch-rail");
-    expect(bar).toHaveAttribute("data-panel-width-contract", "path-support-rail-max-360");
+    expect(bar).toHaveAttribute(
+      "data-panel-width-contract",
+      "path-support-rail-max-360-phone-utility-reserve",
+    );
     expect(bar).toHaveAttribute("data-attention-role", "support");
     expect(bar).toHaveAttribute(
       "data-panel-width-css",
-      "var(--topology-panel-path-rail-width)",
+      "var(--topology-panel-path-responsive-width)",
     );
-    expect(bar).toHaveAttribute("data-panel-width-token", "--topology-panel-path-rail-width");
+    expect(bar).toHaveAttribute(
+      "data-panel-width-token",
+      "--topology-panel-path-responsive-width",
+    );
+    expect(bar).toHaveAttribute(
+      "data-panel-phone-utility-reserve-token",
+      "--topology-panel-phone-utility-rail-reserve",
+    );
     expect(bar).toHaveAttribute("data-panel-surface-token", "--topology-panel-support-surface");
     expect(bar).toHaveAttribute("data-panel-motion-token", "--topology-motion-panel-duration");
   });
@@ -1207,10 +1334,17 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-analysis-mode", "path");
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-target", "path-14-inch-rail");
-    expect(bar).toHaveAttribute("data-panel-width-contract", "path-support-rail-max-360");
+    expect(bar).toHaveAttribute(
+      "data-panel-width-contract",
+      "path-support-rail-max-360-phone-utility-reserve",
+    );
     expect(bar).toHaveAttribute(
       "data-panel-width-token",
-      "--topology-panel-path-rail-width",
+      "--topology-panel-path-responsive-width",
+    );
+    expect(bar).toHaveAttribute(
+      "data-panel-phone-utility-reserve-token",
+      "--topology-panel-phone-utility-rail-reserve",
     );
   });
 
@@ -1272,12 +1406,70 @@ describe("TopologyAnalysisBar", () => {
 
     const handoff = screen.getByTestId("topology-path-agent-handoff");
     expect(handoff).toHaveAttribute("data-attention-layer", "focus-path-state");
+    expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
     expect(handoff).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+    expect(handoff).toHaveAttribute("data-surface-token", "--topology-path-handoff-surface");
+    expect(handoff).toHaveAttribute("data-border-token", "--topology-path-handoff-border");
+    expect(handoff).toHaveAttribute(
+      "data-action-min-height-token",
+      "--topology-path-handoff-action-min-height",
+    );
+    expect(handoff).toHaveAttribute(
+      "data-action-radius-token",
+      "--topology-path-handoff-action-radius",
+    );
     expect(handoff).toHaveAttribute("data-mcp-action", "find_path");
     expect(handoff).toHaveAttribute("data-cli-fallback", "ontology-atlas path");
     expect(handoff).toHaveTextContent("Agent handoff");
     expect(handoff).toHaveTextContent("MCP find_path");
     expect(handoff).toHaveTextContent("CLI path");
+  });
+
+  it("keeps the selected Path route visible before the proof disclosure", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="path"
+        summary={{
+          mode: "path",
+          primaryMetric: 21,
+          secondaryMetric: 504,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        pathSourceSlug="domain:views"
+        pathTargetSlug="capability:topology-analysis-modes"
+        pathSourceTitle="Views (Topology · Browse · Builder)"
+        pathTargetTitle="Topology Analysis Modes"
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const route = screen.getByTestId("topology-path-visible-route");
+    expect(route).toHaveAttribute(
+      "data-route-contract",
+      "source-target-visible-before-proof-disclosure",
+    );
+    expect(route).toHaveAttribute("data-attention-layer", "focus-path-state");
+    expect(route).toHaveAttribute("data-guidance-owner", "analysis-rail");
+    expect(route).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+    expect(route).toHaveAttribute("data-source-slug", "domain:views");
+    expect(route).toHaveAttribute("data-target-slug", "capability:topology-analysis-modes");
+    expect(route).toHaveAttribute("data-surface-token", "--topology-path-route-surface");
+    expect(route).toHaveAttribute("data-border-token", "--topology-path-route-border");
+    expect(route).toHaveAttribute("data-chip-surface-token", "--topology-path-route-chip-surface");
+    expect(route).toHaveAttribute("data-chip-border-token", "--topology-path-route-chip-border");
+    expect(within(route).getByText("Source")).toBeInTheDocument();
+    expect(within(route).getByText("Views")).toBeInTheDocument();
+    expect(within(route).getByText("Target")).toBeInTheDocument();
+    expect(within(route).getByText("Topology Analysis Modes")).toBeInTheDocument();
   });
 
   it("copies an overview brief for first-contact agent and collaborator review", async () => {
@@ -1351,6 +1543,9 @@ describe("TopologyAnalysisBar", () => {
 	    expect(
 	      readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
 	    ).toHaveTextContent("82");
+	    expect(
+	      readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
+	    ).toHaveAttribute("data-proof-cell-contract", "flat-divider-cell");
     expect(
       readinessGate.querySelector('[data-agent-readiness-chip="preflight"]'),
     ).toHaveTextContent("4");

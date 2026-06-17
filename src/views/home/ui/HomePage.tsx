@@ -67,6 +67,14 @@ const SigmaTopology = dynamic(
 /** 안정 참조 빈 set — 영향 보기 비활성 시 매 render 새 Set 생성 회피. */
 const EMPTY_IMPACT_SET: ReadonlySet<string> = new Set();
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
+
+function buildFocusInspectUrl(currentUrl: string, slug: string): string {
+  const url = new URL(currentUrl);
+  url.searchParams.set("mode", "focus");
+  url.searchParams.set("p", slug);
+  return url.toString();
+}
+
 const SigmaControls = dynamic(
   () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaControls),
   { ssr: false },
@@ -110,9 +118,17 @@ import {
 import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
 import {
   buildOntologyHealthSignals,
+  buildOntologyNodeHref,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { buildOntologyReachability, IMPACT_EXCLUDED_RELATION_TYPES, computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
+import { copyText } from "@/shared/lib/copy-text";
+import {
+  buildOntologyReachability,
+  computeOntologyChangeset,
+  formatAgentPostChangeSyncPacket,
+  IMPACT_EXCLUDED_RELATION_TYPES,
+  useChangeBaseline,
+} from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
 import {
   selectTopologyNodeRouteState,
@@ -120,8 +136,12 @@ import {
 } from "../model/url-state";
 import {
   buildTopologyAnalysisSummary,
+  buildTopologyHealthRepairHref,
   buildTopologyHealthActionTarget,
   classifyTopologyRelationQuality,
+  formatTopologyFocusBrief,
+  formatTopologyHealthImpactMcpCheck,
+  formatTopologyHealthMcpCheck,
 } from "../lib/topology-analysis";
 import {
   countProjectRelationsWithinGraph,
@@ -709,9 +729,27 @@ export function HomePage() {
   // 때만 드로어 — 다른 노드를 고르면 자동으로 팝오버부터(effect 불필요).
   const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
   const [nodePopoverCollapsed, setNodePopoverCollapsed] = useState(false);
+  const interactionSelectedSlugRef = useRef<string | null>(null);
   const [selectedRelationActive, setSelectedRelationActive] = useState(false);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
+  const topologyUtilityChromeState = selectedRelationActive
+    ? "collapsed-active-relation"
+    : selectedSlug
+      ? "compact-focus"
+      : "visible";
+  const topologyUtilityChromeCompact = topologyUtilityChromeState === "compact-focus";
+  const topologyShortcutHelpPhoneVisible = analysisMode !== "path";
+  const topologyBlockingOverlayState = createNodeOpen
+    ? "create-node"
+    : searchOpen
+      ? "project-search"
+      : ontologySearchOpen
+        ? "global-search"
+        : shortcutsOpen
+          ? "shortcuts"
+          : "none";
+  const topologyBlockingOverlayActive = topologyBlockingOverlayState !== "none";
   const openCreateNode = useCallback(() => {
     setSearchOpen(false);
     setOntologySearchOpen(false);
@@ -811,6 +849,7 @@ export function HomePage() {
       // renderProjects.find 로 O(N) 스캔.
       // 새 노드 선택(연결 클릭 포함) = 관계 row 가 보이는 inspector 부터.
       // 사용자가 지도만 크게 보고 싶을 때 "지도 보기"로 명시적으로 접는다.
+      interactionSelectedSlugRef.current = slug;
       setFullDetailSlug(null);
       setNodePopoverCollapsed(false);
       setSelectedRelationActive(false);
@@ -827,6 +866,7 @@ export function HomePage() {
   );
 
   const handleClose = useCallback(() => {
+    interactionSelectedSlugRef.current = null;
     setFullDetailSlug(null);
     setNodePopoverCollapsed(false);
     setSelectedRelationActive(false);
@@ -837,6 +877,14 @@ export function HomePage() {
       impactMode: "none",
     }));
   }, [setRouteState]);
+
+  useEffect(() => {
+    if (!selectedOntologyNode || analysisMode !== "focus") return;
+    if (interactionSelectedSlugRef.current === selectedOntologyNode.id) return;
+    // Deep-linked Focus routes should open with the map as the attention winner.
+    // Direct node clicks still expand the inspector because the user asked for detail.
+    setNodePopoverCollapsed(true);
+  }, [analysisMode, selectedOntologyNode]);
 
 
   const handleSelectImpactMode = useCallback(
@@ -1068,6 +1116,87 @@ export function HomePage() {
     relationQuality: topologyRelationQuality,
     ...topologyHealthSummary,
   });
+  const postChangeSyncPacket = useMemo(() => formatAgentPostChangeSyncPacket(), []);
+
+  const copyCompactFocusBrief = useCallback(async () => {
+    if (!selectedSlug || !analysisSelectedTitle) return;
+    const currentUrl =
+      typeof window === "undefined" ? null : window.location.href;
+    const focusUrl =
+      typeof window === "undefined"
+        ? null
+        : buildFocusInspectUrl(window.location.href, selectedSlug);
+    const ok = await copyText(
+      formatTopologyFocusBrief({
+        slug: selectedSlug,
+        title: analysisSelectedTitle,
+        labels: {
+          title: t("analysis.focusBriefTitle"),
+          node: t("analysis.focusBriefNode"),
+          url: t("analysis.focusBriefUrl"),
+          ontologyUrl: t("analysis.focusBriefOntologyUrl"),
+          builderUrl: t("analysis.focusBriefBuilderUrl"),
+          reviewFocus: t("analysis.focusBriefReviewFocus"),
+          agentCheck: t("analysis.focusBriefAgentCheck"),
+          mcpCheck: t("analysis.focusBriefMcpCheck"),
+          impactCheck: t("analysis.focusBriefImpactCheck"),
+          mcpImpactCheck: t("analysis.focusBriefMcpImpactCheck"),
+          syncGate: t("analysis.focusBriefSyncGate"),
+        },
+        url: currentUrl,
+        focusUrl,
+        ontologyUrl: buildOntologyNodeHref(selectedSlug),
+        builderUrl: buildTopologyHealthRepairHref(selectedSlug),
+        syncGatePacket: postChangeSyncPacket,
+      }),
+    );
+    if (ok) toast.show(t("analysis.focusBriefCopied"), "success");
+  }, [analysisSelectedTitle, postChangeSyncPacket, selectedSlug, t, toast]);
+
+  const copyCompactFocusMcpProfile = useCallback(async () => {
+    if (!selectedSlug) return;
+    const ok = await copyText(formatTopologyHealthMcpCheck(selectedSlug));
+    if (ok) toast.show(t("analysis.focusMcpCopied"), "success");
+  }, [selectedSlug, t, toast]);
+
+  const copyCompactFocusMcpImpact = useCallback(async () => {
+    if (!selectedSlug) return;
+    const ok = await copyText(formatTopologyHealthImpactMcpCheck(selectedSlug));
+    if (ok) toast.show(t("analysis.focusMcpImpactCopied"), "success");
+  }, [selectedSlug, t, toast]);
+
+  const nodePopoverActions = useMemo(
+    () =>
+      selectedSlug
+        ? [
+            {
+              kind: "focus-brief" as const,
+              label: t("analysis.focusBriefCopy"),
+              ariaLabel: t("analysis.focusBriefCopyAriaLabel"),
+              onClick: copyCompactFocusBrief,
+            },
+            {
+              kind: "mcp-profile" as const,
+              label: t("analysis.focusMcpCopy"),
+              ariaLabel: t("analysis.focusMcpCopyAriaLabel"),
+              onClick: copyCompactFocusMcpProfile,
+            },
+            {
+              kind: "mcp-impact" as const,
+              label: t("analysis.focusMcpImpactCopy"),
+              ariaLabel: t("analysis.focusMcpImpactCopyAriaLabel"),
+              onClick: copyCompactFocusMcpImpact,
+            },
+          ]
+        : [],
+    [
+      copyCompactFocusBrief,
+      copyCompactFocusMcpImpact,
+      copyCompactFocusMcpProfile,
+      selectedSlug,
+      t,
+    ],
+  );
 
   useEffect(() => {
     if (analysisModeRef.current === analysisMode) return;
@@ -1307,15 +1436,30 @@ export function HomePage() {
             })()}
             <div
               data-testid="topology-command-chrome"
-              data-command-chrome-state={
-                selectedRelationActive ? "collapsed-active-relation" : "visible"
+              data-command-chrome-state={topologyUtilityChromeState}
+              data-blocking-overlay-state={topologyBlockingOverlayState}
+              data-attention-role={
+                selectedRelationActive
+                  ? "demoted-utility"
+                  : topologyBlockingOverlayActive
+                    ? "demoted-under-blocking-overlay"
+                    : "utility-chrome"
               }
-              data-attention-role={selectedRelationActive ? "demoted-utility" : "utility-chrome"}
+              data-utility-lane-height-token={
+                topologyUtilityChromeCompact ? "--topology-utility-lane-height" : undefined
+              }
+              data-utility-lane-gap-token={
+                topologyUtilityChromeCompact ? "--topology-utility-lane-gap" : undefined
+              }
+              data-utility-lane-compact-width-token={
+                topologyUtilityChromeCompact ? "--topology-utility-lane-compact-width" : undefined
+              }
               className="contents"
             >
               {!selectedRelationActive ? (
                 <>
                   <SearchHint
+                    density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
                     onOpenSearch={() => {
                       setSearchOpen(true);
                     }}
@@ -1324,7 +1468,21 @@ export function HomePage() {
                       toast.show(t('controls.relayoutToast'), "info");
                     }}
                   />
-                  <div className="topology-ui-scale absolute right-4 top-4 z-20 flex items-center gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8">
+                  <div
+                    className="topology-ui-scale absolute right-4 top-4 z-20 flex items-center gap-[var(--topology-utility-lane-gap)] md:right-6 md:top-6 xl:right-8 xl:top-8"
+                    data-testid="topology-utility-action-lane"
+                    data-utility-lane-density={
+                      topologyUtilityChromeCompact ? "compact-focus" : "default"
+                    }
+                    data-utility-lane-contract={
+                      topologyUtilityChromeCompact
+                        ? "icon-first-focus-utility"
+                        : "labeled-map-utility"
+                    }
+                    data-utility-lane-surface-token="--topology-utility-lane-surface"
+                    data-utility-lane-border-token="--topology-utility-lane-border"
+                    data-utility-lane-shadow-token="--topology-utility-lane-shadow"
+                  >
                     <TopologyReviewLink
                       changeset={ontologyChangeset}
                       label={(count) => t('controls.reviewLabel', { count })}
@@ -1336,10 +1494,20 @@ export function HomePage() {
                       onClick={() => setDocsDrawerOpen((v) => !v)}
                       aria-expanded={docsDrawerOpen}
                       aria-label={t('controls.docsAriaLabel')}
-                      className="inline-flex h-11 items-center gap-2 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[0_10px_26px_rgba(0,0,0,0.14)] transition-[background-color,border-color,box-shadow,transform] duration-180 ease-out hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:var(--color-panel)] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none motion-reduce:transform-none"
+                      data-utility-action-token-contract="support-surface-family"
+                      data-utility-action-surface-token="--topology-utility-lane-surface"
+                      data-utility-action-border-token="--topology-utility-lane-border"
+                      data-utility-action-shadow-token="--topology-utility-lane-shadow"
+                      className={`inline-flex h-[var(--topology-utility-lane-height)] items-center justify-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-border)] bg-[color:var(--topology-utility-lane-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color,box-shadow,transform] duration-180 ease-out hover:border-[color:var(--topology-utility-lane-accent-border)] hover:bg-[color:var(--topology-utility-lane-hover-surface)] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none motion-reduce:transform-none ${
+                        topologyUtilityChromeCompact
+                          ? "w-[var(--topology-utility-lane-compact-width)] px-0"
+                          : "px-3.5"
+                      }`}
                     >
                       <BookOpen size={15} className="text-[color:var(--color-indigo-accent)]" />
-                      <span>{t('controls.docsLabel')}</span>
+                      <span className={topologyUtilityChromeCompact ? "sr-only" : undefined}>
+                        {t('controls.docsLabel')}
+                      </span>
                       {docsPinnedCount > 0 ? (
                         <span
                           className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:rgba(94,106,210,0.28)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--color-indigo-accent)]"
@@ -1351,7 +1519,9 @@ export function HomePage() {
                       ) : null}
                       <kbd
                         aria-hidden="true"
-                        className="hidden rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)] sm:inline"
+                        className={`hidden rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)] ${
+                          topologyUtilityChromeCompact ? "" : "sm:inline"
+                        }`}
                       >
                         D
                       </kbd>
@@ -1372,10 +1542,20 @@ export function HomePage() {
                           aria-expanded={createNodeOpen}
                           aria-label={t('createNode.toggleAria')}
                           data-testid="topology-create-node-toggle"
-                          className="inline-flex h-11 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[0_10px_26px_rgba(0,0,0,0.14)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:rgba(94,106,210,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none"
+                          data-utility-action-token-contract="accent-surface-family"
+                          data-utility-action-surface-token="--topology-utility-lane-accent-surface"
+                          data-utility-action-border-token="--topology-utility-lane-accent-border"
+                          data-utility-action-shadow-token="--topology-utility-lane-shadow"
+                          className={`inline-flex h-[var(--topology-utility-lane-height)] items-center justify-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none ${
+                            topologyUtilityChromeCompact
+                              ? "w-[var(--topology-utility-lane-compact-width)] px-0"
+                              : "px-3.5"
+                          }`}
                         >
                           <Plus size={15} aria-hidden />
-                          <span>{t('createNode.toggleLabel')}</span>
+                          <span className={topologyUtilityChromeCompact ? "sr-only" : undefined}>
+                            {t('createNode.toggleLabel')}
+                          </span>
                         </button>
                       </Tooltip>
                     ) : null}
@@ -1388,9 +1568,11 @@ export function HomePage() {
                 <button
                   type="button"
                   aria-label={t('createNode.cancel')}
-                  className="absolute inset-0 z-[25] cursor-default bg-black/72 transition-opacity duration-180 ease-out motion-reduce:transition-none"
+                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-180 ease-out motion-reduce:transition-none"
                   data-interactive-overlay="true"
                   data-testid="topology-create-node-backdrop"
+                  data-backdrop-contract="blocks-map-and-closes-composer"
+                  data-backdrop-surface-token="--topology-blocking-backdrop-surface"
                   onClick={closeCreateNode}
                 />
                 <div
@@ -1400,13 +1582,16 @@ export function HomePage() {
                   aria-labelledby={CREATE_NODE_DIALOG_TITLE_ID}
                   tabIndex={-1}
                   onKeyDown={handleCreateNodePanelKeyDown}
-                  className="absolute left-1/2 top-[8.75rem] z-30 max-h-[calc(100dvh-11rem)] w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto md:top-[9rem] xl:top-[9.5rem]"
+                  className="absolute left-1/2 top-[var(--topology-blocking-composer-top)] z-30 max-h-[var(--topology-blocking-composer-max-height)] w-[var(--topology-blocking-composer-width)] -translate-x-1/2 overflow-y-auto"
                   data-testid="topology-create-node-panel"
                   data-attention-role="blocking-composer"
                   data-placement-contract="centered-blocking-edit"
                   data-surface-role="blocking-edit-surface"
                   data-elevation-contract="solid-panel-over-dimmed-map"
                   data-size-contract="bounded-centered-composer"
+                  data-top-token="--topology-blocking-composer-top"
+                  data-width-token="--topology-blocking-composer-width"
+                  data-max-height-token="--topology-blocking-composer-max-height"
                 >
                   <CreateNodeForm
                     onCreate={createNode}
@@ -1831,10 +2016,19 @@ export function HomePage() {
           data-blocking-edit={createNodeOpen ? "true" : "false"}
           data-map-demoted={createNodeOpen ? "true" : "false"}
           data-map-dim-opacity={createNodeOpen ? "0.24" : "1"}
+          data-map-dim-opacity-token={
+            createNodeOpen ? "--topology-blocking-map-opacity" : undefined
+          }
+          data-map-filter-token={
+            createNodeOpen ? "--topology-blocking-map-filter" : undefined
+          }
+          data-map-interaction-contract={
+            createNodeOpen ? "suppressed-while-blocking-composer" : "interactive"
+          }
           aria-hidden={createNodeOpen ? "true" : undefined}
           style={{
-            opacity: createNodeOpen ? 0.24 : 1,
-            filter: createNodeOpen ? "saturate(0.58)" : undefined,
+            opacity: createNodeOpen ? "var(--topology-blocking-map-opacity)" : 1,
+            filter: createNodeOpen ? "var(--topology-blocking-map-filter)" : undefined,
           }}
           className={`absolute inset-0 transition-[opacity,filter] duration-180 ease-out motion-reduce:transition-none ${
             createNodeOpen
@@ -1914,7 +2108,7 @@ export function HomePage() {
                       selectedNodeFocusActive ||
                       analysisMode === "path"
                     }
-                    blockingSurfaceActive={createNodeOpen}
+                    blockingSurfaceActive={topologyBlockingOverlayActive}
                     pathSelection={{
                       sourceSlug: pathSourceSlug,
                       targetSlug: pathTargetSlug,
@@ -1930,10 +2124,11 @@ export function HomePage() {
                   to { opacity: 1; transform: scale(1); }
                 }
               `}</style>
-              {createNodeOpen || selectedRelationActive ? null : (
+              {createNodeOpen || selectedRelationActive || topologyBlockingOverlayActive ? null : (
                 <SigmaControls
                   value={sigmaControls}
                   onChange={setSigmaControls}
+                  density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
                   onFitView={() => setFitViewToken((t) => t + 1)}
                   visibleCount={sigmaVisibleCount}
                   totalCount={
@@ -1943,17 +2138,39 @@ export function HomePage() {
                   }
                 />
               )}
-              {/* 단축키 도움말 진입점 — 우상단 SigmaControls 아래 36×36 아이콘.
-                  ? 키 단축키도 같은 sheet 를 열지만 시각적 affordance 가 없으면
-                  발견성 낮음. 모바일은 키보드가 없어 의미 0 → 데스크톱(md+)
-                  에서만 노출. */}
-              {createNodeOpen || selectedRelationActive ? null : (
+              {/* 단축키/제스처 도움말 진입점 — 우상단 SigmaControls 아래 36×36 아이콘.
+                  phone 은 path panel 과 충돌하지 않는 overview/focus 에서만 노출한다. */}
+              {createNodeOpen || selectedRelationActive || topologyBlockingOverlayActive ? null : (
                 <Tooltip content={t('controls.shortcutsTooltip')} side="left" withProvider={false}>
                 <button
                   type="button"
                   onClick={() => setShortcutsOpen(true)}
                   aria-label={t('controls.shortcutsAriaLabel')}
-                  className="topology-ui-scale pointer-events-auto absolute right-4 top-[228px] z-20 hidden h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] font-mono text-[14px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:right-6 md:flex xl:right-8"
+                  data-testid="topology-shortcuts-help-button"
+                  data-controls-density={
+                    topologyUtilityChromeCompact ? "compact-focus" : "default"
+                  }
+                  data-controls-contract={
+                    topologyUtilityChromeCompact
+                      ? "focus-support-help-entry"
+                      : "map-help-entry"
+                  }
+                  data-phone-help-entry-contract={
+                    topologyShortcutHelpPhoneVisible
+                      ? "visible-outside-path-panel"
+                      : "hidden-during-path-panel"
+                  }
+                  data-phone-help-position-contract={
+                    topologyShortcutHelpPhoneVisible ? "map-card-clearance" : undefined
+                  }
+                  data-phone-help-top-token={
+                    topologyShortcutHelpPhoneVisible
+                      ? "--topology-shortcuts-help-phone-top"
+                      : undefined
+                  }
+                  className={`topology-ui-scale pointer-events-auto absolute right-4 top-[var(--topology-shortcuts-help-phone-top)] z-20 h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] font-mono text-[14px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:right-6 md:top-[var(--topology-shortcuts-help-desktop-top)] md:flex xl:right-8 ${
+                    topologyShortcutHelpPhoneVisible ? "flex" : "hidden"
+                  }`}
                 >
                   ?
                 </button>
@@ -2080,6 +2297,7 @@ export function HomePage() {
                 expand: t("nodePopover.expand"),
                 close: t("controls.close"),
                 moreSuffix: t("nodePopover.moreSuffix"),
+                actionRailTitle: t("nodePopover.actionRailTitle"),
                 // 컴포넌트가 {count} 를 치환 — raw 템플릿 그대로 전달.
                 expandedNote: t.raw("nodePopover.expandedNote") as string,
                 relationLensTitle: t("nodePopover.relationLensTitle"),
@@ -2132,12 +2350,13 @@ export function HomePage() {
               onSelectConnection={(id) => handleSelect(id)}
               onOpenFullDetail={() => setFullDetailSlug(selectedOntologyNode.id)}
               onClose={handleClose}
+              actions={nodePopoverActions}
               collapsed={nodePopoverCollapsed}
               onToggleCollapsed={() => setNodePopoverCollapsed((current) => !current)}
               className={
                 nodePopoverCollapsed
                   ? "max-lg:w-[min(560px,calc(100vw-1.5rem))]"
-                  : "max-lg:max-h-[320px] max-lg:w-[min(520px,calc(100vw-1.5rem))]"
+                  : "max-lg:max-h-[var(--topology-node-popover-mobile-expanded-max-height)] max-lg:w-[min(520px,calc(100vw-1.5rem))]"
               }
             />
           </div>

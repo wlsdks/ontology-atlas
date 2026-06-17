@@ -826,12 +826,12 @@ export function TopologyAnalysisBar({
       selectedFocusRailActive
         ? "var(--topology-panel-selected-rail-width)"
         : panelMode === "path"
-          ? "var(--topology-panel-path-rail-width)"
+          ? "var(--topology-panel-path-responsive-width)"
         : headerAlignedPanel
         ? panelMode === "overview"
           ? rightPanelReserved
             ? "var(--topology-panel-overview-reserved-width)"
-            : "var(--topology-panel-overview-rail-width)"
+            : "var(--topology-panel-overview-responsive-width)"
           : rightPanelReserved
             ? "var(--topology-panel-standard-reserved-width)"
             : "var(--topology-panel-standard-width)"
@@ -843,6 +843,7 @@ export function TopologyAnalysisBar({
     borderColor: "var(--topology-panel-border)",
     background: `var(${panelSurfaceToken})`,
     boxShadow: `var(${panelShadowToken})`,
+    zIndex: "var(--topology-panel-read-layer-z-index)",
     transition:
       "background var(--topology-motion-panel-duration) var(--topology-motion-ease-standard), box-shadow var(--topology-motion-panel-duration) var(--topology-motion-ease-standard)",
   };
@@ -879,17 +880,43 @@ export function TopologyAnalysisBar({
       data-panel-width-token={String(panelStyle.width).replace(/^var\((.*)\)$/, "$1")}
       data-panel-surface-token={panelSurfaceToken}
       data-panel-shadow-token={panelShadowToken}
+      data-panel-layer-contract="read-surface-above-map-cards"
+      data-panel-z-index-token="--topology-panel-read-layer-z-index"
       data-panel-radius-token="--topology-panel-radius"
       data-panel-padding-token="--topology-panel-padding"
       data-panel-motion-token="--topology-motion-panel-duration"
+      data-command-spine-padding-token={
+        panelMode === "focus" ? "--topology-command-spine-padding" : undefined
+      }
+      data-command-spine-gap-token={
+        panelMode === "focus" ? "--topology-command-spine-gap" : undefined
+      }
+      data-command-primary-height-token={
+        panelMode === "focus" ? "--topology-command-primary-min-height" : undefined
+      }
+      data-command-spine-surface-token={
+        panelMode === "focus" ? "--topology-command-spine-surface" : undefined
+      }
+      data-command-spine-border-token={
+        panelMode === "focus" ? "--topology-command-spine-border" : undefined
+      }
       data-panel-width-contract={
         selectedFocusRailActive
           ? "selected-focus-rail-max-320"
           : panelMode === "overview"
-            ? "overview-support-max-360"
+            ? "overview-support-max-360-phone-utility-reserve"
             : panelMode === "path" && headerAlignedPanel
-              ? "path-support-rail-max-360"
+              ? "path-support-rail-max-360-phone-utility-reserve"
             : "standard"
+      }
+      data-panel-phone-utility-reserve-token={
+        panelMode === "overview" || panelMode === "path"
+          ? "--topology-panel-phone-utility-rail-reserve"
+          : undefined
+      }
+      data-panel-compact-scroll-end-reserve-token="--topology-analysis-panel-compact-scroll-end-reserve"
+      data-compact-focus-collapse-contract={
+        selectedFocusRailActive ? "selected-focus-support-hidden-under-md" : undefined
       }
       data-path-guidance-owner={panelMode === "path" ? "analysis-rail" : undefined}
       data-path-prompt-policy={
@@ -897,7 +924,7 @@ export function TopologyAnalysisBar({
       }
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 border data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 border data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         panelMode === "overview" ? "overflow-hidden" : "overflow-y-auto"
       } ${
         createPanelReserved
@@ -905,9 +932,14 @@ export function TopologyAnalysisBar({
           : // 헤더 pill 아래 16px — 9.5rem 은 ~90px 공백, 5rem 은 헤더에
             // 밀착이었다 (사용자 보고 2회). 헤더 bottom ≈ 72px 기준.
             "top-[5.5rem] max-h-[calc(100dvh-7rem)]"
-      } lg:left-6 xl:left-8 ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
+      } lg:left-6 xl:left-8 ${selectedFocusRailActive ? "max-md:hidden" : ""} ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
     >
-      <div className="flex flex-col gap-3">
+      <div
+        data-testid="topology-analysis-panel-body"
+        data-panel-body-scroll-contract="compact-scrolls-above-bottom-tab"
+        data-panel-body-scroll-end-reserve-token="--topology-analysis-panel-compact-scroll-end-reserve"
+        className="flex flex-col gap-3 max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] max-md:pr-1"
+      >
         <div className="grid w-full grid-cols-4 gap-1 rounded-lg bg-[color:var(--color-overlay-1)] p-1">
           {MODES.map(({ value, icon: Icon, labelKey }) => {
             const active = value === panelMode;
@@ -960,6 +992,48 @@ export function TopologyAnalysisBar({
               {pathCandidateVisibilityText}
             </p>
           ) : null}
+          {panelMode === "path" && pathSourceSlug && pathTargetSlug ? (
+            <div
+              data-testid="topology-path-visible-route"
+              data-route-contract="source-target-visible-before-proof-disclosure"
+              data-attention-layer="focus-path-state"
+              data-guidance-owner="analysis-rail"
+              data-overflow-contract="no-horizontal-scroll"
+              data-source-slug={pathSourceSlug}
+              data-target-slug={pathTargetSlug}
+              data-source-title={displayPathSourceTitle}
+              data-target-title={displayPathTargetTitle}
+              data-surface-token="--topology-path-route-surface"
+              data-border-token="--topology-path-route-border"
+              data-chip-surface-token="--topology-path-route-chip-surface"
+              data-chip-border-token="--topology-path-route-chip-border"
+              className="mt-3 grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5"
+            >
+              <span
+                className="min-w-0 rounded border border-[color:var(--topology-path-route-chip-border)] bg-[color:var(--topology-path-route-chip-surface)] px-1.5 py-1"
+                data-route-endpoint="source"
+              >
+                <span className="block font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {labels.pathEvidenceSource}
+                </span>
+                <span className="block truncate text-[10.5px] text-[color:var(--color-text-secondary)]">
+                  {displayPathSourceTitle}
+                </span>
+              </span>
+              <ArrowRight size={12} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+              <span
+                className="min-w-0 rounded border border-[color:var(--topology-path-route-chip-border)] bg-[color:var(--topology-path-route-chip-surface)] px-1.5 py-1 text-right"
+                data-route-endpoint="target"
+              >
+                <span className="block font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {labels.pathEvidenceTarget}
+                </span>
+                <span className="block truncate text-[10.5px] text-[color:var(--color-text-secondary)]">
+                  {displayPathTargetTitle}
+                </span>
+              </span>
+            </div>
+          ) : null}
           {panelMode === "path" ? (
             <div
               data-testid="topology-path-agent-handoff"
@@ -967,18 +1041,23 @@ export function TopologyAnalysisBar({
               data-guidance-owner="analysis-rail"
               data-path-prompt-policy="panel-owned-when-card-mode"
               data-handoff-contract="agent-next-action-visible"
+              data-handoff-layout-contract="compact-proof-strip"
               data-overflow-contract="no-horizontal-scroll"
+              data-surface-token="--topology-path-handoff-surface"
+              data-border-token="--topology-path-handoff-border"
+              data-action-min-height-token="--topology-path-handoff-action-min-height"
+              data-action-radius-token="--topology-path-handoff-action-radius"
               data-mcp-action="find_path"
               data-cli-fallback="ontology-atlas path"
-              className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 overflow-hidden rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.045)] px-2.5 py-2 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
+              className="mt-3 grid min-w-0 grid-cols-2 items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2.5 py-2 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
             >
-              <span className="uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <span className="col-span-2 min-w-0 uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {labels.pathHandoffLabel}
               </span>
-              <span className="rounded-sm border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.075)] px-1.5 py-0.5 uppercase tracking-[0.10em] text-[color:rgba(139,151,255,0.92)]">
+              <span className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.075)] px-1.5 py-0.5 text-center uppercase tracking-[0.10em] text-[color:rgba(139,151,255,0.92)]">
                 {labels.pathHandoffMcpAction}
               </span>
-              <span className="rounded-sm border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.035)] px-1.5 py-0.5 uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
+              <span className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.035)] px-1.5 py-0.5 text-center uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
                 {labels.pathHandoffCliFallback}
               </span>
             </div>
@@ -1444,68 +1523,109 @@ export function TopologyAnalysisBar({
             </details>
           ) : null}
           {panelMode === "focus" ? (
-            <div className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
-              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                {labels.focusReviewOrderTitle}
-              </p>
-              <ol
-                data-testid="topology-focus-review-order"
-                className="mt-1 flex min-w-0 flex-wrap gap-x-2 gap-y-1"
-              >
-                <OverviewWorkStep label={labels.focusReviewOrderProfile} />
-                <OverviewWorkStep label={labels.focusReviewOrderImpact} />
-                <OverviewWorkStep label={labels.focusReviewOrderRepair} />
-                <OverviewWorkStep label={labels.focusReviewOrderSync} />
-              </ol>
+            <div
+              data-testid="topology-focus-command-spine"
+              data-command-hierarchy="brief-primary-review-agent-proof"
+              data-attention-layer="support-command-spine"
+              data-tokenized-surface="topology-command-spine"
+              data-command-spine-surface-token="--topology-command-spine-surface"
+              data-command-spine-border-token="--topology-command-spine-border"
+              className="mt-3 rounded-[var(--topology-command-spine-radius)] border border-[color:var(--topology-command-spine-border)] bg-[image:var(--topology-command-spine-surface)] p-[var(--topology-command-spine-padding)] shadow-[inset_0_1px_0_var(--topology-command-spine-inset-highlight)]"
+            >
               {selectedSlug ? (
                 <>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    <button
-                      type="button"
-                      onClick={copyFocusBrief}
-                      className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
-                      aria-label={
-                        focusBriefCopied
-                          ? labels.focusBriefCopiedAriaLabel
-                          : labels.focusBriefCopyAriaLabel
-                      }
-                    >
-                      {focusBriefCopied ? (
-                        <Check size={12} aria-hidden />
-                      ) : (
-                        <Clipboard size={12} aria-hidden />
-                      )}
-                      <span>
-                        {labels.focusBriefCopy}
+                  <button
+                    type="button"
+                    onClick={copyFocusBrief}
+                    data-testid="topology-focus-primary-action"
+                    data-command-primary-surface-token="--topology-command-primary-surface"
+                    data-command-primary-border-token="--topology-command-primary-border"
+                    className="group/focus-action flex min-h-[var(--topology-command-primary-min-height)] w-full min-w-0 items-center justify-between gap-[var(--topology-command-spine-gap)] rounded-lg border border-[color:var(--topology-command-primary-border)] bg-[color:var(--topology-command-primary-surface)] px-3 py-2 text-left text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform,box-shadow] duration-180 ease-out hover:border-[color:var(--topology-command-primary-hover-border)] hover:bg-[color:var(--topology-command-primary-hover-surface)] hover:text-[color:var(--color-text-primary)] hover:shadow-[var(--topology-command-primary-hover-shadow)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
+                    aria-label={
+                      focusBriefCopied
+                        ? labels.focusBriefCopiedAriaLabel
+                        : labels.focusBriefCopyAriaLabel
+                    }
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[color:var(--topology-command-icon-surface)] text-[color:var(--topology-command-icon-text)]">
+                        {focusBriefCopied ? (
+                          <Check size={13} aria-hidden />
+                        ) : (
+                          <Clipboard size={13} aria-hidden />
+                        )}
                       </span>
-                    </button>
+                      <span className="min-w-0">
+                        <span className="block truncate text-[12px] font-medium leading-4">
+                          {labels.focusBriefCopy}
+                        </span>
+                        <span className="block truncate font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                          {labels.focusReviewOrderProfile} · {labels.focusReviewOrderImpact}
+                        </span>
+                      </span>
+                    </span>
+                    <ArrowRight
+                      size={14}
+                      aria-hidden
+                      className="shrink-0 text-[color:var(--topology-command-arrow-text)] transition-transform duration-180 group-hover/focus-action:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none"
+                    />
+                  </button>
+                </>
+              ) : null}
+              <div className={selectedSlug ? "mt-[var(--topology-command-spine-gap)]" : ""}>
+                <p className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {labels.focusReviewOrderTitle}
+                </p>
+                <ol
+                  data-testid="topology-focus-review-order"
+                  data-review-order-contract="flat-numbered-rail"
+                  data-command-step-surface-token="--topology-command-step-surface"
+                  data-command-step-border-token="--topology-command-step-border"
+                  className="mt-1.5 grid min-w-0 overflow-hidden rounded-md border border-[color:var(--topology-command-step-border)] bg-[color:var(--topology-command-step-surface)]"
+                >
+                  <FocusReviewStep index={1} label={labels.focusReviewOrderProfile} />
+                  <FocusReviewStep index={2} label={labels.focusReviewOrderImpact} />
+                  <FocusReviewStep index={3} label={labels.focusReviewOrderRepair} />
+                  <FocusReviewStep index={4} label={labels.focusReviewOrderSync} />
+                </ol>
+              </div>
+              {selectedSlug ? (
+                <>
+                  <div
+                    data-testid="topology-focus-secondary-actions"
+                    className="mt-[var(--topology-command-spine-gap)] grid grid-cols-2 gap-1"
+                  >
                     <Link
                       href={buildOntologyNodeHref(selectedSlug)}
-                      className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                      className="inline-flex min-h-8 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--topology-command-secondary-hover-border)] hover:text-[color:var(--color-text-primary)]"
                     >
-                      {labels.focusOpenOntology}
+                      <span className="truncate">{labels.focusOpenOntology}</span>
                     </Link>
                     <Link
                       href={buildTopologyHealthRepairHref(selectedSlug)}
-                      className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                      className="inline-flex min-h-8 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--topology-command-secondary-hover-border)] hover:text-[color:var(--color-text-primary)]"
                     >
-                      {labels.focusOpenBuilder}
+                      <span className="truncate">{labels.focusOpenBuilder}</span>
                     </Link>
                   </div>
-                  <details className="group mt-2">
+                  <details
+                    className="group mt-[var(--topology-command-spine-gap)]"
+                    data-testid="topology-focus-agent-handoff"
+                    data-handoff-contract="mcp-cli-proof-disclosed"
+                  >
                     <summary
                       data-testid="topology-focus-proof-summary"
-                      className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                      className="inline-flex min-h-8 w-full cursor-pointer list-none items-center justify-between gap-2 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
                     >
+                      <span>{labels.focusHandoffSummary}</span>
                       <ChevronDown
                         size={12}
                         aria-hidden
                         className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
                         data-testid="topology-focus-proof-chevron"
                       />
-                      <span>{labels.focusHandoffSummary}</span>
                     </summary>
-                    <div className="mt-1 flex flex-wrap gap-1">
+                    <div className="mt-1 grid gap-1">
                       <CompactCopyButton
                         copied={focusMcpCopied}
                         label={labels.focusMcpCopy}
@@ -1729,11 +1849,12 @@ function RelationQualityGate({
   return (
     <div
       {...attrs}
-      className={`grid gap-1.5 rounded-md border border-[color:rgba(94,234,212,0.22)] bg-[color:rgba(94,234,212,0.045)] px-3 py-1.5 ${
+      className={`grid gap-1.5 rounded-md border border-[color:rgba(94,234,212,0.18)] bg-[color:rgba(94,234,212,0.032)] px-3 py-1.5 ${
         attrs.className ?? ""
       }`}
       aria-label={`${title}: ${summary}`}
       data-density="scan-facts"
+      data-proof-strip-contract="flat-no-nested-cards"
       data-overview-signal-card="quality"
       data-testid="topology-overview-relation-quality"
     >
@@ -1741,7 +1862,7 @@ function RelationQualityGate({
         {title}
       </span>
       <span className="sr-only">{summary}</span>
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-4 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.055)]">
         <RelationQualityChip count={counts.strong} label={labels.strong} tone="strong" />
         <RelationQualityChip count={counts.supported} label={labels.supported} tone="supported" />
         <RelationQualityChip count={counts.weak} label={labels.weak} tone="weak" />
@@ -1762,20 +1883,21 @@ function RelationQualityChip({
 }) {
   const toneClass =
     tone === "strong"
-      ? "border-[color:rgba(94,234,212,0.24)] bg-[color:rgba(94,234,212,0.055)]"
+      ? "text-[color:rgba(94,234,212,0.92)]"
       : tone === "supported"
-        ? "border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.045)]"
+        ? "text-[color:rgba(139,151,255,0.92)]"
         : tone === "weak"
-          ? "border-[color:rgba(217,161,65,0.24)] bg-[color:rgba(217,161,65,0.07)]"
-          : "border-[color:rgba(226,105,105,0.24)] bg-[color:rgba(226,105,105,0.07)]";
+          ? "text-[color:rgba(217,161,65,0.92)]"
+          : "text-[color:rgba(226,105,105,0.92)]";
 
   return (
     <span
-      className={`grid min-w-0 gap-0.5 rounded-md border px-1.5 py-1 ${toneClass}`}
+      className="grid min-w-0 gap-0.5 border-r border-[color:rgba(255,255,255,0.055)] px-1.5 py-1 last:border-r-0"
       data-relation-quality-chip={tone}
+      data-proof-cell-contract="flat-divider-cell"
       data-testid={`topology-overview-relation-quality-${tone}`}
     >
-      <span className="font-mono text-[11px] leading-3 text-[color:var(--color-text-secondary)]">
+      <span className={`font-mono text-[11px] leading-3 ${toneClass}`}>
         {count}
       </span>
       <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
@@ -1796,17 +1918,18 @@ function AgentReadinessChip({
 }) {
   const toneClass =
     tone === "ready"
-      ? "border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.055)]"
+      ? "text-[color:rgba(139,151,255,0.92)]"
       : tone === "preflight"
-        ? "border-[color:rgba(217,161,65,0.24)] bg-[color:rgba(217,161,65,0.07)]"
-        : "border-[color:rgba(226,105,105,0.24)] bg-[color:rgba(226,105,105,0.07)]";
+        ? "text-[color:rgba(217,161,65,0.92)]"
+        : "text-[color:rgba(226,105,105,0.92)]";
 
   return (
     <span
-      className={`grid min-w-0 gap-0.5 rounded-md border px-1.5 py-0.5 ${toneClass}`}
+      className="grid min-w-0 gap-0.5 border-r border-[color:rgba(255,255,255,0.055)] px-1.5 py-0.5 last:border-r-0"
       data-agent-readiness-chip={tone}
+      data-proof-cell-contract="flat-divider-cell"
     >
-      <span className="font-mono text-[11px] leading-3 text-[color:var(--color-text-secondary)]">
+      <span className={`font-mono text-[11px] leading-3 ${toneClass}`}>
         {count}
       </span>
       <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
@@ -1877,6 +2000,32 @@ function OverviewWorkStep({
     <li className="inline-flex min-w-0 list-none items-center gap-1.5">
       <span className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--color-overlay-3)]" aria-hidden />
       <span className="block whitespace-nowrap text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
+        {label}
+      </span>
+    </li>
+  );
+}
+
+function FocusReviewStep({
+  index,
+  label,
+}: {
+  index: number;
+  label: string;
+}) {
+  return (
+    <li
+      data-focus-review-step={index}
+      data-command-step-contract="flat-numbered-row"
+      className="grid min-h-[var(--topology-command-step-min-height)] grid-cols-[var(--topology-command-step-index-size)_minmax(0,1fr)] items-center gap-2 border-b border-[color:var(--topology-command-step-border)] px-2 py-1 last:border-b-0"
+    >
+      <span
+        aria-hidden
+        className="flex h-[var(--topology-command-step-index-size)] w-[var(--topology-command-step-index-size)] items-center justify-center rounded-full border border-[color:var(--topology-command-step-index-border)] bg-[color:var(--topology-command-step-index-surface)] font-mono text-[8.5px] text-[color:var(--topology-command-step-index-text)]"
+      >
+        {index}
+      </span>
+      <span className="min-w-0 truncate text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
         {label}
       </span>
     </li>

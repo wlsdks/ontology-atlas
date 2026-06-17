@@ -25,6 +25,8 @@ const HOME_QUERY_KEYS = {
   mode: "mode",
   pathSource: "pathFrom",
   pathTarget: "pathTo",
+  pathSourceAlias: "from",
+  pathTargetAlias: "to",
   create: "create",
 } as const;
 
@@ -69,6 +71,7 @@ export function parseHomeRouteState(
     : DEFAULT_HOME_ROUTE_STATE.analysisMode;
   const pathSourceSlug =
     searchParams.get(HOME_QUERY_KEYS.pathSource) ??
+    searchParams.get(HOME_QUERY_KEYS.pathSourceAlias) ??
     (analysisMode === "path" ? selectedSlug : null);
 
   return {
@@ -83,7 +86,9 @@ export function parseHomeRouteState(
       : DEFAULT_HOME_ROUTE_STATE.pulseMode,
     analysisMode,
     pathSourceSlug,
-    pathTargetSlug: searchParams.get(HOME_QUERY_KEYS.pathTarget),
+    pathTargetSlug:
+      searchParams.get(HOME_QUERY_KEYS.pathTarget) ??
+      searchParams.get(HOME_QUERY_KEYS.pathTargetAlias),
     createNodeIntent: searchParams.get(HOME_QUERY_KEYS.create) === "concept",
   };
 }
@@ -140,6 +145,8 @@ export function applyHomeRouteState(
     HOME_QUERY_KEYS.pathTarget,
     state.analysisMode === "path" ? state.pathTargetSlug : null,
   );
+  next.delete(HOME_QUERY_KEYS.pathSourceAlias);
+  next.delete(HOME_QUERY_KEYS.pathTargetAlias);
   setOrDelete(
     next,
     HOME_QUERY_KEYS.create,

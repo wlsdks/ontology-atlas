@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronUp, X } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronUp, Clipboard, X } from "lucide-react";
 import type { TopologyRelationQuality } from "../lib/topology-analysis";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import type { NodeSignificanceLevel } from "../lib/topology-node-significance";
@@ -8,6 +8,7 @@ import type { NodeSignificanceLevel } from "../lib/topology-node-significance";
 type RelationEvidenceState = "source-backed" | "authored" | "needs-review";
 type RelationAgentGateKind = "handoff-ready" | "preflight-first" | "review-first";
 type RelationCopyActionKind = "explain_relation" | "relation_check";
+const NODE_POPOVER_RELATION_ROW_RENDER_BUDGET = 6;
 
 /**
  * Resolved (i18n-applied) plain-language "so what" of the node. The parent
@@ -45,6 +46,8 @@ export interface TopologyNodePopoverLabels {
   close: string;
   /** "더" — suffix for the hidden remainder ("+5 더"). */
   moreSuffix: string;
+  /** "Agent handoff" — compact action rail title. */
+  actionRailTitle: string;
   /** "{count}개는 왼쪽 지도에 펼쳐져 있어요" — 도킹 열과의 중복 안내. */
   expandedNote: string;
   /** "Relation lens" — small block explaining how to read direct ontology edges. */
@@ -73,6 +76,13 @@ export interface TopologyNodePopoverLabels {
   relationTypeLabels: Record<string, string>;
 }
 
+export interface TopologyNodePopoverAction {
+  kind: "focus-brief" | "mcp-profile" | "mcp-impact";
+  label: string;
+  ariaLabel: string;
+  onClick: () => void;
+}
+
 export interface TopologyNodePopoverProps {
   focus: TopologyNodeFocusModel;
   labels: TopologyNodePopoverLabels;
@@ -89,6 +99,7 @@ export interface TopologyNodePopoverProps {
   onSelectConnection: (id: string) => void;
   onOpenFullDetail: () => void;
   onClose: () => void;
+  actions?: readonly TopologyNodePopoverAction[];
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
   className?: string;
@@ -112,6 +123,7 @@ export function TopologyNodePopover({
   onSelectConnection,
   onOpenFullDetail,
   onClose,
+  actions = [],
   collapsed = false,
   onToggleCollapsed,
   className,
@@ -123,7 +135,13 @@ export function TopologyNodePopover({
   const visibleConnections = expandedChildIds
     ? focus.connections.filter((connection) => !expandedChildIds.has(connection.id))
     : focus.connections;
+  const expandedConnections = expandedChildIds
+    ? focus.connections.filter((connection) => expandedChildIds.has(connection.id))
+    : [];
+  const renderedConnections = visibleConnections.slice(0, NODE_POPOVER_RELATION_ROW_RENDER_BUDGET);
   const expandedCount = focus.connections.length - visibleConnections.length;
+  const renderHiddenCount = Math.max(0, visibleConnections.length - renderedConnections.length);
+  const hiddenConnectionCount = focus.hiddenConnectionCount + renderHiddenCount;
   const relationTypeCount = new Set(focus.connections.map((connection) => connection.relationType))
     .size;
   const relationFactLabel = (
@@ -140,7 +158,7 @@ export function TopologyNodePopover({
   const relationQualitySummary = relationQualityItems
     .map(({ label, count }) => `${label} ${count}`)
     .join(" · ");
-  const agentReadinessCounts = visibleConnections.reduce(
+  const agentReadinessCounts = renderedConnections.reduce(
     (counts, connection) => {
       const gate = relationAgentGateKind(connection);
       if (gate === "handoff-ready") counts.ready += 1;
@@ -170,6 +188,43 @@ export function TopologyNodePopover({
   const agentReadinessSummary = agentReadinessItems
     .map(({ label, count }) => `${label} ${count}`)
     .join(" · ");
+  const expandedRelationTypeCount = new Set(
+    expandedConnections.map((connection) => connection.relationType),
+  ).size;
+  const expandedRelationQualitySummary = relationQualityOrder
+    .map((quality) => {
+      const count = expandedConnections.filter(
+        (connection) => connection.relationQuality === quality,
+      ).length;
+      return `${labels.relationQualityLabels[quality]} ${count}`;
+    })
+    .join(" · ");
+  const expandedAgentReadinessCounts = expandedConnections.reduce(
+    (counts, connection) => {
+      const gate = relationAgentGateKind(connection);
+      if (gate === "handoff-ready") counts.ready += 1;
+      else if (gate === "preflight-first") counts.preflight += 1;
+      else counts.review += 1;
+      return counts;
+    },
+    { ready: 0, preflight: 0, review: 0 },
+  );
+  const expandedAgentReadinessSummary = [
+    {
+      label: labels.agentReadinessLabels.ready,
+      count: expandedAgentReadinessCounts.ready,
+    },
+    {
+      label: labels.agentReadinessLabels.preflight,
+      count: expandedAgentReadinessCounts.preflight,
+    },
+    {
+      label: labels.agentReadinessLabels.review,
+      count: expandedAgentReadinessCounts.review,
+    },
+  ]
+    .map(({ label, count }) => `${label} ${count}`)
+    .join(" · ");
   const selectedNodeSummary = `${focus.kind} ${focus.id} · ${focus.title}`;
   const selectedNodeAttributes = {
     "data-selected-node-id": focus.id,
@@ -178,6 +233,9 @@ export function TopologyNodePopover({
     "data-selected-node-source": focus.sourceSlug ?? "",
     "data-selected-node-summary": selectedNodeSummary,
   };
+  const primaryAction = actions[0] ?? null;
+  const handoffContract =
+    actions.length > 0 ? "selected-node-actions-visible" : "detail-only";
 
   if (collapsed) {
     return (
@@ -192,28 +250,62 @@ export function TopologyNodePopover({
         data-hierarchy-contract="click-focus-detail-support"
         data-collapsed="true"
         data-size-policy="context-chip"
-        className={`flex min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] items-center gap-3 overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.26)] lg:w-[320px] lg:max-w-[320px] min-[1400px]:w-[286px] min-[1400px]:max-w-[286px] min-[1800px]:w-[340px] min-[1800px]:max-w-[340px] ${className ?? ""}`}
+        data-width-token="--topology-node-popover-fluid-width"
+        data-rail-width-token="--topology-node-popover-rail-width"
+        data-compact-gap-token="--topology-node-popover-chip-gap"
+        data-compact-action-size-token="--topology-node-popover-compact-action-size"
+        data-title-lines-token="--topology-node-popover-title-lines"
+        data-popover-surface-token="--topology-node-popover-surface"
+        data-popover-border-token="--topology-node-popover-border"
+        data-responsive-width-contract="fluid-chip-to-rail"
+        data-popover-scroll-contract="collapsed-chip-no-scroll"
+        data-compact-handoff-contract={handoffContract}
+        data-compact-action-contract="icon-only-under-480"
+        data-title-readability-contract="selected-node-title-readable"
+        className={`flex min-w-0 w-[var(--topology-node-popover-fluid-width)] max-w-[var(--topology-node-popover-fluid-width)] items-center gap-[var(--topology-node-popover-chip-gap)] overflow-hidden rounded-[var(--topology-node-popover-radius)] border border-[color:var(--topology-node-popover-border)] bg-[color:var(--topology-node-popover-surface)] px-[var(--topology-node-popover-chip-padding-x)] py-[var(--topology-node-popover-chip-padding-y)] shadow-[var(--topology-node-popover-shadow)] lg:w-[var(--topology-node-popover-rail-width)] lg:max-w-[var(--topology-node-popover-rail-width)] min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)] min-[1400px]:max-w-[var(--topology-node-popover-wide-rail-width)] min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)] min-[1800px]:max-w-[var(--topology-node-popover-cinema-rail-width)] ${className ?? ""}`}
       >
         <div className="min-w-0 flex-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {focusKindLabel}
           </p>
-          <h2 className="mt-0.5 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+          <h2
+            data-testid="topology-node-popover-title"
+            data-title-readability-contract="selected-node-title-readable"
+            data-title-lines-token="--topology-node-popover-title-lines"
+            className="mt-0.5 line-clamp-[var(--topology-node-popover-title-lines)] text-sm font-[var(--font-weight-signature)] leading-5 text-[color:var(--color-text-primary)]"
+          >
             {focus.title}
           </h2>
           <p className="mt-0.5 truncate text-[11px] text-[color:var(--color-text-quaternary)]">
             {labels.usedBy} {focus.usedByCount} · {labels.dependsOn} {focus.dependsOnCount}
           </p>
         </div>
+        {primaryAction ? (
+          <button
+            type="button"
+            onClick={primaryAction.onClick}
+            aria-label={primaryAction.ariaLabel}
+            title={primaryAction.label}
+            data-testid="topology-node-popover-compact-brief-action"
+            data-popover-action={primaryAction.kind}
+            data-agent-handoff-action="copy-focus-brief"
+            data-popover-action-surface-token="--topology-node-popover-action-icon-surface"
+            data-popover-action-border-token="--topology-node-popover-action-icon-border"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--topology-node-popover-action-icon-border)] bg-[color:var(--topology-node-popover-action-icon-surface)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.50)]"
+          >
+            <Clipboard size={14} aria-hidden />
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onToggleCollapsed}
           aria-label={labels.expand}
           data-node-popover-toggle="expand"
-          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+          data-compact-action-contract="icon-only-under-480"
+          className="inline-flex h-[var(--topology-node-popover-compact-action-size)] shrink-0 items-center justify-center gap-1 rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] max-[480px]:w-[var(--topology-node-popover-compact-action-size)] max-[480px]:px-0"
         >
           <ChevronUp size={13} aria-hidden />
-          {labels.expand}
+          <span className="max-[480px]:sr-only">{labels.expand}</span>
         </button>
         <button
           type="button"
@@ -239,14 +331,34 @@ export function TopologyNodePopover({
       data-hierarchy-contract="click-focus-detail-support"
       data-density="readable"
       data-size-policy="inspector-rail"
-      className={`flex max-h-[min(82vh,48rem)] min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_28px_rgba(0,0,0,0.28)] lg:w-[320px] lg:max-w-[320px] min-[1400px]:w-[286px] min-[1400px]:max-w-[286px] min-[1800px]:w-[340px] min-[1800px]:max-w-[340px] ${className ?? ""}`}
+      data-width-token="--topology-node-popover-fluid-width"
+      data-rail-width-token="--topology-node-popover-rail-width"
+      data-max-height-token="--topology-node-popover-max-height"
+      data-popover-surface-token="--topology-node-popover-surface"
+      data-popover-border-token="--topology-node-popover-border"
+      data-title-lines-token="--topology-node-popover-title-lines"
+      data-responsive-width-contract="fluid-inspector-to-rail"
+      data-popover-scroll-contract="expanded-internal-scroll"
+      data-compact-handoff-contract={handoffContract}
+      data-title-readability-contract="selected-node-title-readable"
+      className={`flex max-h-[var(--topology-node-popover-max-height)] min-w-0 w-[var(--topology-node-popover-fluid-width)] max-w-[var(--topology-node-popover-fluid-width)] flex-col overflow-hidden rounded-[var(--topology-node-popover-radius)] border border-[color:var(--topology-node-popover-border)] bg-[color:var(--topology-node-popover-surface)] shadow-[var(--topology-node-popover-shadow)] lg:w-[var(--topology-node-popover-rail-width)] lg:max-w-[var(--topology-node-popover-rail-width)] min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)] min-[1400px]:max-w-[var(--topology-node-popover-wide-rail-width)] min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)] min-[1800px]:max-w-[var(--topology-node-popover-cinema-rail-width)] ${className ?? ""}`}
     >
+      <div
+        data-testid="topology-node-popover-body"
+        data-body-scroll-contract="content-scrolls-above-fixed-footer"
+        className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto"
+      >
       <header className="flex items-start justify-between gap-3 px-4 pt-4">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {focusKindLabel}
           </p>
-          <h2 className="mt-0.5 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+          <h2
+            data-testid="topology-node-popover-title"
+            data-title-readability-contract="selected-node-title-readable"
+            data-title-lines-token="--topology-node-popover-title-lines"
+            className="mt-0.5 line-clamp-[var(--topology-node-popover-title-lines)] text-sm font-[var(--font-weight-signature)] leading-5 text-[color:var(--color-text-primary)]"
+          >
             {focus.title}
           </h2>
         </div>
@@ -261,7 +373,10 @@ export function TopologyNodePopover({
       </header>
 
       {focus.summary ? (
-        <p className="mt-1.5 line-clamp-2 px-4 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+        <p
+          data-phone-density-contract="hide-summary-before-readable-row"
+          className="mt-1.5 line-clamp-2 px-4 text-[11px] leading-4 text-[color:var(--color-text-tertiary)] max-[540px]:hidden"
+        >
           {focus.summary}
         </p>
       ) : null}
@@ -269,9 +384,10 @@ export function TopologyNodePopover({
       {significance ? (
         <div
           data-testid="topology-node-significance"
-          className="mt-2.5 flex flex-col gap-1.5 px-4"
+          data-phone-density-contract="keep-primary-meaning-before-readable-row"
+          className="mt-2.5 flex flex-col gap-1.5 px-4 max-[540px]:mt-2"
         >
-          <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+          <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)] max-[540px]:hidden">
             {significance.whatLine}
           </p>
           <p
@@ -283,10 +399,10 @@ export function TopologyNodePopover({
           >
             {significance.importanceLine}
           </p>
-          <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+          <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)] max-[540px]:hidden">
             {significance.dependsOnLine}
           </p>
-          <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+          <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)] max-[540px]:hidden">
             {significance.impactLine}
           </p>
         </div>
@@ -301,14 +417,16 @@ export function TopologyNodePopover({
         data-testid="topology-connections-section"
         data-overflow-contract="single-vertical-scroll-region"
         data-readable-list-budget="relation-list-primary-scroll"
-        className="mt-2.5 flex min-h-0 flex-1 flex-col overflow-hidden border-t border-[color:var(--color-divider)] px-4 py-3"
+        data-relation-section-min-height-token="--topology-node-popover-relation-section-min-height"
+        className="mt-2.5 flex min-h-[var(--topology-node-popover-relation-section-min-height)] flex-1 flex-col overflow-hidden border-t border-[color:var(--color-divider)] px-4 py-3"
       >
         <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
           {labels.connections} ({total})
         </p>
         <p
           data-testid="topology-relation-lens"
-          className="mb-1.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]"
+          data-phone-density-contract="hide-explainer-before-readable-row"
+          className="mb-1.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)] max-[540px]:hidden"
         >
           <span className="font-mono uppercase tracking-[0.08em]">
             {labels.relationLensTitle}
@@ -359,20 +477,34 @@ export function TopologyNodePopover({
           <p
             data-testid="topology-map-context-note"
             data-map-context-count={expandedCount}
-            className="mb-1 rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.07)] px-2 py-1 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]"
+            data-map-context-contract="expanded-relations-stay-on-map"
+            data-map-context-handoff-contract="map-visible-relations-summarized"
+            data-map-context-relation-type-count={expandedRelationTypeCount}
+            data-map-context-quality-summary={expandedRelationQualitySummary}
+            data-map-context-agent-readiness-summary={expandedAgentReadinessSummary}
+            data-phone-density-contract="defer-map-context-before-readable-row"
+            className="mb-1 rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.07)] px-2 py-1 text-[10px] leading-4 text-[color:var(--color-text-tertiary)] max-[540px]:hidden"
           >
             {labels.expandedNote.replace("{count}", String(expandedCount))}
           </p>
         ) : null}
-        {visibleConnections.length > 0 ? (
+        {renderedConnections.length > 0 ? (
           <ul
             data-testid="topology-node-connection-list"
             data-overflow-contract="vertical-scroll-only"
             data-row-density-contract="agent-handoff-scan-list"
+            data-readable-row-contract="at-least-one-full-relation-row"
             data-row-min-hit-height="72"
-            className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-x-hidden overflow-y-auto pr-1"
+            data-relation-list-min-height-token="--topology-node-popover-relation-list-min-height"
+            data-row-render-contract="capped-preview-plus-remainder"
+            data-row-render-budget={NODE_POPOVER_RELATION_ROW_RENDER_BUDGET}
+            data-rendered-connection-count={renderedConnections.length}
+            data-hidden-connection-count={hiddenConnectionCount}
+            data-total-connection-count={total}
+            data-row-surface-contract="flat-divider-rail"
+            className="flex min-h-[var(--topology-node-popover-relation-list-min-height)] flex-1 flex-col overflow-x-hidden overflow-y-auto rounded-md bg-[color:rgba(255,255,255,0.018)] ring-1 ring-[color:rgba(255,255,255,0.055)]"
           >
-            {visibleConnections.map((connection, index) => {
+            {renderedConnections.map((connection, index) => {
               const directionLabel =
                 connection.direction === "outgoing" ? labels.dependsOn : labels.usedBy;
               const relationTypeLabel =
@@ -387,6 +519,8 @@ export function TopologyNodePopover({
               const relationTargetId =
                 connection.direction === "outgoing" ? connection.id : focus.id;
               const agentGateChipText = labels.agentGateChipLabels[agentGateKind];
+              const primaryCopyActionShortLabel =
+                primaryCopyAction === "explain_relation" ? "explain" : "check";
               const relationHandoffSummary = [
                 `${relationSourceId} > ${relationTargetId}`,
                 relationTypeLabel,
@@ -416,7 +550,10 @@ export function TopologyNodePopover({
                 relationHandoffSummary,
               ].join(" · ");
               return (
-                <li key={`${connection.id}-${connection.direction}-${index}`}>
+                <li
+                  key={`${connection.id}-${connection.direction}-${index}`}
+                  className="border-b border-[color:rgba(255,255,255,0.055)] last:border-b-0"
+                >
                   <button
                     type="button"
                     aria-label={relationAccessibleSummary}
@@ -429,6 +566,7 @@ export function TopologyNodePopover({
                     data-agent-gate-kind={agentGateKind}
                     data-primary-copy-action={primaryCopyAction}
                     data-relation-fact-route="fact>evidence>gate>action"
+                    data-handoff-grammar-contract="fact-evidence-gate-action-payload"
                     data-relation-fact-route-quality={connection.relationQuality}
                     data-relation-fact-route-evidence={evidenceState}
                     data-relation-fact-route-gate={agentGateKind}
@@ -446,10 +584,11 @@ export function TopologyNodePopover({
                     data-relation-handoff-payload-json={relationHandoffPayloadJson}
                     data-overflow-contract="no-horizontal-scroll"
                     data-row-density-contract="agent-handoff-scan-row"
+                    data-row-surface-contract="flat-divider-row"
                     data-row-min-hit-height="72"
                     data-row-scan-order="relation>title>direction>endpoint>handoff"
                     onClick={() => onSelectConnection(connection.id)}
-                    className="group flex min-h-[72px] w-full min-w-0 items-stretch gap-2 overflow-hidden rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-2 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
+                    className="group flex min-h-[72px] w-full min-w-0 items-stretch gap-2 overflow-hidden border border-transparent bg-transparent px-2 py-2 text-left transition-[background-color] hover:bg-[color:rgba(255,255,255,0.04)]"
                   >
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-secondary)]">
                       {connection.direction === "outgoing" ? (
@@ -522,7 +661,9 @@ export function TopologyNodePopover({
                         aria-hidden="true"
                         data-relation-route
                         data-relation-route-state="compact-json-ready"
+                        data-relation-payload-layout="flat-inline-payload-rail"
                         data-handoff-lane="mcp-cli-next-action"
+                        data-handoff-grammar-contract="fact-evidence-gate-action-payload"
                         className="mt-0.5 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]"
                       >
                         <span data-relation-route-chip="fact" className="min-w-0 truncate">
@@ -537,8 +678,18 @@ export function TopologyNodePopover({
                         <span className="shrink-0 text-[color:var(--color-text-disabled)]">
                           &gt;
                         </span>
-                        <span data-relation-route-chip="action" className="shrink-0">
+                        <span data-relation-route-chip="gate" className="shrink-0">
                           {agentGateChipText}
+                        </span>
+                        <span className="shrink-0 text-[color:var(--color-text-disabled)]">
+                          &gt;
+                        </span>
+                        <span
+                          data-relation-route-chip="action"
+                          title={primaryCopyAction}
+                          className="shrink-0"
+                        >
+                          {primaryCopyActionShortLabel}
                         </span>
                         <span className="shrink-0 text-[color:var(--color-text-disabled)]">
                           &gt;
@@ -563,19 +714,52 @@ export function TopologyNodePopover({
             {labels.noConnections}
           </p>
         ) : null}
-        {focus.hiddenConnectionCount > 0 ? (
+      {hiddenConnectionCount > 0 ? (
           <p className="mt-1 px-2 text-[11px] text-[color:var(--color-text-quaternary)]">
-            +{focus.hiddenConnectionCount} {labels.moreSuffix}
+            +{hiddenConnectionCount} {labels.moreSuffix}
           </p>
         ) : null}
+      </div>
       </div>
 
       <footer
         data-testid="topology-node-popover-footer"
         data-footer-contract="fixed-outside-scroll-region"
+        data-footer-position-contract="anchored-bottom-visible"
         data-overflow-contract="no-horizontal-scroll"
-        className="shrink-0 overflow-hidden border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5"
+        data-popover-footer-surface-token="--topology-node-popover-footer-surface"
+        className="shrink-0 overflow-hidden border-t border-[color:var(--topology-node-popover-border)] bg-[color:var(--topology-node-popover-footer-surface)] px-3 py-2.5"
       >
+        {actions.length > 0 ? (
+          <div
+            data-testid="topology-node-popover-action-rail"
+            data-action-rail-contract="compact-mcp-cli-handoff"
+            data-action-count={actions.length}
+            className="mb-2 min-w-0 overflow-hidden"
+          >
+            <p className="mb-1 truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {labels.actionRailTitle}
+            </p>
+            <div className="grid min-w-0 grid-cols-3 gap-1.5 overflow-hidden">
+              {actions.map((action) => (
+                <button
+                  key={action.kind}
+                  type="button"
+                  onClick={action.onClick}
+                  aria-label={action.ariaLabel}
+                  title={action.label}
+                  data-popover-action={action.kind}
+                  data-agent-handoff-action={action.kind}
+                  data-popover-action-surface-token="--topology-node-popover-action-surface"
+                  data-popover-action-border-token="--topology-node-popover-action-border"
+                  className="min-w-0 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-border)] bg-[color:var(--topology-node-popover-action-surface)] px-1.5 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.50)]"
+                >
+                  <span className="block truncate">{action.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div className="flex min-w-0 gap-2 overflow-hidden">
           {onToggleCollapsed ? (
             <button
@@ -595,9 +779,9 @@ export function TopologyNodePopover({
             className="flex min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--color-border-soft)] px-2 py-1.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
           >
             <span className="min-w-0 truncate">{labels.openFullDetail}</span>
-            {focus.hiddenConnectionCount > 0 ? (
+            {hiddenConnectionCount > 0 ? (
               <span className="shrink-0 whitespace-nowrap rounded-full border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                +{focus.hiddenConnectionCount} {labels.moreSuffix}
+                +{hiddenConnectionCount} {labels.moreSuffix}
               </span>
             ) : null}
             <ArrowUpRight size={13} aria-hidden />

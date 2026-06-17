@@ -16,6 +16,7 @@ const labels: TopologyNodePopoverLabels = {
   expand: "상세 보기",
   close: "닫기",
   moreSuffix: "더",
+  actionRailTitle: "에이전트 인계",
   expandedNote:
     "{count}개 직접 연결은 지도에 펼쳐져 있어요. 지도 보기를 누르면 겹침 없이 확인할 수 있어요.",
   relationLensTitle: "관계 렌즈",
@@ -125,6 +126,42 @@ describe("TopologyNodePopover", () => {
     expect(popover).toHaveAttribute("data-hierarchy-contract", "click-focus-detail-support");
     expect(popover).toHaveAttribute("data-density", "readable");
     expect(popover).toHaveAttribute("data-size-policy", "inspector-rail");
+    expect(popover).toHaveAttribute(
+      "data-width-token",
+      "--topology-node-popover-fluid-width",
+    );
+    expect(popover).toHaveAttribute(
+      "data-rail-width-token",
+      "--topology-node-popover-rail-width",
+    );
+    expect(popover).toHaveAttribute(
+      "data-max-height-token",
+      "--topology-node-popover-max-height",
+    );
+    expect(popover).toHaveAttribute(
+      "data-popover-surface-token",
+      "--topology-node-popover-surface",
+    );
+    expect(popover).toHaveAttribute(
+      "data-popover-border-token",
+      "--topology-node-popover-border",
+    );
+    expect(popover).toHaveAttribute(
+      "data-title-lines-token",
+      "--topology-node-popover-title-lines",
+    );
+    expect(popover).toHaveAttribute(
+      "data-responsive-width-contract",
+      "fluid-inspector-to-rail",
+    );
+    expect(popover).toHaveAttribute(
+      "data-popover-scroll-contract",
+      "expanded-internal-scroll",
+    );
+    expect(popover).toHaveAttribute(
+      "data-title-readability-contract",
+      "selected-node-title-readable",
+    );
     expect(popover).toHaveAttribute("data-selected-node-id", "capabilities/mcp-server");
     expect(popover).toHaveAttribute("data-selected-node-kind", "capability");
     expect(popover).toHaveAttribute("data-selected-node-title", "MCP Server");
@@ -134,14 +171,39 @@ describe("TopologyNodePopover", () => {
       "capability capabilities/mcp-server · MCP Server",
     );
     expect(popover.className).toContain("min-w-0");
-    expect(popover.className).toContain("w-[min(568px,calc(100vw-1.5rem))]");
-    expect(popover.className).toContain("max-w-[min(568px,calc(100vw-1.5rem))]");
-    expect(popover.className).toContain("lg:w-[320px]");
-    expect(popover.className).toContain("lg:max-w-[320px]");
-    expect(popover.className).toContain("min-[1400px]:w-[286px]");
-    expect(popover.className).toContain("min-[1400px]:max-w-[286px]");
-    expect(popover.className).toContain("min-[1800px]:w-[340px]");
-    expect(popover.className).toContain("max-h-[min(82vh,48rem)]");
+    expect(popover.className).toContain("w-[var(--topology-node-popover-fluid-width)]");
+    expect(popover.className).toContain("max-w-[var(--topology-node-popover-fluid-width)]");
+    expect(popover.className).toContain("overflow-hidden");
+    expect(screen.getByTestId("topology-node-popover-body").className).toContain(
+      "overflow-y-auto",
+    );
+    expect(screen.getByTestId("topology-node-popover-body")).toHaveAttribute(
+      "data-body-scroll-contract",
+      "content-scrolls-above-fixed-footer",
+    );
+    expect(popover.className).toContain("lg:w-[var(--topology-node-popover-rail-width)]");
+    expect(popover.className).toContain("lg:max-w-[var(--topology-node-popover-rail-width)]");
+    expect(popover.className).toContain(
+      "min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)]",
+    );
+    expect(popover.className).toContain(
+      "min-[1400px]:max-w-[var(--topology-node-popover-wide-rail-width)]",
+    );
+    expect(popover.className).toContain(
+      "min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)]",
+    );
+    expect(popover.className).toContain("max-h-[var(--topology-node-popover-max-height)]");
+    const title = screen.getByTestId("topology-node-popover-title");
+    expect(title).toHaveAttribute(
+      "data-title-readability-contract",
+      "selected-node-title-readable",
+    );
+    expect(title).toHaveAttribute(
+      "data-title-lines-token",
+      "--topology-node-popover-title-lines",
+    );
+    expect(title.className).toContain("line-clamp-[var(--topology-node-popover-title-lines)]");
+    expect(title.className).not.toContain("truncate");
   });
 
   it("reserves enough 14-inch vertical budget for relation rows before scrolling", () => {
@@ -149,7 +211,7 @@ describe("TopologyNodePopover", () => {
     const popover = screen.getByTestId("topology-node-popover");
     const section = screen.getByTestId("topology-connections-section");
 
-    expect(popover.className).toContain("max-h-[min(82vh,48rem)]");
+    expect(popover.className).toContain("max-h-[var(--topology-node-popover-max-height)]");
     expect(popover.className).not.toContain("max-h-[min(72vh,38rem)]");
     expect(popover.className).not.toContain("max-h-[min(78vh,44rem)]");
     expect(section).toHaveAttribute(
@@ -161,20 +223,70 @@ describe("TopologyNodePopover", () => {
   it("keeps the connection list in the only scrolling region so the footer cannot overlap it", () => {
     setup();
     const section = screen.getByTestId("topology-connections-section");
+    const relationLens = screen.getByTestId("topology-relation-lens");
+    const mapContextNote = screen.queryByTestId("topology-map-context-note");
+    const significance = screen.queryByTestId("topology-node-significance");
+    const summary = screen.getByText("AI agent surface.");
     const list = screen.getByText("MCP SDK").closest("ul");
+    const body = screen.getByTestId("topology-node-popover-body");
     const footer = screen.getByTestId("topology-node-popover-footer");
     const row = document.querySelector("[data-relation-row]");
+    expect(body).toHaveAttribute(
+      "data-body-scroll-contract",
+      "content-scrolls-above-fixed-footer",
+    );
+    expect(body.className).toContain("min-h-0");
+    expect(body.className).toContain("overflow-y-auto");
     expect(section).toHaveAttribute("data-overflow-contract", "single-vertical-scroll-region");
+    expect(relationLens).toHaveAttribute(
+      "data-phone-density-contract",
+      "hide-explainer-before-readable-row",
+    );
+    expect(relationLens.className).toContain("max-[540px]:hidden");
+    expect(summary).toHaveAttribute(
+      "data-phone-density-contract",
+      "hide-summary-before-readable-row",
+    );
+    expect(summary.className).toContain("max-[540px]:hidden");
+    if (significance) {
+      expect(significance).toHaveAttribute(
+        "data-phone-density-contract",
+        "keep-primary-meaning-before-readable-row",
+      );
+      expect(significance.className).toContain("max-[540px]:mt-2");
+    }
+    if (mapContextNote) {
+      expect(mapContextNote).toHaveAttribute(
+        "data-phone-density-contract",
+        "defer-map-context-before-readable-row",
+      );
+      expect(mapContextNote.className).toContain("max-[540px]:hidden");
+    }
     expect(list).toHaveAttribute("data-testid", "topology-node-connection-list");
     expect(list).toHaveAttribute("data-overflow-contract", "vertical-scroll-only");
-    expect(list?.className).toContain("min-h-0");
+    expect(list).toHaveAttribute(
+      "data-readable-row-contract",
+      "at-least-one-full-relation-row",
+    );
+    expect(list).toHaveAttribute(
+      "data-relation-list-min-height-token",
+      "--topology-node-popover-relation-list-min-height",
+    );
+    expect(list?.className).toContain(
+      "min-h-[var(--topology-node-popover-relation-list-min-height)]",
+    );
     expect(list?.className).toContain("flex-1");
     expect(list?.className).toContain("overflow-y-auto");
     expect(list?.className).toContain("overflow-x-hidden");
     expect(list?.className).not.toContain("max-h-40");
     expect(row).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
     expect(footer).toHaveAttribute("data-footer-contract", "fixed-outside-scroll-region");
+    expect(footer).toHaveAttribute("data-footer-position-contract", "anchored-bottom-visible");
     expect(footer).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+    expect(footer).toHaveAttribute(
+      "data-popover-footer-surface-token",
+      "--topology-node-popover-footer-surface",
+    );
     expect(footer.className).toContain("shrink-0");
     expect(footer.className).toContain("overflow-hidden");
     expect(section.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -190,8 +302,14 @@ describe("TopologyNodePopover", () => {
     const handoffLane = relationRow?.querySelector("[data-relation-route]");
 
     expect(list).toHaveAttribute("data-row-density-contract", "agent-handoff-scan-list");
+    expect(list).toHaveAttribute("data-row-surface-contract", "flat-divider-rail");
+    expect(list).toHaveAttribute(
+      "data-readable-row-contract",
+      "at-least-one-full-relation-row",
+    );
     expect(list).toHaveAttribute("data-row-min-hit-height", "72");
     expect(relationRow).toHaveAttribute("data-row-density-contract", "agent-handoff-scan-row");
+    expect(relationRow).toHaveAttribute("data-row-surface-contract", "flat-divider-row");
     expect(relationRow).toHaveAttribute("data-row-min-hit-height", "72");
     expect(relationRow).toHaveAttribute(
       "data-row-scan-order",
@@ -199,11 +317,16 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRow?.className).toContain("min-h-[72px]");
     expect(relationRow?.className).toContain("gap-2");
+    expect(relationRow?.className).toContain("bg-transparent");
     expect(relationRow?.className).toContain("px-2");
     expect(relationRow?.className).toContain("py-2");
     expect(relationTitle).toHaveAttribute("data-primary-scan-target", "true");
     expect(relationTitle?.className).toContain("text-[color:var(--color-text-primary)]");
     expect(handoffLane).toHaveAttribute("data-handoff-lane", "mcp-cli-next-action");
+    expect(handoffLane).toHaveAttribute(
+      "data-relation-payload-layout",
+      "flat-inline-payload-rail",
+    );
   });
 
   it("keeps the full-detail footer action compact when hidden relations exist", () => {
@@ -216,12 +339,67 @@ describe("TopologyNodePopover", () => {
     const footer = screen.getByTestId("topology-node-popover-footer");
     const openFullDetail = screen.getByRole("button", { name: /전체 상세/ });
     expect(footer).toHaveAttribute("data-footer-contract", "fixed-outside-scroll-region");
+    expect(footer).toHaveAttribute("data-footer-position-contract", "anchored-bottom-visible");
     expect(footer).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
     expect(openFullDetail.className).toContain("min-w-0");
     expect(openFullDetail.className).toContain("overflow-hidden");
     expect(openFullDetail).toHaveTextContent("+77 더");
     expect(openFullDetail.querySelector(".truncate")).toHaveTextContent("전체 상세");
     expect(openFullDetail.querySelector(".whitespace-nowrap")).toHaveTextContent("+77 더");
+  });
+
+  it("exposes a compact MCP/CLI handoff action rail outside the scrolling region", () => {
+    const copyBrief = vi.fn();
+    const copyMcp = vi.fn();
+    const copyImpact = vi.fn();
+    setup({
+      actions: [
+        {
+          kind: "focus-brief",
+          label: "선택 브리프 복사",
+          ariaLabel: "지형도 선택 개념 검토 브리프 복사",
+          onClick: copyBrief,
+        },
+        {
+          kind: "mcp-profile",
+          label: "MCP 노드 점검 복사",
+          ariaLabel: "지형도 선택 개념 MCP 노드 점검 복사",
+          onClick: copyMcp,
+        },
+        {
+          kind: "mcp-impact",
+          label: "MCP 영향 점검 복사",
+          ariaLabel: "지형도 선택 개념 MCP 영향 점검 복사",
+          onClick: copyImpact,
+        },
+      ],
+    });
+
+    const popover = screen.getByTestId("topology-node-popover");
+    const rail = screen.getByTestId("topology-node-popover-action-rail");
+    const footer = screen.getByTestId("topology-node-popover-footer");
+    expect(popover).toHaveAttribute(
+      "data-compact-handoff-contract",
+      "selected-node-actions-visible",
+    );
+    expect(rail).toHaveAttribute("data-action-rail-contract", "compact-mcp-cli-handoff");
+    expect(rail).toHaveAttribute("data-action-count", "3");
+    expect(rail).toHaveTextContent("에이전트 인계");
+    expect(
+      screen.getByRole("button", { name: "지형도 선택 개념 검토 브리프 복사" }),
+    ).toHaveAttribute(
+      "data-popover-action-surface-token",
+      "--topology-node-popover-action-surface",
+    );
+    expect(footer.compareDocumentPosition(rail) & Node.DOCUMENT_POSITION_CONTAINED_BY).toBeTruthy();
+    expect(rail.closest('[data-testid="topology-connections-section"]')).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "지형도 선택 개념 검토 브리프 복사" }));
+    fireEvent.click(screen.getByRole("button", { name: "지형도 선택 개념 MCP 노드 점검 복사" }));
+    fireEvent.click(screen.getByRole("button", { name: "지형도 선택 개념 MCP 영향 점검 복사" }));
+    expect(copyBrief).toHaveBeenCalledTimes(1);
+    expect(copyMcp).toHaveBeenCalledTimes(1);
+    expect(copyImpact).toHaveBeenCalledTimes(1);
   });
 
   it("can collapse into a low map chip without losing the selected node context", () => {
@@ -235,19 +413,81 @@ describe("TopologyNodePopover", () => {
     expect(popover).toHaveAttribute("data-hierarchy-contract", "click-focus-detail-support");
     expect(popover).toHaveAttribute("data-collapsed", "true");
     expect(popover).toHaveAttribute("data-size-policy", "context-chip");
+    expect(popover).toHaveAttribute(
+      "data-responsive-width-contract",
+      "fluid-chip-to-rail",
+    );
+    expect(popover).toHaveAttribute(
+      "data-width-token",
+      "--topology-node-popover-fluid-width",
+    );
+    expect(popover).toHaveAttribute(
+      "data-rail-width-token",
+      "--topology-node-popover-rail-width",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-gap-token",
+      "--topology-node-popover-chip-gap",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-action-size-token",
+      "--topology-node-popover-compact-action-size",
+    );
+    expect(popover).toHaveAttribute(
+      "data-title-lines-token",
+      "--topology-node-popover-title-lines",
+    );
+    expect(popover).toHaveAttribute(
+      "data-popover-surface-token",
+      "--topology-node-popover-surface",
+    );
+    expect(popover).toHaveAttribute(
+      "data-popover-border-token",
+      "--topology-node-popover-border",
+    );
     expect(popover).toHaveAttribute("data-selected-node-id", "capabilities/mcp-server");
     expect(popover).toHaveAttribute(
       "data-selected-node-summary",
       "capability capabilities/mcp-server · MCP Server",
     );
-    expect(popover.className).toContain("lg:w-[320px]");
-    expect(popover.className).toContain("min-[1400px]:w-[286px]");
-    expect(popover.className).toContain("min-[1800px]:w-[340px]");
+    expect(popover).toHaveAttribute(
+      "data-popover-scroll-contract",
+      "collapsed-chip-no-scroll",
+    );
+    expect(popover).toHaveAttribute("data-compact-handoff-contract", "detail-only");
+    expect(popover).toHaveAttribute("data-compact-action-contract", "icon-only-under-480");
+    expect(popover).toHaveAttribute(
+      "data-title-readability-contract",
+      "selected-node-title-readable",
+    );
+    expect(popover.className).toContain("gap-[var(--topology-node-popover-chip-gap)]");
+    expect(popover.className).toContain("lg:w-[var(--topology-node-popover-rail-width)]");
+    expect(popover.className).toContain(
+      "min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)]",
+    );
+    expect(popover.className).toContain(
+      "min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)]",
+    );
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     expect(screen.getByText("이 노드를 쓰는 곳 1 · 이 노드가 기대는 곳 2")).toBeInTheDocument();
+    const title = screen.getByTestId("topology-node-popover-title");
+    expect(title).toHaveAttribute(
+      "data-title-readability-contract",
+      "selected-node-title-readable",
+    );
+    expect(title).toHaveAttribute(
+      "data-title-lines-token",
+      "--topology-node-popover-title-lines",
+    );
+    expect(title.className).toContain("line-clamp-[var(--topology-node-popover-title-lines)]");
+    expect(title.className).not.toContain("truncate");
 
     const expand = screen.getByRole("button", { name: "상세 보기" });
     expect(expand).toHaveAttribute("data-node-popover-toggle", "expand");
+    expect(expand).toHaveAttribute("data-compact-action-contract", "icon-only-under-480");
+    expect(expand.className).toContain("h-[var(--topology-node-popover-compact-action-size)]");
+    expect(expand.className).toContain("max-[480px]:w-[var(--topology-node-popover-compact-action-size)]");
+    expect(expand.querySelector("span")?.className).toContain("max-[480px]:sr-only");
     fireEvent.click(expand);
     expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
   });
@@ -270,6 +510,20 @@ describe("TopologyNodePopover", () => {
     expect(screen.queryByText("MCP SDK")).not.toBeInTheDocument();
     const note = screen.getByTestId("topology-map-context-note");
     expect(note).toHaveAttribute("data-map-context-count", "1");
+    expect(note).toHaveAttribute("data-map-context-contract", "expanded-relations-stay-on-map");
+    expect(note).toHaveAttribute(
+      "data-map-context-handoff-contract",
+      "map-visible-relations-summarized",
+    );
+    expect(note).toHaveAttribute("data-map-context-relation-type-count", "1");
+    expect(note).toHaveAttribute(
+      "data-map-context-quality-summary",
+      "강한 구조 1 · 근거 있는 관계 0 · 약한 관련 0 · 검토 0",
+    );
+    expect(note).toHaveAttribute(
+      "data-map-context-agent-readiness-summary",
+      "전달 가능 1 · 사전 점검 0 · 검토 0",
+    );
     expect(note).toHaveTextContent(
       "1개 직접 연결은 지도에 펼쳐져 있어요. 지도 보기를 누르면 겹침 없이 확인할 수 있어요.",
     );
@@ -284,6 +538,10 @@ describe("TopologyNodePopover", () => {
     });
     expect(screen.getByTestId("topology-map-context-note")).toHaveTextContent(
       "2개 직접 연결은 지도에 펼쳐져 있어요. 지도 보기를 누르면 겹침 없이 확인할 수 있어요.",
+    );
+    expect(screen.getByTestId("topology-map-context-note")).toHaveAttribute(
+      "data-map-context-agent-readiness-summary",
+      "전달 가능 2 · 사전 점검 0 · 검토 0",
     );
     expect(screen.queryByText("직접 연결 없음")).not.toBeInTheDocument();
   });
@@ -364,13 +622,17 @@ describe("TopologyNodePopover", () => {
     ).toHaveTextContent("포함");
   });
 
-  it("exposes each connection row as a fact to evidence to action handoff route", () => {
+  it("exposes each connection row as a fact to evidence to gate to action handoff route", () => {
     setup();
 
     const relationRows = document.querySelectorAll("[data-relation-row]");
     expect(relationRows[0]).toHaveAttribute(
       "data-relation-fact-route",
       "fact>evidence>gate>action",
+    );
+    expect(relationRows[0]).toHaveAttribute(
+      "data-handoff-grammar-contract",
+      "fact-evidence-gate-action-payload",
     );
     expect(relationRows[0]).toHaveAttribute("data-relation-fact-route-quality", "strong");
     expect(relationRows[0]).toHaveAttribute(
@@ -389,7 +651,11 @@ describe("TopologyNodePopover", () => {
       Array.from(relationRows[0].querySelectorAll("[data-relation-route-chip]"))
         .map((chip) => chip.getAttribute("data-relation-route-chip"))
         .join(">"),
-    ).toBe("fact>evidence>action>payload");
+    ).toBe("fact>evidence>gate>action>payload");
+    expect(relationRows[0].querySelector("[data-relation-route]")).toHaveAttribute(
+      "data-handoff-grammar-contract",
+      "fact-evidence-gate-action-payload",
+    );
     expect(relationRows[0].querySelector("[data-relation-route]")).toHaveAttribute(
       "data-relation-route-state",
       "compact-json-ready",
@@ -401,8 +667,14 @@ describe("TopologyNodePopover", () => {
       relationRows[0].querySelector('[data-relation-route-chip="evidence"]'),
     ).toHaveTextContent("1");
     expect(
-      relationRows[0].querySelector('[data-relation-route-chip="action"]'),
+      relationRows[0].querySelector('[data-relation-route-chip="gate"]'),
     ).toHaveTextContent("전달");
+    expect(
+      relationRows[0].querySelector('[data-relation-route-chip="action"]'),
+    ).toHaveTextContent("explain");
+    expect(
+      relationRows[0].querySelector('[data-relation-route-chip="action"]'),
+    ).toHaveAttribute("title", "explain_relation");
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="payload"]'),
     ).toHaveTextContent("JSON");
@@ -671,6 +943,74 @@ describe("TopologyNodePopover", () => {
   it("reports a hidden remainder when connections are capped", () => {
     setup({ focus: focusModel({ hiddenConnectionCount: 5 }) });
     expect(screen.getAllByText("+5 더").length).toBeGreaterThan(0);
+  });
+
+  it("caps rendered relation rows and rolls the rest into the full-detail remainder", () => {
+    const manyConnections = Array.from({ length: 12 }, (_, index) => ({
+      id: `elements/runtime-${index}`,
+      title: `Runtime ${index}`,
+      kind: "element",
+      direction: "outgoing" as const,
+      relationType: "uses",
+      relationQuality: "strong" as const,
+      evidenceCount: 1,
+      authored: true,
+    }));
+
+    setup({
+      focus: focusModel({
+        usedByCount: 10,
+        dependsOnCount: 72,
+        connections: manyConnections,
+        hiddenConnectionCount: 70,
+      }),
+    });
+
+    const list = screen.getByTestId("topology-node-connection-list");
+    expect(list).toHaveAttribute("data-row-render-contract", "capped-preview-plus-remainder");
+    expect(list).toHaveAttribute("data-row-render-budget", "6");
+    expect(list).toHaveAttribute("data-rendered-connection-count", "6");
+    expect(list).toHaveAttribute("data-hidden-connection-count", "76");
+    expect(list).toHaveAttribute("data-total-connection-count", "82");
+    expect(document.querySelectorAll("[data-relation-row]")).toHaveLength(6);
+    expect(screen.getByText("Runtime 0")).toBeInTheDocument();
+    expect(screen.queryByText("Runtime 6")).not.toBeInTheDocument();
+    expect(screen.getAllByText("+76 더").length).toBeGreaterThan(0);
+  });
+
+  it("keeps the primary focus brief action visible in collapsed compact focus", () => {
+    const copyBrief = vi.fn();
+    setup({
+      collapsed: true,
+      onToggleCollapsed: vi.fn(),
+      actions: [
+        {
+          kind: "focus-brief",
+          label: "선택 브리프 복사",
+          ariaLabel: "지형도 선택 개념 검토 브리프 복사",
+          onClick: copyBrief,
+        },
+      ],
+    });
+
+    const popover = screen.getByTestId("topology-node-popover");
+    const action = screen.getByTestId("topology-node-popover-compact-brief-action");
+    expect(popover).toHaveAttribute(
+      "data-compact-handoff-contract",
+      "selected-node-actions-visible",
+    );
+    expect(action).toHaveAttribute("data-popover-action", "focus-brief");
+    expect(action).toHaveAttribute("data-agent-handoff-action", "copy-focus-brief");
+    expect(action).toHaveAttribute(
+      "data-popover-action-surface-token",
+      "--topology-node-popover-action-icon-surface",
+    );
+    expect(action).toHaveAttribute(
+      "data-popover-action-border-token",
+      "--topology-node-popover-action-icon-border",
+    );
+    fireEvent.click(action);
+    expect(copyBrief).toHaveBeenCalledTimes(1);
   });
 
   it("ties hidden remainders to the full-detail action", () => {

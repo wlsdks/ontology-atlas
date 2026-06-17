@@ -31,9 +31,13 @@ export function TopologyReviewLink({
     <Link
       href="/ontology/"
       data-testid="topology-review-link"
+      data-utility-action-token-contract="accent-surface-family"
+      data-utility-action-surface-token="--topology-utility-lane-accent-surface"
+      data-utility-action-border-token="--topology-utility-lane-accent-border"
+      data-utility-action-shadow-token="--topology-utility-lane-shadow"
       aria-label={ariaLabel(count)}
       title={ariaLabel(count)}
-      className="inline-flex h-11 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[0_10px_26px_rgba(0,0,0,0.14)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:rgba(94,106,210,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none"
+      className="inline-flex h-[var(--topology-utility-lane-height)] items-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none"
     >
       <GitCompare size={15} aria-hidden />
       <span>{label(count)}</span>

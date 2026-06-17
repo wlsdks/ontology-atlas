@@ -29,6 +29,9 @@ describe("CreateNodeForm", () => {
     const form = screen.getByTestId("create-node-form");
     expect(form).toHaveAttribute("data-surface-role", "blocking-edit-surface");
     expect(form).toHaveAttribute("data-elevation-contract", "solid-panel-over-dimmed-map");
+    expect(form).toHaveAttribute("data-surface-token", "--topology-blocking-composer-surface");
+    expect(form).toHaveAttribute("data-border-token", "--topology-blocking-composer-border");
+    expect(form).toHaveAttribute("data-shadow-token", "--topology-blocking-composer-shadow");
     expect(screen.getByText("노드 추가")).toHaveAttribute("id", "create-node-heading");
   });
 
