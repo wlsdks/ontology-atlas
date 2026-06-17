@@ -2256,6 +2256,44 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByTestId("topology-path-proof-route")).toHaveTextContent(
       "Topology Analysis Modes",
     );
+    const proofRoute = screen.getByTestId("topology-path-proof-route");
+    expect(proofRoute).toHaveAttribute(
+      "data-route-contract",
+      "proof-disclosure-source-target",
+    );
+    expect(proofRoute).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-route-surface",
+    );
+    expect(proofRoute).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-route-border",
+    );
+    expect(proofRoute).toHaveAttribute(
+      "data-chip-surface-token",
+      "--topology-path-route-chip-surface",
+    );
+    expect(proofRoute).toHaveAttribute(
+      "data-chip-border-token",
+      "--topology-path-route-chip-border",
+    );
+    expect(
+      proofRoute.querySelector('[data-route-endpoint="source"]'),
+    ).toHaveTextContent("Views");
+    expect(
+      proofRoute.querySelector('[data-route-endpoint="target"]'),
+    ).toHaveTextContent("Topology Analysis Modes");
+    const pathProofActions = [
+      ["Source in ontology", "source-ontology", "--topology-path-route-surface"],
+      ["Target in ontology", "target-ontology", "--topology-path-route-surface"],
+      ["Source in builder", "source-builder", "--topology-path-route-chip-surface"],
+      ["Target in builder", "target-builder", "--topology-path-route-chip-surface"],
+    ] as const;
+    for (const [name, action, surfaceToken] of pathProofActions) {
+      const link = screen.getByRole("link", { name });
+      expect(link).toHaveAttribute("data-path-proof-action", action);
+      expect(link).toHaveAttribute("data-surface-token", surfaceToken);
+    }
     const checklist = screen.getByTestId("topology-path-proof-checklist");
     expect(checklist).toHaveTextContent("Visible path clue");
     expect(checklist).toHaveTextContent("ready");

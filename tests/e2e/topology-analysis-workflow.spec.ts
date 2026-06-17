@@ -698,6 +698,27 @@ test.describe("topology analysis workflow", () => {
     await expect(page.getByText(/^Showing the link from/)).toBeVisible();
     await page.getByTestId("topology-path-proof-summary").click();
     await expect(page.getByText("Shows the visible link between two nodes.")).toBeVisible();
+    const pathProofRoute = page.getByTestId("topology-path-proof-route");
+    await expect(pathProofRoute).toHaveAttribute(
+      "data-route-contract",
+      "proof-disclosure-source-target",
+    );
+    await expect(pathProofRoute).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-route-surface",
+    );
+    await expect(pathProofRoute).toHaveAttribute(
+      "data-chip-border-token",
+      "--topology-path-route-chip-border",
+    );
+    await expect(page.locator('a[data-path-proof-action="source-ontology"]')).toHaveAttribute(
+      "data-path-proof-action",
+      "source-ontology",
+    );
+    await expect(page.locator('a[data-path-proof-action="target-builder"]')).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-route-chip-surface",
+    );
     await expect(
       page.getByRole("button", { name: "Copy topology path evidence" }),
     ).toBeVisible();
