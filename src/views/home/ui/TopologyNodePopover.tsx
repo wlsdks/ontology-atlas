@@ -449,6 +449,18 @@ export function TopologyNodePopover({
             <span
               key={quality}
               data-relation-quality-chip={quality}
+              data-relation-quality-surface-token={relationQualityChipToken(
+                quality,
+                "surface",
+              )}
+              data-relation-quality-border-token={relationQualityChipToken(
+                quality,
+                "border",
+              )}
+              data-relation-quality-text-token={relationQualityChipToken(
+                quality,
+                "text",
+              )}
               className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] leading-3.5 ${relationQualityChipClassName(quality, count)}`}
             >
               <span className="font-mono uppercase tracking-[0.06em]">{label}</span>
@@ -467,6 +479,12 @@ export function TopologyNodePopover({
               key={key}
               data-agent-readiness-chip={key}
               data-count={count}
+              data-agent-readiness-surface-token={agentReadinessToken(
+                key,
+                "surface",
+              )}
+              data-agent-readiness-border-token={agentReadinessToken(key, "border")}
+              data-agent-readiness-text-token={agentReadinessToken(key, "text")}
               className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] leading-3.5 ${agentReadinessChipClassName(key, count)}`}
             >
               <span className="font-mono uppercase tracking-[0.06em]">{label}</span>
@@ -615,6 +633,10 @@ export function TopologyNodePopover({
                         </span>
                         <span
                           data-relation-quality-dot
+                          data-dot-token={relationQualityDotToken(connection.relationQuality)}
+                          data-glow-token={relationQualityGlowToken(
+                            connection.relationQuality,
+                          )}
                           aria-label={labels.relationQualityLabels[connection.relationQuality]}
                           className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(connection.relationQuality)}`}
                         />
@@ -629,6 +651,18 @@ export function TopologyNodePopover({
                           aria-hidden="true"
                           data-relation-row-agent-gate={agentGateKind}
                           data-primary-copy-action={primaryCopyAction}
+                          data-agent-gate-surface-token={relationAgentGateToken(
+                            agentGateKind,
+                            "surface",
+                          )}
+                          data-agent-gate-border-token={relationAgentGateToken(
+                            agentGateKind,
+                            "border",
+                          )}
+                          data-agent-gate-text-token={relationAgentGateToken(
+                            agentGateKind,
+                            "text",
+                          )}
                           className={`inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-full border px-1 font-mono text-[8px] uppercase leading-none ${relationAgentGateChipClassName(agentGateKind)}`}
                         >
                           {agentGateChipText}
@@ -829,25 +863,44 @@ function relationQualityChipClassName(
   const muted = count === 0 ? "opacity-45" : "";
   const tone = {
     strong:
-      "border-indigo-400/35 bg-indigo-400/10 text-[color:var(--color-text-secondary)]",
+      "border-[color:var(--topology-selected-relation-quality-strong-border)] bg-[color:var(--topology-selected-relation-quality-strong-surface)] text-[color:var(--topology-selected-relation-quality-strong-text)]",
     supported:
-      "border-cyan-400/30 bg-cyan-400/10 text-[color:var(--color-text-secondary)]",
+      "border-[color:var(--topology-selected-relation-quality-supported-border)] bg-[color:var(--topology-selected-relation-quality-supported-surface)] text-[color:var(--topology-selected-relation-quality-supported-text)]",
     weak:
-      "border-amber-400/30 bg-amber-400/10 text-[color:var(--color-text-tertiary)]",
+      "border-[color:var(--topology-selected-relation-quality-weak-border)] bg-[color:var(--topology-selected-relation-quality-weak-surface)] text-[color:var(--topology-selected-relation-quality-weak-text)]",
     review:
-      "border-rose-400/35 bg-rose-400/10 text-[color:var(--color-text-tertiary)]",
+      "border-[color:var(--topology-selected-relation-quality-review-border)] bg-[color:var(--topology-selected-relation-quality-review-surface)] text-[color:var(--topology-selected-relation-quality-review-text)]",
   } satisfies Record<TopologyRelationQuality, string>;
   return `${tone[quality]} ${muted}`;
 }
 
+function relationQualityChipToken(
+  quality: TopologyRelationQuality,
+  slot: "surface" | "border" | "text",
+): string {
+  return `--topology-selected-relation-quality-${quality}-${slot}`;
+}
+
 function relationQualityDotClassName(quality: TopologyRelationQuality) {
   const tone = {
-    strong: "bg-indigo-300 shadow-[0_0_10px_rgba(129,140,248,0.48)]",
-    supported: "bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.38)]",
-    weak: "bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.32)]",
-    review: "bg-rose-300 shadow-[0_0_10px_rgba(253,164,175,0.38)]",
+    strong:
+      "bg-[color:var(--topology-relation-quality-strong-dot)] shadow-[var(--topology-relation-quality-strong-glow)]",
+    supported:
+      "bg-[color:var(--topology-relation-quality-supported-dot)] shadow-[var(--topology-relation-quality-supported-glow)]",
+    weak:
+      "bg-[color:var(--topology-relation-quality-weak-dot)] shadow-[var(--topology-relation-quality-weak-glow)]",
+    review:
+      "bg-[color:var(--topology-relation-quality-review-dot)] shadow-[var(--topology-relation-quality-review-glow)]",
   } satisfies Record<TopologyRelationQuality, string>;
   return tone[quality];
+}
+
+function relationQualityDotToken(quality: TopologyRelationQuality): string {
+  return `--topology-relation-quality-${quality}-dot`;
+}
+
+function relationQualityGlowToken(quality: TopologyRelationQuality): string {
+  return `--topology-relation-quality-${quality}-glow`;
 }
 
 function agentReadinessChipClassName(
@@ -856,12 +909,21 @@ function agentReadinessChipClassName(
 ): string {
   const muted = count === 0 ? "opacity-45" : "";
   const tone = {
-    ready: "border-indigo-400/35 bg-indigo-400/10 text-[color:var(--color-text-secondary)]",
+    ready:
+      "border-[color:var(--topology-node-popover-agent-ready-border)] bg-[color:var(--topology-node-popover-agent-ready-surface)] text-[color:var(--topology-node-popover-agent-ready-text)]",
     preflight:
-      "border-amber-400/30 bg-amber-400/10 text-[color:var(--color-text-tertiary)]",
-    review: "border-rose-400/35 bg-rose-400/10 text-[color:var(--color-text-tertiary)]",
+      "border-[color:var(--topology-node-popover-agent-preflight-border)] bg-[color:var(--topology-node-popover-agent-preflight-surface)] text-[color:var(--topology-node-popover-agent-preflight-text)]",
+    review:
+      "border-[color:var(--topology-node-popover-agent-review-border)] bg-[color:var(--topology-node-popover-agent-review-surface)] text-[color:var(--topology-node-popover-agent-review-text)]",
   } satisfies Record<"ready" | "preflight" | "review", string>;
   return `${tone[key]} ${muted}`;
+}
+
+function agentReadinessToken(
+  key: "ready" | "preflight" | "review",
+  slot: "surface" | "border" | "text",
+): string {
+  return `--topology-node-popover-agent-${key}-${slot}`;
 }
 
 function relationEvidenceState({
@@ -909,12 +971,25 @@ function relationPrimaryCopyAction(gateKind: RelationAgentGateKind): RelationCop
 
 function relationAgentGateChipClassName(gateKind: RelationAgentGateKind): string {
   if (gateKind === "handoff-ready") {
-    return "border-indigo-400/35 bg-indigo-400/10 text-[color:rgba(222,225,255,0.94)]";
+    return "border-[color:var(--topology-node-popover-gate-handoff-border)] bg-[color:var(--topology-node-popover-gate-handoff-surface)] text-[color:var(--topology-node-popover-gate-handoff-text)]";
   }
   if (gateKind === "preflight-first") {
-    return "border-amber-400/35 bg-amber-400/10 text-[color:rgba(247,212,150,0.92)]";
+    return "border-[color:var(--topology-node-popover-gate-preflight-border)] bg-[color:var(--topology-node-popover-gate-preflight-surface)] text-[color:var(--topology-node-popover-gate-preflight-text)]";
   }
-  return "border-rose-400/35 bg-rose-400/10 text-[color:rgba(255,190,190,0.92)]";
+  return "border-[color:var(--topology-node-popover-gate-review-border)] bg-[color:var(--topology-node-popover-gate-review-surface)] text-[color:var(--topology-node-popover-gate-review-text)]";
+}
+
+function relationAgentGateToken(
+  gateKind: RelationAgentGateKind,
+  slot: "surface" | "border" | "text",
+): string {
+  if (gateKind === "handoff-ready") {
+    return `--topology-node-popover-gate-handoff-${slot}`;
+  }
+  if (gateKind === "preflight-first") {
+    return `--topology-node-popover-gate-preflight-${slot}`;
+  }
+  return `--topology-node-popover-gate-review-${slot}`;
 }
 
 function Stat({ label, value }: { label: string; value: number }) {

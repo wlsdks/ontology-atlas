@@ -2698,6 +2698,20 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-row-hover-surface-token",
     "--topology-node-popover-relation-row-hover-surface",
   );
+  await expect(firstRelationRow.locator("[data-relation-quality-dot]").first()).toHaveAttribute(
+    "data-dot-token",
+    /--topology-relation-quality-(strong|supported|weak|review)-dot/,
+  );
+  await expect(firstRelationRow.locator("[data-relation-quality-dot]").first()).toHaveAttribute(
+    "data-glow-token",
+    /--topology-relation-quality-(strong|supported|weak|review)-glow/,
+  );
+  await expect(
+    firstRelationRow.locator("[data-relation-row-agent-gate]").first(),
+  ).toHaveAttribute(
+    "data-agent-gate-surface-token",
+    /--topology-node-popover-gate-(handoff|preflight|review)-surface/,
+  );
   const firstRouteRail = firstRelationRow.locator("[data-relation-route]").first();
   await expect(firstRouteRail).toHaveAttribute(
     "data-relation-payload-layout",
@@ -2710,6 +2724,24 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   await expect(firstRouteRail).toHaveAttribute(
     "data-route-chip-surface-token",
     "--topology-node-popover-route-chip-surface",
+  );
+  await expect(
+    page
+      .getByTestId("topology-relation-quality-lens")
+      .locator("[data-relation-quality-chip]")
+      .first(),
+  ).toHaveAttribute(
+    "data-relation-quality-surface-token",
+    /--topology-selected-relation-quality-(strong|supported|weak|review)-surface/,
+  );
+  await expect(
+    page
+      .getByTestId("topology-node-agent-readiness-lens")
+      .locator("[data-agent-readiness-chip]")
+      .first(),
+  ).toHaveAttribute(
+    "data-agent-readiness-surface-token",
+    /--topology-node-popover-agent-(ready|preflight|review)-surface/,
   );
 
   const popoverScroll = await popover.evaluate((element) => {

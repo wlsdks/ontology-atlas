@@ -671,6 +671,12 @@ describe("TopologyNodePopover", () => {
     expect(relationRows[0]).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(relationRows[0]).toHaveAttribute("data-primary-copy-action", "explain_relation");
     expect(
+      relationRows[0].querySelector("[data-relation-quality-dot]"),
+    ).toHaveAttribute("data-dot-token", "--topology-relation-quality-strong-dot");
+    expect(
+      relationRows[0].querySelector("[data-relation-quality-dot]"),
+    ).toHaveAttribute("data-glow-token", "--topology-relation-quality-strong-glow");
+    expect(
       relationRows[0].querySelector("[data-relation-type-label]"),
     ).toHaveTextContent("사용");
     expect(
@@ -679,6 +685,18 @@ describe("TopologyNodePopover", () => {
     expect(
       relationRows[0].querySelector("[data-relation-row-agent-gate]"),
     ).toHaveTextContent("전달");
+    expect(
+      relationRows[0].querySelector("[data-relation-row-agent-gate]"),
+    ).toHaveAttribute(
+      "data-agent-gate-surface-token",
+      "--topology-node-popover-gate-handoff-surface",
+    );
+    expect(
+      relationRows[0].querySelector("[data-relation-row-agent-gate]"),
+    ).toHaveAttribute(
+      "data-agent-gate-text-token",
+      "--topology-node-popover-gate-handoff-text",
+    );
     expect(relationRows[1]).toHaveAttribute("data-relation-direction", "incoming");
     expect(relationRows[1]).toHaveAttribute("data-relation-type", "contains");
     expect(relationRows[1]).toHaveAttribute("data-relation-quality", "supported");
@@ -904,6 +922,20 @@ describe("TopologyNodePopover", () => {
     expect(lens).toHaveTextContent("근거 있는 관계1");
     expect(lens).toHaveTextContent("약한 관련0");
     expect(lens).toHaveTextContent("검토0");
+    expect(lens.querySelector('[data-relation-quality-chip="strong"]')).toHaveAttribute(
+      "data-relation-quality-surface-token",
+      "--topology-selected-relation-quality-strong-surface",
+    );
+    expect(
+      lens.querySelector('[data-relation-quality-chip="supported"]'),
+    ).toHaveAttribute(
+      "data-relation-quality-border-token",
+      "--topology-selected-relation-quality-supported-border",
+    );
+    expect(lens.querySelector('[data-relation-quality-chip="review"]')).toHaveAttribute(
+      "data-relation-quality-text-token",
+      "--topology-selected-relation-quality-review-text",
+    );
   });
 
   it("summarizes relation rows by agent readiness before the list", () => {
@@ -955,11 +987,25 @@ describe("TopologyNodePopover", () => {
     expect(lens.querySelector('[data-agent-readiness-chip="ready"]')).toHaveTextContent(
       "전달 가능1",
     );
+    expect(lens.querySelector('[data-agent-readiness-chip="ready"]')).toHaveAttribute(
+      "data-agent-readiness-surface-token",
+      "--topology-node-popover-agent-ready-surface",
+    );
     expect(lens.querySelector('[data-agent-readiness-chip="preflight"]')).toHaveTextContent(
       "사전 점검1",
     );
+    expect(
+      lens.querySelector('[data-agent-readiness-chip="preflight"]'),
+    ).toHaveAttribute(
+      "data-agent-readiness-border-token",
+      "--topology-node-popover-agent-preflight-border",
+    );
     expect(lens.querySelector('[data-agent-readiness-chip="review"]')).toHaveTextContent(
       "검토1",
+    );
+    expect(lens.querySelector('[data-agent-readiness-chip="review"]')).toHaveAttribute(
+      "data-agent-readiness-text-token",
+      "--topology-node-popover-agent-review-text",
     );
   });
 

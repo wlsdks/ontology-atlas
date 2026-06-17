@@ -251,6 +251,18 @@ names in component data markers and tests whenever a surface depends on
   inside the selected node inspector. Use these for fact/evidence/gate/action
   chips so row-level MCP/CLI payloads scan as structured proof, not loose
   monospace helper text.
+- `--topology-selected-relation-quality-*` and
+  `--topology-relation-quality-*-dot` / `*-glow`: selected node inspector
+  relation quality chips and row dots reuse the same semantic quality token
+  family as selected relation labels. Do not reintroduce raw Tailwind hue
+  classes for strong/supported/weak/review states; tests should assert the
+  visible token names through `data-relation-quality-*` markers.
+- `--topology-node-popover-agent-*` /
+  `--topology-node-popover-gate-*`: selected node inspector agent readiness
+  and row gate chips. These encode MCP/CLI handoff readiness, preflight-first,
+  and review-first states as ontology workflow facts, not decorative status
+  colors. New readiness or gate treatments must expose `data-agent-*-token`
+  markers so phone WebView checks can prove the token contract.
 - `--topology-bottom-tab-surface` / `--topology-bottom-tab-border`: mobile
   topology navigation surface. It must be opaque enough that map cards and
   relation labels cannot bleed through tab icons or labels.
