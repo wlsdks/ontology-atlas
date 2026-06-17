@@ -372,12 +372,26 @@ describe("TopologyNodePopover", () => {
       "data-route-chip-border-token",
       "--topology-node-popover-route-chip-border",
     );
+    expect(handoffLane).toHaveAttribute(
+      "data-route-text-token",
+      "--topology-node-popover-route-text",
+    );
+    expect(handoffLane).toHaveAttribute(
+      "data-route-chip-text-token",
+      "--topology-node-popover-route-chip-text",
+    );
     expect(handoffLane?.className).toContain(
       "bg-[color:var(--topology-node-popover-route-surface)]",
     );
     expect(handoffLane?.className).toContain(
       "border-[color:var(--topology-node-popover-route-border)]",
     );
+    expect(handoffLane?.className).toContain(
+      "text-[color:var(--topology-node-popover-route-text)]",
+    );
+    expect(
+      handoffLane?.querySelector('[data-relation-route-chip="fact"]')?.className,
+    ).toContain("text-[color:var(--topology-node-popover-route-chip-text)]");
   });
 
   it("keeps the full-detail footer action compact when hidden relations exist", () => {

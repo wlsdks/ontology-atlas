@@ -249,8 +249,8 @@ names in component data markers and tests whenever a surface depends on
   relation inspector.
 - `--topology-node-popover-route-*`: compact relation-row handoff route rail
   inside the selected node inspector. Use these for fact/evidence/gate/action
-  chips so row-level MCP/CLI payloads scan as structured proof, not loose
-  monospace helper text.
+  chips and their text so row-level MCP/CLI payloads scan as structured proof,
+  not loose monospace helper text.
 - `--topology-node-popover-direction-*`: selected node inspector relation-row
   direction marker. It encodes incoming/outgoing orientation before the typed
   fact chip, so it must expose `data-direction-*-token` markers and stay tied

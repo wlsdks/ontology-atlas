@@ -2772,6 +2772,14 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-route-chip-surface-token",
     "--topology-node-popover-route-chip-surface",
   );
+  await expect(firstRouteRail).toHaveAttribute(
+    "data-route-text-token",
+    "--topology-node-popover-route-text",
+  );
+  await expect(firstRouteRail).toHaveAttribute(
+    "data-route-chip-text-token",
+    "--topology-node-popover-route-chip-text",
+  );
   await expect(
     page
       .getByTestId("topology-relation-quality-lens")

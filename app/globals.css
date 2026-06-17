@@ -605,6 +605,8 @@
     --topology-node-popover-route-border: rgba(255, 255, 255, 0.07);
     --topology-node-popover-route-chip-surface: rgba(139, 151, 255, 0.065);
     --topology-node-popover-route-chip-border: rgba(139, 151, 255, 0.16);
+    --topology-node-popover-route-text: rgba(222, 225, 255, 0.58);
+    --topology-node-popover-route-chip-text: rgba(222, 225, 255, 0.78);
     --topology-node-popover-route-separator: rgba(139, 151, 255, 0.28);
     --topology-motion-focus-duration: 180ms;
     --topology-motion-panel-duration: 180ms;
@@ -1087,6 +1089,8 @@
     --topology-node-popover-route-border: rgba(15, 23, 42, 0.09);
     --topology-node-popover-route-chip-surface: rgba(77, 86, 200, 0.065);
     --topology-node-popover-route-chip-border: rgba(77, 86, 200, 0.16);
+    --topology-node-popover-route-text: rgba(40, 50, 175, 0.56);
+    --topology-node-popover-route-chip-text: rgba(40, 50, 175, 0.78);
     --topology-node-popover-route-separator: rgba(77, 86, 200, 0.28);
     --topology-analysis-mode-rail-surface: var(--color-overlay-1);
     --topology-analysis-mode-active-surface: var(--color-overlay-2);
