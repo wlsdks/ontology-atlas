@@ -3422,6 +3422,7 @@ export function validateWebviewVerifyPayload(payload, {
         /(strong|supported|weak|review|강함|지원|약함|검토)/i.test(payload.bodyText));
     if (
       topologyAnalysisMode !== "path" &&
+      topologyAnalysisMode !== "health" &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen &&
       payload.markers.topologyRelationQualityLensVisible !== true &&
@@ -3437,6 +3438,7 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       topologyAnalysisMode !== "path" &&
+      topologyAnalysisMode !== "health" &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen &&
       Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
@@ -3446,6 +3448,7 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       topologyAnalysisMode !== "path" &&
+      topologyAnalysisMode !== "health" &&
       Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
       overviewRelationQualityText.length > 0 &&
       !isReadableRelationQualityText(overviewRelationQualityText)
@@ -3475,7 +3478,10 @@ export function validateWebviewVerifyPayload(payload, {
       /(review|검토)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
       /[·,:]/.test(overviewAgentReadinessText);
     const requireOverviewAgentReadiness =
-      topologyAnalysisMode !== "path" && !focusSelectedNodeRoute && !blockingComposerOpen;
+      topologyAnalysisMode !== "path" &&
+      topologyAnalysisMode !== "health" &&
+      !focusSelectedNodeRoute &&
+      !blockingComposerOpen;
     if (
       requireOverviewAgentReadiness &&
       (typeof payload.markers.topologyOverviewAgentReadinessText !== "string" ||
@@ -3534,6 +3540,33 @@ export function validateWebviewVerifyPayload(payload, {
         topologyAnalysisMode === "path" ? 120 : focusSelectedNodeRoute ? 260 : 320;
       if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= analysisPanelMinHeight)) {
         return `WebView reported a cramped Relief analysis panel height (${payload.markers.topologyAnalysisPanelHeight ?? "unknown"})`;
+      }
+      if (topologyAnalysisMode === "health") {
+        if (
+          payload.markers.topologyHealthRepairLaneContract !==
+          "target-to-builder-to-sync"
+        ) {
+          return `WebView Relief health repair lane contract was ${payload.markers.topologyHealthRepairLaneContract || "missing"}`;
+        }
+        if (
+          payload.markers.topologyHealthRepairOrderContract !== "inspect-repair-sync"
+        ) {
+          return `WebView Relief health repair order contract was ${payload.markers.topologyHealthRepairOrderContract || "missing"}`;
+        }
+        if (
+          !String(payload.markers.topologyHealthRepairTargetSlug || "").trim() ||
+          !/^(stale|orphan|promotion)$/.test(
+            String(payload.markers.topologyHealthRepairTargetKind || ""),
+          )
+        ) {
+          return `WebView Relief health repair target was incomplete (${payload.markers.topologyHealthRepairTargetKind || "missing"} ${payload.markers.topologyHealthRepairTargetSlug || "missing"})`;
+        }
+        if (payload.markers.topologyHealthRepairPrimaryAction !== "builder") {
+          return `WebView Relief health repair primary action was ${payload.markers.topologyHealthRepairPrimaryAction || "missing"}`;
+        }
+        if (payload.markers.topologyHealthRepairSyncGate !== "post-change") {
+          return `WebView Relief health repair sync gate was ${payload.markers.topologyHealthRepairSyncGate || "missing"}`;
+        }
       }
       if (payload.markers.topologyCreateNodeOpen !== true && usesOverviewWidth) {
         if (payload.markers.topologyAnalysisPanelWidthPolicy !== "overview-support") {

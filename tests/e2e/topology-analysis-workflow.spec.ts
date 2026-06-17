@@ -39,7 +39,7 @@ test.describe("topology analysis workflow", () => {
     ).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Project search" })).toHaveCount(0);
     await expect(page.getByText(/\d+ PROJECTS/)).toHaveCount(0);
-    await page.getByText("Actions", { exact: true }).click();
+    await page.getByTestId("topology-health-repair-proof-summary").click();
     await page
       .getByRole("button", { name: "Copy topology overview brief" })
       .click();
@@ -118,6 +118,32 @@ test.describe("topology analysis workflow", () => {
     await expect(
       page.getByRole("button", { name: "Copy topology health evidence" }),
     ).toBeVisible();
+    const healthPanel = page.getByTestId("topology-analysis-panel");
+    await expect(healthPanel).toHaveAttribute(
+      "data-health-repair-lane-contract",
+      "target-to-builder-to-sync",
+    );
+    await expect(healthPanel).toHaveAttribute(
+      "data-health-repair-order-contract",
+      "inspect-repair-sync",
+    );
+    await expect(healthPanel).toHaveAttribute(
+      "data-health-repair-target-slug",
+      /.+/,
+    );
+    await expect(healthPanel).toHaveAttribute(
+      "data-health-repair-target-kind",
+      /stale|orphan|promotion/,
+    );
+    const healthRepairOrder = page.getByTestId("topology-health-repair-order");
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-health-repair-primary-action",
+      "builder",
+    );
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-health-repair-sync-gate",
+      "post-change",
+    );
     await page.getByRole("button", { name: "Copy topology health evidence" }).click();
     const copiedHealthEvidence = await page.evaluate(
       () =>
@@ -135,7 +161,7 @@ test.describe("topology analysis workflow", () => {
     expect(copiedHealthEvidence).toContain("  # Post-change ontology sync gate");
     expect(copiedHealthEvidence).toContain('"operation": "maintenance_plan"');
     expect(copiedHealthEvidence).toContain("ontology-atlas validate [vault]");
-    await page.getByText("Actions", { exact: true }).click();
+    await page.getByTestId("topology-health-repair-proof-summary").click();
     await expect(
       page.getByRole("button", { name: "Copy topology health impact MCP check" }),
     ).toBeVisible();

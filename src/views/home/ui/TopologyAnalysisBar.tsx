@@ -915,6 +915,22 @@ export function TopologyAnalysisBar({
           : undefined
       }
       data-panel-compact-scroll-end-reserve-token="--topology-analysis-panel-compact-scroll-end-reserve"
+      data-health-repair-lane-contract={
+        panelMode === "health" && healthAction
+          ? "target-to-builder-to-sync"
+          : undefined
+      }
+      data-health-repair-target-slug={
+        panelMode === "health" ? healthAction?.slug : undefined
+      }
+      data-health-repair-target-kind={
+        panelMode === "health" ? healthAction?.kind : undefined
+      }
+      data-health-repair-order-contract={
+        panelMode === "health" && healthAction
+          ? "inspect-repair-sync"
+          : undefined
+      }
       data-compact-focus-collapse-contract={
         selectedFocusRailActive ? "selected-focus-support-hidden-under-md" : undefined
       }
@@ -1265,6 +1281,11 @@ export function TopologyAnalysisBar({
                     <div
                       className="mt-2 flex flex-wrap gap-1"
                       data-testid="topology-health-repair-order"
+                      data-health-repair-order-contract="inspect-repair-sync"
+                      data-health-repair-target-slug={healthAction.slug}
+                      data-health-repair-target-kind={healthAction.kind}
+                      data-health-repair-primary-action="builder"
+                      data-health-repair-sync-gate="post-change"
                     >
                       <CompactCopyButton
                         copied={healthMcpCopied}

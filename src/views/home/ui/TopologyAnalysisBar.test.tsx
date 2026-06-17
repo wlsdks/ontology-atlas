@@ -2535,6 +2535,30 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText("Inspect target")).toBeInTheDocument();
     expect(screen.getByText("Repair ownership or evidence")).toBeInTheDocument();
     expect(screen.getByText("Run sync gate")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
+      "data-health-repair-lane-contract",
+      "target-to-builder-to-sync",
+    );
+    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
+      "data-health-repair-target-slug",
+      "domain:views",
+    );
+    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
+      "data-health-repair-target-kind",
+      "orphan",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-health-repair-order-contract",
+      "inspect-repair-sync",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-health-repair-primary-action",
+      "builder",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-health-repair-sync-gate",
+      "post-change",
+    );
     expect(
       screen.getByRole("button", { name: "open question Views" }),
     ).toBeInTheDocument();

@@ -1659,6 +1659,7 @@ pub fn run() {
                                 : null;
                               const topologyAnalysisPanelRect =
                                 topologyAnalysisPanel?.getBoundingClientRect();
+                              const topologyHealthRepairOrder = document.querySelector('[data-testid="topology-health-repair-order"]');
                               const topologyPathStartPrompt = document.querySelector('[data-testid="topology-path-start-prompt"]');
                               const topologyPathAnchorPrompt = document.querySelector('[data-testid="topology-path-anchor-prompt"]');
                               const topologyPathStartPromptStyle = topologyPathStartPrompt
@@ -2959,6 +2960,20 @@ pub fn run() {
                                     topologyAnalysisPanel?.getAttribute("data-panel-width-token") || "",
                                   topologyAnalysisPanelPhoneUtilityReserveToken:
                                     topologyAnalysisPanel?.getAttribute("data-panel-phone-utility-reserve-token") || "",
+                                  topologyHealthRepairLaneContract:
+                                    topologyAnalysisPanel?.getAttribute("data-health-repair-lane-contract") || "",
+                                  topologyHealthRepairTargetSlug:
+                                    topologyAnalysisPanel?.getAttribute("data-health-repair-target-slug") || "",
+                                  topologyHealthRepairTargetKind:
+                                    topologyAnalysisPanel?.getAttribute("data-health-repair-target-kind") || "",
+                                  topologyHealthRepairOrderContract:
+                                    topologyAnalysisPanel?.getAttribute("data-health-repair-order-contract") ||
+                                    topologyHealthRepairOrder?.getAttribute("data-health-repair-order-contract") ||
+                                    "",
+                                  topologyHealthRepairPrimaryAction:
+                                    topologyHealthRepairOrder?.getAttribute("data-health-repair-primary-action") || "",
+                                  topologyHealthRepairSyncGate:
+                                    topologyHealthRepairOrder?.getAttribute("data-health-repair-sync-gate") || "",
                                   topologyAnalysisPanelSurfaceToken:
                                     topologyAnalysisPanel?.getAttribute("data-panel-surface-token") || "",
                                   topologyAnalysisPanelLayerContract:
