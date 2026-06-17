@@ -584,6 +584,12 @@ details-on-demand* — not the inverse (everything-at-once + fullscreen-on-click
   ForceAtlas2 layout, level-of-detail labels (`hideLabelsOnMove` /
   `hideEdgesOnMove`), keep representative-edge culling, then domain clustering
   above ~5k.
+- **WebGL palette tokens.** Sigma graph marks do not consume CSS custom
+  properties directly; `src/widgets/topology-map-sigma/lib/topology-palette.ts`
+  is the map-layer token source. Dark overview edges must stay quiet enough for
+  dense vaults, but still visible as topology context before focus/path
+  reducers promote selected relations. Treat base / containment / dependency /
+  dim edges as semantic layers, not incidental RGBA literals.
 
 This serves the new "topology" row in the cited-lineage table above.
 

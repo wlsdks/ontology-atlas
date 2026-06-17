@@ -50,11 +50,12 @@ const DARK: TopologyPalette = {
   hubBorder: 'rgba(139, 151, 255, 0.55)',
   hubOuterHalo: 'rgba(139, 151, 255, 0.08)',
   // Dense ontology vaults can have hundreds of edges. Keep default edges as
-  // background evidence; focus/path reducers promote the relevant lines.
-  edge: 'rgba(130, 150, 195, 0.025)',
-  edgeContains: 'rgba(130, 150, 195, 0.025)',
-  edgeDependsOn: 'rgba(139, 151, 255, 0.055)',
-  edgeDim: 'rgba(255, 255, 255, 0.005)',
+  // background evidence, but leave enough ink that the map still reads as a
+  // topology before focus/path reducers promote the relevant lines.
+  edge: 'rgba(130, 150, 195, 0.038)',
+  edgeContains: 'rgba(130, 150, 195, 0.032)',
+  edgeDependsOn: 'rgba(139, 151, 255, 0.07)',
+  edgeDim: 'rgba(255, 255, 255, 0.008)',
   labelText: 'rgba(235, 240, 250, 0.95)',
   leafFillSaturate: 1,
   ontologyFill: 'rgba(160, 168, 184, 0.55)',

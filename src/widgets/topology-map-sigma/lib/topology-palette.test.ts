@@ -37,12 +37,13 @@ describe('applyLeafFillSaturate', () => {
 });
 
 describe('getTopologyPalette — dense edge defaults', () => {
-  it('keeps dark-mode base edges quiet so large vaults do not turn white', () => {
+  it('keeps dark-mode base edges quiet but readable as topology context', () => {
     const dark = getTopologyPalette('dark');
 
-    expect(dark.edge).toBe('rgba(130, 150, 195, 0.025)');
-    expect(dark.edgeContains).toBe('rgba(130, 150, 195, 0.025)');
-    expect(dark.edgeDependsOn).toBe('rgba(139, 151, 255, 0.055)');
+    expect(dark.edge).toBe('rgba(130, 150, 195, 0.038)');
+    expect(dark.edgeContains).toBe('rgba(130, 150, 195, 0.032)');
+    expect(dark.edgeDependsOn).toBe('rgba(139, 151, 255, 0.07)');
+    expect(dark.edgeDim).toBe('rgba(255, 255, 255, 0.008)');
   });
 
   it('keeps light-mode edges below foreground contrast while preserving relation tiers', () => {
