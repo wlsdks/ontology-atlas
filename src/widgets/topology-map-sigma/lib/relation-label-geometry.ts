@@ -14,6 +14,8 @@ export interface RelationLabelGeometry {
   hitTargetWidth: number;
   left: number;
   right: number;
+  viewportClampContract: 'centered-within-viewport' | 'compacted-to-viewport-edge';
+  viewportClampSide: 'left' | 'right' | 'none';
   viewportInset: number;
 }
 
@@ -40,6 +42,13 @@ export function resolveRelationLabelGeometry({
     Math.min(desiredWidth, centeredAvailableWidth),
   );
   const left = centerX - hitTargetWidth / 2;
+  const right = left + hitTargetWidth;
+  const viewportClampSide =
+    Math.abs(left - viewportInset) <= 0.5
+      ? 'left'
+      : Math.abs(right - (containerWidth - viewportInset)) <= 0.5
+        ? 'right'
+        : 'none';
 
   return {
     centeredAvailableWidth,
@@ -47,7 +56,10 @@ export function resolveRelationLabelGeometry({
     desiredWidth,
     hitTargetWidth,
     left,
-    right: left + hitTargetWidth,
+    right,
+    viewportClampContract:
+      viewportClampSide === 'none' ? 'centered-within-viewport' : 'compacted-to-viewport-edge',
+    viewportClampSide,
     viewportInset,
   };
 }

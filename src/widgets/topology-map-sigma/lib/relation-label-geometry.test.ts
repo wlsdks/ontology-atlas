@@ -20,6 +20,8 @@ describe('resolveRelationLabelGeometry', () => {
     expect(geometry.hitTargetWidth).toBeCloseTo(314.4, 3);
     expect(geometry.left).toBeGreaterThanOrEqual(16);
     expect(geometry.right).toBeLessThanOrEqual(1512 - 16);
+    expect(geometry.viewportClampContract).toBe('centered-within-viewport');
+    expect(geometry.viewportClampSide).toBe('none');
   });
 
   it('compacts around the same center when the desired label would exceed the viewport', () => {
@@ -34,6 +36,8 @@ describe('resolveRelationLabelGeometry', () => {
     expect(geometry.hitTargetWidth).toBe(152);
     expect(geometry.left).toBe(16);
     expect(geometry.right).toBe(168);
+    expect(geometry.viewportClampContract).toBe('compacted-to-viewport-edge');
+    expect(geometry.viewportClampSide).toBe('left');
   });
 
   it('honors the compact floor when there is enough centered space for the minimum target', () => {
@@ -48,6 +52,8 @@ describe('resolveRelationLabelGeometry', () => {
     expect(geometry.hitTargetWidth).toBe(128);
     expect(geometry.hitTargetWidth).toBeGreaterThanOrEqual(112);
     expect(geometry.left).toBe(16);
+    expect(geometry.viewportClampContract).toBe('compacted-to-viewport-edge');
+    expect(geometry.viewportClampSide).toBe('left');
   });
 
   it('stays inside the viewport even when the centered space is smaller than the compact floor', () => {
@@ -61,5 +67,20 @@ describe('resolveRelationLabelGeometry', () => {
     expect(geometry.hitTargetWidth).toBe(40);
     expect(geometry.left).toBe(16);
     expect(geometry.right).toBe(56);
+    expect(geometry.viewportClampContract).toBe('compacted-to-viewport-edge');
+    expect(geometry.viewportClampSide).toBe('left');
+  });
+
+  it('reports right-edge viewport clamping for agent-verifiable relation labels', () => {
+    const geometry = resolveRelationLabelGeometry({
+      ...baseInput,
+      centerX: 328,
+      containerWidth: 360,
+    });
+
+    expect(geometry.compact).toBe(true);
+    expect(geometry.right).toBe(344);
+    expect(geometry.viewportClampContract).toBe('compacted-to-viewport-edge');
+    expect(geometry.viewportClampSide).toBe('right');
   });
 });

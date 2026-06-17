@@ -80,6 +80,118 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(domainCard).toHaveStyle({
       transform: "translate(-50%, -50%) translate3d(120px, 60px, 0)",
     });
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-dom-index-contract",
+      "drag-release-reuses-card-elements",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-dom-index-contract",
+      "reuse-card-index",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-contract",
+      "frame-local-card-rect-cache",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-accounting",
+      "reads-plus-hits",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-read-count",
+      expect.stringMatching(/^\d+$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-hit-count",
+      expect.stringMatching(/^\d+$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-dock-drag-snapshot-contract",
+      "single-pass-card-rect-read",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-visibility-count-contract",
+      "single-pass-unless-fallback",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-visibility-stats-report-contract",
+      "dedupe-stable-counts",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-dom-write-dedupe-contract",
+      "skip-unchanged-transform-and-path",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-measure-contract",
+      "single-pass-rect-read",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-relation-label-blocker-contract",
+      "reuse-visible-card-rects",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-relation-label-blocker-source",
+      "visibility-pass",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-relation-label-handoff-contract",
+      "label-level-mcp-cli-fallback",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-selected-relation-label-handoff",
+      "none",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-relation-label-query-contract",
+      "indexed-once",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-path-endpoint-separation-contract",
+      "source-target-min-gap",
+    );
+  });
+
+  it("선택 카드에 직접 관계 요약 chip 을 붙여 edge label 을 읽기 전 맥락을 준다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "rgba(139,151,255,0.28)",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+      authored: true,
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const summary = screen.getByTestId("sigma-selected-card-relation-summary");
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-contract",
+      "selected-card-direct-facts",
+    );
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-surface-token",
+      "--topology-relation-summary-surface",
+    );
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-border-token",
+      "--topology-relation-summary-border",
+    );
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-text-token",
+      "--topology-relation-summary-text",
+    );
+    expect(summary).toHaveAttribute("data-relation-count", "1");
+    expect(summary).toHaveAttribute("data-relation-type-count", "1");
+    expect(summary).toHaveTextContent("1f · 1t");
   });
 
   it("초기 배치 직후 overlay 를 ready 로 표시해 첫 화면 blank 를 막는다", () => {
@@ -140,6 +252,156 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         initialCalls + CARDS.length,
       );
     } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("afterRender stable visibility stats 는 부모 갱신을 반복하지 않는다", () => {
+    vi.useFakeTimers();
+    const handlers = new Set<() => void>();
+    const onVisibilityChange = vi.fn();
+    const sigma = {
+      ...stubSigma,
+      on: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.add(handler);
+      }),
+      off: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.delete(handler);
+      }),
+    };
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={sigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+          onVisibilityChange={onVisibilityChange}
+        />,
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-visibility-stats-report-contract",
+        "dedupe-stable-counts",
+      );
+      const initialCalls = onVisibilityChange.mock.calls.length;
+      const initialReportCount = screen
+        .getByTestId("sigma-skeleton-cards")
+        .getAttribute("data-visibility-stats-report-count");
+      const handler = [...handlers][0];
+      expect(handler).toBeDefined();
+
+      act(() => {
+        handler?.();
+        vi.advanceTimersByTime(16);
+        handler?.();
+        vi.advanceTimersByTime(16);
+        handler?.();
+        vi.advanceTimersByTime(16);
+      });
+
+      expect(onVisibilityChange).toHaveBeenCalledTimes(initialCalls);
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-visibility-stats-report-count",
+        initialReportCount,
+      );
+      expect(
+        Number(
+          screen
+            .getByTestId("sigma-skeleton-cards")
+            .getAttribute("data-dom-write-skipped-count") ?? "0",
+        ),
+      ).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("afterRender hot path 에서 fixed surface rect 를 짧은 캐시 창 동안 재사용한다", () => {
+    vi.useFakeTimers();
+    const handlers = new Set<() => void>();
+    const sigma = {
+      ...stubSigma,
+      on: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.add(handler);
+      }),
+      off: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.delete(handler);
+      }),
+    };
+    const fixedPanel = document.createElement("aside");
+    fixedPanel.dataset.testid = "topology-analysis-panel";
+    fixedPanel.style.opacity = "1";
+    document.body.appendChild(fixedPanel);
+    let fixedPanelRectReads = 0;
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.dataset.testid === "topology-analysis-panel") {
+          fixedPanelRectReads += 1;
+          return {
+            bottom: 420,
+            height: 260,
+            left: 16,
+            right: 336,
+            top: 160,
+            width: 320,
+            x: 16,
+            y: 160,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        if (this.dataset.testid === "sigma-skeleton-cards") {
+          return {
+            bottom: 768,
+            height: 768,
+            left: 0,
+            right: 1024,
+            top: 0,
+            width: 1024,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        return {
+          bottom: 0,
+          height: 0,
+          left: 0,
+          right: 0,
+          top: 0,
+          width: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        } as DOMRect;
+      });
+
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={sigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+      const initialFixedPanelRectReads = fixedPanelRectReads;
+      const handler = [...handlers][0];
+      expect(handler).toBeDefined();
+
+      act(() => {
+        handler?.();
+        vi.advanceTimersByTime(16);
+        handler?.();
+        vi.advanceTimersByTime(16);
+      });
+
+      expect(fixedPanelRectReads).toBe(initialFixedPanelRectReads);
+    } finally {
+      rectSpy.mockRestore();
+      fixedPanel.remove();
       vi.useRealTimers();
     }
   });
@@ -1379,6 +1641,48 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
   });
 
+  it("ego relation label hover 도 compact edge tooltip data 를 전달한다", () => {
+    const onRelationHover = vi.fn();
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        onRelationHover={onRelationHover}
+      />,
+    );
+    const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+
+    expect(labelHit).toBeInTheDocument();
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-hover-contract",
+      "compact-edge-tooltip",
+    );
+    fireEvent.mouseEnter(labelHit!);
+    expect(onRelationHover).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "project:p",
+        target: "domain:d1",
+        relationType: "contains",
+        evidenceCount: 1,
+        x: expect.any(Number),
+        y: expect.any(Number),
+      }),
+    );
+    fireEvent.mouseLeave(labelHit!);
+    expect(onRelationHover).toHaveBeenLastCalledWith(null);
+  });
+
   it("ego relation label badge 에 relation quality dot 을 함께 표시한다", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {
@@ -1399,18 +1703,54 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
     const qualityDot = labelHit?.querySelector("[data-relation-quality-dot]");
-    const evidenceGlyph = labelHit?.querySelector("[data-relation-evidence-glyph]");
+    const evidenceChip = labelHit?.querySelector("[data-relation-evidence-glyph]");
+    const visibleBadge = labelHit?.querySelector("[data-relation-label-visible-badge]");
     const svgLabel = container.querySelector('[data-connector-relation-label="true"]');
     const svgBadge = container.querySelector('[data-relation-label-bg^="ego:"]');
+    const skeletonLayer = container.querySelector('[data-testid="sigma-skeleton-cards"]');
 
     expect(labelHit).toHaveAttribute("data-relation-quality", "weak");
     expect(labelHit).toHaveAttribute("data-relation-evidence-state", "needs-review");
     expect(labelHit).toHaveAttribute("aria-label", "contains relation · weak · needs review");
     expect(labelHit).toHaveAttribute("data-label-geometry-source", "html-hit-target");
+    expect(labelHit?.getAttribute("data-relation-label-viewport-clamp-contract")).toMatch(
+      /centered-within-viewport|compacted-to-viewport-edge/,
+    );
+    expect(labelHit?.getAttribute("data-relation-label-viewport-clamp-side")).toMatch(
+      /left|right|none/,
+    );
+    expect(skeletonLayer).toHaveAttribute(
+      "data-relation-label-geometry-contract",
+      "frame-positioned-hit-targets",
+    );
+    expect(skeletonLayer).toHaveAttribute(
+      "data-relation-label-geometry-source",
+      "after-render-layout-pass",
+    );
+    expect(skeletonLayer).toHaveAttribute("data-relation-label-geometry-expected-count", "1");
+    expect(skeletonLayer).toHaveAttribute("data-relation-label-geometry-ready-count", "1");
+    expect(skeletonLayer).toHaveAttribute("data-relation-label-geometry-pending-count", "0");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-card-clearance-token",
+      "--topology-relation-label-card-clearance",
+    );
     expect(labelHit?.className).toContain("inline-flex");
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-surface-token",
+      "--topology-relation-label-surface",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-border-token",
+      "--topology-relation-label-border",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-shadow-token",
+      "--topology-relation-label-shadow",
+    );
     expect(qualityDot).toBeInTheDocument();
     expect(qualityDot?.className).toContain("bg-amber-300");
-    expect(evidenceGlyph).toHaveTextContent("!");
+    expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "R");
+    expect(evidenceChip).toHaveTextContent("R");
     expect(svgLabel).toHaveAttribute("opacity", "0");
     expect(svgLabel).toHaveAttribute("aria-hidden", "true");
     expect(svgBadge).toHaveAttribute("opacity", "0");
@@ -1438,12 +1778,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
 
     const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
-    const evidenceGlyph = labelHit?.querySelector("[data-relation-evidence-glyph]");
+    const evidenceChip = labelHit?.querySelector("[data-relation-evidence-glyph]");
 
     expect(labelHit).toHaveAttribute("data-relation-evidence-state", "source-backed");
     expect(labelHit).toHaveAttribute("data-relation-evidence-count", "3");
     expect(labelHit).toHaveAttribute("aria-label", "contains relation · strong · 3 sources");
-    expect(evidenceGlyph).toHaveTextContent("3");
+    expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "S3");
+    expect(evidenceChip).toHaveTextContent("S3");
   });
 
   it("선택된 source-backed relation label 은 agent handoff gate 를 지도 위에 표시한다", () => {
@@ -1468,6 +1809,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
     const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
+    const root = screen.getByTestId("sigma-skeleton-cards");
 
     expect(labelHit).toHaveAttribute("data-selected-relation", "true");
     expect(labelHit).toHaveAttribute("data-relation-label-density", "focus-token");
@@ -1496,6 +1838,26 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit?.querySelector('[data-route-chip="evidence"]')).toHaveAttribute("data-route-chip-text", "src");
     expect(labelHit?.querySelector('[data-route-chip="gate"]')).toHaveAttribute("data-route-chip-text", "MCP/CLI");
     expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveAttribute("data-route-chip-text", "explain");
+    expect(root).toHaveAttribute(
+      "data-relation-label-handoff-contract",
+      "label-level-mcp-cli-fallback",
+    );
+    expect(root).toHaveAttribute("data-selected-relation-label-handoff", "ready");
+    expect(root).toHaveAttribute("data-selected-relation-label-gate", "handoff-ready");
+    expect(root).toHaveAttribute(
+      "data-selected-relation-label-primary-action",
+      "explain_relation",
+    );
+    expect(root).toHaveAttribute(
+      "data-selected-relation-label-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(root).toHaveAttribute(
+      "data-selected-relation-label-fact-route",
+      "fact>evidence>gate>action",
+    );
+    expect(root).toHaveAttribute("data-selected-relation-label-quality", "strong");
+    expect(root).toHaveAttribute("data-selected-relation-label-evidence", "source-backed");
   });
 
   it("선택된 weak relation label 은 먼저 relation_check 를 안내한다", () => {

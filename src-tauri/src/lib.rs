@@ -12,6 +12,8 @@ use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
+const WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV: &str =
+    "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_NODE_POPOVER";
 const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
 const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV: &str =
     "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP";
@@ -530,6 +532,8 @@ pub fn run() {
                         .filter(|route| is_safe_webview_verify_route(route));
                     let verify_topology_drag =
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV).is_some();
+                    let verify_topology_node_popover =
+                        std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV).is_some();
                     let verify_topology_create_node =
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV).is_some();
                     let verify_topology_focus_noop =
@@ -550,6 +554,71 @@ pub fn run() {
                             }
                         } else {
                             std::thread::sleep(Duration::from_millis(2000));
+                        }
+                        if verify_topology_node_popover {
+                            let _ = verify_window.eval(
+                                r#"(() => {
+                                  const result = {
+                                    attempted: true,
+                                    reason: "scheduled",
+                                    expanded: false
+                                  };
+                                  window.__ontologyAtlasTopologyNodePopoverVerify = result;
+
+                                  const visible = (el) => {
+                                    if (!el) return false;
+                                    const style = getComputedStyle(el);
+                                    const rect = el.getBoundingClientRect();
+                                    return style.display !== "none" &&
+                                      style.visibility !== "hidden" &&
+                                      Number(style.opacity || "1") > 0.01 &&
+                                      rect.width > 0 &&
+                                      rect.height > 0;
+                                  };
+                                  const selectFocusCard = (focus) => {
+                                    const rect = focus.getBoundingClientRect();
+                                    const x = rect.left + rect.width / 2;
+                                    const y = rect.top + rect.height / 2;
+                                    focus.dispatchEvent(new MouseEvent("click", {
+                                      bubbles: true,
+                                      cancelable: true,
+                                      button: 0,
+                                      clientX: x,
+                                      clientY: y
+                                    }));
+                                    if (typeof focus.click === "function") focus.click();
+                                  };
+                                  const expandWhenReady = (attempt = 0) => {
+                                    const popover = document.querySelector('[data-testid="topology-node-popover"]');
+                                    const expand = document.querySelector('[data-node-popover-toggle="expand"]');
+                                    if (popover && popover.getAttribute("data-collapsed") !== "true") {
+                                      result.reason = "done";
+                                      result.expanded = true;
+                                      return;
+                                    }
+                                    if (expand && typeof expand.click === "function") {
+                                      expand.click();
+                                      result.reason = "clicked-expand";
+                                      window.setTimeout(() => expandWhenReady(attempt + 1), 180);
+                                      return;
+                                    }
+                                    const focus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
+                                    if (focus && visible(focus) && attempt < 4) {
+                                      selectFocusCard(focus);
+                                    }
+                                    if (attempt >= 36) {
+                                      result.reason = popover
+                                        ? "missing expand control"
+                                        : "missing selected node popover";
+                                      return;
+                                    }
+                                    result.reason = "waiting for selected node popover";
+                                    window.setTimeout(() => expandWhenReady(attempt + 1), 250);
+                                  };
+                                  expandWhenReady();
+                                })()"#,
+                            );
+                            std::thread::sleep(Duration::from_millis(2200));
                         }
                         if verify_topology_drag {
                             let _ = verify_window.eval(
@@ -1015,6 +1084,8 @@ pub fn run() {
                                 document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
                               );
                               const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
+                              const topologyNodePopoverVerification =
+                                window.__ontologyAtlasTopologyNodePopoverVerify || null;
                               const topologyFocusNoopVerification =
                                 window.__ontologyAtlasTopologyFocusNoopVerify || null;
                               const topologyDragConnector = document.querySelector("[data-drag-cluster-connector]");
@@ -1153,10 +1224,38 @@ pub fn run() {
                               );
                               const topologyTopRelayoutButton = document.querySelector('[data-testid="topology-auto-arrange"]');
                               const topologyTopSearchButton = document.querySelector('[data-testid="topology-concept-search"]');
+                              const topologySearchActionLane =
+                                document.querySelector('[data-testid="topology-search-action-lane"]');
+                              const topologySearchActionLaneRect =
+                                topologySearchActionLane?.getBoundingClientRect();
+                              const topologySearchActionLaneStyle = topologySearchActionLane
+                                ? getComputedStyle(topologySearchActionLane)
+                                : null;
                               const topologyTopCreateButton = document.querySelector('[data-testid="topology-create-node-toggle"]');
+                              const topologySigmaControlsStack =
+                                document.querySelector('[data-testid="topology-sigma-controls-stack"]');
+                              const topologySigmaControlsStackRect =
+                                topologySigmaControlsStack?.getBoundingClientRect();
+                              const topologySigmaControlsStackStyle = topologySigmaControlsStack
+                                ? getComputedStyle(topologySigmaControlsStack)
+                                : null;
+                              const topologyShortcutsHelpButton =
+                                document.querySelector('[data-testid="topology-shortcuts-help-button"]');
+                              const topologyShortcutsHelpButtonRect =
+                                topologyShortcutsHelpButton?.getBoundingClientRect();
+                              const topologyShortcutsHelpButtonStyle = topologyShortcutsHelpButton
+                                ? getComputedStyle(topologyShortcutsHelpButton)
+                                : null;
                               const topologyCommandChrome = document.querySelector('[data-testid="topology-command-chrome"]');
                               const topologyCommandChromeState =
                                 topologyCommandChrome?.getAttribute("data-command-chrome-state") || "";
+                              const topologyUtilityActionLane =
+                                document.querySelector('[data-testid="topology-utility-action-lane"]');
+                              const topologyUtilityActionLaneRect =
+                                topologyUtilityActionLane?.getBoundingClientRect();
+                              const topologyUtilityActionLaneStyle = topologyUtilityActionLane
+                                ? getComputedStyle(topologyUtilityActionLane)
+                                : null;
                               const topologyTopLeftChromeGroup = document.querySelector('[data-testid="topology-top-left-chrome-group"]');
                               const topologyTopLeftChromeGroupState =
                                 topologyTopLeftChromeGroup?.getAttribute("data-workspace-context-state") || "";
@@ -1185,6 +1284,7 @@ pub fn run() {
                                 );
                               const topologyCreateNodePanelRect = topologyCreateNodePanel?.getBoundingClientRect();
                               const topologyCreateNodePanelStyle = topologyCreateNodePanel ? getComputedStyle(topologyCreateNodePanel) : null;
+                              const topologyCreateNodeForm = topologyCreateNodePanel?.querySelector('[data-testid="create-node-form"]');
                               const topologyCreateNodeBackdropRect = topologyCreateNodeBackdrop?.getBoundingClientRect();
                               const topologyCreateNodeBackdropStyle = topologyCreateNodeBackdrop ? getComputedStyle(topologyCreateNodeBackdrop) : null;
                               const topologyCreateNodeBackdropVisible = Boolean(
@@ -1293,6 +1393,22 @@ pub fn run() {
                                 kind: chip.getAttribute("data-route-chip") || "",
                                 text: chip.getAttribute("data-route-chip-text") || chip.textContent || ""
                               }));
+                              const topologyRelationLabelHandoffContract =
+                                skeletonCardsLayer?.getAttribute("data-relation-label-handoff-contract") || "";
+                              const topologySelectedRelationLabelHandoffState =
+                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-handoff") || "";
+                              const topologySelectedRelationLabelHandoffGate =
+                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-gate") || "";
+                              const topologySelectedRelationLabelHandoffPrimaryAction =
+                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-primary-action") || "";
+                              const topologySelectedRelationLabelHandoffCliFallbackCommand =
+                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-cli-fallback") || "";
+                              const topologySelectedRelationLabelHandoffFactRoute =
+                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-fact-route") || "";
+                              const topologySelectedRelationLabelHandoffQuality =
+                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-quality") || "";
+                              const topologySelectedRelationLabelHandoffEvidence =
+                                skeletonCardsLayer?.getAttribute("data-selected-relation-label-evidence") || "";
                               const topologySelectedRelationLabelGeometry =
                                 topologySelectedRelationLabelGeometryId
                                   ? document.querySelector(
@@ -1390,15 +1506,41 @@ pub fn run() {
                               const topologySelectedRelationCardMotionEasing =
                                 topologySelectedRelationCard?.getAttribute("data-motion-easing") ||
                                 "";
+                              const topologySelectedRelationCardSurfaceToken =
+                                topologySelectedRelationCard?.getAttribute("data-surface-token") ||
+                                "";
+                              const topologySelectedRelationCardMaxHeightToken =
+                                topologySelectedRelationCard?.getAttribute("data-max-height-token") ||
+                                "";
+                              const topologySelectedRelationCardBorderToken =
+                                topologySelectedRelationCard?.getAttribute("data-border-token") ||
+                                "";
+                              const topologySelectedRelationCardShadowToken =
+                                topologySelectedRelationCard?.getAttribute("data-shadow-token") ||
+                                "";
                               const topologySelectedRelationCardStyle = topologySelectedRelationCard
                                 ? getComputedStyle(topologySelectedRelationCard)
                                 : null;
+                              const topologySelectedRelationCardSurfaceComputed =
+                                topologySelectedRelationCardStyle?.backgroundColor || "";
+                              const topologySelectedRelationCardBorderComputed =
+                                topologySelectedRelationCardStyle?.borderTopColor || "";
                               const topologySelectedRelationActionMinWidthTokenValue =
                                 topologySelectedRelationCardStyle?.getPropertyValue("--topology-selected-relation-action-min-width").trim() || "";
                               const topologySelectedRelationCopyPayloadMinHeightTokenValue =
                                 topologySelectedRelationCardStyle?.getPropertyValue("--topology-selected-relation-copy-payload-min-height").trim() || "";
                               const topologySelectedRelationRouteStepMinWidthTokenValue =
                                 topologySelectedRelationCardStyle?.getPropertyValue("--topology-selected-relation-route-step-min-width").trim() || "";
+                              const topologySelectedRelationKickerFontSizeTokenValue =
+                                topologySelectedRelationCardStyle?.getPropertyValue("--topology-selected-relation-kicker-font-size").trim() || "";
+                              const topologySelectedRelationChipFontSizeTokenValue =
+                                topologySelectedRelationCardStyle?.getPropertyValue("--topology-selected-relation-chip-font-size").trim() || "";
+                              const topologySelectedRelationRouteLabelFontSizeTokenValue =
+                                topologySelectedRelationCardStyle?.getPropertyValue("--topology-selected-relation-route-label-font-size").trim() || "";
+                              const topologySelectedRelationRouteValueFontSizeTokenValue =
+                                topologySelectedRelationCardStyle?.getPropertyValue("--topology-selected-relation-route-value-font-size").trim() || "";
+                              const topologySelectedRelationPayloadFontSizeTokenValue =
+                                topologySelectedRelationCardStyle?.getPropertyValue("--topology-selected-relation-payload-font-size").trim() || "";
                               const topologyCameraMotionState =
                                 sigmaViewport?.getAttribute("data-camera-motion-state") || "";
                               const topologySelectedRelationCardMotionSyncState =
@@ -1437,10 +1579,14 @@ pub fn run() {
                               const topologySelectedRelationAgentRouteSteps = topologySelectedRelationAgentRoute
                                 ? Array.from(topologySelectedRelationAgentRoute.querySelectorAll("[data-route-step]")).map((step) => {
                                     const rect = step.getBoundingClientRect();
+                                    const label = step.querySelector("[data-route-step-label-text]");
+                                    const value = step.querySelector("[data-route-step-value-text]");
                                     return {
                                       kind: step.getAttribute("data-route-step") || "",
                                       label: step.getAttribute("data-route-step-label") || "",
                                       value: step.getAttribute("data-route-step-value") || "",
+                                      labelFontSize: label ? getComputedStyle(label).fontSize : "",
+                                      valueFontSize: value ? getComputedStyle(value).fontSize : "",
                                       left: rect.left,
                                       top: rect.top,
                                       right: rect.right,
@@ -1526,6 +1672,7 @@ pub fn run() {
                               const topologyPathAnchorPromptRect =
                                 topologyPathAnchorPrompt?.getBoundingClientRect();
                               const topologyPathCandidateVisibility = document.querySelector('[data-testid="topology-path-candidate-visibility"]');
+                              const topologyPathVisibleRoute = document.querySelector('[data-testid="topology-path-visible-route"]');
                               const topologyPathAgentHandoff = document.querySelector('[data-testid="topology-path-agent-handoff"]');
                               const topologyPathRestoreProbe = document.querySelector('[data-testid="topology-path-restore-probe"]');
                               const topologyPathResultBanner = document.querySelector('[data-testid="topology-path-result-banner"]');
@@ -1661,11 +1808,38 @@ pub fn run() {
                                 topologyOverviewHandoffActions?.querySelector("button");
                               const topologyOverviewPrimaryCopyButtonRect =
                                 topologyOverviewPrimaryCopyButton?.getBoundingClientRect();
+                              const topologyFocusCommandSpine =
+                                document.querySelector('[data-testid="topology-focus-command-spine"]');
+                              const topologyFocusCommandSpineStyle = topologyFocusCommandSpine
+                                ? getComputedStyle(topologyFocusCommandSpine)
+                                : null;
+                              const topologyFocusCommandSpineRect =
+                                topologyFocusCommandSpine?.getBoundingClientRect();
+                              const topologyFocusPrimaryAction =
+                                document.querySelector('[data-testid="topology-focus-primary-action"]');
+                              const topologyFocusPrimaryActionStyle = topologyFocusPrimaryAction
+                                ? getComputedStyle(topologyFocusPrimaryAction)
+                                : null;
+                              const topologyFocusPrimaryActionRect =
+                                topologyFocusPrimaryAction?.getBoundingClientRect();
+                              const topologyFocusReviewOrder =
+                                document.querySelector('[data-testid="topology-focus-review-order"]');
+                              const topologyFocusSecondaryActions =
+                                document.querySelector('[data-testid="topology-focus-secondary-actions"]');
+                              const topologyFocusAgentHandoff =
+                                document.querySelector('[data-testid="topology-focus-agent-handoff"]');
                               const topologyNodePopover = document.querySelector('[data-testid="topology-node-popover"]');
                               const topologyNodePopoverStyle = topologyNodePopover
                                 ? getComputedStyle(topologyNodePopover)
                                 : null;
                               const topologyNodePopoverRect = topologyNodePopover?.getBoundingClientRect();
+                              const topologyNodePopoverBody =
+                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-body"]');
+                              const topologyNodePopoverBodyRect =
+                                topologyNodePopoverBody?.getBoundingClientRect();
+                              const topologyNodePopoverBodyStyle = topologyNodePopoverBody
+                                ? getComputedStyle(topologyNodePopoverBody)
+                                : null;
                               const topologyMinimap = document.querySelector('[data-testid="topology-minimap"]');
                               const topologyMinimapStyle = topologyMinimap
                                 ? getComputedStyle(topologyMinimap)
@@ -1716,6 +1890,38 @@ pub fn run() {
                                 topologyNodePopover?.querySelector('[data-testid="topology-node-popover-footer"]');
                               const topologyNodePopoverFooterRect =
                                 topologyNodePopoverFooter?.getBoundingClientRect();
+                              const topologyNodePopoverFooterStyle = topologyNodePopoverFooter
+                                ? getComputedStyle(topologyNodePopoverFooter)
+                                : null;
+                              const topologyNodePopoverActionRail =
+                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-action-rail"]');
+                              const topologyNodePopoverActionRailRect =
+                                topologyNodePopoverActionRail?.getBoundingClientRect();
+                              const topologyNodePopoverVisibleRelationRowHeight =
+                                topologyNodePopoverRelationRowRect && topologyNodePopoverBodyRect
+                                  ? Math.max(
+                                      0,
+                                      Math.min(
+                                        topologyNodePopoverRelationRowRect.bottom,
+                                        topologyNodePopoverBodyRect.bottom
+                                      ) -
+                                        Math.max(
+                                          topologyNodePopoverRelationRowRect.top,
+                                          topologyNodePopoverBodyRect.top
+                                        )
+                                    )
+                                  : 0;
+                              const topologyNodePopoverCompactBriefAction =
+                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-brief-action"]');
+                              const topologyNodePopoverCompactBriefActionRect =
+                                topologyNodePopoverCompactBriefAction?.getBoundingClientRect();
+                              const topologyNodePopoverCompactBriefActionStyle = topologyNodePopoverCompactBriefAction
+                                ? getComputedStyle(topologyNodePopoverCompactBriefAction)
+                                : null;
+                              const topologySelectedSkeletonCardRelationSummary =
+                                document.querySelector('[data-skeleton-card][data-slug="domain:views"] [data-testid="sigma-selected-card-relation-summary"]');
+                              const topologySelectedSkeletonCardRelationSummaryRect =
+                                topologySelectedSkeletonCardRelationSummary?.getBoundingClientRect();
                               const topologyNodePopoverRelationGate =
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-row-agent-gate]");
                               const topologyNodePopoverRelationEvidenceGlyph =
@@ -2096,6 +2302,10 @@ pub fn run() {
                                     Number(sigmaViewport?.getAttribute("data-camera-motion-safe-inset-bottom") || "0"),
                                   topologyCameraMotionSafeInsetLeft:
                                     Number(sigmaViewport?.getAttribute("data-camera-motion-safe-inset-left") || "0"),
+                                  topologyCameraMotionRightReserveContract:
+                                    sigmaViewport?.getAttribute("data-camera-motion-right-reserve-contract") || "",
+                                  topologyCameraMotionSafeTargetRightClearance:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-safe-target-right-clearance") || "0"),
                                   topologyCameraMotionSelectedFanoutRows:
                                     Number(sigmaViewport?.getAttribute("data-camera-motion-selected-fanout-rows") || "0"),
                                   topologySkeletonLayerPresent: Boolean(skeletonCardsLayer),
@@ -2292,6 +2502,36 @@ pub fn run() {
                                     topologyPathCandidateVisibility?.getAttribute("data-visible") || "",
                                   topologyPathCandidateVisibilityTotal:
                                     topologyPathCandidateVisibility?.getAttribute("data-total") || "",
+                                  topologyPathVisibleRouteVisible:
+                                    Boolean(topologyPathVisibleRoute),
+                                  topologyPathVisibleRouteContract:
+                                    topologyPathVisibleRoute?.getAttribute("data-route-contract") || "",
+                                  topologyPathVisibleRouteAttentionLayer:
+                                    topologyPathVisibleRoute?.getAttribute("data-attention-layer") || "",
+                                  topologyPathVisibleRouteGuidanceOwner:
+                                    topologyPathVisibleRoute?.getAttribute("data-guidance-owner") || "",
+                                  topologyPathVisibleRouteOverflowContract:
+                                    topologyPathVisibleRoute?.getAttribute("data-overflow-contract") || "",
+                                  topologyPathVisibleRouteSourceSlug:
+                                    topologyPathVisibleRoute?.getAttribute("data-source-slug") || "",
+                                  topologyPathVisibleRouteTargetSlug:
+                                    topologyPathVisibleRoute?.getAttribute("data-target-slug") || "",
+                                  topologyPathVisibleRouteSourceTitle:
+                                    topologyPathVisibleRoute?.getAttribute("data-source-title") || "",
+                                  topologyPathVisibleRouteTargetTitle:
+                                    topologyPathVisibleRoute?.getAttribute("data-target-title") || "",
+                                  topologyPathVisibleRouteSurfaceToken:
+                                    topologyPathVisibleRoute?.getAttribute("data-surface-token") || "",
+                                  topologyPathVisibleRouteBorderToken:
+                                    topologyPathVisibleRoute?.getAttribute("data-border-token") || "",
+                                  topologyPathVisibleRouteChipSurfaceToken:
+                                    topologyPathVisibleRoute?.getAttribute("data-chip-surface-token") || "",
+                                  topologyPathVisibleRouteChipBorderToken:
+                                    topologyPathVisibleRoute?.getAttribute("data-chip-border-token") || "",
+                                  topologyPathVisibleRouteClientWidth:
+                                    topologyPathVisibleRoute?.clientWidth || 0,
+                                  topologyPathVisibleRouteScrollWidth:
+                                    topologyPathVisibleRoute?.scrollWidth || 0,
                                   topologyPathAgentHandoffVisible:
                                     Boolean(topologyPathAgentHandoff),
                                   topologyPathAgentHandoffText:
@@ -2308,8 +2548,18 @@ pub fn run() {
                                     "",
                                   topologyPathHandoffContract:
                                     topologyPathAgentHandoff?.getAttribute("data-handoff-contract") || "",
+                                  topologyPathHandoffLayoutContract:
+                                    topologyPathAgentHandoff?.getAttribute("data-handoff-layout-contract") || "",
                                   topologyPathHandoffOverflowContract:
                                     topologyPathAgentHandoff?.getAttribute("data-overflow-contract") || "",
+                                  topologyPathHandoffSurfaceToken:
+                                    topologyPathAgentHandoff?.getAttribute("data-surface-token") || "",
+                                  topologyPathHandoffBorderToken:
+                                    topologyPathAgentHandoff?.getAttribute("data-border-token") || "",
+                                  topologyPathHandoffActionMinHeightToken:
+                                    topologyPathAgentHandoff?.getAttribute("data-action-min-height-token") || "",
+                                  topologyPathHandoffActionRadiusToken:
+                                    topologyPathAgentHandoff?.getAttribute("data-action-radius-token") || "",
                                   topologyPathAgentHandoffMcpAction:
                                     topologyPathAgentHandoff?.getAttribute("data-mcp-action") || "",
                                   topologyPathAgentHandoffCliFallback:
@@ -2420,9 +2670,97 @@ pub fn run() {
                                     topologyTopRelayoutButton?.textContent?.trim() || "",
                                   topologyTopSearchLabel:
                                     topologyTopSearchButton?.textContent?.trim() || "",
+                                  topologySearchActionLaneVisible:
+                                    Boolean(
+                                      topologySearchActionLaneRect &&
+                                      topologySearchActionLaneStyle &&
+                                      topologySearchActionLaneStyle.display !== "none" &&
+                                      topologySearchActionLaneStyle.visibility !== "hidden" &&
+                                      Number(topologySearchActionLaneStyle.opacity || "1") > 0.01 &&
+                                      topologySearchActionLaneRect.width > 0 &&
+                                      topologySearchActionLaneRect.height > 0
+                                    ),
+                                  topologySearchActionLaneDensity:
+                                    topologySearchActionLane?.getAttribute("data-search-lane-density") || "",
+                                  topologySearchActionLaneContract:
+                                    topologySearchActionLane?.getAttribute("data-search-lane-contract") || "",
+                                  topologySearchLaneCompactWidthToken:
+                                    topologySearchActionLane?.getAttribute("data-search-lane-compact-width-token") || "",
+                                  topologySearchActionLaneWidth:
+                                    topologySearchActionLaneRect?.width || 0,
+                                  topologySearchActionLaneHeight:
+                                    topologySearchActionLaneRect?.height || 0,
                                   topologyTopCreateLabel:
                                     topologyTopCreateButton?.textContent?.trim() || "",
+                                  topologySigmaControlsStackVisible:
+                                    Boolean(
+                                      topologySigmaControlsStackRect &&
+                                      topologySigmaControlsStackStyle &&
+                                      topologySigmaControlsStackStyle.display !== "none" &&
+                                      topologySigmaControlsStackStyle.visibility !== "hidden" &&
+                                      Number(topologySigmaControlsStackStyle.opacity || "1") > 0.01 &&
+                                      topologySigmaControlsStackRect.width > 0 &&
+                                      topologySigmaControlsStackRect.height > 0
+                                    ),
+                                  topologySigmaControlsStackDensity:
+                                    topologySigmaControlsStack?.getAttribute("data-controls-density") || "",
+                                  topologySigmaControlsStackContract:
+                                    topologySigmaControlsStack?.getAttribute("data-controls-contract") || "",
+                                  topologySigmaControlsStackSurfaceToken:
+                                    topologySigmaControlsStack?.getAttribute("data-control-surface-token") || "",
+                                  topologySigmaControlsStackBorderToken:
+                                    topologySigmaControlsStack?.getAttribute("data-control-border-token") || "",
+                                  topologySigmaControlsStackSurfaceComputed:
+                                    topologySigmaControlsStackStyle?.backgroundColor || "",
+                                  topologySigmaControlsStackBorderComputed:
+                                    topologySigmaControlsStackStyle?.borderTopColor || "",
+                                  topologySigmaControlsStackWidth:
+                                    topologySigmaControlsStackRect?.width || 0,
+                                  topologySigmaControlsStackHeight:
+                                    topologySigmaControlsStackRect?.height || 0,
+                                  topologyShortcutsHelpButtonVisible:
+                                    Boolean(
+                                      topologyShortcutsHelpButtonRect &&
+                                      topologyShortcutsHelpButtonStyle &&
+                                      topologyShortcutsHelpButtonStyle.display !== "none" &&
+                                      topologyShortcutsHelpButtonStyle.visibility !== "hidden" &&
+                                      Number(topologyShortcutsHelpButtonStyle.opacity || "1") > 0.01 &&
+                                      topologyShortcutsHelpButtonRect.width > 0 &&
+                                      topologyShortcutsHelpButtonRect.height > 0
+                                    ),
+                                  topologyShortcutsHelpButtonDensity:
+                                    topologyShortcutsHelpButton?.getAttribute("data-controls-density") || "",
+                                  topologyShortcutsHelpButtonContract:
+                                    topologyShortcutsHelpButton?.getAttribute("data-controls-contract") || "",
+                                  topologyShortcutsHelpButtonWidth:
+                                    topologyShortcutsHelpButtonRect?.width || 0,
+                                  topologyShortcutsHelpButtonHeight:
+                                    topologyShortcutsHelpButtonRect?.height || 0,
                                   topologyCommandChromeState,
+                                  topologyUtilityLaneHeightToken:
+                                    topologyCommandChrome?.getAttribute("data-utility-lane-height-token") || "",
+                                  topologyUtilityLaneGapToken:
+                                    topologyCommandChrome?.getAttribute("data-utility-lane-gap-token") || "",
+                                  topologyUtilityLaneCompactWidthToken:
+                                    topologyCommandChrome?.getAttribute("data-utility-lane-compact-width-token") || "",
+                                  topologyUtilityActionLaneVisible:
+                                    Boolean(
+                                      topologyUtilityActionLaneRect &&
+                                      topologyUtilityActionLaneStyle &&
+                                      topologyUtilityActionLaneStyle.display !== "none" &&
+                                      topologyUtilityActionLaneStyle.visibility !== "hidden" &&
+                                      Number(topologyUtilityActionLaneStyle.opacity || "1") > 0.01 &&
+                                      topologyUtilityActionLaneRect.width > 0 &&
+                                      topologyUtilityActionLaneRect.height > 0
+                                    ),
+                                  topologyUtilityActionLaneDensity:
+                                    topologyUtilityActionLane?.getAttribute("data-utility-lane-density") || "",
+                                  topologyUtilityActionLaneContract:
+                                    topologyUtilityActionLane?.getAttribute("data-utility-lane-contract") || "",
+                                  topologyUtilityActionLaneWidth:
+                                    topologyUtilityActionLaneRect?.width || 0,
+                                  topologyUtilityActionLaneHeight:
+                                    topologyUtilityActionLaneRect?.height || 0,
                                   topologyTopLeftChromeGroupVisible:
                                     Boolean(
                                       topologyTopLeftChromeGroupRect &&
@@ -2462,6 +2800,18 @@ pub fn run() {
                                     topologyCreateNodePanel?.getAttribute("data-elevation-contract") || "",
                                   topologyCreateNodeSizeContract:
                                     topologyCreateNodePanel?.getAttribute("data-size-contract") || "",
+                                  topologyCreateNodePanelTopToken:
+                                    topologyCreateNodePanel?.getAttribute("data-top-token") || "",
+                                  topologyCreateNodePanelWidthToken:
+                                    topologyCreateNodePanel?.getAttribute("data-width-token") || "",
+                                  topologyCreateNodePanelMaxHeightToken:
+                                    topologyCreateNodePanel?.getAttribute("data-max-height-token") || "",
+                                  topologyCreateNodeFormSurfaceToken:
+                                    topologyCreateNodeForm?.getAttribute("data-surface-token") || "",
+                                  topologyCreateNodeFormBorderToken:
+                                    topologyCreateNodeForm?.getAttribute("data-border-token") || "",
+                                  topologyCreateNodeFormShadowToken:
+                                    topologyCreateNodeForm?.getAttribute("data-shadow-token") || "",
                                   topologyCreateNodePanelRole:
                                     topologyCreateNodePanel?.getAttribute("role") || "",
                                   topologyCreateNodePanelAriaModal:
@@ -2492,6 +2842,10 @@ pub fn run() {
                                   topologyCreateNodeBackdropCoversViewport,
                                   topologyCreateNodeBackdropPointerEvents:
                                     topologyCreateNodeBackdropStyle?.pointerEvents || "",
+                                  topologyCreateNodeBackdropContract:
+                                    topologyCreateNodeBackdrop?.getAttribute("data-backdrop-contract") || "",
+                                  topologyCreateNodeBackdropSurfaceToken:
+                                    topologyCreateNodeBackdrop?.getAttribute("data-backdrop-surface-token") || "",
                                   topologyCreateNodeBackdropBackground:
                                     topologyCreateNodeBackdropStyle?.backgroundColor || "",
                                   topologyCreateNodeBackdropFilter:
@@ -2506,6 +2860,12 @@ pub fn run() {
                                     topologyMapSurface?.getAttribute("data-map-demoted") === "true",
                                   topologyMapSurfaceDimOpacity:
                                     Number(topologyMapSurface?.getAttribute("data-map-dim-opacity") || "1"),
+                                  topologyMapSurfaceDimOpacityToken:
+                                    topologyMapSurface?.getAttribute("data-map-dim-opacity-token") || "",
+                                  topologyMapSurfaceFilterToken:
+                                    topologyMapSurface?.getAttribute("data-map-filter-token") || "",
+                                  topologyMapSurfaceInteractionContract:
+                                    topologyMapSurface?.getAttribute("data-map-interaction-contract") || "",
                                   topologyMapSurfaceOpacity:
                                     Number(topologyMapSurfaceStyle?.opacity || "1"),
                                   topologyMapSurfacePointerEvents:
@@ -2589,6 +2949,31 @@ pub fn run() {
                                     topologyAnalysisPanel?.getAttribute("data-panel-width-css") || "",
                                   topologyAnalysisPanelWidthToken:
                                     topologyAnalysisPanel?.getAttribute("data-panel-width-token") || "",
+                                  topologyAnalysisPanelPhoneUtilityReserveToken:
+                                    topologyAnalysisPanel?.getAttribute("data-panel-phone-utility-reserve-token") || "",
+                                  topologyAnalysisPanelSurfaceToken:
+                                    topologyAnalysisPanel?.getAttribute("data-panel-surface-token") || "",
+                                  topologyAnalysisPanelLayerContract:
+                                    topologyAnalysisPanel?.getAttribute("data-panel-layer-contract") || "",
+                                  topologyAnalysisPanelZIndexToken:
+                                    topologyAnalysisPanel?.getAttribute("data-panel-z-index-token") || "",
+                                  topologyAnalysisPanelZIndexComputed:
+                                    topologyAnalysisPanelStyle?.zIndex || "",
+                                  topologyAnalysisPanelSurfaceComputed:
+                                    topologyAnalysisPanelStyle?.backgroundColor || "",
+                                  topologyAnalysisPanelBorderComputed:
+                                    topologyAnalysisPanelStyle?.borderColor || "",
+                                  topologyVerifierTokenContractVersion: "command-spine-v1",
+                                  topologyAnalysisPanelCommandSpinePaddingToken:
+                                    topologyAnalysisPanel?.getAttribute("data-command-spine-padding-token") || "",
+                                  topologyAnalysisPanelCommandSpineGapToken:
+                                    topologyAnalysisPanel?.getAttribute("data-command-spine-gap-token") || "",
+                                  topologyAnalysisPanelCommandPrimaryHeightToken:
+                                    topologyAnalysisPanel?.getAttribute("data-command-primary-height-token") || "",
+                                  topologyAnalysisPanelCommandSpineSurfaceToken:
+                                    topologyAnalysisPanel?.getAttribute("data-command-spine-surface-token") || "",
+                                  topologyAnalysisPanelCommandSpineBorderToken:
+                                    topologyAnalysisPanel?.getAttribute("data-command-spine-border-token") || "",
                                   topologyAnalysisPanelWidth:
                                     topologyAnalysisPanelRect?.width || 0,
                                   topologyAnalysisPanelHeight:
@@ -2603,6 +2988,60 @@ pub fn run() {
                                     topologyOverviewPrimaryCopyButtonRect?.width || 0,
                                   topologyOverviewPrimaryCopyHeight:
                                     topologyOverviewPrimaryCopyButtonRect?.height || 0,
+                                  topologyFocusCommandSpineVisible:
+                                    Boolean(
+                                      topologyFocusCommandSpineRect &&
+                                      topologyFocusCommandSpineStyle &&
+                                      topologyFocusCommandSpineStyle.display !== "none" &&
+                                      topologyFocusCommandSpineStyle.visibility !== "hidden" &&
+                                      Number(topologyFocusCommandSpineStyle.opacity || "1") > 0.01 &&
+                                      topologyFocusCommandSpineRect.width > 0 &&
+                                      topologyFocusCommandSpineRect.height > 0
+                                    ),
+                                  topologyFocusCommandSpineHierarchy:
+                                    topologyFocusCommandSpine?.getAttribute("data-command-hierarchy") || "",
+                                  topologyFocusCommandSpineAttentionLayer:
+                                    topologyFocusCommandSpine?.getAttribute("data-attention-layer") || "",
+                                  topologyFocusCommandSpineTokenizedSurface:
+                                    topologyFocusCommandSpine?.getAttribute("data-tokenized-surface") || "",
+                                  topologyFocusCommandSpineSurfaceToken:
+                                    topologyFocusCommandSpine?.getAttribute("data-command-spine-surface-token") || "",
+                                  topologyFocusCommandSpineBorderToken:
+                                    topologyFocusCommandSpine?.getAttribute("data-command-spine-border-token") || "",
+                                  topologyFocusCommandSpineBackgroundComputed:
+                                    topologyFocusCommandSpineStyle?.backgroundImage || "",
+                                  topologyFocusCommandSpineBorderComputed:
+                                    topologyFocusCommandSpineStyle?.borderColor || "",
+                                  topologyFocusCommandSpineWidth:
+                                    topologyFocusCommandSpineRect?.width || 0,
+                                  topologyFocusCommandSpineHeight:
+                                    topologyFocusCommandSpineRect?.height || 0,
+                                  topologyFocusCommandSpinePaddingTokenValue:
+                                    topologyFocusCommandSpineStyle?.getPropertyValue("--topology-command-spine-padding").trim() || "",
+                                  topologyFocusCommandPrimaryActionVisible:
+                                    Boolean(topologyFocusPrimaryActionRect && topologyFocusPrimaryActionRect.width > 0 && topologyFocusPrimaryActionRect.height > 0),
+                                  topologyFocusCommandPrimaryActionText:
+                                    topologyFocusPrimaryAction?.textContent?.trim() || "",
+                                  topologyFocusCommandPrimaryActionSurfaceToken:
+                                    topologyFocusPrimaryAction?.getAttribute("data-command-primary-surface-token") || "",
+                                  topologyFocusCommandPrimaryActionBorderToken:
+                                    topologyFocusPrimaryAction?.getAttribute("data-command-primary-border-token") || "",
+                                  topologyFocusCommandPrimaryActionSurfaceComputed:
+                                    topologyFocusPrimaryActionStyle?.backgroundColor || "",
+                                  topologyFocusCommandPrimaryActionBorderComputed:
+                                    topologyFocusPrimaryActionStyle?.borderColor || "",
+                                  topologyFocusCommandPrimaryActionWidth:
+                                    topologyFocusPrimaryActionRect?.width || 0,
+                                  topologyFocusCommandPrimaryActionHeight:
+                                    topologyFocusPrimaryActionRect?.height || 0,
+                                  topologyFocusReviewOrderVisible:
+                                    Boolean(topologyFocusReviewOrder),
+                                  topologyFocusSecondaryActionsVisible:
+                                    Boolean(topologyFocusSecondaryActions),
+                                  topologyFocusAgentHandoffVisible:
+                                    Boolean(topologyFocusAgentHandoff),
+                                  topologyFocusAgentHandoffContract:
+                                    topologyFocusAgentHandoff?.getAttribute("data-handoff-contract") || "",
                                   topologyNodePopoverVisible:
                                     Boolean(topologyNodePopoverRect) &&
                                     topologyNodePopoverStyle?.display !== "none" &&
@@ -2616,10 +3055,56 @@ pub fn run() {
                                   topologyNodePopoverHierarchyContract,
                                   topologyNodePopoverSizePolicy:
                                     topologyNodePopover?.getAttribute("data-size-policy") || "",
+                                  topologyNodePopoverWidthToken:
+                                    topologyNodePopover?.getAttribute("data-width-token") || "",
+                                  topologyNodePopoverRailWidthToken:
+                                    topologyNodePopover?.getAttribute("data-rail-width-token") || "",
+                                  topologyNodePopoverMaxHeightToken:
+                                    topologyNodePopover?.getAttribute("data-max-height-token") || "",
+                                  topologyNodePopoverScrollContract:
+                                    topologyNodePopover?.getAttribute("data-popover-scroll-contract") || "",
+                                  topologyNodePopoverOverflowY:
+                                    topologyNodePopoverStyle?.overflowY || "",
+                                  topologyNodePopoverOverflowX:
+                                    topologyNodePopoverStyle?.overflowX || "",
+                                  topologyNodePopoverBodyScrollContract:
+                                    topologyNodePopoverBody?.getAttribute("data-body-scroll-contract") || "",
+                                  topologyNodePopoverBodyOverflowY:
+                                    topologyNodePopoverBodyStyle?.overflowY || "",
+                                  topologyNodePopoverBodyOverflowX:
+                                    topologyNodePopoverBodyStyle?.overflowX || "",
+                                  topologyNodePopoverBodyTop:
+                                    topologyNodePopoverBodyRect?.top || 0,
+                                  topologyNodePopoverBodyBottom:
+                                    topologyNodePopoverBodyRect?.bottom || 0,
+                                  topologyNodePopoverBodyClientHeight:
+                                    topologyNodePopoverBody?.clientHeight || 0,
+                                  topologyNodePopoverBodyScrollHeight:
+                                    topologyNodePopoverBody?.scrollHeight || 0,
+                                  topologyNodePopoverSurfaceToken:
+                                    topologyNodePopover?.getAttribute("data-popover-surface-token") || "",
+                                  topologyNodePopoverBorderToken:
+                                    topologyNodePopover?.getAttribute("data-popover-border-token") || "",
+                                  topologyNodePopoverSurfaceComputed:
+                                    topologyNodePopoverStyle?.backgroundColor || "",
+                                  topologyNodePopoverBorderComputed:
+                                    topologyNodePopoverStyle?.borderTopColor || "",
+                                  topologyNodePopoverResponsiveWidthContract:
+                                    topologyNodePopover?.getAttribute("data-responsive-width-contract") || "",
+                                  topologyNodePopoverCompactHandoffContract:
+                                    topologyNodePopover?.getAttribute("data-compact-handoff-contract") || "",
                                   topologyNodePopoverWidth:
                                     topologyNodePopoverRect?.width || 0,
                                   topologyNodePopoverHeight:
                                     topologyNodePopoverRect?.height || 0,
+                                  topologyNodePopoverClientHeight:
+                                    topologyNodePopover?.clientHeight || 0,
+                                  topologyNodePopoverScrollHeight:
+                                    topologyNodePopover?.scrollHeight || 0,
+                                  topologyNodePopoverClientWidth:
+                                    topologyNodePopover?.clientWidth || 0,
+                                  topologyNodePopoverScrollWidth:
+                                    topologyNodePopover?.scrollWidth || 0,
                                   topologyNodePopoverLeft:
                                     topologyNodePopoverRect?.left || 0,
                                   topologyNodePopoverRight:
@@ -2642,6 +3127,8 @@ pub fn run() {
                                     topologyNodePopoverConnectionsSection?.getAttribute("data-overflow-contract") || "",
                                   topologyNodePopoverConnectionListOverflowContract:
                                     topologyNodePopoverConnectionList?.getAttribute("data-overflow-contract") || "",
+                                  topologyNodePopoverConnectionListReadableRowContract:
+                                    topologyNodePopoverConnectionList?.getAttribute("data-readable-row-contract") || "",
                                   topologyNodePopoverConnectionListWidth:
                                     topologyNodePopoverConnectionListRect?.width || 0,
                                   topologyNodePopoverConnectionListTop:
@@ -2656,14 +3143,30 @@ pub fn run() {
                                     topologyNodePopoverConnectionList?.getAttribute("data-row-density-contract") || "",
                                   topologyNodePopoverConnectionListRowMinHitHeight:
                                     Number(topologyNodePopoverConnectionList?.getAttribute("data-row-min-hit-height") || "0"),
+                                  topologyNodePopoverConnectionListRowRenderContract:
+                                    topologyNodePopoverConnectionList?.getAttribute("data-row-render-contract") || "",
+                                  topologyNodePopoverConnectionListRowRenderBudget:
+                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-row-render-budget") || "0"),
+                                  topologyNodePopoverConnectionListRenderedCount:
+                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-rendered-connection-count") || "0"),
+                                  topologyNodePopoverConnectionListHiddenCount:
+                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-hidden-connection-count") || "0"),
+                                  topologyNodePopoverConnectionListTotalCount:
+                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-total-connection-count") || "0"),
                                   topologyNodePopoverFooterVisible:
                                     Boolean(topologyNodePopoverFooterRect) &&
                                     topologyNodePopoverFooterRect.width > 0 &&
                                     topologyNodePopoverFooterRect.height > 0,
                                   topologyNodePopoverFooterContract:
                                     topologyNodePopoverFooter?.getAttribute("data-footer-contract") || "",
+                                  topologyNodePopoverFooterPositionContract:
+                                    topologyNodePopoverFooter?.getAttribute("data-footer-position-contract") || "",
                                   topologyNodePopoverFooterOverflowContract:
                                     topologyNodePopoverFooter?.getAttribute("data-overflow-contract") || "",
+                                  topologyNodePopoverFooterSurfaceToken:
+                                    topologyNodePopoverFooter?.getAttribute("data-popover-footer-surface-token") || "",
+                                  topologyNodePopoverFooterSurfaceComputed:
+                                    topologyNodePopoverFooterStyle?.backgroundColor || "",
                                   topologyNodePopoverFooterWidth:
                                     topologyNodePopoverFooterRect?.width || 0,
                                   topologyNodePopoverFooterHeight:
@@ -2676,12 +3179,66 @@ pub fn run() {
                                     topologyNodePopoverFooter?.clientWidth || 0,
                                   topologyNodePopoverFooterScrollWidth:
                                     topologyNodePopoverFooter?.scrollWidth || 0,
+                                  topologyNodePopoverActionRailVisible:
+                                    Boolean(topologyNodePopoverActionRailRect) &&
+                                    topologyNodePopoverActionRailRect.width > 0 &&
+                                    topologyNodePopoverActionRailRect.height > 0,
+                                  topologyNodePopoverActionRailContract:
+                                    topologyNodePopoverActionRail?.getAttribute("data-action-rail-contract") || "",
+                                  topologyNodePopoverActionRailCount:
+                                    Number(topologyNodePopoverActionRail?.getAttribute("data-action-count") || "0"),
+                                  topologyNodePopoverCompactBriefActionVisible:
+                                    Boolean(topologyNodePopoverCompactBriefActionRect) &&
+                                    topologyNodePopoverCompactBriefActionRect.width > 0 &&
+                                    topologyNodePopoverCompactBriefActionRect.height > 0,
+                                  topologyNodePopoverCompactBriefActionKind:
+                                    topologyNodePopoverCompactBriefAction?.getAttribute("data-popover-action") || "",
+                                  topologyNodePopoverCompactBriefActionContract:
+                                    topologyNodePopoverCompactBriefAction?.getAttribute("data-agent-handoff-action") || "",
+                                  topologyNodePopoverCompactBriefActionSurfaceToken:
+                                    topologyNodePopoverCompactBriefAction?.getAttribute("data-popover-action-surface-token") || "",
+                                  topologyNodePopoverCompactBriefActionBorderToken:
+                                    topologyNodePopoverCompactBriefAction?.getAttribute("data-popover-action-border-token") || "",
+                                  topologyNodePopoverCompactBriefActionSurfaceComputed:
+                                    topologyNodePopoverCompactBriefActionStyle?.backgroundColor || "",
+                                  topologyNodePopoverCompactBriefActionBorderComputed:
+                                    topologyNodePopoverCompactBriefActionStyle?.borderTopColor || "",
+                                  topologyNodePopoverCompactBriefActionWidth:
+                                    topologyNodePopoverCompactBriefActionRect?.width || 0,
+                                  topologyNodePopoverCompactBriefActionHeight:
+                                    topologyNodePopoverCompactBriefActionRect?.height || 0,
+                                  topologySelectedSkeletonCardRelationSummaryVisible:
+                                    Boolean(topologySelectedSkeletonCardRelationSummaryRect) &&
+                                    topologySelectedSkeletonCardRelationSummaryRect.width > 0 &&
+                                    topologySelectedSkeletonCardRelationSummaryRect.height > 0,
+                                  topologySelectedSkeletonCardRelationSummaryContract:
+                                    topologySelectedSkeletonCardRelationSummary?.getAttribute("data-relation-summary-contract") || "",
+                                  topologySelectedSkeletonCardRelationSummarySurfaceToken:
+                                    topologySelectedSkeletonCardRelationSummary?.getAttribute("data-relation-summary-surface-token") || "",
+                                  topologySelectedSkeletonCardRelationSummaryBorderToken:
+                                    topologySelectedSkeletonCardRelationSummary?.getAttribute("data-relation-summary-border-token") || "",
+                                  topologySelectedSkeletonCardRelationSummaryTextToken:
+                                    topologySelectedSkeletonCardRelationSummary?.getAttribute("data-relation-summary-text-token") || "",
+                                  topologySelectedSkeletonCardRelationSummaryCount:
+                                    Number(topologySelectedSkeletonCardRelationSummary?.getAttribute("data-relation-count") || "0"),
+                                  topologySelectedSkeletonCardRelationSummaryTypeCount:
+                                    Number(topologySelectedSkeletonCardRelationSummary?.getAttribute("data-relation-type-count") || "0"),
+                                  topologySelectedSkeletonCardRelationSummaryWidth:
+                                    topologySelectedSkeletonCardRelationSummaryRect?.width || 0,
+                                  topologySelectedSkeletonCardRelationSummaryHeight:
+                                    topologySelectedSkeletonCardRelationSummaryRect?.height || 0,
                                   topologyNodePopoverRelationRowOverflowContract:
                                     topologyNodePopoverRelationRow?.getAttribute("data-overflow-contract") || "",
                                   topologyNodePopoverRelationRowWidth:
                                     topologyNodePopoverRelationRowRect?.width || 0,
                                   topologyNodePopoverRelationRowHeight:
                                     topologyNodePopoverRelationRowRect?.height || 0,
+                                  topologyNodePopoverVisibleRelationRowHeight,
+                                  topologyNodePopoverRelationRowFullyVisible:
+                                    topologyNodePopoverRelationRowRect
+                                      ? topologyNodePopoverVisibleRelationRowHeight >=
+                                        topologyNodePopoverRelationRowRect.height - 1
+                                      : false,
                                   topologyNodePopoverRelationRowClientWidth:
                                     topologyNodePopoverRelationRow?.clientWidth || 0,
                                   topologyNodePopoverRelationRowScrollWidth:
@@ -2718,6 +3275,10 @@ pub fn run() {
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-fact-route-gate") || "",
                                   topologyNodePopoverRelationFactRouteAction:
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-fact-route-action") || "",
+                                  topologyNodePopoverRelationHandoffGrammarContract:
+                                    topologyNodePopoverRelationRouteRail?.getAttribute("data-handoff-grammar-contract") ||
+                                    topologyNodePopoverRelationRow?.getAttribute("data-handoff-grammar-contract") ||
+                                    "",
                                   topologyNodePopoverRelationFactRouteChips,
                                   topologyNodePopoverRelationRouteState:
                                     topologyNodePopoverRelationRouteRail?.getAttribute("data-relation-route-state") || "",
@@ -2768,6 +3329,16 @@ pub fn run() {
                                     Boolean(topologyNodePopoverMapContextNote),
                                   topologyNodePopoverMapContextCount:
                                     Number(topologyNodePopoverMapContextNote?.getAttribute("data-map-context-count") || "0"),
+                                  topologyNodePopoverMapContextContract:
+                                    topologyNodePopoverMapContextNote?.getAttribute("data-map-context-contract") || "",
+                                  topologyNodePopoverMapContextHandoffContract:
+                                    topologyNodePopoverMapContextNote?.getAttribute("data-map-context-handoff-contract") || "",
+                                  topologyNodePopoverMapContextRelationTypeCount:
+                                    Number(topologyNodePopoverMapContextNote?.getAttribute("data-map-context-relation-type-count") || "0"),
+                                  topologyNodePopoverMapContextQualitySummary:
+                                    topologyNodePopoverMapContextNote?.getAttribute("data-map-context-quality-summary") || "",
+                                  topologyNodePopoverMapContextAgentReadinessSummary:
+                                    topologyNodePopoverMapContextNote?.getAttribute("data-map-context-agent-readiness-summary") || "",
                                   topologyNodePopoverMapContextText:
                                     topologyNodePopoverMapContextNote?.textContent || "",
                                   topologySelectedRelationHaloVisible:
@@ -2797,6 +3368,10 @@ pub fn run() {
                                     Number(topologySelectedRelationLabelHit?.getAttribute("data-relation-label-desired-width") || "0"),
                                   topologySelectedRelationLabelCenteredAvailableWidth:
                                     Number(topologySelectedRelationLabelHit?.getAttribute("data-relation-label-centered-available-width") || "0"),
+                                  topologySelectedRelationLabelViewportClampContract:
+                                    topologySelectedRelationLabelHit?.getAttribute("data-relation-label-viewport-clamp-contract") || "",
+                                  topologySelectedRelationLabelViewportClampSide:
+                                    topologySelectedRelationLabelHit?.getAttribute("data-relation-label-viewport-clamp-side") || "",
                                   topologySelectedRelationLabelViewportInset:
                                     Number(topologySelectedRelationLabelHit?.getAttribute("data-relation-label-viewport-inset") || "0"),
                                   topologySelectedRelationLabelGeometryId,
@@ -2816,6 +3391,14 @@ pub fn run() {
                                   topologySelectedRelationLabelFactRouteGate,
                                   topologySelectedRelationLabelFactRouteAction,
                                   topologySelectedRelationLabelFactRouteChips,
+                                  topologyRelationLabelHandoffContract,
+                                  topologySelectedRelationLabelHandoffState,
+                                  topologySelectedRelationLabelHandoffGate,
+                                  topologySelectedRelationLabelHandoffPrimaryAction,
+                                  topologySelectedRelationLabelHandoffCliFallbackCommand,
+                                  topologySelectedRelationLabelHandoffFactRoute,
+                                  topologySelectedRelationLabelHandoffQuality,
+                                  topologySelectedRelationLabelHandoffEvidence,
                                   topologySelectedRelationClaimLensVisible: Boolean(topologySelectedRelationClaimLens),
                                   topologySelectedRelationClaimLensText,
                                   topologySelectedRelationClaimLensQuality,
@@ -2849,15 +3432,38 @@ pub fn run() {
                                   topologySelectedRelationCardMotionContract,
                                   topologySelectedRelationCardMotionDurationMs,
                                   topologySelectedRelationCardMotionEasing,
+                                  topologySelectedRelationCardSurfaceToken,
+                                  topologySelectedRelationCardMaxHeightToken,
+                                  topologySelectedRelationCardBorderToken,
+                                  topologySelectedRelationCardShadowToken,
+                                  topologySelectedRelationCardSurfaceComputed,
+                                  topologySelectedRelationCardBorderComputed,
                                   topologySelectedRelationCardActionMinWidthToken:
                                     topologySelectedRelationCard?.getAttribute("data-copy-action-min-width-token") || "",
                                   topologySelectedRelationCardCopyPayloadMinHeightToken:
                                     topologySelectedRelationCard?.getAttribute("data-copy-payload-min-height-token") || "",
                                   topologySelectedRelationCardRouteStepMinWidthToken:
                                     topologySelectedRelationCard?.getAttribute("data-route-step-min-width-token") || "",
+                                  topologySelectedRelationCardTypographyContract:
+                                    topologySelectedRelationCard?.getAttribute("data-typography-contract") || "",
+                                  topologySelectedRelationCardKickerFontSizeToken:
+                                    topologySelectedRelationCard?.getAttribute("data-kicker-font-size-token") || "",
+                                  topologySelectedRelationCardChipFontSizeToken:
+                                    topologySelectedRelationCard?.getAttribute("data-chip-font-size-token") || "",
+                                  topologySelectedRelationCardRouteLabelFontSizeToken:
+                                    topologySelectedRelationCard?.getAttribute("data-route-label-font-size-token") || "",
+                                  topologySelectedRelationCardRouteValueFontSizeToken:
+                                    topologySelectedRelationCard?.getAttribute("data-route-value-font-size-token") || "",
+                                  topologySelectedRelationCardPayloadFontSizeToken:
+                                    topologySelectedRelationCard?.getAttribute("data-payload-font-size-token") || "",
                                   topologySelectedRelationActionMinWidthTokenValue,
                                   topologySelectedRelationCopyPayloadMinHeightTokenValue,
                                   topologySelectedRelationRouteStepMinWidthTokenValue,
+                                  topologySelectedRelationKickerFontSizeTokenValue,
+                                  topologySelectedRelationChipFontSizeTokenValue,
+                                  topologySelectedRelationRouteLabelFontSizeTokenValue,
+                                  topologySelectedRelationRouteValueFontSizeTokenValue,
+                                  topologySelectedRelationPayloadFontSizeTokenValue,
                                   topologySelectedRelationCardMotionSyncState,
                                   topologySelectedRelationProofBandWidth:
                                     topologySelectedRelationProofBandRect?.width || 0,
@@ -3026,6 +3632,12 @@ pub fn run() {
                                   topologyDragFocusDelta: topologyDragVerification?.focusDelta || null,
                                   topologyDragRelationLabelClicked: topologyDragVerification?.relationLabelClicked === true,
                                   topologyDragNodePopoverExpandClicked: topologyDragVerification?.nodePopoverExpandClicked === true,
+                                  topologyNodePopoverVerifyAttempted:
+                                    topologyNodePopoverVerification?.attempted === true,
+                                  topologyNodePopoverVerifyReason:
+                                    topologyNodePopoverVerification?.reason || "",
+                                  topologyNodePopoverVerifyExpanded:
+                                    topologyNodePopoverVerification?.expanded === true,
                                   topologyDragCompanionVisible: topologyDragVerification?.companionVisible === true,
                                   topologyDragCompanionAligned: topologyDragVerification?.companionAligned === true,
                                   topologyDragCompanionDelta: topologyDragVerification?.companionDelta || null,
@@ -3037,6 +3649,54 @@ pub fn run() {
                                   topologyDragClusterSize:
                                     Number(topologyDragVerification?.clusterSize || 0) ||
                                     Number(skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"),
+                                  topologyDragCollisionPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-drag-collision-policy") || "",
+                                  topologyDragFrameCacheContract:
+                                    skeletonCardsLayer?.getAttribute("data-drag-frame-cache-contract") || "",
+                                  topologyDragDomIndexContract:
+                                    skeletonCardsLayer?.getAttribute("data-drag-dom-index-contract") || "",
+                                  topologyDragDomIndexSize:
+                                    Number(skeletonCardsLayer?.getAttribute("data-drag-dom-index-size") || "0"),
+                                  topologyDragFrameCacheSnapshotCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-drag-frame-cache-snapshot-count") || "0"),
+                                  topologyDockDragSnapshotContract:
+                                    skeletonCardsLayer?.getAttribute("data-dock-drag-snapshot-contract") || "",
+                                  topologyConnectorDomIndexContract:
+                                    skeletonCardsLayer?.getAttribute("data-connector-dom-index-contract") || "",
+                                  topologyConnectorRectCacheContract:
+                                    skeletonCardsLayer?.getAttribute("data-connector-rect-cache-contract") || "",
+                                  topologyConnectorRectCacheAccounting:
+                                    skeletonCardsLayer?.getAttribute("data-connector-rect-cache-accounting") || "",
+                                  topologyConnectorRectCacheSize:
+                                    Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-size") || "0"),
+                                  topologyConnectorRectCacheReadCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-read-count") || "0"),
+                                  topologyConnectorRectCacheHitCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-hit-count") || "0"),
+                                  topologyRelationLabelBlockerContract:
+                                    skeletonCardsLayer?.getAttribute("data-relation-label-blocker-contract") || "",
+                                  topologyRelationLabelBlockerSource:
+                                    skeletonCardsLayer?.getAttribute("data-relation-label-blocker-source") || "",
+                                  topologyRelationLabelQueryContract:
+                                    skeletonCardsLayer?.getAttribute("data-relation-label-query-contract") || "",
+                                  topologyRelationLabelQueryIndexCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-relation-label-query-index-count") || "0"),
+                                  topologyRelationLabelGeometryContract:
+                                    skeletonCardsLayer?.getAttribute("data-relation-label-geometry-contract") || "",
+                                  topologyRelationLabelGeometrySource:
+                                    skeletonCardsLayer?.getAttribute("data-relation-label-geometry-source") || "",
+                                  topologyRelationLabelGeometryExpectedCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-relation-label-geometry-expected-count") || "0"),
+                                  topologyRelationLabelGeometryReadyCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-relation-label-geometry-ready-count") || "0"),
+                                  topologyRelationLabelGeometryPendingCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-relation-label-geometry-pending-count") || "0"),
+                                  topologyVisibilityCountContract:
+                                    skeletonCardsLayer?.getAttribute("data-visibility-count-contract") || "",
+                                  topologyFixedSurfaceMeasureContract:
+                                    skeletonCardsLayer?.getAttribute("data-fixed-surface-measure-contract") || "",
+                                  topologyVisibilityCountSource:
+                                    skeletonCardsLayer?.getAttribute("data-visibility-count-source") || "",
                                   topologyDragSettleMotionContract:
                                     skeletonCardsLayer?.getAttribute("data-drag-settle-motion-contract") || "",
                                   topologyDragSettleMotionDurationMs:

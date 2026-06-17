@@ -265,29 +265,58 @@ export function SigmaEdgeTooltip({ data }: Props) {
       x: data.x + 14 + rect.width > vpW,
       y: data.y + 14 + rect.height > vpH,
     });
-  }, [data.x, data.y, data.sourceName, data.targetName]);
+  }, [data.x, data.y, data.sourceName, data.targetName, data.kind, data.relationType]);
   const style: React.CSSProperties = {
     left: flip.x ? data.x - 14 : data.x + 14,
     top: flip.y ? data.y - 14 : data.y + 14,
     transform: `translate(${flip.x ? '-100%' : '0'}, ${flip.y ? '-100%' : '0'})`,
   };
+  const relationType = data.relationType ?? data.kind ?? 'depends_on';
+  const relationTypeLabel = relationTypeDisplayLabel(relationType, {
+    contains: t('relationTypeContains'),
+    dependsOn: t('relationTypeDependsOn'),
+    relates: t('relationTypeRelates'),
+    describes: t('relationTypeDescribes'),
+    uses: t('relationTypeUses'),
+    belongsTo: t('relationTypeBelongsTo'),
+  });
+  const evidenceState = relationEvidenceState(data);
+  const evidenceLabel = relationEvidenceLabel(data, {
+    sourceBacked: (count) => t('evidenceCount', { count }),
+    authored: t('authoredEvidence'),
+    needsReview: t('noEvidence'),
+  });
   return (
     <div
       ref={tooltipRef}
-      className="pointer-events-none absolute z-10 flex items-center gap-2 rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(12,14,20,1)] px-3 py-1.5 text-[11px] text-[color:var(--color-text-primary)] shadow-[0_8px_20px_rgba(0,0,0,0.5)]"
+      data-testid="topology-edge-tooltip"
+      data-edge-tooltip-contract="compact-relation-fact"
+      data-edge-tooltip-surface-token="--topology-edge-tooltip-surface"
+      data-edge-tooltip-border-token="--topology-edge-tooltip-border"
+      data-relation-type={relationType}
+      data-relation-evidence-state={evidenceState}
+      className="pointer-events-none absolute z-10 max-w-[min(420px,calc(100vw-32px))] rounded-md border border-[color:var(--topology-edge-tooltip-border)] bg-[color:var(--topology-edge-tooltip-surface)] px-3 py-2 text-[11px] text-[color:var(--color-text-primary)] shadow-[var(--topology-edge-tooltip-shadow)]"
       style={style}
     >
-      <span>{data.sourceName}</span>
-      <span className="text-[color:rgba(139,151,255,0.85)]">→</span>
-      <span>{data.targetName}</span>
-      <span className="ml-1 font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-        {kindLabel(data.kind, {
-          knowledge: t('kindKnowledge'),
-          referencedBy: t('kindReferencedBy'),
-          contains: t('kindContains'),
-          dependsOn: t('kindDependsOn'),
-        })}
-      </span>
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="min-w-0 truncate">{data.sourceName}</span>
+        <span className="shrink-0 text-[color:var(--topology-edge-tooltip-arrow)]">→</span>
+        <span className="min-w-0 truncate">{data.targetName}</span>
+      </div>
+      <div className="mt-1 flex min-w-0 items-center gap-1.5 font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        <span className="shrink-0">{relationTypeLabel}</span>
+        <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+        <span className="min-w-0 truncate">{evidenceLabel}</span>
+        <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+        <span className="shrink-0">
+          {kindLabel(data.kind, {
+            knowledge: t('kindKnowledge'),
+            referencedBy: t('kindReferencedBy'),
+            contains: t('kindContains'),
+            dependsOn: t('kindDependsOn'),
+          })}
+        </span>
+      </div>
     </div>
   );
 }
@@ -358,7 +387,7 @@ export function SigmaSelectedEdgeCard({
     evidence: evidenceState,
     gate: agentGateKind,
   });
-  const primaryCopyPayloadVisibleSummary = `query_ontology · ${primaryCopyActionLabel}`;
+  const primaryCopyPayloadVisibleSummary = `query_ontology · ${primaryCopyActionLabel} · ${data.source} → ${data.target}`;
   const ontologyHandleSummary = `${data.source} → ${data.target} · ${relationType}`;
   const preflightCopyPayload = {
     operation: 'relation_check',
@@ -415,25 +444,35 @@ export function SigmaSelectedEdgeCard({
       data-scale-contract="density-fixed-no-ui-zoom"
       data-overflow-contract="no-horizontal-scroll"
       data-width-token="--topology-selected-relation-card-width"
+      data-max-height-token="--topology-selected-relation-card-max-height"
       data-inset-token="--topology-selected-relation-card-inset"
       data-copy-action-min-width-token="--topology-selected-relation-action-min-width"
       data-copy-payload-min-height-token="--topology-selected-relation-copy-payload-min-height"
       data-route-step-min-width-token="--topology-selected-relation-route-step-min-width"
+      data-surface-token="--topology-selected-relation-card-surface"
+      data-border-token="--topology-selected-relation-card-border"
+      data-shadow-token="--topology-selected-relation-card-shadow"
+      data-typography-contract="legible-compact-relation-inspector"
+      data-kicker-font-size-token="--topology-selected-relation-kicker-font-size"
+      data-chip-font-size-token="--topology-selected-relation-chip-font-size"
+      data-route-label-font-size-token="--topology-selected-relation-route-label-font-size"
+      data-route-value-font-size-token="--topology-selected-relation-route-value-font-size"
+      data-payload-font-size-token="--topology-selected-relation-payload-font-size"
       data-elevation-contract="solid-active-inspector-over-map"
       data-motion-contract={TOPOLOGY_RELATION_INSPECTOR_MOTION_CONTRACT}
       data-motion-duration-ms={TOPOLOGY_RELATION_INSPECTOR_DURATION_MS}
       data-motion-easing={TOPOLOGY_RELATION_INSPECTOR_EASING_NAME}
-      className={`pointer-events-auto absolute z-30 flex max-h-[calc(100dvh-7rem)] flex-col gap-1 overflow-x-hidden overflow-y-auto rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.98)] p-1 text-[10px] text-[color:var(--color-text-primary)] shadow-[0_12px_26px_rgba(0,0,0,0.38)] motion-safe:animate-[topology-relation-inspector-enter_180ms_ease-out_1] motion-reduce:animate-none ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
+      className={`pointer-events-auto absolute z-30 flex max-h-[var(--topology-selected-relation-card-max-height)] flex-col gap-1 overflow-x-hidden overflow-y-auto rounded-md border border-[color:var(--topology-selected-relation-card-border)] bg-[color:var(--topology-selected-relation-card-surface)] p-1 text-[10px] text-[color:var(--color-text-primary)] shadow-[var(--topology-selected-relation-card-shadow)] motion-safe:animate-[topology-relation-inspector-enter_180ms_ease-out_1] motion-reduce:animate-none ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
     >
       <div className="flex min-w-0 items-start gap-2">
         <div className="min-w-0 flex-1">
-          <div className="font-mono text-[8px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.92)]">
+          <div className="font-mono text-[length:var(--topology-selected-relation-kicker-font-size)] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.92)]">
             {t('selectedTitle')}
           </div>
           <div
             data-testid="sigma-selected-edge-claim-lens"
             data-relation-quality={data.relationQuality ?? 'supported'}
-            className={`mt-0.5 inline-flex max-w-full items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] ${relationClaimLensTone(
+            className={`mt-0.5 inline-flex max-w-full items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] ${relationClaimLensTone(
               data.relationQuality,
             )}`}
           >
@@ -466,17 +505,17 @@ export function SigmaSelectedEdgeCard({
             </div>
           </div>
           <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
-            <span className="rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]">
+            <span className="rounded-full border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]">
               {visibleRelationTypeLabel || relationLabel}
             </span>
             <span
-              className={`rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] ${relationQualityTone(
+              className={`rounded-full border px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] ${relationQualityTone(
                 data.relationQuality,
               )}`}
             >
               {qualityLabel}
             </span>
-            <span className="rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.035)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
+            <span className="rounded-full border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
               {evidenceLabel}
             </span>
           </div>
@@ -494,9 +533,9 @@ export function SigmaSelectedEdgeCard({
         <div
           data-testid="sigma-selected-edge-contract"
           data-relation-contract="typed-fact-not-similarity"
-          className="min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2 py-1"
+          className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-2 py-1"
         >
-          <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <div className="font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {t('relationContractLabel')}
           </div>
           <p className="mt-0.5 line-clamp-1 text-[10px] leading-3 text-[color:var(--color-text-secondary)]">
@@ -515,7 +554,7 @@ export function SigmaSelectedEdgeCard({
           )}`}
         >
           <div
-            className={`font-mono text-[8px] uppercase tracking-[0.14em] ${relationAgentDecisionLabelTone(
+            className={`font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.12em] ${relationAgentDecisionLabelTone(
               agentGateKind,
             )}`}
           >
@@ -534,7 +573,7 @@ export function SigmaSelectedEdgeCard({
         data-route-density="micro-rail"
         data-route-step-min-width-token="--topology-selected-relation-route-step-min-width"
         data-overflow-contract="no-horizontal-scroll"
-        className="flex min-w-0 flex-nowrap overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)]"
+        className="flex min-w-0 flex-nowrap overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] max-[960px]:flex-col"
       >
         <RouteStep kind="fact" label={t('routeFact')} value={t('typedFactLabel')} />
         <RouteStep kind="evidence" label={t('routeEvidence')} value={evidenceLabel} />
@@ -561,64 +600,81 @@ export function SigmaSelectedEdgeCard({
         <Metric label={t('agentGateLabel')} value={agentGateLabel} testId="sigma-selected-edge-agent-gate" />
       </div>
       <div
-        data-testid="sigma-selected-edge-copy-actions"
-        data-copy-action-min-width-token="--topology-selected-relation-action-min-width"
-        data-density-contract="single-row-compact"
-        data-overflow-contract="no-horizontal-scroll"
-        className="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden"
+        data-testid="sigma-selected-edge-next-action"
+        data-next-action-contract="primary-action-first"
+        data-next-action={primaryCopyAction}
+        data-next-action-surface-token="--topology-selected-relation-next-action-surface"
+        data-next-action-border-token="--topology-selected-relation-next-action-border"
+        className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-next-action-border)] bg-[color:var(--topology-selected-relation-next-action-surface)] p-1"
       >
-        <CopyButton
-          copied={copied === 'preflight'}
-          actionKind="relation_check"
-          gateKind={agentGateKind}
-          label={copied === 'preflight' ? t('copied') : t('copyPreflight')}
-          onClick={() => void copyCheck('preflight')}
-          payloadCall={formatQueryOntologyCall(preflightCopyPayload)}
-          primary={primaryCopyAction === 'relation_check'}
-          primaryBadge={t('primaryCopyBadge')}
-        />
-        <CopyButton
-          copied={copied === 'explain'}
-          actionKind="explain_relation"
-          gateKind={agentGateKind}
-          label={copied === 'explain' ? t('copied') : t('copyExplain')}
-          onClick={() => void copyCheck('explain')}
-          payloadCall={formatQueryOntologyCall(explainCopyPayload)}
-          primary={primaryCopyAction === 'explain_relation'}
-          primaryBadge={t('primaryCopyBadge')}
-        />
-      </div>
-      <div
-        data-testid="sigma-selected-edge-copy-payload"
-        data-copy-payload-tool="query_ontology"
-        data-copy-payload-action={primaryCopyAction}
-        data-copy-payload-from={data.source}
-        data-copy-payload-to={data.target}
-        data-copy-payload-type={relationType}
-        data-copy-payload-evidence={evidenceState}
-        data-copy-payload-gate={agentGateKind}
-        data-cli-fallback-command={cliFallbackCommand}
-        data-copy-payload-call={primaryCopyPayloadCall}
-        data-min-height-token="--topology-selected-relation-copy-payload-min-height"
-        data-overflow-contract="no-horizontal-scroll"
-        className="flex min-h-[var(--topology-selected-relation-copy-payload-min-height)] min-w-0 items-center gap-1 overflow-hidden rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(94,106,210,0.045)] px-1.5 py-0.5"
-      >
-        <div className="shrink-0 font-mono text-[8px] uppercase tracking-[0.12em] text-[color:rgba(139,151,255,0.84)]">
-          {t('copyPayloadLabel')}
+        <div className="mb-1 flex min-w-0 items-center justify-between gap-2">
+          <div className="min-w-0 truncate font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.12em] text-[color:rgba(139,151,255,0.92)]">
+            {t('primaryCopyBadge')}
+          </div>
+          <div className="shrink-0 font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {primaryCopyActionLabel}
+          </div>
         </div>
         <div
-          data-copy-payload-summary={primaryCopyPayloadSummary}
-          data-copy-payload-visible-summary={primaryCopyPayloadVisibleSummary}
-          title={primaryCopyPayloadSummary}
-          className="min-w-0 flex-1 truncate font-mono text-[9px] leading-3 text-[color:var(--color-text-secondary)]"
+          data-testid="sigma-selected-edge-copy-actions"
+          data-copy-action-min-width-token="--topology-selected-relation-action-min-width"
+          data-density-contract="single-row-compact"
+          data-overflow-contract="no-horizontal-scroll"
+          className="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden"
         >
-          {primaryCopyPayloadVisibleSummary}
+          <CopyButton
+            copied={copied === 'preflight'}
+            actionKind="relation_check"
+            gateKind={agentGateKind}
+            label={copied === 'preflight' ? t('copied') : t('copyPreflight')}
+            onClick={() => void copyCheck('preflight')}
+            payloadCall={formatQueryOntologyCall(preflightCopyPayload)}
+            primary={primaryCopyAction === 'relation_check'}
+            primaryBadge={t('primaryCopyBadge')}
+          />
+          <CopyButton
+            copied={copied === 'explain'}
+            actionKind="explain_relation"
+            gateKind={agentGateKind}
+            label={copied === 'explain' ? t('copied') : t('copyExplain')}
+            onClick={() => void copyCheck('explain')}
+            payloadCall={formatQueryOntologyCall(explainCopyPayload)}
+            primary={primaryCopyAction === 'explain_relation'}
+            primaryBadge={t('primaryCopyBadge')}
+          />
         </div>
         <div
-          data-cli-fallback-summary={cliFallbackCommand}
-          title={`${t('cliFallbackLabel')} ${cliFallbackCommand}`}
-          className="sr-only"
-        />
+          data-testid="sigma-selected-edge-copy-payload"
+          data-copy-payload-tool="query_ontology"
+          data-copy-payload-action={primaryCopyAction}
+          data-copy-payload-from={data.source}
+          data-copy-payload-to={data.target}
+          data-copy-payload-type={relationType}
+          data-copy-payload-evidence={evidenceState}
+          data-copy-payload-gate={agentGateKind}
+          data-cli-fallback-command={cliFallbackCommand}
+          data-copy-payload-call={primaryCopyPayloadCall}
+          data-min-height-token="--topology-selected-relation-copy-payload-min-height"
+          data-overflow-contract="no-horizontal-scroll"
+          className="mt-1 flex min-h-[var(--topology-selected-relation-copy-payload-min-height)] min-w-0 items-center gap-1 overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-payload-border)] bg-[color:var(--topology-selected-relation-payload-surface)] px-1.5 py-0.5"
+        >
+          <div className="shrink-0 font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.10em] text-[color:rgba(139,151,255,0.84)]">
+            {t('copyPayloadLabel')}
+          </div>
+          <div
+            data-copy-payload-summary={primaryCopyPayloadSummary}
+            data-copy-payload-visible-summary={primaryCopyPayloadVisibleSummary}
+            title={primaryCopyPayloadSummary}
+            className="min-w-0 flex-1 truncate font-mono text-[length:var(--topology-selected-relation-payload-font-size)] leading-3 text-[color:var(--color-text-secondary)]"
+          >
+            {primaryCopyPayloadVisibleSummary}
+          </div>
+          <div
+            data-cli-fallback-summary={cliFallbackCommand}
+            title={`${t('cliFallbackLabel')} ${cliFallbackCommand}`}
+            className="sr-only"
+          />
+        </div>
       </div>
     </aside>
   );
@@ -645,12 +701,18 @@ function RouteStep({
       data-route-step={kind}
       data-route-step-label={label}
       data-route-step-value={value}
-      className="min-w-[var(--topology-selected-relation-route-step-min-width)] flex-1 basis-0 border-r border-[color:rgba(255,255,255,0.07)] px-1.5 py-1 last:border-r-0"
+      className="min-h-8 min-w-[var(--topology-selected-relation-route-step-min-width)] flex-1 basis-0 border-r border-[color:var(--topology-selected-relation-subtle-border)] px-1.5 py-1 last:border-r-0 max-[960px]:w-full max-[960px]:basis-auto max-[960px]:border-r-0 max-[960px]:border-b max-[960px]:last:border-b-0"
     >
-      <div className="truncate font-mono text-[7px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+      <div
+        data-route-step-label-text
+        className="truncate font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+      >
         {label}
       </div>
-      <div className={`mt-0.5 truncate text-[9px] leading-[10px] ${valueTone}`}>
+      <div
+        data-route-step-value-text
+        className={`mt-0.5 truncate text-[length:var(--topology-selected-relation-route-value-font-size)] leading-3 ${valueTone}`}
+      >
         {value}
       </div>
     </div>
@@ -662,7 +724,7 @@ function Metric({ label, value, testId }: { label: string; value: string; testId
     <div
       data-testid={testId}
       data-metric-value={value}
-      className="min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2 min-[1500px]:px-2 min-[1500px]:py-1.5"
+      className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-2.5 py-2 min-[1500px]:px-2 min-[1500px]:py-1.5"
     >
       <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {label}
@@ -704,7 +766,7 @@ function CopyButton({
       title={payloadCall}
       aria-label={primary ? `${label} · ${primaryBadge}` : label}
       onClick={onClick}
-      className={`inline-flex min-h-7 min-w-[var(--topology-selected-relation-action-min-width)] flex-1 basis-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.16),0_6px_18px_rgba(0,0,0,0.20)]' : ''} ${relationCopyButtonTone({
+      className={`inline-flex min-h-7 min-w-[var(--topology-selected-relation-action-min-width)] flex-1 basis-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.16),0_6px_18px_rgba(0,0,0,0.20)]' : ''} ${relationCopyButtonTone({
         gateKind,
         primary,
       })}`}

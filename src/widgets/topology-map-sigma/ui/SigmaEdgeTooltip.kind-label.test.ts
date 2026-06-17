@@ -6,6 +6,7 @@ import enMessages from '../../../../messages/en.json';
 import koMessages from '../../../../messages/ko.json';
 import {
   SELECTED_EDGE_CARD_DOCK_CLASS,
+  SigmaEdgeTooltip,
   SigmaSelectedEdgeCard,
   type SigmaEdgeTooltipData,
   kindLabel,
@@ -120,6 +121,45 @@ describe('relationClaimLensTone — 관계 claim lens 시각 톤', () => {
     expect(relationClaimLensDotTone('review')).toContain('rgba(226,105,105');
     expect(relationClaimLensTone('supported')).toContain('rgba(72,184,203');
     expect(relationClaimLensDotTone(undefined)).toContain('rgba(72,184,203');
+  });
+});
+
+describe('SigmaEdgeTooltip — compact relation fact surface', () => {
+  it('hover tooltip exposes relation type, evidence state, and surface token markers', () => {
+    const data: SigmaEdgeTooltipData = {
+      source: 'domain:views',
+      target: 'capability:topology-analysis-modes',
+      sourceName: 'Views',
+      targetName: 'Topology modes',
+      kind: 'contains',
+      relationType: 'contains',
+      relationQuality: 'strong',
+      evidenceCount: 1,
+      authored: false,
+      x: 24,
+      y: 32,
+    };
+
+    const providerProps: ComponentProps<typeof NextIntlClientProvider> = {
+      locale: 'en',
+      messages: enMessages,
+      children: createElement(SigmaEdgeTooltip, { data }),
+    };
+
+    render(createElement(NextIntlClientProvider, providerProps));
+
+    const tooltip = screen.getByTestId('topology-edge-tooltip');
+    expect(tooltip).toHaveAttribute('data-edge-tooltip-contract', 'compact-relation-fact');
+    expect(tooltip).toHaveAttribute(
+      'data-edge-tooltip-surface-token',
+      '--topology-edge-tooltip-surface',
+    );
+    expect(tooltip).toHaveAttribute('data-relation-type', 'contains');
+    expect(tooltip).toHaveAttribute('data-relation-evidence-state', 'source-backed');
+    expect(tooltip).toHaveTextContent('Views');
+    expect(tooltip).toHaveTextContent('Topology modes');
+    expect(tooltip).toHaveTextContent('contains');
+    expect(tooltip).toHaveTextContent('1 source');
   });
 });
 
@@ -248,6 +288,16 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(secondary).toHaveAttribute('data-copy-recommended', 'false');
     expect(secondary).not.toHaveAttribute('data-copy-recommendation-label');
 
+    const nextAction = screen.getByTestId('sigma-selected-edge-next-action');
+    expect(nextAction).toHaveAttribute('data-next-action-contract', 'primary-action-first');
+    expect(nextAction).toHaveAttribute('data-next-action', 'explain_relation');
+    expect(nextAction).toHaveAttribute(
+      'data-next-action-surface-token',
+      '--topology-selected-relation-next-action-surface',
+    );
+    expect(nextAction).toContainElement(primary);
+    expect(nextAction).toContainElement(secondary);
+
     const payload = screen.getByTestId('sigma-selected-edge-copy-payload');
     expect(payload).toHaveAttribute('data-copy-payload-tool', 'query_ontology');
     expect(payload).toHaveAttribute('data-copy-payload-action', 'explain_relation');
@@ -271,10 +321,11 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     expect(payloadSummary).toHaveAttribute(
       'data-copy-payload-visible-summary',
-      'query_ontology · explain_relation',
+      'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes',
     );
-    expect(payload).toHaveTextContent('query_ontology · explain_relation');
-    expect(payload).not.toHaveTextContent('domain:views → capability:topology-analysis-modes');
+    expect(payload).toHaveTextContent(
+      'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes',
+    );
     expect(payload).not.toHaveTextContent('source-backed · handoff-ready');
     const cliFallback = payload.querySelector('[data-cli-fallback-summary]');
     expect(cliFallback).toHaveClass('sr-only');
@@ -345,6 +396,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       '--topology-selected-relation-card-width',
     );
     expect(selectedCard).toHaveAttribute(
+      'data-max-height-token',
+      '--topology-selected-relation-card-max-height',
+    );
+    expect(selectedCard).toHaveAttribute(
       'data-inset-token',
       '--topology-selected-relation-card-inset',
     );
@@ -359,6 +414,42 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(selectedCard).toHaveAttribute(
       'data-route-step-min-width-token',
       '--topology-selected-relation-route-step-min-width',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-surface-token',
+      '--topology-selected-relation-card-surface',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-border-token',
+      '--topology-selected-relation-card-border',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-shadow-token',
+      '--topology-selected-relation-card-shadow',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-typography-contract',
+      'legible-compact-relation-inspector',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-kicker-font-size-token',
+      '--topology-selected-relation-kicker-font-size',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-chip-font-size-token',
+      '--topology-selected-relation-chip-font-size',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-route-label-font-size-token',
+      '--topology-selected-relation-route-label-font-size',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-route-value-font-size-token',
+      '--topology-selected-relation-route-value-font-size',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-payload-font-size-token',
+      '--topology-selected-relation-payload-font-size',
     );
     expect(selectedCard).toHaveAttribute(
       'data-elevation-contract',
@@ -382,6 +473,12 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     expect(route.querySelector('[data-route-step="fact"]')?.className).toContain(
       'min-w-[var(--topology-selected-relation-route-step-min-width)]',
+    );
+    expect(route.querySelector('[data-route-step-label-text]')?.className).toContain(
+      'text-[length:var(--topology-selected-relation-route-label-font-size)]',
+    );
+    expect(route.querySelector('[data-route-step-value-text]')?.className).toContain(
+      'text-[length:var(--topology-selected-relation-route-value-font-size)]',
     );
     expect(copyPayload).toHaveAttribute(
       'data-min-height-token',
@@ -430,7 +527,9 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(card).toHaveTextContent('에이전트 게이트');
     expect(card).toHaveTextContent('전달 준비됨');
     expect(card).toHaveTextContent('에이전트 전달 판단');
-    expect(card).not.toHaveTextContent('권장 다음 작업');
+    expect(screen.getByTestId('sigma-selected-edge-next-action')).toHaveTextContent(
+      '권장 다음 작업',
+    );
     const primary = screen.getByRole('button', { name: /관계 설명 복사/ });
     expect(primary).toHaveAttribute('data-copy-recommendation-label', '권장 다음 작업');
     expect(primary).toHaveAccessibleName('관계 설명 복사 · 권장 다음 작업');

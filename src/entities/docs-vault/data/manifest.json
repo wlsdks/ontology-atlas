@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-16T13:13:01.305Z",
+  "generatedAt": "2026-06-17T07:49:59.153Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4087,8 +4087,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. ontology-atlas should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 4016,
-      "updatedAt": "2026-06-16T03:32:41.382Z",
+      "wordCount": 4827,
+      "updatedAt": "2026-06-17T07:49:10.032Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "FOUNDATIONS",
@@ -6054,8 +6054,8 @@
         }
       ],
       "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1-hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · 짧은 description 을 띄운다. ontology 노드는 kind(capability / domain / el",
-      "wordCount": 691,
-      "updatedAt": "2026-06-05T16:28:57.420Z",
+      "wordCount": 726,
+      "updatedAt": "2026-06-17T05:55:17.012Z",
       "linksOut": []
     },
     {
@@ -7089,8 +7089,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
-      "wordCount": 1801,
-      "updatedAt": "2026-06-16T13:00:00.170Z",
+      "wordCount": 2050,
+      "updatedAt": "2026-06-17T05:49:26.036Z",
       "linksOut": []
     },
     {

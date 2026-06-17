@@ -10,6 +10,7 @@ const VIEWPORTS = [
 const MBP14_FULLSCREEN = { label: "mbp14-fullscreen", width: 1512, height: 949 };
 const INSTALLED_APP_WEBVIEW = { label: "installed-app-webview", width: 1512, height: 917 };
 const COMPACT_VIEWPORT = { label: "compact-900", width: 900, height: 760 };
+const PHONE_VIEWPORT = { label: "phone-390", width: 390, height: 844 };
 const OUT = path.resolve("output/ui-audit/topology-drag");
 const OVERVIEW_DRAG_DELTA_TOLERANCE_PX = 48;
 
@@ -169,6 +170,108 @@ async function visibleCardRects(page: Page) {
   );
 }
 
+async function visibleRelationLabelCardOverlaps(page: Page) {
+  return page.locator("[data-relation-label-button]").evaluateAll((labels) => {
+    const cardRects = Array.from(document.querySelectorAll<HTMLElement>("[data-skeleton-card]"))
+      .map((card) => {
+        const rect = card.getBoundingClientRect();
+        const style = window.getComputedStyle(card);
+        return {
+          slug: card.getAttribute("data-slug") ?? "",
+          surfaceHidden: card.getAttribute("data-surface-hidden") === "true",
+          display: style.display,
+          opacity: Number(style.opacity || "1"),
+          visibility: style.visibility,
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        };
+      })
+      .filter(
+        (rect) =>
+          !rect.surfaceHidden &&
+          rect.display !== "none" &&
+          rect.visibility !== "hidden" &&
+          rect.opacity > 0.05 &&
+          rect.width > 0 &&
+          rect.height > 0,
+      );
+    const rectsIntersect = (
+      a: { left: number; top: number; right: number; bottom: number },
+      b: { left: number; top: number; right: number; bottom: number },
+    ) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    const hull = document.querySelector<HTMLElement>("[data-drag-cluster-hull]");
+    const hullRect = hull?.getBoundingClientRect() ?? null;
+    const hullBorderBands = hullRect
+      ? [
+          {
+            edge: "top",
+            left: hullRect.left,
+            top: hullRect.top - 2,
+            right: hullRect.right,
+            bottom: hullRect.top + 2,
+          },
+          {
+            edge: "right",
+            left: hullRect.right - 2,
+            top: hullRect.top,
+            right: hullRect.right + 2,
+            bottom: hullRect.bottom,
+          },
+          {
+            edge: "bottom",
+            left: hullRect.left,
+            top: hullRect.bottom - 2,
+            right: hullRect.right,
+            bottom: hullRect.bottom + 2,
+          },
+          {
+            edge: "left",
+            left: hullRect.left - 2,
+            top: hullRect.top,
+            right: hullRect.left + 2,
+            bottom: hullRect.bottom,
+          },
+        ]
+      : [];
+
+    return labels
+      .map((label) => {
+        const rect = label.getBoundingClientRect();
+        const style = window.getComputedStyle(label);
+        const visible =
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          Number(style.opacity || "1") > 0.05 &&
+          rect.width > 0 &&
+          rect.height > 0;
+        return {
+          id: label.getAttribute("data-relation-label-button") ?? "",
+          text: label.textContent?.trim() ?? "",
+          visible,
+          clearance: label.getAttribute("data-relation-label-card-clearance"),
+          clearanceToken: label.getAttribute("data-relation-label-card-clearance-token"),
+          overlapCount: label.getAttribute("data-relation-label-card-overlap-count"),
+          policy: label.getAttribute("data-relation-label-card-clearance-policy"),
+          hullBorderOverlaps: visible
+            ? hullBorderBands
+                .filter((band) => rectsIntersect(rect, band))
+                .map((band) => band.edge)
+            : [],
+          overlapsCards: visible
+            ? cardRects
+                .filter((card) => rectsIntersect(rect, card))
+                .map((card) => card.slug)
+            : [],
+        };
+      })
+      .filter((label) => label.visible);
+  });
+}
+
 async function firstVisibleSkeletonCard(page: Page) {
   const slug = await page.locator("[data-skeleton-card]").evaluateAll((els) => {
     const visible = els.find((el) => {
@@ -191,6 +294,34 @@ async function firstVisibleSkeletonCard(page: Page) {
   return page.locator(`[data-skeleton-card][data-slug="${slug}"]`).first();
 }
 
+async function expectSelectedCardRelationSummary(page: Page, selectedSlug: string) {
+  const selectedCard = page
+    .locator(`[data-skeleton-card][data-slug="${selectedSlug}"]`)
+    .first();
+  await expect(selectedCard).toBeVisible();
+  await expect(selectedCard).toHaveAttribute("data-selected", "true");
+  const summary = selectedCard.getByTestId("sigma-selected-card-relation-summary");
+  await expect(summary).toBeVisible();
+  await expect(summary).toHaveAttribute(
+    "data-relation-summary-contract",
+    "selected-card-direct-facts",
+  );
+  await expect(summary).toHaveAttribute(
+    "data-relation-summary-surface-token",
+    "--topology-relation-summary-surface",
+  );
+  await expect(summary).toHaveAttribute(
+    "data-relation-summary-border-token",
+    "--topology-relation-summary-border",
+  );
+  await expect(summary).toHaveAttribute(
+    "data-relation-summary-text-token",
+    "--topology-relation-summary-text",
+  );
+  await expect(summary).toHaveAttribute("data-relation-count", /^[1-9]\d*$/);
+  await expect(summary).toHaveAttribute("data-relation-type-count", /^[1-9]\d*$/);
+}
+
 test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async ({
   page,
 }) => {
@@ -205,8 +336,12 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   await expect(panel).toHaveAttribute("data-panel-width-policy", "overview-support");
   await expect(panel).toHaveAttribute("data-panel-width-band", "header-aligned");
   await expect(panel).toHaveAttribute("data-panel-width-target", "overview-14-inch-compact");
-  await expect(panel).toHaveAttribute("data-panel-width-css", "var(--topology-panel-overview-rail-width)");
-  await expect(panel).toHaveAttribute("data-panel-width-token", "--topology-panel-overview-rail-width");
+  await expect(panel).toHaveAttribute("data-panel-width-css", "var(--topology-panel-overview-responsive-width)");
+  await expect(panel).toHaveAttribute("data-panel-width-token", "--topology-panel-overview-responsive-width");
+  await expect(panel).toHaveAttribute(
+    "data-panel-phone-utility-reserve-token",
+    "--topology-panel-phone-utility-rail-reserve",
+  );
   expect(panelRect.width, "analysis panel should keep the compact 14-inch support width").toBeGreaterThanOrEqual(318);
   expect(panelRect.width, "analysis panel should not compete with the map on 14-inch fullscreen").toBeLessThanOrEqual(342);
   expect(panelRect.height, "analysis panel should expose the overview stack").toBeGreaterThan(420);
@@ -253,6 +388,36 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     legendRect,
     minimapRect,
   );
+});
+
+test("Relief overview panel owns the phone read layer above map cards", async ({ page }) => {
+  await openRelief(page, PHONE_VIEWPORT, { mode: "map", requireHud: false });
+
+  const panel = page.getByTestId("topology-analysis-panel");
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute("data-analysis-mode", "overview");
+  await expect(panel).toHaveAttribute("data-panel-layer-contract", "read-surface-above-map-cards");
+  await expect(panel).toHaveAttribute("data-panel-z-index-token", "--topology-panel-read-layer-z-index");
+
+  const layerProof = await panel.evaluate((el) => {
+    const panelRect = el.getBoundingClientRect();
+    const target = document.elementFromPoint(
+      panelRect.left + panelRect.width / 2,
+      panelRect.top + panelRect.height / 2,
+    );
+    const owner = target?.closest('[data-testid="topology-analysis-panel"], [data-skeleton-card]');
+    return {
+      panelZ: getComputedStyle(el).zIndex,
+      ownerTestId: owner?.getAttribute("data-testid") || "",
+      ownerSlug: owner?.getAttribute("data-slug") || "",
+    };
+  });
+
+  expect(layerProof.panelZ, "phone overview panel should use the read layer z-index").toBe("30");
+  expect(layerProof.ownerTestId, "phone overview panel center should not hit a map card").toBe(
+    "topology-analysis-panel",
+  );
+  expect(layerProof.ownerSlug, "phone overview panel center should not expose a skeleton card slug").toBe("");
 });
 
 test("Relief default route renders the readable card skeleton without panel scroll", async ({
@@ -329,7 +494,25 @@ test("Relief minimap pans the viewport with visible feedback", async ({
 
   const minimap = page.getByTestId("topology-minimap");
   await expect(minimap).toBeVisible();
+  await expect(minimap).toHaveAttribute(
+    "data-minimap-camera-sync-contract",
+    "raf-coalesced-camera-updates",
+  );
+  await expect(minimap).toHaveAttribute(
+    "data-minimap-surface-token",
+    "--topology-minimap-surface",
+  );
+  await expect(minimap).toHaveAttribute(
+    "data-minimap-pan-search-contract",
+    "precomputed-navigation-targets",
+  );
   const beforeTick = Number(await minimap.getAttribute("data-camera-tick"));
+  const beforeFrameCount = Number(await minimap.getAttribute("data-camera-frame-count"));
+  const beforePanSearchCount = Number(
+    await minimap.getAttribute("data-minimap-pan-search-count"),
+  );
+  const panTargetCount = Number(await minimap.getAttribute("data-minimap-pan-target-count"));
+  expect(panTargetCount).toBeGreaterThan(0);
   const box = await minimap.boundingBox();
   if (!box) {
     throw new Error("missing minimap bounding box");
@@ -343,6 +526,18 @@ test("Relief minimap pans the viewport with visible feedback", async ({
     message: "minimap click should update the Relief camera",
     timeout: 4_000,
   }).toBeGreaterThan(beforeTick);
+  await expect.poll(async () => {
+    return Number(await minimap.getAttribute("data-camera-frame-count"));
+  }, {
+    message: "minimap camera updates should be folded into render frames",
+    timeout: 4_000,
+  }).toBeGreaterThan(beforeFrameCount);
+  const updateEventCount = Number(await minimap.getAttribute("data-camera-update-event-count"));
+  const frameCount = Number(await minimap.getAttribute("data-camera-frame-count"));
+  expect(frameCount).toBeLessThanOrEqual(updateEventCount);
+  expect(Number(await minimap.getAttribute("data-minimap-pan-search-count"))).toBeGreaterThan(
+    beforePanSearchCount,
+  );
   await expect(minimap).toHaveAttribute("data-navigating", "false", {
     timeout: 1_500,
   });
@@ -575,7 +770,36 @@ for (const viewport of VIEWPORTS) {
     const relationButton = page
       .locator('[data-relation-label-button][data-label-geometry-source="html-hit-target"]')
       .first();
+    const skeletonCards = page.getByTestId("sigma-skeleton-cards");
     await expect(relationButton).toHaveAttribute("data-label-geometry-source", "html-hit-target");
+    await expect(skeletonCards).toHaveAttribute(
+      "data-relation-label-geometry-contract",
+      "frame-positioned-hit-targets",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-relation-label-geometry-source",
+      "after-render-layout-pass",
+    );
+    const geometryReadyCount = Number(
+      await skeletonCards.getAttribute("data-relation-label-geometry-ready-count"),
+    );
+    const geometryExpectedCount = Number(
+      await skeletonCards.getAttribute("data-relation-label-geometry-expected-count"),
+    );
+    expect(
+      geometryReadyCount,
+      `relation label frame geometry ready count should cover expected labels at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(geometryExpectedCount);
+    if (geometryExpectedCount > 0) {
+      expect(
+        geometryReadyCount,
+        `visible relation label frame geometry should be ready before selection at ${viewport.label}`,
+      ).toBeGreaterThanOrEqual(1);
+    }
+    await expect(skeletonCards).toHaveAttribute(
+      "data-relation-label-geometry-pending-count",
+      "0",
+    );
     await expect(relationButton).toHaveAttribute(
       "data-relation-quality",
       /strong|supported|weak|review/,
@@ -585,7 +809,7 @@ for (const viewport of VIEWPORTS) {
       /source-backed|authored|needs-review/,
     );
     await expect(relationButton.locator("[data-relation-evidence-glyph]")).toHaveText(
-      /\d+|9\+|A|!/,
+      /S\d+|S9\+|A|R/,
     );
     const relationButtonBox = await relationButton.boundingBox();
     if (!relationButtonBox) {
@@ -622,6 +846,46 @@ for (const viewport of VIEWPORTS) {
       element.click();
     });
     await expect(relationButton).toHaveAttribute("data-selected-relation", "true");
+    await expect(skeletonCards).toHaveAttribute(
+      "data-relation-label-geometry-ready-count",
+      /[1-9]\d*/,
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-relation-label-geometry-pending-count",
+      "0",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-viewport-clamp-contract",
+      /centered-within-viewport|compacted-to-viewport-edge/,
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-viewport-clamp-side",
+      /left|right|none/,
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-relation-label-handoff-contract",
+      "label-level-mcp-cli-fallback",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-selected-relation-label-handoff",
+      "ready",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-selected-relation-label-gate",
+      /handoff-ready|preflight-first|review-first/,
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-selected-relation-label-primary-action",
+      /relation_check|explain_relation/,
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-selected-relation-label-cli-fallback",
+      /ontology-atlas (relation-check|explain)/,
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-selected-relation-label-fact-route",
+      "fact>evidence>gate>action",
+    );
     await expect(relationButton).toHaveAttribute(
       "data-relation-fact-route",
       "fact>evidence>gate>action",
@@ -643,6 +907,18 @@ for (const viewport of VIEWPORTS) {
       /src|auth|review/,
     );
     await expect(page.getByTestId("sigma-selected-edge-card")).toBeVisible();
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-surface-token",
+      "--topology-selected-relation-card-surface",
+    );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-border-token",
+      "--topology-selected-relation-card-border",
+    );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-typography-contract",
+      "legible-compact-relation-inspector",
+    );
     const claimLens = page.getByTestId("sigma-selected-edge-claim-lens");
     await expect(claimLens).toHaveAttribute("data-relation-quality", /strong|supported|weak|review/);
     await expect(claimLens.locator("[data-relation-quality-dot]")).toBeVisible();
@@ -710,6 +986,16 @@ for (const viewport of VIEWPORTS) {
     const primaryCopyAction = await page
       .locator('[data-relation-copy-priority="primary"]')
       .getAttribute("data-relation-copy-action");
+    const nextActionRail = page.getByTestId("sigma-selected-edge-next-action");
+    await expect(nextActionRail).toHaveAttribute(
+      "data-next-action-contract",
+      "primary-action-first",
+    );
+    await expect(nextActionRail).toHaveAttribute("data-next-action", primaryCopyAction ?? "");
+    await expect(nextActionRail).toHaveAttribute(
+      "data-next-action-surface-token",
+      "--topology-selected-relation-next-action-surface",
+    );
     const copyPayload = page.getByTestId("sigma-selected-edge-copy-payload");
     await expect(copyPayload).toHaveAttribute("data-copy-payload-tool", "query_ontology");
     await expect(copyPayload).toHaveAttribute(
@@ -940,7 +1226,187 @@ for (const viewport of VIEWPORTS) {
       "--topology-panel-selected-rail-width",
     );
     await expect(selectedFocusPanel).toHaveAttribute("data-attention-role", "support");
+    await expect(selectedFocusPanel).toHaveAttribute(
+      "data-panel-surface-token",
+      "--topology-panel-support-surface",
+    );
+    await expect(selectedFocusPanel).toHaveAttribute(
+      "data-command-spine-padding-token",
+      "--topology-command-spine-padding",
+    );
+    await expect(selectedFocusPanel).toHaveAttribute(
+      "data-command-primary-height-token",
+      "--topology-command-primary-min-height",
+    );
+    const commandSpine = page.getByTestId("topology-focus-command-spine");
+    await expect(commandSpine).toBeVisible();
+    await expect(commandSpine).toHaveAttribute(
+      "data-command-hierarchy",
+      "brief-primary-review-agent-proof",
+    );
+    await expect(commandSpine).toHaveAttribute(
+      "data-tokenized-surface",
+      "topology-command-spine",
+    );
+    await expect(commandSpine).toHaveAttribute(
+      "data-command-spine-surface-token",
+      "--topology-command-spine-surface",
+    );
+    await expect(commandSpine).toHaveAttribute(
+      "data-command-spine-border-token",
+      "--topology-command-spine-border",
+    );
+    await expect(page.getByTestId("topology-focus-primary-action")).toHaveAttribute(
+      "data-command-primary-surface-token",
+      "--topology-command-primary-surface",
+    );
+    await expect(page.getByTestId("topology-focus-primary-action")).toBeVisible();
+    await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+      "data-command-chrome-state",
+      "compact-focus",
+    );
+    await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+      "data-utility-lane-height-token",
+      "--topology-utility-lane-height",
+    );
+    const utilityLane = page.getByTestId("topology-utility-action-lane");
+    await expect(utilityLane).toBeVisible();
+    await expect(utilityLane).toHaveAttribute(
+      "data-utility-lane-density",
+      "compact-focus",
+    );
+    await expect(utilityLane).toHaveAttribute(
+      "data-utility-lane-contract",
+      "icon-first-focus-utility",
+    );
+    await expect(utilityLane).toHaveAttribute(
+      "data-utility-lane-surface-token",
+      "--topology-utility-lane-surface",
+    );
+    await expect(utilityLane).toHaveAttribute(
+      "data-utility-lane-border-token",
+      "--topology-utility-lane-border",
+    );
+    await expect(utilityLane).toHaveAttribute(
+      "data-utility-lane-shadow-token",
+      "--topology-utility-lane-shadow",
+    );
+    const searchLane = page.getByTestId("topology-search-action-lane");
+    await expect(searchLane).toBeVisible();
+    await expect(searchLane).toHaveAttribute("data-search-lane-density", "compact-focus");
+    await expect(searchLane).toHaveAttribute(
+      "data-search-lane-contract",
+      "icon-first-focus-search",
+    );
+    await expect(searchLane).toHaveAttribute(
+      "data-search-lane-compact-width-token",
+      "--topology-search-lane-compact-width",
+    );
+    await expect(searchLane).toHaveAttribute(
+      "data-search-lane-surface-token",
+      "--topology-utility-lane-surface",
+    );
+    await expect(searchLane).toHaveAttribute(
+      "data-search-lane-border-token",
+      "--topology-utility-lane-border",
+    );
+    await expect(searchLane).toHaveAttribute(
+      "data-search-lane-shadow-token",
+      "--topology-utility-lane-shadow",
+    );
+    const controlsStack = page.getByTestId("topology-sigma-controls-stack");
+    await expect(controlsStack).toBeVisible();
+    await expect(controlsStack).toHaveAttribute("data-controls-density", "compact-focus");
+    await expect(controlsStack).toHaveAttribute(
+      "data-controls-contract",
+      "focus-support-utility-stack",
+    );
+    await expect(controlsStack).toHaveAttribute(
+      "data-control-surface-token",
+      "--topology-floating-control-surface",
+    );
+    await expect(controlsStack).toHaveAttribute(
+      "data-control-border-token",
+      "--topology-floating-control-border",
+    );
+    await expect(controlsStack).toHaveAttribute(
+      "data-control-phone-bottom-token",
+      "--topology-floating-control-phone-bottom",
+    );
+    await expect(controlsStack).toHaveAttribute(
+      "data-control-desktop-top-token",
+      "--topology-floating-control-desktop-top",
+    );
+    const helpButton = page.getByTestId("topology-shortcuts-help-button");
+    await expect(helpButton).toBeVisible();
+    await expect(helpButton).toHaveAttribute("data-controls-density", "compact-focus");
+    await expect(helpButton).toHaveAttribute(
+      "data-controls-contract",
+      "focus-support-help-entry",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-collision-policy",
+      "release-settle",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-frame-cache-contract",
+      "pointer-move-reuses-drag-indexes",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-dom-index-contract",
+      "drag-release-reuses-card-elements",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-dom-index-size",
+      /^\d+$/,
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-frame-cache-snapshot-count",
+      /^\d+$/,
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-dock-drag-snapshot-contract",
+      "single-pass-card-rect-read",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-visibility-count-contract",
+      "single-pass-unless-fallback",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-measure-contract",
+      "single-pass-rect-read",
+    );
+    await expectSelectedCardRelationSummary(page, "domain:views");
     await expect(page.getByTestId("topology-node-popover")).toBeVisible();
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-collapsed",
+      "true",
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-compact-handoff-contract",
+      "selected-node-actions-visible",
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-popover-surface-token",
+      "--topology-node-popover-surface",
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-popover-border-token",
+      "--topology-node-popover-border",
+    );
+    await expect(page.getByTestId("topology-node-popover-compact-brief-action")).toBeVisible();
+    await expect(page.getByTestId("topology-node-popover-compact-brief-action")).toHaveAttribute(
+      "data-agent-handoff-action",
+      "copy-focus-brief",
+    );
+    await expect(page.getByTestId("topology-node-popover-compact-brief-action")).toHaveAttribute(
+      "data-popover-action-surface-token",
+      "--topology-node-popover-action-icon-surface",
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-size-policy",
+      "context-chip",
+    );
     const selectedFocusPanelRect = await rectOf(selectedFocusPanel);
     const selectedFocusPanelMaxWidth = viewport.width <= 1600 ? 322 : 380;
     expect(
@@ -1003,6 +1469,18 @@ for (const viewport of VIEWPORTS) {
       "data-drag-active",
       "true",
     );
+    const dragCacheProof = await page.getByTestId("sigma-skeleton-cards").evaluate((el) => ({
+      domIndexSize: Number(el.getAttribute("data-drag-dom-index-size") ?? "0"),
+      snapshotCount: Number(el.getAttribute("data-drag-frame-cache-snapshot-count") ?? "0"),
+    }));
+    expect(
+      dragCacheProof.domIndexSize,
+      `drag should reuse a pointer-down DOM index at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      dragCacheProof.snapshotCount,
+      `drag should expose dock snapshot accounting during pointer move at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(0);
     await expect(page.getByText("moving linked cards")).toBeVisible();
     const targetDx = whileDragging.left - before.left;
     const targetDy = whileDragging.top - before.top;
@@ -1145,7 +1623,15 @@ for (const viewport of VIEWPORTS) {
     await expect(panel).toHaveAttribute("data-attention-role", "support");
     await expect(panel).toHaveAttribute(
       "data-panel-width-contract",
-      "path-support-rail-max-360",
+      "path-support-rail-max-360-phone-utility-reserve",
+    );
+    await expect(panel).toHaveAttribute(
+      "data-panel-width-token",
+      "--topology-panel-path-responsive-width",
+    );
+    await expect(panel).toHaveAttribute(
+      "data-panel-phone-utility-reserve-token",
+      "--topology-panel-phone-utility-rail-reserve",
     );
     await expect(panel).toHaveAttribute("data-path-guidance-owner", "analysis-rail");
     await expect(panel).toHaveAttribute(
@@ -1175,6 +1661,18 @@ for (const viewport of VIEWPORTS) {
       await expect(prompt.first()).toHaveAttribute(
         "data-overflow-contract",
         "no-horizontal-scroll",
+      );
+      await expect(prompt.first()).toHaveAttribute(
+        "data-path-prompt-left-token",
+        "--topology-path-prompt-left",
+      );
+      await expect(prompt.first()).toHaveAttribute(
+        "data-path-prompt-half-token",
+        "--topology-path-prompt-half",
+      );
+      await expect(prompt.first()).toHaveAttribute(
+        "data-path-prompt-panel-width-token",
+        "--topology-path-prompt-panel-width",
       );
       const promptRect = await rectOf(prompt.first());
       expect(
@@ -1217,8 +1715,20 @@ for (const viewport of VIEWPORTS) {
       "agent-next-action-visible",
     );
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-handoff-layout-contract",
+      "compact-proof-strip",
+    );
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-overflow-contract",
       "no-horizontal-scroll",
+    );
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-surface",
+    );
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-action-min-height-token",
+      "--topology-path-handoff-action-min-height",
     );
     const handoffDoesNotOverflow = await page
       .getByTestId("topology-path-agent-handoff")
@@ -1254,7 +1764,7 @@ test("Relief selected Path route keeps path guidance primary on 14-inch fullscre
   await expect(panel).toHaveAttribute("data-panel-width-target", "path-14-inch-rail");
   await expect(panel).toHaveAttribute(
     "data-panel-width-contract",
-    "path-support-rail-max-360",
+    "path-support-rail-max-360-phone-utility-reserve",
   );
   await expect(panel).toHaveAttribute("data-path-guidance-owner", "analysis-rail");
   await expect(page.getByTestId("topology-node-popover")).toHaveCount(0);
@@ -1328,9 +1838,994 @@ test("Relief Path result keeps both endpoint cards visible in the installed app 
     "Path result endpoint cards must not overlap other visible Relief cards",
   ).toEqual([]);
   await expect(page.getByTestId("topology-path-result-banner")).toBeVisible();
+  await expect(page.getByTestId("topology-path-result-banner")).toHaveAttribute(
+    "data-path-result-responsive-contract",
+    "hidden-under-md-panel-owned",
+  );
   await expect(page.getByTestId("topology-node-popover")).toHaveCount(0);
   await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
   await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
+});
+
+test("Relief path result keeps phone viewport panel-owned", async ({ page }) => {
+  const viewport = PHONE_VIEWPORT;
+  await openRelief(page, viewport, {
+    mode: "path",
+    requireHud: false,
+    pathFrom: "domain:views",
+    pathTo: "capability:topology-analysis-modes",
+  });
+
+  const panel = page.getByTestId("topology-analysis-panel");
+  const banner = page.getByTestId("topology-path-result-banner");
+  const handoff = page.getByTestId("topology-path-agent-handoff");
+  const route = page.getByTestId("topology-path-visible-route");
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute("data-analysis-mode", "path");
+  await expect(panel).toHaveAttribute("data-path-guidance-owner", "analysis-rail");
+  await expect(panel).toHaveAttribute(
+    "data-panel-width-contract",
+    "path-support-rail-max-360-phone-utility-reserve",
+  );
+  await expect(panel).toHaveAttribute(
+    "data-panel-width-token",
+    "--topology-panel-path-responsive-width",
+  );
+  await expect(panel).toHaveAttribute(
+    "data-panel-phone-utility-reserve-token",
+    "--topology-panel-phone-utility-rail-reserve",
+  );
+  await expect(route).toBeVisible();
+  await expect(route).toHaveAttribute(
+    "data-route-contract",
+    "source-target-visible-before-proof-disclosure",
+  );
+  await expect(route).toHaveAttribute("data-attention-layer", "focus-path-state");
+  await expect(route).toHaveAttribute("data-guidance-owner", "analysis-rail");
+  await expect(route).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+  await expect(route).toHaveAttribute("data-source-slug", "domain:views");
+  await expect(route).toHaveAttribute(
+    "data-target-slug",
+    "capability:topology-analysis-modes",
+  );
+  await expect(route).toHaveAttribute("data-surface-token", "--topology-path-route-surface");
+  await expect(route).toHaveAttribute("data-border-token", "--topology-path-route-border");
+  await expect(route).toHaveAttribute(
+    "data-chip-surface-token",
+    "--topology-path-route-chip-surface",
+  );
+  await expect(route).toHaveAttribute(
+    "data-chip-border-token",
+    "--topology-path-route-chip-border",
+  );
+  const routeDoesNotOverflow = await route.evaluate(
+    (el) => el.scrollWidth <= el.clientWidth + 1,
+  );
+  expect(routeDoesNotOverflow, "phone path visible route should not overflow").toBe(true);
+  await expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
+  await expect(handoff).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+  const handoffDoesNotOverflow = await handoff.evaluate(
+    (el) => el.scrollWidth <= el.clientWidth + 1,
+  );
+  expect(handoffDoesNotOverflow, "phone path handoff strip should not overflow").toBe(true);
+  await expect(banner).toHaveAttribute(
+    "data-path-result-responsive-contract",
+    "hidden-under-md-panel-owned",
+  );
+  await expect(banner).toHaveAttribute(
+    "data-path-prompt-left-token",
+    "--topology-path-prompt-left",
+  );
+  await expect(banner).toHaveAttribute(
+    "data-path-prompt-half-token",
+    "--topology-path-prompt-half",
+  );
+  await expect(banner).toHaveAttribute(
+    "data-path-prompt-panel-width-token",
+    "--topology-path-prompt-panel-width",
+  );
+  await expect(banner).not.toBeVisible();
+  const helpButton = page.getByTestId("topology-shortcuts-help-button").first();
+  await expect(helpButton).toHaveAttribute(
+    "data-phone-help-entry-contract",
+    "hidden-during-path-panel",
+  );
+  await expect(helpButton).not.toBeVisible();
+  const panelRect = await rectOf(panel);
+  const controlsRect = await rectOf(page.getByTestId("topology-sigma-controls-stack"));
+  expect(
+    controlsRect.left - panelRect.right,
+    "phone path analysis rail should reserve space before the right utility rail",
+  ).toBeGreaterThanOrEqual(12);
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-path-endpoint-separation-contract",
+    "source-target-min-gap",
+  );
+
+  const sourceCard = page
+    .locator('[data-skeleton-card][data-slug="domain:views"][data-path-role="source"]')
+    .first();
+  const targetCard = page
+    .locator('[data-skeleton-card][data-path-role="target"]')
+    .first();
+  await expect(sourceCard).toBeVisible();
+  await expect(targetCard).toBeVisible();
+  await expect(page.getByTestId("topology-node-popover")).toHaveCount(0);
+  expect(
+    cardPairsThatIntersect(await visibleCardRects(page)),
+    "Phone path endpoint cards must not overlap after the result banner collapses",
+  ).toEqual([]);
+  const scrollOverflow = await page.evaluate(() => ({
+    x: document.documentElement.scrollWidth - window.innerWidth,
+    y: document.documentElement.scrollHeight - window.innerHeight,
+  }));
+  expect(scrollOverflow.x, "phone path should not introduce horizontal overflow").toBe(0);
+  expect(
+    scrollOverflow.y,
+    "phone path vertical overflow should stay within the mobile bottom-nav reserve",
+  ).toBeLessThanOrEqual(56);
+});
+
+test("Relief Path accepts short from/to shared-link aliases", async ({ page }) => {
+  await page.setViewportSize(PHONE_VIEWPORT);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto(
+    "/en/topology/?mode=path&from=domain%3Aviews&to=capability%3Aagent-graph-readiness",
+  );
+
+  const panel = page.getByTestId("topology-analysis-panel");
+  const handoff = page.getByTestId("topology-path-agent-handoff");
+  await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute("data-analysis-mode", "path");
+  await expect(panel).toContainText("Views");
+  await expect(panel).toContainText("Agent Graph Readiness");
+  await expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
+  await expect(page.getByTestId("topology-path-result-banner")).not.toBeVisible();
+  await expect(
+    page.locator('[data-skeleton-card][data-slug="domain:views"][data-path-role="source"]').first(),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(
+        '[data-skeleton-card][data-slug="capability:agent-graph-readiness"][data-path-role="target"]',
+      )
+      .first(),
+  ).toBeVisible();
+});
+
+test("Relief selected node focus keeps compact viewport clear", async ({ page }) => {
+  const viewport = COMPACT_VIEWPORT;
+  await openRelief(page, viewport, {
+    mode: "focus",
+    requireHud: false,
+    selectedSlug: "domain:views",
+  });
+
+  const selectedFocusPanel = page.getByTestId("topology-analysis-panel");
+  await expect(selectedFocusPanel).toHaveAttribute("data-analysis-mode", "focus");
+  await expect(selectedFocusPanel).toHaveAttribute("data-selected-focus-rail", "true");
+  await expect(selectedFocusPanel).toHaveAttribute(
+    "data-compact-focus-collapse-contract",
+    "selected-focus-support-hidden-under-md",
+  );
+  await expect(selectedFocusPanel).not.toBeVisible();
+
+  const popover = page.getByTestId("topology-node-popover");
+  await expect(popover).toBeVisible();
+  await expect(popover).toHaveAttribute(
+    "data-compact-handoff-contract",
+    "selected-node-actions-visible",
+  );
+  await expect(popover).toHaveAttribute("data-responsive-width-contract", "fluid-chip-to-rail");
+  await expect(popover).toHaveAttribute("data-compact-action-contract", "icon-only-under-480");
+  await expect(popover).toHaveAttribute(
+    "data-compact-gap-token",
+    "--topology-node-popover-chip-gap",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-compact-action-size-token",
+    "--topology-node-popover-compact-action-size",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-title-lines-token",
+    "--topology-node-popover-title-lines",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-title-readability-contract",
+    "selected-node-title-readable",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-popover-surface-token",
+    "--topology-node-popover-surface",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-popover-border-token",
+    "--topology-node-popover-border",
+  );
+  const compactBriefAction = page.getByTestId("topology-node-popover-compact-brief-action");
+  await expect(compactBriefAction).toBeVisible();
+  const popoverTitle = page.getByTestId("topology-node-popover-title");
+  await expect(popoverTitle).toHaveAttribute(
+    "data-title-readability-contract",
+    "selected-node-title-readable",
+  );
+  await expect(popoverTitle).toHaveAttribute(
+    "data-title-lines-token",
+    "--topology-node-popover-title-lines",
+  );
+  const titleReadability = await popoverTitle.evaluate((el) => {
+    const style = window.getComputedStyle(el);
+    return {
+      lineClamp: style.getPropertyValue("-webkit-line-clamp"),
+      overflowsMoreThanTwoLines: el.scrollHeight > el.clientHeight + 2,
+    };
+  });
+  expect(titleReadability.lineClamp).toBe("2");
+  expect(
+    titleReadability.overflowsMoreThanTwoLines,
+    "selected node title should clamp at two lines instead of one-line truncation",
+  ).toBe(false);
+  await expect(compactBriefAction).toHaveAttribute(
+    "data-agent-handoff-action",
+    "copy-focus-brief",
+  );
+  await expect(compactBriefAction).toHaveAttribute(
+    "data-popover-action-surface-token",
+    "--topology-node-popover-action-icon-surface",
+  );
+  await expect(page.locator('[data-node-popover-toggle="expand"]')).toHaveAttribute(
+    "data-compact-action-contract",
+    "icon-only-under-480",
+  );
+  const popoverRect = await rectOf(popover);
+  expect(popoverRect.top, "compact focus popover should stay under top chrome").toBeLessThanOrEqual(96);
+  expect(popoverRect.left, "compact focus popover should stay inside viewport").toBeGreaterThanOrEqual(8);
+  expect(popoverRect.right, "compact focus popover should stay inside viewport").toBeLessThanOrEqual(
+    viewport.width - 8,
+  );
+
+  const controlsStack = page.getByTestId("topology-sigma-controls-stack");
+  const helpButton = page.getByTestId("topology-shortcuts-help-button");
+  await expect(controlsStack).toHaveAttribute("data-controls-density", "compact-focus");
+  await expect(controlsStack).toHaveAttribute(
+    "data-controls-contract",
+    "focus-support-utility-stack",
+  );
+  await expect(controlsStack).toHaveAttribute(
+    "data-control-surface-token",
+    "--topology-floating-control-surface",
+  );
+  await expect(controlsStack).toHaveAttribute(
+    "data-control-border-token",
+    "--topology-floating-control-border",
+  );
+  await expect(controlsStack).toHaveAttribute(
+    "data-control-phone-bottom-token",
+    "--topology-floating-control-phone-bottom",
+  );
+  await expect(controlsStack).toHaveAttribute(
+    "data-control-desktop-top-token",
+    "--topology-floating-control-desktop-top",
+  );
+  await expect(helpButton).toHaveAttribute("data-controls-density", "compact-focus");
+  await expect(helpButton).toHaveAttribute(
+    "data-controls-contract",
+    "focus-support-help-entry",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-collision-policy",
+    "release-settle",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-frame-cache-contract",
+    "pointer-move-reuses-drag-indexes",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-dom-index-contract",
+    "drag-release-reuses-card-elements",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-dom-index-size",
+    /^\d+$/,
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-frame-cache-snapshot-count",
+    /^\d+$/,
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-connector-dom-index-contract",
+    "reuse-card-index",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-connector-rect-cache-contract",
+    "frame-local-card-rect-cache",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-connector-rect-cache-accounting",
+    "reads-plus-hits",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-connector-rect-cache-read-count",
+    /^\d+$/,
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-connector-rect-cache-hit-count",
+    /^\d+$/,
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-dock-drag-snapshot-contract",
+    "single-pass-card-rect-read",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-visibility-count-contract",
+    "single-pass-unless-fallback",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-fixed-surface-measure-contract",
+    "single-pass-rect-read",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-connector-dom-index-contract",
+    "reuse-card-index",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-connector-rect-cache-contract",
+    "frame-local-card-rect-cache",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-relation-label-blocker-contract",
+    "reuse-visible-card-rects",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-relation-label-blocker-source",
+    /visibility-pass|fallback-visibility-pass/,
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-relation-label-query-contract",
+    "indexed-once",
+  );
+  await expectSelectedCardRelationSummary(page, "domain:views");
+
+  const controlsRect = await rectOf(controlsStack);
+  const helpRect = await rectOf(helpButton);
+  expect(
+    intersects(controlsRect, popoverRect),
+    "compact controls must not overlap selected popover",
+  ).toBe(false);
+  expect(
+    intersects(helpRect, popoverRect),
+    "compact help must not overlap selected popover",
+  ).toBe(false);
+  expect(
+    await page.evaluate(() => ({
+      x: document.documentElement.scrollWidth - window.innerWidth,
+      y: document.documentElement.scrollHeight - window.innerHeight,
+    })),
+    "compact focus should not introduce page scroll overflow",
+  ).toEqual({ x: 0, y: 0 });
+});
+
+test("Relief selected node focus keeps phone viewport map primary", async ({ page }) => {
+  const viewport = PHONE_VIEWPORT;
+  await openRelief(page, viewport, {
+    mode: "focus",
+    requireHud: false,
+    selectedSlug: "domain:views",
+  });
+
+  const selectedFocusPanel = page.getByTestId("topology-analysis-panel");
+  await expect(selectedFocusPanel).toHaveAttribute("data-analysis-mode", "focus");
+  await expect(selectedFocusPanel).toHaveAttribute("data-selected-focus-rail", "true");
+  await expect(selectedFocusPanel).toHaveAttribute(
+    "data-compact-focus-collapse-contract",
+    "selected-focus-support-hidden-under-md",
+  );
+  await expect(selectedFocusPanel).not.toBeVisible();
+
+  const popover = page.getByTestId("topology-node-popover");
+  await expect(popover).toBeVisible();
+  await expect(popover).toHaveAttribute("data-compact-action-contract", "icon-only-under-480");
+  const focusHull = page.locator("[data-drag-cluster-hull]");
+  await expect(focusHull).toHaveAttribute("data-cluster-mode", "focus");
+  await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "quiet-outline");
+  await expect(page.locator('[data-skeleton-card][data-slug="domain:views"]').first()).toBeVisible();
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-visibility-count-contract",
+    "single-pass-unless-fallback",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-fixed-surface-measure-contract",
+    "single-pass-rect-read",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-relation-label-blocker-contract",
+    "reuse-visible-card-rects",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-relation-label-blocker-source",
+    /visibility-pass|fallback-visibility-pass/,
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-relation-label-query-contract",
+    "indexed-once",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-connector-rect-cache-accounting",
+    "reads-plus-hits",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-connector-rect-cache-read-count",
+    /^\d+$/,
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-connector-rect-cache-hit-count",
+    /^\d+$/,
+  );
+
+  const popoverRect = await rectOf(popover);
+  expect(popoverRect.left, "phone focus popover should stay inside viewport").toBeGreaterThanOrEqual(8);
+  expect(popoverRect.right, "phone focus popover should stay inside viewport").toBeLessThanOrEqual(
+    viewport.width - 8,
+  );
+  const helpButton = page.getByTestId("topology-shortcuts-help-button").first();
+  const controlsStack = page.getByTestId("topology-sigma-controls-stack");
+  await expect(controlsStack).toBeVisible();
+  await expect(controlsStack).toHaveAttribute(
+    "data-control-phone-bottom-token",
+    "--topology-floating-control-phone-bottom",
+  );
+  await expect(controlsStack).toHaveAttribute(
+    "data-control-desktop-top-token",
+    "--topology-floating-control-desktop-top",
+  );
+  await expect(helpButton).toBeVisible();
+  await expect(helpButton).toHaveAttribute(
+    "data-phone-help-entry-contract",
+    "visible-outside-path-panel",
+  );
+  await expect(helpButton).toHaveAttribute(
+    "data-phone-help-position-contract",
+    "map-card-clearance",
+  );
+  await expect(helpButton).toHaveAttribute(
+    "data-phone-help-top-token",
+    "--topology-shortcuts-help-phone-top",
+  );
+  const helpRect = await rectOf(helpButton);
+  expect(intersects(helpRect, popoverRect), "phone help entry must not overlap focus popover").toBe(
+    false,
+  );
+  const cardsUnderHelp = (await visibleCardRects(page)).filter((card) =>
+    intersects(helpRect, card),
+  );
+  expect(cardsUnderHelp, "phone focus help entry must not cover map cards").toEqual([]);
+  const visibleRelationLabels = await visibleRelationLabelCardOverlaps(page);
+  expect(
+    visibleRelationLabels.length,
+    "phone focus should expose relation labels through the measured clearance contract",
+  ).toBeGreaterThan(0);
+  for (const label of visibleRelationLabels) {
+    expect(label.policy, `${label.id} should use the relation label clearance policy`).toBe(
+      "reposition-or-hide",
+    );
+    expect(
+      label.clearanceToken,
+      `${label.id} should expose the topology relation label clearance token`,
+    ).toBe("--topology-relation-label-card-clearance");
+    expect(
+      label.overlapsCards,
+      `${label.id} (${label.text}) relation label must not overlap visible map cards`,
+    ).toEqual([]);
+    expect(
+      label.hullBorderOverlaps,
+      `${label.id} (${label.text}) relation label must not sit on the focus hull stroke`,
+    ).toEqual([]);
+  }
+  await controlsStack.locator("button").last().click();
+  const controlsPanel = page.getByTestId("topology-sigma-controls-panel");
+  await expect(controlsPanel).toBeVisible();
+  await expect(controlsPanel).toHaveAttribute(
+    "data-panel-phone-bottom-token",
+    "--topology-floating-panel-phone-bottom",
+  );
+  await expect(controlsPanel).toHaveAttribute(
+    "data-panel-phone-max-height-token",
+    "--topology-floating-panel-phone-max-height",
+  );
+  await expect(controlsPanel).toHaveAttribute(
+    "data-panel-desktop-top-token",
+    "--topology-floating-panel-desktop-top",
+  );
+  await expect(controlsPanel).toHaveAttribute(
+    "data-panel-desktop-max-height-token",
+    "--topology-floating-panel-desktop-max-height",
+  );
+  await expect(controlsPanel).toHaveAttribute(
+    "data-controls-panel-contract",
+    "single-support-sheet",
+  );
+  await expect(controlsPanel).toHaveAttribute(
+    "data-panel-surface-token",
+    "--topology-floating-panel-surface",
+  );
+  await expect(controlsPanel).toHaveAttribute(
+    "data-panel-border-token",
+    "--topology-floating-panel-border",
+  );
+  await expect(controlsPanel).toHaveAttribute(
+    "data-panel-shadow-token",
+    "--topology-floating-panel-shadow",
+  );
+  const controlsPanelRect = await rectOf(controlsPanel);
+  const mobileBottomReserve = await page.evaluate(() => {
+    const probe = document.createElement("div");
+    probe.style.position = "fixed";
+    probe.style.inset = "auto auto 0 0";
+    probe.style.height = "var(--topology-mobile-bottom-tab-reserve)";
+    probe.style.width = "0";
+    probe.style.pointerEvents = "none";
+    document.body.appendChild(probe);
+    const height = probe.getBoundingClientRect().height;
+    probe.remove();
+    return height;
+  });
+  expect(
+    viewport.height - controlsPanelRect.bottom,
+    "expanded phone controls panel should stay above the bottom navigation reserve",
+  ).toBeGreaterThanOrEqual(mobileBottomReserve);
+  const scrollOverflow = await page.evaluate(() => ({
+    x: document.documentElement.scrollWidth - window.innerWidth,
+    y: document.documentElement.scrollHeight - window.innerHeight,
+  }));
+  expect(scrollOverflow.x, "phone focus should not introduce horizontal overflow").toBe(0);
+  expect(
+    scrollOverflow.y,
+    "phone focus vertical overflow should stay within the mobile bottom-nav reserve",
+  ).toBeLessThanOrEqual(56);
+});
+
+test("Relief selected node expanded detail scrolls internally on phone", async ({ page }) => {
+  const viewport = PHONE_VIEWPORT;
+  await openRelief(page, viewport, {
+    mode: "focus",
+    requireHud: false,
+    selectedSlug: "domain:views",
+  });
+
+  const popover = page.getByTestId("topology-node-popover");
+  await expect(popover).toBeVisible();
+  await page.locator('[data-node-popover-toggle="expand"]').click();
+  await expect(popover).toHaveAttribute(
+    "data-popover-scroll-contract",
+    "expanded-internal-scroll",
+  );
+  await expect(popover).toHaveAttribute("data-responsive-width-contract", "fluid-inspector-to-rail");
+  await expect(popover).toHaveAttribute(
+    "data-max-height-token",
+    "--topology-node-popover-max-height",
+  );
+
+  const connectionList = page.getByTestId("topology-node-connection-list");
+  await expect(page.getByTestId("topology-connections-section")).toHaveAttribute(
+    "data-relation-section-min-height-token",
+    "--topology-node-popover-relation-section-min-height",
+  );
+  await expect(connectionList).toHaveAttribute(
+    "data-relation-list-min-height-token",
+    "--topology-node-popover-relation-list-min-height",
+  );
+  await expect(connectionList).toHaveAttribute(
+    "data-readable-row-contract",
+    "at-least-one-full-relation-row",
+  );
+  await expect(connectionList).toBeVisible();
+  const firstRelationRow = connectionList.locator("[data-relation-row]").first();
+  await expect(firstRelationRow).toBeVisible();
+
+  const popoverScroll = await popover.evaluate((element) => {
+    const style = window.getComputedStyle(element);
+    const body = element.querySelector<HTMLElement>('[data-testid="topology-node-popover-body"]');
+    const bodyStyle = body ? window.getComputedStyle(body) : null;
+    return {
+      overflowX: style.overflowX,
+      overflowY: style.overflowY,
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      bodyOverflowX: bodyStyle?.overflowX ?? "",
+      bodyOverflowY: bodyStyle?.overflowY ?? "",
+      bodyClientHeight: body?.clientHeight ?? 0,
+      bodyScrollHeight: body?.scrollHeight ?? 0,
+      bodyScrollContract: body?.getAttribute("data-body-scroll-contract") ?? "",
+    };
+  });
+  const readableRelationProof = await page.evaluate(() => {
+    const root = document.querySelector<HTMLElement>('[data-testid="topology-node-popover"]');
+    const list = document.querySelector<HTMLElement>('[data-testid="topology-node-connection-list"]');
+    const row = document.querySelector<HTMLElement>('[data-testid="topology-node-connection-list"] [data-relation-row]');
+    const footer = document.querySelector<HTMLElement>('[data-testid="topology-node-popover-footer"]');
+    const actionRail = document.querySelector<HTMLElement>(
+      '[data-testid="topology-node-popover-action-rail"]',
+    );
+    if (!root || !list || !row) return null;
+    const rootRect = root.getBoundingClientRect();
+    const listRect = list.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const footerRect = footer?.getBoundingClientRect() ?? null;
+    const actionRailRect = actionRail?.getBoundingClientRect() ?? null;
+    const visibleRowHeight = Math.max(
+      0,
+      Math.min(rowRect.bottom, rootRect.bottom, footerRect?.top ?? rootRect.bottom) -
+        Math.max(rowRect.top, rootRect.top),
+    );
+    return {
+      token: getComputedStyle(document.documentElement)
+        .getPropertyValue("--topology-node-popover-mobile-expanded-max-height")
+        .trim(),
+      popoverHeight: rootRect.height,
+      listTop: listRect.top,
+      listHeight: listRect.height,
+      firstRowHeight: rowRect.height,
+      visibleRowHeight,
+      footerTop: footerRect?.top ?? null,
+      footerBottom: footerRect?.bottom ?? null,
+      footerPositionContract: footer?.getAttribute("data-footer-position-contract") ?? "",
+      actionRailTop: actionRailRect?.top ?? null,
+      actionRailBottom: actionRailRect?.bottom ?? null,
+      actionRailHeight: actionRailRect?.height ?? 0,
+      popoverBottom: rootRect.bottom,
+      firstRowBottom: rowRect.bottom,
+    };
+  });
+  expect(readableRelationProof).not.toBeNull();
+  expect(
+    readableRelationProof?.token,
+    "expanded phone popover should use the responsive mobile height token",
+  ).not.toBe("");
+  expect(
+    readableRelationProof?.listHeight ?? 0,
+    "expanded phone popover should give the relation list visible reading space",
+  ).toBeGreaterThanOrEqual(88);
+  expect(
+    readableRelationProof?.visibleRowHeight ?? 0,
+    "expanded phone popover should show a complete relation row before scrolling",
+  ).toBeGreaterThanOrEqual((readableRelationProof?.firstRowHeight ?? 0) - 1);
+  expect(
+    readableRelationProof?.footerPositionContract,
+    "expanded phone popover should keep the MCP/CLI footer anchored in the visible frame",
+  ).toBe("anchored-bottom-visible");
+  expect(
+    readableRelationProof?.footerTop ?? 0,
+    "expanded phone footer should not cover the first readable relation row",
+  ).toBeGreaterThanOrEqual((readableRelationProof?.firstRowBottom ?? 0) - 1);
+  expect(
+    readableRelationProof?.footerBottom ?? Infinity,
+    "expanded phone footer should stay inside the popover visible frame",
+  ).toBeLessThanOrEqual((readableRelationProof?.popoverBottom ?? 0) + 1);
+  expect(
+    readableRelationProof?.actionRailHeight ?? 0,
+    "expanded phone action rail should have a visible tap target",
+  ).toBeGreaterThanOrEqual(32);
+  expect(
+    readableRelationProof?.actionRailBottom ?? Infinity,
+    "expanded phone action rail should stay inside the popover visible frame",
+  ).toBeLessThanOrEqual((readableRelationProof?.popoverBottom ?? 0) + 1);
+  expect(
+    popoverScroll.overflowY,
+    "expanded phone popover should keep overflow clipped so the footer owns the bottom edge",
+  ).toBe("hidden");
+  expect(
+    popoverScroll.bodyScrollContract,
+    "expanded phone popover body should own internal scrolling above the footer",
+  ).toBe("content-scrolls-above-fixed-footer");
+  expect(
+    popoverScroll.bodyOverflowY,
+    "expanded phone popover body should allow internal vertical scroll",
+  ).toBe(
+    "auto",
+  );
+  expect(popoverScroll.overflowX, "expanded phone popover should not allow horizontal scroll").toBe(
+    "hidden",
+  );
+  expect(
+    popoverScroll.bodyScrollHeight,
+    "expanded phone popover should expose clipped detail through body internal scroll",
+  ).toBeGreaterThanOrEqual(popoverScroll.bodyClientHeight);
+  expect(
+    popoverScroll.scrollWidth - popoverScroll.clientWidth,
+    "expanded phone popover should not horizontally overflow",
+  ).toBeLessThanOrEqual(2);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+    "expanded phone popover should not introduce page horizontal overflow",
+  ).toBe(0);
+});
+
+test("Relief global search uses a phone sheet instead of a floating card", async ({ page }) => {
+  const viewport = PHONE_VIEWPORT;
+  await openRelief(page, viewport, {
+    mode: "focus",
+    requireHud: false,
+    selectedSlug: "domain:views",
+  });
+
+  await page.keyboard.press("Meta+Shift+K");
+
+  const content = page.locator('[data-global-search-responsive-contract="mobile-sheet-md-floating"]');
+  await expect(content).toBeVisible();
+  await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+    "data-blocking-overlay-state",
+    "global-search",
+  );
+  await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+    "data-attention-role",
+    "demoted-under-blocking-overlay",
+  );
+  await expect(page.getByTestId("topology-shortcuts-help-button")).toHaveCount(0);
+  await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
+  await expect(content).toHaveAttribute(
+    "data-global-search-floating-width-token",
+    "--topology-search-sheet-floating-width",
+  );
+  await expect(content).toHaveAttribute(
+    "data-global-search-radius-token",
+    "--topology-search-sheet-radius",
+  );
+  await expect(content).toHaveAttribute(
+    "data-global-search-mobile-bottom-reserve-token",
+    "--topology-mobile-bottom-tab-reserve",
+  );
+  const command = page.locator("[cmdk-root]");
+  await expect(command).toBeVisible();
+  const tabBar = page.locator('[data-tabbar="primary"]');
+  await expect(tabBar).toHaveAttribute(
+    "data-tabbar-min-height-token",
+    "--topology-bottom-tab-min-height",
+  );
+  await expect(tabBar).toHaveAttribute(
+    "data-tabbar-bottom-reserve-token",
+    "--topology-mobile-bottom-tab-reserve",
+  );
+  await expect(tabBar).toHaveAttribute(
+    "data-tabbar-surface-token",
+    "--topology-bottom-tab-surface",
+  );
+  await expect(tabBar).toHaveAttribute(
+    "data-tabbar-border-token",
+    "--topology-bottom-tab-border",
+  );
+  const searchReserveScrim = page.getByTestId("global-search-bottom-reserve-scrim");
+  await expect(searchReserveScrim).toBeVisible();
+  await expect(searchReserveScrim).toHaveAttribute(
+    "data-bottom-reserve-scrim-contract",
+    "opaque-sheet-continuation",
+  );
+  await expect(searchReserveScrim).toHaveAttribute(
+    "data-bottom-reserve-token",
+    "--topology-mobile-bottom-tab-reserve",
+  );
+  await expect(page.locator("[cmdk-input]")).toBeFocused();
+  await expect(page.locator("[cmdk-list]")).toBeVisible();
+  const closeButton = page.getByTestId("global-search-close");
+  await expect(closeButton).toBeVisible();
+  await expect(closeButton).toHaveAttribute(
+    "data-global-search-close-contract",
+    "touch-visible",
+  );
+  await expect(closeButton).toHaveAttribute(
+    "data-global-search-close-size-token",
+    "--topology-search-sheet-close-size",
+  );
+
+  const contentRect = await rectOf(content);
+  const commandRect = await rectOf(command);
+  expect(contentRect.left, "global search content should start at the phone viewport edge").toBe(0);
+  expect(contentRect.top, "global search content should start at the phone viewport top").toBe(0);
+  expect(contentRect.width, "global search content should span the phone viewport").toBe(viewport.width);
+  expect(contentRect.height, "global search overlay should block the full phone viewport").toBe(
+    viewport.height,
+  );
+  expect(commandRect.left, "global search command sheet should start at the phone viewport edge").toBe(0);
+  expect(commandRect.top, "global search command sheet should start at the phone viewport top").toBe(0);
+  expect(commandRect.width, "global search command sheet should span the phone viewport").toBe(viewport.width);
+  const searchBottomReserve = await page.evaluate(() => {
+    const probe = document.createElement("div");
+    probe.style.position = "fixed";
+    probe.style.inset = "auto auto 0 0";
+    probe.style.height = "var(--topology-mobile-bottom-tab-reserve)";
+    probe.style.width = "0";
+    probe.style.pointerEvents = "none";
+    document.body.appendChild(probe);
+    const height = probe.getBoundingClientRect().height;
+    probe.remove();
+    return height;
+  });
+  const tabBarRect = await rectOf(tabBar);
+  expect(
+    searchBottomReserve,
+    "mobile bottom reserve should include the tab bar and safe-area height",
+  ).toBeGreaterThanOrEqual(tabBarRect.height - 1);
+  expect(commandRect.height, "global search command sheet should reserve the mobile tab bar").toBe(
+    viewport.height - searchBottomReserve,
+  );
+  expect(
+    viewport.height - commandRect.bottom,
+    "global search command sheet should leave the mobile bottom reserve clear",
+  ).toBe(searchBottomReserve);
+  const searchReserveOwner = await page.evaluate(() => {
+    const element = document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 8);
+    return {
+      testId: element?.getAttribute("data-testid") ?? "",
+      tabbar: element?.closest('[data-tabbar="primary"]') !== null,
+      contract: element?.getAttribute("data-bottom-reserve-scrim-contract") ?? "",
+    };
+  });
+  expect(searchReserveOwner.tabbar, "global search bottom reserve should cover the tab bar").toBe(false);
+  expect(searchReserveOwner.testId, "global search bottom reserve should own the bottom hit point").toBe(
+    "global-search-bottom-reserve-scrim",
+  );
+  expect(searchReserveOwner.contract).toBe("opaque-sheet-continuation");
+
+  const overflow = await page.evaluate(() => ({
+    x: document.documentElement.scrollWidth - window.innerWidth,
+    y: document.documentElement.scrollHeight - window.innerHeight,
+  }));
+  expect(overflow.x, "global search phone sheet should not introduce horizontal overflow").toBe(0);
+  expect(
+    overflow.y,
+    "global search phone sheet should stay within the mobile bottom-nav reserve",
+  ).toBeLessThanOrEqual(56);
+
+  await closeButton.click();
+  await expect(content).toHaveCount(0);
+});
+
+test("Relief shortcut sheet uses a phone sheet instead of an inset help card", async ({ page }) => {
+  const viewport = PHONE_VIEWPORT;
+  await openRelief(page, viewport, {
+    mode: "focus",
+    requireHud: false,
+    selectedSlug: "domain:views",
+  });
+
+  const helpEntry = page.getByTestId("topology-shortcuts-help-button").first();
+  await expect(helpEntry).toBeVisible();
+  await expect(helpEntry).toHaveAttribute(
+    "data-phone-help-entry-contract",
+    "visible-outside-path-panel",
+  );
+  await helpEntry.click();
+
+  const overlay = page.locator('[data-shortcut-sheet-responsive-contract="mobile-sheet-sm-floating"]');
+  await expect(overlay).toBeVisible();
+  await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+    "data-blocking-overlay-state",
+    "shortcuts",
+  );
+  await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+    "data-attention-role",
+    "demoted-under-blocking-overlay",
+  );
+  await expect(page.getByTestId("topology-shortcuts-help-button")).toHaveCount(0);
+  await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
+  await expect(overlay).toHaveAttribute(
+    "data-shortcut-sheet-floating-width-token",
+    "--topology-shortcut-sheet-floating-width",
+  );
+  await expect(overlay).toHaveAttribute(
+    "data-shortcut-sheet-radius-token",
+    "--topology-shortcut-sheet-radius",
+  );
+  await expect(overlay).toHaveAttribute(
+    "data-shortcut-sheet-mobile-bottom-reserve-token",
+    "--topology-mobile-bottom-tab-reserve",
+  );
+  const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+  await expect(dialog).toBeVisible();
+  const tabBar = page.locator('[data-tabbar="primary"]');
+  await expect(tabBar).toHaveAttribute(
+    "data-tabbar-min-height-token",
+    "--topology-bottom-tab-min-height",
+  );
+  await expect(tabBar).toHaveAttribute(
+    "data-tabbar-bottom-reserve-token",
+    "--topology-mobile-bottom-tab-reserve",
+  );
+  await expect(tabBar).toHaveAttribute(
+    "data-tabbar-surface-token",
+    "--topology-bottom-tab-surface",
+  );
+  await expect(tabBar).toHaveAttribute(
+    "data-tabbar-border-token",
+    "--topology-bottom-tab-border",
+  );
+  const shortcutReserveScrim = page.getByTestId("shortcut-sheet-bottom-reserve-scrim");
+  await expect(shortcutReserveScrim).toBeVisible();
+  await expect(shortcutReserveScrim).toHaveAttribute(
+    "data-bottom-reserve-scrim-contract",
+    "opaque-sheet-continuation",
+  );
+  await expect(shortcutReserveScrim).toHaveAttribute(
+    "data-bottom-reserve-token",
+    "--topology-mobile-bottom-tab-reserve",
+  );
+  const closeButton = page.getByTestId("shortcut-sheet-close");
+  await expect(closeButton).toBeVisible();
+  await expect(closeButton).toBeFocused();
+  await expect(closeButton).toHaveAttribute(
+    "data-shortcut-sheet-close-contract",
+    "touch-visible",
+  );
+  await expect(closeButton).toHaveAttribute(
+    "data-shortcut-sheet-close-size-token",
+    "--topology-shortcut-sheet-close-size",
+  );
+
+  const overlayRect = await rectOf(overlay);
+  const dialogRect = await rectOf(dialog);
+  expect(overlayRect.left, "shortcut overlay should span from phone viewport edge").toBe(0);
+  expect(overlayRect.top, "shortcut overlay should span from phone viewport top").toBe(0);
+  expect(overlayRect.width, "shortcut overlay should span phone viewport width").toBe(viewport.width);
+  expect(overlayRect.height, "shortcut overlay should block the full phone viewport").toBe(
+    viewport.height,
+  );
+  expect(dialogRect.left, "shortcut dialog should start at phone viewport edge").toBe(0);
+  expect(dialogRect.top, "shortcut dialog should start at phone viewport top").toBe(0);
+  expect(dialogRect.width, "shortcut dialog should span phone viewport width").toBe(viewport.width);
+  const shortcutBottomReserve = await page.evaluate(() => {
+    const probe = document.createElement("div");
+    probe.style.position = "fixed";
+    probe.style.inset = "auto auto 0 0";
+    probe.style.height = "var(--topology-mobile-bottom-tab-reserve)";
+    probe.style.width = "0";
+    probe.style.pointerEvents = "none";
+    document.body.appendChild(probe);
+    const height = probe.getBoundingClientRect().height;
+    probe.remove();
+    return height;
+  });
+  const tabBarRect = await rectOf(tabBar);
+  expect(
+    shortcutBottomReserve,
+    "mobile bottom reserve should include the shortcut tab bar and safe-area height",
+  ).toBeGreaterThanOrEqual(tabBarRect.height - 1);
+  expect(dialogRect.height, "shortcut dialog should reserve the mobile tab bar").toBe(
+    viewport.height - shortcutBottomReserve,
+  );
+  expect(
+    viewport.height - dialogRect.bottom,
+    "shortcut dialog should leave the mobile bottom reserve clear",
+  ).toBe(shortcutBottomReserve);
+  const shortcutReserveOwner = await page.evaluate(() => {
+    const element = document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 8);
+    return {
+      testId: element?.getAttribute("data-testid") ?? "",
+      tabbar: element?.closest('[data-tabbar="primary"]') !== null,
+      contract: element?.getAttribute("data-bottom-reserve-scrim-contract") ?? "",
+    };
+  });
+  expect(shortcutReserveOwner.tabbar, "shortcut sheet bottom reserve should cover the tab bar").toBe(false);
+  expect(shortcutReserveOwner.testId, "shortcut sheet bottom reserve should own the bottom hit point").toBe(
+    "shortcut-sheet-bottom-reserve-scrim",
+  );
+  expect(shortcutReserveOwner.contract).toBe("opaque-sheet-continuation");
+
+  const overflow = await page.evaluate(() => ({
+    x: document.documentElement.scrollWidth - window.innerWidth,
+    y: document.documentElement.scrollHeight - window.innerHeight,
+  }));
+  expect(overflow.x, "shortcut phone sheet should not introduce horizontal overflow").toBe(0);
+  expect(
+    overflow.y,
+    "shortcut phone sheet should stay within the mobile bottom-nav reserve",
+  ).toBeLessThanOrEqual(56);
+
+  await closeButton.click();
+  await expect(overlay).toHaveCount(0);
 });
 
 test("Relief selected detail uses a compact top dock below tablet width", async ({
@@ -1353,15 +2848,53 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
 
   const popover = page.getByTestId("topology-node-popover");
   await expect(popover).toBeVisible();
+  await expect(popover).toHaveAttribute(
+    "data-popover-scroll-contract",
+    "expanded-internal-scroll",
+  );
+  const popoverScroll = await popover.evaluate((element) => {
+    const body = element.querySelector<HTMLElement>('[data-testid="topology-node-popover-body"]');
+    const style = window.getComputedStyle(element);
+    const bodyStyle = body ? window.getComputedStyle(body) : null;
+    return {
+      overflowX: style.overflowX,
+      overflowY: style.overflowY,
+      bodyScrollContract: body?.dataset.bodyScrollContract ?? "",
+      bodyOverflowY: bodyStyle?.overflowY ?? "",
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    };
+  });
+  expect(
+    popoverScroll.overflowY,
+    "expanded compact popover should clip the shell while the body owns scrolling",
+  ).toBe("hidden");
+  expect(
+    popoverScroll.bodyScrollContract,
+    "expanded compact popover body should own internal scrolling above the footer",
+  ).toBe("content-scrolls-above-fixed-footer");
+  expect(
+    popoverScroll.bodyOverflowY,
+    "expanded compact popover body should allow internal vertical scroll",
+  ).toBe(
+    "auto",
+  );
+  expect(popoverScroll.overflowX, "expanded compact popover should not allow horizontal scroll").toBe(
+    "hidden",
+  );
+  expect(
+    popoverScroll.scrollWidth - popoverScroll.clientWidth,
+    "expanded compact popover should not horizontally overflow",
+  ).toBeLessThanOrEqual(2);
   const expandedRect = await rectOf(popover);
   expect(
     expandedRect.top,
     "compact selected detail should open from the top chrome, not as a bottom sheet",
   ).toBeLessThanOrEqual(128);
   expect(
-    expandedRect.bottom,
+    viewport.height - expandedRect.bottom,
     "compact selected detail should leave the lower graph area readable",
-  ).toBeLessThan(viewport.height * 0.72);
+  ).toBeGreaterThanOrEqual(144);
   expect(
     Math.abs((expandedRect.left + expandedRect.right) / 2 - viewport.width / 2),
     "compact selected detail should stay horizontally centered",
@@ -1378,9 +2911,49 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
     }
     element.click();
   });
+  const selectedRelationLabelButton = page.locator(
+    `[data-relation-label-button="${selectedBadgeId}"]`,
+  );
+  await expect(selectedRelationLabelButton).toHaveAttribute(
+    "data-relation-label-hover-contract",
+    "compact-edge-tooltip",
+  );
+  await selectedRelationLabelButton.evaluate((element) => {
+    if (!(element instanceof HTMLElement)) {
+      throw new Error("relation label hit target should be an HTML button");
+    }
+    const rect = element.getBoundingClientRect();
+    const x = rect.left + Math.max(12, rect.width / 2);
+    const y = rect.top + Math.max(12, rect.height / 2);
+    element.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true, clientX: x, clientY: y }));
+    element.dispatchEvent(new MouseEvent("mouseover", { bubbles: true, clientX: x, clientY: y }));
+  });
+  const edgeTooltip = page.getByTestId("topology-edge-tooltip");
+  await expect(edgeTooltip).toBeVisible();
+  await expect(edgeTooltip).toHaveAttribute(
+    "data-edge-tooltip-contract",
+    "compact-relation-fact",
+  );
+  await expect(edgeTooltip).toHaveAttribute(
+    "data-edge-tooltip-surface-token",
+    "--topology-edge-tooltip-surface",
+  );
+  await expect(edgeTooltip).toHaveAttribute("data-relation-evidence-state", "source-backed");
 
   const selectedEdgeCard = page.getByTestId("sigma-selected-edge-card");
   await expect(selectedEdgeCard).toBeVisible();
+  await expect(selectedEdgeCard).toHaveAttribute(
+    "data-surface-token",
+    "--topology-selected-relation-card-surface",
+  );
+  await expect(selectedEdgeCard).toHaveAttribute(
+    "data-border-token",
+    "--topology-selected-relation-card-border",
+  );
+  await expect(selectedEdgeCard).toHaveAttribute(
+    "data-typography-contract",
+    "legible-compact-relation-inspector",
+  );
   const agentRoute = page.getByTestId("sigma-selected-edge-agent-route");
   await expect(agentRoute.locator("[data-route-step]")).toHaveCount(4);
   const routeRect = await rectOf(agentRoute);

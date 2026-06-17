@@ -105,6 +105,7 @@ interface SigmaSkeletonCardsProps {
   }) => void;
   onVisibilityChange?: (stats: { visible: number; total: number }) => void;
   onRelationSelect?: (data: SigmaEdgeTooltipData) => void;
+  onRelationHover?: (data: SigmaEdgeTooltipData | null) => void;
   /** hover 팝업의 계층 라벨 — 예: "도메인 · 2계층" (i18n 은 호출자 책임). */
   describeKind?: (kind: SkeletonCardModel['kind']) => string;
 }
@@ -190,17 +191,20 @@ const RELATION_BADGE_MIN_WIDTH_PX = 96;
 const RELATION_BADGE_CHAR_WIDTH_PX = 5.8;
 const RELATION_BADGE_PAD_X_PX = 10;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
+const RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX = 18;
 const RELATION_BADGE_QUALITY_CHIP_WIDTH_PX = 64;
 const RELATION_BADGE_FACT_ROUTE_WIDTH_PX = 158;
 const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 32;
 const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 6;
 const RELATION_LABEL_VIEWPORT_INSET_PX = 16;
 const RELATION_LABEL_MIN_COMPACT_WIDTH_PX = 96;
-const DRAG_SETTLE_FEEDBACK_MS = 720;
+const RELATION_LABEL_CARD_CLEARANCE_PX = 22;
+const DRAG_SETTLE_FEEDBACK_MS = TOPOLOGY_DRAG_SETTLE_DURATION_MS;
 const DRAG_GROUP_RELEASE_FEEDBACK_MS = 760;
 const CONNECTOR_PORT_MIN_CLEARANCE_PX = 6;
 const CONNECTOR_PORT_TARGET_CLEARANCE_PX = EDGE_CLEARANCE_MASK_PX + 2;
 const DRAG_COLLISION_SETTLE_PASSES = 4;
+const FIXED_SURFACE_RECT_CACHE_MS = 180;
 
 type RelationConnector = {
   from: string;
@@ -227,6 +231,74 @@ type DockDragSnapshot = {
   parentStartY: number;
   childStartY: number;
 };
+
+type DockDragCardSnapshot = {
+  childStartX: number;
+  dockParent: string;
+  layoutY: number;
+  slug: string;
+  x: number;
+  y: number;
+};
+
+type SkeletonCardElementIndex = {
+  all: HTMLElement[];
+};
+
+function collectSkeletonCardElementIndex(
+  container: HTMLElement | null,
+): SkeletonCardElementIndex {
+  return {
+    all: container
+      ? Array.from(container.querySelectorAll<HTMLElement>('[data-skeleton-card]'))
+      : [],
+  };
+}
+
+type FixedSurfaceRectCache = {
+  height: number;
+  rects: Array<{ left: number; top: number; right: number; bottom: number }>;
+  timestamp: number;
+  width: number;
+};
+
+type SkeletonVisibilityStats = { visible: number; total: number };
+
+type SkeletonDomWriteStats = { applied: number; skipped: number };
+
+function shouldReportSkeletonVisibilityStats(
+  previous: SkeletonVisibilityStats | null,
+  next: SkeletonVisibilityStats,
+): boolean {
+  return !previous || previous.visible !== next.visible || previous.total !== next.total;
+}
+
+function setSkeletonStyleValue(
+  target: HTMLElement,
+  property: 'height' | 'opacity' | 'pointerEvents' | 'transform' | 'width',
+  value: string,
+  stats: SkeletonDomWriteStats,
+): void {
+  if (target.style[property] === value) {
+    stats.skipped += 1;
+    return;
+  }
+  target.style[property] = value;
+  stats.applied += 1;
+}
+
+function setSkeletonPathData(
+  target: SVGPathElement,
+  value: string,
+  stats: SkeletonDomWriteStats,
+): void {
+  if (target.getAttribute('d') === value) {
+    stats.skipped += 1;
+    return;
+  }
+  target.setAttribute('d', value);
+  stats.applied += 1;
+}
 
 /** rgba 문자열의 alpha 만 교체 — kind 틴트의 정량 토큰(8%/18%) 파생용. */
 function withAlpha(rgba: string, alpha: number): string {
@@ -369,7 +441,7 @@ function relationEvidenceState({
   return 'needs-review';
 }
 
-function relationEvidenceGlyph({
+function relationEvidenceChipText({
   evidenceCount,
   state,
 }: {
@@ -378,10 +450,10 @@ function relationEvidenceGlyph({
 }): string {
   if (state === 'source-backed') {
     const count = Math.max(1, evidenceCount ?? 1);
-    return count > 9 ? '9+' : String(count);
+    return `S${count > 9 ? '9+' : count}`;
   }
   if (state === 'authored') return 'A';
-  return '!';
+  return 'R';
 }
 
 function relationEvidenceAriaText({
@@ -583,6 +655,59 @@ function rectsOverlap(
   );
 }
 
+function resolveRelationLabelVerticalPlacement({
+  blockers,
+  containerHeight,
+  height,
+  left,
+  top,
+  width,
+}: {
+  blockers: ReadonlyArray<{ left: number; top: number; right: number; bottom: number }>;
+  containerHeight: number;
+  height: number;
+  left: number;
+  top: number;
+  width: number;
+}): { occluded: boolean; top: number } {
+  const clampTop = (nextTop: number) =>
+    Math.min(
+      Math.max(nextTop, RELATION_LABEL_CARD_CLEARANCE_PX),
+      Math.max(RELATION_LABEL_CARD_CLEARANCE_PX, containerHeight - height - RELATION_LABEL_CARD_CLEARANCE_PX),
+    );
+  const rectFor = (nextTop: number) => ({
+    left,
+    right: left + width,
+    top: nextTop,
+    bottom: nextTop + height,
+  });
+  const overlapCount = (nextTop: number) => {
+    const rect = rectFor(nextTop);
+    return blockers.filter((blocker) => rectsOverlap(rect, blocker, RELATION_LABEL_CARD_CLEARANCE_PX)).length;
+  };
+  const baseTop = clampTop(top);
+  const candidates = new Set<number>([baseTop]);
+  const baseRect = rectFor(baseTop);
+  for (const blocker of blockers) {
+    if (!rectsOverlap(baseRect, blocker, RELATION_LABEL_CARD_CLEARANCE_PX)) continue;
+    candidates.add(clampTop(blocker.top - height - RELATION_LABEL_CARD_CLEARANCE_PX));
+    candidates.add(clampTop(blocker.bottom + RELATION_LABEL_CARD_CLEARANCE_PX));
+  }
+  let best = baseTop;
+  let bestOverlapCount = overlapCount(baseTop);
+  let bestCost = bestOverlapCount * 10_000;
+  for (const candidate of candidates) {
+    const candidateOverlapCount = overlapCount(candidate);
+    const cost = candidateOverlapCount * 10_000 + Math.abs(candidate - baseTop);
+    if (cost < bestCost) {
+      best = candidate;
+      bestOverlapCount = candidateOverlapCount;
+      bestCost = cost;
+    }
+  }
+  return { occluded: bestOverlapCount > 0, top: best };
+}
+
 function isMountedTopologyBlockingSurface(el: HTMLElement): boolean {
   return (
     el.dataset.testid === 'topology-node-popover' ||
@@ -600,26 +725,32 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
   bottom: number;
 }> {
   if (typeof document === 'undefined') return [];
-  return Array.from(
-    document.querySelectorAll<HTMLElement>(
+  const fixedSurfaceRects: Array<{
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  }> = [];
+
+  document
+    .querySelectorAll<HTMLElement>(
       '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"], [data-testid="sigma-selected-edge-card"], [data-testid="topology-path-start-prompt"], [data-testid="topology-path-anchor-prompt"], [data-testid="topology-path-result-banner"]',
-    ),
-  )
-    .filter((el) => {
+    )
+    .forEach((el) => {
       const rect = el.getBoundingClientRect();
       const style = getComputedStyle(el);
-      return (
-        style.display !== 'none' &&
-        style.visibility !== 'hidden' &&
-        (Number(style.opacity || '1') > 0.01 || isMountedTopologyBlockingSurface(el)) &&
-        rect.width > 0 &&
-        rect.height > 0
-      );
-    })
-    .map((el) => {
-      const rect = el.getBoundingClientRect();
+      if (
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        (Number(style.opacity || '1') <= 0.01 && !isMountedTopologyBlockingSurface(el)) ||
+        rect.width <= 0 ||
+        rect.height <= 0
+      ) {
+        return;
+      }
+
       const isAnalysisPanel = el.dataset.testid === 'topology-analysis-panel';
-      return {
+      fixedSurfaceRects.push({
         left: rect.left - containerRect.left - COLLISION_PAD,
         top: rect.top - containerRect.top - COLLISION_PAD,
         right:
@@ -630,8 +761,10 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
           rect.bottom -
           containerRect.top +
           (isAnalysisPanel ? ANALYSIS_PANEL_BLOCK_END_PAD : COLLISION_PAD),
-      };
+      });
     });
+
+  return fixedSurfaceRects;
 }
 
 function anchoredCardRect({
@@ -837,6 +970,67 @@ function hideSkeletonCard(el: HTMLElement) {
   el.style.pointerEvents = 'none';
 }
 
+function separatePathEndpointCards(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+) {
+  const source = orderedEls.find(
+    (el) =>
+      el.dataset.pathRole === 'source' &&
+      el.dataset.surfaceHidden !== 'true' &&
+      getComputedStyle(el).visibility !== 'hidden',
+  );
+  const target = orderedEls.find(
+    (el) =>
+      el.dataset.pathRole === 'target' &&
+      el.dataset.surfaceHidden !== 'true' &&
+      getComputedStyle(el).visibility !== 'hidden',
+  );
+  if (!source || !target) return;
+
+  const sourceBox = source.getBoundingClientRect();
+  const targetBox = target.getBoundingClientRect();
+  const sourceRect = {
+    left: sourceBox.left - containerRect.left,
+    top: sourceBox.top - containerRect.top,
+    right: sourceBox.right - containerRect.left,
+    bottom: sourceBox.bottom - containerRect.top,
+  };
+  const targetRect = {
+    left: targetBox.left - containerRect.left,
+    top: targetBox.top - containerRect.top,
+    right: targetBox.right - containerRect.left,
+    bottom: targetBox.bottom - containerRect.top,
+  };
+  if (!rectsOverlap(sourceRect, targetRect, -2)) {
+    delete source.dataset.pathEndpointPairSeparated;
+    delete target.dataset.pathEndpointPairSeparated;
+    return;
+  }
+
+  const gap = 12;
+  if (targetRect.top >= sourceRect.top) {
+    const dy = Math.min(
+      sourceRect.bottom + gap - targetRect.top,
+      Math.max(0, containerRect.height - SAFE_VIEWPORT_MARGIN - targetRect.bottom),
+    );
+    if (dy > 0) {
+      target.style.transform = `${target.style.transform} translate(0, ${dy}px)`;
+      target.dataset.pathEndpointPairSeparated = 'target-shifted';
+      return;
+    }
+  }
+
+  const dy = Math.max(
+    targetRect.top - gap - sourceRect.bottom,
+    SAFE_VIEWPORT_MARGIN - sourceRect.top,
+  );
+  if (dy < 0) {
+    source.style.transform = `${source.style.transform} translate(0, ${dy}px)`;
+    source.dataset.pathEndpointPairSeparated = 'source-shifted';
+  }
+}
+
 function isElementInsideContainerViewport(el: HTMLElement, containerRect: DOMRect): boolean {
   const rect = el.getBoundingClientRect();
   return (
@@ -888,11 +1082,13 @@ function clampDraggedClusterDelta(
   group: ReadonlySet<string>,
   dx: number,
   dy: number,
+  cardElements: readonly HTMLElement[] | null = null,
 ): { dx: number; dy: number } {
   if (!container) return { dx, dy };
   const containerRect = container.getBoundingClientRect();
   const movingRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
-  for (const el of container.querySelectorAll<HTMLElement>('[data-skeleton-card]')) {
+  const candidates = cardElements ?? container.querySelectorAll<HTMLElement>('[data-skeleton-card]');
+  for (const el of candidates) {
     const slug = el.dataset.slug;
     const dockParent = el.dataset.dockParent;
     if (!slug || (!group.has(slug) && (!dockParent || !group.has(dockParent)))) continue;
@@ -994,6 +1190,7 @@ function moveDraggedCluster(
   sigma: SkeletonCardsCamera,
   movableNodeIds: ReadonlySet<string>,
   tierByNodeId: ReadonlyMap<string, SkeletonCardModel['tier']> = new Map(),
+  dragGroup: ReadonlySet<string> | null = null,
 ): Set<string> {
   const attrs = graph.getNodeAttributes(nodeId);
   const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
@@ -1001,7 +1198,9 @@ function moveDraggedCluster(
   const graphDx = next.x - attrs.x;
   const graphDy = next.y - attrs.y;
 
-  const group = collectDraggedCluster(graph, nodeId, movableNodeIds, tierByNodeId);
+  const group = dragGroup
+    ? new Set(dragGroup)
+    : collectDraggedCluster(graph, nodeId, movableNodeIds, tierByNodeId);
 
   for (const member of group) {
     const memberAttrs = graph.getNodeAttributes(member);
@@ -1028,54 +1227,61 @@ function applyViewportDeltaToNode(
 function snapshotDockDragPositions(
   container: HTMLElement | null,
   movingGroup: ReadonlySet<string>,
+  cardElements: readonly HTMLElement[] | null = null,
 ): Map<string, DockDragSnapshot> {
   const snapshots = new Map<string, DockDragSnapshot>();
   if (!container) return snapshots;
   const containerRect = container.getBoundingClientRect();
   const parentAnchorBySlug = new Map<string, { x: number; y: number }>();
-  for (const parent of container.querySelectorAll<HTMLElement>('[data-skeleton-card]')) {
-    const slug = parent.dataset.slug;
-    if (!slug || !movingGroup.has(slug)) continue;
-    const rect = parent.getBoundingClientRect();
+  const candidates = cardElements ?? container.querySelectorAll<HTMLElement>('[data-skeleton-card]');
+  const cardSnapshots: DockDragCardSnapshot[] = [];
+  for (const element of candidates) {
+    const slug = element.dataset.slug;
+    if (!slug) continue;
+    const dockParent = element.dataset.dockParent ?? '';
+    if (!movingGroup.has(slug) && (!dockParent || !movingGroup.has(dockParent))) continue;
+    const rect = element.getBoundingClientRect();
+    const layoutY = Number(element.dataset.layoutY);
+    const y = Number.isFinite(layoutY)
+      ? layoutY
+      : (rect.top + rect.bottom) / 2 - containerRect.top;
     const x = (rect.left + rect.right) / 2 - containerRect.left;
-    const layoutY = Number(parent.dataset.layoutY);
-    if (Number.isFinite(layoutY)) {
-      parentAnchorBySlug.set(slug, { x, y: layoutY });
-      continue;
-    }
-    parentAnchorBySlug.set(slug, {
+    const childStartX =
+      element.dataset.dockSide === 'left'
+        ? rect.right - containerRect.left
+        : rect.left - containerRect.left;
+    cardSnapshots.push({
+      childStartX,
+      dockParent,
+      layoutY,
+      slug,
       x,
-      y: (rect.top + rect.bottom) / 2 - containerRect.top,
+      y,
     });
+    if (!movingGroup.has(slug)) continue;
+    parentAnchorBySlug.set(slug, { x, y });
   }
-  for (const child of container.querySelectorAll<HTMLElement>('[data-skeleton-card][data-dock-parent]')) {
-    const slug = child.dataset.slug;
-    const parentSlug = child.dataset.dockParent;
-    if (!slug || !parentSlug || !movingGroup.has(parentSlug)) continue;
+  for (const child of cardSnapshots) {
+    const parentSlug = child.dockParent;
+    if (!parentSlug || !movingGroup.has(parentSlug)) continue;
     const parentStart = parentAnchorBySlug.get(parentSlug);
     if (!parentStart) continue;
-    const childRect = child.getBoundingClientRect();
-    const childStartX =
-      child.dataset.dockSide === 'left'
-        ? childRect.right - containerRect.left
-        : childRect.left - containerRect.left;
-    const layoutY = Number(child.dataset.layoutY);
-    if (Number.isFinite(layoutY)) {
-      snapshots.set(slug, {
-        childStartX,
+    if (Number.isFinite(child.layoutY)) {
+      snapshots.set(child.slug, {
+        childStartX: child.childStartX,
         parentSlug,
         parentStartX: parentStart.x,
         parentStartY: parentStart.y,
-        childStartY: layoutY,
+        childStartY: child.layoutY,
       });
       continue;
     }
-    snapshots.set(slug, {
-      childStartX,
+    snapshots.set(child.slug, {
+      childStartX: child.childStartX,
       parentSlug,
       parentStartX: parentStart.x,
       parentStartY: parentStart.y,
-      childStartY: (childRect.top + childRect.bottom) / 2 - containerRect.top,
+      childStartY: child.y,
     });
   }
   return snapshots;
@@ -1143,11 +1349,13 @@ function pushCardsAwayFromDraggedCluster(
   sigma: SkeletonCardsCamera,
   group: ReadonlySet<string>,
   movableNodeIds: ReadonlySet<string>,
+  cardElements: readonly HTMLElement[] | null = null,
 ): Set<string> {
   const pushedSlugs = new Set<string>();
   if (!container) return pushedSlugs;
   const containerRect = container.getBoundingClientRect();
-  const records = Array.from(container.querySelectorAll<HTMLElement>('[data-skeleton-card]'))
+  const candidates = cardElements ?? Array.from(container.querySelectorAll<HTMLElement>('[data-skeleton-card]'));
+  const records = Array.from(candidates)
     .map((el) => {
       const slug = el.dataset.slug;
       const dockParent = el.dataset.dockParent;
@@ -1257,6 +1465,7 @@ export function SigmaSkeletonCards({
   onPathSelectionChange,
   onVisibilityChange,
   onRelationSelect,
+  onRelationHover,
   describeKind,
 }: SigmaSkeletonCardsProps) {
   const tEdgeTooltip = useTranslations('topologyWidgets.edgeTooltip');
@@ -1302,6 +1511,10 @@ export function SigmaSkeletonCards({
     lastY: number;
     travel: number;
     dockDragSnapshots: Map<string, DockDragSnapshot>;
+    cardElements: SkeletonCardElementIndex;
+    movedGroup: Set<string>;
+    movableNodeIds: Set<string>;
+    tierByNodeId: Map<string, SkeletonCardModel['tier']>;
   } | null>(null);
   const activeDockDragSnapshotsRef = useRef<Map<string, DockDragSnapshot>>(new Map());
   const suppressClickRef = useRef(false);
@@ -1309,9 +1522,39 @@ export function SigmaSkeletonCards({
   // 전환 창 동안 충돌 판정 동결용 (slug → 직전 collides).
   const collisionFreezeRef = useRef(new Map<string, boolean>());
   const lastVisibilityStatsRef = useRef<{ visible: number; total: number } | null>(null);
+  const visibilityStatsReportCountRef = useRef(0);
   const hoverPopupRef = useRef<HTMLDivElement | null>(null);
   const dragClusterHullRef = useRef<HTMLDivElement | null>(null);
   const repositionRafRef = useRef<number | null>(null);
+  const repositionNowRef = useRef<(() => void) | null>(null);
+  const fixedSurfaceRectCacheRef = useRef<FixedSurfaceRectCache | null>(null);
+  const lastDragDomIndexSizeRef = useRef(0);
+  const lastDockDragSnapshotSizeRef = useRef(0);
+
+  const invalidateFixedSurfaceRectCache = useCallback(() => {
+    fixedSurfaceRectCacheRef.current = null;
+  }, []);
+
+  const getFixedSurfaceRects = useCallback((containerRect: DOMRect) => {
+    const cached = fixedSurfaceRectCacheRef.current;
+    const now = Date.now();
+    if (
+      cached &&
+      cached.width === containerRect.width &&
+      cached.height === containerRect.height &&
+      now - cached.timestamp < FIXED_SURFACE_RECT_CACHE_MS
+    ) {
+      return cached.rects;
+    }
+    const rects = collectFixedSurfaceRects(containerRect);
+    fixedSurfaceRectCacheRef.current = {
+      height: containerRect.height,
+      rects,
+      timestamp: now,
+      width: containerRect.width,
+    };
+    return rects;
+  }, []);
 
   const clearActiveDragCluster = useCallback(() => {
     if (dragReleaseTimerRef.current !== null) {
@@ -1444,11 +1687,25 @@ export function SigmaSkeletonCards({
       if (moved) {
         suppressClickRef.current = true;
         activeDockDragSnapshotsRef.current = new Map(drag?.dockDragSnapshots ?? []);
+        if (drag && sigma) {
+          const pushedSlugs = pushCardsAwayFromDraggedCluster(
+            containerRef.current,
+            graph,
+            sigma,
+            drag.movedGroup,
+            drag.movableNodeIds,
+            drag.cardElements.all,
+          );
+          if (pushedSlugs.size > 0) {
+            repositionNowRef.current?.();
+            markDragSettled(pushedSlugs);
+          }
+        }
       }
       dragRef.current = null;
       settleActiveDragCluster(moved);
     },
-    [settleActiveDragCluster],
+    [graph, markDragSettled, settleActiveDragCluster, sigma],
   );
 
   useEffect(() => {
@@ -1502,6 +1759,38 @@ export function SigmaSkeletonCards({
     }
     return Array.from(groups.values()).slice(0, 3);
   }, [egoRelationConnectors]);
+
+  const selectedRelationLabelHandoff = useMemo(() => {
+    const selectedLabel = selectedRelationEdgeId
+      ? egoRelationLabels.find((label) => label.edgeId === selectedRelationEdgeId)
+      : null;
+    if (!selectedLabel) return null;
+    const gateKind = relationAgentGateKind(selectedLabel);
+    const primaryCopyAction = relationPrimaryCopyAction(gateKind);
+    return {
+      action: primaryCopyAction,
+      cliFallbackCommand: relationLabelCliFallbackCommand({
+        action: primaryCopyAction,
+        from: selectedLabel.edgeSource,
+        relationType: selectedLabel.relationType,
+        to: selectedLabel.edgeTarget,
+      }),
+      evidence: relationEvidenceState(selectedLabel),
+      gate: gateKind,
+      quality: selectedLabel.relationQuality ?? 'supported',
+      route: 'fact>evidence>gate>action',
+    };
+  }, [egoRelationLabels, selectedRelationEdgeId]);
+
+  const selectedRelationSummary = useMemo(() => {
+    if (!ego || egoRelationConnectors.length === 0) return null;
+    return {
+      relationCount: egoRelationConnectors.length,
+      typeCount: new Set(
+        egoRelationConnectors.map((connector) => connector.relationType),
+      ).size,
+    };
+  }, [ego, egoRelationConnectors]);
 
   const selectedFocusCluster = useMemo(() => {
     if (!ego || ego.slugs.size < 2) return null;
@@ -1595,6 +1884,18 @@ export function SigmaSkeletonCards({
     },
     [graph, onRelationSelect],
   );
+  const hoverRelation = useCallback(
+    (connector: RelationConnector, point: { x: number; y: number } | null) => {
+      if (!point) {
+        onRelationHover?.(null);
+        return;
+      }
+      const data = relationSelectionData(graph, connector);
+      if (!data) return;
+      onRelationHover?.({ ...data, x: point.x, y: point.y });
+    },
+    [graph, onRelationHover],
+  );
 
   const reposition = useCallback(() => {
     const container = containerRef.current;
@@ -1619,8 +1920,9 @@ export function SigmaSkeletonCards({
     );
     const dockGap = 56 * scale;
     const columnStep = COLUMN_STEP_PX * scale;
+    const domWriteStats: SkeletonDomWriteStats = { applied: 0, skipped: 0 };
     const egoRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
-    const fixedSurfaceRects = collectFixedSurfaceRects(containerRect);
+    const fixedSurfaceRects = getFixedSurfaceRects(containerRect);
     const acceptedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     const dimEls: HTMLElement[] = [];
     const overviewEls: HTMLElement[] = [];
@@ -1710,7 +2012,12 @@ export function SigmaSkeletonCards({
         const flippedAnchor =
           flippedSide === 1 ? ANCHOR_TRANSLATE.left : ANCHOR_TRANSLATE.right;
         el.dataset.dockFlipTransform = `${flippedAnchor} translate3d(${flippedX}px, ${y}px, 0)`;
-        el.style.transform = `${anchor} translate3d(${x}px, ${y}px, 0)`;
+        setSkeletonStyleValue(
+          el,
+          'transform',
+          `${anchor} translate3d(${x}px, ${y}px, 0)`,
+          domWriteStats,
+        );
       } else {
         delete el.dataset.dockDragFollow;
         delete el.dataset.dockParentDeltaY;
@@ -1748,7 +2055,12 @@ export function SigmaSkeletonCards({
             : vp;
         const anchor = ANCHOR_TRANSLATE[safeAnchorKey];
         el.dataset.layoutY = String(clamped.y);
-        el.style.transform = `${anchor} translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+        setSkeletonStyleValue(
+          el,
+          'transform',
+          `${anchor} translate3d(${clamped.x}px, ${clamped.y}px, 0)`,
+          domWriteStats,
+        );
       }
       if (el.dataset.dimmed === 'true') {
         dimEls.push(el);
@@ -1795,7 +2107,7 @@ export function SigmaSkeletonCards({
           const flipTransform = el.dataset.dockFlipTransform;
           if (flipTransform) {
             const originalTransform = el.style.transform;
-            el.style.transform = flipTransform;
+            setSkeletonStyleValue(el, 'transform', flipTransform, domWriteStats);
             const flipped = el.getBoundingClientRect();
             const flippedVisibleRect = {
               left: flipped.left - containerRect.left,
@@ -1825,7 +2137,7 @@ export function SigmaSkeletonCards({
               el.dataset.dockFlipped = 'true';
             } else {
               delete el.dataset.dockFlipped;
-              el.style.transform = originalTransform;
+              setSkeletonStyleValue(el, 'transform', originalTransform, domWriteStats);
               hideSkeletonCard(el);
               continue;
             }
@@ -2000,7 +2312,12 @@ export function SigmaSkeletonCards({
           fixedSurfaceRects,
         });
         if (endpointShift.dx !== 0 || endpointShift.dy !== 0) {
-          el.style.transform = `${el.style.transform} translate(${endpointShift.dx}px, ${endpointShift.dy}px)`;
+          setSkeletonStyleValue(
+            el,
+            'transform',
+            `${el.style.transform} translate(${endpointShift.dx}px, ${endpointShift.dy}px)`,
+            domWriteStats,
+          );
           el.dataset.pathEndpointRestored = 'safe-shift';
           endpointRect = endpointShift.rect;
         } else {
@@ -2027,7 +2344,23 @@ export function SigmaSkeletonCards({
         }
         showSkeletonCard(el);
       }
+      separatePathEndpointCards(orderedEls, containerRect);
     }
+    const relationLabelCardBlockers: Array<{
+      left: number;
+      top: number;
+      right: number;
+      bottom: number;
+    }> = [];
+    const recordRelationLabelCardBlocker = (el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      relationLabelCardBlockers.push({
+        left: rect.left - containerRect.left,
+        top: rect.top - containerRect.top,
+        right: rect.right - containerRect.left,
+        bottom: rect.bottom - containerRect.top,
+      });
+    };
     let visibleCardCount = 0;
     for (const el of orderedEls) {
       const style = getComputedStyle(el);
@@ -2037,8 +2370,11 @@ export function SigmaSkeletonCards({
         Number(style.opacity || el.style.opacity || '1') > 0.01
       ) {
         visibleCardCount += 1;
+        recordRelationLabelCardBlocker(el);
       }
     }
+    let reportedVisibleCardCount = visibleCardCount;
+    let visibilityCountSource = 'single-pass';
     if (visibleCardCount === 0 && orderedEls.length > 0) {
       let restored = 0;
       for (const el of orderedEls) {
@@ -2068,36 +2404,55 @@ export function SigmaSkeletonCards({
       }
       container.dataset.visibilityFallback = 'true';
       container.dataset.visibilityFallbackCount = String(restored);
+      if (restored > 0) {
+        reportedVisibleCardCount = 0;
+        relationLabelCardBlockers.length = 0;
+        for (const el of orderedEls) {
+          const style = getComputedStyle(el);
+          if (
+            el.dataset.surfaceHidden !== 'true' &&
+            style.visibility !== 'hidden' &&
+            Number(style.opacity || el.style.opacity || '1') > 0.01
+          ) {
+            reportedVisibleCardCount += 1;
+            recordRelationLabelCardBlocker(el);
+          }
+        }
+        visibilityCountSource = 'fallback-recount';
+      }
     } else {
       delete container.dataset.visibilityFallback;
       delete container.dataset.visibilityFallbackCount;
     }
-    let reportedVisibleCardCount = 0;
-    for (const el of orderedEls) {
-      const style = getComputedStyle(el);
-      if (
-        el.dataset.surfaceHidden !== 'true' &&
-        style.visibility !== 'hidden' &&
-        Number(style.opacity || el.style.opacity || '1') > 0.01
-      ) {
-        reportedVisibleCardCount += 1;
-      }
-    }
     container.dataset.visibleCardCount = String(reportedVisibleCardCount);
+    container.dataset.visibilityCountSource = visibilityCountSource;
+    container.dataset.relationLabelBlockerSource =
+      visibilityCountSource === 'fallback-recount'
+        ? 'fallback-visibility-pass'
+        : 'visibility-pass';
+    container.dataset.relationLabelBlockerContract = 'reuse-visible-card-rects';
+    container.dataset.relationLabelBlockerCount = String(
+      relationLabelCardBlockers.length,
+    );
     container.dataset.totalCardCount = String(orderedEls.length);
     container.dataset.dimAnchorOpacity = DIM_ANCHOR_OPACITY;
     container.dataset.dimChipOpacity = DIM_CHIP_OPACITY;
     container.dataset.dimOpacityContract = 'readable-context-geography';
-    const lastVisibilityStats = lastVisibilityStatsRef.current;
+    const nextVisibilityStats = {
+      visible: reportedVisibleCardCount,
+      total: orderedEls.length,
+    };
     if (
-      !lastVisibilityStats ||
-      lastVisibilityStats.visible !== reportedVisibleCardCount ||
-      lastVisibilityStats.total !== orderedEls.length
+      shouldReportSkeletonVisibilityStats(
+        lastVisibilityStatsRef.current,
+        nextVisibilityStats,
+      )
     ) {
-      lastVisibilityStatsRef.current = {
-        visible: reportedVisibleCardCount,
-        total: orderedEls.length,
-      };
+      lastVisibilityStatsRef.current = nextVisibilityStats;
+      visibilityStatsReportCountRef.current += 1;
+      container.dataset.visibilityStatsReportCount = String(
+        visibilityStatsReportCountRef.current,
+      );
       onVisibilityChange?.({
         visible: reportedVisibleCardCount,
         total: orderedEls.length,
@@ -2136,36 +2491,52 @@ export function SigmaSkeletonCards({
       container.dataset.clickFocusRelationshipContext = 'none';
       container.dataset.clickFocusRelationshipContextSource = 'none';
     }
+    const connectorCardRectCache = new Map<
+      HTMLElement,
+      { left: number; top: number; right: number; bottom: number }
+    >();
+    let connectorCardRectReadCount = 0;
+    let connectorCardRectHitCount = 0;
+    const connectorCardRect = (el: HTMLElement | null | undefined) => {
+      if (!el) return null;
+      const cached = connectorCardRectCache.get(el);
+      if (cached) {
+        connectorCardRectHitCount += 1;
+        return cached;
+      }
+      connectorCardRectReadCount += 1;
+      const rect = el.getBoundingClientRect();
+      const next = {
+        left: rect.left - containerRect.left,
+        top: rect.top - containerRect.top,
+        right: rect.right - containerRect.left,
+        bottom: rect.bottom - containerRect.top,
+      };
+      connectorCardRectCache.set(el, next);
+      return next;
+    };
     const drawConnector = (
       path: SVGPathElement,
       sourceEl: HTMLElement | null | undefined,
       targetEl: HTMLElement | null | undefined,
     ) => {
-      const sourceRect = sourceEl?.getBoundingClientRect();
-      const targetRect = targetEl?.getBoundingClientRect();
+      const source = connectorCardRect(sourceEl);
+      const target = connectorCardRect(targetEl);
       if (
-        !sourceRect ||
-        !targetRect ||
+        !source ||
+        !target ||
         sourceEl?.dataset.surfaceHidden === 'true' ||
         targetEl?.dataset.surfaceHidden === 'true'
       ) {
-        path.setAttribute('d', '');
+        setSkeletonPathData(path, '', domWriteStats);
         return;
       }
-      const source = {
-        left: sourceRect.left - containerRect.left,
-        top: sourceRect.top - containerRect.top,
-        right: sourceRect.right - containerRect.left,
-        bottom: sourceRect.bottom - containerRect.top,
-      };
-      const target = {
-        left: targetRect.left - containerRect.left,
-        top: targetRect.top - containerRect.top,
-        right: targetRect.right - containerRect.left,
-        bottom: targetRect.bottom - containerRect.top,
-      };
       const ports = connectorPorts(source, target);
-      path.setAttribute('d', connectorPath(ports.sx, ports.sy, ports.ex, ports.ey, ports.axis));
+      setSkeletonPathData(
+        path,
+        connectorPath(ports.sx, ports.sy, ports.ex, ports.ey, ports.axis),
+        domWriteStats,
+      );
       path.dataset.connectorAxis = ports.axis;
       path.dataset.connectorClearance = String(ports.clearance);
     };
@@ -2174,18 +2545,14 @@ export function SigmaSkeletonCards({
     // 시작/종료시킨다. 밝은 선이 카드 바깥으로 삐져나와 보이는 현상을 막는다.
     const svg = container.querySelector<SVGSVGElement>('[data-skeleton-connectors]');
     if (svg) {
-      const parentEl = container.querySelector<HTMLElement>(
-        `[data-skeleton-card][data-slug="${CSS.escape(ego?.selected ?? '')}"]`,
-      );
+      container.dataset.connectorDomIndexContract = 'reuse-card-index';
+      container.dataset.connectorRectCacheContract = 'frame-local-card-rect-cache';
+      const parentEl = ego?.selected ? (elBySlug.get(ego.selected) ?? null) : null;
       for (const path of svg.querySelectorAll<SVGPathElement>('[data-connector]')) {
         const childSlug = path.dataset.connector;
-        const childEl = childSlug
-          ? container.querySelector<HTMLElement>(
-              `[data-skeleton-card][data-slug="${CSS.escape(childSlug)}"]`,
-            )
-          : null;
+        const childEl = childSlug ? (elBySlug.get(childSlug) ?? null) : null;
         if (!parentEl || !childEl) {
-          path.setAttribute('d', '');
+          setSkeletonPathData(path, '', domWriteStats);
           continue;
         }
         // 2열 이상의 카드로는 기본 커넥터를 긋지 않는다 — 1열을 관통한다.
@@ -2194,7 +2561,7 @@ export function SigmaSkeletonCards({
           path.dataset.selectedRelation === 'true' ||
           path.dataset.selectedRelationHalo === 'true';
         if (!selectedRelationPath && isDockConnectorSuppressed(childEl)) {
-          path.setAttribute('d', '');
+          setSkeletonPathData(path, '', domWriteStats);
           continue;
         }
         drawConnector(path, parentEl, childEl);
@@ -2213,24 +2580,48 @@ export function SigmaSkeletonCards({
         const toEl = to ? elBySlug.get(to) : null;
         drawConnector(path, fromEl, toEl);
       }
+      const relationLabelBadgesById = new Map<string, SVGRectElement>();
+      for (const badge of svg.querySelectorAll<SVGRectElement>('[data-relation-label-bg]')) {
+        const id = badge.dataset.relationLabelBg;
+        if (id) relationLabelBadgesById.set(id, badge);
+      }
+      const relationLabelButtonsById = new Map<string, HTMLElement>();
+      for (const button of container.querySelectorAll<HTMLElement>(
+        '[data-relation-label-button]',
+      )) {
+        const id = button.dataset.relationLabelButton;
+        if (id) relationLabelButtonsById.set(id, button);
+      }
+      const selectedRelationOverlaysById = new Map<string, HTMLElement>();
+      for (const overlay of container.querySelectorAll<HTMLElement>(
+        '[data-selected-relation-overlay]',
+      )) {
+        const id = overlay.dataset.selectedRelationOverlay;
+        if (id) selectedRelationOverlaysById.set(id, overlay);
+      }
+      container.dataset.relationLabelQueryContract = 'indexed-once';
+      container.dataset.relationLabelQueryIndexCount = String(
+        relationLabelBadgesById.size +
+          relationLabelButtonsById.size +
+          selectedRelationOverlaysById.size,
+      );
+      let relationLabelFrameExpectedCount = 0;
+      let relationLabelFrameReadyCount = 0;
       for (const label of svg.querySelectorAll<SVGTextElement>('[data-relation-label-from]')) {
         const from = label.dataset.relationLabelFrom;
         const to = label.dataset.relationLabelTo;
-        const badge = label.dataset.relationLabelId
-          ? svg.querySelector<SVGRectElement>(
-              `[data-relation-label-bg="${CSS.escape(label.dataset.relationLabelId)}"]`,
-            )
+        const relationLabelId = label.dataset.relationLabelId;
+        const badge = relationLabelId
+          ? (relationLabelBadgesById.get(relationLabelId) ?? null)
           : null;
-        const labelButton = label.dataset.relationLabelId
-          ? container.querySelector<HTMLElement>(
-              `[data-relation-label-button="${CSS.escape(label.dataset.relationLabelId)}"]`,
-            )
+        const labelButton = relationLabelId
+          ? (relationLabelButtonsById.get(relationLabelId) ?? null)
           : null;
         const selectedRelationLabel = labelButton?.dataset.selectedRelation === 'true';
         const fromEl = from ? elBySlug.get(from) : null;
         const toEl = to ? elBySlug.get(to) : null;
-        const fromRect = fromEl?.getBoundingClientRect();
-        const toRect = toEl?.getBoundingClientRect();
+        const fromRect = connectorCardRect(fromEl);
+        const toRect = connectorCardRect(toEl);
         if (
           !fromRect ||
           !toRect ||
@@ -2252,61 +2643,113 @@ export function SigmaSkeletonCards({
         const isEgoBadge = label.dataset.connectorRelationLabel === 'true';
         const labelIndex = Number(label.dataset.relationLabelIndex ?? '0');
         const x = isEgoBadge
-          ? (fromRect.left + fromRect.right) / 2 - containerRect.left
-          : (fromRect.left + fromRect.right + toRect.left + toRect.right) / 4 -
-            containerRect.left;
+          ? (fromRect.left + fromRect.right) / 2
+          : (fromRect.left + fromRect.right + toRect.left + toRect.right) / 4;
         const y = isEgoBadge
-          ? Math.max(18, fromRect.top - containerRect.top - 14 - labelIndex * 14)
+          ? Math.max(18, fromRect.top - 14 - labelIndex * 14)
           : (fromRect.top + fromRect.bottom + toRect.top + toRect.bottom) / 4 -
-            containerRect.top -
             8;
         const relationHitDisabled = activeDragCluster !== null;
         const badgeWidth = Math.max(
           RELATION_BADGE_MIN_WIDTH_PX,
           (label.textContent?.length ?? 0) * RELATION_BADGE_CHAR_WIDTH_PX +
             RELATION_BADGE_PAD_X_PX +
-            (isEgoBadge ? RELATION_BADGE_QUALITY_DOT_WIDTH_PX : 0) +
+            (isEgoBadge
+              ? RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
+                RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX
+              : 0) +
             (labelButton?.dataset.relationLabelAgentGateVisible === 'true'
               ? RELATION_BADGE_QUALITY_CHIP_WIDTH_PX + RELATION_BADGE_FACT_ROUTE_WIDTH_PX
               : 0),
         );
         const usesHtmlBadge = isEgoBadge && labelButton !== null;
+        const labelGeometry = resolveRelationLabelGeometry({
+          badgeWidth,
+          centerX: x,
+          containerWidth: containerRect.width,
+          hitTargetPadX: RELATION_LABEL_HIT_TARGET_PAD_X_PX,
+          minCompactWidth: RELATION_LABEL_MIN_COMPACT_WIDTH_PX,
+          viewportInset: RELATION_LABEL_VIEWPORT_INSET_PX,
+        });
+        const labelPlacement = resolveRelationLabelVerticalPlacement({
+          blockers: relationLabelCardBlockers,
+          containerHeight: containerRect.height,
+          height: RELATION_LABEL_HIT_TARGET_HEIGHT_PX,
+          left: labelGeometry.left,
+          top: y - RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2,
+          width: labelGeometry.hitTargetWidth,
+        });
+        const labelHitRect = {
+          left: labelGeometry.left,
+          top: labelPlacement.top,
+          right: labelGeometry.left + labelGeometry.hitTargetWidth,
+          bottom: labelPlacement.top + RELATION_LABEL_HIT_TARGET_HEIGHT_PX,
+        };
+        const labelCardOverlapCount = relationLabelCardBlockers.filter((blocker) =>
+          rectsOverlap(labelHitRect, blocker),
+        ).length;
+        const labelHiddenByCards =
+          (labelPlacement.occluded || labelCardOverlapCount > 0) && !selectedRelationLabel;
+        const placedY = labelPlacement.top + RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2;
         label.setAttribute('x', String(x));
-        label.setAttribute('y', String(y));
-        label.setAttribute('opacity', usesHtmlBadge ? '0' : '1');
-        label.setAttribute('aria-hidden', usesHtmlBadge ? 'true' : 'false');
+        label.setAttribute('y', String(placedY));
+        label.setAttribute('opacity', usesHtmlBadge || labelHiddenByCards ? '0' : '1');
+        label.setAttribute('aria-hidden', usesHtmlBadge || labelHiddenByCards ? 'true' : 'false');
         const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
         if (labelGroup) {
-          labelGroup.style.pointerEvents = usesHtmlBadge ? 'none' : 'auto';
+          labelGroup.style.pointerEvents = usesHtmlBadge || labelHiddenByCards ? 'none' : 'auto';
         }
         if (badge) {
           badge.setAttribute('x', String(x - badgeWidth / 2));
-          badge.setAttribute('y', String(y - RELATION_BADGE_HEIGHT_PX / 2));
+          badge.setAttribute('y', String(placedY - RELATION_BADGE_HEIGHT_PX / 2));
           badge.setAttribute('width', String(badgeWidth));
           badge.setAttribute('height', String(RELATION_BADGE_HEIGHT_PX));
-          badge.setAttribute('opacity', usesHtmlBadge ? '0' : '1');
+          badge.setAttribute('opacity', usesHtmlBadge || labelHiddenByCards ? '0' : '1');
           badge.setAttribute(
             'pointer-events',
-            usesHtmlBadge || relationHitDisabled ? 'none' : 'auto',
+            usesHtmlBadge || relationHitDisabled || labelHiddenByCards ? 'none' : 'auto',
           );
         }
         if (labelButton) {
-          const labelGeometry = resolveRelationLabelGeometry({
-            badgeWidth,
-            centerX: x,
-            containerWidth: containerRect.width,
-            hitTargetPadX: RELATION_LABEL_HIT_TARGET_PAD_X_PX,
-            minCompactWidth: RELATION_LABEL_MIN_COMPACT_WIDTH_PX,
-            viewportInset: RELATION_LABEL_VIEWPORT_INSET_PX,
-          });
-          labelButton.style.transform = `translate3d(${labelGeometry.left}px, ${
-            y - RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2
-          }px, 0)`;
-          labelButton.style.width = `${labelGeometry.hitTargetWidth}px`;
-          labelButton.style.height = `${RELATION_LABEL_HIT_TARGET_HEIGHT_PX}px`;
-          labelButton.style.opacity = '1';
-          labelButton.style.pointerEvents = relationHitDisabled ? 'none' : 'auto';
+          if (!labelHiddenByCards) relationLabelFrameExpectedCount += 1;
+          setSkeletonStyleValue(
+            labelButton,
+            'transform',
+            `translate3d(${labelGeometry.left}px, ${labelPlacement.top}px, 0)`,
+            domWriteStats,
+          );
+          setSkeletonStyleValue(
+            labelButton,
+            'width',
+            `${labelGeometry.hitTargetWidth}px`,
+            domWriteStats,
+          );
+          setSkeletonStyleValue(
+            labelButton,
+            'height',
+            `${RELATION_LABEL_HIT_TARGET_HEIGHT_PX}px`,
+            domWriteStats,
+          );
+          setSkeletonStyleValue(
+            labelButton,
+            'opacity',
+            labelHiddenByCards ? '0' : '1',
+            domWriteStats,
+          );
+          setSkeletonStyleValue(
+            labelButton,
+            'pointerEvents',
+            relationHitDisabled || labelHiddenByCards ? 'none' : 'auto',
+            domWriteStats,
+          );
           labelButton.dataset.labelGeometrySource = 'html-hit-target';
+          labelButton.dataset.relationLabelCardClearance =
+            labelPlacement.occluded || labelCardOverlapCount > 0 ? 'occluded' : 'clear';
+          labelButton.dataset.relationLabelCardClearancePolicy =
+            'reposition-or-hide';
+          labelButton.dataset.relationLabelCardOverlapCount = String(
+            labelCardOverlapCount,
+          );
           labelButton.dataset.visibleBadgeWidth = String(badgeWidth);
           labelButton.dataset.visibleBadgeHeight = String(RELATION_BADGE_HEIGHT_PX);
           labelButton.dataset.relationLabelCompact = labelGeometry.compact ? 'true' : 'false';
@@ -2314,19 +2757,27 @@ export function SigmaSkeletonCards({
           labelButton.dataset.relationLabelCenteredAvailableWidth = String(
             labelGeometry.centeredAvailableWidth,
           );
+          labelButton.dataset.relationLabelViewportClampContract =
+            labelGeometry.viewportClampContract;
+          labelButton.dataset.relationLabelViewportClampSide =
+            labelGeometry.viewportClampSide;
           labelButton.dataset.relationLabelViewportInset = String(
             labelGeometry.viewportInset,
           );
+          if (!labelHiddenByCards) relationLabelFrameReadyCount += 1;
           if (selectedRelationLabel) {
-            const overlay = label.dataset.relationLabelId
-              ? container.querySelector<HTMLElement>(
-                  `[data-selected-relation-overlay="${CSS.escape(label.dataset.relationLabelId)}"]`,
-                )
+            const overlay = relationLabelId
+              ? (selectedRelationOverlaysById.get(relationLabelId) ?? null)
               : null;
             if (overlay) {
-              overlay.style.transform = labelButton.style.transform;
-              overlay.style.width = labelButton.style.width;
-              overlay.style.height = labelButton.style.height;
+              setSkeletonStyleValue(
+                overlay,
+                'transform',
+                labelButton.style.transform,
+                domWriteStats,
+              );
+              setSkeletonStyleValue(overlay, 'width', labelButton.style.width, domWriteStats);
+              setSkeletonStyleValue(overlay, 'height', labelButton.style.height, domWriteStats);
               overlay.dataset.relationLabelCompact = labelButton.dataset.relationLabelCompact;
               overlay.style.setProperty('opacity', '1', 'important');
               overlay.style.visibility = 'visible';
@@ -2334,6 +2785,24 @@ export function SigmaSkeletonCards({
           }
         }
       }
+      container.dataset.relationLabelGeometryContract = 'frame-positioned-hit-targets';
+      container.dataset.relationLabelGeometrySource = 'after-render-layout-pass';
+      container.dataset.relationLabelGeometryExpectedCount = String(
+        relationLabelFrameExpectedCount,
+      );
+      container.dataset.relationLabelGeometryReadyCount = String(
+        relationLabelFrameReadyCount,
+      );
+      container.dataset.relationLabelGeometryPendingCount = String(
+        Math.max(0, relationLabelFrameExpectedCount - relationLabelFrameReadyCount),
+      );
+      container.dataset.connectorRectCacheSize = String(connectorCardRectCache.size);
+      container.dataset.connectorRectCacheReadCount = String(connectorCardRectReadCount);
+      container.dataset.connectorRectCacheHitCount = String(connectorCardRectHitCount);
+      container.dataset.connectorRectCacheAccounting = 'reads-plus-hits';
+      container.dataset.domWriteDedupeContract = 'skip-unchanged-transform-and-path';
+      container.dataset.domWriteAppliedCount = String(domWriteStats.applied);
+      container.dataset.domWriteSkippedCount = String(domWriteStats.skipped);
       for (const overlay of container.querySelectorAll<HTMLElement>(
         '[data-selected-relation-overlay][data-selected-relation-halo="true"]',
       )) {
@@ -2462,7 +2931,9 @@ export function SigmaSkeletonCards({
     selectedRelationEdgeId,
     selectedSlug,
     onVisibilityChange,
+    getFixedSurfaceRects,
   ]);
+  repositionNowRef.current = reposition;
 
   const scheduleReposition = useCallback(() => {
     if (repositionRafRef.current !== null) return;
@@ -2475,6 +2946,7 @@ export function SigmaSkeletonCards({
   // 카드 목록이 바뀌는 렌더마다 paint 전에 배치 (확장으로 새 카드 등장 시).
   useLayoutEffect(() => {
     const container = containerRef.current;
+    invalidateFixedSurfaceRectCache();
     reposition();
     if (container) {
       container.dataset.skeletonCardsReady = 'true';
@@ -2497,6 +2969,7 @@ export function SigmaSkeletonCards({
       delete container.dataset.layoutAnimate;
       collisionFreezeRef.current.clear();
       try {
+        invalidateFixedSurfaceRectCache();
         reposition();
         delete container.dataset.layoutError;
       } catch (error) {
@@ -2519,16 +2992,20 @@ export function SigmaSkeletonCards({
   useEffect(() => {
     if (!sigma) return;
     sigma.on('afterRender', scheduleReposition);
-    window.addEventListener('resize', scheduleReposition);
+    const onResize = () => {
+      invalidateFixedSurfaceRectCache();
+      scheduleReposition();
+    };
+    window.addEventListener('resize', onResize);
     return () => {
       sigma.off('afterRender', scheduleReposition);
-      window.removeEventListener('resize', scheduleReposition);
+      window.removeEventListener('resize', onResize);
       if (repositionRafRef.current !== null) {
         window.cancelAnimationFrame(repositionRafRef.current);
         repositionRafRef.current = null;
       }
     };
-  }, [sigma, scheduleReposition]);
+  }, [sigma, scheduleReposition, invalidateFixedSurfaceRectCache]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -2541,16 +3018,18 @@ export function SigmaSkeletonCards({
         overlay.style.visibility = 'visible';
         overlay.style.display = 'inline-flex';
       }
+      invalidateFixedSurfaceRectCache();
       reposition();
     });
     const settleFrame = window.requestAnimationFrame(() => {
+      invalidateFixedSurfaceRectCache();
       reposition();
     });
     return () => {
       window.cancelAnimationFrame(frame);
       window.cancelAnimationFrame(settleFrame);
     };
-  }, [reposition, selectedRelationEdgeId]);
+  }, [reposition, selectedRelationEdgeId, invalidateFixedSurfaceRectCache]);
 
   if (!sigma) return null;
 
@@ -2562,6 +3041,20 @@ export function SigmaSkeletonCards({
       data-skeleton-card-model-count={cards.length}
       data-skeleton-card-resolved-count={resolvedCardCount}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
+      data-drag-collision-policy="release-settle"
+      data-drag-frame-cache-contract="pointer-move-reuses-drag-indexes"
+      data-drag-dom-index-contract="drag-release-reuses-card-elements"
+      data-drag-dom-index-size={lastDragDomIndexSizeRef.current}
+      data-drag-frame-cache-snapshot-count={lastDockDragSnapshotSizeRef.current}
+      data-dock-drag-snapshot-contract="single-pass-card-rect-read"
+      data-visibility-count-contract="single-pass-unless-fallback"
+      data-visibility-stats-report-contract="dedupe-stable-counts"
+      data-visibility-stats-report-count={visibilityStatsReportCountRef.current}
+      data-dom-write-dedupe-contract="skip-unchanged-transform-and-path"
+      data-dom-write-applied-count="0"
+      data-dom-write-skipped-count="0"
+      data-fixed-surface-measure-contract="single-pass-rect-read"
+      data-path-endpoint-separation-contract="source-target-min-gap"
       data-drag-settle-motion-contract={TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT}
       data-drag-settle-motion-duration-ms={TOPOLOGY_DRAG_SETTLE_DURATION_MS}
       data-drag-settle-motion-easing={TOPOLOGY_DRAG_SETTLE_EASING_NAME}
@@ -2575,6 +3068,23 @@ export function SigmaSkeletonCards({
       data-dim-anchor-opacity={DIM_ANCHOR_OPACITY}
       data-dim-chip-opacity={DIM_CHIP_OPACITY}
       data-dim-opacity-contract="readable-context-geography"
+      data-relation-label-handoff-contract="label-level-mcp-cli-fallback"
+      data-relation-label-geometry-contract="frame-positioned-hit-targets"
+      data-relation-label-geometry-source="pending-frame"
+      data-relation-label-geometry-expected-count="0"
+      data-relation-label-geometry-ready-count="0"
+      data-relation-label-geometry-pending-count="0"
+      data-selected-relation-label-handoff={
+        selectedRelationLabelHandoff ? 'ready' : 'none'
+      }
+      data-selected-relation-label-gate={selectedRelationLabelHandoff?.gate}
+      data-selected-relation-label-primary-action={selectedRelationLabelHandoff?.action}
+      data-selected-relation-label-cli-fallback={
+        selectedRelationLabelHandoff?.cliFallbackCommand
+      }
+      data-selected-relation-label-fact-route={selectedRelationLabelHandoff?.route}
+      data-selected-relation-label-quality={selectedRelationLabelHandoff?.quality}
+      data-selected-relation-label-evidence={selectedRelationLabelHandoff?.evidence}
       className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-100 transition-opacity duration-150 ease-out data-[skeleton-cards-ready=false]:opacity-0 motion-reduce:transition-none"
     >
       {/* 펼친 가지 커넥터 — 수평 접선 S-커브, 카드 경계 트림. 인디고는
@@ -2854,6 +3364,10 @@ export function SigmaSkeletonCards({
           selectedRelationEdgeId !== null && label.edgeId === selectedRelationEdgeId;
         const quality = label.relationQuality ?? 'supported';
         const evidenceState = relationEvidenceState(label);
+        const evidenceChipText = relationEvidenceChipText({
+          evidenceCount: label.evidenceCount,
+          state: evidenceState,
+        });
         const evidenceText = relationEvidenceAriaText({
           evidenceCount: label.evidenceCount,
           state: evidenceState,
@@ -2872,7 +3386,8 @@ export function SigmaSkeletonCards({
           RELATION_BADGE_MIN_WIDTH_PX,
           labelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
             RELATION_BADGE_PAD_X_PX +
-            RELATION_BADGE_QUALITY_DOT_WIDTH_PX,
+            RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
+            RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX,
         );
         return (
           <button
@@ -2884,8 +3399,10 @@ export function SigmaSkeletonCards({
             data-relation-quality={quality}
             data-relation-evidence-state={evidenceState}
             data-relation-evidence-count={label.evidenceCount ?? 0}
+            data-relation-evidence-chip-text={evidenceChipText}
             data-relation-type={label.relationType}
             data-relation-type-label={labelText}
+            data-relation-label-readable-text={`${labelText} · ${evidenceChipText}`}
             data-selected-relation={selected ? 'true' : 'false'}
             data-agent-gate-kind={selected ? agentGateKind : undefined}
             data-primary-copy-action={selected ? primaryCopyAction : undefined}
@@ -2898,8 +3415,10 @@ export function SigmaSkeletonCards({
             data-relation-label-agent-gate-visible="false"
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             data-label-geometry-source="html-hit-target"
+            data-relation-label-card-clearance-token="--topology-relation-label-card-clearance"
             data-relation-label-density={selected ? 'focus-token' : 'scan-token'}
             data-relation-label-compact={selected ? 'false' : undefined}
+            data-relation-label-hover-contract="compact-edge-tooltip"
             data-visible-badge-width={visibleBadgeWidth}
             data-visible-badge-height={RELATION_BADGE_HEIGHT_PX}
             aria-label={`${tEdgeTooltip('relationAriaLabel', { label: labelText })} · ${quality} · ${evidenceText}${
@@ -2926,21 +3445,43 @@ export function SigmaSkeletonCards({
               event.stopPropagation();
               event.nativeEvent.stopImmediatePropagation();
             }}
+            onMouseEnter={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              hoverRelation(label, {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+              });
+            }}
+            onMouseMove={(event) => {
+              hoverRelation(label, { x: event.clientX, y: event.clientY });
+            }}
+            onMouseLeave={() => hoverRelation(label, null)}
+            onFocus={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              hoverRelation(label, {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+              });
+            }}
+            onBlur={() => hoverRelation(label, null)}
           >
             <span
               aria-hidden="true"
               data-relation-label-visible-badge="true"
+              data-relation-label-surface-token="--topology-relation-label-surface"
+              data-relation-label-border-token="--topology-relation-label-border"
+              data-relation-label-shadow-token="--topology-relation-label-shadow"
               className="inline-flex h-6 max-w-full items-center justify-center gap-1 overflow-hidden rounded-full border px-1.5 shadow-[0_5px_14px_rgba(0,0,0,0.20)]"
               style={{
                 backgroundColor: selected
                   ? 'rgba(139,151,255,0.16)'
-                  : 'var(--color-canvas)',
+                  : 'var(--topology-relation-label-surface)',
                 borderColor: selected
                   ? 'rgba(139,151,255,0.92)'
-                  : 'var(--topology-card-border-selected-strong)',
+                  : 'var(--topology-relation-label-border)',
                 boxShadow: selected
                   ? '0 0 0 3px rgba(139,151,255,0.12), 0 10px 24px rgba(0,0,0,0.34)'
-                  : '0 6px 16px rgba(0,0,0,0.22)',
+                  : 'var(--topology-relation-label-shadow)',
               }}
             >
               <span
@@ -2950,14 +3491,13 @@ export function SigmaSkeletonCards({
                 )}`}
               />
               <span className="min-w-0 truncate">{labelText}</span>
+              {' '}
               <span
                 data-relation-evidence-glyph={evidenceState}
-                className="ml-0.5 inline-flex h-3.5 min-w-3.5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.045)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+                data-relation-evidence-chip-text={evidenceChipText}
+                className="ml-1 inline-flex h-3.5 min-w-[1rem] shrink-0 items-center justify-center text-[8px] font-semibold leading-none tracking-normal text-[color:var(--color-text-tertiary)]"
               >
-                {relationEvidenceGlyph({
-                  evidenceCount: label.evidenceCount,
-                  state: evidenceState,
-                })}
+                {evidenceChipText}
               </span>
               {selected ? (
                 <>
@@ -3007,6 +3547,10 @@ export function SigmaSkeletonCards({
         if (!selected) return null;
         const quality = label.relationQuality ?? 'supported';
         const evidenceState = relationEvidenceState(label);
+        const evidenceChipText = relationEvidenceChipText({
+          evidenceCount: label.evidenceCount,
+          state: evidenceState,
+        });
         const labelText = formatRelationLabel(label.relationType, label.count);
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
@@ -3021,8 +3565,10 @@ export function SigmaSkeletonCards({
             data-relation-quality={quality}
             data-relation-evidence-state={evidenceState}
             data-relation-evidence-count={label.evidenceCount ?? 0}
+            data-relation-evidence-chip-text={evidenceChipText}
             data-relation-type={label.relationType}
             data-relation-type-label={labelText}
+            data-relation-label-readable-text={`${labelText} · ${evidenceChipText}`}
             data-agent-gate-kind={agentGateKind}
             data-primary-copy-action={primaryCopyAction}
             data-relation-fact-route="fact>evidence>gate>action"
@@ -3050,14 +3596,13 @@ export function SigmaSkeletonCards({
               )}`}
             />
             <span className="min-w-0 truncate">{labelText}</span>
+            {' '}
             <span
               aria-hidden="true"
-              className="ml-0.5 inline-flex h-3.5 min-w-3.5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.045)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+              data-relation-evidence-chip-text={evidenceChipText}
+              className="ml-1 inline-flex h-3.5 min-w-[1rem] shrink-0 items-center justify-center text-[8px] font-semibold leading-none tracking-normal text-[color:var(--color-text-tertiary)]"
             >
-              {relationEvidenceGlyph({
-                evidenceCount: label.evidenceCount,
-                state: evidenceState,
-              })}
+              {evidenceChipText}
             </span>
             <span
               aria-hidden="true"
@@ -3214,12 +3759,22 @@ export function SigmaSkeletonCards({
               clearActiveDragCluster();
               const rootSlug = dockParentNodeId ?? nodeId;
               if (!graph.hasNode(rootSlug)) return;
-              const movingGroup = collectDraggedCluster(
-                graph,
-                rootSlug,
-                buildMovableNodeIds(),
-                buildVisibleCardTierByNodeId(),
+	              const movableNodeIds = buildMovableNodeIds();
+	              const tierByNodeId = buildVisibleCardTierByNodeId();
+	              const cardElements = collectSkeletonCardElementIndex(containerRef.current);
+	              const movingGroup = collectDraggedCluster(
+	                graph,
+	                rootSlug,
+                movableNodeIds,
+                tierByNodeId,
               );
+              const dockDragSnapshots = snapshotDockDragPositions(
+                containerRef.current,
+                movingGroup,
+                cardElements.all,
+              );
+              lastDragDomIndexSizeRef.current = cardElements.all.length;
+              lastDockDragSnapshotSizeRef.current = dockDragSnapshots.size;
               dragRef.current = {
                 sourceSlug: nodeId,
                 rootSlug,
@@ -3227,10 +3782,11 @@ export function SigmaSkeletonCards({
                 lastX: event.clientX,
                 lastY: event.clientY,
                 travel: 0,
-                dockDragSnapshots: snapshotDockDragPositions(
-                  containerRef.current,
-                  movingGroup,
-                ),
+	                dockDragSnapshots,
+	                cardElements,
+	                movedGroup: movingGroup,
+                movableNodeIds,
+                tierByNodeId,
               };
               setActiveDragRootSlug(rootSlug);
               setActiveDragRootTitle(event.currentTarget.title || nodeId);
@@ -3259,19 +3815,13 @@ export function SigmaSkeletonCards({
                 activeDragMotionRef.current = true;
                 setActiveDragMotion(true);
               }
-              const movableNodeIds = buildMovableNodeIds();
-              const tierByNodeId = buildVisibleCardTierByNodeId();
-              const movingGroup = collectDraggedCluster(
-                graph,
-                drag.rootSlug,
-                movableNodeIds,
-                tierByNodeId,
-              );
+              const movingGroup = drag.movedGroup;
               const delta = clampDraggedClusterDelta(
                 containerRef.current,
                 movingGroup,
                 dx,
                 dy,
+                drag.cardElements.all,
               );
               if (delta.dx === 0 && delta.dy === 0) return;
               const movedGroup = moveDraggedCluster(
@@ -3280,21 +3830,12 @@ export function SigmaSkeletonCards({
                 delta.dx,
                 delta.dy,
                 sigma,
-                movableNodeIds,
-                tierByNodeId,
+                drag.movableNodeIds,
+                drag.tierByNodeId,
+                movingGroup,
               );
+              drag.movedGroup = movedGroup;
               reposition();
-              const pushedSlugs = pushCardsAwayFromDraggedCluster(
-                containerRef.current,
-                graph,
-                sigma,
-                movedGroup,
-                movableNodeIds,
-              );
-              if (pushedSlugs.size > 0) {
-                reposition();
-                markDragSettled(pushedSlugs);
-              }
             }}
             onPointerUp={(event) => {
               event.preventDefault();
@@ -3382,6 +3923,23 @@ export function SigmaSkeletonCards({
             {card.count !== undefined ? (
               <span className="relative shrink-0 font-mono text-[0.72em] text-[color:var(--color-text-tertiary)]">
                 {card.count}
+              </span>
+            ) : null}
+            {selected && selectedRelationSummary ? (
+              <span
+                data-testid="sigma-selected-card-relation-summary"
+                data-relation-summary-contract="selected-card-direct-facts"
+                data-relation-summary-surface-token="--topology-relation-summary-surface"
+                data-relation-summary-border-token="--topology-relation-summary-border"
+                data-relation-summary-text-token="--topology-relation-summary-text"
+                data-relation-count={selectedRelationSummary.relationCount}
+                data-relation-type-count={selectedRelationSummary.typeCount}
+                className="relative ml-0.5 inline-flex h-[1.55em] shrink-0 items-center rounded-full border border-[color:var(--topology-relation-summary-border)] bg-[color:var(--topology-relation-summary-surface)] px-[0.52em] font-mono text-[0.72em] leading-none text-[color:var(--topology-relation-summary-text)]"
+              >
+                {tEdgeTooltip('selectedCardRelationSummary', {
+                  relations: selectedRelationSummary.relationCount,
+                  types: selectedRelationSummary.typeCount,
+                })}
               </span>
             ) : null}
             {pathRole === 'source' || pathRole === 'target' ? (
