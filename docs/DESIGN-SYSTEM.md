@@ -177,6 +177,21 @@ names in component data markers and tests whenever a surface depends on
   `--topology-relation-label-selected-shadow`: focus-level selected relation
   label treatment. A selected relation is the active ontology fact on the map,
   so its halo must be token-backed instead of embedded RGBA in the renderer.
+- `--topology-focus-hull-*`: selected focus/drag cluster hull treatment. The
+  quiet focus outline and active drag hull must be token-backed so the map reads
+  as a relationship boundary, not a second panel or an ungoverned glow.
+- `--topology-card-drag-*`: drag, active drag, and settle feedback for map
+  cards. Drag motion is an interaction state in the topology grammar, so the
+  wash/glow tokens must stay separate from generic selected-card elevation.
+- `--topology-relation-quality-*-dot` /
+  `--topology-relation-quality-*-glow`: relation quality dots inside map labels.
+  Strong, supported, weak, and review states must be visible as semantic graph
+  marks rather than Tailwind color classes.
+- `--topology-relation-gate-*-surface` /
+  `--topology-relation-gate-*-border` /
+  `--topology-relation-gate-*-text`: relation label gate chips for MCP/CLI,
+  preflight, and review flows. Gate color is agent handoff state, not
+  decorative status color.
 - `--topology-relation-evidence-chip-surface` /
   `--topology-relation-evidence-chip-border` /
   `--topology-relation-evidence-chip-text`: compact evidence glyph inside a
