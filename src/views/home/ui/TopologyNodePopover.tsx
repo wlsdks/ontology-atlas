@@ -291,8 +291,10 @@ export function TopologyNodePopover({
             data-agent-handoff-action="copy-focus-brief"
             data-popover-action-surface-token="--topology-node-popover-action-icon-surface"
             data-popover-action-border-token="--topology-node-popover-action-icon-border"
+            data-popover-action-text-token="--topology-node-popover-action-text"
+            data-popover-action-hover-text-token="--topology-node-popover-action-hover-text"
             data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--topology-node-popover-action-icon-border)] bg-[color:var(--topology-node-popover-action-icon-surface)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--topology-node-popover-action-icon-border)] bg-[color:var(--topology-node-popover-action-icon-surface)] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
           >
             <Clipboard size={14} aria-hidden />
           </button>
@@ -835,8 +837,10 @@ export function TopologyNodePopover({
                   data-agent-handoff-action={action.kind}
                   data-popover-action-surface-token="--topology-node-popover-action-surface"
                   data-popover-action-border-token="--topology-node-popover-action-border"
+                  data-popover-action-text-token="--topology-node-popover-action-text"
+                  data-popover-action-hover-text-token="--topology-node-popover-action-hover-text"
                   data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
-                  className="min-w-0 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-border)] bg-[color:var(--topology-node-popover-action-surface)] px-1.5 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
+                  className="min-w-0 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-border)] bg-[color:var(--topology-node-popover-action-surface)] px-1.5 py-1.5 text-[10px] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
                 >
                   <span className="block truncate">{action.label}</span>
                 </button>

@@ -240,13 +240,14 @@ names in component data markers and tests whenever a surface depends on
   inspector relation list chrome. These keep row separators and hover feedback
   in the same token family as the fixed footer, so relation rows remain a
   readable handoff list instead of ad hoc translucent bands.
-- `--topology-node-popover-action-focus-ring` /
+- `--topology-node-popover-action-*` /
   `--topology-node-popover-context-surface` /
   `--topology-node-popover-context-border`: selected node inspector support
   rail accents. Compact MCP/CLI actions, footer actions, and map-visible
   relation summaries must use node-popover tokens so the support rail stays
   visually related to the active focus state without becoming another primary
-  relation inspector.
+  relation inspector. Action text and hover text must stay token-backed so the
+  footer's next actions do not drift into generic button chrome.
 - `--topology-node-popover-route-*`: compact relation-row handoff route rail
   inside the selected node inspector. Use these for fact/evidence/gate/action
   chips and their text so row-level MCP/CLI payloads scan as structured proof,

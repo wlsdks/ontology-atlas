@@ -1559,6 +1559,14 @@ for (const viewport of VIEWPORTS) {
       "data-popover-action-surface-token",
       "--topology-node-popover-action-icon-surface",
     );
+    await expect(page.getByTestId("topology-node-popover-compact-brief-action")).toHaveAttribute(
+      "data-popover-action-text-token",
+      "--topology-node-popover-action-text",
+    );
+    await expect(page.getByTestId("topology-node-popover-compact-brief-action")).toHaveAttribute(
+      "data-popover-action-hover-text-token",
+      "--topology-node-popover-action-hover-text",
+    );
     await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
       "data-size-policy",
       "context-chip",
@@ -2314,6 +2322,14 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "data-popover-action-surface-token",
     "--topology-node-popover-action-icon-surface",
   );
+  await expect(compactBriefAction).toHaveAttribute(
+    "data-popover-action-text-token",
+    "--topology-node-popover-action-text",
+  );
+  await expect(compactBriefAction).toHaveAttribute(
+    "data-popover-action-hover-text-token",
+    "--topology-node-popover-action-hover-text",
+  );
   await expect(page.locator('[data-node-popover-toggle="expand"]')).toHaveAttribute(
     "data-compact-action-contract",
     "icon-only-under-480",
@@ -2797,6 +2813,18 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   ).toHaveAttribute(
     "data-agent-readiness-surface-token",
     /--topology-node-popover-agent-(ready|preflight|review)-surface/,
+  );
+  const firstHandoffAction = page
+    .getByTestId("topology-node-popover-action-rail")
+    .locator("[data-popover-action]")
+    .first();
+  await expect(firstHandoffAction).toHaveAttribute(
+    "data-popover-action-text-token",
+    "--topology-node-popover-action-text",
+  );
+  await expect(firstHandoffAction).toHaveAttribute(
+    "data-popover-action-hover-text-token",
+    "--topology-node-popover-action-hover-text",
   );
 
   const popoverScroll = await popover.evaluate((element) => {

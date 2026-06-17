@@ -443,6 +443,9 @@ describe("TopologyNodePopover", () => {
     const popover = screen.getByTestId("topology-node-popover");
     const rail = screen.getByTestId("topology-node-popover-action-rail");
     const footer = screen.getByTestId("topology-node-popover-footer");
+    const briefAction = screen.getByRole("button", {
+      name: "지형도 선택 개념 검토 브리프 복사",
+    });
     expect(popover).toHaveAttribute(
       "data-compact-handoff-contract",
       "selected-node-actions-visible",
@@ -450,17 +453,27 @@ describe("TopologyNodePopover", () => {
     expect(rail).toHaveAttribute("data-action-rail-contract", "compact-mcp-cli-handoff");
     expect(rail).toHaveAttribute("data-action-count", "3");
     expect(rail).toHaveTextContent("에이전트 인계");
-    expect(
-      screen.getByRole("button", { name: "지형도 선택 개념 검토 브리프 복사" }),
-    ).toHaveAttribute(
+    expect(briefAction).toHaveAttribute(
       "data-popover-action-surface-token",
       "--topology-node-popover-action-surface",
     );
-    expect(
-      screen.getByRole("button", { name: "지형도 선택 개념 검토 브리프 복사" }),
-    ).toHaveAttribute(
+    expect(briefAction).toHaveAttribute(
+      "data-popover-action-text-token",
+      "--topology-node-popover-action-text",
+    );
+    expect(briefAction).toHaveAttribute(
+      "data-popover-action-hover-text-token",
+      "--topology-node-popover-action-hover-text",
+    );
+    expect(briefAction).toHaveAttribute(
       "data-popover-action-focus-ring-token",
       "--topology-node-popover-action-focus-ring",
+    );
+    expect(briefAction.className).toContain(
+      "text-[color:var(--topology-node-popover-action-text)]",
+    );
+    expect(briefAction.className).toContain(
+      "hover:text-[color:var(--topology-node-popover-action-hover-text)]",
     );
     expect(footer.compareDocumentPosition(rail) & Node.DOCUMENT_POSITION_CONTAINED_BY).toBeTruthy();
     expect(rail.closest('[data-testid="topology-connections-section"]')).toBeNull();
@@ -1225,8 +1238,22 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-action-icon-border",
     );
     expect(action).toHaveAttribute(
+      "data-popover-action-text-token",
+      "--topology-node-popover-action-text",
+    );
+    expect(action).toHaveAttribute(
+      "data-popover-action-hover-text-token",
+      "--topology-node-popover-action-hover-text",
+    );
+    expect(action).toHaveAttribute(
       "data-popover-action-focus-ring-token",
       "--topology-node-popover-action-focus-ring",
+    );
+    expect(action.className).toContain(
+      "text-[color:var(--topology-node-popover-action-text)]",
+    );
+    expect(action.className).toContain(
+      "hover:text-[color:var(--topology-node-popover-action-hover-text)]",
     );
     fireEvent.click(action);
     expect(copyBrief).toHaveBeenCalledTimes(1);
