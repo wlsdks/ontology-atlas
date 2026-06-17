@@ -1578,8 +1578,18 @@ export function TopologyAnalysisBar({
                   />
                   <span>{labels.pathCopyTools}</span>
                 </summary>
-                <div className="mt-1 flex flex-wrap gap-1">
+                <div
+                  className="mt-1 flex flex-wrap gap-1"
+                  data-testid="topology-path-check-actions"
+                  data-path-check-action-contract="mcp-sequence-proof-actions"
+                  data-surface-token="--topology-path-handoff-surface"
+                  data-border-token="--topology-path-handoff-border"
+                >
                   <CompactCopyButton
+                    data-path-check-action="path-mcp"
+                    data-surface-token="--topology-path-handoff-mcp-surface"
+                    data-border-token="--topology-path-handoff-mcp-border"
+                    data-text-token="--topology-path-handoff-mcp-text"
                     copied={pathMcpCopied}
                     label={labels.pathMcpCopy}
                     ariaLabel={
@@ -1588,8 +1598,12 @@ export function TopologyAnalysisBar({
                         : labels.pathMcpCopyAriaLabel
                     }
                     onClick={copyPathMcpCheck}
+                    className="border border-[color:var(--topology-path-handoff-mcp-border)] bg-[color:var(--topology-path-handoff-mcp-surface)] text-[color:var(--topology-path-handoff-mcp-text)] hover:border-[color:var(--topology-path-handoff-border)]"
                   />
                   <CompactCopyButton
+                    data-path-check-action="relation-preflight"
+                    data-surface-token="--topology-path-handoff-cli-surface"
+                    data-border-token="--topology-path-handoff-cli-border"
                     copied={pathRelationPreflightCopied}
                     label={labels.pathRelationPreflightCopy}
                     ariaLabel={
@@ -1598,8 +1612,12 @@ export function TopologyAnalysisBar({
                         : labels.pathRelationPreflightCopyAriaLabel
                     }
                     onClick={copyPathRelationPreflight}
+                    className="border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] hover:border-[color:var(--topology-path-handoff-border)]"
                   />
                   <CompactCopyButton
+                    data-path-check-action="explain-relation"
+                    data-surface-token="--topology-path-handoff-cli-surface"
+                    data-border-token="--topology-path-handoff-cli-border"
                     copied={pathExplainRelationCopied}
                     label={labels.pathExplainRelationCopy}
                     ariaLabel={
@@ -1608,8 +1626,12 @@ export function TopologyAnalysisBar({
                         : labels.pathExplainRelationCopyAriaLabel
                     }
                     onClick={copyPathExplainRelation}
+                    className="border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] hover:border-[color:var(--topology-path-handoff-border)]"
                   />
                   <CompactCopyButton
+                    data-path-check-action="all-paths-plan"
+                    data-surface-token="--topology-path-handoff-cli-surface"
+                    data-border-token="--topology-path-handoff-cli-border"
                     copied={pathAllPathsPlanCopied}
                     label={labels.pathAllPathsPlanCopy}
                     ariaLabel={
@@ -1618,8 +1640,12 @@ export function TopologyAnalysisBar({
                         : labels.pathAllPathsPlanCopyAriaLabel
                     }
                     onClick={copyPathAllPathsPlan}
+                    className="border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] hover:border-[color:var(--topology-path-handoff-border)]"
                   />
                   <CompactCopyButton
+                    data-path-check-action="all-paths-run"
+                    data-surface-token="--topology-path-handoff-cli-surface"
+                    data-border-token="--topology-path-handoff-cli-border"
                     copied={pathAllPathsCopied}
                     label={labels.pathAllPathsCopy}
                     ariaLabel={
@@ -1628,6 +1654,7 @@ export function TopologyAnalysisBar({
                         : labels.pathAllPathsCopyAriaLabel
                     }
                     onClick={copyPathAllPaths}
+                    className="border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] hover:border-[color:var(--topology-path-handoff-border)]"
                   />
                 </div>
               </details>

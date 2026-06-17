@@ -248,7 +248,10 @@ names in component data markers and tests whenever a surface depends on
   `--topology-path-handoff-cli-surface` /
   `--topology-path-handoff-cli-border`: path handoff fallback chips. The MCP
   chip remains the stronger command target, while the CLI fallback stays visible
-  but quieter in the same compact rail.
+  but quieter in the same compact rail. The same family covers the disclosed
+  path checks rail (`path`, `relation_check`, `explain_relation`, `all_paths`
+  plan, and `all_paths` run) so graph-evidence copy tools read as one sequence
+  rather than unrelated compact buttons.
 - `--topology-overview-signal-grid-surface` /
   `--topology-overview-signal-grid-border` /
   `--topology-overview-notice-surface` /

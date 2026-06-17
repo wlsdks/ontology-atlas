@@ -2380,6 +2380,43 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByTestId("topology-path-checks-chevron")).toHaveClass(
       "group-open:rotate-180",
     );
+    const checkActions = screen.getByTestId("topology-path-check-actions");
+    expect(checkActions).toHaveAttribute(
+      "data-path-check-action-contract",
+      "mcp-sequence-proof-actions",
+    );
+    expect(checkActions).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-surface",
+    );
+    const pathCheckActions = [
+      ["Copy topology path MCP check", "path-mcp", "--topology-path-handoff-mcp-surface"],
+      [
+        "Copy topology path relation preflight MCP check",
+        "relation-preflight",
+        "--topology-path-handoff-cli-surface",
+      ],
+      [
+        "Copy topology path explain_relation MCP check",
+        "explain-relation",
+        "--topology-path-handoff-cli-surface",
+      ],
+      [
+        "Copy topology path all_paths query plan MCP check",
+        "all-paths-plan",
+        "--topology-path-handoff-cli-surface",
+      ],
+      [
+        "Copy topology path all_paths MCP execution check",
+        "all-paths-run",
+        "--topology-path-handoff-cli-surface",
+      ],
+    ] as const;
+    for (const [name, action, surfaceToken] of pathCheckActions) {
+      const button = screen.getByRole("button", { name });
+      expect(button).toHaveAttribute("data-path-check-action", action);
+      expect(button).toHaveAttribute("data-surface-token", surfaceToken);
+    }
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
     expect(screen.queryByText("Copy tools")).not.toBeInTheDocument();
   });

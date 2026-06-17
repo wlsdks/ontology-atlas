@@ -780,9 +780,28 @@ test.describe("topology analysis workflow", () => {
     expect(copiedEvidence).toContain("ontology-atlas validate [vault]");
 
     await page.getByTestId("topology-path-checks-summary").click();
+    const pathCheckActions = page.getByTestId("topology-path-check-actions");
+    await expect(pathCheckActions).toHaveAttribute(
+      "data-path-check-action-contract",
+      "mcp-sequence-proof-actions",
+    );
+    await expect(pathCheckActions).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-surface",
+    );
     await expect(
       page.getByRole("button", { name: "Copy topology path MCP check" }),
     ).toBeVisible();
+    await expect(page.locator('button[data-path-check-action="path-mcp"]')).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-mcp-surface",
+    );
+    await expect(
+      page.locator('button[data-path-check-action="relation-preflight"]'),
+    ).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-cli-surface",
+    );
     await page.getByRole("button", { name: "Copy topology path MCP check" }).click();
     const copiedMcpCheck = await page.evaluate(
       () =>
