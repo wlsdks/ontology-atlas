@@ -225,6 +225,10 @@ names in component data markers and tests whenever a surface depends on
   selected path instead of generic panel chrome.
 - `--topology-path-proof-step-surface` /
   `--topology-path-proof-step-border` /
+  `--topology-path-proof-summary-surface` /
+  `--topology-path-proof-summary-border` /
+  `--topology-path-proof-summary-hover-surface` /
+  `--topology-path-proof-summary-hover-border` /
   `--topology-path-proof-ready-surface` /
   `--topology-path-proof-ready-border` /
   `--topology-path-proof-ready-text` /
@@ -233,9 +237,10 @@ names in component data markers and tests whenever a surface depends on
   `--topology-path-proof-required-text` /
   `--topology-path-proof-after-write-surface` /
   `--topology-path-proof-after-write-border` /
-  `--topology-path-proof-after-write-text`: path proof checklist rows and
-  status chips. They keep ready / required / after-write evidence readable in
-  the same agent handoff language as the primary path action.
+  `--topology-path-proof-after-write-text`: path proof disclosure, checklist
+  rows, and status chips. The collapsed disclosure must read as an available
+  proof control, not empty panel text, while ready / required / after-write
+  evidence stays in the same agent handoff language as the primary path action.
 - `--topology-path-candidate-visibility-surface` /
   `--topology-path-candidate-visibility-border`: path candidate coverage strip.
   It explains how many map cards remain visible after panel-clearance hiding,

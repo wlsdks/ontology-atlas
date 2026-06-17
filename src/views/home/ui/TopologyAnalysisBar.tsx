@@ -1469,8 +1469,13 @@ export function TopologyAnalysisBar({
           {panelMode === "path" && pathSourceSlug && pathTargetSlug ? (
             <details className="group mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
               <summary
-                className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                className="flex min-h-9 w-full cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:var(--topology-path-proof-summary-border)] bg-[color:var(--topology-path-proof-summary-surface)] px-2 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:var(--topology-path-proof-summary-hover-border)] hover:bg-[color:var(--topology-path-proof-summary-hover-surface)] hover:text-[color:var(--color-text-secondary)]"
                 data-testid="topology-path-proof-summary"
+                data-summary-contract="full-width-proof-disclosure"
+                data-surface-token="--topology-path-proof-summary-surface"
+                data-border-token="--topology-path-proof-summary-border"
+                data-hover-surface-token="--topology-path-proof-summary-hover-surface"
+                data-hover-border-token="--topology-path-proof-summary-hover-border"
               >
                 <ChevronDown
                   size={12}

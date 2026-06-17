@@ -709,6 +709,15 @@ test.describe("topology analysis workflow", () => {
       "active",
     );
     await expect(page.getByText(/^Showing the link from/)).toBeVisible();
+    const pathProofSummary = page.getByTestId("topology-path-proof-summary");
+    await expect(pathProofSummary).toHaveAttribute(
+      "data-summary-contract",
+      "full-width-proof-disclosure",
+    );
+    await expect(pathProofSummary).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-proof-summary-surface",
+    );
     await page.getByTestId("topology-path-proof-summary").click();
     await expect(page.getByText("Shows the visible link between two nodes.")).toBeVisible();
     const pathProofRoute = page.getByTestId("topology-path-proof-route");

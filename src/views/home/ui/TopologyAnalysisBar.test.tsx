@@ -2392,6 +2392,19 @@ describe("TopologyAnalysisBar", () => {
 
     const summary = screen.getByTestId("topology-path-proof-summary");
     expect(summary).toHaveTextContent("Path proof");
+    expect(summary).toHaveClass("w-full");
+    expect(summary).toHaveAttribute(
+      "data-summary-contract",
+      "full-width-proof-disclosure",
+    );
+    expect(summary).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-proof-summary-surface",
+    );
+    expect(summary).toHaveAttribute(
+      "data-hover-surface-token",
+      "--topology-path-proof-summary-hover-surface",
+    );
     expect(summary.closest("details")).not.toHaveAttribute("open");
     expect(screen.getByTestId("topology-path-proof-chevron")).toHaveClass(
       "group-open:rotate-180",

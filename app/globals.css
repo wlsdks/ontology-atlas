@@ -312,6 +312,10 @@
     --topology-path-route-border: rgba(139, 151, 255, 0.14);
     --topology-path-route-chip-surface: rgba(139, 151, 255, 0.07);
     --topology-path-route-chip-border: rgba(139, 151, 255, 0.18);
+    --topology-path-proof-summary-surface: rgba(255, 255, 255, 0.018);
+    --topology-path-proof-summary-border: rgba(255, 255, 255, 0.07);
+    --topology-path-proof-summary-hover-surface: rgba(139, 151, 255, 0.055);
+    --topology-path-proof-summary-hover-border: rgba(139, 151, 255, 0.18);
     --topology-path-proof-step-surface: rgba(255, 255, 255, 0.018);
     --topology-path-proof-step-border: rgba(255, 255, 255, 0.07);
     --topology-path-proof-ready-surface: rgba(92, 214, 138, 0.08);
@@ -721,6 +725,10 @@
     --topology-path-route-border: rgba(77, 86, 200, 0.16);
     --topology-path-route-chip-surface: rgba(77, 86, 200, 0.08);
     --topology-path-route-chip-border: rgba(77, 86, 200, 0.18);
+    --topology-path-proof-summary-surface: rgba(15, 23, 42, 0.025);
+    --topology-path-proof-summary-border: rgba(15, 23, 42, 0.10);
+    --topology-path-proof-summary-hover-surface: rgba(77, 86, 200, 0.07);
+    --topology-path-proof-summary-hover-border: rgba(77, 86, 200, 0.18);
     --topology-path-proof-step-surface: rgba(15, 23, 42, 0.025);
     --topology-path-proof-step-border: rgba(15, 23, 42, 0.10);
     --topology-path-proof-ready-surface: rgba(23, 114, 51, 0.08);
