@@ -325,6 +325,19 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
 }
 
 async function expectSelectedCardHiddenForCompactRail(page: Page, selectedSlug: string) {
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-card-visibility-contract",
+    "compact-rail-hides-selected-map-card",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-card-visibility-policy",
+    "hide-selected-card",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-card-hide-max-width-px",
+    "1280",
+  );
   const selectedCard = page
     .locator(`[data-skeleton-card][data-slug="${selectedSlug}"]`)
     .first();

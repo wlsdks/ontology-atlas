@@ -155,6 +155,7 @@ const DIM_CHIP_OPACITY = '0.18';
 const COLLISION_PAD = 24;
 const ANALYSIS_PANEL_TRAILING_PAD = 12;
 const ANALYSIS_PANEL_BLOCK_END_PAD = 8;
+const SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX = 1280;
 const OVERVIEW_COLLISION_PAD = 2;
 const SAFE_VIEWPORT_MARGIN = 8;
 const FOCUS_HULL_BREATHING_ROOM_PX = 16;
@@ -816,6 +817,16 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
     });
 
   return fixedSurfaceRects;
+}
+
+function isSelectedFocusRailSurfaceMounted(): boolean {
+  if (typeof document === 'undefined') return false;
+  const panel = document.querySelector<HTMLElement>(
+    '[data-testid="topology-analysis-panel"][data-analysis-mode="focus"][data-selected-focus-rail="true"]',
+  );
+  if (!panel) return false;
+  const style = getComputedStyle(panel);
+  return style.display !== 'none' && style.visibility !== 'hidden';
 }
 
 function anchoredCardRect({
@@ -1979,6 +1990,23 @@ export function SigmaSkeletonCards({
     const domWriteStats: SkeletonDomWriteStats = { applied: 0, skipped: 0 };
     const egoRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     const fixedSurfaceRects = getFixedSurfaceRects(containerRect);
+    const selectedFocusRailSurfaceMounted = isSelectedFocusRailSurfaceMounted();
+    const hideSelectedCardForCompactFocusRail =
+      selectedFocusRailSurfaceMounted &&
+      selectedRelationEdgeId === null &&
+      selectedSlug !== null &&
+      containerRect.width <= SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX;
+    container.dataset.selectedFocusCardVisibilityContract =
+      'compact-rail-hides-selected-map-card';
+    container.dataset.selectedFocusCardHideMaxWidthPx = String(
+      SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX,
+    );
+    container.dataset.selectedFocusCardVisibilityPolicy =
+      hideSelectedCardForCompactFocusRail
+        ? 'hide-selected-card'
+        : selectedFocusRailSurfaceMounted
+          ? 'show-selected-card'
+          : 'default';
     const acceptedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     const dimEls: HTMLElement[] = [];
     const overviewEls: HTMLElement[] = [];
@@ -2204,6 +2232,15 @@ export function SigmaSkeletonCards({
           }
         } else {
           delete el.dataset.dockFlipped;
+        }
+        if (
+          hideSelectedCardForCompactFocusRail &&
+          selected &&
+          !pathEndpoint &&
+          !lockedForDrag
+        ) {
+          hideSkeletonCard(el);
+          continue;
         }
         const protectSelectedCard =
           (selected || pathEndpoint) && selectedRelationEdgeId === null;

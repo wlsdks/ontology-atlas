@@ -193,7 +193,9 @@ names in component data markers and tests whenever a surface depends on
   become more legible without touching renderer logic.
 - `--topology-focus-hull-*`: selected focus/drag cluster hull treatment. The
   quiet focus outline and active drag hull must be token-backed so the map reads
-  as a relationship boundary, not a second panel or an ungoverned glow.
+  as a relationship boundary, not a second panel or an ungoverned glow. At the
+  1280px compact-focus rail, the selected map anchor is hidden by an explicit
+  visibility contract so the support rail owns the selected fact.
 - `--topology-card-drag-*`: drag, active drag, and settle feedback for map
   cards. Drag motion is an interaction state in the topology grammar, so the
   wash/glow tokens must stay separate from generic selected-card elevation.

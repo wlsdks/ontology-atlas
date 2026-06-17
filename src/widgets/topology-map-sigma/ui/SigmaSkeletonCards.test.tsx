@@ -1311,6 +1311,137 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("1280 compact focus rail 에서는 selected map anchor 를 숨기고 넓은 화면에서는 유지한다", async () => {
+    const graph = makeGraph();
+    const fixedPanel = document.createElement("aside");
+    fixedPanel.dataset.testid = "topology-analysis-panel";
+    fixedPanel.dataset.analysisMode = "focus";
+    fixedPanel.dataset.selectedFocusRail = "true";
+    fixedPanel.style.display = "block";
+    fixedPanel.style.opacity = "1";
+    fixedPanel.style.visibility = "visible";
+    document.body.append(fixedPanel);
+
+    let containerWidth = 1280;
+    const focusSigma = {
+      ...stubSigma,
+      graphToViewport: ({ x, y }: { x: number; y: number }) => ({
+        x: x === 10 ? 580 : 760,
+        y: y === 5 ? 240 : 100,
+      }),
+    };
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        if (this.dataset?.testid === "topology-analysis-panel") {
+          return {
+            bottom: 720,
+            height: 624,
+            left: 16,
+            right: 336,
+            top: 96,
+            width: 320,
+            x: 16,
+            y: 96,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        if (this.dataset?.testid === "sigma-skeleton-cards") {
+          return {
+            bottom: 800,
+            height: 800,
+            left: 0,
+            right: containerWidth,
+            top: 0,
+            width: containerWidth,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        if (this.dataset?.slug === "domain:d1") {
+          return {
+            bottom: 260,
+            height: 40,
+            left: 520,
+            right: 640,
+            top: 220,
+            width: 120,
+            x: 520,
+            y: 220,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        return {
+          bottom: 120,
+          height: 40,
+          left: 700,
+          right: 820,
+          top: 80,
+          width: 120,
+          x: 700,
+          y: 80,
+          toJSON: () => ({}),
+        } as DOMRect;
+      });
+    const offsetWidthSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetWidth", "get")
+      .mockReturnValue(120);
+    const offsetHeightSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetHeight", "get")
+      .mockReturnValue(40);
+
+    try {
+      const { rerender } = render(
+        <SigmaSkeletonCards
+          sigma={focusSigma}
+          graph={graph}
+          cards={[...CARDS]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const selectedCard = screen.getByText("Views").closest("[data-skeleton-card]");
+      await waitFor(() => {
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-card-visibility-policy",
+          "hide-selected-card",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-card-hide-max-width-px",
+          "1280",
+        );
+        expect(selectedCard).toHaveAttribute("data-surface-hidden", "true");
+      });
+
+      containerWidth = 1920;
+      rerender(
+        <SigmaSkeletonCards
+          sigma={focusSigma}
+          graph={graph}
+          cards={[...CARDS]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-card-visibility-policy",
+          "show-selected-card",
+        );
+        expect(selectedCard).not.toHaveAttribute("data-surface-hidden", "true");
+      });
+    } finally {
+      fixedPanel.remove();
+      rectSpy.mockRestore();
+      offsetWidthSpy.mockRestore();
+      offsetHeightSpy.mockRestore();
+    }
+  });
+
   it("entry 중인 selected relation card 는 opacity 가 낮아도 card collision surface 로 예약한다", async () => {
     const rectSpy = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")
