@@ -280,6 +280,14 @@ names in component data markers and tests whenever a surface depends on
   `--topology-overview-proof-warning-text` /
   `--topology-overview-proof-review-text`: shared proof-cell divider and
   semantic text tones used by relation quality and readiness chips.
+- `--topology-health-repair-primary-surface` /
+  `--topology-health-repair-primary-border` /
+  `--topology-health-repair-primary-hover-surface` /
+  `--topology-health-repair-secondary-surface` /
+  `--topology-health-repair-secondary-border` /
+  `--topology-health-repair-secondary-hover-surface`: health repair action
+  hierarchy. Builder repair is the primary action; MCP and ontology handoff
+  remain compact secondary actions without inventing one-off button colors.
 - `--topology-overview-readiness-meter-surface` /
   `--topology-overview-readiness-meter-border` /
   `--topology-overview-readiness-ready-meter` /

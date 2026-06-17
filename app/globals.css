@@ -147,6 +147,12 @@
     --topology-health-repair-card-border-strong: rgba(139, 151, 255, 0.58);
     --topology-health-repair-card-outline: rgba(139, 151, 255, 0.24);
     --topology-health-repair-card-shadow: rgba(35, 40, 88, 0.34);
+    --topology-health-repair-primary-surface: var(--color-overlay-3);
+    --topology-health-repair-primary-border: var(--color-border-strong);
+    --topology-health-repair-primary-hover-surface: var(--color-overlay-2);
+    --topology-health-repair-secondary-surface: transparent;
+    --topology-health-repair-secondary-border: transparent;
+    --topology-health-repair-secondary-hover-surface: var(--color-overlay-1);
     --topology-relation-summary-surface: rgba(139, 151, 255, 0.18);
     --topology-relation-summary-border: rgba(139, 151, 255, 0.42);
     --topology-relation-summary-text: rgba(222, 225, 255, 0.94);
@@ -574,6 +580,12 @@
     --topology-health-repair-card-border-strong: rgba(94, 106, 210, 0.48);
     --topology-health-repair-card-outline: rgba(94, 106, 210, 0.18);
     --topology-health-repair-card-shadow: rgba(15, 23, 42, 0.14);
+    --topology-health-repair-primary-surface: var(--color-overlay-3);
+    --topology-health-repair-primary-border: var(--color-border-strong);
+    --topology-health-repair-primary-hover-surface: var(--color-overlay-2);
+    --topology-health-repair-secondary-surface: transparent;
+    --topology-health-repair-secondary-border: transparent;
+    --topology-health-repair-secondary-hover-surface: var(--color-overlay-1);
     --topology-panel-border: rgba(15, 23, 42, 0.12);
     --topology-panel-primary-surface: rgba(255, 255, 255, 0.96);
     --topology-panel-support-surface: rgba(255, 255, 255, 0.99);

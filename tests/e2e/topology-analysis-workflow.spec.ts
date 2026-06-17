@@ -230,6 +230,14 @@ test.describe("topology analysis workflow", () => {
       "data-health-repair-sync-gate",
       "post-change",
     );
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-primary-surface-token",
+      "--topology-health-repair-primary-surface",
+    );
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-secondary-border-token",
+      "--topology-health-repair-secondary-border",
+    );
     const firstRepairAction = healthRepairOrder.locator("a,button").first();
     await expect(firstRepairAction).toHaveText(/Edit relations/);
     await expect(firstRepairAction).toHaveAttribute(
@@ -239,6 +247,14 @@ test.describe("topology analysis workflow", () => {
     await expect(firstRepairAction).toHaveAttribute(
       "data-health-repair-action-tier",
       "primary",
+    );
+    await expect(firstRepairAction).toHaveAttribute(
+      "data-surface-token",
+      "--topology-health-repair-primary-surface",
+    );
+    await expect(firstRepairAction).toHaveAttribute(
+      "data-border-token",
+      "--topology-health-repair-primary-border",
     );
     const firstRepairActionBox = await firstRepairAction.boundingBox();
     expect(firstRepairActionBox?.width ?? 0).toBeGreaterThanOrEqual(96);
@@ -340,11 +356,19 @@ test.describe("topology analysis workflow", () => {
       "data-health-repair-visual-contract",
       "builder-primary-secondary-compact",
     );
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-secondary-border-token",
+      "--topology-health-repair-secondary-border",
+    );
     const primaryRepair = healthRepairOrder
       .locator('a[data-health-repair-primary-action="builder"]')
       .first();
     await expect(primaryRepair).toBeVisible();
     await expect(primaryRepair).toBeInViewport();
+    await expect(primaryRepair).toHaveAttribute(
+      "data-border-token",
+      "--topology-health-repair-primary-border",
+    );
     const primaryRepairBox = await primaryRepair.boundingBox();
     expect(primaryRepairBox?.width ?? 0).toBeGreaterThanOrEqual(96);
 

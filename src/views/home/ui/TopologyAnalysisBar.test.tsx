@@ -2726,6 +2726,22 @@ describe("TopologyAnalysisBar", () => {
       "data-health-repair-sync-gate",
       "post-change",
     );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-primary-surface-token",
+      "--topology-health-repair-primary-surface",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-primary-border-token",
+      "--topology-health-repair-primary-border",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-secondary-surface-token",
+      "--topology-health-repair-secondary-surface",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-secondary-border-token",
+      "--topology-health-repair-secondary-border",
+    );
     expect(
       screen.getByRole("button", { name: "open question Views" }),
     ).toBeInTheDocument();
@@ -2742,13 +2758,42 @@ describe("TopologyAnalysisBar", () => {
       "data-health-repair-action-tier",
       "primary",
     );
+    expect(primaryRepair).toHaveAttribute(
+      "data-surface-token",
+      "--topology-health-repair-primary-surface",
+    );
+    expect(primaryRepair).toHaveAttribute(
+      "data-border-token",
+      "--topology-health-repair-primary-border",
+    );
     expect(primaryRepair.className).toContain("min-h-9");
     expect(primaryRepair.className).toContain("justify-center");
     expect(actionRail.className).toContain("grid-cols-[minmax(0,1fr)_auto]");
     expect(within(actionRail).getAllByRole("link")[0]).toBe(primaryRepair);
-    expect(
-      within(actionRail).getByRole("button", { name: "Copy health MCP check" }),
-    ).toBeInTheDocument();
+    const mcpCopy = within(actionRail).getByRole("button", {
+      name: "Copy health MCP check",
+    });
+    expect(mcpCopy).toHaveAttribute("data-health-repair-secondary-action", "mcp");
+    expect(mcpCopy).toHaveAttribute("data-health-repair-action-tier", "secondary");
+    expect(mcpCopy).toHaveAttribute(
+      "data-surface-token",
+      "--topology-health-repair-secondary-surface",
+    );
+    expect(mcpCopy).toHaveAttribute(
+      "data-border-token",
+      "--topology-health-repair-secondary-border",
+    );
+    const ontologyLink = within(actionRail).getByRole("link", {
+      name: "Open ontology",
+    });
+    expect(ontologyLink).toHaveAttribute(
+      "data-health-repair-secondary-action",
+      "ontology",
+    );
+    expect(ontologyLink).toHaveAttribute(
+      "data-border-token",
+      "--topology-health-repair-secondary-border",
+    );
   });
 
   it("names the health repair disclosure as repair proof instead of generic actions", () => {
