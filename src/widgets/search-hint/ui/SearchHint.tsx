@@ -9,6 +9,7 @@ interface Props {
   onOpenSearch: () => void;
   /** 자동 정렬 트리거 — 토폴로지 physics reheat. */
   onRelayout: () => void;
+  density?: 'default' | 'compact-focus';
 }
 
 const subscribe = () => () => {};
@@ -23,12 +24,14 @@ const ARRANGE_FEEDBACK_MS = 950;
 export function SearchHint({
   onOpenSearch,
   onRelayout,
+  density = 'default',
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
   const [arranging, setArranging] = useState(false);
+  const compact = density === 'compact-focus';
   const pillClass =
-    'h-11 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_10px_26px_rgba(0,0,0,0.14)]';
+    'h-[var(--topology-utility-lane-height)] rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-border)] bg-[color:var(--topology-utility-lane-surface)] shadow-[var(--topology-utility-lane-shadow)]';
 
   useEffect(() => {
     if (!arranging) return;
@@ -39,6 +42,17 @@ export function SearchHint({
   return (
     <div
       className="topology-ui-scale pointer-events-auto absolute right-4 top-[4.75rem] z-20 md:left-1/2 md:right-auto md:top-6 md:-translate-x-1/2 xl:top-8"
+      data-testid="topology-search-action-lane"
+      data-search-lane-density={density}
+      data-search-lane-contract={
+        compact ? 'icon-first-focus-search' : 'labeled-search-utility'
+      }
+      data-search-lane-compact-width-token={
+        compact ? '--topology-search-lane-compact-width' : undefined
+      }
+      data-search-lane-surface-token="--topology-utility-lane-surface"
+      data-search-lane-border-token="--topology-utility-lane-border"
+      data-search-lane-shadow-token="--topology-utility-lane-shadow"
     >
       <div className="flex items-center gap-2">
         {/* 자동 정렬 — 데스크톱에서만 노출. 모바일에서는 자주 안 쓰는 액션이라
@@ -53,7 +67,8 @@ export function SearchHint({
           data-testid="topology-auto-arrange"
           data-arranging={arranging ? 'true' : 'false'}
           className={cn(
-            'hidden h-11 items-center gap-2 overflow-hidden px-4 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] data-[arranging=true]:border-[color:rgba(139,151,255,0.44)] data-[arranging=true]:text-[color:var(--color-text-primary)] md:flex',
+            'hidden items-center justify-center gap-2 overflow-hidden text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] data-[arranging=true]:border-[color:rgba(139,151,255,0.44)] data-[arranging=true]:text-[color:var(--color-text-primary)] md:flex',
+            compact ? 'w-[var(--topology-utility-lane-compact-width)] px-0' : 'px-4',
             pillClass,
           )}
           aria-label={t('relayoutAriaLabel')}
@@ -63,7 +78,7 @@ export function SearchHint({
             size={14}
             className={arranging ? 'motion-safe:animate-spin' : undefined}
           />
-          <span className="hidden md:inline">
+          <span className={compact ? 'sr-only' : 'hidden md:inline'}>
             {arranging ? t('relayoutActiveLabel') : t('relayoutLabel')}
           </span>
         </button>
@@ -72,7 +87,10 @@ export function SearchHint({
           onClick={onOpenSearch}
           data-testid="topology-concept-search"
           className={cn(
-            'group flex h-11 items-center gap-2 overflow-hidden px-3.5 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors active:bg-[color:rgba(94,106,210,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] md:min-w-[176px] md:gap-2.5 md:pl-4 md:text-[color:var(--color-text-tertiary)] md:hover:text-[color:var(--color-text-primary)] md:active:bg-[color:var(--color-overlay-1)] xl:min-w-[208px]',
+            'group flex items-center justify-center gap-2 overflow-hidden text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors active:bg-[color:rgba(94,106,210,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] md:gap-2.5 md:text-[color:var(--color-text-tertiary)] md:hover:text-[color:var(--color-text-primary)] md:active:bg-[color:var(--color-overlay-1)]',
+            compact
+              ? 'w-[var(--topology-utility-lane-compact-width)] px-0'
+              : 'px-3.5 md:min-w-[176px] md:pl-4 xl:min-w-[208px]',
             pillClass,
           )}
           aria-label={t('searchAriaLabel')}
@@ -82,12 +100,15 @@ export function SearchHint({
             size={14}
             className="text-[color:var(--color-text-secondary)] md:text-[color:var(--color-text-tertiary)] md:group-hover:text-[color:var(--color-text-secondary)]"
           />
-          <span className="hidden md:inline md:group-hover:text-[color:var(--color-text-primary)]">
+          <span className={compact ? 'sr-only' : 'hidden md:inline md:group-hover:text-[color:var(--color-text-primary)]'}>
             {t('searchLabel')}
           </span>
           <span
             aria-hidden="true"
-            className="hidden items-center gap-0.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] md:flex"
+            className={cn(
+              'hidden items-center gap-0.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]',
+              compact ? '' : 'md:flex',
+            )}
           >
             {isMac ? '⌘' : 'Ctrl'}
             <span>K</span>

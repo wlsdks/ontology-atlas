@@ -1,5 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { resolveFocusLabelPlacement } from './SigmaFocusLabel';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  createFocusLabelFrameScheduler,
+  resolveFocusLabelPlacement,
+} from './SigmaFocusLabel';
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('resolveFocusLabelPlacement', () => {
   it('places labels to the left when a right-side node would overflow', () => {
@@ -39,5 +46,27 @@ describe('resolveFocusLabelPlacement', () => {
     });
 
     expect(placement.top + 28 + 16).toBeLessThanOrEqual(768);
+  });
+
+  it('coalesces repeated afterRender updates into one animation frame', () => {
+    vi.useFakeTimers();
+    const onFrame = vi.fn();
+    const scheduler = createFocusLabelFrameScheduler(onFrame);
+
+    scheduler.schedule();
+    scheduler.schedule();
+    scheduler.schedule();
+
+    expect(onFrame).toHaveBeenCalledTimes(0);
+
+    vi.advanceTimersByTime(16);
+
+    expect(onFrame).toHaveBeenCalledTimes(1);
+
+    scheduler.schedule();
+    scheduler.cancel();
+    vi.advanceTimersByTime(16);
+
+    expect(onFrame).toHaveBeenCalledTimes(1);
   });
 });

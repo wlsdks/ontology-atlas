@@ -87,6 +87,10 @@ export function resolveMinimapViewportFrame({
   };
 }
 
+export function createMinimapCameraFrameScheduler(onFrame: () => void) {
+  return coalesceRaf(onFrame);
+}
+
 /**
  * 우하단 미니맵. 본 Sigma의 카메라 상태·그래프를 구독해 축소 렌더 + 현재
  * 뷰포트 사각형을 표시한다. 클릭·드래그 모두 해당 미니맵 좌표가 카메라
@@ -99,6 +103,9 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   const [navigating, setNavigating] = useState(false);
   const draggingRef = useRef(false);
   const navigationFeedbackTimerRef = useRef<number | null>(null);
+  const cameraUpdateEventCountRef = useRef(0);
+  const cameraFrameCountRef = useRef(0);
+  const panSearchCountRef = useRef(0);
   const model = useMemo(() => buildMinimapModel(graph), [graph]);
 
   const pulseNavigationFeedback = useCallback(() => {
@@ -125,10 +132,17 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
     const camera = sigma.getCamera();
     // 'updated' 는 pan/zoom/animate 중 프레임당 여러 번 발화한다. 매 발화마다
     // setTick → 미니맵 전체 리렌더는 낭비라, rAF 로 합쳐 프레임당 1회만 리렌더.
-    const coalesced = coalesceRaf(() => setTick((t) => (t + 1) % 1_000_000));
-    camera.on('updated', coalesced.trigger);
+    const coalesced = createMinimapCameraFrameScheduler(() => {
+      cameraFrameCountRef.current += 1;
+      setTick((t) => (t + 1) % 1_000_000);
+    });
+    const onCameraUpdated = () => {
+      cameraUpdateEventCountRef.current += 1;
+      coalesced.trigger();
+    };
+    camera.on('updated', onCameraUpdated);
     return () => {
-      camera.off('updated', coalesced.trigger);
+      camera.off('updated', onCameraUpdated);
       coalesced.cancel();
     };
   }, [sigma]);
@@ -149,15 +163,16 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
       // "내가 찍은 곳"과 거의 일치한다.
       let nearestId: string | null = null;
       let nearestDist = Infinity;
-      graph.forEachNode((id, attrs) => {
-        const dx = attrs.x - graphX;
-        const dy = attrs.y - graphY;
+      panSearchCountRef.current += 1;
+      for (const target of model.navigationTargets) {
+        const dx = target.graphX - graphX;
+        const dy = target.graphY - graphY;
         const d = dx * dx + dy * dy;
         if (d < nearestDist) {
           nearestDist = d;
-          nearestId = id;
+          nearestId = target.id;
         }
-      });
+      }
       if (!nearestId) return;
       const disp = sigma.getNodeDisplayData(nearestId);
       if (!disp) return;
@@ -177,12 +192,16 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
         );
       }
     },
-    [sigma, graph, model, pulseNavigationFeedback],
+    [sigma, model, pulseNavigationFeedback],
   );
 
   const onPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
     draggingRef.current = true;
-    svgRef.current?.setPointerCapture(event.pointerId);
+    try {
+      svgRef.current?.setPointerCapture(event.pointerId);
+    } catch {
+      // Synthetic/devtools pointer events may not have an active pointer capture.
+    }
     panTo(event.clientX, event.clientY);
   };
   const onPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
@@ -245,15 +264,24 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
       data-testid="topology-minimap"
       data-navigating={navigating ? 'true' : 'false'}
       data-camera-tick={tick}
+      data-minimap-camera-sync-contract="raf-coalesced-camera-updates"
+      data-camera-update-event-count={cameraUpdateEventCountRef.current}
+      data-camera-frame-count={cameraFrameCountRef.current}
+      data-minimap-pan-search-contract="precomputed-navigation-targets"
+      data-minimap-pan-search-count={panSearchCountRef.current}
+      data-minimap-pan-target-count={model.navigationTargets.length}
       data-viewport-frame-state={viewportFrameState}
       data-viewport-frame-width={Math.round(rectW)}
       data-viewport-frame-height={Math.round(rectH)}
-      className="topology-ui-scale pointer-events-auto absolute bottom-6 right-4 z-10 hidden overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[rgba(10,12,15,0.96)] shadow-[0_18px_42px_rgba(0,0,0,0.56)] transition-[border-color,box-shadow] duration-200 data-[navigating=true]:border-[rgba(139,151,255,0.5)] data-[navigating=true]:shadow-[0_0_0_1px_rgba(139,151,255,0.24),0_18px_42px_rgba(0,0,0,0.56)] motion-reduce:transition-none md:right-6 md:block xl:right-8"
+      data-minimap-surface-token="--topology-minimap-surface"
+      data-minimap-border-token="--topology-minimap-border"
+      data-minimap-shadow-token="--topology-minimap-shadow"
+      className="topology-ui-scale pointer-events-auto absolute bottom-6 right-4 z-10 hidden overflow-hidden rounded-lg border border-[color:var(--topology-minimap-border)] bg-[color:var(--topology-minimap-surface)] shadow-[var(--topology-minimap-shadow)] transition-[border-color,box-shadow] duration-200 data-[navigating=true]:border-[color:var(--topology-minimap-active-border)] data-[navigating=true]:shadow-[var(--topology-minimap-active-shadow)] motion-reduce:transition-none md:right-6 md:block xl:right-8"
     >
       <span className="sr-only" aria-live="polite">
         {navigating ? t('minimapNavigating') : ''}
       </span>
-      <div className="flex items-center justify-between border-b border-[color:var(--color-border-soft)] px-2.5 py-1.5">
+      <div className="flex items-center justify-between border-b border-[color:var(--color-border-soft)] bg-[color:var(--topology-minimap-header-surface)] px-2.5 py-1.5">
         <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
           {t('minimapTitle')}
         </span>
@@ -277,7 +305,7 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="cursor-crosshair touch-none bg-[radial-gradient(circle_at_50%_50%,rgba(139,151,255,0.08),transparent_68%)]"
+        className="cursor-crosshair touch-none bg-[radial-gradient(circle_at_50%_50%,var(--topology-minimap-grid-glow),transparent_68%)]"
       >
         {model.hubEdges.map((e) => (
           <line
@@ -346,12 +374,16 @@ function buildMinimapModel(graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>) {
     size: number;
     isHub: boolean;
   }[] = [];
+  const navigationTargets: { id: string; graphX: number; graphY: number }[] = [];
   const totalNodes = graph.order;
   const sampleStep = Math.max(1, Math.floor(totalNodes / 40));
   let idx = 0;
   let hubCount = 0;
 
   graph.forEachNode((id, attrs) => {
+    if (Number.isFinite(attrs.x) && Number.isFinite(attrs.y)) {
+      navigationTargets.push({ id, graphX: attrs.x, graphY: attrs.y });
+    }
     if (attrs.isHub) {
       hubCount += 1;
       const x = (attrs.x + offsetX) * scale;
@@ -389,6 +421,7 @@ function buildMinimapModel(graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>) {
   return {
     bbox,
     hubEdges,
+    navigationTargets,
     primaryCount: hubCount,
     sampledNodes,
     totalNodes,

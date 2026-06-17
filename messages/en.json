@@ -334,6 +334,7 @@
       "pathAllPathsPlanCopied": "Plan copied",
       "pathAllPathsCopy": "all_paths",
       "pathAllPathsCopied": "all_paths copied",
+      "pathCopyTools": "Path checks",
       "pathRelationPreflightReasonLabel": "Preflight reason",
       "pathTraversalCompletenessLabel": "Completeness check",
       "pathTraversalCompletenessBadge": "all_paths",
@@ -506,6 +507,7 @@
       "copyPayloadLabel": "MCP payload",
       "cliFallbackLabel": "CLI fallback",
       "copyPayloadSummary": "{tool} · {action} · {source} → {target} · {type} · {evidence} · {gate}",
+      "selectedCardRelationSummary": "{relations}f · {types}t",
       "copied": "Copied"
     }
   },
@@ -561,6 +563,7 @@
       "dialogTitle": "Global search",
       "dialogDescription": "Search concepts (ontology nodes), documents, and projects in one place. Use up/down arrows to move, Enter to select, ESC to close.",
       "commandLabel": "Global search",
+      "closeAriaLabel": "Close global search",
       "placeholderWithProjects": "Search concepts and projects — KR/EN mix OK",
       "placeholderOntologyOnly": "Search concepts — KR/EN mix OK",
       "filterAriaLabel": "Ontology filter",
@@ -2719,6 +2722,7 @@
       "collapse": "Map view",
       "expand": "Show detail",
       "moreSuffix": "more",
+      "actionRailTitle": "Agent handoff",
       "expandedNote": "{count} direct connections are on the map; use Map view to inspect them without panel overlap.",
       "relationLensTitle": "Relation lens",
       "relationLensDirectFactOne": "{count} direct fact",

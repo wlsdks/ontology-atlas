@@ -142,6 +142,17 @@
     --topology-card-selected-wash: rgba(139, 151, 255, 0.12);
     --topology-card-selected-shadow: rgba(24, 28, 60, 0.62);
     --topology-card-shadow: rgba(0, 0, 0, 0.4);
+    --topology-relation-summary-surface: rgba(139, 151, 255, 0.18);
+    --topology-relation-summary-border: rgba(139, 151, 255, 0.42);
+    --topology-relation-summary-text: rgba(222, 225, 255, 0.94);
+    --topology-relation-label-card-clearance: 22px;
+    --topology-relation-label-surface: rgba(12, 14, 20, 0.88);
+    --topology-relation-label-border: rgba(139, 151, 255, 0.34);
+    --topology-relation-label-shadow: 0 7px 18px rgba(0, 0, 0, 0.26);
+    --topology-edge-tooltip-surface: rgba(12, 14, 20, 0.96);
+    --topology-edge-tooltip-border: rgba(139, 151, 255, 0.26);
+    --topology-edge-tooltip-shadow: 0 10px 24px rgba(0, 0, 0, 0.36);
+    --topology-edge-tooltip-arrow: rgba(139, 151, 255, 0.86);
 
     /*
      * Relief/Topology layout + motion tokens.
@@ -151,8 +162,17 @@
      */
     --topology-panel-selected-rail-width: clamp(248px, 18vw, 286px);
     --topology-panel-overview-rail-width: clamp(320px, 21vw, 340px);
+    --topology-panel-overview-responsive-width: min(
+      var(--topology-panel-overview-rail-width),
+      calc(100vw - var(--topology-panel-phone-utility-rail-reserve))
+    );
     --topology-panel-overview-reserved-width: clamp(380px, calc(38vw - 170px), 420px);
     --topology-panel-path-rail-width: clamp(320px, 23vw, 360px);
+    --topology-panel-phone-utility-rail-reserve: 82px;
+    --topology-panel-path-responsive-width: min(
+      var(--topology-panel-path-rail-width),
+      calc(100vw - var(--topology-panel-phone-utility-rail-reserve))
+    );
     --topology-panel-standard-width: clamp(460px, 31vw, 560px);
     --topology-panel-standard-reserved-width: clamp(440px, calc(44vw - 190px), 560px);
     --topology-panel-compact-width: clamp(380px, calc(50vw - 270px), 560px);
@@ -164,22 +184,183 @@
     --topology-panel-padding: 16px;
     --topology-panel-border: rgba(255, 255, 255, 0.07);
     --topology-panel-primary-surface: rgba(15, 16, 17, 0.96);
-    --topology-panel-support-surface: rgba(15, 16, 17, 0.91);
+    --topology-panel-support-surface: rgba(15, 16, 17, 0.99);
+    --topology-panel-read-layer-z-index: 30;
     --topology-panel-primary-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
     --topology-panel-support-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
     --topology-selected-relation-card-width: clamp(244px, 16vw, 276px);
+    --topology-selected-relation-card-max-height: min(248px, calc(100dvh - 7rem));
     --topology-selected-relation-card-inset: clamp(16px, 2vw, 32px);
     --topology-selected-relation-card-top: 104px;
     --topology-selected-relation-action-min-width: 86px;
     --topology-selected-relation-copy-payload-min-height: 30px;
     --topology-selected-relation-route-step-min-width: 48px;
+    --topology-selected-relation-card-surface: rgba(13, 15, 21, 0.98);
+    --topology-selected-relation-card-border: rgba(139, 151, 255, 0.28);
+    --topology-selected-relation-card-shadow: 0 12px 26px rgba(0, 0, 0, 0.38);
+    --topology-selected-relation-subtle-surface: rgba(255, 255, 255, 0.035);
+    --topology-selected-relation-subtle-border: rgba(255, 255, 255, 0.08);
+    --topology-selected-relation-next-action-surface: rgba(139, 151, 255, 0.075);
+    --topology-selected-relation-next-action-border: rgba(139, 151, 255, 0.20);
+    --topology-selected-relation-payload-surface: rgba(94, 106, 210, 0.045);
+    --topology-selected-relation-payload-border: rgba(139, 151, 255, 0.14);
+    --topology-selected-relation-kicker-font-size: 9px;
+    --topology-selected-relation-chip-font-size: 9px;
+    --topology-selected-relation-route-label-font-size: 8px;
+    --topology-selected-relation-route-value-font-size: 10px;
+    --topology-selected-relation-payload-font-size: 10px;
     --topology-drawer-relation-list-max-height: min(18rem, 44vh);
     --topology-drawer-relation-row-min-height: 58px;
     --topology-drawer-relation-chip-max-width: 8.5rem;
+    --topology-command-spine-padding: clamp(10px, 0.72vw, 12px);
+    --topology-command-spine-gap: clamp(8px, 0.64vw, 10px);
+    --topology-command-spine-radius: 12px;
+    --topology-command-spine-surface: linear-gradient(
+      180deg,
+      rgba(139, 151, 255, 0.085),
+      rgba(255, 255, 255, 0.018) 42%,
+      rgba(255, 255, 255, 0.012)
+    );
+    --topology-command-spine-border: rgba(139, 151, 255, 0.16);
+    --topology-command-spine-inset-highlight: rgba(255, 255, 255, 0.04);
+    --topology-command-primary-surface: rgba(139, 151, 255, 0.105);
+    --topology-command-primary-border: rgba(139, 151, 255, 0.24);
+    --topology-command-primary-hover-surface: rgba(139, 151, 255, 0.15);
+    --topology-command-primary-hover-border: rgba(139, 151, 255, 0.44);
+    --topology-command-primary-hover-shadow: 0 12px 28px rgba(20, 24, 54, 0.24);
+    --topology-command-icon-surface: rgba(139, 151, 255, 0.16);
+    --topology-command-icon-text: rgba(179, 186, 255, 0.96);
+    --topology-command-arrow-text: rgba(179, 186, 255, 0.78);
+    --topology-command-secondary-surface: rgba(255, 255, 255, 0.024);
+    --topology-command-secondary-border: rgba(255, 255, 255, 0.07);
+    --topology-command-secondary-hover-border: rgba(139, 151, 255, 0.28);
+    --topology-command-step-surface: rgba(0, 0, 0, 0.12);
+    --topology-command-step-border: rgba(255, 255, 255, 0.055);
+    --topology-command-step-index-surface: rgba(139, 151, 255, 0.07);
+    --topology-command-step-index-border: rgba(139, 151, 255, 0.18);
+    --topology-command-step-index-text: rgba(179, 186, 255, 0.82);
+    --topology-command-primary-min-height: clamp(44px, 3.1vw, 50px);
+    --topology-command-step-min-height: clamp(28px, 2vw, 34px);
+    --topology-command-step-index-size: clamp(20px, 1.45vw, 24px);
+    --topology-path-handoff-surface: rgba(139, 151, 255, 0.045);
+    --topology-path-handoff-border: rgba(139, 151, 255, 0.16);
+    --topology-path-handoff-action-min-height: 24px;
+    --topology-path-handoff-action-radius: 4px;
+    --topology-path-route-surface: rgba(255, 255, 255, 0.024);
+    --topology-path-route-border: rgba(139, 151, 255, 0.14);
+    --topology-path-route-chip-surface: rgba(139, 151, 255, 0.07);
+    --topology-path-route-chip-border: rgba(139, 151, 255, 0.18);
+    --topology-path-prompt-half: min(27vw, 340px);
+    --topology-path-prompt-panel-width: clamp(460px, 31vw, 560px);
+    --topology-path-prompt-left: clamp(
+      calc(var(--topology-path-prompt-half) + 24px),
+      calc(
+        32px + var(--topology-path-prompt-panel-width) + 24px +
+          var(--topology-path-prompt-half)
+      ),
+      calc(100vw - var(--topology-path-prompt-half) - 24px)
+    );
+    --topology-floating-control-surface: rgba(15, 16, 17, 0.92);
+    --topology-floating-control-border: rgba(255, 255, 255, 0.07);
+    --topology-floating-control-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+    --topology-floating-control-hover-surface: rgba(255, 255, 255, 0.045);
+    --topology-floating-control-icon: rgba(210, 214, 228, 0.68);
+    --topology-floating-control-icon-hover: rgba(244, 245, 247, 0.92);
+    --topology-minimap-surface: rgba(10, 12, 15, 0.94);
+    --topology-minimap-header-surface: rgba(255, 255, 255, 0.018);
+    --topology-minimap-border: rgba(255, 255, 255, 0.075);
+    --topology-minimap-shadow: 0 16px 36px rgba(0, 0, 0, 0.34);
+    --topology-minimap-active-border: rgba(139, 151, 255, 0.50);
+    --topology-minimap-active-shadow:
+      0 0 0 1px rgba(139, 151, 255, 0.22), 0 16px 36px rgba(0, 0, 0, 0.34);
+    --topology-minimap-grid-glow: rgba(139, 151, 255, 0.08);
+    --topology-floating-control-phone-bottom: calc(
+      var(--topology-mobile-bottom-tab-reserve) + 56px
+    );
+    --topology-floating-panel-phone-bottom: calc(
+      var(--topology-floating-control-phone-bottom) + 48px
+    );
+    --topology-floating-panel-surface: rgba(15, 16, 17, 0.92);
+    --topology-floating-panel-border: rgba(255, 255, 255, 0.075);
+    --topology-floating-panel-shadow: 0 16px 34px rgba(0, 0, 0, 0.26);
+    --topology-floating-panel-divider: rgba(255, 255, 255, 0.06);
+    --topology-floating-panel-phone-max-height: calc(
+      100dvh - var(--topology-floating-panel-phone-bottom) - 64px
+    );
+    --topology-floating-control-desktop-top: 140px;
+    --topology-floating-panel-desktop-top: 184px;
+    --topology-floating-panel-desktop-max-height: calc(100vh - 260px);
+    --topology-utility-lane-height: clamp(40px, 2.8vw, 44px);
+    --topology-utility-lane-gap: clamp(6px, 0.5vw, 8px);
+    --topology-utility-lane-radius: 999px;
+    --topology-utility-lane-compact-width: clamp(40px, 2.8vw, 44px);
+    --topology-utility-lane-surface: rgba(15, 16, 17, 0.92);
+    --topology-utility-lane-border: rgba(255, 255, 255, 0.07);
+    --topology-utility-lane-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
+    --topology-utility-lane-hover-surface: rgba(255, 255, 255, 0.045);
+    --topology-utility-lane-accent-surface: rgba(94, 106, 210, 0.12);
+    --topology-utility-lane-accent-border: rgba(94, 106, 210, 0.38);
+    --topology-utility-lane-accent-hover-surface: rgba(94, 106, 210, 0.18);
+    --topology-blocking-backdrop-surface: rgba(0, 0, 0, 0.72);
+    --topology-blocking-map-opacity: 0.24;
+    --topology-blocking-map-filter: saturate(0.58);
+    --topology-blocking-composer-top: clamp(7.5rem, 12vh, 9.5rem);
+    --topology-blocking-composer-width: min(560px, calc(100vw - 2rem));
+    --topology-blocking-composer-max-height: calc(100dvh - 11rem);
+    --topology-blocking-composer-surface: var(--color-panel);
+    --topology-blocking-composer-border: rgba(139, 151, 255, 0.48);
+    --topology-blocking-composer-shadow:
+      0 28px 72px rgba(0, 0, 0, 0.58),
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 0 0 6px rgba(94, 106, 210, 0.10);
+    --topology-search-lane-compact-width: clamp(84px, 6vw, 96px);
+    --topology-search-sheet-floating-width: 36rem;
+    --topology-search-sheet-radius: 16px;
+    --topology-search-sheet-close-size: 32px;
+    --topology-shortcut-sheet-floating-width: 45rem;
+    --topology-shortcut-sheet-radius: 22px;
+    --topology-shortcut-sheet-close-size: 32px;
+    --topology-bottom-tab-min-height: 56px;
+    --topology-bottom-tab-surface: #08090a;
+    --topology-bottom-tab-border: rgba(255, 255, 255, 0.09);
+    --topology-mobile-bottom-tab-reserve: calc(
+      var(--topology-bottom-tab-min-height) + env(safe-area-inset-bottom)
+    );
+    --topology-analysis-panel-compact-scroll-end-reserve: calc(
+      var(--topology-mobile-bottom-tab-reserve) + 12px
+    );
+    --topology-shortcuts-help-phone-top: 188px;
+    --topology-shortcuts-help-desktop-top: 228px;
+    --topology-node-popover-fluid-width: min(568px, calc(100vw - 1.5rem));
+    --topology-node-popover-rail-width: 320px;
+    --topology-node-popover-wide-rail-width: 286px;
+    --topology-node-popover-cinema-rail-width: 340px;
+    --topology-node-popover-max-height: min(82vh, 48rem);
+    --topology-node-popover-mobile-expanded-max-height: min(
+      520px,
+      calc(100dvh - 72px - var(--topology-mobile-bottom-tab-reserve) - 16px)
+    );
+    --topology-node-popover-relation-list-min-height: 88px;
+    --topology-node-popover-relation-section-min-height: 248px;
+    --topology-node-popover-radius: 12px;
+    --topology-node-popover-chip-padding-x: clamp(12px, 0.86vw, 14px);
+    --topology-node-popover-chip-padding-y: clamp(10px, 0.72vw, 12px);
+    --topology-node-popover-chip-gap: clamp(8px, 0.72vw, 12px);
+    --topology-node-popover-compact-action-size: 32px;
+    --topology-node-popover-title-lines: 2;
+    --topology-node-popover-surface: rgba(15, 16, 17, 0.99);
+    --topology-node-popover-border: rgba(255, 255, 255, 0.07);
+    --topology-node-popover-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+    --topology-node-popover-footer-surface: rgba(15, 16, 17, 0.96);
+    --topology-node-popover-action-surface: rgba(139, 151, 255, 0.075);
+    --topology-node-popover-action-border: rgba(139, 151, 255, 0.24);
+    --topology-node-popover-action-hover-border: rgba(139, 151, 255, 0.44);
+    --topology-node-popover-action-icon-surface: rgba(139, 151, 255, 0.1);
+    --topology-node-popover-action-icon-border: rgba(139, 151, 255, 0.3);
     --topology-motion-focus-duration: 180ms;
     --topology-motion-panel-duration: 180ms;
     --topology-motion-camera-duration: 420ms;
-    --topology-motion-drag-settle-duration: 260ms;
+    --topology-motion-drag-settle-duration: 720ms;
     --topology-motion-ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
     --topology-motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     /* --topology-card-scale 은 SigmaSkeletonCards 가 viewport 폭 기준으로
@@ -324,6 +505,107 @@
     --topology-card-selected-wash: rgba(94, 106, 210, 0.10);
     --topology-card-selected-shadow: rgba(15, 23, 42, 0.18);
     --topology-card-shadow: rgba(15, 23, 42, 0.12);
+    --topology-panel-border: rgba(15, 23, 42, 0.12);
+    --topology-panel-primary-surface: rgba(255, 255, 255, 0.96);
+    --topology-panel-support-surface: rgba(255, 255, 255, 0.99);
+    --topology-panel-primary-shadow: 0 18px 44px rgba(15, 23, 42, 0.10);
+    --topology-panel-support-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+    --topology-relation-summary-surface: rgba(77, 86, 200, 0.12);
+    --topology-relation-summary-border: rgba(77, 86, 200, 0.32);
+    --topology-relation-summary-text: rgba(40, 50, 175, 0.96);
+    --topology-relation-label-surface: rgba(255, 255, 255, 0.90);
+    --topology-relation-label-border: rgba(77, 86, 200, 0.26);
+    --topology-relation-label-shadow: 0 7px 18px rgba(15, 23, 42, 0.10);
+    --topology-edge-tooltip-surface: rgba(255, 255, 255, 0.96);
+    --topology-edge-tooltip-border: rgba(77, 86, 200, 0.24);
+    --topology-edge-tooltip-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+    --topology-edge-tooltip-arrow: rgba(77, 86, 200, 0.84);
+    --topology-command-spine-surface: linear-gradient(
+      180deg,
+      rgba(77, 86, 200, 0.075),
+      rgba(255, 255, 255, 0.82) 42%,
+      rgba(255, 255, 255, 0.72)
+    );
+    --topology-command-spine-border: rgba(77, 86, 200, 0.18);
+    --topology-command-spine-inset-highlight: rgba(255, 255, 255, 0.88);
+    --topology-command-primary-surface: rgba(77, 86, 200, 0.10);
+    --topology-command-primary-border: rgba(77, 86, 200, 0.26);
+    --topology-command-primary-hover-surface: rgba(77, 86, 200, 0.14);
+    --topology-command-primary-hover-border: rgba(77, 86, 200, 0.40);
+    --topology-command-primary-hover-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
+    --topology-command-icon-surface: rgba(77, 86, 200, 0.14);
+    --topology-command-icon-text: rgba(40, 50, 175, 0.96);
+    --topology-command-arrow-text: rgba(40, 50, 175, 0.78);
+    --topology-command-secondary-surface: rgba(15, 23, 42, 0.035);
+    --topology-command-secondary-border: rgba(15, 23, 42, 0.11);
+    --topology-command-secondary-hover-border: rgba(77, 86, 200, 0.30);
+    --topology-command-step-surface: rgba(255, 255, 255, 0.66);
+    --topology-command-step-border: rgba(15, 23, 42, 0.10);
+    --topology-command-step-index-surface: rgba(77, 86, 200, 0.10);
+    --topology-command-step-index-border: rgba(77, 86, 200, 0.22);
+    --topology-command-step-index-text: rgba(40, 50, 175, 0.88);
+    --topology-selected-relation-card-surface: rgba(255, 255, 255, 0.94);
+    --topology-selected-relation-card-border: rgba(77, 86, 200, 0.24);
+    --topology-selected-relation-card-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+    --topology-selected-relation-subtle-surface: rgba(15, 23, 42, 0.035);
+    --topology-selected-relation-subtle-border: rgba(15, 23, 42, 0.10);
+    --topology-selected-relation-next-action-surface: rgba(77, 86, 200, 0.075);
+    --topology-selected-relation-next-action-border: rgba(77, 86, 200, 0.20);
+    --topology-selected-relation-payload-surface: rgba(77, 86, 200, 0.06);
+    --topology-selected-relation-payload-border: rgba(77, 86, 200, 0.18);
+    --topology-selected-relation-kicker-font-size: 9px;
+    --topology-selected-relation-chip-font-size: 9px;
+    --topology-selected-relation-route-label-font-size: 8px;
+    --topology-selected-relation-route-value-font-size: 10px;
+    --topology-selected-relation-payload-font-size: 10px;
+    --topology-floating-control-surface: rgba(255, 255, 255, 0.92);
+    --topology-floating-control-border: rgba(15, 23, 42, 0.12);
+    --topology-floating-control-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
+    --topology-floating-control-hover-surface: rgba(77, 86, 200, 0.08);
+    --topology-floating-control-icon: rgba(55, 65, 81, 0.66);
+    --topology-floating-control-icon-hover: rgba(17, 24, 39, 0.92);
+    --topology-minimap-surface: rgba(255, 255, 255, 0.92);
+    --topology-minimap-header-surface: rgba(15, 23, 42, 0.025);
+    --topology-minimap-border: rgba(15, 23, 42, 0.12);
+    --topology-minimap-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+    --topology-minimap-active-border: rgba(77, 86, 200, 0.38);
+    --topology-minimap-active-shadow:
+      0 0 0 1px rgba(77, 86, 200, 0.18), 0 16px 36px rgba(15, 23, 42, 0.12);
+    --topology-minimap-grid-glow: rgba(77, 86, 200, 0.08);
+    --topology-floating-panel-surface: rgba(255, 255, 255, 0.92);
+    --topology-floating-panel-border: rgba(15, 23, 42, 0.12);
+    --topology-floating-panel-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);
+    --topology-floating-panel-divider: rgba(15, 23, 42, 0.09);
+    --topology-utility-lane-surface: rgba(255, 255, 255, 0.92);
+    --topology-utility-lane-border: rgba(15, 23, 42, 0.12);
+    --topology-utility-lane-shadow: 0 10px 22px rgba(15, 23, 42, 0.10);
+    --topology-utility-lane-hover-surface: rgba(77, 86, 200, 0.08);
+    --topology-utility-lane-accent-surface: rgba(77, 86, 200, 0.10);
+    --topology-utility-lane-accent-border: rgba(77, 86, 200, 0.30);
+    --topology-utility-lane-accent-hover-surface: rgba(77, 86, 200, 0.14);
+    --topology-path-route-surface: rgba(77, 86, 200, 0.045);
+    --topology-path-route-border: rgba(77, 86, 200, 0.16);
+    --topology-path-route-chip-surface: rgba(77, 86, 200, 0.08);
+    --topology-path-route-chip-border: rgba(77, 86, 200, 0.18);
+    --topology-blocking-backdrop-surface: rgba(243, 245, 249, 0.84);
+    --topology-blocking-map-filter: saturate(0.48);
+    --topology-blocking-composer-surface: rgba(255, 255, 255, 0.99);
+    --topology-blocking-composer-border: rgba(77, 86, 200, 0.30);
+    --topology-blocking-composer-shadow:
+      0 28px 72px rgba(15, 23, 42, 0.18),
+      0 0 0 1px rgba(15, 23, 42, 0.08),
+      0 0 0 6px rgba(77, 86, 200, 0.07);
+    --topology-bottom-tab-surface: #ffffff;
+    --topology-bottom-tab-border: rgba(15, 23, 42, 0.12);
+    --topology-node-popover-surface: rgba(255, 255, 255, 0.99);
+    --topology-node-popover-border: rgba(15, 23, 42, 0.12);
+    --topology-node-popover-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+    --topology-node-popover-footer-surface: rgba(255, 255, 255, 0.96);
+    --topology-node-popover-action-surface: rgba(77, 86, 200, 0.08);
+    --topology-node-popover-action-border: rgba(77, 86, 200, 0.24);
+    --topology-node-popover-action-hover-border: rgba(77, 86, 200, 0.42);
+    --topology-node-popover-action-icon-surface: rgba(77, 86, 200, 0.10);
+    --topology-node-popover-action-icon-border: rgba(77, 86, 200, 0.28);
 
     /* 라이트 전용 — 카드 elevation. 다크에선 토큰 대비만으로 충분하지만
        라이트는 panel(#fff) 위 panel(#fff) 가 잦아 subtle drop shadow 로

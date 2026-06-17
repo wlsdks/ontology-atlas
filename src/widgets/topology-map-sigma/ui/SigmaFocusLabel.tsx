@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type Sigma from 'sigma';
 import type Graph from 'graphology';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
@@ -58,6 +58,30 @@ export function resolveFocusLabelPlacement({
   } as const;
 }
 
+export function createFocusLabelFrameScheduler(onFrame: () => void) {
+  let frame: number | null = null;
+
+  const schedule = () => {
+    if (typeof window === 'undefined') {
+      onFrame();
+      return;
+    }
+    if (frame !== null) return;
+    frame = window.requestAnimationFrame(() => {
+      frame = null;
+      onFrame();
+    });
+  };
+
+  const cancel = () => {
+    if (frame === null || typeof window === 'undefined') return;
+    window.cancelAnimationFrame(frame);
+    frame = null;
+  };
+
+  return { cancel, schedule };
+}
+
 /**
  * 포커스 노드 옆에 떠 있는 작은 라벨 카드 (DOM overlay).
  *
@@ -66,8 +90,8 @@ export function resolveFocusLabelPlacement({
  *   을 쓰므로 포커스 상태에서 선명한 "흰 박스" 처럼 보이는 역효과가 있었다.
  *   per-node 스타일 override 가 불가능하므로, focus 라벨만 DOM 으로 분리.
  * - camera pan/zoom, drag, physics tick 이 발생할 때마다 Sigma 는 afterRender
- *   이벤트를 emit 하므로 그 때 한 번만 tick 업데이트. React batching 덕에
- *   setState 비용은 낮다.
+ *   이벤트를 emit 한다. 이 overlay 는 requestAnimationFrame 으로 같은 frame 안의
+ *   afterRender 를 합쳐 React state 갱신을 프레임당 1회로 제한한다.
  */
 export function SigmaFocusLabel({
   sigma,
@@ -76,13 +100,22 @@ export function SigmaFocusLabel({
   focused = true,
 }: SigmaFocusLabelProps) {
   const [tick, setTick] = useState(0);
+  const schedulerRef = useRef<ReturnType<typeof createFocusLabelFrameScheduler> | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!sigma) return;
-    const handler = () => setTick((t) => (t + 1) % 1_000_000);
+    const scheduler = createFocusLabelFrameScheduler(() =>
+      setTick((t) => (t + 1) % 1_000_000),
+    );
+    schedulerRef.current = scheduler;
+    const handler = () => scheduler.schedule();
     sigma.on('afterRender', handler);
     window.addEventListener('resize', handler);
     return () => {
+      scheduler.cancel();
+      schedulerRef.current = null;
       sigma.off('afterRender', handler);
       window.removeEventListener('resize', handler);
     };
@@ -116,6 +149,7 @@ export function SigmaFocusLabel({
       data-node-y={String(Math.round(vp.y))}
       data-display-x={display ? String(Math.round(display.x)) : undefined}
       data-display-y={display ? String(Math.round(display.y)) : undefined}
+      data-position-sync-contract="raf-coalesced-after-render"
       className="pointer-events-none absolute z-30"
       style={{
         left: placement.left,

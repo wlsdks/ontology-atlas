@@ -13,6 +13,7 @@ import type {
 interface SigmaControlsProps {
   value: SigmaControlsState;
   onChange: (next: SigmaControlsState) => void;
+  density?: 'default' | 'compact-focus';
   /** "지도 전체 맞추기" 콜백. 설정되면 Controls 아이콘 위에 Fit 버튼이 같은
    *  pill 안에 합쳐져서 렌더된다. 없으면 Fit 버튼은 숨김. */
   onFitView?: () => void;
@@ -32,6 +33,7 @@ interface SigmaControlsProps {
 export function SigmaControls({
   value,
   onChange,
+  density = 'default',
   onFitView,
   visibleCount,
   totalCount,
@@ -41,6 +43,12 @@ export function SigmaControls({
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [forcesOpen, setForcesOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const compactFocus = density === 'compact-focus';
+  const valueRef = useRef(value);
+  const onChangeRef = useRef(onChange);
+
+  valueRef.current = value;
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -62,16 +70,16 @@ export function SigmaControls({
       // 여기서 별도 HelpOverlay 를 같이 열면 dialog 두 개가 동시에 떠 사용자가
       // 어느 쪽이 진짜 help 인지 헷갈린다. button click (line 366) 은 유지.
       if (event.key === '0') {
-        onChange({ ...value, depthLimit: null });
+        onChangeRef.current({ ...valueRef.current, depthLimit: null });
         return;
       }
       if (/^[1-6]$/.test(event.key)) {
-        onChange({ ...value, depthLimit: Number(event.key) });
+        onChangeRef.current({ ...valueRef.current, depthLimit: Number(event.key) });
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onChange, value]);
+  }, []);
 
   const updateForces = (key: keyof SigmaForces, next: number) => {
     onChange({ ...value, forces: { ...value.forces, [key]: next } });
@@ -106,7 +114,18 @@ export function SigmaControls({
   if (!expanded) {
     return (
       <>
-        <div className="topology-ui-scale pointer-events-auto absolute bottom-[7rem] right-4 z-20 flex flex-col overflow-hidden rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] md:bottom-auto md:right-6 md:top-[140px] xl:right-8">
+        <div
+          className="topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 flex flex-col overflow-hidden rounded-md border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] shadow-[var(--topology-floating-control-shadow)] md:bottom-auto md:right-6 md:top-[var(--topology-floating-control-desktop-top)] xl:right-8"
+          data-testid="topology-sigma-controls-stack"
+          data-controls-density={density}
+          data-control-surface-token="--topology-floating-control-surface"
+          data-control-border-token="--topology-floating-control-border"
+          data-control-phone-bottom-token="--topology-floating-control-phone-bottom"
+          data-control-desktop-top-token="--topology-floating-control-desktop-top"
+          data-controls-contract={
+            compactFocus ? 'focus-support-utility-stack' : 'map-utility-stack'
+          }
+        >
           {/* Fit · 도움말은 데스크톱에서만 노출 — 모바일은 pinch-zoom 으로
               fit 가능하고 키보드 단축키도 의미 없음. sliders 만 모바일에 남겨
               우측 floating 무게를 줄인다. */}
@@ -117,7 +136,7 @@ export function SigmaControls({
                   type="button"
                   onClick={onFitView}
                   aria-label={t('fitViewAriaLabel')}
-                  className="hidden h-9 w-9 items-center justify-center text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset md:flex"
+                  className="hidden h-9 w-9 items-center justify-center text-[color:var(--topology-floating-control-icon)] transition-colors hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--topology-floating-control-icon-hover)] active:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset md:flex"
                 >
                   <Maximize2 className="h-4 w-4" />
                 </button>
@@ -133,7 +152,7 @@ export function SigmaControls({
                 setHelpOpen(false);
               }}
               aria-label={t('openAriaLabel')}
-              className="flex h-9 w-9 items-center justify-center text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+              className="flex h-9 w-9 items-center justify-center text-[color:var(--topology-floating-control-icon)] transition-colors hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--topology-floating-control-icon-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
             >
               <SlidersHorizontal className="h-4 w-4" />
             </button>
@@ -165,14 +184,29 @@ export function SigmaControls({
             type="button"
             onClick={onFitView}
             aria-label={t('fitViewAriaLabel')}
-            className="topology-ui-scale pointer-events-auto absolute bottom-[7rem] right-4 z-20 flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset md:bottom-auto md:right-6 md:top-[140px] xl:right-8"
+            data-control-surface-token="--topology-floating-control-surface"
+            data-control-border-token="--topology-floating-control-border"
+            data-control-phone-bottom-token="--topology-floating-control-phone-bottom"
+            data-control-desktop-top-token="--topology-floating-control-desktop-top"
+            className="topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] text-[color:var(--topology-floating-control-icon)] shadow-[var(--topology-floating-control-shadow)] transition-colors hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--topology-floating-control-icon-hover)] active:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset md:bottom-auto md:right-6 md:top-[var(--topology-floating-control-desktop-top)] xl:right-8"
           >
             <Maximize2 className="h-4 w-4" />
           </button>
         </Tooltip>
       ) : null}
-      <div className="topology-ui-scale pointer-events-none absolute bottom-[10rem] right-4 z-20 flex max-h-[calc(100dvh-14rem)] w-[248px] flex-col gap-1.5 overflow-y-auto overscroll-contain md:bottom-auto md:right-6 md:top-[184px] md:max-h-[calc(100vh-260px)] xl:right-8">
-        <div className="pointer-events-auto flex h-9 items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 transition-colors focus-within:border-[color:var(--color-indigo-accent)]">
+      <div
+        data-testid="topology-sigma-controls-panel"
+        data-panel-phone-bottom-token="--topology-floating-panel-phone-bottom"
+        data-panel-phone-max-height-token="--topology-floating-panel-phone-max-height"
+        data-panel-desktop-top-token="--topology-floating-panel-desktop-top"
+        data-panel-desktop-max-height-token="--topology-floating-panel-desktop-max-height"
+        data-panel-surface-token="--topology-floating-panel-surface"
+        data-panel-border-token="--topology-floating-panel-border"
+        data-panel-shadow-token="--topology-floating-panel-shadow"
+        data-controls-panel-contract="single-support-sheet"
+        className="topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-panel-phone-bottom)] right-4 z-20 flex max-h-[var(--topology-floating-panel-phone-max-height)] w-[248px] flex-col overflow-y-auto overscroll-contain rounded-md border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)] md:bottom-auto md:right-6 md:top-[var(--topology-floating-panel-desktop-top)] md:max-h-[var(--topology-floating-panel-desktop-max-height)] xl:right-8"
+      >
+        <div className="flex h-9 items-center gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-2.5 transition-colors focus-within:border-[color:var(--color-indigo-accent)] focus-within:bg-[color:var(--topology-floating-control-hover-surface)]">
           <Search className="h-3.5 w-3.5 text-[color:var(--color-text-quaternary)]" />
           <input
             id="sigma-search-input"
@@ -222,7 +256,7 @@ export function SigmaControls({
 
         {/* 허브만 보기 — 500노드 한눈에 보기 부담 줄이는 토글. 허브 11개 +
             허브-허브 엣지만 렌더. 클릭 한 번으로 전환. */}
-        <label className="pointer-events-auto flex cursor-pointer items-center justify-between rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)]">
+        <label className="flex cursor-pointer items-center justify-between border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--topology-floating-control-hover-surface)]">
           <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
             {t('hubsOnlyLabel')}
           </span>
@@ -235,7 +269,7 @@ export function SigmaControls({
         </label>
 
         {/* 지도 overlay — 공개 사용자가 바로 이해할 정보만 먼저 노출. */}
-        <div className="pointer-events-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2.5">
+        <div className="border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2.5">
           <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
             {t('overlayHeader')}
           </span>
@@ -255,7 +289,7 @@ export function SigmaControls({
           </div>
         </div>
 
-        <div className="pointer-events-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2.5">
+        <div className="px-3 py-2.5">
           <button
             type="button"
             onClick={toggleAdvanced}
@@ -397,7 +431,10 @@ export function SigmaControls({
           <button
             type="button"
             onClick={openHelp}
-            className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            data-testid="topology-shortcuts-help-button"
+            data-control-surface-token="--topology-floating-control-surface"
+            data-control-border-token="--topology-floating-control-border"
+            className="rounded-md border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] shadow-[var(--topology-floating-control-shadow)] transition-colors hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
             aria-label={t('shortcutsAriaLabel')}
           >
             {t('shortcutsButton')}
@@ -546,7 +583,9 @@ function HelpOverlay({ onClose }: { onClose: () => void }) {
         aria-modal="true"
         aria-label={t('helpDialogAriaLabel')}
         onClick={(e) => e.stopPropagation()}
-        className="w-[320px] rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-5 shadow-[0_20px_48px_rgba(0,0,0,0.6)]"
+        data-control-surface-token="--topology-floating-control-surface"
+        data-control-border-token="--topology-floating-control-border"
+        className="w-[320px] rounded-lg border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] p-5 shadow-[0_20px_48px_rgba(0,0,0,0.6)]"
       >
         <div className="flex items-center justify-between">
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
