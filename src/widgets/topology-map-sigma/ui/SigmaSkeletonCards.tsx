@@ -3583,6 +3583,20 @@ export function SigmaSkeletonCards({
             data-relation-label-card-clearance-token="--topology-relation-label-card-clearance"
             data-relation-label-density={selected ? 'focus-token' : 'scan-token'}
             data-relation-label-compact={selected ? 'false' : undefined}
+            data-relation-label-token-contract="hit-target-and-visible-badge-share-relation-label-tokens"
+            data-relation-label-surface-token="--topology-relation-label-surface"
+            data-relation-label-border-token="--topology-relation-label-border"
+            data-relation-label-shadow-token="--topology-relation-label-shadow"
+            data-relation-label-selected-surface-token={
+              selected ? '--topology-relation-label-selected-surface' : undefined
+            }
+            data-relation-label-selected-border-token={
+              selected ? '--topology-relation-label-selected-border' : undefined
+            }
+            data-relation-label-selected-shadow-token={
+              selected ? '--topology-relation-label-selected-shadow' : undefined
+            }
+            data-relation-label-focus-ring-token="--topology-relation-label-focus-ring"
             data-relation-label-hover-contract="compact-edge-tooltip"
             data-visible-badge-width={visibleBadgeWidth}
             data-visible-badge-height={RELATION_BADGE_HEIGHT_PX}
@@ -3591,7 +3605,7 @@ export function SigmaSkeletonCards({
                 ? ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
                 : ''
             }`}
-            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-[33px] items-center justify-center overflow-visible whitespace-nowrap bg-transparent font-mono text-[9px] uppercase tracking-[0.07em] transition-[opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
+            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-[33px] items-center justify-center overflow-visible whitespace-nowrap bg-transparent font-mono text-[9px] uppercase tracking-[0.07em] transition-[opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-relation-label-focus-ring)] motion-reduce:transition-none"
             style={{
               color: 'var(--color-text-secondary)',
               opacity: selected ? 1 : 0,

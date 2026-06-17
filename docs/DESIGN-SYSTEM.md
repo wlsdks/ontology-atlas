@@ -177,8 +177,11 @@ names in component data markers and tests whenever a surface depends on
   scan-level relation labels and visible map cards; keeps the label readable as
   a topology annotation instead of a clipped card badge.
 - `--topology-relation-label-surface` / `--topology-relation-label-border` /
-  `--topology-relation-label-shadow`: scan-level relation label treatment that
-  separates typed relation facts from selected-card surfaces.
+  `--topology-relation-label-shadow` /
+  `--topology-relation-label-focus-ring`: scan-level relation label treatment
+  that separates typed relation facts from selected-card surfaces. The HTML hit
+  target and visible badge both expose the same token contract so screen proof
+  can verify the clickable graph mark, not only its inner badge.
 - `--topology-relation-label-selected-surface` /
   `--topology-relation-label-selected-border` /
   `--topology-relation-label-selected-shadow`: focus-level selected relation

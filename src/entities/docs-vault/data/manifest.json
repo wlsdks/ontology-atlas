@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-17T14:35:55.335Z",
+  "generatedAt": "2026-06-17T14:45:58.246Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4087,8 +4087,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. ontology-atlas should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 5958,
-      "updatedAt": "2026-06-17T14:35:00.431Z",
+      "wordCount": 5987,
+      "updatedAt": "2026-06-17T14:45:13.161Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "FOUNDATIONS",

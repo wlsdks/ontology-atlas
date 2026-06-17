@@ -825,6 +825,26 @@ for (const viewport of VIEWPORTS) {
       .first();
     const skeletonCards = page.getByTestId("sigma-skeleton-cards");
     await expect(relationButton).toHaveAttribute("data-label-geometry-source", "html-hit-target");
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-token-contract",
+      "hit-target-and-visible-badge-share-relation-label-tokens",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-surface-token",
+      "--topology-relation-label-surface",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-border-token",
+      "--topology-relation-label-border",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-shadow-token",
+      "--topology-relation-label-shadow",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-focus-ring-token",
+      "--topology-relation-label-focus-ring",
+    );
     await expect(skeletonCards).toHaveAttribute(
       "data-relation-label-geometry-contract",
       "frame-positioned-hit-targets",

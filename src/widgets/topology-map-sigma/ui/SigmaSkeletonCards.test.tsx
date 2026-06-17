@@ -1862,6 +1862,26 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-label-card-clearance-token",
       "--topology-relation-label-card-clearance",
     );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-token-contract",
+      "hit-target-and-visible-badge-share-relation-label-tokens",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-surface-token",
+      "--topology-relation-label-surface",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-border-token",
+      "--topology-relation-label-border",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-shadow-token",
+      "--topology-relation-label-shadow",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-focus-ring-token",
+      "--topology-relation-label-focus-ring",
+    );
     expect(labelHit?.className).toContain("inline-flex");
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-surface-token",
