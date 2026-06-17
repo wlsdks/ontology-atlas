@@ -3725,6 +3725,25 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief relation label blocker source was ${payload.markers.topologyRelationLabelBlockerSource}`;
       }
+      if (payload.markers.topologyRelationLabelPhoneBottomReserveContract) {
+        if (
+          payload.markers.topologyRelationLabelPhoneBottomReserveContract !==
+          "avoid-floating-controls"
+        ) {
+          return `WebView Relief relation label phone bottom reserve contract was ${payload.markers.topologyRelationLabelPhoneBottomReserveContract}`;
+        }
+        if (
+          Number(payload.markers.topologyRelationLabelPhoneBottomReservePx || 0) < 96
+        ) {
+          return `WebView Relief relation label phone bottom reserve was too small (${payload.markers.topologyRelationLabelPhoneBottomReservePx || "missing"}px)`;
+        }
+        if (
+          payload.markers.topologyRelationLabelPhoneBottomReserveToken !==
+          "--topology-floating-control-phone-bottom"
+        ) {
+          return `WebView Relief relation label phone bottom reserve token was ${payload.markers.topologyRelationLabelPhoneBottomReserveToken || "missing"}`;
+        }
+      }
       if (payload.markers.topologyRelationLabelQueryContract !== "indexed-once") {
         return `WebView Relief relation label query contract was ${payload.markers.topologyRelationLabelQueryContract || "missing"}`;
       }

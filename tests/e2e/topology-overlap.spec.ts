@@ -252,6 +252,8 @@ async function visibleRelationLabelCardOverlaps(page: Page) {
           id: label.getAttribute("data-relation-label-button") ?? "",
           text: label.textContent?.trim() ?? "",
           visible,
+          top: rect.top,
+          bottom: rect.bottom,
           clearance: label.getAttribute("data-relation-label-card-clearance"),
           clearanceToken: label.getAttribute("data-relation-label-card-clearance-token"),
           overlapCount: label.getAttribute("data-relation-label-card-overlap-count"),
@@ -2324,6 +2326,18 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   );
   expect(cardsUnderHelp, "phone focus help entry must not cover map cards").toEqual([]);
   const visibleRelationLabels = await visibleRelationLabelCardOverlaps(page);
+  const skeletonLayer = page.getByTestId("sigma-skeleton-cards");
+  await expect(skeletonLayer).toHaveAttribute(
+    "data-relation-label-phone-bottom-reserve-contract",
+    "avoid-floating-controls",
+  );
+  await expect(skeletonLayer).toHaveAttribute(
+    "data-relation-label-phone-bottom-reserve-token",
+    "--topology-floating-control-phone-bottom",
+  );
+  const phoneBottomReserve = Number(
+    await skeletonLayer.getAttribute("data-relation-label-phone-bottom-reserve-px"),
+  );
   expect(
     visibleRelationLabels.length,
     "phone focus should expose relation labels through the measured clearance contract",
@@ -2344,6 +2358,10 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
       label.hullBorderOverlaps,
       `${label.id} (${label.text}) relation label must not sit on the focus hull stroke`,
     ).toEqual([]);
+    expect(
+      label.bottom,
+      `${label.id} (${label.text}) relation label must stay above the phone controls reserve`,
+    ).toBeLessThanOrEqual(viewport.height - phoneBottomReserve);
   }
   await controlsStack.locator("button").last().click();
   const controlsPanel = page.getByTestId("topology-sigma-controls-panel");

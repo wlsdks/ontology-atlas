@@ -200,6 +200,8 @@ const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 6;
 const RELATION_LABEL_VIEWPORT_INSET_PX = 16;
 const RELATION_LABEL_MIN_COMPACT_WIDTH_PX = 96;
 const RELATION_LABEL_CARD_CLEARANCE_PX = 22;
+const RELATION_LABEL_PHONE_BREAKPOINT_PX = 768;
+const RELATION_LABEL_PHONE_BOTTOM_RESERVE_PX = 112;
 const DRAG_SETTLE_FEEDBACK_MS = TOPOLOGY_DRAG_SETTLE_DURATION_MS;
 const DRAG_GROUP_RELEASE_FEEDBACK_MS = 760;
 const CONNECTOR_PORT_MIN_CLEARANCE_PX = 6;
@@ -2424,6 +2426,27 @@ export function SigmaSkeletonCards({
     } else {
       delete container.dataset.visibilityFallback;
       delete container.dataset.visibilityFallbackCount;
+    }
+    const relationLabelPhoneBottomReserveActive =
+      containerRect.width < RELATION_LABEL_PHONE_BREAKPOINT_PX;
+    if (relationLabelPhoneBottomReserveActive) {
+      relationLabelCardBlockers.push({
+        left: 0,
+        top: Math.max(0, containerRect.height - RELATION_LABEL_PHONE_BOTTOM_RESERVE_PX),
+        right: containerRect.width,
+        bottom: containerRect.height,
+      });
+      container.dataset.relationLabelPhoneBottomReserveContract =
+        'avoid-floating-controls';
+      container.dataset.relationLabelPhoneBottomReservePx = String(
+        RELATION_LABEL_PHONE_BOTTOM_RESERVE_PX,
+      );
+      container.dataset.relationLabelPhoneBottomReserveToken =
+        '--topology-floating-control-phone-bottom';
+    } else {
+      delete container.dataset.relationLabelPhoneBottomReserveContract;
+      delete container.dataset.relationLabelPhoneBottomReservePx;
+      delete container.dataset.relationLabelPhoneBottomReserveToken;
     }
     container.dataset.visibleCardCount = String(reportedVisibleCardCount);
     container.dataset.visibilityCountSource = visibilityCountSource;

@@ -3685,6 +3685,12 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-relation-label-blocker-contract") || "",
                                   topologyRelationLabelBlockerSource:
                                     skeletonCardsLayer?.getAttribute("data-relation-label-blocker-source") || "",
+                                  topologyRelationLabelPhoneBottomReserveContract:
+                                    skeletonCardsLayer?.getAttribute("data-relation-label-phone-bottom-reserve-contract") || "",
+                                  topologyRelationLabelPhoneBottomReservePx:
+                                    Number(skeletonCardsLayer?.getAttribute("data-relation-label-phone-bottom-reserve-px") || "0"),
+                                  topologyRelationLabelPhoneBottomReserveToken:
+                                    skeletonCardsLayer?.getAttribute("data-relation-label-phone-bottom-reserve-token") || "",
                                   topologyRelationLabelQueryContract:
                                     skeletonCardsLayer?.getAttribute("data-relation-label-query-contract") || "",
                                   topologyRelationLabelQueryIndexCount:
