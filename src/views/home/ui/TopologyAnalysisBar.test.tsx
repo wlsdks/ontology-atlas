@@ -636,18 +636,35 @@ describe("TopologyAnalysisBar", () => {
     expect(details).not.toBeNull();
     const actions = screen.getByTestId("topology-overview-handoff-actions");
     expect(actions).toBeVisible();
+    expect(actions).toHaveAttribute(
+      "data-divider-token",
+      "--topology-overview-handoff-divider",
+    );
     expect(actions.textContent).toContain("Agent handoff");
     expect(actions.querySelectorAll("button")).toHaveLength(3);
     expect(actions.querySelector(".grid")?.className).not.toContain("grid-cols-2");
-    expect(
-      screen
-        .getByRole("button", { name: "Copy topology overview brief" })
-        .className,
-    ).toContain("min-h-9");
+    const briefCopy = screen.getByTestId("topology-overview-brief-copy");
+    expect(briefCopy.className).toContain("min-h-9");
+    expect(briefCopy).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-handoff-primary-surface",
+    );
+    expect(briefCopy).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-handoff-primary-border",
+    );
     const sync = screen.getByRole("button", {
       name: "Copy ontology update check",
     });
     expect(sync.closest("details")).not.toBeNull();
+    expect(screen.getByTestId("topology-overview-reanalyze-copy")).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-handoff-secondary-surface",
+    );
+    expect(screen.getByTestId("topology-overview-sync-copy")).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-handoff-secondary-border",
+    );
   });
 
   it("uses a disclosure for secondary overview commands so the first-screen panel stays about ontology reading", () => {
@@ -808,8 +825,15 @@ describe("TopologyAnalysisBar", () => {
     );
 
     const progress = screen.getByTestId("topology-overview-relation-progress");
-    expect(screen.getByTestId("topology-overview-signal-grid").className).toContain(
-      "rounded",
+    const signalGrid = screen.getByTestId("topology-overview-signal-grid");
+    expect(signalGrid.className).toContain("rounded");
+    expect(signalGrid).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-signal-grid-surface",
+    );
+    expect(signalGrid).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-signal-grid-border",
     );
     expect(progress).toHaveTextContent("shown");
     expect(progress).toHaveTextContent("36/428");
@@ -821,6 +845,10 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(notice.closest("p")?.className).toContain("leading-5");
     expect(notice.closest("p")?.className).not.toContain("line-clamp-2");
+    expect(screen.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-notice-surface",
+    );
   });
 
   it("offers an agent reanalysis command from overview actions", () => {

@@ -1127,7 +1127,9 @@ export function TopologyAnalysisBar({
           {panelMode === "overview" ? (
             <>
               <div
-                className="mt-3 grid min-w-0 gap-2 rounded-lg border border-[color:rgba(255,255,255,0.065)] bg-[color:rgba(255,255,255,0.025)] p-2.5"
+                className="mt-3 grid min-w-0 gap-2 rounded-lg border border-[color:var(--topology-overview-signal-grid-border)] bg-[color:var(--topology-overview-signal-grid-surface)] p-2.5"
+                data-surface-token="--topology-overview-signal-grid-surface"
+                data-border-token="--topology-overview-signal-grid-border"
                 data-testid="topology-overview-signal-grid"
               >
                 <div
@@ -1190,12 +1192,18 @@ export function TopologyAnalysisBar({
                     counts={overviewAgentReadinessCounts}
                   />
                 ) : null}
-                <p className="break-keep rounded-md border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.02)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                <p
+                  className="break-keep rounded-md border border-[color:var(--topology-overview-notice-border)] bg-[color:var(--topology-overview-notice-surface)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]"
+                  data-surface-token="--topology-overview-notice-surface"
+                  data-border-token="--topology-overview-notice-border"
+                  data-testid="topology-overview-relation-notice"
+                >
                   {overviewRelationNotice}
                 </p>
               </div>
               <div
-                className="mt-3 border-t border-[color:rgba(255,255,255,0.07)] pt-3"
+                className="mt-3 border-t border-[color:var(--topology-overview-handoff-divider)] pt-3"
+                data-divider-token="--topology-overview-handoff-divider"
                 data-testid="topology-overview-handoff-actions"
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
@@ -1203,7 +1211,8 @@ export function TopologyAnalysisBar({
                     {disclosureSummaryLabel}
                   </span>
                   <span
-                    className="h-px min-w-6 flex-1 bg-[color:rgba(255,255,255,0.07)]"
+                    className="h-px min-w-6 flex-1 bg-[color:var(--topology-overview-handoff-divider)]"
+                    data-divider-token="--topology-overview-handoff-divider"
                     aria-hidden
                   />
                 </div>
@@ -1217,7 +1226,10 @@ export function TopologyAnalysisBar({
                         : labels.overviewBriefCopyAriaLabel
                     }
                     onClick={copyOverviewBrief}
-                    className="min-h-9 border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] text-[10.5px] text-[color:var(--color-text-secondary)]"
+                    className="min-h-9 border border-[color:var(--topology-overview-handoff-primary-border)] bg-[color:var(--topology-overview-handoff-primary-surface)] text-[10.5px] text-[color:var(--color-text-secondary)]"
+                    data-testid="topology-overview-brief-copy"
+                    data-surface-token="--topology-overview-handoff-primary-surface"
+                    data-border-token="--topology-overview-handoff-primary-border"
                   />
                   <details className="group">
                     <summary
@@ -1242,7 +1254,10 @@ export function TopologyAnalysisBar({
                             : labels.overviewReanalyzeCopyAriaLabel
                         }
                         onClick={copyOverviewReanalysisCommand}
-                        className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10px] text-[color:var(--color-text-tertiary)]"
+                        className="border border-[color:var(--topology-overview-handoff-secondary-border)] bg-[color:var(--topology-overview-handoff-secondary-surface)] text-[10px] text-[color:var(--color-text-tertiary)]"
+                        data-testid="topology-overview-reanalyze-copy"
+                        data-surface-token="--topology-overview-handoff-secondary-surface"
+                        data-border-token="--topology-overview-handoff-secondary-border"
                       />
                       <CompactCopyButton
                         copied={overviewSyncCopied}
@@ -1253,7 +1268,10 @@ export function TopologyAnalysisBar({
                             : labels.overviewSyncCopyAriaLabel
                         }
                         onClick={copyOverviewSyncGate}
-                        className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10px] text-[color:var(--color-text-tertiary)]"
+                        className="border border-[color:var(--topology-overview-handoff-secondary-border)] bg-[color:var(--topology-overview-handoff-secondary-surface)] text-[10px] text-[color:var(--color-text-tertiary)]"
+                        data-testid="topology-overview-sync-copy"
+                        data-surface-token="--topology-overview-handoff-secondary-surface"
+                        data-border-token="--topology-overview-handoff-secondary-border"
                       />
                     </div>
                   </details>
@@ -2126,15 +2144,17 @@ function CompactCopyButton({
   ariaLabel,
   onClick,
   className = "",
+  ...attrs
 }: {
   copied: boolean;
   label: string;
   ariaLabel: string;
   onClick: () => void;
   className?: string;
-}) {
+} & Omit<HTMLAttributes<HTMLButtonElement>, "className" | "onClick">) {
   return (
     <button
+      {...attrs}
       type="button"
       onClick={onClick}
       className={`inline-flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-180 ease-out hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none ${className}`}

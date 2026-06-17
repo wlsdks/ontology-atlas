@@ -354,8 +354,24 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   await expect(panel.getByText(/Relation provenance|관계 출처/i)).toBeVisible();
   await expect(panel.getByText(/Agent readiness|Agent 준비도/i)).toBeVisible();
   await expect(page.getByTestId("topology-overview-signal-grid")).toBeVisible();
+  await expect(page.getByTestId("topology-overview-signal-grid")).toHaveAttribute(
+    "data-surface-token",
+    "--topology-overview-signal-grid-surface",
+  );
+  await expect(page.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
+    "data-border-token",
+    "--topology-overview-notice-border",
+  );
   await expect(panel.getByRole("button", { name: /Copy topology overview brief|토폴로지 개요/i })).toBeVisible();
+  await expect(page.getByTestId("topology-overview-brief-copy")).toHaveAttribute(
+    "data-border-token",
+    "--topology-overview-handoff-primary-border",
+  );
   await expect(panel.getByTestId("topology-overview-handoff-summary")).toBeVisible();
+  await expect(panel.getByTestId("topology-overview-handoff-actions")).toHaveAttribute(
+    "data-divider-token",
+    "--topology-overview-handoff-divider",
+  );
   const panelOverflow = await panel.evaluate((element) => ({
     clientHeight: element.clientHeight,
     scrollHeight: element.scrollHeight,

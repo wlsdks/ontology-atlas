@@ -233,6 +233,20 @@ names in component data markers and tests whenever a surface depends on
   `--topology-path-handoff-cli-border`: path handoff fallback chips. The MCP
   chip remains the stronger command target, while the CLI fallback stays visible
   but quieter in the same compact rail.
+- `--topology-overview-signal-grid-surface` /
+  `--topology-overview-signal-grid-border` /
+  `--topology-overview-notice-surface` /
+  `--topology-overview-notice-border`: overview first-read signal stack. These
+  tokens keep relation progress, provenance, readiness, and the level-of-detail
+  notice in one compact reading surface without hard-coded theme exceptions.
+- `--topology-overview-handoff-divider` /
+  `--topology-overview-handoff-primary-surface` /
+  `--topology-overview-handoff-primary-border` /
+  `--topology-overview-handoff-secondary-surface` /
+  `--topology-overview-handoff-secondary-border`: overview agent handoff rail.
+  The graph brief remains the primary action; reanalysis and sync checks stay
+  quieter inside the disclosure while sharing the same responsive token
+  contract.
 - `--topology-minimap-surface` / `--topology-minimap-border` /
   `--topology-minimap-shadow`: right-side minimap support chrome. It is a
   navigation aid, not a selected fact surface, so it stays quieter than node
