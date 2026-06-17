@@ -1378,6 +1378,14 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(visibility).toHaveAttribute("data-visible", "10");
     expect(visibility).toHaveAttribute("data-total", "21");
+    expect(visibility).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-candidate-visibility-surface",
+    );
+    expect(visibility).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-candidate-visibility-border",
+    );
   });
 
   it("shows the Path mode MCP and CLI handoff contract in the support panel", () => {

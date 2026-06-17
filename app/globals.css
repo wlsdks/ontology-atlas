@@ -251,6 +251,8 @@
     --topology-path-handoff-border: rgba(139, 151, 255, 0.16);
     --topology-path-handoff-action-min-height: 24px;
     --topology-path-handoff-action-radius: 4px;
+    --topology-path-candidate-visibility-surface: rgba(139, 151, 255, 0.06);
+    --topology-path-candidate-visibility-border: rgba(139, 151, 255, 0.18);
     --topology-path-primary-evidence-surface: rgba(139, 151, 255, 0.09);
     --topology-path-primary-evidence-border: rgba(139, 151, 255, 0.24);
     --topology-path-primary-evidence-hover-surface: rgba(139, 151, 255, 0.13);
@@ -599,6 +601,8 @@
     --topology-utility-lane-accent-hover-surface: rgba(77, 86, 200, 0.14);
     --topology-path-handoff-surface: rgba(77, 86, 200, 0.045);
     --topology-path-handoff-border: rgba(77, 86, 200, 0.16);
+    --topology-path-candidate-visibility-surface: rgba(77, 86, 200, 0.06);
+    --topology-path-candidate-visibility-border: rgba(77, 86, 200, 0.18);
     --topology-path-primary-evidence-surface: rgba(77, 86, 200, 0.08);
     --topology-path-primary-evidence-border: rgba(77, 86, 200, 0.24);
     --topology-path-primary-evidence-hover-surface: rgba(77, 86, 200, 0.12);

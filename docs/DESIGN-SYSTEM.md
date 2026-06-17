@@ -214,6 +214,11 @@ names in component data markers and tests whenever a surface depends on
   and target endpoints are selected, the analysis rail must expose the current
   source-to-target route before the proof disclosure so users and agents can
   read the active graph question without opening secondary evidence.
+- `--topology-path-candidate-visibility-surface` /
+  `--topology-path-candidate-visibility-border`: path candidate coverage strip.
+  It explains how many map cards remain visible after panel-clearance hiding,
+  so the user can trust whether the current source/target selection is being
+  made from the full visible candidate set or a collision-managed subset.
 - `--topology-path-primary-evidence-surface` /
   `--topology-path-primary-evidence-border` /
   `--topology-path-primary-evidence-hover-surface` /

@@ -1003,7 +1003,9 @@ export function TopologyAnalysisBar({
               data-testid="topology-path-candidate-visibility"
               data-visible={pathCandidateVisibility?.visible}
               data-total={pathCandidateVisibility?.total}
-              className="mt-3 rounded-md border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.06)] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+              data-surface-token="--topology-path-candidate-visibility-surface"
+              data-border-token="--topology-path-candidate-visibility-border"
+              className="mt-3 rounded-md border border-[color:var(--topology-path-candidate-visibility-border)] bg-[color:var(--topology-path-candidate-visibility-surface)] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
             >
               {pathCandidateVisibilityText}
             </p>

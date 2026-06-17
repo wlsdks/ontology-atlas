@@ -1896,6 +1896,7 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   const banner = page.getByTestId("topology-path-result-banner");
   const handoff = page.getByTestId("topology-path-agent-handoff");
   const route = page.getByTestId("topology-path-visible-route");
+  const candidateVisibility = page.getByTestId("topology-path-candidate-visibility");
   await expect(panel).toBeVisible();
   await expect(panel).toHaveAttribute("data-analysis-mode", "path");
   await expect(panel).toHaveAttribute("data-path-guidance-owner", "analysis-rail");
@@ -1933,6 +1934,15 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   await expect(route).toHaveAttribute(
     "data-chip-border-token",
     "--topology-path-route-chip-border",
+  );
+  await expect(candidateVisibility).toBeVisible();
+  await expect(candidateVisibility).toHaveAttribute(
+    "data-surface-token",
+    "--topology-path-candidate-visibility-surface",
+  );
+  await expect(candidateVisibility).toHaveAttribute(
+    "data-border-token",
+    "--topology-path-candidate-visibility-border",
   );
   const routeDoesNotOverflow = await route.evaluate(
     (el) => el.scrollWidth <= el.clientWidth + 1,
