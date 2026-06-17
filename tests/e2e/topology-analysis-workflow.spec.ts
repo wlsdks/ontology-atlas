@@ -695,6 +695,19 @@ test.describe("topology analysis workflow", () => {
     await expect(
       page.getByRole("button", { name: "Path", pressed: true }),
     ).toBeVisible();
+    const modeRail = page.getByTestId("topology-analysis-mode-rail");
+    await expect(modeRail).toHaveAttribute(
+      "data-surface-token",
+      "--topology-analysis-mode-rail-surface",
+    );
+    await expect(modeRail).toHaveAttribute(
+      "data-active-surface-token",
+      "--topology-analysis-mode-active-surface",
+    );
+    await expect(page.locator('button[data-analysis-mode-tab="path"]')).toHaveAttribute(
+      "data-mode-tab-state",
+      "active",
+    );
     await expect(page.getByText(/^Showing the link from/)).toBeVisible();
     await page.getByTestId("topology-path-proof-summary").click();
     await expect(page.getByText("Shows the visible link between two nodes.")).toBeVisible();

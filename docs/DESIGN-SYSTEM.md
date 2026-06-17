@@ -184,6 +184,12 @@ names in component data markers and tests whenever a surface depends on
   panel end padding. It keeps overview/focus/path proof content scrollable
   above the fixed mobile bottom tab instead of letting support evidence hide
   under primary navigation.
+- `--topology-analysis-mode-rail-surface` /
+  `--topology-analysis-mode-active-surface` /
+  `--topology-analysis-mode-hover-surface`: Relief analysis mode rail. The
+  Overview/Focus/Path/Health tabs stay icon-only and tooltip-labeled, but their
+  active/hover feedback must be token-backed so mode switching reads consistently
+  across compact and desktop support panels.
 - `--topology-utility-lane-surface` / `--topology-utility-lane-border` /
   `--topology-utility-lane-shadow`: top utility chrome for search, auto
   arrange, docs, create, and review actions. These controls are support layer,

@@ -956,7 +956,14 @@ export function TopologyAnalysisBar({
         data-panel-body-scroll-end-reserve-token="--topology-analysis-panel-compact-scroll-end-reserve"
         className="flex flex-col gap-3 max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] max-md:pr-1"
       >
-        <div className="grid w-full grid-cols-4 gap-1 rounded-lg bg-[color:var(--color-overlay-1)] p-1">
+        <div
+          className="grid w-full grid-cols-4 gap-1 rounded-lg bg-[color:var(--topology-analysis-mode-rail-surface)] p-1"
+          data-testid="topology-analysis-mode-rail"
+          data-mode-rail-contract="four-icon-tabs-tooltip-labels"
+          data-surface-token="--topology-analysis-mode-rail-surface"
+          data-active-surface-token="--topology-analysis-mode-active-surface"
+          data-hover-surface-token="--topology-analysis-mode-hover-surface"
+        >
           {MODES.map(({ value, icon: Icon, labelKey }) => {
             const active = value === panelMode;
             return (
@@ -968,10 +975,16 @@ export function TopologyAnalysisBar({
                   onClick={() => handleModeRailChange(value)}
                   aria-pressed={active}
                   aria-label={labels[labelKey]}
+                  data-analysis-mode-tab={value}
+                  data-mode-tab-state={active ? "active" : "idle"}
+                  data-active-surface-token={
+                    active ? "--topology-analysis-mode-active-surface" : undefined
+                  }
+                  data-hover-surface-token="--topology-analysis-mode-hover-surface"
                   className={`inline-flex h-9 w-full items-center justify-center rounded-md px-2 transition-colors ${
                     active
-                      ? "bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]"
-                      : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                      ? "bg-[color:var(--topology-analysis-mode-active-surface)] text-[color:var(--color-text-primary)]"
+                      : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--topology-analysis-mode-hover-surface)] hover:text-[color:var(--color-text-primary)]"
                   }`}
                 >
                   <Icon size={15} aria-hidden />

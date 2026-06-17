@@ -575,10 +575,31 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("top-[5.5rem]");
     expect(bar.className).toContain("max-h-[calc(100dvh-7rem)]");
     expect(bar.className).toContain("topology-ui-scale");
+    const modeRail = screen.getByTestId("topology-analysis-mode-rail");
+    expect(modeRail).toHaveAttribute(
+      "data-mode-rail-contract",
+      "four-icon-tabs-tooltip-labels",
+    );
+    expect(modeRail).toHaveAttribute(
+      "data-surface-token",
+      "--topology-analysis-mode-rail-surface",
+    );
+    expect(modeRail).toHaveAttribute(
+      "data-active-surface-token",
+      "--topology-analysis-mode-active-surface",
+    );
     expect(screen.getByRole("button", { name: "Overview" }).className).toContain("h-9");
     expect(screen.getByRole("button", { name: "Focus" }).className).toContain("h-9");
     expect(screen.getByRole("button", { name: "Path" }).className).toContain("h-9");
     expect(screen.getByRole("button", { name: "Health" }).className).toContain("h-9");
+    expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute(
+      "data-mode-tab-state",
+      "active",
+    );
+    expect(screen.getByRole("button", { name: "Path" })).toHaveAttribute(
+      "data-hover-surface-token",
+      "--topology-analysis-mode-hover-surface",
+    );
   });
 
   it("renders mode tabs icon-only (text via aria-label/tooltip) to keep the panel compact", () => {
@@ -609,6 +630,7 @@ describe("TopologyAnalysisBar", () => {
       // 아이콘만 — 라벨은 aria-label + hover Tooltip 컴포넌트가 담당.
       expect(tab.textContent).toBe("");
       expect(tab).toHaveAttribute("aria-label", name);
+      expect(tab).toHaveAttribute("data-analysis-mode-tab");
     }
   });
 
