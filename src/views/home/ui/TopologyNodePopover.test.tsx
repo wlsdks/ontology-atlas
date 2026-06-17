@@ -683,6 +683,18 @@ describe("TopologyNodePopover", () => {
       relationRows[0].querySelector("[data-relation-evidence-glyph]"),
     ).toHaveTextContent("1");
     expect(
+      relationRows[0].querySelector("[data-relation-evidence-glyph]"),
+    ).toHaveAttribute(
+      "data-evidence-surface-token",
+      "--topology-node-popover-evidence-source-surface",
+    );
+    expect(
+      relationRows[0].querySelector("[data-relation-evidence-glyph]"),
+    ).toHaveAttribute(
+      "data-evidence-text-token",
+      "--topology-node-popover-evidence-source-text",
+    );
+    expect(
       relationRows[0].querySelector("[data-relation-row-agent-gate]"),
     ).toHaveTextContent("전달");
     expect(
@@ -701,6 +713,12 @@ describe("TopologyNodePopover", () => {
     expect(relationRows[1]).toHaveAttribute("data-relation-type", "contains");
     expect(relationRows[1]).toHaveAttribute("data-relation-quality", "supported");
     expect(relationRows[1]).toHaveAttribute("data-relation-evidence-state", "authored");
+    expect(
+      relationRows[1].querySelector("[data-relation-evidence-glyph]"),
+    ).toHaveAttribute(
+      "data-evidence-border-token",
+      "--topology-node-popover-evidence-authored-border",
+    );
     expect(relationRows[1]).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(
       relationRows[1].querySelector("[data-relation-type-label]"),
@@ -888,6 +906,14 @@ describe("TopologyNodePopover", () => {
     expect(relationRow).toHaveAttribute("data-agent-gate-kind", "preflight-first");
     expect(relationRow).toHaveAttribute("data-primary-copy-action", "relation_check");
     expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveTextContent("!");
+    expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveAttribute(
+      "data-evidence-surface-token",
+      "--topology-node-popover-evidence-review-surface",
+    );
+    expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveAttribute(
+      "data-evidence-text-token",
+      "--topology-node-popover-evidence-review-text",
+    );
     expect(relationRow?.querySelector("[data-relation-row-agent-gate]")).toHaveTextContent(
       "점검",
     );

@@ -2707,6 +2707,18 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     /--topology-relation-quality-(strong|supported|weak|review)-glow/,
   );
   await expect(
+    firstRelationRow.locator("[data-relation-evidence-glyph]").first(),
+  ).toHaveAttribute(
+    "data-evidence-surface-token",
+    /--topology-node-popover-evidence-(source|authored|review)-surface/,
+  );
+  await expect(
+    firstRelationRow.locator("[data-relation-evidence-glyph]").first(),
+  ).toHaveAttribute(
+    "data-evidence-text-token",
+    /--topology-node-popover-evidence-(source|authored|review)-text/,
+  );
+  await expect(
     firstRelationRow.locator("[data-relation-row-agent-gate]").first(),
   ).toHaveAttribute(
     "data-agent-gate-surface-token",

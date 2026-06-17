@@ -643,7 +643,19 @@ export function TopologyNodePopover({
                         <span
                           aria-hidden="true"
                           data-relation-evidence-glyph={evidenceState}
-                          className="inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.045)] px-1 font-mono text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+                          data-evidence-surface-token={relationEvidenceToken(
+                            evidenceState,
+                            "surface",
+                          )}
+                          data-evidence-border-token={relationEvidenceToken(
+                            evidenceState,
+                            "border",
+                          )}
+                          data-evidence-text-token={relationEvidenceToken(
+                            evidenceState,
+                            "text",
+                          )}
+                          className={`inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full border px-1 font-mono text-[8px] leading-none ${relationEvidenceGlyphClassName(evidenceState)}`}
                         >
                           {relationEvidenceGlyph(connection)}
                         </span>
@@ -948,6 +960,29 @@ function relationEvidenceGlyph({
   if (evidenceCount > 0) return evidenceCount > 9 ? "9+" : String(evidenceCount);
   if (authored) return "A";
   return "!";
+}
+
+function relationEvidenceGlyphClassName(evidenceState: RelationEvidenceState): string {
+  if (evidenceState === "source-backed") {
+    return "border-[color:var(--topology-node-popover-evidence-source-border)] bg-[color:var(--topology-node-popover-evidence-source-surface)] text-[color:var(--topology-node-popover-evidence-source-text)]";
+  }
+  if (evidenceState === "authored") {
+    return "border-[color:var(--topology-node-popover-evidence-authored-border)] bg-[color:var(--topology-node-popover-evidence-authored-surface)] text-[color:var(--topology-node-popover-evidence-authored-text)]";
+  }
+  return "border-[color:var(--topology-node-popover-evidence-review-border)] bg-[color:var(--topology-node-popover-evidence-review-surface)] text-[color:var(--topology-node-popover-evidence-review-text)]";
+}
+
+function relationEvidenceToken(
+  evidenceState: RelationEvidenceState,
+  slot: "surface" | "border" | "text",
+): string {
+  if (evidenceState === "source-backed") {
+    return `--topology-node-popover-evidence-source-${slot}`;
+  }
+  if (evidenceState === "authored") {
+    return `--topology-node-popover-evidence-authored-${slot}`;
+  }
+  return `--topology-node-popover-evidence-review-${slot}`;
 }
 
 function relationAgentGateKind({
