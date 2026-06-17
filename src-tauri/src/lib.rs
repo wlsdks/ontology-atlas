@@ -2347,6 +2347,14 @@ pub fn run() {
                                       : topologyFocusClusterHull?.getAttribute("data-cluster-mode") || "",
                                   topologyFocusClusterStage,
                                   topologyFocusClusterAttentionLabel,
+                                  topologyFocusClusterBreathingRoomContract:
+                                    topologyFocusClusterHull?.getAttribute("data-focus-breathing-room-contract") || "",
+                                  topologyFocusClusterBreathingRoomPx:
+                                    Number(topologyFocusClusterHull?.getAttribute("data-focus-breathing-room-px") || "0"),
+                                  topologyFocusClusterRightClearance:
+                                    Number(topologyFocusClusterHull?.getAttribute("data-focus-right-clearance") || "0"),
+                                  topologyFocusClusterBottomClearance:
+                                    Number(topologyFocusClusterHull?.getAttribute("data-focus-bottom-clearance") || "0"),
                                   topologyFocusClusterVisible:
                                     topologyFocusClusterHullVisible,
                                   topologyFocusClusterSize:

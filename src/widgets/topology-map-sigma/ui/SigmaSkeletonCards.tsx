@@ -153,6 +153,7 @@ const ANALYSIS_PANEL_TRAILING_PAD = 12;
 const ANALYSIS_PANEL_BLOCK_END_PAD = 8;
 const OVERVIEW_COLLISION_PAD = 2;
 const SAFE_VIEWPORT_MARGIN = 8;
+const FOCUS_HULL_BREATHING_ROOM_PX = 16;
 const FIXED_SURFACE_GAP = 8;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
@@ -2854,11 +2855,33 @@ export function SigmaSkeletonCards({
           }),
           { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
         );
+        const hullViewportMargin =
+          activeHullMode === 'focus' ? FOCUS_HULL_BREATHING_ROOM_PX : 0;
+        const hullMaxRight = Math.max(
+          hullViewportMargin + 1,
+          containerRect.width - hullViewportMargin,
+        );
+        const hullMaxBottom = Math.max(
+          hullViewportMargin + 1,
+          containerRect.height - hullViewportMargin,
+        );
         const rawHullRect = {
-          left: Math.max(0, bounds.left - DRAG_CLUSTER_HULL_PAD_PX),
-          top: Math.max(0, bounds.top - DRAG_CLUSTER_HULL_PAD_PX),
-          right: Math.min(containerRect.width, bounds.right + DRAG_CLUSTER_HULL_PAD_PX),
-          bottom: Math.min(containerRect.height, bounds.bottom + DRAG_CLUSTER_HULL_PAD_PX),
+          left: Math.min(
+            Math.max(hullViewportMargin, bounds.left - DRAG_CLUSTER_HULL_PAD_PX),
+            hullMaxRight - 1,
+          ),
+          top: Math.min(
+            Math.max(hullViewportMargin, bounds.top - DRAG_CLUSTER_HULL_PAD_PX),
+            hullMaxBottom - 1,
+          ),
+          right: Math.min(
+            hullMaxRight,
+            bounds.right + DRAG_CLUSTER_HULL_PAD_PX,
+          ),
+          bottom: Math.min(
+            hullMaxBottom,
+            bounds.bottom + DRAG_CLUSTER_HULL_PAD_PX,
+          ),
         };
         const hullRect =
           activeHullMode === 'focus'
@@ -2880,10 +2903,22 @@ export function SigmaSkeletonCards({
           hull.dataset.focusClusterSize = String(clusterRects.length);
           hull.dataset.focusStage = 'click-focus';
           hull.dataset.focusAttentionLabel = 'linked-focus';
+          hull.dataset.focusBreathingRoomContract = 'viewport-edge-clearance';
+          hull.dataset.focusBreathingRoomPx = String(FOCUS_HULL_BREATHING_ROOM_PX);
+          hull.dataset.focusRightClearance = String(
+            Math.round(containerRect.width - hullRect.right),
+          );
+          hull.dataset.focusBottomClearance = String(
+            Math.round(containerRect.height - hullRect.bottom),
+          );
         } else {
           delete hull.dataset.focusClusterSize;
           delete hull.dataset.focusStage;
           delete hull.dataset.focusAttentionLabel;
+          delete hull.dataset.focusBreathingRoomContract;
+          delete hull.dataset.focusBreathingRoomPx;
+          delete hull.dataset.focusRightClearance;
+          delete hull.dataset.focusBottomClearance;
         }
       } else {
         hull.style.opacity = '0';
@@ -2893,6 +2928,10 @@ export function SigmaSkeletonCards({
         delete hull.dataset.focusClusterSize;
         delete hull.dataset.focusStage;
         delete hull.dataset.focusAttentionLabel;
+        delete hull.dataset.focusBreathingRoomContract;
+        delete hull.dataset.focusBreathingRoomPx;
+        delete hull.dataset.focusRightClearance;
+        delete hull.dataset.focusBottomClearance;
       }
     }
 
