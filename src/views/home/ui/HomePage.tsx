@@ -1498,7 +1498,8 @@ export function HomePage() {
                       data-utility-action-surface-token="--topology-utility-lane-surface"
                       data-utility-action-border-token="--topology-utility-lane-border"
                       data-utility-action-shadow-token="--topology-utility-lane-shadow"
-                      className={`inline-flex h-[var(--topology-utility-lane-height)] items-center justify-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-border)] bg-[color:var(--topology-utility-lane-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color,box-shadow,transform] duration-180 ease-out hover:border-[color:var(--topology-utility-lane-accent-border)] hover:bg-[color:var(--topology-utility-lane-hover-surface)] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none motion-reduce:transform-none ${
+                      data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
+                      className={`inline-flex h-[var(--topology-utility-lane-height)] items-center justify-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-border)] bg-[color:var(--topology-utility-lane-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color,box-shadow,transform] duration-180 ease-out hover:border-[color:var(--topology-utility-lane-accent-border)] hover:bg-[color:var(--topology-utility-lane-hover-surface)] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none motion-reduce:transform-none ${
                         topologyUtilityChromeCompact
                           ? "w-[var(--topology-utility-lane-compact-width)] px-0"
                           : "px-3.5"
@@ -1510,7 +1511,10 @@ export function HomePage() {
                       </span>
                       {docsPinnedCount > 0 ? (
                         <span
-                          className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:rgba(94,106,210,0.28)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--color-indigo-accent)]"
+                          data-utility-count-badge="pinned-docs"
+                          data-surface-token="--topology-utility-lane-count-surface"
+                          data-text-token="--topology-utility-lane-count-text"
+                          className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--topology-utility-lane-count-surface)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--topology-utility-lane-count-text)]"
                           aria-label={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
                           title={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
                         >
@@ -1546,7 +1550,8 @@ export function HomePage() {
                           data-utility-action-surface-token="--topology-utility-lane-accent-surface"
                           data-utility-action-border-token="--topology-utility-lane-accent-border"
                           data-utility-action-shadow-token="--topology-utility-lane-shadow"
-                          className={`inline-flex h-[var(--topology-utility-lane-height)] items-center justify-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none ${
+                          data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
+                          className={`inline-flex h-[var(--topology-utility-lane-height)] items-center justify-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none ${
                             topologyUtilityChromeCompact
                               ? "w-[var(--topology-utility-lane-compact-width)] px-0"
                               : "px-3.5"

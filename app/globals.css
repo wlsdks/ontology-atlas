@@ -425,6 +425,9 @@
     --topology-utility-lane-accent-surface: rgba(94, 106, 210, 0.12);
     --topology-utility-lane-accent-border: rgba(94, 106, 210, 0.38);
     --topology-utility-lane-accent-hover-surface: rgba(94, 106, 210, 0.18);
+    --topology-utility-lane-focus-ring: rgba(94, 106, 210, 0.46);
+    --topology-utility-lane-count-surface: rgba(94, 106, 210, 0.28);
+    --topology-utility-lane-count-text: var(--color-indigo-accent);
     --topology-blocking-backdrop-surface: rgba(0, 0, 0, 0.72);
     --topology-blocking-map-opacity: 0.24;
     --topology-blocking-map-filter: saturate(0.58);
@@ -805,6 +808,9 @@
     --topology-utility-lane-accent-surface: rgba(77, 86, 200, 0.10);
     --topology-utility-lane-accent-border: rgba(77, 86, 200, 0.30);
     --topology-utility-lane-accent-hover-surface: rgba(77, 86, 200, 0.14);
+    --topology-utility-lane-focus-ring: rgba(77, 86, 200, 0.46);
+    --topology-utility-lane-count-surface: rgba(77, 86, 200, 0.12);
+    --topology-utility-lane-count-text: rgba(40, 50, 175, 0.96);
     --topology-path-handoff-surface: rgba(77, 86, 200, 0.045);
     --topology-path-handoff-border: rgba(77, 86, 200, 0.16);
     --topology-path-candidate-visibility-surface: rgba(77, 86, 200, 0.06);

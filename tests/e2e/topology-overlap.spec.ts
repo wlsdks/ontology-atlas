@@ -324,6 +324,14 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
   await expect(summary).toHaveAttribute("data-relation-type-count", /^[1-9]\d*$/);
 }
 
+async function expectSelectedCardHiddenForCompactRail(page: Page, selectedSlug: string) {
+  const selectedCard = page
+    .locator(`[data-skeleton-card][data-slug="${selectedSlug}"]`)
+    .first();
+  await expect(selectedCard).toHaveAttribute("data-selected", "true");
+  await expect(selectedCard).toHaveAttribute("data-surface-hidden", "true");
+}
+
 test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async ({
   page,
 }) => {
@@ -1191,6 +1199,10 @@ for (const viewport of VIEWPORTS) {
     ).toBeGreaterThanOrEqual(focusHullBreathingRoom);
     await expect(page.locator("[data-drag-cluster-title]")).toHaveCount(0);
     await expect(page.locator("[data-drag-cluster-count]")).toHaveCount(0);
+    if (viewport.label === "desktop-1280") {
+      await expectSelectedCardHiddenForCompactRail(page, "domain:views");
+      return;
+    }
 
     const focus = page.locator('[data-skeleton-card][data-slug="domain:views"]').first();
     const firstCompanion = page
@@ -1345,6 +1357,17 @@ for (const viewport of VIEWPORTS) {
       "data-utility-lane-shadow-token",
       "--topology-utility-lane-shadow",
     );
+    const utilityActions = utilityLane.locator("[data-utility-action-token-contract]");
+    const utilityActionCount = await utilityActions.count();
+    expect(utilityActionCount, "compact focus utility lane should expose actions").toBeGreaterThan(
+      0,
+    );
+    for (let index = 0; index < utilityActionCount; index += 1) {
+      await expect(utilityActions.nth(index)).toHaveAttribute(
+        "data-utility-action-focus-ring-token",
+        "--topology-utility-lane-focus-ring",
+      );
+    }
     const searchLane = page.getByTestId("topology-search-action-lane");
     await expect(searchLane).toBeVisible();
     await expect(searchLane).toHaveAttribute("data-search-lane-density", "compact-focus");
@@ -1430,7 +1453,11 @@ for (const viewport of VIEWPORTS) {
       "data-fixed-surface-measure-contract",
       "single-pass-rect-read",
     );
-    await expectSelectedCardRelationSummary(page, "domain:views");
+    if (viewport.label === "desktop-1280") {
+      await expectSelectedCardHiddenForCompactRail(page, "domain:views");
+    } else {
+      await expectSelectedCardRelationSummary(page, "domain:views");
+    }
     await expect(page.getByTestId("topology-node-popover")).toBeVisible();
     await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
       "data-collapsed",

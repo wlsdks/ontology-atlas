@@ -244,6 +244,11 @@ names in component data markers and tests whenever a surface depends on
   `--topology-utility-lane-accent-border`: utility-lane accent actions such as
   create or review. They may signal actionability but must stay in the same
   compact lane geometry as non-primary utility controls.
+- `--topology-utility-lane-focus-ring` /
+  `--topology-utility-lane-count-surface` /
+  `--topology-utility-lane-count-text`: support-action keyboard focus and
+  compact count badge accents. Utility chrome is not the primary graph fact, but
+  it must remain keyboard-readable and token-backed in compact WebView layouts.
 - `--topology-blocking-backdrop-surface` /
   `--topology-blocking-map-opacity` / `--topology-blocking-map-filter`: blocking
   edit layer contract. When Add Concept or another graph mutation composer is
