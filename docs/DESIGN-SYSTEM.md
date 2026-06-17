@@ -163,6 +163,13 @@ names in component data markers and tests whenever a surface depends on
   inspector action accent system. The title, relation direction, recommended
   action label, payload label, focus rings, and primary copy elevation must use
   one token-backed accent language instead of scattered RGBA values.
+- `--topology-selected-relation-claim-*` /
+  `--topology-selected-relation-quality-*` /
+  `--topology-selected-relation-gate-*` /
+  `--topology-selected-relation-copy-*`: selected relation fact tones for
+  quality, evidence readiness, agent gate, and copy priority. Relation color may
+  communicate ontology quality, but the decisions must stay token-backed so
+  graph fact semantics can be tuned without editing component classes.
 - `--topology-selected-relation-route-step-min-width`: selected relation
   fact/evidence/gate/action step minimum width; prevents cramped ontology
   proof cells inside the compact inspector.

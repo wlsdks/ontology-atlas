@@ -179,40 +179,40 @@ export function relationAgentGateKind(
 function relationQualityTone(
   quality: SigmaEdgeTooltipData['relationQuality'] | undefined,
 ): string {
-  if (quality === 'strong') return 'border-[color:rgba(139,151,255,0.44)] bg-[color:rgba(139,151,255,0.15)] text-[color:rgba(222,225,255,0.96)]';
-  if (quality === 'weak') return 'border-[color:rgba(217,161,65,0.34)] bg-[color:rgba(217,161,65,0.12)] text-[color:rgba(247,212,150,0.92)]';
-  if (quality === 'review') return 'border-[color:rgba(226,105,105,0.34)] bg-[color:rgba(226,105,105,0.12)] text-[color:rgba(255,190,190,0.92)]';
-  return 'border-[color:rgba(72,184,203,0.30)] bg-[color:rgba(72,184,203,0.11)] text-[color:rgba(187,237,244,0.92)]';
+  if (quality === 'strong') return 'border-[color:var(--topology-selected-relation-quality-strong-border)] bg-[color:var(--topology-selected-relation-quality-strong-surface)] text-[color:var(--topology-selected-relation-quality-strong-text)]';
+  if (quality === 'weak') return 'border-[color:var(--topology-selected-relation-quality-weak-border)] bg-[color:var(--topology-selected-relation-quality-weak-surface)] text-[color:var(--topology-selected-relation-quality-weak-text)]';
+  if (quality === 'review') return 'border-[color:var(--topology-selected-relation-quality-review-border)] bg-[color:var(--topology-selected-relation-quality-review-surface)] text-[color:var(--topology-selected-relation-quality-review-text)]';
+  return 'border-[color:var(--topology-selected-relation-quality-supported-border)] bg-[color:var(--topology-selected-relation-quality-supported-surface)] text-[color:var(--topology-selected-relation-quality-supported-text)]';
 }
 
 export function relationClaimLensTone(
   quality: SigmaEdgeTooltipData['relationQuality'] | undefined,
 ): string {
-  if (quality === 'strong') return 'border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] text-[color:rgba(222,225,255,0.94)]';
-  if (quality === 'weak') return 'border-[color:rgba(217,161,65,0.24)] bg-[color:rgba(217,161,65,0.08)] text-[color:rgba(247,212,150,0.88)]';
-  if (quality === 'review') return 'border-[color:rgba(226,105,105,0.26)] bg-[color:rgba(226,105,105,0.09)] text-[color:rgba(255,190,190,0.90)]';
-  return 'border-[color:rgba(72,184,203,0.22)] bg-[color:rgba(72,184,203,0.08)] text-[color:rgba(187,237,244,0.92)]';
+  if (quality === 'strong') return 'border-[color:var(--topology-selected-relation-claim-strong-border)] bg-[color:var(--topology-selected-relation-claim-strong-surface)] text-[color:var(--topology-selected-relation-claim-strong-text)]';
+  if (quality === 'weak') return 'border-[color:var(--topology-selected-relation-claim-weak-border)] bg-[color:var(--topology-selected-relation-claim-weak-surface)] text-[color:var(--topology-selected-relation-claim-weak-text)]';
+  if (quality === 'review') return 'border-[color:var(--topology-selected-relation-claim-review-border)] bg-[color:var(--topology-selected-relation-claim-review-surface)] text-[color:var(--topology-selected-relation-claim-review-text)]';
+  return 'border-[color:var(--topology-selected-relation-claim-supported-border)] bg-[color:var(--topology-selected-relation-claim-supported-surface)] text-[color:var(--topology-selected-relation-claim-supported-text)]';
 }
 
 export function relationClaimLensDotTone(
   quality: SigmaEdgeTooltipData['relationQuality'] | undefined,
 ): string {
-  if (quality === 'strong') return 'bg-[color:rgba(139,151,255,0.96)]';
-  if (quality === 'weak') return 'bg-[color:rgba(217,161,65,0.94)]';
-  if (quality === 'review') return 'bg-[color:rgba(226,105,105,0.94)]';
-  return 'bg-[color:rgba(72,184,203,0.95)]';
+  if (quality === 'strong') return 'bg-[color:var(--topology-selected-relation-claim-strong-dot)]';
+  if (quality === 'weak') return 'bg-[color:var(--topology-selected-relation-claim-weak-dot)]';
+  if (quality === 'review') return 'bg-[color:var(--topology-selected-relation-claim-review-dot)]';
+  return 'bg-[color:var(--topology-selected-relation-claim-supported-dot)]';
 }
 
 export function relationAgentDecisionTone(gateKind: RelationAgentGateKind): string {
-  if (gateKind === 'handoff-ready') return 'border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.075)]';
-  if (gateKind === 'preflight-first') return 'border-[color:rgba(217,161,65,0.24)] bg-[color:rgba(217,161,65,0.08)]';
-  return 'border-[color:rgba(226,105,105,0.26)] bg-[color:rgba(226,105,105,0.09)]';
+  if (gateKind === 'handoff-ready') return 'border-[color:var(--topology-selected-relation-gate-handoff-border)] bg-[color:var(--topology-selected-relation-gate-handoff-surface)]';
+  if (gateKind === 'preflight-first') return 'border-[color:var(--topology-selected-relation-gate-preflight-border)] bg-[color:var(--topology-selected-relation-gate-preflight-surface)]';
+  return 'border-[color:var(--topology-selected-relation-gate-review-border)] bg-[color:var(--topology-selected-relation-gate-review-surface)]';
 }
 
 export function relationAgentDecisionLabelTone(gateKind: RelationAgentGateKind): string {
-  if (gateKind === 'handoff-ready') return 'text-[color:rgba(139,151,255,0.88)]';
-  if (gateKind === 'preflight-first') return 'text-[color:rgba(247,212,150,0.88)]';
-  return 'text-[color:rgba(255,190,190,0.90)]';
+  if (gateKind === 'handoff-ready') return 'text-[color:var(--topology-selected-relation-gate-handoff-text)]';
+  if (gateKind === 'preflight-first') return 'text-[color:var(--topology-selected-relation-gate-preflight-text)]';
+  return 'text-[color:var(--topology-selected-relation-gate-review-text)]';
 }
 
 export function relationPrimaryCopyAction(
@@ -229,15 +229,24 @@ export function relationCopyButtonTone({
   primary: boolean;
 }): string {
   if (!primary) {
-    return 'border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.035)] text-[color:var(--color-text-tertiary)] hover:bg-[color:rgba(255,255,255,0.06)] hover:text-[color:var(--color-text-secondary)]';
+    return 'border-[color:var(--topology-selected-relation-copy-secondary-border)] bg-[color:var(--topology-selected-relation-copy-secondary-surface)] text-[color:var(--topology-selected-relation-copy-secondary-text)] hover:bg-[color:var(--topology-selected-relation-copy-secondary-hover-surface)] hover:text-[color:var(--topology-selected-relation-copy-secondary-hover-text)]';
   }
-  if (gateKind === 'handoff-ready') {
-    return 'border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(139,151,255,0.12)] text-[color:rgba(222,225,255,0.94)] hover:bg-[color:rgba(139,151,255,0.18)] hover:text-[color:var(--color-text-primary)]';
-  }
-  if (gateKind === 'preflight-first') {
-    return 'border-[color:rgba(217,161,65,0.34)] bg-[color:rgba(217,161,65,0.12)] text-[color:rgba(247,212,150,0.92)] hover:bg-[color:rgba(217,161,65,0.18)] hover:text-[color:var(--color-text-primary)]';
-  }
-  return 'border-[color:rgba(226,105,105,0.34)] bg-[color:rgba(226,105,105,0.12)] text-[color:rgba(255,190,190,0.92)] hover:bg-[color:rgba(226,105,105,0.18)] hover:text-[color:var(--color-text-primary)]';
+  const token = relationGateToken(gateKind);
+  if (token === 'handoff') return 'border-[color:var(--topology-selected-relation-copy-handoff-border)] bg-[color:var(--topology-selected-relation-copy-handoff-surface)] text-[color:var(--topology-selected-relation-copy-handoff-text)] hover:bg-[color:var(--topology-selected-relation-copy-handoff-hover-surface)] hover:text-[color:var(--topology-selected-relation-copy-handoff-hover-text)]';
+  if (token === 'preflight') return 'border-[color:var(--topology-selected-relation-copy-preflight-border)] bg-[color:var(--topology-selected-relation-copy-preflight-surface)] text-[color:var(--topology-selected-relation-copy-preflight-text)] hover:bg-[color:var(--topology-selected-relation-copy-preflight-hover-surface)] hover:text-[color:var(--topology-selected-relation-copy-preflight-hover-text)]';
+  return 'border-[color:var(--topology-selected-relation-copy-review-border)] bg-[color:var(--topology-selected-relation-copy-review-surface)] text-[color:var(--topology-selected-relation-copy-review-text)] hover:bg-[color:var(--topology-selected-relation-copy-review-hover-surface)] hover:text-[color:var(--topology-selected-relation-copy-review-hover-text)]';
+}
+
+function relationQualityToken(
+  quality: SigmaEdgeTooltipData['relationQuality'] | undefined,
+): NonNullable<SigmaEdgeTooltipData['relationQuality']> {
+  return quality ?? 'supported';
+}
+
+function relationGateToken(gateKind: RelationAgentGateKind): 'handoff' | 'preflight' | 'review' {
+  if (gateKind === 'handoff-ready') return 'handoff';
+  if (gateKind === 'preflight-first') return 'preflight';
+  return 'review';
 }
 
 export const SELECTED_EDGE_CARD_DOCK_CLASS =
@@ -370,6 +379,7 @@ export function SigmaSelectedEdgeCard({
       ? t('actionExplainRelation')
       : t('actionRelationCheck');
   const relationType = data.relationType ?? data.kind ?? 'depends_on';
+  const relationQuality = relationQualityToken(data.relationQuality);
   const visibleRelationTypeLabel = relationTypeDisplayLabel(relationType, {
     contains: t('relationTypeContains'),
     dependsOn: t('relationTypeDependsOn'),
@@ -475,13 +485,18 @@ export function SigmaSelectedEdgeCard({
           </div>
           <div
             data-testid="sigma-selected-edge-claim-lens"
-            data-relation-quality={data.relationQuality ?? 'supported'}
+            data-relation-quality={relationQuality}
+            data-claim-lens-surface-token={`--topology-selected-relation-claim-${relationQuality}-surface`}
+            data-claim-lens-border-token={`--topology-selected-relation-claim-${relationQuality}-border`}
+            data-claim-lens-text-token={`--topology-selected-relation-claim-${relationQuality}-text`}
+            data-claim-lens-dot-token={`--topology-selected-relation-claim-${relationQuality}-dot`}
             className={`mt-0.5 inline-flex max-w-full items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] ${relationClaimLensTone(
               data.relationQuality,
             )}`}
           >
             <span
               data-relation-quality-dot
+              data-dot-token={`--topology-selected-relation-claim-${relationQuality}-dot`}
               className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationClaimLensDotTone(
                 data.relationQuality,
               )}`}
@@ -513,6 +528,10 @@ export function SigmaSelectedEdgeCard({
               {visibleRelationTypeLabel || relationLabel}
             </span>
             <span
+              data-relation-quality-tone-token={`--topology-selected-relation-quality-${relationQuality}`}
+              data-relation-quality-surface-token={`--topology-selected-relation-quality-${relationQuality}-surface`}
+              data-relation-quality-border-token={`--topology-selected-relation-quality-${relationQuality}-border`}
+              data-relation-quality-text-token={`--topology-selected-relation-quality-${relationQuality}-text`}
               className={`rounded-full border px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] ${relationQualityTone(
                 data.relationQuality,
               )}`}
@@ -553,6 +572,15 @@ export function SigmaSelectedEdgeCard({
           data-testid="sigma-selected-edge-agent-decision"
           data-agent-decision={agentDecisionText}
           data-agent-gate-kind={agentGateKind}
+          data-agent-gate-surface-token={`--topology-selected-relation-gate-${relationGateToken(
+            agentGateKind,
+          )}-surface`}
+          data-agent-gate-border-token={`--topology-selected-relation-gate-${relationGateToken(
+            agentGateKind,
+          )}-border`}
+          data-agent-gate-text-token={`--topology-selected-relation-gate-${relationGateToken(
+            agentGateKind,
+          )}-text`}
           className={`min-w-0 rounded-md border px-2 py-1 ${relationAgentDecisionTone(
             agentGateKind,
           )}`}
@@ -761,6 +789,9 @@ function CopyButton({
   primary: boolean;
   primaryBadge: string;
 }) {
+  const copyToneToken = primary
+    ? `--topology-selected-relation-copy-${relationGateToken(gateKind)}`
+    : '--topology-selected-relation-copy-secondary';
   return (
     <button
       type="button"
@@ -773,6 +804,11 @@ function CopyButton({
       data-primary-shadow-token={
         primary ? '--topology-selected-relation-copy-primary-shadow' : undefined
       }
+      data-copy-surface-token={`${copyToneToken}-surface`}
+      data-copy-border-token={`${copyToneToken}-border`}
+      data-copy-text-token={`${copyToneToken}-text`}
+      data-copy-hover-surface-token={`${copyToneToken}-hover-surface`}
+      data-copy-hover-text-token={`${copyToneToken}-hover-text`}
       title={payloadCall}
       aria-label={primary ? `${label} · ${primaryBadge}` : label}
       onClick={onClick}

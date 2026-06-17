@@ -3133,8 +3133,70 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
     "data-typography-contract",
     "legible-compact-relation-inspector",
   );
+  const selectedRelationQuality = await selectedEdgeCard.getAttribute("data-relation-quality");
+  if (!selectedRelationQuality) {
+    throw new Error("selected relation card should expose relation quality");
+  }
+  const claimLens = page.getByTestId("sigma-selected-edge-claim-lens");
+  await expect(claimLens).toHaveAttribute(
+    "data-claim-lens-surface-token",
+    `--topology-selected-relation-claim-${selectedRelationQuality}-surface`,
+  );
+  await expect(claimLens).toHaveAttribute(
+    "data-claim-lens-border-token",
+    `--topology-selected-relation-claim-${selectedRelationQuality}-border`,
+  );
+  await expect(claimLens).toHaveAttribute(
+    "data-claim-lens-dot-token",
+    `--topology-selected-relation-claim-${selectedRelationQuality}-dot`,
+  );
+  await expect(claimLens.locator("[data-relation-quality-dot]")).toHaveAttribute(
+    "data-dot-token",
+    `--topology-selected-relation-claim-${selectedRelationQuality}-dot`,
+  );
+  await expect(
+    selectedEdgeCard.locator("[data-relation-quality-tone-token]"),
+  ).toHaveAttribute(
+    "data-relation-quality-tone-token",
+    `--topology-selected-relation-quality-${selectedRelationQuality}`,
+  );
+  const agentDecision = page.getByTestId("sigma-selected-edge-agent-decision");
+  const agentGateKind = await agentDecision.getAttribute("data-agent-gate-kind");
+  const agentGateToken =
+    agentGateKind === "handoff-ready"
+      ? "handoff"
+      : agentGateKind === "preflight-first"
+        ? "preflight"
+        : "review";
+  await expect(agentDecision).toHaveAttribute(
+    "data-agent-gate-surface-token",
+    `--topology-selected-relation-gate-${agentGateToken}-surface`,
+  );
+  await expect(agentDecision).toHaveAttribute(
+    "data-agent-gate-text-token",
+    `--topology-selected-relation-gate-${agentGateToken}-text`,
+  );
   const agentRoute = page.getByTestId("sigma-selected-edge-agent-route");
   await expect(agentRoute.locator("[data-route-step]")).toHaveCount(4);
+  const primaryCopyAction = await agentRoute.getAttribute("data-primary-copy-action");
+  if (!primaryCopyAction) {
+    throw new Error("selected relation route should expose a primary copy action");
+  }
+  const primaryCopyButton = page.locator(
+    `[data-relation-copy-action="${primaryCopyAction}"]`,
+  );
+  await expect(primaryCopyButton).toHaveAttribute(
+    "data-copy-surface-token",
+    `--topology-selected-relation-copy-${agentGateToken}-surface`,
+  );
+  await expect(
+    page.locator(
+      `[data-relation-copy-priority="secondary"][data-relation-copy-action]`,
+    ),
+  ).toHaveAttribute(
+    "data-copy-surface-token",
+    "--topology-selected-relation-copy-secondary-surface",
+  );
   const routeRect = await rectOf(agentRoute);
   expect(routeRect.left, "compact relation route should stay inside the viewport").toBeGreaterThanOrEqual(8);
   expect(routeRect.right, "compact relation route should stay inside the viewport").toBeLessThanOrEqual(
