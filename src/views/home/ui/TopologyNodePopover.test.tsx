@@ -325,7 +325,29 @@ describe("TopologyNodePopover", () => {
     expect(handoffLane).toHaveAttribute("data-handoff-lane", "mcp-cli-next-action");
     expect(handoffLane).toHaveAttribute(
       "data-relation-payload-layout",
-      "flat-inline-payload-rail",
+      "tokenized-compact-route-rail",
+    );
+    expect(handoffLane).toHaveAttribute(
+      "data-route-surface-token",
+      "--topology-node-popover-route-surface",
+    );
+    expect(handoffLane).toHaveAttribute(
+      "data-route-border-token",
+      "--topology-node-popover-route-border",
+    );
+    expect(handoffLane).toHaveAttribute(
+      "data-route-chip-surface-token",
+      "--topology-node-popover-route-chip-surface",
+    );
+    expect(handoffLane).toHaveAttribute(
+      "data-route-chip-border-token",
+      "--topology-node-popover-route-chip-border",
+    );
+    expect(handoffLane?.className).toContain(
+      "bg-[color:var(--topology-node-popover-route-surface)]",
+    );
+    expect(handoffLane?.className).toContain(
+      "border-[color:var(--topology-node-popover-route-border)]",
     );
   });
 

@@ -235,6 +235,10 @@ names in component data markers and tests whenever a surface depends on
   relation summaries must use node-popover tokens so the support rail stays
   visually related to the active focus state without becoming another primary
   relation inspector.
+- `--topology-node-popover-route-*`: compact relation-row handoff route rail
+  inside the selected node inspector. Use these for fact/evidence/gate/action
+  chips so row-level MCP/CLI payloads scan as structured proof, not loose
+  monospace helper text.
 - `--topology-bottom-tab-surface` / `--topology-bottom-tab-border`: mobile
   topology navigation surface. It must be opaque enough that map cards and
   relation labels cannot bleed through tab icons or labels.

@@ -2629,6 +2629,19 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   await expect(connectionList).toBeVisible();
   const firstRelationRow = connectionList.locator("[data-relation-row]").first();
   await expect(firstRelationRow).toBeVisible();
+  const firstRouteRail = firstRelationRow.locator("[data-relation-route]").first();
+  await expect(firstRouteRail).toHaveAttribute(
+    "data-relation-payload-layout",
+    "tokenized-compact-route-rail",
+  );
+  await expect(firstRouteRail).toHaveAttribute(
+    "data-route-surface-token",
+    "--topology-node-popover-route-surface",
+  );
+  await expect(firstRouteRail).toHaveAttribute(
+    "data-route-chip-surface-token",
+    "--topology-node-popover-route-chip-surface",
+  );
 
   const popoverScroll = await popover.evaluate((element) => {
     const style = window.getComputedStyle(element);
@@ -2652,6 +2665,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     const root = document.querySelector<HTMLElement>('[data-testid="topology-node-popover"]');
     const list = document.querySelector<HTMLElement>('[data-testid="topology-node-connection-list"]');
     const row = document.querySelector<HTMLElement>('[data-testid="topology-node-connection-list"] [data-relation-row]');
+    const route = row?.querySelector<HTMLElement>("[data-relation-route]") ?? null;
     const footer = document.querySelector<HTMLElement>('[data-testid="topology-node-popover-footer"]');
     const actionRail = document.querySelector<HTMLElement>(
       '[data-testid="topology-node-popover-action-rail"]',
@@ -2660,6 +2674,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     const rootRect = root.getBoundingClientRect();
     const listRect = list.getBoundingClientRect();
     const rowRect = row.getBoundingClientRect();
+    const routeRect = route?.getBoundingClientRect() ?? null;
     const footerRect = footer?.getBoundingClientRect() ?? null;
     const actionRailRect = actionRail?.getBoundingClientRect() ?? null;
     const visibleRowHeight = Math.max(
@@ -2675,6 +2690,10 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
       listTop: listRect.top,
       listHeight: listRect.height,
       firstRowHeight: rowRect.height,
+      routeChipCount: route?.querySelectorAll("[data-relation-route-chip]").length ?? 0,
+      routeClientWidth: route?.clientWidth ?? 0,
+      routeScrollWidth: route?.scrollWidth ?? 0,
+      routeHeight: routeRect?.height ?? 0,
       visibleRowHeight,
       footerTop: footerRect?.top ?? null,
       footerBottom: footerRect?.bottom ?? null,
@@ -2699,6 +2718,18 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     readableRelationProof?.visibleRowHeight ?? 0,
     "expanded phone popover should show a complete relation row before scrolling",
   ).toBeGreaterThanOrEqual((readableRelationProof?.firstRowHeight ?? 0) - 1);
+  expect(
+    readableRelationProof?.routeChipCount ?? 0,
+    "expanded phone relation row should expose fact/evidence/gate/action/payload chips",
+  ).toBe(5);
+  expect(
+    readableRelationProof?.routeScrollWidth ?? 0,
+    "expanded phone relation route rail should not horizontally overflow",
+  ).toBeLessThanOrEqual((readableRelationProof?.routeClientWidth ?? 0) + 1);
+  expect(
+    readableRelationProof?.routeHeight ?? 0,
+    "expanded phone relation route rail should remain a compact proof strip",
+  ).toBeLessThanOrEqual(26);
   expect(
     readableRelationProof?.footerPositionContract,
     "expanded phone popover should keep the MCP/CLI footer anchored in the visible frame",

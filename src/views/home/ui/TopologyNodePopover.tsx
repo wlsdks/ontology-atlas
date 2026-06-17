@@ -664,44 +664,58 @@ export function TopologyNodePopover({
                         aria-hidden="true"
                         data-relation-route
                         data-relation-route-state="compact-json-ready"
-                        data-relation-payload-layout="flat-inline-payload-rail"
+                        data-relation-payload-layout="tokenized-compact-route-rail"
                         data-handoff-lane="mcp-cli-next-action"
                         data-handoff-grammar-contract="fact-evidence-gate-action-payload"
-                        className="mt-0.5 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]"
+                        data-route-surface-token="--topology-node-popover-route-surface"
+                        data-route-border-token="--topology-node-popover-route-border"
+                        data-route-chip-surface-token="--topology-node-popover-route-chip-surface"
+                        data-route-chip-border-token="--topology-node-popover-route-chip-border"
+                        data-route-separator-token="--topology-node-popover-route-separator"
+                        className="mt-1 flex min-w-0 items-center gap-1 overflow-hidden rounded border border-[color:var(--topology-node-popover-route-border)] bg-[color:var(--topology-node-popover-route-surface)] px-1 py-0.5 font-mono text-[8px] uppercase tracking-normal text-[color:var(--color-text-quaternary)]"
                       >
-                        <span data-relation-route-chip="fact" className="min-w-0 truncate">
+                        <span
+                          data-relation-route-chip="fact"
+                          className="min-w-0 truncate rounded border border-[color:var(--topology-node-popover-route-chip-border)] bg-[color:var(--topology-node-popover-route-chip-surface)] px-1 py-px"
+                        >
                           {relationTypeLabel}
                         </span>
-                        <span className="shrink-0 text-[color:var(--color-text-disabled)]">
+                        <span className="shrink-0 text-[color:var(--topology-node-popover-route-separator)]">
                           &gt;
                         </span>
-                        <span data-relation-route-chip="evidence" className="shrink-0">
+                        <span
+                          data-relation-route-chip="evidence"
+                          className="shrink-0 rounded border border-[color:var(--topology-node-popover-route-chip-border)] bg-[color:var(--topology-node-popover-route-chip-surface)] px-1 py-px"
+                        >
                           {relationEvidenceGlyph(connection)}
                         </span>
-                        <span className="shrink-0 text-[color:var(--color-text-disabled)]">
+                        <span className="shrink-0 text-[color:var(--topology-node-popover-route-separator)]">
                           &gt;
                         </span>
-                        <span data-relation-route-chip="gate" className="shrink-0">
+                        <span
+                          data-relation-route-chip="gate"
+                          className="shrink-0 rounded border border-[color:var(--topology-node-popover-route-chip-border)] bg-[color:var(--topology-node-popover-route-chip-surface)] px-1 py-px"
+                        >
                           {agentGateChipText}
                         </span>
-                        <span className="shrink-0 text-[color:var(--color-text-disabled)]">
+                        <span className="shrink-0 text-[color:var(--topology-node-popover-route-separator)]">
                           &gt;
                         </span>
                         <span
                           data-relation-route-chip="action"
                           title={primaryCopyAction}
-                          className="shrink-0"
+                          className="shrink-0 rounded border border-[color:var(--topology-node-popover-route-chip-border)] bg-[color:var(--topology-node-popover-route-chip-surface)] px-1 py-px"
                         >
                           {primaryCopyActionShortLabel}
                         </span>
-                        <span className="shrink-0 text-[color:var(--color-text-disabled)]">
+                        <span className="shrink-0 text-[color:var(--topology-node-popover-route-separator)]">
                           &gt;
                         </span>
                         <span
                           data-relation-route-chip="payload"
                           data-relation-payload-summary={relationHandoffPayloadSummary}
                           title={relationHandoffPayloadSummary}
-                          className="shrink-0"
+                          className="shrink-0 rounded border border-[color:var(--topology-node-popover-route-chip-border)] bg-[color:var(--topology-node-popover-route-chip-surface)] px-1 py-px"
                         >
                           JSON
                         </span>
