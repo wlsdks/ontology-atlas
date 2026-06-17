@@ -680,6 +680,24 @@ describe("TopologyNodePopover", () => {
       relationRows[0].querySelector("[data-relation-type-label]"),
     ).toHaveTextContent("사용");
     expect(
+      relationRows[0].querySelector("[data-relation-type-label]"),
+    ).toHaveAttribute(
+      "data-fact-type-surface-token",
+      "--topology-node-popover-fact-type-surface",
+    );
+    expect(
+      relationRows[0].querySelector("[data-relation-type-label]"),
+    ).toHaveAttribute(
+      "data-fact-type-border-token",
+      "--topology-node-popover-fact-type-border",
+    );
+    expect(
+      relationRows[0].querySelector("[data-relation-type-label]"),
+    ).toHaveAttribute(
+      "data-fact-type-text-token",
+      "--topology-node-popover-fact-type-text",
+    );
+    expect(
       relationRows[0].querySelector("[data-relation-evidence-glyph]"),
     ).toHaveTextContent("1");
     expect(

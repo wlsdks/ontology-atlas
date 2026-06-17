@@ -627,7 +627,10 @@ export function TopologyNodePopover({
                       <span className="flex min-w-0 items-center gap-1.5">
                         <span
                           data-relation-type-label
-                          className="shrink-0 rounded-full border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]"
+                          data-fact-type-surface-token="--topology-node-popover-fact-type-surface"
+                          data-fact-type-border-token="--topology-node-popover-fact-type-border"
+                          data-fact-type-text-token="--topology-node-popover-fact-type-text"
+                          className="shrink-0 rounded-full border border-[color:var(--topology-node-popover-fact-type-border)] bg-[color:var(--topology-node-popover-fact-type-surface)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--topology-node-popover-fact-type-text)]"
                         >
                           {relationTypeLabel}
                         </span>

@@ -251,6 +251,10 @@ names in component data markers and tests whenever a surface depends on
   inside the selected node inspector. Use these for fact/evidence/gate/action
   chips so row-level MCP/CLI payloads scan as structured proof, not loose
   monospace helper text.
+- `--topology-node-popover-fact-type-*`: selected node inspector relation type
+  chip, the first scan target in a relation row. It must stay token-backed and
+  expose `data-fact-type-*-token` markers so the typed fact reads as the start
+  of the handoff grammar before quality, evidence, gate, and payload.
 - `--topology-node-popover-evidence-*`: selected node inspector relation
   evidence glyphs (`source`, `authored`, `review`). These sit between relation
   quality and agent gate in the scan row, so they must expose
