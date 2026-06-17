@@ -3553,16 +3553,25 @@ export function SigmaSkeletonCards({
               data-relation-label-surface-token="--topology-relation-label-surface"
               data-relation-label-border-token="--topology-relation-label-border"
               data-relation-label-shadow-token="--topology-relation-label-shadow"
+              data-relation-label-selected-surface-token={
+                selected ? '--topology-relation-label-selected-surface' : undefined
+              }
+              data-relation-label-selected-border-token={
+                selected ? '--topology-relation-label-selected-border' : undefined
+              }
+              data-relation-label-selected-shadow-token={
+                selected ? '--topology-relation-label-selected-shadow' : undefined
+              }
               className="inline-flex h-6 max-w-full items-center justify-center gap-1 overflow-hidden rounded-full border px-1.5 shadow-[0_5px_14px_rgba(0,0,0,0.20)]"
               style={{
                 backgroundColor: selected
-                  ? 'rgba(139,151,255,0.16)'
+                  ? 'var(--topology-relation-label-selected-surface)'
                   : 'var(--topology-relation-label-surface)',
                 borderColor: selected
-                  ? 'rgba(139,151,255,0.92)'
+                  ? 'var(--topology-relation-label-selected-border)'
                   : 'var(--topology-relation-label-border)',
                 boxShadow: selected
-                  ? '0 0 0 3px rgba(139,151,255,0.12), 0 10px 24px rgba(0,0,0,0.34)'
+                  ? 'var(--topology-relation-label-selected-shadow)'
                   : 'var(--topology-relation-label-shadow)',
               }}
             >
@@ -3660,13 +3669,15 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-action={primaryCopyAction}
             data-relation-label-compact="false"
             data-relation-label-density="focus-token"
+            data-relation-label-selected-surface-token="--topology-relation-label-selected-surface"
+            data-relation-label-selected-border-token="--topology-relation-label-selected-border"
+            data-relation-label-selected-shadow-token="--topology-relation-label-selected-shadow"
             aria-hidden="true"
             className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full border px-1.5 font-mono text-[9px] uppercase tracking-[0.07em] text-[color:var(--color-text-secondary)]"
             style={{
-              backgroundColor: 'rgba(139,151,255,0.16)',
-              borderColor: 'rgba(139,151,255,0.92)',
-              boxShadow:
-                '0 0 0 3px rgba(139,151,255,0.12), 0 10px 24px rgba(0,0,0,0.34)',
+              backgroundColor: 'var(--topology-relation-label-selected-surface)',
+              borderColor: 'var(--topology-relation-label-selected-border)',
+              boxShadow: 'var(--topology-relation-label-selected-shadow)',
               opacity: 1,
               visibility: 'visible',
             }}

@@ -1866,11 +1866,29 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
 
     const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+    const visibleBadge = labelHit?.querySelector("[data-relation-label-visible-badge]");
+    const selectedOverlay = container.querySelector("[data-selected-relation-overlay]");
     const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
     const root = screen.getByTestId("sigma-skeleton-cards");
 
     expect(labelHit).toHaveAttribute("data-selected-relation", "true");
     expect(labelHit).toHaveAttribute("data-relation-label-density", "focus-token");
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-selected-surface-token",
+      "--topology-relation-label-selected-surface",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-selected-border-token",
+      "--topology-relation-label-selected-border",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-selected-shadow-token",
+      "--topology-relation-label-selected-shadow",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-selected-surface-token",
+      "--topology-relation-label-selected-surface",
+    );
     expect(labelHit).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(labelHit).toHaveAttribute("data-primary-copy-action", "explain_relation");
     expect(labelHit).toHaveAttribute(

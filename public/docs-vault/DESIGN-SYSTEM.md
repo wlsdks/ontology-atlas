@@ -165,6 +165,11 @@ names in component data markers and tests whenever a surface depends on
 - `--topology-relation-label-surface` / `--topology-relation-label-border` /
   `--topology-relation-label-shadow`: scan-level relation label treatment that
   separates typed relation facts from selected-card surfaces.
+- `--topology-relation-label-selected-surface` /
+  `--topology-relation-label-selected-border` /
+  `--topology-relation-label-selected-shadow`: focus-level selected relation
+  label treatment. A selected relation is the active ontology fact on the map,
+  so its halo must be token-backed instead of embedded RGBA in the renderer.
 - `--topology-edge-tooltip-surface` / `--topology-edge-tooltip-border` /
   `--topology-edge-tooltip-shadow`: hover relation tooltip treatment. It must
   stay a compact relation fact with `source -> target`, relation type, and
