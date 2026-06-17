@@ -3564,6 +3564,15 @@ export function validateWebviewVerifyPayload(payload, {
         if (payload.markers.topologyHealthRepairPrimaryAction !== "builder") {
           return `WebView Relief health repair primary action was ${payload.markers.topologyHealthRepairPrimaryAction || "missing"}`;
         }
+        if (
+          payload.markers.topologyHealthRepairActionOrder !==
+          "builder-mcp-ontology"
+        ) {
+          return `WebView Relief health repair action order was ${payload.markers.topologyHealthRepairActionOrder || "missing"}`;
+        }
+        if (payload.markers.topologyHealthRepairFirstActionPrimary !== "builder") {
+          return `WebView Relief health repair first action was ${payload.markers.topologyHealthRepairFirstActionPrimary || "missing"}`;
+        }
         if (payload.markers.topologyHealthRepairSyncGate !== "post-change") {
           return `WebView Relief health repair sync gate was ${payload.markers.topologyHealthRepairSyncGate || "missing"}`;
         }

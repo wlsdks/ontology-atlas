@@ -1660,6 +1660,8 @@ pub fn run() {
                               const topologyAnalysisPanelRect =
                                 topologyAnalysisPanel?.getBoundingClientRect();
                               const topologyHealthRepairOrder = document.querySelector('[data-testid="topology-health-repair-order"]');
+                              const topologyHealthRepairFirstAction =
+                                topologyHealthRepairOrder?.querySelector("a,button");
                               const topologyPathStartPrompt = document.querySelector('[data-testid="topology-path-start-prompt"]');
                               const topologyPathAnchorPrompt = document.querySelector('[data-testid="topology-path-anchor-prompt"]');
                               const topologyPathStartPromptStyle = topologyPathStartPrompt
@@ -2972,6 +2974,10 @@ pub fn run() {
                                     "",
                                   topologyHealthRepairPrimaryAction:
                                     topologyHealthRepairOrder?.getAttribute("data-health-repair-primary-action") || "",
+                                  topologyHealthRepairActionOrder:
+                                    topologyHealthRepairOrder?.getAttribute("data-health-repair-action-order") || "",
+                                  topologyHealthRepairFirstActionPrimary:
+                                    topologyHealthRepairFirstAction?.getAttribute("data-health-repair-primary-action") || "",
                                   topologyHealthRepairSyncGate:
                                     topologyHealthRepairOrder?.getAttribute("data-health-repair-sync-gate") || "",
                                   topologyAnalysisPanelSurfaceToken:

@@ -2552,6 +2552,10 @@ describe("TopologyAnalysisBar", () => {
       "inspect-repair-sync",
     );
     expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-health-repair-action-order",
+      "builder-mcp-ontology",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
       "data-health-repair-primary-action",
       "builder",
     );
@@ -2563,7 +2567,18 @@ describe("TopologyAnalysisBar", () => {
       screen.getByRole("button", { name: "open question Views" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Inspect" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Repair in builder" })).toBeInTheDocument();
+    const actionRail = screen.getByTestId("topology-health-repair-order");
+    const primaryRepair = within(actionRail).getByRole("link", {
+      name: "Repair in builder",
+    });
+    expect(primaryRepair).toHaveAttribute(
+      "data-health-repair-primary-action",
+      "builder",
+    );
+    expect(within(actionRail).getAllByRole("link")[0]).toBe(primaryRepair);
+    expect(
+      within(actionRail).getByRole("button", { name: "Copy health MCP check" }),
+    ).toBeInTheDocument();
   });
 
   it("names the health repair disclosure as repair proof instead of generic actions", () => {

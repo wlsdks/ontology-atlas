@@ -39,7 +39,6 @@ test.describe("topology analysis workflow", () => {
     ).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Project search" })).toHaveCount(0);
     await expect(page.getByText(/\d+ PROJECTS/)).toHaveCount(0);
-    await page.getByTestId("topology-health-repair-proof-summary").click();
     await page
       .getByRole("button", { name: "Copy topology overview brief" })
       .click();
@@ -141,8 +140,18 @@ test.describe("topology analysis workflow", () => {
       "builder",
     );
     await expect(healthRepairOrder).toHaveAttribute(
+      "data-health-repair-action-order",
+      "builder-mcp-ontology",
+    );
+    await expect(healthRepairOrder).toHaveAttribute(
       "data-health-repair-sync-gate",
       "post-change",
+    );
+    const firstRepairAction = healthRepairOrder.locator("a,button").first();
+    await expect(firstRepairAction).toHaveText(/Edit relations/);
+    await expect(firstRepairAction).toHaveAttribute(
+      "data-health-repair-primary-action",
+      "builder",
     );
     await page.getByRole("button", { name: "Copy topology health evidence" }).click();
     const copiedHealthEvidence = await page.evaluate(
@@ -198,6 +207,41 @@ test.describe("topology analysis workflow", () => {
     await expect(
       page.getByRole("link", { name: "Edit relations" }),
     ).toBeVisible();
+  });
+
+  test("keeps health repair primary action visible on mobile", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/topology/?mode=health");
+
+    await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
+      timeout: 20_000,
+    });
+    const healthPanel = page.getByTestId("topology-analysis-panel");
+    await expect(healthPanel).toBeVisible();
+    await expect(healthPanel).toHaveAttribute(
+      "data-health-repair-lane-contract",
+      "target-to-builder-to-sync",
+    );
+
+    const healthRepairOrder = page.getByTestId("topology-health-repair-order");
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-health-repair-action-order",
+      "builder-mcp-ontology",
+    );
+    const primaryRepair = healthRepairOrder
+      .locator('a[data-health-repair-primary-action="builder"]')
+      .first();
+    await expect(primaryRepair).toBeVisible();
+    await expect(primaryRepair).toBeInViewport();
+
+    const overflow = await page.evaluate(() => ({
+      x: document.documentElement.scrollWidth - window.innerWidth,
+      y: document.documentElement.scrollHeight - window.innerHeight,
+    }));
+    expect(overflow.x).toBe(0);
+    expect(overflow.y).toBeLessThanOrEqual(160);
   });
 
   test("restores ontology drawer handoff links from selected-node URL state", async ({
