@@ -3570,8 +3570,20 @@ export function validateWebviewVerifyPayload(payload, {
         ) {
           return `WebView Relief health repair action order was ${payload.markers.topologyHealthRepairActionOrder || "missing"}`;
         }
+        if (
+          payload.markers.topologyHealthRepairVisualContract !==
+          "builder-primary-secondary-compact"
+        ) {
+          return `WebView Relief health repair visual contract was ${payload.markers.topologyHealthRepairVisualContract || "missing"}`;
+        }
         if (payload.markers.topologyHealthRepairFirstActionPrimary !== "builder") {
           return `WebView Relief health repair first action was ${payload.markers.topologyHealthRepairFirstActionPrimary || "missing"}`;
+        }
+        if (payload.markers.topologyHealthRepairFirstActionTier !== "primary") {
+          return `WebView Relief health repair first action tier was ${payload.markers.topologyHealthRepairFirstActionTier || "missing"}`;
+        }
+        if (!(Number(payload.markers.topologyHealthRepairFirstActionWidth) >= 96)) {
+          return `WebView Relief health repair first action was too narrow (${payload.markers.topologyHealthRepairFirstActionWidth || "missing"})`;
         }
         if (payload.markers.topologyHealthRepairSyncGate !== "post-change") {
           return `WebView Relief health repair sync gate was ${payload.markers.topologyHealthRepairSyncGate || "missing"}`;

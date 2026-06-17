@@ -2556,6 +2556,10 @@ describe("TopologyAnalysisBar", () => {
       "builder-mcp-ontology",
     );
     expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-health-repair-visual-contract",
+      "builder-primary-secondary-compact",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
       "data-health-repair-primary-action",
       "builder",
     );
@@ -2575,6 +2579,13 @@ describe("TopologyAnalysisBar", () => {
       "data-health-repair-primary-action",
       "builder",
     );
+    expect(primaryRepair).toHaveAttribute(
+      "data-health-repair-action-tier",
+      "primary",
+    );
+    expect(primaryRepair.className).toContain("min-h-9");
+    expect(primaryRepair.className).toContain("justify-center");
+    expect(actionRail.className).toContain("grid-cols-[minmax(0,1fr)_auto]");
     expect(within(actionRail).getAllByRole("link")[0]).toBe(primaryRepair);
     expect(
       within(actionRail).getByRole("button", { name: "Copy health MCP check" }),

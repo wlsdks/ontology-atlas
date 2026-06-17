@@ -144,6 +144,10 @@ test.describe("topology analysis workflow", () => {
       "builder-mcp-ontology",
     );
     await expect(healthRepairOrder).toHaveAttribute(
+      "data-health-repair-visual-contract",
+      "builder-primary-secondary-compact",
+    );
+    await expect(healthRepairOrder).toHaveAttribute(
       "data-health-repair-sync-gate",
       "post-change",
     );
@@ -153,6 +157,12 @@ test.describe("topology analysis workflow", () => {
       "data-health-repair-primary-action",
       "builder",
     );
+    await expect(firstRepairAction).toHaveAttribute(
+      "data-health-repair-action-tier",
+      "primary",
+    );
+    const firstRepairActionBox = await firstRepairAction.boundingBox();
+    expect(firstRepairActionBox?.width ?? 0).toBeGreaterThanOrEqual(96);
     await page.getByRole("button", { name: "Copy topology health evidence" }).click();
     const copiedHealthEvidence = await page.evaluate(
       () =>
@@ -230,11 +240,17 @@ test.describe("topology analysis workflow", () => {
       "data-health-repair-action-order",
       "builder-mcp-ontology",
     );
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-health-repair-visual-contract",
+      "builder-primary-secondary-compact",
+    );
     const primaryRepair = healthRepairOrder
       .locator('a[data-health-repair-primary-action="builder"]')
       .first();
     await expect(primaryRepair).toBeVisible();
     await expect(primaryRepair).toBeInViewport();
+    const primaryRepairBox = await primaryRepair.boundingBox();
+    expect(primaryRepairBox?.width ?? 0).toBeGreaterThanOrEqual(96);
 
     const overflow = await page.evaluate(() => ({
       x: document.documentElement.scrollWidth - window.innerWidth,

@@ -1279,10 +1279,11 @@ export function TopologyAnalysisBar({
                       </span>
                     </div>
                     <div
-                      className="mt-2 flex flex-wrap gap-1"
+                      className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-1.5 min-[430px]:grid-cols-[minmax(0,1fr)_auto_auto]"
                       data-testid="topology-health-repair-order"
                       data-health-repair-order-contract="inspect-repair-sync"
                       data-health-repair-action-order="builder-mcp-ontology"
+                      data-health-repair-visual-contract="builder-primary-secondary-compact"
                       data-health-repair-target-slug={healthAction.slug}
                       data-health-repair-target-kind={healthAction.kind}
                       data-health-repair-primary-action="builder"
@@ -1291,7 +1292,8 @@ export function TopologyAnalysisBar({
                       <Link
                         href={buildTopologyHealthRepairHref(healthAction.slug)}
                         data-health-repair-primary-action="builder"
-                        className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-3)]"
+                        data-health-repair-action-tier="primary"
+                        className="inline-flex min-h-9 min-w-0 items-center justify-center rounded-md border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-3)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
                       >
                         {labels.healthRepair}
                       </Link>
@@ -1304,11 +1306,13 @@ export function TopologyAnalysisBar({
                             : labels.healthMcpCopyAriaLabel
                         }
                         onClick={copyHealthMcpCheck}
+                        className="border border-transparent px-2.5 text-[color:var(--color-text-tertiary)]"
                       />
                       <Link
                         href={buildOntologyNodeHref(healthAction.slug)}
                         data-health-repair-secondary-action="ontology"
-                        className="inline-flex min-h-8 items-center rounded-md px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                        data-health-repair-action-tier="secondary"
+                        className="inline-flex min-h-9 items-center justify-center rounded-md px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                       >
                         {labels.healthOpenOntology}
                       </Link>
