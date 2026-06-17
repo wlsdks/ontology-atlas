@@ -1084,7 +1084,11 @@ export function TopologyAnalysisBar({
                   onClick={copyPathEvidence}
                   data-testid="topology-path-primary-evidence-action"
                   data-path-primary-evidence-contract="visible-before-proof-disclosure"
-                  className="col-span-2 inline-flex min-h-9 min-w-0 items-center justify-between gap-2 rounded-md border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.09)] px-2.5 py-1.5 text-left text-[10.5px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:rgba(139,151,255,0.38)] hover:bg-[color:rgba(139,151,255,0.13)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
+                  data-surface-token="--topology-path-primary-evidence-surface"
+                  data-border-token="--topology-path-primary-evidence-border"
+                  data-hover-surface-token="--topology-path-primary-evidence-hover-surface"
+                  data-hover-border-token="--topology-path-primary-evidence-hover-border"
+                  className="col-span-2 inline-flex min-h-9 min-w-0 items-center justify-between gap-2 rounded-md border border-[color:var(--topology-path-primary-evidence-border)] bg-[color:var(--topology-path-primary-evidence-surface)] px-2.5 py-1.5 text-left text-[10.5px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--topology-path-primary-evidence-hover-border)] hover:bg-[color:var(--topology-path-primary-evidence-hover-surface)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
                   aria-label={
                     pathEvidenceCopied
                       ? labels.pathEvidenceCopiedAriaLabel

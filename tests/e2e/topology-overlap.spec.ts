@@ -1950,6 +1950,14 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "data-path-primary-evidence-contract",
     "visible-before-proof-disclosure",
   );
+  await expect(primaryEvidenceAction).toHaveAttribute(
+    "data-surface-token",
+    "--topology-path-primary-evidence-surface",
+  );
+  await expect(primaryEvidenceAction).toHaveAttribute(
+    "data-hover-surface-token",
+    "--topology-path-primary-evidence-hover-surface",
+  );
   await expect(handoff).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
   const handoffDoesNotOverflow = await handoff.evaluate(
     (el) => el.scrollWidth <= el.clientWidth + 1,
@@ -2031,7 +2039,12 @@ test("Relief Path accepts short from/to shared-link aliases", async ({ page }) =
   await expect(panel).toContainText("Agent Graph Readiness");
   await expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
   await expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
-  await expect(page.getByTestId("topology-path-primary-evidence-action")).toBeVisible();
+  const primaryEvidenceAction = page.getByTestId("topology-path-primary-evidence-action");
+  await expect(primaryEvidenceAction).toBeVisible();
+  await expect(primaryEvidenceAction).toHaveAttribute(
+    "data-border-token",
+    "--topology-path-primary-evidence-border",
+  );
   await expect(page.getByTestId("topology-path-result-banner")).not.toBeVisible();
   await expect(
     page.locator('[data-skeleton-card][data-slug="domain:views"][data-path-role="source"]').first(),

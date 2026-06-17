@@ -2067,6 +2067,22 @@ describe("TopologyAnalysisBar", () => {
       "data-path-primary-evidence-contract",
       "visible-before-proof-disclosure",
     );
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-primary-evidence-surface",
+    );
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-primary-evidence-border",
+    );
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-hover-surface-token",
+      "--topology-path-primary-evidence-hover-surface",
+    );
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-hover-border-token",
+      "--topology-path-primary-evidence-hover-border",
+    );
     expect(
       within(handoff).getByRole("button", { name: "Copy topology path evidence" }),
     ).toBeInTheDocument();

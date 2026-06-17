@@ -214,6 +214,13 @@ names in component data markers and tests whenever a surface depends on
   and target endpoints are selected, the analysis rail must expose the current
   source-to-target route before the proof disclosure so users and agents can
   read the active graph question without opening secondary evidence.
+- `--topology-path-primary-evidence-surface` /
+  `--topology-path-primary-evidence-border` /
+  `--topology-path-primary-evidence-hover-surface` /
+  `--topology-path-primary-evidence-hover-border`: path result primary handoff
+  action. When a source and target are selected, `Copy path evidence` must read
+  as the first actionable proof step inside the agent handoff rail, before MCP
+  and CLI fallback chips and before the secondary proof disclosure.
 - `--topology-minimap-surface` / `--topology-minimap-border` /
   `--topology-minimap-shadow`: right-side minimap support chrome. It is a
   navigation aid, not a selected fact surface, so it stays quieter than node
