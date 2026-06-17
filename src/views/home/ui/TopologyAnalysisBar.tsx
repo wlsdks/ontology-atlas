@@ -1063,6 +1063,14 @@ export function TopologyAnalysisBar({
               data-border-token="--topology-path-handoff-border"
               data-action-min-height-token="--topology-path-handoff-action-min-height"
               data-action-radius-token="--topology-path-handoff-action-radius"
+              data-primary-evidence-visible={
+                pathSourceSlug && pathTargetSlug ? "true" : "false"
+              }
+              data-path-primary-evidence-contract={
+                pathSourceSlug && pathTargetSlug
+                  ? "visible-before-proof-disclosure"
+                  : undefined
+              }
               data-mcp-action="find_path"
               data-cli-fallback="ontology-atlas path"
               className="mt-3 grid min-w-0 grid-cols-2 items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2.5 py-2 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
@@ -1070,6 +1078,27 @@ export function TopologyAnalysisBar({
               <span className="col-span-2 min-w-0 uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {labels.pathHandoffLabel}
               </span>
+              {pathSourceSlug && pathTargetSlug ? (
+                <button
+                  type="button"
+                  onClick={copyPathEvidence}
+                  data-testid="topology-path-primary-evidence-action"
+                  data-path-primary-evidence-contract="visible-before-proof-disclosure"
+                  className="col-span-2 inline-flex min-h-9 min-w-0 items-center justify-between gap-2 rounded-md border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.09)] px-2.5 py-1.5 text-left text-[10.5px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:rgba(139,151,255,0.38)] hover:bg-[color:rgba(139,151,255,0.13)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
+                  aria-label={
+                    pathEvidenceCopied
+                      ? labels.pathEvidenceCopiedAriaLabel
+                      : labels.pathEvidenceCopyAriaLabel
+                  }
+                >
+                  <span className="min-w-0 truncate">{labels.pathEvidenceCopy}</span>
+                  {pathEvidenceCopied ? (
+                    <Check size={12} aria-hidden className="shrink-0" />
+                  ) : (
+                    <Clipboard size={12} aria-hidden className="shrink-0" />
+                  )}
+                </button>
+              ) : null}
               <span className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.075)] px-1.5 py-0.5 text-center uppercase tracking-[0.10em] text-[color:rgba(139,151,255,0.92)]">
                 {labels.pathHandoffMcpAction}
               </span>
@@ -1437,25 +1466,6 @@ export function TopologyAnalysisBar({
                 />
               </ol>
               <div className="mt-2 flex flex-wrap gap-1">
-                <button
-                  type="button"
-                  onClick={copyPathEvidence}
-                  className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
-                  aria-label={
-                    pathEvidenceCopied
-                      ? labels.pathEvidenceCopiedAriaLabel
-                      : labels.pathEvidenceCopyAriaLabel
-                  }
-                >
-                  {pathEvidenceCopied ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                  <span>
-                    {labels.pathEvidenceCopy}
-                  </span>
-                </button>
                 <Link
                   href={buildOntologyNodeHref(pathSourceSlug)}
                   className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"

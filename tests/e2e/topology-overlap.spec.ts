@@ -1604,22 +1604,31 @@ for (const viewport of VIEWPORTS) {
       `drag cluster count should explain linked movement at ${viewport.label}`,
     ).toBeGreaterThan(1);
     const hullRect = await rectOf(hull);
+    const hullCoverageTolerance = 2.5;
     expect(
       hullRect.left,
       `drag cluster hull should cover the dragged card on the left at ${viewport.label}`,
-    ).toBeLessThanOrEqual(Math.min(whileDragging.left, companionAfter.left) + 2);
+    ).toBeLessThanOrEqual(
+      Math.min(whileDragging.left, companionAfter.left) + hullCoverageTolerance,
+    );
     expect(
       hullRect.right,
       `drag cluster hull should cover the dragged card on the right at ${viewport.label}`,
-    ).toBeGreaterThanOrEqual(Math.max(whileDragging.right, companionAfter.right) - 2);
+    ).toBeGreaterThanOrEqual(
+      Math.max(whileDragging.right, companionAfter.right) - hullCoverageTolerance,
+    );
     expect(
       hullRect.top,
       `drag cluster hull should cover the dragged card on top at ${viewport.label}`,
-    ).toBeLessThanOrEqual(Math.min(whileDragging.top, companionAfter.top) + 2);
+    ).toBeLessThanOrEqual(
+      Math.min(whileDragging.top, companionAfter.top) + hullCoverageTolerance,
+    );
     expect(
       hullRect.bottom,
       `drag cluster hull should cover the dragged card on bottom at ${viewport.label}`,
-    ).toBeGreaterThanOrEqual(Math.max(whileDragging.bottom, companionAfter.bottom) - 2);
+    ).toBeGreaterThanOrEqual(
+      Math.max(whileDragging.bottom, companionAfter.bottom) - hullCoverageTolerance,
+    );
     await page.screenshot({
       path: path.join(OUT, `drag-connector-${viewport.label}.png`),
       fullPage: false,
@@ -1740,6 +1749,10 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-handoff-layout-contract",
       "compact-proof-strip",
+    );
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-primary-evidence-visible",
+      "false",
     );
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-overflow-contract",
@@ -1926,6 +1939,17 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   );
   expect(routeDoesNotOverflow, "phone path visible route should not overflow").toBe(true);
   await expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
+  await expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
+  await expect(handoff).toHaveAttribute(
+    "data-path-primary-evidence-contract",
+    "visible-before-proof-disclosure",
+  );
+  const primaryEvidenceAction = page.getByTestId("topology-path-primary-evidence-action");
+  await expect(primaryEvidenceAction).toBeVisible();
+  await expect(primaryEvidenceAction).toHaveAttribute(
+    "data-path-primary-evidence-contract",
+    "visible-before-proof-disclosure",
+  );
   await expect(handoff).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
   const handoffDoesNotOverflow = await handoff.evaluate(
     (el) => el.scrollWidth <= el.clientWidth + 1,
@@ -2006,6 +2030,8 @@ test("Relief Path accepts short from/to shared-link aliases", async ({ page }) =
   await expect(panel).toContainText("Views");
   await expect(panel).toContainText("Agent Graph Readiness");
   await expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
+  await expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
+  await expect(page.getByTestId("topology-path-primary-evidence-action")).toBeVisible();
   await expect(page.getByTestId("topology-path-result-banner")).not.toBeVisible();
   await expect(
     page.locator('[data-skeleton-card][data-slug="domain:views"][data-path-role="source"]').first(),

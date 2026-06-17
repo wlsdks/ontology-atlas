@@ -1418,6 +1418,7 @@ describe("TopologyAnalysisBar", () => {
       "data-action-radius-token",
       "--topology-path-handoff-action-radius",
     );
+    expect(handoff).toHaveAttribute("data-primary-evidence-visible", "false");
     expect(handoff).toHaveAttribute("data-mcp-action", "find_path");
     expect(handoff).toHaveAttribute("data-cli-fallback", "ontology-atlas path");
     expect(handoff).toHaveTextContent("Agent handoff");
@@ -2055,8 +2056,19 @@ describe("TopologyAnalysisBar", () => {
       "href",
       "/ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
     );
+    const handoff = screen.getByTestId("topology-path-agent-handoff");
+    expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
+    expect(handoff).toHaveAttribute(
+      "data-path-primary-evidence-contract",
+      "visible-before-proof-disclosure",
+    );
+    const primaryEvidenceAction = screen.getByTestId("topology-path-primary-evidence-action");
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-path-primary-evidence-contract",
+      "visible-before-proof-disclosure",
+    );
     expect(
-      screen.getByRole("button", { name: "Copy topology path evidence" }),
+      within(handoff).getByRole("button", { name: "Copy topology path evidence" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Copy topology path MCP check" }),
