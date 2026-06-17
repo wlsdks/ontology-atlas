@@ -2159,23 +2159,47 @@ function PathProofStep({
   status: string;
   tone: "ready" | "required" | "after-write";
 }) {
-  const statusClass =
-    tone === "ready"
-      ? "border-[color:rgba(92,214,138,0.28)] bg-[color:rgba(92,214,138,0.08)] text-[color:var(--color-text-secondary)]"
-      : tone === "after-write"
-        ? "border-[color:rgba(212,160,72,0.28)] bg-[color:rgba(212,160,72,0.08)] text-[color:var(--color-text-secondary)]"
-        : "border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] text-[color:var(--color-text-tertiary)]";
+  const statusTokens = {
+    ready: {
+      surface: "--topology-path-proof-ready-surface",
+      border: "--topology-path-proof-ready-border",
+      text: "--topology-path-proof-ready-text",
+    },
+    required: {
+      surface: "--topology-path-proof-required-surface",
+      border: "--topology-path-proof-required-border",
+      text: "--topology-path-proof-required-text",
+    },
+    "after-write": {
+      surface: "--topology-path-proof-after-write-surface",
+      border: "--topology-path-proof-after-write-border",
+      text: "--topology-path-proof-after-write-text",
+    },
+  }[tone];
 
   return (
     <li
       data-path-proof-step={tone}
-      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-2 py-1.5"
+      data-surface-token="--topology-path-proof-step-surface"
+      data-border-token="--topology-path-proof-step-border"
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-[color:var(--topology-path-proof-step-border)] bg-[color:var(--topology-path-proof-step-surface)] px-2 py-1.5"
     >
       <span className="min-w-0 truncate text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
         {label}
       </span>
       <span
-        className={`shrink-0 rounded-full border px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.1em] ${statusClass}`}
+        data-path-proof-status={tone}
+        data-surface-token={statusTokens.surface}
+        data-border-token={statusTokens.border}
+        data-text-token={statusTokens.text}
+        className="shrink-0 rounded-full border border-[color:var(--path-proof-status-border)] bg-[color:var(--path-proof-status-surface)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.1em] text-[color:var(--path-proof-status-text)]"
+        style={
+          {
+            "--path-proof-status-surface": `var(${statusTokens.surface})`,
+            "--path-proof-status-border": `var(${statusTokens.border})`,
+            "--path-proof-status-text": `var(${statusTokens.text})`,
+          } as CSSProperties
+        }
       >
         {status}
       </span>

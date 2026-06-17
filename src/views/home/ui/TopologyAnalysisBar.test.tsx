@@ -2217,12 +2217,28 @@ describe("TopologyAnalysisBar", () => {
     const checklist = screen.getByTestId("topology-path-proof-checklist");
     expect(checklist).toHaveTextContent("Visible path clue");
     expect(checklist).toHaveTextContent("ready");
+    expect(checklist.querySelector('[data-path-proof-step="ready"]')).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-proof-step-surface",
+    );
+    expect(checklist.querySelector('[data-path-proof-status="ready"]')).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-proof-ready-border",
+    );
     expect(checklist).toHaveTextContent("relation_check preflight");
     expect(checklist).toHaveTextContent("explain_relation context");
     expect(checklist).toHaveTextContent("bounded all_paths plan");
     expect(checklist).toHaveTextContent("post-write sync gate");
     expect(screen.getAllByText("required")).toHaveLength(3);
+    expect(checklist.querySelector('[data-path-proof-status="required"]')).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-proof-required-surface",
+    );
     expect(screen.getByText("after write")).toBeInTheDocument();
+    expect(checklist.querySelector('[data-path-proof-status="after-write"]')).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-proof-after-write-text",
+    );
     expect(
       screen.getByRole("button", {
         name: "Copy topology path relation preflight MCP check",

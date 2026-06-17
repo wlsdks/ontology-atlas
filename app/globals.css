@@ -303,6 +303,17 @@
     --topology-path-route-border: rgba(139, 151, 255, 0.14);
     --topology-path-route-chip-surface: rgba(139, 151, 255, 0.07);
     --topology-path-route-chip-border: rgba(139, 151, 255, 0.18);
+    --topology-path-proof-step-surface: rgba(255, 255, 255, 0.018);
+    --topology-path-proof-step-border: rgba(255, 255, 255, 0.07);
+    --topology-path-proof-ready-surface: rgba(92, 214, 138, 0.08);
+    --topology-path-proof-ready-border: rgba(92, 214, 138, 0.28);
+    --topology-path-proof-ready-text: var(--color-text-secondary);
+    --topology-path-proof-required-surface: var(--color-canvas);
+    --topology-path-proof-required-border: var(--color-border-soft);
+    --topology-path-proof-required-text: var(--color-text-tertiary);
+    --topology-path-proof-after-write-surface: rgba(212, 160, 72, 0.08);
+    --topology-path-proof-after-write-border: rgba(212, 160, 72, 0.28);
+    --topology-path-proof-after-write-text: var(--color-text-secondary);
     --topology-path-prompt-half: min(27vw, 340px);
     --topology-path-prompt-panel-width: clamp(460px, 31vw, 560px);
     --topology-path-prompt-left: clamp(
@@ -695,6 +706,17 @@
     --topology-path-route-border: rgba(77, 86, 200, 0.16);
     --topology-path-route-chip-surface: rgba(77, 86, 200, 0.08);
     --topology-path-route-chip-border: rgba(77, 86, 200, 0.18);
+    --topology-path-proof-step-surface: rgba(15, 23, 42, 0.025);
+    --topology-path-proof-step-border: rgba(15, 23, 42, 0.10);
+    --topology-path-proof-ready-surface: rgba(23, 114, 51, 0.08);
+    --topology-path-proof-ready-border: rgba(23, 114, 51, 0.24);
+    --topology-path-proof-ready-text: var(--color-text-secondary);
+    --topology-path-proof-required-surface: rgba(15, 23, 42, 0.035);
+    --topology-path-proof-required-border: rgba(15, 23, 42, 0.10);
+    --topology-path-proof-required-text: var(--color-text-tertiary);
+    --topology-path-proof-after-write-surface: rgba(138, 90, 0, 0.08);
+    --topology-path-proof-after-write-border: rgba(138, 90, 0, 0.24);
+    --topology-path-proof-after-write-text: var(--color-text-secondary);
     --topology-blocking-backdrop-surface: rgba(243, 245, 249, 0.84);
     --topology-blocking-map-filter: saturate(0.48);
     --topology-blocking-composer-surface: rgba(255, 255, 255, 0.99);

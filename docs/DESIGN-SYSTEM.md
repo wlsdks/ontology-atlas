@@ -214,6 +214,19 @@ names in component data markers and tests whenever a surface depends on
   and target endpoints are selected, the analysis rail must expose the current
   source-to-target route before the proof disclosure so users and agents can
   read the active graph question without opening secondary evidence.
+- `--topology-path-proof-step-surface` /
+  `--topology-path-proof-step-border` /
+  `--topology-path-proof-ready-surface` /
+  `--topology-path-proof-ready-border` /
+  `--topology-path-proof-ready-text` /
+  `--topology-path-proof-required-surface` /
+  `--topology-path-proof-required-border` /
+  `--topology-path-proof-required-text` /
+  `--topology-path-proof-after-write-surface` /
+  `--topology-path-proof-after-write-border` /
+  `--topology-path-proof-after-write-text`: path proof checklist rows and
+  status chips. They keep ready / required / after-write evidence readable in
+  the same agent handoff language as the primary path action.
 - `--topology-path-candidate-visibility-surface` /
   `--topology-path-candidate-visibility-border`: path candidate coverage strip.
   It explains how many map cards remain visible after panel-clearance hiding,

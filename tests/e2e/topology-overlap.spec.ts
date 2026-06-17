@@ -2007,6 +2007,15 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "data-hover-surface-token",
     "--topology-path-primary-evidence-hover-surface",
   );
+  await page.getByTestId("topology-path-proof-summary").click();
+  await expect(page.locator('[data-path-proof-status="ready"]')).toHaveAttribute(
+    "data-border-token",
+    "--topology-path-proof-ready-border",
+  );
+  await expect(page.locator('[data-path-proof-status="after-write"]')).toHaveAttribute(
+    "data-text-token",
+    "--topology-path-proof-after-write-text",
+  );
   await expect(handoff).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
   const handoffDoesNotOverflow = await handoff.evaluate(
     (el) => el.scrollWidth <= el.clientWidth + 1,
