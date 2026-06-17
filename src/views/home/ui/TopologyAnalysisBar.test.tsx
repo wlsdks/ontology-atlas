@@ -1429,6 +1429,28 @@ describe("TopologyAnalysisBar", () => {
     expect(handoff).toHaveAttribute("data-primary-evidence-visible", "false");
     expect(handoff).toHaveAttribute("data-mcp-action", "find_path");
     expect(handoff).toHaveAttribute("data-cli-fallback", "ontology-atlas path");
+    const mcpChip = screen.getByTestId("topology-path-handoff-mcp-chip");
+    expect(mcpChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-mcp-surface",
+    );
+    expect(mcpChip).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-handoff-mcp-border",
+    );
+    expect(mcpChip).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-handoff-mcp-text",
+    );
+    const cliChip = screen.getByTestId("topology-path-handoff-cli-chip");
+    expect(cliChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-cli-surface",
+    );
+    expect(cliChip).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-handoff-cli-border",
+    );
     expect(handoff).toHaveTextContent("Agent handoff");
     expect(handoff).toHaveTextContent("MCP find_path");
     expect(handoff).toHaveTextContent("CLI path");

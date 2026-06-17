@@ -1766,6 +1766,14 @@ for (const viewport of VIEWPORTS) {
       "data-action-min-height-token",
       "--topology-path-handoff-action-min-height",
     );
+    await expect(page.getByTestId("topology-path-handoff-mcp-chip")).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-mcp-surface",
+    );
+    await expect(page.getByTestId("topology-path-handoff-cli-chip")).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-handoff-cli-border",
+    );
     const handoffDoesNotOverflow = await page
       .getByTestId("topology-path-agent-handoff")
       .evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
@@ -2049,6 +2057,10 @@ test("Relief Path accepts short from/to shared-link aliases", async ({ page }) =
   await expect(panel).toContainText("Agent Graph Readiness");
   await expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
   await expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
+  await expect(page.getByTestId("topology-path-handoff-mcp-chip")).toHaveAttribute(
+    "data-text-token",
+    "--topology-path-handoff-mcp-text",
+  );
   const primaryEvidenceAction = page.getByTestId("topology-path-primary-evidence-action");
   await expect(primaryEvidenceAction).toBeVisible();
   await expect(primaryEvidenceAction).toHaveAttribute(

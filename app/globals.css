@@ -257,6 +257,11 @@
     --topology-path-primary-evidence-border: rgba(139, 151, 255, 0.24);
     --topology-path-primary-evidence-hover-surface: rgba(139, 151, 255, 0.13);
     --topology-path-primary-evidence-hover-border: rgba(139, 151, 255, 0.38);
+    --topology-path-handoff-mcp-surface: rgba(139, 151, 255, 0.075);
+    --topology-path-handoff-mcp-border: rgba(139, 151, 255, 0.22);
+    --topology-path-handoff-mcp-text: rgba(139, 151, 255, 0.92);
+    --topology-path-handoff-cli-surface: rgba(255, 255, 255, 0.035);
+    --topology-path-handoff-cli-border: rgba(255, 255, 255, 0.10);
     --topology-path-route-surface: rgba(255, 255, 255, 0.024);
     --topology-path-route-border: rgba(139, 151, 255, 0.14);
     --topology-path-route-chip-surface: rgba(139, 151, 255, 0.07);
@@ -607,6 +612,11 @@
     --topology-path-primary-evidence-border: rgba(77, 86, 200, 0.24);
     --topology-path-primary-evidence-hover-surface: rgba(77, 86, 200, 0.12);
     --topology-path-primary-evidence-hover-border: rgba(77, 86, 200, 0.32);
+    --topology-path-handoff-mcp-surface: rgba(77, 86, 200, 0.08);
+    --topology-path-handoff-mcp-border: rgba(77, 86, 200, 0.22);
+    --topology-path-handoff-mcp-text: rgba(40, 50, 175, 0.96);
+    --topology-path-handoff-cli-surface: rgba(15, 23, 42, 0.035);
+    --topology-path-handoff-cli-border: rgba(15, 23, 42, 0.10);
     --topology-path-route-surface: rgba(77, 86, 200, 0.045);
     --topology-path-route-border: rgba(77, 86, 200, 0.16);
     --topology-path-route-chip-surface: rgba(77, 86, 200, 0.08);

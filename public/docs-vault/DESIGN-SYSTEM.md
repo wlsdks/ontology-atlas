@@ -226,6 +226,13 @@ names in component data markers and tests whenever a surface depends on
   action. When a source and target are selected, `Copy path evidence` must read
   as the first actionable proof step inside the agent handoff rail, before MCP
   and CLI fallback chips and before the secondary proof disclosure.
+- `--topology-path-handoff-mcp-surface` /
+  `--topology-path-handoff-mcp-border` /
+  `--topology-path-handoff-mcp-text` /
+  `--topology-path-handoff-cli-surface` /
+  `--topology-path-handoff-cli-border`: path handoff fallback chips. The MCP
+  chip remains the stronger command target, while the CLI fallback stays visible
+  but quieter in the same compact rail.
 - `--topology-minimap-surface` / `--topology-minimap-border` /
   `--topology-minimap-shadow`: right-side minimap support chrome. It is a
   navigation aid, not a selected fact surface, so it stays quieter than node

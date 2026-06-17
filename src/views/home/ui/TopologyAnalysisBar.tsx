@@ -1105,10 +1105,21 @@ export function TopologyAnalysisBar({
                   )}
                 </button>
               ) : null}
-              <span className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.075)] px-1.5 py-0.5 text-center uppercase tracking-[0.10em] text-[color:rgba(139,151,255,0.92)]">
+              <span
+                data-testid="topology-path-handoff-mcp-chip"
+                data-surface-token="--topology-path-handoff-mcp-surface"
+                data-border-token="--topology-path-handoff-mcp-border"
+                data-text-token="--topology-path-handoff-mcp-text"
+                className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-mcp-border)] bg-[color:var(--topology-path-handoff-mcp-surface)] px-1.5 py-0.5 text-center uppercase tracking-[0.10em] text-[color:var(--topology-path-handoff-mcp-text)]"
+              >
                 {labels.pathHandoffMcpAction}
               </span>
-              <span className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.035)] px-1.5 py-0.5 text-center uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
+              <span
+                data-testid="topology-path-handoff-cli-chip"
+                data-surface-token="--topology-path-handoff-cli-surface"
+                data-border-token="--topology-path-handoff-cli-border"
+                className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] px-1.5 py-0.5 text-center uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+              >
                 {labels.pathHandoffCliFallback}
               </span>
             </div>
