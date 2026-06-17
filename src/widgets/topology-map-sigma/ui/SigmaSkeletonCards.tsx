@@ -197,8 +197,7 @@ const RELATION_BADGE_CHAR_WIDTH_PX = 5.8;
 const RELATION_BADGE_PAD_X_PX = 10;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
 const RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX = 18;
-const RELATION_BADGE_QUALITY_CHIP_WIDTH_PX = 64;
-const RELATION_BADGE_FACT_ROUTE_WIDTH_PX = 158;
+const RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX = 32;
 const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 32;
 const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 6;
 const RELATION_LABEL_VIEWPORT_INSET_PX = 16;
@@ -2714,7 +2713,7 @@ export function SigmaSkeletonCards({
                 RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX
               : 0) +
             (labelButton?.dataset.relationLabelAgentGateVisible === 'true'
-              ? RELATION_BADGE_QUALITY_CHIP_WIDTH_PX + RELATION_BADGE_FACT_ROUTE_WIDTH_PX
+              ? RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX
               : 0),
         );
         const usesHtmlBadge = isEgoBadge && labelButton !== null;
@@ -3511,7 +3510,8 @@ export function SigmaSkeletonCards({
           labelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
             RELATION_BADGE_PAD_X_PX +
             RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
-            RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX,
+            RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX +
+            (selected ? RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX : 0),
         );
         return (
           <button
@@ -3536,7 +3536,7 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-evidence={selected ? evidenceState : undefined}
             data-relation-fact-route-gate={selected ? agentGateKind : undefined}
             data-relation-fact-route-action={selected ? primaryCopyAction : undefined}
-            data-relation-label-agent-gate-visible="false"
+            data-relation-label-agent-gate-visible={selected ? 'true' : 'false'}
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             data-label-geometry-source="html-hit-target"
             data-relation-label-card-clearance-token="--topology-relation-label-card-clearance"
@@ -3639,6 +3639,21 @@ export function SigmaSkeletonCards({
                 {evidenceChipText}
               </span>
               {selected ? (
+                <span
+                  data-relation-label-agent-gate={agentGateKind}
+                  data-primary-copy-action={primaryCopyAction}
+                  data-route-chip-text={agentGateText}
+                  data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
+                  data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
+                  data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
+                  className={`ml-0.5 inline-flex h-3.5 min-w-[1.55rem] shrink-0 items-center justify-center rounded-full border px-0.5 text-[7px] font-semibold leading-none tracking-normal ${relationAgentGateChipTone(
+                    agentGateKind,
+                  )}`}
+                >
+                  {agentGateText}
+                </span>
+              ) : null}
+              {selected ? (
                 <>
                 <span
                   data-relation-quality-chip={quality}
@@ -3663,14 +3678,10 @@ export function SigmaSkeletonCards({
                   <span
                     data-route-chip="gate"
                     data-route-chip-text={agentGateText}
-                    data-relation-label-agent-gate={agentGateKind}
                     data-primary-copy-action={primaryCopyAction}
                     data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
                     data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
                     data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
-                    className={`inline-flex h-3 min-w-[1.55rem] items-center justify-center rounded-full border px-0.5 ${relationAgentGateChipTone(
-                      agentGateKind,
-                    )}`}
                   />
                   <span
                     data-route-chip="action"
@@ -3759,6 +3770,20 @@ export function SigmaSkeletonCards({
             </span>
             <span
               aria-hidden="true"
+              data-relation-label-agent-gate={agentGateKind}
+              data-primary-copy-action={primaryCopyAction}
+              data-route-chip-text={agentGateText}
+              data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
+              data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
+              data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
+              className={`ml-0.5 inline-flex h-3.5 min-w-[1.55rem] shrink-0 items-center justify-center rounded-full border px-0.5 text-[7px] font-semibold leading-none tracking-normal ${relationAgentGateChipTone(
+                agentGateKind,
+              )}`}
+            >
+              {agentGateText}
+            </span>
+            <span
+              aria-hidden="true"
               data-relation-quality-chip={quality}
               data-relation-quality-chip-text={relationQualityChipText(quality)}
               className="sr-only"
@@ -3782,14 +3807,10 @@ export function SigmaSkeletonCards({
               <span
                 data-route-chip="gate"
                 data-route-chip-text={agentGateText}
-                data-relation-label-agent-gate={agentGateKind}
                 data-primary-copy-action={primaryCopyAction}
                 data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
                 data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
                 data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
-                className={`inline-flex h-3 min-w-[1.55rem] items-center justify-center rounded-full border px-0.5 ${relationAgentGateChipTone(
-                  agentGateKind,
-                )}`}
               />
               <span
                 data-route-chip="action"

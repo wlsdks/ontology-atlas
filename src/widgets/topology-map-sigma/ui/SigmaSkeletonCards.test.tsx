@@ -1976,7 +1976,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-fact-route-evidence", "source-backed");
     expect(labelHit).toHaveAttribute("data-relation-fact-route-gate", "handoff-ready");
     expect(labelHit).toHaveAttribute("data-relation-fact-route-action", "explain_relation");
-    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "false");
+    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "true");
     expect(labelHit).toHaveAttribute(
       "aria-label",
       "contains relation · strong · 2 sources · MCP/CLI · explain relation",
@@ -1996,7 +1996,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-text-token",
       "--topology-relation-gate-ready-text",
     );
-    expect(gateChip).toHaveTextContent("");
+    expect(gateChip).toHaveTextContent("MCP/CLI");
     expect(labelHit?.querySelector("[data-relation-fact-route-rail]")).toHaveClass("sr-only");
     expect(labelHit?.querySelector('[data-route-chip="fact"]')).toHaveAttribute("data-route-chip-text", "fact");
     expect(labelHit?.querySelector('[data-route-chip="evidence"]')).toHaveAttribute("data-route-chip-text", "src");
@@ -2074,7 +2074,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-text-token",
       "--topology-relation-gate-preflight-text",
     );
-    expect(gateChip).toHaveTextContent("");
+    expect(gateChip).toHaveTextContent("check");
     expect(labelHit?.querySelector("[data-relation-fact-route-rail]")).toHaveClass("sr-only");
     expect(labelHit?.querySelector('[data-route-chip="fact"]')).toHaveAttribute("data-route-chip-text", "fact");
     expect(labelHit?.querySelector('[data-route-chip="evidence"]')).toHaveAttribute("data-route-chip-text", "review");

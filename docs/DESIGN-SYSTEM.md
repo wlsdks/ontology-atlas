@@ -198,7 +198,9 @@ names in component data markers and tests whenever a surface depends on
   `--topology-relation-gate-*-border` /
   `--topology-relation-gate-*-text`: relation label gate chips for MCP/CLI,
   preflight, and review flows. Gate color is agent handoff state, not
-  decorative status color.
+  decorative status color. The gate chip is visible only on the selected map
+  relation label; scan-level labels stay compact with type, quality, and
+  evidence.
 - `--topology-path-endpoint-surface` /
   `--topology-path-endpoint-border` /
   `--topology-path-endpoint-text`: Path mode A/B endpoint badges on map cards.

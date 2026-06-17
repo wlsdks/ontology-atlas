@@ -939,6 +939,20 @@ for (const viewport of VIEWPORTS) {
       "data-relation-fact-route-action",
       /relation_check|explain_relation/,
     );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-agent-gate-visible",
+      "true",
+    );
+    const visibleGateChip = relationButton.locator("[data-relation-label-agent-gate]");
+    await expect(visibleGateChip).toBeVisible();
+    await expect(visibleGateChip).toHaveAttribute(
+      "data-route-chip-text",
+      /MCP\/CLI|check|review/,
+    );
+    await expect(visibleGateChip).toHaveAttribute(
+      "data-surface-token",
+      /--topology-relation-gate-(ready|preflight|review)-surface/,
+    );
     await expect(relationButton.locator('[data-route-chip="fact"]')).toHaveAttribute(
       "data-route-chip-text",
       "fact",
