@@ -3385,7 +3385,13 @@ function SigmaTopologyImpl({
       {/* Audit overlay 범례 — overlay on + non-minimal 에서만. 좌하단 stats 위로
           살짝 겹쳐 놓아 "지금 켜져 있는 해석" 을 명확히 드러낸다. */}
       {!minimal && overlays?.auditHighlight ? (
-        <div className="pointer-events-none absolute bottom-[60px] left-4 z-10 flex flex-col gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 md:left-6 xl:left-8">
+        <div
+          data-testid="topology-audit-legend"
+          data-audit-legend-contract="health-support-bottom-left-clear-of-minimap"
+          data-audit-legend-attention-role="support"
+          data-audit-legend-density="compact"
+          className="topology-ui-scale pointer-events-none absolute bottom-[60px] left-4 z-10 hidden max-w-[18rem] flex-col gap-1 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.90)] px-3 py-2 shadow-[0_10px_28px_rgba(0,0,0,0.26)] min-[1280px]:flex md:left-6 xl:left-8"
+        >
           <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('auditLegendTitle')}
           </span>

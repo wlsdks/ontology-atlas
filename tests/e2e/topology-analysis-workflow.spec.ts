@@ -1,4 +1,28 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+async function rectOf(locator: Locator) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error("missing bounding box");
+  return {
+    left: box.x,
+    top: box.y,
+    right: box.x + box.width,
+    bottom: box.y + box.height,
+  };
+}
+
+function intersects(
+  a: Awaited<ReturnType<typeof rectOf>>,
+  b: Awaited<ReturnType<typeof rectOf>>,
+  pad = 0,
+) {
+  return (
+    a.left < b.right + pad &&
+    a.right > b.left - pad &&
+    a.top < b.bottom + pad &&
+    a.bottom > b.top - pad
+  );
+}
 
 test.describe("topology analysis workflow", () => {
   test("copies overview brief as a first-contact graph handoff", async ({
@@ -134,6 +158,25 @@ test.describe("topology analysis workflow", () => {
       "data-health-repair-target-kind",
       /stale|orphan|promotion/,
     );
+    const auditLegend = page.getByTestId("topology-audit-legend");
+    await expect(auditLegend).toBeVisible();
+    await expect(auditLegend).toHaveAttribute(
+      "data-audit-legend-contract",
+      "health-support-bottom-left-clear-of-minimap",
+    );
+    await expect(auditLegend).toHaveAttribute(
+      "data-audit-legend-attention-role",
+      "support",
+    );
+    await expect(auditLegend).toHaveAttribute("data-audit-legend-density", "compact");
+    const minimap = page.getByTestId("topology-minimap");
+    await expect(minimap).toBeVisible();
+    expect(intersects(await rectOf(auditLegend), await rectOf(healthPanel), 12)).toBe(
+      false,
+    );
+    expect(intersects(await rectOf(auditLegend), await rectOf(minimap), 12)).toBe(
+      false,
+    );
     const healthRepairOrder = page.getByTestId("topology-health-repair-order");
     await expect(healthRepairOrder).toHaveAttribute(
       "data-health-repair-primary-action",
@@ -234,6 +277,7 @@ test.describe("topology analysis workflow", () => {
       "data-health-repair-lane-contract",
       "target-to-builder-to-sync",
     );
+    await expect(page.getByTestId("topology-audit-legend")).toBeHidden();
 
     const healthRepairOrder = page.getByTestId("topology-health-repair-order");
     await expect(healthRepairOrder).toHaveAttribute(

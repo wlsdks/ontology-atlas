@@ -1865,6 +1865,21 @@ pub fn run() {
                                   topologyKindLegendRect.width > 0 &&
                                   topologyKindLegendRect.height > 0
                                 );
+                              const topologyAuditLegend = document.querySelector('[data-testid="topology-audit-legend"]');
+                              const topologyAuditLegendStyle = topologyAuditLegend
+                                ? getComputedStyle(topologyAuditLegend)
+                                : null;
+                              const topologyAuditLegendRect = topologyAuditLegend?.getBoundingClientRect();
+                              const topologyAuditLegendVisible =
+                                Boolean(
+                                  topologyAuditLegendRect &&
+                                  topologyAuditLegendStyle &&
+                                  topologyAuditLegendStyle.display !== "none" &&
+                                  topologyAuditLegendStyle.visibility !== "hidden" &&
+                                  Number(topologyAuditLegendStyle.opacity || "1") > 0.01 &&
+                                  topologyAuditLegendRect.width > 0 &&
+                                  topologyAuditLegendRect.height > 0
+                                );
                               const topologyMinimapViewport =
                                 topologyMinimap?.querySelector('[data-testid="topology-minimap-viewport"]');
                               const topologyMinimapViewportRect =
@@ -1880,6 +1895,27 @@ pub fn run() {
                                   Number(topologyMinimapStyle.opacity || "1") > 0.01 &&
                                   topologyMinimapRect.width > 0 &&
                                   topologyMinimapRect.height > 0
+                                );
+                              const topologyAuditLegendOverlapsAnalysisPanel =
+                                Boolean(
+                                  topologyAuditLegendVisible &&
+                                  topologyAnalysisPanelRect &&
+                                  topologyAuditLegendRect &&
+                                  topologyAnalysisPanelRect.left < topologyAuditLegendRect.right + 12 &&
+                                  topologyAnalysisPanelRect.right > topologyAuditLegendRect.left - 12 &&
+                                  topologyAnalysisPanelRect.top < topologyAuditLegendRect.bottom + 12 &&
+                                  topologyAnalysisPanelRect.bottom > topologyAuditLegendRect.top - 12
+                                );
+                              const topologyAuditLegendOverlapsMinimap =
+                                Boolean(
+                                  topologyAuditLegendVisible &&
+                                  topologyMinimapVisible &&
+                                  topologyMinimapRect &&
+                                  topologyAuditLegendRect &&
+                                  topologyMinimapRect.left < topologyAuditLegendRect.right + 12 &&
+                                  topologyMinimapRect.right > topologyAuditLegendRect.left - 12 &&
+                                  topologyMinimapRect.top < topologyAuditLegendRect.bottom + 12 &&
+                                  topologyMinimapRect.bottom > topologyAuditLegendRect.top - 12
                                 );
                               const topologyNodePopoverRelationRow =
                                 topologyNodePopover?.querySelector("[data-relation-row]");
@@ -2677,6 +2713,19 @@ pub fn run() {
                                   topologyKindLegendState:
                                     sigmaViewport?.getAttribute("data-kind-legend-state") || "",
                                   topologyKindLegendVisible,
+                                  topologyAuditLegendVisible,
+                                  topologyAuditLegendContract:
+                                    topologyAuditLegend?.getAttribute("data-audit-legend-contract") || "",
+                                  topologyAuditLegendAttentionRole:
+                                    topologyAuditLegend?.getAttribute("data-audit-legend-attention-role") || "",
+                                  topologyAuditLegendDensity:
+                                    topologyAuditLegend?.getAttribute("data-audit-legend-density") || "",
+                                  topologyAuditLegendWidth:
+                                    topologyAuditLegendRect?.width || 0,
+                                  topologyAuditLegendHeight:
+                                    topologyAuditLegendRect?.height || 0,
+                                  topologyAuditLegendOverlapsAnalysisPanel,
+                                  topologyAuditLegendOverlapsMinimap,
                                   topologyTopWorkspaceLabel:
                                     topologyTopWorkspaceButton?.textContent?.trim() || "",
                                   topologyTopRelayoutLabel:

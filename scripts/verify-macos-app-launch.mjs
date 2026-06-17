@@ -3588,6 +3588,27 @@ export function validateWebviewVerifyPayload(payload, {
         if (payload.markers.topologyHealthRepairSyncGate !== "post-change") {
           return `WebView Relief health repair sync gate was ${payload.markers.topologyHealthRepairSyncGate || "missing"}`;
         }
+        if (payload.markers.topologyAuditLegendVisible !== true) {
+          return "WebView Relief health audit legend was not visible as support chrome";
+        }
+        if (
+          payload.markers.topologyAuditLegendContract !==
+          "health-support-bottom-left-clear-of-minimap"
+        ) {
+          return `WebView Relief health audit legend contract was ${payload.markers.topologyAuditLegendContract || "missing"}`;
+        }
+        if (payload.markers.topologyAuditLegendAttentionRole !== "support") {
+          return `WebView Relief health audit legend attention role was ${payload.markers.topologyAuditLegendAttentionRole || "missing"}`;
+        }
+        if (payload.markers.topologyAuditLegendDensity !== "compact") {
+          return `WebView Relief health audit legend density was ${payload.markers.topologyAuditLegendDensity || "missing"}`;
+        }
+        if (
+          payload.markers.topologyAuditLegendOverlapsAnalysisPanel === true ||
+          payload.markers.topologyAuditLegendOverlapsMinimap === true
+        ) {
+          return "WebView Relief health audit legend overlapped the analysis panel or minimap";
+        }
       }
       if (payload.markers.topologyCreateNodeOpen !== true && usesOverviewWidth) {
         if (payload.markers.topologyAnalysisPanelWidthPolicy !== "overview-support") {
