@@ -192,6 +192,11 @@ names in component data markers and tests whenever a surface depends on
   `--topology-relation-gate-*-text`: relation label gate chips for MCP/CLI,
   preflight, and review flows. Gate color is agent handoff state, not
   decorative status color.
+- `--topology-path-endpoint-surface` /
+  `--topology-path-endpoint-border` /
+  `--topology-path-endpoint-text`: Path mode A/B endpoint badges on map cards.
+  They mark source and target anchors for path verification, so they must stay
+  token-backed on both desktop and compact WebView layouts.
 - `--topology-relation-evidence-chip-surface` /
   `--topology-relation-evidence-chip-border` /
   `--topology-relation-evidence-chip-text`: compact evidence glyph inside a

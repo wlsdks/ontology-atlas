@@ -2704,6 +2704,18 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-path-card-badge-contract",
         "endpoint-role-token",
       );
+      expect(sourceBadge).toHaveAttribute(
+        "data-surface-token",
+        "--topology-path-endpoint-surface",
+      );
+      expect(sourceBadge).toHaveAttribute(
+        "data-border-token",
+        "--topology-path-endpoint-border",
+      );
+      expect(sourceBadge).toHaveAttribute(
+        "data-text-token",
+        "--topology-path-endpoint-text",
+      );
 
       fireEvent.click(targetCard);
       expect(onPathSelectionChange).toHaveBeenLastCalledWith({

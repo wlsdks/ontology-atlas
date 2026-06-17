@@ -4164,7 +4164,10 @@ export function SigmaSkeletonCards({
                 data-path-card-badge={pathRole}
                 data-path-card-badge-label={pathBadgeLabel}
                 data-path-card-badge-contract="endpoint-role-token"
-                className="relative ml-0.5 inline-flex h-[1.35em] min-w-[1.35em] shrink-0 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.16)] px-[0.28em] font-mono text-[0.66em] leading-none text-[color:var(--color-indigo-accent)]"
+                data-surface-token="--topology-path-endpoint-surface"
+                data-border-token="--topology-path-endpoint-border"
+                data-text-token="--topology-path-endpoint-text"
+                className="relative ml-0.5 inline-flex h-[1.35em] min-w-[1.35em] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-path-endpoint-border)] bg-[color:var(--topology-path-endpoint-surface)] px-[0.28em] font-mono text-[0.66em] leading-none text-[color:var(--topology-path-endpoint-text)]"
               >
                 {pathBadgeLabel}
               </span>

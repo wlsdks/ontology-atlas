@@ -1858,6 +1858,10 @@ test("Relief selected Path route keeps path guidance primary on 14-inch fullscre
   await expect(sourceCard).toHaveAttribute("data-path-next-action", "pick-target");
   await expect(sourceCard).toHaveAttribute("data-path-anchor", "source");
   await expect(sourceCard.locator('[data-path-card-badge="source"]')).toHaveText("A");
+  await expect(sourceCard.locator('[data-path-card-badge="source"]')).toHaveAttribute(
+    "data-surface-token",
+    "--topology-path-endpoint-surface",
+  );
 
   const panelRect = await rectOf(panel);
   expect(
@@ -1908,6 +1912,14 @@ test("Relief Path result keeps both endpoint cards visible in the installed app 
   await expect(targetCard).toHaveAttribute("data-slug", /topology-analysis-modes$/);
   await expect(sourceCard.locator('[data-path-card-badge="source"]')).toHaveText("A");
   await expect(targetCard.locator('[data-path-card-badge="target"]')).toHaveText("B");
+  await expect(sourceCard.locator('[data-path-card-badge="source"]')).toHaveAttribute(
+    "data-border-token",
+    "--topology-path-endpoint-border",
+  );
+  await expect(targetCard.locator('[data-path-card-badge="target"]')).toHaveAttribute(
+    "data-text-token",
+    "--topology-path-endpoint-text",
+  );
   expect(
     cardPairsThatIntersect(await visibleCardRects(page)),
     "Path result endpoint cards must not overlap other visible Relief cards",
