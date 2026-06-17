@@ -447,6 +447,9 @@
     --topology-node-popover-action-hover-border: rgba(139, 151, 255, 0.44);
     --topology-node-popover-action-icon-surface: rgba(139, 151, 255, 0.1);
     --topology-node-popover-action-icon-border: rgba(139, 151, 255, 0.3);
+    --topology-node-popover-action-focus-ring: rgba(94, 106, 210, 0.50);
+    --topology-node-popover-context-surface: rgba(94, 106, 210, 0.07);
+    --topology-node-popover-context-border: rgba(94, 106, 210, 0.22);
     --topology-motion-focus-duration: 180ms;
     --topology-motion-panel-duration: 180ms;
     --topology-motion-camera-duration: 420ms;
@@ -785,6 +788,9 @@
     --topology-node-popover-action-hover-border: rgba(77, 86, 200, 0.42);
     --topology-node-popover-action-icon-surface: rgba(77, 86, 200, 0.10);
     --topology-node-popover-action-icon-border: rgba(77, 86, 200, 0.28);
+    --topology-node-popover-action-focus-ring: rgba(77, 86, 200, 0.46);
+    --topology-node-popover-context-surface: rgba(77, 86, 200, 0.07);
+    --topology-node-popover-context-border: rgba(77, 86, 200, 0.20);
     --topology-analysis-mode-rail-surface: var(--color-overlay-1);
     --topology-analysis-mode-active-surface: var(--color-overlay-2);
     --topology-analysis-mode-hover-surface: var(--color-overlay-2);

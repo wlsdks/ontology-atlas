@@ -291,7 +291,8 @@ export function TopologyNodePopover({
             data-agent-handoff-action="copy-focus-brief"
             data-popover-action-surface-token="--topology-node-popover-action-icon-surface"
             data-popover-action-border-token="--topology-node-popover-action-icon-border"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--topology-node-popover-action-icon-border)] bg-[color:var(--topology-node-popover-action-icon-surface)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.50)]"
+            data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--topology-node-popover-action-icon-border)] bg-[color:var(--topology-node-popover-action-icon-surface)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
           >
             <Clipboard size={14} aria-hidden />
           </button>
@@ -483,7 +484,9 @@ export function TopologyNodePopover({
             data-map-context-quality-summary={expandedRelationQualitySummary}
             data-map-context-agent-readiness-summary={expandedAgentReadinessSummary}
             data-phone-density-contract="defer-map-context-before-readable-row"
-            className="mb-1 rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.07)] px-2 py-1 text-[10px] leading-4 text-[color:var(--color-text-tertiary)] max-[540px]:hidden"
+            data-map-context-surface-token="--topology-node-popover-context-surface"
+            data-map-context-border-token="--topology-node-popover-context-border"
+            className="mb-1 rounded-md border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-2 py-1 text-[10px] leading-4 text-[color:var(--color-text-tertiary)] max-[540px]:hidden"
           >
             {labels.expandedNote.replace("{count}", String(expandedCount))}
           </p>
@@ -752,7 +755,8 @@ export function TopologyNodePopover({
                   data-agent-handoff-action={action.kind}
                   data-popover-action-surface-token="--topology-node-popover-action-surface"
                   data-popover-action-border-token="--topology-node-popover-action-border"
-                  className="min-w-0 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-border)] bg-[color:var(--topology-node-popover-action-surface)] px-1.5 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.50)]"
+                  data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
+                  className="min-w-0 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-border)] bg-[color:var(--topology-node-popover-action-surface)] px-1.5 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
                 >
                   <span className="block truncate">{action.label}</span>
                 </button>

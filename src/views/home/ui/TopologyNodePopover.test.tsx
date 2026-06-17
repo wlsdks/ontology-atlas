@@ -391,6 +391,12 @@ describe("TopologyNodePopover", () => {
       "data-popover-action-surface-token",
       "--topology-node-popover-action-surface",
     );
+    expect(
+      screen.getByRole("button", { name: "지형도 선택 개념 검토 브리프 복사" }),
+    ).toHaveAttribute(
+      "data-popover-action-focus-ring-token",
+      "--topology-node-popover-action-focus-ring",
+    );
     expect(footer.compareDocumentPosition(rail) & Node.DOCUMENT_POSITION_CONTAINED_BY).toBeTruthy();
     expect(rail.closest('[data-testid="topology-connections-section"]')).toBeNull();
 
@@ -527,7 +533,17 @@ describe("TopologyNodePopover", () => {
     expect(note).toHaveTextContent(
       "1개 직접 연결은 지도에 펼쳐져 있어요. 지도 보기를 누르면 겹침 없이 확인할 수 있어요.",
     );
-    expect(note.className).toContain("border-[color:rgba(94,106,210,0.22)]");
+    expect(note).toHaveAttribute(
+      "data-map-context-surface-token",
+      "--topology-node-popover-context-surface",
+    );
+    expect(note).toHaveAttribute(
+      "data-map-context-border-token",
+      "--topology-node-popover-context-border",
+    );
+    expect(note.className).toContain(
+      "border-[color:var(--topology-node-popover-context-border)]",
+    );
     // 펼쳐지지 않은 관계는 그대로.
     expect(screen.getByText("AI Agent Partner")).toBeInTheDocument();
   });
@@ -1008,6 +1024,10 @@ describe("TopologyNodePopover", () => {
     expect(action).toHaveAttribute(
       "data-popover-action-border-token",
       "--topology-node-popover-action-icon-border",
+    );
+    expect(action).toHaveAttribute(
+      "data-popover-action-focus-ring-token",
+      "--topology-node-popover-action-focus-ring",
     );
     fireEvent.click(action);
     expect(copyBrief).toHaveBeenCalledTimes(1);

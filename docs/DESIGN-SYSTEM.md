@@ -195,6 +195,13 @@ names in component data markers and tests whenever a surface depends on
 - `--topology-node-popover-relation-section-min-height`: selected node
   inspector section budget that keeps the relation lenses, the first full row,
   and the fixed footer from competing for the same vertical layer.
+- `--topology-node-popover-action-focus-ring` /
+  `--topology-node-popover-context-surface` /
+  `--topology-node-popover-context-border`: selected node inspector support
+  rail accents. Compact MCP/CLI actions, footer actions, and map-visible
+  relation summaries must use node-popover tokens so the support rail stays
+  visually related to the active focus state without becoming another primary
+  relation inspector.
 - `--topology-bottom-tab-surface` / `--topology-bottom-tab-border`: mobile
   topology navigation surface. It must be opaque enough that map cards and
   relation labels cannot bleed through tab icons or labels.
