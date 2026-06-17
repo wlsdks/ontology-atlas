@@ -259,6 +259,10 @@ names in component data markers and tests whenever a surface depends on
   chip, the first scan target in a relation row. It must stay token-backed and
   expose `data-fact-type-*-token` markers so the typed fact reads as the start
   of the handoff grammar before quality, evidence, gate, and payload.
+- `--topology-node-popover-endpoint-*`: selected node inspector endpoint route
+  (`source > target`) text. This is the visible from/to proof for MCP/CLI
+  payloads, so it must expose `data-endpoint-*-token` markers and remain tied
+  to the relation row instead of generic helper text.
 - `--topology-node-popover-evidence-*`: selected node inspector relation
   evidence glyphs (`source`, `authored`, `review`). These sit between relation
   quality and agent gate in the scan row, so they must expose

@@ -703,20 +703,23 @@ export function TopologyNodePopover({
                       <span
                         aria-hidden="true"
                         data-relation-endpoint-route-label
-                        className="mt-0.5 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] text-[color:var(--color-text-quaternary)]"
+                        data-endpoint-route-text-token="--topology-node-popover-endpoint-text"
+                        data-endpoint-chip-text-token="--topology-node-popover-endpoint-chip-text"
+                        data-endpoint-separator-token="--topology-node-popover-endpoint-separator"
+                        className="mt-0.5 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] text-[color:var(--topology-node-popover-endpoint-text)]"
                       >
                         <span
                           data-relation-endpoint-chip="source"
-                          className="min-w-0 truncate"
+                          className="min-w-0 truncate text-[color:var(--topology-node-popover-endpoint-chip-text)]"
                         >
                           {relationSourceId}
                         </span>
-                        <span className="shrink-0 font-mono text-[color:var(--color-text-disabled)]">
+                        <span className="shrink-0 font-mono text-[color:var(--topology-node-popover-endpoint-separator)]">
                           &gt;
                         </span>
                         <span
                           data-relation-endpoint-chip="target"
-                          className="min-w-0 truncate"
+                          className="min-w-0 truncate text-[color:var(--topology-node-popover-endpoint-chip-text)]"
                         >
                           {relationTargetId}
                         </span>

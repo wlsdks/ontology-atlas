@@ -571,6 +571,9 @@
     --topology-node-popover-fact-type-surface: rgba(139, 151, 255, 0.075);
     --topology-node-popover-fact-type-border: rgba(139, 151, 255, 0.24);
     --topology-node-popover-fact-type-text: rgba(222, 225, 255, 0.88);
+    --topology-node-popover-endpoint-text: rgba(222, 225, 255, 0.62);
+    --topology-node-popover-endpoint-chip-text: rgba(222, 225, 255, 0.72);
+    --topology-node-popover-endpoint-separator: rgba(139, 151, 255, 0.32);
     --topology-node-popover-evidence-source-surface: rgba(139, 151, 255, 0.10);
     --topology-node-popover-evidence-source-border: rgba(139, 151, 255, 0.26);
     --topology-node-popover-evidence-source-text: rgba(222, 225, 255, 0.94);
@@ -1050,6 +1053,9 @@
     --topology-node-popover-fact-type-surface: rgba(77, 86, 200, 0.065);
     --topology-node-popover-fact-type-border: rgba(77, 86, 200, 0.18);
     --topology-node-popover-fact-type-text: rgba(40, 50, 175, 0.92);
+    --topology-node-popover-endpoint-text: rgba(40, 50, 175, 0.58);
+    --topology-node-popover-endpoint-chip-text: rgba(40, 50, 175, 0.68);
+    --topology-node-popover-endpoint-separator: rgba(77, 86, 200, 0.28);
     --topology-node-popover-evidence-source-surface: rgba(77, 86, 200, 0.08);
     --topology-node-popover-evidence-source-border: rgba(77, 86, 200, 0.22);
     --topology-node-popover-evidence-source-text: rgba(40, 50, 175, 0.96);

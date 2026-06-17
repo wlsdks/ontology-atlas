@@ -2738,6 +2738,21 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-evidence-text-token",
     /--topology-node-popover-evidence-(source|authored|review)-text/,
   );
+  const firstEndpointRoute = firstRelationRow
+    .locator("[data-relation-endpoint-route-label]")
+    .first();
+  await expect(firstEndpointRoute).toHaveAttribute(
+    "data-endpoint-route-text-token",
+    "--topology-node-popover-endpoint-text",
+  );
+  await expect(firstEndpointRoute).toHaveAttribute(
+    "data-endpoint-chip-text-token",
+    "--topology-node-popover-endpoint-chip-text",
+  );
+  await expect(firstEndpointRoute).toHaveAttribute(
+    "data-endpoint-separator-token",
+    "--topology-node-popover-endpoint-separator",
+  );
   await expect(
     firstRelationRow.locator("[data-relation-row-agent-gate]").first(),
   ).toHaveAttribute(

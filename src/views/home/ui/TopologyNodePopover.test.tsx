@@ -835,6 +835,15 @@ describe("TopologyNodePopover", () => {
     setup();
 
     const relationRows = document.querySelectorAll("[data-relation-row]");
+    const outgoingEndpointRoute = relationRows[0].querySelector(
+      "[data-relation-endpoint-route-label]",
+    );
+    const outgoingSourceChip = relationRows[0].querySelector(
+      '[data-relation-endpoint-chip="source"]',
+    );
+    const outgoingTargetChip = relationRows[0].querySelector(
+      '[data-relation-endpoint-chip="target"]',
+    );
     expect(relationRows[0]).toHaveAttribute(
       "data-relation-endpoint-route",
       "capabilities/mcp-server>elements/mcp-sdk",
@@ -844,12 +853,29 @@ describe("TopologyNodePopover", () => {
       "capabilities/mcp-server",
     );
     expect(relationRows[0]).toHaveAttribute("data-relation-target-id", "elements/mcp-sdk");
-    expect(
-      relationRows[0].querySelector('[data-relation-endpoint-chip="source"]'),
-    ).toHaveTextContent("capabilities/mcp-server");
-    expect(
-      relationRows[0].querySelector('[data-relation-endpoint-chip="target"]'),
-    ).toHaveTextContent("elements/mcp-sdk");
+    expect(outgoingEndpointRoute).toHaveAttribute(
+      "data-endpoint-route-text-token",
+      "--topology-node-popover-endpoint-text",
+    );
+    expect(outgoingEndpointRoute).toHaveAttribute(
+      "data-endpoint-chip-text-token",
+      "--topology-node-popover-endpoint-chip-text",
+    );
+    expect(outgoingEndpointRoute).toHaveAttribute(
+      "data-endpoint-separator-token",
+      "--topology-node-popover-endpoint-separator",
+    );
+    expect(outgoingEndpointRoute?.className).toContain(
+      "text-[color:var(--topology-node-popover-endpoint-text)]",
+    );
+    expect(outgoingSourceChip).toHaveTextContent("capabilities/mcp-server");
+    expect(outgoingSourceChip?.className).toContain(
+      "text-[color:var(--topology-node-popover-endpoint-chip-text)]",
+    );
+    expect(outgoingTargetChip).toHaveTextContent("elements/mcp-sdk");
+    expect(outgoingTargetChip?.className).toContain(
+      "text-[color:var(--topology-node-popover-endpoint-chip-text)]",
+    );
 
     expect(relationRows[1]).toHaveAttribute(
       "data-relation-endpoint-route",
