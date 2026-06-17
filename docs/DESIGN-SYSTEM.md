@@ -251,10 +251,14 @@ names in component data markers and tests whenever a surface depends on
   under primary navigation.
 - `--topology-analysis-mode-rail-surface` /
   `--topology-analysis-mode-active-surface` /
-  `--topology-analysis-mode-hover-surface`: Relief analysis mode rail. The
-  Overview/Focus/Path/Health tabs stay icon-only and tooltip-labeled, but their
-  active/hover feedback must be token-backed so mode switching reads consistently
-  across compact and desktop support panels.
+  `--topology-analysis-mode-active-border` /
+  `--topology-analysis-mode-active-text` /
+  `--topology-analysis-mode-idle-text` /
+  `--topology-analysis-mode-hover-surface` /
+  `--topology-analysis-mode-focus-ring`: Relief analysis mode rail. The
+  Overview/Focus/Path/Health tabs stay icon-only and tooltip-labeled, while
+  active, idle, hover, and keyboard focus states remain token-backed so mode
+  switching reads consistently across compact and desktop support panels.
 - `--topology-utility-lane-surface` / `--topology-utility-lane-border` /
   `--topology-utility-lane-shadow`: top utility chrome for search, auto
   arrange, docs, create, and review actions. These controls are support layer,

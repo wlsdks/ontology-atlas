@@ -341,7 +341,11 @@
     --topology-drawer-relation-chip-max-width: 8.5rem;
     --topology-analysis-mode-rail-surface: var(--color-overlay-1);
     --topology-analysis-mode-active-surface: var(--color-overlay-2);
+    --topology-analysis-mode-active-border: rgba(139, 151, 255, 0.24);
+    --topology-analysis-mode-active-text: var(--color-text-primary);
+    --topology-analysis-mode-idle-text: var(--color-text-tertiary);
     --topology-analysis-mode-hover-surface: var(--color-overlay-2);
+    --topology-analysis-mode-focus-ring: rgba(139, 151, 255, 0.42);
     --topology-command-spine-padding: clamp(10px, 0.72vw, 12px);
     --topology-command-spine-gap: clamp(8px, 0.64vw, 10px);
     --topology-command-spine-radius: 12px;
@@ -1004,7 +1008,11 @@
     --topology-node-popover-route-separator: rgba(77, 86, 200, 0.28);
     --topology-analysis-mode-rail-surface: var(--color-overlay-1);
     --topology-analysis-mode-active-surface: var(--color-overlay-2);
+    --topology-analysis-mode-active-border: rgba(77, 86, 200, 0.18);
+    --topology-analysis-mode-active-text: var(--color-text-primary);
+    --topology-analysis-mode-idle-text: var(--color-text-tertiary);
     --topology-analysis-mode-hover-surface: var(--color-overlay-2);
+    --topology-analysis-mode-focus-ring: rgba(77, 86, 200, 0.34);
 
     /* 라이트 전용 — 카드 elevation. 다크에선 토큰 대비만으로 충분하지만
        라이트는 panel(#fff) 위 panel(#fff) 가 잦아 subtle drop shadow 로

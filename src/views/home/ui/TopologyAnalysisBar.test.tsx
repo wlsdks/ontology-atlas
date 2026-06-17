@@ -588,6 +588,22 @@ describe("TopologyAnalysisBar", () => {
       "data-active-surface-token",
       "--topology-analysis-mode-active-surface",
     );
+    expect(modeRail).toHaveAttribute(
+      "data-active-border-token",
+      "--topology-analysis-mode-active-border",
+    );
+    expect(modeRail).toHaveAttribute(
+      "data-active-text-token",
+      "--topology-analysis-mode-active-text",
+    );
+    expect(modeRail).toHaveAttribute(
+      "data-idle-text-token",
+      "--topology-analysis-mode-idle-text",
+    );
+    expect(modeRail).toHaveAttribute(
+      "data-focus-ring-token",
+      "--topology-analysis-mode-focus-ring",
+    );
     expect(screen.getByRole("button", { name: "Overview" }).className).toContain("h-9");
     expect(screen.getByRole("button", { name: "Focus" }).className).toContain("h-9");
     expect(screen.getByRole("button", { name: "Path" }).className).toContain("h-9");
@@ -596,9 +612,25 @@ describe("TopologyAnalysisBar", () => {
       "data-mode-tab-state",
       "active",
     );
+    expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute(
+      "data-active-border-token",
+      "--topology-analysis-mode-active-border",
+    );
+    expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute(
+      "data-text-token",
+      "--topology-analysis-mode-active-text",
+    );
+    expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute(
+      "data-focus-ring-token",
+      "--topology-analysis-mode-focus-ring",
+    );
     expect(screen.getByRole("button", { name: "Path" })).toHaveAttribute(
       "data-hover-surface-token",
       "--topology-analysis-mode-hover-surface",
+    );
+    expect(screen.getByRole("button", { name: "Path" })).toHaveAttribute(
+      "data-text-token",
+      "--topology-analysis-mode-idle-text",
     );
   });
 
@@ -631,6 +663,10 @@ describe("TopologyAnalysisBar", () => {
       expect(tab.textContent).toBe("");
       expect(tab).toHaveAttribute("aria-label", name);
       expect(tab).toHaveAttribute("data-analysis-mode-tab");
+      expect(tab).toHaveAttribute(
+        "data-focus-ring-token",
+        "--topology-analysis-mode-focus-ring",
+      );
     }
   });
 

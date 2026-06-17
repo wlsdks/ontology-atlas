@@ -704,9 +704,37 @@ test.describe("topology analysis workflow", () => {
       "data-active-surface-token",
       "--topology-analysis-mode-active-surface",
     );
+    await expect(modeRail).toHaveAttribute(
+      "data-active-border-token",
+      "--topology-analysis-mode-active-border",
+    );
+    await expect(modeRail).toHaveAttribute(
+      "data-active-text-token",
+      "--topology-analysis-mode-active-text",
+    );
+    await expect(modeRail).toHaveAttribute(
+      "data-idle-text-token",
+      "--topology-analysis-mode-idle-text",
+    );
+    await expect(modeRail).toHaveAttribute(
+      "data-focus-ring-token",
+      "--topology-analysis-mode-focus-ring",
+    );
     await expect(page.locator('button[data-analysis-mode-tab="path"]')).toHaveAttribute(
       "data-mode-tab-state",
       "active",
+    );
+    await expect(page.locator('button[data-analysis-mode-tab="path"]')).toHaveAttribute(
+      "data-active-border-token",
+      "--topology-analysis-mode-active-border",
+    );
+    await expect(page.locator('button[data-analysis-mode-tab="path"]')).toHaveAttribute(
+      "data-text-token",
+      "--topology-analysis-mode-active-text",
+    );
+    await expect(page.locator('button[data-analysis-mode-tab="overview"]')).toHaveAttribute(
+      "data-text-token",
+      "--topology-analysis-mode-idle-text",
     );
     await expect(page.getByText(/^Showing the link from/)).toBeVisible();
     const pathProofSummary = page.getByTestId("topology-path-proof-summary");

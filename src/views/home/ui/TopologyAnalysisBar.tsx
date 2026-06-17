@@ -962,7 +962,11 @@ export function TopologyAnalysisBar({
           data-mode-rail-contract="four-icon-tabs-tooltip-labels"
           data-surface-token="--topology-analysis-mode-rail-surface"
           data-active-surface-token="--topology-analysis-mode-active-surface"
+          data-active-border-token="--topology-analysis-mode-active-border"
+          data-active-text-token="--topology-analysis-mode-active-text"
+          data-idle-text-token="--topology-analysis-mode-idle-text"
           data-hover-surface-token="--topology-analysis-mode-hover-surface"
+          data-focus-ring-token="--topology-analysis-mode-focus-ring"
         >
           {MODES.map(({ value, icon: Icon, labelKey }) => {
             const active = value === panelMode;
@@ -980,11 +984,20 @@ export function TopologyAnalysisBar({
                   data-active-surface-token={
                     active ? "--topology-analysis-mode-active-surface" : undefined
                   }
-                  data-hover-surface-token="--topology-analysis-mode-hover-surface"
-                  className={`inline-flex h-9 w-full items-center justify-center rounded-md px-2 transition-colors ${
+                  data-active-border-token={
+                    active ? "--topology-analysis-mode-active-border" : undefined
+                  }
+                  data-text-token={
                     active
-                      ? "bg-[color:var(--topology-analysis-mode-active-surface)] text-[color:var(--color-text-primary)]"
-                      : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--topology-analysis-mode-hover-surface)] hover:text-[color:var(--color-text-primary)]"
+                      ? "--topology-analysis-mode-active-text"
+                      : "--topology-analysis-mode-idle-text"
+                  }
+                  data-hover-surface-token="--topology-analysis-mode-hover-surface"
+                  data-focus-ring-token="--topology-analysis-mode-focus-ring"
+                  className={`inline-flex h-9 w-full items-center justify-center rounded-md border px-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-analysis-mode-focus-ring)] ${
+                    active
+                      ? "border-[color:var(--topology-analysis-mode-active-border)] bg-[color:var(--topology-analysis-mode-active-surface)] text-[color:var(--topology-analysis-mode-active-text)]"
+                      : "border-transparent text-[color:var(--topology-analysis-mode-idle-text)] hover:bg-[color:var(--topology-analysis-mode-hover-surface)] hover:text-[color:var(--topology-analysis-mode-active-text)]"
                   }`}
                 >
                   <Icon size={15} aria-hidden />
