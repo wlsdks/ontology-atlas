@@ -4029,7 +4029,14 @@ export function SigmaSkeletonCards({
             />
             <span className="relative min-w-0 truncate">{card.title}</span>
             {card.count !== undefined ? (
-              <span className="relative shrink-0 font-mono text-[0.72em] text-[color:var(--color-text-tertiary)]">
+              <span
+                data-skeleton-card-count
+                data-count-chip-contract="tokenized-node-scale-signal"
+                data-surface-token="--topology-card-count-surface"
+                data-border-token="--topology-card-count-border"
+                data-text-token="--topology-card-count-text"
+                className="relative ml-0.5 inline-flex h-[1.42em] min-w-[1.65em] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-card-count-border)] bg-[color:var(--topology-card-count-surface)] px-[0.42em] font-mono text-[0.68em] leading-none text-[color:var(--topology-card-count-text)]"
+              >
                 {card.count}
               </span>
             ) : null}

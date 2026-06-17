@@ -75,7 +75,20 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(screen.getByText("Atlas")).toBeInTheDocument();
     expect(screen.getByText("Views")).toBeInTheDocument();
-    expect(screen.getByText("59")).toBeInTheDocument();
+    const countChip = screen.getByText("59");
+    expect(countChip).toBeInTheDocument();
+    expect(countChip).toHaveAttribute(
+      "data-count-chip-contract",
+      "tokenized-node-scale-signal",
+    );
+    expect(countChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-card-count-surface",
+    );
+    expect(countChip).toHaveAttribute(
+      "data-border-token",
+      "--topology-card-count-border",
+    );
     const domainCard = screen.getByText("Views").closest("[data-skeleton-card]");
     expect(domainCard).toHaveStyle({
       transform: "translate(-50%, -50%) translate3d(120px, 60px, 0)",

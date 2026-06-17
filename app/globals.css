@@ -142,6 +142,9 @@
     --topology-card-selected-wash: rgba(139, 151, 255, 0.12);
     --topology-card-selected-shadow: rgba(24, 28, 60, 0.62);
     --topology-card-shadow: rgba(0, 0, 0, 0.4);
+    --topology-card-count-surface: rgba(255, 255, 255, 0.045);
+    --topology-card-count-border: rgba(255, 255, 255, 0.085);
+    --topology-card-count-text: var(--color-text-secondary);
     --topology-health-repair-card-wash: rgba(139, 151, 255, 0.13);
     --topology-health-repair-card-border: rgba(139, 151, 255, 0.42);
     --topology-health-repair-card-border-strong: rgba(139, 151, 255, 0.58);
@@ -582,6 +585,9 @@
     --topology-card-selected-wash: rgba(94, 106, 210, 0.10);
     --topology-card-selected-shadow: rgba(15, 23, 42, 0.18);
     --topology-card-shadow: rgba(15, 23, 42, 0.12);
+    --topology-card-count-surface: rgba(15, 23, 42, 0.045);
+    --topology-card-count-border: rgba(15, 23, 42, 0.10);
+    --topology-card-count-text: var(--color-text-secondary);
     --topology-health-repair-card-wash: rgba(94, 106, 210, 0.08);
     --topology-health-repair-card-border: rgba(94, 106, 210, 0.36);
     --topology-health-repair-card-border-strong: rgba(94, 106, 210, 0.48);

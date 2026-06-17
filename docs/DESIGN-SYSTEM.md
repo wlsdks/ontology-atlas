@@ -574,6 +574,11 @@ details-on-demand* — not the inverse (everything-at-once + fullscreen-on-click
   anchors near the node and lists the connected nodes (each a click target for
   an incremental ego walk). The large `NodeDetailPanel` becomes an opt-in
   `전체 상세 →` drill, not the click default.
+- **Card count chips are topology marks.** `--topology-card-count-surface` /
+  `--topology-card-count-border` / `--topology-card-count-text` make each
+  visible skeleton card's count read as node scale, not incidental metadata.
+  Keep the chip compact and token-backed so card width remains stable while
+  important anchors expose why they matter on the map.
 - **Default view is an overview, not the full graph.** Show `project` + `domain`
   + hub nodes at level 0; reveal a domain's members on demand (semantic zoom).
   Never drop the full 2–3k-node hairball on the user uninvited.
