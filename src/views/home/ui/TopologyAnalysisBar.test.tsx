@@ -1231,6 +1231,14 @@ describe("TopologyAnalysisBar", () => {
       "flat-no-nested-cards",
     );
     expect(relationQuality).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-quality-surface",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-quality-border",
+    );
+    expect(relationQuality).toHaveAttribute(
       "aria-label",
       expect.stringContaining("Relation quality: strong 384"),
     );
@@ -1240,6 +1248,12 @@ describe("TopologyAnalysisBar", () => {
     expect(
       within(relationQuality).getByTestId("topology-overview-relation-quality-strong"),
     ).toHaveAttribute("data-proof-cell-contract", "flat-divider-cell");
+    expect(
+      within(relationQuality).getByTestId("topology-overview-relation-quality-strong"),
+    ).toHaveAttribute("data-text-token", "--topology-overview-proof-strong-text");
+    expect(
+      within(relationQuality).getByTestId("topology-overview-relation-quality-weak"),
+    ).toHaveAttribute("data-divider-token", "--topology-overview-proof-cell-divider");
     expect(
       within(relationQuality).getByTestId("topology-overview-relation-quality-weak"),
     ).toHaveTextContent("114");
@@ -1593,6 +1607,14 @@ describe("TopologyAnalysisBar", () => {
 	    const readinessGate = screen.getByTestId("topology-overview-agent-readiness");
 	    expect(readinessGate).toHaveTextContent("Agent readiness");
 	    expect(readinessGate).toHaveAttribute(
+	      "data-surface-token",
+	      "--topology-overview-readiness-surface",
+	    );
+	    expect(readinessGate).toHaveAttribute(
+	      "data-border-token",
+	      "--topology-overview-readiness-border",
+	    );
+	    expect(readinessGate).toHaveAttribute(
 	      "data-agent-readiness-summary",
 	      "handoff-ready 82 · preflight 4 · review 2",
 	    );
@@ -1605,9 +1627,15 @@ describe("TopologyAnalysisBar", () => {
 	    expect(
 	      readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
 	    ).toHaveAttribute("data-proof-cell-contract", "flat-divider-cell");
+	    expect(
+	      readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
+	    ).toHaveAttribute("data-text-token", "--topology-overview-proof-supported-text");
     expect(
       readinessGate.querySelector('[data-agent-readiness-chip="preflight"]'),
     ).toHaveTextContent("4");
+    expect(
+      readinessGate.querySelector('[data-agent-readiness-chip="preflight"]'),
+    ).toHaveAttribute("data-text-token", "--topology-overview-proof-warning-text");
     expect(
       readinessGate.querySelector('[data-agent-readiness-chip="review"]'),
     ).toHaveTextContent("2");
@@ -1616,12 +1644,29 @@ describe("TopologyAnalysisBar", () => {
       "aria-label",
       "Agent readiness: handoff-ready 82 · preflight 4 · review 2",
     );
+    expect(readinessMeter).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-readiness-meter-surface",
+    );
+    expect(readinessMeter).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-readiness-meter-border",
+    );
     expect(
       readinessMeter.querySelector('[data-agent-readiness-segment="ready"]'),
     ).toHaveAttribute("data-count", "82");
     expect(
+      readinessMeter.querySelector('[data-agent-readiness-segment="ready"]'),
+    ).toHaveAttribute("data-meter-token", "--topology-overview-readiness-ready-meter");
+    expect(
       readinessMeter.querySelector('[data-agent-readiness-segment="preflight"]'),
     ).toHaveAttribute("data-count", "4");
+    expect(
+      readinessMeter.querySelector('[data-agent-readiness-segment="preflight"]'),
+    ).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-readiness-preflight-meter",
+    );
     expect(
       readinessMeter.querySelector('[data-agent-readiness-segment="review"]'),
     ).toHaveAttribute("data-count", "2");

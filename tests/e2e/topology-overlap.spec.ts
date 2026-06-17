@@ -768,6 +768,13 @@ for (const viewport of VIEWPORTS) {
       "aria-label",
       /Agent readiness|Agent 준비도/i,
     );
+    await expect(page.getByTestId("topology-overview-agent-readiness-meter")).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-readiness-meter-border",
+    );
+    await expect(
+      page.locator('[data-agent-readiness-segment="ready"]'),
+    ).toHaveAttribute("data-meter-token", "--topology-overview-readiness-ready-meter");
     const selectableCard = page
       .locator('[data-skeleton-card]:not([data-surface-hidden="true"])', {
         hasText: "AI Agent Partner",

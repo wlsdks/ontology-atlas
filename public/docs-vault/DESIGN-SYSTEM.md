@@ -247,6 +247,25 @@ names in component data markers and tests whenever a surface depends on
   The graph brief remains the primary action; reanalysis and sync checks stay
   quieter inside the disclosure while sharing the same responsive token
   contract.
+- `--topology-overview-quality-surface` /
+  `--topology-overview-quality-border` /
+  `--topology-overview-readiness-surface` /
+  `--topology-overview-readiness-border`: overview proof cards for relation
+  quality and agent readiness. They are scan facts, not nested cards, and must
+  keep the first-read stack visually flat.
+- `--topology-overview-proof-cell-divider` /
+  `--topology-overview-proof-strong-text` /
+  `--topology-overview-proof-supported-text` /
+  `--topology-overview-proof-warning-text` /
+  `--topology-overview-proof-review-text`: shared proof-cell divider and
+  semantic text tones used by relation quality and readiness chips.
+- `--topology-overview-readiness-meter-surface` /
+  `--topology-overview-readiness-meter-border` /
+  `--topology-overview-readiness-ready-meter` /
+  `--topology-overview-readiness-preflight-meter` /
+  `--topology-overview-readiness-review-meter`: readiness meter track and
+  segment fills. These tokens keep the handoff-ready/preflight/review balance
+  mode-aware without hard-coded gradient exceptions in the component.
 - `--topology-minimap-surface` / `--topology-minimap-border` /
   `--topology-minimap-shadow`: right-side minimap support chrome. It is a
   navigation aid, not a selected fact surface, so it stays quieter than node

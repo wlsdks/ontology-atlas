@@ -1855,10 +1855,12 @@ function AgentReadinessGate({
 }) {
   return (
     <div
-      className="grid gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)] px-3 py-1.5"
+      className="grid gap-1.5 rounded-md border border-[color:var(--topology-overview-readiness-border)] bg-[color:var(--topology-overview-readiness-surface)] px-3 py-1.5"
       aria-label={`${title}: ${summary}`}
       data-agent-readiness-summary={summary}
       data-overview-signal-card="readiness"
+      data-surface-token="--topology-overview-readiness-surface"
+      data-border-token="--topology-overview-readiness-border"
       data-testid="topology-overview-agent-readiness"
     >
       <div className="flex min-w-0 items-center">
@@ -1922,20 +1924,25 @@ function RelationQualityGate({
   return (
     <div
       {...attrs}
-      className={`grid gap-1.5 rounded-md border border-[color:rgba(94,234,212,0.18)] bg-[color:rgba(94,234,212,0.032)] px-3 py-1.5 ${
+      className={`grid gap-1.5 rounded-md border border-[color:var(--topology-overview-quality-border)] bg-[color:var(--topology-overview-quality-surface)] px-3 py-1.5 ${
         attrs.className ?? ""
       }`}
       aria-label={`${title}: ${summary}`}
       data-density="scan-facts"
       data-proof-strip-contract="flat-no-nested-cards"
       data-overview-signal-card="quality"
+      data-surface-token="--topology-overview-quality-surface"
+      data-border-token="--topology-overview-quality-border"
       data-testid="topology-overview-relation-quality"
     >
       <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {title}
       </span>
       <span className="sr-only">{summary}</span>
-      <div className="grid grid-cols-4 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.055)]">
+      <div
+        className="grid grid-cols-4 overflow-hidden rounded-md border border-[color:var(--topology-overview-proof-cell-divider)]"
+        data-divider-token="--topology-overview-proof-cell-divider"
+      >
         <RelationQualityChip count={counts.strong} label={labels.strong} tone="strong" />
         <RelationQualityChip count={counts.supported} label={labels.supported} tone="supported" />
         <RelationQualityChip count={counts.weak} label={labels.weak} tone="weak" />
@@ -1956,18 +1963,28 @@ function RelationQualityChip({
 }) {
   const toneClass =
     tone === "strong"
-      ? "text-[color:rgba(94,234,212,0.92)]"
+      ? "text-[color:var(--topology-overview-proof-strong-text)]"
       : tone === "supported"
-        ? "text-[color:rgba(139,151,255,0.92)]"
+        ? "text-[color:var(--topology-overview-proof-supported-text)]"
         : tone === "weak"
-          ? "text-[color:rgba(217,161,65,0.92)]"
-          : "text-[color:rgba(226,105,105,0.92)]";
+          ? "text-[color:var(--topology-overview-proof-warning-text)]"
+          : "text-[color:var(--topology-overview-proof-review-text)]";
+  const textToken =
+    tone === "strong"
+      ? "--topology-overview-proof-strong-text"
+      : tone === "supported"
+        ? "--topology-overview-proof-supported-text"
+        : tone === "weak"
+          ? "--topology-overview-proof-warning-text"
+          : "--topology-overview-proof-review-text";
 
   return (
     <span
-      className="grid min-w-0 gap-0.5 border-r border-[color:rgba(255,255,255,0.055)] px-1.5 py-1 last:border-r-0"
+      className="grid min-w-0 gap-0.5 border-r border-[color:var(--topology-overview-proof-cell-divider)] px-1.5 py-1 last:border-r-0"
       data-relation-quality-chip={tone}
       data-proof-cell-contract="flat-divider-cell"
+      data-divider-token="--topology-overview-proof-cell-divider"
+      data-text-token={textToken}
       data-testid={`topology-overview-relation-quality-${tone}`}
     >
       <span className={`font-mono text-[11px] leading-3 ${toneClass}`}>
@@ -1991,16 +2008,24 @@ function AgentReadinessChip({
 }) {
   const toneClass =
     tone === "ready"
-      ? "text-[color:rgba(139,151,255,0.92)]"
+      ? "text-[color:var(--topology-overview-proof-supported-text)]"
       : tone === "preflight"
-        ? "text-[color:rgba(217,161,65,0.92)]"
-        : "text-[color:rgba(226,105,105,0.92)]";
+        ? "text-[color:var(--topology-overview-proof-warning-text)]"
+        : "text-[color:var(--topology-overview-proof-review-text)]";
+  const textToken =
+    tone === "ready"
+      ? "--topology-overview-proof-supported-text"
+      : tone === "preflight"
+        ? "--topology-overview-proof-warning-text"
+        : "--topology-overview-proof-review-text";
 
   return (
     <span
-      className="grid min-w-0 gap-0.5 border-r border-[color:rgba(255,255,255,0.055)] px-1.5 py-0.5 last:border-r-0"
+      className="grid min-w-0 gap-0.5 border-r border-[color:var(--topology-overview-proof-cell-divider)] px-1.5 py-0.5 last:border-r-0"
       data-agent-readiness-chip={tone}
       data-proof-cell-contract="flat-divider-cell"
+      data-divider-token="--topology-overview-proof-cell-divider"
+      data-text-token={textToken}
     >
       <span className={`font-mono text-[11px] leading-3 ${toneClass}`}>
         {count}
@@ -2028,19 +2053,17 @@ function AgentReadinessMeter({
     {
       key: "ready",
       count: counts.ready,
-      className:
-        "bg-[linear-gradient(90deg,rgba(139,151,255,0.86),rgba(72,184,203,0.78))]",
+      token: "--topology-overview-readiness-ready-meter",
     },
     {
       key: "preflight",
       count: counts.preflight,
-      className: "bg-[color:rgba(217,161,65,0.72)]",
+      token: "--topology-overview-readiness-preflight-meter",
     },
     {
       key: "review",
       count: counts.review,
-      className:
-        "bg-[repeating-linear-gradient(90deg,rgba(226,105,105,0.78)_0_4px,rgba(226,105,105,0.30)_4px_7px)]",
+      token: "--topology-overview-readiness-review-meter",
     },
   ] as const;
 
@@ -2048,7 +2071,9 @@ function AgentReadinessMeter({
     <div
       aria-label={label}
       data-testid="topology-overview-agent-readiness-meter"
-      className="flex h-2 w-full overflow-hidden rounded-full border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.045)]"
+      data-surface-token="--topology-overview-readiness-meter-surface"
+      data-border-token="--topology-overview-readiness-meter-border"
+      className="flex h-2 w-full overflow-hidden rounded-full border border-[color:var(--topology-overview-readiness-meter-border)] bg-[color:var(--topology-overview-readiness-meter-surface)]"
     >
       {segments.map((segment) => (
         <span
@@ -2056,8 +2081,11 @@ function AgentReadinessMeter({
           aria-hidden
           data-agent-readiness-segment={segment.key}
           data-count={segment.count}
-          className={segment.className}
-          style={{ flexGrow: total > 0 ? segment.count : 1 }}
+          data-meter-token={segment.token}
+          style={{
+            background: `var(${segment.token})`,
+            flexGrow: total > 0 ? segment.count : 1,
+          }}
         />
       ))}
     </div>

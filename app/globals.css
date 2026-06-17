@@ -256,6 +256,28 @@
     --topology-overview-handoff-primary-border: rgba(139, 151, 255, 0.22);
     --topology-overview-handoff-secondary-surface: rgba(255, 255, 255, 0.025);
     --topology-overview-handoff-secondary-border: rgba(255, 255, 255, 0.055);
+    --topology-overview-quality-surface: rgba(94, 234, 212, 0.032);
+    --topology-overview-quality-border: rgba(94, 234, 212, 0.18);
+    --topology-overview-proof-cell-divider: rgba(255, 255, 255, 0.055);
+    --topology-overview-proof-strong-text: rgba(94, 234, 212, 0.92);
+    --topology-overview-proof-supported-text: rgba(139, 151, 255, 0.92);
+    --topology-overview-proof-warning-text: rgba(217, 161, 65, 0.92);
+    --topology-overview-proof-review-text: rgba(226, 105, 105, 0.92);
+    --topology-overview-readiness-surface: rgba(139, 151, 255, 0.065);
+    --topology-overview-readiness-border: rgba(139, 151, 255, 0.24);
+    --topology-overview-readiness-meter-surface: rgba(255, 255, 255, 0.045);
+    --topology-overview-readiness-meter-border: rgba(255, 255, 255, 0.08);
+    --topology-overview-readiness-ready-meter: linear-gradient(
+      90deg,
+      rgba(139, 151, 255, 0.86),
+      rgba(72, 184, 203, 0.78)
+    );
+    --topology-overview-readiness-preflight-meter: rgba(217, 161, 65, 0.72);
+    --topology-overview-readiness-review-meter: repeating-linear-gradient(
+      90deg,
+      rgba(226, 105, 105, 0.78) 0 4px,
+      rgba(226, 105, 105, 0.30) 4px 7px
+    );
     --topology-path-handoff-surface: rgba(139, 151, 255, 0.045);
     --topology-path-handoff-border: rgba(139, 151, 255, 0.16);
     --topology-path-handoff-action-min-height: 24px;
@@ -583,6 +605,28 @@
     --topology-overview-handoff-primary-border: rgba(77, 86, 200, 0.22);
     --topology-overview-handoff-secondary-surface: rgba(15, 23, 42, 0.035);
     --topology-overview-handoff-secondary-border: rgba(15, 23, 42, 0.10);
+    --topology-overview-quality-surface: rgba(20, 148, 128, 0.055);
+    --topology-overview-quality-border: rgba(20, 148, 128, 0.22);
+    --topology-overview-proof-cell-divider: rgba(15, 23, 42, 0.10);
+    --topology-overview-proof-strong-text: rgba(18, 122, 106, 0.96);
+    --topology-overview-proof-supported-text: rgba(40, 50, 175, 0.96);
+    --topology-overview-proof-warning-text: rgba(138, 90, 0, 0.96);
+    --topology-overview-proof-review-text: rgba(192, 53, 58, 0.96);
+    --topology-overview-readiness-surface: rgba(77, 86, 200, 0.08);
+    --topology-overview-readiness-border: rgba(77, 86, 200, 0.24);
+    --topology-overview-readiness-meter-surface: rgba(15, 23, 42, 0.045);
+    --topology-overview-readiness-meter-border: rgba(15, 23, 42, 0.10);
+    --topology-overview-readiness-ready-meter: linear-gradient(
+      90deg,
+      rgba(77, 86, 200, 0.82),
+      rgba(20, 148, 128, 0.72)
+    );
+    --topology-overview-readiness-preflight-meter: rgba(138, 90, 0, 0.68);
+    --topology-overview-readiness-review-meter: repeating-linear-gradient(
+      90deg,
+      rgba(192, 53, 58, 0.72) 0 4px,
+      rgba(192, 53, 58, 0.28) 4px 7px
+    );
     --topology-selected-relation-card-surface: rgba(255, 255, 255, 0.94);
     --topology-selected-relation-card-border: rgba(77, 86, 200, 0.24);
     --topology-selected-relation-card-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
