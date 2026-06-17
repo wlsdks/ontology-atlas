@@ -251,6 +251,10 @@ names in component data markers and tests whenever a surface depends on
   inside the selected node inspector. Use these for fact/evidence/gate/action
   chips so row-level MCP/CLI payloads scan as structured proof, not loose
   monospace helper text.
+- `--topology-node-popover-direction-*`: selected node inspector relation-row
+  direction marker. It encodes incoming/outgoing orientation before the typed
+  fact chip, so it must expose `data-direction-*-token` markers and stay tied
+  to the row hover state instead of generic icon chrome.
 - `--topology-node-popover-fact-type-*`: selected node inspector relation type
   chip, the first scan target in a relation row. It must stay token-backed and
   expose `data-fact-type-*-token` markers so the typed fact reads as the start

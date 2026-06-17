@@ -616,7 +616,14 @@ export function TopologyNodePopover({
                     onClick={() => onSelectConnection(connection.id)}
                     className="group flex min-h-[72px] w-full min-w-0 items-stretch gap-2 overflow-hidden border border-transparent bg-transparent px-2 py-2 text-left transition-[background-color] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)]"
                   >
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-secondary)]">
+                    <span
+                      data-relation-direction-marker={connection.direction}
+                      data-direction-surface-token="--topology-node-popover-direction-surface"
+                      data-direction-border-token="--topology-node-popover-direction-border"
+                      data-direction-text-token="--topology-node-popover-direction-text"
+                      data-direction-hover-text-token="--topology-node-popover-direction-hover-text"
+                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-node-popover-direction-border)] bg-[color:var(--topology-node-popover-direction-surface)] text-[color:var(--topology-node-popover-direction-text)] group-hover:text-[color:var(--topology-node-popover-direction-hover-text)]"
+                    >
                       {connection.direction === "outgoing" ? (
                         <ArrowUpRight size={12} aria-hidden />
                       ) : (

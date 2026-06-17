@@ -2698,6 +2698,18 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-row-hover-surface-token",
     "--topology-node-popover-relation-row-hover-surface",
   );
+  await expect(
+    firstRelationRow.locator("[data-relation-direction-marker]").first(),
+  ).toHaveAttribute(
+    "data-direction-surface-token",
+    "--topology-node-popover-direction-surface",
+  );
+  await expect(
+    firstRelationRow.locator("[data-relation-direction-marker]").first(),
+  ).toHaveAttribute(
+    "data-direction-hover-text-token",
+    "--topology-node-popover-direction-hover-text",
+  );
   await expect(firstRelationRow.locator("[data-relation-type-label]").first()).toHaveAttribute(
     "data-fact-type-surface-token",
     "--topology-node-popover-fact-type-surface",

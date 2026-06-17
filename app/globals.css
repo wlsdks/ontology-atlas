@@ -564,6 +564,10 @@
     --topology-node-popover-relation-list-border: rgba(255, 255, 255, 0.055);
     --topology-node-popover-relation-row-divider: rgba(255, 255, 255, 0.055);
     --topology-node-popover-relation-row-hover-surface: rgba(255, 255, 255, 0.04);
+    --topology-node-popover-direction-surface: rgba(255, 255, 255, 0.035);
+    --topology-node-popover-direction-border: rgba(139, 151, 255, 0.18);
+    --topology-node-popover-direction-text: rgba(222, 225, 255, 0.76);
+    --topology-node-popover-direction-hover-text: rgba(222, 225, 255, 0.94);
     --topology-node-popover-fact-type-surface: rgba(139, 151, 255, 0.075);
     --topology-node-popover-fact-type-border: rgba(139, 151, 255, 0.24);
     --topology-node-popover-fact-type-text: rgba(222, 225, 255, 0.88);
@@ -1039,6 +1043,10 @@
     --topology-node-popover-relation-list-border: rgba(15, 23, 42, 0.08);
     --topology-node-popover-relation-row-divider: rgba(15, 23, 42, 0.08);
     --topology-node-popover-relation-row-hover-surface: rgba(77, 86, 200, 0.055);
+    --topology-node-popover-direction-surface: rgba(77, 86, 200, 0.045);
+    --topology-node-popover-direction-border: rgba(77, 86, 200, 0.16);
+    --topology-node-popover-direction-text: rgba(40, 50, 175, 0.72);
+    --topology-node-popover-direction-hover-text: rgba(40, 50, 175, 0.94);
     --topology-node-popover-fact-type-surface: rgba(77, 86, 200, 0.065);
     --topology-node-popover-fact-type-border: rgba(77, 86, 200, 0.18);
     --topology-node-popover-fact-type-text: rgba(40, 50, 175, 0.92);
