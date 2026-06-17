@@ -156,6 +156,13 @@ names in component data markers and tests whenever a surface depends on
   next-action rail. The primary MCP action must read first, with payload and
   CLI fallback evidence inside the same rail instead of floating as separate
   proof fragments.
+- `--topology-selected-relation-accent-text` /
+  `--topology-selected-relation-accent-muted` /
+  `--topology-selected-relation-focus-ring` /
+  `--topology-selected-relation-copy-primary-shadow`: selected relation
+  inspector action accent system. The title, relation direction, recommended
+  action label, payload label, focus rings, and primary copy elevation must use
+  one token-backed accent language instead of scattered RGBA values.
 - `--topology-selected-relation-route-step-min-width`: selected relation
   fact/evidence/gate/action step minimum width; prevents cramped ontology
   proof cells inside the compact inspector.

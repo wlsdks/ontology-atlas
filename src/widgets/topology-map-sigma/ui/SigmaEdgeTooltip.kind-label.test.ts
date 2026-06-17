@@ -295,6 +295,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-next-action-surface-token',
       '--topology-selected-relation-next-action-surface',
     );
+    expect(nextAction).toHaveAttribute(
+      'data-next-action-accent-text-token',
+      '--topology-selected-relation-accent-text',
+    );
     expect(nextAction).toContainElement(primary);
     expect(nextAction).toContainElement(secondary);
 
@@ -313,6 +317,18 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(payload).toHaveAttribute(
       'data-copy-payload-call',
       'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
+    );
+    expect(payload).toHaveAttribute(
+      'data-copy-payload-accent-muted-token',
+      '--topology-selected-relation-accent-muted',
+    );
+    expect(primary).toHaveAttribute(
+      'data-focus-ring-token',
+      '--topology-selected-relation-focus-ring',
+    );
+    expect(primary).toHaveAttribute(
+      'data-primary-shadow-token',
+      '--topology-selected-relation-copy-primary-shadow',
     );
     const payloadSummary = payload.querySelector('[data-copy-payload-summary]');
     expect(payloadSummary).toHaveAttribute(
@@ -426,6 +442,22 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(selectedCard).toHaveAttribute(
       'data-shadow-token',
       '--topology-selected-relation-card-shadow',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-accent-text-token',
+      '--topology-selected-relation-accent-text',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-accent-muted-token',
+      '--topology-selected-relation-accent-muted',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-focus-ring-token',
+      '--topology-selected-relation-focus-ring',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-copy-primary-shadow-token',
+      '--topology-selected-relation-copy-primary-shadow',
     );
     expect(selectedCard).toHaveAttribute(
       'data-typography-contract',

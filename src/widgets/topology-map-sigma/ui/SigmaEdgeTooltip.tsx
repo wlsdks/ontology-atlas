@@ -452,6 +452,10 @@ export function SigmaSelectedEdgeCard({
       data-surface-token="--topology-selected-relation-card-surface"
       data-border-token="--topology-selected-relation-card-border"
       data-shadow-token="--topology-selected-relation-card-shadow"
+      data-accent-text-token="--topology-selected-relation-accent-text"
+      data-accent-muted-token="--topology-selected-relation-accent-muted"
+      data-focus-ring-token="--topology-selected-relation-focus-ring"
+      data-copy-primary-shadow-token="--topology-selected-relation-copy-primary-shadow"
       data-typography-contract="legible-compact-relation-inspector"
       data-kicker-font-size-token="--topology-selected-relation-kicker-font-size"
       data-chip-font-size-token="--topology-selected-relation-chip-font-size"
@@ -466,7 +470,7 @@ export function SigmaSelectedEdgeCard({
     >
       <div className="flex min-w-0 items-start gap-2">
         <div className="min-w-0 flex-1">
-          <div className="font-mono text-[length:var(--topology-selected-relation-kicker-font-size)] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.92)]">
+          <div className="font-mono text-[length:var(--topology-selected-relation-kicker-font-size)] uppercase tracking-[0.14em] text-[color:var(--topology-selected-relation-accent-text)]">
             {t('selectedTitle')}
           </div>
           <div
@@ -486,7 +490,7 @@ export function SigmaSelectedEdgeCard({
           </div>
           <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[11px] font-semibold leading-3.5">
             <span className="truncate">{data.sourceName}</span>
-            <span className="shrink-0 text-[color:rgba(139,151,255,0.82)]">→</span>
+            <span className="shrink-0 text-[color:var(--topology-selected-relation-accent-muted)]">→</span>
             <span className="truncate">{data.targetName}</span>
           </div>
           <div
@@ -523,7 +527,7 @@ export function SigmaSelectedEdgeCard({
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded-md p-0.5 text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+          className="shrink-0 rounded-md p-0.5 text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-selected-relation-focus-ring)]"
           aria-label={t('closeSelectedAriaLabel')}
         >
           <X size={14} />
@@ -605,10 +609,11 @@ export function SigmaSelectedEdgeCard({
         data-next-action={primaryCopyAction}
         data-next-action-surface-token="--topology-selected-relation-next-action-surface"
         data-next-action-border-token="--topology-selected-relation-next-action-border"
+        data-next-action-accent-text-token="--topology-selected-relation-accent-text"
         className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-next-action-border)] bg-[color:var(--topology-selected-relation-next-action-surface)] p-1"
       >
         <div className="mb-1 flex min-w-0 items-center justify-between gap-2">
-          <div className="min-w-0 truncate font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.12em] text-[color:rgba(139,151,255,0.92)]">
+          <div className="min-w-0 truncate font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.12em] text-[color:var(--topology-selected-relation-accent-text)]">
             {t('primaryCopyBadge')}
           </div>
           <div className="shrink-0 font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
@@ -655,10 +660,11 @@ export function SigmaSelectedEdgeCard({
           data-cli-fallback-command={cliFallbackCommand}
           data-copy-payload-call={primaryCopyPayloadCall}
           data-min-height-token="--topology-selected-relation-copy-payload-min-height"
+          data-copy-payload-accent-muted-token="--topology-selected-relation-accent-muted"
           data-overflow-contract="no-horizontal-scroll"
           className="mt-1 flex min-h-[var(--topology-selected-relation-copy-payload-min-height)] min-w-0 items-center gap-1 overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-payload-border)] bg-[color:var(--topology-selected-relation-payload-surface)] px-1.5 py-0.5"
         >
-          <div className="shrink-0 font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.10em] text-[color:rgba(139,151,255,0.84)]">
+          <div className="shrink-0 font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.10em] text-[color:var(--topology-selected-relation-accent-muted)]">
             {t('copyPayloadLabel')}
           </div>
           <div
@@ -763,10 +769,14 @@ function CopyButton({
       data-relation-copy-priority={primary ? 'primary' : 'secondary'}
       data-copy-recommended={primary ? 'true' : 'false'}
       data-copy-recommendation-label={primary ? primaryBadge : undefined}
+      data-focus-ring-token="--topology-selected-relation-focus-ring"
+      data-primary-shadow-token={
+        primary ? '--topology-selected-relation-copy-primary-shadow' : undefined
+      }
       title={payloadCall}
       aria-label={primary ? `${label} · ${primaryBadge}` : label}
       onClick={onClick}
-      className={`inline-flex min-h-7 min-w-[var(--topology-selected-relation-action-min-width)] flex-1 basis-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.16),0_6px_18px_rgba(0,0,0,0.20)]' : ''} ${relationCopyButtonTone({
+      className={`inline-flex min-h-7 min-w-[var(--topology-selected-relation-action-min-width)] flex-1 basis-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-selected-relation-focus-ring)] ${primary ? 'shadow-[var(--topology-selected-relation-copy-primary-shadow)]' : ''} ${relationCopyButtonTone({
         gateKind,
         primary,
       })}`}
