@@ -2212,7 +2212,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-evidence-count", "3");
     expect(labelHit).toHaveAttribute(
       "aria-label",
-      "contains relation · strong · 3 sources · MCP/CLI · explain relation",
+      "contains relation · strong · 3 sources · explain · explain relation",
     );
     expect(labelHit).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(labelHit).toHaveAttribute("data-primary-copy-action", "explain_relation");
@@ -2233,7 +2233,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(evidenceChip).toHaveTextContent("S3");
     const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
-    expect(gateChip).toHaveAttribute("data-route-chip-text", "MCP/CLI");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "explain");
   });
 
   it("선택된 source-backed relation label 은 agent handoff gate 를 지도 위에 표시한다", () => {
@@ -2309,11 +2309,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "true");
     expect(labelHit).toHaveAttribute(
       "aria-label",
-      "contains relation · strong · 2 sources · MCP/CLI · explain relation",
+      "contains relation · strong · 2 sources · explain · explain relation",
     );
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "explain_relation");
-    expect(gateChip).toHaveAttribute("data-route-chip-text", "MCP/CLI");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "explain");
     const typeText = labelHit?.querySelector("[data-relation-label-type-text]");
     const selectedOverlayTypeText = selectedOverlay?.querySelector(
       "[data-relation-label-type-text]",
@@ -2342,7 +2342,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-text-token",
       "--topology-relation-gate-ready-text",
     );
-    expect(gateChip).toHaveTextContent("MCP/CLI");
+    expect(gateChip).toHaveTextContent("explain");
     expect(labelHit?.querySelector("[data-relation-fact-route-rail]")).toHaveClass("sr-only");
     expect(labelHit?.querySelector('[data-route-chip="fact"]')).toHaveAttribute("data-route-chip-text", "fact");
     expect(labelHit?.querySelector('[data-route-chip="evidence"]')).toHaveAttribute("data-route-chip-text", "src");

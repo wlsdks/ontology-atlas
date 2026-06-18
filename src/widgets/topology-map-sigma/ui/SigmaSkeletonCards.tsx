@@ -439,9 +439,14 @@ function relationQualityGlowToken(
 }
 
 function relationAgentGateChipText(gateKind: RelationAgentGateKind): string {
-  if (gateKind === 'handoff-ready') return 'MCP/CLI';
+  if (gateKind === 'handoff-ready') return 'explain';
   if (gateKind === 'preflight-first') return 'check';
   return 'review';
+}
+
+function relationAgentGateRouteText(gateKind: RelationAgentGateKind): string {
+  if (gateKind === 'handoff-ready') return 'MCP/CLI';
+  return relationAgentGateChipText(gateKind);
 }
 
 function relationAgentGateChipTone(gateKind: RelationAgentGateKind): string {
@@ -3706,6 +3711,7 @@ export function SigmaSkeletonCards({
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentGateText = relationAgentGateChipText(agentGateKind);
+        const agentGateRouteText = relationAgentGateRouteText(agentGateKind);
         const cliFallbackCommand = relationLabelCliFallbackCommand({
           action: primaryCopyAction,
           from: label.edgeSource,
@@ -3900,7 +3906,7 @@ export function SigmaSkeletonCards({
                   />
                   <span
                     data-route-chip="gate"
-                    data-route-chip-text={agentGateText}
+                    data-route-chip-text={agentGateRouteText}
                     data-primary-copy-action={primaryCopyAction}
                     data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
                     data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
@@ -3931,6 +3937,7 @@ export function SigmaSkeletonCards({
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentGateText = relationAgentGateChipText(agentGateKind);
+        const agentGateRouteText = relationAgentGateRouteText(agentGateKind);
         return (
           <div
             key={`selected-relation-overlay:${label.key}`}
@@ -4035,7 +4042,7 @@ export function SigmaSkeletonCards({
               />
               <span
                 data-route-chip="gate"
-                data-route-chip-text={agentGateText}
+                data-route-chip-text={agentGateRouteText}
                 data-primary-copy-action={primaryCopyAction}
                 data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
                 data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}

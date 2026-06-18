@@ -1021,7 +1021,7 @@ for (const viewport of VIEWPORTS) {
     await expect(scanGateChip).toBeVisible();
     await expect(scanGateChip).toHaveAttribute(
       "data-route-chip-text",
-      /MCP\/CLI|check|review/,
+      /explain|check|review/,
     );
     const relationButtonBox = await relationButton.boundingBox();
     if (!relationButtonBox) {
@@ -1118,7 +1118,7 @@ for (const viewport of VIEWPORTS) {
     await expect(visibleGateChip).toBeVisible();
     await expect(visibleGateChip).toHaveAttribute(
       "data-route-chip-text",
-      /MCP\/CLI|check|review/,
+      /explain|check|review/,
     );
     await expect(visibleGateChip).toHaveAttribute(
       "data-surface-token",
