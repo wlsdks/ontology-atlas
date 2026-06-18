@@ -278,6 +278,11 @@ names in component data markers and tests whenever a surface depends on
   Use this for the active ontology object name so the primary header remains
   token-backed across collapsed and expanded focus states instead of borrowing
   generic page heading text.
+- `--topology-node-popover-significance-core-text` /
+  `--topology-node-popover-significance-support-text`: selected node
+  inspector plain-language importance line. Use these for the visible "so
+  what" sentence below the title so core hubs stay prominent while supporting
+  nodes remain secondary, without borrowing generic page text colors.
 - `--topology-node-popover-relation-section-*`: selected node inspector
   relation-section boundary and heading tokens. Use these for the divider,
   `Connections` title, and typed-fact summary lens so the transition from node

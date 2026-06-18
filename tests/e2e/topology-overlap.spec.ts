@@ -2803,6 +2803,10 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-title-text-token",
     "--topology-node-popover-title-text",
   );
+  await expect(popover.locator("[data-selected-node-importance-line]").first()).toHaveAttribute(
+    "data-importance-text-token",
+    "--topology-node-popover-significance-core-text",
+  );
   await expect(firstRelationRow.locator("[data-relation-quality-dot]").first()).toHaveAttribute(
     "data-dot-token",
     /--topology-relation-quality-(strong|supported|weak|review)-dot/,

@@ -414,10 +414,17 @@ export function TopologyNodePopover({
             {significance.whatLine}
           </p>
           <p
+            data-selected-node-importance-line
+            data-significance-level={significance.level}
+            data-importance-text-token={
+              significance.level === "core"
+                ? "--topology-node-popover-significance-core-text"
+                : "--topology-node-popover-significance-support-text"
+            }
             className={
               significance.level === "core"
-                ? "line-clamp-2 text-[12px] leading-4 font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
-                : "line-clamp-2 text-[12px] leading-4 text-[color:var(--color-text-secondary)]"
+                ? "line-clamp-2 text-[12px] leading-4 font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-significance-core-text)]"
+                : "line-clamp-2 text-[12px] leading-4 text-[color:var(--topology-node-popover-significance-support-text)]"
             }
           >
             {significance.importanceLine}

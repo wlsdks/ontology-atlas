@@ -1519,7 +1519,18 @@ describe("TopologyNodePopover", () => {
       },
     });
     expect(screen.getByText("AI Agent Partner 영역에 속한 역량")).toBeInTheDocument();
-    expect(screen.getByText("12곳이 직접 의존하는 핵심 축이에요")).toBeInTheDocument();
+    const importanceLine = screen.getByText("12곳이 직접 의존하는 핵심 축이에요");
+    expect(importanceLine).toBeInTheDocument();
+    expect(importanceLine).toHaveAttribute("data-selected-node-importance-line");
+    expect(importanceLine).toHaveAttribute("data-significance-level", "core");
+    expect(importanceLine).toHaveAttribute(
+      "data-importance-text-token",
+      "--topology-node-popover-significance-core-text",
+    );
+    expect(importanceLine.className).toContain(
+      "text-[color:var(--topology-node-popover-significance-core-text)]",
+    );
+    expect(importanceLine.className).not.toContain("var(--color-text-primary)");
     expect(screen.getByText("2곳에 기댑니다: MCP SDK, Parser")).toBeInTheDocument();
     expect(screen.getByText("바꾸면 최대 7곳까지 영향이 번질 수 있어요")).toBeInTheDocument();
   });
