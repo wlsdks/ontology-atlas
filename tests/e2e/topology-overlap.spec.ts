@@ -3106,6 +3106,22 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-popover-action-hover-text-token",
     "--topology-node-popover-action-hover-text",
   );
+  await expect(firstHandoffAction).toHaveAttribute(
+    "data-popover-action-label-contract",
+    "compact-visible-full-aria",
+  );
+  await expect(firstHandoffAction).toHaveAttribute("data-popover-action-full-label", /.+/);
+  await expect(firstHandoffAction).toHaveAttribute("data-popover-action-compact-label", /.+/);
+  const handoffActionsFit = await page
+    .getByTestId("topology-node-popover-action-rail")
+    .locator("[data-popover-action] span")
+    .evaluateAll((labels) =>
+      labels.every((label) => label.scrollWidth <= label.clientWidth + 1),
+    );
+  expect(
+    handoffActionsFit,
+    "expanded phone handoff action labels should fit their compact footer buttons",
+  ).toBe(true);
   const footerMapAction = page.locator('[data-node-popover-toggle="collapse"]');
   await expect(footerMapAction).toHaveAttribute(
     "data-footer-action-border-token",

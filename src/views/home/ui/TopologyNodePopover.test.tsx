@@ -685,6 +685,18 @@ describe("TopologyNodePopover", () => {
       "data-popover-action-focus-ring-token",
       "--topology-node-popover-action-focus-ring",
     );
+    expect(briefAction).toHaveAttribute(
+      "data-popover-action-label-contract",
+      "compact-visible-full-aria",
+    );
+    expect(briefAction).toHaveAttribute(
+      "data-popover-action-full-label",
+      "선택 브리프 복사",
+    );
+    expect(briefAction).toHaveAttribute("data-popover-action-compact-label", "브리프");
+    expect(briefAction).toHaveAttribute("title", "선택 브리프 복사");
+    expect(briefAction).toHaveTextContent("브리프");
+    expect(briefAction).not.toHaveTextContent("선택 브리프 복사");
     expect(briefAction.className).toContain(
       "text-[color:var(--topology-node-popover-action-text)]",
     );

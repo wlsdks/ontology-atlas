@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronUp, Clipboard, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { TopologyRelationQuality } from "../lib/topology-analysis";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import type { NodeSignificanceLevel } from "../lib/topology-node-significance";
@@ -239,6 +239,11 @@ export function TopologyNodePopover({
   const primaryAction = actions[0] ?? null;
   const handoffContract =
     actions.length > 0 ? "selected-node-actions-visible" : "detail-only";
+  const compactActionLabel = useCallback(
+    (action: TopologyNodePopoverAction) =>
+      compactNodePopoverActionLabel(action.kind, action.label),
+    [],
+  );
 
   useEffect(() => {
     const wasCollapsed = wasCollapsedRef.current;
@@ -933,6 +938,9 @@ export function TopologyNodePopover({
                   title={action.label}
                   data-popover-action={action.kind}
                   data-agent-handoff-action={action.kind}
+                  data-popover-action-label-contract="compact-visible-full-aria"
+                  data-popover-action-full-label={action.label}
+                  data-popover-action-compact-label={compactActionLabel(action)}
                   data-popover-action-surface-token="--topology-node-popover-action-surface"
                   data-popover-action-border-token="--topology-node-popover-action-border"
                   data-popover-action-text-token="--topology-node-popover-action-text"
@@ -940,7 +948,7 @@ export function TopologyNodePopover({
                   data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
                   className="min-w-0 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-border)] bg-[color:var(--topology-node-popover-action-surface)] px-1.5 py-1.5 text-[10px] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
                 >
-                  <span className="block truncate">{action.label}</span>
+                  <span className="block truncate">{compactActionLabel(action)}</span>
                 </button>
               ))}
             </div>
@@ -990,6 +998,16 @@ export function TopologyNodePopover({
       </footer>
     </div>
   );
+}
+
+function compactNodePopoverActionLabel(
+  kind: TopologyNodePopoverAction["kind"],
+  label: string,
+): string {
+  const hasKorean = /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(label);
+  if (kind === "focus-brief") return hasKorean ? "브리프" : "Brief";
+  if (kind === "mcp-profile") return hasKorean ? "노드" : "Node";
+  return hasKorean ? "영향" : "Impact";
 }
 
 const relationQualityOrder: TopologyRelationQuality[] = [
