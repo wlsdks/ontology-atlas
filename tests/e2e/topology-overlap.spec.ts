@@ -993,10 +993,23 @@ for (const viewport of VIEWPORTS) {
       { timeout: 20_000 },
     );
     const relationButton = page
-      .locator('[data-relation-label-button][data-label-geometry-source="html-hit-target"]')
+      .locator(
+        '[data-relation-label-button][data-label-geometry-source="html-hit-target"][data-relation-label-visibility="visible-clear"]',
+      )
       .first();
     const skeletonCards = page.getByTestId("sigma-skeleton-cards");
+    if ((await relationButton.count()) === 0) {
+      const suppressedLabel = page.locator("[data-relation-label-button]").first();
+      await expect(suppressedLabel).toHaveAttribute(
+        "data-relation-label-visibility",
+        /suppressed-hidden-endpoint|suppressed-card-overlap/,
+      );
+      await expect(suppressedLabel).toBeHidden();
+      await expect(suppressedLabel).toHaveCSS("pointer-events", "none");
+      return;
+    }
     await expect(relationButton).toHaveAttribute("data-label-geometry-source", "html-hit-target");
+    await expect(relationButton).toHaveAttribute("data-relation-label-visibility", "visible-clear");
     await expect(relationButton).toHaveAttribute(
       "data-relation-label-token-contract",
       "hit-target-and-visible-badge-share-relation-label-tokens",
@@ -1130,12 +1143,11 @@ for (const viewport of VIEWPORTS) {
       visibleBadgeHeight,
       `selected relation visual badge should remain visually compact at ${viewport.label}`,
     ).toBeLessThan(relationButtonBox.height);
-    await relationButton.evaluate((element) => {
-      if (!(element instanceof HTMLElement)) {
-        throw new Error("relation label hit target should be an HTML button");
-      }
-      element.click();
-    });
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-pointer-contract",
+      "html-hit-target-click-selects-relation",
+    );
+    await relationButton.click();
     await expect(relationButton).toHaveAttribute("data-selected-relation", "true");
     await expect(skeletonCards).toHaveAttribute(
       "data-relation-label-geometry-ready-count",

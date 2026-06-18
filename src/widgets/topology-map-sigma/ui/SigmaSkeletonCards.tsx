@@ -303,7 +303,7 @@ function shouldReportSkeletonVisibilityStats(
 
 function setSkeletonStyleValue(
   target: HTMLElement,
-  property: 'height' | 'opacity' | 'pointerEvents' | 'transform' | 'width',
+  property: 'height' | 'opacity' | 'pointerEvents' | 'transform' | 'visibility' | 'width',
   value: string,
   stats: SkeletonDomWriteStats,
 ): void {
@@ -2879,6 +2879,8 @@ export function SigmaSkeletonCards({
           if (labelButton) {
             labelButton.style.opacity = '0';
             labelButton.style.pointerEvents = 'none';
+            labelButton.style.visibility = 'hidden';
+            labelButton.dataset.relationLabelVisibility = 'suppressed-hidden-endpoint';
           }
           continue;
         }
@@ -2982,6 +2984,15 @@ export function SigmaSkeletonCards({
             relationHitDisabled || labelHiddenByCards ? 'none' : 'auto',
             domWriteStats,
           );
+          setSkeletonStyleValue(
+            labelButton,
+            'visibility',
+            labelHiddenByCards ? 'hidden' : 'visible',
+            domWriteStats,
+          );
+          labelButton.dataset.relationLabelVisibility = labelHiddenByCards
+            ? 'suppressed-card-overlap'
+            : 'visible-clear';
           labelButton.dataset.labelGeometrySource = 'html-hit-target';
           labelButton.dataset.relationLabelCardClearance =
             labelPlacement.occluded || labelCardOverlapCount > 0 ? 'occluded' : 'clear';
@@ -3778,6 +3789,7 @@ export function SigmaSkeletonCards({
             data-relation-label-density={selected ? 'focus-token' : 'scan-token'}
             data-relation-label-compact={selected ? 'false' : undefined}
             data-relation-label-token-contract="hit-target-and-visible-badge-share-relation-label-tokens"
+            data-relation-label-pointer-contract="html-hit-target-click-selects-relation"
             data-relation-label-surface-token="--topology-relation-label-surface"
             data-relation-label-border-token="--topology-relation-label-border"
             data-relation-label-shadow-token="--topology-relation-label-shadow"
@@ -3797,10 +3809,11 @@ export function SigmaSkeletonCards({
             aria-label={`${tEdgeTooltip('relationAriaLabel', { label: labelText })} · ${quality} · ${evidenceText}${
               ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
             }`}
-            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-[33px] items-center justify-center overflow-visible whitespace-nowrap bg-transparent font-mono text-[9px] uppercase tracking-[0.07em] transition-[opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-relation-label-focus-ring)] motion-reduce:transition-none"
+            className="pointer-events-auto absolute left-0 top-0 z-[4] inline-flex min-h-[33px] items-center justify-center overflow-visible whitespace-nowrap bg-transparent font-mono text-[9px] uppercase tracking-[0.07em] transition-[opacity] duration-150 data-[drag-hit-disabled=true]:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-relation-label-focus-ring)] motion-reduce:transition-none"
             style={{
               color: 'var(--color-text-secondary)',
               opacity: selected ? 1 : 0,
+              pointerEvents: activeDragCluster !== null ? 'none' : 'auto',
             }}
             onClick={(event) => {
               event.preventDefault();
