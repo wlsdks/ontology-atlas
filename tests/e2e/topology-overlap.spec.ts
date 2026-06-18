@@ -3252,6 +3252,12 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
     "data-phone-help-top-token",
     "--topology-shortcuts-help-focus-phone-top",
   );
+  const searchLane = page.getByTestId("topology-search-action-lane");
+  await expect(searchLane).toHaveAttribute(
+    "data-phone-focus-utility-contract",
+    "hidden-below-md-while-node-popover-owns-focus",
+  );
+  await expect(searchLane).not.toBeVisible();
   const helpRect = await rectOf(helpButton);
   expect(intersects(helpRect, popoverRect), "phone help entry must not overlap focus popover").toBe(
     false,

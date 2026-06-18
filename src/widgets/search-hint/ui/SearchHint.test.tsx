@@ -87,4 +87,23 @@ describe("SearchHint", () => {
       "--topology-utility-lane-focus-ring",
     );
   });
+
+  it("can suppress the phone focus lane while keeping tablet and desktop utility access", () => {
+    render(
+      <SearchHint
+        density="compact-focus"
+        phoneFocusSuppressed
+        onOpenSearch={vi.fn()}
+        onRelayout={vi.fn()}
+      />,
+    );
+
+    const lane = screen.getByTestId("topology-search-action-lane");
+    expect(lane).toHaveAttribute(
+      "data-phone-focus-utility-contract",
+      "hidden-below-md-while-node-popover-owns-focus",
+    );
+    expect(lane).toHaveClass("hidden");
+    expect(lane).toHaveClass("md:block");
+  });
 });

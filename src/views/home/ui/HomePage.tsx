@@ -1476,6 +1476,7 @@ export function HomePage() {
                 <>
                   <SearchHint
                     density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
+                    phoneFocusSuppressed={selectedNodeFocusActive}
                     onOpenSearch={() => {
                       setSearchOpen(true);
                     }}

@@ -10,6 +10,11 @@ interface Props {
   /** 자동 정렬 트리거 — 토폴로지 physics reheat. */
   onRelayout: () => void;
   density?: 'default' | 'compact-focus';
+  /**
+   * Phone selected-node focus에서는 popover가 입력 우선권을 가진다.
+   * 검색/정렬 utility lane은 tablet 이상에서만 남겨 hit area 충돌을 피한다.
+   */
+  phoneFocusSuppressed?: boolean;
 }
 
 const subscribe = () => () => {};
@@ -25,6 +30,7 @@ export function SearchHint({
   onOpenSearch,
   onRelayout,
   density = 'default',
+  phoneFocusSuppressed = false,
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
@@ -41,11 +47,17 @@ export function SearchHint({
 
   return (
     <div
-      className="topology-ui-scale pointer-events-auto absolute right-4 top-[4.75rem] z-20 md:left-1/2 md:right-auto md:top-6 md:-translate-x-1/2 xl:top-8"
+      className={cn(
+        "topology-ui-scale pointer-events-auto absolute right-4 top-[4.75rem] z-20 md:left-1/2 md:right-auto md:top-6 md:-translate-x-1/2 xl:top-8",
+        phoneFocusSuppressed ? "hidden md:block" : undefined,
+      )}
       data-testid="topology-search-action-lane"
       data-search-lane-density={density}
       data-search-lane-contract={
         compact ? 'icon-first-focus-search' : 'labeled-search-utility'
+      }
+      data-phone-focus-utility-contract={
+        phoneFocusSuppressed ? "hidden-below-md-while-node-popover-owns-focus" : undefined
       }
       data-search-lane-compact-width-token={
         compact ? '--topology-search-lane-compact-width' : undefined
