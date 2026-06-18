@@ -270,6 +270,10 @@ names in component data markers and tests whenever a surface depends on
   `Used by` and `Depends on`. Use these for the first read of ontology
   directionality above the relation list; the cards should read as quiet
   node-context facts, not generic overlay panels.
+- `--topology-node-popover-kind-text`: selected node inspector kind eyebrow
+  above the title. Use this for the first ontology hierarchy cue (`Project`,
+  `Domain`, `Capability`, `Element`) so the selected node header stays in the
+  topology inspector token family instead of borrowing generic muted text.
 - `--topology-node-popover-relation-section-*`: selected node inspector
   relation-section boundary and heading tokens. Use these for the divider,
   `Connections` title, and typed-fact summary lens so the transition from node

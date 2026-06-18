@@ -2279,6 +2279,10 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "data-title-lines-token",
     "--topology-node-popover-title-lines",
   );
+  await expect(popover.locator("[data-selected-node-kind-label]").first()).toHaveAttribute(
+    "data-kind-text-token",
+    "--topology-node-popover-kind-text",
+  );
   await expect(popover).toHaveAttribute(
     "data-title-readability-contract",
     "selected-node-title-readable",
@@ -2786,6 +2790,10 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   await expect(firstRelationRow.locator("[data-relation-row-meta]").first()).toHaveAttribute(
     "data-row-meta-text-token",
     "--topology-node-popover-relation-row-meta-text",
+  );
+  await expect(popover.locator("[data-selected-node-kind-label]").first()).toHaveAttribute(
+    "data-kind-text-token",
+    "--topology-node-popover-kind-text",
   );
   await expect(firstRelationRow.locator("[data-relation-quality-dot]").first()).toHaveAttribute(
     "data-dot-token",

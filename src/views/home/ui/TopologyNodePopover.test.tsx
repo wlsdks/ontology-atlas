@@ -150,6 +150,15 @@ describe("TopologyNodePopover", () => {
       "data-title-lines-token",
       "--topology-node-popover-title-lines",
     );
+    const kindLabel = document.querySelector("[data-selected-node-kind-label]");
+    expect(kindLabel).toHaveAttribute(
+      "data-kind-text-token",
+      "--topology-node-popover-kind-text",
+    );
+    expect(kindLabel?.className).toContain(
+      "text-[color:var(--topology-node-popover-kind-text)]",
+    );
+    expect(kindLabel?.className).not.toContain("var(--color-text-quaternary)");
     expect(popover).toHaveAttribute(
       "data-responsive-width-contract",
       "fluid-inspector-to-rail",
@@ -671,6 +680,15 @@ describe("TopologyNodePopover", () => {
     );
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     expect(screen.getByText("이 노드를 쓰는 곳 1 · 이 노드가 기대는 곳 2")).toBeInTheDocument();
+    const kindLabel = document.querySelector("[data-selected-node-kind-label]");
+    expect(kindLabel).toHaveAttribute(
+      "data-kind-text-token",
+      "--topology-node-popover-kind-text",
+    );
+    expect(kindLabel?.className).toContain(
+      "text-[color:var(--topology-node-popover-kind-text)]",
+    );
+    expect(kindLabel?.className).not.toContain("var(--color-text-quaternary)");
     const title = screen.getByTestId("topology-node-popover-title");
     expect(title).toHaveAttribute(
       "data-title-readability-contract",

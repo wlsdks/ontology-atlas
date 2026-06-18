@@ -265,7 +265,11 @@ export function TopologyNodePopover({
         className={`flex min-w-0 w-[var(--topology-node-popover-fluid-width)] max-w-[var(--topology-node-popover-fluid-width)] items-center gap-[var(--topology-node-popover-chip-gap)] overflow-hidden rounded-[var(--topology-node-popover-radius)] border border-[color:var(--topology-node-popover-border)] bg-[color:var(--topology-node-popover-surface)] px-[var(--topology-node-popover-chip-padding-x)] py-[var(--topology-node-popover-chip-padding-y)] shadow-[var(--topology-node-popover-shadow)] lg:w-[var(--topology-node-popover-rail-width)] lg:max-w-[var(--topology-node-popover-rail-width)] min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)] min-[1400px]:max-w-[var(--topology-node-popover-wide-rail-width)] min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)] min-[1800px]:max-w-[var(--topology-node-popover-cinema-rail-width)] ${className ?? ""}`}
       >
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          <p
+            data-selected-node-kind-label
+            data-kind-text-token="--topology-node-popover-kind-text"
+            className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-node-popover-kind-text)]"
+          >
             {focusKindLabel}
           </p>
           <h2
@@ -360,7 +364,11 @@ export function TopologyNodePopover({
       >
       <header className="flex items-start justify-between gap-3 px-4 pt-4">
         <div className="min-w-0">
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          <p
+            data-selected-node-kind-label
+            data-kind-text-token="--topology-node-popover-kind-text"
+            className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-node-popover-kind-text)]"
+          >
             {focusKindLabel}
           </p>
           <h2
