@@ -3208,6 +3208,21 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-route-chip-text-token",
     "--topology-node-popover-route-chip-text",
   );
+  await expect(firstRelationRow).toHaveAttribute(
+    "data-row-quality-accent-token",
+    /--topology-overview-quality-(strong|supported|weak|review)-meter/,
+  );
+  const firstQualityAccent = firstRelationRow
+    .locator("[data-relation-quality-accent]")
+    .first();
+  await expect(firstQualityAccent).toHaveAttribute(
+    "data-quality-accent-contract",
+    "row-scan-rail-maps-relation-quality",
+  );
+  await expect(firstQualityAccent).toHaveAttribute(
+    "data-quality-accent-token",
+    /--topology-overview-quality-(strong|supported|weak|review)-meter/,
+  );
   await expect(
     page
       .getByTestId("topology-relation-quality-lens")

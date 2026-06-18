@@ -1363,6 +1363,18 @@ describe("TopologyNodePopover", () => {
     expect(relationRow).toHaveAttribute("data-relation-evidence-state", "needs-review");
     expect(relationRow).toHaveAttribute("data-agent-gate-kind", "preflight-first");
     expect(relationRow).toHaveAttribute("data-primary-copy-action", "relation_check");
+    expect(relationRow).toHaveAttribute(
+      "data-row-quality-accent-token",
+      "--topology-overview-quality-weak-meter",
+    );
+    expect(relationRow?.querySelector("[data-relation-quality-accent]")).toHaveAttribute(
+      "data-quality-accent-contract",
+      "row-scan-rail-maps-relation-quality",
+    );
+    expect(relationRow?.querySelector("[data-relation-quality-accent]")).toHaveAttribute(
+      "data-quality-accent-token",
+      "--topology-overview-quality-weak-meter",
+    );
     expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveTextContent("!");
     expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveAttribute(
       "data-evidence-surface-token",
