@@ -258,6 +258,10 @@ names in component data markers and tests whenever a surface depends on
   actions stay subdued inside the node inspector layer and do not borrow generic
   page-button color while relation facts, evidence, and handoff actions remain
   the primary scan targets.
+- `--topology-node-popover-metric-*`: selected node inspector metric cards for
+  `Used by` and `Depends on`. Use these for the first read of ontology
+  directionality above the relation list; the cards should read as quiet
+  node-context facts, not generic overlay panels.
 - `--topology-node-popover-route-*`: compact relation-row handoff route rail
   inside the selected node inspector. Use these for fact/evidence/gate/action
   chips and their text so row-level MCP/CLI payloads scan as structured proof,

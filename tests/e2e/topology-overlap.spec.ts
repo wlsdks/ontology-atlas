@@ -2700,6 +2700,19 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-chrome-action-hover-text-token",
     "--topology-node-popover-chrome-action-hover-text",
   );
+  const usedByMetric = page.locator('[data-node-popover-metric="Used by"]');
+  await expect(usedByMetric).toHaveAttribute(
+    "data-metric-surface-token",
+    "--topology-node-popover-metric-surface",
+  );
+  await expect(usedByMetric).toHaveAttribute(
+    "data-metric-border-token",
+    "--topology-node-popover-metric-border",
+  );
+  await expect(usedByMetric).toHaveAttribute(
+    "data-metric-value-text-token",
+    "--topology-node-popover-metric-value-text",
+  );
 
   const connectionList = page.getByTestId("topology-node-connection-list");
   await expect(page.getByTestId("topology-connections-section")).toHaveAttribute(

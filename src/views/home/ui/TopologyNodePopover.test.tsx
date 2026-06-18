@@ -204,6 +204,38 @@ describe("TopologyNodePopover", () => {
     );
     expect(title.className).toContain("line-clamp-[var(--topology-node-popover-title-lines)]");
     expect(title.className).not.toContain("truncate");
+
+    const usedByMetric = document.querySelector('[data-node-popover-metric="이 노드를 쓰는 곳"]');
+    expect(usedByMetric).toHaveAttribute(
+      "data-metric-surface-token",
+      "--topology-node-popover-metric-surface",
+    );
+    expect(usedByMetric).toHaveAttribute(
+      "data-metric-border-token",
+      "--topology-node-popover-metric-border",
+    );
+    expect(usedByMetric).toHaveAttribute(
+      "data-metric-label-text-token",
+      "--topology-node-popover-metric-label-text",
+    );
+    expect(usedByMetric).toHaveAttribute(
+      "data-metric-value-text-token",
+      "--topology-node-popover-metric-value-text",
+    );
+    expect(usedByMetric?.className).toContain(
+      "bg-[color:var(--topology-node-popover-metric-surface)]",
+    );
+    expect(usedByMetric?.className).toContain(
+      "border-[color:var(--topology-node-popover-metric-border)]",
+    );
+    expect(usedByMetric?.className).not.toContain("var(--color-overlay-1)");
+    const usedByMetricTexts = usedByMetric?.querySelectorAll("p");
+    expect(usedByMetricTexts?.[0]?.className).toContain(
+      "text-[color:var(--topology-node-popover-metric-label-text)]",
+    );
+    expect(usedByMetricTexts?.[1]?.className).toContain(
+      "text-[color:var(--topology-node-popover-metric-value-text)]",
+    );
   });
 
   it("reserves enough 14-inch vertical budget for relation rows before scrolling", () => {

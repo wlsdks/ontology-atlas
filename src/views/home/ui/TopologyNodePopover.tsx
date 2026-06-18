@@ -1072,11 +1072,18 @@ function relationAgentGateToken(
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2">
-      <p className="text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+    <div
+      data-node-popover-metric={label}
+      data-metric-surface-token="--topology-node-popover-metric-surface"
+      data-metric-border-token="--topology-node-popover-metric-border"
+      data-metric-label-text-token="--topology-node-popover-metric-label-text"
+      data-metric-value-text-token="--topology-node-popover-metric-value-text"
+      className="rounded-lg border border-[color:var(--topology-node-popover-metric-border)] bg-[color:var(--topology-node-popover-metric-surface)] px-3 py-2"
+    >
+      <p className="text-[10px] leading-4 text-[color:var(--topology-node-popover-metric-label-text)]">
         {label}
       </p>
-      <p className="mt-0.5 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+      <p className="mt-0.5 text-sm font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-metric-value-text)]">
         {value}
       </p>
     </div>
