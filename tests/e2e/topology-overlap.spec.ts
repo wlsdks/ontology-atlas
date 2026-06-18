@@ -2444,6 +2444,60 @@ test("Relief Path result keeps both endpoint cards visible in the installed app 
     "data-path-result-responsive-contract",
     "hidden-under-md-panel-owned",
   );
+  const routeChain = page.getByTestId("topology-path-result-route-chain");
+  const actionRail = page.getByTestId("topology-path-result-action-rail");
+  await expect(routeChain).toHaveAttribute(
+    "data-path-result-route-contract",
+    "fact-first-readable-before-actions",
+  );
+  await expect(routeChain).toHaveAttribute(
+    "data-compact-contract",
+    "endpoint-badges-visible-relation-chips-readable",
+  );
+  await expect(actionRail).toHaveAttribute(
+    "data-action-hierarchy",
+    "primary-visible-secondary-disclosed",
+  );
+  const pathHeaderReadability = await page.evaluate(() => {
+    const route = document.querySelector<HTMLElement>(
+      '[data-testid="topology-path-result-route-chain"]',
+    );
+    const actionRail = document.querySelector<HTMLElement>(
+      '[data-testid="topology-path-result-action-rail"]',
+    );
+    const source = route?.querySelector<HTMLElement>('[data-path-result-endpoint="source"]');
+    const target = route?.querySelector<HTMLElement>('[data-path-result-endpoint="target"]');
+    const sourceTitle = route?.querySelector<HTMLElement>(
+      '[data-path-result-endpoint-title="source"]',
+    );
+    const targetTitle = route?.querySelector<HTMLElement>(
+      '[data-path-result-endpoint-title="target"]',
+    );
+    const relation = route?.querySelector<HTMLElement>("[data-path-result-relation-chip]");
+    const fits = (element: HTMLElement | null | undefined) =>
+      !!element && element.scrollWidth <= element.clientWidth + 1;
+    const routeRect = route?.getBoundingClientRect();
+    const actionRect = actionRail?.getBoundingClientRect();
+    return {
+      routeFits: fits(route),
+      sourceFits: fits(source),
+      targetFits: fits(target),
+      sourceTitleFits: fits(sourceTitle),
+      targetTitleFits: fits(targetTitle),
+      relationFits: fits(relation),
+      routeBeforeActions:
+        !!routeRect && !!actionRect && routeRect.bottom <= actionRect.top + 1,
+    };
+  });
+  expect(pathHeaderReadability).toEqual({
+    routeFits: true,
+    sourceFits: true,
+    targetFits: true,
+    sourceTitleFits: true,
+    targetTitleFits: true,
+    relationFits: true,
+    routeBeforeActions: true,
+  });
   await expect(page.getByTestId("topology-node-popover")).toHaveCount(0);
   await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
   await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);

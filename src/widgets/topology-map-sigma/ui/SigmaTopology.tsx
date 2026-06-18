@@ -3091,13 +3091,11 @@ function SigmaTopologyImpl({
           data-path-prompt-left-token="--topology-path-prompt-left"
           data-path-prompt-half-token="--topology-path-prompt-half"
           data-path-prompt-panel-width-token="--topology-path-prompt-panel-width"
-          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 hidden max-w-[min(760px,calc(100vw-32px))] -translate-x-1/2 flex-col gap-2 overflow-hidden rounded-lg border border-[color:rgba(139,151,255,0.4)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:flex md:top-[128px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)]"
+          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 hidden w-[min(var(--topology-path-prompt-panel-width),calc(100vw-32px))] max-w-[min(760px,calc(100vw-32px))] -translate-x-1/2 flex-col gap-2 overflow-hidden rounded-lg border border-[color:rgba(139,151,255,0.4)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:flex md:top-[128px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)]"
         >
           <div
-            data-testid="topology-path-result-action-rail"
-            data-overflow-contract="no-horizontal-scroll"
-            data-action-hierarchy="primary-visible-secondary-disclosed"
-            className="flex min-w-0 flex-wrap items-center gap-2 overflow-visible"
+            data-path-result-header-contract="route-fact-readable-before-actions"
+            className="flex min-w-0 items-center gap-2 overflow-hidden"
           >
             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
               Path · {pathResultSlugs.length - 1} hop
@@ -3105,8 +3103,9 @@ function SigmaTopologyImpl({
             <div
               data-testid="topology-path-result-route-chain"
               data-overflow-contract="no-horizontal-scroll"
-              data-compact-contract="endpoint-badges-visible-relation-chips-truncated"
-              className="flex min-w-[220px] flex-1 items-center gap-1 overflow-hidden"
+              data-path-result-route-contract="fact-first-readable-before-actions"
+              data-compact-contract="endpoint-badges-visible-relation-chips-readable"
+              className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden"
             >
               {pathResultSlugs.map((slug, idx) => {
                 const label = graph.hasNode(slug)
@@ -3125,7 +3124,7 @@ function SigmaTopologyImpl({
                       <>
                         <span
                           data-path-result-relation-chip={relation ?? 'related'}
-                          className="max-w-[88px] shrink min-w-[2.8rem] truncate rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+                          className="max-w-[128px] shrink-0 truncate rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
                         >
                           {relation}
                         </span>
@@ -3137,7 +3136,7 @@ function SigmaTopologyImpl({
                       data-path-result-endpoint={endpointRole ?? undefined}
                       data-path-result-node={slug}
                       onClick={() => onSelectProjectRef.current?.(slug)}
-                      className="inline-flex min-w-0 max-w-[156px] items-center gap-1 rounded-sm px-1 py-0.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.12)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+                      className="inline-flex min-w-0 max-w-[240px] items-center gap-1 rounded-sm px-1 py-0.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.12)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
                       title={label}
                     >
                       {endpointRole ? (
@@ -3145,12 +3144,24 @@ function SigmaTopologyImpl({
                           {endpointRole === 'source' ? 'A' : 'B'}
                         </span>
                       ) : null}
-                      <span className="min-w-0 truncate">{label}</span>
+                      <span
+                        data-path-result-endpoint-title={endpointRole ?? 'middle'}
+                        className="min-w-0 truncate"
+                      >
+                        {label}
+                      </span>
                     </button>
                   </span>
                 );
               })}
             </div>
+          </div>
+          <div
+            data-testid="topology-path-result-action-rail"
+            data-overflow-contract="no-horizontal-scroll"
+            data-action-hierarchy="primary-visible-secondary-disclosed"
+            className="flex min-w-0 flex-wrap items-center gap-2 overflow-visible"
+          >
             <button
               type="button"
               data-path-result-action="evidence"
