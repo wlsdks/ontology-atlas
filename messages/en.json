@@ -2991,7 +2991,7 @@
       "overviewBriefRelationQualitySupported": "supported",
       "overviewBriefRelationQualityWeak": "weak",
       "overviewBriefRelationQualityReview": "review",
-      "overviewAgentReadiness": "Agent readiness",
+      "overviewAgentReadiness": "Share readiness",
       "overviewAgentReadinessReady": "handoff-ready",
       "overviewAgentReadinessPreflight": "preflight",
       "overviewAgentReadinessReview": "review",

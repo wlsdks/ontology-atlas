@@ -498,7 +498,7 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "collapsed-support-chrome",
   );
   await expect(panel.getByText(/Relation provenance|관계 출처/i)).toBeVisible();
-  await expect(panel.getByText(/Agent readiness|Agent 준비도/i)).toBeVisible();
+  await expect(panel.getByText(/Share readiness|공유 준비도/i)).toBeVisible();
   await expect(page.getByTestId("topology-overview-signal-grid")).toBeVisible();
   await expect(page.getByTestId("topology-overview-signal-grid")).toHaveAttribute(
     "data-surface-token",
@@ -872,7 +872,7 @@ test("Korean Relief top actions stay localized", async ({
     page.getByRole("button", { name: "온톨로지 워크스페이스 빠른 보기 열기 (D)" }),
   ).toContainText("작업공간");
   await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
-    "에이전트 준비도",
+    "공유 준비도",
   );
   await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
     "전달 가능",
@@ -1179,7 +1179,7 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("topology-overview-agent-readiness-meter")).toBeVisible();
     await expect(page.getByTestId("topology-overview-agent-readiness-meter")).toHaveAttribute(
       "aria-label",
-      /Agent readiness|Agent 준비도/i,
+      /Share readiness|공유 준비도/i,
     );
     await expect(page.getByTestId("topology-overview-agent-readiness-meter")).toHaveAttribute(
       "data-border-token",

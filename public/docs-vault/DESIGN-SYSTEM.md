@@ -496,7 +496,7 @@ names in component data markers and tests whenever a surface depends on
   `--topology-overview-quality-border` /
   `--topology-overview-readiness-surface` /
   `--topology-overview-readiness-border`: overview proof cards for relation
-  quality and agent readiness. They are scan facts, not nested cards, and must
+  quality and share readiness. They are scan facts, not nested cards, and must
   keep the first-read stack visually flat.
 - `--topology-overview-proof-cell-divider` /
   `--topology-overview-proof-strong-text` /
