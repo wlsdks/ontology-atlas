@@ -250,12 +250,21 @@ names in component data markers and tests whenever a surface depends on
   list instead of ad hoc translucent bands or generic page/helper text.
 - `--topology-node-popover-action-*` /
   `--topology-node-popover-context-surface` /
-  `--topology-node-popover-context-border`: selected node inspector support
+  `--topology-node-popover-context-border` /
+  `--topology-node-popover-count-text` /
+  `--topology-node-popover-summary-text` /
+  `--topology-node-popover-significance-context-text` /
+  `--topology-node-popover-significance-detail-text` /
+  `--topology-node-popover-context-text` /
+  `--topology-node-popover-empty-text`: selected node inspector support
   rail accents. Compact MCP/CLI actions, footer actions, and map-visible
   relation summaries must use node-popover tokens so the support rail stays
   visually related to the active focus state without becoming another primary
-  relation inspector. Action text and hover text must stay token-backed so the
-  footer's next actions do not drift into generic button chrome.
+  relation inspector. Count, summary, significance helper, context note, and
+  empty-state copy must also stay token-backed so the selected-node reading
+  layer can be tuned independently from generic page helper text. Action text
+  and hover text must stay token-backed so the footer's next actions do not
+  drift into generic button chrome.
 - `--topology-node-popover-footer-action-*` /
   `--topology-node-popover-footer-count-*`: selected node inspector fixed
   footer navigation tokens. Use these for `Map view`, `Full detail`, and hidden

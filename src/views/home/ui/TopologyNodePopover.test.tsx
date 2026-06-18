@@ -151,6 +151,8 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-title-lines",
     );
     const kindLabel = document.querySelector("[data-selected-node-kind-label]");
+    const countLine = document.querySelector("[data-selected-node-count-line]");
+    const summaryLine = document.querySelector("[data-summary-text-token]");
     expect(kindLabel).toHaveAttribute(
       "data-kind-text-token",
       "--topology-node-popover-kind-text",
@@ -159,6 +161,22 @@ describe("TopologyNodePopover", () => {
       "text-[color:var(--topology-node-popover-kind-text)]",
     );
     expect(kindLabel?.className).not.toContain("var(--color-text-quaternary)");
+    expect(countLine).toHaveAttribute(
+      "data-count-text-token",
+      "--topology-node-popover-count-text",
+    );
+    expect(countLine?.className).toContain(
+      "text-[color:var(--topology-node-popover-count-text)]",
+    );
+    expect(countLine?.className).not.toContain("var(--color-text-quaternary)");
+    expect(summaryLine).toHaveAttribute(
+      "data-summary-text-token",
+      "--topology-node-popover-summary-text",
+    );
+    expect(summaryLine?.className).toContain(
+      "text-[color:var(--topology-node-popover-summary-text)]",
+    );
+    expect(summaryLine?.className).not.toContain("var(--color-text-tertiary)");
     expect(popover).toHaveAttribute(
       "data-responsive-width-contract",
       "fluid-inspector-to-rail",
@@ -884,9 +902,17 @@ describe("TopologyNodePopover", () => {
       "data-map-context-border-token",
       "--topology-node-popover-context-border",
     );
+    expect(note).toHaveAttribute(
+      "data-map-context-text-token",
+      "--topology-node-popover-context-text",
+    );
     expect(note.className).toContain(
       "border-[color:var(--topology-node-popover-context-border)]",
     );
+    expect(note.className).toContain(
+      "text-[color:var(--topology-node-popover-context-text)]",
+    );
+    expect(note.className).not.toContain("var(--color-text-tertiary)");
     // 펼쳐지지 않은 관계는 그대로.
     expect(screen.getByText("AI Agent Partner")).toBeInTheDocument();
   });
@@ -1569,7 +1595,16 @@ describe("TopologyNodePopover", () => {
         },
       }),
     });
-    expect(screen.getByText("직접 연결 없음")).toBeInTheDocument();
+    const emptyState = screen.getByText("직접 연결 없음");
+    expect(emptyState).toBeInTheDocument();
+    expect(emptyState).toHaveAttribute(
+      "data-empty-text-token",
+      "--topology-node-popover-empty-text",
+    );
+    expect(emptyState.className).toContain(
+      "text-[color:var(--topology-node-popover-empty-text)]",
+    );
+    expect(emptyState.className).not.toContain("var(--color-text-quaternary)");
   });
 
   it("renders the plain-language 'so what' significance block when provided", () => {
@@ -1582,7 +1617,16 @@ describe("TopologyNodePopover", () => {
         level: "core",
       },
     });
-    expect(screen.getByText("AI Agent Partner 영역에 속한 역량")).toBeInTheDocument();
+    const contextLine = screen.getByText("AI Agent Partner 영역에 속한 역량");
+    expect(contextLine).toBeInTheDocument();
+    expect(contextLine).toHaveAttribute(
+      "data-significance-context-text-token",
+      "--topology-node-popover-significance-context-text",
+    );
+    expect(contextLine.className).toContain(
+      "text-[color:var(--topology-node-popover-significance-context-text)]",
+    );
+    expect(contextLine.className).not.toContain("var(--color-text-quaternary)");
     const importanceLine = screen.getByText("12곳이 직접 의존하는 핵심 축이에요");
     expect(importanceLine).toBeInTheDocument();
     expect(importanceLine).toHaveAttribute("data-selected-node-importance-line");
@@ -1595,8 +1639,19 @@ describe("TopologyNodePopover", () => {
       "text-[color:var(--topology-node-popover-significance-core-text)]",
     );
     expect(importanceLine.className).not.toContain("var(--color-text-primary)");
-    expect(screen.getByText("2곳에 기댑니다: MCP SDK, Parser")).toBeInTheDocument();
-    expect(screen.getByText("바꾸면 최대 7곳까지 영향이 번질 수 있어요")).toBeInTheDocument();
+    for (const detailLine of [
+      screen.getByText("2곳에 기댑니다: MCP SDK, Parser"),
+      screen.getByText("바꾸면 최대 7곳까지 영향이 번질 수 있어요"),
+    ]) {
+      expect(detailLine).toHaveAttribute(
+        "data-significance-detail-text-token",
+        "--topology-node-popover-significance-detail-text",
+      );
+      expect(detailLine.className).toContain(
+        "text-[color:var(--topology-node-popover-significance-detail-text)]",
+      );
+      expect(detailLine.className).not.toContain("var(--color-text-tertiary)");
+    }
   });
 
   it("omits the significance block when no significance is provided", () => {

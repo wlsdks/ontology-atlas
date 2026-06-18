@@ -294,7 +294,11 @@ export function TopologyNodePopover({
           >
             {focus.title}
           </h2>
-          <p className="mt-0.5 truncate text-[11px] text-[color:var(--color-text-quaternary)]">
+          <p
+            data-selected-node-count-line
+            data-count-text-token="--topology-node-popover-count-text"
+            className="mt-0.5 truncate text-[11px] text-[color:var(--topology-node-popover-count-text)]"
+          >
             {labels.usedBy} {focus.usedByCount} · {labels.dependsOn} {focus.dependsOnCount}
           </p>
         </div>
@@ -395,6 +399,13 @@ export function TopologyNodePopover({
           >
             {focus.title}
           </h2>
+          <p
+            data-selected-node-count-line
+            data-count-text-token="--topology-node-popover-count-text"
+            className="mt-0.5 truncate text-[11px] text-[color:var(--topology-node-popover-count-text)]"
+          >
+            {labels.usedBy} {focus.usedByCount} · {labels.dependsOn} {focus.dependsOnCount}
+          </p>
         </div>
         <button
           type="button"
@@ -412,7 +423,8 @@ export function TopologyNodePopover({
       {focus.summary ? (
         <p
           data-phone-density-contract="hide-summary-before-readable-row"
-          className="mt-1.5 line-clamp-2 px-4 text-[11px] leading-4 text-[color:var(--color-text-tertiary)] max-[540px]:hidden"
+          data-summary-text-token="--topology-node-popover-summary-text"
+          className="mt-1.5 line-clamp-2 px-4 text-[11px] leading-4 text-[color:var(--topology-node-popover-summary-text)] max-[540px]:hidden"
         >
           {focus.summary}
         </p>
@@ -424,7 +436,11 @@ export function TopologyNodePopover({
           data-phone-density-contract="keep-primary-meaning-before-readable-row"
           className="mt-2.5 flex flex-col gap-1.5 px-4 max-[540px]:mt-2"
         >
-          <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)] max-[540px]:hidden">
+          <p
+            data-significance-context-line="what"
+            data-significance-context-text-token="--topology-node-popover-significance-context-text"
+            className="line-clamp-1 text-[11px] leading-4 text-[color:var(--topology-node-popover-significance-context-text)] max-[540px]:hidden"
+          >
             {significance.whatLine}
           </p>
           <p
@@ -443,10 +459,18 @@ export function TopologyNodePopover({
           >
             {significance.importanceLine}
           </p>
-          <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)] max-[540px]:hidden">
+          <p
+            data-significance-detail-line="depends-on"
+            data-significance-detail-text-token="--topology-node-popover-significance-detail-text"
+            className="line-clamp-1 text-[11px] leading-4 text-[color:var(--topology-node-popover-significance-detail-text)] max-[540px]:hidden"
+          >
             {significance.dependsOnLine}
           </p>
-          <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)] max-[540px]:hidden">
+          <p
+            data-significance-detail-line="impact"
+            data-significance-detail-text-token="--topology-node-popover-significance-detail-text"
+            className="line-clamp-1 text-[11px] leading-4 text-[color:var(--topology-node-popover-significance-detail-text)] max-[540px]:hidden"
+          >
             {significance.impactLine}
           </p>
         </div>
@@ -554,7 +578,8 @@ export function TopologyNodePopover({
             data-phone-density-contract="defer-map-context-before-readable-row"
             data-map-context-surface-token="--topology-node-popover-context-surface"
             data-map-context-border-token="--topology-node-popover-context-border"
-            className="mb-1 rounded-md border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-2 py-1 text-[10px] leading-4 text-[color:var(--color-text-tertiary)] max-[540px]:hidden"
+            data-map-context-text-token="--topology-node-popover-context-text"
+            className="mb-1 rounded-md border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-2 py-1 text-[10px] leading-4 text-[color:var(--topology-node-popover-context-text)] max-[540px]:hidden"
           >
             {labels.expandedNote.replace("{count}", String(expandedCount))}
           </p>
@@ -855,7 +880,11 @@ export function TopologyNodePopover({
             })}
           </ul>
         ) : expandedCount === 0 ? (
-          <p className="px-2 py-1 text-[12px] text-[color:var(--color-text-quaternary)]">
+          <p
+            data-relation-empty-state
+            data-empty-text-token="--topology-node-popover-empty-text"
+            className="px-2 py-1 text-[12px] text-[color:var(--topology-node-popover-empty-text)]"
+          >
             {labels.noConnections}
           </p>
         ) : null}
