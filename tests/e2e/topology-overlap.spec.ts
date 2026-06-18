@@ -3226,6 +3226,23 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-agent-readiness-surface-token",
     /--topology-node-popover-agent-(ready|preflight|review)-surface/,
   );
+  const readyReadinessChip = page
+    .getByTestId("topology-node-agent-readiness-lens")
+    .locator('[data-agent-readiness-chip="ready"]');
+  await expect(readyReadinessChip).toHaveAttribute(
+    "data-agent-readiness-label-contract",
+    "compact-visible-full-aria",
+  );
+  await expect(readyReadinessChip).toHaveAttribute(
+    "data-agent-readiness-full-label",
+    "handoff-ready",
+  );
+  await expect(readyReadinessChip).toHaveAttribute(
+    "data-agent-readiness-compact-label",
+    "ready",
+  );
+  await expect(readyReadinessChip).toContainText("ready");
+  await expect(readyReadinessChip).not.toContainText("handoff-ready");
   await expect(page.getByTestId("topology-node-agent-readiness-lens")).toHaveAttribute(
     "data-agent-readiness-layout",
     "separate-readiness-strip",

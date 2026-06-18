@@ -175,16 +175,28 @@ export function TopologyNodePopover({
     {
       key: "ready" as const,
       label: labels.agentReadinessLabels.ready,
+      displayLabel: compactAgentReadinessLabel(
+        "ready",
+        labels.agentReadinessLabels.ready,
+      ),
       count: agentReadinessCounts.ready,
     },
     {
       key: "preflight" as const,
       label: labels.agentReadinessLabels.preflight,
+      displayLabel: compactAgentReadinessLabel(
+        "preflight",
+        labels.agentReadinessLabels.preflight,
+      ),
       count: agentReadinessCounts.preflight,
     },
     {
       key: "review" as const,
       label: labels.agentReadinessLabels.review,
+      displayLabel: compactAgentReadinessLabel(
+        "review",
+        labels.agentReadinessLabels.review,
+      ),
       count: agentReadinessCounts.review,
     },
   ];
@@ -573,21 +585,25 @@ export function TopologyNodePopover({
             {labels.agentReadinessTitle}
           </p>
           <div className="grid min-w-0 grid-cols-3 gap-1 overflow-hidden">
-            {agentReadinessItems.map(({ key, label, count }) => (
+            {agentReadinessItems.map(({ key, label, displayLabel, count }) => (
               <span
                 key={key}
                 data-agent-readiness-chip={key}
                 data-count={count}
+                data-agent-readiness-label-contract="compact-visible-full-aria"
+                data-agent-readiness-full-label={label}
+                data-agent-readiness-compact-label={displayLabel}
                 data-agent-readiness-surface-token={agentReadinessToken(
                   key,
                   "surface",
                 )}
                 data-agent-readiness-border-token={agentReadinessToken(key, "border")}
                 data-agent-readiness-text-token={agentReadinessToken(key, "text")}
+                title={`${label} ${count}`}
                 className={`min-w-0 rounded border px-1.5 py-1 ${agentReadinessChipClassName(key, count)}`}
               >
                 <span className="block truncate font-mono text-[8px] uppercase leading-3 tracking-[0.04em]">
-                  {label}
+                  {displayLabel}
                 </span>
                 <span className="block font-mono text-[11px] leading-4 tabular-nums">
                   {count}
@@ -1110,6 +1126,16 @@ function agentReadinessToken(
   slot: "surface" | "border" | "text",
 ): string {
   return `--topology-node-popover-agent-${key}-${slot}`;
+}
+
+function compactAgentReadinessLabel(
+  key: "ready" | "preflight" | "review",
+  label: string,
+): string {
+  if (!/^[a-z][a-z -]*$/i.test(label.trim())) return label;
+  if (key === "ready") return "ready";
+  if (key === "preflight") return "check";
+  return "review";
 }
 
 function relationEvidenceState({

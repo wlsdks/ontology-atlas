@@ -1502,6 +1502,18 @@ describe("TopologyNodePopover", () => {
       "전달 가능1",
     );
     expect(lens.querySelector('[data-agent-readiness-chip="ready"]')).toHaveAttribute(
+      "data-agent-readiness-label-contract",
+      "compact-visible-full-aria",
+    );
+    expect(lens.querySelector('[data-agent-readiness-chip="ready"]')).toHaveAttribute(
+      "data-agent-readiness-full-label",
+      "전달 가능",
+    );
+    expect(lens.querySelector('[data-agent-readiness-chip="ready"]')).toHaveAttribute(
+      "data-agent-readiness-compact-label",
+      "전달 가능",
+    );
+    expect(lens.querySelector('[data-agent-readiness-chip="ready"]')).toHaveAttribute(
       "data-agent-readiness-surface-token",
       "--topology-node-popover-agent-ready-surface",
     );
@@ -1521,6 +1533,64 @@ describe("TopologyNodePopover", () => {
       "data-agent-readiness-text-token",
       "--topology-node-popover-agent-review-text",
     );
+  });
+
+  it("keeps English readiness labels compact while preserving the full handoff state", () => {
+    setup({
+      labels: {
+        ...labels,
+        agentReadinessTitle: "Agent readiness",
+        agentReadinessLabels: {
+          ready: "handoff-ready",
+          preflight: "preflight",
+          review: "review",
+        },
+      },
+      focus: focusModel({
+        connections: [
+          {
+            id: "elements/mcp-sdk",
+            title: "MCP SDK",
+            kind: "element",
+            direction: "outgoing",
+            relationType: "uses",
+            relationQuality: "strong",
+            evidenceCount: 1,
+            authored: true,
+          },
+          {
+            id: "elements/mcp-config",
+            title: "MCP Config",
+            kind: "element",
+            direction: "outgoing",
+            relationType: "uses",
+            relationQuality: "weak",
+            evidenceCount: 0,
+            authored: false,
+          },
+        ],
+      }),
+    });
+
+    const lens = screen.getByTestId("topology-node-agent-readiness-lens");
+    expect(lens).toHaveAccessibleName(
+      "Agent readiness: handoff-ready 1 · preflight 1 · review 0",
+    );
+    const ready = lens.querySelector('[data-agent-readiness-chip="ready"]');
+    const preflight = lens.querySelector('[data-agent-readiness-chip="preflight"]');
+    const review = lens.querySelector('[data-agent-readiness-chip="review"]');
+    expect(ready).toHaveTextContent("ready1");
+    expect(ready).not.toHaveTextContent("handoff-ready");
+    expect(ready).toHaveAttribute("data-agent-readiness-full-label", "handoff-ready");
+    expect(ready).toHaveAttribute("data-agent-readiness-compact-label", "ready");
+    expect(ready).toHaveAttribute("title", "handoff-ready 1");
+    expect(preflight).toHaveTextContent("check1");
+    expect(preflight).not.toHaveTextContent("preflight1");
+    expect(preflight).toHaveAttribute("data-agent-readiness-full-label", "preflight");
+    expect(preflight).toHaveAttribute("data-agent-readiness-compact-label", "check");
+    expect(review).toHaveTextContent("review0");
+    expect(review).toHaveAttribute("data-agent-readiness-full-label", "review");
+    expect(review).toHaveAttribute("data-agent-readiness-compact-label", "review");
   });
 
   it("uses singular relation lens labels when the count is one", () => {
