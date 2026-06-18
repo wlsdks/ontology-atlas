@@ -332,6 +332,52 @@ async function firstVisibleSkeletonCard(page: Page) {
   return page.locator(`[data-skeleton-card][data-slug="${slug}"]`).first();
 }
 
+async function firstVisibleDragClusterCard(page: Page) {
+  const candidates = await page.locator("[data-skeleton-card]").evaluateAll((els) =>
+    els
+      .map((el) => {
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        return {
+          slug: el.getAttribute("data-slug"),
+          surfaceHidden: el.getAttribute("data-surface-hidden") === "true",
+          display: style.display,
+          visibility: style.visibility,
+          opacity: Number(style.opacity || "1"),
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+        };
+      })
+      .filter(
+        (card) =>
+          card.slug &&
+          !card.surfaceHidden &&
+          card.display !== "none" &&
+          card.visibility !== "hidden" &&
+          card.opacity > 0.05 &&
+          card.width > 0 &&
+          card.height > 0,
+      ),
+  );
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  for (const candidate of candidates) {
+    const target = page.locator(`[data-skeleton-card][data-slug="${candidate.slug}"]`).first();
+    const before = await rectOf(target);
+    await page.mouse.move(before.left + before.width / 2, before.top + before.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(120);
+    const activeSize = Number(await layer.getAttribute("data-active-drag-cluster-size"));
+    if (activeSize >= 2) {
+      return { target, before };
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(80);
+  }
+  throw new Error("Relief should expose at least one visible linked drag cluster card");
+}
+
 async function expectSelectedCardRelationSummary(page: Page, selectedSlug: string) {
   const selectedCard = page
     .locator(`[data-skeleton-card][data-slug="${selectedSlug}"]`)
@@ -2026,9 +2072,8 @@ for (const viewport of VIEWPORTS) {
 
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
     const legendRect = await kindLegendRectOrNull(page);
-    const target = await firstVisibleSkeletonCard(page);
+    const { target, before } = await firstVisibleDragClusterCard(page);
     await expect(target).toBeVisible();
-    const before = await rectOf(target);
     const targetText = (await target.textContent())?.trim() ?? "";
     const targetTitle = (await target.getAttribute("title")) ?? targetText.replace(/\s*\d+$/, "");
     const targetSlug = await target.getAttribute("data-slug");
@@ -2036,13 +2081,24 @@ for (const viewport of VIEWPORTS) {
       throw new Error(`visible drag target should expose a slug at ${viewport.label}`);
     }
 
-    await page.mouse.move(before.left + before.width / 2, before.top + before.height / 2);
-    await page.mouse.down();
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-dragging-active",
       "false",
     );
-    await expect(page.getByText("linked cards move together")).toBeVisible();
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-active-drag-cluster-size",
+      /^[2-9]\d*$/,
+    );
+    const dragStateLabel = page.locator("[data-drag-cluster-state-label]");
+    await expect(dragStateLabel).toBeVisible();
+    await expect(dragStateLabel).toHaveText("linked cards move together");
+    const dragStateLabelFits = await dragStateLabel.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    );
+    expect(
+      dragStateLabelFits,
+      `drag helper state label should remain readable at ${viewport.label}`,
+    ).toBe(true);
     const companionHandle = await page
       .locator('[data-skeleton-card][data-drag-cluster-role="movable"]')
       .evaluateAll((els) => {

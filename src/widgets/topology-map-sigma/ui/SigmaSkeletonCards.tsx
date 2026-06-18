@@ -3522,17 +3522,20 @@ export function SigmaSkeletonCards({
       >
         {activeHullMode === 'drag' ? (
           <>
-            <div className="absolute left-2 top-2 inline-flex max-w-[min(18rem,calc(100%-3.25rem))] items-center gap-1.5 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-canvas)] px-2 py-1 text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]">
-              <span className="font-mono uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            <div className="absolute left-2 top-0 z-[2] inline-flex max-w-[min(18rem,calc(100%-3.25rem))] -translate-y-1/2 items-center gap-1.5 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-canvas)] px-2 py-1 text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]">
+              <span
+                data-drag-cluster-state-label
+                className="shrink-0 whitespace-nowrap font-mono uppercase tracking-[0.08em] text-[9px] text-[color:var(--color-text-quaternary)]"
+              >
                 {activeHullLabel}
               </span>
-              <span data-drag-cluster-title className="min-w-0 truncate">
+              <span data-drag-cluster-title className="sr-only">
                 {activeHullTitle}
               </span>
             </div>
             <span
               data-drag-cluster-count
-              className="absolute right-2 top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--color-canvas)] px-1.5 font-mono text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]"
+              className="absolute right-2 top-0 z-[2] inline-flex h-5 min-w-5 -translate-y-1/2 items-center justify-center rounded-full border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--color-canvas)] px-1.5 font-mono text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]"
             >
               {activeHullCluster ? `${activeHullCluster.size} linked` : ""}
             </span>

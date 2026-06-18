@@ -3334,6 +3334,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "true",
     );
     expect(screen.getByText("linked cards move together")).toBeInTheDocument();
+    expect(document.querySelector("[data-drag-cluster-state-label]")).toHaveTextContent(
+      "linked cards move together",
+    );
     expect(screen.getByText("Disconnected").closest("[data-skeleton-card]")).toHaveAttribute(
       "data-drag-cluster",
       "false",
@@ -3398,6 +3401,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(card).toHaveAttribute("data-drag-cluster", "true");
       expect(layer).toHaveAttribute("data-dragging-active", "false");
       expect(screen.getByText("linked cards move together")).toBeInTheDocument();
+      expect(document.querySelector("[data-drag-cluster-state-label]")).toHaveTextContent(
+        "linked cards move together",
+      );
 
       act(() => {
         vi.advanceTimersByTime(520);
