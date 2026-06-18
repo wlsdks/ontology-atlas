@@ -645,10 +645,10 @@ describe('i18n message catalog', () => {
     );
     assert.equal(pathCopy.pathProofChecklist, '검증 순서');
     assert.equal(pathCopy.pathProofVisiblePath, '화면에 보이는 경로');
-    assert.equal(pathCopy.pathProofRelationPreflight, '관계 사전 점검');
-    assert.equal(pathCopy.pathProofExplainRelation, '관계 설명 맥락');
-    assert.equal(pathCopy.pathProofBoundedTraversal, '전체 경로 계획');
-    assert.equal(pathCopy.pathProofPostWriteSync, '수정 후 동기화 점검');
+    assert.equal(pathCopy.pathProofRelationPreflight, '관계 방향 확인');
+    assert.equal(pathCopy.pathProofExplainRelation, '연결 이유 설명');
+    assert.equal(pathCopy.pathProofBoundedTraversal, '다른 경로 비교');
+    assert.equal(pathCopy.pathProofPostWriteSync, '수정 후 동기화');
     assert.equal(pathCopy.pathProofStatusReady, '준비됨');
     assert.equal(pathCopy.pathProofStatusRequired, '필수');
     assert.equal(pathCopy.pathProofStatusAfterWrite, '수정 후');

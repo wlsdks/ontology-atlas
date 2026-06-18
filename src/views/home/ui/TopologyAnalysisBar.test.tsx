@@ -172,8 +172,8 @@ const labels = {
   pathCandidateVisibility:
     "Showing {visible} of {total} path candidates so the map stays readable.",
   pathHandoffLabel: "Share route",
-  pathHandoffMcpAction: "MCP find_path",
-  pathHandoffCliFallback: "CLI path",
+  pathHandoffMcpAction: "Agent check",
+  pathHandoffCliFallback: "Terminal check",
   pathEvidenceCopy: "Copy path evidence",
   pathEvidenceCopied: "Path evidence copied",
   pathEvidenceCopyAriaLabel: "Copy topology path evidence",
@@ -205,13 +205,13 @@ const labels = {
   pathCopyTools: "Path checks",
   pathProofOrderTitle: "Proof order",
   pathProofOrderDesc:
-    "Use the visible path as a clue, then run relation_check, explain_relation, and a bounded all_paths plan before treating it as write evidence.",
+    "Shows the visible link first, then the checks needed before changing the ontology.",
   pathProofChecklist: "Proof checklist",
   pathProofVisiblePath: "Visible path clue",
-  pathProofRelationPreflight: "relation_check preflight",
-  pathProofExplainRelation: "explain_relation context",
-  pathProofBoundedTraversal: "bounded all_paths plan",
-  pathProofPostWriteSync: "post-write sync gate",
+  pathProofRelationPreflight: "Check relation direction",
+  pathProofExplainRelation: "Explain why it connects",
+  pathProofBoundedTraversal: "Compare alternate paths",
+  pathProofPostWriteSync: "Sync after edits",
   pathProofStatusReady: "ready",
   pathProofStatusRequired: "required",
   pathProofStatusAfterWrite: "after write",
@@ -1861,8 +1861,8 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(cliChip.className).not.toContain("--color-text-tertiary");
     expect(handoff).toHaveTextContent("Share route");
-    expect(handoff).toHaveTextContent("MCP find_path");
-    expect(handoff).toHaveTextContent("CLI path");
+    expect(handoff).toHaveTextContent("Agent check");
+    expect(handoff).toHaveTextContent("Terminal check");
   });
 
   it("keeps the selected Path route visible before the proof disclosure", () => {
@@ -2629,7 +2629,7 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText("Proof order")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Use the visible path as a clue, then run relation_check, explain_relation, and a bounded all_paths plan before treating it as write evidence.",
+        "Shows the visible link first, then the checks needed before changing the ontology.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByTestId("topology-path-proof-route")).toHaveTextContent("Views");
@@ -2685,10 +2685,10 @@ describe("TopologyAnalysisBar", () => {
       "data-border-token",
       "--topology-path-proof-ready-border",
     );
-    expect(checklist).toHaveTextContent("relation_check preflight");
-    expect(checklist).toHaveTextContent("explain_relation context");
-    expect(checklist).toHaveTextContent("bounded all_paths plan");
-    expect(checklist).toHaveTextContent("post-write sync gate");
+    expect(checklist).toHaveTextContent("Check relation direction");
+    expect(checklist).toHaveTextContent("Explain why it connects");
+    expect(checklist).toHaveTextContent("Compare alternate paths");
+    expect(checklist).toHaveTextContent("Sync after edits");
     expect(screen.getAllByText("required")).toHaveLength(3);
     expect(checklist.querySelector('[data-path-proof-status="required"]')).toHaveAttribute(
       "data-surface-token",
@@ -2994,16 +2994,16 @@ describe("TopologyAnalysisBar", () => {
       expect.stringContaining("  - Visible path clue: ready"),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("  - relation_check preflight: required"),
+      expect.stringContaining("  - Check relation direction: required"),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("  - explain_relation context: required"),
+      expect.stringContaining("  - Explain why it connects: required"),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("  - bounded all_paths plan: required"),
+      expect.stringContaining("  - Compare alternate paths: required"),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("  - post-write sync gate: after write"),
+      expect.stringContaining("  - Sync after edits: after write"),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("- Post-write sync gate:"),
