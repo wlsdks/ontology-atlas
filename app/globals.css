@@ -396,6 +396,12 @@
     --topology-overview-signal-indigo-border: rgba(139, 151, 255, 0.24);
     --topology-overview-signal-cyan-surface: rgba(94, 234, 212, 0.045);
     --topology-overview-signal-cyan-border: rgba(94, 234, 212, 0.22);
+    --topology-overview-reader-lens-surface: rgba(139, 151, 255, 0.055);
+    --topology-overview-reader-lens-border: rgba(139, 151, 255, 0.18);
+    --topology-overview-reader-lens-title-text: rgba(179, 186, 255, 0.86);
+    --topology-overview-reader-lens-item-text: rgba(222, 225, 255, 0.70);
+    --topology-overview-reader-lens-marker-surface: rgba(139, 151, 255, 0.11);
+    --topology-overview-reader-lens-marker-border: rgba(139, 151, 255, 0.24);
     --topology-overview-notice-surface: rgba(255, 255, 255, 0.02);
     --topology-overview-notice-border: rgba(255, 255, 255, 0.055);
     --topology-overview-notice-compact-padding-y: 6px;
@@ -951,6 +957,12 @@
     --topology-overview-signal-indigo-border: rgba(77, 86, 200, 0.22);
     --topology-overview-signal-cyan-surface: rgba(20, 148, 128, 0.055);
     --topology-overview-signal-cyan-border: rgba(20, 148, 128, 0.22);
+    --topology-overview-reader-lens-surface: rgba(77, 86, 200, 0.065);
+    --topology-overview-reader-lens-border: rgba(77, 86, 200, 0.18);
+    --topology-overview-reader-lens-title-text: rgba(40, 50, 175, 0.88);
+    --topology-overview-reader-lens-item-text: rgba(51, 65, 85, 0.76);
+    --topology-overview-reader-lens-marker-surface: rgba(77, 86, 200, 0.10);
+    --topology-overview-reader-lens-marker-border: rgba(77, 86, 200, 0.22);
     --topology-overview-notice-surface: rgba(15, 23, 42, 0.025);
     --topology-overview-notice-border: rgba(15, 23, 42, 0.10);
     --topology-overview-handoff-divider: rgba(15, 23, 42, 0.12);

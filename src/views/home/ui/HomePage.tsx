@@ -1762,6 +1762,14 @@ export function HomePage() {
                 overviewWorkOrderFocus: t("analysis.overviewWorkOrderFocus"),
                 overviewWorkOrderPath: t("analysis.overviewWorkOrderPath"),
                 overviewWorkOrderHealth: t("analysis.overviewWorkOrderHealth"),
+                overviewReaderLensTitle: t("analysis.overviewReaderLensTitle"),
+                overviewReaderLensDomains: t("analysis.overviewReaderLensDomains"),
+                overviewReaderLensCapabilities: t(
+                  "analysis.overviewReaderLensCapabilities",
+                ),
+                overviewReaderLensChangePaths: t(
+                  "analysis.overviewReaderLensChangePaths",
+                ),
                 overviewBriefCopyAriaLabel: t(
                   "analysis.overviewBriefCopyAriaLabel",
                 ),

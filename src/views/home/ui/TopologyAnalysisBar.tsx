@@ -84,6 +84,10 @@ interface TopologyAnalysisBarLabels {
   overviewWorkOrderFocus: string;
   overviewWorkOrderPath: string;
   overviewWorkOrderHealth: string;
+  overviewReaderLensTitle: string;
+  overviewReaderLensDomains: string;
+  overviewReaderLensCapabilities: string;
+  overviewReaderLensChangePaths: string;
   overviewBriefCopyAriaLabel: string;
   overviewBriefCopiedAriaLabel: string;
   overviewReanalyzeCopyAriaLabel: string;
@@ -1061,6 +1065,40 @@ export function TopologyAnalysisBar({
               {labels.metricRelations}
             </span>
           </div>
+          {panelMode === "overview" ? (
+            <div
+              data-testid="topology-overview-reader-lens"
+              data-reader-lens-contract="non-developer-first-map-read"
+              data-surface-token="--topology-overview-reader-lens-surface"
+              data-border-token="--topology-overview-reader-lens-border"
+              data-title-text-token="--topology-overview-reader-lens-title-text"
+              data-item-text-token="--topology-overview-reader-lens-item-text"
+              data-marker-surface-token="--topology-overview-reader-lens-marker-surface"
+              data-marker-border-token="--topology-overview-reader-lens-marker-border"
+              className="mt-2 rounded-lg border border-[color:var(--topology-overview-reader-lens-border)] bg-[color:var(--topology-overview-reader-lens-surface)] px-3 py-2"
+            >
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
+                {labels.overviewReaderLensTitle}
+              </p>
+              <ol className="mt-1.5 grid gap-1 text-[11.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
+                {[
+                  labels.overviewReaderLensDomains,
+                  labels.overviewReaderLensCapabilities,
+                  labels.overviewReaderLensChangePaths,
+                ].map((item, index) => (
+                  <li key={item} className="flex min-w-0 items-start gap-2">
+                    <span
+                      aria-hidden
+                      className="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border border-[color:var(--topology-overview-reader-lens-marker-border)] bg-[color:var(--topology-overview-reader-lens-marker-surface)] font-mono text-[8px] leading-none text-[color:var(--topology-overview-reader-lens-title-text)]"
+                    >
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0 break-keep">{item}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
           {pathCandidateVisibilityText ? (
             <p
               data-testid="topology-path-candidate-visibility"

@@ -49,12 +49,17 @@ const labels = {
   overviewSyncCopy: "Sync",
   overviewSyncCopied: "Update check copied",
   overviewHandoffSummary: "Share map",
-  overviewCopyTools: "Proof checks",
+  overviewCopyTools: "Agent follow-up",
   overviewWorkOrderTitle: "Analysis order",
   overviewWorkOrderRead: "Read ontology map",
   overviewWorkOrderFocus: "Focus concept",
   overviewWorkOrderPath: "Prove path",
   overviewWorkOrderHealth: "Repair health",
+  overviewReaderLensTitle: "Reader lens",
+  overviewReaderLensDomains: "Find the main domains and ownership areas.",
+  overviewReaderLensCapabilities: "Read which capabilities each area carries.",
+  overviewReaderLensChangePaths:
+    "Trace what would change before handing it to an agent.",
   overviewBriefCopyAriaLabel: "Copy topology map brief",
   overviewBriefCopiedAriaLabel: "Topology map brief copied",
   overviewReanalyzeCopyAriaLabel: "Copy ontology reanalysis command",
@@ -858,6 +863,17 @@ describe("TopologyAnalysisBar", () => {
     );
 
     const actions = screen.getByTestId("topology-overview-handoff-actions");
+    const readerLens = screen.getByTestId("topology-overview-reader-lens");
+    expect(readerLens).toHaveTextContent("Reader lens");
+    expect(readerLens).toHaveTextContent("Find the main domains and ownership areas.");
+    expect(readerLens).toHaveTextContent("Read which capabilities each area carries.");
+    expect(readerLens).toHaveTextContent(
+      "Trace what would change before handing it to an agent.",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-reader-lens-contract",
+      "non-developer-first-map-read",
+    );
     expect(actions.closest("details")).toBeNull();
     expect(screen.getByText("Copy map brief")).toBeVisible();
     expect(
@@ -868,7 +884,7 @@ describe("TopologyAnalysisBar", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByTestId("topology-overview-handoff-summary"),
-    ).toHaveTextContent("Proof checks");
+    ).toHaveTextContent("Agent follow-up");
     expect(
       screen.getByText(
         "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
@@ -929,7 +945,7 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveTextContent(
-      "Proof checks",
+      "Agent follow-up",
     );
     expect(screen.getByTestId("topology-overview-handoff-chevron")).toBeInTheDocument();
   });
@@ -1415,6 +1431,35 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(body.className).toContain(
       "data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)]",
+    );
+    const readerLens = screen.getByTestId("topology-overview-reader-lens");
+    expect(readerLens).toHaveAttribute(
+      "data-reader-lens-contract",
+      "non-developer-first-map-read",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-reader-lens-surface",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-reader-lens-border",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-title-text-token",
+      "--topology-overview-reader-lens-title-text",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-item-text-token",
+      "--topology-overview-reader-lens-item-text",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-marker-surface-token",
+      "--topology-overview-reader-lens-marker-surface",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-marker-border-token",
+      "--topology-overview-reader-lens-marker-border",
     );
     const relationQuality = screen.getByTestId("topology-overview-relation-quality");
     const signalGrid = screen.getByTestId("topology-overview-signal-grid");

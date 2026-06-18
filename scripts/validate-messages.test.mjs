@@ -328,7 +328,11 @@ describe('i18n message catalog', () => {
     assert.equal(en.topology.analysis.overviewWorkOrderPath, 'Prove path evidence');
     assert.equal(en.topology.analysis.overviewWorkOrderHealth, 'Close health gate');
     assert.equal(en.topology.analysis.overviewHandoffSummary, 'Share map');
-    assert.equal(en.topology.analysis.overviewCopyTools, 'Proof checks');
+    assert.equal(en.topology.analysis.overviewCopyTools, 'Agent follow-up');
+    assert.equal(en.topology.analysis.overviewReaderLensTitle, 'Reader lens');
+    assert.match(en.topology.analysis.overviewReaderLensDomains, /domains/i);
+    assert.match(en.topology.analysis.overviewReaderLensCapabilities, /capabilities/i);
+    assert.match(en.topology.analysis.overviewReaderLensChangePaths, /agent/i);
     assert.equal(en.topology.controls.docsTooltip, 'Ontology workspace quick look (D)');
     assert.equal(
       en.topology.controls.docsAriaLabel,
@@ -336,6 +340,11 @@ describe('i18n message catalog', () => {
     );
     assert.equal(en.topology.controls.docsLabel, 'Workspace');
     assert.match(en.topology.analysis.overviewPrompt, /product\/system map/i);
+    assert.equal(ko.topology.analysis.overviewCopyTools, '에이전트 후속 점검');
+    assert.equal(ko.topology.analysis.overviewReaderLensTitle, '읽는 순서');
+    assert.match(ko.topology.analysis.overviewReaderLensDomains, /핵심 영역/);
+    assert.match(ko.topology.analysis.overviewReaderLensCapabilities, /기능/);
+    assert.match(ko.topology.analysis.overviewReaderLensChangePaths, /에이전트/);
     assert.match(en.topology.analysis.overviewPrompt, /domains, capabilities, and change paths/i);
     assert.match(en.topology.analysis.overviewPrompt, /team inspection and sharing/i);
     assert.doesNotMatch(en.topology.analysis.overviewPrompt, /agent handoff/i);
@@ -360,7 +369,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.analysis.overviewWorkOrderPath, '경로 근거 검증');
     assert.equal(ko.topology.analysis.overviewWorkOrderHealth, '상태 신호 확인');
     assert.equal(ko.topology.analysis.overviewHandoffSummary, '지도 공유');
-    assert.equal(ko.topology.analysis.overviewCopyTools, '검증 체크');
+    assert.equal(ko.topology.analysis.overviewCopyTools, '에이전트 후속 점검');
     assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '지형도 지도 요약 복사');
     assert.equal(ko.topology.analysis.overviewBriefCopiedAriaLabel, '지형도 지도 요약 복사됨');
     assert.equal(ko.topology.analysis.overviewBriefTitle, '지형도 지도 요약');
