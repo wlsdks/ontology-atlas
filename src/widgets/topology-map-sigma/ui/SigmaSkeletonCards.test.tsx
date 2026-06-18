@@ -1165,6 +1165,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "--topology-focus-hull-quiet-shadow",
       );
       expect(hull).toHaveAttribute(
+        "data-focus-hull-quiet-opacity-token",
+        "--topology-focus-hull-quiet-opacity",
+      );
+      expect(hull).toHaveAttribute(
+        "data-focus-hull-line-contract",
+        "dashed-boundary-not-panel",
+      );
+      expect(hull?.className).toContain("data-[cluster-mode=focus]:border-dashed");
+      expect(hull).toHaveAttribute(
         "data-focus-breathing-room-contract",
         "viewport-edge-clearance",
       );
@@ -1179,7 +1188,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(hull).toBeEmptyDOMElement();
       expect(document.querySelector("[data-drag-cluster-title]")).not.toBeInTheDocument();
       expect(document.querySelector("[data-drag-cluster-count]")).not.toBeInTheDocument();
-      expect(hull).toHaveStyle({ opacity: "0.8" });
+      expect(hull).toHaveStyle({ opacity: "var(--topology-focus-hull-quiet-opacity)" });
       expect(document.querySelector("[data-focus-cluster-connector]")).toBeInTheDocument();
       expect(document.querySelector("[data-focus-relation-label]")).not.toBeInTheDocument();
       expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(

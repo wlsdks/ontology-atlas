@@ -171,6 +171,7 @@ const OVERVIEW_COLLISION_PAD = 2;
 const SAFE_VIEWPORT_MARGIN = 8;
 const FOCUS_HULL_BREATHING_ROOM_PX = 16;
 const FOCUS_HULL_LABEL_CLEARANCE_PX = 34;
+const FOCUS_HULL_QUIET_OPACITY = 'var(--topology-focus-hull-quiet-opacity)';
 const FIXED_SURFACE_GAP = 8;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
@@ -3274,7 +3275,11 @@ export function SigmaSkeletonCards({
         hull.style.transform = `translate3d(${hullRect.left}px, ${hullRect.top}px, 0)`;
         hull.style.width = `${Math.max(1, hullRect.right - hullRect.left)}px`;
         hull.style.height = `${Math.max(1, hullRect.bottom - hullRect.top)}px`;
-        hull.style.opacity = activeDragMotion ? '0.95' : '0.8';
+        hull.style.opacity = activeDragMotion
+          ? '0.95'
+          : activeHullMode === 'focus'
+            ? FOCUS_HULL_QUIET_OPACITY
+            : '0.8';
         hull.dataset.visible = 'true';
         hull.dataset.clusterMode = activeHullMode;
         hull.dataset.dragClusterSize = String(clusterRects.length);
@@ -3282,6 +3287,8 @@ export function SigmaSkeletonCards({
           hull.dataset.focusClusterSize = String(clusterRects.length);
           hull.dataset.focusStage = 'click-focus';
           hull.dataset.focusAttentionLabel = 'linked-focus';
+          hull.dataset.focusHullLineContract = 'dashed-boundary-not-panel';
+          hull.dataset.focusHullQuietOpacityToken = '--topology-focus-hull-quiet-opacity';
           hull.dataset.focusBreathingRoomContract = 'viewport-edge-clearance';
           hull.dataset.focusBreathingRoomPx = String(FOCUS_HULL_BREATHING_ROOM_PX);
           hull.dataset.focusLabelClearanceContract = 'quiet-outline-does-not-slice-card-labels';
@@ -3296,6 +3303,8 @@ export function SigmaSkeletonCards({
           delete hull.dataset.focusClusterSize;
           delete hull.dataset.focusStage;
           delete hull.dataset.focusAttentionLabel;
+          delete hull.dataset.focusHullLineContract;
+          delete hull.dataset.focusHullQuietOpacityToken;
           delete hull.dataset.focusBreathingRoomContract;
           delete hull.dataset.focusBreathingRoomPx;
           delete hull.dataset.focusLabelClearanceContract;
@@ -3311,6 +3320,8 @@ export function SigmaSkeletonCards({
         delete hull.dataset.focusClusterSize;
         delete hull.dataset.focusStage;
         delete hull.dataset.focusAttentionLabel;
+        delete hull.dataset.focusHullLineContract;
+        delete hull.dataset.focusHullQuietOpacityToken;
         delete hull.dataset.focusBreathingRoomContract;
         delete hull.dataset.focusBreathingRoomPx;
         delete hull.dataset.focusLabelClearanceContract;
@@ -3560,6 +3571,7 @@ export function SigmaSkeletonCards({
         data-focus-hull-quiet-border-token="--topology-focus-hull-quiet-border"
         data-focus-hull-quiet-surface-token="--topology-focus-hull-quiet-surface"
         data-focus-hull-quiet-shadow-token="--topology-focus-hull-quiet-shadow"
+        data-focus-hull-quiet-opacity-token="--topology-focus-hull-quiet-opacity"
         data-focus-hull-drag-border-token="--topology-focus-hull-drag-border"
         data-focus-hull-drag-surface-token="--topology-focus-hull-drag-surface"
         data-focus-hull-drag-shadow-token="--topology-focus-hull-drag-shadow"
@@ -3571,7 +3583,7 @@ export function SigmaSkeletonCards({
             : 0,
         }}
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-[color:var(--topology-focus-hull-border)] bg-[color:var(--topology-focus-hull-surface)] shadow-[var(--topology-focus-hull-shadow)] transition-[opacity,box-shadow,border-color,background-color] duration-100 data-[cluster-mode=focus]:border-[color:var(--topology-focus-hull-quiet-border)] data-[cluster-mode=focus]:bg-[color:var(--topology-focus-hull-quiet-surface)] data-[cluster-mode=focus]:shadow-[var(--topology-focus-hull-quiet-shadow)] data-[drag-active=true]:border-[color:var(--topology-focus-hull-drag-border)] data-[drag-active=true]:bg-[color:var(--topology-focus-hull-drag-surface)] data-[drag-active=true]:shadow-[var(--topology-focus-hull-drag-shadow)] motion-reduce:transition-none"
+        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-[color:var(--topology-focus-hull-border)] bg-[color:var(--topology-focus-hull-surface)] shadow-[var(--topology-focus-hull-shadow)] transition-[opacity,box-shadow,border-color,background-color] duration-100 data-[cluster-mode=focus]:border-dashed data-[cluster-mode=focus]:border-[color:var(--topology-focus-hull-quiet-border)] data-[cluster-mode=focus]:bg-[color:var(--topology-focus-hull-quiet-surface)] data-[cluster-mode=focus]:shadow-[var(--topology-focus-hull-quiet-shadow)] data-[drag-active=true]:border-solid data-[drag-active=true]:border-[color:var(--topology-focus-hull-drag-border)] data-[drag-active=true]:bg-[color:var(--topology-focus-hull-drag-surface)] data-[drag-active=true]:shadow-[var(--topology-focus-hull-drag-shadow)] motion-reduce:transition-none"
       >
         {activeHullMode === 'drag' ? (
           <>

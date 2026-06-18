@@ -156,9 +156,10 @@
     --topology-focus-hull-border: rgba(139, 151, 255, 0.42);
     --topology-focus-hull-surface: rgba(139, 151, 255, 0.08);
     --topology-focus-hull-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 18px 50px rgba(0, 0, 0, 0.22);
-    --topology-focus-hull-quiet-border: rgba(139, 151, 255, 0.30);
-    --topology-focus-hull-quiet-surface: rgba(139, 151, 255, 0.045);
-    --topology-focus-hull-quiet-shadow: 0 0 0 1px rgba(139, 151, 255, 0.12), 0 14px 42px rgba(0, 0, 0, 0.16);
+    --topology-focus-hull-quiet-border: rgba(139, 151, 255, 0.26);
+    --topology-focus-hull-quiet-surface: rgba(139, 151, 255, 0.026);
+    --topology-focus-hull-quiet-shadow: 0 0 0 1px rgba(139, 151, 255, 0.08), 0 10px 28px rgba(0, 0, 0, 0.10);
+    --topology-focus-hull-quiet-opacity: 0.52;
     --topology-focus-hull-drag-border: rgba(139, 151, 255, 0.70);
     --topology-focus-hull-drag-surface: rgba(139, 151, 255, 0.12);
     --topology-focus-hull-drag-shadow: 0 0 0 1px rgba(139, 151, 255, 0.24), 0 22px 60px rgba(0, 0, 0, 0.28), 0 0 36px rgba(139, 151, 255, 0.14);
@@ -897,9 +898,10 @@
     --topology-focus-hull-border: rgba(94, 106, 210, 0.34);
     --topology-focus-hull-surface: rgba(94, 106, 210, 0.06);
     --topology-focus-hull-shadow: 0 0 0 1px rgba(15, 23, 42, 0.05), 0 18px 46px rgba(15, 23, 42, 0.12);
-    --topology-focus-hull-quiet-border: rgba(94, 106, 210, 0.24);
-    --topology-focus-hull-quiet-surface: rgba(94, 106, 210, 0.035);
-    --topology-focus-hull-quiet-shadow: 0 0 0 1px rgba(94, 106, 210, 0.10), 0 14px 34px rgba(15, 23, 42, 0.10);
+    --topology-focus-hull-quiet-border: rgba(94, 106, 210, 0.20);
+    --topology-focus-hull-quiet-surface: rgba(94, 106, 210, 0.022);
+    --topology-focus-hull-quiet-shadow: 0 0 0 1px rgba(94, 106, 210, 0.07), 0 10px 24px rgba(15, 23, 42, 0.08);
+    --topology-focus-hull-quiet-opacity: 0.52;
     --topology-focus-hull-drag-border: rgba(94, 106, 210, 0.56);
     --topology-focus-hull-drag-surface: rgba(94, 106, 210, 0.09);
     --topology-focus-hull-drag-shadow: 0 0 0 1px rgba(94, 106, 210, 0.18), 0 20px 44px rgba(15, 23, 42, 0.16), 0 0 30px rgba(94, 106, 210, 0.12);
