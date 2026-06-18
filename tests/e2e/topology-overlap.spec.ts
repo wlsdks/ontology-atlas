@@ -2170,6 +2170,30 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "--topology-path-proof-summary-hover-text",
   );
   await page.getByTestId("topology-path-proof-summary").click();
+  await expect(page.getByTestId("topology-path-proof-kicker")).toHaveAttribute(
+    "data-text-token",
+    "--topology-path-proof-kicker-text",
+  );
+  await expect(page.getByTestId("topology-path-proof-route")).toHaveAttribute(
+    "data-chip-text-token",
+    "--topology-path-route-chip-text",
+  );
+  await expect(page.getByTestId("topology-path-proof-route")).toHaveAttribute(
+    "data-arrow-text-token",
+    "--topology-path-route-arrow-text",
+  );
+  await expect(page.getByTestId("topology-path-proof-description")).toHaveAttribute(
+    "data-text-token",
+    "--topology-path-proof-desc-text",
+  );
+  await expect(page.getByTestId("topology-path-checks-summary")).toHaveAttribute(
+    "data-text-token",
+    "--topology-path-check-summary-text",
+  );
+  await expect(page.getByTestId("topology-path-checks-summary")).toHaveAttribute(
+    "data-hover-text-token",
+    "--topology-path-check-summary-hover-text",
+  );
   await expect(page.locator('[data-path-proof-status="ready"]')).toHaveAttribute(
     "data-border-token",
     "--topology-path-proof-ready-border",

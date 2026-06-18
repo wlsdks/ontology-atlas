@@ -2522,9 +2522,74 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByTestId("topology-path-proof-chevron")).toHaveClass(
       "group-open:rotate-180",
     );
+    const proofKicker = screen.getByTestId("topology-path-proof-kicker");
+    expect(proofKicker).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-proof-kicker-text",
+    );
+    expect(proofKicker.className).toContain(
+      "text-[color:var(--topology-path-proof-kicker-text)]",
+    );
+    expect(proofKicker.className).not.toContain("--color-text-quaternary");
+    const proofRoute = screen.getByTestId("topology-path-proof-route");
+    expect(proofRoute).toHaveAttribute(
+      "data-chip-text-token",
+      "--topology-path-route-chip-text",
+    );
+    expect(proofRoute).toHaveAttribute(
+      "data-arrow-text-token",
+      "--topology-path-route-arrow-text",
+    );
+    for (const endpoint of proofRoute.querySelectorAll("[data-route-endpoint]")) {
+      expect(endpoint.className).toContain(
+        "text-[color:var(--topology-path-route-chip-text)]",
+      );
+      expect(endpoint.className).not.toContain("--color-text-secondary");
+    }
+    const proofDescription = screen.getByTestId("topology-path-proof-description");
+    expect(proofDescription).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-proof-desc-text",
+    );
+    expect(proofDescription.className).toContain(
+      "text-[color:var(--topology-path-proof-desc-text)]",
+    );
+    expect(proofDescription.className).not.toContain("--color-text-tertiary");
+    for (const action of [
+      "source-ontology",
+      "target-ontology",
+      "source-builder",
+      "target-builder",
+    ] as const) {
+      const link = document.querySelector(`[data-path-proof-action="${action}"]`);
+      expect(link).toHaveAttribute(
+        "data-text-token",
+        "--topology-path-proof-action-text",
+      );
+      expect(link).toHaveAttribute(
+        "data-hover-text-token",
+        "--topology-path-proof-action-hover-text",
+      );
+      expect(link?.className).toContain(
+        "text-[color:var(--topology-path-proof-action-text)]",
+      );
+      expect(link?.className).not.toContain("--color-text-tertiary");
+    }
     const toolsSummary = screen.getByTestId("topology-path-checks-summary");
     expect(toolsSummary).toHaveTextContent("Path checks");
     expect(toolsSummary.className).toContain("min-h-8");
+    expect(toolsSummary).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-check-summary-text",
+    );
+    expect(toolsSummary).toHaveAttribute(
+      "data-hover-text-token",
+      "--topology-path-check-summary-hover-text",
+    );
+    expect(toolsSummary.className).toContain(
+      "text-[color:var(--topology-path-check-summary-text)]",
+    );
+    expect(toolsSummary.className).not.toContain("--color-text-quaternary");
     expect(screen.getByTestId("topology-path-checks-chevron")).toHaveClass(
       "group-open:rotate-180",
     );

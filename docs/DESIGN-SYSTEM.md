@@ -397,7 +397,9 @@ names in component data markers and tests whenever a surface depends on
   using token-backed elevation rather than ad hoc glow or hard-coded colors.
 - `--topology-path-route-surface` / `--topology-path-route-border` /
   `--topology-path-route-chip-surface` /
-  `--topology-path-route-chip-border`: path result route rail. When both source
+  `--topology-path-route-chip-border` /
+  `--topology-path-route-chip-text` /
+  `--topology-path-route-arrow-text`: path result route rail. When both source
   and target endpoints are selected, the analysis rail must expose the current
   source-to-target route before the proof disclosure so users and agents can
   read the active graph question without opening secondary evidence. The same
@@ -406,12 +408,18 @@ names in component data markers and tests whenever a surface depends on
   selected path instead of generic panel chrome.
 - `--topology-path-proof-step-surface` /
   `--topology-path-proof-step-border` /
+  `--topology-path-proof-kicker-text` /
+  `--topology-path-proof-desc-text` /
+  `--topology-path-proof-action-text` /
+  `--topology-path-proof-action-hover-text` /
   `--topology-path-proof-summary-surface` /
   `--topology-path-proof-summary-border` /
   `--topology-path-proof-summary-text` /
   `--topology-path-proof-summary-hover-surface` /
   `--topology-path-proof-summary-hover-border` /
   `--topology-path-proof-summary-hover-text` /
+  `--topology-path-check-summary-text` /
+  `--topology-path-check-summary-hover-text` /
   `--topology-path-proof-ready-surface` /
   `--topology-path-proof-ready-border` /
   `--topology-path-proof-ready-text` /
