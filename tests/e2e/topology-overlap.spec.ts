@@ -2210,6 +2210,12 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "data-border-token",
     "--topology-path-candidate-visibility-border",
   );
+  await expect(candidateVisibility).toHaveAttribute(
+    "data-copy-contract",
+    "reader-facing-map-readability",
+  );
+  await expect(candidateVisibility).toContainText("map stays readable");
+  await expect(candidateVisibility).not.toContainText(/panel clearance|hidden/i);
   const routeDoesNotOverflow = await route.evaluate(
     (el) => el.scrollWidth <= el.clientWidth + 1,
   );

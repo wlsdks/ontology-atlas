@@ -3065,7 +3065,7 @@
       "pathPrompt": "Choose a start node, then a target node.",
       "pathSelected": "Starting from {title}. Choose a target.",
       "pathResolved": "Showing the link from {source} to {target}.",
-      "pathCandidateVisibility": "Visible candidates {visible} / {total}; hidden for panel clearance.",
+      "pathCandidateVisibility": "Showing {visible} of {total} path candidates so the map stays readable.",
       "pathHandoffLabel": "Agent handoff",
       "pathHandoffMcpAction": "MCP find_path",
       "pathHandoffCliFallback": "CLI path",

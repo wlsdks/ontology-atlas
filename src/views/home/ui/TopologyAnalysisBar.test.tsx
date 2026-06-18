@@ -169,7 +169,7 @@ const labels = {
   pathSelected: "Path source is {title}. Click a target node.",
   pathResolved: "Path selected: {source} to {target}.",
   pathCandidateVisibility:
-    "Visible candidates {visible} / {total}; hidden for panel clearance.",
+    "Showing {visible} of {total} path candidates so the map stays readable.",
   pathHandoffLabel: "Agent handoff",
   pathHandoffMcpAction: "MCP find_path",
   pathHandoffCliFallback: "CLI path",
@@ -1604,7 +1604,12 @@ describe("TopologyAnalysisBar", () => {
 
     const visibility = screen.getByTestId("topology-path-candidate-visibility");
     expect(visibility).toHaveTextContent(
-      "Visible candidates 10 / 21; hidden for panel clearance.",
+      "Showing 10 of 21 path candidates so the map stays readable.",
+    );
+    expect(visibility).not.toHaveTextContent(/panel clearance|hidden/i);
+    expect(visibility).toHaveAttribute(
+      "data-copy-contract",
+      "reader-facing-map-readability",
     );
     expect(visibility).toHaveAttribute("data-visible", "10");
     expect(visibility).toHaveAttribute("data-total", "21");
@@ -1623,6 +1628,9 @@ describe("TopologyAnalysisBar", () => {
     expect(visibility.className).toContain(
       "text-[color:var(--topology-analysis-panel-notice-text)]",
     );
+    expect(visibility.className).toContain("tracking-normal");
+    expect(visibility.className).not.toContain("uppercase");
+    expect(visibility.className).not.toContain("font-mono");
     expect(visibility.className).not.toContain("--color-text-tertiary");
   });
 

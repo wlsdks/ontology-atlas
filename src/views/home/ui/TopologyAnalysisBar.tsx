@@ -1043,10 +1043,11 @@ export function TopologyAnalysisBar({
               data-testid="topology-path-candidate-visibility"
               data-visible={pathCandidateVisibility?.visible}
               data-total={pathCandidateVisibility?.total}
+              data-copy-contract="reader-facing-map-readability"
               data-surface-token="--topology-path-candidate-visibility-surface"
               data-border-token="--topology-path-candidate-visibility-border"
               data-notice-text-token="--topology-analysis-panel-notice-text"
-              className="mt-3 rounded-md border border-[color:var(--topology-path-candidate-visibility-border)] bg-[color:var(--topology-path-candidate-visibility-surface)] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--topology-analysis-panel-notice-text)]"
+              className="mt-3 rounded-md border border-[color:var(--topology-path-candidate-visibility-border)] bg-[color:var(--topology-path-candidate-visibility-surface)] px-2.5 py-2 text-[11px] leading-4 tracking-normal text-[color:var(--topology-analysis-panel-notice-text)]"
             >
               {pathCandidateVisibilityText}
             </p>
