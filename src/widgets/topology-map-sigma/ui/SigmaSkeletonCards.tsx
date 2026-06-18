@@ -189,7 +189,7 @@ const TIER_CARD_MAX_WIDTH_TOKEN: Record<SkeletonCardModel['tier'], string> = {
 };
 const TIER_CARD_MAX_WIDTH_PX: Record<SkeletonCardModel['tier'], number> = {
   0: BASE_ANCHOR_CARD_MAX_WIDTH_PX,
-  1: BASE_ANCHOR_CARD_MAX_WIDTH_PX,
+  1: 248,
   2: 312,
   3: 224,
 };

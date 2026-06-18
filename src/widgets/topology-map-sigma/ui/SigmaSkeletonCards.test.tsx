@@ -109,7 +109,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     });
     const layer = screen.getByTestId("sigma-skeleton-cards");
     expect(layer.style.getPropertyValue("--topology-card-max-width-project")).toBe("224px");
-    expect(layer.style.getPropertyValue("--topology-card-max-width-domain")).toBe("224px");
+    expect(layer.style.getPropertyValue("--topology-card-max-width-domain")).toBe("248px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-capability")).toBe("312px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-element")).toBe("224px");
     expect(layer.style.getPropertyValue("--topology-card-selected-focus-max-width")).toBe("360px");

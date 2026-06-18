@@ -650,6 +650,22 @@ test("Relief Focus selected capability card keeps its title readable in the inst
     cardPairsThatIntersect(await visibleCardRects(page)),
     "Wider selected Focus card should not overlap other visible Relief cards",
   ).toEqual([]);
+
+  const contextDomainCard = page
+    .locator('[data-skeleton-card][data-slug="domain:mode-aware-adapters"]')
+    .first();
+  await expect(contextDomainCard).toBeVisible();
+  await expect(contextDomainCard).toHaveAttribute(
+    "data-card-max-width-token",
+    "--topology-card-max-width-domain",
+  );
+  const contextDomainTitleFits = await contextDomainCard
+    .locator("[data-card-title]")
+    .evaluate((element) => element.scrollWidth <= element.clientWidth + 1);
+  expect(
+    contextDomainTitleFits,
+    "Installed-app WebView Focus context domain title should stay readable even when dimmed",
+  ).toBe(true);
 });
 
 test("Relief Health repair target keeps the project title readable in the installed app WebView size", async ({
