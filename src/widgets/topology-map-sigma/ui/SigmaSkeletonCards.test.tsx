@@ -817,7 +817,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("충돌 회피가 모든 카드를 숨기면 핵심 tier 카드를 실제 visible 상태로 복구한다", () => {
+  it("충돌 회피가 모든 카드를 숨기면 fixed surface 밖으로 핵심 tier 카드 하나를 복구한다", () => {
     const rectSpy = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")
       .mockImplementation(function getMockRect(this: HTMLElement) {
@@ -885,12 +885,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         .closest("[data-skeleton-card]") as HTMLElement;
 
       expect(layer).toHaveAttribute("data-visibility-fallback", "true");
-      expect(layer).toHaveAttribute("data-visibility-fallback-count", "2");
+      expect(layer).toHaveAttribute(
+        "data-visibility-fallback-surface-contract",
+        "restore-clear-or-shifted-landmark",
+      );
+      expect(layer).toHaveAttribute("data-visibility-fallback-count", "1");
       expect(projectCard).not.toHaveAttribute("data-surface-hidden", "true");
-      expect(domainCard).not.toHaveAttribute("data-surface-hidden", "true");
+      expect(domainCard).toHaveAttribute("data-surface-hidden", "true");
       expect(projectCard.style.visibility).toBe("visible");
-      expect(domainCard.style.visibility).toBe("visible");
-      expect(container.querySelectorAll('[data-skeleton-card][style*="opacity: 1"]')).toHaveLength(2);
+      expect(domainCard.style.visibility).toBe("hidden");
+      expect(container.querySelectorAll('[data-skeleton-card][style*="opacity: 1"]')).toHaveLength(1);
     } finally {
       rectSpy.mockRestore();
     }

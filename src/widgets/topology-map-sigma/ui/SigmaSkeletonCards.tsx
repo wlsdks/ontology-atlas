@@ -1218,6 +1218,25 @@ function isElementInsideContainerViewport(el: HTMLElement, containerRect: DOMRec
   );
 }
 
+function elementRectRelativeToContainer(el: HTMLElement, containerRect: DOMRect) {
+  const rect = el.getBoundingClientRect();
+  return {
+    left: rect.left - containerRect.left,
+    top: rect.top - containerRect.top,
+    right: rect.right - containerRect.left,
+    bottom: rect.bottom - containerRect.top,
+  };
+}
+
+function isElementClearOfFixedSurfaces(
+  el: HTMLElement,
+  containerRect: DOMRect,
+  fixedSurfaceRects: ReadonlyArray<{ left: number; top: number; right: number; bottom: number }>,
+): boolean {
+  const rect = elementRectRelativeToContainer(el, containerRect);
+  return !fixedSurfaceRects.some((surface) => rectsOverlap(rect, surface));
+}
+
 function collectDraggedCluster(
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
   nodeId: string,
@@ -2596,6 +2615,7 @@ export function SigmaSkeletonCards({
     }
     let reportedVisibleCardCount = visibleCardCount;
     let visibilityCountSource = 'single-pass';
+    container.dataset.visibilityFallbackSurfaceContract = 'restore-clear-or-shifted-landmark';
     if (visibleCardCount === 0 && orderedEls.length > 0) {
       let restored = 0;
       for (const el of orderedEls) {
@@ -2608,6 +2628,7 @@ export function SigmaSkeletonCards({
           continue;
         }
         if (!isElementInsideContainerViewport(el, containerRect)) continue;
+        if (!isElementClearOfFixedSurfaces(el, containerRect, fixedSurfaceRects)) continue;
         showSkeletonCard(el);
         restored += 1;
       }
@@ -2619,6 +2640,26 @@ export function SigmaSkeletonCards({
             isElementInsideContainerViewport(el, containerRect),
         );
         if (first) {
+          if (!isElementClearOfFixedSurfaces(first, containerRect, fixedSurfaceRects)) {
+            const rect = elementRectRelativeToContainer(first, containerRect);
+            const shift = clampRectToViewportAndFixedSurfaces({
+              rect,
+              containerWidth: containerRect.width,
+              containerHeight: containerRect.height,
+              fixedSurfaceRects,
+            });
+            if (shift.dx !== 0 || shift.dy !== 0) {
+              setSkeletonStyleValue(
+                first,
+                'transform',
+                `${first.style.transform} translate(${shift.dx}px, ${shift.dy}px)`,
+                domWriteStats,
+              );
+              first.dataset.visibilityFallbackSurfaceRestore = 'safe-shift';
+            }
+          } else {
+            delete first.dataset.visibilityFallbackSurfaceRestore;
+          }
           showSkeletonCard(first);
           restored = 1;
         }

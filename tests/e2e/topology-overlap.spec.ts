@@ -4155,6 +4155,15 @@ test("Relief Health phone rail owns the read layer without help overlap", async 
       Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
   });
   expect(visibleHelpOverlap, "Health phone panel should have no visible help overlap").toBe(0);
+  const skeletonLayer = page.getByTestId("sigma-skeleton-cards");
+  await expect(skeletonLayer).toHaveAttribute(
+    "data-visibility-fallback-surface-contract",
+    "restore-clear-or-shifted-landmark",
+  );
+  const cardsUnderPanel = (await visibleCardRects(page)).filter((card) => intersects(card, rect));
+  expect(cardsUnderPanel, "Health phone panel should own the read layer over map cards").toEqual(
+    [],
+  );
 });
 
 test("Relief shortcut sheet uses a phone sheet instead of an inset help card", async ({ page }) => {
