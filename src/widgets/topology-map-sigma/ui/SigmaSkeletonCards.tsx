@@ -1112,6 +1112,15 @@ function hideSkeletonCard(el: HTMLElement) {
   el.style.pointerEvents = 'none';
 }
 
+function isSkeletonCardVisibleForStats(el: HTMLElement): boolean {
+  const style = getComputedStyle(el);
+  return (
+    el.dataset.surfaceHidden !== 'true' &&
+    style.visibility !== 'hidden' &&
+    Number(style.opacity || el.style.opacity || '1') > 0.01
+  );
+}
+
 function separatePathEndpointCards(
   orderedEls: readonly HTMLElement[],
   containerRect: DOMRect,
@@ -2664,12 +2673,7 @@ export function SigmaSkeletonCards({
     };
     let visibleCardCount = 0;
     for (const el of orderedEls) {
-      const style = getComputedStyle(el);
-      if (
-        el.dataset.surfaceHidden !== 'true' &&
-        style.visibility !== 'hidden' &&
-        Number(style.opacity || el.style.opacity || '1') > 0.01
-      ) {
+      if (isSkeletonCardVisibleForStats(el)) {
         visibleCardCount += 1;
         recordRelationLabelCardBlocker(el);
       }
@@ -2731,12 +2735,7 @@ export function SigmaSkeletonCards({
         reportedVisibleCardCount = 0;
         relationLabelCardBlockers.length = 0;
         for (const el of orderedEls) {
-          const style = getComputedStyle(el);
-          if (
-            el.dataset.surfaceHidden !== 'true' &&
-            style.visibility !== 'hidden' &&
-            Number(style.opacity || el.style.opacity || '1') > 0.01
-          ) {
+          if (isSkeletonCardVisibleForStats(el)) {
             reportedVisibleCardCount += 1;
             recordRelationLabelCardBlocker(el);
           }
@@ -3188,6 +3187,29 @@ export function SigmaSkeletonCards({
       container.dataset.domWriteDedupeContract = 'skip-unchanged-transform-and-path';
       container.dataset.domWriteAppliedCount = String(domWriteStats.applied);
       container.dataset.domWriteSkippedCount = String(domWriteStats.skipped);
+      const finalVisibleCardCount = orderedEls.filter(isSkeletonCardVisibleForStats).length;
+      if (finalVisibleCardCount !== reportedVisibleCardCount) {
+        reportedVisibleCardCount = finalVisibleCardCount;
+        container.dataset.visibleCardCount = String(reportedVisibleCardCount);
+        container.dataset.visibilityCountSource = `${visibilityCountSource}-final-recount`;
+        const nextVisibilityStats = {
+          visible: reportedVisibleCardCount,
+          total: orderedEls.length,
+        };
+        if (
+          shouldReportSkeletonVisibilityStats(
+            lastVisibilityStatsRef.current,
+            nextVisibilityStats,
+          )
+        ) {
+          lastVisibilityStatsRef.current = nextVisibilityStats;
+          visibilityStatsReportCountRef.current += 1;
+          container.dataset.visibilityStatsReportCount = String(
+            visibilityStatsReportCountRef.current,
+          );
+          onVisibilityChange?.(nextVisibilityStats);
+        }
+      }
       for (const overlay of container.querySelectorAll<HTMLElement>(
         '[data-selected-relation-overlay][data-selected-relation-halo="true"]',
       )) {

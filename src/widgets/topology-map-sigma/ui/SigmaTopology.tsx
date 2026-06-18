@@ -3494,9 +3494,13 @@ function SigmaTopologyImpl({
           labels={{
             title: t('relationLegendTitle'),
             strong: t('relationLegendStrong'),
+            strongShort: t('relationLegendStrongShort'),
             supported: t('relationLegendSupported'),
+            supportedShort: t('relationLegendSupportedShort'),
             weak: t('relationLegendWeak'),
+            weakShort: t('relationLegendWeakShort'),
             review: t('relationLegendReview'),
+            reviewShort: t('relationLegendReviewShort'),
           }}
         />
       ) : null}
