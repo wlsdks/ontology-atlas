@@ -2783,6 +2783,13 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-row-focus-ring-token",
     "--topology-node-popover-relation-row-focus-ring",
   );
+  const conceptSearch = page.getByTestId("topology-concept-search");
+  await conceptSearch.focus();
+  await page.keyboard.press("Tab");
+  await expect(
+    conceptSearch,
+    "graph keyboard navigation should not trap native Tab movement on the search action",
+  ).not.toBeFocused();
   await expect(
     firstRelationRow.locator("[data-relation-direction-marker]").first(),
   ).toHaveAttribute(

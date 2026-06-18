@@ -2936,6 +2936,7 @@ function SigmaTopologyImpl({
       <div
         ref={containerRef}
         data-testid="sigma-topology-viewport"
+        data-graph-keyboard-nav-root="true"
         data-arranging={arranging ? 'true' : 'false'}
         data-sigma-ready={sigmaInstance ? 'true' : 'false'}
         data-sigma-boot-error={sigmaBootError ? 'true' : 'false'}
