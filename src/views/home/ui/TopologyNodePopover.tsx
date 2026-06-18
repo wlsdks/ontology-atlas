@@ -355,11 +355,13 @@ export function TopologyNodePopover({
         data-compact-action-contract={collapsedActionContract}
         data-title-readability-contract="selected-node-title-readable"
         data-compact-facts-layout-contract="facts-before-actions"
-        className={`flex min-w-0 w-[var(--topology-node-popover-fluid-width)] max-w-[var(--topology-node-popover-fluid-width)] flex-wrap items-start gap-[var(--topology-node-popover-chip-gap)] overflow-hidden rounded-[var(--topology-node-popover-radius)] border border-[color:var(--topology-node-popover-border)] bg-[color:var(--topology-node-popover-surface)] px-[var(--topology-node-popover-chip-padding-x)] py-[var(--topology-node-popover-chip-padding-y)] shadow-[var(--topology-node-popover-shadow)] max-[540px]:flex-nowrap max-[540px]:items-center lg:w-[var(--topology-node-popover-rail-width)] lg:max-w-[var(--topology-node-popover-rail-width)] min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)] min-[1400px]:max-w-[var(--topology-node-popover-wide-rail-width)] min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)] min-[1800px]:max-w-[var(--topology-node-popover-cinema-rail-width)] ${className ?? ""}`}
+        data-phone-layout-contract="title-row-before-actions"
+        className={`flex min-w-0 w-[var(--topology-node-popover-fluid-width)] max-w-[var(--topology-node-popover-fluid-width)] flex-wrap items-start gap-[var(--topology-node-popover-chip-gap)] overflow-hidden rounded-[var(--topology-node-popover-radius)] border border-[color:var(--topology-node-popover-border)] bg-[color:var(--topology-node-popover-surface)] px-[var(--topology-node-popover-chip-padding-x)] py-[var(--topology-node-popover-chip-padding-y)] shadow-[var(--topology-node-popover-shadow)] max-[540px]:items-start lg:w-[var(--topology-node-popover-rail-width)] lg:max-w-[var(--topology-node-popover-rail-width)] min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)] min-[1400px]:max-w-[var(--topology-node-popover-wide-rail-width)] min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)] min-[1800px]:max-w-[var(--topology-node-popover-cinema-rail-width)] ${className ?? ""}`}
       >
         <div
           data-node-popover-compact-fact-priority="selected-node-facts-before-actions"
-          className="min-w-0 basis-full max-[540px]:flex-1 max-[540px]:basis-auto"
+          data-phone-layout-contract="title-keeps-full-width-before-actions"
+          className="min-w-0 basis-full"
         >
           <p
             data-selected-node-kind-label
@@ -409,7 +411,8 @@ export function TopologyNodePopover({
         <div
           data-testid="topology-node-popover-compact-actions"
           data-compact-actions-layout-contract="actions-after-facts"
-          className="flex min-w-0 w-full items-center justify-end gap-1 max-[540px]:w-auto"
+          data-phone-layout-contract="actions-wrap-below-title"
+          className="flex min-w-0 w-full items-center justify-end gap-1"
         >
           {primaryAction ? (
             <button

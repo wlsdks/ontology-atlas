@@ -789,6 +789,10 @@ describe("TopologyNodePopover", () => {
       "data-compact-facts-layout-contract",
       "facts-before-actions",
     );
+    expect(popover).toHaveAttribute(
+      "data-phone-layout-contract",
+      "title-row-before-actions",
+    );
     expect(popover.className).toContain("gap-[var(--topology-node-popover-chip-gap)]");
     expect(popover.className).toContain("flex-wrap");
     expect(popover.className).toContain("lg:w-[var(--topology-node-popover-rail-width)]");
@@ -830,11 +834,19 @@ describe("TopologyNodePopover", () => {
       "data-node-popover-compact-fact-priority",
       "selected-node-facts-before-actions",
     );
+    expect(factPriority).toHaveAttribute(
+      "data-phone-layout-contract",
+      "title-keeps-full-width-before-actions",
+    );
     expect(factPriority?.className).toContain("basis-full");
     const actions = screen.getByTestId("topology-node-popover-compact-actions");
     expect(actions).toHaveAttribute(
       "data-compact-actions-layout-contract",
       "actions-after-facts",
+    );
+    expect(actions).toHaveAttribute(
+      "data-phone-layout-contract",
+      "actions-wrap-below-title",
     );
     expect(actions.className).toContain("w-full");
     expect(actions.className).toContain("justify-end");
@@ -1874,9 +1886,17 @@ describe("TopologyNodePopover", () => {
       "data-compact-facts-layout-contract",
       "facts-before-actions",
     );
+    expect(popover).toHaveAttribute(
+      "data-phone-layout-contract",
+      "title-row-before-actions",
+    );
     expect(screen.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
       "data-compact-actions-layout-contract",
       "actions-after-facts",
+    );
+    expect(screen.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
+      "data-phone-layout-contract",
+      "actions-wrap-below-title",
     );
     expect(action).toHaveAttribute("data-popover-action", "focus-brief");
     expect(action).toHaveAttribute("data-agent-handoff-action", "copy-focus-brief");

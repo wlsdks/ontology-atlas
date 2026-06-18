@@ -2882,9 +2882,17 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "data-compact-facts-layout-contract",
     "facts-before-actions",
   );
+  await expect(popover).toHaveAttribute(
+    "data-phone-layout-contract",
+    "title-row-before-actions",
+  );
   await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
     "data-compact-actions-layout-contract",
     "actions-after-facts",
+  );
+  await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
+    "data-phone-layout-contract",
+    "actions-wrap-below-title",
   );
   await expect(popover).toHaveAttribute(
     "data-popover-surface-token",
@@ -2921,6 +2929,17 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     titleReadability.overflowsMoreThanTwoLines,
     "selected node title should clamp at two lines instead of one-line truncation",
   ).toBe(false);
+  const popoverRect = await rectOf(popover);
+  const titleRect = await rectOf(popoverTitle);
+  const actionRect = await rectOf(page.getByTestId("topology-node-popover-compact-actions"));
+  expect(
+    titleRect.right,
+    "phone selected node title should keep full popover width before action row",
+  ).toBeGreaterThanOrEqual(popoverRect.right - 24);
+  expect(
+    actionRect.top,
+    "phone compact actions should wrap below the selected title row",
+  ).toBeGreaterThanOrEqual(titleRect.bottom - 1);
   const compactRelationFacts = page.getByTestId("topology-node-popover-compact-relation-facts");
   await expect(compactRelationFacts).toBeVisible();
   await expect(compactRelationFacts).toHaveAttribute(
@@ -2989,7 +3008,6 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "data-chrome-action-text-token",
     "--topology-node-popover-chrome-action-text",
   );
-  const popoverRect = await rectOf(popover);
   expect(popoverRect.top, "compact focus popover should stay under top chrome").toBeLessThanOrEqual(96);
   expect(popoverRect.left, "compact focus popover should stay inside viewport").toBeGreaterThanOrEqual(8);
   expect(popoverRect.right, "compact focus popover should stay inside viewport").toBeLessThanOrEqual(
@@ -3232,7 +3250,7 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   );
   await expect(helpButton).toHaveAttribute(
     "data-phone-help-top-token",
-    "--topology-shortcuts-help-phone-top",
+    "--topology-shortcuts-help-focus-phone-top",
   );
   const helpRect = await rectOf(helpButton);
   expect(intersects(helpRect, popoverRect), "phone help entry must not overlap focus popover").toBe(

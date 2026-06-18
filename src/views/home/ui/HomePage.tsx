@@ -2257,10 +2257,16 @@ export function HomePage() {
                   }
                   data-phone-help-top-token={
                     topologyShortcutHelpPhoneVisible
-                      ? "--topology-shortcuts-help-phone-top"
+                      ? selectedNodeFocusActive
+                        ? "--topology-shortcuts-help-focus-phone-top"
+                        : "--topology-shortcuts-help-phone-top"
                       : undefined
                   }
-                  className={`topology-ui-scale pointer-events-auto absolute right-4 top-[var(--topology-shortcuts-help-phone-top)] z-20 h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] font-mono text-[14px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:right-6 md:top-[var(--topology-shortcuts-help-desktop-top)] md:flex xl:right-8 ${
+                  className={`topology-ui-scale pointer-events-auto absolute right-4 ${
+                    selectedNodeFocusActive
+                      ? "top-[var(--topology-shortcuts-help-focus-phone-top)]"
+                      : "top-[var(--topology-shortcuts-help-phone-top)]"
+                  } z-20 h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] font-mono text-[14px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:right-6 md:top-[var(--topology-shortcuts-help-desktop-top)] md:flex xl:right-8 ${
                     topologyShortcutHelpPhoneVisible ? "flex" : "hidden"
                   }`}
                 >
