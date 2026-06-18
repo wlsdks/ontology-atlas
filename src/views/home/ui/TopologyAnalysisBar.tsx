@@ -1318,10 +1318,11 @@ export function TopologyAnalysisBar({
                   />
                 ) : null}
                 <p
-                  className="break-keep rounded-md border border-[color:var(--topology-overview-notice-border)] bg-[color:var(--topology-overview-notice-surface)] px-3 py-[var(--topology-overview-notice-compact-padding-y)] text-[12px] leading-5 text-[color:var(--color-text-tertiary)]"
+                  className="break-keep rounded-md border border-[color:var(--topology-overview-notice-border)] bg-[color:var(--topology-overview-notice-surface)] px-3 py-[var(--topology-overview-notice-compact-padding-y)] text-[12px] leading-5 text-[color:var(--color-text-tertiary)] max-md:sr-only"
                   data-surface-token="--topology-overview-notice-surface"
                   data-border-token="--topology-overview-notice-border"
                   data-compact-padding-y-token="--topology-overview-notice-compact-padding-y"
+                  data-phone-overview-notice-contract="sr-only-while-map-evidence-wins"
                   data-testid="topology-overview-relation-notice"
                 >
                   {overviewRelationNotice}

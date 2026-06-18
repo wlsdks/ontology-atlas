@@ -541,6 +541,10 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-border-token",
     "--topology-overview-notice-border",
   );
+  await expect(page.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
+    "data-phone-overview-notice-contract",
+    "sr-only-while-map-evidence-wins",
+  );
   await expect(panel.getByRole("button", { name: /Copy topology overview brief|토폴로지 개요/i })).toBeVisible();
   await expect(page.getByTestId("topology-overview-brief-copy")).toHaveAttribute(
     "data-border-token",
@@ -633,7 +637,7 @@ test("Relief overview panel owns the phone read layer above map cards", async ({
   expect(
     compactOverviewPanelRect.height,
     "phone overview support rail should leave first-viewport map evidence visible",
-  ).toBeLessThanOrEqual(625);
+  ).toBeLessThanOrEqual(500);
 
   const layerProof = await panel.evaluate((el) => {
     const panelRect = el.getBoundingClientRect();

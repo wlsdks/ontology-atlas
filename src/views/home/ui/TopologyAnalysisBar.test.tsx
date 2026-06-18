@@ -1018,10 +1018,15 @@ describe("TopologyAnalysisBar", () => {
       "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
     );
     expect(notice.closest("p")?.className).toContain("leading-5");
+    expect(notice.closest("p")?.className).toContain("max-md:sr-only");
     expect(notice.closest("p")?.className).not.toContain("line-clamp-2");
     expect(screen.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
       "data-surface-token",
       "--topology-overview-notice-surface",
+    );
+    expect(screen.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
+      "data-phone-overview-notice-contract",
+      "sr-only-while-map-evidence-wins",
     );
   });
 
