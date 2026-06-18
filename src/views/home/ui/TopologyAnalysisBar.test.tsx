@@ -1604,6 +1604,15 @@ describe("TopologyAnalysisBar", () => {
     expect(handoff).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
     expect(handoff).toHaveAttribute("data-surface-token", "--topology-path-handoff-surface");
     expect(handoff).toHaveAttribute("data-border-token", "--topology-path-handoff-border");
+    expect(handoff).toHaveAttribute("data-text-token", "--topology-path-handoff-text");
+    expect(handoff).toHaveAttribute(
+      "data-label-text-token",
+      "--topology-path-handoff-label-text",
+    );
+    expect(handoff.className).toContain(
+      "text-[color:var(--topology-path-handoff-text)]",
+    );
+    expect(handoff.className).not.toContain("--color-text-tertiary");
     expect(handoff).toHaveAttribute(
       "data-action-min-height-token",
       "--topology-path-handoff-action-min-height",
@@ -1637,6 +1646,14 @@ describe("TopologyAnalysisBar", () => {
       "data-border-token",
       "--topology-path-handoff-cli-border",
     );
+    expect(cliChip).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-handoff-cli-text",
+    );
+    expect(cliChip.className).toContain(
+      "text-[color:var(--topology-path-handoff-cli-text)]",
+    );
+    expect(cliChip.className).not.toContain("--color-text-tertiary");
     expect(handoff).toHaveTextContent("Agent handoff");
     expect(handoff).toHaveTextContent("MCP find_path");
     expect(handoff).toHaveTextContent("CLI path");
@@ -2327,6 +2344,10 @@ describe("TopologyAnalysisBar", () => {
       "--topology-path-primary-evidence-border",
     );
     expect(primaryEvidenceAction).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-primary-evidence-text",
+    );
+    expect(primaryEvidenceAction).toHaveAttribute(
       "data-hover-surface-token",
       "--topology-path-primary-evidence-hover-surface",
     );
@@ -2334,6 +2355,14 @@ describe("TopologyAnalysisBar", () => {
       "data-hover-border-token",
       "--topology-path-primary-evidence-hover-border",
     );
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-hover-text-token",
+      "--topology-path-primary-evidence-hover-text",
+    );
+    expect(primaryEvidenceAction.className).toContain(
+      "text-[color:var(--topology-path-primary-evidence-text)]",
+    );
+    expect(primaryEvidenceAction.className).not.toContain("--color-text-secondary");
     expect(
       within(handoff).getByRole("button", { name: "Copy topology path evidence" }),
     ).toBeInTheDocument();
@@ -2474,9 +2503,21 @@ describe("TopologyAnalysisBar", () => {
       "--topology-path-proof-summary-surface",
     );
     expect(summary).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-proof-summary-text",
+    );
+    expect(summary).toHaveAttribute(
       "data-hover-surface-token",
       "--topology-path-proof-summary-hover-surface",
     );
+    expect(summary).toHaveAttribute(
+      "data-hover-text-token",
+      "--topology-path-proof-summary-hover-text",
+    );
+    expect(summary.className).toContain(
+      "text-[color:var(--topology-path-proof-summary-text)]",
+    );
+    expect(summary.className).not.toContain("--color-text-quaternary");
     expect(summary.closest("details")).not.toHaveAttribute("open");
     expect(screen.getByTestId("topology-path-proof-chevron")).toHaveClass(
       "group-open:rotate-180",

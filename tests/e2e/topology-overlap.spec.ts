@@ -1916,6 +1916,14 @@ for (const viewport of VIEWPORTS) {
       "--topology-path-handoff-surface",
     );
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-handoff-text",
+    );
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-label-text-token",
+      "--topology-path-handoff-label-text",
+    );
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-action-min-height-token",
       "--topology-path-handoff-action-min-height",
     );
@@ -1926,6 +1934,10 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("topology-path-handoff-cli-chip")).toHaveAttribute(
       "data-border-token",
       "--topology-path-handoff-cli-border",
+    );
+    await expect(page.getByTestId("topology-path-handoff-cli-chip")).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-handoff-cli-text",
     );
     const handoffDoesNotOverflow = await page
       .getByTestId("topology-path-agent-handoff")
@@ -2138,8 +2150,24 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "--topology-path-primary-evidence-surface",
   );
   await expect(primaryEvidenceAction).toHaveAttribute(
+    "data-text-token",
+    "--topology-path-primary-evidence-text",
+  );
+  await expect(primaryEvidenceAction).toHaveAttribute(
     "data-hover-surface-token",
     "--topology-path-primary-evidence-hover-surface",
+  );
+  await expect(primaryEvidenceAction).toHaveAttribute(
+    "data-hover-text-token",
+    "--topology-path-primary-evidence-hover-text",
+  );
+  await expect(page.getByTestId("topology-path-proof-summary")).toHaveAttribute(
+    "data-text-token",
+    "--topology-path-proof-summary-text",
+  );
+  await expect(page.getByTestId("topology-path-proof-summary")).toHaveAttribute(
+    "data-hover-text-token",
+    "--topology-path-proof-summary-hover-text",
   );
   await page.getByTestId("topology-path-proof-summary").click();
   await expect(page.locator('[data-path-proof-status="ready"]')).toHaveAttribute(
@@ -2234,6 +2262,10 @@ test("Relief Path accepts short from/to shared-link aliases", async ({ page }) =
   await expect(page.getByTestId("topology-path-handoff-mcp-chip")).toHaveAttribute(
     "data-text-token",
     "--topology-path-handoff-mcp-text",
+  );
+  await expect(page.getByTestId("topology-path-handoff-cli-chip")).toHaveAttribute(
+    "data-text-token",
+    "--topology-path-handoff-cli-text",
   );
   const primaryEvidenceAction = page.getByTestId("topology-path-primary-evidence-action");
   await expect(primaryEvidenceAction).toBeVisible();

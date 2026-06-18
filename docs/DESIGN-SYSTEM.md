@@ -408,8 +408,10 @@ names in component data markers and tests whenever a surface depends on
   `--topology-path-proof-step-border` /
   `--topology-path-proof-summary-surface` /
   `--topology-path-proof-summary-border` /
+  `--topology-path-proof-summary-text` /
   `--topology-path-proof-summary-hover-surface` /
   `--topology-path-proof-summary-hover-border` /
+  `--topology-path-proof-summary-hover-text` /
   `--topology-path-proof-ready-surface` /
   `--topology-path-proof-ready-border` /
   `--topology-path-proof-ready-text` /
@@ -429,21 +431,28 @@ names in component data markers and tests whenever a surface depends on
   made from the full visible candidate set or a collision-managed subset.
 - `--topology-path-primary-evidence-surface` /
   `--topology-path-primary-evidence-border` /
+  `--topology-path-primary-evidence-text` /
   `--topology-path-primary-evidence-hover-surface` /
-  `--topology-path-primary-evidence-hover-border`: path result primary handoff
+  `--topology-path-primary-evidence-hover-border` /
+  `--topology-path-primary-evidence-hover-text`: path result primary handoff
   action. When a source and target are selected, `Copy path evidence` must read
   as the first actionable proof step inside the agent handoff rail, before MCP
   and CLI fallback chips and before the secondary proof disclosure.
+- `--topology-path-handoff-text` /
+  `--topology-path-handoff-label-text`: path handoff rail copy. The rail label
+  and ambient text are support copy for the selected path, so they stay quieter
+  than selected endpoint cards while still framing the agent next action.
 - `--topology-path-handoff-mcp-surface` /
   `--topology-path-handoff-mcp-border` /
   `--topology-path-handoff-mcp-text` /
   `--topology-path-handoff-cli-surface` /
-  `--topology-path-handoff-cli-border`: path handoff fallback chips. The MCP
-  chip remains the stronger command target, while the CLI fallback stays visible
-  but quieter in the same compact rail. The same family covers the disclosed
-  path checks rail (`path`, `relation_check`, `explain_relation`, `all_paths`
-  plan, and `all_paths` run) so graph-evidence copy tools read as one sequence
-  rather than unrelated compact buttons.
+  `--topology-path-handoff-cli-border` /
+  `--topology-path-handoff-cli-text`: path handoff fallback chips. The MCP chip
+  remains the stronger command target, while the CLI fallback stays visible but
+  quieter in the same compact rail. The same family covers the disclosed path
+  checks rail (`path`, `relation_check`, `explain_relation`, `all_paths` plan,
+  and `all_paths` run) so graph-evidence copy tools read as one sequence rather
+  than unrelated compact buttons.
 - `--topology-overview-signal-grid-surface` /
   `--topology-overview-signal-grid-border` /
   `--topology-overview-notice-surface` /

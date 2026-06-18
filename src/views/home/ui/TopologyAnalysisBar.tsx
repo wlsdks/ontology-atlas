@@ -1099,6 +1099,8 @@ export function TopologyAnalysisBar({
               data-overflow-contract="no-horizontal-scroll"
               data-surface-token="--topology-path-handoff-surface"
               data-border-token="--topology-path-handoff-border"
+              data-text-token="--topology-path-handoff-text"
+              data-label-text-token="--topology-path-handoff-label-text"
               data-action-min-height-token="--topology-path-handoff-action-min-height"
               data-action-radius-token="--topology-path-handoff-action-radius"
               data-primary-evidence-visible={
@@ -1111,9 +1113,9 @@ export function TopologyAnalysisBar({
               }
               data-mcp-action="find_path"
               data-cli-fallback="ontology-atlas path"
-              className="mt-3 grid min-w-0 grid-cols-2 items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2.5 py-2 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
+              className="mt-3 grid min-w-0 grid-cols-2 items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2.5 py-2 font-mono text-[10px] text-[color:var(--topology-path-handoff-text)]"
             >
-              <span className="col-span-2 min-w-0 uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <span className="col-span-2 min-w-0 uppercase tracking-[0.12em] text-[color:var(--topology-path-handoff-label-text)]">
                 {labels.pathHandoffLabel}
               </span>
               {pathSourceSlug && pathTargetSlug ? (
@@ -1124,9 +1126,11 @@ export function TopologyAnalysisBar({
                   data-path-primary-evidence-contract="visible-before-proof-disclosure"
                   data-surface-token="--topology-path-primary-evidence-surface"
                   data-border-token="--topology-path-primary-evidence-border"
+                  data-text-token="--topology-path-primary-evidence-text"
                   data-hover-surface-token="--topology-path-primary-evidence-hover-surface"
                   data-hover-border-token="--topology-path-primary-evidence-hover-border"
-                  className="col-span-2 inline-flex min-h-9 min-w-0 items-center justify-between gap-2 rounded-md border border-[color:var(--topology-path-primary-evidence-border)] bg-[color:var(--topology-path-primary-evidence-surface)] px-2.5 py-1.5 text-left text-[10.5px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--topology-path-primary-evidence-hover-border)] hover:bg-[color:var(--topology-path-primary-evidence-hover-surface)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
+                  data-hover-text-token="--topology-path-primary-evidence-hover-text"
+                  className="col-span-2 inline-flex min-h-9 min-w-0 items-center justify-between gap-2 rounded-md border border-[color:var(--topology-path-primary-evidence-border)] bg-[color:var(--topology-path-primary-evidence-surface)] px-2.5 py-1.5 text-left text-[10.5px] text-[color:var(--topology-path-primary-evidence-text)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--topology-path-primary-evidence-hover-border)] hover:bg-[color:var(--topology-path-primary-evidence-hover-surface)] hover:text-[color:var(--topology-path-primary-evidence-hover-text)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
                   aria-label={
                     pathEvidenceCopied
                       ? labels.pathEvidenceCopiedAriaLabel
@@ -1154,7 +1158,8 @@ export function TopologyAnalysisBar({
                 data-testid="topology-path-handoff-cli-chip"
                 data-surface-token="--topology-path-handoff-cli-surface"
                 data-border-token="--topology-path-handoff-cli-border"
-                className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] px-1.5 py-0.5 text-center uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+                data-text-token="--topology-path-handoff-cli-text"
+                className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] px-1.5 py-0.5 text-center uppercase tracking-[0.10em] text-[color:var(--topology-path-handoff-cli-text)]"
               >
                 {labels.pathHandoffCliFallback}
               </span>
@@ -1492,13 +1497,15 @@ export function TopologyAnalysisBar({
           {panelMode === "path" && pathSourceSlug && pathTargetSlug ? (
             <details className="group mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
               <summary
-                className="flex min-h-9 w-full cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:var(--topology-path-proof-summary-border)] bg-[color:var(--topology-path-proof-summary-surface)] px-2 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:var(--topology-path-proof-summary-hover-border)] hover:bg-[color:var(--topology-path-proof-summary-hover-surface)] hover:text-[color:var(--color-text-secondary)]"
+                className="flex min-h-9 w-full cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:var(--topology-path-proof-summary-border)] bg-[color:var(--topology-path-proof-summary-surface)] px-2 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--topology-path-proof-summary-text)] transition-colors hover:border-[color:var(--topology-path-proof-summary-hover-border)] hover:bg-[color:var(--topology-path-proof-summary-hover-surface)] hover:text-[color:var(--topology-path-proof-summary-hover-text)]"
                 data-testid="topology-path-proof-summary"
                 data-summary-contract="full-width-proof-disclosure"
                 data-surface-token="--topology-path-proof-summary-surface"
                 data-border-token="--topology-path-proof-summary-border"
+                data-text-token="--topology-path-proof-summary-text"
                 data-hover-surface-token="--topology-path-proof-summary-hover-surface"
                 data-hover-border-token="--topology-path-proof-summary-hover-border"
+                data-hover-text-token="--topology-path-proof-summary-hover-text"
               >
                 <ChevronDown
                   size={12}
