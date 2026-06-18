@@ -3071,7 +3071,7 @@
       "healthEvidenceActionPromotion": "Promote it if this is now a key concept.",
       "healthEvidenceNone": "No actionable target",
       "healthEvidenceUrl": "URL",
-      "overviewPrompt": "Start with the product/system map: domains, capabilities, and change paths stay visible before agent handoff.",
+      "overviewPrompt": "Start with the product/system map: domains, capabilities, and change paths stay visible for team inspection and sharing.",
       "overviewRelationVisibleCountSuffix": "shown",
       "overviewSkeletonCardCountSuffix": "concept cards",
       "overviewRelationLodNotice": "Showing the representative skeleton only. Zoom in or use Focus/Path to inspect relations.",

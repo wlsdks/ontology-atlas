@@ -728,7 +728,7 @@ describe("TopologyAnalysisBar", () => {
         labels={{
           ...labels,
           overviewPrompt:
-            "Start with the product/system map: domains, capabilities, and change paths stay visible before agent handoff.",
+            "Start with the product/system map: domains, capabilities, and change paths stay visible for team inspection and sharing.",
         }}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -736,7 +736,7 @@ describe("TopologyAnalysisBar", () => {
     );
 
     const prompt = screen.getByText(
-      "Start with the product/system map: domains, capabilities, and change paths stay visible before agent handoff.",
+      "Start with the product/system map: domains, capabilities, and change paths stay visible for team inspection and sharing.",
     );
     expect(prompt.className).toContain("line-clamp-3");
     expect(prompt.className).not.toContain("truncate");

@@ -318,7 +318,7 @@ describe('i18n message catalog', () => {
     );
   });
 
-  it('keeps topology overview framed as a product/system map before agent handoff', async () => {
+  it('keeps topology overview framed as a product/system map for team inspection decisions', async () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
@@ -335,7 +335,8 @@ describe('i18n message catalog', () => {
     assert.equal(en.topology.controls.docsLabel, 'Workspace');
     assert.match(en.topology.analysis.overviewPrompt, /product\/system map/i);
     assert.match(en.topology.analysis.overviewPrompt, /domains, capabilities, and change paths/i);
-    assert.match(en.topology.analysis.overviewPrompt, /agent handoff/i);
+    assert.match(en.topology.analysis.overviewPrompt, /team inspection and sharing/i);
+    assert.doesNotMatch(en.topology.analysis.overviewPrompt, /agent handoff/i);
     assert.doesNotMatch(
       [
         en.topology.analysis.overviewWorkOrderTitle,
@@ -375,7 +376,8 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.controls.docsLabel, '작업공간');
     assert.match(ko.topology.analysis.overviewPrompt, /제품\/시스템 지도/);
     assert.match(ko.topology.analysis.overviewPrompt, /영역, 기능, 변경 경로/);
-    assert.match(ko.topology.analysis.overviewPrompt, /에이전트 인계/);
+    assert.match(ko.topology.analysis.overviewPrompt, /점검과 공유/);
+    assert.doesNotMatch(ko.topology.analysis.overviewPrompt, /에이전트 인계/);
     assert.equal(ko.topology.controls.relayoutToast, '지형도를 다시 정렬합니다');
     assert.doesNotMatch(
       [

@@ -3071,7 +3071,7 @@
       "healthEvidenceActionPromotion": "중요한 노드라면 상위 개념으로 올릴지 검토해 주세요.",
       "healthEvidenceNone": "점검 대상 없음",
       "healthEvidenceUrl": "URL",
-      "overviewPrompt": "제품/시스템 지도를 먼저 읽으세요. 영역, 기능, 변경 경로를 본 뒤 에이전트 인계로 이어갑니다.",
+      "overviewPrompt": "제품/시스템 지도를 먼저 읽으세요. 영역, 기능, 변경 경로가 점검과 공유의 기준이 됩니다.",
       "overviewRelationVisibleCountSuffix": "표시 중",
       "overviewSkeletonCardCountSuffix": "대표 카드",
       "overviewRelationLodNotice": "대표 골격만 표시 중입니다. 확대하거나 초점·경로로 필요한 연결을 확인하세요.",
