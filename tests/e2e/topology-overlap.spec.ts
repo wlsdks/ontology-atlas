@@ -474,6 +474,14 @@ test("Relief overview panel owns the phone read layer above map cards", async ({
     .locator("[data-overview-provenance-row]")
     .evaluateAll((rows) => rows.every((row) => row.scrollWidth <= row.clientWidth + 1));
   expect(provenanceRowsFit, "phone overview provenance rows should not truncate").toBe(true);
+  await expect(page.getByTestId("topology-overview-relation-quality-supported")).toHaveAttribute(
+    "data-compact-label",
+    "support",
+  );
+  const overviewProofLabelsFit = await panel
+    .locator("[data-proof-label-contract='compact-visible-full-aria'] span:last-child")
+    .evaluateAll((labels) => labels.every((label) => label.scrollWidth <= label.clientWidth + 1));
+  expect(overviewProofLabelsFit, "phone overview proof labels should not truncate").toBe(true);
 });
 
 test("Relief default route renders the readable card skeleton without panel scroll", async ({
@@ -822,7 +830,16 @@ for (const viewport of VIEWPORTS) {
   }) => {
     await openRelief(page, viewport, { mode: "map" });
 
-    await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
+    await expect(page.getByTestId("topology-overview-agent-readiness")).toHaveAttribute(
+      "data-agent-readiness-summary",
+      /handoff-ready|handoff 가능/i,
+    );
+    await expect(page.locator('[data-agent-readiness-chip="ready"]')).toHaveAttribute(
+      "data-compact-label",
+      "ready",
+    );
+    await expect(page.locator('[data-agent-readiness-chip="ready"]')).toHaveAttribute(
+      "data-full-label",
       /handoff-ready|handoff 가능/i,
     );
     await expect(page.getByTestId("topology-overview-agent-readiness-meter")).toBeVisible();

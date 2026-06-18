@@ -2256,11 +2256,16 @@ function RelationQualityChip({
         : tone === "weak"
           ? "--topology-overview-proof-warning-text"
           : "--topology-overview-proof-review-text";
+  const displayLabel = compactOverviewProofLabel(label, tone);
 
   return (
     <span
+      aria-label={`${label}: ${count}`}
       className="grid min-w-0 gap-0.5 border-r border-[color:var(--topology-overview-proof-cell-divider)] px-1.5 py-1 last:border-r-0"
       data-relation-quality-chip={tone}
+      data-full-label={label}
+      data-compact-label={displayLabel}
+      data-proof-label-contract="compact-visible-full-aria"
       data-proof-cell-contract="flat-divider-cell"
       data-divider-token="--topology-overview-proof-cell-divider"
       data-text-token={textToken}
@@ -2269,8 +2274,8 @@ function RelationQualityChip({
       <span className={`font-mono text-[11px] leading-3 ${toneClass}`}>
         {count}
       </span>
-      <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-        {label}
+      <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
+        {displayLabel}
       </span>
     </span>
   );
@@ -2297,11 +2302,16 @@ function AgentReadinessChip({
       : tone === "preflight"
         ? "--topology-overview-proof-warning-text"
         : "--topology-overview-proof-review-text";
+  const displayLabel = compactOverviewProofLabel(label, tone);
 
   return (
     <span
+      aria-label={`${label}: ${count}`}
       className="grid min-w-0 gap-0.5 border-r border-[color:var(--topology-overview-proof-cell-divider)] px-1.5 py-0.5 last:border-r-0"
       data-agent-readiness-chip={tone}
+      data-full-label={label}
+      data-compact-label={displayLabel}
+      data-proof-label-contract="compact-visible-full-aria"
       data-proof-cell-contract="flat-divider-cell"
       data-divider-token="--topology-overview-proof-cell-divider"
       data-text-token={textToken}
@@ -2309,11 +2319,17 @@ function AgentReadinessChip({
       <span className={`font-mono text-[11px] leading-3 ${toneClass}`}>
         {count}
       </span>
-      <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-        {label}
+      <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
+        {displayLabel}
       </span>
     </span>
   );
+}
+
+function compactOverviewProofLabel(label: string, tone: string): string {
+  if (tone === "supported") return label.replace(/supported/i, "support");
+  if (tone === "ready") return label.replace(/handoff[-\s]?ready/i, "ready");
+  return label;
 }
 
 function AgentReadinessMeter({

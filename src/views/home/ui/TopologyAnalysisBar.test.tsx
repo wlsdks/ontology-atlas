@@ -308,6 +308,26 @@ describe("TopologyAnalysisBar", () => {
     expect(
       provenance.querySelector('[data-overview-provenance-row="needs-review"]'),
     ).toHaveTextContent("0");
+    const supportedQuality = screen.getByTestId("topology-overview-relation-quality-supported");
+    expect(supportedQuality).toHaveAttribute(
+      "data-proof-label-contract",
+      "compact-visible-full-aria",
+    );
+    expect(supportedQuality).toHaveAttribute("data-full-label", "supported");
+    expect(supportedQuality).toHaveAttribute("data-compact-label", "support");
+    expect(supportedQuality).toHaveAttribute("aria-label", "supported: 0");
+    expect(supportedQuality).toHaveTextContent("support");
+    const readyChip = screen
+      .getByTestId("topology-overview-agent-readiness")
+      .querySelector('[data-agent-readiness-chip="ready"]');
+    expect(readyChip).toHaveAttribute(
+      "data-proof-label-contract",
+      "compact-visible-full-aria",
+    );
+    expect(readyChip).toHaveAttribute("data-full-label", "handoff-ready");
+    expect(readyChip).toHaveAttribute("data-compact-label", "ready");
+    expect(readyChip).toHaveAttribute("aria-label", "handoff-ready: 387");
+    expect(readyChip).toHaveTextContent("ready");
   });
 
   it("promotes the panel to focus support when a node is selected from overview", () => {
