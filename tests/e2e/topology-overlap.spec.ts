@@ -9,6 +9,7 @@ const VIEWPORTS = [
 ];
 const MBP14_FULLSCREEN = { label: "mbp14-fullscreen", width: 1512, height: 949 };
 const INSTALLED_APP_WEBVIEW = { label: "installed-app-webview", width: 1512, height: 917 };
+const INSTALLED_APP_COMPACT_WEBVIEW = { label: "installed-app-compact-webview", width: 1224, height: 768 };
 const COMPACT_VIEWPORT = { label: "compact-900", width: 900, height: 760 };
 const PHONE_VIEWPORT = { label: "phone-390", width: 390, height: 844 };
 const NARROW_PHONE_VIEWPORT = { label: "phone-360", width: 360, height: 780 };
@@ -828,6 +829,28 @@ test("Relief default route renders the readable card skeleton without panel scro
     panelOverflow.scrollHeight - panelOverflow.clientHeight,
     "default overview panel content should fit at the deployed verifier size",
   ).toBeLessThanOrEqual(2);
+});
+
+test("Relief overview cards stay separated in a compact installed-app window", async ({
+  page,
+}) => {
+  await openRelief(page, INSTALLED_APP_COMPACT_WEBVIEW, { mode: "map" });
+
+  const panelRect = await rectOf(page.getByTestId("topology-analysis-panel"));
+  const legendRect = await kindLegendRectOrNull(page);
+  const minimapRect = await rectOf(page.getByTestId("topology-minimap"));
+  const cards = await visibleCardRects(page);
+  expect(
+    cardPairsThatIntersect(cards),
+    "compact installed-app overview should not let center context cards overlap",
+  ).toEqual([]);
+  expectCardsClear(
+    cards,
+    INSTALLED_APP_COMPACT_WEBVIEW,
+    panelRect,
+    legendRect,
+    minimapRect,
+  );
 });
 
 test("Korean Relief top actions stay localized", async ({
