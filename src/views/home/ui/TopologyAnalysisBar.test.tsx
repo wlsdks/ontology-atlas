@@ -102,6 +102,7 @@ const labels = {
   overviewBriefMcpWorkspaceCheck: "MCP workspace check",
   overviewRelationVisibleCountSuffix: "shown",
   overviewSkeletonCardCountSuffix: "concept cards",
+  overviewSkeletonCardHiddenSuffix: "folded",
   overviewRelationLodNotice:
     "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
   overviewRelationPreparingNotice:
@@ -1187,7 +1188,7 @@ describe("TopologyAnalysisBar", () => {
         }}
         healthAction={null}
         selectedTitle={null}
-        overviewRelationVisibility={{ visible: 21, total: 292, mode: "skeleton" }}
+        overviewRelationVisibility={{ visible: 8, total: 21, mode: "skeleton" }}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -1195,7 +1196,7 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByTestId("topology-overview-relation-progress")).toHaveTextContent(
-      "21 concept cards",
+      "8/21 concept cards · 13 folded",
     );
     expect(screen.queryByText(/0\/498/)).not.toBeInTheDocument();
     expect(
@@ -1203,6 +1204,38 @@ describe("TopologyAnalysisBar", () => {
         "Showing the readable concept map. Use Focus or Path for exact relation evidence.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("omits folded count when every overview skeleton card remains visible", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 294,
+          secondaryMetric: 498,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        overviewRelationVisibility={{ visible: 21, total: 21, mode: "skeleton" }}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("topology-overview-relation-progress")).toHaveTextContent(
+      "21/21 concept cards",
+    );
+    expect(screen.getByTestId("topology-overview-relation-progress")).not.toHaveTextContent(
+      "folded",
+    );
   });
 
   it("reserves space for the selected-node drawer on desktop", () => {

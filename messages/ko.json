@@ -3087,6 +3087,7 @@
       "overviewPrompt": "제품/시스템 지도를 먼저 읽으세요. 영역, 기능, 변경 경로가 점검과 공유의 기준이 됩니다.",
       "overviewRelationVisibleCountSuffix": "표시 중",
       "overviewSkeletonCardCountSuffix": "대표 카드",
+      "overviewSkeletonCardHiddenSuffix": "접힘",
       "overviewRelationLodNotice": "대표 골격만 표시 중입니다. 확대하거나 초점·경로로 필요한 연결을 확인하세요.",
       "overviewRelationPreparingNotice": "관계선을 정리하는 중입니다. 곧 상위 개념끼리의 대표 골격만 표시합니다.",
       "overviewSkeletonNotice": "읽기 쉬운 개념 지도를 표시 중입니다. 정확한 관계 근거는 초점·경로에서 확인하세요.",

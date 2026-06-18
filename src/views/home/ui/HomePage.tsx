@@ -1058,7 +1058,11 @@ export function HomePage() {
     analysisMode === "overview" && !topologyFiltersActive && localGraphRoot === null
       ? currentSigmaRelationVisibility
         ? currentSigmaRelationVisibility.mode === "skeleton"
-          ? currentSigmaRelationVisibility
+          ? {
+              ...currentSigmaRelationVisibility,
+              visible: topologyCardVisibility?.visible ?? currentSigmaRelationVisibility.visible,
+              total: topologyCardVisibility?.total ?? currentSigmaRelationVisibility.total,
+            }
           : { ...currentSigmaRelationVisibility, total: topologyTotalRelations }
         : null
       : null;
@@ -1858,6 +1862,9 @@ export function HomePage() {
                 ),
                 overviewSkeletonCardCountSuffix: t(
                   "analysis.overviewSkeletonCardCountSuffix",
+                ),
+                overviewSkeletonCardHiddenSuffix: t(
+                  "analysis.overviewSkeletonCardHiddenSuffix",
                 ),
                 overviewRelationLodNotice: t("analysis.overviewRelationLodNotice"),
                 overviewRelationPreparingNotice: t(

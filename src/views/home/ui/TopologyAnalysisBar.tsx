@@ -133,6 +133,7 @@ interface TopologyAnalysisBarLabels {
   overviewBriefMcpWorkspaceCheck: string;
   overviewRelationVisibleCountSuffix: string;
   overviewSkeletonCardCountSuffix: string;
+  overviewSkeletonCardHiddenSuffix: string;
   overviewRelationLodNotice: string;
   overviewRelationPreparingNotice: string;
   overviewSkeletonNotice: string;
@@ -433,6 +434,10 @@ export function TopologyAnalysisBar({
     overviewRelationVisibility.visible === 0;
   const relationVisibilitySkeleton =
     panelMode === "overview" && overviewRelationVisibility?.mode === "skeleton";
+  const overviewSkeletonHiddenCount =
+    relationVisibilitySkeleton && overviewRelationVisibility
+      ? Math.max(0, overviewRelationVisibility.total - overviewRelationVisibility.visible)
+      : 0;
   const overviewRelationNotice = relationVisibilitySkeleton
     ? labels.overviewSkeletonNotice
     : relationVisibilityPreparing
@@ -1406,7 +1411,9 @@ export function TopologyAnalysisBar({
                       label={labels.overviewRelationVisibleCountSuffix}
                       value={
                         relationVisibilitySkeleton
-                          ? `${overviewRelationVisibility.visible} ${labels.overviewSkeletonCardCountSuffix}`
+                          ? overviewSkeletonHiddenCount > 0
+                            ? `${overviewRelationVisibility.visible}/${overviewRelationVisibility.total} ${labels.overviewSkeletonCardCountSuffix} · ${overviewSkeletonHiddenCount} ${labels.overviewSkeletonCardHiddenSuffix}`
+                            : `${overviewRelationVisibility.visible}/${overviewRelationVisibility.total} ${labels.overviewSkeletonCardCountSuffix}`
                           : `${overviewRelationVisibility.visible}/${overviewRelationVisibility.total}`
                       }
                       compact

@@ -3087,6 +3087,7 @@
       "overviewPrompt": "Start with the product/system map: domains, capabilities, and change paths stay visible for team inspection and sharing.",
       "overviewRelationVisibleCountSuffix": "shown",
       "overviewSkeletonCardCountSuffix": "concept cards",
+      "overviewSkeletonCardHiddenSuffix": "folded",
       "overviewRelationLodNotice": "Showing the representative skeleton only. Zoom in or use Focus/Path to inspect relations.",
       "overviewRelationPreparingNotice": "Arranging links before showing only the top-concept skeleton.",
       "overviewSkeletonNotice": "Showing the readable concept map. Use Focus or Path for exact relation evidence.",
