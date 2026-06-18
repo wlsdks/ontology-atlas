@@ -262,6 +262,11 @@ names in component data markers and tests whenever a surface depends on
   `Used by` and `Depends on`. Use these for the first read of ontology
   directionality above the relation list; the cards should read as quiet
   node-context facts, not generic overlay panels.
+- `--topology-node-popover-relation-section-*`: selected node inspector
+  relation-section boundary and heading tokens. Use these for the divider,
+  `Connections` title, and typed-fact summary lens so the transition from node
+  metrics to relation rows remains part of the inspector grammar, not a generic
+  panel divider.
 - `--topology-node-popover-route-*`: compact relation-row handoff route rail
   inside the selected node inspector. Use these for fact/evidence/gate/action
   chips and their text so row-level MCP/CLI payloads scan as structured proof,

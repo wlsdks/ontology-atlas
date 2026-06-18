@@ -181,6 +181,23 @@ describe("TopologyNodePopover", () => {
       "data-body-scroll-contract",
       "content-scrolls-above-fixed-footer",
     );
+    const connectionSection = screen.getByTestId("topology-connections-section");
+    expect(connectionSection).toHaveAttribute(
+      "data-relation-section-border-token",
+      "--topology-node-popover-relation-section-border",
+    );
+    expect(connectionSection).toHaveAttribute(
+      "data-relation-section-title-text-token",
+      "--topology-node-popover-relation-section-title-text",
+    );
+    expect(connectionSection).toHaveAttribute(
+      "data-relation-section-lens-text-token",
+      "--topology-node-popover-relation-section-lens-text",
+    );
+    expect(connectionSection.className).toContain(
+      "border-[color:var(--topology-node-popover-relation-section-border)]",
+    );
+    expect(connectionSection.className).not.toContain("var(--color-divider)");
     expect(popover.className).toContain("lg:w-[var(--topology-node-popover-rail-width)]");
     expect(popover.className).toContain("lg:max-w-[var(--topology-node-popover-rail-width)]");
     expect(popover.className).toContain(
@@ -235,6 +252,17 @@ describe("TopologyNodePopover", () => {
     );
     expect(usedByMetricTexts?.[1]?.className).toContain(
       "text-[color:var(--topology-node-popover-metric-value-text)]",
+    );
+    const relationTitle = document.querySelector('[data-relation-section-title="connections"]');
+    expect(relationTitle?.className).toContain(
+      "text-[color:var(--topology-node-popover-relation-section-title-text)]",
+    );
+    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
+      "data-relation-section-lens",
+      "typed-fact-summary",
+    );
+    expect(screen.getByTestId("topology-relation-lens").className).toContain(
+      "text-[color:var(--topology-node-popover-relation-section-lens-text)]",
     );
   });
 

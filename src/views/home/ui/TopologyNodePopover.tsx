@@ -431,15 +431,22 @@ export function TopologyNodePopover({
         data-overflow-contract="single-vertical-scroll-region"
         data-readable-list-budget="relation-list-primary-scroll"
         data-relation-section-min-height-token="--topology-node-popover-relation-section-min-height"
-        className="mt-2.5 flex min-h-[var(--topology-node-popover-relation-section-min-height)] flex-1 flex-col overflow-hidden border-t border-[color:var(--color-divider)] px-4 py-3"
+        data-relation-section-border-token="--topology-node-popover-relation-section-border"
+        data-relation-section-title-text-token="--topology-node-popover-relation-section-title-text"
+        data-relation-section-lens-text-token="--topology-node-popover-relation-section-lens-text"
+        className="mt-2.5 flex min-h-[var(--topology-node-popover-relation-section-min-height)] flex-1 flex-col overflow-hidden border-t border-[color:var(--topology-node-popover-relation-section-border)] px-4 py-3"
       >
-        <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+        <p
+          data-relation-section-title="connections"
+          className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-node-popover-relation-section-title-text)]"
+        >
           {labels.connections} ({total})
         </p>
         <p
           data-testid="topology-relation-lens"
+          data-relation-section-lens="typed-fact-summary"
           data-phone-density-contract="hide-explainer-before-readable-row"
-          className="mb-1.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)] max-[540px]:hidden"
+          className="mb-1.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--topology-node-popover-relation-section-lens-text)] max-[540px]:hidden"
         >
           <span className="font-mono uppercase tracking-[0.08em]">
             {labels.relationLensTitle}

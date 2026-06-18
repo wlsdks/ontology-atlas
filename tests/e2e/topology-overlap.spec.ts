@@ -2715,9 +2715,22 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   );
 
   const connectionList = page.getByTestId("topology-node-connection-list");
-  await expect(page.getByTestId("topology-connections-section")).toHaveAttribute(
+  const connectionSection = page.getByTestId("topology-connections-section");
+  await expect(connectionSection).toHaveAttribute(
     "data-relation-section-min-height-token",
     "--topology-node-popover-relation-section-min-height",
+  );
+  await expect(connectionSection).toHaveAttribute(
+    "data-relation-section-border-token",
+    "--topology-node-popover-relation-section-border",
+  );
+  await expect(connectionSection).toHaveAttribute(
+    "data-relation-section-title-text-token",
+    "--topology-node-popover-relation-section-title-text",
+  );
+  await expect(connectionSection).toHaveAttribute(
+    "data-relation-section-lens-text-token",
+    "--topology-node-popover-relation-section-lens-text",
   );
   await expect(connectionList).toHaveAttribute(
     "data-relation-list-min-height-token",

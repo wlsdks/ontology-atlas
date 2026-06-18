@@ -556,6 +556,9 @@
     --topology-node-popover-metric-border: rgba(255, 255, 255, 0.075);
     --topology-node-popover-metric-label-text: rgba(222, 225, 255, 0.50);
     --topology-node-popover-metric-value-text: rgba(255, 255, 255, 0.90);
+    --topology-node-popover-relation-section-border: rgba(255, 255, 255, 0.075);
+    --topology-node-popover-relation-section-title-text: rgba(222, 225, 255, 0.54);
+    --topology-node-popover-relation-section-lens-text: rgba(222, 225, 255, 0.46);
     --topology-node-popover-action-surface: rgba(139, 151, 255, 0.075);
     --topology-node-popover-action-border: rgba(139, 151, 255, 0.24);
     --topology-node-popover-action-hover-border: rgba(139, 151, 255, 0.44);
@@ -1056,6 +1059,9 @@
     --topology-node-popover-metric-border: rgba(15, 23, 42, 0.10);
     --topology-node-popover-metric-label-text: rgba(71, 85, 105, 0.76);
     --topology-node-popover-metric-value-text: rgba(15, 23, 42, 0.90);
+    --topology-node-popover-relation-section-border: rgba(15, 23, 42, 0.10);
+    --topology-node-popover-relation-section-title-text: rgba(71, 85, 105, 0.82);
+    --topology-node-popover-relation-section-lens-text: rgba(71, 85, 105, 0.68);
     --topology-node-popover-action-surface: rgba(77, 86, 200, 0.08);
     --topology-node-popover-action-border: rgba(77, 86, 200, 0.24);
     --topology-node-popover-action-hover-border: rgba(77, 86, 200, 0.42);
