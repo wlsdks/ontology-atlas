@@ -356,11 +356,21 @@ export function SigmaSelectedEdgeCard({
     authored: t('authoredEvidence'),
     needsReview: t('noEvidence'),
   });
+  const visibleEvidenceLabel = relationEvidenceLabel(data, {
+    sourceBacked: (count) => t('evidenceCountShort', { count }),
+    authored: t('authoredEvidence'),
+    needsReview: t('noEvidence'),
+  });
   const evidenceState = relationEvidenceState(data);
   const claimLensText = relationClaimLensText({
     qualityLabel,
     evidenceLabel,
     typedFactLabel: t('typedFactLabel'),
+  });
+  const claimLensVisibleText = relationClaimLensText({
+    qualityLabel,
+    evidenceLabel: visibleEvidenceLabel,
+    typedFactLabel: t('typedFactShortLabel'),
   });
   const agentGateLabel = relationAgentGateLabel(data, {
     handoffReady: t('agentGateHandoffReady'),
@@ -498,6 +508,10 @@ export function SigmaSelectedEdgeCard({
             data-claim-lens-border-token={`--topology-selected-relation-claim-${relationQuality}-border`}
             data-claim-lens-text-token={`--topology-selected-relation-claim-${relationQuality}-text`}
             data-claim-lens-dot-token={`--topology-selected-relation-claim-${relationQuality}-dot`}
+            data-claim-lens-full-text={claimLensText}
+            data-claim-lens-visible-text={claimLensVisibleText}
+            data-claim-lens-copy-contract="visible-proof-full-proof-accessible"
+            title={claimLensText}
             className={`mt-0.5 inline-flex max-w-full items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] ${relationClaimLensTone(
               data.relationQuality,
             )}`}
@@ -509,7 +523,10 @@ export function SigmaSelectedEdgeCard({
                 data.relationQuality,
               )}`}
             />
-            <span className="min-w-0 truncate">{claimLensText}</span>
+            <span data-claim-lens-visible-summary className="min-w-0 truncate">
+              {claimLensVisibleText}
+            </span>
+            <span className="sr-only">{claimLensText}</span>
           </div>
           <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[11px] font-semibold leading-3.5">
             <span className="truncate">{data.sourceName}</span>

@@ -1160,7 +1160,26 @@ for (const viewport of VIEWPORTS) {
     );
     const claimLens = page.getByTestId("sigma-selected-edge-claim-lens");
     await expect(claimLens).toHaveAttribute("data-relation-quality", /strong|supported|weak|review/);
+    await expect(claimLens).toHaveAttribute(
+      "data-claim-lens-copy-contract",
+      "visible-proof-full-proof-accessible",
+    );
+    await expect(claimLens).toHaveAttribute(
+      "data-claim-lens-visible-text",
+      /src|authored|review|출처|작성자|검토/,
+    );
+    await expect(claimLens).toHaveAttribute(
+      "data-claim-lens-full-text",
+      /typed ontology fact|타입이 있는 온톨로지 사실/i,
+    );
     await expect(claimLens.locator("[data-relation-quality-dot]")).toBeVisible();
+    const claimLensVisibleFits = await claimLens
+      .locator("[data-claim-lens-visible-summary]")
+      .evaluate((element) => element.scrollWidth <= element.clientWidth + 1);
+    expect(
+      claimLensVisibleFits,
+      `selected relation claim lens visible proof should fit at ${viewport.label}`,
+    ).toBe(true);
     await expect(claimLens).toContainText(/typed ontology fact|타입이 있는 온톨로지 사실/i);
     await expect(claimLens).toContainText(/strong|supported|weak|review|강한 구조|근거 있음|약한 관련|검토 필요/i);
     const relationContract = page.getByTestId("sigma-selected-edge-contract");
@@ -4044,6 +4063,17 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
     throw new Error("selected relation card should expose relation quality");
   }
   const claimLens = page.getByTestId("sigma-selected-edge-claim-lens");
+  await expect(claimLens).toHaveAttribute(
+    "data-claim-lens-copy-contract",
+    "visible-proof-full-proof-accessible",
+  );
+  const compactClaimLensVisibleFits = await claimLens
+    .locator("[data-claim-lens-visible-summary]")
+    .evaluate((element) => element.scrollWidth <= element.clientWidth + 1);
+  expect(
+    compactClaimLensVisibleFits,
+    "compact selected relation claim lens visible proof should fit",
+  ).toBe(true);
   await expect(claimLens).toHaveAttribute(
     "data-claim-lens-surface-token",
     `--topology-selected-relation-claim-${selectedRelationQuality}-surface`,

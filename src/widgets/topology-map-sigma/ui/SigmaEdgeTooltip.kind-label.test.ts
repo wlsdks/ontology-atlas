@@ -343,6 +343,24 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(nextAction).toContainElement(primary);
     expect(nextAction).toContainElement(secondary);
 
+    const claimLens = screen.getByTestId('sigma-selected-edge-claim-lens');
+    expect(claimLens).toHaveAttribute(
+      'data-claim-lens-copy-contract',
+      'visible-proof-full-proof-accessible',
+    );
+    expect(claimLens).toHaveAttribute(
+      'data-claim-lens-visible-text',
+      'strong · 1 src · typed fact',
+    );
+    expect(claimLens).toHaveAttribute(
+      'data-claim-lens-full-text',
+      'strong · 1 source · typed ontology fact',
+    );
+    expect(claimLens.querySelector('[data-claim-lens-visible-summary]')).toHaveTextContent(
+      'strong · 1 src · typed fact',
+    );
+    expect(claimLens).toHaveTextContent('strong · 1 source · typed ontology fact');
+
     const payload = screen.getByTestId('sigma-selected-edge-copy-payload');
     expect(payload).toHaveAttribute('data-copy-payload-tool', 'query_ontology');
     expect(payload).toHaveAttribute('data-copy-payload-action', 'explain_relation');
