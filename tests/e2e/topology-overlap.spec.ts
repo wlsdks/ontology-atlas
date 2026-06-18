@@ -2826,6 +2826,28 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-popover-action-hover-text-token",
     "--topology-node-popover-action-hover-text",
   );
+  const footerMapAction = page.locator('[data-node-popover-toggle="collapse"]');
+  await expect(footerMapAction).toHaveAttribute(
+    "data-footer-action-border-token",
+    "--topology-node-popover-footer-action-border",
+  );
+  await expect(footerMapAction).toHaveAttribute(
+    "data-footer-action-text-token",
+    "--topology-node-popover-footer-action-text",
+  );
+  const footerFullDetailAction = page.locator('[data-footer-action="open-full-detail"]');
+  await expect(footerFullDetailAction).toHaveAttribute(
+    "data-footer-action-border-token",
+    "--topology-node-popover-footer-action-border",
+  );
+  await expect(footerFullDetailAction).toHaveAttribute(
+    "data-footer-action-text-token",
+    "--topology-node-popover-footer-action-text",
+  );
+  await expect(page.locator("[data-footer-hidden-count]").first()).toHaveAttribute(
+    "data-footer-count-text-token",
+    "--topology-node-popover-footer-count-text",
+  );
 
   const popoverScroll = await popover.evaluate((element) => {
     const style = window.getComputedStyle(element);

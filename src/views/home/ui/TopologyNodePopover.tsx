@@ -855,7 +855,11 @@ export function TopologyNodePopover({
               onClick={onToggleCollapsed}
               aria-label={labels.collapse}
               data-node-popover-toggle="collapse"
-              className="hidden min-w-0 max-w-[48%] shrink-0 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] max-lg:inline-flex"
+              data-footer-action-border-token="--topology-node-popover-footer-action-border"
+              data-footer-action-hover-border-token="--topology-node-popover-footer-action-hover-border"
+              data-footer-action-text-token="--topology-node-popover-footer-action-text"
+              data-footer-action-hover-text-token="--topology-node-popover-footer-action-hover-text"
+              className="hidden min-w-0 max-w-[48%] shrink-0 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-md border border-[color:var(--topology-node-popover-footer-action-border)] px-2.5 text-[12px] text-[color:var(--topology-node-popover-footer-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-footer-action-hover-border)] hover:text-[color:var(--topology-node-popover-footer-action-hover-text)] max-lg:inline-flex"
             >
               <ChevronDown size={14} aria-hidden />
               <span className="truncate">{labels.collapse}</span>
@@ -864,11 +868,21 @@ export function TopologyNodePopover({
           <button
             type="button"
             onClick={onOpenFullDetail}
-            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--color-border-soft)] px-2 py-1.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+            data-footer-action="open-full-detail"
+            data-footer-action-border-token="--topology-node-popover-footer-action-border"
+            data-footer-action-hover-border-token="--topology-node-popover-footer-action-hover-border"
+            data-footer-action-text-token="--topology-node-popover-footer-action-text"
+            data-footer-action-hover-text-token="--topology-node-popover-footer-action-hover-text"
+            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-footer-action-border)] px-2 py-1.5 text-[12px] text-[color:var(--topology-node-popover-footer-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-footer-action-hover-border)] hover:text-[color:var(--topology-node-popover-footer-action-hover-text)]"
           >
             <span className="min-w-0 truncate">{labels.openFullDetail}</span>
             {hiddenConnectionCount > 0 ? (
-              <span className="shrink-0 whitespace-nowrap rounded-full border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+              <span
+                data-footer-hidden-count
+                data-footer-count-border-token="--topology-node-popover-footer-count-border"
+                data-footer-count-text-token="--topology-node-popover-footer-count-text"
+                className="shrink-0 whitespace-nowrap rounded-full border border-[color:var(--topology-node-popover-footer-count-border)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--topology-node-popover-footer-count-text)]"
+              >
                 +{hiddenConnectionCount} {labels.moreSuffix}
               </span>
             ) : null}

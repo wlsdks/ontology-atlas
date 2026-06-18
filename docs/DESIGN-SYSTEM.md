@@ -248,6 +248,11 @@ names in component data markers and tests whenever a surface depends on
   visually related to the active focus state without becoming another primary
   relation inspector. Action text and hover text must stay token-backed so the
   footer's next actions do not drift into generic button chrome.
+- `--topology-node-popover-footer-action-*` /
+  `--topology-node-popover-footer-count-*`: selected node inspector fixed
+  footer navigation tokens. Use these for `Map view`, `Full detail`, and hidden
+  relation count pills so the bottom edge remains a stable state-transition
+  rail, not generic page chrome.
 - `--topology-node-popover-route-*`: compact relation-row handoff route rail
   inside the selected node inspector. Use these for fact/evidence/gate/action
   chips and their text so row-level MCP/CLI payloads scan as structured proof,

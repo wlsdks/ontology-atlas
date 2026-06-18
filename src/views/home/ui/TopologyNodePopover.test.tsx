@@ -408,9 +408,41 @@ describe("TopologyNodePopover", () => {
     expect(footer).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
     expect(openFullDetail.className).toContain("min-w-0");
     expect(openFullDetail.className).toContain("overflow-hidden");
+    expect(openFullDetail).toHaveAttribute("data-footer-action", "open-full-detail");
+    expect(openFullDetail).toHaveAttribute(
+      "data-footer-action-border-token",
+      "--topology-node-popover-footer-action-border",
+    );
+    expect(openFullDetail).toHaveAttribute(
+      "data-footer-action-hover-border-token",
+      "--topology-node-popover-footer-action-hover-border",
+    );
+    expect(openFullDetail).toHaveAttribute(
+      "data-footer-action-text-token",
+      "--topology-node-popover-footer-action-text",
+    );
+    expect(openFullDetail).toHaveAttribute(
+      "data-footer-action-hover-text-token",
+      "--topology-node-popover-footer-action-hover-text",
+    );
+    expect(openFullDetail.className).toContain(
+      "border-[color:var(--topology-node-popover-footer-action-border)]",
+    );
+    expect(openFullDetail.className).toContain(
+      "text-[color:var(--topology-node-popover-footer-action-text)]",
+    );
     expect(openFullDetail).toHaveTextContent("+77 더");
     expect(openFullDetail.querySelector(".truncate")).toHaveTextContent("전체 상세");
-    expect(openFullDetail.querySelector(".whitespace-nowrap")).toHaveTextContent("+77 더");
+    const hiddenCount = openFullDetail.querySelector("[data-footer-hidden-count]");
+    expect(hiddenCount).toHaveAttribute(
+      "data-footer-count-border-token",
+      "--topology-node-popover-footer-count-border",
+    );
+    expect(hiddenCount).toHaveAttribute(
+      "data-footer-count-text-token",
+      "--topology-node-popover-footer-count-text",
+    );
+    expect(hiddenCount).toHaveTextContent("+77 더");
   });
 
   it("exposes a compact MCP/CLI handoff action rail outside the scrolling region", () => {
@@ -582,6 +614,20 @@ describe("TopologyNodePopover", () => {
 
     const collapse = screen.getByRole("button", { name: "지도 보기" });
     expect(collapse).toHaveAttribute("data-node-popover-toggle", "collapse");
+    expect(collapse).toHaveAttribute(
+      "data-footer-action-border-token",
+      "--topology-node-popover-footer-action-border",
+    );
+    expect(collapse).toHaveAttribute(
+      "data-footer-action-text-token",
+      "--topology-node-popover-footer-action-text",
+    );
+    expect(collapse.className).toContain(
+      "border-[color:var(--topology-node-popover-footer-action-border)]",
+    );
+    expect(collapse.className).toContain(
+      "text-[color:var(--topology-node-popover-footer-action-text)]",
+    );
     expect(collapse).toHaveTextContent("지도 보기");
 
     fireEvent.click(collapse);
