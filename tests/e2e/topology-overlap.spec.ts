@@ -2222,6 +2222,9 @@ for (const viewport of VIEWPORTS) {
     const dragCacheProof = await page.getByTestId("sigma-skeleton-cards").evaluate((el) => ({
       domIndexSize: Number(el.getAttribute("data-drag-dom-index-size") ?? "0"),
       snapshotCount: Number(el.getAttribute("data-drag-frame-cache-snapshot-count") ?? "0"),
+      resolvedCardCount: Number(el.getAttribute("data-skeleton-card-resolved-count") ?? "0"),
+      activeDragClusterSize: Number(el.getAttribute("data-active-drag-cluster-size") ?? "0"),
+      domWriteAppliedCount: Number(el.getAttribute("data-dom-write-applied-count") ?? "0"),
     }));
     expect(
       dragCacheProof.domIndexSize,
@@ -2231,6 +2234,16 @@ for (const viewport of VIEWPORTS) {
       dragCacheProof.snapshotCount,
       `drag should expose dock snapshot accounting during pointer move at ${viewport.label}`,
     ).toBeGreaterThanOrEqual(0);
+    expect(
+      dragCacheProof.domWriteAppliedCount,
+      `drag should keep the current frame's real DOM writes bounded at ${viewport.label}`,
+    ).toBeGreaterThan(0);
+    expect(
+      dragCacheProof.domWriteAppliedCount,
+      `drag should not rewrite beyond resolved cards plus active drag adornments at ${viewport.label}`,
+    ).toBeLessThanOrEqual(
+      dragCacheProof.resolvedCardCount + dragCacheProof.activeDragClusterSize,
+    );
     await expect(page.getByText("moving linked cards")).toBeVisible();
     const targetDx = whileDragging.left - before.left;
     const targetDy = whileDragging.top - before.top;
