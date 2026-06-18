@@ -694,6 +694,11 @@ test("Relief overview panel owns the phone read layer above map cards", async ({
     "data-min-height-token",
     "--topology-overview-handoff-primary-min-height",
   );
+  const briefCopyRect = await rectOf(page.getByTestId("topology-overview-brief-copy"));
+  expect(
+    briefCopyRect.bottom,
+    "phone overview primary handoff action should be fully visible inside the support rail",
+  ).toBeLessThanOrEqual(compactOverviewPanelRect.bottom);
   await expect(page.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
     "data-min-height-token",
     "--topology-overview-handoff-summary-min-height",

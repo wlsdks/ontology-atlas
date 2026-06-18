@@ -404,7 +404,7 @@
     --topology-overview-handoff-primary-border: rgba(139, 151, 255, 0.22);
     --topology-overview-handoff-secondary-surface: rgba(255, 255, 255, 0.025);
     --topology-overview-handoff-secondary-border: rgba(255, 255, 255, 0.055);
-    --topology-overview-handoff-compact-padding-top: 8px;
+    --topology-overview-handoff-compact-padding-top: 4px;
     --topology-overview-handoff-primary-min-height: 34px;
     --topology-overview-handoff-summary-min-height: 28px;
     --topology-overview-quality-surface: rgba(94, 234, 212, 0.032);

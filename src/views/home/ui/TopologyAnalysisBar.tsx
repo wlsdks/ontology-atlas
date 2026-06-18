@@ -1333,7 +1333,10 @@ export function TopologyAnalysisBar({
                 data-compact-padding-top-token="--topology-overview-handoff-compact-padding-top"
                 data-testid="topology-overview-handoff-actions"
               >
-                <div className="mb-1.5 flex items-center justify-between gap-2">
+                <div
+                  className="mb-1.5 flex items-center justify-between gap-2 max-md:sr-only"
+                  data-overview-handoff-label-compact-contract="phone-action-label-hidden"
+                >
                   <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                     {disclosureSummaryLabel}
                   </span>
