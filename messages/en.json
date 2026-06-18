@@ -2895,7 +2895,10 @@
       "kindElement": "Element",
       "toastSaved": "Created {slug}",
       "toastExists": "A node with that slug already exists.",
-      "toastError": "Could not create the node."
+      "toastError": "Could not create the node.",
+      "unavailableHeading": "Workspace required",
+      "unavailableBody": "Connect a local workspace before creating ontology concepts from the topology map.",
+      "unavailableAction": "Open workspace"
     },
     "relationCreate": {
       "heading": "Add relation",

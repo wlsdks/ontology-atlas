@@ -4034,6 +4034,51 @@ test("Relief global search uses a phone sheet instead of a floating card", async
   await expect(content).toHaveCount(0);
 });
 
+test("Relief Create intent keeps a blocking pending state until a writable workspace exists", async ({ page }) => {
+  const viewport = PHONE_VIEWPORT;
+  await page.setViewportSize(viewport);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/en/topology/?create=concept");
+  await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
+    timeout: 20_000,
+  });
+
+  const pendingPanel = page.getByTestId("topology-create-node-unavailable-panel");
+  await expect(pendingPanel).toBeVisible();
+  await expect(pendingPanel).toHaveAttribute("data-attention-role", "blocking-composer");
+  await expect(pendingPanel).toHaveAttribute(
+    "data-create-intent-state",
+    "pending-writable-vault",
+  );
+  await expect(pendingPanel).toHaveAttribute(
+    "data-placement-contract",
+    "centered-blocking-edit",
+  );
+  await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+    "data-blocking-overlay-state",
+    "create-node-pending-vault",
+  );
+  await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+    "data-create-node-intent-state",
+    "pending-writable-vault",
+  );
+  await expect(page.getByTestId("topology-map-surface")).toHaveAttribute(
+    "data-map-interaction-contract",
+    "suppressed-while-blocking-composer",
+  );
+  await expect(page.getByTestId("topology-map-surface")).toHaveAttribute(
+    "data-map-dim-opacity-token",
+    "--topology-blocking-map-opacity",
+  );
+  await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
+  await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
+  expect(page.url()).toContain("create=concept");
+
+  await page.getByTestId("topology-create-node-pending-backdrop").click();
+  await expect(pendingPanel).toHaveCount(0);
+  expect(page.url()).not.toContain("create=concept");
+});
+
 test("Relief Health phone rail owns the read layer without help overlap", async ({ page }) => {
   const viewport = PHONE_VIEWPORT;
   await openRelief(page, viewport, {

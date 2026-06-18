@@ -2895,7 +2895,10 @@
       "kindElement": "요소",
       "toastSaved": "{slug} 생성됨",
       "toastExists": "같은 slug 의 노드가 이미 있어요.",
-      "toastError": "노드를 만들지 못했어요."
+      "toastError": "노드를 만들지 못했어요.",
+      "unavailableHeading": "워크스페이스 필요",
+      "unavailableBody": "토폴로지 지도에서 온톨로지 개념을 만들려면 먼저 로컬 워크스페이스를 연결하세요.",
+      "unavailableAction": "워크스페이스 열기"
     },
     "relationCreate": {
       "heading": "관계 추가",

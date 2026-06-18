@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BookOpen, Plus } from "lucide-react";
+import { BookOpen, Plus, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
@@ -380,10 +380,14 @@ export function HomePage() {
   const createNodePanelRef = useRef<HTMLDivElement | null>(null);
   const closeCreateNode = useCallback(() => {
     setCreateNodeOpen(false);
+    setRouteState((current) => ({
+      ...current,
+      createNodeIntent: false,
+    }));
     window.requestAnimationFrame(() => {
       createNodeToggleRef.current?.focus();
     });
-  }, []);
+  }, [setRouteState]);
   const canCreateNode = vault.manifest !== null;
   const createNode = useCallback(
     async (input: { title: string; kind: CreateNodeKind; domain?: string }) => {
@@ -741,8 +745,12 @@ export function HomePage() {
   const topologyUtilityChromeCompact = topologyUtilityChromeState === "compact-focus";
   const topologyShortcutHelpPhoneVisible =
     analysisMode !== "path" && analysisMode !== "health";
+  const createNodePending = createNodeIntent && !canCreateNode;
+  const topologyCreateNodeBlockingActive = createNodeOpen || createNodePending;
   const topologyBlockingOverlayState = createNodeOpen
     ? "create-node"
+    : createNodePending
+      ? "create-node-pending-vault"
     : searchOpen
       ? "project-search"
       : ontologySearchOpen
@@ -759,7 +767,11 @@ export function HomePage() {
     setFullDetailSlug(null);
     setNodePopoverCollapsed(false);
     setCreateNodeOpen(true);
-  }, []);
+    setRouteState((current) => ({
+      ...current,
+      createNodeIntent: true,
+    }));
+  }, [setRouteState]);
   useEffect(() => {
     if (!createNodeIntent) return;
     let cancelled = false;
@@ -768,10 +780,6 @@ export function HomePage() {
       if (canCreateNode && !createNodeOpen) {
         openCreateNode();
       }
-      setRouteState((current) => ({
-        ...current,
-        createNodeIntent: false,
-      }));
     });
     return () => {
       cancelled = true;
@@ -1439,6 +1447,13 @@ export function HomePage() {
               data-testid="topology-command-chrome"
               data-command-chrome-state={topologyUtilityChromeState}
               data-blocking-overlay-state={topologyBlockingOverlayState}
+              data-create-node-intent-state={
+                createNodeOpen
+                  ? "active-blocking-composer"
+                  : createNodePending
+                    ? "pending-writable-vault"
+                    : "idle"
+              }
               data-attention-role={
                 selectedRelationActive
                   ? "demoted-utility"
@@ -1621,7 +1636,71 @@ export function HomePage() {
                 </div>
               </>
             ) : null}
-            {!selectedRelationActive && !createNodeOpen ? (
+            {createNodePending ? (
+              <>
+                <button
+                  type="button"
+                  aria-label={t('createNode.cancel')}
+                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-180 ease-out motion-reduce:transition-none"
+                  data-interactive-overlay="true"
+                  data-testid="topology-create-node-pending-backdrop"
+                  data-backdrop-contract="blocks-map-and-clears-create-intent"
+                  data-backdrop-surface-token="--topology-blocking-backdrop-surface"
+                  onClick={closeCreateNode}
+                />
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="topology-create-node-unavailable-title"
+                  className="absolute left-1/2 top-[var(--topology-blocking-composer-top)] z-30 w-[var(--topology-blocking-composer-width)] -translate-x-1/2"
+                  data-testid="topology-create-node-unavailable-panel"
+                  data-attention-role="blocking-composer"
+                  data-create-intent-state="pending-writable-vault"
+                  data-placement-contract="centered-blocking-edit"
+                  data-surface-role="blocking-edit-surface"
+                  data-elevation-contract="solid-panel-over-dimmed-map"
+                  data-size-contract="bounded-centered-composer"
+                  data-top-token="--topology-blocking-composer-top"
+                  data-width-token="--topology-blocking-composer-width"
+                >
+                  <section className="rounded-lg border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-4 py-3 shadow-[var(--topology-blocking-composer-shadow)]">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p
+                          id="topology-create-node-unavailable-title"
+                          className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+                        >
+                          {t('createNode.unavailableHeading')}
+                        </p>
+                        <p className="mt-2 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+                          {t('createNode.unavailableBody')}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={closeCreateNode}
+                        aria-label={t('createNode.cancel')}
+                        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+                      >
+                        <X size={12} aria-hidden />
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeCreateNode();
+                        setDocsDrawerOpen(true);
+                      }}
+                      data-testid="topology-create-node-open-workspace"
+                      className="mt-3 inline-flex h-8 items-center justify-center rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.16)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:rgba(94,106,210,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+                    >
+                      {t('createNode.unavailableAction')}
+                    </button>
+                  </section>
+                </div>
+              </>
+            ) : null}
+            {!selectedRelationActive && !topologyCreateNodeBlockingActive ? (
               <TopologyAnalysisBar
                 mode={analysisMode}
                 summary={analysisSummary}
@@ -2019,25 +2098,25 @@ export function HomePage() {
           </>
         <div
           data-testid="topology-map-surface"
-          data-blocking-edit={createNodeOpen ? "true" : "false"}
-          data-map-demoted={createNodeOpen ? "true" : "false"}
-          data-map-dim-opacity={createNodeOpen ? "0.24" : "1"}
+          data-blocking-edit={topologyCreateNodeBlockingActive ? "true" : "false"}
+          data-map-demoted={topologyCreateNodeBlockingActive ? "true" : "false"}
+          data-map-dim-opacity={topologyCreateNodeBlockingActive ? "0.24" : "1"}
           data-map-dim-opacity-token={
-            createNodeOpen ? "--topology-blocking-map-opacity" : undefined
+            topologyCreateNodeBlockingActive ? "--topology-blocking-map-opacity" : undefined
           }
           data-map-filter-token={
-            createNodeOpen ? "--topology-blocking-map-filter" : undefined
+            topologyCreateNodeBlockingActive ? "--topology-blocking-map-filter" : undefined
           }
           data-map-interaction-contract={
-            createNodeOpen ? "suppressed-while-blocking-composer" : "interactive"
+            topologyCreateNodeBlockingActive ? "suppressed-while-blocking-composer" : "interactive"
           }
-          aria-hidden={createNodeOpen ? "true" : undefined}
+          aria-hidden={topologyCreateNodeBlockingActive ? "true" : undefined}
           style={{
-            opacity: createNodeOpen ? "var(--topology-blocking-map-opacity)" : 1,
-            filter: createNodeOpen ? "var(--topology-blocking-map-filter)" : undefined,
+            opacity: topologyCreateNodeBlockingActive ? "var(--topology-blocking-map-opacity)" : 1,
+            filter: topologyCreateNodeBlockingActive ? "var(--topology-blocking-map-filter)" : undefined,
           }}
           className={`absolute inset-0 transition-[opacity,filter] duration-180 ease-out motion-reduce:transition-none ${
-            createNodeOpen
+            topologyCreateNodeBlockingActive
               ? "pointer-events-none"
               : ""
           }`}
