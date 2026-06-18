@@ -228,8 +228,16 @@ describe("TopologyNodePopover", () => {
       "data-title-lines-token",
       "--topology-node-popover-title-lines",
     );
+    expect(title).toHaveAttribute(
+      "data-title-text-token",
+      "--topology-node-popover-title-text",
+    );
     expect(title.className).toContain("line-clamp-[var(--topology-node-popover-title-lines)]");
+    expect(title.className).toContain(
+      "text-[color:var(--topology-node-popover-title-text)]",
+    );
     expect(title.className).not.toContain("truncate");
+    expect(title.className).not.toContain("var(--color-text-primary)");
 
     const usedByMetric = document.querySelector('[data-node-popover-metric="이 노드를 쓰는 곳"]');
     expect(usedByMetric).toHaveAttribute(
@@ -698,8 +706,16 @@ describe("TopologyNodePopover", () => {
       "data-title-lines-token",
       "--topology-node-popover-title-lines",
     );
+    expect(title).toHaveAttribute(
+      "data-title-text-token",
+      "--topology-node-popover-title-text",
+    );
     expect(title.className).toContain("line-clamp-[var(--topology-node-popover-title-lines)]");
+    expect(title.className).toContain(
+      "text-[color:var(--topology-node-popover-title-text)]",
+    );
     expect(title.className).not.toContain("truncate");
+    expect(title.className).not.toContain("var(--color-text-primary)");
 
     const close = screen.getByRole("button", { name: "닫기" });
     expect(close).toHaveAttribute("data-node-popover-close", "true");

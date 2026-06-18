@@ -276,7 +276,8 @@ export function TopologyNodePopover({
             data-testid="topology-node-popover-title"
             data-title-readability-contract="selected-node-title-readable"
             data-title-lines-token="--topology-node-popover-title-lines"
-            className="mt-0.5 line-clamp-[var(--topology-node-popover-title-lines)] text-sm font-[var(--font-weight-signature)] leading-5 text-[color:var(--color-text-primary)]"
+            data-title-text-token="--topology-node-popover-title-text"
+            className="mt-0.5 line-clamp-[var(--topology-node-popover-title-lines)] text-sm font-[var(--font-weight-signature)] leading-5 text-[color:var(--topology-node-popover-title-text)]"
           >
             {focus.title}
           </h2>
@@ -375,7 +376,8 @@ export function TopologyNodePopover({
             data-testid="topology-node-popover-title"
             data-title-readability-contract="selected-node-title-readable"
             data-title-lines-token="--topology-node-popover-title-lines"
-            className="mt-0.5 line-clamp-[var(--topology-node-popover-title-lines)] text-sm font-[var(--font-weight-signature)] leading-5 text-[color:var(--color-text-primary)]"
+            data-title-text-token="--topology-node-popover-title-text"
+            className="mt-0.5 line-clamp-[var(--topology-node-popover-title-lines)] text-sm font-[var(--font-weight-signature)] leading-5 text-[color:var(--topology-node-popover-title-text)]"
           >
             {focus.title}
           </h2>

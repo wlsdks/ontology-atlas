@@ -274,6 +274,10 @@ names in component data markers and tests whenever a surface depends on
   above the title. Use this for the first ontology hierarchy cue (`Project`,
   `Domain`, `Capability`, `Element`) so the selected node header stays in the
   topology inspector token family instead of borrowing generic muted text.
+- `--topology-node-popover-title-text`: selected node inspector title text.
+  Use this for the active ontology object name so the primary header remains
+  token-backed across collapsed and expanded focus states instead of borrowing
+  generic page heading text.
 - `--topology-node-popover-relation-section-*`: selected node inspector
   relation-section boundary and heading tokens. Use these for the divider,
   `Connections` title, and typed-fact summary lens so the transition from node
