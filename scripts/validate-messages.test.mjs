@@ -195,9 +195,9 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topologyWidgets.controls.shortcutDepthAll, '연결 범위 전체');
     assert.equal(ko.topologyWidgets.controls.shortcutDoubleClick, '로컬 그래프 진입');
     assert.equal(ko.topologyWidgets.controls.shortcutEsc, '로컬 그래프 나가기 / 검색 지우기');
-    assert.equal(ko.topology.analysis.overviewAgentReadiness, '공유 준비도');
+    assert.equal(ko.topology.analysis.overviewAgentReadiness, '팀 공유');
     assert.equal(ko.topology.analysis.overviewAgentReadinessReady, '전달 가능');
-    assert.equal(ko.topology.analysis.overviewAgentReadinessPreflight, '사전 점검');
+    assert.equal(ko.topology.analysis.overviewAgentReadinessPreflight, '먼저 확인');
     assert.doesNotMatch(
       [
         ko.topologyWidgets.sigma.kindLegendUnknownRole,
@@ -323,7 +323,7 @@ describe('i18n message catalog', () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
     assert.equal(en.topology.analysis.overviewWorkOrderTitle, 'Proof order');
-    assert.equal(en.topology.analysis.overviewWorkOrderRead, 'Read source-backed map');
+    assert.equal(en.topology.analysis.overviewWorkOrderRead, 'Read evidence-backed map');
     assert.equal(en.topology.analysis.overviewWorkOrderFocus, 'Focus graph handle');
     assert.equal(en.topology.analysis.overviewWorkOrderPath, 'Prove path evidence');
     assert.equal(en.topology.analysis.overviewWorkOrderHealth, 'Close health gate');
@@ -355,7 +355,7 @@ describe('i18n message catalog', () => {
 
     assert.equal(ko.topology.analysis.overviewWorkOrderTitle, '검증 순서');
     assert.equal(ko.topology.analysis.title, '지형도 분석 모드');
-    assert.equal(ko.topology.analysis.overviewWorkOrderRead, '근거 있는 지형도 읽기');
+    assert.equal(ko.topology.analysis.overviewWorkOrderRead, '근거 있는 지도 읽기');
     assert.equal(ko.topology.analysis.overviewWorkOrderFocus, '그래프 기준점 선택');
     assert.equal(ko.topology.analysis.overviewWorkOrderPath, '경로 근거 검증');
     assert.equal(ko.topology.analysis.overviewWorkOrderHealth, '상태 신호 확인');

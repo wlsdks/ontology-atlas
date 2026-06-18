@@ -65,19 +65,19 @@ const labels = {
   overviewBriefTotalNodes: "Total nodes",
   overviewBriefTotalRelations: "Total relations",
   overviewBriefRelationReading: "Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
-  overviewBriefRelationProvenance: "Relation provenance",
-  overviewBriefRelationSourceBacked: "source-backed",
-  overviewBriefRelationAuthored: "authored",
-  overviewBriefRelationNeedsReview: "needs review",
-  overviewBriefRelationQuality: "Relation quality",
-  overviewBriefRelationQualityStrong: "strong",
+  overviewBriefRelationProvenance: "Evidence coverage",
+  overviewBriefRelationSourceBacked: "with source",
+  overviewBriefRelationAuthored: "team-added",
+  overviewBriefRelationNeedsReview: "needs check",
+  overviewBriefRelationQuality: "Trust level",
+  overviewBriefRelationQualityStrong: "clear",
   overviewBriefRelationQualitySupported: "supported",
-  overviewBriefRelationQualityWeak: "weak",
-  overviewBriefRelationQualityReview: "review",
-  overviewAgentReadiness: "Share readiness",
-  overviewAgentReadinessReady: "handoff-ready",
-  overviewAgentReadinessPreflight: "preflight",
-  overviewAgentReadinessReview: "review",
+  overviewBriefRelationQualityWeak: "thin",
+  overviewBriefRelationQualityReview: "check",
+  overviewAgentReadiness: "Team handoff",
+  overviewAgentReadinessReady: "ready",
+  overviewAgentReadinessPreflight: "check first",
+  overviewAgentReadinessReview: "needs review",
   overviewBriefHealthSignals: "Health signals",
   overviewBriefHealthUrl: "Health URL",
   overviewBriefInsightsUrl: "Insights URL",
@@ -325,9 +325,9 @@ describe("TopologyAnalysisBar", () => {
       "data-proof-label-contract",
       "compact-visible-full-aria",
     );
-    expect(readyChip).toHaveAttribute("data-full-label", "handoff-ready");
+    expect(readyChip).toHaveAttribute("data-full-label", "ready");
     expect(readyChip).toHaveAttribute("data-compact-label", "ready");
-    expect(readyChip).toHaveAttribute("aria-label", "handoff-ready: 387");
+    expect(readyChip).toHaveAttribute("aria-label", "ready: 387");
     expect(readyChip).toHaveTextContent("ready");
   });
 
@@ -1449,7 +1449,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(relationQuality).toHaveAttribute(
       "aria-label",
-      expect.stringContaining("Relation quality: strong 384"),
+      expect.stringContaining("Trust level: clear 384"),
     );
     expect(
       within(relationQuality).getByTestId("topology-overview-relation-quality-strong"),
@@ -2003,22 +2003,22 @@ describe("TopologyAnalysisBar", () => {
     expect(graphBriefButton).toHaveAttribute("title", "Copy map brief");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
-    ).toHaveTextContent("Relation provenance");
+    ).toHaveTextContent("Evidence coverage");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
-    ).toHaveTextContent("source-backed 70 · authored 18 · needs review 0");
+    ).toHaveTextContent("with source 70 · team-added 18 · needs check 0");
     expect(screen.getByTestId("topology-overview-relation-provenance")).toHaveAttribute(
       "data-surface-token",
       "--topology-overview-signal-indigo-surface",
     );
     expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
-      "Relation quality",
+      "Trust level",
     );
     expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
-      "strong 62 · supported 20 · weak 4 · review 2",
+      "clear 62 · supported 20 · thin 4 · check 2",
     );
     const readinessGate = screen.getByTestId("topology-overview-agent-readiness");
-    expect(readinessGate).toHaveTextContent("Share readiness");
+    expect(readinessGate).toHaveTextContent("Team handoff");
     expect(readinessGate).toHaveAttribute(
       "data-surface-token",
       "--topology-overview-readiness-surface",
@@ -2029,10 +2029,10 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(readinessGate).toHaveAttribute(
       "data-agent-readiness-summary",
-      "handoff-ready 82 · preflight 4 · review 2",
+      "ready 82 · check first 4 · needs review 2",
     );
     expect(readinessGate).toHaveAccessibleName(
-      "Share readiness: handoff-ready 82 · preflight 4 · review 2",
+      "Team handoff: ready 82 · check first 4 · needs review 2",
     );
     expect(
       readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
@@ -2055,7 +2055,7 @@ describe("TopologyAnalysisBar", () => {
     const readinessMeter = screen.getByTestId("topology-overview-agent-readiness-meter");
     expect(readinessMeter).toHaveAttribute(
       "aria-label",
-      "Share readiness: handoff-ready 82 · preflight 4 · review 2",
+      "Team handoff: ready 82 · check first 4 · needs review 2",
     );
     expect(readinessMeter).toHaveAttribute(
       "data-surface-token",
@@ -2105,17 +2105,17 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Relation provenance: source-backed 70 · authored 18 · needs review 0",
+        "- Evidence coverage: with source 70 · team-added 18 · needs check 0",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Relation quality: strong 62 · supported 20 · weak 4 · review 2",
+        "- Trust level: clear 62 · supported 20 · thin 4 · check 2",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Share readiness: handoff-ready 82 · preflight 4 · review 2",
+        "- Team handoff: ready 82 · check first 4 · needs review 2",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
