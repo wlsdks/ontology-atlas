@@ -150,6 +150,7 @@
     --topology-card-count-surface: rgba(255, 255, 255, 0.045);
     --topology-card-count-border: rgba(255, 255, 255, 0.085);
     --topology-card-count-text: var(--color-text-secondary);
+    --topology-card-kind-surface: rgba(255, 255, 255, 0.038);
     --topology-path-endpoint-surface: rgba(139, 151, 255, 0.16);
     --topology-path-endpoint-border: rgba(139, 151, 255, 0.42);
     --topology-path-endpoint-text: var(--color-indigo-accent);
@@ -892,6 +893,7 @@
     --topology-card-count-surface: rgba(15, 23, 42, 0.045);
     --topology-card-count-border: rgba(15, 23, 42, 0.10);
     --topology-card-count-text: var(--color-text-secondary);
+    --topology-card-kind-surface: rgba(15, 23, 42, 0.04);
     --topology-path-endpoint-surface: rgba(77, 86, 200, 0.11);
     --topology-path-endpoint-border: rgba(77, 86, 200, 0.30);
     --topology-path-endpoint-text: rgba(40, 50, 175, 0.96);

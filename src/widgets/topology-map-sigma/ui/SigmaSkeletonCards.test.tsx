@@ -103,6 +103,27 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "title-shrinks-before-meta-chips",
     );
     expect(screen.getByText("Views")).toHaveAttribute("data-full-title", "Views");
+    const kindBadges = domainCard?.querySelectorAll("[data-card-kind-badge]");
+    expect(kindBadges).toHaveLength(1);
+    const domainKindBadge = kindBadges?.[0];
+    expect(domainKindBadge).toHaveTextContent("D");
+    expect(domainKindBadge).toHaveAttribute("data-card-kind", "domain");
+    expect(domainKindBadge).toHaveAttribute(
+      "data-card-kind-badge-contract",
+      "visible-ontology-kind-marker",
+    );
+    expect(domainKindBadge).toHaveAttribute(
+      "data-surface-token",
+      "--topology-card-kind-surface",
+    );
+    expect(domainKindBadge).toHaveAttribute(
+      "data-border-token",
+      "--card-kind-border",
+    );
+    expect(domainKindBadge).toHaveAttribute(
+      "data-accent-token",
+      "--card-kind-accent",
+    );
     expect(domainCard).toHaveStyle({
       transform: "translate(-50%, -50%) translate3d(120px, 60px, 0)",
       maxWidth: "var(--topology-card-max-width-domain)",

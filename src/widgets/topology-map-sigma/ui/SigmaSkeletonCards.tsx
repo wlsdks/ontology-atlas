@@ -220,6 +220,14 @@ const KIND_RANK: Record<SkeletonCardModel['kind'], number> = {
   unknown: 4,
 };
 
+const KIND_BADGE_LABEL: Record<SkeletonCardModel['kind'], string> = {
+  project: 'P',
+  domain: 'D',
+  capability: 'C',
+  element: 'E',
+  unknown: '?',
+};
+
 const TIER_Z_INDEX: Record<SkeletonCardModel['tier'], number> = {
   0: 4,
   1: 3,
@@ -4676,6 +4684,23 @@ export function SigmaSkeletonCards({
                 backgroundColor: fill,
               }}
             />
+            <span
+              data-card-kind-badge
+              data-card-kind={card.kind}
+              data-card-kind-badge-contract="visible-ontology-kind-marker"
+              data-surface-token="--topology-card-kind-surface"
+              data-border-token="--card-kind-border"
+              data-accent-token="--card-kind-accent"
+              aria-label={describeKind?.(card.kind) ?? card.kind}
+              title={describeKind?.(card.kind) ?? card.kind}
+              className="relative inline-flex h-[1.42em] min-w-[1.42em] shrink-0 items-center justify-center rounded-[0.38em] border border-[color:var(--card-kind-border)] bg-[color:var(--topology-card-kind-surface)] px-[0.3em] font-mono text-[0.62em] font-semibold leading-none text-[color:var(--card-kind-accent)]"
+              style={{
+                '--card-kind-accent': fill,
+                '--card-kind-border': withAlpha(fill, 0.34),
+              } as React.CSSProperties}
+            >
+              {KIND_BADGE_LABEL[card.kind]}
+            </span>
             <span
               data-card-title
               data-path-endpoint-title={pathEndpoint ? pathRole : undefined}
