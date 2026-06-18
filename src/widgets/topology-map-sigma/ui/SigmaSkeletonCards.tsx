@@ -159,6 +159,7 @@ const SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX = 1280;
 const OVERVIEW_COLLISION_PAD = 2;
 const SAFE_VIEWPORT_MARGIN = 8;
 const FOCUS_HULL_BREATHING_ROOM_PX = 16;
+const FOCUS_HULL_LABEL_CLEARANCE_PX = 34;
 const FIXED_SURFACE_GAP = 8;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
@@ -3095,6 +3096,10 @@ export function SigmaSkeletonCards({
         );
         const hullViewportMargin =
           activeHullMode === 'focus' ? FOCUS_HULL_BREATHING_ROOM_PX : 0;
+        const focusLabelClearancePx =
+          activeHullMode === 'focus' && containerRect.width >= 900
+            ? FOCUS_HULL_LABEL_CLEARANCE_PX
+            : 0;
         const hullMaxRight = Math.max(
           hullViewportMargin + 1,
           containerRect.width - hullViewportMargin,
@@ -3103,13 +3108,14 @@ export function SigmaSkeletonCards({
           hullViewportMargin + 1,
           containerRect.height - hullViewportMargin,
         );
+        const hullTopPadPx = DRAG_CLUSTER_HULL_PAD_PX + focusLabelClearancePx;
         const rawHullRect = {
           left: Math.min(
             Math.max(hullViewportMargin, bounds.left - DRAG_CLUSTER_HULL_PAD_PX),
             hullMaxRight - 1,
           ),
           top: Math.min(
-            Math.max(hullViewportMargin, bounds.top - DRAG_CLUSTER_HULL_PAD_PX),
+            Math.max(hullViewportMargin, bounds.top - hullTopPadPx),
             hullMaxBottom - 1,
           ),
           right: Math.min(
@@ -3143,6 +3149,8 @@ export function SigmaSkeletonCards({
           hull.dataset.focusAttentionLabel = 'linked-focus';
           hull.dataset.focusBreathingRoomContract = 'viewport-edge-clearance';
           hull.dataset.focusBreathingRoomPx = String(FOCUS_HULL_BREATHING_ROOM_PX);
+          hull.dataset.focusLabelClearanceContract = 'quiet-outline-does-not-slice-card-labels';
+          hull.dataset.focusLabelClearancePx = String(focusLabelClearancePx);
           hull.dataset.focusRightClearance = String(
             Math.round(containerRect.width - hullRect.right),
           );
@@ -3155,6 +3163,8 @@ export function SigmaSkeletonCards({
           delete hull.dataset.focusAttentionLabel;
           delete hull.dataset.focusBreathingRoomContract;
           delete hull.dataset.focusBreathingRoomPx;
+          delete hull.dataset.focusLabelClearanceContract;
+          delete hull.dataset.focusLabelClearancePx;
           delete hull.dataset.focusRightClearance;
           delete hull.dataset.focusBottomClearance;
         }
@@ -3168,6 +3178,8 @@ export function SigmaSkeletonCards({
         delete hull.dataset.focusAttentionLabel;
         delete hull.dataset.focusBreathingRoomContract;
         delete hull.dataset.focusBreathingRoomPx;
+        delete hull.dataset.focusLabelClearanceContract;
+        delete hull.dataset.focusLabelClearancePx;
         delete hull.dataset.focusRightClearance;
         delete hull.dataset.focusBottomClearance;
       }

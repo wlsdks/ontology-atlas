@@ -1503,9 +1503,20 @@ for (const viewport of VIEWPORTS) {
       "data-focus-breathing-room-contract",
       "viewport-edge-clearance",
     );
+    await expect(focusHull).toHaveAttribute(
+      "data-focus-label-clearance-contract",
+      "quiet-outline-does-not-slice-card-labels",
+    );
     const focusHullBreathingRoom = Number(
       await focusHull.getAttribute("data-focus-breathing-room-px"),
     );
+    const focusHullLabelClearance = Number(
+      await focusHull.getAttribute("data-focus-label-clearance-px"),
+    );
+    expect(
+      focusHullLabelClearance,
+      `selected focus hull should expose label clearance at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(32);
     const focusHullRightClearance = Number(
       await focusHull.getAttribute("data-focus-right-clearance"),
     );
@@ -3001,6 +3012,10 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   const focusHull = page.locator("[data-drag-cluster-hull]");
   await expect(focusHull).toHaveAttribute("data-cluster-mode", "focus");
   await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "quiet-outline");
+  await expect(focusHull).toHaveAttribute(
+    "data-focus-label-clearance-contract",
+    "quiet-outline-does-not-slice-card-labels",
+  );
   await expect(page.locator("[data-focus-relation-label]")).toHaveCount(0);
   await expect(page.locator('[data-skeleton-card][data-slug="domain:views"]').first()).toBeVisible();
   await expectSelectedCardRelationSummary(page, "domain:views");
