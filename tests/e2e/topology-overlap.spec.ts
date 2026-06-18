@@ -1835,6 +1835,33 @@ for (const viewport of VIEWPORTS) {
       "data-size-policy",
       "context-chip",
     );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-compact-facts-layout-contract",
+      "facts-before-actions",
+    );
+    await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
+      "data-compact-actions-layout-contract",
+      "actions-after-facts",
+    );
+    const selectedNodeCountLine = page.locator("[data-selected-node-count-line]");
+    const selectedNodeCountLineFits = await selectedNodeCountLine.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    );
+    expect(
+      selectedNodeCountLineFits,
+      `selected node count line should keep its own width before compact actions at ${viewport.label}`,
+    ).toBe(true);
+    const compactRelationFacts = page.getByTestId(
+      "topology-node-popover-compact-relation-facts",
+    );
+    await expect(compactRelationFacts).toBeVisible();
+    const compactRelationFactsFit = await compactRelationFacts.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    );
+    expect(
+      compactRelationFactsFit,
+      `compact relation fact pill should keep direct facts readable at ${viewport.label}`,
+    ).toBe(true);
     const selectedFocusPanelRect = await rectOf(selectedFocusPanel);
     const selectedFocusPanelMaxWidth = viewport.width <= 1600 ? 322 : 380;
     expect(
@@ -2694,6 +2721,14 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   await expect(popover).toHaveAttribute(
     "data-title-readability-contract",
     "selected-node-title-readable",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-compact-facts-layout-contract",
+    "facts-before-actions",
+  );
+  await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
+    "data-compact-actions-layout-contract",
+    "actions-after-facts",
   );
   await expect(popover).toHaveAttribute(
     "data-popover-surface-token",

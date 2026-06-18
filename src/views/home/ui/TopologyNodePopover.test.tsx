@@ -785,7 +785,12 @@ describe("TopologyNodePopover", () => {
       "data-title-readability-contract",
       "selected-node-title-readable",
     );
+    expect(popover).toHaveAttribute(
+      "data-compact-facts-layout-contract",
+      "facts-before-actions",
+    );
     expect(popover.className).toContain("gap-[var(--topology-node-popover-chip-gap)]");
+    expect(popover.className).toContain("flex-wrap");
     expect(popover.className).toContain("lg:w-[var(--topology-node-popover-rail-width)]");
     expect(popover.className).toContain(
       "min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)]",
@@ -818,6 +823,21 @@ describe("TopologyNodePopover", () => {
     );
     expect(compactFacts).toHaveTextContent("직접 의미 관계 3개");
     expect(compactFacts).toHaveTextContent("관계 유형 2종");
+    const factPriority = document.querySelector(
+      "[data-node-popover-compact-fact-priority]",
+    );
+    expect(factPriority).toHaveAttribute(
+      "data-node-popover-compact-fact-priority",
+      "selected-node-facts-before-actions",
+    );
+    expect(factPriority?.className).toContain("basis-full");
+    const actions = screen.getByTestId("topology-node-popover-compact-actions");
+    expect(actions).toHaveAttribute(
+      "data-compact-actions-layout-contract",
+      "actions-after-facts",
+    );
+    expect(actions.className).toContain("w-full");
+    expect(actions.className).toContain("justify-end");
     const kindLabel = document.querySelector("[data-selected-node-kind-label]");
     expect(kindLabel).toHaveAttribute(
       "data-kind-text-token",
@@ -1849,6 +1869,14 @@ describe("TopologyNodePopover", () => {
     expect(popover).toHaveAttribute(
       "data-compact-handoff-contract",
       "selected-node-actions-visible",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-facts-layout-contract",
+      "facts-before-actions",
+    );
+    expect(screen.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
+      "data-compact-actions-layout-contract",
+      "actions-after-facts",
     );
     expect(action).toHaveAttribute("data-popover-action", "focus-brief");
     expect(action).toHaveAttribute("data-agent-handoff-action", "copy-focus-brief");
