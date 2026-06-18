@@ -3259,6 +3259,25 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-agent-readiness-strip-title-text-token",
     "--topology-node-popover-relation-section-title-text",
   );
+  const nodeReadinessMeter = page.getByTestId("topology-node-agent-readiness-meter");
+  await expect(nodeReadinessMeter).toHaveAttribute(
+    "data-agent-readiness-meter-contract",
+    "distribution-bar-maps-agent-readiness",
+  );
+  await expect(nodeReadinessMeter).toHaveAttribute(
+    "data-surface-token",
+    "--topology-overview-readiness-meter-surface",
+  );
+  await expect(nodeReadinessMeter).toHaveAttribute(
+    "data-border-token",
+    "--topology-overview-readiness-meter-border",
+  );
+  await expect(
+    nodeReadinessMeter.locator('[data-agent-readiness-meter-segment="ready"]'),
+  ).toHaveAttribute(
+    "data-meter-token",
+    "--topology-overview-readiness-ready-meter",
+  );
   const firstHandoffAction = page
     .getByTestId("topology-node-popover-action-rail")
     .locator("[data-popover-action]")

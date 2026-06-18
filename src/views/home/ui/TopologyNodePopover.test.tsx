@@ -1498,6 +1498,50 @@ describe("TopologyNodePopover", () => {
     ).toContain(
       "text-[color:var(--topology-node-popover-relation-section-title-text)]",
     );
+    const meter = screen.getByTestId("topology-node-agent-readiness-meter");
+    expect(meter).toHaveAttribute(
+      "data-agent-readiness-meter-contract",
+      "distribution-bar-maps-agent-readiness",
+    );
+    expect(meter).toHaveAttribute("data-agent-readiness-meter-total", "3");
+    expect(meter).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-readiness-meter-surface",
+    );
+    expect(meter).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-readiness-meter-border",
+    );
+    expect(meter.className).toContain(
+      "bg-[color:var(--topology-overview-readiness-meter-surface)]",
+    );
+    expect(
+      meter.querySelector('[data-agent-readiness-meter-segment="ready"]'),
+    ).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-readiness-ready-meter",
+    );
+    expect(
+      meter.querySelector('[data-agent-readiness-meter-segment="ready"]'),
+    ).toHaveAttribute("data-count", "1");
+    expect(
+      meter.querySelector('[data-agent-readiness-meter-segment="preflight"]'),
+    ).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-readiness-preflight-meter",
+    );
+    expect(
+      meter.querySelector('[data-agent-readiness-meter-segment="preflight"]'),
+    ).toHaveAttribute("data-count", "1");
+    expect(
+      meter.querySelector('[data-agent-readiness-meter-segment="review"]'),
+    ).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-readiness-review-meter",
+    );
+    expect(
+      meter.querySelector('[data-agent-readiness-meter-segment="review"]'),
+    ).toHaveAttribute("data-count", "1");
     expect(lens.querySelector('[data-agent-readiness-chip="ready"]')).toHaveTextContent(
       "전달 가능1",
     );

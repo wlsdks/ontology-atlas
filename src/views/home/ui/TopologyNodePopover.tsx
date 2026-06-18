@@ -203,6 +203,27 @@ export function TopologyNodePopover({
   const agentReadinessSummary = agentReadinessItems
     .map(({ label, count }) => `${label} ${count}`)
     .join(" · ");
+  const agentReadinessMeterItems = [
+    {
+      key: "ready" as const,
+      count: agentReadinessCounts.ready,
+      token: "--topology-overview-readiness-ready-meter",
+    },
+    {
+      key: "preflight" as const,
+      count: agentReadinessCounts.preflight,
+      token: "--topology-overview-readiness-preflight-meter",
+    },
+    {
+      key: "review" as const,
+      count: agentReadinessCounts.review,
+      token: "--topology-overview-readiness-review-meter",
+    },
+  ];
+  const agentReadinessMeterTotal =
+    agentReadinessCounts.ready +
+    agentReadinessCounts.preflight +
+    agentReadinessCounts.review;
   const expandedRelationTypeCount = new Set(
     expandedConnections.map((connection) => connection.relationType),
   ).size;
@@ -584,6 +605,29 @@ export function TopologyNodePopover({
           >
             {labels.agentReadinessTitle}
           </p>
+          <div
+            aria-hidden="true"
+            data-testid="topology-node-agent-readiness-meter"
+            data-agent-readiness-meter-contract="distribution-bar-maps-agent-readiness"
+            data-agent-readiness-meter-total={agentReadinessMeterTotal}
+            data-surface-token="--topology-overview-readiness-meter-surface"
+            data-border-token="--topology-overview-readiness-meter-border"
+            className="mb-1.5 flex h-1.5 w-full overflow-hidden rounded-full border border-[color:var(--topology-overview-readiness-meter-border)] bg-[color:var(--topology-overview-readiness-meter-surface)]"
+          >
+            {agentReadinessMeterItems.map((segment) => (
+              <span
+                key={segment.key}
+                data-agent-readiness-meter-segment={segment.key}
+                data-count={segment.count}
+                data-meter-token={segment.token}
+                style={{
+                  background: `var(${segment.token})`,
+                  flexGrow:
+                    agentReadinessMeterTotal > 0 ? segment.count : 1,
+                }}
+              />
+            ))}
+          </div>
           <div className="grid min-w-0 grid-cols-3 gap-1 overflow-hidden">
             {agentReadinessItems.map(({ key, label, displayLabel, count }) => (
               <span
