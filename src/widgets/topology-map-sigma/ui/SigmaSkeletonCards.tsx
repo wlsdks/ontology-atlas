@@ -3338,6 +3338,10 @@ export function SigmaSkeletonCards({
       data-relation-label-geometry-expected-count="0"
       data-relation-label-geometry-ready-count="0"
       data-relation-label-geometry-pending-count="0"
+      data-focus-relation-label-density-contract="click-focus-uses-ego-label-only"
+      data-focus-relation-label-source={
+        activeHullMode === 'focus' ? 'ego-relation-labels' : undefined
+      }
       data-selected-relation-label-handoff={
         selectedRelationLabelHandoff ? 'ready' : 'none'
       }
@@ -3640,35 +3644,36 @@ export function SigmaSkeletonCards({
               strokeWidth={activeDragMotion ? 1.75 : 1.35}
               opacity={activeDragMotion ? 0.96 : 0.86}
             />
-            <rect
-              data-relation-label-bg={`drag:${connector.key}`}
-              fill="var(--color-canvas)"
-              stroke="var(--topology-card-border-selected-strong)"
-              strokeWidth={0.7}
-              rx={7}
-              opacity={0}
-            />
-            <text
-              data-relation-label-id={`drag:${connector.key}`}
-              data-relation-label-from={connector.from}
-              data-relation-label-to={connector.to}
-              data-drag-relation-label-from={connector.from}
-              data-drag-relation-label-to={connector.to}
-              data-drag-relation-label="true"
-              data-focus-relation-label={
-                activeHullMode === 'focus' ? 'true' : undefined
-              }
-              data-relation-kind={connector.kind}
-              data-relation-quality={connector.relationQuality ?? 'supported'}
-              data-relation-type={connector.relationType}
-              data-relation-type-label={formatRelationLabel(connector.relationType)}
-              dominantBaseline="middle"
-              textAnchor="middle"
-              fill="var(--color-text-secondary)"
-              className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
-            >
-              {formatRelationLabel(connector.relationType)}
-            </text>
+            {activeHullMode === 'drag' ? (
+              <>
+                <rect
+                  data-relation-label-bg={`drag:${connector.key}`}
+                  fill="var(--color-canvas)"
+                  stroke="var(--topology-card-border-selected-strong)"
+                  strokeWidth={0.7}
+                  rx={7}
+                  opacity={0}
+                />
+                <text
+                  data-relation-label-id={`drag:${connector.key}`}
+                  data-relation-label-from={connector.from}
+                  data-relation-label-to={connector.to}
+                  data-drag-relation-label-from={connector.from}
+                  data-drag-relation-label-to={connector.to}
+                  data-drag-relation-label="true"
+                  data-relation-kind={connector.kind}
+                  data-relation-quality={connector.relationQuality ?? 'supported'}
+                  data-relation-type={connector.relationType}
+                  data-relation-type-label={formatRelationLabel(connector.relationType)}
+                  dominantBaseline="middle"
+                  textAnchor="middle"
+                  fill="var(--color-text-secondary)"
+                  className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
+                >
+                  {formatRelationLabel(connector.relationType)}
+                </text>
+              </>
+            ) : null}
           </g>
         ))}
       </svg>

@@ -1130,7 +1130,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(document.querySelector("[data-drag-cluster-count]")).not.toBeInTheDocument();
       expect(hull).toHaveStyle({ opacity: "0.8" });
       expect(document.querySelector("[data-focus-cluster-connector]")).toBeInTheDocument();
-      expect(document.querySelector("[data-focus-relation-label]")).toBeInTheDocument();
+      expect(document.querySelector("[data-focus-relation-label]")).not.toBeInTheDocument();
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-focus-relation-label-density-contract",
+        "click-focus-uses-ego-label-only",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-focus-relation-label-source",
+        "ego-relation-labels",
+      );
     } finally {
       rectSpy.mockRestore();
     }

@@ -2668,7 +2668,9 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   const focusHull = page.locator("[data-drag-cluster-hull]");
   await expect(focusHull).toHaveAttribute("data-cluster-mode", "focus");
   await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "quiet-outline");
+  await expect(page.locator("[data-focus-relation-label]")).toHaveCount(0);
   await expect(page.locator('[data-skeleton-card][data-slug="domain:views"]').first()).toBeVisible();
+  await expectSelectedCardRelationSummary(page, "domain:views");
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-visibility-count-contract",
     "single-pass-unless-fallback",
@@ -2688,6 +2690,14 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-relation-label-query-contract",
     "indexed-once",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-focus-relation-label-density-contract",
+    "click-focus-uses-ego-label-only",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-focus-relation-label-source",
+    "ego-relation-labels",
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-connector-rect-cache-accounting",
@@ -2754,8 +2764,8 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   );
   expect(
     visibleRelationLabels.length,
-    "phone focus should expose relation labels through the measured clearance contract",
-  ).toBeGreaterThan(0);
+    "phone focus should keep relation labels to one ego fact instead of duplicating focus-hull labels",
+  ).toBeLessThanOrEqual(1);
   for (const label of visibleRelationLabels) {
     expect(label.policy, `${label.id} should use the relation label clearance policy`).toBe(
       "reposition-or-hide",
