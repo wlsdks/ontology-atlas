@@ -4071,6 +4071,30 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
       routeStepRects[3].left > routeStepRects[2].left,
     "compact relation route should form a two-column fact/evidence/gate/action grid",
   ).toBe(true);
+  const compactCopyButtons = page.locator("[data-relation-copy-action]");
+  await expect(compactCopyButtons).toHaveCount(2);
+  await expect(page.locator('[data-relation-copy-action="relation_check"]')).toHaveAttribute(
+    "data-copy-label-contract",
+    "visible-action-full-label-accessible",
+  );
+  await expect(page.locator('[data-relation-copy-action="relation_check"]')).toHaveAttribute(
+    "data-copy-visible-label",
+    "relation_check",
+  );
+  await expect(page.locator('[data-relation-copy-action="explain_relation"]')).toHaveAttribute(
+    "data-copy-visible-label",
+    "explain_relation",
+  );
+  const compactCopyLabelsFit = await compactCopyButtons.evaluateAll((buttons) =>
+    buttons.every((button) => {
+      const label = button.querySelector("span");
+      return label ? label.scrollWidth <= label.clientWidth + 1 : false;
+    }),
+  );
+  expect(
+    compactCopyLabelsFit,
+    "compact relation copy action labels should fit without truncating the MCP action",
+  ).toBe(true);
 
   await expect(popover).toHaveCount(0);
 });

@@ -661,6 +661,9 @@ export function SigmaSelectedEdgeCard({
             actionKind="relation_check"
             gateKind={agentGateKind}
             label={copied === 'preflight' ? t('copied') : t('copyPreflight')}
+            visibleLabel={
+              copied === 'preflight' ? t('copied') : t('actionRelationCheck')
+            }
             onClick={() => void copyCheck('preflight')}
             payloadCall={formatQueryOntologyCall(preflightCopyPayload)}
             primary={primaryCopyAction === 'relation_check'}
@@ -671,6 +674,9 @@ export function SigmaSelectedEdgeCard({
             actionKind="explain_relation"
             gateKind={agentGateKind}
             label={copied === 'explain' ? t('copied') : t('copyExplain')}
+            visibleLabel={
+              copied === 'explain' ? t('copied') : t('actionExplainRelation')
+            }
             onClick={() => void copyCheck('explain')}
             payloadCall={formatQueryOntologyCall(explainCopyPayload)}
             primary={primaryCopyAction === 'explain_relation'}
@@ -780,6 +786,7 @@ function CopyButton({
   payloadCall,
   primary,
   primaryBadge,
+  visibleLabel,
 }: {
   actionKind: RelationCopyActionKind;
   copied: boolean;
@@ -789,6 +796,7 @@ function CopyButton({
   payloadCall: string;
   primary: boolean;
   primaryBadge: string;
+  visibleLabel: string;
 }) {
   const copyToneToken = primary
     ? `--topology-selected-relation-copy-${relationGateToken(gateKind)}`
@@ -801,6 +809,9 @@ function CopyButton({
       data-relation-copy-priority={primary ? 'primary' : 'secondary'}
       data-copy-recommended={primary ? 'true' : 'false'}
       data-copy-recommendation-label={primary ? primaryBadge : undefined}
+      data-copy-label-contract="visible-action-full-label-accessible"
+      data-copy-visible-label={visibleLabel}
+      data-copy-full-label={label}
       data-focus-ring-token="--topology-selected-relation-focus-ring"
       data-primary-shadow-token={
         primary ? '--topology-selected-relation-copy-primary-shadow' : undefined
@@ -819,7 +830,7 @@ function CopyButton({
       })}`}
     >
       {copied ? <Check size={11} /> : <Clipboard size={11} />}
-      <span className="min-w-0 truncate">{label}</span>
+      <span className="min-w-0 truncate">{visibleLabel}</span>
     </button>
   );
 }

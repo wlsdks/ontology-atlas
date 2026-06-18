@@ -302,8 +302,14 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(primary).toHaveAttribute('data-relation-copy-priority', 'primary');
     expect(primary).toHaveAttribute('data-copy-recommended', 'true');
     expect(primary).toHaveAttribute('data-copy-recommendation-label', 'Best next');
+    expect(primary).toHaveAttribute(
+      'data-copy-label-contract',
+      'visible-action-full-label-accessible',
+    );
+    expect(primary).toHaveAttribute('data-copy-visible-label', 'explain_relation');
+    expect(primary).toHaveAttribute('data-copy-full-label', 'Copy explain');
     expect(primary).toHaveAccessibleName('Copy explain · Best next');
-    expect(primary).toHaveTextContent('Copy explain');
+    expect(primary).toHaveTextContent('explain_relation');
     expect(primary).not.toHaveTextContent('Best next');
 
     const secondary = screen.getByRole('button', { name: /Copy relation check/i });
@@ -315,6 +321,13 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(secondary).toHaveAttribute('data-relation-copy-priority', 'secondary');
     expect(secondary).toHaveAttribute('data-copy-recommended', 'false');
     expect(secondary).not.toHaveAttribute('data-copy-recommendation-label');
+    expect(secondary).toHaveAttribute(
+      'data-copy-label-contract',
+      'visible-action-full-label-accessible',
+    );
+    expect(secondary).toHaveAttribute('data-copy-visible-label', 'relation_check');
+    expect(secondary).toHaveAttribute('data-copy-full-label', 'Copy relation check');
+    expect(secondary).toHaveTextContent('relation_check');
 
     const nextAction = screen.getByTestId('sigma-selected-edge-next-action');
     expect(nextAction).toHaveAttribute('data-next-action-contract', 'primary-action-first');
@@ -564,6 +577,26 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(copyActions).toHaveAttribute('data-overflow-contract', 'no-horizontal-scroll');
     expect(copyActions).toHaveClass('min-w-0');
     expect(copyActions).toHaveClass('overflow-hidden');
+    const relationCheckCopy = selectedCard.querySelector(
+      '[data-relation-copy-action="relation_check"]',
+    );
+    const explainCopy = selectedCard.querySelector(
+      '[data-relation-copy-action="explain_relation"]',
+    );
+    expect(relationCheckCopy).toHaveAttribute(
+      'data-copy-label-contract',
+      'visible-action-full-label-accessible',
+    );
+    expect(relationCheckCopy).toHaveAttribute('data-copy-visible-label', 'relation_check');
+    expect(relationCheckCopy).toHaveAttribute('data-copy-full-label', 'Copy relation check');
+    expect(relationCheckCopy).toHaveTextContent('relation_check');
+    expect(explainCopy).toHaveAttribute(
+      'data-copy-label-contract',
+      'visible-action-full-label-accessible',
+    );
+    expect(explainCopy).toHaveAttribute('data-copy-visible-label', 'explain_relation');
+    expect(explainCopy).toHaveAttribute('data-copy-full-label', 'Copy explain');
+    expect(explainCopy).toHaveTextContent('explain_relation');
     expect(metricStrip).toHaveClass('sr-only');
     expect(metricStrip).toContainElement(
       screen.getByTestId('sigma-selected-edge-agent-gate'),
