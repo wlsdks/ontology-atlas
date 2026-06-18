@@ -2566,6 +2566,22 @@ test("Relief Path result keeps both endpoint cards visible in the installed app 
     "data-path-result-responsive-contract",
     "hidden-under-md-panel-owned",
   );
+  const visibleRoute = page.getByTestId("topology-path-visible-route");
+  await expect(visibleRoute).toHaveAttribute(
+    "data-route-source-min-width-token",
+    "--topology-path-route-source-min-width",
+  );
+  await expect(visibleRoute).toHaveAttribute(
+    "data-route-target-min-width-token",
+    "--topology-path-route-target-min-width",
+  );
+  const targetPanelTitleFits = await visibleRoute
+    .locator('[data-route-endpoint-title="target"]')
+    .evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
+  expect(
+    targetPanelTitleFits,
+    "Installed-app WebView Path target endpoint title should not truncate in the panel route",
+  ).toBe(true);
   const routeChain = page.getByTestId("topology-path-result-route-chain");
   const actionRail = page.getByTestId("topology-path-result-action-rail");
   await expect(routeChain).toHaveAttribute(

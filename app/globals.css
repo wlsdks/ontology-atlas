@@ -466,6 +466,8 @@
     --topology-path-route-chip-border: rgba(139, 151, 255, 0.18);
     --topology-path-route-chip-text: rgba(222, 225, 255, 0.70);
     --topology-path-route-arrow-text: rgba(222, 225, 255, 0.36);
+    --topology-path-route-source-min-width: 3.75rem;
+    --topology-path-route-target-min-width: 9.75rem;
     --topology-path-route-source-surface: rgba(85, 205, 221, 0.075);
     --topology-path-route-source-border: rgba(85, 205, 221, 0.22);
     --topology-path-route-source-text: rgba(201, 250, 255, 0.76);

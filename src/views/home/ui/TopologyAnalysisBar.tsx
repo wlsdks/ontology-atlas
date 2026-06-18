@@ -1099,8 +1099,10 @@ export function TopologyAnalysisBar({
               data-endpoint-marker-border-token="--topology-path-route-endpoint-marker-border"
               data-endpoint-marker-text-token="--topology-path-route-endpoint-marker-text"
               data-route-compact-min-height-token="--topology-path-route-compact-min-height"
+              data-route-source-min-width-token="--topology-path-route-source-min-width"
+              data-route-target-min-width-token="--topology-path-route-target-min-width"
               data-route-responsive-contract="target-weighted-endpoints"
-              className="mt-3 grid min-w-0 grid-cols-[minmax(0,0.8fr)_auto_minmax(0,1.45fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5"
+              className="mt-3 grid min-w-0 grid-cols-[minmax(var(--topology-path-route-source-min-width),0.62fr)_auto_minmax(var(--topology-path-route-target-min-width),1.9fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5"
             >
               <span
                 className="min-h-[var(--topology-path-route-compact-min-height)] min-w-0 rounded border border-[color:var(--topology-path-route-source-border)] bg-[color:var(--topology-path-route-source-surface)] px-1.5 py-1"
