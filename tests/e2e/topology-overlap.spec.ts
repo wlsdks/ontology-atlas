@@ -402,6 +402,28 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-overview-provenance-contract",
     "scan-counts-not-wrapped-summary",
   );
+  const relationQuality = page.getByTestId("topology-overview-relation-quality");
+  await expect(relationQuality).toHaveAttribute(
+    "data-quality-meter-contract",
+    "distribution-bar-maps-relation-quality",
+  );
+  const relationQualityMeter = page.getByTestId("topology-overview-relation-quality-meter");
+  await expect(relationQualityMeter).toHaveAttribute(
+    "data-surface-token",
+    "--topology-overview-quality-meter-surface",
+  );
+  await expect(relationQualityMeter).toHaveAttribute(
+    "data-border-token",
+    "--topology-overview-quality-meter-border",
+  );
+  await expect(relationQualityMeter.locator('[data-relation-quality-segment="strong"]')).toHaveAttribute(
+    "data-meter-token",
+    "--topology-overview-quality-strong-meter",
+  );
+  await expect(relationQualityMeter.locator('[data-relation-quality-segment="weak"]')).toHaveAttribute(
+    "data-meter-token",
+    "--topology-overview-quality-weak-meter",
+  );
   await expect(page.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
     "data-border-token",
     "--topology-overview-notice-border",
@@ -513,6 +535,10 @@ test("Relief overview panel owns the phone read layer above map cards", async ({
   await expect(page.getByTestId("topology-overview-relation-quality-supported")).toHaveAttribute(
     "data-compact-label",
     "support",
+  );
+  await expect(page.getByTestId("topology-overview-relation-quality-meter")).toHaveAttribute(
+    "data-quality-meter-contract",
+    "distribution-bar-maps-relation-quality",
   );
   const overviewProofLabelsFit = await panel
     .locator("[data-proof-label-contract='compact-visible-full-aria'] span:last-child")

@@ -1406,6 +1406,10 @@ describe("TopologyAnalysisBar", () => {
       "flat-no-nested-cards",
     );
     expect(relationQuality).toHaveAttribute(
+      "data-quality-meter-contract",
+      "distribution-bar-maps-relation-quality",
+    );
+    expect(relationQuality).toHaveAttribute(
       "data-surface-token",
       "--topology-overview-quality-surface",
     );
@@ -1432,6 +1436,33 @@ describe("TopologyAnalysisBar", () => {
     expect(
       within(relationQuality).getByTestId("topology-overview-relation-quality-weak"),
     ).toHaveTextContent("114");
+    const qualityMeter = within(relationQuality).getByTestId(
+      "topology-overview-relation-quality-meter",
+    );
+    expect(qualityMeter).toHaveAttribute(
+      "data-quality-meter-contract",
+      "distribution-bar-maps-relation-quality",
+    );
+    expect(qualityMeter).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-quality-meter-surface",
+    );
+    expect(qualityMeter).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-quality-meter-border",
+    );
+    const strongSegment = qualityMeter.querySelector('[data-relation-quality-segment="strong"]');
+    const weakSegment = qualityMeter.querySelector('[data-relation-quality-segment="weak"]');
+    expect(strongSegment).toHaveAttribute("data-count", "384");
+    expect(strongSegment).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-quality-strong-meter",
+    );
+    expect(weakSegment).toHaveAttribute("data-count", "114");
+    expect(weakSegment).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-quality-weak-meter",
+    );
     expect(
       screen.getByRole("button", { name: "Copy topology overview brief" }).className,
     ).toContain("min-h-9");

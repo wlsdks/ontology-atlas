@@ -2210,6 +2210,7 @@ function RelationQualityGate({
       aria-label={`${title}: ${summary}`}
       data-density="scan-facts"
       data-proof-strip-contract="flat-no-nested-cards"
+      data-quality-meter-contract="distribution-bar-maps-relation-quality"
       data-overview-signal-card="quality"
       data-surface-token="--topology-overview-quality-surface"
       data-border-token="--topology-overview-quality-border"
@@ -2228,6 +2229,7 @@ function RelationQualityGate({
         <RelationQualityChip count={counts.weak} label={labels.weak} tone="weak" />
         <RelationQualityChip count={counts.review} label={labels.review} tone="review" />
       </div>
+      <RelationQualityMeter label={`${title}: ${summary}`} counts={counts} />
     </div>
   );
 }
@@ -2331,6 +2333,68 @@ function compactOverviewProofLabel(label: string, tone: string): string {
   if (tone === "supported") return label.replace(/supported/i, "support");
   if (tone === "ready") return label.replace(/handoff[-\s]?ready/i, "ready");
   return label;
+}
+
+function RelationQualityMeter({
+  label,
+  counts,
+}: {
+  label: string;
+  counts: {
+    strong: number;
+    supported: number;
+    weak: number;
+    review: number;
+  };
+}) {
+  const total = counts.strong + counts.supported + counts.weak + counts.review;
+  const segments = [
+    {
+      key: "strong",
+      count: counts.strong,
+      token: "--topology-overview-quality-strong-meter",
+    },
+    {
+      key: "supported",
+      count: counts.supported,
+      token: "--topology-overview-quality-supported-meter",
+    },
+    {
+      key: "weak",
+      count: counts.weak,
+      token: "--topology-overview-quality-weak-meter",
+    },
+    {
+      key: "review",
+      count: counts.review,
+      token: "--topology-overview-quality-review-meter",
+    },
+  ] as const;
+
+  return (
+    <div
+      aria-label={label}
+      data-testid="topology-overview-relation-quality-meter"
+      data-quality-meter-contract="distribution-bar-maps-relation-quality"
+      data-surface-token="--topology-overview-quality-meter-surface"
+      data-border-token="--topology-overview-quality-meter-border"
+      className="flex h-1.5 w-full overflow-hidden rounded-full border border-[color:var(--topology-overview-quality-meter-border)] bg-[color:var(--topology-overview-quality-meter-surface)]"
+    >
+      {segments.map((segment) => (
+        <span
+          key={segment.key}
+          aria-hidden
+          data-relation-quality-segment={segment.key}
+          data-count={segment.count}
+          data-meter-token={segment.token}
+          style={{
+            background: `var(${segment.token})`,
+            flexGrow: total > 0 ? segment.count : 1,
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
 function AgentReadinessMeter({
