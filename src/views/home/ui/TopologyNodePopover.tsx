@@ -560,25 +560,41 @@ export function TopologyNodePopover({
           data-testid="topology-node-agent-readiness-lens"
           aria-label={`${labels.agentReadinessTitle}: ${agentReadinessSummary}`}
           data-agent-readiness-summary={agentReadinessSummary}
-          className="mb-2 flex flex-wrap gap-1"
+          data-agent-readiness-layout="separate-readiness-strip"
+          data-agent-readiness-strip-surface-token="--topology-node-popover-context-surface"
+          data-agent-readiness-strip-border-token="--topology-node-popover-context-border"
+          data-agent-readiness-strip-title-text-token="--topology-node-popover-relation-section-title-text"
+          className="mb-2 rounded-md border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] p-1.5"
         >
-          {agentReadinessItems.map(({ key, label, count }) => (
-            <span
-              key={key}
-              data-agent-readiness-chip={key}
-              data-count={count}
-              data-agent-readiness-surface-token={agentReadinessToken(
-                key,
-                "surface",
-              )}
-              data-agent-readiness-border-token={agentReadinessToken(key, "border")}
-              data-agent-readiness-text-token={agentReadinessToken(key, "text")}
-              className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] leading-3.5 ${agentReadinessChipClassName(key, count)}`}
-            >
-              <span className="font-mono uppercase tracking-[0.06em]">{label}</span>
-              <span className="font-mono tabular-nums">{count}</span>
-            </span>
-          ))}
+          <p
+            data-agent-readiness-title
+            className="mb-1 truncate font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--topology-node-popover-relation-section-title-text)]"
+          >
+            {labels.agentReadinessTitle}
+          </p>
+          <div className="grid min-w-0 grid-cols-3 gap-1 overflow-hidden">
+            {agentReadinessItems.map(({ key, label, count }) => (
+              <span
+                key={key}
+                data-agent-readiness-chip={key}
+                data-count={count}
+                data-agent-readiness-surface-token={agentReadinessToken(
+                  key,
+                  "surface",
+                )}
+                data-agent-readiness-border-token={agentReadinessToken(key, "border")}
+                data-agent-readiness-text-token={agentReadinessToken(key, "text")}
+                className={`min-w-0 rounded border px-1.5 py-1 ${agentReadinessChipClassName(key, count)}`}
+              >
+                <span className="block truncate font-mono text-[8px] uppercase leading-3 tracking-[0.04em]">
+                  {label}
+                </span>
+                <span className="block font-mono text-[11px] leading-4 tabular-nums">
+                  {count}
+                </span>
+              </span>
+            ))}
+          </div>
         </div>
         {expandedCount > 0 ? (
           <p

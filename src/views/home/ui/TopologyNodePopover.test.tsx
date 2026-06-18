@@ -1465,8 +1465,38 @@ describe("TopologyNodePopover", () => {
       "에이전트 준비도: 전달 가능 1 · 사전 점검 1 · 검토 1",
     );
     expect(lens).toHaveAttribute(
+      "data-agent-readiness-layout",
+      "separate-readiness-strip",
+    );
+    expect(lens).toHaveAttribute(
+      "data-agent-readiness-strip-surface-token",
+      "--topology-node-popover-context-surface",
+    );
+    expect(lens).toHaveAttribute(
+      "data-agent-readiness-strip-border-token",
+      "--topology-node-popover-context-border",
+    );
+    expect(lens).toHaveAttribute(
+      "data-agent-readiness-strip-title-text-token",
+      "--topology-node-popover-relation-section-title-text",
+    );
+    expect(lens).toHaveAttribute(
       "data-agent-readiness-summary",
       "전달 가능 1 · 사전 점검 1 · 검토 1",
+    );
+    expect(lens.className).toContain(
+      "bg-[color:var(--topology-node-popover-context-surface)]",
+    );
+    expect(lens.className).toContain(
+      "border-[color:var(--topology-node-popover-context-border)]",
+    );
+    expect(lens.querySelector("[data-agent-readiness-title]")).toHaveTextContent(
+      "에이전트 준비도",
+    );
+    expect(
+      lens.querySelector("[data-agent-readiness-title]")?.className,
+    ).toContain(
+      "text-[color:var(--topology-node-popover-relation-section-title-text)]",
     );
     expect(lens.querySelector('[data-agent-readiness-chip="ready"]')).toHaveTextContent(
       "전달 가능1",
