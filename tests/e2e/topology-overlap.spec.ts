@@ -2279,6 +2279,14 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     .first();
   await expect(sourceCard).toBeVisible();
   await expect(targetCard).toBeVisible();
+  await expect(targetCard).toHaveAttribute(
+    "data-path-endpoint-max-width-token",
+    "--topology-path-endpoint-card-max-width",
+  );
+  const targetTitleFits = await targetCard.locator("[data-card-title]").evaluate(
+    (el) => el.scrollWidth <= el.clientWidth + 1,
+  );
+  expect(targetTitleFits, "Phone Path target endpoint title should not truncate").toBe(true);
   await expect(page.getByTestId("topology-node-popover")).toHaveCount(0);
   const scrollOverflow = await page.evaluate(() => ({
     x: document.documentElement.scrollWidth - window.innerWidth,

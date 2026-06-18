@@ -2905,6 +2905,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-path-attention-layer",
         "focus-path-state",
       );
+      expect(rerenderedSourceCard).toHaveAttribute(
+        "data-path-endpoint-max-width-token",
+        "--topology-path-endpoint-card-max-width",
+      );
+      expect(rerenderedSourceCard).toHaveStyle({
+        maxWidth: "var(--topology-path-endpoint-card-max-width)",
+      });
       const sourceBadge = screen.getByText("A");
       expect(sourceBadge).toHaveAttribute("data-path-card-badge", "source");
       expect(sourceBadge).toHaveAttribute(
@@ -2929,6 +2936,32 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         sourceSlug: "project:p",
         targetSlug: "domain:d1",
       });
+
+      rerender(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug="project:p"
+          onSelect={onSelect}
+          pathWorkflowActive
+          pathSelection={{ sourceSlug: "project:p", targetSlug: "domain:d1" }}
+          onPathSelectionChange={onPathSelectionChange}
+        />,
+      );
+      const selectedTargetCard = screen.getByText("Views").closest("[data-skeleton-card]")!;
+      expect(selectedTargetCard).toHaveAttribute("data-path-role", "target");
+      expect(selectedTargetCard).toHaveAttribute(
+        "data-path-endpoint-max-width-token",
+        "--topology-path-endpoint-card-max-width",
+      );
+      expect(selectedTargetCard).toHaveStyle({
+        maxWidth: "var(--topology-path-endpoint-card-max-width)",
+      });
+      expect(selectedTargetCard.querySelector("[data-card-title]")).toHaveAttribute(
+        "data-path-endpoint-title-contract",
+        "endpoint-title-gets-readable-width",
+      );
     } finally {
       rectSpy.mockRestore();
     }

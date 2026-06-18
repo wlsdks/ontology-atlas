@@ -4045,6 +4045,7 @@ export function SigmaSkeletonCards({
               ? 'movable'
               : 'dock-follower';
         const dragSettled = dragSettledSlugs.has(nodeId);
+        const pathEndpoint = pathRole === 'source' || pathRole === 'target';
         // 카드 표면 = kind 틴트의 *정량 토큰* (bg 8% · border 18% · dot 100%)
         // — 틴트가 칩마다 다른 강도로 보이면 4색 칩 더미가 된다 (패널 #5).
         const fill = ontologyFillTone(card.kind === 'project' ? 'project' : card.kind);
@@ -4069,6 +4070,9 @@ export function SigmaSkeletonCards({
             data-path-workflow={pathWorkflowActive ? 'true' : 'false'}
             data-path-role={pathRole}
             data-path-role-contract={pathRoleContract}
+            data-path-endpoint-max-width-token={
+              pathEndpoint ? '--topology-path-endpoint-card-max-width' : undefined
+            }
             data-path-next-action={pathNextAction}
             data-path-attention-layer={
               pathWorkflowActive && pathRole !== 'none' ? 'focus-path-state' : undefined
@@ -4247,7 +4251,11 @@ export function SigmaSkeletonCards({
                       : TIER_Z_INDEX[card.tier],
                 fontSize: `calc(${TIER_FONT_PX[card.tier]}px * var(--topology-card-scale, 1))`,
                 maxWidth:
-                  card.tier <= 1 ? 'var(--topology-anchor-card-max-width, 14rem)' : '12rem',
+                  pathEndpoint
+                    ? 'var(--topology-path-endpoint-card-max-width)'
+                    : card.tier <= 1
+                      ? 'var(--topology-anchor-card-max-width, 14rem)'
+                      : '12rem',
                 '--card-border': selected
                   ? 'var(--topology-card-border-selected)'
                   : healthRepairAuditTarget
@@ -4317,7 +4325,16 @@ export function SigmaSkeletonCards({
                 backgroundColor: fill,
               }}
             />
-            <span className="relative min-w-0 truncate">{card.title}</span>
+            <span
+              data-card-title
+              data-path-endpoint-title={pathEndpoint ? pathRole : undefined}
+              data-path-endpoint-title-contract={
+                pathEndpoint ? 'endpoint-title-gets-readable-width' : undefined
+              }
+              className="relative min-w-0 truncate"
+            >
+              {card.title}
+            </span>
             {card.count !== undefined ? (
               <span
                 data-skeleton-card-count
@@ -4356,7 +4373,7 @@ export function SigmaSkeletonCards({
                 })}
               </span>
             ) : null}
-            {pathRole === 'source' || pathRole === 'target' ? (
+            {pathEndpoint ? (
               <span
                 aria-hidden="true"
                 data-path-card-badge={pathRole}
