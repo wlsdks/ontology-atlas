@@ -431,6 +431,11 @@
     --topology-path-handoff-label-text: rgba(222, 225, 255, 0.42);
     --topology-path-handoff-action-min-height: 24px;
     --topology-path-handoff-action-radius: 4px;
+    --topology-path-panel-compact-gap: 8px;
+    --topology-path-route-compact-min-height: 32px;
+    --topology-path-handoff-compact-padding-y: 6px;
+    --topology-path-primary-evidence-min-height: 32px;
+    --topology-path-proof-summary-min-height: 32px;
     --topology-path-candidate-visibility-surface: rgba(139, 151, 255, 0.06);
     --topology-path-candidate-visibility-border: rgba(139, 151, 255, 0.18);
     --topology-path-primary-evidence-surface: rgba(139, 151, 255, 0.09);

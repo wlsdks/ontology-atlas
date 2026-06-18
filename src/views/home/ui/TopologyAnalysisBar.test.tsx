@@ -1763,6 +1763,14 @@ describe("TopologyAnalysisBar", () => {
       "data-action-radius-token",
       "--topology-path-handoff-action-radius",
     );
+    expect(handoff).toHaveAttribute(
+      "data-compact-padding-y-token",
+      "--topology-path-handoff-compact-padding-y",
+    );
+    expect(handoff).toHaveAttribute(
+      "data-primary-evidence-min-height-token",
+      "--topology-path-primary-evidence-min-height",
+    );
     expect(handoff).toHaveAttribute("data-primary-evidence-visible", "false");
     expect(handoff).toHaveAttribute("data-mcp-action", "find_path");
     expect(handoff).toHaveAttribute("data-cli-fallback", "ontology-atlas path");
@@ -1877,6 +1885,10 @@ describe("TopologyAnalysisBar", () => {
     expect(route).toHaveAttribute(
       "data-endpoint-marker-text-token",
       "--topology-path-route-endpoint-marker-text",
+    );
+    expect(route).toHaveAttribute(
+      "data-route-compact-min-height-token",
+      "--topology-path-route-compact-min-height",
     );
     expect(within(route).getByText("Source")).toBeInTheDocument();
     expect(within(route).getByText("Views")).toBeInTheDocument();

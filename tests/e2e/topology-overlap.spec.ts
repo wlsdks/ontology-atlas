@@ -2544,6 +2544,10 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "data-panel-compact-scroll-end-reserve-token",
     "--topology-analysis-panel-path-collapsed-scroll-end-reserve",
   );
+  await expect(panel).toHaveAttribute(
+    "data-path-panel-compact-gap-token",
+    "--topology-path-panel-compact-gap",
+  );
   const panelBody = page.getByTestId("topology-analysis-panel-body");
   await expect(panelBody).toHaveAttribute("data-analysis-body-mode", "path");
   await expect(panelBody).toHaveAttribute(
@@ -2554,7 +2558,7 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   expect(
     collapsedPanelRect.height,
     "phone Path panel should not carry the bottom-tab reserve while proof is collapsed",
-  ).toBeLessThanOrEqual(500);
+  ).toBeLessThanOrEqual(470);
   await expect(route).toBeVisible();
   await expect(route).toHaveAttribute(
     "data-route-contract",
@@ -2614,6 +2618,10 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "data-endpoint-marker-text-token",
     "--topology-path-route-endpoint-marker-text",
   );
+  await expect(route).toHaveAttribute(
+    "data-route-compact-min-height-token",
+    "--topology-path-route-compact-min-height",
+  );
   await expect(route.locator('[data-route-endpoint-marker="source"]')).toHaveText("A");
   await expect(route.locator('[data-route-endpoint-marker="target"]')).toHaveText("B");
   await expect(route).toHaveAttribute(
@@ -2645,6 +2653,14 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   expect(routeTargetTitleFits, "phone path route target title should not truncate").toBe(true);
   await expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
   await expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
+  await expect(handoff).toHaveAttribute(
+    "data-compact-padding-y-token",
+    "--topology-path-handoff-compact-padding-y",
+  );
+  await expect(handoff).toHaveAttribute(
+    "data-primary-evidence-min-height-token",
+    "--topology-path-primary-evidence-min-height",
+  );
   await expect(handoff).toHaveAttribute(
     "data-path-primary-evidence-contract",
     "visible-before-proof-disclosure",
@@ -2678,6 +2694,10 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   await expect(page.getByTestId("topology-path-proof-summary")).toHaveAttribute(
     "data-hover-text-token",
     "--topology-path-proof-summary-hover-text",
+  );
+  await expect(page.getByTestId("topology-path-proof-summary")).toHaveAttribute(
+    "data-min-height-token",
+    "--topology-path-proof-summary-min-height",
   );
   const preProofPanelRect = await rectOf(panel);
   const preProofVisibleCards = await visibleCardRects(page);
