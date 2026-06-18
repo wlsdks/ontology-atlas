@@ -875,6 +875,7 @@ export function TopologyNodePopover({
                     data-overflow-contract="no-horizontal-scroll"
                     data-row-density-contract="agent-handoff-scan-row"
                     data-row-surface-contract="flat-divider-row"
+                    data-row-visual-contract="direction-quality-fact-spine"
                     data-row-min-hit-height="72"
                     data-row-scan-order="relation>title>direction>endpoint>handoff"
                     data-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
@@ -905,7 +906,9 @@ export function TopologyNodePopover({
                       data-direction-border-token="--topology-node-popover-direction-border"
                       data-direction-text-token="--topology-node-popover-direction-text"
                       data-direction-hover-text-token="--topology-node-popover-direction-hover-text"
-                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-node-popover-direction-border)] bg-[color:var(--topology-node-popover-direction-surface)] text-[color:var(--topology-node-popover-direction-text)] group-hover:text-[color:var(--topology-node-popover-direction-hover-text)]"
+                      data-direction-shadow-token="--topology-node-popover-direction-shadow"
+                      data-direction-marker-contract="primary-row-scan-anchor"
+                      className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-node-popover-direction-border)] bg-[color:var(--topology-node-popover-direction-surface)] text-[color:var(--topology-node-popover-direction-text)] shadow-[var(--topology-node-popover-direction-shadow)] group-hover:text-[color:var(--topology-node-popover-direction-hover-text)]"
                     >
                       {connection.direction === "outgoing" ? (
                         <ArrowUpRight size={12} aria-hidden />

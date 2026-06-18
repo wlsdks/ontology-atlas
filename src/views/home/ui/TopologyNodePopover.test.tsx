@@ -1134,6 +1134,10 @@ describe("TopologyNodePopover", () => {
     expect(relationRows[0]).toHaveAttribute("data-relation-evidence-count", "1");
     expect(relationRows[0]).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(relationRows[0]).toHaveAttribute("data-primary-copy-action", "explain_relation");
+    expect(relationRows[0]).toHaveAttribute(
+      "data-row-visual-contract",
+      "direction-quality-fact-spine",
+    );
     expect(
       relationRows[0].querySelector("[data-relation-direction-marker]"),
     ).toHaveAttribute("data-relation-direction-marker", "outgoing");
@@ -1149,6 +1153,24 @@ describe("TopologyNodePopover", () => {
       "data-direction-hover-text-token",
       "--topology-node-popover-direction-hover-text",
     );
+    expect(
+      relationRows[0].querySelector("[data-relation-direction-marker]"),
+    ).toHaveAttribute(
+      "data-direction-shadow-token",
+      "--topology-node-popover-direction-shadow",
+    );
+    expect(
+      relationRows[0].querySelector("[data-relation-direction-marker]"),
+    ).toHaveAttribute(
+      "data-direction-marker-contract",
+      "primary-row-scan-anchor",
+    );
+    expect(
+      relationRows[0].querySelector("[data-relation-direction-marker]")?.className,
+    ).toContain("h-6");
+    expect(
+      relationRows[0].querySelector("[data-relation-direction-marker]")?.className,
+    ).toContain("shadow-[var(--topology-node-popover-direction-shadow)]");
     expect(
       relationRows[0].querySelector("[data-relation-quality-dot]"),
     ).toHaveAttribute("data-dot-token", "--topology-relation-quality-strong-dot");

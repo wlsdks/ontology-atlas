@@ -2234,6 +2234,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "--topology-relation-quality-weak-glow",
     );
     const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
+    const directionGlyph = labelHit?.querySelector("[data-relation-direction-glyph]");
     const typeText = labelHit?.querySelector("[data-relation-label-type-text]");
     expect(typeText).toHaveAttribute("data-relation-label-segment", "type");
     expect(typeText).toHaveAttribute(
@@ -2257,6 +2258,41 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-text-token",
       "--topology-relation-gate-preflight-text",
     );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-direction-contract",
+      "edge-source-to-target-glyph",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-direction-contract",
+      "edge-source-to-target-glyph",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-direction-surface-token",
+      "--topology-relation-direction-surface",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-direction-border-token",
+      "--topology-relation-direction-border",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-direction-text-token",
+      "--topology-relation-direction-text",
+    );
+    expect(directionGlyph).toHaveAttribute("data-relation-direction-glyph", "source-to-target");
+    expect(directionGlyph).toHaveAttribute("data-relation-label-segment", "direction");
+    expect(directionGlyph).toHaveAttribute(
+      "data-surface-token",
+      "--topology-relation-direction-surface",
+    );
+    expect(directionGlyph).toHaveAttribute(
+      "data-border-token",
+      "--topology-relation-direction-border",
+    );
+    expect(directionGlyph).toHaveAttribute(
+      "data-text-token",
+      "--topology-relation-direction-text",
+    );
+    expect(directionGlyph).toHaveTextContent("→");
     expect(qualityDot?.className).toContain(
       "bg-[color:var(--topology-relation-quality-weak-dot)]",
     );
@@ -2470,8 +2506,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(gateChip).toHaveAttribute("data-route-chip-text", "explain");
     expect(gateChip).toHaveAttribute("data-relation-label-segment", "gate");
     const typeText = labelHit?.querySelector("[data-relation-label-type-text]");
+    const directionGlyph = labelHit?.querySelector("[data-relation-direction-glyph]");
     const selectedOverlayTypeText = selectedOverlay?.querySelector(
       "[data-relation-label-type-text]",
+    );
+    const selectedOverlayDirectionGlyph = selectedOverlay?.querySelector(
+      "[data-relation-direction-glyph]",
     );
     expect(typeText).toHaveAttribute(
       "data-relation-label-type-text-contract",
@@ -2493,6 +2533,42 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-label-segment",
       "evidence",
     );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-direction-contract",
+      "edge-source-to-target-glyph",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-direction-contract",
+      "edge-source-to-target-glyph",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-direction-contract",
+      "edge-source-to-target-glyph",
+    );
+    expect(directionGlyph).toHaveAttribute("data-relation-direction-glyph", "source-to-target");
+    expect(directionGlyph).toHaveAttribute("data-relation-label-segment", "direction");
+    expect(directionGlyph).toHaveTextContent("→");
+    expect(selectedOverlayDirectionGlyph).toHaveAttribute(
+      "data-relation-direction-glyph",
+      "source-to-target",
+    );
+    expect(selectedOverlayDirectionGlyph).toHaveAttribute(
+      "data-relation-label-segment",
+      "direction",
+    );
+    expect(selectedOverlayDirectionGlyph).toHaveAttribute(
+      "data-surface-token",
+      "--topology-relation-direction-surface",
+    );
+    expect(selectedOverlayDirectionGlyph).toHaveAttribute(
+      "data-border-token",
+      "--topology-relation-direction-border",
+    );
+    expect(selectedOverlayDirectionGlyph).toHaveAttribute(
+      "data-text-token",
+      "--topology-relation-direction-text",
+    );
+    expect(selectedOverlayDirectionGlyph).toHaveTextContent("→");
     expect(gateChip).toHaveAttribute(
       "data-surface-token",
       "--topology-relation-gate-ready-surface",
