@@ -170,7 +170,7 @@ const labels = {
   pathResolved: "Path selected: {source} to {target}.",
   pathCandidateVisibility:
     "Showing {visible} of {total} path candidates so the map stays readable.",
-  pathHandoffLabel: "Agent handoff",
+  pathHandoffLabel: "Share route",
   pathHandoffMcpAction: "MCP find_path",
   pathHandoffCliFallback: "CLI path",
   pathEvidenceCopy: "Copy path evidence",
@@ -1793,6 +1793,10 @@ describe("TopologyAnalysisBar", () => {
 
     const handoff = screen.getByTestId("topology-path-agent-handoff");
     expect(handoff).toHaveAttribute("data-attention-layer", "focus-path-state");
+    expect(handoff).toHaveAttribute(
+      "data-handoff-contract",
+      "route-proof-action-visible",
+    );
     expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
     expect(handoff).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
     expect(handoff).toHaveAttribute("data-surface-token", "--topology-path-handoff-surface");
@@ -1855,7 +1859,7 @@ describe("TopologyAnalysisBar", () => {
       "text-[color:var(--topology-path-handoff-cli-text)]",
     );
     expect(cliChip.className).not.toContain("--color-text-tertiary");
-    expect(handoff).toHaveTextContent("Agent handoff");
+    expect(handoff).toHaveTextContent("Share route");
     expect(handoff).toHaveTextContent("MCP find_path");
     expect(handoff).toHaveTextContent("CLI path");
   });

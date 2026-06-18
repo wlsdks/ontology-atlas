@@ -3083,7 +3083,7 @@
       "pathSelected": "{title}에서 시작합니다. 대상 노드를 선택하세요.",
       "pathResolved": "{source}에서 {target}까지의 연결을 보고 있습니다.",
       "pathCandidateVisibility": "지도가 읽히도록 경로 후보 {total}개 중 {visible}개만 보여줍니다.",
-      "pathHandoffLabel": "에이전트 인계",
+      "pathHandoffLabel": "경로 공유",
       "pathHandoffMcpAction": "MCP find_path",
       "pathHandoffCliFallback": "CLI path",
       "pathEvidenceCopy": "경로 근거 복사",

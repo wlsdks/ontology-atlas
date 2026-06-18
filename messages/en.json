@@ -3083,7 +3083,7 @@
       "pathSelected": "Starting from {title}. Choose a target.",
       "pathResolved": "Showing the link from {source} to {target}.",
       "pathCandidateVisibility": "Showing {visible} of {total} path candidates so the map stays readable.",
-      "pathHandoffLabel": "Agent handoff",
+      "pathHandoffLabel": "Share route",
       "pathHandoffMcpAction": "MCP find_path",
       "pathHandoffCliFallback": "CLI path",
       "pathEvidenceCopy": "Copy path evidence",

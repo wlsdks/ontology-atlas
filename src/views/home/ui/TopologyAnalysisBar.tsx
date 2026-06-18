@@ -1167,7 +1167,7 @@ export function TopologyAnalysisBar({
               data-attention-layer="focus-path-state"
               data-guidance-owner="analysis-rail"
               data-path-prompt-policy="panel-owned-when-card-mode"
-              data-handoff-contract="agent-next-action-visible"
+              data-handoff-contract="route-proof-action-visible"
               data-handoff-layout-contract="compact-proof-strip"
               data-overflow-contract="no-horizontal-scroll"
               data-surface-token="--topology-path-handoff-surface"

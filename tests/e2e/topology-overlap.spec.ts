@@ -2507,7 +2507,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-handoff-contract",
-      "agent-next-action-visible",
+      "route-proof-action-visible",
     );
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-handoff-layout-contract",

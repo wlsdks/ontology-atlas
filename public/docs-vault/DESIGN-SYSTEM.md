@@ -440,7 +440,7 @@ names in component data markers and tests whenever a surface depends on
   `--topology-path-proof-after-write-text`: path proof disclosure, checklist
   rows, and status chips. The collapsed disclosure must read as an available
   proof control, not empty panel text, while ready / required / after-write
-  evidence stays in the same agent handoff language as the primary path action.
+  evidence stays in the same route-sharing language as the primary path action.
 - `--topology-path-candidate-visibility-surface` /
   `--topology-path-candidate-visibility-border`: path candidate coverage strip.
   It explains how many map cards remain visible after panel-clearance hiding,
@@ -451,14 +451,14 @@ names in component data markers and tests whenever a surface depends on
   `--topology-path-primary-evidence-text` /
   `--topology-path-primary-evidence-hover-surface` /
   `--topology-path-primary-evidence-hover-border` /
-  `--topology-path-primary-evidence-hover-text`: path result primary handoff
+  `--topology-path-primary-evidence-hover-text`: path result primary route-share
   action. When a source and target are selected, `Copy path evidence` must read
-  as the first actionable proof step inside the agent handoff rail, before MCP
+  as the first actionable proof step inside the route-sharing rail, before MCP
   and CLI fallback chips and before the secondary proof disclosure.
 - `--topology-path-handoff-text` /
-  `--topology-path-handoff-label-text`: path handoff rail copy. The rail label
+  `--topology-path-handoff-label-text`: path route-share rail copy. The rail label
   and ambient text are support copy for the selected path, so they stay quieter
-  than selected endpoint cards while still framing the agent next action.
+  than selected endpoint cards while still framing the copyable proof action.
 - `--topology-path-handoff-mcp-surface` /
   `--topology-path-handoff-mcp-border` /
   `--topology-path-handoff-mcp-text` /
@@ -488,8 +488,8 @@ names in component data markers and tests whenever a surface depends on
   `--topology-overview-handoff-primary-surface` /
   `--topology-overview-handoff-primary-border` /
   `--topology-overview-handoff-secondary-surface` /
-  `--topology-overview-handoff-secondary-border`: overview agent handoff rail.
-  The graph brief remains the primary action; reanalysis and sync checks stay
+  `--topology-overview-handoff-secondary-border`: overview share rail.
+  The map brief remains the primary action; reanalysis and sync checks stay
   quieter inside the disclosure while sharing the same responsive token
   contract.
 - `--topology-overview-quality-surface` /
