@@ -570,7 +570,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("카드 표면이 kind 틴트 정량 토큰으로 온톨로지 계층을 더 선명하게 표시한다", () => {
+  it("카드 표면이 kind × tier 정량 토큰으로 온톨로지 계층을 더 선명하게 표시한다", () => {
     render(
       <SigmaSkeletonCards
         sigma={stubSigma}
@@ -580,18 +580,29 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         onSelect={vi.fn()}
       />,
     );
+    const projectCard = screen
+      .getByText("Atlas")
+      .closest("[data-skeleton-card]") as HTMLElement;
     const domainCard = screen
       .getByText("Views")
       .closest("[data-skeleton-card]") as HTMLElement;
-    const expectAlpha = (alpha: string) =>
-      ONTOLOGY_KIND_TONE.domain.fill.replace(/,\s*[\d.]+\)$/, `, ${alpha})`);
+
+    const expectAlpha = (kind: "project" | "domain", alpha: string) =>
+      ONTOLOGY_KIND_TONE[kind].fill.replace(/,\s*[\d.]+\)$/, `, ${alpha})`);
+    expect(projectCard.style.getPropertyValue("--card-border")).toBe(
+      expectAlpha("project", "0.34"),
+    );
     expect(domainCard.style.getPropertyValue("--card-border")).toBe(
-      expectAlpha("0.24"),
+      expectAlpha("domain", "0.28"),
     );
     // 틴트는 불투명 panel 베이스 위 레이어 — 반투명 bg 단독이면 뒤 엣지가 비친다.
-    const tint = domainCard.querySelector("[data-kind-tint]");
-    expect(tint).toHaveStyle({
-      backgroundColor: expectAlpha("0.11"),
+    const projectTint = projectCard.querySelector("[data-kind-tint]");
+    const domainTint = domainCard.querySelector("[data-kind-tint]");
+    expect(projectTint).toHaveStyle({
+      backgroundColor: expectAlpha("project", "0.16"),
+    });
+    expect(domainTint).toHaveStyle({
+      backgroundColor: expectAlpha("domain", "0.13"),
     });
   });
 

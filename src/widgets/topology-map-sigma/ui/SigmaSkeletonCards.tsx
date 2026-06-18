@@ -143,6 +143,16 @@ const TIER_DOT_EM: Record<SkeletonCardModel['tier'], string> = {
   3: '0.42em',
 };
 
+const TIER_SURFACE_ALPHA: Record<
+  SkeletonCardModel['tier'],
+  { bg: number; border: number; hoverBorder: number }
+> = {
+  0: { bg: 0.16, border: 0.34, hoverBorder: 0.56 },
+  1: { bg: 0.13, border: 0.28, hoverBorder: 0.50 },
+  2: { bg: 0.10, border: 0.22, hoverBorder: 0.42 },
+  3: { bg: 0.07, border: 0.16, hoverBorder: 0.34 },
+};
+
 /**
  * dim 잉크 2단계 (디자이너 패널 합의): click-focus 에서는 선택 ego
  * 관계가 먼저 읽혀야 하므로 방향 감각용 상위 anchor(project/domain)는
@@ -4238,12 +4248,14 @@ export function SigmaSkeletonCards({
               : 'dock-follower';
         const dragSettled = dragSettledSlugs.has(nodeId);
         const pathEndpoint = pathRole === 'source' || pathRole === 'target';
-        // 카드 표면 = kind 틴트의 *정량 토큰* (bg 11% · border 24% · dot 100%)
-        // — 틴트가 칩마다 다른 강도로 보이면 4색 칩 더미가 된다 (패널 #5).
+        // 카드 표면 = kind 틴트 × tier alpha 의 *정량 토큰*.
+        // 상위 개념일수록 표면을 더 세게 주어 지도가 태그 더미가 아니라
+        // project → domain → capability → element 위계로 먼저 읽히게 한다.
         const fill = ontologyFillTone(card.kind === 'project' ? 'project' : card.kind);
-        const tintBg = withAlpha(fill, 0.11);
-        const tintBorder = withAlpha(fill, 0.24);
-        const tintBorderHover = withAlpha(fill, 0.46);
+        const surfaceAlpha = TIER_SURFACE_ALPHA[card.tier];
+        const tintBg = withAlpha(fill, surfaceAlpha.bg);
+        const tintBorder = withAlpha(fill, surfaceAlpha.border);
+        const tintBorderHover = withAlpha(fill, surfaceAlpha.hoverBorder);
         const selectedRelationSummaryText =
           selected && selectedRelationSummary
             ? tEdgeTooltip('selectedCardRelationSummaryAction', {

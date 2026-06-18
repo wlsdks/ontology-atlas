@@ -41,6 +41,13 @@ as an ontology structure first — project, domain, capability, and typed relati
 shape — instead of a dark tag cloud with faint lines. This deliberately improves
 expression through existing tokens rather than adding more labels to every card.
 
+The card surface also separates kind hue from tier strength: project, domain,
+capability, and element cards keep the same visual vocabulary but use tiered
+surface alpha so the overview reads as ontology hierarchy before it reads as a
+flat set of labels. The design guardrail is that hierarchy is expressed through
+tokenized surface weight, not through decorative badges or extra prose on every
+card.
+
 선택된 relation label 은 36px hit target 안에 더 작은 visual badge 를 두어 클릭은
 쉽고 지도 표식은 작게 유지한다. selected relation inspector 는
 `--topology-selected-relation-card-*` 토큰으로 우측 compact rail 에 고정해 중앙
