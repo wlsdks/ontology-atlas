@@ -864,6 +864,8 @@ export function TopologyAnalysisBar({
   const panelBodyScrollEndReserveToken =
     panelMode === "path"
       ? "--topology-analysis-panel-path-collapsed-scroll-end-reserve"
+      : panelMode === "health"
+        ? "--topology-health-panel-scroll-end-reserve"
       : "--topology-analysis-panel-compact-scroll-end-reserve";
 
   return (
@@ -934,6 +936,9 @@ export function TopologyAnalysisBar({
       data-overview-panel-phone-max-height-token={
         panelMode === "overview" ? "--topology-overview-panel-phone-max-height" : undefined
       }
+      data-health-panel-phone-max-height-token={
+        panelMode === "health" ? "--topology-health-panel-phone-max-height" : undefined
+      }
       data-health-repair-lane-contract={
         panelMode === "health" && healthAction
           ? "target-to-builder-to-sync"
@@ -959,7 +964,7 @@ export function TopologyAnalysisBar({
       }
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 border data-[analysis-mode=overview]:max-md:max-h-[var(--topology-overview-panel-phone-max-height)] data-[analysis-mode=overview]:max-md:overflow-y-auto data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 border data-[analysis-mode=overview]:max-md:max-h-[var(--topology-overview-panel-phone-max-height)] data-[analysis-mode=overview]:max-md:overflow-y-auto data-[analysis-mode=overview]:lg:min-h-[455px] data-[analysis-mode=health]:max-md:max-h-[var(--topology-health-panel-phone-max-height)] data-[analysis-mode=health]:max-md:overflow-y-auto md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         panelMode === "overview" ? "overflow-hidden" : "overflow-y-auto"
       } ${
         createPanelReserved
@@ -973,7 +978,7 @@ export function TopologyAnalysisBar({
         data-testid="topology-analysis-panel-body"
         data-panel-body-scroll-contract="compact-scrolls-above-bottom-tab"
         data-panel-body-scroll-end-reserve-token={panelBodyScrollEndReserveToken}
-        className="flex flex-col gap-3 data-[analysis-body-mode=overview]:gap-[var(--topology-overview-panel-compact-gap)] data-[analysis-body-mode=path]:gap-[var(--topology-path-panel-compact-gap)] max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-path-collapsed-scroll-end-reserve)] data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=focus]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=health]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] max-md:pr-1"
+        className="flex flex-col gap-3 data-[analysis-body-mode=overview]:gap-[var(--topology-overview-panel-compact-gap)] data-[analysis-body-mode=path]:gap-[var(--topology-path-panel-compact-gap)] max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-path-collapsed-scroll-end-reserve)] data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=focus]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=health]:max-md:pb-[var(--topology-health-panel-scroll-end-reserve)] max-md:pr-1"
         data-analysis-body-mode={panelMode}
       >
         <div

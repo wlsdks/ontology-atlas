@@ -11,6 +11,7 @@ const MBP14_FULLSCREEN = { label: "mbp14-fullscreen", width: 1512, height: 949 }
 const INSTALLED_APP_WEBVIEW = { label: "installed-app-webview", width: 1512, height: 917 };
 const COMPACT_VIEWPORT = { label: "compact-900", width: 900, height: 760 };
 const PHONE_VIEWPORT = { label: "phone-390", width: 390, height: 844 };
+const NARROW_PHONE_VIEWPORT = { label: "phone-360", width: 360, height: 780 };
 const OUT = path.resolve("output/ui-audit/topology-drag");
 const OVERVIEW_DRAG_DELTA_TOLERANCE_PX = 48;
 
@@ -4169,7 +4170,7 @@ test("Relief Create intent keeps a blocking pending state until a writable works
 });
 
 test("Relief Health phone rail owns the read layer without help overlap", async ({ page }) => {
-  const viewport = PHONE_VIEWPORT;
+  const viewport = NARROW_PHONE_VIEWPORT;
   await openRelief(page, viewport, {
     mode: "health",
     requireHud: false,
@@ -4191,6 +4192,14 @@ test("Relief Health phone rail owns the read layer without help overlap", async 
     "data-panel-phone-utility-reserve-token",
     "--topology-panel-phone-utility-rail-reserve",
   );
+  await expect(panel).toHaveAttribute(
+    "data-health-panel-phone-max-height-token",
+    "--topology-health-panel-phone-max-height",
+  );
+  await expect(panel).toHaveAttribute(
+    "data-panel-compact-scroll-end-reserve-token",
+    "--topology-health-panel-scroll-end-reserve",
+  );
   const helpEntry = page.getByTestId("topology-shortcuts-help-button");
   await expect(helpEntry).toHaveAttribute(
     "data-phone-help-entry-contract",
@@ -4199,6 +4208,10 @@ test("Relief Health phone rail owns the read layer without help overlap", async 
   await expect(helpEntry).not.toBeVisible();
 
   const rect = await rectOf(panel);
+  expect(
+    rect.height,
+    "Health phone panel should leave the repair map target visible below the rail",
+  ).toBeLessThanOrEqual(525);
   expect(rect.left, "Health phone panel should start inside the viewport").toBeGreaterThanOrEqual(0);
   expect(
     rect.right,

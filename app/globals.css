@@ -386,6 +386,8 @@
     --topology-overview-signal-grid-border: rgba(255, 255, 255, 0.065);
     --topology-overview-panel-compact-gap: 8px;
     --topology-overview-panel-phone-max-height: min(640px, calc(100dvh - 14rem));
+    --topology-health-panel-phone-max-height: min(520px, calc(100dvh - 16rem));
+    --topology-health-panel-scroll-end-reserve: 12px;
     --topology-overview-signal-grid-compact-padding: 8px;
     --topology-overview-signal-grid-compact-gap: 6px;
     --topology-overview-signal-neutral-surface: rgba(255, 255, 255, 0.028);

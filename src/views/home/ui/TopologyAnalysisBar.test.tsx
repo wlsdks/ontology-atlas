@@ -3277,6 +3277,20 @@ describe("TopologyAnalysisBar", () => {
       "data-health-repair-target-kind",
       "orphan",
     );
+    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
+      "data-health-panel-phone-max-height-token",
+      "--topology-health-panel-phone-max-height",
+    );
+    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
+      "data-panel-compact-scroll-end-reserve-token",
+      "--topology-health-panel-scroll-end-reserve",
+    );
+    expect(screen.getByTestId("topology-analysis-panel").className).toContain(
+      "data-[analysis-mode=health]:max-md:max-h-[var(--topology-health-panel-phone-max-height)]",
+    );
+    expect(screen.getByTestId("topology-analysis-panel-body").className).toContain(
+      "data-[analysis-body-mode=health]:max-md:pb-[var(--topology-health-panel-scroll-end-reserve)]",
+    );
     expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
       "data-health-repair-order-contract",
       "inspect-repair-sync",
