@@ -603,9 +603,10 @@ export function SigmaSelectedEdgeCard({
         data-relation-evidence-state={evidenceState}
         data-primary-copy-action={primaryCopyAction}
         data-route-density="micro-rail"
+        data-route-layout-contract="compact-two-column-route-grid"
         data-route-step-min-width-token="--topology-selected-relation-route-step-min-width"
         data-overflow-contract="no-horizontal-scroll"
-        className="flex min-w-0 flex-nowrap overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] max-[960px]:flex-col"
+        className="grid min-w-0 shrink-0 grid-cols-4 overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] max-[960px]:min-h-16 max-[960px]:grid-cols-2"
       >
         <RouteStep kind="fact" label={t('routeFact')} value={t('typedFactLabel')} />
         <RouteStep kind="evidence" label={t('routeEvidence')} value={evidenceLabel} />
@@ -735,7 +736,7 @@ function RouteStep({
       data-route-step={kind}
       data-route-step-label={label}
       data-route-step-value={value}
-      className="min-h-8 min-w-[var(--topology-selected-relation-route-step-min-width)] flex-1 basis-0 border-r border-[color:var(--topology-selected-relation-subtle-border)] px-1.5 py-1 last:border-r-0 max-[960px]:w-full max-[960px]:basis-auto max-[960px]:border-r-0 max-[960px]:border-b max-[960px]:last:border-b-0"
+      className="min-h-8 min-w-[var(--topology-selected-relation-route-step-min-width)] border-r border-[color:var(--topology-selected-relation-subtle-border)] px-1.5 py-1 last:border-r-0 max-[960px]:min-w-0 max-[960px]:border-b max-[960px]:even:border-r-0 max-[960px]:[&:nth-last-child(-n+2)]:border-b-0"
     >
       <div
         data-route-step-label-text

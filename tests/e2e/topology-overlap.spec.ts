@@ -1172,6 +1172,10 @@ for (const viewport of VIEWPORTS) {
       /handoff-ready|preflight-first|review-first/,
     );
     await expect(agentRoute).toHaveAttribute(
+      "data-route-layout-contract",
+      "compact-two-column-route-grid",
+    );
+    await expect(agentRoute).toHaveAttribute(
       "data-primary-copy-action",
       /relation_check|explain_relation/,
     );
@@ -4031,25 +4035,41 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
     "--topology-selected-relation-copy-secondary-surface",
   );
   const routeRect = await rectOf(agentRoute);
+  const nextActionRect = await rectOf(page.getByTestId("sigma-selected-edge-next-action"));
   expect(routeRect.left, "compact relation route should stay inside the viewport").toBeGreaterThanOrEqual(8);
   expect(routeRect.right, "compact relation route should stay inside the viewport").toBeLessThanOrEqual(
     viewport.width - 8,
   );
+  expect(
+    routeRect.bottom,
+    "compact relation route should clear the next-action rail",
+  ).toBeLessThanOrEqual(nextActionRect.top + 1);
   const routeStepRects = await agentRoute.locator("[data-route-step]").evaluateAll((steps) =>
     steps.map((step) => {
       const rect = step.getBoundingClientRect();
-      return { bottom: rect.bottom, height: rect.height, top: rect.top, width: rect.width };
+      return {
+        bottom: Math.round(rect.bottom),
+        height: Math.round(rect.height),
+        left: Math.round(rect.left),
+        top: Math.round(rect.top),
+        width: Math.round(rect.width),
+      };
     }),
   );
   expect(
     routeStepRects.every((rect) => rect.width <= routeRect.width + 1 && rect.height >= 32),
-    "compact relation route steps should use readable stacked lanes",
+    "compact relation route steps should keep readable lanes",
   ).toBe(true);
+  const compactRouteRows = new Set(routeStepRects.map((rect) => rect.top));
   expect(
-    routeStepRects[1].top > routeStepRects[0].top &&
-      routeStepRects[2].top > routeStepRects[1].top &&
-      routeStepRects[3].top > routeStepRects[2].top,
-    "compact relation route should stack fact, evidence, gate, and action vertically",
+    compactRouteRows.size,
+    "compact relation route should use at most two rows before the next-action rail",
+  ).toBeLessThanOrEqual(2);
+  expect(
+    routeStepRects[1].left > routeStepRects[0].left &&
+      routeStepRects[2].top > routeStepRects[0].top &&
+      routeStepRects[3].left > routeStepRects[2].left,
+    "compact relation route should form a two-column fact/evidence/gate/action grid",
   ).toBe(true);
 
   await expect(popover).toHaveCount(0);

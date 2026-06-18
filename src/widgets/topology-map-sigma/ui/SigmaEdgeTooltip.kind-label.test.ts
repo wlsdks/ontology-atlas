@@ -113,14 +113,30 @@ describe('relationClaimLensText — 관계 claim lens', () => {
 
 describe('relationClaimLensTone — 관계 claim lens 시각 톤', () => {
   it('claim lens container 와 dot 은 relation quality 색을 함께 따른다', () => {
-    expect(relationClaimLensTone('strong')).toContain('rgba(139,151,255');
-    expect(relationClaimLensDotTone('strong')).toContain('rgba(139,151,255');
-    expect(relationClaimLensTone('weak')).toContain('rgba(217,161,65');
-    expect(relationClaimLensDotTone('weak')).toContain('rgba(217,161,65');
-    expect(relationClaimLensTone('review')).toContain('rgba(226,105,105');
-    expect(relationClaimLensDotTone('review')).toContain('rgba(226,105,105');
-    expect(relationClaimLensTone('supported')).toContain('rgba(72,184,203');
-    expect(relationClaimLensDotTone(undefined)).toContain('rgba(72,184,203');
+    expect(relationClaimLensTone('strong')).toContain(
+      '--topology-selected-relation-claim-strong-surface',
+    );
+    expect(relationClaimLensDotTone('strong')).toContain(
+      '--topology-selected-relation-claim-strong-dot',
+    );
+    expect(relationClaimLensTone('weak')).toContain(
+      '--topology-selected-relation-claim-weak-surface',
+    );
+    expect(relationClaimLensDotTone('weak')).toContain(
+      '--topology-selected-relation-claim-weak-dot',
+    );
+    expect(relationClaimLensTone('review')).toContain(
+      '--topology-selected-relation-claim-review-surface',
+    );
+    expect(relationClaimLensDotTone('review')).toContain(
+      '--topology-selected-relation-claim-review-dot',
+    );
+    expect(relationClaimLensTone('supported')).toContain(
+      '--topology-selected-relation-claim-supported-surface',
+    );
+    expect(relationClaimLensDotTone(undefined)).toContain(
+      '--topology-selected-relation-claim-supported-dot',
+    );
   });
 });
 
@@ -205,12 +221,24 @@ describe('relationAgentGateLabel — agent handoff gate', () => {
 
 describe('relationAgentDecisionTone — agent decision panel tone', () => {
   it('decision panel 과 label 은 gate kind 색을 따른다', () => {
-    expect(relationAgentDecisionTone('handoff-ready')).toContain('rgba(139,151,255');
-    expect(relationAgentDecisionLabelTone('handoff-ready')).toContain('rgba(139,151,255');
-    expect(relationAgentDecisionTone('preflight-first')).toContain('rgba(217,161,65');
-    expect(relationAgentDecisionLabelTone('preflight-first')).toContain('rgba(247,212,150');
-    expect(relationAgentDecisionTone('review-first')).toContain('rgba(226,105,105');
-    expect(relationAgentDecisionLabelTone('review-first')).toContain('rgba(255,190,190');
+    expect(relationAgentDecisionTone('handoff-ready')).toContain(
+      '--topology-selected-relation-gate-handoff-surface',
+    );
+    expect(relationAgentDecisionLabelTone('handoff-ready')).toContain(
+      '--topology-selected-relation-gate-handoff-text',
+    );
+    expect(relationAgentDecisionTone('preflight-first')).toContain(
+      '--topology-selected-relation-gate-preflight-surface',
+    );
+    expect(relationAgentDecisionLabelTone('preflight-first')).toContain(
+      '--topology-selected-relation-gate-preflight-text',
+    );
+    expect(relationAgentDecisionTone('review-first')).toContain(
+      '--topology-selected-relation-gate-review-surface',
+    );
+    expect(relationAgentDecisionLabelTone('review-first')).toContain(
+      '--topology-selected-relation-gate-review-text',
+    );
   });
 });
 
@@ -224,16 +252,16 @@ describe('relationPrimaryCopyAction — gate-aware MCP action priority', () => {
   it('primary action button 은 gate kind 에 맞는 톤을 쓴다', () => {
     expect(
       relationCopyButtonTone({ gateKind: 'handoff-ready', primary: true }),
-    ).toContain('rgba(139,151,255');
+    ).toContain('--topology-selected-relation-copy-handoff-surface');
     expect(
       relationCopyButtonTone({ gateKind: 'preflight-first', primary: true }),
-    ).toContain('rgba(217,161,65');
+    ).toContain('--topology-selected-relation-copy-preflight-surface');
     expect(
       relationCopyButtonTone({ gateKind: 'review-first', primary: true }),
-    ).toContain('rgba(226,105,105');
+    ).toContain('--topology-selected-relation-copy-review-surface');
     expect(
       relationCopyButtonTone({ gateKind: 'review-first', primary: false }),
-    ).toContain('var(--color-text-tertiary)');
+    ).toContain('--topology-selected-relation-copy-secondary-text');
   });
 });
 
@@ -366,8 +394,15 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     const route = screen.getByTestId('sigma-selected-edge-agent-route');
     expect(route).toHaveAttribute('data-relation-evidence-state', 'source-backed');
     expect(route).toHaveAttribute('data-route-density', 'micro-rail');
+    expect(route).toHaveAttribute(
+      'data-route-layout-contract',
+      'compact-two-column-route-grid',
+    );
     expect(route).toHaveAttribute('data-overflow-contract', 'no-horizontal-scroll');
-    expect(route).toHaveClass('flex-nowrap');
+    expect(route).toHaveClass('shrink-0');
+    expect(route).toHaveClass('grid-cols-4');
+    expect(route).toHaveClass('max-[960px]:min-h-16');
+    expect(route).toHaveClass('max-[960px]:grid-cols-2');
     expect(route).toHaveClass('overflow-hidden');
     expect(route.className).not.toContain('overflow-x-auto');
     const steps = Array.from(route.querySelectorAll('[data-route-step]')).map((step) =>
@@ -505,6 +540,9 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     expect(route.querySelector('[data-route-step="fact"]')?.className).toContain(
       'min-w-[var(--topology-selected-relation-route-step-min-width)]',
+    );
+    expect(route.querySelector('[data-route-step="fact"]')?.className).toContain(
+      'max-[960px]:min-w-0',
     );
     expect(route.querySelector('[data-route-step-label-text]')?.className).toContain(
       'text-[length:var(--topology-selected-relation-route-label-font-size)]',
