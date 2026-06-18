@@ -1479,11 +1479,11 @@ export function TopologyAnalysisBar({
                       </span>
                     </div>
                     <div
-                      className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-1.5 min-[430px]:grid-cols-[minmax(0,1fr)_auto_auto]"
+                      className="mt-2 grid grid-cols-2 gap-1.5"
                       data-testid="topology-health-repair-order"
                       data-health-repair-order-contract="inspect-repair-sync"
                       data-health-repair-action-order="builder-mcp-ontology"
-                      data-health-repair-visual-contract="builder-primary-secondary-compact"
+                      data-health-repair-visual-contract="builder-primary-full-secondary-row"
                       data-health-repair-target-slug={healthAction.slug}
                       data-health-repair-target-kind={healthAction.kind}
                       data-health-repair-primary-action="builder"
@@ -1500,9 +1500,9 @@ export function TopologyAnalysisBar({
                         data-surface-token="--topology-health-repair-primary-surface"
                         data-border-token="--topology-health-repair-primary-border"
                         data-hover-surface-token="--topology-health-repair-primary-hover-surface"
-                        className="inline-flex min-h-9 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-health-repair-primary-border)] bg-[color:var(--topology-health-repair-primary-surface)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--topology-health-repair-primary-hover-surface)]"
+                        className="col-span-2 inline-flex min-h-9 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-health-repair-primary-border)] bg-[color:var(--topology-health-repair-primary-surface)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--topology-health-repair-primary-hover-surface)]"
                       >
-                        {labels.healthRepair}
+                        <span className="truncate whitespace-nowrap">{labels.healthRepair}</span>
                       </Link>
                       <CompactCopyButton
                         data-testid="topology-health-repair-mcp-copy"
@@ -1519,7 +1519,7 @@ export function TopologyAnalysisBar({
                             : labels.healthMcpCopyAriaLabel
                         }
                         onClick={copyHealthMcpCheck}
-                        className="border border-[color:var(--topology-health-repair-secondary-border)] bg-[color:var(--topology-health-repair-secondary-surface)] px-2.5 text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--topology-health-repair-secondary-hover-surface)]"
+                        className="min-w-0 border border-[color:var(--topology-health-repair-secondary-border)] bg-[color:var(--topology-health-repair-secondary-surface)] px-2.5 text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--topology-health-repair-secondary-hover-surface)]"
                       />
                       <Link
                         href={buildOntologyNodeHref(healthAction.slug)}
@@ -1528,9 +1528,9 @@ export function TopologyAnalysisBar({
                         data-surface-token="--topology-health-repair-secondary-surface"
                         data-border-token="--topology-health-repair-secondary-border"
                         data-hover-surface-token="--topology-health-repair-secondary-hover-surface"
-                        className="inline-flex min-h-9 items-center justify-center rounded-md border border-[color:var(--topology-health-repair-secondary-border)] bg-[color:var(--topology-health-repair-secondary-surface)] px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--topology-health-repair-secondary-hover-surface)] hover:text-[color:var(--color-text-primary)]"
+                        className="inline-flex min-h-9 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-health-repair-secondary-border)] bg-[color:var(--topology-health-repair-secondary-surface)] px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--topology-health-repair-secondary-hover-surface)] hover:text-[color:var(--color-text-primary)]"
                       >
-                        {labels.healthOpenOntology}
+                        <span className="truncate whitespace-nowrap">{labels.healthOpenOntology}</span>
                       </Link>
                     </div>
                     <div className="mt-2">
