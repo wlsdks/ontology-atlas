@@ -3591,6 +3591,26 @@ export function SigmaSkeletonCards({
                       selectRelation(connector);
                     }}
                   />
+                  {!selected ? (
+                    <path
+                      data-overview-connector-from={connector.from}
+                      data-overview-connector-to={connector.to}
+                      data-overview-hierarchy-spine="contains"
+                      data-overview-hierarchy-spine-contract="contains-relation-reads-as-ontology-backbone"
+                      data-relation-kind={connector.kind}
+                      data-relation-quality={connector.relationQuality ?? 'supported'}
+                      data-relation-type={connector.relationType}
+                      data-relation-spine-halo-token="--topology-relation-spine-halo"
+                      data-relation-spine-halo-opacity-token="--topology-relation-spine-halo-opacity"
+                      data-relation-spine-halo-width-token="--topology-relation-spine-halo-width"
+                      className="pointer-events-none"
+                      fill="none"
+                      stroke="var(--topology-relation-spine-halo)"
+                      strokeLinecap="round"
+                      strokeWidth="var(--topology-relation-spine-halo-width)"
+                      opacity="var(--topology-relation-spine-halo-opacity)"
+                    />
+                  ) : null}
                   {selected ? (
                     <path
                       data-overview-connector-from={connector.from}

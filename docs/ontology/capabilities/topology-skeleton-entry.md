@@ -48,6 +48,12 @@ flat set of labels. The design guardrail is that hierarchy is expressed through
 tokenized surface weight, not through decorative badges or extra prose on every
 card.
 
+Overview containment connectors render a quiet tokenized spine underneath the
+quality stroke. This makes `contains` edges read as the ontology backbone while
+keeping relation quality, evidence, and selection on the foreground stroke. The
+spine is intentionally limited to overview containment links so loose or
+review-needed relations do not gain false structural authority.
+
 선택된 relation label 은 36px hit target 안에 더 작은 visual badge 를 두어 클릭은
 쉽고 지도 표식은 작게 유지한다. selected relation inspector 는
 `--topology-selected-relation-card-*` 토큰으로 우측 compact rail 에 고정해 중앙

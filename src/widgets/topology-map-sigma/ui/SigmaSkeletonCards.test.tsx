@@ -1840,12 +1840,27 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const hitPath = container.querySelector(
       '[data-relation-hit-path="true"][data-overview-connector-from="project:p"]',
     );
+    const hierarchySpine = container.querySelector(
+      '[data-overview-hierarchy-spine="contains"][data-overview-connector-from="project:p"]',
+    );
     const visiblePath = container.querySelector(
-      '[data-overview-connector-from="project:p"]:not([data-relation-hit-path])',
+      '[data-overview-connector-from="project:p"]:not([data-relation-hit-path]):not([data-overview-hierarchy-spine])',
     );
 
     expect(hitPath).toBeInTheDocument();
     expect(hitPath).toHaveAttribute("data-relation-quality", "strong");
+    expect(hierarchySpine).toHaveAttribute(
+      "data-overview-hierarchy-spine-contract",
+      "contains-relation-reads-as-ontology-backbone",
+    );
+    expect(hierarchySpine).toHaveAttribute(
+      "data-relation-spine-halo-token",
+      "--topology-relation-spine-halo",
+    );
+    expect(hierarchySpine).toHaveAttribute(
+      "stroke-width",
+      "var(--topology-relation-spine-halo-width)",
+    );
     expect(visiblePath).toHaveAttribute("data-relation-quality", "strong");
     expect(visiblePath).toHaveAttribute(
       "data-relation-stroke-token",
@@ -1911,11 +1926,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     const visiblePaths = Array.from(
       container.querySelectorAll(
-        "[data-overview-connector-from]:not([data-relation-hit-path]):not([data-selected-relation-halo])",
+        "[data-overview-connector-from]:not([data-relation-hit-path]):not([data-selected-relation-halo]):not([data-overview-hierarchy-spine])",
       ),
     );
+    const hierarchySpines = container.querySelectorAll("[data-overview-hierarchy-spine]");
 
     expect(visiblePaths).toHaveLength(2);
+    expect(hierarchySpines).toHaveLength(2);
     expect(visiblePaths[0]).toHaveAttribute("data-relation-quality", "weak");
     expect(visiblePaths[1]).toHaveAttribute("data-relation-quality", "strong");
     expect(visiblePaths[1]).toHaveAttribute(
