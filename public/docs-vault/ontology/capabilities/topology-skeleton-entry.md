@@ -35,6 +35,12 @@ scope 유지(시야 붕괴 없음) / 배경 클릭 → overview 복귀. Shneider
 `--topology-panel-selected-rail-width` 토큰을 타서, URL 복원과 클릭 선택이 서로
 다른 크기의 좌측 패널을 만들지 않는다.
 
+Overview skeleton cards now use a stronger kind wash and border tint while
+relation strokes use slightly higher quality-token contrast. The map should read
+as an ontology structure first — project, domain, capability, and typed relation
+shape — instead of a dark tag cloud with faint lines. This deliberately improves
+expression through existing tokens rather than adding more labels to every card.
+
 선택된 relation label 은 36px hit target 안에 더 작은 visual badge 를 두어 클릭은
 쉽고 지도 표식은 작게 유지한다. selected relation inspector 는
 `--topology-selected-relation-card-*` 토큰으로 우측 compact rail 에 고정해 중앙

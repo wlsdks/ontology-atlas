@@ -4238,12 +4238,12 @@ export function SigmaSkeletonCards({
               : 'dock-follower';
         const dragSettled = dragSettledSlugs.has(nodeId);
         const pathEndpoint = pathRole === 'source' || pathRole === 'target';
-        // 카드 표면 = kind 틴트의 *정량 토큰* (bg 8% · border 18% · dot 100%)
+        // 카드 표면 = kind 틴트의 *정량 토큰* (bg 11% · border 24% · dot 100%)
         // — 틴트가 칩마다 다른 강도로 보이면 4색 칩 더미가 된다 (패널 #5).
         const fill = ontologyFillTone(card.kind === 'project' ? 'project' : card.kind);
-        const tintBg = withAlpha(fill, 0.08);
-        const tintBorder = withAlpha(fill, 0.18);
-        const tintBorderHover = withAlpha(fill, 0.38);
+        const tintBg = withAlpha(fill, 0.11);
+        const tintBorder = withAlpha(fill, 0.24);
+        const tintBorderHover = withAlpha(fill, 0.46);
         const selectedRelationSummaryText =
           selected && selectedRelationSummary
             ? tEdgeTooltip('selectedCardRelationSummaryAction', {

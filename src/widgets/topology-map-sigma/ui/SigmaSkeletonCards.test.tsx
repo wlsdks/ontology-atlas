@@ -570,7 +570,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("카드 표면이 kind 틴트 정량 토큰 (bg 8% · border 18% — 패널 평준화)", () => {
+  it("카드 표면이 kind 틴트 정량 토큰으로 온톨로지 계층을 더 선명하게 표시한다", () => {
     render(
       <SigmaSkeletonCards
         sigma={stubSigma}
@@ -586,12 +586,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const expectAlpha = (alpha: string) =>
       ONTOLOGY_KIND_TONE.domain.fill.replace(/,\s*[\d.]+\)$/, `, ${alpha})`);
     expect(domainCard.style.getPropertyValue("--card-border")).toBe(
-      expectAlpha("0.18"),
+      expectAlpha("0.24"),
     );
     // 틴트는 불투명 panel 베이스 위 레이어 — 반투명 bg 단독이면 뒤 엣지가 비친다.
     const tint = domainCard.querySelector("[data-kind-tint]");
     expect(tint).toHaveStyle({
-      backgroundColor: expectAlpha("0.08"),
+      backgroundColor: expectAlpha("0.11"),
     });
   });
 
