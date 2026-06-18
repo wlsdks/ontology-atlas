@@ -1695,6 +1695,7 @@ export function SigmaSkeletonCards({
   const dragClusterHullRef = useRef<HTMLDivElement | null>(null);
   const repositionRafRef = useRef<number | null>(null);
   const repositionNowRef = useRef<(() => void) | null>(null);
+  const responsiveRepositionTimerRef = useRef<number | null>(null);
   const fixedSurfaceRectCacheRef = useRef<FixedSurfaceRectCache | null>(null);
   const lastDragDomIndexSizeRef = useRef(0);
   const lastDockDragSnapshotSizeRef = useRef(0);
@@ -3257,11 +3258,23 @@ export function SigmaSkeletonCards({
     const onResize = () => {
       invalidateFixedSurfaceRectCache();
       scheduleReposition();
+      if (responsiveRepositionTimerRef.current !== null) {
+        window.clearTimeout(responsiveRepositionTimerRef.current);
+      }
+      responsiveRepositionTimerRef.current = window.setTimeout(() => {
+        responsiveRepositionTimerRef.current = null;
+        invalidateFixedSurfaceRectCache();
+        scheduleReposition();
+      }, 120);
     };
     window.addEventListener('resize', onResize);
     return () => {
       sigma.off('afterRender', scheduleReposition);
       window.removeEventListener('resize', onResize);
+      if (responsiveRepositionTimerRef.current !== null) {
+        window.clearTimeout(responsiveRepositionTimerRef.current);
+        responsiveRepositionTimerRef.current = null;
+      }
       if (repositionRafRef.current !== null) {
         window.cancelAnimationFrame(repositionRafRef.current);
         repositionRafRef.current = null;
@@ -3312,6 +3325,7 @@ export function SigmaSkeletonCards({
       data-visibility-count-contract="single-pass-unless-fallback"
       data-visibility-stats-report-contract="dedupe-stable-counts"
       data-visibility-stats-report-count={visibilityStatsReportCountRef.current}
+      data-responsive-reposition-contract="resize-immediate-and-settled"
       data-dom-write-dedupe-contract="skip-unchanged-transform-and-path"
       data-dom-write-applied-count="0"
       data-dom-write-skipped-count="0"

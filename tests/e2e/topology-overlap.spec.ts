@@ -2720,6 +2720,10 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "single-pass-unless-fallback",
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-responsive-reposition-contract",
+    "resize-immediate-and-settled",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-fixed-surface-measure-contract",
     "single-pass-rect-read",
   );
