@@ -825,6 +825,8 @@ export function TopologyAnalysisBar({
     width:
       selectedFocusRailActive
         ? "var(--topology-panel-selected-rail-width)"
+        : panelMode === "health"
+          ? "var(--topology-panel-overview-responsive-width)"
         : panelMode === "path"
           ? "var(--topology-panel-path-responsive-width)"
         : headerAlignedPanel
@@ -852,6 +854,8 @@ export function TopologyAnalysisBar({
       ? "selected-focus-rail"
       : panelMode === "overview"
       ? "overview-14-inch-compact"
+      : panelMode === "health"
+        ? "health-phone-primary-rail"
       : panelMode === "path" && headerAlignedPanel
         ? "path-14-inch-rail"
         : headerAlignedPanel
@@ -909,12 +913,14 @@ export function TopologyAnalysisBar({
           ? "selected-focus-rail-max-320"
           : panelMode === "overview"
             ? "overview-support-max-360-phone-utility-reserve"
+            : panelMode === "health"
+              ? "health-primary-max-360-phone-full-width"
             : panelMode === "path" && headerAlignedPanel
               ? "path-support-rail-max-360-phone-utility-reserve"
             : "standard"
       }
       data-panel-phone-utility-reserve-token={
-        panelMode === "overview" || panelMode === "path"
+        panelMode === "overview" || panelMode === "path" || panelMode === "health"
           ? "--topology-panel-phone-utility-rail-reserve"
           : undefined
       }

@@ -1609,6 +1609,57 @@ describe("TopologyAnalysisBar", () => {
     );
   });
 
+  it("uses a phone-safe primary rail width for Health mode", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="health"
+        summary={{
+          mode: "health",
+          primaryMetric: 23,
+          secondaryMetric: 504,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 1,
+            promotion: 22,
+          },
+        }}
+        healthAction={{
+          slug: "ontology-atlas",
+          title: "ontology-atlas",
+          kind: "promotion",
+        }}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const bar = screen.getByRole("region", {
+      name: "Topology analysis mode",
+    });
+    expect(bar).toHaveAttribute("data-analysis-mode", "health");
+    expect(bar).toHaveAttribute("data-attention-role", "primary");
+    expect(bar).toHaveAttribute("data-panel-width-target", "health-phone-primary-rail");
+    expect(bar).toHaveAttribute(
+      "data-panel-width-contract",
+      "health-primary-max-360-phone-full-width",
+    );
+    expect(bar).toHaveAttribute(
+      "data-panel-width-token",
+      "--topology-panel-overview-responsive-width",
+    );
+    expect(bar).toHaveAttribute(
+      "data-panel-phone-utility-reserve-token",
+      "--topology-panel-phone-utility-rail-reserve",
+    );
+    expect(bar).toHaveAttribute(
+      "data-health-repair-lane-contract",
+      "target-to-builder-to-sync",
+    );
+  });
+
   it("shows Path mode visible candidate coverage when collision clearance hides cards", () => {
     render(
       <TopologyAnalysisBar

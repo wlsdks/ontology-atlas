@@ -29,7 +29,7 @@ async function openRelief(
     pathTo = null,
     settle = true,
   }: {
-    mode?: "map" | "focus" | "path";
+    mode?: "map" | "focus" | "path" | "health";
     requireHud?: boolean;
     selectedSlug?: string | null;
     pathFrom?: string | null;
@@ -4032,6 +4032,60 @@ test("Relief global search uses a phone sheet instead of a floating card", async
 
   await closeButton.click();
   await expect(content).toHaveCount(0);
+});
+
+test("Relief Health phone rail owns the read layer without help overlap", async ({ page }) => {
+  const viewport = PHONE_VIEWPORT;
+  await openRelief(page, viewport, {
+    mode: "health",
+    requireHud: false,
+  });
+
+  const panel = page.getByTestId("topology-analysis-panel");
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute("data-analysis-mode", "health");
+  await expect(panel).toHaveAttribute("data-attention-role", "primary");
+  await expect(panel).toHaveAttribute(
+    "data-panel-width-contract",
+    "health-primary-max-360-phone-full-width",
+  );
+  await expect(panel).toHaveAttribute(
+    "data-panel-width-token",
+    "--topology-panel-overview-responsive-width",
+  );
+  await expect(panel).toHaveAttribute(
+    "data-panel-phone-utility-reserve-token",
+    "--topology-panel-phone-utility-rail-reserve",
+  );
+  const helpEntry = page.getByTestId("topology-shortcuts-help-button");
+  await expect(helpEntry).toHaveAttribute(
+    "data-phone-help-entry-contract",
+    "hidden-during-health-panel",
+  );
+  await expect(helpEntry).not.toBeVisible();
+
+  const rect = await rectOf(panel);
+  expect(rect.left, "Health phone panel should start inside the viewport").toBeGreaterThanOrEqual(0);
+  expect(
+    rect.right,
+    "Health phone panel should not spill past the viewport edge",
+  ).toBeLessThanOrEqual(viewport.width);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+    "Health phone panel should not introduce horizontal page overflow",
+  ).toBe(0);
+  const visibleHelpOverlap = await page.evaluate(() => {
+    const panel = document.querySelector('[data-testid="topology-analysis-panel"]');
+    const help = document.querySelector('[data-testid="topology-shortcuts-help-button"]');
+    if (!panel || !help) return 0;
+    const helpStyle = window.getComputedStyle(help);
+    if (helpStyle.display === "none" || helpStyle.visibility === "hidden") return 0;
+    const a = panel.getBoundingClientRect();
+    const b = help.getBoundingClientRect();
+    return Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) *
+      Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+  });
+  expect(visibleHelpOverlap, "Health phone panel should have no visible help overlap").toBe(0);
 });
 
 test("Relief shortcut sheet uses a phone sheet instead of an inset help card", async ({ page }) => {

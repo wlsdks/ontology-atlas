@@ -739,7 +739,8 @@ export function HomePage() {
       ? "compact-focus"
       : "visible";
   const topologyUtilityChromeCompact = topologyUtilityChromeState === "compact-focus";
-  const topologyShortcutHelpPhoneVisible = analysisMode !== "path";
+  const topologyShortcutHelpPhoneVisible =
+    analysisMode !== "path" && analysisMode !== "health";
   const topologyBlockingOverlayState = createNodeOpen
     ? "create-node"
     : searchOpen
@@ -2149,7 +2150,7 @@ export function HomePage() {
                 />
               )}
               {/* 단축키/제스처 도움말 진입점 — 우상단 SigmaControls 아래 36×36 아이콘.
-                  phone 은 path panel 과 충돌하지 않는 overview/focus 에서만 노출한다. */}
+                  phone 은 primary read rail(path/health) 과 충돌하지 않는 overview/focus 에서만 노출한다. */}
               {createNodeOpen || selectedRelationActive || topologyBlockingOverlayActive ? null : (
                 <Tooltip content={t('controls.shortcutsTooltip')} side="left" withProvider={false}>
                 <button
@@ -2168,7 +2169,9 @@ export function HomePage() {
                   data-phone-help-entry-contract={
                     topologyShortcutHelpPhoneVisible
                       ? "visible-outside-path-panel"
-                      : "hidden-during-path-panel"
+                      : analysisMode === "health"
+                        ? "hidden-during-health-panel"
+                        : "hidden-during-path-panel"
                   }
                   data-phone-help-position-contract={
                     topologyShortcutHelpPhoneVisible ? "map-card-clearance" : undefined
