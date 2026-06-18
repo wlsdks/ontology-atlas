@@ -1777,6 +1777,15 @@ export function HomePage() {
                   "analysis.overviewTierLegendCapability",
                 ),
                 overviewTierLegendElement: t("analysis.overviewTierLegendElement"),
+                overviewRelationLegendTitle: t(
+                  "analysis.overviewRelationLegendTitle",
+                ),
+                overviewRelationLegendSpine: t(
+                  "analysis.overviewRelationLegendSpine",
+                ),
+                overviewRelationLegendQuality: t(
+                  "analysis.overviewRelationLegendQuality",
+                ),
                 overviewBriefCopyAriaLabel: t(
                   "analysis.overviewBriefCopyAriaLabel",
                 ),

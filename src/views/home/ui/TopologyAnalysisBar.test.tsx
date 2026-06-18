@@ -66,6 +66,9 @@ const labels = {
   overviewTierLegendDomain: "Domain",
   overviewTierLegendCapability: "Capability",
   overviewTierLegendElement: "Evidence",
+  overviewRelationLegendTitle: "Relation lines",
+  overviewRelationLegendSpine: "Containment backbone",
+  overviewRelationLegendQuality: "Relations to check",
   overviewBriefCopyAriaLabel: "Copy topology map brief",
   overviewBriefCopiedAriaLabel: "Topology map brief copied",
   overviewReanalyzeCopyAriaLabel: "Copy ontology reanalysis command",
@@ -906,6 +909,32 @@ describe("TopologyAnalysisBar", () => {
     expect(
       tierLegend.querySelector('[data-tier-legend-kind="element"]'),
     ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.element.fill);
+    const relationLineLegend = screen.getByTestId(
+      "topology-overview-relation-line-legend",
+    );
+    expect(relationLineLegend).toHaveAttribute(
+      "data-relation-line-legend-contract",
+      "map-line-to-ontology-relation",
+    );
+    expect(relationLineLegend).toHaveAttribute(
+      "data-spine-token",
+      "--topology-relation-spine-halo",
+    );
+    expect(relationLineLegend).toHaveAttribute(
+      "data-spine-terminal-token",
+      "--topology-relation-spine-terminal",
+    );
+    expect(relationLineLegend).toHaveAttribute(
+      "data-quality-strong-token",
+      "--topology-relation-stroke-strong",
+    );
+    expect(relationLineLegend).toHaveAttribute(
+      "data-quality-weak-token",
+      "--topology-relation-stroke-weak",
+    );
+    expect(relationLineLegend).toHaveTextContent("Relation lines");
+    expect(relationLineLegend).toHaveTextContent("Containment backbone");
+    expect(relationLineLegend).toHaveTextContent("Relations to check");
     expect(actions.closest("details")).toBeNull();
     expect(screen.getByText("Copy map brief")).toBeVisible();
     expect(

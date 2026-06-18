@@ -97,6 +97,9 @@ interface TopologyAnalysisBarLabels {
   overviewTierLegendDomain: string;
   overviewTierLegendCapability: string;
   overviewTierLegendElement: string;
+  overviewRelationLegendTitle: string;
+  overviewRelationLegendSpine: string;
+  overviewRelationLegendQuality: string;
   overviewBriefCopyAriaLabel: string;
   overviewBriefCopiedAriaLabel: string;
   overviewReanalyzeCopyAriaLabel: string;
@@ -1154,6 +1157,48 @@ export function TopologyAnalysisBar({
                       </span>
                     );
                   })}
+                </div>
+              </div>
+              <div
+                data-testid="topology-overview-relation-line-legend"
+                data-relation-line-legend-contract="map-line-to-ontology-relation"
+                data-spine-token="--topology-relation-spine-halo"
+                data-spine-terminal-token="--topology-relation-spine-terminal"
+                data-quality-strong-token="--topology-relation-stroke-strong"
+                data-quality-weak-token="--topology-relation-stroke-weak"
+                className="mt-2 border-t border-[color:var(--topology-overview-reader-lens-border)] pt-2"
+              >
+                <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
+                  {labels.overviewRelationLegendTitle}
+                </p>
+                <div className="mt-1.5 grid gap-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span
+                      aria-hidden
+                      className="relative h-2.5 w-8 shrink-0"
+                    >
+                      <span className="absolute left-0 right-1 top-1/2 h-px -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-halo)]" />
+                      <span className="absolute right-0 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-terminal)]" />
+                    </span>
+                    <span className="min-w-0 truncate">
+                      {labels.overviewRelationLegendSpine}
+                    </span>
+                  </span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span
+                      aria-hidden
+                      className="h-[2px] w-8 shrink-0 rounded-full"
+                      style={
+                        {
+                          backgroundImage:
+                            "linear-gradient(90deg, var(--topology-relation-stroke-strong), var(--topology-relation-stroke-weak))",
+                        } as CSSProperties
+                      }
+                    />
+                    <span className="min-w-0 truncate">
+                      {labels.overviewRelationLegendQuality}
+                    </span>
+                  </span>
                 </div>
               </div>
             </div>

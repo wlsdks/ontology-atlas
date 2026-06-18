@@ -65,6 +65,12 @@ graph cards. This keeps non-developer readers from treating color as decoration:
 the left panel explains the ontology layer, while the map stays quiet enough to
 scan.
 
+The same reader lens also explains relation-line marks without adding labels on
+top of the map: the containment backbone uses the overview spine/terminal tokens,
+and quality-check relations use the strong-to-weak relation stroke tokens. This
+lets non-developer readers distinguish hierarchy from review paths before they
+switch into focus or path mode.
+
 선택된 relation label 은 36px hit target 안에 더 작은 visual badge 를 두어 클릭은
 쉽고 지도 표식은 작게 유지한다. selected relation inspector 는
 `--topology-selected-relation-card-*` 토큰으로 우측 compact rail 에 고정해 중앙
