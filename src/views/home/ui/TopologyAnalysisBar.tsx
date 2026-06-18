@@ -78,6 +78,7 @@ interface TopologyAnalysisBarLabels {
   overviewSyncCopy: string;
   overviewSyncCopied: string;
   overviewHandoffSummary: string;
+  overviewCopyTools: string;
   overviewWorkOrderTitle: string;
   overviewWorkOrderRead: string;
   overviewWorkOrderFocus: string;
@@ -1377,7 +1378,7 @@ export function TopologyAnalysisBar({
                         className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
                         data-testid="topology-overview-handoff-chevron"
                       />
-                      <span>{labels.healthCopyTools}</span>
+                      <span>{labels.overviewCopyTools}</span>
                     </summary>
                     <div className="mt-1 grid grid-cols-2 gap-1.5">
                       <CompactCopyButton

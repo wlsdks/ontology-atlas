@@ -1756,6 +1756,7 @@ export function HomePage() {
                 overviewBriefCopy: t("analysis.overviewBriefCopy"),
                 overviewBriefCopied: t("analysis.overviewBriefCopied"),
                 overviewHandoffSummary: t("analysis.overviewHandoffSummary"),
+                overviewCopyTools: t("analysis.overviewCopyTools"),
                 overviewWorkOrderTitle: t("analysis.overviewWorkOrderTitle"),
                 overviewWorkOrderRead: t("analysis.overviewWorkOrderRead"),
                 overviewWorkOrderFocus: t("analysis.overviewWorkOrderFocus"),

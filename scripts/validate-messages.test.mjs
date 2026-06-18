@@ -327,6 +327,8 @@ describe('i18n message catalog', () => {
     assert.equal(en.topology.analysis.overviewWorkOrderFocus, 'Focus graph handle');
     assert.equal(en.topology.analysis.overviewWorkOrderPath, 'Prove path evidence');
     assert.equal(en.topology.analysis.overviewWorkOrderHealth, 'Close health gate');
+    assert.equal(en.topology.analysis.overviewHandoffSummary, 'Share map');
+    assert.equal(en.topology.analysis.overviewCopyTools, 'Proof checks');
     assert.equal(en.topology.controls.docsTooltip, 'Ontology workspace quick look (D)');
     assert.equal(
       en.topology.controls.docsAriaLabel,
@@ -357,6 +359,8 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.analysis.overviewWorkOrderFocus, '그래프 기준점 선택');
     assert.equal(ko.topology.analysis.overviewWorkOrderPath, '경로 근거 검증');
     assert.equal(ko.topology.analysis.overviewWorkOrderHealth, '상태 신호 확인');
+    assert.equal(ko.topology.analysis.overviewHandoffSummary, '지도 공유');
+    assert.equal(ko.topology.analysis.overviewCopyTools, '검증 체크');
     assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '지형도 지도 요약 복사');
     assert.equal(ko.topology.analysis.overviewBriefCopiedAriaLabel, '지형도 지도 요약 복사됨');
     assert.equal(ko.topology.analysis.overviewBriefTitle, '지형도 지도 요약');

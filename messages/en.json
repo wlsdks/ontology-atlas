@@ -2967,6 +2967,7 @@
       "overviewSyncCopy": "Sync",
       "overviewSyncCopied": "Update check copied",
       "overviewHandoffSummary": "Share map",
+      "overviewCopyTools": "Proof checks",
       "overviewWorkOrderTitle": "Proof order",
       "overviewWorkOrderRead": "Read source-backed map",
       "overviewWorkOrderFocus": "Focus graph handle",

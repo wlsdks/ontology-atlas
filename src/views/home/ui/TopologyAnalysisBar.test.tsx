@@ -49,6 +49,7 @@ const labels = {
   overviewSyncCopy: "Sync",
   overviewSyncCopied: "Update check copied",
   overviewHandoffSummary: "Share map",
+  overviewCopyTools: "Proof checks",
   overviewWorkOrderTitle: "Analysis order",
   overviewWorkOrderRead: "Read ontology map",
   overviewWorkOrderFocus: "Focus concept",
@@ -867,7 +868,7 @@ describe("TopologyAnalysisBar", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByTestId("topology-overview-handoff-summary"),
-    ).toHaveTextContent("Copy tools");
+    ).toHaveTextContent("Proof checks");
     expect(
       screen.getByText(
         "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
@@ -928,7 +929,7 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveTextContent(
-      "Copy tools",
+      "Proof checks",
     );
     expect(screen.getByTestId("topology-overview-handoff-chevron")).toBeInTheDocument();
   });
