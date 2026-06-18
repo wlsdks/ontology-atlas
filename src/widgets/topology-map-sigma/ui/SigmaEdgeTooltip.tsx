@@ -395,6 +395,16 @@ export function SigmaSelectedEdgeCard({
     primaryCopyAction === 'explain_relation'
       ? t('actionExplainRelation')
       : t('actionRelationCheck');
+  const primaryCopyActionRouteLabel =
+    primaryCopyAction === 'explain_relation'
+      ? t('routeActionExplainRelationShort')
+      : t('routeActionRelationCheckShort');
+  const agentGateRouteLabel =
+    agentGateKind === 'handoff-ready'
+      ? t('routeGateHandoffReadyShort')
+      : agentGateKind === 'preflight-first'
+        ? t('routeGatePreflightFirstShort')
+        : t('routeGateReviewFirstShort');
   const relationType = data.relationType ?? data.kind ?? 'depends_on';
   const relationQuality = relationQualityToken(data.relationQuality);
   const visibleRelationTypeLabel = relationTypeDisplayLabel(relationType, {
@@ -652,18 +662,25 @@ export function SigmaSelectedEdgeCard({
         data-overflow-contract="no-horizontal-scroll"
         className="grid min-w-0 shrink-0 grid-cols-4 overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] max-[960px]:min-h-16 max-[960px]:grid-cols-2"
       >
-        <RouteStep kind="fact" label={t('routeFact')} value={t('typedFactLabel')} />
+        <RouteStep
+          kind="fact"
+          label={t('routeFact')}
+          value={t('typedFactLabel')}
+          visibleValue={t('routeFactValueShort')}
+        />
         <RouteStep kind="evidence" label={t('routeEvidence')} value={evidenceLabel} />
         <RouteStep
           kind="gate"
           label={t('routeGate')}
           value={agentGateLabel}
+          visibleValue={agentGateRouteLabel}
           tone={agentGateKind}
         />
         <RouteStep
           kind="action"
           label={t('routeAction')}
           value={primaryCopyActionLabel}
+          visibleValue={primaryCopyActionRouteLabel}
           tone={agentGateKind}
         />
       </div>
@@ -788,18 +805,24 @@ function RouteStep({
   label,
   tone,
   value,
+  visibleValue,
 }: {
   kind: 'fact' | 'evidence' | 'gate' | 'action';
   label: string;
   tone?: RelationAgentGateKind;
   value: string;
+  visibleValue?: string;
 }) {
+  const renderedValue = visibleValue ?? value;
   const valueTone = tone ? relationAgentDecisionLabelTone(tone) : 'text-[color:var(--color-text-secondary)]';
   return (
     <div
       data-route-step={kind}
       data-route-step-label={label}
       data-route-step-value={value}
+      data-route-step-visible-value={renderedValue}
+      data-route-step-copy-contract="visible-route-value-full-value-accessible"
+      title={`${label}: ${value}`}
       className="min-h-8 min-w-[var(--topology-selected-relation-route-step-min-width)] border-r border-[color:var(--topology-selected-relation-subtle-border)] px-1.5 py-1 last:border-r-0 max-[960px]:min-w-0 max-[960px]:border-b max-[960px]:even:border-r-0 max-[960px]:[&:nth-last-child(-n+2)]:border-b-0"
     >
       <div
@@ -812,8 +835,9 @@ function RouteStep({
         data-route-step-value-text
         className={`mt-0.5 truncate text-[length:var(--topology-selected-relation-route-value-font-size)] leading-3 ${valueTone}`}
       >
-        {value}
+        {renderedValue}
       </div>
+      {renderedValue === value ? null : <span className="sr-only">{value}</span>}
     </div>
   );
 }

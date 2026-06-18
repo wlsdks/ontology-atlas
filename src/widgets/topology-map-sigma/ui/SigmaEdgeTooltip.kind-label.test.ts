@@ -474,6 +474,37 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-route-step-value',
       '1 source',
     );
+    expect(route.querySelector('[data-route-step="fact"]')).toHaveAttribute(
+      'data-route-step-copy-contract',
+      'visible-route-value-full-value-accessible',
+    );
+    expect(route.querySelector('[data-route-step="fact"]')).toHaveAttribute(
+      'data-route-step-value',
+      'typed ontology fact',
+    );
+    expect(route.querySelector('[data-route-step="fact"]')).toHaveAttribute(
+      'data-route-step-visible-value',
+      'typed',
+    );
+    expect(route.querySelector('[data-route-step="gate"]')).toHaveAttribute(
+      'data-route-step-value',
+      'handoff ready',
+    );
+    expect(route.querySelector('[data-route-step="gate"]')).toHaveAttribute(
+      'data-route-step-visible-value',
+      'handoff',
+    );
+    expect(route.querySelector('[data-route-step="action"]')).toHaveAttribute(
+      'data-route-step-value',
+      'explain_relation',
+    );
+    expect(route.querySelector('[data-route-step="action"]')).toHaveAttribute(
+      'data-route-step-visible-value',
+      'explain',
+    );
+    expect(route.querySelector('[data-route-step="action"]')).toHaveTextContent(
+      'explain_relation',
+    );
     const proofBand = screen.getByTestId('sigma-selected-edge-proof-band');
     const copyPayload = screen.getByTestId('sigma-selected-edge-copy-payload');
     const relationContract = screen.getByTestId('sigma-selected-edge-contract');

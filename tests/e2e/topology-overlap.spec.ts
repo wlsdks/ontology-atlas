@@ -1252,6 +1252,10 @@ for (const viewport of VIEWPORTS) {
       "data-route-step-value",
       /typed ontology fact|타입이 있는 온톨로지 사실/i,
     );
+    await expect(agentRoute.locator('[data-route-step="fact"]')).toHaveAttribute(
+      "data-route-step-visible-value",
+      /typed|타입/i,
+    );
     await expect(agentRoute.locator('[data-route-step="evidence"]')).toHaveAttribute(
       "data-route-step-value",
       /source|authored|review|출처|작성자|검토/i,
@@ -1260,10 +1264,27 @@ for (const viewport of VIEWPORTS) {
       "data-route-step-value",
       /handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저/i,
     );
+    await expect(agentRoute.locator('[data-route-step="gate"]')).toHaveAttribute(
+      "data-route-step-visible-value",
+      /handoff|check|review|전달|점검|검토/i,
+    );
     await expect(agentRoute.locator('[data-route-step="action"]')).toHaveAttribute(
       "data-route-step-value",
       /relation_check|explain_relation/,
     );
+    await expect(agentRoute.locator('[data-route-step="action"]')).toHaveAttribute(
+      "data-route-step-visible-value",
+      /check|explain|점검|설명/,
+    );
+    const routeVisibleValuesFit = await agentRoute
+      .locator("[data-route-step-value-text]")
+      .evaluateAll((values) =>
+        values.every((element) => element.scrollWidth <= element.clientWidth + 1),
+      );
+    expect(
+      routeVisibleValuesFit,
+      `selected relation route visible values should fit at ${viewport.label}`,
+    ).toBe(true);
     await expect(agentRoute).toContainText(/typed ontology fact|타입이 있는 온톨로지 사실/i);
     await expect(agentRoute).toContainText(/MCP action|MCP 액션/i);
     const handleStrip = page.getByTestId("sigma-selected-edge-handle-strip");
@@ -4137,6 +4158,19 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
   ).toBe(true);
   const agentRoute = page.getByTestId("sigma-selected-edge-agent-route");
   await expect(agentRoute.locator("[data-route-step]")).toHaveCount(4);
+  await expect(agentRoute.locator('[data-route-step="fact"]')).toHaveAttribute(
+    "data-route-step-copy-contract",
+    "visible-route-value-full-value-accessible",
+  );
+  const compactRouteVisibleValuesFit = await agentRoute
+    .locator("[data-route-step-value-text]")
+    .evaluateAll((values) =>
+      values.every((element) => element.scrollWidth <= element.clientWidth + 1),
+    );
+  expect(
+    compactRouteVisibleValuesFit,
+    "compact relation route visible values should fit",
+  ).toBe(true);
   const primaryCopyAction = await agentRoute.getAttribute("data-primary-copy-action");
   if (!primaryCopyAction) {
     throw new Error("selected relation route should expose a primary copy action");
