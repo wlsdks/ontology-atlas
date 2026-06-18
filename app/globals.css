@@ -247,7 +247,7 @@
       clamp(360px, calc(50vw - 290px), 540px),
       calc(100vw - 520px)
     );
-    --topology-path-endpoint-card-max-width: min(15rem, calc(100vw - 1rem));
+    --topology-path-endpoint-card-max-width: min(17rem, calc(100vw - 1rem));
     --topology-panel-radius: 12px;
     --topology-panel-padding: 16px;
     --topology-panel-border: rgba(255, 255, 255, 0.07);

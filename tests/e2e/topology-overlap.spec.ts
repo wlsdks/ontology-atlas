@@ -2546,6 +2546,17 @@ test("Relief Path result keeps both endpoint cards visible in the installed app 
     "data-text-token",
     "--topology-path-endpoint-text",
   );
+  await expect(targetCard.locator("[data-card-title]")).toHaveAttribute(
+    "data-path-endpoint-title-contract",
+    "endpoint-title-gets-readable-width",
+  );
+  const targetMapTitleFits = await targetCard.locator("[data-card-title]").evaluate(
+    (el) => el.scrollWidth <= el.clientWidth + 1,
+  );
+  expect(
+    targetMapTitleFits,
+    "Installed-app WebView Path target endpoint title should not truncate on the map",
+  ).toBe(true);
   expect(
     cardPairsThatIntersect(await visibleCardRects(page)),
     "Path result endpoint cards must not overlap other visible Relief cards",
