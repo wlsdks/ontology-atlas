@@ -1,6 +1,17 @@
 "use client";
 
-import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronUp, Clipboard, X } from "lucide-react";
+import {
+  Activity,
+  ArrowDownLeft,
+  ArrowUpRight,
+  ChevronDown,
+  ChevronUp,
+  CircleDot,
+  Clipboard,
+  FileText,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 import type { TopologyRelationQuality } from "../lib/topology-analysis";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
@@ -1080,28 +1091,42 @@ export function TopologyNodePopover({
               {labels.actionRailTitle}
             </p>
             <div className="grid min-w-0 grid-cols-3 gap-1.5 overflow-hidden">
-              {actions.map((action) => (
-                <button
-                  key={action.kind}
-                  type="button"
-                  onClick={action.onClick}
-                  aria-label={action.ariaLabel}
-                  title={action.label}
-                  data-popover-action={action.kind}
-                  data-agent-handoff-action={action.kind}
-                  data-popover-action-label-contract="compact-visible-full-aria"
-                  data-popover-action-full-label={action.label}
-                  data-popover-action-compact-label={compactActionLabel(action)}
-                  data-popover-action-surface-token="--topology-node-popover-action-surface"
-                  data-popover-action-border-token="--topology-node-popover-action-border"
-                  data-popover-action-text-token="--topology-node-popover-action-text"
-                  data-popover-action-hover-text-token="--topology-node-popover-action-hover-text"
-                  data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
-                  className="min-w-0 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-border)] bg-[color:var(--topology-node-popover-action-surface)] px-1.5 py-1.5 text-[10px] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
-                >
-                  <span className="block truncate">{compactActionLabel(action)}</span>
-                </button>
-              ))}
+              {actions.map((action) => {
+                const actionIcon = nodePopoverActionIcon(action.kind);
+                const Icon = actionIcon.Icon;
+                return (
+                  <button
+                    key={action.kind}
+                    type="button"
+                    onClick={action.onClick}
+                    aria-label={action.ariaLabel}
+                    title={action.label}
+                    data-popover-action={action.kind}
+                    data-agent-handoff-action={action.kind}
+                    data-popover-action-icon={actionIcon.marker}
+                    data-popover-action-icon-contract="icon-marks-agent-handoff-kind"
+                    data-popover-action-icon-token="--topology-node-popover-action-text"
+                    data-popover-action-label-contract="compact-visible-full-aria"
+                    data-popover-action-full-label={action.label}
+                    data-popover-action-compact-label={compactActionLabel(action)}
+                    data-popover-action-surface-token="--topology-node-popover-action-surface"
+                    data-popover-action-border-token="--topology-node-popover-action-border"
+                    data-popover-action-text-token="--topology-node-popover-action-text"
+                    data-popover-action-hover-text-token="--topology-node-popover-action-hover-text"
+                    data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
+                    className="inline-flex min-w-0 items-center justify-center gap-1 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-border)] bg-[color:var(--topology-node-popover-action-surface)] px-1.5 py-1.5 text-[10px] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
+                  >
+                    <span
+                      aria-hidden="true"
+                      data-popover-action-icon-glyph={actionIcon.marker}
+                      className="inline-flex shrink-0 text-[color:var(--topology-node-popover-action-text)]"
+                    >
+                      <Icon size={12} strokeWidth={1.8} />
+                    </span>
+                    <span className="min-w-0 truncate">{compactActionLabel(action)}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -1159,6 +1184,15 @@ function compactNodePopoverActionLabel(
   if (kind === "focus-brief") return hasKorean ? "브리프" : "Brief";
   if (kind === "mcp-profile") return hasKorean ? "노드" : "Node";
   return hasKorean ? "영향" : "Impact";
+}
+
+function nodePopoverActionIcon(kind: TopologyNodePopoverAction["kind"]): {
+  Icon: LucideIcon;
+  marker: "brief" | "node" | "impact";
+} {
+  if (kind === "focus-brief") return { Icon: FileText, marker: "brief" };
+  if (kind === "mcp-profile") return { Icon: CircleDot, marker: "node" };
+  return { Icon: Activity, marker: "impact" };
 }
 
 const relationQualityOrder: TopologyRelationQuality[] = [

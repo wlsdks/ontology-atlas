@@ -3338,6 +3338,19 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-popover-action-label-contract",
     "compact-visible-full-aria",
   );
+  await expect(firstHandoffAction).toHaveAttribute(
+    "data-popover-action-icon-contract",
+    "icon-marks-agent-handoff-kind",
+  );
+  await expect(firstHandoffAction).toHaveAttribute("data-popover-action-icon", /brief|node|impact/);
+  await expect(firstHandoffAction).toHaveAttribute(
+    "data-popover-action-icon-token",
+    "--topology-node-popover-action-text",
+  );
+  await expect(firstHandoffAction.locator("[data-popover-action-icon-glyph]")).toHaveAttribute(
+    "data-popover-action-icon-glyph",
+    /brief|node|impact/,
+  );
   await expect(firstHandoffAction).toHaveAttribute("data-popover-action-full-label", /.+/);
   await expect(firstHandoffAction).toHaveAttribute("data-popover-action-compact-label", /.+/);
   const handoffActionsFit = await page

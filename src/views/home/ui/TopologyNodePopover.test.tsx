@@ -690,6 +690,19 @@ describe("TopologyNodePopover", () => {
       "compact-visible-full-aria",
     );
     expect(briefAction).toHaveAttribute(
+      "data-popover-action-icon-contract",
+      "icon-marks-agent-handoff-kind",
+    );
+    expect(briefAction).toHaveAttribute("data-popover-action-icon", "brief");
+    expect(briefAction).toHaveAttribute(
+      "data-popover-action-icon-token",
+      "--topology-node-popover-action-text",
+    );
+    expect(briefAction.querySelector("[data-popover-action-icon-glyph]")).toHaveAttribute(
+      "data-popover-action-icon-glyph",
+      "brief",
+    );
+    expect(briefAction).toHaveAttribute(
       "data-popover-action-full-label",
       "선택 브리프 복사",
     );
