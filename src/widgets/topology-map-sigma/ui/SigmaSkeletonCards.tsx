@@ -4084,6 +4084,20 @@ export function SigmaSkeletonCards({
         const tintBg = withAlpha(fill, 0.08);
         const tintBorder = withAlpha(fill, 0.18);
         const tintBorderHover = withAlpha(fill, 0.38);
+        const selectedRelationSummaryText =
+          selected && selectedRelationSummary
+            ? tEdgeTooltip('selectedCardRelationSummary', {
+                relations: selectedRelationSummary.relationCount,
+                types: selectedRelationSummary.typeCount,
+              })
+            : null;
+        const selectedRelationSummaryCompactText =
+          selected && selectedRelationSummary
+            ? tEdgeTooltip('selectedCardRelationSummaryCompact', {
+                relations: selectedRelationSummary.relationCount,
+                types: selectedRelationSummary.typeCount,
+              })
+            : null;
         return (
           <button
             key={card.id}
@@ -4398,17 +4412,21 @@ export function SigmaSkeletonCards({
               <span
                 data-testid="sigma-selected-card-relation-summary"
                 data-relation-summary-contract="selected-card-direct-facts"
+                data-relation-summary-visible-contract="primary-count-visible-full-summary-accessible"
+                data-relation-summary-readable-text={selectedRelationSummaryText ?? undefined}
+                data-relation-summary-visible-text={
+                  selectedRelationSummaryCompactText ?? undefined
+                }
                 data-relation-summary-surface-token="--topology-relation-summary-surface"
                 data-relation-summary-border-token="--topology-relation-summary-border"
                 data-relation-summary-text-token="--topology-relation-summary-text"
                 data-relation-count={selectedRelationSummary.relationCount}
                 data-relation-type-count={selectedRelationSummary.typeCount}
+                aria-label={selectedRelationSummaryText ?? undefined}
+                title={selectedRelationSummaryText ?? undefined}
                 className="relative ml-0.5 inline-flex h-[1.55em] shrink-0 items-center rounded-full border border-[color:var(--topology-relation-summary-border)] bg-[color:var(--topology-relation-summary-surface)] px-[0.52em] font-mono text-[0.72em] leading-none text-[color:var(--topology-relation-summary-text)]"
               >
-                {tEdgeTooltip('selectedCardRelationSummary', {
-                  relations: selectedRelationSummary.relationCount,
-                  types: selectedRelationSummary.typeCount,
-                })}
+                {selectedRelationSummaryCompactText}
               </span>
             ) : null}
             {pathEndpoint ? (

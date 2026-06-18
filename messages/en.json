@@ -507,7 +507,8 @@
       "copyPayloadLabel": "MCP payload",
       "cliFallbackLabel": "CLI fallback",
       "copyPayloadSummary": "{tool} · {action} · {source} → {target} · {type} · {evidence} · {gate}",
-      "selectedCardRelationSummary": "{relations}f · {types}t",
+      "selectedCardRelationSummary": "{relations, plural, one {# fact} other {# facts}} · {types, plural, one {# type} other {# types}}",
+      "selectedCardRelationSummaryCompact": "{relations, plural, one {# fact} other {# facts}}",
       "healthRepairAuditBadge": "repair",
       "copied": "Copied"
     }

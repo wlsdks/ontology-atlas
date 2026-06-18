@@ -508,6 +508,7 @@
       "cliFallbackLabel": "CLI 대체 명령",
       "copyPayloadSummary": "{tool} · {action} · {source} → {target} · {type} · {evidence} · {gate}",
       "selectedCardRelationSummary": "관계 {relations} · 유형 {types}",
+      "selectedCardRelationSummaryCompact": "관계 {relations}",
       "healthRepairAuditBadge": "수리 대상",
       "copied": "복사됨"
     }

@@ -263,7 +263,18 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(summary).toHaveAttribute("data-relation-count", "1");
     expect(summary).toHaveAttribute("data-relation-type-count", "1");
-    expect(summary).toHaveTextContent("1f · 1t");
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-readable-text",
+      "1 fact · 1 type",
+    );
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-visible-contract",
+      "primary-count-visible-full-summary-accessible",
+    );
+    expect(summary).toHaveAttribute("data-relation-summary-visible-text", "1 fact");
+    expect(summary).toHaveAttribute("aria-label", "1 fact · 1 type");
+    expect(summary).toHaveAttribute("title", "1 fact · 1 type");
+    expect(summary).toHaveTextContent("1 fact");
   });
 
   it("health repair target 을 카드 표면의 audit target 으로 표시한다", () => {
