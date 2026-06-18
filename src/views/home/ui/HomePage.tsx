@@ -1770,6 +1770,13 @@ export function HomePage() {
                 overviewReaderLensChangePaths: t(
                   "analysis.overviewReaderLensChangePaths",
                 ),
+                overviewTierLegendTitle: t("analysis.overviewTierLegendTitle"),
+                overviewTierLegendProject: t("analysis.overviewTierLegendProject"),
+                overviewTierLegendDomain: t("analysis.overviewTierLegendDomain"),
+                overviewTierLegendCapability: t(
+                  "analysis.overviewTierLegendCapability",
+                ),
+                overviewTierLegendElement: t("analysis.overviewTierLegendElement"),
                 overviewBriefCopyAriaLabel: t(
                   "analysis.overviewBriefCopyAriaLabel",
                 ),

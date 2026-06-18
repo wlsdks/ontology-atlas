@@ -14,6 +14,10 @@ import {
 import { Link } from "@/i18n/navigation";
 import { Tooltip } from "@/shared/ui";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
+import {
+  ONTOLOGY_KIND_TONE,
+  type OntologyVisualKind,
+} from "@/entities/ontology-class";
 import { formatAgentPostChangeSyncPacket } from "@/shared/lib/ontology-tree";
 import type { TopologyAnalysisMode } from "../model/url-state";
 import type {
@@ -88,6 +92,11 @@ interface TopologyAnalysisBarLabels {
   overviewReaderLensDomains: string;
   overviewReaderLensCapabilities: string;
   overviewReaderLensChangePaths: string;
+  overviewTierLegendTitle: string;
+  overviewTierLegendProject: string;
+  overviewTierLegendDomain: string;
+  overviewTierLegendCapability: string;
+  overviewTierLegendElement: string;
   overviewBriefCopyAriaLabel: string;
   overviewBriefCopiedAriaLabel: string;
   overviewReanalyzeCopyAriaLabel: string;
@@ -297,6 +306,13 @@ const MODES = [
   { value: "path", icon: GitBranch, labelKey: "path" },
   { value: "health", icon: HeartPulse, labelKey: "health" },
 ] as const;
+
+const OVERVIEW_TIER_LEGEND_KINDS = [
+  "project",
+  "domain",
+  "capability",
+  "element",
+] as const satisfies readonly OntologyVisualKind[];
 
 function formatOntologyReanalysisAgentCommand(): string {
   return [
@@ -1097,6 +1113,49 @@ export function TopologyAnalysisBar({
                   </li>
                 ))}
               </ol>
+              <div
+                data-testid="topology-overview-tier-legend"
+                data-tier-legend-contract="map-color-to-ontology-layer"
+                data-tier-legend-token-source="ONTOLOGY_KIND_TONE"
+                className="mt-2 border-t border-[color:var(--topology-overview-reader-lens-border)] pt-2"
+              >
+                <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
+                  {labels.overviewTierLegendTitle}
+                </p>
+                <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
+                  {OVERVIEW_TIER_LEGEND_KINDS.map((kind) => {
+                    const tone = ONTOLOGY_KIND_TONE[kind];
+                    const labelByKind = {
+                      project: labels.overviewTierLegendProject,
+                      domain: labels.overviewTierLegendDomain,
+                      capability: labels.overviewTierLegendCapability,
+                      element: labels.overviewTierLegendElement,
+                    } satisfies Record<(typeof kind), string>;
+
+                    return (
+                      <span
+                        key={kind}
+                        data-tier-legend-kind={kind}
+                        data-kind-tone-fill={tone.fill}
+                        data-kind-tone-border={tone.border}
+                        className="flex min-w-0 items-center gap-1.5"
+                      >
+                        <span
+                          aria-hidden
+                          className="size-1.5 shrink-0 rounded-full ring-1"
+                          style={
+                            {
+                              backgroundColor: tone.fill,
+                              "--tw-ring-color": tone.border,
+                            } as CSSProperties
+                          }
+                        />
+                        <span className="min-w-0 truncate">{labelByKind[kind]}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           ) : null}
           {pathCandidateVisibilityText ? (

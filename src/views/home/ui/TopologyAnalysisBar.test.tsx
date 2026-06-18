@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
+import { ONTOLOGY_KIND_TONE } from "@/entities/ontology-class";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -60,6 +61,11 @@ const labels = {
   overviewReaderLensCapabilities: "Read which capabilities each area carries.",
   overviewReaderLensChangePaths:
     "Trace what would change before handing it to an agent.",
+  overviewTierLegendTitle: "Map layers",
+  overviewTierLegendProject: "Product/system",
+  overviewTierLegendDomain: "Domain",
+  overviewTierLegendCapability: "Capability",
+  overviewTierLegendElement: "Evidence",
   overviewBriefCopyAriaLabel: "Copy topology map brief",
   overviewBriefCopiedAriaLabel: "Topology map brief copied",
   overviewReanalyzeCopyAriaLabel: "Copy ontology reanalysis command",
@@ -874,6 +880,32 @@ describe("TopologyAnalysisBar", () => {
       "data-reader-lens-contract",
       "non-developer-first-map-read",
     );
+    const tierLegend = screen.getByTestId("topology-overview-tier-legend");
+    expect(tierLegend).toHaveAttribute(
+      "data-tier-legend-contract",
+      "map-color-to-ontology-layer",
+    );
+    expect(tierLegend).toHaveAttribute(
+      "data-tier-legend-token-source",
+      "ONTOLOGY_KIND_TONE",
+    );
+    expect(tierLegend).toHaveTextContent("Map layers");
+    expect(tierLegend).toHaveTextContent("Product/system");
+    expect(tierLegend).toHaveTextContent("Domain");
+    expect(tierLegend).toHaveTextContent("Capability");
+    expect(tierLegend).toHaveTextContent("Evidence");
+    expect(
+      tierLegend.querySelector('[data-tier-legend-kind="project"]'),
+    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.project.fill);
+    expect(
+      tierLegend.querySelector('[data-tier-legend-kind="domain"]'),
+    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.domain.fill);
+    expect(
+      tierLegend.querySelector('[data-tier-legend-kind="capability"]'),
+    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.capability.fill);
+    expect(
+      tierLegend.querySelector('[data-tier-legend-kind="element"]'),
+    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.element.fill);
     expect(actions.closest("details")).toBeNull();
     expect(screen.getByText("Copy map brief")).toBeVisible();
     expect(
