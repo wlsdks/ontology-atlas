@@ -928,6 +928,12 @@ export function TopologyAnalysisBar({
       data-path-panel-compact-gap-token={
         panelMode === "path" ? "--topology-path-panel-compact-gap" : undefined
       }
+      data-overview-panel-compact-gap-token={
+        panelMode === "overview" ? "--topology-overview-panel-compact-gap" : undefined
+      }
+      data-overview-panel-phone-max-height-token={
+        panelMode === "overview" ? "--topology-overview-panel-phone-max-height" : undefined
+      }
       data-health-repair-lane-contract={
         panelMode === "health" && healthAction
           ? "target-to-builder-to-sync"
@@ -953,7 +959,7 @@ export function TopologyAnalysisBar({
       }
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 border data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 border data-[analysis-mode=overview]:max-md:max-h-[var(--topology-overview-panel-phone-max-height)] data-[analysis-mode=overview]:max-md:overflow-y-auto data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         panelMode === "overview" ? "overflow-hidden" : "overflow-y-auto"
       } ${
         createPanelReserved
@@ -967,7 +973,7 @@ export function TopologyAnalysisBar({
         data-testid="topology-analysis-panel-body"
         data-panel-body-scroll-contract="compact-scrolls-above-bottom-tab"
         data-panel-body-scroll-end-reserve-token={panelBodyScrollEndReserveToken}
-        className="flex flex-col gap-3 data-[analysis-body-mode=path]:gap-[var(--topology-path-panel-compact-gap)] max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-path-collapsed-scroll-end-reserve)] data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=focus]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=health]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] max-md:pr-1"
+        className="flex flex-col gap-3 data-[analysis-body-mode=overview]:gap-[var(--topology-overview-panel-compact-gap)] data-[analysis-body-mode=path]:gap-[var(--topology-path-panel-compact-gap)] max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-path-collapsed-scroll-end-reserve)] data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=focus]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=health]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] max-md:pr-1"
         data-analysis-body-mode={panelMode}
       >
         <div
@@ -1024,7 +1030,9 @@ export function TopologyAnalysisBar({
           <p
             data-testid="topology-analysis-panel-prompt"
             data-prompt-text-token="--topology-analysis-panel-prompt-text"
-            className="line-clamp-3 break-keep text-[13.5px] leading-6 text-[color:var(--topology-analysis-panel-prompt-text)]"
+            className={`line-clamp-3 break-keep text-[13.5px] text-[color:var(--topology-analysis-panel-prompt-text)] ${
+              panelMode === "overview" ? "leading-5 max-md:line-clamp-2" : "leading-6"
+            }`}
           >
             {prompt}
           </p>
@@ -1228,13 +1236,15 @@ export function TopologyAnalysisBar({
           {panelMode === "overview" ? (
             <>
               <div
-                className="mt-3 grid min-w-0 gap-2 rounded-lg border border-[color:var(--topology-overview-signal-grid-border)] bg-[color:var(--topology-overview-signal-grid-surface)] p-2.5"
+                className="mt-2 grid min-w-0 gap-[var(--topology-overview-signal-grid-compact-gap)] rounded-lg border border-[color:var(--topology-overview-signal-grid-border)] bg-[color:var(--topology-overview-signal-grid-surface)] p-[var(--topology-overview-signal-grid-compact-padding)]"
                 data-surface-token="--topology-overview-signal-grid-surface"
                 data-border-token="--topology-overview-signal-grid-border"
+                data-compact-padding-token="--topology-overview-signal-grid-compact-padding"
+                data-compact-gap-token="--topology-overview-signal-grid-compact-gap"
                 data-testid="topology-overview-signal-grid"
               >
                 <div
-                  className="grid min-w-0 grid-cols-2 gap-2"
+                  className="grid min-w-0 grid-cols-2 gap-[var(--topology-overview-signal-grid-compact-gap)]"
                   data-overview-signal-layout="compact-two-column"
                   data-testid="topology-overview-signal-metric-row"
                 >
@@ -1303,20 +1313,22 @@ export function TopologyAnalysisBar({
                   />
                 ) : null}
                 <p
-                  className="break-keep rounded-md border border-[color:var(--topology-overview-notice-border)] bg-[color:var(--topology-overview-notice-surface)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]"
+                  className="break-keep rounded-md border border-[color:var(--topology-overview-notice-border)] bg-[color:var(--topology-overview-notice-surface)] px-3 py-[var(--topology-overview-notice-compact-padding-y)] text-[12px] leading-5 text-[color:var(--color-text-tertiary)]"
                   data-surface-token="--topology-overview-notice-surface"
                   data-border-token="--topology-overview-notice-border"
+                  data-compact-padding-y-token="--topology-overview-notice-compact-padding-y"
                   data-testid="topology-overview-relation-notice"
                 >
                   {overviewRelationNotice}
                 </p>
               </div>
               <div
-                className="mt-3 border-t border-[color:var(--topology-overview-handoff-divider)] pt-3"
+                className="mt-2 border-t border-[color:var(--topology-overview-handoff-divider)] pt-[var(--topology-overview-handoff-compact-padding-top)]"
                 data-divider-token="--topology-overview-handoff-divider"
+                data-compact-padding-top-token="--topology-overview-handoff-compact-padding-top"
                 data-testid="topology-overview-handoff-actions"
               >
-                <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="mb-1.5 flex items-center justify-between gap-2">
                   <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                     {disclosureSummaryLabel}
                   </span>
@@ -1336,15 +1348,17 @@ export function TopologyAnalysisBar({
                         : labels.overviewBriefCopyAriaLabel
                     }
                     onClick={copyOverviewBrief}
-                    className="min-h-9 border border-[color:var(--topology-overview-handoff-primary-border)] bg-[color:var(--topology-overview-handoff-primary-surface)] text-[10.5px] text-[color:var(--color-text-secondary)]"
+                    className="min-h-[var(--topology-overview-handoff-primary-min-height)] border border-[color:var(--topology-overview-handoff-primary-border)] bg-[color:var(--topology-overview-handoff-primary-surface)] text-[10.5px] text-[color:var(--color-text-secondary)]"
                     data-testid="topology-overview-brief-copy"
                     data-surface-token="--topology-overview-handoff-primary-surface"
                     data-border-token="--topology-overview-handoff-primary-border"
+                    data-min-height-token="--topology-overview-handoff-primary-min-height"
                   />
                   <details className="group">
                     <summary
                       data-testid="topology-overview-handoff-summary"
-                      className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                      className="inline-flex min-h-[var(--topology-overview-handoff-summary-min-height)] cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                      data-min-height-token="--topology-overview-handoff-summary-min-height"
                     >
                       <ChevronDown
                         size={12}

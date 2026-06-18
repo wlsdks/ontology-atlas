@@ -384,6 +384,10 @@
     --topology-command-step-index-size: clamp(20px, 1.45vw, 24px);
     --topology-overview-signal-grid-surface: rgba(255, 255, 255, 0.025);
     --topology-overview-signal-grid-border: rgba(255, 255, 255, 0.065);
+    --topology-overview-panel-compact-gap: 8px;
+    --topology-overview-panel-phone-max-height: min(640px, calc(100dvh - 14rem));
+    --topology-overview-signal-grid-compact-padding: 8px;
+    --topology-overview-signal-grid-compact-gap: 6px;
     --topology-overview-signal-neutral-surface: rgba(255, 255, 255, 0.028);
     --topology-overview-signal-neutral-border: rgba(255, 255, 255, 0.065);
     --topology-overview-signal-indigo-surface: rgba(139, 151, 255, 0.065);
@@ -392,11 +396,15 @@
     --topology-overview-signal-cyan-border: rgba(94, 234, 212, 0.22);
     --topology-overview-notice-surface: rgba(255, 255, 255, 0.02);
     --topology-overview-notice-border: rgba(255, 255, 255, 0.055);
+    --topology-overview-notice-compact-padding-y: 6px;
     --topology-overview-handoff-divider: rgba(255, 255, 255, 0.07);
     --topology-overview-handoff-primary-surface: rgba(139, 151, 255, 0.08);
     --topology-overview-handoff-primary-border: rgba(139, 151, 255, 0.22);
     --topology-overview-handoff-secondary-surface: rgba(255, 255, 255, 0.025);
     --topology-overview-handoff-secondary-border: rgba(255, 255, 255, 0.055);
+    --topology-overview-handoff-compact-padding-top: 8px;
+    --topology-overview-handoff-primary-min-height: 34px;
+    --topology-overview-handoff-summary-min-height: 28px;
     --topology-overview-quality-surface: rgba(94, 234, 212, 0.032);
     --topology-overview-quality-border: rgba(94, 234, 212, 0.18);
     --topology-overview-quality-meter-surface: rgba(255, 255, 255, 0.045);

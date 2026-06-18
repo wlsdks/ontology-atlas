@@ -574,6 +574,19 @@ test("Relief overview panel owns the phone read layer above map cards", async ({
   await expect(panel).toHaveAttribute("data-analysis-mode", "overview");
   await expect(panel).toHaveAttribute("data-panel-layer-contract", "read-surface-above-map-cards");
   await expect(panel).toHaveAttribute("data-panel-z-index-token", "--topology-panel-read-layer-z-index");
+  await expect(panel).toHaveAttribute(
+    "data-overview-panel-compact-gap-token",
+    "--topology-overview-panel-compact-gap",
+  );
+  await expect(panel).toHaveAttribute(
+    "data-overview-panel-phone-max-height-token",
+    "--topology-overview-panel-phone-max-height",
+  );
+  const compactOverviewPanelRect = await rectOf(panel);
+  expect(
+    compactOverviewPanelRect.height,
+    "phone overview support rail should leave first-viewport map evidence visible",
+  ).toBeLessThanOrEqual(625);
 
   const layerProof = await panel.evaluate((el) => {
     const panelRect = el.getBoundingClientRect();
@@ -610,9 +623,33 @@ test("Relief overview panel owns the phone read layer above map cards", async ({
     "data-compact-label",
     "support",
   );
+  await expect(page.getByTestId("topology-overview-signal-grid")).toHaveAttribute(
+    "data-compact-padding-token",
+    "--topology-overview-signal-grid-compact-padding",
+  );
+  await expect(page.getByTestId("topology-overview-signal-grid")).toHaveAttribute(
+    "data-compact-gap-token",
+    "--topology-overview-signal-grid-compact-gap",
+  );
   await expect(page.getByTestId("topology-overview-relation-quality-meter")).toHaveAttribute(
     "data-quality-meter-contract",
     "distribution-bar-maps-relation-quality",
+  );
+  await expect(page.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
+    "data-compact-padding-y-token",
+    "--topology-overview-notice-compact-padding-y",
+  );
+  await expect(page.getByTestId("topology-overview-handoff-actions")).toHaveAttribute(
+    "data-compact-padding-top-token",
+    "--topology-overview-handoff-compact-padding-top",
+  );
+  await expect(page.getByTestId("topology-overview-brief-copy")).toHaveAttribute(
+    "data-min-height-token",
+    "--topology-overview-handoff-primary-min-height",
+  );
+  await expect(page.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
+    "data-min-height-token",
+    "--topology-overview-handoff-summary-min-height",
   );
   const overviewProofLabelsFit = await panel
     .locator("[data-proof-label-contract='compact-visible-full-aria'] span:last-child")

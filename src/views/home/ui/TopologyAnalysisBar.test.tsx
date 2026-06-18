@@ -1370,6 +1370,14 @@ describe("TopologyAnalysisBar", () => {
       "data-panel-compact-scroll-end-reserve-token",
       "--topology-analysis-panel-compact-scroll-end-reserve",
     );
+    expect(bar).toHaveAttribute(
+      "data-overview-panel-compact-gap-token",
+      "--topology-overview-panel-compact-gap",
+    );
+    expect(bar).toHaveAttribute(
+      "data-overview-panel-phone-max-height-token",
+      "--topology-overview-panel-phone-max-height",
+    );
     expect(bar).toHaveAttribute("data-attention-role", "support");
     expect(bar).toHaveAttribute("data-panel-surface-token", "--topology-panel-support-surface");
     expect(bar).toHaveAttribute("data-panel-shadow-token", "--topology-panel-support-shadow");
@@ -1378,6 +1386,10 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-motion-token", "--topology-motion-panel-duration");
     expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
     expect(bar.className).toContain("overflow-hidden");
+    expect(bar.className).toContain(
+      "data-[analysis-mode=overview]:max-md:max-h-[var(--topology-overview-panel-phone-max-height)]",
+    );
+    expect(bar.className).toContain("data-[analysis-mode=overview]:max-md:overflow-y-auto");
     const body = screen.getByTestId("topology-analysis-panel-body");
     expect(body).toHaveAttribute("data-analysis-body-mode", "overview");
     expect(body).toHaveAttribute(
@@ -1393,9 +1405,21 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(body.className).toContain("max-md:overflow-y-auto");
     expect(body.className).toContain(
+      "data-[analysis-body-mode=overview]:gap-[var(--topology-overview-panel-compact-gap)]",
+    );
+    expect(body.className).toContain(
       "data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)]",
     );
     const relationQuality = screen.getByTestId("topology-overview-relation-quality");
+    const signalGrid = screen.getByTestId("topology-overview-signal-grid");
+    expect(signalGrid).toHaveAttribute(
+      "data-compact-padding-token",
+      "--topology-overview-signal-grid-compact-padding",
+    );
+    expect(signalGrid).toHaveAttribute(
+      "data-compact-gap-token",
+      "--topology-overview-signal-grid-compact-gap",
+    );
     expect(screen.getByTestId("topology-overview-signal-metric-row")).toHaveAttribute(
       "data-overview-signal-layout",
       "compact-two-column",
@@ -1465,7 +1489,23 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(
       screen.getByRole("button", { name: "Copy topology overview brief" }).className,
-    ).toContain("min-h-9");
+    ).toContain("min-h-[var(--topology-overview-handoff-primary-min-height)]");
+    expect(screen.getByRole("button", { name: "Copy topology overview brief" })).toHaveAttribute(
+      "data-min-height-token",
+      "--topology-overview-handoff-primary-min-height",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-actions")).toHaveAttribute(
+      "data-compact-padding-top-token",
+      "--topology-overview-handoff-compact-padding-top",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
+      "data-min-height-token",
+      "--topology-overview-handoff-summary-min-height",
+    );
+    expect(screen.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
+      "data-compact-padding-y-token",
+      "--topology-overview-notice-compact-padding-y",
+    );
   });
 
   it("moves below the concept creation panel when that panel is open", () => {
