@@ -177,8 +177,10 @@ const DRAG_CLUSTER_HULL_PAD_PX = 14;
 const HOVER_POP_W = 272;
 const BASE_ANCHOR_CARD_MAX_WIDTH_PX = 224;
 const SELECTED_FOCUS_CARD_MAX_WIDTH_PX = 360;
+const HEALTH_REPAIR_CARD_MAX_WIDTH_PX = 320;
 const ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX = 128;
 const SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN = '--topology-card-selected-focus-max-width';
+const HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN = '--topology-health-repair-card-max-width';
 const TIER_CARD_MAX_WIDTH_TOKEN: Record<SkeletonCardModel['tier'], string> = {
   0: '--topology-card-max-width-project',
   1: '--topology-card-max-width-domain',
@@ -2162,6 +2164,13 @@ export function SigmaSkeletonCards({
       SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN,
       `${
         SELECTED_FOCUS_CARD_MAX_WIDTH_PX +
+        (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
+      }px`,
+    );
+    container.style.setProperty(
+      HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN,
+      `${
+        HEALTH_REPAIR_CARD_MAX_WIDTH_PX +
         (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
       }px`,
     );
@@ -4323,6 +4332,8 @@ export function SigmaSkeletonCards({
                 ? SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN
                 : pathEndpoint
                 ? '--topology-path-endpoint-card-max-width'
+                : healthRepairAuditTarget
+                ? HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN
                 : TIER_CARD_MAX_WIDTH_TOKEN[card.tier]
             }
             onClick={(event) => {
@@ -4467,6 +4478,8 @@ export function SigmaSkeletonCards({
                     ? `var(${SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN})`
                     : pathEndpoint
                     ? 'var(--topology-path-endpoint-card-max-width)'
+                    : healthRepairAuditTarget
+                    ? `var(${HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN})`
                     : `var(${TIER_CARD_MAX_WIDTH_TOKEN[card.tier]})`,
                 '--card-border': selected
                   ? 'var(--topology-card-border-selected)'
@@ -4547,6 +4560,8 @@ export function SigmaSkeletonCards({
               data-card-title-lane-contract={
                 selectedRelationSummaryOwnsMeta
                   ? 'selected-title-keeps-current-focus-readable'
+                  : healthRepairAuditTarget
+                    ? 'health-repair-target-keeps-project-title-readable'
                   : 'title-shrinks-before-meta-chips'
               }
               data-full-title={card.title}

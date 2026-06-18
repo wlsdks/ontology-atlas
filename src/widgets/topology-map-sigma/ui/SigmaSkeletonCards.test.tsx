@@ -308,6 +308,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const auditTarget = screen.getByText("Atlas").closest("[data-skeleton-card]");
     expect(auditTarget).toHaveAttribute("data-health-repair-audit-target", "true");
     expect(auditTarget).toHaveAttribute(
+      "data-card-max-width-token",
+      "--topology-health-repair-card-max-width",
+    );
+    expect(auditTarget?.querySelector("[data-card-title]")).toHaveAttribute(
+      "data-card-title-lane-contract",
+      "health-repair-target-keeps-project-title-readable",
+    );
+    expect(auditTarget).toHaveAttribute(
       "data-health-repair-audit-contract",
       "panel-target-card-highlight",
     );

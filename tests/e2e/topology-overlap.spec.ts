@@ -652,6 +652,37 @@ test("Relief Focus selected capability card keeps its title readable in the inst
   ).toEqual([]);
 });
 
+test("Relief Health repair target keeps the project title readable in the installed app WebView size", async ({
+  page,
+}) => {
+  await openRelief(page, INSTALLED_APP_WEBVIEW, { mode: "health" });
+
+  const repairTargetCard = page
+    .locator('[data-skeleton-card][data-health-repair-audit-target="true"]')
+    .first();
+  await expect(repairTargetCard).toBeVisible();
+  await expect(repairTargetCard).toHaveAttribute(
+    "data-card-max-width-token",
+    "--topology-health-repair-card-max-width",
+  );
+  const repairTargetTitle = repairTargetCard.locator("[data-card-title]");
+  await expect(repairTargetTitle).toHaveAttribute(
+    "data-card-title-lane-contract",
+    "health-repair-target-keeps-project-title-readable",
+  );
+  const repairTitleFits = await repairTargetTitle.evaluate(
+    (element) => element.scrollWidth <= element.clientWidth + 1,
+  );
+  expect(
+    repairTitleFits,
+    "Installed-app WebView Health repair target title should identify the map target",
+  ).toBe(true);
+  expect(
+    cardPairsThatIntersect(await visibleCardRects(page)),
+    "Wider Health repair target card should not overlap other visible Relief cards",
+  ).toEqual([]);
+});
+
 test("Relief overview panel owns the phone read layer above map cards", async ({ page }) => {
   await openRelief(page, PHONE_VIEWPORT, { mode: "map", requireHud: false });
 
