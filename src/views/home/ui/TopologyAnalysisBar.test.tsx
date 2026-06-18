@@ -1615,11 +1615,21 @@ describe("TopologyAnalysisBar", () => {
       "data-compact-padding-top-token",
       "--topology-overview-handoff-compact-padding-top",
     );
+    expect(screen.getByTestId("topology-overview-handoff-actions")).toHaveAttribute(
+      "data-low-height-density-contract",
+      "primary-copy-visible-secondary-tools-hidden",
+    );
     expect(screen.getByTestId("topology-overview-handoff-actions").querySelector(
       "[data-overview-handoff-label-compact-contract]",
     )).toHaveAttribute(
       "data-overview-handoff-label-compact-contract",
       "phone-action-label-hidden",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-actions").querySelector(
+      "[data-overview-handoff-label-low-height-contract]",
+    )).toHaveAttribute(
+      "data-overview-handoff-label-low-height-contract",
+      "hidden-under-800px",
     );
     expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
       "data-min-height-token",
@@ -1628,6 +1638,10 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
       "data-compact-padding-y-token",
       "--topology-overview-notice-compact-padding-y",
+    );
+    expect(screen.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
+      "data-low-height-overview-notice-contract",
+      "sr-only-while-primary-copy-stays-visible",
     );
   });
 

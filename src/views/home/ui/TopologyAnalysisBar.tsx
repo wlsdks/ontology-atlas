@@ -1466,11 +1466,12 @@ export function TopologyAnalysisBar({
                   />
                 ) : null}
                 <p
-                  className="break-keep rounded-md border border-[color:var(--topology-overview-notice-border)] bg-[color:var(--topology-overview-notice-surface)] px-3 py-[var(--topology-overview-notice-compact-padding-y)] text-[12px] leading-5 text-[color:var(--color-text-tertiary)] max-md:sr-only"
+                  className="break-keep rounded-md border border-[color:var(--topology-overview-notice-border)] bg-[color:var(--topology-overview-notice-surface)] px-3 py-[var(--topology-overview-notice-compact-padding-y)] text-[12px] leading-5 text-[color:var(--color-text-tertiary)] max-md:sr-only [@media(max-height:800px)]:sr-only"
                   data-surface-token="--topology-overview-notice-surface"
                   data-border-token="--topology-overview-notice-border"
                   data-compact-padding-y-token="--topology-overview-notice-compact-padding-y"
                   data-phone-overview-notice-contract="sr-only-while-map-evidence-wins"
+                  data-low-height-overview-notice-contract="sr-only-while-primary-copy-stays-visible"
                   data-testid="topology-overview-relation-notice"
                 >
                   {overviewRelationNotice}
@@ -1480,11 +1481,13 @@ export function TopologyAnalysisBar({
                 className="mt-2 border-t border-[color:var(--topology-overview-handoff-divider)] pt-[var(--topology-overview-handoff-compact-padding-top)]"
                 data-divider-token="--topology-overview-handoff-divider"
                 data-compact-padding-top-token="--topology-overview-handoff-compact-padding-top"
+                data-low-height-density-contract="primary-copy-visible-secondary-tools-hidden"
                 data-testid="topology-overview-handoff-actions"
               >
                 <div
-                  className="mb-1.5 flex items-center justify-between gap-2 max-md:sr-only"
+                  className="mb-1.5 flex items-center justify-between gap-2 max-md:sr-only [@media(max-height:800px)]:sr-only"
                   data-overview-handoff-label-compact-contract="phone-action-label-hidden"
+                  data-overview-handoff-label-low-height-contract="hidden-under-800px"
                 >
                   <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                     {disclosureSummaryLabel}
@@ -1511,7 +1514,7 @@ export function TopologyAnalysisBar({
                     data-border-token="--topology-overview-handoff-primary-border"
                     data-min-height-token="--topology-overview-handoff-primary-min-height"
                   />
-                  <details className="group">
+                  <details className="group [@media(max-height:800px)]:sr-only">
                     <summary
                       data-testid="topology-overview-handoff-summary"
                       className="inline-flex min-h-[var(--topology-overview-handoff-summary-min-height)] cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
