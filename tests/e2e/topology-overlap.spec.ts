@@ -388,6 +388,10 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-border-token",
     "--topology-overview-signal-indigo-border",
   );
+  await expect(page.getByTestId("topology-overview-relation-provenance")).toHaveAttribute(
+    "data-overview-provenance-contract",
+    "scan-counts-not-wrapped-summary",
+  );
   await expect(page.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
     "data-border-token",
     "--topology-overview-notice-border",
@@ -466,6 +470,10 @@ test("Relief overview panel owns the phone read layer above map cards", async ({
     "topology-analysis-panel",
   );
   expect(layerProof.ownerSlug, "phone overview panel center should not expose a skeleton card slug").toBe("");
+  const provenanceRowsFit = await panel
+    .locator("[data-overview-provenance-row]")
+    .evaluateAll((rows) => rows.every((row) => row.scrollWidth <= row.clientWidth + 1));
+  expect(provenanceRowsFit, "phone overview provenance rows should not truncate").toBe(true);
 });
 
 test("Relief default route renders the readable card skeleton without panel scroll", async ({

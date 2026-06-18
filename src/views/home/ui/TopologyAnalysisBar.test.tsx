@@ -290,6 +290,24 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(panel).toHaveAttribute("data-panel-layer-contract", "read-surface-above-map-cards");
     expect(panel).toHaveAttribute("data-panel-z-index-token", "--topology-panel-read-layer-z-index");
+    const provenance = screen.getByTestId("topology-overview-relation-provenance");
+    expect(provenance).toHaveAttribute(
+      "data-overview-provenance-contract",
+      "scan-counts-not-wrapped-summary",
+    );
+    expect(provenance).toHaveAttribute(
+      "data-overview-provenance-layout",
+      "stacked-fact-rows",
+    );
+    expect(
+      provenance.querySelector('[data-overview-provenance-row="source-backed"]'),
+    ).toHaveTextContent("504");
+    expect(
+      provenance.querySelector('[data-overview-provenance-row="authored"]'),
+    ).toHaveTextContent("0");
+    expect(
+      provenance.querySelector('[data-overview-provenance-row="needs-review"]'),
+    ).toHaveTextContent("0");
   });
 
   it("promotes the panel to focus support when a node is selected from overview", () => {

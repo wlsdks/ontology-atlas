@@ -1209,12 +1209,21 @@ export function TopologyAnalysisBar({
                     />
                   ) : null}
                   {overviewRelationProvenanceSummary ? (
-                    <OverviewSignalCard
-                      label={labels.overviewBriefRelationProvenance}
-                      value={overviewRelationProvenanceSummary}
-                      tone="indigo"
-                      compact
-                      data-testid="topology-overview-relation-provenance"
+                    <RelationProvenanceGate
+                      title={labels.overviewBriefRelationProvenance}
+                      labels={{
+                        sourceBacked: labels.overviewBriefRelationSourceBacked,
+                        authored: labels.overviewBriefRelationAuthored,
+                        needsReview: labels.overviewBriefRelationNeedsReview,
+                      }}
+                      summary={overviewRelationProvenanceSummary}
+                      counts={
+                        summary.relationProvenance ?? {
+                          sourceBacked: 0,
+                          authored: 0,
+                          needsReview: 0,
+                        }
+                      }
                     />
                   ) : null}
                 </div>
@@ -2023,6 +2032,82 @@ function OverviewSignalCard({
       </span>
       <span className="break-words font-mono text-[11.5px] uppercase leading-4 tracking-[0.08em] text-[color:var(--color-text-secondary)]">
         {value}
+      </span>
+    </div>
+  );
+}
+
+function RelationProvenanceGate({
+  title,
+  labels,
+  summary,
+  counts,
+}: {
+  title: string;
+  labels: {
+    sourceBacked: string;
+    authored: string;
+    needsReview: string;
+  };
+  summary: string;
+  counts: NonNullable<TopologyAnalysisSummary["relationProvenance"]>;
+}) {
+  const rows = [
+    {
+      key: "source-backed",
+      count: counts.sourceBacked,
+      label: labels.sourceBacked,
+      token: "--topology-overview-proof-strong-text",
+    },
+    {
+      key: "authored",
+      count: counts.authored,
+      label: labels.authored,
+      token: "--topology-overview-proof-supported-text",
+    },
+    {
+      key: "needs-review",
+      count: counts.needsReview,
+      label: labels.needsReview,
+      token: "--topology-overview-proof-review-text",
+    },
+  ] as const;
+
+  return (
+    <div
+      aria-label={`${title}: ${summary}`}
+      className="grid min-w-0 gap-1 rounded-md border border-[color:var(--topology-overview-signal-indigo-border)] bg-[color:var(--topology-overview-signal-indigo-surface)] px-2.5 py-2"
+      data-overview-provenance-contract="scan-counts-not-wrapped-summary"
+      data-overview-provenance-layout="stacked-fact-rows"
+      data-overview-signal-card="indigo"
+      data-overview-signal-compact="true"
+      data-surface-token="--topology-overview-signal-indigo-surface"
+      data-border-token="--topology-overview-signal-indigo-border"
+      data-testid="topology-overview-relation-provenance"
+    >
+      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        {title}
+      </span>
+      <span className="sr-only">{summary}</span>
+      <span className="grid min-w-0 gap-0.5">
+        {rows.map((row) => (
+          <span
+            key={row.key}
+            className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-1.5"
+            data-overview-provenance-row={row.key}
+            data-text-token={row.token}
+          >
+            <span
+              className="font-mono text-[11px] leading-3"
+              style={{ color: `var(${row.token})` }}
+            >
+              {row.count}
+            </span>
+            <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+              {row.label}
+            </span>
+          </span>
+        ))}
       </span>
     </div>
   );
