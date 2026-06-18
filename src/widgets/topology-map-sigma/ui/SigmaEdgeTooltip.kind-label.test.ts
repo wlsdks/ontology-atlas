@@ -458,8 +458,39 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     const proofBand = screen.getByTestId('sigma-selected-edge-proof-band');
     const copyPayload = screen.getByTestId('sigma-selected-edge-copy-payload');
-    expect(proofBand).toContainElement(screen.getByTestId('sigma-selected-edge-contract'));
-    expect(proofBand).toContainElement(screen.getByTestId('sigma-selected-edge-agent-decision'));
+    const relationContract = screen.getByTestId('sigma-selected-edge-contract');
+    const agentDecision = screen.getByTestId('sigma-selected-edge-agent-decision');
+    expect(proofBand).toContainElement(relationContract);
+    expect(proofBand).toContainElement(agentDecision);
+    expect(relationContract).toHaveAttribute(
+      'data-relation-contract-copy-contract',
+      'visible-judgment-full-explanation-accessible',
+    );
+    expect(relationContract).toHaveAttribute(
+      'data-relation-contract-visible-text',
+      'Typed fact',
+    );
+    expect(relationContract).toHaveAttribute(
+      'data-relation-contract-full-text',
+      'A typed ontology fact, not a similarity score. Use the checks below before changing the graph. Quality means handoff confidence: evidence, authorship, and review state — not generic relevance.',
+    );
+    expect(
+      relationContract.querySelector('[data-relation-contract-visible-summary]'),
+    ).toHaveTextContent('Typed fact');
+    expect(agentDecision).toHaveAttribute(
+      'data-agent-decision-copy-contract',
+      'visible-judgment-full-decision-accessible',
+    );
+    expect(agentDecision).toHaveAttribute(
+      'data-agent-decision-visible-text',
+      'Agent-ready',
+    );
+    expect(
+      agentDecision.querySelector('[data-agent-decision-visible-summary]'),
+    ).toHaveTextContent('Agent-ready');
+    expect(agentDecision).toHaveTextContent(
+      'Include this relation in agent handoff; it has typed evidence.',
+    );
     const selectedCard = screen.getByTestId('sigma-selected-edge-card');
     const metricStrip = screen.getByTestId('sigma-selected-edge-metric-strip');
     const copyActions = screen.getByTestId('sigma-selected-edge-copy-actions');

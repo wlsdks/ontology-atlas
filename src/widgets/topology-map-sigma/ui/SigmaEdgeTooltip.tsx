@@ -373,6 +373,13 @@ export function SigmaSelectedEdgeCard({
     preflightFirst: t('agentDecisionPreflightFirst'),
     reviewFirst: t('agentDecisionReviewFirst'),
   });
+  const agentDecisionVisibleText = relationAgentDecisionText(data, {
+    handoffReady: t('agentDecisionHandoffReadyVisible'),
+    preflightFirst: t('agentDecisionPreflightFirstVisible'),
+    reviewFirst: t('agentDecisionReviewFirstVisible'),
+  });
+  const semanticFactVisibleHint = t('semanticFactVisibleHint');
+  const relationContractFullText = `${t('semanticFactHint')} ${t('qualityContractHint')}`;
   const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
   const primaryCopyActionLabel =
     primaryCopyAction === 'explain_relation'
@@ -557,12 +564,22 @@ export function SigmaSelectedEdgeCard({
         <div
           data-testid="sigma-selected-edge-contract"
           data-relation-contract="typed-fact-not-similarity"
+          data-relation-contract-visible-text={semanticFactVisibleHint}
+          data-relation-contract-full-text={relationContractFullText}
+          data-relation-contract-copy-contract="visible-judgment-full-explanation-accessible"
           className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-2 py-1"
         >
           <div className="font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {t('relationContractLabel')}
           </div>
-          <p className="mt-0.5 line-clamp-1 text-[10px] leading-3 text-[color:var(--color-text-secondary)]">
+          <p
+            data-relation-contract-visible-summary={semanticFactVisibleHint}
+            title={relationContractFullText}
+            className="mt-0.5 truncate text-[10px] leading-3 text-[color:var(--color-text-secondary)]"
+          >
+            {semanticFactVisibleHint}
+          </p>
+          <p className="sr-only">
             {t('semanticFactHint')}
           </p>
           <p className="sr-only">
@@ -572,6 +589,8 @@ export function SigmaSelectedEdgeCard({
         <div
           data-testid="sigma-selected-edge-agent-decision"
           data-agent-decision={agentDecisionText}
+          data-agent-decision-visible-text={agentDecisionVisibleText}
+          data-agent-decision-copy-contract="visible-judgment-full-decision-accessible"
           data-agent-gate-kind={agentGateKind}
           data-agent-gate-surface-token={`--topology-selected-relation-gate-${relationGateToken(
             agentGateKind,
@@ -593,7 +612,14 @@ export function SigmaSelectedEdgeCard({
           >
             {t('agentDecisionLabel')}
           </div>
-          <p className="mt-0.5 line-clamp-1 text-[10px] leading-3 text-[color:var(--color-text-secondary)]">
+          <p
+            data-agent-decision-visible-summary={agentDecisionVisibleText}
+            title={agentDecisionText}
+            className="mt-0.5 truncate text-[10px] leading-3 text-[color:var(--color-text-secondary)]"
+          >
+            {agentDecisionVisibleText}
+          </p>
+          <p className="sr-only">
             {agentDecisionText}
           </p>
         </div>

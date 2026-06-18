@@ -1165,8 +1165,26 @@ for (const viewport of VIEWPORTS) {
     await expect(claimLens).toContainText(/strong|supported|weak|review|강한 구조|근거 있음|약한 관련|검토 필요/i);
     const relationContract = page.getByTestId("sigma-selected-edge-contract");
     await expect(relationContract).toHaveAttribute("data-relation-contract", "typed-fact-not-similarity");
+    await expect(relationContract).toHaveAttribute(
+      "data-relation-contract-copy-contract",
+      "visible-judgment-full-explanation-accessible",
+    );
+    await expect(relationContract).toHaveAttribute(
+      "data-relation-contract-visible-text",
+      /Typed fact|타입 사실/,
+    );
     await expect(relationContract).toContainText(/not a similarity score|유사도 점수가 아니라/i);
     await expect(relationContract).toContainText(/handoff confidence|handoff 신뢰도|전달 신뢰도/i);
+    const relationContractVisibleSummary = relationContract.locator(
+      "[data-relation-contract-visible-summary]",
+    );
+    const relationContractVisibleFits = await relationContractVisibleSummary.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    );
+    expect(
+      relationContractVisibleFits,
+      `selected relation contract visible judgment should fit at ${viewport.label}`,
+    ).toBe(true);
     const agentGate = page.getByTestId("sigma-selected-edge-agent-gate");
     await expect(agentGate).toContainText(/handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저/i);
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
@@ -1178,7 +1196,25 @@ for (const viewport of VIEWPORTS) {
       "data-agent-gate-kind",
       /handoff-ready|preflight-first|review-first/,
     );
+    await expect(agentDecision).toHaveAttribute(
+      "data-agent-decision-copy-contract",
+      "visible-judgment-full-decision-accessible",
+    );
+    await expect(agentDecision).toHaveAttribute(
+      "data-agent-decision-visible-text",
+      /Agent-ready|Check first|Review first|전달 준비|점검 먼저|검토 먼저/,
+    );
     await expect(agentDecision).toContainText(/agent handoff|에이전트 전달|relation_check|agent-ready|관계 근거|handoff|전달/i);
+    const agentDecisionVisibleSummary = agentDecision.locator(
+      "[data-agent-decision-visible-summary]",
+    );
+    const agentDecisionVisibleFits = await agentDecisionVisibleSummary.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    );
+    expect(
+      agentDecisionVisibleFits,
+      `selected relation agent decision visible judgment should fit at ${viewport.label}`,
+    ).toBe(true);
     const agentRoute = page.getByTestId("sigma-selected-edge-agent-route");
     await expect(agentRoute).toHaveAttribute(
       "data-agent-gate-kind",
@@ -4046,6 +4082,29 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
     "data-agent-gate-text-token",
     `--topology-selected-relation-gate-${agentGateToken}-text`,
   );
+  await expect(agentDecision).toHaveAttribute(
+    "data-agent-decision-copy-contract",
+    "visible-judgment-full-decision-accessible",
+  );
+  const compactAgentDecisionVisibleFits = await agentDecision
+    .locator("[data-agent-decision-visible-summary]")
+    .evaluate((element) => element.scrollWidth <= element.clientWidth + 1);
+  expect(
+    compactAgentDecisionVisibleFits,
+    "compact relation agent decision visible judgment should fit",
+  ).toBe(true);
+  const relationContract = page.getByTestId("sigma-selected-edge-contract");
+  await expect(relationContract).toHaveAttribute(
+    "data-relation-contract-copy-contract",
+    "visible-judgment-full-explanation-accessible",
+  );
+  const compactRelationContractVisibleFits = await relationContract
+    .locator("[data-relation-contract-visible-summary]")
+    .evaluate((element) => element.scrollWidth <= element.clientWidth + 1);
+  expect(
+    compactRelationContractVisibleFits,
+    "compact relation contract visible judgment should fit",
+  ).toBe(true);
   const agentRoute = page.getByTestId("sigma-selected-edge-agent-route");
   await expect(agentRoute.locator("[data-route-step]")).toHaveCount(4);
   const primaryCopyAction = await agentRoute.getAttribute("data-primary-copy-action");
