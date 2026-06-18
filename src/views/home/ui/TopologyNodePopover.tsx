@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronUp, Clipboard, X } from "lucide-react";
+import { useEffect, useRef } from "react";
 import type { TopologyRelationQuality } from "../lib/topology-analysis";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import type { NodeSignificanceLevel } from "../lib/topology-node-significance";
@@ -128,6 +129,8 @@ export function TopologyNodePopover({
   onToggleCollapsed,
   className,
 }: TopologyNodePopoverProps) {
+  const firstRelationRowRef = useRef<HTMLButtonElement | null>(null);
+  const wasCollapsedRef = useRef(collapsed);
   const total = focus.usedByCount + focus.dependsOnCount;
   const focusKindLabel = labels.kindLabels[focus.kind] ?? focus.kind;
   // 지도에 펼쳐진 자식은 리스트에서 제외 — 팝오버는 캔버스가 못 보여주는
@@ -236,6 +239,16 @@ export function TopologyNodePopover({
   const primaryAction = actions[0] ?? null;
   const handoffContract =
     actions.length > 0 ? "selected-node-actions-visible" : "detail-only";
+
+  useEffect(() => {
+    const wasCollapsed = wasCollapsedRef.current;
+    wasCollapsedRef.current = collapsed;
+    if (!wasCollapsed || collapsed) return;
+    const frame = window.requestAnimationFrame(() => {
+      firstRelationRowRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [collapsed]);
 
   if (collapsed) {
     return (
@@ -356,6 +369,7 @@ export function TopologyNodePopover({
       data-popover-scroll-contract="expanded-internal-scroll"
       data-compact-handoff-contract={handoffContract}
       data-title-readability-contract="selected-node-title-readable"
+      data-expanded-focus-contract="first-relation-row-on-expand"
       className={`flex max-h-[var(--topology-node-popover-max-height)] min-w-0 w-[var(--topology-node-popover-fluid-width)] max-w-[var(--topology-node-popover-fluid-width)] flex-col overflow-hidden rounded-[var(--topology-node-popover-radius)] border border-[color:var(--topology-node-popover-border)] bg-[color:var(--topology-node-popover-surface)] shadow-[var(--topology-node-popover-shadow)] lg:w-[var(--topology-node-popover-rail-width)] lg:max-w-[var(--topology-node-popover-rail-width)] min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)] min-[1400px]:max-w-[var(--topology-node-popover-wide-rail-width)] min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)] min-[1800px]:max-w-[var(--topology-node-popover-cinema-rail-width)] ${className ?? ""}`}
     >
       <div
@@ -616,9 +630,13 @@ export function TopologyNodePopover({
                   className="border-b border-[color:var(--topology-node-popover-relation-row-divider)] last:border-b-0"
                 >
                   <button
+                    ref={index === 0 ? firstRelationRowRef : undefined}
                     type="button"
                     aria-label={relationAccessibleSummary}
                     data-relation-row
+                    data-expanded-focus-entry={
+                      index === 0 ? "selected-node-first-relation-row" : undefined
+                    }
                     data-relation-direction={connection.direction}
                     data-relation-type={connection.relationType}
                     data-relation-quality={connection.relationQuality}

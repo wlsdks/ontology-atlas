@@ -2694,6 +2694,10 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-popover-scroll-contract",
     "expanded-internal-scroll",
   );
+  await expect(popover).toHaveAttribute(
+    "data-expanded-focus-contract",
+    "first-relation-row-on-expand",
+  );
   await expect(popover).toHaveAttribute("data-responsive-width-contract", "fluid-inspector-to-rail");
   await expect(popover).toHaveAttribute(
     "data-max-height-token",
@@ -2767,6 +2771,11 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   await expect(connectionList).toBeVisible();
   const firstRelationRow = connectionList.locator("[data-relation-row]").first();
   await expect(firstRelationRow).toBeVisible();
+  await expect(firstRelationRow).toHaveAttribute(
+    "data-expanded-focus-entry",
+    "selected-node-first-relation-row",
+  );
+  await expect(firstRelationRow).toBeFocused();
   await expect(firstRelationRow).toHaveAttribute(
     "data-row-hover-surface-token",
     "--topology-node-popover-relation-row-hover-surface",

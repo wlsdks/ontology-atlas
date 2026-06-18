@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import {
@@ -440,6 +440,10 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-relation-row-focus-ring",
     );
     expect(relationRow).toHaveAttribute(
+      "data-expanded-focus-entry",
+      "selected-node-first-relation-row",
+    );
+    expect(relationRow).toHaveAttribute(
       "data-row-scan-order",
       "relation>title>direction>endpoint>handoff",
     );
@@ -518,6 +522,38 @@ describe("TopologyNodePopover", () => {
     expect(
       handoffLane?.querySelector('[data-relation-route-chip="fact"]')?.className,
     ).toContain("text-[color:var(--topology-node-popover-route-chip-text)]");
+  });
+
+  it("hands focus to the first relation row when expanded from the compact inspector", async () => {
+    const props = {
+      focus: focusModel(),
+      labels,
+      onSelectConnection: vi.fn(),
+      onOpenFullDetail: vi.fn(),
+      onClose: vi.fn(),
+    };
+    const { rerender } = render(
+      <TopologyNodePopover {...props} collapsed onToggleCollapsed={vi.fn()} />,
+    );
+
+    expect(screen.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-collapsed",
+      "true",
+    );
+
+    rerender(<TopologyNodePopover {...props} collapsed={false} onToggleCollapsed={vi.fn()} />);
+
+    const popover = screen.getByTestId("topology-node-popover");
+    expect(popover).toHaveAttribute(
+      "data-expanded-focus-contract",
+      "first-relation-row-on-expand",
+    );
+    const firstRelationRow = document.querySelector("[data-relation-row]");
+    expect(firstRelationRow).toHaveAttribute(
+      "data-expanded-focus-entry",
+      "selected-node-first-relation-row",
+    );
+    await waitFor(() => expect(document.activeElement).toBe(firstRelationRow));
   });
 
   it("keeps the full-detail footer action compact when hidden relations exist", () => {
