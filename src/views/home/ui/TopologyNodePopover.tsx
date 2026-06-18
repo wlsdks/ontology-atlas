@@ -716,7 +716,11 @@ export function TopologyNodePopover({
                           {connection.title}
                         </span>
                       </span>
-                      <span className="mt-0.5 block truncate text-[10px] text-[color:var(--color-text-quaternary)]">
+                      <span
+                        data-relation-row-meta
+                        data-row-meta-text-token="--topology-node-popover-relation-row-meta-text"
+                        className="mt-0.5 block truncate text-[10px] text-[color:var(--topology-node-popover-relation-row-meta-text)]"
+                      >
                         {directionLabel} · {kindLabel}
                       </span>
                       <span

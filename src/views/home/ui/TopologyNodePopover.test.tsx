@@ -371,6 +371,7 @@ describe("TopologyNodePopover", () => {
     const list = screen.getByTestId("topology-node-connection-list");
     const relationRow = document.querySelector("[data-relation-row]");
     const relationTitle = relationRow?.querySelector("[data-relation-title]");
+    const relationMeta = relationRow?.querySelector("[data-relation-row-meta]");
     const handoffLane = relationRow?.querySelector("[data-relation-route]");
 
     expect(list).toHaveAttribute("data-row-density-contract", "agent-handoff-scan-list");
@@ -423,6 +424,14 @@ describe("TopologyNodePopover", () => {
     expect(relationRow?.className).toContain("py-2");
     expect(relationTitle).toHaveAttribute("data-primary-scan-target", "true");
     expect(relationTitle?.className).toContain("text-[color:var(--color-text-primary)]");
+    expect(relationMeta).toHaveAttribute(
+      "data-row-meta-text-token",
+      "--topology-node-popover-relation-row-meta-text",
+    );
+    expect(relationMeta?.className).toContain(
+      "text-[color:var(--topology-node-popover-relation-row-meta-text)]",
+    );
+    expect(relationMeta?.className).not.toContain("var(--color-text-quaternary)");
     expect(handoffLane).toHaveAttribute("data-handoff-lane", "mcp-cli-next-action");
     expect(handoffLane).toHaveAttribute(
       "data-relation-payload-layout",

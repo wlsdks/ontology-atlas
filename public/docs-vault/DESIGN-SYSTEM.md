@@ -236,10 +236,13 @@ names in component data markers and tests whenever a surface depends on
 - `--topology-node-popover-relation-list-surface` /
   `--topology-node-popover-relation-list-border` /
   `--topology-node-popover-relation-row-divider` /
-  `--topology-node-popover-relation-row-hover-surface`: selected node
+  `--topology-node-popover-relation-row-hover-surface` /
+  `--topology-node-popover-relation-row-meta-text`: selected node
   inspector relation list chrome. These keep row separators and hover feedback
-  in the same token family as the fixed footer, so relation rows remain a
-  readable handoff list instead of ad hoc translucent bands.
+  in the same token family as the fixed footer, while the row meta text keeps
+  direction and kind as secondary reading context. Relation rows should remain
+  a readable handoff list instead of ad hoc translucent bands or generic muted
+  helper text.
 - `--topology-node-popover-action-*` /
   `--topology-node-popover-context-surface` /
   `--topology-node-popover-context-border`: selected node inspector support
