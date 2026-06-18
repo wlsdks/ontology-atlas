@@ -1124,6 +1124,19 @@ for (const viewport of VIEWPORTS) {
       "data-surface-token",
       /--topology-relation-gate-(ready|preflight|review)-surface/,
     );
+    const relationTypeText = relationButton.locator("[data-relation-label-type-text]");
+    await expect(relationTypeText).toHaveAttribute(
+      "data-relation-label-type-text-contract",
+      "typed-fact-label-stays-readable",
+    );
+    await expect(relationTypeText).toHaveText(/contains|depends|relates|describes|uses/);
+    const relationTypeTextFit = await relationTypeText.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    );
+    expect(
+      relationTypeTextFit,
+      `selected relation type text should not truncate before evidence/gate chips at ${viewport.label}`,
+    ).toBe(true);
     await expect(relationButton.locator('[data-route-chip="fact"]')).toHaveAttribute(
       "data-route-chip-text",
       "fact",

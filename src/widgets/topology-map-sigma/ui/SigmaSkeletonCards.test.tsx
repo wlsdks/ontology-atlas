@@ -2314,6 +2314,22 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "explain_relation");
     expect(gateChip).toHaveAttribute("data-route-chip-text", "MCP/CLI");
+    const typeText = labelHit?.querySelector("[data-relation-label-type-text]");
+    const selectedOverlayTypeText = selectedOverlay?.querySelector(
+      "[data-relation-label-type-text]",
+    );
+    expect(typeText).toHaveAttribute(
+      "data-relation-label-type-text-contract",
+      "typed-fact-label-stays-readable",
+    );
+    expect(typeText).toHaveTextContent("contains");
+    expect(typeText).toHaveClass("shrink-0");
+    expect(selectedOverlayTypeText).toHaveAttribute(
+      "data-relation-label-type-text-contract",
+      "typed-fact-label-stays-readable",
+    );
+    expect(selectedOverlayTypeText).toHaveTextContent("contains");
+    expect(selectedOverlayTypeText).toHaveClass("shrink-0");
     expect(gateChip).toHaveAttribute(
       "data-surface-token",
       "--topology-relation-gate-ready-surface",

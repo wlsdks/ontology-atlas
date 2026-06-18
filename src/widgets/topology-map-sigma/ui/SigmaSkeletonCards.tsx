@@ -216,7 +216,7 @@ const RELATION_BADGE_CHAR_WIDTH_PX = 5.8;
 const RELATION_BADGE_PAD_X_PX = 10;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
 const RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX = 18;
-const RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX = 32;
+const RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX = 38;
 const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 32;
 const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 6;
 const RELATION_LABEL_VIEWPORT_INSET_PX = 16;
@@ -3844,7 +3844,13 @@ export function SigmaSkeletonCards({
                   quality,
                 )}`}
               />
-              <span className="min-w-0 truncate">{labelText}</span>
+              <span
+                data-relation-label-type-text
+                data-relation-label-type-text-contract="typed-fact-label-stays-readable"
+                className="shrink-0"
+              >
+                {labelText}
+              </span>
               {' '}
               <span
                 data-relation-evidence-glyph={evidenceState}
@@ -3971,7 +3977,13 @@ export function SigmaSkeletonCards({
                 quality,
               )}`}
             />
-            <span className="min-w-0 truncate">{labelText}</span>
+            <span
+              data-relation-label-type-text
+              data-relation-label-type-text-contract="typed-fact-label-stays-readable"
+              className="shrink-0"
+            >
+              {labelText}
+            </span>
             {' '}
             <span
               aria-hidden="true"
