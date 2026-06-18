@@ -413,20 +413,20 @@ describe('i18n message catalog', () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const focusCopy = ko.topology.analysis;
 
-    assert.equal(focusCopy.focusMcpCopy, 'MCP 노드 점검 복사');
-    assert.equal(focusCopy.focusMcpCopied, 'MCP 노드 점검 복사됨');
-    assert.equal(focusCopy.focusMcpImpactCopy, 'MCP 영향 점검 복사');
-    assert.equal(focusCopy.focusMcpImpactCopied, 'MCP 영향 점검 복사됨');
+    assert.equal(focusCopy.focusMcpCopy, '개념 점검 복사');
+    assert.equal(focusCopy.focusMcpCopied, '개념 점검 복사됨');
+    assert.equal(focusCopy.focusMcpImpactCopy, '영향 점검 복사');
+    assert.equal(focusCopy.focusMcpImpactCopied, '영향 점검 복사됨');
     assert.equal(focusCopy.focusSyncGateCopy, '동기화 점검 복사');
     assert.equal(focusCopy.focusSyncGateCopied, '동기화 점검 복사됨');
     assert.equal(focusCopy.focusBriefCopy, '선택 브리프 복사');
     assert.equal(focusCopy.focusBriefCopied, '선택 브리프 복사됨');
     assert.equal(focusCopy.focusReviewOrderTitle, '선택 개념 검토 순서');
-    assert.equal(focusCopy.focusReviewOrderProfile, '노드 정보 읽기');
+    assert.equal(focusCopy.focusReviewOrderProfile, '개념 브리프 읽기');
     assert.equal(focusCopy.focusReviewOrderImpact, '들어오는 영향 추적');
     assert.equal(focusCopy.focusReviewOrderSync, '동기화 점검 실행');
-    assert.equal(focusCopy.focusMcpCopyAriaLabel, '지형도 선택 개념 MCP 노드 점검 복사');
-    assert.equal(focusCopy.focusMcpImpactCopyAriaLabel, '지형도 선택 개념 MCP 영향 점검 복사');
+    assert.equal(focusCopy.focusMcpCopyAriaLabel, '지형도 선택 개념 점검 복사');
+    assert.equal(focusCopy.focusMcpImpactCopyAriaLabel, '지형도 선택 개념 영향 점검 복사');
     assert.equal(focusCopy.focusSyncGateCopyAriaLabel, '지형도 선택 개념 수정 후 동기화 점검 복사');
     assert.equal(focusCopy.focusBriefCopyAriaLabel, '지형도 선택 개념 검토 브리프 복사');
     assert.equal(focusCopy.focusBriefCopiedAriaLabel, '지형도 선택 개념 검토 브리프 복사됨');

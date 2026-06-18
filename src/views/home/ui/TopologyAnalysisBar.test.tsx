@@ -96,10 +96,10 @@ const labels = {
     "Showing the readable concept map. Use Focus or Path for exact relation evidence.",
   focusBriefCopy: "Copy focus brief",
   focusBriefCopied: "Focus brief copied",
-  focusMcpCopy: "Copy MCP profile",
-  focusMcpCopied: "MCP profile copied",
-  focusMcpImpactCopy: "Copy MCP impact",
-  focusMcpImpactCopied: "MCP impact copied",
+  focusMcpCopy: "Copy concept check",
+  focusMcpCopied: "Concept check copied",
+  focusMcpImpactCopy: "Copy impact check",
+  focusMcpImpactCopied: "Impact check copied",
   focusSyncGateCopy: "Copy sync gate",
   focusSyncGateCopied: "Sync gate copied",
   focusEnhanceCopy: "Copy strengthen command",
@@ -108,16 +108,16 @@ const labels = {
   focusOpenBuilder: "Open builder",
   focusHandoffSummary: "Focus proof",
   focusReviewOrderTitle: "Focus review order",
-  focusReviewOrderProfile: "Read node profile",
+  focusReviewOrderProfile: "Read concept brief",
   focusReviewOrderImpact: "Trace incoming impact",
   focusReviewOrderRepair: "Edit or confirm meaning",
   focusReviewOrderSync: "Run sync gate",
   focusBriefCopyAriaLabel: "Copy focus review brief",
   focusBriefCopiedAriaLabel: "Focus review brief copied",
-  focusMcpCopyAriaLabel: "Copy focus MCP profile",
-  focusMcpCopiedAriaLabel: "Focus MCP profile copied",
-  focusMcpImpactCopyAriaLabel: "Copy focus MCP impact",
-  focusMcpImpactCopiedAriaLabel: "Focus MCP impact copied",
+  focusMcpCopyAriaLabel: "Copy focus concept check",
+  focusMcpCopiedAriaLabel: "Focus concept check copied",
+  focusMcpImpactCopyAriaLabel: "Copy focus impact check",
+  focusMcpImpactCopiedAriaLabel: "Focus impact check copied",
   focusSyncGateCopyAriaLabel: "Copy focus post-change sync gate",
   focusSyncGateCopiedAriaLabel: "Focus post-change sync gate copied",
   focusEnhanceCopyAriaLabel: "Copy selected concept strengthening command",
@@ -529,7 +529,7 @@ describe("TopologyAnalysisBar", () => {
       "data-command-step-border-token",
       "--topology-command-step-border",
     );
-    expect(screen.getByText("Read node profile").closest("li")).toHaveAttribute(
+    expect(screen.getByText("Read concept brief").closest("li")).toHaveAttribute(
       "data-command-step-contract",
       "flat-numbered-row",
     );
@@ -563,8 +563,8 @@ describe("TopologyAnalysisBar", () => {
       "mcp-cli-proof-disclosed",
     );
     const focusProofActions = [
-      ["Copy focus MCP profile", "mcp-profile"],
-      ["Copy focus MCP impact", "mcp-impact"],
+      ["Copy focus concept check", "mcp-profile"],
+      ["Copy focus impact check", "mcp-impact"],
       ["Copy focus post-change sync gate", "sync-gate"],
       ["Copy selected concept strengthening command", "strengthen-command"],
     ] as const;
@@ -2229,7 +2229,7 @@ describe("TopologyAnalysisBar", () => {
     ).toBeVisible();
   });
 
-  it("copies MCP profile and impact checks for the focused node", async () => {
+  it("copies concept and impact checks for the focused node", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: { writeText },
@@ -2258,7 +2258,7 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy focus MCP profile" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy focus concept check" }));
     expect(writeText).toHaveBeenCalledWith(
       'query_ontology({"operation":"node_profile","slug":"capability:topology-analysis-modes","depth":2,"limit":12})',
     );
@@ -2275,7 +2275,7 @@ describe("TopologyAnalysisBar", () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy focus MCP impact" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy focus impact check" }));
     expect(writeText).toHaveBeenCalledWith(
       'query_ontology({"operation":"blast_radius","slug":"capability:topology-analysis-modes","depth":2,"direction":"incoming"})',
     );
@@ -2307,7 +2307,7 @@ describe("TopologyAnalysisBar", () => {
 
     expect(screen.getByText("Focus review order")).toBeInTheDocument();
     expect(screen.getByTestId("topology-focus-review-order")).toBeVisible();
-    expect(screen.getByText("Read node profile")).toBeInTheDocument();
+    expect(screen.getByText("Read concept brief")).toBeInTheDocument();
     expect(screen.getByText("Trace incoming impact")).toBeInTheDocument();
     expect(screen.getByText("Edit or confirm meaning")).toBeInTheDocument();
     expect(screen.getByText("Run sync gate")).toBeInTheDocument();
@@ -2351,7 +2351,7 @@ describe("TopologyAnalysisBar", () => {
 
     expect(screen.getByText("Select a node.")).toBeInTheDocument();
     const reviewOrder = screen.getByTestId("topology-focus-review-order");
-    expect(reviewOrder).toHaveTextContent("Read node profile");
+    expect(reviewOrder).toHaveTextContent("Read concept brief");
     expect(reviewOrder).toHaveTextContent("Trace incoming impact");
     expect(reviewOrder).toHaveTextContent("Edit or confirm meaning");
     expect(reviewOrder).toHaveTextContent("Run sync gate");
