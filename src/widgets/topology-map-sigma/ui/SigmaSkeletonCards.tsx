@@ -176,7 +176,7 @@ const DRAG_CLUSTER_HULL_PAD_PX = 14;
 /** hover 팝업 폭 추정(px) — flip 판정용 (max-w-[17rem]). */
 const HOVER_POP_W = 272;
 const BASE_ANCHOR_CARD_MAX_WIDTH_PX = 224;
-const SELECTED_FOCUS_CARD_MAX_WIDTH_PX = 248;
+const SELECTED_FOCUS_CARD_MAX_WIDTH_PX = 360;
 const ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX = 128;
 const SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN = '--topology-card-selected-focus-max-width';
 const TIER_CARD_MAX_WIDTH_TOKEN: Record<SkeletonCardModel['tier'], string> = {

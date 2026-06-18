@@ -617,6 +617,41 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   ).toBe(true);
 });
 
+test("Relief Focus selected capability card keeps its title readable in the installed app WebView size", async ({
+  page,
+}) => {
+  await openRelief(page, INSTALLED_APP_WEBVIEW, {
+    mode: "focus",
+    selectedSlug: "capability:topology-analysis-modes",
+  });
+
+  const selectedCard = page
+    .locator(
+      '[data-skeleton-card][data-slug="capability:topology-analysis-modes"][data-selected="true"]',
+    )
+    .first();
+  await expect(selectedCard).toBeVisible();
+  await expect(selectedCard).toHaveAttribute(
+    "data-card-max-width-token",
+    "--topology-card-selected-focus-max-width",
+  );
+  await expect(selectedCard.locator("[data-card-title]")).toHaveAttribute(
+    "data-card-title-lane-contract",
+    "selected-title-keeps-current-focus-readable",
+  );
+  const selectedTitleFits = await selectedCard
+    .locator("[data-card-title]")
+    .evaluate((element) => element.scrollWidth <= element.clientWidth + 1);
+  expect(
+    selectedTitleFits,
+    "Installed-app WebView Focus selected capability title should not truncate on the map",
+  ).toBe(true);
+  expect(
+    cardPairsThatIntersect(await visibleCardRects(page)),
+    "Wider selected Focus card should not overlap other visible Relief cards",
+  ).toEqual([]);
+});
+
 test("Relief overview panel owns the phone read layer above map cards", async ({ page }) => {
   await openRelief(page, PHONE_VIEWPORT, { mode: "map", requireHud: false });
 
