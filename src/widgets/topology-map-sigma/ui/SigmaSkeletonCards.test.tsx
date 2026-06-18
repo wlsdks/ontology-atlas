@@ -1843,8 +1843,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const hierarchySpine = container.querySelector(
       '[data-overview-hierarchy-spine="contains"][data-overview-connector-from="project:p"]',
     );
+    const hierarchyTerminal = container.querySelector(
+      '[data-overview-hierarchy-terminal="child"][data-overview-connector-from="project:p"]',
+    );
     const visiblePath = container.querySelector(
-      '[data-overview-connector-from="project:p"]:not([data-relation-hit-path]):not([data-overview-hierarchy-spine])',
+      '[data-overview-connector-from="project:p"]:not([data-relation-hit-path]):not([data-overview-hierarchy-spine]):not([data-overview-hierarchy-terminal])',
     );
 
     expect(hitPath).toBeInTheDocument();
@@ -1860,6 +1863,18 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(hierarchySpine).toHaveAttribute(
       "stroke-width",
       "var(--topology-relation-spine-halo-width)",
+    );
+    expect(hierarchyTerminal).toHaveAttribute(
+      "data-overview-hierarchy-terminal-contract",
+      "contains-edge-lands-on-child-card",
+    );
+    expect(hierarchyTerminal).toHaveAttribute(
+      "data-relation-spine-terminal-token",
+      "--topology-relation-spine-terminal",
+    );
+    expect(hierarchyTerminal).toHaveAttribute(
+      "r",
+      "var(--topology-relation-spine-terminal-radius)",
     );
     expect(visiblePath).toHaveAttribute("data-relation-quality", "strong");
     expect(visiblePath).toHaveAttribute(
@@ -1926,13 +1941,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     const visiblePaths = Array.from(
       container.querySelectorAll(
-        "[data-overview-connector-from]:not([data-relation-hit-path]):not([data-selected-relation-halo]):not([data-overview-hierarchy-spine])",
+        "[data-overview-connector-from]:not([data-relation-hit-path]):not([data-selected-relation-halo]):not([data-overview-hierarchy-spine]):not([data-overview-hierarchy-terminal])",
       ),
     );
     const hierarchySpines = container.querySelectorAll("[data-overview-hierarchy-spine]");
+    const hierarchyTerminals = container.querySelectorAll("[data-overview-hierarchy-terminal]");
 
     expect(visiblePaths).toHaveLength(2);
     expect(hierarchySpines).toHaveLength(2);
+    expect(hierarchyTerminals).toHaveLength(2);
     expect(visiblePaths[0]).toHaveAttribute("data-relation-quality", "weak");
     expect(visiblePaths[1]).toHaveAttribute("data-relation-quality", "strong");
     expect(visiblePaths[1]).toHaveAttribute(

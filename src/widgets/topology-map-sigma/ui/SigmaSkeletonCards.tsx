@@ -2873,6 +2873,29 @@ export function SigmaSkeletonCards({
       path.dataset.connectorAxis = ports.axis;
       path.dataset.connectorClearance = String(ports.clearance);
     };
+    const drawConnectorTerminal = (
+      terminal: SVGCircleElement,
+      sourceEl: HTMLElement | null | undefined,
+      targetEl: HTMLElement | null | undefined,
+    ) => {
+      const source = connectorCardRect(sourceEl);
+      const target = connectorCardRect(targetEl);
+      if (
+        !source ||
+        !target ||
+        sourceEl?.dataset.surfaceHidden === 'true' ||
+        targetEl?.dataset.surfaceHidden === 'true'
+      ) {
+        terminal.style.opacity = '0';
+        return;
+      }
+      const ports = connectorPorts(source, target);
+      terminal.setAttribute('cx', String(ports.ex));
+      terminal.setAttribute('cy', String(ports.ey));
+      terminal.dataset.connectorAxis = ports.axis;
+      terminal.dataset.connectorClearance = String(ports.clearance);
+      terminal.style.opacity = '';
+    };
 
     // pass 3 — 커넥터: 포트를 카드 안쪽으로 넣고 edge mask 아래에서
     // 시작/종료시킨다. 밝은 선이 카드 바깥으로 삐져나와 보이는 현상을 막는다.
@@ -2912,6 +2935,15 @@ export function SigmaSkeletonCards({
         const fromEl = from ? elBySlug.get(from) : null;
         const toEl = to ? elBySlug.get(to) : null;
         drawConnector(path, fromEl, toEl);
+      }
+      for (const terminal of svg.querySelectorAll<SVGCircleElement>(
+        '[data-overview-hierarchy-terminal]',
+      )) {
+        const from = terminal.dataset.overviewConnectorFrom;
+        const to = terminal.dataset.overviewConnectorTo;
+        const fromEl = from ? elBySlug.get(from) : null;
+        const toEl = to ? elBySlug.get(to) : null;
+        drawConnectorTerminal(terminal, fromEl, toEl);
       }
       const relationLabelBadgesById = new Map<string, SVGRectElement>();
       for (const badge of svg.querySelectorAll<SVGRectElement>('[data-relation-label-bg]')) {
@@ -3650,6 +3682,22 @@ export function SigmaSkeletonCards({
                     strokeWidth={tone.strokeWidth}
                     opacity={tone.opacity}
                   />
+                  {!selected ? (
+                    <circle
+                      data-overview-connector-from={connector.from}
+                      data-overview-connector-to={connector.to}
+                      data-overview-hierarchy-terminal="child"
+                      data-overview-hierarchy-terminal-contract="contains-edge-lands-on-child-card"
+                      data-relation-kind={connector.kind}
+                      data-relation-quality={connector.relationQuality ?? 'supported'}
+                      data-relation-type={connector.relationType}
+                      data-relation-spine-terminal-token="--topology-relation-spine-terminal"
+                      data-relation-spine-terminal-radius-token="--topology-relation-spine-terminal-radius"
+                      className="pointer-events-none"
+                      fill="var(--topology-relation-spine-terminal)"
+                      r="var(--topology-relation-spine-terminal-radius)"
+                    />
+                  ) : null}
                 </g>
               );
             })

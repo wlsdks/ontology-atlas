@@ -54,6 +54,11 @@ keeping relation quality, evidence, and selection on the foreground stroke. The
 spine is intentionally limited to overview containment links so loose or
 review-needed relations do not gain false structural authority.
 
+Those overview containment links also place a small tokenized terminal at the
+child-card landing point. This gives non-developer readers a direction cue for
+parent → child containment without adding arrowheads, extra labels, or another
+legend row.
+
 선택된 relation label 은 36px hit target 안에 더 작은 visual badge 를 두어 클릭은
 쉽고 지도 표식은 작게 유지한다. selected relation inspector 는
 `--topology-selected-relation-card-*` 토큰으로 우측 compact rail 에 고정해 중앙
