@@ -207,9 +207,10 @@ names in component data markers and tests whenever a surface depends on
   `--topology-relation-gate-*-border` /
   `--topology-relation-gate-*-text`: relation label gate chips for MCP/CLI,
   preflight, and review flows. Gate color is agent handoff state, not
-  decorative status color. The gate chip is visible only on the selected map
-  relation label; scan-level labels stay compact with type, quality, and
-  evidence.
+  decorative status color. The gate chip is visible on scan-level and selected
+  map relation labels so a user can see the handoff action before opening the
+  relation inspector; selected labels keep the same chip in the active fact
+  route.
 - `--topology-path-endpoint-surface` /
   `--topology-path-endpoint-border` /
   `--topology-path-endpoint-text`: Path mode A/B endpoint badges on map cards.
@@ -602,11 +603,11 @@ Use named `--topology-*` tokens or add a documented token before changing:
   next action stay visible.
 
 Relation-label handoff state is aggregated on the skeleton-cards root with
-`data-relation-label-handoff-contract="label-level-mcp-cli-fallback"`. When a
-map label is selected, the root must also expose the selected label's gate,
-primary MCP action, CLI fallback command, fact route, quality, and evidence so
-installed-app WebView evidence can prove the label is an actionable ontology
-fact, not just a decorative badge.
+`data-relation-label-handoff-contract="label-level-mcp-cli-fallback"`. Every map
+label hit target must expose its gate, primary MCP action, CLI fallback command,
+fact route, quality, and evidence; when a map label is selected, the root also
+mirrors the selected label's handoff state so installed-app WebView evidence can
+prove the label is an actionable ontology fact, not just a decorative badge.
 
 Relation-label geometry is also a frame-level contract. The skeleton-cards root
 must expose `data-relation-label-geometry-contract="frame-positioned-hit-targets"`

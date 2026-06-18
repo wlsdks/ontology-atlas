@@ -997,6 +997,32 @@ for (const viewport of VIEWPORTS) {
     await expect(relationButton.locator("[data-relation-evidence-glyph]")).toHaveText(
       /S\d+|S9\+|A|R/,
     );
+    await expect(relationButton).toHaveAttribute(
+      "data-agent-gate-kind",
+      /handoff-ready|preflight-first|review-first/,
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-primary-copy-action",
+      /relation_check|explain_relation/,
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-cli-fallback-command",
+      /ontology-atlas (relation-check|explain)/,
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-fact-route",
+      "fact>evidence>gate>action",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-agent-gate-visible",
+      "true",
+    );
+    const scanGateChip = relationButton.locator("[data-relation-label-agent-gate]");
+    await expect(scanGateChip).toBeVisible();
+    await expect(scanGateChip).toHaveAttribute(
+      "data-route-chip-text",
+      /MCP\/CLI|check|review/,
+    );
     const relationButtonBox = await relationButton.boundingBox();
     if (!relationButtonBox) {
       throw new Error(`selected relation HTML badge should expose a box at ${viewport.label}`);

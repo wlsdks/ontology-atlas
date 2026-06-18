@@ -2053,7 +2053,22 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     expect(labelHit).toHaveAttribute("data-relation-quality", "weak");
     expect(labelHit).toHaveAttribute("data-relation-evidence-state", "needs-review");
-    expect(labelHit).toHaveAttribute("aria-label", "contains relation · weak · needs review");
+    expect(labelHit).toHaveAttribute(
+      "aria-label",
+      "contains relation · weak · needs review · check · relation check",
+    );
+    expect(labelHit).toHaveAttribute("data-agent-gate-kind", "preflight-first");
+    expect(labelHit).toHaveAttribute("data-primary-copy-action", "relation_check");
+    expect(labelHit).toHaveAttribute(
+      "data-cli-fallback-command",
+      "ontology-atlas relation-check 'project:p' 'domain:d1' 'contains' [vault]",
+    );
+    expect(labelHit).toHaveAttribute("data-relation-fact-route", "fact>evidence>gate>action");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-quality", "weak");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-evidence", "needs-review");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-gate", "preflight-first");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-action", "relation_check");
+    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "true");
     expect(labelHit).toHaveAttribute("data-label-geometry-source", "html-hit-target");
     expect(labelHit?.getAttribute("data-relation-label-viewport-clamp-contract")).toMatch(
       /centered-within-viewport|compacted-to-viewport-edge/,
@@ -2118,6 +2133,22 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-glow-token",
       "--topology-relation-quality-weak-glow",
     );
+    const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
+    expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "preflight-first");
+    expect(gateChip).toHaveAttribute("data-primary-copy-action", "relation_check");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "check");
+    expect(gateChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-relation-gate-preflight-surface",
+    );
+    expect(gateChip).toHaveAttribute(
+      "data-border-token",
+      "--topology-relation-gate-preflight-border",
+    );
+    expect(gateChip).toHaveAttribute(
+      "data-text-token",
+      "--topology-relation-gate-preflight-text",
+    );
     expect(qualityDot?.className).toContain(
       "bg-[color:var(--topology-relation-quality-weak-dot)]",
     );
@@ -2179,7 +2210,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     expect(labelHit).toHaveAttribute("data-relation-evidence-state", "source-backed");
     expect(labelHit).toHaveAttribute("data-relation-evidence-count", "3");
-    expect(labelHit).toHaveAttribute("aria-label", "contains relation · strong · 3 sources");
+    expect(labelHit).toHaveAttribute(
+      "aria-label",
+      "contains relation · strong · 3 sources · MCP/CLI · explain relation",
+    );
+    expect(labelHit).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
+    expect(labelHit).toHaveAttribute("data-primary-copy-action", "explain_relation");
+    expect(labelHit).toHaveAttribute(
+      "data-cli-fallback-command",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "true");
     expect(evidenceChip).toHaveAttribute(
       "data-relation-evidence-chip-contract",
       "proof-state-token",
@@ -2190,6 +2231,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "S3");
     expect(evidenceChip).toHaveTextContent("S3");
+    const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
+    expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "MCP/CLI");
   });
 
   it("선택된 source-backed relation label 은 agent handoff gate 를 지도 위에 표시한다", () => {

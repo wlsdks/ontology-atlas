@@ -2877,15 +2877,13 @@ export function SigmaSkeletonCards({
             8;
         const relationHitDisabled = activeDragCluster !== null;
         const badgeWidth = Math.max(
-          RELATION_BADGE_MIN_WIDTH_PX,
-          (label.textContent?.length ?? 0) * RELATION_BADGE_CHAR_WIDTH_PX +
-            RELATION_BADGE_PAD_X_PX +
+            RELATION_BADGE_MIN_WIDTH_PX,
+            (label.textContent?.length ?? 0) * RELATION_BADGE_CHAR_WIDTH_PX +
+              RELATION_BADGE_PAD_X_PX +
             (isEgoBadge
               ? RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
-                RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX
-              : 0) +
-            (labelButton?.dataset.relationLabelAgentGateVisible === 'true'
-              ? RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX
+                RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX +
+                RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX
               : 0),
         );
         const usesHtmlBadge = isEgoBadge && labelButton !== null;
@@ -3706,7 +3704,7 @@ export function SigmaSkeletonCards({
             RELATION_BADGE_PAD_X_PX +
             RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
             RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX +
-            (selected ? RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX : 0),
+            RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX,
         );
         return (
           <button
@@ -3723,15 +3721,15 @@ export function SigmaSkeletonCards({
             data-relation-type-label={labelText}
             data-relation-label-readable-text={`${labelText} · ${evidenceChipText}`}
             data-selected-relation={selected ? 'true' : 'false'}
-            data-agent-gate-kind={selected ? agentGateKind : undefined}
-            data-primary-copy-action={selected ? primaryCopyAction : undefined}
-            data-cli-fallback-command={selected ? cliFallbackCommand : undefined}
-            data-relation-fact-route={selected ? 'fact>evidence>gate>action' : undefined}
-            data-relation-fact-route-quality={selected ? quality : undefined}
-            data-relation-fact-route-evidence={selected ? evidenceState : undefined}
-            data-relation-fact-route-gate={selected ? agentGateKind : undefined}
-            data-relation-fact-route-action={selected ? primaryCopyAction : undefined}
-            data-relation-label-agent-gate-visible={selected ? 'true' : 'false'}
+            data-agent-gate-kind={agentGateKind}
+            data-primary-copy-action={primaryCopyAction}
+            data-cli-fallback-command={cliFallbackCommand}
+            data-relation-fact-route="fact>evidence>gate>action"
+            data-relation-fact-route-quality={quality}
+            data-relation-fact-route-evidence={evidenceState}
+            data-relation-fact-route-gate={agentGateKind}
+            data-relation-fact-route-action={primaryCopyAction}
+            data-relation-label-agent-gate-visible="true"
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             data-label-geometry-source="html-hit-target"
             data-relation-label-card-clearance-token="--topology-relation-label-card-clearance"
@@ -3755,9 +3753,7 @@ export function SigmaSkeletonCards({
             data-visible-badge-width={visibleBadgeWidth}
             data-visible-badge-height={RELATION_BADGE_HEIGHT_PX}
             aria-label={`${tEdgeTooltip('relationAriaLabel', { label: labelText })} · ${quality} · ${evidenceText}${
-              selected
-                ? ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
-                : ''
+              ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
             }`}
             className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-[33px] items-center justify-center overflow-visible whitespace-nowrap bg-transparent font-mono text-[9px] uppercase tracking-[0.07em] transition-[opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-relation-label-focus-ring)] motion-reduce:transition-none"
             style={{
@@ -3847,21 +3843,19 @@ export function SigmaSkeletonCards({
               >
                 {evidenceChipText}
               </span>
-              {selected ? (
-                <span
-                  data-relation-label-agent-gate={agentGateKind}
-                  data-primary-copy-action={primaryCopyAction}
-                  data-route-chip-text={agentGateText}
-                  data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
-                  data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
-                  data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
-                  className={`ml-0.5 inline-flex h-3.5 min-w-[1.55rem] shrink-0 items-center justify-center rounded-full border px-0.5 text-[7px] font-semibold leading-none tracking-normal ${relationAgentGateChipTone(
-                    agentGateKind,
-                  )}`}
-                >
-                  {agentGateText}
-                </span>
-              ) : null}
+              <span
+                data-relation-label-agent-gate={agentGateKind}
+                data-primary-copy-action={primaryCopyAction}
+                data-route-chip-text={agentGateText}
+                data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
+                data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
+                data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
+                className={`ml-0.5 inline-flex h-3.5 min-w-[1.55rem] shrink-0 items-center justify-center rounded-full border px-0.5 text-[7px] font-semibold leading-none tracking-normal ${relationAgentGateChipTone(
+                  agentGateKind,
+                )}`}
+              >
+                {agentGateText}
+              </span>
               {selected ? (
                 <>
                 <span
