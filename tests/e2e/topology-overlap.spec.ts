@@ -146,6 +146,7 @@ async function visibleCardRects(page: Page) {
         const style = window.getComputedStyle(el);
         return {
           text: el.textContent?.trim() ?? "",
+          pathRole: el.getAttribute("data-path-role"),
           display: style.display,
           opacity: Number(style.opacity || "1"),
           surfaceHidden: el.getAttribute("data-surface-hidden") === "true",
@@ -2169,6 +2170,20 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "data-hover-text-token",
     "--topology-path-proof-summary-hover-text",
   );
+  const preProofPanelRect = await rectOf(panel);
+  const preProofVisibleCards = await visibleCardRects(page);
+  expect(
+    cardPairsThatIntersect(preProofVisibleCards),
+    "Phone path endpoint cards must not overlap before proof disclosure owns the panel",
+  ).toEqual([]);
+  const preProofEndpointPanelOverlap = preProofVisibleCards
+    .filter((card) => card.pathRole === "source" || card.pathRole === "target")
+    .filter((card) => intersects(card, preProofPanelRect, 8))
+    .map((card) => card.text);
+  expect(
+    preProofEndpointPanelOverlap,
+    "Phone path endpoint cards must stay clear before proof disclosure owns the panel",
+  ).toEqual([]);
   await page.getByTestId("topology-path-proof-summary").click();
   await expect(page.getByTestId("topology-path-proof-kicker")).toHaveAttribute(
     "data-text-token",
@@ -2250,10 +2265,6 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   await expect(sourceCard).toBeVisible();
   await expect(targetCard).toBeVisible();
   await expect(page.getByTestId("topology-node-popover")).toHaveCount(0);
-  expect(
-    cardPairsThatIntersect(await visibleCardRects(page)),
-    "Phone path endpoint cards must not overlap after the result banner collapses",
-  ).toEqual([]);
   const scrollOverflow = await page.evaluate(() => ({
     x: document.documentElement.scrollWidth - window.innerWidth,
     y: document.documentElement.scrollHeight - window.innerHeight,

@@ -1035,6 +1035,7 @@ function hideSkeletonCard(el: HTMLElement) {
 function separatePathEndpointCards(
   orderedEls: readonly HTMLElement[],
   containerRect: DOMRect,
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }> = [],
 ) {
   const source = orderedEls.find(
     (el) =>
@@ -1071,26 +1072,112 @@ function separatePathEndpointCards(
   }
 
   const gap = 12;
-  if (targetRect.top >= sourceRect.top) {
-    const dy = Math.min(
-      sourceRect.bottom + gap - targetRect.top,
-      Math.max(0, containerRect.height - SAFE_VIEWPORT_MARGIN - targetRect.bottom),
-    );
-    if (dy > 0) {
-      target.style.transform = `${target.style.transform} translate(0, ${dy}px)`;
-      target.dataset.pathEndpointPairSeparated = 'target-shifted';
-      return;
+  const candidates = [
+    {
+      el: target,
+      rect: targetRect,
+      dy: sourceRect.bottom + gap - targetRect.top,
+      marker: 'target-shifted',
+    },
+    {
+      el: source,
+      rect: sourceRect,
+      dy: targetRect.top - gap - sourceRect.bottom,
+      marker: 'source-shifted',
+    },
+  ]
+    .map((candidate) => {
+      const moved = {
+        left: candidate.rect.left,
+        top: candidate.rect.top + candidate.dy,
+        right: candidate.rect.right,
+        bottom: candidate.rect.bottom + candidate.dy,
+      };
+      return {
+        ...candidate,
+        moved,
+        inside:
+          moved.top >= SAFE_VIEWPORT_MARGIN &&
+          moved.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN,
+        clear: !fixedSurfaceRects.some((surface) => rectsOverlap(moved, surface)),
+      };
+    })
+    .filter((candidate) => candidate.dy !== 0 && candidate.inside && candidate.clear);
+  const best = candidates[0];
+  if (!best) return;
+  best.el.style.transform = `${best.el.style.transform} translate(0, ${best.dy}px)`;
+  best.el.dataset.pathEndpointPairSeparated = best.marker;
+}
+
+function restorePathEndpointsFromFixedSurfaces(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>,
+  domWriteStats: SkeletonDomWriteStats,
+) {
+  const pathAnalysisPanelRects = collectPathAnalysisPanelRects(containerRect);
+  for (const el of orderedEls) {
+    if (el.dataset.pathRole !== 'source' && el.dataset.pathRole !== 'target') {
+      continue;
+    }
+    const endpointBox = el.getBoundingClientRect();
+    const endpointRect = {
+      left: endpointBox.left - containerRect.left,
+      top: endpointBox.top - containerRect.top,
+      right: endpointBox.right - containerRect.left,
+      bottom: endpointBox.bottom - containerRect.top,
+    };
+    const endpointShift = clampRectToViewportAndFixedSurfaces({
+      rect: endpointRect,
+      containerWidth: containerRect.width,
+      containerHeight: containerRect.height,
+      fixedSurfaceRects,
+    });
+    if (endpointShift.dx !== 0 || endpointShift.dy !== 0) {
+      setSkeletonStyleValue(
+        el,
+        'transform',
+        `${el.style.transform} translate(${endpointShift.dx}px, ${endpointShift.dy}px)`,
+        domWriteStats,
+      );
+      el.dataset.pathEndpointRestored = 'safe-shift';
+    } else {
+      delete el.dataset.pathEndpointRestored;
+    }
+    if (pathAnalysisPanelRects.some((surface) => rectsOverlap(endpointShift.rect, surface))) {
+      hideSkeletonCard(el);
+      el.dataset.pathEndpointPanelClearance = 'hidden-under-expanded-panel';
+    } else {
+      showSkeletonCard(el);
+      delete el.dataset.pathEndpointPanelClearance;
     }
   }
+}
 
-  const dy = Math.max(
-    targetRect.top - gap - sourceRect.bottom,
-    SAFE_VIEWPORT_MARGIN - sourceRect.top,
+function collectPathAnalysisPanelRects(containerRect: DOMRect) {
+  if (typeof document === 'undefined') return [];
+  const panel = document.querySelector<HTMLElement>(
+    '[data-testid="topology-analysis-panel"][data-analysis-mode="path"]',
   );
-  if (dy < 0) {
-    source.style.transform = `${source.style.transform} translate(0, ${dy}px)`;
-    source.dataset.pathEndpointPairSeparated = 'source-shifted';
+  if (!panel) return [];
+  const rect = panel.getBoundingClientRect();
+  const style = getComputedStyle(panel);
+  if (
+    style.display === 'none' ||
+    style.visibility === 'hidden' ||
+    rect.width <= 0 ||
+    rect.height <= 0
+  ) {
+    return [];
   }
+  return [
+    {
+      left: rect.left - containerRect.left - COLLISION_PAD,
+      top: rect.top - containerRect.top - COLLISION_PAD,
+      right: rect.right - containerRect.left + ANALYSIS_PANEL_TRAILING_PAD,
+      bottom: rect.bottom - containerRect.top + ANALYSIS_PANEL_BLOCK_END_PAD,
+    },
+  ];
 }
 
 function isElementInsideContainerViewport(el: HTMLElement, containerRect: DOMRect): boolean {
@@ -2387,36 +2474,28 @@ export function SigmaSkeletonCards({
       }
     }
     if (selectedRelationEdgeId === null) {
+      restorePathEndpointsFromFixedSurfaces(
+        orderedEls,
+        containerRect,
+        fixedSurfaceRects,
+        domWriteStats,
+      );
       for (const el of orderedEls) {
         if (el.dataset.pathRole !== 'source' && el.dataset.pathRole !== 'target') {
           continue;
         }
+        if (el.dataset.surfaceHidden === 'true') {
+          continue;
+        }
         const endpointBox = el.getBoundingClientRect();
-        let endpointRect = {
+        const endpointRect = {
           left: endpointBox.left - containerRect.left,
           top: endpointBox.top - containerRect.top,
           right: endpointBox.right - containerRect.left,
           bottom: endpointBox.bottom - containerRect.top,
         };
-        const endpointShift = clampRectToViewportAndFixedSurfaces({
-          rect: endpointRect,
-          containerWidth: containerRect.width,
-          containerHeight: containerRect.height,
-          fixedSurfaceRects,
-        });
-        if (endpointShift.dx !== 0 || endpointShift.dy !== 0) {
-          setSkeletonStyleValue(
-            el,
-            'transform',
-            `${el.style.transform} translate(${endpointShift.dx}px, ${endpointShift.dy}px)`,
-            domWriteStats,
-          );
-          el.dataset.pathEndpointRestored = 'safe-shift';
-          endpointRect = endpointShift.rect;
-        } else {
-          delete el.dataset.pathEndpointRestored;
-        }
         if (fixedSurfaceRects.some((surface) => rectsOverlap(endpointRect, surface))) {
+          showSkeletonCard(el);
           continue;
         }
         for (const other of orderedEls) {
@@ -2437,7 +2516,13 @@ export function SigmaSkeletonCards({
         }
         showSkeletonCard(el);
       }
-      separatePathEndpointCards(orderedEls, containerRect);
+      separatePathEndpointCards(orderedEls, containerRect, fixedSurfaceRects);
+      restorePathEndpointsFromFixedSurfaces(
+        orderedEls,
+        containerRect,
+        fixedSurfaceRects,
+        domWriteStats,
+      );
     }
     const relationLabelCardBlockers: Array<{
       left: number;
