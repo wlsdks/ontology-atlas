@@ -1073,11 +1073,31 @@ for (const viewport of VIEWPORTS) {
       "fact>evidence>gate>action",
     );
     await expect(relationButton).toHaveAttribute(
+      "data-relation-label-fact-segmentation",
+      "type>evidence>gate",
+    );
+    await expect(relationButton).toHaveAttribute(
       "data-relation-label-agent-gate-visible",
       "true",
     );
+    const visibleRelationBadge = relationButton.locator(
+      "[data-relation-label-visible-badge]",
+    );
+    await expect(visibleRelationBadge).toHaveAttribute(
+      "data-relation-label-fact-segmentation",
+      "type>evidence>gate",
+    );
+    await expect(visibleRelationBadge).toHaveAttribute(
+      "data-relation-label-segment-gap-token",
+      "--topology-relation-label-segment-gap",
+    );
+    await expect(visibleRelationBadge).toHaveAttribute(
+      "data-relation-label-segment-divider-token",
+      "--topology-relation-label-border",
+    );
     const scanGateChip = relationButton.locator("[data-relation-label-agent-gate]");
     await expect(scanGateChip).toBeVisible();
+    await expect(scanGateChip).toHaveAttribute("data-relation-label-segment", "gate");
     await expect(scanGateChip).toHaveAttribute(
       "data-route-chip-text",
       /explain|check|review/,
@@ -1188,6 +1208,11 @@ for (const viewport of VIEWPORTS) {
       "data-relation-label-type-text-contract",
       "typed-fact-label-stays-readable",
     );
+    await expect(relationTypeText).toHaveAttribute("data-relation-label-segment", "type");
+    await expect(relationTypeText).toHaveAttribute(
+      "data-segment-divider-token",
+      "--topology-relation-label-border",
+    );
     await expect(relationTypeText).toHaveText(/contains|depends|relates|describes|uses/);
     const relationTypeTextFit = await relationTypeText.evaluate(
       (element) => element.scrollWidth <= element.clientWidth + 1,
@@ -1195,6 +1220,15 @@ for (const viewport of VIEWPORTS) {
     expect(
       relationTypeTextFit,
       `selected relation type text should not truncate before evidence/gate chips at ${viewport.label}`,
+    ).toBe(true);
+    const visibleRelationSegmentsFit = await relationButton
+      .locator("[data-relation-label-segment]")
+      .evaluateAll((segments) =>
+        segments.every((segment) => segment.scrollWidth <= segment.clientWidth + 1),
+      );
+    expect(
+      visibleRelationSegmentsFit,
+      `relation label type/evidence/gate segments should fit inside the visible badge at ${viewport.label}`,
     ).toBe(true);
     await expect(relationButton.locator('[data-route-chip="fact"]')).toHaveAttribute(
       "data-route-chip-text",

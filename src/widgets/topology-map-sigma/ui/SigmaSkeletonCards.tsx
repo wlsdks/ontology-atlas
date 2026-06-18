@@ -3770,6 +3770,7 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-evidence={evidenceState}
             data-relation-fact-route-gate={agentGateKind}
             data-relation-fact-route-action={primaryCopyAction}
+            data-relation-label-fact-segmentation="type>evidence>gate"
             data-relation-label-agent-gate-visible="true"
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             data-label-geometry-source="html-hit-target"
@@ -3850,7 +3851,10 @@ export function SigmaSkeletonCards({
               data-relation-label-selected-shadow-token={
                 selected ? '--topology-relation-label-selected-shadow' : undefined
               }
-              className="inline-flex h-6 max-w-full items-center justify-center gap-1 overflow-hidden rounded-full border px-1.5 shadow-[0_5px_14px_rgba(0,0,0,0.20)]"
+              data-relation-label-fact-segmentation="type>evidence>gate"
+              data-relation-label-segment-gap-token="--topology-relation-label-segment-gap"
+              data-relation-label-segment-divider-token="--topology-relation-label-border"
+              className="inline-flex h-6 max-w-full items-center justify-center gap-[var(--topology-relation-label-segment-gap)] overflow-hidden rounded-full border px-2 shadow-[0_5px_14px_rgba(0,0,0,0.20)]"
               style={{
                 backgroundColor: selected
                   ? 'var(--topology-relation-label-selected-surface)'
@@ -3867,37 +3871,41 @@ export function SigmaSkeletonCards({
                 data-relation-quality-dot
                 data-dot-token={relationQualityDotToken(quality)}
                 data-glow-token={relationQualityGlowToken(quality)}
+                data-relation-label-segment="quality"
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(
                   quality,
                 )}`}
               />
               <span
                 data-relation-label-type-text
+                data-relation-label-segment="type"
                 data-relation-label-type-text-contract="typed-fact-label-stays-readable"
-                className="shrink-0"
+                data-segment-divider-token="--topology-relation-label-border"
+                className="shrink-0 border-r border-[color:var(--topology-relation-label-border)] pr-1.5"
               >
                 {labelText}
               </span>
-              {' '}
               <span
                 data-relation-evidence-glyph={evidenceState}
+                data-relation-label-segment="evidence"
                 data-relation-evidence-chip-contract="proof-state-token"
                 data-relation-evidence-chip-text={evidenceChipText}
                 data-surface-token="--topology-relation-evidence-chip-surface"
                 data-border-token="--topology-relation-evidence-chip-border"
                 data-text-token="--topology-relation-evidence-chip-text"
-                className="ml-1 inline-flex h-3.5 min-w-[1.2rem] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-relation-evidence-chip-border)] bg-[color:var(--topology-relation-evidence-chip-surface)] px-1 text-[8px] font-semibold leading-none tracking-normal text-[color:var(--topology-relation-evidence-chip-text)]"
+                className="inline-flex h-3.5 min-w-[1.2rem] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-relation-evidence-chip-border)] bg-[color:var(--topology-relation-evidence-chip-surface)] px-1 text-[8px] font-semibold leading-none tracking-normal text-[color:var(--topology-relation-evidence-chip-text)]"
               >
                 {evidenceChipText}
               </span>
               <span
                 data-relation-label-agent-gate={agentGateKind}
+                data-relation-label-segment="gate"
                 data-primary-copy-action={primaryCopyAction}
                 data-route-chip-text={agentGateText}
                 data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
                 data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
                 data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
-                className={`ml-0.5 inline-flex h-3.5 min-w-[1.55rem] shrink-0 items-center justify-center rounded-full border px-0.5 text-[7px] font-semibold leading-none tracking-normal ${relationAgentGateChipTone(
+                className={`inline-flex h-3.5 min-w-[1.55rem] shrink-0 items-center justify-center rounded-full border px-0.5 text-[7px] font-semibold leading-none tracking-normal ${relationAgentGateChipTone(
                   agentGateKind,
                 )}`}
               >
@@ -3980,14 +3988,17 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-evidence={evidenceState}
             data-relation-fact-route-gate={agentGateKind}
             data-relation-fact-route-action={primaryCopyAction}
+            data-relation-label-fact-segmentation="type>evidence>gate"
             data-relation-label-compact="false"
             data-relation-label-density="focus-token"
             data-relation-label-selected-surface-token="--topology-relation-label-selected-surface"
             data-relation-label-selected-border-token="--topology-relation-label-selected-border"
             data-relation-label-selected-shadow-token="--topology-relation-label-selected-shadow"
             data-selected-relation-halo-token="--topology-relation-label-selected-surface"
+            data-relation-label-segment-gap-token="--topology-relation-label-segment-gap"
+            data-relation-label-segment-divider-token="--topology-relation-label-border"
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full border px-1.5 font-mono text-[9px] uppercase tracking-[0.07em] text-[color:var(--color-text-secondary)]"
+            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-[var(--topology-relation-label-segment-gap)] overflow-hidden whitespace-nowrap rounded-full border px-2 font-mono text-[9px] uppercase tracking-[0.07em] text-[color:var(--color-text-secondary)]"
             style={{
               backgroundColor: 'var(--topology-relation-label-selected-surface)',
               borderColor: 'var(--topology-relation-label-selected-border)',
@@ -4001,39 +4012,43 @@ export function SigmaSkeletonCards({
               data-relation-quality-dot
               data-dot-token={relationQualityDotToken(quality)}
               data-glow-token={relationQualityGlowToken(quality)}
+              data-relation-label-segment="quality"
               className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(
                 quality,
               )}`}
             />
             <span
               data-relation-label-type-text
+              data-relation-label-segment="type"
               data-relation-label-type-text-contract="typed-fact-label-stays-readable"
-              className="shrink-0"
+              data-segment-divider-token="--topology-relation-label-border"
+              className="shrink-0 border-r border-[color:var(--topology-relation-label-border)] pr-1.5"
             >
               {labelText}
             </span>
-            {' '}
             <span
               aria-hidden="true"
               data-relation-evidence-glyph={evidenceState}
+              data-relation-label-segment="evidence"
               data-relation-evidence-chip-contract="proof-state-token"
               data-relation-evidence-chip-text={evidenceChipText}
               data-surface-token="--topology-relation-evidence-chip-surface"
               data-border-token="--topology-relation-evidence-chip-border"
               data-text-token="--topology-relation-evidence-chip-text"
-              className="ml-1 inline-flex h-3.5 min-w-[1.2rem] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-relation-evidence-chip-border)] bg-[color:var(--topology-relation-evidence-chip-surface)] px-1 text-[8px] font-semibold leading-none tracking-normal text-[color:var(--topology-relation-evidence-chip-text)]"
+              className="inline-flex h-3.5 min-w-[1.2rem] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-relation-evidence-chip-border)] bg-[color:var(--topology-relation-evidence-chip-surface)] px-1 text-[8px] font-semibold leading-none tracking-normal text-[color:var(--topology-relation-evidence-chip-text)]"
             >
               {evidenceChipText}
             </span>
             <span
               aria-hidden="true"
               data-relation-label-agent-gate={agentGateKind}
+              data-relation-label-segment="gate"
               data-primary-copy-action={primaryCopyAction}
               data-route-chip-text={agentGateText}
               data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
               data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
               data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
-              className={`ml-0.5 inline-flex h-3.5 min-w-[1.55rem] shrink-0 items-center justify-center rounded-full border px-0.5 text-[7px] font-semibold leading-none tracking-normal ${relationAgentGateChipTone(
+              className={`inline-flex h-3.5 min-w-[1.55rem] shrink-0 items-center justify-center rounded-full border px-0.5 text-[7px] font-semibold leading-none tracking-normal ${relationAgentGateChipTone(
                 agentGateKind,
               )}`}
             >
