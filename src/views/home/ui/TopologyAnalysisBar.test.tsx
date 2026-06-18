@@ -1631,10 +1631,16 @@ describe("TopologyAnalysisBar", () => {
       "data-overview-handoff-label-low-height-contract",
       "hidden-under-800px",
     );
+    expect(screen.getByTestId("topology-overview-handoff-actions").querySelector(
+      "[data-overview-handoff-label-low-height-contract]",
+    )).toHaveClass("topology-overview-low-height-sr-only");
     expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
       "data-min-height-token",
       "--topology-overview-handoff-summary-min-height",
     );
+    expect(
+      screen.getByTestId("topology-overview-handoff-summary").closest("details"),
+    ).toHaveClass("topology-overview-low-height-sr-only");
     expect(screen.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
       "data-compact-padding-y-token",
       "--topology-overview-notice-compact-padding-y",
@@ -1642,6 +1648,9 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
       "data-low-height-overview-notice-contract",
       "sr-only-while-primary-copy-stays-visible",
+    );
+    expect(screen.getByTestId("topology-overview-relation-notice")).toHaveClass(
+      "topology-overview-low-height-sr-only",
     );
   });
 
