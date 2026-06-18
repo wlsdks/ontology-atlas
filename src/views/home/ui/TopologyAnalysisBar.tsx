@@ -854,9 +854,13 @@ export function TopologyAnalysisBar({
       ? "overview-14-inch-compact"
       : panelMode === "path" && headerAlignedPanel
         ? "path-14-inch-rail"
-      : headerAlignedPanel
-        ? "header-aligned"
-        : "mode-compact";
+        : headerAlignedPanel
+          ? "header-aligned"
+          : "mode-compact";
+  const panelBodyScrollEndReserveToken =
+    panelMode === "path"
+      ? "--topology-analysis-panel-path-collapsed-scroll-end-reserve"
+      : "--topology-analysis-panel-compact-scroll-end-reserve";
 
   return (
     <section
@@ -914,7 +918,7 @@ export function TopologyAnalysisBar({
           ? "--topology-panel-phone-utility-rail-reserve"
           : undefined
       }
-      data-panel-compact-scroll-end-reserve-token="--topology-analysis-panel-compact-scroll-end-reserve"
+      data-panel-compact-scroll-end-reserve-token={panelBodyScrollEndReserveToken}
       data-health-repair-lane-contract={
         panelMode === "health" && healthAction
           ? "target-to-builder-to-sync"
@@ -953,8 +957,9 @@ export function TopologyAnalysisBar({
       <div
         data-testid="topology-analysis-panel-body"
         data-panel-body-scroll-contract="compact-scrolls-above-bottom-tab"
-        data-panel-body-scroll-end-reserve-token="--topology-analysis-panel-compact-scroll-end-reserve"
-        className="flex flex-col gap-3 max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] max-md:pr-1"
+        data-panel-body-scroll-end-reserve-token={panelBodyScrollEndReserveToken}
+        className="flex flex-col gap-3 max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-path-collapsed-scroll-end-reserve)] data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=focus]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=health]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] max-md:pr-1"
+        data-analysis-body-mode={panelMode}
       >
         <div
           className="grid w-full grid-cols-4 gap-1 rounded-lg bg-[color:var(--topology-analysis-mode-rail-surface)] p-1"

@@ -548,6 +548,7 @@
     --topology-analysis-panel-compact-scroll-end-reserve: calc(
       var(--topology-mobile-bottom-tab-reserve) + 12px
     );
+    --topology-analysis-panel-path-collapsed-scroll-end-reserve: 12px;
     --topology-shortcuts-help-phone-top: 188px;
     --topology-shortcuts-help-desktop-top: 228px;
     --topology-node-popover-fluid-width: min(568px, calc(100vw - 1.5rem));

@@ -2098,6 +2098,21 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "data-panel-phone-utility-reserve-token",
     "--topology-panel-phone-utility-rail-reserve",
   );
+  await expect(panel).toHaveAttribute(
+    "data-panel-compact-scroll-end-reserve-token",
+    "--topology-analysis-panel-path-collapsed-scroll-end-reserve",
+  );
+  const panelBody = page.getByTestId("topology-analysis-panel-body");
+  await expect(panelBody).toHaveAttribute("data-analysis-body-mode", "path");
+  await expect(panelBody).toHaveAttribute(
+    "data-panel-body-scroll-end-reserve-token",
+    "--topology-analysis-panel-path-collapsed-scroll-end-reserve",
+  );
+  const collapsedPanelRect = await rectOf(panel);
+  expect(
+    collapsedPanelRect.height,
+    "phone Path panel should not carry the bottom-tab reserve while proof is collapsed",
+  ).toBeLessThanOrEqual(500);
   await expect(route).toBeVisible();
   await expect(route).toHaveAttribute(
     "data-route-contract",

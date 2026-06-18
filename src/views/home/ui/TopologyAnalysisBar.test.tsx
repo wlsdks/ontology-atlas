@@ -1341,6 +1341,7 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
     expect(bar.className).toContain("overflow-hidden");
     const body = screen.getByTestId("topology-analysis-panel-body");
+    expect(body).toHaveAttribute("data-analysis-body-mode", "overview");
     expect(body).toHaveAttribute(
       "data-panel-body-scroll-contract",
       "compact-scrolls-above-bottom-tab",
@@ -1354,7 +1355,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(body.className).toContain("max-md:overflow-y-auto");
     expect(body.className).toContain(
-      "max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)]",
+      "data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)]",
     );
     const relationQuality = screen.getByTestId("topology-overview-relation-quality");
     expect(screen.getByTestId("topology-overview-signal-metric-row")).toHaveAttribute(
@@ -1480,6 +1481,19 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(bar).toHaveAttribute("data-panel-surface-token", "--topology-panel-support-surface");
     expect(bar).toHaveAttribute("data-panel-motion-token", "--topology-motion-panel-duration");
+    expect(bar).toHaveAttribute(
+      "data-panel-compact-scroll-end-reserve-token",
+      "--topology-analysis-panel-path-collapsed-scroll-end-reserve",
+    );
+    const body = screen.getByTestId("topology-analysis-panel-body");
+    expect(body).toHaveAttribute("data-analysis-body-mode", "path");
+    expect(body).toHaveAttribute(
+      "data-panel-body-scroll-end-reserve-token",
+      "--topology-analysis-panel-path-collapsed-scroll-end-reserve",
+    );
+    expect(body.className).toContain(
+      "max-md:pb-[var(--topology-analysis-panel-path-collapsed-scroll-end-reserve)]",
+    );
   });
 
   it("keeps the Path support rail contract even when a right detail surface is reserved", () => {
