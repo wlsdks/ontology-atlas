@@ -1247,10 +1247,30 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(copyPayload).toHaveAttribute("data-copy-payload-from", /.+/);
     await expect(copyPayload).toHaveAttribute("data-copy-payload-to", /.+/);
+    await expect(copyPayload).toHaveAttribute(
+      "data-copy-payload-handle-summary",
+      `${sourceHandle ?? ""} → ${targetHandle ?? ""}`,
+    );
     await expect(copyPayload).toContainText(/query_ontology/);
     await expect(copyPayload).toContainText(/relation_check|explain_relation/);
     await expect(copyPayload).toContainText(sourceHandle ?? "");
     await expect(copyPayload).toContainText(targetHandle ?? "");
+    const visiblePayloadSummary = copyPayload.locator("[data-copy-payload-visible-summary]");
+    await expect(visiblePayloadSummary).toHaveAttribute(
+      "data-copy-payload-visible-contract",
+      "tool-action-visible-handles-accessible",
+    );
+    await expect(visiblePayloadSummary).toHaveAttribute(
+      "data-copy-payload-visible-summary",
+      new RegExp(`^query_ontology · ${primaryCopyAction ?? ""}$`),
+    );
+    const visiblePayloadSummaryFits = await visiblePayloadSummary.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    );
+    expect(
+      visiblePayloadSummaryFits,
+      `selected relation payload visible summary should fit the MCP action at ${viewport.label}`,
+    ).toBe(true);
     await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
     await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
     await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(

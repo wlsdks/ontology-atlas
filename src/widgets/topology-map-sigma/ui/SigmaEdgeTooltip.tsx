@@ -397,7 +397,8 @@ export function SigmaSelectedEdgeCard({
     evidence: evidenceState,
     gate: agentGateKind,
   });
-  const primaryCopyPayloadVisibleSummary = `query_ontology · ${primaryCopyActionLabel} · ${data.source} → ${data.target}`;
+  const primaryCopyPayloadVisibleSummary = `query_ontology · ${primaryCopyActionLabel}`;
+  const primaryCopyPayloadHandleSummary = `${data.source} → ${data.target}`;
   const ontologyHandleSummary = `${data.source} → ${data.target} · ${relationType}`;
   const preflightCopyPayload = {
     operation: 'relation_check',
@@ -692,6 +693,7 @@ export function SigmaSelectedEdgeCard({
           data-copy-payload-type={relationType}
           data-copy-payload-evidence={evidenceState}
           data-copy-payload-gate={agentGateKind}
+          data-copy-payload-handle-summary={primaryCopyPayloadHandleSummary}
           data-cli-fallback-command={cliFallbackCommand}
           data-copy-payload-call={primaryCopyPayloadCall}
           data-min-height-token="--topology-selected-relation-copy-payload-min-height"
@@ -699,17 +701,30 @@ export function SigmaSelectedEdgeCard({
           data-overflow-contract="no-horizontal-scroll"
           className="mt-1 flex min-h-[var(--topology-selected-relation-copy-payload-min-height)] min-w-0 items-center gap-1 overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-payload-border)] bg-[color:var(--topology-selected-relation-payload-surface)] px-1.5 py-0.5"
         >
-          <div className="shrink-0 font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.10em] text-[color:var(--topology-selected-relation-accent-muted)]">
-            {t('copyPayloadLabel')}
+          <div
+            data-copy-payload-label={t('copyPayloadLabel')}
+            data-copy-payload-visible-label="MCP"
+            data-copy-payload-label-contract="compact-visible-label-full-label-accessible"
+            className="shrink-0 font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.10em] text-[color:var(--topology-selected-relation-accent-muted)]"
+          >
+            <span aria-hidden="true">MCP</span>
+            <span className="sr-only">{t('copyPayloadLabel')}</span>
           </div>
           <div
             data-copy-payload-summary={primaryCopyPayloadSummary}
             data-copy-payload-visible-summary={primaryCopyPayloadVisibleSummary}
+            data-copy-payload-visible-contract="tool-action-visible-handles-accessible"
             title={primaryCopyPayloadSummary}
             className="min-w-0 flex-1 truncate font-mono text-[length:var(--topology-selected-relation-payload-font-size)] leading-3 text-[color:var(--color-text-secondary)]"
           >
             {primaryCopyPayloadVisibleSummary}
           </div>
+          <span
+            data-copy-payload-handle-summary={primaryCopyPayloadHandleSummary}
+            className="sr-only"
+          >
+            {primaryCopyPayloadHandleSummary}
+          </span>
           <div
             data-cli-fallback-summary={cliFallbackCommand}
             title={`${t('cliFallbackLabel')} ${cliFallbackCommand}`}

@@ -348,6 +348,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(payload).toHaveAttribute('data-copy-payload-action', 'explain_relation');
     expect(payload).toHaveAttribute('data-copy-payload-from', 'domain:views');
     expect(payload).toHaveAttribute('data-copy-payload-to', 'capability:topology-analysis-modes');
+    expect(payload).toHaveAttribute(
+      'data-copy-payload-handle-summary',
+      'domain:views → capability:topology-analysis-modes',
+    );
     expect(payload).toHaveAttribute('data-copy-payload-type', 'contains');
     expect(payload).toHaveAttribute('data-copy-payload-evidence', 'source-backed');
     expect(payload).toHaveAttribute('data-copy-payload-gate', 'handoff-ready');
@@ -363,6 +367,33 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-copy-payload-accent-muted-token',
       '--topology-selected-relation-accent-muted',
     );
+    expect(
+      payload.querySelector('[data-copy-payload-visible-summary]'),
+    ).toHaveAttribute(
+      'data-copy-payload-visible-contract',
+      'tool-action-visible-handles-accessible',
+    );
+    expect(
+      payload.querySelector('[data-copy-payload-visible-summary]'),
+    ).toHaveAttribute('data-copy-payload-visible-summary', 'query_ontology · explain_relation');
+    expect(payload.querySelector('[data-copy-payload-label]')).toHaveAttribute(
+      'data-copy-payload-label-contract',
+      'compact-visible-label-full-label-accessible',
+    );
+    expect(payload.querySelector('[data-copy-payload-label]')).toHaveAttribute(
+      'data-copy-payload-visible-label',
+      'MCP',
+    );
+    expect(payload.querySelector('[data-copy-payload-label]')).toHaveAttribute(
+      'data-copy-payload-label',
+      'MCP payload',
+    );
+    expect(
+      payload.querySelector('[data-copy-payload-handle-summary]'),
+    ).toHaveClass('sr-only');
+    expect(
+      payload.querySelector('[data-copy-payload-handle-summary]'),
+    ).toHaveTextContent('domain:views → capability:topology-analysis-modes');
     expect(primary).toHaveAttribute(
       'data-focus-ring-token',
       '--topology-selected-relation-focus-ring',
@@ -378,11 +409,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     expect(payloadSummary).toHaveAttribute(
       'data-copy-payload-visible-summary',
-      'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes',
+      'query_ontology · explain_relation',
     );
-    expect(payload).toHaveTextContent(
-      'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes',
-    );
+    expect(payload).toHaveTextContent('query_ontology · explain_relation');
+    expect(payload).toHaveTextContent('domain:views → capability:topology-analysis-modes');
     expect(payload).not.toHaveTextContent('source-backed · handoff-ready');
     const cliFallback = payload.querySelector('[data-cli-fallback-summary]');
     expect(cliFallback).toHaveClass('sr-only');
