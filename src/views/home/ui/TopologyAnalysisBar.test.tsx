@@ -702,7 +702,35 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(prompt.className).toContain("line-clamp-3");
     expect(prompt.className).not.toContain("truncate");
-    expect(screen.getByText("nodes").closest("div")?.className).toContain("grid-cols-2");
+    expect(prompt).toHaveAttribute(
+      "data-prompt-text-token",
+      "--topology-analysis-panel-prompt-text",
+    );
+    expect(prompt.className).toContain(
+      "text-[color:var(--topology-analysis-panel-prompt-text)]",
+    );
+    expect(prompt.className).not.toContain("--color-text-secondary");
+
+    const metrics = screen.getByTestId("topology-analysis-panel-metrics");
+    expect(metrics.className).toContain("grid-cols-2");
+    expect(metrics).toHaveAttribute(
+      "data-metric-label-text-token",
+      "--topology-analysis-panel-metric-label-text",
+    );
+    expect(metrics).toHaveAttribute(
+      "data-metric-value-text-token",
+      "--topology-analysis-panel-metric-value-text",
+    );
+    expect(metrics.className).toContain(
+      "text-[color:var(--topology-analysis-panel-metric-label-text)]",
+    );
+    expect(metrics.className).not.toContain("--color-text-quaternary");
+    expect(screen.getByText("292").className).toContain(
+      "text-[color:var(--topology-analysis-panel-metric-value-text)]",
+    );
+    expect(screen.getByText("498").className).toContain(
+      "text-[color:var(--topology-analysis-panel-metric-value-text)]",
+    );
   });
 
   it("keeps the primary overview brief visible and tucks secondary agent commands into a compact rail", () => {
@@ -1536,6 +1564,14 @@ describe("TopologyAnalysisBar", () => {
       "data-border-token",
       "--topology-path-candidate-visibility-border",
     );
+    expect(visibility).toHaveAttribute(
+      "data-notice-text-token",
+      "--topology-analysis-panel-notice-text",
+    );
+    expect(visibility.className).toContain(
+      "text-[color:var(--topology-analysis-panel-notice-text)]",
+    );
+    expect(visibility.className).not.toContain("--color-text-tertiary");
   });
 
   it("shows the Path mode MCP and CLI handoff contract in the support panel", () => {

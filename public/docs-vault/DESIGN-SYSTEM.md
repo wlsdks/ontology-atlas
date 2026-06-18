@@ -356,6 +356,14 @@ names in component data markers and tests whenever a surface depends on
   Overview/Focus/Path/Health tabs stay icon-only and tooltip-labeled, while
   active, idle, hover, and keyboard focus states remain token-backed so mode
   switching reads consistently across compact and desktop support panels.
+- `--topology-analysis-panel-prompt-text` /
+  `--topology-analysis-panel-metric-label-text` /
+  `--topology-analysis-panel-metric-value-text` /
+  `--topology-analysis-panel-notice-text`: Relief analysis panel support copy.
+  Prompt copy, compact metrics, and path visibility notices must stay visually
+  below the map/focus layer while remaining readable in the macOS WebView and
+  phone sheet; do not reuse generic `--color-text-*` tokens directly in this
+  support rail.
 - `--topology-utility-lane-surface` / `--topology-utility-lane-border` /
   `--topology-utility-lane-shadow`: top utility chrome for search, auto
   arrange, docs, create, and review actions. These controls are support layer,

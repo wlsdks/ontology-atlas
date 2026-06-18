@@ -1007,18 +1007,27 @@ export function TopologyAnalysisBar({
           })}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-3 break-keep text-[14px] leading-6 text-[color:var(--color-text-secondary)]">
+          <p
+            data-testid="topology-analysis-panel-prompt"
+            data-prompt-text-token="--topology-analysis-panel-prompt-text"
+            className="line-clamp-3 break-keep text-[13.5px] leading-6 text-[color:var(--topology-analysis-panel-prompt-text)]"
+          >
             {prompt}
           </p>
-          <div className="mt-3 grid grid-cols-2 gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          <div
+            data-testid="topology-analysis-panel-metrics"
+            data-metric-label-text-token="--topology-analysis-panel-metric-label-text"
+            data-metric-value-text-token="--topology-analysis-panel-metric-value-text"
+            className="mt-3 grid grid-cols-2 gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--topology-analysis-panel-metric-label-text)]"
+          >
             <span>
-              <span className="text-[color:var(--color-text-secondary)]">
+              <span className="text-[color:var(--topology-analysis-panel-metric-value-text)]">
                 {summary.primaryMetric}
               </span>{" "}
               {primaryLabel}
             </span>
             <span>
-              <span className="text-[color:var(--color-text-secondary)]">
+              <span className="text-[color:var(--topology-analysis-panel-metric-value-text)]">
                 {summary.secondaryMetric}
               </span>{" "}
               {labels.metricRelations}
@@ -1031,7 +1040,8 @@ export function TopologyAnalysisBar({
               data-total={pathCandidateVisibility?.total}
               data-surface-token="--topology-path-candidate-visibility-surface"
               data-border-token="--topology-path-candidate-visibility-border"
-              className="mt-3 rounded-md border border-[color:var(--topology-path-candidate-visibility-border)] bg-[color:var(--topology-path-candidate-visibility-surface)] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+              data-notice-text-token="--topology-analysis-panel-notice-text"
+              className="mt-3 rounded-md border border-[color:var(--topology-path-candidate-visibility-border)] bg-[color:var(--topology-path-candidate-visibility-surface)] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--topology-analysis-panel-notice-text)]"
             >
               {pathCandidateVisibilityText}
             </p>

@@ -346,6 +346,10 @@
     --topology-analysis-mode-idle-text: var(--color-text-tertiary);
     --topology-analysis-mode-hover-surface: var(--color-overlay-2);
     --topology-analysis-mode-focus-ring: rgba(139, 151, 255, 0.42);
+    --topology-analysis-panel-prompt-text: rgba(222, 225, 255, 0.68);
+    --topology-analysis-panel-metric-label-text: rgba(222, 225, 255, 0.44);
+    --topology-analysis-panel-metric-value-text: rgba(222, 225, 255, 0.72);
+    --topology-analysis-panel-notice-text: rgba(222, 225, 255, 0.56);
     --topology-command-spine-padding: clamp(10px, 0.72vw, 12px);
     --topology-command-spine-gap: clamp(8px, 0.64vw, 10px);
     --topology-command-spine-radius: 12px;
@@ -1173,6 +1177,10 @@
     --topology-analysis-mode-idle-text: var(--color-text-tertiary);
     --topology-analysis-mode-hover-surface: var(--color-overlay-2);
     --topology-analysis-mode-focus-ring: rgba(77, 86, 200, 0.34);
+    --topology-analysis-panel-prompt-text: rgba(51, 65, 85, 0.72);
+    --topology-analysis-panel-metric-label-text: rgba(71, 85, 105, 0.64);
+    --topology-analysis-panel-metric-value-text: rgba(30, 41, 59, 0.78);
+    --topology-analysis-panel-notice-text: rgba(51, 65, 85, 0.68);
 
     /* 라이트 전용 — 카드 elevation. 다크에선 토큰 대비만으로 충분하지만
        라이트는 panel(#fff) 위 panel(#fff) 가 잦아 subtle drop shadow 로

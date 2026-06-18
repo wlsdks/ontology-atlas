@@ -761,6 +761,18 @@ for (const viewport of VIEWPORTS) {
 
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
     const legendRect = await kindLegendRectOrNull(page);
+    await expect(page.getByTestId("topology-analysis-panel-prompt")).toHaveAttribute(
+      "data-prompt-text-token",
+      "--topology-analysis-panel-prompt-text",
+    );
+    await expect(page.getByTestId("topology-analysis-panel-metrics")).toHaveAttribute(
+      "data-metric-label-text-token",
+      "--topology-analysis-panel-metric-label-text",
+    );
+    await expect(page.getByTestId("topology-analysis-panel-metrics")).toHaveAttribute(
+      "data-metric-value-text-token",
+      "--topology-analysis-panel-metric-value-text",
+    );
     expectCardsClear(await visibleCardRects(page), viewport, analysisRect, legendRect);
     const overviewConnector = page
       .locator('[data-overview-connector-from][data-relation-stroke-contract="quality-token"]')
