@@ -546,7 +546,7 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-phone-overview-notice-contract",
     "sr-only-while-map-evidence-wins",
   );
-  await expect(panel.getByRole("button", { name: /Copy topology overview brief|토폴로지 개요/i })).toBeVisible();
+  await expect(panel.getByRole("button", { name: /Copy topology map brief|지형도 지도 요약/i })).toBeVisible();
   await expect(page.getByTestId("topology-overview-brief-copy")).toHaveAttribute(
     "data-border-token",
     "--topology-overview-handoff-primary-border",
@@ -568,7 +568,7 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   ).toBeLessThanOrEqual(2);
 
   const copyButtonRect = await rectOf(
-    panel.getByRole("button", { name: /Copy topology overview brief|토폴로지 개요/i }),
+    panel.getByRole("button", { name: /Copy topology map brief|지형도 지도 요약/i }),
   );
   const copyToolsRect = await rectOf(panel.getByTestId("topology-overview-handoff-summary"));
   expect(copyButtonRect.height, "copy actions need a MacBook-sized hit target").toBeGreaterThanOrEqual(34);

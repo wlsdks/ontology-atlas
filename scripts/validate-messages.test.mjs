@@ -318,7 +318,7 @@ describe('i18n message catalog', () => {
     );
   });
 
-  it('keeps topology overview framed as ontology proof and agent handoff', async () => {
+  it('keeps topology overview framed as a product/system map before agent handoff', async () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
@@ -333,7 +333,8 @@ describe('i18n message catalog', () => {
       'Open ontology workspace quick look (D)',
     );
     assert.equal(en.topology.controls.docsLabel, 'Workspace');
-    assert.match(en.topology.analysis.overviewPrompt, /source-backed ontology map/i);
+    assert.match(en.topology.analysis.overviewPrompt, /product\/system map/i);
+    assert.match(en.topology.analysis.overviewPrompt, /domains, capabilities, and change paths/i);
     assert.match(en.topology.analysis.overviewPrompt, /agent handoff/i);
     assert.doesNotMatch(
       [
@@ -355,9 +356,9 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.analysis.overviewWorkOrderFocus, '그래프 기준점 선택');
     assert.equal(ko.topology.analysis.overviewWorkOrderPath, '경로 근거 검증');
     assert.equal(ko.topology.analysis.overviewWorkOrderHealth, '상태 신호 확인');
-    assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '지형도 검증 요약 복사');
-    assert.equal(ko.topology.analysis.overviewBriefCopiedAriaLabel, '지형도 검증 요약 복사됨');
-    assert.equal(ko.topology.analysis.overviewBriefTitle, '지형도 검증 요약');
+    assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '지형도 지도 요약 복사');
+    assert.equal(ko.topology.analysis.overviewBriefCopiedAriaLabel, '지형도 지도 요약 복사됨');
+    assert.equal(ko.topology.analysis.overviewBriefTitle, '지형도 지도 요약');
     assert.equal(ko.topology.analysis.overviewBriefHealthSignals, '상태 신호');
     assert.equal(ko.topology.analysis.overviewBriefHealthUrl, '상태 점검 URL');
     assert.equal(ko.topology.analysis.overviewBriefInsightsUrl, '연결·검증 URL');
@@ -372,7 +373,8 @@ describe('i18n message catalog', () => {
       '온톨로지 워크스페이스 빠른 보기 열기 (D)',
     );
     assert.equal(ko.topology.controls.docsLabel, '작업공간');
-    assert.match(ko.topology.analysis.overviewPrompt, /근거 있는 온톨로지 지형도/);
+    assert.match(ko.topology.analysis.overviewPrompt, /제품\/시스템 지도/);
+    assert.match(ko.topology.analysis.overviewPrompt, /영역, 기능, 변경 경로/);
     assert.match(ko.topology.analysis.overviewPrompt, /에이전트 인계/);
     assert.equal(ko.topology.controls.relayoutToast, '지형도를 다시 정렬합니다');
     assert.doesNotMatch(

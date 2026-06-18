@@ -42,25 +42,25 @@ const labels = {
   healthRepairOrderRepair: "Repair ownership or evidence",
   healthRepairOrderSync: "Run sync gate",
   healthRepairTargetLabel: "Current repair target",
-  overviewBriefCopy: "Copy graph brief",
-  overviewBriefCopied: "Graph brief copied",
+  overviewBriefCopy: "Copy map brief",
+  overviewBriefCopied: "Map brief copied",
   overviewReanalyzeCopy: "Audit",
   overviewReanalyzeCopied: "Reanalysis command copied",
   overviewSyncCopy: "Sync",
   overviewSyncCopied: "Update check copied",
-  overviewHandoffSummary: "Agent handoff",
+  overviewHandoffSummary: "Share map",
   overviewWorkOrderTitle: "Analysis order",
   overviewWorkOrderRead: "Read ontology map",
   overviewWorkOrderFocus: "Focus concept",
   overviewWorkOrderPath: "Prove path",
   overviewWorkOrderHealth: "Repair health",
-  overviewBriefCopyAriaLabel: "Copy topology overview brief",
-  overviewBriefCopiedAriaLabel: "Topology overview brief copied",
+  overviewBriefCopyAriaLabel: "Copy topology map brief",
+  overviewBriefCopiedAriaLabel: "Topology map brief copied",
   overviewReanalyzeCopyAriaLabel: "Copy ontology reanalysis command",
   overviewReanalyzeCopiedAriaLabel: "Ontology reanalysis command copied",
   overviewSyncCopyAriaLabel: "Copy ontology update check",
   overviewSyncCopiedAriaLabel: "Ontology update check copied",
-  overviewBriefTitle: "Topology overview brief",
+  overviewBriefTitle: "Topology map brief",
   overviewBriefTotalNodes: "Total nodes",
   overviewBriefTotalRelations: "Total relations",
   overviewBriefRelationReading: "Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
@@ -92,7 +92,7 @@ const labels = {
   overviewRelationPreparingNotice:
     "Arranging links before showing the readable skeleton.",
   overviewSkeletonNotice:
-    "Showing the readable card skeleton. Use Focus or Path to inspect exact relations.",
+    "Showing the readable concept map. Use Focus or Path for exact relation evidence.",
   focusBriefCopy: "Copy focus brief",
   focusBriefCopied: "Focus brief copied",
   focusMcpCopy: "Copy MCP profile",
@@ -728,7 +728,7 @@ describe("TopologyAnalysisBar", () => {
         labels={{
           ...labels,
           overviewPrompt:
-            "Read the source-backed ontology map first, then copy an agent handoff.",
+            "Start with the product/system map: domains, capabilities, and change paths stay visible before agent handoff.",
         }}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -736,7 +736,7 @@ describe("TopologyAnalysisBar", () => {
     );
 
     const prompt = screen.getByText(
-      "Read the source-backed ontology map first, then copy an agent handoff.",
+      "Start with the product/system map: domains, capabilities, and change paths stay visible before agent handoff.",
     );
     expect(prompt.className).toContain("line-clamp-3");
     expect(prompt.className).not.toContain("truncate");
@@ -806,7 +806,7 @@ describe("TopologyAnalysisBar", () => {
       "data-divider-token",
       "--topology-overview-handoff-divider",
     );
-    expect(actions.textContent).toContain("Agent handoff");
+    expect(actions.textContent).toContain("Share map");
     expect(actions.querySelectorAll("button")).toHaveLength(3);
     expect(actions.querySelector(".grid")?.className).not.toContain("grid-cols-2");
     const briefCopy = screen.getByTestId("topology-overview-brief-copy");
@@ -858,7 +858,7 @@ describe("TopologyAnalysisBar", () => {
 
     const actions = screen.getByTestId("topology-overview-handoff-actions");
     expect(actions.closest("details")).toBeNull();
-    expect(screen.getByText("Copy graph brief")).toBeVisible();
+    expect(screen.getByText("Copy map brief")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Copy ontology reanalysis command" }),
     ).toBeInTheDocument();
@@ -875,7 +875,7 @@ describe("TopologyAnalysisBar", () => {
     ).toBeVisible();
   });
 
-  it("names the overview command rail as an agent handoff, not a generic actions bucket", () => {
+  it("names the overview command rail as map sharing before agent handoff tools", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -899,7 +899,7 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByTestId("topology-overview-handoff-actions")).toHaveTextContent(
-      "Agent handoff",
+      "Share map",
     );
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
   });
@@ -1117,7 +1117,7 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.queryByText(/0\/498/)).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        "Showing the readable card skeleton. Use Focus or Path to inspect exact relations.",
+        "Showing the readable concept map. Use Focus or Path for exact relation evidence.",
       ),
     ).toBeInTheDocument();
   });
@@ -1493,9 +1493,9 @@ describe("TopologyAnalysisBar", () => {
       "--topology-overview-quality-weak-meter",
     );
     expect(
-      screen.getByRole("button", { name: "Copy topology overview brief" }).className,
+      screen.getByRole("button", { name: "Copy topology map brief" }).className,
     ).toContain("min-h-[var(--topology-overview-handoff-primary-min-height)]");
-    expect(screen.getByRole("button", { name: "Copy topology overview brief" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Copy topology map brief" })).toHaveAttribute(
       "data-min-height-token",
       "--topology-overview-handoff-primary-min-height",
     );
@@ -1989,13 +1989,13 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.queryByTestId("topology-overview-work-order")).toBeNull();
-    expect(screen.getByText("Copy graph brief")).toBeVisible();
+    expect(screen.getByText("Copy map brief")).toBeVisible();
     const graphBriefButton = screen.getByRole("button", {
-      name: "Copy topology overview brief",
+      name: "Copy topology map brief",
     });
     expect(graphBriefButton.className).toContain("min-h-9");
     expect(graphBriefButton.className).not.toContain("col-span-2");
-    expect(graphBriefButton).toHaveAttribute("title", "Copy graph brief");
+    expect(graphBriefButton).toHaveAttribute("title", "Copy map brief");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
     ).toHaveTextContent("Relation provenance");
@@ -2083,12 +2083,12 @@ describe("TopologyAnalysisBar", () => {
     fireEvent.click(graphBriefButton);
 
     const copiedButton = await screen.findByRole("button", {
-      name: "Topology overview brief copied",
+      name: "Topology map brief copied",
     });
-    expect(copiedButton).toHaveTextContent("Copy graph brief");
-    expect(copiedButton).not.toHaveTextContent("Graph brief copied");
+    expect(copiedButton).toHaveTextContent("Copy map brief");
+    expect(copiedButton).not.toHaveTextContent("Map brief copied");
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("# Topology overview brief"),
+      expect.stringContaining("# Topology map brief"),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("- Total nodes: 36"),
@@ -2220,7 +2220,7 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.queryByText("Analysis order")).toBeNull();
     expect(screen.queryByTestId("topology-overview-work-order")).toBeNull();
     expect(
-      screen.getByRole("button", { name: "Copy topology overview brief" }),
+      screen.getByRole("button", { name: "Copy topology map brief" }),
     ).toBeVisible();
   });
 
