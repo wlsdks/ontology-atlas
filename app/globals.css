@@ -590,6 +590,7 @@
     --topology-node-popover-relation-list-border: rgba(255, 255, 255, 0.055);
     --topology-node-popover-relation-row-divider: rgba(255, 255, 255, 0.055);
     --topology-node-popover-relation-row-hover-surface: rgba(255, 255, 255, 0.04);
+    --topology-node-popover-relation-row-title-text: rgba(255, 255, 255, 0.92);
     --topology-node-popover-relation-row-meta-text: rgba(222, 225, 255, 0.50);
     --topology-node-popover-direction-surface: rgba(255, 255, 255, 0.035);
     --topology-node-popover-direction-border: rgba(139, 151, 255, 0.18);
@@ -1101,6 +1102,7 @@
     --topology-node-popover-relation-list-border: rgba(15, 23, 42, 0.08);
     --topology-node-popover-relation-row-divider: rgba(15, 23, 42, 0.08);
     --topology-node-popover-relation-row-hover-surface: rgba(77, 86, 200, 0.055);
+    --topology-node-popover-relation-row-title-text: rgba(15, 23, 42, 0.88);
     --topology-node-popover-relation-row-meta-text: rgba(71, 85, 105, 0.72);
     --topology-node-popover-direction-surface: rgba(77, 86, 200, 0.045);
     --topology-node-popover-direction-border: rgba(77, 86, 200, 0.16);

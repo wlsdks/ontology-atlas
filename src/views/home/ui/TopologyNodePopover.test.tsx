@@ -440,7 +440,14 @@ describe("TopologyNodePopover", () => {
     expect(relationRow?.className).toContain("px-2");
     expect(relationRow?.className).toContain("py-2");
     expect(relationTitle).toHaveAttribute("data-primary-scan-target", "true");
-    expect(relationTitle?.className).toContain("text-[color:var(--color-text-primary)]");
+    expect(relationTitle).toHaveAttribute(
+      "data-relation-title-text-token",
+      "--topology-node-popover-relation-row-title-text",
+    );
+    expect(relationTitle?.className).toContain(
+      "text-[color:var(--topology-node-popover-relation-row-title-text)]",
+    );
+    expect(relationTitle?.className).not.toContain("var(--color-text-primary)");
     expect(relationMeta).toHaveAttribute(
       "data-row-meta-text-token",
       "--topology-node-popover-relation-row-meta-text",

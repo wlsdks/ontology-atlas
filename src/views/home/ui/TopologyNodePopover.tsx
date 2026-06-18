@@ -728,7 +728,8 @@ export function TopologyNodePopover({
                         <span
                           data-relation-title
                           data-primary-scan-target="true"
-                          className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+                          data-relation-title-text-token="--topology-node-popover-relation-row-title-text"
+                          className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-relation-row-title-text)]"
                         >
                           {connection.title}
                         </span>
