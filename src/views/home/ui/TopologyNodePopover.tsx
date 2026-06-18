@@ -830,7 +830,9 @@ export function TopologyNodePopover({
         data-footer-position-contract="anchored-bottom-visible"
         data-overflow-contract="no-horizontal-scroll"
         data-popover-footer-surface-token="--topology-node-popover-footer-surface"
-        className="shrink-0 overflow-hidden border-t border-[color:var(--topology-node-popover-border)] bg-[color:var(--topology-node-popover-footer-surface)] px-3 py-2.5"
+        data-popover-footer-border-token="--topology-node-popover-footer-border"
+        data-popover-footer-title-text-token="--topology-node-popover-footer-title-text"
+        className="shrink-0 overflow-hidden border-t border-[color:var(--topology-node-popover-footer-border)] bg-[color:var(--topology-node-popover-footer-surface)] px-3 py-2.5"
       >
         {actions.length > 0 ? (
           <div
@@ -839,7 +841,10 @@ export function TopologyNodePopover({
             data-action-count={actions.length}
             className="mb-2 min-w-0 overflow-hidden"
           >
-            <p className="mb-1 truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            <p
+              data-agent-handoff-title="footer"
+              className="mb-1 truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--topology-node-popover-footer-title-text)]"
+            >
               {labels.actionRailTitle}
             </p>
             <div className="grid min-w-0 grid-cols-3 gap-1.5 overflow-hidden">

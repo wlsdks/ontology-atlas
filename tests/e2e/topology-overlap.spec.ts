@@ -2867,6 +2867,16 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     .getByTestId("topology-node-popover-action-rail")
     .locator("[data-popover-action]")
     .first();
+  const footer = page.getByTestId("topology-node-popover-footer");
+  await expect(footer).toHaveAttribute(
+    "data-popover-footer-border-token",
+    "--topology-node-popover-footer-border",
+  );
+  await expect(footer).toHaveAttribute(
+    "data-popover-footer-title-text-token",
+    "--topology-node-popover-footer-title-text",
+  );
+  await expect(footer.locator('[data-agent-handoff-title="footer"]')).toBeVisible();
   await expect(firstHandoffAction).toHaveAttribute(
     "data-popover-action-text-token",
     "--topology-node-popover-action-text",

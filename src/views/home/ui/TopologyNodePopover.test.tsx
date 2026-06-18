@@ -347,8 +347,20 @@ describe("TopologyNodePopover", () => {
       "data-popover-footer-surface-token",
       "--topology-node-popover-footer-surface",
     );
+    expect(footer).toHaveAttribute(
+      "data-popover-footer-border-token",
+      "--topology-node-popover-footer-border",
+    );
+    expect(footer).toHaveAttribute(
+      "data-popover-footer-title-text-token",
+      "--topology-node-popover-footer-title-text",
+    );
     expect(footer.className).toContain("shrink-0");
     expect(footer.className).toContain("overflow-hidden");
+    expect(footer.className).toContain(
+      "border-[color:var(--topology-node-popover-footer-border)]",
+    );
+    expect(footer.className).not.toContain("var(--topology-node-popover-border)");
     expect(section.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(footer.closest('[data-testid="topology-connections-section"]')).toBeNull();
   });
@@ -545,6 +557,10 @@ describe("TopologyNodePopover", () => {
     expect(rail).toHaveAttribute("data-action-rail-contract", "compact-mcp-cli-handoff");
     expect(rail).toHaveAttribute("data-action-count", "3");
     expect(rail).toHaveTextContent("에이전트 인계");
+    const handoffTitle = footer.querySelector('[data-agent-handoff-title="footer"]');
+    expect(handoffTitle?.className).toContain(
+      "text-[color:var(--topology-node-popover-footer-title-text)]",
+    );
     expect(briefAction).toHaveAttribute(
       "data-popover-action-surface-token",
       "--topology-node-popover-action-surface",

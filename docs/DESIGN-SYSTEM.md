@@ -253,6 +253,11 @@ names in component data markers and tests whenever a surface depends on
   footer navigation tokens. Use these for `Map view`, `Full detail`, and hidden
   relation count pills so the bottom edge remains a stable state-transition
   rail, not generic page chrome.
+- `--topology-node-popover-footer-border` /
+  `--topology-node-popover-footer-title-text`: selected node inspector fixed
+  handoff rail boundary and title tokens. Use these for the footer divider and
+  `Agent Handoff` title so the MCP/CLI action rail stays visually attached to
+  the inspector's handoff layer instead of borrowing generic panel chrome.
 - `--topology-node-popover-chrome-action-*`: selected node inspector utility
   chrome tokens. Use these for close and compact expand controls so utility
   actions stay subdued inside the node inspector layer and do not borrow generic
