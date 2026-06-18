@@ -130,6 +130,7 @@ import {
   type SigmaEdgeTooltipData,
 } from './SigmaEdgeTooltip';
 import { SigmaLegendRow } from './SigmaLegendRow';
+import { SigmaRelationLegend } from './SigmaRelationLegend';
 import { SigmaSkeletonCards, type SkeletonCardModel } from './SigmaSkeletonCards';
 import {
   resolveSafeAreaCameraFit,
@@ -3486,6 +3487,18 @@ function SigmaTopologyImpl({
             />
           </div>
         </div>
+      ) : null}
+
+      {!minimal && !overlays?.auditHighlight && skeletonCardsActive ? (
+        <SigmaRelationLegend
+          labels={{
+            title: t('relationLegendTitle'),
+            strong: t('relationLegendStrong'),
+            supported: t('relationLegendSupported'),
+            weak: t('relationLegendWeak'),
+            review: t('relationLegendReview'),
+          }}
+        />
       ) : null}
 
       {!minimal && !suppressMinimap ? (

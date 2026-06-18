@@ -849,6 +849,7 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
   const fixedSurfaceSelector = [
     '[data-testid="topology-analysis-panel"]',
     '[data-testid="topology-kind-legend"]',
+    '[data-testid="topology-relation-legend"]',
     '[data-testid="topology-minimap"]',
     '[data-testid="topology-node-popover"]',
     '[data-testid="sigma-selected-edge-card"]',
