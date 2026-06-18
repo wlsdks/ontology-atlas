@@ -1067,18 +1067,37 @@ export function TopologyAnalysisBar({
               data-border-token="--topology-path-route-border"
               data-chip-surface-token="--topology-path-route-chip-surface"
               data-chip-border-token="--topology-path-route-chip-border"
+              data-source-surface-token="--topology-path-route-source-surface"
+              data-source-border-token="--topology-path-route-source-border"
+              data-source-text-token="--topology-path-route-source-text"
+              data-target-surface-token="--topology-path-route-target-surface"
+              data-target-border-token="--topology-path-route-target-border"
+              data-target-text-token="--topology-path-route-target-text"
+              data-endpoint-marker-surface-token="--topology-path-route-endpoint-marker-surface"
+              data-endpoint-marker-border-token="--topology-path-route-endpoint-marker-border"
+              data-endpoint-marker-text-token="--topology-path-route-endpoint-marker-text"
               data-route-responsive-contract="target-weighted-endpoints"
               className="mt-3 grid min-w-0 grid-cols-[minmax(0,0.8fr)_auto_minmax(0,1.45fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5"
             >
               <span
-                className="min-w-0 rounded border border-[color:var(--topology-path-route-chip-border)] bg-[color:var(--topology-path-route-chip-surface)] px-1.5 py-1"
+                className="min-h-9 min-w-0 rounded border border-[color:var(--topology-path-route-source-border)] bg-[color:var(--topology-path-route-source-surface)] px-1.5 py-1"
                 data-route-endpoint="source"
+                data-route-endpoint-marker-contract="source-a-marker"
               >
-                <span className="block font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {labels.pathEvidenceSource}
+                <span className="flex min-w-0 items-center gap-1">
+                  <span
+                    aria-hidden
+                    data-route-endpoint-marker="source"
+                    className="grid size-3.5 shrink-0 place-items-center rounded-full border border-[color:var(--topology-path-route-endpoint-marker-border)] bg-[color:var(--topology-path-route-endpoint-marker-surface)] font-mono text-[7px] font-semibold leading-none text-[color:var(--topology-path-route-endpoint-marker-text)]"
+                  >
+                    A
+                  </span>
+                  <span className="block truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--topology-path-route-chip-text)]">
+                    {labels.pathEvidenceSource}
+                  </span>
                 </span>
                 <span
-                  className="block truncate text-[10.5px] text-[color:var(--color-text-secondary)]"
+                  className="block truncate text-[10.5px] text-[color:var(--topology-path-route-source-text)]"
                   data-route-endpoint-title="source"
                   data-route-endpoint-title-contract="weighted-route-title"
                 >
@@ -1088,17 +1107,27 @@ export function TopologyAnalysisBar({
               <ArrowRight
                 size={12}
                 aria-hidden
-                className="text-[color:var(--color-text-quaternary)]"
+                className="text-[color:var(--topology-path-route-arrow-text)]"
               />
               <span
-                className="min-w-0 rounded border border-[color:var(--topology-path-route-chip-border)] bg-[color:var(--topology-path-route-chip-surface)] px-1.5 py-1 text-right"
+                className="min-h-9 min-w-0 rounded border border-[color:var(--topology-path-route-target-border)] bg-[color:var(--topology-path-route-target-surface)] px-1.5 py-1 text-right"
                 data-route-endpoint="target"
+                data-route-endpoint-marker-contract="target-b-marker"
               >
-                <span className="block font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {labels.pathEvidenceTarget}
+                <span className="flex min-w-0 items-center justify-end gap-1">
+                  <span className="block truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--topology-path-route-chip-text)]">
+                    {labels.pathEvidenceTarget}
+                  </span>
+                  <span
+                    aria-hidden
+                    data-route-endpoint-marker="target"
+                    className="grid size-3.5 shrink-0 place-items-center rounded-full border border-[color:var(--topology-path-route-endpoint-marker-border)] bg-[color:var(--topology-path-route-endpoint-marker-surface)] font-mono text-[7px] font-semibold leading-none text-[color:var(--topology-path-route-endpoint-marker-text)]"
+                  >
+                    B
+                  </span>
                 </span>
                 <span
-                  className="block truncate text-[10.5px] text-[color:var(--color-text-secondary)]"
+                  className="block truncate text-[10.5px] text-[color:var(--topology-path-route-target-text)]"
                   data-route-endpoint-title="target"
                   data-route-endpoint-title-contract="weighted-route-title"
                 >

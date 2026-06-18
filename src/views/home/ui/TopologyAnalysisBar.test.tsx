@@ -1791,10 +1791,48 @@ describe("TopologyAnalysisBar", () => {
     expect(route).toHaveAttribute("data-border-token", "--topology-path-route-border");
     expect(route).toHaveAttribute("data-chip-surface-token", "--topology-path-route-chip-surface");
     expect(route).toHaveAttribute("data-chip-border-token", "--topology-path-route-chip-border");
+    expect(route).toHaveAttribute(
+      "data-source-surface-token",
+      "--topology-path-route-source-surface",
+    );
+    expect(route).toHaveAttribute(
+      "data-source-border-token",
+      "--topology-path-route-source-border",
+    );
+    expect(route).toHaveAttribute(
+      "data-source-text-token",
+      "--topology-path-route-source-text",
+    );
+    expect(route).toHaveAttribute(
+      "data-target-surface-token",
+      "--topology-path-route-target-surface",
+    );
+    expect(route).toHaveAttribute(
+      "data-target-border-token",
+      "--topology-path-route-target-border",
+    );
+    expect(route).toHaveAttribute(
+      "data-target-text-token",
+      "--topology-path-route-target-text",
+    );
+    expect(route).toHaveAttribute(
+      "data-endpoint-marker-surface-token",
+      "--topology-path-route-endpoint-marker-surface",
+    );
+    expect(route).toHaveAttribute(
+      "data-endpoint-marker-border-token",
+      "--topology-path-route-endpoint-marker-border",
+    );
+    expect(route).toHaveAttribute(
+      "data-endpoint-marker-text-token",
+      "--topology-path-route-endpoint-marker-text",
+    );
     expect(within(route).getByText("Source")).toBeInTheDocument();
     expect(within(route).getByText("Views")).toBeInTheDocument();
     expect(within(route).getByText("Target")).toBeInTheDocument();
     expect(within(route).getByText("Topology Analysis Modes")).toBeInTheDocument();
+    expect(route.querySelector('[data-route-endpoint-marker="source"]')).toHaveTextContent("A");
+    expect(route.querySelector('[data-route-endpoint-marker="target"]')).toHaveTextContent("B");
   });
 
   it("copies an overview brief for first-contact agent and collaborator review", async () => {

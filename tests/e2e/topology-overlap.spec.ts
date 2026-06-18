@@ -2224,6 +2224,44 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "--topology-path-route-chip-border",
   );
   await expect(route).toHaveAttribute(
+    "data-source-surface-token",
+    "--topology-path-route-source-surface",
+  );
+  await expect(route).toHaveAttribute(
+    "data-source-border-token",
+    "--topology-path-route-source-border",
+  );
+  await expect(route).toHaveAttribute(
+    "data-source-text-token",
+    "--topology-path-route-source-text",
+  );
+  await expect(route).toHaveAttribute(
+    "data-target-surface-token",
+    "--topology-path-route-target-surface",
+  );
+  await expect(route).toHaveAttribute(
+    "data-target-border-token",
+    "--topology-path-route-target-border",
+  );
+  await expect(route).toHaveAttribute(
+    "data-target-text-token",
+    "--topology-path-route-target-text",
+  );
+  await expect(route).toHaveAttribute(
+    "data-endpoint-marker-surface-token",
+    "--topology-path-route-endpoint-marker-surface",
+  );
+  await expect(route).toHaveAttribute(
+    "data-endpoint-marker-border-token",
+    "--topology-path-route-endpoint-marker-border",
+  );
+  await expect(route).toHaveAttribute(
+    "data-endpoint-marker-text-token",
+    "--topology-path-route-endpoint-marker-text",
+  );
+  await expect(route.locator('[data-route-endpoint-marker="source"]')).toHaveText("A");
+  await expect(route.locator('[data-route-endpoint-marker="target"]')).toHaveText("B");
+  await expect(route).toHaveAttribute(
     "data-route-responsive-contract",
     "target-weighted-endpoints",
   );

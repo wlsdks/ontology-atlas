@@ -399,13 +399,18 @@ names in component data markers and tests whenever a surface depends on
   `--topology-path-route-chip-surface` /
   `--topology-path-route-chip-border` /
   `--topology-path-route-chip-text` /
-  `--topology-path-route-arrow-text`: path result route rail. When both source
-  and target endpoints are selected, the analysis rail must expose the current
-  source-to-target route before the proof disclosure so users and agents can
-  read the active graph question without opening secondary evidence. The same
-  tokens also govern the proof disclosure route recap and source/target
-  ontology or Builder exits, so route evidence stays visually tied to the
-  selected path instead of generic panel chrome.
+  `--topology-path-route-arrow-text` /
+  `--topology-path-route-source-*` /
+  `--topology-path-route-target-*` /
+  `--topology-path-route-endpoint-marker-*`: path result route rail. When both
+  source and target endpoints are selected, the analysis rail must expose the
+  current source-to-target route before the proof disclosure so users and agents
+  can read the active graph question without opening secondary evidence.
+  Source/target tones and A/B endpoint markers make direction visible in the
+  14-inch rail and compact phone panel without adding a second path surface. The
+  same base route tokens also govern the proof disclosure route recap and
+  source/target ontology or Builder exits, so route evidence stays visually tied
+  to the selected path instead of generic panel chrome.
 - `--topology-path-proof-step-surface` /
   `--topology-path-proof-step-border` /
   `--topology-path-proof-kicker-text` /
