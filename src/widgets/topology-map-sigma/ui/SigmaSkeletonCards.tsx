@@ -2482,10 +2482,18 @@ export function SigmaSkeletonCards({
     if (!ego) {
       const accepted: Array<{ left: number; top: number; right: number; bottom: number }> =
         [];
+      const overviewCollisionRank = (el: HTMLElement) => {
+        const tier = Number(el.dataset.tier ?? '3');
+        // Overview evidence landmark: keep the proof leaf after project/domain,
+        // but before capability chips so the map visibly reaches implementation.
+        if (tier === 3 && !el.dataset.dockParent) return 1.5;
+        return tier;
+      };
       const ordered = overviewEls.slice().sort((a, b) => {
-        const tierA = Number(a.dataset.tier ?? '3');
-        const tierB = Number(b.dataset.tier ?? '3');
-        return tierA - tierB;
+        const rankA = overviewCollisionRank(a);
+        const rankB = overviewCollisionRank(b);
+        if (rankA !== rankB) return rankA - rankB;
+        return Number(a.dataset.layoutY ?? 0) - Number(b.dataset.layoutY ?? 0);
       });
       for (const el of ordered) {
         const r = el.getBoundingClientRect();

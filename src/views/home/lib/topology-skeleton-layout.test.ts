@@ -45,6 +45,7 @@ function skeleton(): { skeleton: OntologySkeleton; nodes: KnowledgeGraphNode[] }
       ["d1", ["c1", "c2"]],
       ["d2", ["c5"]],
     ]),
+    evidenceLandmarksByDomain: new Map(),
     overflowByDomain: new Map(),
   };
   return { skeleton: skel, nodes };
@@ -149,6 +150,7 @@ describe("buildSkeletonRadialLayout", () => {
         ["d2", ["c1", "c2", "c3"]],
         ["d3", ["c4", "c5", "c6"]],
       ]),
+      evidenceLandmarksByDomain: new Map(),
       overflowByDomain: new Map(),
     };
 
@@ -180,6 +182,27 @@ describe("buildSkeletonRadialLayout", () => {
     const layout = buildSkeletonRadialLayout(s, withHidden, { width: 1000, height: 1000 });
     expect(layout.pointById.has("e1")).toBe(false);
     expect(layout.points).toHaveLength(6);
+  });
+
+  it("places an overview evidence element as a tier-3 landmark", () => {
+    const { skeleton: s, nodes } = skeleton();
+    const withEvidence = [...nodes, n("e1", "element")];
+    const skel: OntologySkeleton = {
+      ...s,
+      skeletonSlugs: new Set([...s.skeletonSlugs, "e1"]),
+      levelBySlug: new Map([...s.levelBySlug, ["e1", "landmark"]]),
+      evidenceLandmarksByDomain: new Map([["d1", ["e1"]]]),
+    };
+    const layout = buildSkeletonRadialLayout(skel, withEvidence, {
+      width: 1000,
+      height: 1000,
+    });
+    const evidence = layout.pointById.get("e1")!;
+    expect(evidence.tier).toBe(3);
+    expect(dist(evidence, layout.center)).toBeGreaterThan(0);
+    expect(dist(evidence, layout.center)).toBeLessThan(
+      dist(layout.pointById.get("c1")!, layout.center),
+    );
   });
 });
 

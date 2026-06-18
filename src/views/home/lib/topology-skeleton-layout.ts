@@ -4,7 +4,7 @@ import type { RevealState } from "./topology-reveal-state";
 
 /**
  * One placed skeleton node. tier 0 = project (center), 1 = domain, 2 =
- * capability(landmark/펼침), 3 = element(클릭 확장에서만 등장).
+ * capability(landmark/펼침), 3 = element(evidence landmark/클릭 확장).
  */
 export interface SkeletonLayoutPoint {
   id: string;
@@ -78,7 +78,7 @@ export function buildSkeletonRadialLayout(
   const points: SkeletonLayoutPoint[] = [];
   const pointById = new Map<string, SkeletonLayoutPoint>();
 
-  const place = (id: string, x: number, y: number, tier: 0 | 1 | 2) => {
+  const place = (id: string, x: number, y: number, tier: 0 | 1 | 2 | 3) => {
     // 타원 — x 성분만 aspectX 배 (중심 기준).
     const point: SkeletonLayoutPoint = {
       id,
@@ -127,6 +127,21 @@ export function buildSkeletonRadialLayout(
           ? domainAngle
           : domainAngle - sectorHalf + ((2 * sectorHalf) / (ordered.length - 1)) * i;
       place(slug, cx + Math.cos(theta) * outerRadius, cy + Math.sin(theta) * outerRadius, 2);
+    });
+  }
+
+  // tier 3 — one evidence leaf, tucked inside the strongest domain wedge. This
+  // keeps the entry map grounded in implementation proof without turning the
+  // overview into a full leaf cloud. The skeleton picker prefers a left/center
+  // domain when possible, so this can sit outside its domain card without
+  // colliding with the right-side controls on 14-inch desktops.
+  for (const [domainSlug, elements] of skeleton.evidenceLandmarksByDomain) {
+    const domainAngle = angleByRing1.get(domainSlug);
+    if (domainAngle === undefined) continue;
+    elements.forEach((slug, i) => {
+      const theta = domainAngle + sectorHalf * (i % 2 === 0 ? 0.45 : -0.45);
+      const radius = outerRadius * 0.72;
+      place(slug, cx + Math.cos(theta) * radius, cy + Math.sin(theta) * radius, 3);
     });
   }
 
