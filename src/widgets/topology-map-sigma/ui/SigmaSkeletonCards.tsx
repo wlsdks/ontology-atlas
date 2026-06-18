@@ -809,11 +809,41 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
     right: number;
     bottom: number;
   }> = [];
+  const analysisPanel = document.querySelector<HTMLElement>(
+    '[data-testid="topology-analysis-panel"]',
+  );
+  const analysisPanelRect = analysisPanel?.getBoundingClientRect();
+  const analysisPanelStyle = analysisPanel ? getComputedStyle(analysisPanel) : null;
+  const panelOwnedReadLayerActive = Boolean(
+    analysisPanel &&
+      analysisPanelRect &&
+      analysisPanelStyle &&
+      analysisPanelStyle.display !== 'none' &&
+      analysisPanelStyle.visibility !== 'hidden' &&
+      analysisPanelRect.width > 0 &&
+      analysisPanelRect.height > 0,
+  );
+  const fixedSurfaceSelector = [
+    '[data-testid="topology-analysis-panel"]',
+    '[data-testid="topology-kind-legend"]',
+    '[data-testid="topology-minimap"]',
+    '[data-testid="topology-node-popover"]',
+    '[data-testid="sigma-selected-edge-card"]',
+    '[data-testid="topology-path-start-prompt"]',
+    '[data-testid="topology-path-anchor-prompt"]',
+    '[data-testid="topology-path-result-banner"]',
+    ...(panelOwnedReadLayerActive
+      ? [
+          '[data-testid="topology-search-action-lane"]',
+          '[data-testid="topology-utility-action-lane"]',
+          '[data-testid="topology-shortcuts-help-button"]',
+          '[data-testid="topology-sigma-controls-stack"]',
+        ]
+      : []),
+  ].join(', ');
 
   document
-    .querySelectorAll<HTMLElement>(
-      '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"], [data-testid="sigma-selected-edge-card"], [data-testid="topology-path-start-prompt"], [data-testid="topology-path-anchor-prompt"], [data-testid="topology-path-result-banner"]',
-    )
+    .querySelectorAll<HTMLElement>(fixedSurfaceSelector)
     .forEach((el) => {
       const rect = el.getBoundingClientRect();
       const style = getComputedStyle(el);
@@ -1029,7 +1059,7 @@ function clampRectToViewportAndFixedSurfaces({
             moved.top >= SAFE_VIEWPORT_MARGIN &&
             moved.right <= containerWidth - SAFE_VIEWPORT_MARGIN &&
             moved.bottom <= containerHeight - SAFE_VIEWPORT_MARGIN,
-          clear: !rectsOverlap(moved, surface),
+          clear: !fixedSurfaceRects.some((fixedSurface) => rectsOverlap(moved, fixedSurface)),
         };
       })
       .filter((candidate) => candidate.inside && candidate.clear)

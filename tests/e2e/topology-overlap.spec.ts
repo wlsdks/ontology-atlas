@@ -594,6 +594,14 @@ test("Relief overview panel owns the phone read layer above map cards", async ({
     "topology-analysis-panel",
   );
   expect(layerProof.ownerSlug, "phone overview panel center should not expose a skeleton card slug").toBe("");
+  const utilityLaneRect = await rectOf(page.getByTestId("topology-utility-action-lane"));
+  const cardsUnderUtilityLane = (await visibleCardRects(page)).filter((card) =>
+    intersects(card, utilityLaneRect),
+  );
+  expect(
+    cardsUnderUtilityLane,
+    "phone overview map cards should clear the Workspace utility lane",
+  ).toEqual([]);
   const provenanceRowsFit = await panel
     .locator("[data-overview-provenance-row]")
     .evaluateAll((rows) => rows.every((row) => row.scrollWidth <= row.clientWidth + 1));
