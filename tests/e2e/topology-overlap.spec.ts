@@ -440,6 +440,32 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     legendRect,
     minimapRect,
   );
+  const capabilityCard = page
+    .locator(
+      [
+        '[data-skeleton-card][data-tier="2"]',
+        '[data-card-max-width-token="--topology-card-max-width-capability"]',
+        ':not([data-surface-hidden="true"])',
+      ].join(""),
+    )
+    .first();
+  await expect(capabilityCard).toBeVisible();
+  await expect(capabilityCard).toHaveAttribute(
+    "data-card-readable-width-contract",
+    "tier-token-preserves-title-lane",
+  );
+  const capabilityTitle = capabilityCard.locator("[data-card-title]");
+  await expect(capabilityTitle).toHaveAttribute(
+    "data-card-title-lane-contract",
+    "title-shrinks-before-meta-chips",
+  );
+  const capabilityTitleFits = await capabilityTitle.evaluate(
+    (el) => el.scrollWidth <= el.clientWidth + 1,
+  );
+  expect(
+    capabilityTitleFits,
+    "14-inch overview capability card title should fit its tokenized map-card lane",
+  ).toBe(true);
 });
 
 test("Relief overview panel owns the phone read layer above map cards", async ({ page }) => {

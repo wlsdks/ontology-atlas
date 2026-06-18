@@ -90,9 +90,28 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "--topology-card-count-border",
     );
     const domainCard = screen.getByText("Views").closest("[data-skeleton-card]");
+    expect(domainCard).toHaveAttribute(
+      "data-card-readable-width-contract",
+      "tier-token-preserves-title-lane",
+    );
+    expect(domainCard).toHaveAttribute(
+      "data-card-max-width-token",
+      "--topology-card-max-width-domain",
+    );
+    expect(screen.getByText("Views")).toHaveAttribute(
+      "data-card-title-lane-contract",
+      "title-shrinks-before-meta-chips",
+    );
+    expect(screen.getByText("Views")).toHaveAttribute("data-full-title", "Views");
     expect(domainCard).toHaveStyle({
       transform: "translate(-50%, -50%) translate3d(120px, 60px, 0)",
+      maxWidth: "var(--topology-card-max-width-domain)",
     });
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    expect(layer.style.getPropertyValue("--topology-card-max-width-project")).toBe("224px");
+    expect(layer.style.getPropertyValue("--topology-card-max-width-domain")).toBe("224px");
+    expect(layer.style.getPropertyValue("--topology-card-max-width-capability")).toBe("312px");
+    expect(layer.style.getPropertyValue("--topology-card-max-width-element")).toBe("224px");
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-drag-dom-index-contract",
       "drag-release-reuses-card-elements",
@@ -161,6 +180,46 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-path-endpoint-separation-contract",
       "source-target-min-gap",
     );
+  });
+
+  it("capability 카드 폭은 별도 토큰으로 제목 lane 을 더 넓게 보존한다", () => {
+    const graph = makeGraph();
+    graph.addNode("capability:c1", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: 30,
+      y: 10,
+      label: "Product Owner Operating System",
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "capability:c1",
+            title: "Product Owner Operating System",
+            kind: "capability",
+            tier: 2 as const,
+            count: 1,
+          },
+        ]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const card = screen
+      .getByText("Product Owner Operating System")
+      .closest("[data-skeleton-card]");
+    expect(card).toHaveAttribute(
+      "data-card-max-width-token",
+      "--topology-card-max-width-capability",
+    );
+    expect(card).toHaveStyle({
+      maxWidth: "var(--topology-card-max-width-capability)",
+    });
   });
 
   it("선택 카드에 직접 관계 요약 chip 을 붙여 edge label 을 읽기 전 맥락을 준다", () => {
@@ -911,8 +970,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "Very Long Capability Name That Should Not Push The Card Wider",
     );
     expect(title).toHaveClass("min-w-0", "truncate");
-    expect(title.closest("[data-skeleton-card]")).toHaveStyle({
-      maxWidth: "var(--topology-anchor-card-max-width, 14rem)",
+    const card = title.closest("[data-skeleton-card]");
+    expect(card).toHaveAttribute(
+      "data-card-max-width-token",
+      "--topology-card-max-width-domain",
+    );
+    expect(card).toHaveStyle({
+      maxWidth: "var(--topology-card-max-width-domain)",
     });
   });
 

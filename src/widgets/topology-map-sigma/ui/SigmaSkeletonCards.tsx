@@ -175,6 +175,24 @@ const DRAG_CLUSTER_HULL_PAD_PX = 14;
 const HOVER_POP_W = 272;
 const BASE_ANCHOR_CARD_MAX_WIDTH_PX = 224;
 const ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX = 128;
+const TIER_CARD_MAX_WIDTH_TOKEN: Record<SkeletonCardModel['tier'], string> = {
+  0: '--topology-card-max-width-project',
+  1: '--topology-card-max-width-domain',
+  2: '--topology-card-max-width-capability',
+  3: '--topology-card-max-width-element',
+};
+const TIER_CARD_MAX_WIDTH_PX: Record<SkeletonCardModel['tier'], number> = {
+  0: BASE_ANCHOR_CARD_MAX_WIDTH_PX,
+  1: BASE_ANCHOR_CARD_MAX_WIDTH_PX,
+  2: 312,
+  3: 224,
+};
+const TIER_CARD_MAX_WIDTH_SCALE_STEP_PX: Record<SkeletonCardModel['tier'], number> = {
+  0: ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX,
+  1: ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX,
+  2: 96,
+  3: 64,
+};
 
 /** kind 위계 — 커넥터/ego 판정에 사용 (낮을수록 상위). */
 const KIND_RANK: Record<SkeletonCardModel['kind'], number> = {
@@ -2072,6 +2090,15 @@ export function SigmaSkeletonCards({
         (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
       }px`,
     );
+    for (const tier of [0, 1, 2, 3] as const) {
+      container.style.setProperty(
+        TIER_CARD_MAX_WIDTH_TOKEN[tier],
+        `${
+          TIER_CARD_MAX_WIDTH_PX[tier] +
+          (scale - 1) * TIER_CARD_MAX_WIDTH_SCALE_STEP_PX[tier]
+        }px`,
+      );
+    }
     const dockGap = 56 * scale;
     const columnStep = COLUMN_STEP_PX * scale;
     const domWriteStats: SkeletonDomWriteStats = { applied: 0, skipped: 0 };
@@ -4113,6 +4140,12 @@ export function SigmaSkeletonCards({
                   : '--topology-card-drag-wash'
                 : undefined
             }
+            data-card-readable-width-contract="tier-token-preserves-title-lane"
+            data-card-max-width-token={
+              pathEndpoint
+                ? '--topology-path-endpoint-card-max-width'
+                : TIER_CARD_MAX_WIDTH_TOKEN[card.tier]
+            }
             onClick={(event) => {
               event.stopPropagation();
               if (event.currentTarget.dataset.surfaceHidden === 'true') return;
@@ -4253,9 +4286,7 @@ export function SigmaSkeletonCards({
                 maxWidth:
                   pathEndpoint
                     ? 'var(--topology-path-endpoint-card-max-width)'
-                    : card.tier <= 1
-                      ? 'var(--topology-anchor-card-max-width, 14rem)'
-                      : '12rem',
+                    : `var(${TIER_CARD_MAX_WIDTH_TOKEN[card.tier]})`,
                 '--card-border': selected
                   ? 'var(--topology-card-border-selected)'
                   : healthRepairAuditTarget
@@ -4331,6 +4362,8 @@ export function SigmaSkeletonCards({
               data-path-endpoint-title-contract={
                 pathEndpoint ? 'endpoint-title-gets-readable-width' : undefined
               }
+              data-card-title-lane-contract="title-shrinks-before-meta-chips"
+              data-full-title={card.title}
               className="relative min-w-0 truncate"
             >
               {card.title}
