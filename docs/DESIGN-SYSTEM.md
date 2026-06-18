@@ -137,6 +137,9 @@ names in component data markers and tests whenever a surface depends on
   unavailable.
 - `--topology-panel-compact-reserved-width`: compact fallback with reserved
   right-side inspector space.
+- `--topology-card-selected-focus-max-width`: selected focus map card width;
+  keeps the current node title readable before secondary subtree count metadata
+  while the direct relation facts chip stays visible.
 - `--topology-selected-relation-card-width` /
   `--topology-selected-relation-card-max-height`: compact selected relation
   inspector geometry; keeps MCP/CLI handoff visible without turning the card

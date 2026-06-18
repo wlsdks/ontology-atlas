@@ -303,6 +303,31 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
     .first();
   await expect(selectedCard).toBeVisible();
   await expect(selectedCard).toHaveAttribute("data-selected", "true");
+  await expect(selectedCard).toHaveAttribute(
+    "data-card-selected-title-priority",
+    "selected-title-before-subtree-count",
+  );
+  await expect(selectedCard).toHaveAttribute(
+    "data-card-max-width-token",
+    "--topology-card-selected-focus-max-width",
+  );
+  const selectedTitle = selectedCard.locator("[data-card-title]");
+  await expect(selectedTitle).toHaveAttribute(
+    "data-card-title-lane-contract",
+    "selected-title-keeps-current-focus-readable",
+  );
+  const selectedTitleFits = await selectedTitle.evaluate(
+    (element) => element.scrollWidth <= element.clientWidth + 1,
+  );
+  expect(
+    selectedTitleFits,
+    `selected map card title should stay readable for ${selectedSlug}`,
+  ).toBe(true);
+  const subtreeCount = selectedCard.locator("[data-skeleton-card-count]");
+  await expect(subtreeCount).toHaveAttribute(
+    "data-count-chip-visibility",
+    "sr-only-selected-relation-summary",
+  );
   const summary = selectedCard.getByTestId("sigma-selected-card-relation-summary");
   await expect(summary).toBeVisible();
   await expect(summary).toHaveAttribute(

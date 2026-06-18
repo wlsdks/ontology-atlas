@@ -174,7 +174,9 @@ const DRAG_CLUSTER_HULL_PAD_PX = 14;
 /** hover 팝업 폭 추정(px) — flip 판정용 (max-w-[17rem]). */
 const HOVER_POP_W = 272;
 const BASE_ANCHOR_CARD_MAX_WIDTH_PX = 224;
+const SELECTED_FOCUS_CARD_MAX_WIDTH_PX = 248;
 const ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX = 128;
+const SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN = '--topology-card-selected-focus-max-width';
 const TIER_CARD_MAX_WIDTH_TOKEN: Record<SkeletonCardModel['tier'], string> = {
   0: '--topology-card-max-width-project',
   1: '--topology-card-max-width-domain',
@@ -2105,6 +2107,13 @@ export function SigmaSkeletonCards({
         }px`,
       );
     }
+    container.style.setProperty(
+      SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN,
+      `${
+        SELECTED_FOCUS_CARD_MAX_WIDTH_PX +
+        (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
+      }px`,
+    );
     const dockGap = 56 * scale;
     const columnStep = COLUMN_STEP_PX * scale;
     const domWriteStats: SkeletonDomWriteStats = { applied: 0, skipped: 0 };
@@ -4125,6 +4134,8 @@ export function SigmaSkeletonCards({
                 types: selectedRelationSummary.typeCount,
               })
             : null;
+        const selectedRelationSummaryOwnsMeta =
+          selected && selectedRelationSummary !== null;
         return (
           <button
             key={card.id}
@@ -4187,8 +4198,15 @@ export function SigmaSkeletonCards({
                 : undefined
             }
             data-card-readable-width-contract="tier-token-preserves-title-lane"
+            data-card-selected-title-priority={
+              selectedRelationSummaryOwnsMeta
+                ? 'selected-title-before-subtree-count'
+                : undefined
+            }
             data-card-max-width-token={
-              pathEndpoint
+              selectedRelationSummaryOwnsMeta
+                ? SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN
+                : pathEndpoint
                 ? '--topology-path-endpoint-card-max-width'
                 : TIER_CARD_MAX_WIDTH_TOKEN[card.tier]
             }
@@ -4330,7 +4348,9 @@ export function SigmaSkeletonCards({
                       : TIER_Z_INDEX[card.tier],
                 fontSize: `calc(${TIER_FONT_PX[card.tier]}px * var(--topology-card-scale, 1))`,
                 maxWidth:
-                  pathEndpoint
+                  selectedRelationSummaryOwnsMeta
+                    ? `var(${SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN})`
+                    : pathEndpoint
                     ? 'var(--topology-path-endpoint-card-max-width)'
                     : `var(${TIER_CARD_MAX_WIDTH_TOKEN[card.tier]})`,
                 '--card-border': selected
@@ -4408,7 +4428,11 @@ export function SigmaSkeletonCards({
               data-path-endpoint-title-contract={
                 pathEndpoint ? 'endpoint-title-gets-readable-width' : undefined
               }
-              data-card-title-lane-contract="title-shrinks-before-meta-chips"
+              data-card-title-lane-contract={
+                selectedRelationSummaryOwnsMeta
+                  ? 'selected-title-keeps-current-focus-readable'
+                  : 'title-shrinks-before-meta-chips'
+              }
               data-full-title={card.title}
               className="relative min-w-0 truncate"
             >
@@ -4421,7 +4445,16 @@ export function SigmaSkeletonCards({
                 data-surface-token="--topology-card-count-surface"
                 data-border-token="--topology-card-count-border"
                 data-text-token="--topology-card-count-text"
-                className="relative ml-0.5 inline-flex h-[1.42em] min-w-[1.65em] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-card-count-border)] bg-[color:var(--topology-card-count-surface)] px-[0.42em] font-mono text-[0.68em] leading-none text-[color:var(--topology-card-count-text)]"
+                data-count-chip-visibility={
+                  selectedRelationSummaryOwnsMeta
+                    ? 'sr-only-selected-relation-summary'
+                    : 'visible'
+                }
+                className={
+                  selectedRelationSummaryOwnsMeta
+                    ? 'sr-only'
+                    : 'relative ml-0.5 inline-flex h-[1.42em] min-w-[1.65em] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-card-count-border)] bg-[color:var(--topology-card-count-surface)] px-[0.42em] font-mono text-[0.68em] leading-none text-[color:var(--topology-card-count-text)]'
+                }
               >
                 {card.count}
               </span>

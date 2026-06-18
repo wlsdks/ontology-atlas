@@ -112,6 +112,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer.style.getPropertyValue("--topology-card-max-width-domain")).toBe("224px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-capability")).toBe("312px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-element")).toBe("224px");
+    expect(layer.style.getPropertyValue("--topology-card-selected-focus-max-width")).toBe("248px");
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-drag-dom-index-contract",
       "drag-release-reuses-card-elements",
@@ -2264,7 +2265,36 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
     const root = screen.getByTestId("sigma-skeleton-cards");
+    const selectedCard = container.querySelector('[data-skeleton-card][data-selected="true"]');
+    const selectedCardTitle = selectedCard?.querySelector("[data-card-title]");
+    const selectedCountChip = selectedCard?.querySelector("[data-skeleton-card-count]");
+    const selectedRelationSummary = selectedCard?.querySelector(
+      "[data-relation-summary-contract]",
+    );
 
+    expect(selectedCard).toHaveAttribute(
+      "data-card-selected-title-priority",
+      "selected-title-before-subtree-count",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-max-width-token",
+      "--topology-card-selected-focus-max-width",
+    );
+    expect(selectedCardTitle).toHaveAttribute(
+      "data-card-title-lane-contract",
+      "selected-title-keeps-current-focus-readable",
+    );
+    if (selectedCountChip) {
+      expect(selectedCountChip).toHaveAttribute(
+        "data-count-chip-visibility",
+        "sr-only-selected-relation-summary",
+      );
+      expect(selectedCountChip).toHaveClass("sr-only");
+    }
+    expect(selectedRelationSummary).toHaveAttribute(
+      "data-relation-summary-contract",
+      "selected-card-direct-facts",
+    );
     expect(labelHit).toHaveAttribute("data-selected-relation", "true");
     expect(labelHit).toHaveAttribute("data-relation-label-density", "focus-token");
     expect(visibleBadge).toHaveAttribute(
