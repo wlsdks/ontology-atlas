@@ -598,10 +598,46 @@ describe("TopologyNodePopover", () => {
     expect(title.className).toContain("line-clamp-[var(--topology-node-popover-title-lines)]");
     expect(title.className).not.toContain("truncate");
 
+    const close = screen.getByRole("button", { name: "닫기" });
+    expect(close).toHaveAttribute("data-node-popover-close", "true");
+    expect(close).toHaveAttribute(
+      "data-chrome-action-text-token",
+      "--topology-node-popover-chrome-action-text",
+    );
+    expect(close).toHaveAttribute(
+      "data-chrome-action-hover-text-token",
+      "--topology-node-popover-chrome-action-hover-text",
+    );
+    expect(close.className).toContain(
+      "text-[color:var(--topology-node-popover-chrome-action-text)]",
+    );
+
     const expand = screen.getByRole("button", { name: "상세 보기" });
     expect(expand).toHaveAttribute("data-node-popover-toggle", "expand");
     expect(expand).toHaveAttribute("data-compact-action-contract", "icon-only-under-480");
+    expect(expand).toHaveAttribute(
+      "data-chrome-action-border-token",
+      "--topology-node-popover-chrome-action-border",
+    );
+    expect(expand).toHaveAttribute(
+      "data-chrome-action-hover-border-token",
+      "--topology-node-popover-chrome-action-hover-border",
+    );
+    expect(expand).toHaveAttribute(
+      "data-chrome-action-text-token",
+      "--topology-node-popover-chrome-action-text",
+    );
+    expect(expand).toHaveAttribute(
+      "data-chrome-action-hover-text-token",
+      "--topology-node-popover-chrome-action-hover-text",
+    );
     expect(expand.className).toContain("h-[var(--topology-node-popover-compact-action-size)]");
+    expect(expand.className).toContain(
+      "border-[color:var(--topology-node-popover-chrome-action-border)]",
+    );
+    expect(expand.className).toContain(
+      "text-[color:var(--topology-node-popover-chrome-action-text)]",
+    );
     expect(expand.className).toContain("max-[480px]:w-[var(--topology-node-popover-compact-action-size)]");
     expect(expand.querySelector("span")?.className).toContain("max-[480px]:sr-only");
     fireEvent.click(expand);

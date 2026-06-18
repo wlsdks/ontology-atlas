@@ -305,7 +305,11 @@ export function TopologyNodePopover({
           aria-label={labels.expand}
           data-node-popover-toggle="expand"
           data-compact-action-contract="icon-only-under-480"
-          className="inline-flex h-[var(--topology-node-popover-compact-action-size)] shrink-0 items-center justify-center gap-1 rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] max-[480px]:w-[var(--topology-node-popover-compact-action-size)] max-[480px]:px-0"
+          data-chrome-action-border-token="--topology-node-popover-chrome-action-border"
+          data-chrome-action-hover-border-token="--topology-node-popover-chrome-action-hover-border"
+          data-chrome-action-text-token="--topology-node-popover-chrome-action-text"
+          data-chrome-action-hover-text-token="--topology-node-popover-chrome-action-hover-text"
+          className="inline-flex h-[var(--topology-node-popover-compact-action-size)] shrink-0 items-center justify-center gap-1 rounded-md border border-[color:var(--topology-node-popover-chrome-action-border)] px-2.5 text-[11px] text-[color:var(--topology-node-popover-chrome-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-chrome-action-hover-border)] hover:text-[color:var(--topology-node-popover-chrome-action-hover-text)] max-[480px]:w-[var(--topology-node-popover-compact-action-size)] max-[480px]:px-0"
         >
           <ChevronUp size={13} aria-hidden />
           <span className="max-[480px]:sr-only">{labels.expand}</span>
@@ -314,7 +318,10 @@ export function TopologyNodePopover({
           type="button"
           onClick={onClose}
           aria-label={labels.close}
-          className="-mr-1 shrink-0 rounded-md p-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          data-node-popover-close="true"
+          data-chrome-action-text-token="--topology-node-popover-chrome-action-text"
+          data-chrome-action-hover-text-token="--topology-node-popover-chrome-action-hover-text"
+          className="-mr-1 shrink-0 rounded-md p-1 text-[color:var(--topology-node-popover-chrome-action-text)] transition-colors hover:text-[color:var(--topology-node-popover-chrome-action-hover-text)]"
         >
           <X size={14} aria-hidden />
         </button>
@@ -369,7 +376,10 @@ export function TopologyNodePopover({
           type="button"
           onClick={onClose}
           aria-label={labels.close}
-          className="-mr-1 -mt-1 shrink-0 rounded-md p-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          data-node-popover-close="true"
+          data-chrome-action-text-token="--topology-node-popover-chrome-action-text"
+          data-chrome-action-hover-text-token="--topology-node-popover-chrome-action-hover-text"
+          className="-mr-1 -mt-1 shrink-0 rounded-md p-1 text-[color:var(--topology-node-popover-chrome-action-text)] transition-colors hover:text-[color:var(--topology-node-popover-chrome-action-hover-text)]"
         >
           <X size={14} aria-hidden />
         </button>

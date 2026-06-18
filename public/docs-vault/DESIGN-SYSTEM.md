@@ -253,6 +253,11 @@ names in component data markers and tests whenever a surface depends on
   footer navigation tokens. Use these for `Map view`, `Full detail`, and hidden
   relation count pills so the bottom edge remains a stable state-transition
   rail, not generic page chrome.
+- `--topology-node-popover-chrome-action-*`: selected node inspector utility
+  chrome tokens. Use these for close and compact expand controls so utility
+  actions stay subdued inside the node inspector layer and do not borrow generic
+  page-button color while relation facts, evidence, and handoff actions remain
+  the primary scan targets.
 - `--topology-node-popover-route-*`: compact relation-row handoff route rail
   inside the selected node inspector. Use these for fact/evidence/gate/action
   chips and their text so row-level MCP/CLI payloads scan as structured proof,

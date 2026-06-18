@@ -2334,6 +2334,20 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "data-compact-action-contract",
     "icon-only-under-480",
   );
+  const compactExpandAction = page.locator('[data-node-popover-toggle="expand"]');
+  await expect(compactExpandAction).toHaveAttribute(
+    "data-chrome-action-border-token",
+    "--topology-node-popover-chrome-action-border",
+  );
+  await expect(compactExpandAction).toHaveAttribute(
+    "data-chrome-action-text-token",
+    "--topology-node-popover-chrome-action-text",
+  );
+  const compactCloseAction = page.locator('[data-node-popover-close="true"]');
+  await expect(compactCloseAction).toHaveAttribute(
+    "data-chrome-action-text-token",
+    "--topology-node-popover-chrome-action-text",
+  );
   const popoverRect = await rectOf(popover);
   expect(popoverRect.top, "compact focus popover should stay under top chrome").toBeLessThanOrEqual(96);
   expect(popoverRect.left, "compact focus popover should stay inside viewport").toBeGreaterThanOrEqual(8);
@@ -2676,6 +2690,15 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   await expect(popover).toHaveAttribute(
     "data-max-height-token",
     "--topology-node-popover-max-height",
+  );
+  const expandedCloseAction = page.locator('[data-node-popover-close="true"]');
+  await expect(expandedCloseAction).toHaveAttribute(
+    "data-chrome-action-text-token",
+    "--topology-node-popover-chrome-action-text",
+  );
+  await expect(expandedCloseAction).toHaveAttribute(
+    "data-chrome-action-hover-text-token",
+    "--topology-node-popover-chrome-action-hover-text",
   );
 
   const connectionList = page.getByTestId("topology-node-connection-list");
