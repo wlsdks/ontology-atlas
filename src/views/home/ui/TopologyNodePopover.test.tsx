@@ -355,7 +355,7 @@ describe("TopologyNodePopover", () => {
         "data-phone-density-contract",
         "defer-map-context-before-readable-row",
       );
-      expect(mapContextNote.className).toContain("max-[540px]:hidden");
+      expect(mapContextNote.className).toContain("max-xl:hidden");
     }
     expect(list).toHaveAttribute("data-testid", "topology-node-connection-list");
     expect(list).toHaveAttribute("data-overflow-contract", "vertical-scroll-only");

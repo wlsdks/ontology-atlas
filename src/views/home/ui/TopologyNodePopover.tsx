@@ -762,7 +762,7 @@ export function TopologyNodePopover({
             data-map-context-surface-token="--topology-node-popover-context-surface"
             data-map-context-border-token="--topology-node-popover-context-border"
             data-map-context-text-token="--topology-node-popover-context-text"
-            className="mb-1 rounded-md border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-2 py-1 text-[10px] leading-4 text-[color:var(--topology-node-popover-context-text)] max-[540px]:hidden"
+            className="mb-1 rounded-md border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-2 py-1 text-[10px] leading-4 text-[color:var(--topology-node-popover-context-text)] max-xl:hidden"
           >
             {labels.expandedNote.replace("{count}", String(expandedCount))}
           </p>

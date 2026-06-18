@@ -3749,6 +3749,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
       routeClientWidth: route?.clientWidth ?? 0,
       routeScrollWidth: route?.scrollWidth ?? 0,
       routeHeight: routeRect?.height ?? 0,
+      routeBottom: routeRect?.bottom ?? null,
       visibleRowHeight,
       footerTop: footerRect?.top ?? null,
       footerBottom: footerRect?.bottom ?? null,
@@ -3785,6 +3786,10 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     readableRelationProof?.routeHeight ?? 0,
     "expanded phone relation route rail should remain a compact proof strip",
   ).toBeLessThanOrEqual(26);
+  expect(
+    readableRelationProof?.routeBottom ?? Infinity,
+    "expanded phone relation route rail should stay fully readable above the fixed footer",
+  ).toBeLessThanOrEqual((readableRelationProof?.footerTop ?? 0) - 4);
   expect(
     readableRelationProof?.footerPositionContract,
     "expanded phone popover should keep the MCP/CLI footer anchored in the visible frame",

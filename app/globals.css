@@ -577,7 +577,7 @@
       520px,
       calc(100dvh - 72px - var(--topology-mobile-bottom-tab-reserve) - 16px)
     );
-    --topology-node-popover-relation-list-min-height: 88px;
+    --topology-node-popover-relation-list-min-height: 96px;
     --topology-node-popover-relation-section-min-height: 248px;
     --topology-node-popover-radius: 12px;
     --topology-node-popover-chip-padding-x: clamp(12px, 0.86vw, 14px);
