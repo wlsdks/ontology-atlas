@@ -380,6 +380,27 @@ export function TopologyNodePopover({
           >
             {labels.usedBy} {focus.usedByCount} · {labels.dependsOn} {focus.dependsOnCount}
           </p>
+          <p
+            data-testid="topology-node-popover-compact-relation-facts"
+            data-compact-relation-facts-contract="collapsed-dock-surfaces-typed-facts"
+            data-relation-fact-count={total}
+            data-relation-type-count={relationTypeCount}
+            data-relation-fact-label={relationFactLabel}
+            data-relation-type-label={relationTypeLabel}
+            data-compact-relation-facts-surface-token="--topology-node-popover-context-surface"
+            data-compact-relation-facts-border-token="--topology-node-popover-context-border"
+            data-compact-relation-facts-text-token="--topology-node-popover-context-text"
+            className="mt-1 inline-flex max-w-full items-center gap-1 overflow-hidden rounded-full border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--topology-node-popover-context-text)] max-[540px]:hidden"
+          >
+            <span className="shrink-0 tabular-nums">{relationFactLabel}</span>
+            <span
+              aria-hidden="true"
+              className="shrink-0 text-[color:var(--topology-node-popover-endpoint-separator)]"
+            >
+              ·
+            </span>
+            <span className="min-w-0 truncate tabular-nums">{relationTypeLabel}</span>
+          </p>
         </div>
         {primaryAction ? (
           <button

@@ -2592,6 +2592,30 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     titleReadability.overflowsMoreThanTwoLines,
     "selected node title should clamp at two lines instead of one-line truncation",
   ).toBe(false);
+  const compactRelationFacts = page.getByTestId("topology-node-popover-compact-relation-facts");
+  await expect(compactRelationFacts).toBeVisible();
+  await expect(compactRelationFacts).toHaveAttribute(
+    "data-compact-relation-facts-contract",
+    "collapsed-dock-surfaces-typed-facts",
+  );
+  await expect(compactRelationFacts).toHaveAttribute("data-relation-fact-count", /^[1-9]\d*$/);
+  await expect(compactRelationFacts).toHaveAttribute("data-relation-type-count", /^[1-9]\d*$/);
+  await expect(compactRelationFacts).toHaveAttribute(
+    "data-compact-relation-facts-surface-token",
+    "--topology-node-popover-context-surface",
+  );
+  await expect(compactRelationFacts).toHaveAttribute(
+    "data-compact-relation-facts-border-token",
+    "--topology-node-popover-context-border",
+  );
+  await expect(compactRelationFacts).toHaveAttribute(
+    "data-compact-relation-facts-text-token",
+    "--topology-node-popover-context-text",
+  );
+  const compactRelationFactsFit = await compactRelationFacts.evaluate(
+    (el) => el.scrollWidth <= el.clientWidth + 1,
+  );
+  expect(compactRelationFactsFit, "compact relation fact pill should not overflow").toBe(true);
   await expect(compactBriefAction).toHaveAttribute(
     "data-agent-handoff-action",
     "copy-focus-brief",

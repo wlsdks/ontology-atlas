@@ -795,6 +795,29 @@ describe("TopologyNodePopover", () => {
     );
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     expect(screen.getByText("이 노드를 쓰는 곳 1 · 이 노드가 기대는 곳 2")).toBeInTheDocument();
+    const compactFacts = screen.getByTestId("topology-node-popover-compact-relation-facts");
+    expect(compactFacts).toHaveAttribute(
+      "data-compact-relation-facts-contract",
+      "collapsed-dock-surfaces-typed-facts",
+    );
+    expect(compactFacts).toHaveAttribute("data-relation-fact-count", "3");
+    expect(compactFacts).toHaveAttribute("data-relation-type-count", "2");
+    expect(compactFacts).toHaveAttribute("data-relation-fact-label", "직접 의미 관계 3개");
+    expect(compactFacts).toHaveAttribute("data-relation-type-label", "관계 유형 2종");
+    expect(compactFacts).toHaveAttribute(
+      "data-compact-relation-facts-surface-token",
+      "--topology-node-popover-context-surface",
+    );
+    expect(compactFacts).toHaveAttribute(
+      "data-compact-relation-facts-border-token",
+      "--topology-node-popover-context-border",
+    );
+    expect(compactFacts).toHaveAttribute(
+      "data-compact-relation-facts-text-token",
+      "--topology-node-popover-context-text",
+    );
+    expect(compactFacts).toHaveTextContent("직접 의미 관계 3개");
+    expect(compactFacts).toHaveTextContent("관계 유형 2종");
     const kindLabel = document.querySelector("[data-selected-node-kind-label]");
     expect(kindLabel).toHaveAttribute(
       "data-kind-text-token",
