@@ -4400,8 +4400,9 @@ export function SigmaSkeletonCards({
             <span
               aria-hidden="true"
               data-edge-mask
-              className="pointer-events-none absolute rounded-[inherit] bg-[color:var(--color-canvas)]"
-              style={{ inset: `-${EDGE_CLEARANCE_MASK_PX}px` }}
+              data-edge-mask-contract="paint-only-does-not-expand-card-scroll-width"
+              className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[color:var(--color-canvas)]"
+              style={{ boxShadow: `0 0 0 ${EDGE_CLEARANCE_MASK_PX}px var(--color-canvas)` }}
             />
             <span
               aria-hidden="true"

@@ -599,7 +599,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const mask = domainCard.querySelector("[data-edge-mask]");
     expect(mask).toBeInTheDocument();
     expect(mask).toHaveClass("bg-[color:var(--color-canvas)]");
-    expect(mask).toHaveStyle({ inset: "-10px" });
+    expect(mask).toHaveAttribute(
+      "data-edge-mask-contract",
+      "paint-only-does-not-expand-card-scroll-width",
+    );
+    expect(mask).toHaveClass("inset-0");
+    expect(mask).toHaveStyle({
+      boxShadow: "0 0 0 10px var(--color-canvas)",
+    });
   });
 
   it("선택된 카드는 data-selected — 인디고 ring 채널", () => {

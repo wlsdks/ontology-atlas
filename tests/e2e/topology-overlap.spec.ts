@@ -171,6 +171,40 @@ async function visibleCardRects(page: Page) {
   );
 }
 
+async function visibleCardScrollWidthViolations(page: Page) {
+  return page.locator("[data-skeleton-card]").evaluateAll((els) =>
+    els
+      .map((el) => {
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        return {
+          text: el.textContent?.trim() ?? "",
+          display: style.display,
+          opacity: Number(style.opacity || "1"),
+          surfaceHidden: el.getAttribute("data-surface-hidden") === "true",
+          visibility: style.visibility,
+          width: rect.width,
+          height: rect.height,
+          clientWidth: el.clientWidth,
+          scrollWidth: el.scrollWidth,
+          maskContract: el
+            .querySelector("[data-edge-mask]")
+            ?.getAttribute("data-edge-mask-contract"),
+        };
+      })
+      .filter(
+        (card) =>
+          !card.surfaceHidden &&
+          card.display !== "none" &&
+          card.visibility !== "hidden" &&
+          card.opacity > 0.05 &&
+          card.width > 0 &&
+          card.height > 0,
+      )
+      .filter((card) => card.scrollWidth > card.clientWidth + 1),
+  );
+}
+
 async function visibleRelationLabelCardOverlaps(page: Page) {
   return page.locator("[data-relation-label-button]").evaluateAll((labels) => {
     const cardRects = Array.from(document.querySelectorAll<HTMLElement>("[data-skeleton-card]"))
@@ -1531,6 +1565,10 @@ for (const viewport of VIEWPORTS) {
       focusHullBottomClearance,
       `selected focus hull should leave viewport bottom breathing room at ${viewport.label}`,
     ).toBeGreaterThanOrEqual(focusHullBreathingRoom);
+    expect(
+      await visibleCardScrollWidthViolations(page),
+      `visible skeleton cards should keep edge masks paint-only at ${viewport.label}`,
+    ).toEqual([]);
     await expect(page.locator("[data-drag-cluster-title]")).toHaveCount(0);
     await expect(page.locator("[data-drag-cluster-count]")).toHaveCount(0);
     if (viewport.label === "desktop-1280") {
