@@ -568,6 +568,7 @@
     --topology-node-popover-chip-padding-y: clamp(10px, 0.72vw, 12px);
     --topology-node-popover-chip-gap: clamp(8px, 0.72vw, 12px);
     --topology-node-popover-compact-action-size: 32px;
+    --topology-node-popover-compact-handoff-action-max-width: 76px;
     --topology-node-popover-title-lines: 2;
     --topology-node-popover-kind-text: rgba(222, 225, 255, 0.52);
     --topology-node-popover-title-text: rgba(255, 255, 255, 0.94);

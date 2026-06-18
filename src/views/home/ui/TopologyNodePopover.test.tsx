@@ -857,6 +857,72 @@ describe("TopologyNodePopover", () => {
     expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps the primary agent handoff label visible in the collapsed mobile inspector", () => {
+    const copyBrief = vi.fn();
+    setup({
+      collapsed: true,
+      onToggleCollapsed: vi.fn(),
+      actions: [
+        {
+          kind: "focus-brief",
+          label: "선택 브리프 복사",
+          ariaLabel: "지형도 선택 개념 검토 브리프 복사",
+          onClick: copyBrief,
+        },
+      ],
+    });
+
+    const popover = screen.getByTestId("topology-node-popover");
+    const briefAction = screen.getByRole("button", {
+      name: "지형도 선택 개념 검토 브리프 복사",
+    });
+    expect(popover).toHaveAttribute(
+      "data-compact-handoff-contract",
+      "selected-node-actions-visible",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-action-contract",
+      "compact-label-visible-under-480",
+    );
+    expect(briefAction).toHaveAttribute(
+      "data-popover-action-label-contract",
+      "compact-visible-full-aria",
+    );
+    expect(briefAction).toHaveAttribute(
+      "data-popover-action-full-label",
+      "선택 브리프 복사",
+    );
+    expect(briefAction).toHaveAttribute("data-popover-action-compact-label", "브리프");
+    expect(briefAction).toHaveAttribute(
+      "data-popover-action-surface-token",
+      "--topology-node-popover-action-icon-surface",
+    );
+    expect(briefAction).toHaveAttribute(
+      "data-popover-action-border-token",
+      "--topology-node-popover-action-icon-border",
+    );
+    expect(briefAction).toHaveAttribute(
+      "data-popover-action-text-token",
+      "--topology-node-popover-action-text",
+    );
+    expect(briefAction).toHaveAttribute(
+      "data-popover-action-max-width-token",
+      "--topology-node-popover-compact-handoff-action-max-width",
+    );
+    expect(briefAction.className).toContain(
+      "max-w-[var(--topology-node-popover-compact-handoff-action-max-width)]",
+    );
+    expect(briefAction.className).toContain("overflow-hidden");
+    expect(briefAction.className).toContain(
+      "text-[color:var(--topology-node-popover-action-text)]",
+    );
+    expect(briefAction).toHaveTextContent("브리프");
+    expect(briefAction).not.toHaveTextContent("선택 브리프 복사");
+
+    fireEvent.click(briefAction);
+    expect(copyBrief).toHaveBeenCalledTimes(1);
+  });
+
   it("shows a readable compact map return control when expanded", () => {
     const onToggleCollapsed = vi.fn();
     setup({ onToggleCollapsed });

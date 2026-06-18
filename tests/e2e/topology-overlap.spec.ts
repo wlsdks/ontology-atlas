@@ -2443,7 +2443,10 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "selected-node-actions-visible",
   );
   await expect(popover).toHaveAttribute("data-responsive-width-contract", "fluid-chip-to-rail");
-  await expect(popover).toHaveAttribute("data-compact-action-contract", "icon-only-under-480");
+  await expect(popover).toHaveAttribute(
+    "data-compact-action-contract",
+    "compact-label-visible-under-480",
+  );
   await expect(popover).toHaveAttribute(
     "data-compact-gap-token",
     "--topology-node-popover-chip-gap",
@@ -2515,6 +2518,16 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "data-popover-action-hover-text-token",
     "--topology-node-popover-action-hover-text",
   );
+  await expect(compactBriefAction).toHaveAttribute(
+    "data-popover-action-max-width-token",
+    "--topology-node-popover-compact-handoff-action-max-width",
+  );
+  await expect(compactBriefAction).toHaveAttribute(
+    "data-popover-action-label-contract",
+    "compact-visible-full-aria",
+  );
+  await expect(compactBriefAction).toHaveAttribute("data-popover-action-compact-label", /.+/);
+  await expect(compactBriefAction).toHaveText(/.+/);
   await expect(page.locator('[data-node-popover-toggle="expand"]')).toHaveAttribute(
     "data-compact-action-contract",
     "icon-only-under-480",
@@ -2680,7 +2693,20 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
 
   const popover = page.getByTestId("topology-node-popover");
   await expect(popover).toBeVisible();
-  await expect(popover).toHaveAttribute("data-compact-action-contract", "icon-only-under-480");
+  await expect(popover).toHaveAttribute(
+    "data-compact-action-contract",
+    "compact-label-visible-under-480",
+  );
+  const compactBriefAction = page.getByTestId("topology-node-popover-compact-brief-action");
+  await expect(compactBriefAction).toHaveAttribute(
+    "data-popover-action-label-contract",
+    "compact-visible-full-aria",
+  );
+  await expect(compactBriefAction).toHaveAttribute(
+    "data-popover-action-max-width-token",
+    "--topology-node-popover-compact-handoff-action-max-width",
+  );
+  await expect(compactBriefAction).toHaveText(/.+/);
   const focusHull = page.locator("[data-drag-cluster-hull]");
   await expect(focusHull).toHaveAttribute("data-cluster-mode", "focus");
   await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "quiet-outline");
