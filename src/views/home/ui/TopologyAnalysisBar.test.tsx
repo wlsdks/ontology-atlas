@@ -2338,6 +2338,15 @@ describe("TopologyAnalysisBar", () => {
       "href",
       "/ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
     );
+    const visibleRoute = screen.getByTestId("topology-path-visible-route");
+    expect(visibleRoute).toHaveAttribute(
+      "data-route-responsive-contract",
+      "target-weighted-endpoints",
+    );
+    expect(visibleRoute.querySelector('[data-route-endpoint-title="target"]')).toHaveAttribute(
+      "data-route-endpoint-title-contract",
+      "weighted-route-title",
+    );
     const handoff = screen.getByTestId("topology-path-agent-handoff");
     expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
     expect(handoff).toHaveAttribute(

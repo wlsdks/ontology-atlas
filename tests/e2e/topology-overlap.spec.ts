@@ -2136,6 +2136,10 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "data-chip-border-token",
     "--topology-path-route-chip-border",
   );
+  await expect(route).toHaveAttribute(
+    "data-route-responsive-contract",
+    "target-weighted-endpoints",
+  );
   await expect(candidateVisibility).toBeVisible();
   await expect(candidateVisibility).toHaveAttribute(
     "data-surface-token",
@@ -2149,6 +2153,10 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     (el) => el.scrollWidth <= el.clientWidth + 1,
   );
   expect(routeDoesNotOverflow, "phone path visible route should not overflow").toBe(true);
+  const routeTargetTitleFits = await route
+    .locator('[data-route-endpoint-title="target"]')
+    .evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
+  expect(routeTargetTitleFits, "phone path route target title should not truncate").toBe(true);
   await expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
   await expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
   await expect(handoff).toHaveAttribute(

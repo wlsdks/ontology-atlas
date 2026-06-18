@@ -1066,7 +1066,8 @@ export function TopologyAnalysisBar({
               data-border-token="--topology-path-route-border"
               data-chip-surface-token="--topology-path-route-chip-surface"
               data-chip-border-token="--topology-path-route-chip-border"
-              className="mt-3 grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5"
+              data-route-responsive-contract="target-weighted-endpoints"
+              className="mt-3 grid min-w-0 grid-cols-[minmax(0,0.8fr)_auto_minmax(0,1.45fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5"
             >
               <span
                 className="min-w-0 rounded border border-[color:var(--topology-path-route-chip-border)] bg-[color:var(--topology-path-route-chip-surface)] px-1.5 py-1"
@@ -1075,11 +1076,19 @@ export function TopologyAnalysisBar({
                 <span className="block font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {labels.pathEvidenceSource}
                 </span>
-                <span className="block truncate text-[10.5px] text-[color:var(--color-text-secondary)]">
+                <span
+                  className="block truncate text-[10.5px] text-[color:var(--color-text-secondary)]"
+                  data-route-endpoint-title="source"
+                  data-route-endpoint-title-contract="weighted-route-title"
+                >
                   {displayPathSourceTitle}
                 </span>
               </span>
-              <ArrowRight size={12} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+              <ArrowRight
+                size={12}
+                aria-hidden
+                className="text-[color:var(--color-text-quaternary)]"
+              />
               <span
                 className="min-w-0 rounded border border-[color:var(--topology-path-route-chip-border)] bg-[color:var(--topology-path-route-chip-surface)] px-1.5 py-1 text-right"
                 data-route-endpoint="target"
@@ -1087,7 +1096,11 @@ export function TopologyAnalysisBar({
                 <span className="block font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {labels.pathEvidenceTarget}
                 </span>
-                <span className="block truncate text-[10.5px] text-[color:var(--color-text-secondary)]">
+                <span
+                  className="block truncate text-[10.5px] text-[color:var(--color-text-secondary)]"
+                  data-route-endpoint-title="target"
+                  data-route-endpoint-title-contract="weighted-route-title"
+                >
                   {displayPathTargetTitle}
                 </span>
               </span>
