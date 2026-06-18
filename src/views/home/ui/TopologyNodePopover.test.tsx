@@ -428,6 +428,18 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-relation-row-hover-surface",
     );
     expect(relationRow).toHaveAttribute(
+      "data-row-focus-surface-token",
+      "--topology-node-popover-relation-row-focus-surface",
+    );
+    expect(relationRow).toHaveAttribute(
+      "data-row-focus-border-token",
+      "--topology-node-popover-relation-row-focus-border",
+    );
+    expect(relationRow).toHaveAttribute(
+      "data-row-focus-ring-token",
+      "--topology-node-popover-relation-row-focus-ring",
+    );
+    expect(relationRow).toHaveAttribute(
       "data-row-scan-order",
       "relation>title>direction>endpoint>handoff",
     );
@@ -436,6 +448,15 @@ describe("TopologyNodePopover", () => {
     expect(relationRow?.className).toContain("bg-transparent");
     expect(relationRow?.className).toContain(
       "hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)]",
+    );
+    expect(relationRow?.className).toContain(
+      "focus-visible:border-[color:var(--topology-node-popover-relation-row-focus-border)]",
+    );
+    expect(relationRow?.className).toContain(
+      "focus-visible:bg-[color:var(--topology-node-popover-relation-row-focus-surface)]",
+    );
+    expect(relationRow?.className).toContain(
+      "focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]",
     );
     expect(relationRow?.className).toContain("px-2");
     expect(relationRow?.className).toContain("py-2");

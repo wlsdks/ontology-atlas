@@ -649,8 +649,11 @@ export function TopologyNodePopover({
                     data-row-min-hit-height="72"
                     data-row-scan-order="relation>title>direction>endpoint>handoff"
                     data-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
+                    data-row-focus-surface-token="--topology-node-popover-relation-row-focus-surface"
+                    data-row-focus-border-token="--topology-node-popover-relation-row-focus-border"
+                    data-row-focus-ring-token="--topology-node-popover-relation-row-focus-ring"
                     onClick={() => onSelectConnection(connection.id)}
-                    className="group flex min-h-[72px] w-full min-w-0 items-stretch gap-2 overflow-hidden border border-transparent bg-transparent px-2 py-2 text-left transition-[background-color] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)]"
+                    className="group flex min-h-[72px] w-full min-w-0 items-stretch gap-2 overflow-hidden border border-transparent bg-transparent px-2 py-2 text-left transition-[background-color,border-color,box-shadow] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)] focus-visible:border-[color:var(--topology-node-popover-relation-row-focus-border)] focus-visible:bg-[color:var(--topology-node-popover-relation-row-focus-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]"
                   >
                     <span
                       data-relation-direction-marker={connection.direction}
