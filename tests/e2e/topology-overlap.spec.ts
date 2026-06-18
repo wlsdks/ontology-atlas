@@ -3217,6 +3217,25 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-relation-quality-surface-token",
     /--topology-selected-relation-quality-(strong|supported|weak|review)-surface/,
   );
+  const nodeQualityMeter = page.getByTestId("topology-node-relation-quality-meter");
+  await expect(nodeQualityMeter).toHaveAttribute(
+    "data-quality-meter-contract",
+    "distribution-bar-maps-relation-quality",
+  );
+  await expect(nodeQualityMeter).toHaveAttribute(
+    "data-surface-token",
+    "--topology-overview-quality-meter-surface",
+  );
+  await expect(nodeQualityMeter).toHaveAttribute(
+    "data-border-token",
+    "--topology-overview-quality-meter-border",
+  );
+  await expect(
+    nodeQualityMeter.locator('[data-relation-quality-meter-segment="strong"]'),
+  ).toHaveAttribute(
+    "data-meter-token",
+    "--topology-overview-quality-strong-meter",
+  );
   await expect(
     page
       .getByTestId("topology-node-agent-readiness-lens")

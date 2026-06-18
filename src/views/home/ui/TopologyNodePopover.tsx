@@ -161,6 +161,32 @@ export function TopologyNodePopover({
   const relationQualitySummary = relationQualityItems
     .map(({ label, count }) => `${label} ${count}`)
     .join(" · ");
+  const relationQualityMeterItems = [
+    {
+      key: "strong" as const,
+      count: focus.relationQuality.strong,
+      token: "--topology-overview-quality-strong-meter",
+    },
+    {
+      key: "supported" as const,
+      count: focus.relationQuality.supported,
+      token: "--topology-overview-quality-supported-meter",
+    },
+    {
+      key: "weak" as const,
+      count: focus.relationQuality.weak,
+      token: "--topology-overview-quality-weak-meter",
+    },
+    {
+      key: "review" as const,
+      count: focus.relationQuality.review,
+      token: "--topology-overview-quality-review-meter",
+    },
+  ];
+  const relationQualityMeterTotal = relationQualityMeterItems.reduce(
+    (sum, item) => sum + item.count,
+    0,
+  );
   const agentReadinessCounts = renderedConnections.reduce(
     (counts, connection) => {
       const gate = relationAgentGateKind(connection);
@@ -564,30 +590,55 @@ export function TopologyNodePopover({
           data-testid="topology-relation-quality-lens"
           aria-label={`${labels.relationQualityTitle}: ${relationQualitySummary}`}
           data-relation-quality-summary={relationQualitySummary}
-          className="mb-1.5 flex flex-wrap gap-1"
+          data-relation-quality-meter-total={relationQualityMeterTotal}
+          className="mb-1"
         >
-          {relationQualityItems.map(({ quality, label, count }) => (
-            <span
-              key={quality}
-              data-relation-quality-chip={quality}
-              data-relation-quality-surface-token={relationQualityChipToken(
-                quality,
-                "surface",
-              )}
-              data-relation-quality-border-token={relationQualityChipToken(
-                quality,
-                "border",
-              )}
-              data-relation-quality-text-token={relationQualityChipToken(
-                quality,
-                "text",
-              )}
-              className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] leading-3.5 ${relationQualityChipClassName(quality, count)}`}
-            >
-              <span className="font-mono uppercase tracking-[0.06em]">{label}</span>
-              <span className="font-mono tabular-nums">{count}</span>
-            </span>
-          ))}
+          <div
+            aria-hidden="true"
+            data-testid="topology-node-relation-quality-meter"
+            data-quality-meter-contract="distribution-bar-maps-relation-quality"
+            data-surface-token="--topology-overview-quality-meter-surface"
+            data-border-token="--topology-overview-quality-meter-border"
+            className="mb-0.5 flex h-1 w-full overflow-hidden rounded-full border border-[color:var(--topology-overview-quality-meter-border)] bg-[color:var(--topology-overview-quality-meter-surface)]"
+          >
+            {relationQualityMeterItems.map((segment) => (
+              <span
+                key={segment.key}
+                data-relation-quality-meter-segment={segment.key}
+                data-count={segment.count}
+                data-meter-token={segment.token}
+                style={{
+                  background: `var(${segment.token})`,
+                  flexGrow:
+                    relationQualityMeterTotal > 0 ? segment.count : 1,
+                }}
+              />
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {relationQualityItems.map(({ quality, label, count }) => (
+              <span
+                key={quality}
+                data-relation-quality-chip={quality}
+                data-relation-quality-surface-token={relationQualityChipToken(
+                  quality,
+                  "surface",
+                )}
+                data-relation-quality-border-token={relationQualityChipToken(
+                  quality,
+                  "border",
+                )}
+                data-relation-quality-text-token={relationQualityChipToken(
+                  quality,
+                  "text",
+                )}
+                className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] leading-3.5 ${relationQualityChipClassName(quality, count)}`}
+              >
+                <span className="font-mono uppercase tracking-[0.06em]">{label}</span>
+                <span className="font-mono tabular-nums">{count}</span>
+              </span>
+            ))}
+          </div>
         </div>
         <div
           data-testid="topology-node-agent-readiness-lens"

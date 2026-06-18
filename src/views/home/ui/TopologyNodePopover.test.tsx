@@ -1402,6 +1402,59 @@ describe("TopologyNodePopover", () => {
       "data-relation-quality-summary",
       "강한 구조 1 · 근거 있는 관계 1 · 약한 관련 0 · 검토 0",
     );
+    expect(lens).toHaveAttribute("data-relation-quality-meter-total", "2");
+    const meter = screen.getByTestId("topology-node-relation-quality-meter");
+    expect(meter).toHaveAttribute(
+      "data-quality-meter-contract",
+      "distribution-bar-maps-relation-quality",
+    );
+    expect(meter).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-quality-meter-surface",
+    );
+    expect(meter).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-quality-meter-border",
+    );
+    expect(meter.className).toContain(
+      "bg-[color:var(--topology-overview-quality-meter-surface)]",
+    );
+    expect(
+      meter.querySelector('[data-relation-quality-meter-segment="strong"]'),
+    ).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-quality-strong-meter",
+    );
+    expect(
+      meter.querySelector('[data-relation-quality-meter-segment="strong"]'),
+    ).toHaveAttribute("data-count", "1");
+    expect(
+      meter.querySelector('[data-relation-quality-meter-segment="supported"]'),
+    ).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-quality-supported-meter",
+    );
+    expect(
+      meter.querySelector('[data-relation-quality-meter-segment="supported"]'),
+    ).toHaveAttribute("data-count", "1");
+    expect(
+      meter.querySelector('[data-relation-quality-meter-segment="weak"]'),
+    ).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-quality-weak-meter",
+    );
+    expect(
+      meter.querySelector('[data-relation-quality-meter-segment="weak"]'),
+    ).toHaveAttribute("data-count", "0");
+    expect(
+      meter.querySelector('[data-relation-quality-meter-segment="review"]'),
+    ).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-quality-review-meter",
+    );
+    expect(
+      meter.querySelector('[data-relation-quality-meter-segment="review"]'),
+    ).toHaveAttribute("data-count", "0");
     expect(lens).toHaveTextContent("강한 구조1");
     expect(lens).toHaveTextContent("근거 있는 관계1");
     expect(lens).toHaveTextContent("약한 관련0");
