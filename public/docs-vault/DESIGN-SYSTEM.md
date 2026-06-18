@@ -272,6 +272,10 @@ names in component data markers and tests whenever a surface depends on
   `Connections` title, and typed-fact summary lens so the transition from node
   metrics to relation rows remains part of the inspector grammar, not a generic
   panel divider.
+- `--topology-node-popover-remainder-text`: selected node inspector hidden
+  relation remainder text (`+N more`) below the capped preview list. Use this
+  for inline relation overflow facts so folded relation count remains tied to
+  the relation list, separate from the footer's drill-down count pill.
 - `--topology-node-popover-route-*`: compact relation-row handoff route rail
   inside the selected node inspector. Use these for fact/evidence/gate/action
   chips and their text so row-level MCP/CLI payloads scan as structured proof,

@@ -817,7 +817,11 @@ export function TopologyNodePopover({
           </p>
         ) : null}
       {hiddenConnectionCount > 0 ? (
-          <p className="mt-1 px-2 text-[11px] text-[color:var(--color-text-quaternary)]">
+          <p
+            data-relation-hidden-remainder
+            data-remainder-text-token="--topology-node-popover-remainder-text"
+            className="mt-1 px-2 text-[11px] text-[color:var(--topology-node-popover-remainder-text)]"
+          >
             +{hiddenConnectionCount} {labels.moreSuffix}
           </p>
         ) : null}

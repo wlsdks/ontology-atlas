@@ -1362,6 +1362,15 @@ describe("TopologyNodePopover", () => {
     expect(screen.getByText("Runtime 0")).toBeInTheDocument();
     expect(screen.queryByText("Runtime 6")).not.toBeInTheDocument();
     expect(screen.getAllByText("+76 더").length).toBeGreaterThan(0);
+    const relationRemainder = document.querySelector("[data-relation-hidden-remainder]");
+    expect(relationRemainder).toHaveAttribute(
+      "data-remainder-text-token",
+      "--topology-node-popover-remainder-text",
+    );
+    expect(relationRemainder?.className).toContain(
+      "text-[color:var(--topology-node-popover-remainder-text)]",
+    );
+    expect(relationRemainder?.className).not.toContain("var(--color-text-quaternary)");
   });
 
   it("keeps the primary focus brief action visible in collapsed compact focus", () => {

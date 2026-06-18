@@ -2903,6 +2903,11 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-footer-action-text-token",
     "--topology-node-popover-footer-action-text",
   );
+  const relationRemainder = page.locator("[data-relation-hidden-remainder]");
+  await expect(relationRemainder).toHaveAttribute(
+    "data-remainder-text-token",
+    "--topology-node-popover-remainder-text",
+  );
   await expect(page.locator("[data-footer-hidden-count]").first()).toHaveAttribute(
     "data-footer-count-text-token",
     "--topology-node-popover-footer-count-text",
