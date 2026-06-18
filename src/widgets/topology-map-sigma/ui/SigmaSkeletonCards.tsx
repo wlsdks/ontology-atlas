@@ -144,13 +144,14 @@ const TIER_DOT_EM: Record<SkeletonCardModel['tier'], string> = {
 };
 
 /**
- * dim 잉크 2단계 (디자이너 패널 합의): 방향 감각용 상위 anchor(project/
- * domain)는 0.34, 하위 칩은 dot+실루엣 수준 0.18. 펼친 열과 *겹치는* dim
- * 카드는 0 — "포커스 콘텐츠와 고스트 콘텐츠의 텍스트 충돌"은 디자이너
- * 제품에서 절대 허용되지 않는 픽셀이다.
+ * dim 잉크 2단계 (디자이너 패널 합의): click-focus 에서는 선택 ego
+ * 관계가 먼저 읽혀야 하므로 방향 감각용 상위 anchor(project/domain)는
+ * 0.24, 하위 칩은 dot+실루엣 수준 0.10. 펼친 열과 *겹치는* dim 카드는
+ * 0 — "포커스 콘텐츠와 고스트 콘텐츠의 텍스트 충돌"은 디자이너 제품에서
+ * 절대 허용되지 않는 픽셀이다.
  */
-const DIM_ANCHOR_OPACITY = '0.34';
-const DIM_CHIP_OPACITY = '0.18';
+const DIM_ANCHOR_OPACITY = '0.24';
+const DIM_CHIP_OPACITY = '0.10';
 /** 펼친 열 카드 주변 충돌 판정 패딩(px). */
 const COLLISION_PAD = 24;
 const ANALYSIS_PANEL_TRAILING_PAD = 12;

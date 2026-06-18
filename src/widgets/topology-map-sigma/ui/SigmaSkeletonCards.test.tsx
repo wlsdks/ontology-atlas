@@ -2736,11 +2736,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       await waitFor(() => {
         expect(layer).toHaveAttribute("data-dim-opacity-contract", "readable-context-geography");
-        expect(layer).toHaveAttribute("data-dim-anchor-opacity", "0.34");
-        expect(layer).toHaveAttribute("data-dim-chip-opacity", "0.18");
-        expect(projectCard).toHaveStyle({ opacity: "0.34" });
-        expect(domainCard).toHaveStyle({ opacity: "0.34" });
-        expect(capabilityCard).toHaveStyle({ opacity: "0.18" });
+        expect(layer).toHaveAttribute("data-dim-anchor-opacity", "0.24");
+        expect(layer).toHaveAttribute("data-dim-chip-opacity", "0.10");
+        expect(projectCard).toHaveStyle({ opacity: "0.24" });
+        expect(domainCard).toHaveStyle({ opacity: "0.24" });
+        expect(capabilityCard).toHaveStyle({ opacity: "0.10" });
       });
     } finally {
       rectSpy.mockRestore();
