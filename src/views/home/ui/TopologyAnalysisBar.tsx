@@ -1117,88 +1117,91 @@ export function TopologyAnalysisBar({
                 ))}
               </ol>
               <div
-                data-testid="topology-overview-tier-legend"
-                data-tier-legend-contract="map-color-to-ontology-layer"
-                data-tier-legend-token-source="ONTOLOGY_KIND_TONE"
-                className="mt-2 border-t border-[color:var(--topology-overview-reader-lens-border)] pt-2"
+                data-testid="topology-overview-map-key"
+                data-map-key-contract="compact-node-and-relation-reading"
+                className="mt-2 grid grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-3 border-t border-[color:var(--topology-overview-reader-lens-border)] pt-2"
               >
-                <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
-                  {labels.overviewTierLegendTitle}
-                </p>
-                <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
-                  {OVERVIEW_TIER_LEGEND_KINDS.map((kind) => {
-                    const tone = ONTOLOGY_KIND_TONE[kind];
-                    const labelByKind = {
-                      project: labels.overviewTierLegendProject,
-                      domain: labels.overviewTierLegendDomain,
-                      capability: labels.overviewTierLegendCapability,
-                      element: labels.overviewTierLegendElement,
-                    } satisfies Record<(typeof kind), string>;
+                <div
+                  data-testid="topology-overview-tier-legend"
+                  data-tier-legend-contract="map-color-to-ontology-layer"
+                  data-tier-legend-token-source="ONTOLOGY_KIND_TONE"
+                  className="min-w-0"
+                >
+                  <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
+                    {labels.overviewTierLegendTitle}
+                  </p>
+                  <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
+                    {OVERVIEW_TIER_LEGEND_KINDS.map((kind) => {
+                      const tone = ONTOLOGY_KIND_TONE[kind];
+                      const labelByKind = {
+                        project: labels.overviewTierLegendProject,
+                        domain: labels.overviewTierLegendDomain,
+                        capability: labels.overviewTierLegendCapability,
+                        element: labels.overviewTierLegendElement,
+                      } satisfies Record<(typeof kind), string>;
 
-                    return (
-                      <span
-                        key={kind}
-                        data-tier-legend-kind={kind}
-                        data-kind-tone-fill={tone.fill}
-                        data-kind-tone-border={tone.border}
-                        className="flex min-w-0 items-center gap-1.5"
-                      >
+                      return (
                         <span
-                          aria-hidden
-                          className="size-1.5 shrink-0 rounded-full ring-1"
-                          style={
-                            {
-                              backgroundColor: tone.fill,
-                              "--tw-ring-color": tone.border,
-                            } as CSSProperties
-                          }
-                        />
-                        <span className="min-w-0 truncate">{labelByKind[kind]}</span>
-                      </span>
-                    );
-                  })}
+                          key={kind}
+                          data-tier-legend-kind={kind}
+                          data-kind-tone-fill={tone.fill}
+                          data-kind-tone-border={tone.border}
+                          className="flex min-w-0 items-center gap-1.5"
+                        >
+                          <span
+                            aria-hidden
+                            className="size-1.5 shrink-0 rounded-full ring-1"
+                            style={
+                              {
+                                backgroundColor: tone.fill,
+                                "--tw-ring-color": tone.border,
+                              } as CSSProperties
+                            }
+                          />
+                          <span className="min-w-0 truncate">{labelByKind[kind]}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-              <div
-                data-testid="topology-overview-relation-line-legend"
-                data-relation-line-legend-contract="map-line-to-ontology-relation"
-                data-spine-token="--topology-relation-spine-halo"
-                data-spine-terminal-token="--topology-relation-spine-terminal"
-                data-quality-strong-token="--topology-relation-stroke-strong"
-                data-quality-weak-token="--topology-relation-stroke-weak"
-                className="mt-2 border-t border-[color:var(--topology-overview-reader-lens-border)] pt-2"
-              >
-                <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
-                  {labels.overviewRelationLegendTitle}
-                </p>
-                <div className="mt-1.5 grid gap-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
-                  <span className="flex min-w-0 items-center gap-2">
-                    <span
-                      aria-hidden
-                      className="relative h-2.5 w-8 shrink-0"
-                    >
-                      <span className="absolute left-0 right-1 top-1/2 h-px -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-halo)]" />
-                      <span className="absolute right-0 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-terminal)]" />
+                <div
+                  data-testid="topology-overview-relation-line-legend"
+                  data-relation-line-legend-contract="map-line-to-ontology-relation"
+                  data-spine-token="--topology-relation-spine-halo"
+                  data-spine-terminal-token="--topology-relation-spine-terminal"
+                  data-quality-strong-token="--topology-relation-stroke-strong"
+                  data-quality-weak-token="--topology-relation-stroke-weak"
+                  className="min-w-0"
+                >
+                  <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
+                    {labels.overviewRelationLegendTitle}
+                  </p>
+                  <div className="mt-1.5 grid gap-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span aria-hidden className="relative h-2.5 w-8 shrink-0">
+                        <span className="absolute left-0 right-1 top-1/2 h-px -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-halo)]" />
+                        <span className="absolute right-0 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-terminal)]" />
+                      </span>
+                      <span className="min-w-0 truncate">
+                        {labels.overviewRelationLegendSpine}
+                      </span>
                     </span>
-                    <span className="min-w-0 truncate">
-                      {labels.overviewRelationLegendSpine}
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span
+                        aria-hidden
+                        className="h-[2px] w-8 shrink-0 rounded-full"
+                        style={
+                          {
+                            backgroundImage:
+                              "linear-gradient(90deg, var(--topology-relation-stroke-strong), var(--topology-relation-stroke-weak))",
+                          } as CSSProperties
+                        }
+                      />
+                      <span className="min-w-0 truncate">
+                        {labels.overviewRelationLegendQuality}
+                      </span>
                     </span>
-                  </span>
-                  <span className="flex min-w-0 items-center gap-2">
-                    <span
-                      aria-hidden
-                      className="h-[2px] w-8 shrink-0 rounded-full"
-                      style={
-                        {
-                          backgroundImage:
-                            "linear-gradient(90deg, var(--topology-relation-stroke-strong), var(--topology-relation-stroke-weak))",
-                        } as CSSProperties
-                      }
-                    />
-                    <span className="min-w-0 truncate">
-                      {labels.overviewRelationLegendQuality}
-                    </span>
-                  </span>
+                  </div>
                 </div>
               </div>
             </div>

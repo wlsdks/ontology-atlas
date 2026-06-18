@@ -883,6 +883,11 @@ describe("TopologyAnalysisBar", () => {
       "data-reader-lens-contract",
       "non-developer-first-map-read",
     );
+    const mapKey = screen.getByTestId("topology-overview-map-key");
+    expect(mapKey).toHaveAttribute(
+      "data-map-key-contract",
+      "compact-node-and-relation-reading",
+    );
     const tierLegend = screen.getByTestId("topology-overview-tier-legend");
     expect(tierLegend).toHaveAttribute(
       "data-tier-legend-contract",
