@@ -78,7 +78,7 @@ const labels = {
   overviewBriefTotalNodes: "Total nodes",
   overviewBriefTotalRelations: "Total relations",
   overviewBriefRelationReading: "Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
-  overviewBriefRelationProvenance: "Evidence",
+  overviewBriefRelationProvenance: "Evidence source",
   overviewBriefRelationSourceBacked: "with source",
   overviewBriefRelationAuthored: "team-added",
   overviewBriefRelationNeedsReview: "needs check",
@@ -87,7 +87,7 @@ const labels = {
   overviewBriefRelationQualitySupported: "supported",
   overviewBriefRelationQualityWeak: "thin",
   overviewBriefRelationQualityReview: "check",
-  overviewAgentReadiness: "Handoff",
+  overviewAgentReadiness: "Agent handoff",
   overviewAgentReadinessReady: "ready",
   overviewAgentReadinessPreflight: "check first",
   overviewAgentReadinessReview: "needs review",
@@ -1148,6 +1148,7 @@ describe("TopologyAnalysisBar", () => {
       "sr-only-while-evidence-and-handoff-stay-visible",
     );
     expect(progress).toHaveClass("topology-overview-low-height-sr-only");
+    expect(progress).toHaveClass("topology-overview-medium-height-sr-only");
     expect(progress).toHaveAttribute(
       "data-surface-token",
       "--topology-overview-signal-neutral-surface",
@@ -2244,7 +2245,7 @@ describe("TopologyAnalysisBar", () => {
     expect(graphBriefButton).toHaveAttribute("title", "Copy map brief");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
-    ).toHaveTextContent("Evidence");
+    ).toHaveTextContent("Evidence source");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
     ).toHaveTextContent("with source 70 · team-added 18 · needs check 0");
@@ -2259,7 +2260,7 @@ describe("TopologyAnalysisBar", () => {
       "clear 62 · supported 20 · thin 4 · check 2",
     );
     const readinessGate = screen.getByTestId("topology-overview-agent-readiness");
-    expect(readinessGate).toHaveTextContent("Handoff");
+    expect(readinessGate).toHaveTextContent("Agent handoff");
     expect(readinessGate).toHaveAttribute("data-density", "summary-first");
     expect(readinessGate).toHaveAttribute(
       "data-proof-strip-contract",
@@ -2278,7 +2279,7 @@ describe("TopologyAnalysisBar", () => {
       "ready 82 · check first 4 · needs review 2",
     );
     expect(readinessGate).toHaveAccessibleName(
-      "Handoff: ready 82 · check first 4 · needs review 2",
+      "Agent handoff: ready 82 · check first 4 · needs review 2",
     );
     expect(
       screen.getByTestId("topology-overview-agent-readiness-summary"),
@@ -2313,7 +2314,7 @@ describe("TopologyAnalysisBar", () => {
     const readinessMeter = screen.getByTestId("topology-overview-agent-readiness-meter");
     expect(readinessMeter).toHaveAttribute(
       "aria-label",
-      "Handoff: ready 82 · check first 4 · needs review 2",
+      "Agent handoff: ready 82 · check first 4 · needs review 2",
     );
     expect(readinessMeter).toHaveAttribute(
       "data-surface-token",
@@ -2363,7 +2364,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Evidence: with source 70 · team-added 18 · needs check 0",
+        "- Evidence source: with source 70 · team-added 18 · needs check 0",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
@@ -2373,7 +2374,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Handoff: ready 82 · check first 4 · needs review 2",
+        "- Agent handoff: ready 82 · check first 4 · needs review 2",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(

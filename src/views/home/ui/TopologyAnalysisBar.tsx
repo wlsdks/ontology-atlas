@@ -1428,7 +1428,7 @@ export function TopologyAnalysisBar({
                       compact
                       data-testid="topology-overview-relation-progress"
                       data-low-height-overview-progress-contract="sr-only-while-evidence-and-handoff-stay-visible"
-                      className="topology-overview-low-height-sr-only"
+                      className="topology-overview-low-height-sr-only topology-overview-medium-height-sr-only"
                     />
                   ) : null}
                 </div>

@@ -766,6 +766,20 @@
     }
   }
 
+  @media (max-height: 960px) {
+    .topology-overview-medium-height-sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border-width: 0 !important;
+    }
+  }
+
   /* 활성 가지 커넥터의 잉크 흐름 — 부모→자식 방향성이 모션으로 읽힌다
      (HIG motion-with-purpose: 장식이 아니라 방향 정보). reduced-motion
      사용자는 정적 선. */

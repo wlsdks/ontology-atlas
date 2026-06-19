@@ -497,8 +497,10 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-kind-legend-state",
     "collapsed-support-chrome",
   );
-  await expect(panel.getByText(/Relation provenance|관계 출처/i)).toBeVisible();
-  await expect(panel.getByText(/Share readiness|공유 준비도/i)).toBeVisible();
+  await expect(panel.getByText(/Evidence source|관계 근거/i)).toBeVisible();
+  await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
+    /Agent handoff|에이전트 인계/i,
+  );
   await expect(page.getByTestId("topology-overview-signal-grid")).toBeVisible();
   await expect(page.getByTestId("topology-overview-signal-grid")).toHaveAttribute(
     "data-surface-token",
@@ -514,7 +516,7 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   );
   await expect(page.getByTestId("topology-overview-relation-provenance")).toHaveAttribute(
     "data-overview-provenance-contract",
-    "scan-counts-not-wrapped-summary",
+    "summary-first-counts-retained",
   );
   const relationQuality = page.getByTestId("topology-overview-relation-quality");
   await expect(relationQuality).toHaveAttribute(
@@ -886,10 +888,10 @@ test("Korean Relief top actions stay localized", async ({
     page.getByRole("button", { name: "온톨로지 워크스페이스 빠른 보기 열기 (D)" }),
   ).toContainText("작업공간");
   await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
-    "공유 준비도",
+    "에이전트 인계",
   );
   await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
-    "전달 가능",
+    "인계 가능",
   );
   await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
     "사전 점검",
@@ -1180,7 +1182,7 @@ for (const viewport of VIEWPORTS) {
 
     await expect(page.getByTestId("topology-overview-agent-readiness")).toHaveAttribute(
       "data-agent-readiness-summary",
-      /handoff-ready|handoff 가능/i,
+      /ready|인계 가능/i,
     );
     await expect(page.locator('[data-agent-readiness-chip="ready"]')).toHaveAttribute(
       "data-compact-label",
@@ -1188,12 +1190,12 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(page.locator('[data-agent-readiness-chip="ready"]')).toHaveAttribute(
       "data-full-label",
-      /handoff-ready|handoff 가능/i,
+      /ready|인계 가능/i,
     );
     await expect(page.getByTestId("topology-overview-agent-readiness-meter")).toBeVisible();
     await expect(page.getByTestId("topology-overview-agent-readiness-meter")).toHaveAttribute(
       "aria-label",
-      /Share readiness|공유 준비도/i,
+      /Agent handoff|에이전트 인계/i,
     );
     await expect(page.getByTestId("topology-overview-agent-readiness-meter")).toHaveAttribute(
       "data-border-token",

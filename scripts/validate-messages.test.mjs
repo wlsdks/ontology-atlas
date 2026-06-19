@@ -195,9 +195,9 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topologyWidgets.controls.shortcutDepthAll, '연결 범위 전체');
     assert.equal(ko.topologyWidgets.controls.shortcutDoubleClick, '로컬 그래프 진입');
     assert.equal(ko.topologyWidgets.controls.shortcutEsc, '로컬 그래프 나가기 / 검색 지우기');
-    assert.equal(ko.topology.analysis.overviewAgentReadiness, '팀 공유');
-    assert.equal(ko.topology.analysis.overviewAgentReadinessReady, '전달 가능');
-    assert.equal(ko.topology.analysis.overviewAgentReadinessPreflight, '먼저 확인');
+    assert.equal(ko.topology.analysis.overviewAgentReadiness, '에이전트 인계');
+    assert.equal(ko.topology.analysis.overviewAgentReadinessReady, '인계 가능');
+    assert.equal(ko.topology.analysis.overviewAgentReadinessPreflight, '사전 점검');
     assert.doesNotMatch(
       [
         ko.topologyWidgets.sigma.kindLegendUnknownRole,
