@@ -804,12 +804,12 @@ export function TopologyNodePopover({
           data-testid="topology-node-agent-readiness-lens"
           aria-label={`${labels.agentReadinessTitle}: ${agentReadinessSummary}`}
           data-agent-readiness-summary={agentReadinessSummary}
-          data-agent-readiness-layout="meter-only-summary"
-          data-visible-density-contract="meter-only-preserve-summary-for-agents"
+          data-agent-readiness-layout="screen-reader-summary"
+          data-visible-density-contract="screen-reader-only-preserve-summary-for-agents"
           data-agent-readiness-strip-surface-token="--topology-node-popover-context-surface"
           data-agent-readiness-strip-border-token="--topology-node-popover-context-border"
           data-agent-readiness-strip-title-text-token="--topology-node-popover-relation-section-title-text"
-          className="mb-2"
+          className="sr-only"
         >
           <div
             aria-hidden="true"

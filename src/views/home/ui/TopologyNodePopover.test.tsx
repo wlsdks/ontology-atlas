@@ -1936,7 +1936,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(lens).toHaveAttribute(
       "data-agent-readiness-layout",
-      "meter-only-summary",
+      "screen-reader-summary",
     );
     expect(lens).toHaveAttribute(
       "data-agent-readiness-strip-surface-token",
@@ -1960,6 +1960,7 @@ describe("TopologyNodePopover", () => {
     expect(lens.className).not.toContain(
       "border-[color:var(--topology-node-popover-context-border)]",
     );
+    expect(lens.className).toContain("sr-only");
     expect(lens.querySelector("[data-agent-readiness-title]")).toHaveTextContent(
       "에이전트 준비도",
     );
@@ -1970,7 +1971,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(lens).toHaveAttribute(
       "data-visible-density-contract",
-      "meter-only-preserve-summary-for-agents",
+      "screen-reader-only-preserve-summary-for-agents",
     );
     const meter = screen.getByTestId("topology-node-agent-readiness-meter");
     expect(meter).toHaveAttribute(

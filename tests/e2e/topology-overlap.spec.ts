@@ -4002,8 +4002,13 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   await expect(readyReadinessChip).not.toContainText("handoff-ready");
   await expect(page.getByTestId("topology-node-agent-readiness-lens")).toHaveAttribute(
     "data-agent-readiness-layout",
-    "quiet-readiness-line",
+    "screen-reader-summary",
   );
+  await expect(page.getByTestId("topology-node-agent-readiness-lens")).toHaveAttribute(
+    "data-visible-density-contract",
+    "screen-reader-only-preserve-summary-for-agents",
+  );
+  await expect(page.getByTestId("topology-node-agent-readiness-lens")).toHaveClass(/sr-only/);
   await expect(page.getByTestId("topology-node-agent-readiness-lens")).toHaveAttribute(
     "data-agent-readiness-strip-surface-token",
     "--topology-node-popover-context-surface",
