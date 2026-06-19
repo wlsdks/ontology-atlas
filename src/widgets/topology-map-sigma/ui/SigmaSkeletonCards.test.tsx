@@ -2390,7 +2390,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "preflight-first");
     expect(gateChip).toHaveAttribute("data-relation-label-segment", "gate");
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "relation_check");
-    expect(gateChip).toHaveAttribute("data-route-chip-text", "check");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "Check");
     expect(gateChip).toHaveAttribute(
       "data-surface-token",
       "--topology-relation-gate-preflight-surface",
@@ -2523,7 +2523,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(evidenceChip).toHaveTextContent("S3");
     const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
-    expect(gateChip).toHaveAttribute("data-route-chip-text", "explain");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "Explain");
   });
 
   it("선택된 source-backed relation label 은 agent handoff gate 를 지도 위에 표시한다", () => {
@@ -2651,7 +2651,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "explain_relation");
-    expect(gateChip).toHaveAttribute("data-route-chip-text", "explain");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "Explain");
     expect(gateChip).toHaveAttribute("data-relation-label-segment", "gate");
     const typeText = labelHit?.querySelector("[data-relation-label-type-text]");
     const directionGlyph = labelHit?.querySelector("[data-relation-direction-glyph]");
@@ -2729,12 +2729,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-text-token",
       "--topology-relation-gate-ready-text",
     );
-    expect(gateChip).toHaveAttribute("data-route-chip-text", "explain");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "Explain");
     expect(labelHit?.querySelector("[data-relation-fact-route-rail]")).toHaveClass("sr-only");
     expect(labelHit?.querySelector('[data-route-chip="fact"]')).toHaveAttribute("data-route-chip-text", "fact");
     expect(labelHit?.querySelector('[data-route-chip="evidence"]')).toHaveAttribute("data-route-chip-text", "src");
     expect(labelHit?.querySelector('[data-route-chip="gate"]')).toHaveAttribute("data-route-chip-text", "MCP/CLI");
-    expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveAttribute("data-route-chip-text", "explain");
+    expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveAttribute("data-route-chip-text", "Explain");
     expect(root).toHaveAttribute(
       "data-relation-label-handoff-contract",
       "label-level-mcp-cli-fallback",
@@ -2794,7 +2794,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "aria-label",
       "contains relation · weak · needs review · check · relation check",
     );
-    expect(gateChip).toHaveAttribute("data-route-chip-text", "check");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "Check");
     expect(gateChip).toHaveAttribute(
       "data-surface-token",
       "--topology-relation-gate-preflight-surface",
@@ -2807,12 +2807,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-text-token",
       "--topology-relation-gate-preflight-text",
     );
-    expect(gateChip).toHaveAttribute("data-route-chip-text", "check");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "Check");
     expect(labelHit?.querySelector("[data-relation-fact-route-rail]")).toHaveClass("sr-only");
     expect(labelHit?.querySelector('[data-route-chip="fact"]')).toHaveAttribute("data-route-chip-text", "fact");
     expect(labelHit?.querySelector('[data-route-chip="evidence"]')).toHaveAttribute("data-route-chip-text", "review");
     expect(labelHit?.querySelector('[data-route-chip="gate"]')).toHaveAttribute("data-route-chip-text", "check");
-    expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveAttribute("data-route-chip-text", "check");
+    expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveAttribute("data-route-chip-text", "Check");
   });
 
   it("드래그 중에는 relation label hit target 을 꺼서 카드 이동과 관계 선택이 충돌하지 않는다", async () => {

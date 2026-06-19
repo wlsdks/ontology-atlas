@@ -508,10 +508,6 @@ function relationFactRouteText(action: RelationCopyActionKind): string {
   return action === 'explain_relation' ? 'explain' : 'check';
 }
 
-function relationAgentActionChipText(action: RelationCopyActionKind): string {
-  return relationFactRouteText(action);
-}
-
 function relationLabelCliFallbackCommand({
   action,
   from,
@@ -1840,6 +1836,13 @@ export function SigmaSkeletonCards({
       uses: tEdgeTooltip('relationTypeUses'),
       belongsTo: tEdgeTooltip('relationTypeBelongsTo'),
     }),
+    [tEdgeTooltip],
+  );
+  const relationActionChipText = useCallback(
+    (action: RelationCopyActionKind) =>
+      action === 'explain_relation'
+        ? tEdgeTooltip('actionExplainRelationVisible')
+        : tEdgeTooltip('actionRelationCheckVisible'),
     [tEdgeTooltip],
   );
   const formatRelationLabel = useCallback(
@@ -4093,7 +4096,7 @@ export function SigmaSkeletonCards({
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentGateText = relationAgentGateChipText(agentGateKind);
-        const agentActionChipText = relationAgentActionChipText(primaryCopyAction);
+        const agentActionChipText = relationActionChipText(primaryCopyAction);
         const agentGateRouteText = relationAgentGateRouteText(agentGateKind);
         const cliFallbackCommand = relationLabelCliFallbackCommand({
           action: primaryCopyAction,
@@ -4327,7 +4330,7 @@ export function SigmaSkeletonCards({
                   />
                   <span
                     data-route-chip="action"
-                    data-route-chip-text={relationFactRouteText(primaryCopyAction)}
+                    data-route-chip-text={agentActionChipText}
                   />
                 </span>
                 </>
@@ -4350,7 +4353,7 @@ export function SigmaSkeletonCards({
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentGateText = relationAgentGateChipText(agentGateKind);
-        const agentActionChipText = relationAgentActionChipText(primaryCopyAction);
+        const agentActionChipText = relationActionChipText(primaryCopyAction);
         const agentGateRouteText = relationAgentGateRouteText(agentGateKind);
         return (
           <div
@@ -4484,7 +4487,7 @@ export function SigmaSkeletonCards({
               />
               <span
                 data-route-chip="action"
-                data-route-chip-text={relationFactRouteText(primaryCopyAction)}
+                data-route-chip-text={agentActionChipText}
               />
             </span>
           </div>

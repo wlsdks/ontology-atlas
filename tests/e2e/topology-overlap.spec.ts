@@ -1342,7 +1342,7 @@ for (const viewport of VIEWPORTS) {
     await expect(scanGateChip).toHaveAttribute("data-relation-label-segment", "gate");
     await expect(scanGateChip).toHaveAttribute(
       "data-route-chip-text",
-      /explain|check|review/,
+      /Explain|Check|Review|설명|점검|검토/,
     );
     const relationButtonBox = await relationButton.boundingBox();
     if (!relationButtonBox) {
@@ -1438,7 +1438,7 @@ for (const viewport of VIEWPORTS) {
     await expect(visibleGateChip).toBeVisible();
     await expect(visibleGateChip).toHaveAttribute(
       "data-route-chip-text",
-      /explain|check|review/,
+      /Explain|Check|Review|설명|점검|검토/,
     );
     await expect(visibleGateChip).toHaveAttribute(
       "data-surface-token",
