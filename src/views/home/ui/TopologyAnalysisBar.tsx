@@ -424,8 +424,6 @@ export function TopologyAnalysisBar({
   );
   const headerAlignedPanel = panelMode === "overview" || panelMode === "path";
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
-  const disclosureSummaryLabel =
-    panelMode === "overview" ? labels.overviewHandoffSummary : labels.actions;
   const relationVisibilityPreparing =
     panelMode === "overview" &&
     overviewRelationVisibility &&
@@ -1500,21 +1498,25 @@ export function TopologyAnalysisBar({
                 data-divider-token="--topology-overview-handoff-divider"
                 data-compact-padding-top-token="--topology-overview-handoff-compact-padding-top"
                 data-low-height-density-contract="primary-copy-visible-secondary-tools-hidden"
+                data-next-action-contract="map-brief-before-agent-audit-sync"
                 data-testid="topology-overview-handoff-actions"
               >
                 <div
-                  className="topology-overview-low-height-sr-only mb-1.5 flex items-center justify-between gap-2 max-md:sr-only"
+                  className="topology-overview-low-height-sr-only mb-1.5 flex min-w-0 items-center justify-between gap-2 max-md:sr-only"
                   data-overview-handoff-label-compact-contract="phone-action-label-hidden"
                   data-overview-handoff-label-low-height-contract="hidden-under-800px"
                 >
-                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                    {disclosureSummaryLabel}
+                  <span className="min-w-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                    {labels.overviewHandoffSummary}
                   </span>
                   <span
                     className="h-px min-w-6 flex-1 bg-[color:var(--topology-overview-handoff-divider)]"
                     data-divider-token="--topology-overview-handoff-divider"
                     aria-hidden
                   />
+                  <span className="min-w-0 truncate text-right text-[10.5px] text-[color:var(--color-text-tertiary)]">
+                    {labels.overviewCopyTools}
+                  </span>
                 </div>
                 <div className="grid gap-1.5">
                   <CompactCopyButton
@@ -1544,7 +1546,9 @@ export function TopologyAnalysisBar({
                         className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
                         data-testid="topology-overview-handoff-chevron"
                       />
-                      <span>{labels.overviewCopyTools}</span>
+                      <span>
+                        {labels.overviewReanalyzeCopy} · {labels.overviewSyncCopy}
+                      </span>
                     </summary>
                     <div className="mt-1 grid grid-cols-2 gap-1.5">
                       <CompactCopyButton

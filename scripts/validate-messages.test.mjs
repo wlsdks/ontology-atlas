@@ -327,8 +327,8 @@ describe('i18n message catalog', () => {
     assert.equal(en.topology.analysis.overviewWorkOrderFocus, 'Focus graph handle');
     assert.equal(en.topology.analysis.overviewWorkOrderPath, 'Prove path evidence');
     assert.equal(en.topology.analysis.overviewWorkOrderHealth, 'Close health gate');
-    assert.equal(en.topology.analysis.overviewHandoffSummary, 'Share map');
-    assert.equal(en.topology.analysis.overviewCopyTools, 'Agent follow-up');
+    assert.equal(en.topology.analysis.overviewHandoffSummary, 'Next step');
+    assert.equal(en.topology.analysis.overviewCopyTools, 'Prepare agent handoff');
     assert.equal(en.topology.analysis.overviewReaderLensTitle, 'Reader lens');
     assert.match(en.topology.analysis.overviewReaderLensDomains, /domains/i);
     assert.match(en.topology.analysis.overviewReaderLensCapabilities, /capabilities/i);
@@ -340,7 +340,7 @@ describe('i18n message catalog', () => {
     );
     assert.equal(en.topology.controls.docsLabel, 'Workspace');
     assert.match(en.topology.analysis.overviewPrompt, /product\/system map/i);
-    assert.equal(ko.topology.analysis.overviewCopyTools, '에이전트 후속 점검');
+    assert.equal(ko.topology.analysis.overviewCopyTools, '에이전트 인계 준비');
     assert.equal(ko.topology.analysis.overviewReaderLensTitle, '읽는 순서');
     assert.match(ko.topology.analysis.overviewReaderLensDomains, /핵심 영역/);
     assert.match(ko.topology.analysis.overviewReaderLensCapabilities, /기능/);
@@ -368,8 +368,8 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.analysis.overviewWorkOrderFocus, '그래프 기준점 선택');
     assert.equal(ko.topology.analysis.overviewWorkOrderPath, '경로 근거 검증');
     assert.equal(ko.topology.analysis.overviewWorkOrderHealth, '상태 신호 확인');
-    assert.equal(ko.topology.analysis.overviewHandoffSummary, '지도 공유');
-    assert.equal(ko.topology.analysis.overviewCopyTools, '에이전트 후속 점검');
+    assert.equal(ko.topology.analysis.overviewHandoffSummary, '다음 단계');
+    assert.equal(ko.topology.analysis.overviewCopyTools, '에이전트 인계 준비');
     assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '지형도 지도 요약 복사');
     assert.equal(ko.topology.analysis.overviewBriefCopiedAriaLabel, '지형도 지도 요약 복사됨');
     assert.equal(ko.topology.analysis.overviewBriefTitle, '지형도 지도 요약');

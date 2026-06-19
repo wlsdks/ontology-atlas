@@ -49,8 +49,8 @@ const labels = {
   overviewReanalyzeCopied: "Reanalysis command copied",
   overviewSyncCopy: "Sync",
   overviewSyncCopied: "Update check copied",
-  overviewHandoffSummary: "Share map",
-  overviewCopyTools: "Agent follow-up",
+  overviewHandoffSummary: "Next step",
+  overviewCopyTools: "Prepare agent handoff",
   overviewWorkOrderTitle: "Analysis order",
   overviewWorkOrderRead: "Read ontology map",
   overviewWorkOrderFocus: "Focus concept",
@@ -822,7 +822,12 @@ describe("TopologyAnalysisBar", () => {
       "data-divider-token",
       "--topology-overview-handoff-divider",
     );
-    expect(actions.textContent).toContain("Share map");
+    expect(actions).toHaveAttribute(
+      "data-next-action-contract",
+      "map-brief-before-agent-audit-sync",
+    );
+    expect(actions.textContent).toContain("Next step");
+    expect(actions.textContent).toContain("Prepare agent handoff");
     expect(actions.querySelectorAll("button")).toHaveLength(3);
     expect(actions.querySelector(".grid")?.className).not.toContain("grid-cols-2");
     const briefCopy = screen.getByTestId("topology-overview-brief-copy");
@@ -962,7 +967,7 @@ describe("TopologyAnalysisBar", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByTestId("topology-overview-handoff-summary"),
-    ).toHaveTextContent("Agent follow-up");
+    ).toHaveTextContent("Audit · Sync");
     expect(
       screen.getByText(
         "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
@@ -970,7 +975,7 @@ describe("TopologyAnalysisBar", () => {
     ).toBeVisible();
   });
 
-  it("names the overview command rail as map sharing before agent handoff tools", () => {
+  it("names the overview command rail as the next step before agent handoff tools", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -994,7 +999,7 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByTestId("topology-overview-handoff-actions")).toHaveTextContent(
-      "Share map",
+      "Next step",
     );
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
   });
@@ -1023,7 +1028,7 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveTextContent(
-      "Agent follow-up",
+      "Audit · Sync",
     );
     expect(screen.getByTestId("topology-overview-handoff-chevron")).toBeInTheDocument();
   });
