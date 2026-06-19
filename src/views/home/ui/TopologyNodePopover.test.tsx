@@ -571,6 +571,29 @@ describe("TopologyNodePopover", () => {
     ).toContain("text-[color:var(--topology-node-popover-route-chip-text)]");
   });
 
+  it("keeps a proof row visible when preview relations are already expanded on the map", () => {
+    setup({
+      expandedChildIds: new Set(["elements/mcp-sdk", "domains/ai-agent-partner"]),
+    });
+
+    const mapNote = screen.getByTestId("topology-map-context-note");
+    const list = screen.getByTestId("topology-node-connection-list");
+    const rows = document.querySelectorAll("[data-relation-row]");
+
+    expect(mapNote).toHaveAttribute("data-map-context-count", "2");
+    expect(list).toHaveAttribute("data-row-render-source", "map-expanded-proof");
+    expect(list).toHaveAttribute("data-rendered-connection-count", "2");
+    expect(list).toHaveAttribute("data-hidden-connection-count", "0");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveAttribute("data-row-render-source", "map-expanded-proof");
+    expect(rows[0]).toHaveAttribute(
+      "data-row-visual-contract",
+      "title-first-relation-metadata-secondary",
+    );
+    expect(screen.getByText("MCP SDK")).toBeInTheDocument();
+    expect(screen.getByText("AI Agent Partner")).toBeInTheDocument();
+  });
+
   it("hands focus to the first relation row when expanded from the compact inspector", async () => {
     const props = {
       focus: focusModel(),

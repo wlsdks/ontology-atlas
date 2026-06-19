@@ -158,9 +158,20 @@ export function TopologyNodePopover({
   const expandedConnections = expandedChildIds
     ? focus.connections.filter((connection) => expandedChildIds.has(connection.id))
     : [];
-  const renderedConnections = visibleConnections.slice(0, NODE_POPOVER_RELATION_ROW_RENDER_BUDGET);
+  const relationPreviewSource =
+    visibleConnections.length > 0
+      ? "remaining-direct-facts"
+      : expandedConnections.length > 0
+        ? "map-expanded-proof"
+        : "none";
+  const previewConnections =
+    relationPreviewSource === "map-expanded-proof" ? expandedConnections : visibleConnections;
+  const renderedConnections = previewConnections.slice(0, NODE_POPOVER_RELATION_ROW_RENDER_BUDGET);
   const expandedCount = focus.connections.length - visibleConnections.length;
-  const renderHiddenCount = Math.max(0, visibleConnections.length - renderedConnections.length);
+  const renderHiddenCount =
+    relationPreviewSource === "remaining-direct-facts"
+      ? Math.max(0, visibleConnections.length - renderedConnections.length)
+      : 0;
   const hiddenConnectionCount = focus.hiddenConnectionCount + renderHiddenCount;
   const relationTypeCount = new Set(focus.connections.map((connection) => connection.relationType))
     .size;
@@ -817,6 +828,7 @@ export function TopologyNodePopover({
             data-row-min-hit-height="72"
             data-relation-list-min-height-token="--topology-node-popover-relation-list-min-height"
             data-row-render-contract="capped-preview-plus-remainder"
+            data-row-render-source={relationPreviewSource}
             data-row-render-budget={NODE_POPOVER_RELATION_ROW_RENDER_BUDGET}
             data-rendered-connection-count={renderedConnections.length}
             data-hidden-connection-count={hiddenConnectionCount}
@@ -917,6 +929,7 @@ export function TopologyNodePopover({
                     data-relation-handoff-payload-json={relationHandoffPayloadJson}
                     data-overflow-contract="no-horizontal-scroll"
                     data-row-density-contract="agent-handoff-scan-row"
+                    data-row-render-source={relationPreviewSource}
                     data-row-surface-contract="flat-divider-row"
                     data-row-visual-contract="title-first-relation-metadata-secondary"
                     data-row-min-hit-height="72"
