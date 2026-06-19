@@ -432,11 +432,11 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
   await expect(summary).toHaveAttribute("data-relation-type-count", /^[1-9]\d*$/);
   await expect(summary).toHaveAttribute(
     "data-relation-summary-readable-text",
-    /\d+ facts? · \d+ types? · inspect/,
+    /\d+ relations? · \d+ types? · inspect/,
   );
   await expect(summary).toHaveAttribute(
     "data-relation-summary-visible-contract",
-    "primary-count-plus-inspect-action-visible-full-summary-accessible",
+    "primary-count-visible-action-accessible",
   );
   await expect(summary).toHaveAttribute(
     "data-relation-summary-map-label-fallback",
@@ -444,7 +444,7 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
   );
   await expect(summary).toHaveAttribute(
     "data-relation-summary-visible-text",
-    /\d+ facts? · inspect/,
+    /\d+ relations?/,
   );
   await expect(summary).not.toHaveText(/^\d+f · \d+t$/);
 }

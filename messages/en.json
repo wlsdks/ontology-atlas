@@ -539,10 +539,10 @@
       "copyPayloadCheckVisibleSummary": "Check first",
       "cliFallbackLabel": "CLI fallback",
       "copyPayloadSummary": "{tool} · {action} · {source} → {target} · {type} · {evidence} · {gate}",
-      "selectedCardRelationSummary": "{relations, plural, one {# fact} other {# facts}} · {types, plural, one {# type} other {# types}}",
-      "selectedCardRelationSummaryCompact": "{relations, plural, one {# fact} other {# facts}}",
-      "selectedCardRelationSummaryAction": "{relations, plural, one {# fact} other {# facts}} · {types, plural, one {# type} other {# types}} · inspect",
-      "selectedCardRelationSummaryCompactAction": "{relations, plural, one {# fact} other {# facts}} · inspect",
+      "selectedCardRelationSummary": "{relations, plural, one {# relation} other {# relations}} · {types, plural, one {# type} other {# types}}",
+      "selectedCardRelationSummaryCompact": "{relations, plural, one {# relation} other {# relations}}",
+      "selectedCardRelationSummaryAction": "{relations, plural, one {# relation} other {# relations}} · {types, plural, one {# type} other {# types}} · inspect",
+      "selectedCardRelationSummaryCompactAction": "{relations, plural, one {# relation} other {# relations}}",
       "healthRepairAuditBadge": "repair",
       "copied": "Copied"
     }

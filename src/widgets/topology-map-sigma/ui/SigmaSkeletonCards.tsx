@@ -4592,7 +4592,7 @@ export function SigmaSkeletonCards({
             : null;
         const selectedRelationSummaryCompactText =
           selected && selectedRelationSummary
-            ? tEdgeTooltip('selectedCardRelationSummaryCompactAction', {
+            ? tEdgeTooltip('selectedCardRelationSummaryCompact', {
                 relations: selectedRelationSummary.relationCount,
                 types: selectedRelationSummary.typeCount,
               })
@@ -4967,7 +4967,7 @@ export function SigmaSkeletonCards({
               <span
                 data-testid="sigma-selected-card-relation-summary"
                 data-relation-summary-contract="selected-card-direct-facts"
-                data-relation-summary-visible-contract="primary-count-plus-inspect-action-visible-full-summary-accessible"
+                data-relation-summary-visible-contract="primary-count-visible-action-accessible"
                 data-relation-summary-map-label-fallback="selected-card-keeps-action-when-map-labels-collapse"
                 data-relation-summary-readable-text={selectedRelationSummaryText ?? undefined}
                 data-relation-summary-visible-text={

@@ -542,7 +542,7 @@
       "selectedCardRelationSummary": "관계 {relations} · 유형 {types}",
       "selectedCardRelationSummaryCompact": "관계 {relations}",
       "selectedCardRelationSummaryAction": "관계 {relations} · 유형 {types} · 확인",
-      "selectedCardRelationSummaryCompactAction": "관계 {relations} · 확인",
+      "selectedCardRelationSummaryCompactAction": "관계 {relations}",
       "healthRepairAuditBadge": "수리 대상",
       "copied": "복사됨"
     }
