@@ -826,6 +826,7 @@ describe("TopologyAnalysisBar", () => {
       "data-secondary-actions-contract",
       "closed-until-user-expands",
     );
+    expect(details).toHaveClass("relative");
     const actions = screen.getByTestId("topology-overview-handoff-actions");
     expect(actions).toBeVisible();
     expect(actions).toHaveAttribute(
@@ -860,15 +861,29 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(screen.getByTestId("topology-overview-secondary-handoff-actions")).toHaveAttribute(
       "data-secondary-actions-contract",
-      "hidden-closed-grid-open",
+      "hidden-closed-overlay-row-open",
+    );
+    expect(screen.getByTestId("topology-overview-secondary-handoff-actions").className).toContain(
+      "absolute",
     );
     expect(screen.getByTestId("topology-overview-reanalyze-copy")).toHaveAttribute(
       "data-surface-token",
       "--topology-overview-handoff-secondary-surface",
     );
+    expect(screen.getByTestId("topology-overview-reanalyze-copy")).toHaveAttribute(
+      "data-density-contract",
+      "compact-disclosure-action",
+    );
+    expect(screen.getByTestId("topology-overview-reanalyze-copy").className).toContain(
+      "min-h-[26px]",
+    );
     expect(screen.getByTestId("topology-overview-sync-copy")).toHaveAttribute(
       "data-border-token",
       "--topology-overview-handoff-secondary-border",
+    );
+    expect(screen.getByTestId("topology-overview-sync-copy")).toHaveAttribute(
+      "data-density-contract",
+      "compact-disclosure-action",
     );
   });
 

@@ -1535,7 +1535,7 @@ export function TopologyAnalysisBar({
                     data-min-height-token="--topology-overview-handoff-primary-min-height"
                   />
                   <details
-                    className="topology-overview-low-height-sr-only group"
+                    className="topology-overview-low-height-sr-only group relative"
                     data-secondary-actions-contract="closed-until-user-expands"
                   >
                     <summary
@@ -1549,14 +1549,14 @@ export function TopologyAnalysisBar({
                         className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
                         data-testid="topology-overview-handoff-chevron"
                       />
-                      <span>
+                      <span className="group-open:sr-only">
                         {labels.overviewReanalyzeCopy} · {labels.overviewSyncCopy}
                       </span>
                     </summary>
                     <div
-                      className="mt-1 hidden grid-cols-2 gap-1.5 group-open:grid"
+                      className="absolute bottom-0 left-5 right-0 z-10 hidden grid-cols-2 gap-1 group-open:grid"
                       data-testid="topology-overview-secondary-handoff-actions"
-                      data-secondary-actions-contract="hidden-closed-grid-open"
+                      data-secondary-actions-contract="hidden-closed-overlay-row-open"
                     >
                       <CompactCopyButton
                         copied={overviewReanalyzeCopied}
@@ -1567,10 +1567,11 @@ export function TopologyAnalysisBar({
                             : labels.overviewReanalyzeCopyAriaLabel
                         }
                         onClick={copyOverviewReanalysisCommand}
-                        className="border border-[color:var(--topology-overview-handoff-secondary-border)] bg-[color:var(--topology-overview-handoff-secondary-surface)] text-[10px] text-[color:var(--color-text-tertiary)]"
+                        className="min-h-[26px] justify-start border border-[color:var(--topology-overview-handoff-secondary-border)] bg-[color:var(--topology-overview-handoff-secondary-surface)] px-1.5 py-0 text-[9.5px] text-[color:var(--color-text-tertiary)]"
                         data-testid="topology-overview-reanalyze-copy"
                         data-surface-token="--topology-overview-handoff-secondary-surface"
                         data-border-token="--topology-overview-handoff-secondary-border"
+                        data-density-contract="compact-disclosure-action"
                       />
                       <CompactCopyButton
                         copied={overviewSyncCopied}
@@ -1581,10 +1582,11 @@ export function TopologyAnalysisBar({
                             : labels.overviewSyncCopyAriaLabel
                         }
                         onClick={copyOverviewSyncGate}
-                        className="border border-[color:var(--topology-overview-handoff-secondary-border)] bg-[color:var(--topology-overview-handoff-secondary-surface)] text-[10px] text-[color:var(--color-text-tertiary)]"
+                        className="min-h-[26px] justify-start border border-[color:var(--topology-overview-handoff-secondary-border)] bg-[color:var(--topology-overview-handoff-secondary-surface)] px-1.5 py-0 text-[9.5px] text-[color:var(--color-text-tertiary)]"
                         data-testid="topology-overview-sync-copy"
                         data-surface-token="--topology-overview-handoff-secondary-surface"
                         data-border-token="--topology-overview-handoff-secondary-border"
+                        data-density-contract="compact-disclosure-action"
                       />
                     </div>
                   </details>
