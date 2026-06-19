@@ -2464,6 +2464,7 @@ export function HomePage() {
                   relation_check: t("nodePopover.relationCopyCheckShort"),
                 },
                 relationPayloadChipLabel: t("nodePopover.relationPayloadCopyShort"),
+                relationEvidenceChipLabel: t("nodePopover.relationEvidenceShort"),
                 kindLabels: {
                   project: tKinds(normalizeKindLabelKey("project")),
                   domain: tKinds(normalizeKindLabelKey("domain")),

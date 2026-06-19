@@ -2767,7 +2767,8 @@
       "agentGateReviewFirstShort": "review",
       "relationCopyExplainShort": "explain",
       "relationCopyCheckShort": "check",
-      "relationPayloadCopyShort": "copy"
+      "relationPayloadCopyShort": "copy",
+      "relationEvidenceShort": "proof"
     },
     "ontologyDrawer": {
       "caption": "Concept profile",

@@ -2767,7 +2767,8 @@
       "agentGateReviewFirstShort": "검토",
       "relationCopyExplainShort": "설명",
       "relationCopyCheckShort": "점검",
-      "relationPayloadCopyShort": "복사"
+      "relationPayloadCopyShort": "복사",
+      "relationEvidenceShort": "근거"
     },
     "ontologyDrawer": {
       "caption": "개념 정보",

@@ -48,6 +48,7 @@ const labels: TopologyNodePopoverLabels = {
     relation_check: "점검",
   },
   relationPayloadChipLabel: "복사",
+  relationEvidenceChipLabel: "근거",
   kindLabels: {
     capability: "역량",
     domain: "도메인",
@@ -445,7 +446,7 @@ describe("TopologyNodePopover", () => {
     expect(list).toHaveAttribute("data-row-min-hit-height", "72");
     expect(relationRow).toHaveAttribute("data-row-density-contract", "agent-handoff-scan-row");
     expect(relationRow).toHaveAttribute("data-row-surface-contract", "flat-divider-row");
-    expect(relationRow).toHaveAttribute("data-row-min-hit-height", "72");
+    expect(relationRow).toHaveAttribute("data-row-min-hit-height", "64");
     expect(relationRow).toHaveAttribute(
       "data-row-hover-surface-token",
       "--topology-node-popover-relation-row-hover-surface",
@@ -470,7 +471,7 @@ describe("TopologyNodePopover", () => {
       "data-row-scan-order",
       "relation>title>direction>endpoint>handoff",
     );
-    expect(relationRow?.className).toContain("min-h-[72px]");
+    expect(relationRow?.className).toContain("min-h-16");
     expect(relationRow?.className).toContain("gap-2");
     expect(relationRow?.className).toContain("bg-transparent");
     expect(relationRow?.className).toContain(
@@ -507,7 +508,7 @@ describe("TopologyNodePopover", () => {
     expect(handoffLane).toHaveAttribute("data-handoff-lane", "mcp-cli-next-action");
     expect(handoffLane).toHaveAttribute(
       "data-relation-payload-layout",
-      "tokenized-compact-route-rail",
+      "plain-next-action-line",
     );
     expect(handoffLane).toHaveAttribute(
       "data-route-surface-token",
@@ -533,10 +534,10 @@ describe("TopologyNodePopover", () => {
       "data-route-chip-text-token",
       "--topology-node-popover-route-chip-text",
     );
-    expect(handoffLane?.className).toContain(
+    expect(handoffLane?.className).not.toContain(
       "bg-[color:var(--topology-node-popover-route-surface)]",
     );
-    expect(handoffLane?.className).toContain(
+    expect(handoffLane?.className).not.toContain(
       "border-[color:var(--topology-node-popover-route-border)]",
     );
     expect(handoffLane?.className).toContain(
@@ -544,6 +545,9 @@ describe("TopologyNodePopover", () => {
     );
     expect(
       handoffLane?.querySelector('[data-relation-route-chip="fact"]')?.className,
+    ).toContain("sr-only");
+    expect(
+      handoffLane?.querySelector('[data-relation-route-chip="evidence"]')?.className,
     ).toContain("text-[color:var(--topology-node-popover-route-chip-text)]");
   });
 
@@ -1290,12 +1294,16 @@ describe("TopologyNodePopover", () => {
       "data-relation-route-state",
       "compact-json-ready",
     );
+    expect(relationRows[0].querySelector("[data-relation-route]")).toHaveAttribute(
+      "data-relation-payload-layout",
+      "plain-next-action-line",
+    );
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="fact"]'),
     ).toHaveTextContent("사용");
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="evidence"]'),
-    ).toHaveTextContent("1");
+    ).toHaveTextContent("근거 1");
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="gate"]'),
     ).toHaveTextContent("전달");
@@ -1356,17 +1364,13 @@ describe("TopologyNodePopover", () => {
       "data-endpoint-separator-token",
       "--topology-node-popover-endpoint-separator",
     );
-    expect(outgoingEndpointRoute?.className).toContain(
-      "text-[color:var(--topology-node-popover-endpoint-text)]",
+    expect(outgoingEndpointRoute).toHaveAttribute(
+      "data-visible-contract",
+      "machine-route-hidden-from-default-row",
     );
+    expect(outgoingEndpointRoute).toHaveClass("sr-only");
     expect(outgoingSourceChip).toHaveTextContent("capabilities/mcp-server");
-    expect(outgoingSourceChip?.className).toContain(
-      "text-[color:var(--topology-node-popover-endpoint-chip-text)]",
-    );
     expect(outgoingTargetChip).toHaveTextContent("elements/mcp-sdk");
-    expect(outgoingTargetChip?.className).toContain(
-      "text-[color:var(--topology-node-popover-endpoint-chip-text)]",
-    );
 
     expect(relationRows[1]).toHaveAttribute(
       "data-relation-endpoint-route",
@@ -1398,7 +1402,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRows[0]).toHaveAttribute(
       "aria-label",
-      "사용 · MCP SDK · 이 노드가 기대는 곳 · 요소 · capabilities/mcp-server > elements/mcp-sdk · 사용 · 1 · 전달 · 설명",
+      "사용 · MCP SDK · 이 노드가 기대는 곳 · 요소 · 사용 · 1 · 전달 · 설명",
     );
     expect(relationRows[1]).toHaveAttribute(
       "data-relation-handoff-summary",

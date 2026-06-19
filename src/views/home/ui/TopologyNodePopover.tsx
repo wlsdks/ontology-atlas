@@ -86,6 +86,8 @@ export interface TopologyNodePopoverLabels {
   relationCopyActionChipLabels: Record<RelationCopyActionKind, string>;
   /** Compact visible payload chip. The JSON payload stays in data attributes/title. */
   relationPayloadChipLabel: string;
+  /** Compact visible evidence prefix in relation rows. */
+  relationEvidenceChipLabel: string;
   /** Display labels for raw ontology kind tokens. Unknown/missing falls back to the raw token. */
   kindLabels: Record<string, string>;
   /** Display labels for raw relation type tokens. Unknown/missing falls back to the raw token. */
@@ -819,7 +821,6 @@ export function TopologyNodePopover({
                 primaryCopyAction,
               ].join(" · ");
               const relationAccessibleHandoffSummary = [
-                `${relationSourceId} > ${relationTargetId}`,
                 relationTypeLabel,
                 relationEvidenceGlyph(connection),
                 agentGateChipText,
@@ -887,7 +888,7 @@ export function TopologyNodePopover({
                     data-row-density-contract="agent-handoff-scan-row"
                     data-row-surface-contract="flat-divider-row"
                     data-row-visual-contract="direction-quality-fact-spine"
-                    data-row-min-hit-height="72"
+                    data-row-min-hit-height="64"
                     data-row-scan-order="relation>title>direction>endpoint>handoff"
                     data-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
                     data-row-focus-surface-token="--topology-node-popover-relation-row-focus-surface"
@@ -897,7 +898,7 @@ export function TopologyNodePopover({
                       connection.relationQuality,
                     )}
                     onClick={() => onSelectConnection(connection.id)}
-                    className="group relative flex min-h-[72px] w-full min-w-0 items-stretch gap-2 overflow-hidden border border-transparent bg-transparent px-2 py-2 text-left transition-[background-color,border-color,box-shadow] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)] focus-visible:border-[color:var(--topology-node-popover-relation-row-focus-border)] focus-visible:bg-[color:var(--topology-node-popover-relation-row-focus-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]"
+                    className="group relative flex min-h-16 w-full min-w-0 items-stretch gap-2 overflow-hidden border border-transparent bg-transparent px-2 py-2 text-left transition-[background-color,border-color,box-shadow] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)] focus-visible:border-[color:var(--topology-node-popover-relation-row-focus-border)] focus-visible:bg-[color:var(--topology-node-popover-relation-row-focus-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]"
                   >
                     <span
                       aria-hidden="true"
@@ -1005,10 +1006,11 @@ export function TopologyNodePopover({
                       <span
                         aria-hidden="true"
                         data-relation-endpoint-route-label
+                        data-visible-contract="machine-route-hidden-from-default-row"
                         data-endpoint-route-text-token="--topology-node-popover-endpoint-text"
                         data-endpoint-chip-text-token="--topology-node-popover-endpoint-chip-text"
                         data-endpoint-separator-token="--topology-node-popover-endpoint-separator"
-                        className="mt-0.5 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] text-[color:var(--topology-node-popover-endpoint-text)]"
+                        className="sr-only"
                       >
                         <span
                           data-relation-endpoint-chip="source"
@@ -1030,7 +1032,7 @@ export function TopologyNodePopover({
                         aria-hidden="true"
                         data-relation-route
                         data-relation-route-state="compact-json-ready"
-                        data-relation-payload-layout="tokenized-compact-route-rail"
+                        data-relation-payload-layout="plain-next-action-line"
                         data-handoff-lane="mcp-cli-next-action"
                         data-handoff-grammar-contract="fact-evidence-gate-action-payload"
                         data-route-surface-token="--topology-node-popover-route-surface"
@@ -1040,50 +1042,50 @@ export function TopologyNodePopover({
                         data-route-text-token="--topology-node-popover-route-text"
                         data-route-chip-text-token="--topology-node-popover-route-chip-text"
                         data-route-separator-token="--topology-node-popover-route-separator"
-                        className="mt-1 flex min-w-0 items-center gap-1 overflow-hidden rounded border border-[color:var(--topology-node-popover-route-border)] bg-[color:var(--topology-node-popover-route-surface)] px-1 py-0.5 font-mono text-[8px] uppercase tracking-normal text-[color:var(--topology-node-popover-route-text)]"
+                        className="mt-1 flex min-w-0 items-center gap-1.5 overflow-hidden text-[10px] leading-4 text-[color:var(--topology-node-popover-route-text)]"
                       >
                         <span
                           data-relation-route-chip="fact"
-                          className="min-w-0 truncate rounded border border-[color:var(--topology-node-popover-route-chip-border)] bg-[color:var(--topology-node-popover-route-chip-surface)] px-1 py-px text-[color:var(--topology-node-popover-route-chip-text)]"
+                          className="sr-only"
                         >
                           {relationTypeLabel}
                         </span>
-                        <span className="shrink-0 text-[color:var(--topology-node-popover-route-separator)]">
+                        <span className="sr-only">
                           &gt;
                         </span>
                         <span
                           data-relation-route-chip="evidence"
-                          className="shrink-0 rounded border border-[color:var(--topology-node-popover-route-chip-border)] bg-[color:var(--topology-node-popover-route-chip-surface)] px-1 py-px text-[color:var(--topology-node-popover-route-chip-text)]"
+                          className="shrink-0 text-[color:var(--topology-node-popover-route-chip-text)]"
                         >
-                          {relationEvidenceGlyph(connection)}
+                          {labels.relationEvidenceChipLabel} {relationEvidenceGlyph(connection)}
                         </span>
                         <span className="shrink-0 text-[color:var(--topology-node-popover-route-separator)]">
-                          &gt;
+                          ·
                         </span>
                         <span
                           data-relation-route-chip="gate"
-                          className="shrink-0 rounded border border-[color:var(--topology-node-popover-route-chip-border)] bg-[color:var(--topology-node-popover-route-chip-surface)] px-1 py-px text-[color:var(--topology-node-popover-route-chip-text)]"
+                          className="shrink-0 text-[color:var(--topology-node-popover-route-chip-text)]"
                         >
                           {agentGateChipText}
                         </span>
                         <span className="shrink-0 text-[color:var(--topology-node-popover-route-separator)]">
-                          &gt;
+                          ·
                         </span>
                         <span
                           data-relation-route-chip="action"
                           title={primaryCopyAction}
-                          className="shrink-0 rounded border border-[color:var(--topology-node-popover-route-chip-border)] bg-[color:var(--topology-node-popover-route-chip-surface)] px-1 py-px text-[color:var(--topology-node-popover-route-chip-text)]"
+                          className="shrink-0 text-[color:var(--topology-node-popover-route-chip-text)]"
                         >
                           {primaryCopyActionShortLabel}
                         </span>
                         <span className="shrink-0 text-[color:var(--topology-node-popover-route-separator)]">
-                          &gt;
+                          ·
                         </span>
                         <span
                           data-relation-route-chip="payload"
                           data-relation-payload-summary={relationHandoffPayloadSummary}
                           title={relationHandoffPayloadSummary}
-                          className="shrink-0 rounded border border-[color:var(--topology-node-popover-route-chip-border)] bg-[color:var(--topology-node-popover-route-chip-surface)] px-1 py-px text-[color:var(--topology-node-popover-route-chip-text)]"
+                          className="shrink-0 text-[color:var(--topology-node-popover-route-chip-text)]"
                         >
                           {labels.relationPayloadChipLabel}
                         </span>
