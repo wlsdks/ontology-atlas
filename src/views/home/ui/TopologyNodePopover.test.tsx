@@ -407,27 +407,15 @@ describe("TopologyNodePopover", () => {
     );
     expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
       "data-relation-lens-density-contract",
-      "split-metric-proof-strip",
+      "quiet-inline-fact-strip",
     );
     expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
       "data-relation-lens-layout",
-      "label-value-metrics",
-    );
-    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
-      "data-relation-lens-grid-token",
-      "--topology-node-popover-relation-lens-grid",
+      "inline-label-value-metrics",
     );
     expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
       "data-relation-lens-gap-token",
       "--topology-node-popover-relation-lens-gap",
-    );
-    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
-      "data-relation-lens-padding-x-token",
-      "--topology-node-popover-relation-lens-padding-x",
-    );
-    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
-      "data-relation-lens-padding-y-token",
-      "--topology-node-popover-relation-lens-padding-y",
     );
     expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
       "data-relation-lens-metric-gap-token",
@@ -438,10 +426,13 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-relation-lens-metric-min-width",
     );
     expect(screen.getByTestId("topology-relation-lens").className).toContain(
-      "grid-cols-[var(--topology-node-popover-relation-lens-grid)]",
-    );
-    expect(screen.getByTestId("topology-relation-lens").className).toContain(
       "gap-[var(--topology-node-popover-relation-lens-gap)]",
+    );
+    expect(screen.getByTestId("topology-relation-lens").className).not.toContain(
+      "border",
+    );
+    expect(screen.getByTestId("topology-relation-lens").className).not.toContain(
+      "bg-[color",
     );
     expect(screen.getByTestId("topology-relation-lens").className).toContain(
       "text-[color:var(--topology-node-popover-relation-section-lens-text)]",
@@ -1878,9 +1869,9 @@ describe("TopologyNodePopover", () => {
     expect(section).toContainElement(lens);
     expect(lens).toHaveAttribute(
       "data-relation-lens-density-contract",
-      "split-metric-proof-strip",
+      "quiet-inline-fact-strip",
     );
-    expect(lens).toHaveAttribute("data-relation-lens-layout", "label-value-metrics");
+    expect(lens).toHaveAttribute("data-relation-lens-layout", "inline-label-value-metrics");
     expect(lens).toHaveAttribute("data-relation-fact-label", "직접 의미 관계 3개");
     expect(lens).toHaveAttribute("data-relation-type-label", "관계 유형 2종");
     expect(lens).toHaveAccessibleName(

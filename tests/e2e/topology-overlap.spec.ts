@@ -3868,6 +3868,30 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-count-text-token",
     "--topology-node-popover-count-text",
   );
+  const relationLens = popover.getByTestId("topology-relation-lens");
+  await expect(relationLens).toHaveAttribute(
+    "data-relation-lens-density-contract",
+    "quiet-inline-fact-strip",
+  );
+  await expect(relationLens).toHaveAttribute(
+    "data-relation-lens-layout",
+    "inline-label-value-metrics",
+  );
+  await expect(relationLens).toHaveAttribute(
+    "data-relation-lens-gap-token",
+    "--topology-node-popover-relation-lens-gap",
+  );
+  const relationLensChrome = await relationLens.evaluate((el) => {
+    const style = window.getComputedStyle(el);
+    return {
+      backgroundColor: style.backgroundColor,
+      borderTopWidth: style.borderTopWidth,
+      boxShadow: style.boxShadow,
+    };
+  });
+  expect(relationLensChrome.borderTopWidth).toBe("0px");
+  expect(relationLensChrome.backgroundColor).toBe("rgba(0, 0, 0, 0)");
+  expect(relationLensChrome.boxShadow).toBe("none");
   await expect(popover.locator("[data-selected-node-importance-line]").first()).toHaveAttribute(
     "data-importance-text-token",
     "--topology-node-popover-significance-core-text",
