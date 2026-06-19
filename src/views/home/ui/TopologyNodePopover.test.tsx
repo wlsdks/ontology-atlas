@@ -821,6 +821,13 @@ describe("TopologyNodePopover", () => {
     expect(openFullDetail.className).toContain("min-w-0");
     expect(openFullDetail.className).toContain("overflow-hidden");
     expect(openFullDetail).toHaveAttribute("data-footer-action", "open-full-detail");
+    expect(openFullDetail).toHaveAccessibleName("전체 상세, +77 더");
+    expect(openFullDetail).toHaveAttribute("title", "전체 상세, +77 더");
+    expect(openFullDetail).toHaveAttribute(
+      "data-footer-action-accessible-label-contract",
+      "full-detail-plus-hidden-remainder",
+    );
+    expect(openFullDetail).toHaveAttribute("data-footer-hidden-remainder-count", "77");
     expect(openFullDetail).toHaveAttribute(
       "data-footer-action-border-token",
       "--topology-node-popover-footer-action-border",
@@ -2391,11 +2398,12 @@ describe("TopologyNodePopover", () => {
 
   it("ties hidden remainders to the full-detail action", () => {
     setup({ focus: focusModel({ hiddenConnectionCount: 5 }) });
-    expect(
-      screen.getByRole("button", {
-        name: /전체 상세.*\+5 더/,
-      }),
-    ).toBeInTheDocument();
+    const fullDetail = screen.getByRole("button", {
+      name: "전체 상세, +5 더",
+    });
+    expect(fullDetail).toBeInTheDocument();
+    expect(fullDetail).toHaveAttribute("title", "전체 상세, +5 더");
+    expect(fullDetail).toHaveAttribute("data-footer-hidden-remainder-count", "5");
   });
 
   it("wires connection click, full-detail open, and close", () => {

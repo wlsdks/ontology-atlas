@@ -180,6 +180,10 @@ export function TopologyNodePopover({
       ? Math.max(0, visibleConnections.length - renderedConnections.length)
       : 0;
   const hiddenConnectionCount = focus.hiddenConnectionCount + renderHiddenCount;
+  const fullDetailActionLabel =
+    hiddenConnectionCount > 0
+      ? `${labels.openFullDetail}, +${hiddenConnectionCount} ${labels.moreSuffix}`
+      : labels.openFullDetail;
   const relationTypeCount = new Set(focus.connections.map((connection) => connection.relationType))
     .size;
   const relationFactLabel = (
@@ -1374,7 +1378,11 @@ export function TopologyNodePopover({
           <button
             type="button"
             onClick={onOpenFullDetail}
+            aria-label={fullDetailActionLabel}
+            title={fullDetailActionLabel}
             data-footer-action="open-full-detail"
+            data-footer-action-accessible-label-contract="full-detail-plus-hidden-remainder"
+            data-footer-hidden-remainder-count={hiddenConnectionCount}
             data-footer-action-border-token="--topology-node-popover-footer-action-border"
             data-footer-action-hover-border-token="--topology-node-popover-footer-action-hover-border"
             data-footer-action-text-token="--topology-node-popover-footer-action-text"
