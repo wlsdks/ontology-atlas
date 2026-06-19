@@ -177,6 +177,7 @@ const ANALYSIS_PANEL_BLOCK_END_PAD = 8;
 const SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX = 1280;
 const OVERVIEW_COLLISION_PAD = 2;
 const OVERVIEW_DOMAIN_COLLISION_PAD = 10;
+const DRAG_SETTLE_OVERLAP_PAD = -2;
 const SAFE_VIEWPORT_MARGIN = 8;
 const FOCUS_HULL_BREATHING_ROOM_PX = 16;
 const FOCUS_HULL_LABEL_CLEARANCE_PX = 34;
@@ -1410,6 +1411,48 @@ function restoreVisibleCardsFromFixedSurfaces(
     el.dataset.fixedSurfaceRestore = 'hidden-under-fixed-surface';
   }
   return restored;
+}
+
+function dragSettleCardPriority(el: HTMLElement): number {
+  if (el.dataset.selected === 'true') return 0;
+  if (el.dataset.pathRole === 'source' || el.dataset.pathRole === 'target') return 0;
+  if (!el.dataset.dockParent && el.dataset.dimmed !== 'true') return 1;
+  if (el.dataset.dockParent && el.dataset.dimmed !== 'true') return 2;
+  const tier = Number(el.dataset.tier ?? '3');
+  return tier <= 1 ? 3 : 4;
+}
+
+function suppressSettlingDragCardOverlaps(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+): number {
+  const visible = orderedEls
+    .filter(isSkeletonCardVisibleForStats)
+    .map((el) => ({
+      el,
+      priority: dragSettleCardPriority(el),
+      rect: elementRectRelativeToContainer(el, containerRect),
+    }))
+    .sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      const tierA = Number(a.el.dataset.tier ?? '3');
+      const tierB = Number(b.el.dataset.tier ?? '3');
+      if (tierA !== tierB) return tierA - tierB;
+      return Number(a.el.dataset.layoutY ?? '0') - Number(b.el.dataset.layoutY ?? '0');
+    });
+  const accepted: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+  let hidden = 0;
+  for (const item of visible) {
+    delete item.el.dataset.dragSettleOverlapHidden;
+    if (accepted.some((rect) => rectsOverlap(item.rect, rect, DRAG_SETTLE_OVERLAP_PAD))) {
+      hideSkeletonCard(item.el);
+      item.el.dataset.dragSettleOverlapHidden = 'true';
+      hidden += 1;
+      continue;
+    }
+    accepted.push(item.rect);
+  }
+  return hidden;
 }
 
 function collectPathAnalysisPanelRects(containerRect: DOMRect) {
@@ -2919,6 +2962,15 @@ export function SigmaSkeletonCards({
     container.dataset.fixedSurfaceRestoreContract =
       'visible-cards-shift-or-hide-after-drag-release';
     container.dataset.fixedSurfaceRestoredCount = String(fixedSurfaceRestoredCount);
+    const dragSettleOverlapHiddenCount =
+      activeDragCluster !== null && !activeDragMotion
+        ? suppressSettlingDragCardOverlaps(orderedEls, containerRect)
+        : 0;
+    container.dataset.dragSettleOverlapPolicy =
+      'released-cluster-hides-lower-priority-overlaps';
+    container.dataset.dragSettleOverlapHiddenCount = String(
+      dragSettleOverlapHiddenCount,
+    );
     const relationLabelCardBlockers: Array<{
       left: number;
       top: number;

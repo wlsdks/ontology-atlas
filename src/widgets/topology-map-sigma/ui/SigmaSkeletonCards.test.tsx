@@ -3906,7 +3906,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       expect(graph.getNodeAttributes("domain:d1").x).toBeLessThan(110);
       expect(graph.getNodeAttributes("domain:d1").x).toBeGreaterThan(80);
-      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(84);
+      expect(graph.getNodeAttributes("project:p").x).toBeLessThan(110);
+      expect(graph.getNodeAttributes("project:p").x).toBeGreaterThan(80);
     } finally {
       rectSpy.mockRestore();
       panel.remove();

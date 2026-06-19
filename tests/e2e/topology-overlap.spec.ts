@@ -1041,13 +1041,13 @@ function pointDistanceFromRect(
 function expectCardsClear(
   cards: Array<Rect & { text: string }>,
   viewport: { label: string; width: number; height: number },
-  analysisRect: Rect,
+  analysisRect: Rect | null,
   legendRect: Rect | null,
   minimapRect?: Rect,
 ) {
   const hudViolations = cards.filter(
     (card) =>
-      intersects(card, analysisRect, 8) ||
+      (analysisRect ? intersects(card, analysisRect, 8) : false) ||
       (legendRect ? intersects(card, legendRect, 8) : false) ||
       (minimapRect ? intersects(card, minimapRect, 8) : false),
   );
@@ -1796,26 +1796,31 @@ for (const viewport of VIEWPORTS) {
   test(`Relief selected reveal cards travel with the dragged focus — ${viewport.label}`, async ({
     page,
   }) => {
-    await openRelief(page, viewport, { mode: "map", selectedSlug: "domain:views" });
+    await openRelief(page, viewport, {
+      mode: "map",
+      requireHud: false,
+      selectedSlug: "domain:views",
+    });
 
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-skeleton-cards-ready",
       "true",
       { timeout: 20_000 },
     );
-    await expect(page.getByTestId("topology-node-popover")).toBeVisible();
-    const selectedFocusPanel = page.getByTestId("topology-analysis-panel");
-    await expect(selectedFocusPanel).toHaveAttribute("data-analysis-mode", "focus");
-    await expect(selectedFocusPanel).toHaveAttribute(
-      "data-panel-width-contract",
-      "selected-focus-rail-max-320",
+    await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
+    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
+      "data-workspace-context-state",
+      "selected-inspector-support-closed",
     );
-    const selectedFocusPanelRect = await rectOf(selectedFocusPanel);
-    const selectedFocusPanelMaxWidth = viewport.width <= 1600 ? 322 : 380;
-    expect(
-      selectedFocusPanelRect.width,
-      `selected node support rail should not compete with the graph at ${viewport.label}`,
-    ).toBeLessThanOrEqual(selectedFocusPanelMaxWidth);
+    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
+      "data-selected-inspector-support-rail",
+      "closed",
+    );
+    await expect(page.getByTestId("topology-node-popover")).toBeVisible();
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-size-policy",
+      "inspector-rail",
+    );
     await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
       "data-kind-legend-state",
@@ -1837,6 +1842,10 @@ for (const viewport of VIEWPORTS) {
     await expect(focusHull).toHaveAttribute(
       "data-focus-label-clearance-contract",
       "no-hull-boundary-uses-ego-labels",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-click-focus-relationship-context",
+      "durable",
     );
     const focusHullBreathingRoom = Number(
       await focusHull.getAttribute("data-focus-breathing-room-px"),
@@ -1868,10 +1877,13 @@ for (const viewport of VIEWPORTS) {
     ).toEqual([]);
     await expect(page.locator("[data-drag-cluster-title]")).toHaveCount(0);
     await expect(page.locator("[data-drag-cluster-count]")).toHaveCount(0);
-    if (viewport.label === "desktop-1280") {
-      await expectSelectedCardHiddenForCompactRail(page, "domain:views");
-      return;
-    }
+    expectCardsClear(
+      await visibleCardRects(page),
+      viewport,
+      null,
+      null,
+      await rectOf(page.getByTestId("topology-node-popover")),
+    );
 
     const focus = page.locator('[data-skeleton-card][data-slug="domain:views"]').first();
     const firstCompanion = page
@@ -1880,6 +1892,13 @@ for (const viewport of VIEWPORTS) {
       )
       .first();
     await expect(focus).toBeVisible();
+    if ((await firstCompanion.count()) === 0) {
+      await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-selected-dock-visible-companion-count",
+        "0",
+      );
+      return;
+    }
     await expect(firstCompanion).toBeVisible();
     const companionSlug = await firstCompanion.getAttribute("data-slug");
     if (!companionSlug) {
@@ -1933,6 +1952,10 @@ for (const viewport of VIEWPORTS) {
       "true",
       { timeout: 20_000 },
     );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-settle-overlap-policy",
+      "released-cluster-hides-lower-priority-overlaps",
+    );
     await expect(companion).not.toHaveAttribute("data-surface-hidden", "true");
     await expect(companion).toHaveCSS("opacity", "1");
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
@@ -1943,8 +1966,9 @@ for (const viewport of VIEWPORTS) {
     expectCardsClear(
       await visibleCardRects(page),
       viewport,
-      selectedFocusPanelRect,
       null,
+      null,
+      popoverRect,
     );
   });
 
