@@ -57,9 +57,9 @@ const labels = {
   overviewWorkOrderPath: "Prove path",
   overviewWorkOrderHealth: "Repair health",
   overviewReaderLensTitle: "Reader lens",
-  overviewReaderLensDomains: "Domains and ownership.",
-  overviewReaderLensCapabilities: "Capabilities by area.",
-  overviewReaderLensChangePaths: "Change path before agent handoff.",
+  overviewReaderLensDomains: "Domains",
+  overviewReaderLensCapabilities: "Capabilities",
+  overviewReaderLensChangePaths: "Agent handoff",
   overviewTierLegendTitle: "Map layers",
   overviewTierLegendProject: "System",
   overviewTierLegendDomain: "Domain",
@@ -912,9 +912,9 @@ describe("TopologyAnalysisBar", () => {
     const actions = screen.getByTestId("topology-overview-handoff-actions");
     const readerLens = screen.getByTestId("topology-overview-reader-lens");
     expect(readerLens).toHaveTextContent("Reader lens");
-    expect(readerLens).toHaveTextContent("Domains and ownership.");
-    expect(readerLens).toHaveTextContent("Capabilities by area.");
-    expect(readerLens).toHaveTextContent("Change path before agent handoff.");
+    expect(readerLens).toHaveTextContent("Domains");
+    expect(readerLens).toHaveTextContent("Capabilities");
+    expect(readerLens).toHaveTextContent("Agent handoff");
     expect(readerLens).not.toHaveTextContent(
       "Find the main domains and ownership areas.",
     );
@@ -1640,7 +1640,7 @@ describe("TopologyAnalysisBar", () => {
     const signalGrid = screen.getByTestId("topology-overview-signal-grid");
     expect(screen.getByTestId("topology-overview-reader-lens")).toHaveAttribute(
       "data-density-contract",
-      "inline-read-order-no-nested-card",
+      "inline-step-path-no-nested-card",
     );
     expect(signalGrid).toHaveAttribute(
       "data-compact-padding-token",

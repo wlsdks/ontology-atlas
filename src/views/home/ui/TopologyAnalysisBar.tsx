@@ -1097,29 +1097,39 @@ export function TopologyAnalysisBar({
               data-item-text-token="--topology-overview-reader-lens-item-text"
               data-marker-surface-token="--topology-overview-reader-lens-marker-surface"
               data-marker-border-token="--topology-overview-reader-lens-marker-border"
-              data-density-contract="inline-read-order-no-nested-card"
-              className="mt-2 px-1 py-1"
+              data-density-contract="inline-step-path-no-nested-card"
+              className="mt-2 px-1 py-0.5"
             >
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
-                {labels.overviewReaderLensTitle}
-              </p>
-              <ol className="mt-1.5 grid gap-1 text-[11.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
-                {[
-                  labels.overviewReaderLensDomains,
-                  labels.overviewReaderLensCapabilities,
-                  labels.overviewReaderLensChangePaths,
-                ].map((item, index) => (
-                  <li key={item} className="flex min-w-0 items-start gap-1.5">
-                    <span
-                      aria-hidden
-                      className="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border border-[color:var(--topology-overview-reader-lens-marker-border)] bg-[color:var(--topology-overview-reader-lens-marker-surface)] font-mono text-[8px] leading-none text-[color:var(--topology-overview-reader-lens-title-text)]"
-                    >
-                      {index + 1}
-                    </span>
-                    <span className="min-w-0 break-keep">{item}</span>
-                  </li>
-                ))}
-              </ol>
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <p className="shrink-0 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
+                  {labels.overviewReaderLensTitle}
+                </p>
+                <ol className="flex min-w-0 flex-wrap items-center justify-end gap-x-1.5 gap-y-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
+                  {[
+                    labels.overviewReaderLensDomains,
+                    labels.overviewReaderLensCapabilities,
+                    labels.overviewReaderLensChangePaths,
+                  ].map((item, index) => (
+                    <li key={item} className="flex min-w-0 items-center gap-1.5">
+                      <span
+                        aria-hidden
+                        className="grid size-3.5 shrink-0 place-items-center rounded-full border border-[color:var(--topology-overview-reader-lens-marker-border)] bg-[color:var(--topology-overview-reader-lens-marker-surface)] font-mono text-[7px] leading-none text-[color:var(--topology-overview-reader-lens-title-text)]"
+                      >
+                        {index + 1}
+                      </span>
+                      <span className="min-w-0 whitespace-nowrap">{item}</span>
+                      {index < 2 ? (
+                        <span
+                          aria-hidden
+                          className="font-mono text-[9px] text-[color:var(--topology-overview-reader-lens-title-text)]"
+                        >
+                          →
+                        </span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ol>
+              </div>
               <div
                 data-testid="topology-overview-map-key"
                 data-map-key-contract="compact-node-and-relation-reading"
