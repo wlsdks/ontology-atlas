@@ -60,6 +60,8 @@ export interface TopologyNodePopoverLabels {
   moreSuffix: string;
   /** "Agent handoff" — compact action rail title. */
   actionRailTitle: string;
+  /** "Copy" — compact hint that action buttons copy agent handoff packets. */
+  actionRailHint: string;
   /** "{count}개는 왼쪽 지도에 펼쳐져 있어요" — 도킹 열과의 중복 안내. */
   expandedNote: string;
   /** "Relation lens" — small block explaining how to read direct ontology edges. */
@@ -1255,15 +1257,29 @@ export function TopologyNodePopover({
           <div
             data-testid="topology-node-popover-action-rail"
             data-action-rail-contract="compact-mcp-cli-handoff"
+            data-action-rail-title-gap-token="--topology-node-popover-action-rail-title-gap"
             data-action-count={actions.length}
             className="mb-2 min-w-0 overflow-hidden"
           >
-            <p
-              data-agent-handoff-title="footer"
-              className="mb-1 truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--topology-node-popover-footer-title-text)]"
+            <div
+              data-agent-handoff-title-row="footer"
+              data-agent-handoff-title-row-contract="title-plus-copy-hint"
+              className="mb-1 flex min-w-0 items-center justify-between gap-[var(--topology-node-popover-action-rail-title-gap)]"
             >
-              {labels.actionRailTitle}
-            </p>
+              <p
+                data-agent-handoff-title="footer"
+                className="min-w-0 truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--topology-node-popover-footer-title-text)]"
+              >
+                {labels.actionRailTitle}
+              </p>
+              <span
+                data-agent-handoff-title-hint="copy"
+                data-agent-handoff-title-hint-token="--topology-node-popover-footer-title-text"
+                className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--topology-node-popover-footer-title-text)] opacity-70"
+              >
+                {labels.actionRailHint}
+              </span>
+            </div>
             <div className="grid min-w-0 grid-cols-3 gap-1.5 overflow-hidden">
               {actions.map((action) => {
                 const actionIcon = nodePopoverActionIcon(action.kind);

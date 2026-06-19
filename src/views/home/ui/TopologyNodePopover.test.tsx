@@ -17,6 +17,7 @@ const labels: TopologyNodePopoverLabels = {
   close: "닫기",
   moreSuffix: "더",
   actionRailTitle: "에이전트 인계",
+  actionRailHint: "복사",
   expandedNote:
     "{count}개 직접 연결은 지도에 펼쳐져 있어요. 지도 보기를 누르면 겹침 없이 확인할 수 있어요.",
   relationLensTitle: "관계 렌즈",
@@ -756,11 +757,26 @@ describe("TopologyNodePopover", () => {
       "selected-node-actions-visible",
     );
     expect(rail).toHaveAttribute("data-action-rail-contract", "compact-mcp-cli-handoff");
+    expect(rail).toHaveAttribute(
+      "data-action-rail-title-gap-token",
+      "--topology-node-popover-action-rail-title-gap",
+    );
     expect(rail).toHaveAttribute("data-action-count", "3");
     expect(rail).toHaveTextContent("에이전트 인계");
+    expect(rail).toHaveTextContent("복사");
+    const handoffTitleRow = footer.querySelector('[data-agent-handoff-title-row="footer"]');
+    expect(handoffTitleRow).toHaveAttribute(
+      "data-agent-handoff-title-row-contract",
+      "title-plus-copy-hint",
+    );
     const handoffTitle = footer.querySelector('[data-agent-handoff-title="footer"]');
     expect(handoffTitle?.className).toContain(
       "text-[color:var(--topology-node-popover-footer-title-text)]",
+    );
+    const handoffHint = footer.querySelector('[data-agent-handoff-title-hint="copy"]');
+    expect(handoffHint).toHaveAttribute(
+      "data-agent-handoff-title-hint-token",
+      "--topology-node-popover-footer-title-text",
     );
     expect(briefAction).toHaveAttribute(
       "data-popover-action-surface-token",

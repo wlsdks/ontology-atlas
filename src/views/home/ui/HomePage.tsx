@@ -2429,6 +2429,7 @@ export function HomePage() {
                 close: t("controls.close"),
                 moreSuffix: t("nodePopover.moreSuffix"),
                 actionRailTitle: t("nodePopover.actionRailTitle"),
+                actionRailHint: t("nodePopover.actionRailHint"),
                 // 컴포넌트가 {count} 를 치환 — raw 템플릿 그대로 전달.
                 expandedNote: t.raw("nodePopover.expandedNote") as string,
                 relationLensTitle: t("nodePopover.relationLensTitle"),
