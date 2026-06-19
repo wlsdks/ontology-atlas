@@ -49,6 +49,12 @@ function topologyDragDeltaVector(delta) {
   return { x, y, magnitude: Math.hypot(x, y) };
 }
 
+export function topologyDragCompanionVectorTolerance(markers = {}) {
+  const uiScale = Number(markers.topologyUiScale);
+  if (!Number.isFinite(uiScale) || uiScale <= 1) return 8;
+  return Math.min(14, Math.max(8, uiScale * 8));
+}
+
 function validateTopologyNodePopoverScrollFooterContract(markers) {
   if (markers.topologyNodePopoverFooterVisible !== true) {
     return "WebView Relief selected node popover footer was not measurable";
@@ -3771,7 +3777,8 @@ export function validateWebviewVerifyPayload(payload, {
           focusDeltaVector.x - companionDeltaVector.x,
           focusDeltaVector.y - companionDeltaVector.y,
         );
-        if (dragVectorDelta > 8) {
+        const dragVectorTolerance = topologyDragCompanionVectorTolerance(payload.markers);
+        if (dragVectorDelta > dragVectorTolerance) {
           return `WebView Relief drag companion vector drifted from the focus card (${Math.round(dragVectorDelta)}px)`;
         }
       }

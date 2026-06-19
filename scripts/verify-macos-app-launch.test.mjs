@@ -29,6 +29,7 @@ import {
   validateSelectedRelationCardDensityContract,
   validateRelationLabelFrameGeometryMarkers,
   validateSelectedRelationLabelCompactMarkers,
+  topologyDragCompanionVectorTolerance,
   validateAccessibilityWindowRows,
   validateAccessibilityText,
   validateCapturableWindowRows,
@@ -91,6 +92,13 @@ test("selected relation hidden route rail text leak detector catches collapsed c
     }),
     false,
   );
+});
+
+test("topology drag companion vector tolerance scales with wide WebView UI scale", () => {
+  assert.equal(topologyDragCompanionVectorTolerance({}), 8);
+  assert.equal(topologyDragCompanionVectorTolerance({ topologyUiScale: 0.9 }), 8);
+  assert.equal(topologyDragCompanionVectorTolerance({ topologyUiScale: 1.32 }), 10.56);
+  assert.equal(topologyDragCompanionVectorTolerance({ topologyUiScale: 4 }), 14);
 });
 
 test("WebView verification requires Add Concept backdrop when the composer is open", () => {
