@@ -3483,7 +3483,7 @@ export function validateWebviewVerifyPayload(payload, {
         : "";
     const overviewAgentReadinessReadable =
       /(handoff-ready|ready|handoff 가능|전달 가능)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
-      /(preflight|check first|사전 점검)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
+      /(preflight|check first|check|사전 점검)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
       /(needs review|review|검토)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
       /[·,:]/.test(overviewAgentReadinessText);
     const requireOverviewAgentReadiness =

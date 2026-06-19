@@ -79,9 +79,9 @@ const labels = {
   overviewBriefTotalRelations: "Total relations",
   overviewBriefRelationReading: "Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
   overviewBriefRelationProvenance: "Evidence source",
-  overviewBriefRelationSourceBacked: "with source",
-  overviewBriefRelationAuthored: "team-added",
-  overviewBriefRelationNeedsReview: "needs check",
+  overviewBriefRelationSourceBacked: "sourced",
+  overviewBriefRelationAuthored: "added",
+  overviewBriefRelationNeedsReview: "check",
   overviewBriefRelationQuality: "Trust",
   overviewBriefRelationQualityStrong: "clear",
   overviewBriefRelationQualitySupported: "supported",
@@ -89,7 +89,7 @@ const labels = {
   overviewBriefRelationQualityReview: "check",
   overviewAgentReadiness: "Agent handoff",
   overviewAgentReadinessReady: "ready",
-  overviewAgentReadinessPreflight: "check first",
+  overviewAgentReadinessPreflight: "check",
   overviewAgentReadinessReview: "needs review",
   overviewBriefHealthSignals: "Health signals",
   overviewBriefHealthUrl: "Health URL",
@@ -2268,7 +2268,7 @@ describe("TopologyAnalysisBar", () => {
     ).toHaveTextContent("Evidence source");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
-    ).toHaveTextContent("with source 70 · team-added 18 · needs check 0");
+    ).toHaveTextContent("sourced 70 · added 18 · check 0");
     expect(screen.getByTestId("topology-overview-relation-provenance")).toHaveAttribute(
       "data-surface-token",
       "--topology-overview-signal-indigo-surface",
@@ -2296,14 +2296,14 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(readinessGate).toHaveAttribute(
       "data-agent-readiness-summary",
-      "ready 82 · check first 4 · needs review 2",
+      "ready 82 · check 4 · needs review 2",
     );
     expect(readinessGate).toHaveAccessibleName(
-      "Agent handoff: ready 82 · check first 4 · needs review 2",
+      "Agent handoff: ready 82 · check 4 · needs review 2",
     );
     expect(
       screen.getByTestId("topology-overview-agent-readiness-summary"),
-    ).toHaveTextContent("ready 82 · check first 4 · needs review 2");
+    ).toHaveTextContent("ready 82 · check 4 · needs review 2");
     expect(
       screen.getByTestId("topology-overview-agent-readiness-summary"),
     ).toHaveAttribute(
@@ -2334,7 +2334,7 @@ describe("TopologyAnalysisBar", () => {
     const readinessMeter = screen.getByTestId("topology-overview-agent-readiness-meter");
     expect(readinessMeter).toHaveAttribute(
       "aria-label",
-      "Agent handoff: ready 82 · check first 4 · needs review 2",
+      "Agent handoff: ready 82 · check 4 · needs review 2",
     );
     expect(readinessMeter).toHaveAttribute(
       "data-surface-token",
@@ -2384,7 +2384,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Evidence source: with source 70 · team-added 18 · needs check 0",
+        "- Evidence source: sourced 70 · added 18 · check 0",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
@@ -2394,7 +2394,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Agent handoff: ready 82 · check first 4 · needs review 2",
+        "- Agent handoff: ready 82 · check 4 · needs review 2",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(

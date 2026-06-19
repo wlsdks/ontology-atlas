@@ -7771,8 +7771,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationLensPluralMismatch: false,
         topologyRelationQualityLensVisible: true,
         topologyRelationQualityLensText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
-        topologyOverviewAgentReadinessText:
-          "ready 2 · check first 0 · needs review 0",
+        topologyOverviewAgentReadinessText: "ready 2 · check 0 · needs review 0",
         topologyOverviewAgentReadinessMeterSegments: [
           { kind: "ready", count: "2" },
           { kind: "preflight", count: "0" },
