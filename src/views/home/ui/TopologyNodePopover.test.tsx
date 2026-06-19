@@ -501,7 +501,15 @@ describe("TopologyNodePopover", () => {
         "data-phone-density-contract",
         "defer-map-context-before-readable-row",
       );
-      expect(mapContextNote.className).toContain("max-xl:hidden");
+      expect(mapContextNote).toHaveAttribute(
+        "data-map-context-visual-contract",
+        "screen-reader-map-context-summary",
+      );
+      expect(mapContextNote).toHaveAttribute(
+        "data-visible-density-contract",
+        "preserve-map-context-for-agents-without-visible-note",
+      );
+      expect(mapContextNote.className).toContain("sr-only");
     }
     expect(list).toHaveAttribute("data-testid", "topology-node-connection-list");
     expect(list).toHaveAttribute("data-overflow-contract", "vertical-scroll-only");
@@ -762,6 +770,15 @@ describe("TopologyNodePopover", () => {
     const rows = document.querySelectorAll("[data-relation-row]");
 
     expect(mapNote).toHaveAttribute("data-map-context-count", "2");
+    expect(mapNote).toHaveAttribute(
+      "data-map-context-visual-contract",
+      "screen-reader-map-context-summary",
+    );
+    expect(mapNote).toHaveAttribute(
+      "data-visible-density-contract",
+      "preserve-map-context-for-agents-without-visible-note",
+    );
+    expect(mapNote.className).toContain("sr-only");
     expect(list).toHaveAttribute("data-row-render-source", "map-expanded-proof");
     expect(list).toHaveAttribute("data-rendered-connection-count", "2");
     expect(list).toHaveAttribute("data-hidden-connection-count", "0");
@@ -1338,7 +1355,7 @@ describe("TopologyNodePopover", () => {
     expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
   });
 
-  it("지도에 펼쳐진 자식은 리스트에서 제외하고 안내 한 줄로 축약한다", () => {
+  it("지도에 펼쳐진 자식은 리스트에서 제외하고 agent summary로 보존한다", () => {
     setup({ expandedChildIds: new Set(["elements/mcp-sdk"]) });
     // 펼쳐진 자식은 중복 나열 안 함 (Toss '한 화면에 한 가지').
     expect(screen.queryByText("MCP SDK")).not.toBeInTheDocument();
@@ -1364,15 +1381,17 @@ describe("TopologyNodePopover", () => {
     expect(note).not.toHaveTextContent("지도 보기를 누르면");
     expect(note).toHaveAttribute(
       "data-map-context-visual-contract",
-      "quiet-inline-note-before-rows",
+      "screen-reader-map-context-summary",
+    );
+    expect(note).toHaveAttribute(
+      "data-visible-density-contract",
+      "preserve-map-context-for-agents-without-visible-note",
     );
     expect(note).toHaveAttribute(
       "data-map-context-text-token",
       "--topology-node-popover-relation-section-lens-text",
     );
-    expect(note.className).toContain(
-      "text-[color:var(--topology-node-popover-relation-section-lens-text)]",
-    );
+    expect(note.className).toContain("sr-only");
     expect(note.className).not.toContain("border");
     expect(note.className).not.toContain("bg-[color");
     expect(note.className).not.toContain("var(--color-text-tertiary)");

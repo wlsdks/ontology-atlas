@@ -899,9 +899,10 @@ export function TopologyNodePopover({
             data-map-context-quality-summary={expandedRelationQualitySummary}
             data-map-context-agent-readiness-summary={expandedAgentReadinessSummary}
             data-phone-density-contract="defer-map-context-before-readable-row"
-            data-map-context-visual-contract="quiet-inline-note-before-rows"
+            data-map-context-visual-contract="screen-reader-map-context-summary"
+            data-visible-density-contract="preserve-map-context-for-agents-without-visible-note"
             data-map-context-text-token="--topology-node-popover-relation-section-lens-text"
-            className="mb-1 line-clamp-1 px-0 py-0.5 text-[10px] leading-4 text-[color:var(--topology-node-popover-relation-section-lens-text)] max-xl:hidden"
+            className="sr-only"
           >
             {labels.expandedNote.replace("{count}", String(expandedCount))}
           </p>
