@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import {
   TopologyNodePopover,
@@ -125,7 +125,39 @@ function setup(props: Partial<React.ComponentProps<typeof TopologyNodePopover>> 
   return { onSelectConnection, onOpenFullDetail, onClose };
 }
 
+function mockViewportMatch(matches: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
+
+const originalMatchMedia = window.matchMedia;
+
 describe("TopologyNodePopover", () => {
+  beforeEach(() => {
+    mockViewportMatch(false);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: originalMatchMedia,
+    });
+  });
+
   it("uses a readable inspector rail while leaving the map primary", () => {
     setup();
     const popover = screen.getByTestId("topology-node-popover");
@@ -1254,12 +1286,30 @@ describe("TopologyNodePopover", () => {
     expect(copyBrief).toHaveBeenCalledTimes(1);
   });
 
-  it("shows a readable compact map return control when expanded", () => {
+  it("does not render the map return control as a hidden desktop button", () => {
     const onToggleCollapsed = vi.fn();
     setup({ onToggleCollapsed });
 
-    const collapse = screen.getByRole("button", { name: "지도 보기" });
+    const footer = screen.getByTestId("topology-node-popover-footer");
+    expect(footer).toHaveAttribute(
+      "data-footer-map-return-render-contract",
+      "small-screen-only-no-desktop-hidden-button",
+    );
+    expect(screen.queryByRole("button", { name: "지도 보기" })).not.toBeInTheDocument();
+    expect(document.querySelector('[data-node-popover-toggle="collapse"]')).not.toBeInTheDocument();
+  });
+
+  it("shows a readable compact map return control when expanded on small screens", async () => {
+    mockViewportMatch(true);
+    const onToggleCollapsed = vi.fn();
+    setup({ onToggleCollapsed });
+
+    const collapse = await screen.findByRole("button", { name: "지도 보기" });
     expect(collapse).toHaveAttribute("data-node-popover-toggle", "collapse");
+    expect(collapse).toHaveAttribute(
+      "data-footer-map-return-visibility",
+      "rendered-small-screen",
+    );
     expect(collapse).toHaveAttribute(
       "data-footer-action-border-token",
       "--topology-node-popover-footer-action-border",
@@ -1274,6 +1324,7 @@ describe("TopologyNodePopover", () => {
     expect(collapse.className).toContain(
       "text-[color:var(--topology-node-popover-footer-action-text)]",
     );
+    expect(collapse.classList.contains("hidden")).toBe(false);
     expect(collapse).toHaveTextContent("지도 보기");
 
     fireEvent.click(collapse);

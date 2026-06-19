@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
+import { useMediaQuery } from "usehooks-ts";
 import type { TopologyRelationQuality } from "../lib/topology-analysis";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import type { NodeSignificanceLevel } from "../lib/topology-node-significance";
@@ -340,6 +341,9 @@ export function TopologyNodePopover({
   const collapsedActionContract = primaryAction
     ? "label-visible-above-480"
     : "icon-only-under-480";
+  const showCompactMapReturn = useMediaQuery("(max-width: 1023px)", {
+    initializeWithValue: false,
+  });
 
   useEffect(() => {
     const wasCollapsed = wasCollapsedRef.current;
@@ -1274,6 +1278,7 @@ export function TopologyNodePopover({
         data-popover-footer-padding-x-token="--topology-node-popover-footer-padding-x"
         data-popover-footer-padding-y-token="--topology-node-popover-footer-padding-y"
         data-footer-density-contract="compact-command-strip"
+        data-footer-map-return-render-contract="small-screen-only-no-desktop-hidden-button"
         className="shrink-0 overflow-hidden border-t border-[color:var(--topology-node-popover-footer-border)] bg-[color:var(--topology-node-popover-footer-surface)] px-[var(--topology-node-popover-footer-padding-x)] py-[var(--topology-node-popover-footer-padding-y)]"
       >
         {actions.length > 0 ? (
@@ -1348,7 +1353,7 @@ export function TopologyNodePopover({
           </div>
         ) : null}
         <div className="flex min-w-0 gap-2 overflow-hidden">
-          {onToggleCollapsed ? (
+          {onToggleCollapsed && showCompactMapReturn ? (
             <button
               type="button"
               onClick={onToggleCollapsed}
@@ -1359,7 +1364,8 @@ export function TopologyNodePopover({
               data-footer-action-text-token="--topology-node-popover-footer-action-text"
               data-footer-action-hover-text-token="--topology-node-popover-footer-action-hover-text"
               data-footer-action-min-height-token="--topology-node-popover-footer-secondary-action-min-height"
-              className="hidden min-h-[var(--topology-node-popover-footer-secondary-action-min-height)] min-w-0 max-w-[48%] shrink-0 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-md border border-[color:var(--topology-node-popover-footer-action-border)] px-2 text-[11px] text-[color:var(--topology-node-popover-footer-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-footer-action-hover-border)] hover:text-[color:var(--topology-node-popover-footer-action-hover-text)] max-lg:inline-flex"
+              data-footer-map-return-visibility="rendered-small-screen"
+              className="inline-flex min-h-[var(--topology-node-popover-footer-secondary-action-min-height)] min-w-0 max-w-[48%] shrink-0 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-md border border-[color:var(--topology-node-popover-footer-action-border)] px-2 text-[11px] text-[color:var(--topology-node-popover-footer-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-footer-action-hover-border)] hover:text-[color:var(--topology-node-popover-footer-action-hover-text)]"
             >
               <ChevronDown size={14} aria-hidden />
               <span className="truncate">{labels.collapse}</span>
