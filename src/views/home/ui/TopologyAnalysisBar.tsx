@@ -992,7 +992,7 @@ export function TopologyAnalysisBar({
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
       className={`topology-ui-scale pointer-events-auto absolute inset-x-3 border data-[analysis-mode=overview]:max-md:max-h-[var(--topology-overview-panel-phone-max-height)] data-[analysis-mode=overview]:max-md:overflow-y-auto data-[analysis-mode=overview]:lg:min-h-[455px] data-[analysis-mode=health]:max-md:max-h-[var(--topology-health-panel-phone-max-height)] data-[analysis-mode=health]:max-md:overflow-y-auto md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
-        panelMode === "overview" ? "overflow-hidden" : "overflow-y-auto"
+        panelMode === "overview" ? "overflow-x-hidden overflow-y-auto" : "overflow-y-auto"
       } ${
         createPanelReserved
           ? "top-[31.5rem] max-h-[calc(100dvh-33.5rem)]"
@@ -1534,7 +1534,10 @@ export function TopologyAnalysisBar({
                     data-border-token="--topology-overview-handoff-primary-border"
                     data-min-height-token="--topology-overview-handoff-primary-min-height"
                   />
-                  <details className="topology-overview-low-height-sr-only group">
+                  <details
+                    className="topology-overview-low-height-sr-only group"
+                    data-secondary-actions-contract="closed-until-user-expands"
+                  >
                     <summary
                       data-testid="topology-overview-handoff-summary"
                       className="inline-flex min-h-[var(--topology-overview-handoff-summary-min-height)] cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
@@ -1550,7 +1553,11 @@ export function TopologyAnalysisBar({
                         {labels.overviewReanalyzeCopy} · {labels.overviewSyncCopy}
                       </span>
                     </summary>
-                    <div className="mt-1 grid grid-cols-2 gap-1.5">
+                    <div
+                      className="mt-1 hidden grid-cols-2 gap-1.5 group-open:grid"
+                      data-testid="topology-overview-secondary-handoff-actions"
+                      data-secondary-actions-contract="hidden-closed-grid-open"
+                    >
                       <CompactCopyButton
                         copied={overviewReanalyzeCopied}
                         label={labels.overviewReanalyzeCopy}

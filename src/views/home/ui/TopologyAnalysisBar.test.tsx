@@ -822,6 +822,10 @@ describe("TopologyAnalysisBar", () => {
     });
     const details = reanalyze.closest("details");
     expect(details).not.toBeNull();
+    expect(details).toHaveAttribute(
+      "data-secondary-actions-contract",
+      "closed-until-user-expands",
+    );
     const actions = screen.getByTestId("topology-overview-handoff-actions");
     expect(actions).toBeVisible();
     expect(actions).toHaveAttribute(
@@ -850,6 +854,14 @@ describe("TopologyAnalysisBar", () => {
       name: "Copy ontology update check",
     });
     expect(sync.closest("details")).not.toBeNull();
+    expect(screen.getByTestId("topology-overview-secondary-handoff-actions")).toHaveClass(
+      "hidden",
+      "group-open:grid",
+    );
+    expect(screen.getByTestId("topology-overview-secondary-handoff-actions")).toHaveAttribute(
+      "data-secondary-actions-contract",
+      "hidden-closed-grid-open",
+    );
     expect(screen.getByTestId("topology-overview-reanalyze-copy")).toHaveAttribute(
       "data-surface-token",
       "--topology-overview-handoff-secondary-surface",
@@ -1528,7 +1540,8 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-padding-token", "--topology-panel-padding");
     expect(bar).toHaveAttribute("data-panel-motion-token", "--topology-motion-panel-duration");
     expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
-    expect(bar.className).toContain("overflow-hidden");
+    expect(bar.className).toContain("overflow-x-hidden");
+    expect(bar.className).toContain("overflow-y-auto");
     expect(bar.className).toContain(
       "data-[analysis-mode=overview]:max-md:max-h-[var(--topology-overview-panel-phone-max-height)]",
     );
