@@ -1824,14 +1824,19 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
     const focusHull = page.locator("[data-drag-cluster-hull]");
     await expect(focusHull).toHaveAttribute("data-cluster-mode", "focus");
-    await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "quiet-outline");
+    await expect(focusHull).toHaveAttribute("data-visible", "false");
+    await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "no-boundary");
+    await expect(focusHull).toHaveAttribute(
+      "data-focus-hull-line-contract",
+      "no-visible-boundary-highlight-dim-rest",
+    );
     await expect(focusHull).toHaveAttribute(
       "data-focus-breathing-room-contract",
       "viewport-edge-clearance",
     );
     await expect(focusHull).toHaveAttribute(
       "data-focus-label-clearance-contract",
-      "quiet-outline-does-not-slice-card-labels",
+      "no-hull-boundary-uses-ego-labels",
     );
     const focusHullBreathingRoom = Number(
       await focusHull.getAttribute("data-focus-breathing-room-px"),
@@ -3577,10 +3582,15 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   await expect(compactBriefAction).toHaveText(/.+/);
   const focusHull = page.locator("[data-drag-cluster-hull]");
   await expect(focusHull).toHaveAttribute("data-cluster-mode", "focus");
-  await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "quiet-outline");
+  await expect(focusHull).toHaveAttribute("data-visible", "false");
+  await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "no-boundary");
+  await expect(focusHull).toHaveAttribute(
+    "data-focus-hull-line-contract",
+    "no-visible-boundary-highlight-dim-rest",
+  );
   await expect(focusHull).toHaveAttribute(
     "data-focus-label-clearance-contract",
-    "quiet-outline-does-not-slice-card-labels",
+    "no-hull-boundary-uses-ego-labels",
   );
   await expect(page.locator("[data-focus-relation-label]")).toHaveCount(0);
   await expect(page.locator('[data-skeleton-card][data-slug="domain:views"]').first()).toBeVisible();
@@ -4116,6 +4126,14 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "--topology-node-popover-footer-title-text",
   );
   await expect(footer.locator('[data-agent-handoff-title="footer"]')).toBeVisible();
+  await expect(page.getByTestId("topology-node-popover-action-rail")).toHaveAttribute(
+    "data-action-rail-title-margin-bottom-token",
+    "--topology-node-popover-action-rail-title-margin-bottom",
+  );
+  await expect(page.getByTestId("topology-node-popover-action-rail")).toHaveAttribute(
+    "data-action-rail-action-gap-token",
+    "--topology-node-popover-action-rail-action-gap",
+  );
   await expect(firstHandoffAction).toHaveAttribute(
     "data-popover-action-text-token",
     "--topology-node-popover-action-text",
@@ -4143,6 +4161,11 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   );
   await expect(firstHandoffAction).toHaveAttribute("data-popover-action-full-label", /.+/);
   await expect(firstHandoffAction).toHaveAttribute("data-popover-action-compact-label", /.+/);
+  const firstHandoffActionRect = await rectOf(firstHandoffAction);
+  expect(
+    firstHandoffActionRect.height,
+    "expanded handoff action should have a visible desktop hit area",
+  ).toBeGreaterThanOrEqual(32);
   const handoffActionsFit = await page
     .getByTestId("topology-node-popover-action-rail")
     .locator("[data-popover-action] span")

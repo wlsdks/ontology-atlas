@@ -1281,6 +1281,8 @@ export function TopologyNodePopover({
             data-testid="topology-node-popover-action-rail"
             data-action-rail-contract="compact-mcp-cli-handoff"
             data-action-rail-title-gap-token="--topology-node-popover-action-rail-title-gap"
+            data-action-rail-title-margin-bottom-token="--topology-node-popover-action-rail-title-margin-bottom"
+            data-action-rail-action-gap-token="--topology-node-popover-action-rail-action-gap"
             data-action-rail-margin-bottom-token="--topology-node-popover-action-rail-margin-bottom"
             data-action-min-height-token="--topology-node-popover-action-min-height"
             data-action-count={actions.length}
@@ -1289,7 +1291,7 @@ export function TopologyNodePopover({
             <div
               data-agent-handoff-title-row="footer"
               data-agent-handoff-title-row-contract="title-plus-copy-hint"
-              className="mb-0.5 flex min-w-0 items-center justify-between gap-[var(--topology-node-popover-action-rail-title-gap)]"
+              className="mb-[var(--topology-node-popover-action-rail-title-margin-bottom)] flex min-w-0 items-center justify-between gap-[var(--topology-node-popover-action-rail-title-gap)]"
             >
               <p
                 data-agent-handoff-title="footer"
@@ -1305,7 +1307,7 @@ export function TopologyNodePopover({
                 {labels.actionRailHint}
               </span>
             </div>
-            <div className="grid min-w-0 grid-cols-3 gap-1.5 overflow-hidden">
+            <div className="grid min-w-0 grid-cols-3 gap-[var(--topology-node-popover-action-rail-action-gap)] overflow-hidden">
               {actions.map((action) => {
                 const actionIcon = nodePopoverActionIcon(action.kind);
                 const Icon = actionIcon.Icon;

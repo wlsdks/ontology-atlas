@@ -180,7 +180,6 @@ const OVERVIEW_DOMAIN_COLLISION_PAD = 10;
 const SAFE_VIEWPORT_MARGIN = 8;
 const FOCUS_HULL_BREATHING_ROOM_PX = 16;
 const FOCUS_HULL_LABEL_CLEARANCE_PX = 34;
-const FOCUS_HULL_QUIET_OPACITY = 'var(--topology-focus-hull-quiet-opacity)';
 const FIXED_SURFACE_GAP = 8;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
@@ -3600,20 +3599,21 @@ export function SigmaSkeletonCards({
         hull.style.opacity = activeDragMotion
           ? '0.95'
           : activeHullMode === 'focus'
-            ? FOCUS_HULL_QUIET_OPACITY
+            ? '0'
             : '0.8';
-        hull.dataset.visible = 'true';
+        hull.dataset.visible =
+          activeHullMode === 'focus' && !activeDragMotion ? 'false' : 'true';
         hull.dataset.clusterMode = activeHullMode;
         hull.dataset.dragClusterSize = String(clusterRects.length);
         if (activeHullMode === 'focus') {
           hull.dataset.focusClusterSize = String(clusterRects.length);
           hull.dataset.focusStage = 'click-focus';
           hull.dataset.focusAttentionLabel = 'linked-focus';
-          hull.dataset.focusHullLineContract = 'dashed-boundary-not-panel';
+          hull.dataset.focusHullLineContract = 'no-visible-boundary-highlight-dim-rest';
           hull.dataset.focusHullQuietOpacityToken = '--topology-focus-hull-quiet-opacity';
           hull.dataset.focusBreathingRoomContract = 'viewport-edge-clearance';
           hull.dataset.focusBreathingRoomPx = String(FOCUS_HULL_BREATHING_ROOM_PX);
-          hull.dataset.focusLabelClearanceContract = 'quiet-outline-does-not-slice-card-labels';
+          hull.dataset.focusLabelClearanceContract = 'no-hull-boundary-uses-ego-labels';
           hull.dataset.focusLabelClearancePx = String(focusLabelClearancePx);
           hull.dataset.focusRightClearance = String(
             Math.round(containerRect.width - hullRect.right),
@@ -3885,7 +3885,7 @@ export function SigmaSkeletonCards({
         data-drag-active={activeDragMotion ? 'true' : 'false'}
         data-cluster-mode={activeHullMode}
         data-focus-cluster-density={
-          activeHullMode === 'focus' ? 'quiet-outline' : undefined
+          activeHullMode === 'focus' ? 'no-boundary' : undefined
         }
         data-focus-stage={activeHullMode === 'focus' ? 'click-focus' : undefined}
         data-focus-attention-label={
@@ -3905,7 +3905,9 @@ export function SigmaSkeletonCards({
           opacity: activeHullCluster && activeHullCluster.size > 1
             ? activeDragMotion
               ? 0.95
-              : 0.8
+              : activeHullMode === 'focus'
+                ? 0
+                : 0.8
             : 0,
         }}
         aria-hidden="true"

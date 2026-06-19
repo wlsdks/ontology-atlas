@@ -2857,12 +2857,6 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView Relief selected node focus cluster mode was ${payload.markers.topologyFocusClusterMode || "missing"}`;
       }
       if (
-        payload.markers.topologyFocusClusterVisible !== true &&
-        !bodyFocusClusterVisible
-      ) {
-        return "WebView Relief selected node focus cluster was not visible";
-      }
-      if (
         payload.markers.topologyFocusClusterMode === "focus" &&
         payload.markers.topologyFocusClusterStage !== "click-focus"
       ) {
@@ -3130,29 +3124,29 @@ export function validateWebviewVerifyPayload(payload, {
       if (canMeasurePanelCollision && overlapsPanel) {
         return `WebView Relief selected node focus cluster overlapped the analysis panel (${focusClusterLeft}, ${focusClusterTop}, ${focusClusterRight}, ${focusClusterBottom} vs ${panelLeft}, ${panelTop}, ${panelRight}, ${panelBottom})`;
       }
-      if (payload.markers.topologyFocusClusterVisible === true) {
-        if (
-          payload.markers.topologyFocusClusterBreathingRoomContract !==
-          "viewport-edge-clearance"
-        ) {
-          return `WebView Relief selected node focus cluster breathing-room contract was ${payload.markers.topologyFocusClusterBreathingRoomContract || "missing"}`;
-        }
-        const focusClusterBreathingRoom = Number(
-          payload.markers.topologyFocusClusterBreathingRoomPx || 0,
-        );
-        const focusClusterRightClearance = Number(
-          payload.markers.topologyFocusClusterRightClearance || 0,
-        );
-        const focusClusterBottomClearance = Number(
-          payload.markers.topologyFocusClusterBottomClearance || 0,
-        );
-        if (
-          focusClusterBreathingRoom < 12 ||
+      if (
+        payload.markers.topologyFocusClusterMode === "focus" &&
+        payload.markers.topologyFocusClusterBreathingRoomContract !==
+        "viewport-edge-clearance"
+      ) {
+        return `WebView Relief selected node focus cluster breathing-room contract was ${payload.markers.topologyFocusClusterBreathingRoomContract || "missing"}`;
+      }
+      const focusClusterBreathingRoom = Number(
+        payload.markers.topologyFocusClusterBreathingRoomPx || 0,
+      );
+      const focusClusterRightClearance = Number(
+        payload.markers.topologyFocusClusterRightClearance || 0,
+      );
+      const focusClusterBottomClearance = Number(
+        payload.markers.topologyFocusClusterBottomClearance || 0,
+      );
+      if (
+        payload.markers.topologyFocusClusterMode === "focus" &&
+        (focusClusterBreathingRoom < 12 ||
           focusClusterRightClearance < focusClusterBreathingRoom ||
-          focusClusterBottomClearance < focusClusterBreathingRoom
-        ) {
-          return `WebView Relief selected node focus cluster hugged the viewport edge (${focusClusterRightClearance || "missing"}px right / ${focusClusterBottomClearance || "missing"}px bottom / ${focusClusterBreathingRoom || "missing"}px required)`;
-        }
+          focusClusterBottomClearance < focusClusterBreathingRoom)
+      ) {
+        return `WebView Relief selected node focus cluster hugged the viewport edge (${focusClusterRightClearance || "missing"}px right / ${focusClusterBottomClearance || "missing"}px bottom / ${focusClusterBreathingRoom || "missing"}px required)`;
       }
     }
     if (

@@ -1280,9 +1280,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       const hull = container.querySelector("[data-drag-cluster-hull]");
 
-      expect(hull).toHaveAttribute("data-visible", "true");
+      expect(hull).toHaveAttribute("data-visible", "false");
       expect(hull).toHaveAttribute("data-cluster-mode", "focus");
-      expect(hull).toHaveAttribute("data-focus-cluster-density", "quiet-outline");
+      expect(hull).toHaveAttribute("data-focus-cluster-density", "no-boundary");
       expect(hull).toHaveAttribute("data-focus-stage", "click-focus");
       expect(hull).toHaveAttribute("data-focus-attention-label", "linked-focus");
       expect(hull).toHaveAttribute(
@@ -1315,7 +1315,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       );
       expect(hull).toHaveAttribute(
         "data-focus-hull-line-contract",
-        "dashed-boundary-not-panel",
+        "no-visible-boundary-highlight-dim-rest",
       );
       expect(hull?.className).toContain("data-[cluster-mode=focus]:border-dashed");
       expect(hull).toHaveAttribute(
@@ -1325,7 +1325,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(hull).toHaveAttribute("data-focus-breathing-room-px", "16");
       expect(hull).toHaveAttribute(
         "data-focus-label-clearance-contract",
-        "quiet-outline-does-not-slice-card-labels",
+        "no-hull-boundary-uses-ego-labels",
       );
       expect(hull).toHaveAttribute("data-focus-label-clearance-px", "34");
       expect(hull).toHaveAttribute("data-drag-cluster-size", "2");
@@ -1333,7 +1333,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(hull).toBeEmptyDOMElement();
       expect(document.querySelector("[data-drag-cluster-title]")).not.toBeInTheDocument();
       expect(document.querySelector("[data-drag-cluster-count]")).not.toBeInTheDocument();
-      expect(hull).toHaveStyle({ opacity: "var(--topology-focus-hull-quiet-opacity)" });
+      expect(hull).toHaveStyle({ opacity: "0" });
       expect(document.querySelector("[data-focus-cluster-connector]")).toBeInTheDocument();
       expect(document.querySelector("[data-focus-relation-label]")).not.toBeInTheDocument();
       expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
@@ -1361,7 +1361,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("14-inch click focus hull 은 왼쪽 분석 패널과 겹치지 않게 밀려난다", () => {
+  it("14-inch click focus geometry is retained without drawing a boundary box", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {
       size: 1,
@@ -1457,7 +1457,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       const transform = hull.style.transform;
       const match = /translate3d\(([-\d.]+)px, ([-\d.]+)px, 0\)/.exec(transform);
 
-      expect(hull).toHaveAttribute("data-visible", "true");
+      expect(hull).toHaveAttribute("data-visible", "false");
+      expect(hull).toHaveAttribute(
+        "data-focus-hull-line-contract",
+        "no-visible-boundary-highlight-dim-rest",
+      );
       expect(match).not.toBeNull();
       expect(Number(match?.[1])).toBeGreaterThan(308);
     } finally {
@@ -1587,7 +1591,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         expect(selectedCard).toHaveAttribute("data-surface-hidden", "true");
       });
       const hull = document.querySelector("[data-drag-cluster-hull]");
-      expect(hull).toHaveAttribute("data-visible", "true");
+      expect(hull).toHaveAttribute("data-visible", "false");
       expect(hull).toHaveAttribute("data-cluster-mode", "focus");
       expect(hull).toHaveAttribute("data-focus-cluster-size", "2");
       expect(selectedCard).toHaveStyle({ visibility: "hidden" });
