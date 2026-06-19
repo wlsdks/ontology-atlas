@@ -1231,7 +1231,13 @@ describe("TopologyNodePopover", () => {
     );
     expect(
       relationRows[0].querySelector("[data-relation-row-agent-gate]"),
-    ).toHaveTextContent("전달");
+    ).toHaveTextContent("설명");
+    expect(
+      relationRows[0].querySelector("[data-relation-row-agent-gate]"),
+    ).toHaveAttribute("data-relation-row-action-chip", "explain_relation");
+    expect(
+      relationRows[0].querySelector("[data-relation-row-agent-gate]"),
+    ).toHaveAttribute("data-route-chip-text", "설명");
     expect(
       relationRows[0].querySelector("[data-relation-row-agent-gate]"),
     ).toHaveAttribute(
@@ -1314,6 +1320,9 @@ describe("TopologyNodePopover", () => {
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="gate"]'),
     ).toHaveTextContent("전달");
+    expect(
+      relationRows[0].querySelector('[data-relation-route-chip="gate"]'),
+    ).toHaveClass("sr-only");
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="action"]'),
     ).toHaveTextContent("설명");
@@ -1409,7 +1418,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRows[0]).toHaveAttribute(
       "aria-label",
-      "사용 · MCP SDK · 이 노드가 기대는 곳 · 요소 · 사용 · 1 · 전달 · 설명",
+      "사용 · MCP SDK · 이 노드가 기대는 곳 · 요소 · 사용 · 1 · 설명",
     );
     expect(relationRows[1]).toHaveAttribute(
       "data-relation-handoff-summary",

@@ -826,7 +826,6 @@ export function TopologyNodePopover({
               const relationAccessibleHandoffSummary = [
                 relationTypeLabel,
                 relationEvidenceGlyph(connection),
-                agentGateChipText,
                 primaryCopyActionShortLabel,
               ].join(" · ");
               const relationHandoffTool = "query_ontology";
@@ -974,6 +973,8 @@ export function TopologyNodePopover({
                           aria-hidden="true"
                           data-relation-row-agent-gate={agentGateKind}
                           data-primary-copy-action={primaryCopyAction}
+                          data-relation-row-action-chip={primaryCopyAction}
+                          data-route-chip-text={primaryCopyActionShortLabel}
                           data-agent-gate-surface-token={relationAgentGateToken(
                             agentGateKind,
                             "surface",
@@ -988,7 +989,7 @@ export function TopologyNodePopover({
                           )}
                           className={`inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-full border px-1 font-mono text-[8px] uppercase leading-none ${relationAgentGateChipClassName(agentGateKind)}`}
                         >
-                          {agentGateChipText}
+                          {primaryCopyActionShortLabel}
                         </span>
                         <span
                           data-relation-title
@@ -1067,12 +1068,9 @@ export function TopologyNodePopover({
                         </span>
                         <span
                           data-relation-route-chip="gate"
-                          className="shrink-0 text-[color:var(--topology-node-popover-route-chip-text)]"
+                          className="sr-only"
                         >
                           {agentGateChipText}
-                        </span>
-                        <span className="shrink-0 text-[color:var(--topology-node-popover-route-separator)]">
-                          ·
                         </span>
                         <span
                           data-relation-route-chip="action"
