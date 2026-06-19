@@ -307,7 +307,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
       "data-relation-lens-density-contract",
-      "one-line-proof-summary",
+      "summary-first-proof-strip",
     );
     expect(screen.getByTestId("topology-relation-lens").className).toContain(
       "line-clamp-1",
@@ -1540,8 +1540,9 @@ describe("TopologyNodePopover", () => {
     expect(lens).toHaveTextContent("관계 렌즈");
     expect(lens).toHaveTextContent("직접 의미 관계 3개");
     expect(lens).toHaveTextContent("관계 유형 2종");
-    expect(lens).toHaveTextContent(
-      "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+    expect(lens).toHaveAttribute(
+      "title",
+      "관계 렌즈: 직접 의미 관계 3개 · 관계 유형 2종 · 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
     );
   });
 
