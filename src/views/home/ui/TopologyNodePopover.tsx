@@ -544,20 +544,11 @@ export function TopologyNodePopover({
         </button>
       </header>
 
-      {focus.summary ? (
-        <p
-          data-phone-density-contract="hide-summary-before-readable-row"
-          data-summary-text-token="--topology-node-popover-summary-text"
-          className="mt-1.5 line-clamp-2 px-4 text-[11px] leading-4 text-[color:var(--topology-node-popover-summary-text)] max-[540px]:hidden"
-        >
-          {focus.summary}
-        </p>
-      ) : null}
-
       {significance ? (
         <div
           data-testid="topology-node-significance"
           data-phone-density-contract="keep-primary-meaning-before-readable-row"
+          data-meaning-order-contract="before-raw-summary"
           className="mt-2.5 flex flex-col gap-1.5 px-4 max-[540px]:mt-2"
         >
           <p
@@ -598,6 +589,18 @@ export function TopologyNodePopover({
             {significance.impactLine}
           </p>
         </div>
+      ) : null}
+
+      {focus.summary ? (
+        <p
+          data-phone-density-contract="hide-summary-before-readable-row"
+          data-summary-role="raw-supporting-note"
+          data-summary-order-contract={significance ? "after-meaning" : "primary-when-no-meaning"}
+          data-summary-text-token="--topology-node-popover-summary-text"
+          className="mt-1.5 line-clamp-1 px-4 text-[10px] leading-4 text-[color:var(--topology-node-popover-summary-text)] max-[540px]:hidden"
+        >
+          {focus.summary}
+        </p>
       ) : null}
 
       <div className="mt-2.5 grid grid-cols-2 gap-2 px-4">

@@ -179,9 +179,12 @@ describe("TopologyNodePopover", () => {
       "data-summary-text-token",
       "--topology-node-popover-summary-text",
     );
+    expect(summaryLine).toHaveAttribute("data-summary-role", "raw-supporting-note");
+    expect(summaryLine).toHaveAttribute("data-summary-order-contract", "primary-when-no-meaning");
     expect(summaryLine?.className).toContain(
       "text-[color:var(--topology-node-popover-summary-text)]",
     );
+    expect(summaryLine?.className).toContain("line-clamp-1");
     expect(summaryLine?.className).not.toContain("var(--color-text-tertiary)");
     expect(popover).toHaveAttribute(
       "data-responsive-width-contract",
@@ -353,6 +356,10 @@ describe("TopologyNodePopover", () => {
       expect(significance).toHaveAttribute(
         "data-phone-density-contract",
         "keep-primary-meaning-before-readable-row",
+      );
+      expect(significance).toHaveAttribute(
+        "data-meaning-order-contract",
+        "before-raw-summary",
       );
       expect(significance.className).toContain("max-[540px]:mt-2");
     }
@@ -2020,6 +2027,13 @@ describe("TopologyNodePopover", () => {
       },
     });
     const contextLine = screen.getByText("AI Agent Partner 영역에 속한 역량");
+    const summaryLine = screen.getByText("AI agent surface.");
+    const significance = screen.getByTestId("topology-node-significance");
+    expect(significance.compareDocumentPosition(summaryLine)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(summaryLine).toHaveAttribute("data-summary-role", "raw-supporting-note");
+    expect(summaryLine).toHaveAttribute("data-summary-order-contract", "after-meaning");
     expect(contextLine).toBeInTheDocument();
     expect(contextLine).toHaveAttribute(
       "data-significance-context-text-token",
