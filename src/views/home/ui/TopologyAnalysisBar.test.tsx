@@ -1594,8 +1594,11 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(screen.getByTestId("topology-overview-signal-metric-row")).toHaveAttribute(
       "data-overview-signal-layout",
-      "compact-two-column",
+      "status-before-evidence",
     );
+    expect(
+      screen.getByTestId("topology-overview-signal-metric-row"),
+    ).not.toContainElement(screen.getByTestId("topology-overview-relation-provenance"));
     expect(relationQuality).toHaveAttribute("data-density", "summary-first");
     expect(relationQuality).toHaveAttribute(
       "data-proof-strip-contract",

@@ -1411,8 +1411,8 @@ export function TopologyAnalysisBar({
                 data-testid="topology-overview-signal-grid"
               >
                 <div
-                  className="grid min-w-0 grid-cols-2 gap-[var(--topology-overview-signal-grid-compact-gap)]"
-                  data-overview-signal-layout="compact-two-column"
+                  className="grid min-w-0 grid-cols-1 gap-[var(--topology-overview-signal-grid-compact-gap)]"
+                  data-overview-signal-layout="status-before-evidence"
                   data-testid="topology-overview-signal-metric-row"
                 >
                   {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
@@ -1429,25 +1429,25 @@ export function TopologyAnalysisBar({
                       data-testid="topology-overview-relation-progress"
                     />
                   ) : null}
-                  {overviewRelationProvenanceSummary ? (
-                    <RelationProvenanceGate
-                      title={labels.overviewBriefRelationProvenance}
-                      labels={{
-                        sourceBacked: labels.overviewBriefRelationSourceBacked,
-                        authored: labels.overviewBriefRelationAuthored,
-                        needsReview: labels.overviewBriefRelationNeedsReview,
-                      }}
-                      summary={overviewRelationProvenanceSummary}
-                      counts={
-                        summary.relationProvenance ?? {
-                          sourceBacked: 0,
-                          authored: 0,
-                          needsReview: 0,
-                        }
-                      }
-                    />
-                  ) : null}
                 </div>
+                {overviewRelationProvenanceSummary ? (
+                  <RelationProvenanceGate
+                    title={labels.overviewBriefRelationProvenance}
+                    labels={{
+                      sourceBacked: labels.overviewBriefRelationSourceBacked,
+                      authored: labels.overviewBriefRelationAuthored,
+                      needsReview: labels.overviewBriefRelationNeedsReview,
+                    }}
+                    summary={overviewRelationProvenanceSummary}
+                    counts={
+                      summary.relationProvenance ?? {
+                        sourceBacked: 0,
+                        authored: 0,
+                        needsReview: 0,
+                      }
+                    }
+                  />
+                ) : null}
                 {overviewRelationQualitySummary ? (
                   <RelationQualityGate
                     title={labels.overviewBriefRelationQuality}
