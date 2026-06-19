@@ -3051,6 +3051,8 @@ export function validateWebviewVerifyPayload(payload, {
       const cameraMotionViewportMaxDistancePx =
         cameraMotionViewportWidth >= 1800
           ? Math.round(cameraMotionViewportWidth * 0.18)
+          : cameraMotionViewportWidth >= 1400
+            ? Math.round(cameraMotionViewportWidth * 0.2)
           : 0;
       const cameraMotionMaxDistancePx = Math.max(
         cameraMotionFanoutMaxDistancePx,

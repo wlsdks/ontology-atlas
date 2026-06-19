@@ -32,6 +32,10 @@ export function resolveSelectedFocusCameraMaxDistancePx(
     ? Math.max(0, viewportWidth)
     : 0;
   const viewportBound =
-    normalizedViewportWidth >= 1800 ? Math.round(normalizedViewportWidth * 0.18) : 0;
+    normalizedViewportWidth >= 1800
+      ? Math.round(normalizedViewportWidth * 0.18)
+      : normalizedViewportWidth >= 1400
+        ? Math.round(normalizedViewportWidth * 0.2)
+        : 0;
   return Math.max(fanoutBound, viewportBound);
 }

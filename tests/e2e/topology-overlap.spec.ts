@@ -3830,18 +3830,12 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   await expect(
     firstRelationRow.locator("[data-relation-direction-marker]").first(),
   ).toHaveAttribute(
-    "data-direction-surface-token",
-    "--topology-node-popover-direction-surface",
+    "data-direction-text-token",
+    "--topology-node-popover-relation-row-meta-text",
   );
   await expect(
     firstRelationRow.locator("[data-relation-direction-marker]").first(),
-  ).toHaveAttribute(
-    "data-direction-hover-text-token",
-    "--topology-node-popover-direction-hover-text",
-  );
-  await expect(
-    firstRelationRow.locator("[data-relation-direction-marker]").first(),
-  ).toHaveAttribute("data-direction-marker-contract", "quiet-row-scan-glyph");
+  ).toHaveAttribute("data-direction-marker-contract", "inline-relation-direction-glyph");
   await expect(firstRelationRow.locator("[data-relation-type-label]").first()).toHaveAttribute(
     "data-fact-type-surface-token",
     "--topology-node-popover-fact-type-surface",

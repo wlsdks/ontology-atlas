@@ -38,6 +38,7 @@ describe('topology motion tokens', () => {
     expect(resolveSelectedFocusCameraMaxDistancePx(0)).toBe(220);
     expect(resolveSelectedFocusCameraMaxDistancePx(2)).toBe(220);
     expect(resolveSelectedFocusCameraMaxDistancePx(5)).toBe(268);
+    expect(resolveSelectedFocusCameraMaxDistancePx(4, 1512)).toBe(302);
     expect(resolveSelectedFocusCameraMaxDistancePx(4, 1920)).toBe(346);
     expect(resolveSelectedFocusCameraMaxDistancePx(4, 2560)).toBe(461);
   });

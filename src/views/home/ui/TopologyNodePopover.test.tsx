@@ -1492,36 +1492,35 @@ describe("TopologyNodePopover", () => {
     expect(
       relationRows[0].querySelector("[data-relation-direction-marker]"),
     ).toHaveAttribute(
-      "data-direction-surface-token",
-      "--topology-node-popover-direction-surface",
-    );
-    expect(
-      relationRows[0].querySelector("[data-relation-direction-marker]"),
-    ).toHaveAttribute(
-      "data-direction-hover-text-token",
-      "--topology-node-popover-direction-hover-text",
-    );
-    expect(
-      relationRows[0].querySelector("[data-relation-direction-marker]"),
-    ).toHaveAttribute(
-      "data-direction-shadow-token",
-      "--topology-node-popover-direction-shadow",
+      "data-direction-text-token",
+      "--topology-node-popover-relation-row-meta-text",
     );
     expect(
       relationRows[0].querySelector("[data-relation-direction-marker]"),
     ).toHaveAttribute(
       "data-direction-marker-contract",
-      "quiet-row-scan-glyph",
+      "inline-relation-direction-glyph",
     );
     expect(
       relationRows[0].querySelector("[data-relation-direction-marker]")?.className,
-    ).toContain("h-5");
+    ).toContain("h-4");
     expect(
       relationRows[0].querySelector("[data-relation-direction-marker]")?.className,
-    ).toContain("w-5");
+    ).toContain("w-4");
     expect(
       relationRows[0].querySelector("[data-relation-direction-marker]")?.className,
-    ).toContain("shadow-[var(--topology-node-popover-direction-shadow)]");
+    ).toContain(
+      "text-[color:var(--topology-node-popover-relation-row-meta-text)]",
+    );
+    expect(
+      relationRows[0].querySelector("[data-relation-direction-marker]")?.className,
+    ).not.toContain("border");
+    expect(
+      relationRows[0].querySelector("[data-relation-direction-marker]")?.className,
+    ).not.toContain("bg-[color");
+    expect(
+      relationRows[0].querySelector("[data-relation-direction-marker]")?.className,
+    ).not.toContain("shadow");
     expect(
       relationRows[0].querySelector("[data-relation-quality-dot]"),
     ).toHaveAttribute("data-dot-token", "--topology-relation-quality-strong-dot");

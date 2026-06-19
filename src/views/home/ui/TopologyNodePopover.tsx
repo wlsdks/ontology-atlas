@@ -1050,13 +1050,9 @@ export function TopologyNodePopover({
                   >
                     <span
                       data-relation-direction-marker={connection.direction}
-                      data-direction-surface-token="--topology-node-popover-direction-surface"
-                      data-direction-border-token="--topology-node-popover-direction-border"
-                      data-direction-text-token="--topology-node-popover-direction-text"
-                      data-direction-hover-text-token="--topology-node-popover-direction-hover-text"
-                      data-direction-shadow-token="--topology-node-popover-direction-shadow"
-                      data-direction-marker-contract="quiet-row-scan-glyph"
-                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-[color:var(--topology-node-popover-direction-border)] bg-[color:var(--topology-node-popover-direction-surface)] text-[color:var(--topology-node-popover-direction-text)] shadow-[var(--topology-node-popover-direction-shadow)] group-hover:text-[color:var(--topology-node-popover-direction-hover-text)]"
+                      data-direction-text-token="--topology-node-popover-relation-row-meta-text"
+                      data-direction-marker-contract="inline-relation-direction-glyph"
+                      className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--topology-node-popover-relation-row-meta-text)] opacity-70 transition-opacity group-hover:opacity-90"
                     >
                       {connection.direction === "outgoing" ? (
                         <ArrowUpRight size={12} aria-hidden />
