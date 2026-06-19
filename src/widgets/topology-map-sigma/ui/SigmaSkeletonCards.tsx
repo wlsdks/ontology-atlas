@@ -4138,7 +4138,7 @@ export function SigmaSkeletonCards({
             aria-label={`${tEdgeTooltip('relationAriaLabel', { label: labelText })} · ${quality} · ${evidenceText}${
               ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
             }`}
-            className="pointer-events-auto absolute left-0 top-0 z-[4] inline-flex min-h-[33px] items-center justify-center overflow-visible whitespace-nowrap bg-transparent font-mono text-[9px] uppercase tracking-[0.07em] transition-[opacity] duration-150 data-[drag-hit-disabled=true]:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-relation-label-focus-ring)] motion-reduce:transition-none"
+            className="pointer-events-auto absolute left-0 top-0 z-[4] inline-flex min-h-[33px] items-center justify-center overflow-visible whitespace-nowrap bg-transparent text-[11px] font-medium leading-none tracking-normal transition-[opacity] duration-150 data-[drag-hit-disabled=true]:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-relation-label-focus-ring)] motion-reduce:transition-none"
             style={{
               color: 'var(--color-text-secondary)',
               opacity: selected ? 1 : 0,
@@ -4356,7 +4356,7 @@ export function SigmaSkeletonCards({
             data-relation-direction-border-token="--topology-relation-direction-border"
             data-relation-direction-text-token="--topology-relation-direction-text"
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-full border px-2.5 font-mono text-[9px] uppercase tracking-[0.07em] text-[color:var(--color-text-secondary)]"
+            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-full border px-2.5 text-[11px] font-medium leading-none tracking-normal text-[color:var(--color-text-secondary)]"
             style={{
               backgroundColor: 'var(--topology-relation-label-selected-surface)',
               borderColor: 'var(--topology-relation-label-selected-border)',

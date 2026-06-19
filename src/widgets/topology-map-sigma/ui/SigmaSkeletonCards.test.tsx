@@ -2250,6 +2250,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(labelHit?.className).toContain("pointer-events-auto");
     expect(labelHit?.className).toContain("data-[drag-hit-disabled=true]:pointer-events-none");
+    expect(labelHit?.className).toContain("font-medium");
+    expect(labelHit?.className).not.toContain("font-mono");
+    expect(labelHit?.className).not.toContain("uppercase");
     expect(labelHit).toHaveStyle({ pointerEvents: "auto" });
     expect(labelHit).toHaveStyle({ visibility: "visible" });
     expect(labelHit?.className).toContain("inline-flex");
@@ -2523,6 +2526,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-label-segment-divider-token",
       "--topology-relation-label-border",
     );
+    expect(selectedOverlay?.className).toContain("font-medium");
+    expect(selectedOverlay?.className).not.toContain("font-mono");
+    expect(selectedOverlay?.className).not.toContain("uppercase");
     expect(selectedOverlayEvidenceChip).toHaveAttribute(
       "data-relation-evidence-glyph",
       "source-backed",
