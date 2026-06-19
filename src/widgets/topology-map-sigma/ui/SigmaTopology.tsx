@@ -412,6 +412,8 @@ interface SigmaTopologyProps {
   skeletonCards?: readonly SkeletonCardModel[] | null;
   /** true면 좌하단 kind legend 를 접어 부모 analysis rail 과 fixed-surface 충돌을 막는다. */
   suppressKindLegend?: boolean;
+  /** true면 선택 inspector 가 attention winner 이므로 하단 relation legend 를 접는다. */
+  suppressRelationLegend?: boolean;
   /** true면 blocking composer 같은 편집 표면 뒤의 minimap support chrome 을 접는다. */
   suppressMinimap?: boolean;
   /** true면 blocking composer/modal 이 attention winner 이므로 map transient surface 를 닫는다. */
@@ -453,6 +455,7 @@ function SigmaTopologyImpl({
   skeletonSlugs = null,
   skeletonCards = null,
   suppressKindLegend = false,
+  suppressRelationLegend = false,
   suppressMinimap = false,
   blockingSurfaceActive = false,
   className,
@@ -2945,6 +2948,14 @@ function SigmaTopologyImpl({
         data-skeleton-cards-active={skeletonCardsActive ? 'true' : 'false'}
         data-skeleton-card-model-count={skeletonCards?.length ?? 0}
         data-kind-legend-state={suppressKindLegend ? 'collapsed-support-chrome' : 'visible-support-chrome'}
+        data-relation-legend-state={
+          suppressRelationLegend
+            ? 'collapsed-selected-inspector-attention'
+            : 'visible-support-chrome'
+        }
+        data-selected-inspector-chrome-policy={
+          suppressRelationLegend ? 'selected-inspector-suppresses-map-utility-chrome' : undefined
+        }
         data-health-repair-map-target-contract={
           healthRepairTarget ? 'analysis-panel-target-to-audit-overlay' : undefined
         }
@@ -3498,7 +3509,7 @@ function SigmaTopologyImpl({
         </div>
       ) : null}
 
-      {!minimal && !overlays?.auditHighlight && skeletonCardsActive ? (
+      {!minimal && !overlays?.auditHighlight && skeletonCardsActive && !suppressRelationLegend ? (
         <SigmaRelationLegend
           labels={{
             title: t('relationLegendTitle'),

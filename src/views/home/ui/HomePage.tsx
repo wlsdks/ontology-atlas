@@ -844,6 +844,8 @@ export function HomePage() {
         !fullDetailOpen &&
         analysisMode !== "path",
     );
+  const selectedNodeInspectorExpandedActive =
+    selectedNodeFocusActive && !nodePopoverCollapsed;
 
   const handleSelect = useCallback(
     (
@@ -2221,6 +2223,7 @@ export function HomePage() {
                         localGraphRoot === null &&
                         !canvasSelectedSlug)
                     }
+                    suppressRelationLegend={selectedNodeInspectorExpandedActive}
                     suppressMinimap={
                       createNodeOpen ||
                       selectedRelationActive ||
@@ -2248,7 +2251,10 @@ export function HomePage() {
                   to { opacity: 1; transform: scale(1); }
                 }
               `}</style>
-              {createNodeOpen || selectedRelationActive || topologyBlockingOverlayActive ? null : (
+              {createNodeOpen ||
+              selectedRelationActive ||
+              topologyBlockingOverlayActive ||
+              selectedNodeInspectorExpandedActive ? null : (
                 <SigmaControls
                   value={sigmaControls}
                   onChange={setSigmaControls}
@@ -2264,7 +2270,10 @@ export function HomePage() {
               )}
               {/* 단축키/제스처 도움말 진입점 — 우상단 SigmaControls 아래 36×36 아이콘.
                   phone 은 primary read rail(path/health) 과 충돌하지 않는 overview/focus 에서만 노출한다. */}
-              {createNodeOpen || selectedRelationActive || topologyBlockingOverlayActive ? null : (
+              {createNodeOpen ||
+              selectedRelationActive ||
+              topologyBlockingOverlayActive ||
+              selectedNodeInspectorExpandedActive ? null : (
                 <Tooltip content={t('controls.shortcutsTooltip')} side="left" withProvider={false}>
                 <button
                   type="button"

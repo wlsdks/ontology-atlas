@@ -2210,6 +2210,19 @@ for (const viewport of VIEWPORTS) {
       `focus URL support rail should stay compact at ${viewport.label}`,
     ).toBeLessThanOrEqual(selectedFocusPanelMaxWidth);
     expectCardsClear(await visibleCardRects(page), viewport, selectedFocusPanelRect, null);
+
+    await page.locator('[data-node-popover-toggle="expand"]').click();
+    await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
+    await expect(page.getByTestId("topology-shortcuts-help-button")).toHaveCount(0);
+    await expect(page.getByTestId("topology-relation-legend")).toHaveCount(0);
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-relation-legend-state",
+      "collapsed-selected-inspector-attention",
+    );
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-selected-inspector-chrome-policy",
+      "selected-inspector-suppresses-map-utility-chrome",
+    );
   });
 
   test(`Relief skeleton cards remain separated after dragging a card — ${viewport.label}`, async ({

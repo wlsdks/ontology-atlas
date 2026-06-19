@@ -1000,28 +1000,14 @@ export function TopologyNodePopover({
 	                    data-row-visual-contract="title-plus-relation-pill-meta-secondary"
 	                    data-row-min-hit-height="72"
 	                    data-row-scan-order="title>relation>kind>proof"
+                    data-row-emphasis-contract="state-layer-no-fluorescent-rail"
                     data-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
                     data-row-focus-surface-token="--topology-node-popover-relation-row-focus-surface"
                     data-row-focus-border-token="--topology-node-popover-relation-row-focus-border"
                     data-row-focus-ring-token="--topology-node-popover-relation-row-focus-ring"
-                    data-row-quality-accent-token={relationQualityAccentToken(
-                      connection.relationQuality,
-                    )}
                     onClick={() => onSelectConnection(connection.id)}
                     className="group relative flex min-h-[72px] w-full min-w-0 items-stretch gap-2 overflow-hidden border border-transparent bg-transparent px-2 py-2 text-left transition-[background-color,border-color,box-shadow] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)] focus-visible:border-[color:var(--topology-node-popover-relation-row-focus-border)] focus-visible:bg-[color:var(--topology-node-popover-relation-row-focus-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]"
                   >
-                    <span
-                      aria-hidden="true"
-                      data-relation-quality-accent={connection.relationQuality}
-                      data-quality-accent-contract="row-scan-rail-maps-relation-quality"
-                      data-quality-accent-token={relationQualityAccentToken(
-                        connection.relationQuality,
-                      )}
-                      className="pointer-events-none absolute bottom-2 left-1 top-2 w-0.5 rounded-full"
-                      style={{
-                        background: `var(${relationQualityAccentToken(connection.relationQuality)})`,
-                      }}
-                    />
                     <span
                       data-relation-direction-marker={connection.direction}
                       data-direction-surface-token="--topology-node-popover-direction-surface"
@@ -1435,10 +1421,6 @@ function relationQualityDotToken(quality: TopologyRelationQuality): string {
 
 function relationQualityGlowToken(quality: TopologyRelationQuality): string {
   return `--topology-relation-quality-${quality}-glow`;
-}
-
-function relationQualityAccentToken(quality: TopologyRelationQuality): string {
-  return `--topology-overview-quality-${quality}-meter`;
 }
 
 function agentReadinessToken(
