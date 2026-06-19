@@ -2231,10 +2231,19 @@ for (const viewport of VIEWPORTS) {
       "selected-inspector-aligns-to-right-inset",
     );
     await expect(page.getByTestId("topology-node-popover-positioner")).toHaveAttribute(
+      "data-position-top-token",
+      "--topology-node-popover-top",
+    );
+    await expect(page.getByTestId("topology-node-popover-positioner")).toHaveAttribute(
       "data-position-right-inset-token",
       "--topology-node-popover-right-inset",
     );
     const expandedPopoverRect = await rectOf(page.getByTestId("topology-node-popover"));
+    const topLeftChromeRect = await rectOf(page.getByTestId("topology-top-left-chrome-group"));
+    expect(
+      expandedPopoverRect.top - topLeftChromeRect.bottom,
+      `expanded selected inspector should start below the top chrome rhythm at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(8);
     const rightInset = viewport.width - expandedPopoverRect.right;
     const expectedRightInset = await page.getByTestId("topology-node-popover-positioner").evaluate(
       (element) => Number.parseFloat(getComputedStyle(element).right),

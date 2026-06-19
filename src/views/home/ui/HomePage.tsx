@@ -2473,8 +2473,9 @@ export function HomePage() {
           <div
             data-testid="topology-node-popover-positioner"
             data-position-contract="selected-inspector-aligns-to-right-inset"
+            data-position-top-token="--topology-node-popover-top"
             data-position-right-inset-token="--topology-node-popover-right-inset"
-            className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[5.5rem] lg:block"
+            className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
             <TopologyNodePopover
               focus={nodeFocus}
