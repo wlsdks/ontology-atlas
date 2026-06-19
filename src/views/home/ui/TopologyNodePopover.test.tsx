@@ -523,10 +523,18 @@ describe("TopologyNodePopover", () => {
       "data-visible-contract",
       "relation-facts-secondary-to-connected-title",
     );
+    expect(relationMeta).toHaveAttribute(
+      "data-readable-summary-contract",
+      "plain-language-proof-before-machine-route",
+    );
     expect(relationMeta?.className).toContain(
       "text-[color:var(--topology-node-popover-relation-row-meta-text)]",
     );
+    expect(relationMeta?.className).toContain("text-[11px]");
     expect(relationMeta?.className).not.toContain("var(--color-text-quaternary)");
+    expect(relationMeta?.textContent?.replace(/\s+/g, " ").trim()).toBe(
+      "이 노드가 기대는 곳 · 요소 · 사용 · 근거 1 · 설명",
+    );
     expect(handoffLane).toHaveAttribute("data-handoff-lane", "mcp-cli-next-action");
     expect(handoffLane).toHaveAttribute(
       "data-relation-payload-layout",
@@ -1465,6 +1473,10 @@ describe("TopologyNodePopover", () => {
     expect(relationRows[0]).toHaveAttribute(
       "data-relation-handoff-summary",
       "capabilities/mcp-server > elements/mcp-sdk · 사용 · source-backed · handoff-ready · explain_relation",
+    );
+    expect(relationRows[0]).toHaveAttribute(
+      "data-relation-readable-summary",
+      "이 노드가 기대는 곳 · 요소 · 사용 · 근거 1 · 설명",
     );
     expect(relationRows[0]).toHaveAttribute(
       "aria-label",

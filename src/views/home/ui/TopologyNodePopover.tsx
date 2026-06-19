@@ -869,6 +869,13 @@ export function TopologyNodePopover({
                 relationEvidenceGlyph(connection),
                 primaryCopyActionShortLabel,
               ].join(" · ");
+              const relationReadableProofLabel = `${labels.relationEvidenceChipLabel} ${relationEvidenceGlyph(connection)}`;
+              const relationReadableSummary = [
+                `${directionLabel} · ${kindLabel}`,
+                relationTypeLabel,
+                relationReadableProofLabel,
+                primaryCopyActionShortLabel,
+              ].join(" · ");
               const relationHandoffTool = "query_ontology";
               const relationHandoffPayloadSummary = [
                 relationHandoffTool,
@@ -920,6 +927,7 @@ export function TopologyNodePopover({
                     data-relation-target-id={relationTargetId}
                     data-relation-endpoint-route={`${relationSourceId}>${relationTargetId}`}
                     data-relation-handoff-summary={relationHandoffSummary}
+                    data-relation-readable-summary={relationReadableSummary}
                     data-relation-handoff-tool={relationHandoffTool}
                     data-relation-handoff-operation={primaryCopyAction}
                     data-relation-handoff-from={relationSourceId}
@@ -991,16 +999,35 @@ export function TopologyNodePopover({
                         data-relation-row-meta
                         data-row-meta-text-token="--topology-node-popover-relation-row-meta-text"
                         data-visible-contract="relation-facts-secondary-to-connected-title"
-                        className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] leading-4 text-[color:var(--topology-node-popover-relation-row-meta-text)]"
+                        data-readable-summary-contract="plain-language-proof-before-machine-route"
+                        className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-4 text-[color:var(--topology-node-popover-relation-row-meta-text)]"
                       >
+                        <span
+                          data-relation-row-context
+                          className="min-w-0 truncate"
+                        >
+                          {directionLabel} · {kindLabel}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className="text-[color:var(--topology-node-popover-endpoint-separator)]"
+                        >
+                          {" · "}
+                        </span>
                         <span
                           data-relation-type-label
                           data-fact-type-surface-token="--topology-node-popover-fact-type-surface"
                           data-fact-type-border-token="--topology-node-popover-fact-type-border"
                           data-fact-type-text-token="--topology-node-popover-fact-type-text"
-                          className="shrink-0 rounded-[5px] border border-[color:var(--topology-node-popover-fact-type-border)] bg-[color:var(--topology-node-popover-fact-type-surface)] px-1.5 py-0.5 text-[10px] text-[color:var(--topology-node-popover-fact-type-text)]"
+                          className="shrink-0 text-[color:var(--topology-node-popover-fact-type-text)]"
                         >
                           {relationTypeLabel}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className="text-[color:var(--topology-node-popover-endpoint-separator)]"
+                        >
+                          {" · "}
                         </span>
                         <span
                           data-relation-quality-dot
@@ -1014,6 +1041,7 @@ export function TopologyNodePopover({
                         <span
                           aria-hidden="true"
                           data-relation-evidence-glyph={evidenceState}
+                          data-relation-readable-proof={relationReadableProofLabel}
                           data-evidence-surface-token={relationEvidenceToken(
                             evidenceState,
                             "surface",
@@ -1026,9 +1054,15 @@ export function TopologyNodePopover({
                             evidenceState,
                             "text",
                           )}
-                          className={`inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-[5px] border px-1 font-mono text-[8px] leading-none ${relationEvidenceGlyphClassName(evidenceState)}`}
+                          className="shrink-0 text-[color:var(--topology-node-popover-relation-row-meta-text)]"
                         >
-                          {relationEvidenceGlyph(connection)}
+                          {relationReadableProofLabel}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className="text-[color:var(--topology-node-popover-endpoint-separator)]"
+                        >
+                          {" · "}
                         </span>
                         <span
                           aria-hidden="true"
@@ -1048,15 +1082,9 @@ export function TopologyNodePopover({
                             agentGateKind,
                             "text",
                           )}
-                          className={`inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-[5px] border px-1 text-[9px] leading-none ${relationAgentGateChipClassName(agentGateKind)}`}
+                          className="shrink-0 text-[color:var(--topology-node-popover-relation-row-meta-text)]"
                         >
                           {primaryCopyActionShortLabel}
-                        </span>
-                        <span
-                          data-relation-row-context
-                          className="min-w-0 truncate"
-                        >
-                          {directionLabel} · {kindLabel}
                         </span>
                       </span>
                       <span
