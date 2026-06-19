@@ -1268,16 +1268,20 @@ export function TopologyAnalysisBar({
                   data-min-height-token="--topology-overview-handoff-primary-min-height"
                 />
                 <details
-                  className="topology-overview-low-height-sr-only group relative"
+                  className="topology-overview-low-height-sr-only group relative mt-0.5"
                   data-secondary-actions-contract="closed-until-user-expands"
+                  data-secondary-visual-priority="tertiary-disclosure"
                 >
                   <summary
                     data-testid="topology-overview-handoff-summary"
-                    className="inline-flex min-h-[var(--topology-overview-handoff-summary-min-height)] cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
-                    data-min-height-token="--topology-overview-handoff-summary-min-height"
+                    className="inline-flex min-h-[var(--topology-overview-secondary-disclosure-min-height)] cursor-pointer list-none items-center gap-1 rounded px-0.5 py-0 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--topology-overview-secondary-disclosure-text)] transition-colors hover:text-[color:var(--topology-overview-secondary-disclosure-hover-text)]"
+                    data-secondary-min-height-token="--topology-overview-secondary-disclosure-min-height"
+                    data-text-token="--topology-overview-secondary-disclosure-text"
+                    data-hover-text-token="--topology-overview-secondary-disclosure-hover-text"
+                    data-secondary-visual-priority="tertiary-disclosure"
                   >
                     <ChevronDown
-                      size={12}
+                      size={10}
                       aria-hidden
                       className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
                       data-testid="topology-overview-handoff-chevron"

@@ -1025,6 +1025,18 @@ describe("TopologyAnalysisBar", () => {
     expect(
       screen.getByTestId("topology-overview-handoff-summary"),
     ).toHaveTextContent("Audit · Sync");
+    expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
+      "data-secondary-visual-priority",
+      "tertiary-disclosure",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
+      "data-secondary-min-height-token",
+      "--topology-overview-secondary-disclosure-min-height",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
+      "data-text-token",
+      "--topology-overview-secondary-disclosure-text",
+    );
     expect(
       screen.getByText(
         "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
@@ -1086,6 +1098,13 @@ describe("TopologyAnalysisBar", () => {
 
     expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveTextContent(
       "Audit · Sync",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-summary").className).toContain(
+      "text-[8.5px]",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-summary")).not.toHaveAttribute(
+      "data-min-height-token",
+      "--topology-overview-handoff-summary-min-height",
     );
     expect(screen.getByTestId("topology-overview-handoff-chevron")).toBeInTheDocument();
   });
@@ -1783,8 +1802,8 @@ describe("TopologyAnalysisBar", () => {
       "[data-overview-handoff-label-low-height-contract]",
     )).toHaveClass("topology-overview-low-height-sr-only");
     expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
-      "data-min-height-token",
-      "--topology-overview-handoff-summary-min-height",
+      "data-secondary-min-height-token",
+      "--topology-overview-secondary-disclosure-min-height",
     );
     expect(
       screen.getByTestId("topology-overview-handoff-summary").closest("details"),

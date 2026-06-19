@@ -425,6 +425,9 @@
     --topology-overview-handoff-compact-padding-top: 4px;
     --topology-overview-handoff-primary-min-height: 34px;
     --topology-overview-handoff-summary-min-height: 28px;
+    --topology-overview-secondary-disclosure-min-height: 22px;
+    --topology-overview-secondary-disclosure-text: rgba(222, 225, 255, 0.46);
+    --topology-overview-secondary-disclosure-hover-text: rgba(222, 225, 255, 0.72);
     --topology-overview-quality-surface: rgba(94, 234, 212, 0.032);
     --topology-overview-quality-border: rgba(94, 234, 212, 0.18);
     --topology-overview-quality-meter-surface: rgba(255, 255, 255, 0.045);
