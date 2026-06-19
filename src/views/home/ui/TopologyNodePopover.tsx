@@ -1008,6 +1008,7 @@ export function TopologyNodePopover({
                     data-relation-evidence-count={connection.evidenceCount}
                     data-agent-gate-kind={agentGateKind}
                     data-primary-copy-action={primaryCopyAction}
+                    data-relation-row-action-contract="inspect-relation-and-copy-handoff"
                     data-relation-fact-route="fact>evidence>gate>action"
                     data-handoff-grammar-contract="fact-evidence-gate-action-payload"
                     data-relation-fact-route-quality={connection.relationQuality}

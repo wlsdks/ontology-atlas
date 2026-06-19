@@ -1467,6 +1467,10 @@ describe("TopologyNodePopover", () => {
     expect(relationRows[0]).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(relationRows[0]).toHaveAttribute("data-primary-copy-action", "explain_relation");
     expect(relationRows[0]).toHaveAttribute(
+      "data-relation-row-action-contract",
+      "inspect-relation-and-copy-handoff",
+    );
+    expect(relationRows[0]).toHaveAttribute(
       "data-row-visual-contract",
       "quiet-title-relation-meta-secondary",
     );
@@ -1833,6 +1837,10 @@ describe("TopologyNodePopover", () => {
     expect(relationRow).toHaveAttribute("data-relation-evidence-state", "needs-review");
     expect(relationRow).toHaveAttribute("data-agent-gate-kind", "preflight-first");
     expect(relationRow).toHaveAttribute("data-primary-copy-action", "relation_check");
+    expect(relationRow).toHaveAttribute(
+      "data-relation-row-action-contract",
+      "inspect-relation-and-copy-handoff",
+    );
     expect(relationRow).toHaveAttribute(
       "data-row-emphasis-contract",
       "state-layer-no-fluorescent-rail",
