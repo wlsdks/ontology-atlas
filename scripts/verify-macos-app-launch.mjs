@@ -469,7 +469,7 @@ function validateTopologyFocusRightControlsContract(markers) {
     stackWidth < 32 ||
     stackWidth > 60 ||
     stackHeight < 32 ||
-    stackHeight > 96
+    stackHeight > 104
   ) {
     return `WebView Relief selected focus right controls stack was malformed (${stackWidth}x${stackHeight})`;
   }
@@ -2721,7 +2721,7 @@ export function validateWebviewVerifyPayload(payload, {
       if (
         !Number.isFinite(nodePopoverRowRenderBudget) ||
         nodePopoverRowRenderBudget < 1 ||
-        nodePopoverRowRenderBudget > 6
+        nodePopoverRowRenderBudget > 2
       ) {
         return `WebView Relief selected node popover connection list row render budget was ${payload.markers.topologyNodePopoverConnectionListRowRenderBudget ?? "missing"}`;
       }

@@ -1651,9 +1651,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverConnectionListRowDensityContract: "agent-handoff-scan-list",
       topologyNodePopoverConnectionListRowMinHitHeight: 72,
       topologyNodePopoverConnectionListRowRenderContract: "capped-preview-plus-remainder",
-      topologyNodePopoverConnectionListRowRenderBudget: 6,
-      topologyNodePopoverConnectionListRenderedCount: 3,
-      topologyNodePopoverConnectionListHiddenCount: 77,
+      topologyNodePopoverConnectionListRowRenderBudget: 2,
+      topologyNodePopoverConnectionListRenderedCount: 2,
+      topologyNodePopoverConnectionListHiddenCount: 78,
       topologyNodePopoverConnectionListTotalCount: 82,
       topologyNodePopoverFooterVisible: true,
       topologyNodePopoverFooterContract: "fixed-outside-scroll-region",
@@ -2535,7 +2535,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     validateWebviewVerifyPayload(
       selectedNodeExpandedFocusPayload({
         topologyNodePopoverConnectionListTotalCount: 82,
-        topologyNodePopoverConnectionListRenderedCount: 3,
+        topologyNodePopoverConnectionListRenderedCount: 2,
         topologyNodePopoverConnectionListHiddenCount: 0,
       }),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },

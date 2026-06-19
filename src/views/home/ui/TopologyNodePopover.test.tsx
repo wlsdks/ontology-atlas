@@ -305,6 +305,13 @@ describe("TopologyNodePopover", () => {
       "data-relation-section-lens",
       "typed-fact-summary",
     );
+    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
+      "data-relation-lens-density-contract",
+      "one-line-proof-summary",
+    );
+    expect(screen.getByTestId("topology-relation-lens").className).toContain(
+      "line-clamp-1",
+    );
     expect(screen.getByTestId("topology-relation-lens").className).toContain(
       "text-[color:var(--topology-node-popover-relation-section-lens-text)]",
     );
@@ -320,7 +327,7 @@ describe("TopologyNodePopover", () => {
     expect(popover.className).not.toContain("max-h-[min(78vh,44rem)]");
     expect(section).toHaveAttribute(
       "data-readable-list-budget",
-      "relation-list-primary-scroll",
+      "two-relation-preview-primary-scroll",
     );
   });
 
@@ -1910,14 +1917,14 @@ describe("TopologyNodePopover", () => {
 
     const list = screen.getByTestId("topology-node-connection-list");
     expect(list).toHaveAttribute("data-row-render-contract", "capped-preview-plus-remainder");
-    expect(list).toHaveAttribute("data-row-render-budget", "3");
-    expect(list).toHaveAttribute("data-rendered-connection-count", "3");
-    expect(list).toHaveAttribute("data-hidden-connection-count", "79");
+    expect(list).toHaveAttribute("data-row-render-budget", "2");
+    expect(list).toHaveAttribute("data-rendered-connection-count", "2");
+    expect(list).toHaveAttribute("data-hidden-connection-count", "80");
     expect(list).toHaveAttribute("data-total-connection-count", "82");
-    expect(document.querySelectorAll("[data-relation-row]")).toHaveLength(3);
+    expect(document.querySelectorAll("[data-relation-row]")).toHaveLength(2);
     expect(screen.getByText("Runtime 0")).toBeInTheDocument();
-    expect(screen.queryByText("Runtime 3")).not.toBeInTheDocument();
-    expect(screen.getAllByText("+79 더").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Runtime 2")).not.toBeInTheDocument();
+    expect(screen.getAllByText("+80 더").length).toBeGreaterThan(0);
     const relationRemainder = document.querySelector("[data-relation-hidden-remainder]");
     expect(relationRemainder).toHaveAttribute(
       "data-remainder-text-token",

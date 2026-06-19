@@ -20,7 +20,7 @@ import type { NodeSignificanceLevel } from "../lib/topology-node-significance";
 type RelationEvidenceState = "source-backed" | "authored" | "needs-review";
 type RelationAgentGateKind = "handoff-ready" | "preflight-first" | "review-first";
 type RelationCopyActionKind = "explain_relation" | "relation_check";
-const NODE_POPOVER_RELATION_ROW_RENDER_BUDGET = 3;
+const NODE_POPOVER_RELATION_ROW_RENDER_BUDGET = 2;
 
 /**
  * Resolved (i18n-applied) plain-language "so what" of the node. The parent
@@ -204,7 +204,7 @@ export function TopologyNodePopover({
     (sum, item) => sum + item.count,
     0,
   );
-  const agentReadinessCounts = renderedConnections.reduce(
+  const agentReadinessCounts = focus.connections.reduce(
     (counts, connection) => {
       const gate = relationAgentGateKind(connection);
       if (gate === "handoff-ready") counts.ready += 1;
@@ -616,7 +616,7 @@ export function TopologyNodePopover({
       <div
         data-testid="topology-connections-section"
         data-overflow-contract="single-vertical-scroll-region"
-        data-readable-list-budget="relation-list-primary-scroll"
+        data-readable-list-budget="two-relation-preview-primary-scroll"
         data-relation-section-min-height-token="--topology-node-popover-relation-section-min-height"
         data-relation-section-border-token="--topology-node-popover-relation-section-border"
         data-relation-section-title-text-token="--topology-node-popover-relation-section-title-text"
@@ -632,8 +632,9 @@ export function TopologyNodePopover({
         <p
           data-testid="topology-relation-lens"
           data-relation-section-lens="typed-fact-summary"
+          data-relation-lens-density-contract="one-line-proof-summary"
           data-phone-density-contract="hide-explainer-before-readable-row"
-          className="mb-1.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--topology-node-popover-relation-section-lens-text)] max-[540px]:hidden"
+          className="mb-1 line-clamp-1 text-[9px] leading-4 text-[color:var(--topology-node-popover-relation-section-lens-text)] max-[540px]:hidden"
         >
           <span className="font-mono uppercase tracking-[0.08em]">
             {labels.relationLensTitle}
