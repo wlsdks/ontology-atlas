@@ -161,6 +161,11 @@ describe("TopologyNodePopover", () => {
   it("uses a readable inspector rail while leaving the map primary", () => {
     setup();
     const popover = screen.getByTestId("topology-node-popover");
+    expect(popover).toHaveAttribute("data-topology-node-popover", "selected-node-inspector");
+    expect(popover).toHaveAttribute(
+      "data-node-popover-shell-contract",
+      "selected-node-inspector-shell",
+    );
     expect(popover).toHaveAttribute("data-surface-role", "active-node-inspector");
     expect(popover).toHaveAttribute("data-attention-role", "supporting-detail");
     expect(popover).toHaveAttribute("data-focus-primary", "linked-focus-cluster");
@@ -1024,6 +1029,11 @@ describe("TopologyNodePopover", () => {
     setup({ collapsed: true, onToggleCollapsed });
 
     const popover = screen.getByTestId("topology-node-popover");
+    expect(popover).toHaveAttribute("data-topology-node-popover", "selected-node-inspector");
+    expect(popover).toHaveAttribute(
+      "data-node-popover-shell-contract",
+      "selected-node-inspector-shell",
+    );
     expect(popover).toHaveAttribute("data-surface-role", "active-node-inspector");
     expect(popover).toHaveAttribute("data-attention-role", "supporting-detail");
     expect(popover).toHaveAttribute("data-focus-primary", "linked-focus-cluster");

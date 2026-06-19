@@ -366,6 +366,8 @@ export function TopologyNodePopover({
         aria-label={focus.title}
         {...selectedNodeAttributes}
         data-testid="topology-node-popover"
+        data-topology-node-popover="selected-node-inspector"
+        data-node-popover-shell-contract="selected-node-inspector-shell"
         data-surface-role="active-node-inspector"
         data-attention-role="supporting-detail"
         data-focus-primary="linked-focus-cluster"
@@ -523,6 +525,8 @@ export function TopologyNodePopover({
       aria-label={focus.title}
       {...selectedNodeAttributes}
       data-testid="topology-node-popover"
+      data-topology-node-popover="selected-node-inspector"
+      data-node-popover-shell-contract="selected-node-inspector-shell"
       data-surface-role="active-node-inspector"
       data-attention-role="supporting-detail"
       data-focus-primary="linked-focus-cluster"
