@@ -4880,11 +4880,11 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
   );
   await expect(page.locator('[data-relation-copy-action="relation_check"]')).toHaveAttribute(
     "data-copy-visible-label",
-    "relation_check",
+    "Check",
   );
   await expect(page.locator('[data-relation-copy-action="explain_relation"]')).toHaveAttribute(
     "data-copy-visible-label",
-    "explain_relation",
+    "Explain",
   );
   const compactCopyLabelsFit = await compactCopyButtons.evaluateAll((buttons) =>
     buttons.every((button) => {

@@ -289,7 +289,7 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
 
     render(createElement(NextIntlClientProvider, providerProps));
 
-    const primary = screen.getByRole('button', { name: /Copy explain/i });
+    const primary = screen.getByRole('button', { name: /Copy explanation/i });
     expect(primary).toHaveAttribute('data-relation-copy-action', 'explain_relation');
     expect(primary).toHaveAttribute(
       'data-relation-copy-payload-call',
@@ -306,10 +306,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-copy-label-contract',
       'visible-action-full-label-accessible',
     );
-    expect(primary).toHaveAttribute('data-copy-visible-label', 'Copy explain');
-    expect(primary).toHaveAttribute('data-copy-full-label', 'Copy explain');
-    expect(primary).toHaveAccessibleName('Copy explain · Next step');
-    expect(primary).toHaveTextContent('Copy explain');
+    expect(primary).toHaveAttribute('data-copy-visible-label', 'Explain');
+    expect(primary).toHaveAttribute('data-copy-full-label', 'Copy explanation');
+    expect(primary).toHaveAccessibleName('Copy explanation · Next step');
+    expect(primary).toHaveTextContent('Explain');
     expect(primary).not.toHaveTextContent('explain_relation');
 
     const secondary = screen.getByRole('button', { name: /Copy relation check/i });
@@ -325,9 +325,9 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-copy-label-contract',
       'visible-action-full-label-accessible',
     );
-    expect(secondary).toHaveAttribute('data-copy-visible-label', 'Copy check');
+    expect(secondary).toHaveAttribute('data-copy-visible-label', 'Check');
     expect(secondary).toHaveAttribute('data-copy-full-label', 'Copy relation check');
-    expect(secondary).toHaveTextContent('Copy check');
+    expect(secondary).toHaveTextContent('Check');
 
     const nextAction = screen.getByTestId('sigma-selected-edge-next-action');
     expect(nextAction).toHaveAttribute('data-next-action-contract', 'primary-action-first');
@@ -393,7 +393,7 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     expect(
       payload.querySelector('[data-copy-payload-visible-summary]'),
-    ).toHaveAttribute('data-copy-payload-visible-summary', 'Copy explain');
+    ).toHaveAttribute('data-copy-payload-visible-summary', 'Explain');
     expect(payload.querySelector('[data-copy-payload-label]')).toHaveAttribute(
       'data-copy-payload-label-contract',
       'compact-visible-label-full-label-accessible',
@@ -427,9 +427,9 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     expect(payloadSummary).toHaveAttribute(
       'data-copy-payload-visible-summary',
-      'Copy explain',
+      'Explain',
     );
-    expect(payload).toHaveTextContent('Copy explain');
+    expect(payload).toHaveTextContent('Explain');
     expect(payload).toHaveTextContent('domain:views → capability:topology-analysis-modes');
     expect(payload).not.toHaveTextContent('source-backed · handoff-ready');
     const cliFallback = payload.querySelector('[data-cli-fallback-summary]');
@@ -697,16 +697,16 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-copy-label-contract',
       'visible-action-full-label-accessible',
     );
-    expect(relationCheckCopy).toHaveAttribute('data-copy-visible-label', 'Copy check');
+    expect(relationCheckCopy).toHaveAttribute('data-copy-visible-label', 'Check');
     expect(relationCheckCopy).toHaveAttribute('data-copy-full-label', 'Copy relation check');
-    expect(relationCheckCopy).toHaveTextContent('Copy check');
+    expect(relationCheckCopy).toHaveTextContent('Check');
     expect(explainCopy).toHaveAttribute(
       'data-copy-label-contract',
       'visible-action-full-label-accessible',
     );
-    expect(explainCopy).toHaveAttribute('data-copy-visible-label', 'Copy explain');
-    expect(explainCopy).toHaveAttribute('data-copy-full-label', 'Copy explain');
-    expect(explainCopy).toHaveTextContent('Copy explain');
+    expect(explainCopy).toHaveAttribute('data-copy-visible-label', 'Explain');
+    expect(explainCopy).toHaveAttribute('data-copy-full-label', 'Copy explanation');
+    expect(explainCopy).toHaveTextContent('Explain');
     expect(metricStrip).toHaveClass('sr-only');
     expect(metricStrip).toContainElement(
       screen.getByTestId('sigma-selected-edge-agent-gate'),
