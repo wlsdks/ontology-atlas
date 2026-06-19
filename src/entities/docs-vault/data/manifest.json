@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-19T10:10:13.736Z",
+  "generatedAt": "2026-06-19T16:55:05.951Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8224,6 +8224,11 @@
         },
         {
           "depth": 3,
+          "text": "Relief/Topology Graph Engine Fit Gate",
+          "slug": "relieftopology-graph-engine-fit-gate"
+        },
+        {
+          "depth": 3,
           "text": "Relief/Topology Token And Anti-Pattern Gate",
           "slug": "relieftopology-token-and-anti-pattern-gate"
         },
@@ -8279,8 +8284,8 @@
         }
       ],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
-      "wordCount": 9738,
-      "updatedAt": "2026-06-19T10:10:00.289Z",
+      "wordCount": 10261,
+      "updatedAt": "2026-06-19T16:54:38.609Z",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
       ]

@@ -777,6 +777,75 @@ Verdicts:
 - `Build and verify`: the slice has a clear hierarchy, graph meaning, agent
   value, and installed-app proof.
 
+### Relief/Topology Graph Engine Fit Gate
+
+Relief is not allowed to switch graph libraries because another demo looks
+smoother, and it is not allowed to defend the current stack by inertia. Graph
+engine choice is a design decision because it changes what a non-developer can
+read and what an AI agent can act on.
+
+Current Atlas contract:
+
+- **Sigma.js** owns WebGL rendering, camera, pan/zoom, reducers, canvas event
+  handling, and large-graph frame budget.
+- **Graphology** owns graph data shape, node/edge attributes, typed relation
+  traversal, metrics, and layout inputs.
+- **ForceAtlas2 / d3-force** own layout and live drag physics; they are not the
+  product surface by themselves.
+- **Atlas DOM overlays** own readable ontology cards, relation evidence,
+  selected-node inspector, and MCP/CLI handoff. Overlay geometry is therefore a
+  first-class graph-design problem, not a CSS afterthought.
+
+Before changing graph libraries, adding a second renderer, or replacing a
+Sigma/Graphology mechanism, fill this fit pass:
+
+```md
+Graph engine fit pass
+- User moment: [overview scan / click focus / relation inspect / path build / drag arrange / agent handoff]
+- Current stack: [Sigma / Graphology / ForceAtlas2 / d3-force / DOM overlay]
+- Observed failure: [runtime or screenshot evidence, not taste]
+- Missing capability: [renderer, layout, interaction, collision, label, camera, accessibility, or handoff]
+- Can current stack solve it? [setting / reducer / layout / worker / overlay constraint / verifier]
+- Candidate alternative: [force-graph / Cytoscape.js / d3 / yFiles/Ogma commercial reference / other]
+- Tradeoff: [performance, custom labels, typed facts, overlay integration, Graphology reuse, bundle, tests]
+- Decision: [keep current stack / spike alternative / replace a subsystem / do not change]
+- Proof: [1920 and 2560 screenshots, WebView markers, installed-app evidence when UI changes]
+```
+
+Default decision rules:
+
+- **Keep Sigma/Graphology** when the problem is attention hierarchy,
+  relation-card density, camera framing, selected-state dimming, label
+  disclosure, overlay collision, or agent handoff visibility. These are Atlas
+  product-design problems; replacing the renderer will not solve them.
+- **Tune the current stack first** when official Sigma/Graphology capabilities
+  apply: `nodeReducer`, `edgeReducer`, camera state, `graphToViewport`,
+  `viewportToGraph`, ForceAtlas2 settings, worker physics, label density, edge
+  level-of-detail, or `autoRescale` / size-reference settings.
+- **Spike an alternative only** when the current stack cannot prove a needed
+  capability after one narrow experiment. Good spike questions are concrete:
+  "Can force-graph keep selected neighbors collision-free while preserving
+  readable labels at 1920?", not "Is force-graph prettier?"
+- **Reject renderer shopping** when the visible issue is a full-height colored
+  rail, popup soup, oversized pills, tokenless spacing, or too much information
+  in one panel. Those are design-system failures.
+
+Use these public sources as principle references only:
+
+- Sigma.js: WebGL renderer built on Graphology, reducers for dynamic
+  node/edge appearance, camera and interaction primitives.
+- Graphology: graph model and standard-library algorithms, including
+  ForceAtlas2 and metrics.
+- react-force-graph / force-graph: useful comparison for force-directed 2D/3D
+  interaction, node/link focus, drag, fit, and collision examples.
+- Cytoscape.js: useful comparison for graph theory analysis, gestures,
+  selection, and rich interactive network apps.
+
+Do not copy demo styling, palettes, particle effects, 3D spectacle, or vendor
+component shape. Translate a source into an Atlas verifier: typed ontology
+fact, visible relation, readable label, smooth camera, collision-free overlay,
+or MCP/CLI handoff action.
+
 ### Relief/Topology Token And Anti-Pattern Gate
 
 Relief/Topology design must be tokenized enough that another agent, designer,
