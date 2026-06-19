@@ -499,6 +499,15 @@ palette, marketing composition, animation signature, or brand skin.
 Reference checks were refreshed on 2026-06-15. Treat the links below as
 principle sources, not as visual targets.
 
+Toss-specific boundary, refreshed on 2026-06-19: Toss Tech product-design
+writing and the public `toss/slash` MIT-licensed repo may inform principles
+such as patterning repeated cases, long-text handling, accessibility, and
+engineering craft. Apps-in-Toss TDS and Figma UI Kit materials are not
+general-use Atlas sources: their license and guide restrict use to Apps-in-Toss
+contexts, and their assets, components, styles, logos, visual details, and UI
+Kit files must not be copied, modified, repurposed, or redistributed in
+Ontology Atlas.
+
 ### Live Reference Review Loop
 
 When the user asks to bring in a designer, review modern references, or raise
@@ -710,6 +719,7 @@ Use this matrix when "look at modern references" is part of the request.
 | Carbon | direct labels, concise legends, visualization anatomy | IBM chart styling or palette | relation labels should sit near the relation they explain; legends are backup, not the main reading path |
 | Linear public writing | reduced visual noise, alignment, hierarchy, dense product-work surfaces | Linear's exact sidebar, issue UI, colors, icons, or animations | make Atlas calmer and more scannable while preserving ontology-specific facts |
 | Rauno/public craft writing | fine interaction detail, immediate feedback, implementation craft close to the final medium | signature motion or personal portfolio styling | selection/focus/drag states should feel deliberate and verified in the installed app |
+| Toss public design-system writing / `toss/slash` MIT repo | pattern repeated cases, support long text, protect accessibility, keep makers focused on product work, and borrow MIT-licensed implementation ideas when useful | Apps-in-Toss TDS/Figma UI Kit assets, component styling, logos, brand visuals, exact UI patterns, or any use outside the license scope | Atlas may translate Toss's product-finish principles into token-backed width, text, interaction, and accessibility rules, then verify them in web and installed macOS app |
 | yFiles/Cambridge Intelligence | graph question framing, filtering, clustering, accessible graph interaction | SDK demo visuals or vendor styling | Relief must answer "what is this fact and what can I do next?", not merely render a graph |
 | Tufte/Rams | truthful density, less decoration, understandable and unobtrusive design | book/page aesthetics as a theme | remove non-informative chrome before adding new UI |
 

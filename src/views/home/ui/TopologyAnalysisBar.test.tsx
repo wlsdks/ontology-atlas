@@ -61,9 +61,9 @@ const labels = {
   overviewReaderLensCapabilities: "Capabilities by area.",
   overviewReaderLensChangePaths: "Change path before agent handoff.",
   overviewTierLegendTitle: "Map layers",
-  overviewTierLegendProject: "Product/system",
+  overviewTierLegendProject: "System",
   overviewTierLegendDomain: "Domain",
-  overviewTierLegendCapability: "Capability",
+  overviewTierLegendCapability: "Feature",
   overviewTierLegendElement: "Evidence",
   overviewRelationLegendTitle: "Lines",
   overviewRelationLegendSpine: "Contains",
@@ -944,9 +944,9 @@ describe("TopologyAnalysisBar", () => {
       "project>domain>capability>element",
     );
     expect(tierLegend).toHaveTextContent("Map layers");
-    expect(tierLegend).toHaveTextContent("Product/system");
+    expect(tierLegend).toHaveTextContent("System");
     expect(tierLegend).toHaveTextContent("Domain");
-    expect(tierLegend).toHaveTextContent("Capability");
+    expect(tierLegend).toHaveTextContent("Feature");
     expect(tierLegend).toHaveTextContent("Evidence");
     expect(
       tierLegend.querySelector('[data-tier-legend-kind="project"]'),

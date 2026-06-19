@@ -39,7 +39,7 @@ Full grounding + verified links in [`FOUNDATIONS.md` §4](./FOUNDATIONS.md#4-des
 | Invisible-detail polish (hover/focus/transition feel) without flashy patterns | **Rauno Freiberg**, "Craft" |
 | Motion: `transition-colors`/opacity, sub-200ms, minimal transform, `prefers-reduced-motion`; state-conveying not decorative | **Emil Kowalski**, "Great animations" |
 | Native-feeling motion that explains status, feedback, and continuity without overwhelming the task | **Apple Human Interface Guidelines**, Motion |
-| Design-system quality as a shared language for designers, developers, and product work; interaction detail as part of product finish | **Toss Design System** public docs and Toss design-system article |
+| Design-system quality as a shared language for designers, developers, and product work; interaction detail as part of product finish | **Toss Tech** design-system writing and public Toss docs as principle sources only; do not copy Apps-in-Toss TDS/Figma UI Kit assets, components, styles, logos, or restricted UI patterns |
 | Unstyled accessible primitives + our own theming; mono for code/diagrams | **Radix Primitives**, **Vercel Geist** |
 | Topology: overview first, ego-focus + details-on-demand popover (never fullscreen on click); start focused as the graph scales | **Ben Shneiderman**, *The Eyes Have It* (1996) — "overview first, zoom and filter, details-on-demand"; **Cambridge Intelligence / yFiles** large-graph guidance |
 
@@ -78,8 +78,10 @@ This bar changes how we judge UI work:
 Reference anchors for this bar:
 
 - Apple HIG Motion: https://developer.apple.com/design/human-interface-guidelines/motion
-- Toss Design System overview: https://developers-apps-in-toss.toss.im/design/components.html
+- Toss Design System overview: https://developers-apps-in-toss.toss.im/design/components.html (principle reference only; not a license to copy TDS assets or components)
 - Toss design-system article: https://toss.tech/article/toss-design-system
+- Toss / Apps-in-Toss Figma UI Kit license: https://developers-apps-in-toss.toss.im/design/prepare/figma-ui-license.html
+- Toss Slash MIT repo: https://github.com/toss/slash
 
 ## Design tokens
 

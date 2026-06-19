@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-18T15:51:24.831Z",
+  "generatedAt": "2026-06-19T10:10:13.736Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4087,8 +4087,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. ontology-atlas should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 6991,
-      "updatedAt": "2026-06-18T14:20:42.967Z",
+      "wordCount": 7036,
+      "updatedAt": "2026-06-19T10:10:00.291Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "FOUNDATIONS",
@@ -8279,8 +8279,8 @@
         }
       ],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
-      "wordCount": 9588,
-      "updatedAt": "2026-06-15T16:32:20.957Z",
+      "wordCount": 9738,
+      "updatedAt": "2026-06-19T10:10:00.289Z",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
       ]
