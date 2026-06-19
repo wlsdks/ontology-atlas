@@ -996,6 +996,16 @@ describe("TopologyAnalysisBar", () => {
     expect(relationLineLegend).not.toHaveTextContent("Containment backbone");
     expect(relationLineLegend).not.toHaveTextContent("Relations to check");
     expect(actions.closest("details")).toBeNull();
+    expect(actions).toHaveAttribute(
+      "data-overview-handoff-placement",
+      "after-reader-lens-before-proof-detail",
+    );
+    expect(readerLens.compareDocumentPosition(actions)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(
+      actions.compareDocumentPosition(screen.getByTestId("topology-overview-signal-grid")),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(screen.getByText("Copy map brief")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Copy ontology reanalysis command" }),

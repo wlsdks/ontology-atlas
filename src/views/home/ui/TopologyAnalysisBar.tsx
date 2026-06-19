@@ -1213,6 +1213,108 @@ export function TopologyAnalysisBar({
               </div>
             </div>
           ) : null}
+          {panelMode === "overview" ? (
+            <div
+              className="mt-2 border-t border-[color:var(--topology-overview-handoff-divider)] pt-[var(--topology-overview-handoff-compact-padding-top)]"
+              data-divider-token="--topology-overview-handoff-divider"
+              data-compact-padding-top-token="--topology-overview-handoff-compact-padding-top"
+              data-low-height-density-contract="primary-copy-visible-secondary-tools-hidden"
+              data-next-action-contract="map-brief-before-agent-audit-sync"
+              data-overview-handoff-placement="after-reader-lens-before-proof-detail"
+              data-testid="topology-overview-handoff-actions"
+            >
+              <div
+                className="topology-overview-low-height-sr-only mb-1.5 flex min-w-0 items-center justify-between gap-2 max-md:sr-only"
+                data-overview-handoff-label-compact-contract="phone-action-label-hidden"
+                data-overview-handoff-label-low-height-contract="hidden-under-800px"
+              >
+                <span className="min-w-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                  {labels.overviewHandoffSummary}
+                </span>
+                <span
+                  className="h-px min-w-6 flex-1 bg-[color:var(--topology-overview-handoff-divider)]"
+                  data-divider-token="--topology-overview-handoff-divider"
+                  aria-hidden
+                />
+                <span className="min-w-0 truncate text-right text-[10.5px] text-[color:var(--color-text-tertiary)]">
+                  {labels.overviewCopyTools}
+                </span>
+              </div>
+              <div className="grid gap-1.5">
+                <CompactCopyButton
+                  copied={overviewBriefCopied}
+                  label={labels.overviewBriefCopy}
+                  ariaLabel={
+                    overviewBriefCopied
+                      ? labels.overviewBriefCopiedAriaLabel
+                      : labels.overviewBriefCopyAriaLabel
+                  }
+                  onClick={copyOverviewBrief}
+                  className="min-h-[var(--topology-overview-handoff-primary-min-height)] border border-[color:var(--topology-overview-handoff-primary-border)] bg-[color:var(--topology-overview-handoff-primary-surface)] text-[10.5px] text-[color:var(--color-text-secondary)]"
+                  data-testid="topology-overview-brief-copy"
+                  data-surface-token="--topology-overview-handoff-primary-surface"
+                  data-border-token="--topology-overview-handoff-primary-border"
+                  data-min-height-token="--topology-overview-handoff-primary-min-height"
+                />
+                <details
+                  className="topology-overview-low-height-sr-only group relative"
+                  data-secondary-actions-contract="closed-until-user-expands"
+                >
+                  <summary
+                    data-testid="topology-overview-handoff-summary"
+                    className="inline-flex min-h-[var(--topology-overview-handoff-summary-min-height)] cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                    data-min-height-token="--topology-overview-handoff-summary-min-height"
+                  >
+                    <ChevronDown
+                      size={12}
+                      aria-hidden
+                      className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
+                      data-testid="topology-overview-handoff-chevron"
+                    />
+                    <span className="group-open:sr-only">
+                      {labels.overviewReanalyzeCopy} · {labels.overviewSyncCopy}
+                    </span>
+                  </summary>
+                  <div
+                    className="absolute bottom-0 left-5 right-0 z-10 hidden grid-cols-2 gap-1 group-open:grid"
+                    data-testid="topology-overview-secondary-handoff-actions"
+                    data-secondary-actions-contract="hidden-closed-overlay-row-open"
+                  >
+                    <CompactCopyButton
+                      copied={overviewReanalyzeCopied}
+                      label={labels.overviewReanalyzeCopy}
+                      ariaLabel={
+                        overviewReanalyzeCopied
+                          ? labels.overviewReanalyzeCopiedAriaLabel
+                          : labels.overviewReanalyzeCopyAriaLabel
+                      }
+                      onClick={copyOverviewReanalysisCommand}
+                      className="min-h-[26px] justify-start border border-[color:var(--topology-overview-handoff-secondary-border)] bg-[color:var(--topology-overview-handoff-secondary-surface)] px-1.5 py-0 text-[9.5px] text-[color:var(--color-text-tertiary)]"
+                      data-testid="topology-overview-reanalyze-copy"
+                      data-surface-token="--topology-overview-handoff-secondary-surface"
+                      data-border-token="--topology-overview-handoff-secondary-border"
+                      data-density-contract="compact-disclosure-action"
+                    />
+                    <CompactCopyButton
+                      copied={overviewSyncCopied}
+                      label={labels.overviewSyncCopy}
+                      ariaLabel={
+                        overviewSyncCopied
+                          ? labels.overviewSyncCopiedAriaLabel
+                          : labels.overviewSyncCopyAriaLabel
+                      }
+                      onClick={copyOverviewSyncGate}
+                      className="min-h-[26px] justify-start border border-[color:var(--topology-overview-handoff-secondary-border)] bg-[color:var(--topology-overview-handoff-secondary-surface)] px-1.5 py-0 text-[9.5px] text-[color:var(--color-text-tertiary)]"
+                      data-testid="topology-overview-sync-copy"
+                      data-surface-token="--topology-overview-handoff-secondary-surface"
+                      data-border-token="--topology-overview-handoff-secondary-border"
+                      data-density-contract="compact-disclosure-action"
+                    />
+                  </div>
+                </details>
+              </div>
+            </div>
+          ) : null}
           {pathCandidateVisibilityText ? (
             <p
               data-testid="topology-path-candidate-visibility"
@@ -1488,105 +1590,6 @@ export function TopologyAnalysisBar({
                 >
                   {overviewRelationNotice}
                 </p>
-              </div>
-              <div
-                className="mt-2 border-t border-[color:var(--topology-overview-handoff-divider)] pt-[var(--topology-overview-handoff-compact-padding-top)]"
-                data-divider-token="--topology-overview-handoff-divider"
-                data-compact-padding-top-token="--topology-overview-handoff-compact-padding-top"
-                data-low-height-density-contract="primary-copy-visible-secondary-tools-hidden"
-                data-next-action-contract="map-brief-before-agent-audit-sync"
-                data-testid="topology-overview-handoff-actions"
-              >
-                <div
-                  className="topology-overview-low-height-sr-only mb-1.5 flex min-w-0 items-center justify-between gap-2 max-md:sr-only"
-                  data-overview-handoff-label-compact-contract="phone-action-label-hidden"
-                  data-overview-handoff-label-low-height-contract="hidden-under-800px"
-                >
-                  <span className="min-w-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                    {labels.overviewHandoffSummary}
-                  </span>
-                  <span
-                    className="h-px min-w-6 flex-1 bg-[color:var(--topology-overview-handoff-divider)]"
-                    data-divider-token="--topology-overview-handoff-divider"
-                    aria-hidden
-                  />
-                  <span className="min-w-0 truncate text-right text-[10.5px] text-[color:var(--color-text-tertiary)]">
-                    {labels.overviewCopyTools}
-                  </span>
-                </div>
-                <div className="grid gap-1.5">
-                  <CompactCopyButton
-                    copied={overviewBriefCopied}
-                    label={labels.overviewBriefCopy}
-                    ariaLabel={
-                      overviewBriefCopied
-                        ? labels.overviewBriefCopiedAriaLabel
-                        : labels.overviewBriefCopyAriaLabel
-                    }
-                    onClick={copyOverviewBrief}
-                    className="min-h-[var(--topology-overview-handoff-primary-min-height)] border border-[color:var(--topology-overview-handoff-primary-border)] bg-[color:var(--topology-overview-handoff-primary-surface)] text-[10.5px] text-[color:var(--color-text-secondary)]"
-                    data-testid="topology-overview-brief-copy"
-                    data-surface-token="--topology-overview-handoff-primary-surface"
-                    data-border-token="--topology-overview-handoff-primary-border"
-                    data-min-height-token="--topology-overview-handoff-primary-min-height"
-                  />
-                  <details
-                    className="topology-overview-low-height-sr-only group relative"
-                    data-secondary-actions-contract="closed-until-user-expands"
-                  >
-                    <summary
-                      data-testid="topology-overview-handoff-summary"
-                      className="inline-flex min-h-[var(--topology-overview-handoff-summary-min-height)] cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
-                      data-min-height-token="--topology-overview-handoff-summary-min-height"
-                    >
-                      <ChevronDown
-                        size={12}
-                        aria-hidden
-                        className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
-                        data-testid="topology-overview-handoff-chevron"
-                      />
-                      <span className="group-open:sr-only">
-                        {labels.overviewReanalyzeCopy} · {labels.overviewSyncCopy}
-                      </span>
-                    </summary>
-                    <div
-                      className="absolute bottom-0 left-5 right-0 z-10 hidden grid-cols-2 gap-1 group-open:grid"
-                      data-testid="topology-overview-secondary-handoff-actions"
-                      data-secondary-actions-contract="hidden-closed-overlay-row-open"
-                    >
-                      <CompactCopyButton
-                        copied={overviewReanalyzeCopied}
-                        label={labels.overviewReanalyzeCopy}
-                        ariaLabel={
-                          overviewReanalyzeCopied
-                            ? labels.overviewReanalyzeCopiedAriaLabel
-                            : labels.overviewReanalyzeCopyAriaLabel
-                        }
-                        onClick={copyOverviewReanalysisCommand}
-                        className="min-h-[26px] justify-start border border-[color:var(--topology-overview-handoff-secondary-border)] bg-[color:var(--topology-overview-handoff-secondary-surface)] px-1.5 py-0 text-[9.5px] text-[color:var(--color-text-tertiary)]"
-                        data-testid="topology-overview-reanalyze-copy"
-                        data-surface-token="--topology-overview-handoff-secondary-surface"
-                        data-border-token="--topology-overview-handoff-secondary-border"
-                        data-density-contract="compact-disclosure-action"
-                      />
-                      <CompactCopyButton
-                        copied={overviewSyncCopied}
-                        label={labels.overviewSyncCopy}
-                        ariaLabel={
-                          overviewSyncCopied
-                            ? labels.overviewSyncCopiedAriaLabel
-                            : labels.overviewSyncCopyAriaLabel
-                        }
-                        onClick={copyOverviewSyncGate}
-                        className="min-h-[26px] justify-start border border-[color:var(--topology-overview-handoff-secondary-border)] bg-[color:var(--topology-overview-handoff-secondary-surface)] px-1.5 py-0 text-[9.5px] text-[color:var(--color-text-tertiary)]"
-                        data-testid="topology-overview-sync-copy"
-                        data-surface-token="--topology-overview-handoff-secondary-surface"
-                        data-border-token="--topology-overview-handoff-secondary-border"
-                        data-density-contract="compact-disclosure-action"
-                      />
-                    </div>
-                  </details>
-                </div>
               </div>
             </>
           ) : null}
