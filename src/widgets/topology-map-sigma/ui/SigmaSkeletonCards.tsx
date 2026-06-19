@@ -170,6 +170,7 @@ const ANALYSIS_PANEL_TRAILING_PAD = 12;
 const ANALYSIS_PANEL_BLOCK_END_PAD = 8;
 const SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX = 1280;
 const OVERVIEW_COLLISION_PAD = 2;
+const OVERVIEW_DOMAIN_COLLISION_PAD = 10;
 const SAFE_VIEWPORT_MARGIN = 8;
 const FOCUS_HULL_BREATHING_ROOM_PX = 16;
 const FOCUS_HULL_LABEL_CLEARANCE_PX = 34;
@@ -1198,6 +1199,96 @@ function separatePathEndpointCards(
   if (!best) return;
   best.el.style.transform = `${best.el.style.transform} translate(0, ${best.dy}px)`;
   best.el.dataset.pathEndpointPairSeparated = best.marker;
+}
+
+function separateOverviewDomainCards(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>,
+): number {
+  const records = orderedEls
+    .filter((el) => {
+      if (el.dataset.tier !== '1' || el.dataset.dockParent) return false;
+      if (el.dataset.surfaceHidden === 'true') return false;
+      const style = getComputedStyle(el);
+      if (style.visibility === 'hidden' || Number(style.opacity || '1') <= 0.01) {
+        return false;
+      }
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    })
+    .map((el) => {
+      const rect = el.getBoundingClientRect();
+      return {
+        el,
+        rect: {
+          left: rect.left - containerRect.left,
+          top: rect.top - containerRect.top,
+          right: rect.right - containerRect.left,
+          bottom: rect.bottom - containerRect.top,
+        },
+      };
+    })
+    .sort((a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left);
+
+  const accepted: Array<{ left: number; top: number; right: number; bottom: number }> =
+    [];
+  let separated = 0;
+  for (const record of records) {
+    delete record.el.dataset.overviewDomainSeparated;
+    let dy = 0;
+    for (const blocker of accepted) {
+      const moved = {
+        left: record.rect.left,
+        top: record.rect.top + dy,
+        right: record.rect.right,
+        bottom: record.rect.bottom + dy,
+      };
+      if (!rectsOverlap(moved, blocker, OVERVIEW_DOMAIN_COLLISION_PAD)) continue;
+      const moveDown = blocker.bottom + OVERVIEW_DOMAIN_COLLISION_PAD - moved.top;
+      const moveUp = blocker.top - OVERVIEW_DOMAIN_COLLISION_PAD - moved.bottom;
+      const preferred = moved.top >= blocker.top ? moveDown : moveUp;
+      const fallback = preferred === moveDown ? moveUp : moveDown;
+      const nextDy = dy + preferred;
+      const preferredRect = {
+        left: record.rect.left,
+        top: record.rect.top + nextDy,
+        right: record.rect.right,
+        bottom: record.rect.bottom + nextDy,
+      };
+      const preferredFits =
+        preferredRect.top >= SAFE_VIEWPORT_MARGIN &&
+        preferredRect.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN &&
+        !fixedSurfaceRects.some((surface) => rectsOverlap(preferredRect, surface));
+      dy += preferredFits ? preferred : fallback;
+    }
+
+    const finalRect = {
+      left: record.rect.left,
+      top: record.rect.top + dy,
+      right: record.rect.right,
+      bottom: record.rect.bottom + dy,
+    };
+    const clampedDy =
+      finalRect.top < SAFE_VIEWPORT_MARGIN
+        ? dy + SAFE_VIEWPORT_MARGIN - finalRect.top
+        : finalRect.bottom > containerRect.height - SAFE_VIEWPORT_MARGIN
+          ? dy + containerRect.height - SAFE_VIEWPORT_MARGIN - finalRect.bottom
+          : dy;
+    const acceptedRect = {
+      left: record.rect.left,
+      top: record.rect.top + clampedDy,
+      right: record.rect.right,
+      bottom: record.rect.bottom + clampedDy,
+    };
+    if (clampedDy !== 0) {
+      record.el.style.transform = `${record.el.style.transform} translate(0, ${clampedDy}px)`;
+      record.el.dataset.overviewDomainSeparated = 'true';
+      separated += 1;
+    }
+    accepted.push(acceptedRect);
+  }
+  return separated;
 }
 
 function restorePathEndpointsFromFixedSurfaces(
@@ -2667,6 +2758,28 @@ export function SigmaSkeletonCards({
         domWriteStats,
       );
     }
+    const projectOverviewDomainSeparationActive = Boolean(
+      selectedRelationEdgeId === null &&
+        !pathWorkflowActive &&
+        (!ego ||
+          cards.some((card) => {
+            const resolved = resolveNodeId(card.id);
+            return (
+              resolved === ego.selected &&
+              (card.kind === 'project' || card.tier === 0)
+            );
+          })),
+    );
+    container.dataset.overviewDomainSeparationContract =
+      'project-overview-domain-labels-do-not-overlap';
+    container.dataset.overviewDomainSeparationActive =
+      projectOverviewDomainSeparationActive ? 'true' : 'false';
+    const overviewDomainSeparatedCount = projectOverviewDomainSeparationActive
+      ? separateOverviewDomainCards(orderedEls, containerRect, fixedSurfaceRects)
+      : 0;
+    container.dataset.overviewDomainSeparatedCount = String(
+      overviewDomainSeparatedCount,
+    );
     const relationLabelCardBlockers: Array<{
       left: number;
       top: number;

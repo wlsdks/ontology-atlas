@@ -152,6 +152,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer.style.getPropertyValue("--topology-card-max-width-capability")).toBe("360px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-element")).toBe("224px");
     expect(layer.style.getPropertyValue("--topology-card-selected-focus-max-width")).toBe("360px");
+    expect(layer).toHaveAttribute(
+      "data-overview-domain-separation-contract",
+      "project-overview-domain-labels-do-not-overlap",
+    );
+    expect(layer).toHaveAttribute("data-overview-domain-separation-active", "true");
+    expect(layer).toHaveAttribute("data-overview-domain-separated-count", "0");
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-drag-dom-index-contract",
       "drag-release-reuses-card-elements",
