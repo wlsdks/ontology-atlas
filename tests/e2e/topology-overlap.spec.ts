@@ -1673,7 +1673,9 @@ for (const viewport of VIEWPORTS) {
       "data-copy-payload-handle-summary",
       `${sourceHandle ?? ""} → ${targetHandle ?? ""}`,
     );
-    await expect(copyPayload).toContainText(/Explain|Check|설명|점검/);
+    await expect(copyPayload).toContainText(
+      /Ready to explain|Check first|설명 준비|점검 먼저/,
+    );
     await expect(copyPayload).toContainText(sourceHandle ?? "");
     await expect(copyPayload).toContainText(targetHandle ?? "");
     const visiblePayloadSummary = copyPayload.locator("[data-copy-payload-visible-summary]");
@@ -1683,7 +1685,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(visiblePayloadSummary).toHaveAttribute(
       "data-copy-payload-visible-summary",
-      /^(Explain|Check|설명|점검)$/,
+      /^(Ready to explain|Check first|설명 준비|점검 먼저)$/,
     );
     const visiblePayloadSummaryFits = await visiblePayloadSummary.evaluate(
       (element) => element.scrollWidth <= element.clientWidth + 1,

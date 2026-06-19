@@ -399,6 +399,11 @@ export function SigmaSelectedEdgeCard({
     primaryCopyAction === 'explain_relation'
       ? t('actionExplainRelationVisible')
       : t('actionRelationCheckVisible');
+  const primaryCopyPayloadVisibleLabel = t('copyPayloadVisibleLabel');
+  const primaryCopyPayloadVisibleSummary =
+    primaryCopyAction === 'explain_relation'
+      ? t('copyPayloadExplainVisibleSummary')
+      : t('copyPayloadCheckVisibleSummary');
   const primaryCopyActionRouteLabel =
     primaryCopyAction === 'explain_relation'
       ? t('routeActionExplainRelationShort')
@@ -428,7 +433,6 @@ export function SigmaSelectedEdgeCard({
     evidence: evidenceState,
     gate: agentGateKind,
   });
-  const primaryCopyPayloadVisibleSummary = primaryCopyActionVisibleLabel;
   const primaryCopyPayloadHandleSummary = `${data.source} → ${data.target}`;
   const ontologyHandleSummary = `${data.source} → ${data.target} · ${relationType}`;
   const preflightCopyPayload = {
@@ -770,11 +774,11 @@ export function SigmaSelectedEdgeCard({
         >
           <div
             data-copy-payload-label={t('copyPayloadLabel')}
-            data-copy-payload-visible-label="MCP"
+            data-copy-payload-visible-label={primaryCopyPayloadVisibleLabel}
             data-copy-payload-label-contract="compact-visible-label-full-label-accessible"
-            className="shrink-0 font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.10em] text-[color:var(--topology-selected-relation-accent-muted)]"
+            className="shrink-0 text-[10px] font-medium leading-3 text-[color:var(--topology-selected-relation-accent-muted)]"
           >
-            <span aria-hidden="true">MCP</span>
+            <span aria-hidden="true">{primaryCopyPayloadVisibleLabel}</span>
             <span className="sr-only">{t('copyPayloadLabel')}</span>
           </div>
           <div
