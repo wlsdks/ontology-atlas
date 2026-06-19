@@ -3807,7 +3807,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   );
   await expect(firstRelationRow).toHaveAttribute(
     "data-row-visual-contract",
-    "quiet-title-relation-meta-secondary",
+    "title-only-relation-facts-secondary",
   );
   await expect(firstRelationRow).toHaveAttribute("data-row-min-hit-height", "72");
   const conceptSearch = page.getByTestId("topology-concept-search");
@@ -3842,7 +3842,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   );
   await expect(firstRelationRow.locator("[data-relation-type-label]").first()).toHaveAttribute(
     "data-relation-pill-contract",
-    "plain-typed-fact-label",
+    "plain-inline-typed-fact-label",
   );
   await expect(firstRelationRow.locator("[data-relation-title]").first()).toHaveAttribute(
     "data-relation-title-text-token",

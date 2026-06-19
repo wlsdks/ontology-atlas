@@ -682,7 +682,7 @@ describe("TopologyNodePopover", () => {
       relationRow?.querySelector("[data-relation-primary-line]"),
     ).toHaveAttribute(
       "data-visible-contract",
-      "connected-title-plus-quiet-relation-label",
+      "connected-title-only",
     );
     expect(relationTitle).toHaveAttribute(
       "data-relation-title-text-token",
@@ -709,8 +709,14 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationMeta?.className).toContain("text-[11px]");
     expect(relationMeta?.className).not.toContain("var(--color-text-quaternary)");
+    expect(relationMeta).toContainElement(
+      relationRow?.querySelector("[data-relation-type-label]") ?? null,
+    );
+    expect(
+      relationRow?.querySelector("[data-relation-row-context]"),
+    ).toHaveAttribute("data-visible-contract", "connected-kind-secondary-to-typed-fact");
     expect(relationMeta?.textContent?.replace(/\s+/g, " ").trim()).toBe(
-      "이 노드가 기대는 곳 · 요소 · 근거 1 · 설명",
+      "사용 · 요소 · 근거 1 · 설명",
     );
     expect(handoffLane).toHaveAttribute("data-handoff-lane", "mcp-cli-next-action");
     expect(handoffLane).toHaveAttribute(
@@ -773,7 +779,7 @@ describe("TopologyNodePopover", () => {
     expect(rows[0]).toHaveAttribute("data-row-render-source", "map-expanded-proof");
     expect(rows[0]).toHaveAttribute(
       "data-row-visual-contract",
-      "quiet-title-relation-meta-secondary",
+      "title-only-relation-facts-secondary",
     );
     expect(screen.getByText("MCP SDK")).toBeInTheDocument();
     expect(screen.getByText("AI Agent Partner")).toBeInTheDocument();
@@ -1472,7 +1478,11 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRows[0]).toHaveAttribute(
       "data-row-visual-contract",
-      "quiet-title-relation-meta-secondary",
+      "title-only-relation-facts-secondary",
+    );
+    expect(relationRows[0].querySelector("[data-relation-primary-line]")).toHaveAttribute(
+      "data-visible-contract",
+      "connected-title-only",
     );
     expect(
       relationRows[0].querySelector("[data-relation-title]")?.compareDocumentPosition(
@@ -1544,16 +1554,22 @@ describe("TopologyNodePopover", () => {
     );
     expect(
       relationRows[0].querySelector("[data-relation-type-label]"),
-    ).toHaveAttribute("data-relation-pill-contract", "plain-typed-fact-label");
+    ).toHaveAttribute("data-relation-pill-contract", "plain-inline-typed-fact-label");
+    expect(
+      relationRows[0].querySelector("[data-relation-type-label]"),
+    ).toHaveAttribute(
+      "data-visible-contract",
+      "relation-type-belongs-to-secondary-facts",
+    );
+    expect(relationRows[0].querySelector("[data-relation-row-meta]")).toContainElement(
+      relationRows[0].querySelector("[data-relation-type-label]"),
+    );
     expect(
       relationRows[0].querySelector("[data-relation-type-label]")?.className,
-    ).toContain("border-l");
+    ).not.toContain("border-l");
     expect(
       relationRows[0].querySelector("[data-relation-type-label]")?.className,
-    ).toContain("bg-[color:var(--topology-node-popover-fact-type-surface)]");
-    expect(
-      relationRows[0].querySelector("[data-relation-type-label]")?.className,
-    ).toContain("border-[color:var(--topology-node-popover-fact-type-border)]");
+    ).not.toContain("bg-[color:var(--topology-node-popover-fact-type-surface)]");
     expect(
       relationRows[0].querySelector("[data-relation-evidence-glyph]"),
     ).toHaveTextContent("1");

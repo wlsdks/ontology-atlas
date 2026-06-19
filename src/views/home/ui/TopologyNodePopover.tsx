@@ -1031,7 +1031,7 @@ export function TopologyNodePopover({
                     data-row-density-contract="agent-handoff-scan-row"
                     data-row-render-source={relationPreviewSource}
                     data-row-surface-contract="flat-divider-row"
-                    data-row-visual-contract="quiet-title-relation-meta-secondary"
+                    data-row-visual-contract="title-only-relation-facts-secondary"
                     data-row-min-hit-height="72"
                     data-row-min-height-token="--topology-node-popover-relation-row-min-height"
                     data-row-gap-token="--topology-node-popover-relation-row-gap"
@@ -1065,8 +1065,8 @@ export function TopologyNodePopover({
                     <span className="min-w-0 flex-1">
                       <span
                         data-relation-primary-line
-                        data-visible-contract="connected-title-plus-quiet-relation-label"
-                        className="flex min-w-0 items-center gap-1.5"
+                        data-visible-contract="connected-title-only"
+                        className="flex min-w-0 items-center"
                       >
                         <span
                           data-relation-title
@@ -1075,16 +1075,6 @@ export function TopologyNodePopover({
                           className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-relation-row-title-text)]"
                         >
                           {connection.title}
-                        </span>
-                        <span
-                          data-relation-type-label
-                          data-fact-type-surface-token="--topology-node-popover-fact-type-surface"
-                          data-fact-type-border-token="--topology-node-popover-fact-type-border"
-                          data-fact-type-text-token="--topology-node-popover-fact-type-text"
-                          data-relation-pill-contract="plain-typed-fact-label"
-                          className="max-w-[96px] shrink-0 truncate border-l border-[color:var(--topology-node-popover-fact-type-border)] bg-[color:var(--topology-node-popover-fact-type-surface)] pl-2 font-mono text-[10px] leading-4 text-[color:var(--topology-node-popover-fact-type-text)]"
-                        >
-                          {relationTypeLabel}
                         </span>
                       </span>
                       <span
@@ -1095,10 +1085,28 @@ export function TopologyNodePopover({
                         className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-4 text-[color:var(--topology-node-popover-relation-row-meta-text)]"
                       >
                         <span
+                          data-relation-type-label
+                          data-fact-type-surface-token="--topology-node-popover-fact-type-surface"
+                          data-fact-type-border-token="--topology-node-popover-fact-type-border"
+                          data-fact-type-text-token="--topology-node-popover-fact-type-text"
+                          data-relation-pill-contract="plain-inline-typed-fact-label"
+                          data-visible-contract="relation-type-belongs-to-secondary-facts"
+                          className="max-w-[96px] shrink-0 truncate font-mono text-[10px] leading-4 text-[color:var(--topology-node-popover-fact-type-text)]"
+                        >
+                          {relationTypeLabel}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className="text-[color:var(--topology-node-popover-endpoint-separator)]"
+                        >
+                          {" · "}
+                        </span>
+                        <span
                           data-relation-row-context
+                          data-visible-contract="connected-kind-secondary-to-typed-fact"
                           className="min-w-0 truncate"
                         >
-                          {directionLabel} · {kindLabel}
+                          {kindLabel}
                         </span>
                         <span
                           aria-hidden="true"
