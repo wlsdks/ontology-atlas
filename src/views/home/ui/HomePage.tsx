@@ -2440,6 +2440,8 @@ export function HomePage() {
                 ) as string,
                 relationLensTypeOne: t.raw("nodePopover.relationLensTypeOne") as string,
                 relationLensTypeOther: t.raw("nodePopover.relationLensTypeOther") as string,
+                relationLensCompactFacts: t("nodePopover.relationLensCompactFacts"),
+                relationLensCompactTypes: t("nodePopover.relationLensCompactTypes"),
                 relationLensNoScores: t("nodePopover.relationLensNoScores"),
                 relationQualityTitle: t("analysis.overviewBriefRelationQuality"),
                 relationQualityLabels: {

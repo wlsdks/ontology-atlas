@@ -24,6 +24,8 @@ const labels: TopologyNodePopoverLabels = {
   relationLensDirectFactOther: "직접 의미 관계 {count}개",
   relationLensTypeOne: "관계 유형 {count}종",
   relationLensTypeOther: "관계 유형 {count}종",
+  relationLensCompactFacts: "관계",
+  relationLensCompactTypes: "유형",
   relationLensNoScores: "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
   relationQualityTitle: "관계 품질",
   relationQualityLabels: {
@@ -873,6 +875,9 @@ describe("TopologyNodePopover", () => {
     expect(compactFacts).toHaveAttribute("data-relation-type-count", "2");
     expect(compactFacts).toHaveAttribute("data-relation-fact-label", "직접 의미 관계 3개");
     expect(compactFacts).toHaveAttribute("data-relation-type-label", "관계 유형 2종");
+    expect(compactFacts).toHaveAttribute("data-compact-relation-fact-label", "관계");
+    expect(compactFacts).toHaveAttribute("data-compact-relation-type-label", "유형");
+    expect(compactFacts).toHaveAccessibleName("직접 의미 관계 3개 · 관계 유형 2종");
     expect(compactFacts).toHaveAttribute(
       "data-compact-relation-facts-surface-token",
       "--topology-node-popover-context-surface",
@@ -885,8 +890,12 @@ describe("TopologyNodePopover", () => {
       "data-compact-relation-facts-text-token",
       "--topology-node-popover-context-text",
     );
-    expect(compactFacts).toHaveTextContent("직접 의미 관계 3개");
-    expect(compactFacts).toHaveTextContent("관계 유형 2종");
+    expect(compactFacts).toHaveTextContent("관계");
+    expect(compactFacts).toHaveTextContent("3");
+    expect(compactFacts).toHaveTextContent("유형");
+    expect(compactFacts).toHaveTextContent("2");
+    expect(compactFacts).not.toHaveTextContent("직접 의미 관계 3개");
+    expect(compactFacts).not.toHaveTextContent("관계 유형 2종");
     const factPriority = document.querySelector(
       "[data-node-popover-compact-fact-priority]",
     );
@@ -1911,6 +1920,8 @@ describe("TopologyNodePopover", () => {
         relationLensDirectFactOther: "{count} direct facts",
         relationLensTypeOne: "{count} relation type",
         relationLensTypeOther: "{count} relation types",
+        relationLensCompactFacts: "Facts",
+        relationLensCompactTypes: "Types",
       },
     });
 

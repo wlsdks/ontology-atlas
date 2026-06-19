@@ -2765,6 +2765,8 @@
       "relationLensDirectFactOther": "{count} direct facts",
       "relationLensTypeOne": "{count} relation type",
       "relationLensTypeOther": "{count} relation types",
+      "relationLensCompactFacts": "Facts",
+      "relationLensCompactTypes": "Types",
       "relationLensNoScores": "Typed ontology facts, not inferred similarity scores.",
       "agentGateHandoffReadyShort": "ready",
       "agentGatePreflightFirstShort": "check",

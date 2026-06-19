@@ -72,6 +72,10 @@ export interface TopologyNodePopoverLabels {
   relationLensTypeOne: string;
   /** "{count} relation types" — plural distinct relation type count. */
   relationLensTypeOther: string;
+  /** Compact collapsed-chip label for direct relation facts. */
+  relationLensCompactFacts: string;
+  /** Compact collapsed-chip label for distinct relation types. */
+  relationLensCompactTypes: string;
   /** "Typed ontology facts, not inferred similarity scores." */
   relationLensNoScores: string;
   /** "Relation quality" — edge confidence/provenance summary. */
@@ -410,19 +414,32 @@ export function TopologyNodePopover({
             data-relation-type-count={relationTypeCount}
             data-relation-fact-label={relationFactLabel}
             data-relation-type-label={relationTypeLabel}
+            data-compact-relation-fact-label={labels.relationLensCompactFacts}
+            data-compact-relation-type-label={labels.relationLensCompactTypes}
             data-compact-relation-facts-surface-token="--topology-node-popover-context-surface"
             data-compact-relation-facts-border-token="--topology-node-popover-context-border"
             data-compact-relation-facts-text-token="--topology-node-popover-context-text"
+            aria-label={`${relationFactLabel} · ${relationTypeLabel}`}
             className="mt-1 inline-flex max-w-full items-center gap-1 overflow-hidden rounded-full border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--topology-node-popover-context-text)] max-[540px]:hidden"
           >
-            <span className="shrink-0 tabular-nums">{relationFactLabel}</span>
+            <span className="shrink-0 uppercase tracking-[0.08em]">
+              {labels.relationLensCompactFacts}
+            </span>
+            {" "}
+            <span className="shrink-0 tabular-nums">{total}</span>
+            {" "}
             <span
               aria-hidden="true"
               className="shrink-0 text-[color:var(--topology-node-popover-endpoint-separator)]"
             >
               ·
             </span>
-            <span className="min-w-0 truncate tabular-nums">{relationTypeLabel}</span>
+            {" "}
+            <span className="shrink-0 uppercase tracking-[0.08em]">
+              {labels.relationLensCompactTypes}
+            </span>
+            {" "}
+            <span className="min-w-0 truncate tabular-nums">{relationTypeCount}</span>
           </p>
         </div>
         <div
