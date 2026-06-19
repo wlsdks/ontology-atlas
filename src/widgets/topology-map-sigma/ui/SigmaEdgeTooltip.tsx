@@ -661,10 +661,12 @@ export function SigmaSelectedEdgeCard({
         data-relation-evidence-state={evidenceState}
         data-primary-copy-action={primaryCopyAction}
         data-route-density="micro-rail"
-        data-route-layout-contract="compact-two-column-route-grid"
+        data-route-layout-contract="three-step-human-route-action-metadata"
+        data-route-visible-steps="fact,evidence,gate"
+        data-route-action-visibility="metadata-only"
         data-route-step-min-width-token="--topology-selected-relation-route-step-min-width"
         data-overflow-contract="no-horizontal-scroll"
-        className="grid min-w-0 shrink-0 grid-cols-4 overflow-hidden rounded-lg border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] max-[960px]:min-h-16 max-[960px]:grid-cols-2"
+        className="grid min-w-0 shrink-0 grid-cols-3 overflow-hidden rounded-lg border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] max-[960px]:min-h-16 max-[960px]:grid-cols-2"
       >
         <RouteStep
           kind="fact"
@@ -686,6 +688,7 @@ export function SigmaSelectedEdgeCard({
           value={primaryCopyActionLabel}
           visibleValue={primaryCopyActionRouteLabel}
           tone={agentGateKind}
+          hidden
         />
       </div>
       <div
@@ -810,12 +813,14 @@ function RouteStep({
   tone,
   value,
   visibleValue,
+  hidden,
 }: {
   kind: 'fact' | 'evidence' | 'gate' | 'action';
   label: string;
   tone?: RelationAgentGateKind;
   value: string;
   visibleValue?: string;
+  hidden?: boolean;
 }) {
   const renderedValue = visibleValue ?? value;
   const valueTone = tone ? relationAgentDecisionLabelTone(tone) : 'text-[color:var(--color-text-secondary)]';
@@ -826,8 +831,13 @@ function RouteStep({
       data-route-step-value={value}
       data-route-step-visible-value={renderedValue}
       data-route-step-copy-contract="visible-route-value-full-value-accessible"
+      data-route-step-visibility={hidden ? 'metadata-only' : 'visible'}
       title={`${label}: ${value}`}
-      className="min-h-8 min-w-[var(--topology-selected-relation-route-step-min-width)] border-r border-[color:var(--topology-selected-relation-subtle-border)] px-1.5 py-1 last:border-r-0 max-[960px]:min-w-0 max-[960px]:border-b max-[960px]:even:border-r-0 max-[960px]:[&:nth-last-child(-n+2)]:border-b-0"
+      className={
+        hidden
+          ? 'sr-only'
+          : 'min-h-8 min-w-[var(--topology-selected-relation-route-step-min-width)] border-r border-[color:var(--topology-selected-relation-subtle-border)] px-1.5 py-1 last:border-r-0 max-[960px]:min-w-0 max-[960px]:border-b max-[960px]:even:border-r-0 max-[960px]:[&:nth-last-child(-n+2)]:border-b-0'
+      }
     >
       <div
         data-route-step-label-text

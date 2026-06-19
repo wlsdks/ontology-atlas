@@ -457,11 +457,13 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(route).toHaveAttribute('data-route-density', 'micro-rail');
     expect(route).toHaveAttribute(
       'data-route-layout-contract',
-      'compact-two-column-route-grid',
+      'three-step-human-route-action-metadata',
     );
+    expect(route).toHaveAttribute('data-route-visible-steps', 'fact,evidence,gate');
+    expect(route).toHaveAttribute('data-route-action-visibility', 'metadata-only');
     expect(route).toHaveAttribute('data-overflow-contract', 'no-horizontal-scroll');
     expect(route).toHaveClass('shrink-0');
-    expect(route).toHaveClass('grid-cols-4');
+    expect(route).toHaveClass('grid-cols-3');
     expect(route).toHaveClass('max-[960px]:min-h-16');
     expect(route).toHaveClass('max-[960px]:grid-cols-2');
     expect(route).toHaveClass('overflow-hidden');
@@ -477,6 +479,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(route.querySelector('[data-route-step="fact"]')).toHaveAttribute(
       'data-route-step-copy-contract',
       'visible-route-value-full-value-accessible',
+    );
+    expect(route.querySelector('[data-route-step="fact"]')).toHaveAttribute(
+      'data-route-step-visibility',
+      'visible',
     );
     expect(route.querySelector('[data-route-step="fact"]')).toHaveAttribute(
       'data-route-step-value',
@@ -502,6 +508,11 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-route-step-visible-value',
       'explain',
     );
+    expect(route.querySelector('[data-route-step="action"]')).toHaveAttribute(
+      'data-route-step-visibility',
+      'metadata-only',
+    );
+    expect(route.querySelector('[data-route-step="action"]')).toHaveClass('sr-only');
     expect(route.querySelector('[data-route-step="action"]')).toHaveTextContent(
       'explain_relation',
     );
