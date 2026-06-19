@@ -649,6 +649,11 @@
     --topology-node-popover-footer-surface: rgba(15, 16, 17, 0.96);
     --topology-node-popover-footer-border: rgba(255, 255, 255, 0.075);
     --topology-node-popover-footer-title-text: rgba(222, 225, 255, 0.54);
+    --topology-node-popover-footer-padding-x: 12px;
+    --topology-node-popover-footer-padding-y: 8px;
+    --topology-node-popover-action-rail-margin-bottom: 6px;
+    --topology-node-popover-action-min-height: 28px;
+    --topology-node-popover-footer-secondary-action-min-height: 30px;
     --topology-node-popover-metric-surface: rgba(255, 255, 255, 0.026);
     --topology-node-popover-metric-border: rgba(255, 255, 255, 0.075);
     --topology-node-popover-metric-label-text: rgba(222, 225, 255, 0.50);
@@ -1259,6 +1264,11 @@
     --topology-node-popover-footer-surface: rgba(255, 255, 255, 0.96);
     --topology-node-popover-footer-border: rgba(15, 23, 42, 0.10);
     --topology-node-popover-footer-title-text: rgba(71, 85, 105, 0.82);
+    --topology-node-popover-footer-padding-x: 12px;
+    --topology-node-popover-footer-padding-y: 8px;
+    --topology-node-popover-action-rail-margin-bottom: 6px;
+    --topology-node-popover-action-min-height: 28px;
+    --topology-node-popover-footer-secondary-action-min-height: 30px;
     --topology-node-popover-metric-surface: rgba(15, 23, 42, 0.026);
     --topology-node-popover-metric-border: rgba(15, 23, 42, 0.10);
     --topology-node-popover-kind-text: rgba(71, 85, 105, 0.74);

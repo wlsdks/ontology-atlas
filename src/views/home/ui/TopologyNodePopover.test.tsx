@@ -432,6 +432,7 @@ describe("TopologyNodePopover", () => {
     expect(footer).toHaveAttribute("data-footer-contract", "fixed-outside-scroll-region");
     expect(footer).toHaveAttribute("data-footer-position-contract", "anchored-bottom-visible");
     expect(footer).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+    expect(footer).toHaveAttribute("data-footer-density-contract", "compact-command-strip");
     expect(footer).toHaveAttribute(
       "data-popover-footer-surface-token",
       "--topology-node-popover-footer-surface",
@@ -443,6 +444,14 @@ describe("TopologyNodePopover", () => {
     expect(footer).toHaveAttribute(
       "data-popover-footer-title-text-token",
       "--topology-node-popover-footer-title-text",
+    );
+    expect(footer).toHaveAttribute(
+      "data-popover-footer-padding-x-token",
+      "--topology-node-popover-footer-padding-x",
+    );
+    expect(footer).toHaveAttribute(
+      "data-popover-footer-padding-y-token",
+      "--topology-node-popover-footer-padding-y",
     );
     expect(footer.className).toContain("shrink-0");
     expect(footer.className).toContain("overflow-hidden");
@@ -699,6 +708,13 @@ describe("TopologyNodePopover", () => {
       "data-footer-action-hover-text-token",
       "--topology-node-popover-footer-action-hover-text",
     );
+    expect(openFullDetail).toHaveAttribute(
+      "data-footer-action-min-height-token",
+      "--topology-node-popover-footer-secondary-action-min-height",
+    );
+    expect(openFullDetail.className).toContain(
+      "min-h-[var(--topology-node-popover-footer-secondary-action-min-height)]",
+    );
     expect(openFullDetail.className).toContain(
       "border-[color:var(--topology-node-popover-footer-action-border)]",
     );
@@ -761,6 +777,14 @@ describe("TopologyNodePopover", () => {
       "data-action-rail-title-gap-token",
       "--topology-node-popover-action-rail-title-gap",
     );
+    expect(rail).toHaveAttribute(
+      "data-action-rail-margin-bottom-token",
+      "--topology-node-popover-action-rail-margin-bottom",
+    );
+    expect(rail).toHaveAttribute(
+      "data-action-min-height-token",
+      "--topology-node-popover-action-min-height",
+    );
     expect(rail).toHaveAttribute("data-action-count", "3");
     expect(rail).toHaveTextContent("에이전트 인계");
     expect(rail).toHaveTextContent("복사");
@@ -797,6 +821,9 @@ describe("TopologyNodePopover", () => {
     expect(briefAction).toHaveAttribute(
       "data-popover-action-label-contract",
       "compact-visible-full-aria",
+    );
+    expect(briefAction.className).toContain(
+      "min-h-[var(--topology-node-popover-action-min-height)]",
     );
     expect(briefAction).toHaveAttribute(
       "data-popover-action-icon-contract",

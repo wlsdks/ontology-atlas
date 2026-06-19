@@ -1245,20 +1245,25 @@ export function TopologyNodePopover({
         data-popover-footer-surface-token="--topology-node-popover-footer-surface"
         data-popover-footer-border-token="--topology-node-popover-footer-border"
         data-popover-footer-title-text-token="--topology-node-popover-footer-title-text"
-        className="shrink-0 overflow-hidden border-t border-[color:var(--topology-node-popover-footer-border)] bg-[color:var(--topology-node-popover-footer-surface)] px-3 py-2.5"
+        data-popover-footer-padding-x-token="--topology-node-popover-footer-padding-x"
+        data-popover-footer-padding-y-token="--topology-node-popover-footer-padding-y"
+        data-footer-density-contract="compact-command-strip"
+        className="shrink-0 overflow-hidden border-t border-[color:var(--topology-node-popover-footer-border)] bg-[color:var(--topology-node-popover-footer-surface)] px-[var(--topology-node-popover-footer-padding-x)] py-[var(--topology-node-popover-footer-padding-y)]"
       >
         {actions.length > 0 ? (
           <div
             data-testid="topology-node-popover-action-rail"
             data-action-rail-contract="compact-mcp-cli-handoff"
             data-action-rail-title-gap-token="--topology-node-popover-action-rail-title-gap"
+            data-action-rail-margin-bottom-token="--topology-node-popover-action-rail-margin-bottom"
+            data-action-min-height-token="--topology-node-popover-action-min-height"
             data-action-count={actions.length}
-            className="mb-2 min-w-0 overflow-hidden"
+            className="mb-[var(--topology-node-popover-action-rail-margin-bottom)] min-w-0 overflow-hidden"
           >
             <div
               data-agent-handoff-title-row="footer"
               data-agent-handoff-title-row-contract="title-plus-copy-hint"
-              className="mb-1 flex min-w-0 items-center justify-between gap-[var(--topology-node-popover-action-rail-title-gap)]"
+              className="mb-0.5 flex min-w-0 items-center justify-between gap-[var(--topology-node-popover-action-rail-title-gap)]"
             >
               <p
                 data-agent-handoff-title="footer"
@@ -1298,7 +1303,7 @@ export function TopologyNodePopover({
                     data-popover-action-text-token="--topology-node-popover-action-text"
                     data-popover-action-hover-text-token="--topology-node-popover-action-hover-text"
                     data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
-                    className="inline-flex min-h-8 min-w-0 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-border)] bg-[color:var(--topology-node-popover-action-surface)] px-2 py-1.5 text-[11px] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
+                    className="inline-flex min-h-[var(--topology-node-popover-action-min-height)] min-w-0 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-border)] bg-[color:var(--topology-node-popover-action-surface)] px-2 py-1 text-[10.5px] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
                   >
                     <span
                       aria-hidden="true"
@@ -1325,7 +1330,8 @@ export function TopologyNodePopover({
               data-footer-action-hover-border-token="--topology-node-popover-footer-action-hover-border"
               data-footer-action-text-token="--topology-node-popover-footer-action-text"
               data-footer-action-hover-text-token="--topology-node-popover-footer-action-hover-text"
-              className="hidden min-w-0 max-w-[48%] shrink-0 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-md border border-[color:var(--topology-node-popover-footer-action-border)] px-2.5 text-[12px] text-[color:var(--topology-node-popover-footer-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-footer-action-hover-border)] hover:text-[color:var(--topology-node-popover-footer-action-hover-text)] max-lg:inline-flex"
+              data-footer-action-min-height-token="--topology-node-popover-footer-secondary-action-min-height"
+              className="hidden min-h-[var(--topology-node-popover-footer-secondary-action-min-height)] min-w-0 max-w-[48%] shrink-0 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-md border border-[color:var(--topology-node-popover-footer-action-border)] px-2 text-[11px] text-[color:var(--topology-node-popover-footer-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-footer-action-hover-border)] hover:text-[color:var(--topology-node-popover-footer-action-hover-text)] max-lg:inline-flex"
             >
               <ChevronDown size={14} aria-hidden />
               <span className="truncate">{labels.collapse}</span>
@@ -1339,7 +1345,8 @@ export function TopologyNodePopover({
             data-footer-action-hover-border-token="--topology-node-popover-footer-action-hover-border"
             data-footer-action-text-token="--topology-node-popover-footer-action-text"
             data-footer-action-hover-text-token="--topology-node-popover-footer-action-hover-text"
-            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-footer-action-border)] px-2 py-1.5 text-[12px] text-[color:var(--topology-node-popover-footer-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-footer-action-hover-border)] hover:text-[color:var(--topology-node-popover-footer-action-hover-text)]"
+            data-footer-action-min-height-token="--topology-node-popover-footer-secondary-action-min-height"
+            className="flex min-h-[var(--topology-node-popover-footer-secondary-action-min-height)] min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-footer-action-border)] px-2 py-1 text-[11px] text-[color:var(--topology-node-popover-footer-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-footer-action-hover-border)] hover:text-[color:var(--topology-node-popover-footer-action-hover-text)]"
           >
             <span className="min-w-0 truncate">{labels.openFullDetail}</span>
             {hiddenConnectionCount > 0 ? (
