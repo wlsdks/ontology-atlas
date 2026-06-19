@@ -604,15 +604,15 @@
     --topology-shortcuts-help-focus-phone-top: 208px;
     --topology-shortcuts-help-desktop-top: 228px;
     --topology-node-popover-fluid-width: min(568px, calc(100vw - 1.5rem));
-    --topology-node-popover-rail-width: clamp(360px, 20vw, 420px);
-    --topology-node-popover-wide-rail-width: 400px;
-    --topology-node-popover-cinema-rail-width: 420px;
+    --topology-node-popover-rail-width: clamp(372px, 22vw, 460px);
+    --topology-node-popover-wide-rail-width: 432px;
+    --topology-node-popover-cinema-rail-width: 460px;
     --topology-node-popover-max-height: min(82vh, 48rem);
     --topology-node-popover-mobile-expanded-max-height: min(
       520px,
       calc(100dvh - 72px - var(--topology-mobile-bottom-tab-reserve) - 16px)
     );
-    --topology-node-popover-relation-list-min-height: 96px;
+    --topology-node-popover-relation-list-min-height: 112px;
     --topology-node-popover-relation-section-min-height: 228px;
     --topology-node-popover-radius: 12px;
     --topology-node-popover-chip-padding-x: clamp(12px, 0.86vw, 14px);

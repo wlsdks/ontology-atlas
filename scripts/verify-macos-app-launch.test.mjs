@@ -1677,7 +1677,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverRelationRowScrollWidth: 250,
       topologyNodePopoverRelationRowDensityContract: "agent-handoff-scan-row",
       topologyNodePopoverRelationRowMinHitHeight: 72,
-      topologyNodePopoverRelationRowScanOrder: "relation>title>direction>endpoint>handoff",
+      topologyNodePopoverRelationRowScanOrder: "title>relation>direction>proof>handoff",
       topologyNodePopoverRelationTitlePrimaryScanTarget: "true",
       topologyNodePopoverRelationHandoffLane: "mcp-cli-next-action",
       topologyNodePopoverRelationQuality: "strong",
@@ -8683,7 +8683,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationLensText: "관계 렌즈 · 직접 의미 관계 21개 · 관계 유형 1종",
         topologyRelationLensPluralMismatch: false,
         topologyRelationQualityLensVisible: true,
-        topologyRelationQualityLensText: "관계 품질: 강한 구조 1 · 근거 있는 관계 1 · 약한 관련 0 · 검토 0",
+        topologyRelationQualityLensText:
+          "분명함 70 · 근거 있는 관계 0 · 얇은 근거 12 · 확인 0",
         topologyOverviewAgentReadinessText: "에이전트 준비도: 전달 가능 2 · 사전 점검 0 · 검토 0",
         topologyCommandChromeState: "collapsed-active-relation",
         topologyDragAttempted: true,

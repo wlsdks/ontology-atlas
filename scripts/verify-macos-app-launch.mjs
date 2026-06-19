@@ -2750,7 +2750,7 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node popover relation row hit height token was ${payload.markers.topologyNodePopoverRelationRowMinHitHeight ?? "missing"}`;
       }
-      if (payload.markers.topologyNodePopoverRelationRowScanOrder !== "relation>title>direction>endpoint>handoff") {
+      if (payload.markers.topologyNodePopoverRelationRowScanOrder !== "title>relation>direction>proof>handoff") {
         return `WebView Relief selected node popover relation row scan order was ${payload.markers.topologyNodePopoverRelationRowScanOrder || "missing"}`;
       }
       if (payload.markers.topologyNodePopoverRelationTitlePrimaryScanTarget !== "true") {
@@ -3418,10 +3418,10 @@ export function validateWebviewVerifyPayload(payload, {
     const relationQualityText =
       overviewRelationQualityText || selectedRelationQualityText || legacyRelationQualityText;
     const isReadableRelationQualityText = (text) =>
-      /(strong|clear|강한)[^\d]+\d+/i.test(text) &&
+      /(strong|clear|강한|분명함)[^\d]+\d+/i.test(text) &&
       /(supported|근거)[^\d]+\d+/i.test(text) &&
-      /(weak|thin|약한)[^\d]+\d+/i.test(text) &&
-      /(review|check|검토)[^\d]+\d+/i.test(text) &&
+      /(weak|thin|약한|얇은)[^\d]+\d+/i.test(text) &&
+      /(review|check|검토|확인)[^\d]+\d+/i.test(text) &&
       /[·,:]/.test(text);
     const relationQualityTextReadable = isReadableRelationQualityText(relationQualityText);
     const hasOverviewRelationQuality =
