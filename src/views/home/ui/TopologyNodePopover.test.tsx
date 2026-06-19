@@ -1713,7 +1713,7 @@ describe("TopologyNodePopover", () => {
       "강한 구조 1 · 근거 있는 관계 1 · 약한 관련 0 · 검토 0",
     );
     expect(lens).toHaveAttribute("data-relation-quality-meter-total", "2");
-    expect(lens).toHaveAttribute("data-relation-quality-layout", "quiet-summary");
+    expect(lens).toHaveAttribute("data-relation-quality-layout", "meter-only-summary");
     const meter = screen.getByTestId("topology-node-relation-quality-meter");
     expect(meter).toHaveAttribute(
       "data-quality-meter-contract",
@@ -1766,10 +1766,13 @@ describe("TopologyNodePopover", () => {
     expect(
       meter.querySelector('[data-relation-quality-meter-segment="review"]'),
     ).toHaveAttribute("data-count", "0");
-    expect(lens).toHaveTextContent("강한 구조1");
-    expect(lens).toHaveTextContent("근거 있는 관계1");
-    expect(lens).toHaveTextContent("약한 관련0");
-    expect(lens).toHaveTextContent("검토0");
+    expect(lens.querySelector("[data-relation-quality-summary-line]")?.className).toContain(
+      "sr-only",
+    );
+    expect(lens).toHaveAttribute(
+      "data-visible-density-contract",
+      "meter-only-preserve-summary-for-agents",
+    );
     expect(lens.querySelector('[data-relation-quality-chip="strong"]')).toHaveAttribute(
       "data-relation-quality-surface-token",
       "--topology-selected-relation-quality-strong-surface",
@@ -1830,7 +1833,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(lens).toHaveAttribute(
       "data-agent-readiness-layout",
-      "quiet-readiness-line",
+      "meter-only-summary",
     );
     expect(lens).toHaveAttribute(
       "data-agent-readiness-strip-surface-token",
@@ -1858,9 +1861,13 @@ describe("TopologyNodePopover", () => {
       "에이전트 준비도",
     );
     expect(
-      lens.querySelector("[data-agent-readiness-title]")?.className,
+      lens.querySelector("[data-agent-readiness-summary-line]")?.className,
     ).toContain(
-      "text-[color:var(--topology-node-popover-relation-section-title-text)]",
+      "sr-only",
+    );
+    expect(lens).toHaveAttribute(
+      "data-visible-density-contract",
+      "meter-only-preserve-summary-for-agents",
     );
     const meter = screen.getByTestId("topology-node-agent-readiness-meter");
     expect(meter).toHaveAttribute(
@@ -1983,6 +1990,9 @@ describe("TopologyNodePopover", () => {
     const lens = screen.getByTestId("topology-node-agent-readiness-lens");
     expect(lens).toHaveAccessibleName(
       "Agent readiness: handoff-ready 1 · preflight 1 · review 0",
+    );
+    expect(lens.querySelector("[data-agent-readiness-summary-line]")?.className).toContain(
+      "sr-only",
     );
     const ready = lens.querySelector('[data-agent-readiness-chip="ready"]');
     const preflight = lens.querySelector('[data-agent-readiness-chip="preflight"]');

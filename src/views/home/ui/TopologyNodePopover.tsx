@@ -712,7 +712,8 @@ export function TopologyNodePopover({
           aria-label={`${labels.relationQualityTitle}: ${relationQualitySummary}`}
           data-relation-quality-summary={relationQualitySummary}
           data-relation-quality-meter-total={relationQualityMeterTotal}
-          data-relation-quality-layout="quiet-summary"
+          data-relation-quality-layout="meter-only-summary"
+          data-visible-density-contract="meter-only-preserve-summary-for-agents"
           className="mb-1.5"
         >
           <div
@@ -739,7 +740,7 @@ export function TopologyNodePopover({
           </div>
           <p
             data-relation-quality-summary-line
-            className="truncate font-mono text-[10px] leading-4 text-[color:var(--topology-node-popover-relation-section-lens-text)]"
+            className="sr-only"
           >
             {relationQualityItems.map(({ quality, label, count }) => (
               <span
@@ -777,7 +778,8 @@ export function TopologyNodePopover({
           data-testid="topology-node-agent-readiness-lens"
           aria-label={`${labels.agentReadinessTitle}: ${agentReadinessSummary}`}
           data-agent-readiness-summary={agentReadinessSummary}
-          data-agent-readiness-layout="quiet-readiness-line"
+          data-agent-readiness-layout="meter-only-summary"
+          data-visible-density-contract="meter-only-preserve-summary-for-agents"
           data-agent-readiness-strip-surface-token="--topology-node-popover-context-surface"
           data-agent-readiness-strip-border-token="--topology-node-popover-context-border"
           data-agent-readiness-strip-title-text-token="--topology-node-popover-relation-section-title-text"
@@ -807,7 +809,8 @@ export function TopologyNodePopover({
             ))}
           </div>
           <p
-            className="truncate font-mono text-[10px] leading-4 text-[color:var(--topology-node-popover-relation-section-lens-text)]"
+            data-agent-readiness-summary-line
+            className="sr-only"
           >
             <span
               data-agent-readiness-title
