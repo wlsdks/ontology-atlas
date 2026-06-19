@@ -57,10 +57,9 @@ const labels = {
   overviewWorkOrderPath: "Prove path",
   overviewWorkOrderHealth: "Repair health",
   overviewReaderLensTitle: "Reader lens",
-  overviewReaderLensDomains: "Find the main domains and ownership areas.",
-  overviewReaderLensCapabilities: "Read which capabilities each area carries.",
-  overviewReaderLensChangePaths:
-    "Trace what would change before handing it to an agent.",
+  overviewReaderLensDomains: "Domains and ownership.",
+  overviewReaderLensCapabilities: "Capabilities by area.",
+  overviewReaderLensChangePaths: "Change path before agent handoff.",
   overviewTierLegendTitle: "Map layers",
   overviewTierLegendProject: "Product/system",
   overviewTierLegendDomain: "Domain",
@@ -79,16 +78,16 @@ const labels = {
   overviewBriefTotalNodes: "Total nodes",
   overviewBriefTotalRelations: "Total relations",
   overviewBriefRelationReading: "Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
-  overviewBriefRelationProvenance: "Evidence coverage",
+  overviewBriefRelationProvenance: "Evidence",
   overviewBriefRelationSourceBacked: "with source",
   overviewBriefRelationAuthored: "team-added",
   overviewBriefRelationNeedsReview: "needs check",
-  overviewBriefRelationQuality: "Trust level",
+  overviewBriefRelationQuality: "Trust",
   overviewBriefRelationQualityStrong: "clear",
   overviewBriefRelationQualitySupported: "supported",
   overviewBriefRelationQualityWeak: "thin",
   overviewBriefRelationQualityReview: "check",
-  overviewAgentReadiness: "Team handoff",
+  overviewAgentReadiness: "Handoff",
   overviewAgentReadinessReady: "ready",
   overviewAgentReadinessPreflight: "check first",
   overviewAgentReadinessReview: "needs review",
@@ -913,9 +912,13 @@ describe("TopologyAnalysisBar", () => {
     const actions = screen.getByTestId("topology-overview-handoff-actions");
     const readerLens = screen.getByTestId("topology-overview-reader-lens");
     expect(readerLens).toHaveTextContent("Reader lens");
-    expect(readerLens).toHaveTextContent("Find the main domains and ownership areas.");
-    expect(readerLens).toHaveTextContent("Read which capabilities each area carries.");
-    expect(readerLens).toHaveTextContent(
+    expect(readerLens).toHaveTextContent("Domains and ownership.");
+    expect(readerLens).toHaveTextContent("Capabilities by area.");
+    expect(readerLens).toHaveTextContent("Change path before agent handoff.");
+    expect(readerLens).not.toHaveTextContent(
+      "Find the main domains and ownership areas.",
+    );
+    expect(readerLens).not.toHaveTextContent(
       "Trace what would change before handing it to an agent.",
     );
     expect(readerLens).toHaveAttribute(
@@ -1648,7 +1651,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(relationQuality).toHaveAttribute(
       "aria-label",
-      expect.stringContaining("Trust level: clear 384"),
+      expect.stringContaining("Trust: clear 384"),
     );
     expect(screen.getByTestId("topology-overview-relation-quality-summary")).toHaveAttribute(
       "data-signal-summary-contract",
@@ -2236,7 +2239,7 @@ describe("TopologyAnalysisBar", () => {
     expect(graphBriefButton).toHaveAttribute("title", "Copy map brief");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
-    ).toHaveTextContent("Evidence coverage");
+    ).toHaveTextContent("Evidence");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
     ).toHaveTextContent("with source 70 · team-added 18 · needs check 0");
@@ -2245,13 +2248,13 @@ describe("TopologyAnalysisBar", () => {
       "--topology-overview-signal-indigo-surface",
     );
     expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
-      "Trust level",
+      "Trust",
     );
     expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
       "clear 62 · supported 20 · thin 4 · check 2",
     );
     const readinessGate = screen.getByTestId("topology-overview-agent-readiness");
-    expect(readinessGate).toHaveTextContent("Team handoff");
+    expect(readinessGate).toHaveTextContent("Handoff");
     expect(readinessGate).toHaveAttribute("data-density", "summary-first");
     expect(readinessGate).toHaveAttribute(
       "data-proof-strip-contract",
@@ -2270,7 +2273,7 @@ describe("TopologyAnalysisBar", () => {
       "ready 82 · check first 4 · needs review 2",
     );
     expect(readinessGate).toHaveAccessibleName(
-      "Team handoff: ready 82 · check first 4 · needs review 2",
+      "Handoff: ready 82 · check first 4 · needs review 2",
     );
     expect(
       screen.getByTestId("topology-overview-agent-readiness-summary"),
@@ -2305,7 +2308,7 @@ describe("TopologyAnalysisBar", () => {
     const readinessMeter = screen.getByTestId("topology-overview-agent-readiness-meter");
     expect(readinessMeter).toHaveAttribute(
       "aria-label",
-      "Team handoff: ready 82 · check first 4 · needs review 2",
+      "Handoff: ready 82 · check first 4 · needs review 2",
     );
     expect(readinessMeter).toHaveAttribute(
       "data-surface-token",
@@ -2355,17 +2358,17 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Evidence coverage: with source 70 · team-added 18 · needs check 0",
+        "- Evidence: with source 70 · team-added 18 · needs check 0",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Trust level: clear 62 · supported 20 · thin 4 · check 2",
+        "- Trust: clear 62 · supported 20 · thin 4 · check 2",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Team handoff: ready 82 · check first 4 · needs review 2",
+        "- Handoff: ready 82 · check first 4 · needs review 2",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
