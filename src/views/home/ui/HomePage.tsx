@@ -739,12 +739,6 @@ export function HomePage() {
   const [selectedRelationActive, setSelectedRelationActive] = useState(false);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
-  const topologyUtilityChromeState = selectedRelationActive
-    ? "collapsed-active-relation"
-    : selectedSlug
-      ? "compact-focus"
-      : "visible";
-  const topologyUtilityChromeCompact = topologyUtilityChromeState === "compact-focus";
   const topologyShortcutHelpPhoneVisible =
     analysisMode !== "path" && analysisMode !== "health";
   const createNodePending = createNodeIntent && !canCreateNode;
@@ -850,6 +844,17 @@ export function HomePage() {
     selectedNodeFocusActive && !nodePopoverCollapsed;
   const selectedInspectorSupportRailVisible =
     selectedNodeInspectorExpandedActive && selectedInspectorSupportRailOpen;
+  const selectedNodeOwnsRightRail = selectedNodeFocusActive;
+  const topologyUtilityChromeState = selectedRelationActive
+    ? "collapsed-active-relation"
+    : selectedNodeOwnsRightRail
+      ? "selected-node-inspector"
+      : selectedSlug
+        ? "compact-focus"
+        : "visible";
+  const topologyUtilityChromeCompact =
+    topologyUtilityChromeState === "compact-focus" ||
+    topologyUtilityChromeState === "selected-node-inspector";
 
   useEffect(() => {
     setSelectedInspectorSupportRailOpen(false);
@@ -1521,6 +1526,11 @@ export function HomePage() {
               data-utility-lane-compact-width-token={
                 topologyUtilityChromeCompact ? "--topology-utility-lane-compact-width" : undefined
               }
+              data-utility-lane-suppression-contract={
+                selectedNodeOwnsRightRail
+                  ? "selected-node-inspector-owns-right-rail"
+                  : undefined
+              }
               className="contents"
             >
               {!selectedRelationActive ? (
@@ -1536,21 +1546,22 @@ export function HomePage() {
                       toast.show(t('controls.relayoutToast'), "info");
                     }}
                   />
-                  <div
-                    className="topology-ui-scale absolute right-4 top-4 z-20 flex items-center gap-[var(--topology-utility-lane-gap)] md:right-6 md:top-6 xl:right-8 xl:top-8"
-                    data-testid="topology-utility-action-lane"
-                    data-utility-lane-density={
-                      topologyUtilityChromeCompact ? "compact-focus" : "default"
-                    }
-                    data-utility-lane-contract={
-                      topologyUtilityChromeCompact
-                        ? "icon-first-focus-utility"
-                        : "labeled-map-utility"
-                    }
-                    data-utility-lane-surface-token="--topology-utility-lane-surface"
-                    data-utility-lane-border-token="--topology-utility-lane-border"
-                    data-utility-lane-shadow-token="--topology-utility-lane-shadow"
-                  >
+                  {selectedNodeOwnsRightRail ? null : (
+                    <div
+                      className="topology-ui-scale absolute right-4 top-4 z-20 flex items-center gap-[var(--topology-utility-lane-gap)] md:right-6 md:top-6 xl:right-8 xl:top-8"
+                      data-testid="topology-utility-action-lane"
+                      data-utility-lane-density={
+                        topologyUtilityChromeCompact ? "compact-focus" : "default"
+                      }
+                      data-utility-lane-contract={
+                        topologyUtilityChromeCompact
+                          ? "icon-first-focus-utility"
+                          : "labeled-map-utility"
+                      }
+                      data-utility-lane-surface-token="--topology-utility-lane-surface"
+                      data-utility-lane-border-token="--topology-utility-lane-border"
+                      data-utility-lane-shadow-token="--topology-utility-lane-shadow"
+                    >
                     <TopologyReviewLink
                       changeset={ontologyChangeset}
                       label={(count) => t('controls.reviewLabel', { count })}
@@ -1632,7 +1643,8 @@ export function HomePage() {
                         </button>
                       </Tooltip>
                     ) : null}
-                  </div>
+                    </div>
+                  )}
                 </>
               ) : null}
             </div>

@@ -1998,45 +1998,17 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("topology-focus-primary-action")).toBeVisible();
     await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
       "data-command-chrome-state",
-      "compact-focus",
+      "selected-node-inspector",
     );
     await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
       "data-utility-lane-height-token",
       "--topology-utility-lane-height",
     );
-    const utilityLane = page.getByTestId("topology-utility-action-lane");
-    await expect(utilityLane).toBeVisible();
-    await expect(utilityLane).toHaveAttribute(
-      "data-utility-lane-density",
-      "compact-focus",
+    await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+      "data-utility-lane-suppression-contract",
+      "selected-node-inspector-owns-right-rail",
     );
-    await expect(utilityLane).toHaveAttribute(
-      "data-utility-lane-contract",
-      "icon-first-focus-utility",
-    );
-    await expect(utilityLane).toHaveAttribute(
-      "data-utility-lane-surface-token",
-      "--topology-utility-lane-surface",
-    );
-    await expect(utilityLane).toHaveAttribute(
-      "data-utility-lane-border-token",
-      "--topology-utility-lane-border",
-    );
-    await expect(utilityLane).toHaveAttribute(
-      "data-utility-lane-shadow-token",
-      "--topology-utility-lane-shadow",
-    );
-    const utilityActions = utilityLane.locator("[data-utility-action-token-contract]");
-    const utilityActionCount = await utilityActions.count();
-    expect(utilityActionCount, "compact focus utility lane should expose actions").toBeGreaterThan(
-      0,
-    );
-    for (let index = 0; index < utilityActionCount; index += 1) {
-      await expect(utilityActions.nth(index)).toHaveAttribute(
-        "data-utility-action-focus-ring-token",
-        "--topology-utility-lane-focus-ring",
-      );
-    }
+    await expect(page.getByTestId("topology-utility-action-lane")).toHaveCount(0);
     const searchLane = page.getByTestId("topology-search-action-lane");
     await expect(searchLane).toBeVisible();
     await expect(searchLane).toHaveAttribute("data-search-lane-density", "compact-focus");

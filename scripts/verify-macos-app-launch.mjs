@@ -383,7 +383,10 @@ function validateTopologyFocusUtilityLaneContract(markers) {
   if (markers.topologyVerifierTokenContractVersion !== "command-spine-v1") {
     return null;
   }
-  if (markers.topologyCommandChromeState !== "compact-focus") {
+  if (
+    markers.topologyCommandChromeState !== "compact-focus" &&
+    markers.topologyCommandChromeState !== "selected-node-inspector"
+  ) {
     return `WebView Relief selected focus command chrome state was ${markers.topologyCommandChromeState || "missing"}`;
   }
   if (markers.topologyUtilityLaneHeightToken !== "--topology-utility-lane-height") {
@@ -397,6 +400,12 @@ function validateTopologyFocusUtilityLaneContract(markers) {
     "--topology-utility-lane-compact-width"
   ) {
     return `WebView Relief selected focus utility lane compact width token was ${markers.topologyUtilityLaneCompactWidthToken || "missing"}`;
+  }
+  if (markers.topologyCommandChromeState === "selected-node-inspector") {
+    if (markers.topologyUtilityActionLaneVisible !== false) {
+      return "WebView Relief selected node inspector utility action lane was not suppressed";
+    }
+    return null;
   }
   if (markers.topologyUtilityActionLaneVisible !== true) {
     return "WebView Relief selected focus utility action lane was not visible";
