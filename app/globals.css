@@ -179,12 +179,12 @@
     --topology-relation-summary-border: rgba(139, 151, 255, 0.42);
     --topology-relation-summary-text: rgba(222, 225, 255, 0.94);
     --topology-relation-label-card-clearance: 22px;
-    --topology-relation-label-surface: rgba(12, 14, 20, 0.88);
-    --topology-relation-label-border: rgba(139, 151, 255, 0.34);
-    --topology-relation-label-shadow: 0 7px 18px rgba(0, 0, 0, 0.26);
-    --topology-relation-label-selected-surface: rgba(139, 151, 255, 0.16);
-    --topology-relation-label-selected-border: rgba(139, 151, 255, 0.92);
-    --topology-relation-label-selected-shadow: 0 0 0 3px rgba(139, 151, 255, 0.12), 0 10px 24px rgba(0, 0, 0, 0.34);
+    --topology-relation-label-surface: rgba(12, 14, 20, 0.84);
+    --topology-relation-label-border: rgba(139, 151, 255, 0.24);
+    --topology-relation-label-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+    --topology-relation-label-selected-surface: rgba(32, 36, 58, 0.92);
+    --topology-relation-label-selected-border: rgba(139, 151, 255, 0.58);
+    --topology-relation-label-selected-shadow: 0 8px 18px rgba(0, 0, 0, 0.30);
     --topology-relation-label-focus-ring: rgba(139, 151, 255, 0.58);
     --topology-relation-label-segment-gap: 0.375rem;
     --topology-relation-direction-surface: rgba(139, 151, 255, 0.10);
@@ -603,9 +603,9 @@
     --topology-shortcuts-help-focus-phone-top: 208px;
     --topology-shortcuts-help-desktop-top: 228px;
     --topology-node-popover-fluid-width: min(568px, calc(100vw - 1.5rem));
-    --topology-node-popover-rail-width: 320px;
-    --topology-node-popover-wide-rail-width: 286px;
-    --topology-node-popover-cinema-rail-width: 340px;
+    --topology-node-popover-rail-width: clamp(340px, 18vw, 380px);
+    --topology-node-popover-wide-rail-width: 360px;
+    --topology-node-popover-cinema-rail-width: 380px;
     --topology-node-popover-max-height: min(82vh, 48rem);
     --topology-node-popover-mobile-expanded-max-height: min(
       520px,
@@ -940,12 +940,12 @@
     --topology-relation-summary-surface: rgba(77, 86, 200, 0.12);
     --topology-relation-summary-border: rgba(77, 86, 200, 0.32);
     --topology-relation-summary-text: rgba(40, 50, 175, 0.96);
-    --topology-relation-label-surface: rgba(255, 255, 255, 0.90);
-    --topology-relation-label-border: rgba(77, 86, 200, 0.26);
-    --topology-relation-label-shadow: 0 7px 18px rgba(15, 23, 42, 0.10);
-    --topology-relation-label-selected-surface: rgba(77, 86, 200, 0.12);
-    --topology-relation-label-selected-border: rgba(77, 86, 200, 0.62);
-    --topology-relation-label-selected-shadow: 0 0 0 3px rgba(77, 86, 200, 0.10), 0 10px 24px rgba(15, 23, 42, 0.16);
+    --topology-relation-label-surface: rgba(255, 255, 255, 0.88);
+    --topology-relation-label-border: rgba(77, 86, 200, 0.20);
+    --topology-relation-label-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+    --topology-relation-label-selected-surface: rgba(246, 247, 255, 0.94);
+    --topology-relation-label-selected-border: rgba(77, 86, 200, 0.42);
+    --topology-relation-label-selected-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
     --topology-relation-label-focus-ring: rgba(77, 86, 200, 0.46);
     --topology-relation-direction-surface: rgba(77, 86, 200, 0.08);
     --topology-relation-direction-border: rgba(77, 86, 200, 0.18);

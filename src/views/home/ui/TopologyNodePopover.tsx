@@ -20,7 +20,7 @@ import type { NodeSignificanceLevel } from "../lib/topology-node-significance";
 type RelationEvidenceState = "source-backed" | "authored" | "needs-review";
 type RelationAgentGateKind = "handoff-ready" | "preflight-first" | "review-first";
 type RelationCopyActionKind = "explain_relation" | "relation_check";
-const NODE_POPOVER_RELATION_ROW_RENDER_BUDGET = 6;
+const NODE_POPOVER_RELATION_ROW_RENDER_BUDGET = 3;
 
 /**
  * Resolved (i18n-applied) plain-language "so what" of the node. The parent
@@ -650,7 +650,8 @@ export function TopologyNodePopover({
           aria-label={`${labels.relationQualityTitle}: ${relationQualitySummary}`}
           data-relation-quality-summary={relationQualitySummary}
           data-relation-quality-meter-total={relationQualityMeterTotal}
-          className="mb-1"
+          data-relation-quality-layout="quiet-summary"
+          className="mb-1.5"
         >
           <div
             aria-hidden="true"
@@ -658,7 +659,7 @@ export function TopologyNodePopover({
             data-quality-meter-contract="distribution-bar-maps-relation-quality"
             data-surface-token="--topology-overview-quality-meter-surface"
             data-border-token="--topology-overview-quality-meter-border"
-            className="mb-0.5 flex h-1 w-full overflow-hidden rounded-full border border-[color:var(--topology-overview-quality-meter-border)] bg-[color:var(--topology-overview-quality-meter-surface)]"
+            className="mb-1 flex h-0.5 w-full overflow-hidden rounded-full bg-[color:var(--topology-overview-quality-meter-surface)]"
           >
             {relationQualityMeterItems.map((segment) => (
               <span
@@ -674,7 +675,10 @@ export function TopologyNodePopover({
               />
             ))}
           </div>
-          <div className="flex flex-wrap gap-1">
+          <p
+            data-relation-quality-summary-line
+            className="truncate font-mono text-[9px] leading-4 text-[color:var(--topology-node-popover-relation-section-lens-text)]"
+          >
             {relationQualityItems.map(({ quality, label, count }) => (
               <span
                 key={quality}
@@ -691,30 +695,32 @@ export function TopologyNodePopover({
                   quality,
                   "text",
                 )}
-                className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] leading-3.5 ${relationQualityChipClassName(quality, count)}`}
+                className="inline text-[color:var(--topology-node-popover-relation-section-lens-text)]"
               >
-                <span className="font-mono uppercase tracking-[0.06em]">{label}</span>
-                <span className="font-mono tabular-nums">{count}</span>
+                <span className="uppercase tracking-[0.04em]">{label}</span>
+                <span className="ml-1 tabular-nums">{count}</span>
+                {quality === "review" ? null : (
+                  <span
+                    aria-hidden="true"
+                    className="mx-1 text-[color:var(--topology-node-popover-endpoint-separator)]"
+                  >
+                    ·
+                  </span>
+                )}
               </span>
             ))}
-          </div>
+          </p>
         </div>
         <div
           data-testid="topology-node-agent-readiness-lens"
           aria-label={`${labels.agentReadinessTitle}: ${agentReadinessSummary}`}
           data-agent-readiness-summary={agentReadinessSummary}
-          data-agent-readiness-layout="separate-readiness-strip"
+          data-agent-readiness-layout="quiet-readiness-line"
           data-agent-readiness-strip-surface-token="--topology-node-popover-context-surface"
           data-agent-readiness-strip-border-token="--topology-node-popover-context-border"
           data-agent-readiness-strip-title-text-token="--topology-node-popover-relation-section-title-text"
-          className="mb-2 rounded-md border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] p-1.5"
+          className="mb-2"
         >
-          <p
-            data-agent-readiness-title
-            className="mb-1 truncate font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--topology-node-popover-relation-section-title-text)]"
-          >
-            {labels.agentReadinessTitle}
-          </p>
           <div
             aria-hidden="true"
             data-testid="topology-node-agent-readiness-meter"
@@ -722,7 +728,7 @@ export function TopologyNodePopover({
             data-agent-readiness-meter-total={agentReadinessMeterTotal}
             data-surface-token="--topology-overview-readiness-meter-surface"
             data-border-token="--topology-overview-readiness-meter-border"
-            className="mb-1.5 flex h-1.5 w-full overflow-hidden rounded-full border border-[color:var(--topology-overview-readiness-meter-border)] bg-[color:var(--topology-overview-readiness-meter-surface)]"
+            className="mb-1 flex h-0.5 w-full overflow-hidden rounded-full bg-[color:var(--topology-overview-readiness-meter-surface)]"
           >
             {agentReadinessMeterItems.map((segment) => (
               <span
@@ -738,7 +744,21 @@ export function TopologyNodePopover({
               />
             ))}
           </div>
-          <div className="grid min-w-0 grid-cols-3 gap-1 overflow-hidden">
+          <p
+            className="truncate font-mono text-[9px] leading-4 text-[color:var(--topology-node-popover-relation-section-lens-text)]"
+          >
+            <span
+              data-agent-readiness-title
+              className="uppercase tracking-[0.04em] text-[color:var(--topology-node-popover-relation-section-title-text)]"
+            >
+              {labels.agentReadinessTitle}
+            </span>
+            <span
+              aria-hidden="true"
+              className="mx-1 text-[color:var(--topology-node-popover-endpoint-separator)]"
+            >
+              ·
+            </span>
             {agentReadinessItems.map(({ key, label, displayLabel, count }) => (
               <span
                 key={key}
@@ -754,17 +774,21 @@ export function TopologyNodePopover({
                 data-agent-readiness-border-token={agentReadinessToken(key, "border")}
                 data-agent-readiness-text-token={agentReadinessToken(key, "text")}
                 title={`${label} ${count}`}
-                className={`min-w-0 rounded border px-1.5 py-1 ${agentReadinessChipClassName(key, count)}`}
+                className="inline text-[color:var(--topology-node-popover-relation-section-lens-text)]"
               >
-                <span className="block truncate font-mono text-[8px] uppercase leading-3 tracking-[0.04em]">
-                  {displayLabel}
-                </span>
-                <span className="block font-mono text-[11px] leading-4 tabular-nums">
-                  {count}
-                </span>
+                <span className="uppercase tracking-[0.04em]">{displayLabel}</span>
+                <span className="ml-1 tabular-nums">{count}</span>
+                {key === "review" ? null : (
+                  <span
+                    aria-hidden="true"
+                    className="mx-1 text-[color:var(--topology-node-popover-endpoint-separator)]"
+                  >
+                    ·
+                  </span>
+                )}
               </span>
             ))}
-          </div>
+          </p>
         </div>
         {expandedCount > 0 ? (
           <p
@@ -895,8 +919,8 @@ export function TopologyNodePopover({
                     data-row-density-contract="agent-handoff-scan-row"
                     data-row-surface-contract="flat-divider-row"
                     data-row-visual-contract="title-first-relation-metadata-secondary"
-                    data-row-min-hit-height="64"
-                    data-row-scan-order="title>relation-metadata>direction>endpoint>handoff"
+                    data-row-min-hit-height="72"
+                    data-row-scan-order="relation>title>direction>endpoint>handoff"
                     data-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
                     data-row-focus-surface-token="--topology-node-popover-relation-row-focus-surface"
                     data-row-focus-border-token="--topology-node-popover-relation-row-focus-border"
@@ -905,7 +929,7 @@ export function TopologyNodePopover({
                       connection.relationQuality,
                     )}
                     onClick={() => onSelectConnection(connection.id)}
-                    className="group relative flex min-h-16 w-full min-w-0 items-stretch gap-2 overflow-hidden border border-transparent bg-transparent px-2 py-2 text-left transition-[background-color,border-color,box-shadow] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)] focus-visible:border-[color:var(--topology-node-popover-relation-row-focus-border)] focus-visible:bg-[color:var(--topology-node-popover-relation-row-focus-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]"
+                    className="group relative flex min-h-[72px] w-full min-w-0 items-stretch gap-2 overflow-hidden border border-transparent bg-transparent px-2 py-2 text-left transition-[background-color,border-color,box-shadow] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)] focus-visible:border-[color:var(--topology-node-popover-relation-row-focus-border)] focus-visible:bg-[color:var(--topology-node-popover-relation-row-focus-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]"
                   >
                     <span
                       aria-hidden="true"
@@ -1266,24 +1290,6 @@ const relationQualityOrder: TopologyRelationQuality[] = [
   "review",
 ];
 
-function relationQualityChipClassName(
-  quality: TopologyRelationQuality,
-  count: number,
-) {
-  const muted = count === 0 ? "opacity-45" : "";
-  const tone = {
-    strong:
-      "border-[color:var(--topology-selected-relation-quality-strong-border)] bg-[color:var(--topology-selected-relation-quality-strong-surface)] text-[color:var(--topology-selected-relation-quality-strong-text)]",
-    supported:
-      "border-[color:var(--topology-selected-relation-quality-supported-border)] bg-[color:var(--topology-selected-relation-quality-supported-surface)] text-[color:var(--topology-selected-relation-quality-supported-text)]",
-    weak:
-      "border-[color:var(--topology-selected-relation-quality-weak-border)] bg-[color:var(--topology-selected-relation-quality-weak-surface)] text-[color:var(--topology-selected-relation-quality-weak-text)]",
-    review:
-      "border-[color:var(--topology-selected-relation-quality-review-border)] bg-[color:var(--topology-selected-relation-quality-review-surface)] text-[color:var(--topology-selected-relation-quality-review-text)]",
-  } satisfies Record<TopologyRelationQuality, string>;
-  return `${tone[quality]} ${muted}`;
-}
-
 function relationQualityChipToken(
   quality: TopologyRelationQuality,
   slot: "surface" | "border" | "text",
@@ -1315,22 +1321,6 @@ function relationQualityGlowToken(quality: TopologyRelationQuality): string {
 
 function relationQualityAccentToken(quality: TopologyRelationQuality): string {
   return `--topology-overview-quality-${quality}-meter`;
-}
-
-function agentReadinessChipClassName(
-  key: "ready" | "preflight" | "review",
-  count: number,
-): string {
-  const muted = count === 0 ? "opacity-45" : "";
-  const tone = {
-    ready:
-      "border-[color:var(--topology-node-popover-agent-ready-border)] bg-[color:var(--topology-node-popover-agent-ready-surface)] text-[color:var(--topology-node-popover-agent-ready-text)]",
-    preflight:
-      "border-[color:var(--topology-node-popover-agent-preflight-border)] bg-[color:var(--topology-node-popover-agent-preflight-surface)] text-[color:var(--topology-node-popover-agent-preflight-text)]",
-    review:
-      "border-[color:var(--topology-node-popover-agent-review-border)] bg-[color:var(--topology-node-popover-agent-review-surface)] text-[color:var(--topology-node-popover-agent-review-text)]",
-  } satisfies Record<"ready" | "preflight" | "review", string>;
-  return `${tone[key]} ${muted}`;
 }
 
 function agentReadinessToken(

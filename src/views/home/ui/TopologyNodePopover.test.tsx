@@ -453,7 +453,7 @@ describe("TopologyNodePopover", () => {
     expect(list).toHaveAttribute("data-row-min-hit-height", "72");
     expect(relationRow).toHaveAttribute("data-row-density-contract", "agent-handoff-scan-row");
     expect(relationRow).toHaveAttribute("data-row-surface-contract", "flat-divider-row");
-    expect(relationRow).toHaveAttribute("data-row-min-hit-height", "64");
+    expect(relationRow).toHaveAttribute("data-row-min-hit-height", "72");
     expect(relationRow).toHaveAttribute(
       "data-row-hover-surface-token",
       "--topology-node-popover-relation-row-hover-surface",
@@ -476,9 +476,9 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRow).toHaveAttribute(
       "data-row-scan-order",
-      "title>relation-metadata>direction>endpoint>handoff",
+      "relation>title>direction>endpoint>handoff",
     );
-    expect(relationRow?.className).toContain("min-h-16");
+    expect(relationRow?.className).toContain("min-h-[72px]");
     expect(relationRow?.className).toContain("gap-2");
     expect(relationRow?.className).toContain("bg-transparent");
     expect(relationRow?.className).toContain(
@@ -1550,6 +1550,7 @@ describe("TopologyNodePopover", () => {
       "강한 구조 1 · 근거 있는 관계 1 · 약한 관련 0 · 검토 0",
     );
     expect(lens).toHaveAttribute("data-relation-quality-meter-total", "2");
+    expect(lens).toHaveAttribute("data-relation-quality-layout", "quiet-summary");
     const meter = screen.getByTestId("topology-node-relation-quality-meter");
     expect(meter).toHaveAttribute(
       "data-quality-meter-contract",
@@ -1666,7 +1667,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(lens).toHaveAttribute(
       "data-agent-readiness-layout",
-      "separate-readiness-strip",
+      "quiet-readiness-line",
     );
     expect(lens).toHaveAttribute(
       "data-agent-readiness-strip-surface-token",
@@ -1684,10 +1685,10 @@ describe("TopologyNodePopover", () => {
       "data-agent-readiness-summary",
       "전달 가능 1 · 사전 점검 1 · 검토 1",
     );
-    expect(lens.className).toContain(
+    expect(lens.className).not.toContain(
       "bg-[color:var(--topology-node-popover-context-surface)]",
     );
-    expect(lens.className).toContain(
+    expect(lens.className).not.toContain(
       "border-[color:var(--topology-node-popover-context-border)]",
     );
     expect(lens.querySelector("[data-agent-readiness-title]")).toHaveTextContent(
@@ -1909,14 +1910,14 @@ describe("TopologyNodePopover", () => {
 
     const list = screen.getByTestId("topology-node-connection-list");
     expect(list).toHaveAttribute("data-row-render-contract", "capped-preview-plus-remainder");
-    expect(list).toHaveAttribute("data-row-render-budget", "6");
-    expect(list).toHaveAttribute("data-rendered-connection-count", "6");
-    expect(list).toHaveAttribute("data-hidden-connection-count", "76");
+    expect(list).toHaveAttribute("data-row-render-budget", "3");
+    expect(list).toHaveAttribute("data-rendered-connection-count", "3");
+    expect(list).toHaveAttribute("data-hidden-connection-count", "79");
     expect(list).toHaveAttribute("data-total-connection-count", "82");
-    expect(document.querySelectorAll("[data-relation-row]")).toHaveLength(6);
+    expect(document.querySelectorAll("[data-relation-row]")).toHaveLength(3);
     expect(screen.getByText("Runtime 0")).toBeInTheDocument();
-    expect(screen.queryByText("Runtime 6")).not.toBeInTheDocument();
-    expect(screen.getAllByText("+76 더").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Runtime 3")).not.toBeInTheDocument();
+    expect(screen.getAllByText("+79 더").length).toBeGreaterThan(0);
     const relationRemainder = document.querySelector("[data-relation-hidden-remainder]");
     expect(relationRemainder).toHaveAttribute(
       "data-remainder-text-token",

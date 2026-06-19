@@ -4267,7 +4267,7 @@ export function SigmaSkeletonCards({
               data-relation-direction-surface-token="--topology-relation-direction-surface"
               data-relation-direction-border-token="--topology-relation-direction-border"
               data-relation-direction-text-token="--topology-relation-direction-text"
-              className="inline-flex h-6 max-w-full items-center justify-center gap-1.5 overflow-hidden rounded-[7px] border px-2.5 shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
+              className="inline-flex h-5 max-w-full items-center justify-center gap-1.5 overflow-hidden rounded-md border px-2 shadow-[0_3px_10px_rgba(0,0,0,0.14)]"
               style={{
                 backgroundColor: selected
                   ? 'var(--topology-relation-label-selected-surface)'
@@ -4424,7 +4424,7 @@ export function SigmaSkeletonCards({
             data-relation-direction-border-token="--topology-relation-direction-border"
             data-relation-direction-text-token="--topology-relation-direction-text"
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[7px] border px-2.5 text-[11px] font-medium leading-none tracking-normal text-[color:var(--color-text-secondary)]"
+            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-md border px-2 text-[11px] font-medium leading-none tracking-normal text-[color:var(--color-text-secondary)]"
             style={{
               backgroundColor: 'var(--topology-relation-label-selected-surface)',
               borderColor: 'var(--topology-relation-label-selected-border)',

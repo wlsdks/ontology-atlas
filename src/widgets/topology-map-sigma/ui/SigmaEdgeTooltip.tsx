@@ -176,15 +176,6 @@ export function relationAgentGateKind(
   return 'review-first';
 }
 
-function relationQualityTone(
-  quality: SigmaEdgeTooltipData['relationQuality'] | undefined,
-): string {
-  if (quality === 'strong') return 'border-[color:var(--topology-selected-relation-quality-strong-border)] bg-[color:var(--topology-selected-relation-quality-strong-surface)] text-[color:var(--topology-selected-relation-quality-strong-text)]';
-  if (quality === 'weak') return 'border-[color:var(--topology-selected-relation-quality-weak-border)] bg-[color:var(--topology-selected-relation-quality-weak-surface)] text-[color:var(--topology-selected-relation-quality-weak-text)]';
-  if (quality === 'review') return 'border-[color:var(--topology-selected-relation-quality-review-border)] bg-[color:var(--topology-selected-relation-quality-review-surface)] text-[color:var(--topology-selected-relation-quality-review-text)]';
-  return 'border-[color:var(--topology-selected-relation-quality-supported-border)] bg-[color:var(--topology-selected-relation-quality-supported-surface)] text-[color:var(--topology-selected-relation-quality-supported-text)]';
-}
-
 export function relationClaimLensTone(
   quality: SigmaEdgeTooltipData['relationQuality'] | undefined,
 ): string {
@@ -530,7 +521,7 @@ export function SigmaSelectedEdgeCard({
             data-claim-lens-visible-text={claimLensVisibleText}
             data-claim-lens-copy-contract="visible-proof-full-proof-accessible"
             title={claimLensText}
-            className={`mt-0.5 inline-flex max-w-full items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] ${relationClaimLensTone(
+            className={`mt-0.5 inline-flex max-w-full items-center gap-1 rounded-md border px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] ${relationClaimLensTone(
               data.relationQuality,
             )}`}
           >
@@ -566,22 +557,22 @@ export function SigmaSelectedEdgeCard({
               {ontologyHandleSummary}
             </div>
           </div>
-          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1">
-            <span className="rounded-full border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]">
+          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
+            <span className="text-[color:var(--color-text-secondary)]">
               {visibleRelationTypeLabel || relationLabel}
             </span>
+            <span aria-hidden="true" className="text-[color:var(--color-text-quaternary)]">·</span>
             <span
               data-relation-quality-tone-token={`--topology-selected-relation-quality-${relationQuality}`}
               data-relation-quality-surface-token={`--topology-selected-relation-quality-${relationQuality}-surface`}
               data-relation-quality-border-token={`--topology-selected-relation-quality-${relationQuality}-border`}
               data-relation-quality-text-token={`--topology-selected-relation-quality-${relationQuality}-text`}
-              className={`rounded-full border px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] ${relationQualityTone(
-                data.relationQuality,
-              )}`}
+              className="text-[color:var(--color-text-tertiary)]"
             >
               {qualityLabel}
             </span>
-            <span className="rounded-full border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
+            <span aria-hidden="true" className="text-[color:var(--color-text-quaternary)]">·</span>
+            <span>
               {evidenceLabel}
             </span>
           </div>
@@ -930,7 +921,7 @@ function CopyButton({
       title={payloadCall}
       aria-label={primary ? `${label} · ${primaryBadge}` : label}
       onClick={onClick}
-      className={`inline-flex min-h-7 min-w-[var(--topology-selected-relation-action-min-width)] flex-1 basis-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-2 py-0.5 text-[11px] font-medium leading-none tracking-normal transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-selected-relation-focus-ring)] ${primary ? 'shadow-[var(--topology-selected-relation-copy-primary-shadow)]' : ''} ${relationCopyButtonTone({
+      className={`inline-flex min-h-7 min-w-[var(--topology-selected-relation-action-min-width)] flex-1 basis-0 items-center justify-center gap-1 overflow-hidden rounded-md border px-2 py-0.5 text-[11px] font-medium leading-none tracking-normal transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-selected-relation-focus-ring)] ${primary ? 'shadow-[var(--topology-selected-relation-copy-primary-shadow)]' : ''} ${relationCopyButtonTone({
         gateKind,
         primary,
       })}`}
