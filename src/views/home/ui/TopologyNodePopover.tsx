@@ -996,17 +996,21 @@ export function TopologyNodePopover({
                     data-overflow-contract="no-horizontal-scroll"
                     data-row-density-contract="agent-handoff-scan-row"
                     data-row-render-source={relationPreviewSource}
-	                    data-row-surface-contract="flat-divider-row"
-	                    data-row-visual-contract="title-plus-relation-pill-meta-secondary"
-	                    data-row-min-hit-height="72"
-	                    data-row-scan-order="title>relation>kind>proof"
+                    data-row-surface-contract="flat-divider-row"
+                    data-row-visual-contract="title-plus-relation-pill-meta-secondary"
+                    data-row-min-hit-height="72"
+                    data-row-min-height-token="--topology-node-popover-relation-row-min-height"
+                    data-row-gap-token="--topology-node-popover-relation-row-gap"
+                    data-row-padding-x-token="--topology-node-popover-relation-row-padding-x"
+                    data-row-padding-y-token="--topology-node-popover-relation-row-padding-y"
+                    data-row-scan-order="title>relation>kind>proof"
                     data-row-emphasis-contract="state-layer-no-fluorescent-rail"
                     data-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
                     data-row-focus-surface-token="--topology-node-popover-relation-row-focus-surface"
                     data-row-focus-border-token="--topology-node-popover-relation-row-focus-border"
                     data-row-focus-ring-token="--topology-node-popover-relation-row-focus-ring"
                     onClick={() => onSelectConnection(connection.id)}
-                    className="group relative flex min-h-[72px] w-full min-w-0 items-stretch gap-2 overflow-hidden border border-transparent bg-transparent px-2 py-2 text-left transition-[background-color,border-color,box-shadow] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)] focus-visible:border-[color:var(--topology-node-popover-relation-row-focus-border)] focus-visible:bg-[color:var(--topology-node-popover-relation-row-focus-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]"
+                    className="group relative flex min-h-[var(--topology-node-popover-relation-row-min-height)] w-full min-w-0 items-stretch gap-[var(--topology-node-popover-relation-row-gap)] overflow-hidden border border-transparent bg-transparent px-[var(--topology-node-popover-relation-row-padding-x)] py-[var(--topology-node-popover-relation-row-padding-y)] text-left transition-[background-color,border-color,box-shadow] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)] focus-visible:border-[color:var(--topology-node-popover-relation-row-focus-border)] focus-visible:bg-[color:var(--topology-node-popover-relation-row-focus-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]"
                   >
                     <span
                       data-relation-direction-marker={connection.direction}

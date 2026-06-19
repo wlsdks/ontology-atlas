@@ -528,13 +528,39 @@ describe("TopologyNodePopover", () => {
       "data-expanded-focus-entry",
       "selected-node-first-relation-row",
     );
-	    expect(relationRow).toHaveAttribute(
-	      "data-row-scan-order",
-	      "title>relation>kind>proof",
-	    );
-    expect(relationRow?.className).toContain("min-h-[72px]");
-    expect(relationRow?.className).toContain("gap-2");
+    expect(relationRow).toHaveAttribute(
+      "data-row-min-height-token",
+      "--topology-node-popover-relation-row-min-height",
+    );
+    expect(relationRow).toHaveAttribute(
+      "data-row-gap-token",
+      "--topology-node-popover-relation-row-gap",
+    );
+    expect(relationRow).toHaveAttribute(
+      "data-row-padding-x-token",
+      "--topology-node-popover-relation-row-padding-x",
+    );
+    expect(relationRow).toHaveAttribute(
+      "data-row-padding-y-token",
+      "--topology-node-popover-relation-row-padding-y",
+    );
+    expect(relationRow).toHaveAttribute(
+      "data-row-scan-order",
+      "title>relation>kind>proof",
+    );
+    expect(relationRow?.className).toContain(
+      "min-h-[var(--topology-node-popover-relation-row-min-height)]",
+    );
+    expect(relationRow?.className).toContain(
+      "gap-[var(--topology-node-popover-relation-row-gap)]",
+    );
     expect(relationRow?.className).toContain("bg-transparent");
+    expect(relationRow?.className).toContain(
+      "px-[var(--topology-node-popover-relation-row-padding-x)]",
+    );
+    expect(relationRow?.className).toContain(
+      "py-[var(--topology-node-popover-relation-row-padding-y)]",
+    );
     expect(relationRow?.className).toContain(
       "hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)]",
     );
@@ -547,13 +573,13 @@ describe("TopologyNodePopover", () => {
     expect(relationRow?.className).toContain(
       "focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]",
     );
-    expect(relationRow?.className).toContain("px-2");
-    expect(relationRow?.className).toContain("py-2");
     expect(relationTitle).toHaveAttribute("data-primary-scan-target", "true");
-	    expect(relationRow?.querySelector("[data-relation-primary-line]")).toHaveAttribute(
-	      "data-visible-contract",
-	      "connected-title-plus-relation-pill",
-	    );
+    expect(
+      relationRow?.querySelector("[data-relation-primary-line]"),
+    ).toHaveAttribute(
+      "data-visible-contract",
+      "connected-title-plus-relation-pill",
+    );
     expect(relationTitle).toHaveAttribute(
       "data-relation-title-text-token",
       "--topology-node-popover-relation-row-title-text",
