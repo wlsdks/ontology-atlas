@@ -1381,23 +1381,18 @@ describe("TopologyNodePopover", () => {
     );
     expect(note).not.toHaveTextContent("지도 보기를 누르면");
     expect(note).toHaveAttribute(
-      "data-map-context-surface-token",
-      "--topology-node-popover-context-surface",
-    );
-    expect(note).toHaveAttribute(
-      "data-map-context-border-token",
-      "--topology-node-popover-context-border",
+      "data-map-context-visual-contract",
+      "quiet-inline-note-before-rows",
     );
     expect(note).toHaveAttribute(
       "data-map-context-text-token",
-      "--topology-node-popover-context-text",
+      "--topology-node-popover-relation-section-lens-text",
     );
     expect(note.className).toContain(
-      "border-[color:var(--topology-node-popover-context-border)]",
+      "text-[color:var(--topology-node-popover-relation-section-lens-text)]",
     );
-    expect(note.className).toContain(
-      "text-[color:var(--topology-node-popover-context-text)]",
-    );
+    expect(note.className).not.toContain("border");
+    expect(note.className).not.toContain("bg-[color");
     expect(note.className).not.toContain("var(--color-text-tertiary)");
     // 펼쳐지지 않은 관계는 그대로.
     expect(screen.getByText("AI Agent Partner")).toBeInTheDocument();

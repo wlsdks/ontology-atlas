@@ -906,10 +906,9 @@ export function TopologyNodePopover({
             data-map-context-quality-summary={expandedRelationQualitySummary}
             data-map-context-agent-readiness-summary={expandedAgentReadinessSummary}
             data-phone-density-contract="defer-map-context-before-readable-row"
-            data-map-context-surface-token="--topology-node-popover-context-surface"
-            data-map-context-border-token="--topology-node-popover-context-border"
-            data-map-context-text-token="--topology-node-popover-context-text"
-            className="mb-1 line-clamp-1 rounded-md border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-2 py-1 text-[10px] leading-4 text-[color:var(--topology-node-popover-context-text)] max-xl:hidden"
+            data-map-context-visual-contract="quiet-inline-note-before-rows"
+            data-map-context-text-token="--topology-node-popover-relation-section-lens-text"
+            className="mb-1 line-clamp-1 px-0 py-0.5 text-[10px] leading-4 text-[color:var(--topology-node-popover-relation-section-lens-text)] max-xl:hidden"
           >
             {labels.expandedNote.replace("{count}", String(expandedCount))}
           </p>
