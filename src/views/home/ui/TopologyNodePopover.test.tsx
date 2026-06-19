@@ -613,7 +613,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRow).toHaveAttribute(
       "data-row-scan-order",
-      "title>relation>kind>proof",
+      "title>relation>direction>proof>handoff",
     );
     expect(relationRow?.className).toContain(
       "min-h-[var(--topology-node-popover-relation-row-min-height)]",
@@ -865,6 +865,9 @@ describe("TopologyNodePopover", () => {
     const briefAction = screen.getByRole("button", {
       name: "지형도 선택 개념 검토 브리프 복사",
     });
+    const profileAction = screen.getByRole("button", {
+      name: "지형도 선택 개념 MCP 노드 점검 복사",
+    });
     expect(popover).toHaveAttribute(
       "data-compact-handoff-contract",
       "selected-node-actions-visible",
@@ -957,6 +960,9 @@ describe("TopologyNodePopover", () => {
     expect(briefAction).toHaveAttribute("title", "선택 브리프 복사");
     expect(briefAction).toHaveTextContent("브리프");
     expect(briefAction).not.toHaveTextContent("선택 브리프 복사");
+    expect(profileAction).toHaveAttribute("data-popover-action-compact-label", "프로필");
+    expect(profileAction).toHaveTextContent("프로필");
+    expect(profileAction).not.toHaveTextContent("MCP 노드 점검 복사");
     expect(briefAction.className).toContain(
       "text-[color:var(--topology-node-popover-action-text)]",
     );

@@ -181,6 +181,7 @@ const DRAG_SETTLE_OVERLAP_PAD = -2;
 const SAFE_VIEWPORT_MARGIN = 8;
 const FOCUS_HULL_BREATHING_ROOM_PX = 16;
 const FOCUS_HULL_LABEL_CLEARANCE_PX = 34;
+const FOCUS_HULL_TOP_SAFE_AREA_PX = 72;
 const FIXED_SURFACE_GAP = 8;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
@@ -1889,6 +1890,15 @@ function resolveFocusHullRect({
         bottom: adjusted.bottom,
       };
     }
+  }
+  if (adjusted.top < FOCUS_HULL_TOP_SAFE_AREA_PX) {
+    const height = adjusted.bottom - adjusted.top;
+    adjusted = {
+      left: adjusted.left,
+      top: FOCUS_HULL_TOP_SAFE_AREA_PX,
+      right: adjusted.right,
+      bottom: FOCUS_HULL_TOP_SAFE_AREA_PX + height,
+    };
   }
   return adjusted;
 }
@@ -3860,8 +3870,11 @@ export function SigmaSkeletonCards({
           hull.dataset.focusHullQuietOpacityToken = '--topology-focus-hull-quiet-opacity';
           hull.dataset.focusBreathingRoomContract = 'viewport-edge-clearance';
           hull.dataset.focusBreathingRoomPx = String(FOCUS_HULL_BREATHING_ROOM_PX);
+          hull.dataset.focusTopSafeAreaContract = 'top-chrome-clearance';
+          hull.dataset.focusTopSafeAreaPx = String(FOCUS_HULL_TOP_SAFE_AREA_PX);
           hull.dataset.focusLabelClearanceContract = 'no-hull-boundary-uses-ego-labels';
           hull.dataset.focusLabelClearancePx = String(focusLabelClearancePx);
+          hull.dataset.focusTopClearance = String(Math.round(hullRect.top));
           hull.dataset.focusRightClearance = String(
             Math.round(containerRect.width - hullRect.right),
           );
@@ -3876,8 +3889,11 @@ export function SigmaSkeletonCards({
           delete hull.dataset.focusHullQuietOpacityToken;
           delete hull.dataset.focusBreathingRoomContract;
           delete hull.dataset.focusBreathingRoomPx;
+          delete hull.dataset.focusTopSafeAreaContract;
+          delete hull.dataset.focusTopSafeAreaPx;
           delete hull.dataset.focusLabelClearanceContract;
           delete hull.dataset.focusLabelClearancePx;
+          delete hull.dataset.focusTopClearance;
           delete hull.dataset.focusRightClearance;
           delete hull.dataset.focusBottomClearance;
         }

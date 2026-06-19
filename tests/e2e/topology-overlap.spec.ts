@@ -1887,6 +1887,20 @@ for (const viewport of VIEWPORTS) {
     const focusHullBreathingRoom = Number(
       await focusHull.getAttribute("data-focus-breathing-room-px"),
     );
+    await expect(focusHull).toHaveAttribute(
+      "data-focus-top-safe-area-contract",
+      "top-chrome-clearance",
+    );
+    const focusHullTopSafeArea = Number(
+      await focusHull.getAttribute("data-focus-top-safe-area-px"),
+    );
+    const focusHullTopClearance = Number(
+      await focusHull.getAttribute("data-focus-top-clearance"),
+    );
+    expect(
+      focusHullTopClearance,
+      `selected focus hull should clear top chrome at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(focusHullTopSafeArea);
     const focusHullLabelClearance = Number(
       await focusHull.getAttribute("data-focus-label-clearance-px"),
     );

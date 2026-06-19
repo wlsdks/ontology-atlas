@@ -1024,7 +1024,7 @@ export function TopologyNodePopover({
                     data-row-gap-token="--topology-node-popover-relation-row-gap"
                     data-row-padding-x-token="--topology-node-popover-relation-row-padding-x"
                     data-row-padding-y-token="--topology-node-popover-relation-row-padding-y"
-                    data-row-scan-order="title>relation>kind>proof"
+                    data-row-scan-order="title>relation>direction>proof>handoff"
                     data-row-emphasis-contract="state-layer-no-fluorescent-rail"
                     data-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
                     data-row-focus-surface-token="--topology-node-popover-relation-row-focus-surface"
@@ -1401,7 +1401,7 @@ function compactNodePopoverActionLabel(
 ): string {
   const hasKorean = /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(label);
   if (kind === "focus-brief") return hasKorean ? "브리프" : "Brief";
-  if (kind === "mcp-profile") return hasKorean ? "노드" : "Node";
+  if (kind === "mcp-profile") return hasKorean ? "프로필" : "Profile";
   return hasKorean ? "영향" : "Impact";
 }
 
