@@ -921,61 +921,53 @@ describe("TopologyAnalysisBar", () => {
     const actions = screen.getByTestId("topology-overview-handoff-actions");
     const readerLens = screen.getByTestId("topology-overview-reader-lens");
     expect(readerLens).toHaveTextContent("Reader lens");
-    expect(readerLens).toHaveTextContent("Domains");
-    expect(readerLens).toHaveTextContent("Capabilities");
+    expect(readerLens).toHaveAttribute(
+      "data-reader-lens-contract",
+      "single-business-to-agent-read-path",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-reader-lens-flow",
+      "project>domain>capability>element>agent-handoff",
+    );
+    expect(readerLens).toHaveTextContent("System");
+    expect(readerLens).toHaveTextContent("Domain");
+    expect(readerLens).toHaveTextContent("Feature");
+    expect(readerLens).toHaveTextContent("Evidence");
     expect(readerLens).toHaveTextContent("Agent handoff");
+    const readerSteps = Array.from(
+      readerLens.querySelectorAll("[data-reader-lens-step]"),
+    );
+    expect(readerSteps.map((step) => step.getAttribute("data-reader-lens-step"))).toEqual([
+      "project",
+      "domain",
+      "capability",
+      "element",
+      "agent-handoff",
+    ]);
+    expect(
+      readerLens.querySelector('[data-reader-lens-step="project"]'),
+    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.project.fill);
+    expect(
+      readerLens.querySelector('[data-reader-lens-step="domain"]'),
+    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.domain.fill);
+    expect(
+      readerLens.querySelector('[data-reader-lens-step="capability"]'),
+    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.capability.fill);
+    expect(
+      readerLens.querySelector('[data-reader-lens-step="element"]'),
+    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.element.fill);
     expect(readerLens).not.toHaveTextContent(
       "Find the main domains and ownership areas.",
     );
     expect(readerLens).not.toHaveTextContent(
       "Trace what would change before handing it to an agent.",
     );
-    expect(readerLens).toHaveAttribute(
-      "data-reader-lens-contract",
-      "non-developer-first-map-read",
-    );
     const mapKey = screen.getByTestId("topology-overview-map-key");
     expect(mapKey).toHaveAttribute(
       "data-map-key-contract",
-      "compact-node-and-relation-reading",
+      "relation-reading-after-hierarchy-rail",
     );
-    const tierLegend = screen.getByTestId("topology-overview-tier-legend");
-    expect(tierLegend).toHaveAttribute(
-      "data-tier-legend-contract",
-      "ordered-product-to-evidence-ladder",
-    );
-    expect(tierLegend).toHaveAttribute(
-      "data-tier-legend-token-source",
-      "ONTOLOGY_KIND_TONE",
-    );
-    expect(tierLegend).toHaveAttribute(
-      "data-tier-legend-flow",
-      "project>domain>capability>element",
-    );
-    expect(tierLegend).toHaveTextContent("Map layers");
-    expect(tierLegend).toHaveTextContent("System");
-    expect(tierLegend).toHaveTextContent("Domain");
-    expect(tierLegend).toHaveTextContent("Feature");
-    expect(tierLegend).toHaveTextContent("Evidence");
-    expect(
-      tierLegend.querySelector('[data-tier-legend-kind="project"]'),
-    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.project.fill);
-    expect(
-      tierLegend.querySelector('[data-tier-legend-kind="domain"]'),
-    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.domain.fill);
-    expect(
-      tierLegend.querySelector('[data-tier-legend-kind="capability"]'),
-    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.capability.fill);
-    expect(
-      tierLegend.querySelector('[data-tier-legend-kind="element"]'),
-    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.element.fill);
-    const tierRows = Array.from(tierLegend.querySelectorAll("[data-tier-legend-kind]"));
-    expect(tierRows.map((row) => row.getAttribute("data-tier-legend-kind"))).toEqual([
-      "project",
-      "domain",
-      "capability",
-      "element",
-    ]);
+    expect(screen.queryByTestId("topology-overview-tier-legend")).toBeNull();
     const relationLineLegend = screen.getByTestId(
       "topology-overview-relation-line-legend",
     );
@@ -1641,7 +1633,11 @@ describe("TopologyAnalysisBar", () => {
     const readerLens = screen.getByTestId("topology-overview-reader-lens");
     expect(readerLens).toHaveAttribute(
       "data-reader-lens-contract",
-      "non-developer-first-map-read",
+      "single-business-to-agent-read-path",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-reader-lens-flow",
+      "project>domain>capability>element>agent-handoff",
     );
     expect(readerLens).toHaveAttribute(
       "data-surface-token",

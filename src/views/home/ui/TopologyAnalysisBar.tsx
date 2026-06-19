@@ -16,7 +16,6 @@ import { Tooltip } from "@/shared/ui";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import {
   ONTOLOGY_KIND_TONE,
-  type OntologyVisualKind,
 } from "@/entities/ontology-class";
 import { formatAgentPostChangeSyncPacket } from "@/shared/lib/ontology-tree";
 import type { TopologyAnalysisMode } from "../model/url-state";
@@ -311,13 +310,6 @@ const MODES = [
   { value: "path", icon: GitBranch, labelKey: "path" },
   { value: "health", icon: HeartPulse, labelKey: "health" },
 ] as const;
-
-const OVERVIEW_TIER_LEGEND_KINDS = [
-  "project",
-  "domain",
-  "capability",
-  "element",
-] as const satisfies readonly OntologyVisualKind[];
 
 function formatOntologyReanalysisAgentCommand(): string {
   return [
@@ -1091,7 +1083,8 @@ export function TopologyAnalysisBar({
           {panelMode === "overview" ? (
             <div
               data-testid="topology-overview-reader-lens"
-              data-reader-lens-contract="non-developer-first-map-read"
+              data-reader-lens-contract="single-business-to-agent-read-path"
+              data-reader-lens-flow="project>domain>capability>element>agent-handoff"
               data-surface-token="--topology-overview-reader-lens-surface"
               data-border-token="--topology-overview-reader-lens-border"
               data-title-text-token="--topology-overview-reader-lens-title-text"
@@ -1101,87 +1094,83 @@ export function TopologyAnalysisBar({
               data-density-contract="inline-step-path-no-nested-card"
               className="mt-2 px-1 py-0.5"
             >
-              <div className="flex min-w-0 items-center justify-between gap-2">
-                <p className="shrink-0 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
+              <div className="grid min-w-0 gap-2">
+                <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
                   {labels.overviewReaderLensTitle}
                 </p>
-                <ol className="flex min-w-0 flex-wrap items-center justify-end gap-x-1.5 gap-y-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
+                <ol className="grid min-w-0 gap-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
                   {[
-                    labels.overviewReaderLensDomains,
-                    labels.overviewReaderLensCapabilities,
-                    labels.overviewReaderLensChangePaths,
-                  ].map((item, index) => (
-                    <li key={item} className="flex min-w-0 items-center gap-1.5">
+                    {
+                      key: "project",
+                      label: labels.overviewTierLegendProject,
+                      tone: ONTOLOGY_KIND_TONE.project,
+                    },
+                    {
+                      key: "domain",
+                      label: labels.overviewTierLegendDomain,
+                      tone: ONTOLOGY_KIND_TONE.domain,
+                    },
+                    {
+                      key: "capability",
+                      label: labels.overviewTierLegendCapability,
+                      tone: ONTOLOGY_KIND_TONE.capability,
+                    },
+                    {
+                      key: "element",
+                      label: labels.overviewTierLegendElement,
+                      tone: ONTOLOGY_KIND_TONE.element,
+                    },
+                    {
+                      key: "agent-handoff",
+                      label: labels.overviewReaderLensChangePaths,
+                      tone: null,
+                    },
+                  ].map((item, index, steps) => (
+                    <li
+                      key={item.key}
+                      data-reader-lens-step={item.key}
+                      data-kind-tone-fill={item.tone?.fill}
+                      data-kind-tone-border={item.tone?.border}
+                      className="grid min-w-0 grid-cols-[0.875rem_minmax(0,1fr)] items-center gap-2"
+                    >
                       <span
                         aria-hidden
-                        className="grid size-3.5 shrink-0 place-items-center rounded-full border border-[color:var(--topology-overview-reader-lens-marker-border)] bg-[color:var(--topology-overview-reader-lens-marker-surface)] font-mono text-[7px] leading-none text-[color:var(--topology-overview-reader-lens-title-text)]"
+                        className="relative grid size-3.5 shrink-0 place-items-center rounded-full border"
+                        style={
+                          item.tone
+                            ? ({
+                                backgroundColor: item.tone.fill,
+                                borderColor: item.tone.border,
+                              } as CSSProperties)
+                            : ({
+                                backgroundColor:
+                                  "var(--topology-overview-reader-lens-marker-surface)",
+                                borderColor:
+                                  "var(--topology-overview-reader-lens-marker-border)",
+                              } as CSSProperties)
+                        }
                       >
-                        {index + 1}
-                      </span>
-                      <span className="min-w-0 whitespace-nowrap">{item}</span>
-                      {index < 2 ? (
+                        {index < steps.length - 1 ? (
+                          <span
+                            aria-hidden
+                            className="absolute left-1/2 top-[calc(100%+2px)] h-2 w-px -translate-x-1/2 rounded-full bg-[color:var(--topology-overview-reader-lens-border)]"
+                          />
+                        ) : null}
                         <span
                           aria-hidden
-                          className="font-mono text-[9px] text-[color:var(--topology-overview-reader-lens-title-text)]"
-                        >
-                          →
-                        </span>
-                      ) : null}
+                          className="size-1.5 rounded-full bg-[color:var(--topology-overview-reader-lens-title-text)] opacity-70"
+                        />
+                      </span>
+                      <span className="min-w-0 truncate">{item.label}</span>
                     </li>
                   ))}
                 </ol>
               </div>
               <div
                 data-testid="topology-overview-map-key"
-                data-map-key-contract="compact-node-and-relation-reading"
-                className="mt-2 grid grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-2 border-t border-[color:var(--topology-overview-reader-lens-border)] pt-2"
+                data-map-key-contract="relation-reading-after-hierarchy-rail"
+                className="mt-2 border-t border-[color:var(--topology-overview-reader-lens-border)] pt-2"
               >
-                <div
-                  data-testid="topology-overview-tier-legend"
-                  data-tier-legend-contract="ordered-product-to-evidence-ladder"
-                  data-tier-legend-token-source="ONTOLOGY_KIND_TONE"
-                  data-tier-legend-flow="project>domain>capability>element"
-                  className="min-w-0"
-                >
-                  <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
-                    {labels.overviewTierLegendTitle}
-                  </p>
-                  <ol className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
-                    {OVERVIEW_TIER_LEGEND_KINDS.map((kind) => {
-                      const tone = ONTOLOGY_KIND_TONE[kind];
-                      const labelByKind = {
-                        project: labels.overviewTierLegendProject,
-                        domain: labels.overviewTierLegendDomain,
-                        capability: labels.overviewTierLegendCapability,
-                        element: labels.overviewTierLegendElement,
-                      } satisfies Record<(typeof kind), string>;
-
-                      return (
-                        <li
-                          key={kind}
-                          data-tier-legend-kind={kind}
-                          data-kind-tone-fill={tone.fill}
-                          data-kind-tone-border={tone.border}
-                          className="group flex min-w-0 items-center gap-1.5"
-                        >
-                          <span
-                            aria-hidden
-                            className="grid size-4 shrink-0 place-items-center rounded-full border font-mono text-[8px] leading-none"
-                            style={
-                              {
-                                backgroundColor: tone.fill,
-                                borderColor: tone.border,
-                              } as CSSProperties
-                            }
-                          >
-                            {OVERVIEW_TIER_LEGEND_KINDS.indexOf(kind) + 1}
-                          </span>
-                          <span className="min-w-0 truncate">{labelByKind[kind]}</span>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                </div>
                 <div
                   data-testid="topology-overview-relation-line-legend"
                   data-relation-line-legend-contract="map-line-to-ontology-relation"
@@ -1194,7 +1183,7 @@ export function TopologyAnalysisBar({
                   <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
                     {labels.overviewRelationLegendTitle}
                   </p>
-                  <div className="mt-1.5 grid gap-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
                     <span className="flex min-w-0 items-center gap-2">
                       <span aria-hidden className="relative h-2.5 w-8 shrink-0">
                         <span className="absolute left-0 right-1 top-1/2 h-px -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-halo)]" />
