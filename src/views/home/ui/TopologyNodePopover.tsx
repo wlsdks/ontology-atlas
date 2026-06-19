@@ -532,6 +532,10 @@ export function TopologyNodePopover({
       data-compact-handoff-contract={handoffContract}
       data-title-readability-contract="selected-node-title-readable"
       data-expanded-focus-contract="first-relation-row-on-expand"
+      data-section-spacing-contract="shared-inset-and-rhythm-tokens"
+      data-section-padding-x-token="--topology-node-popover-section-padding-x"
+      data-section-gap-token="--topology-node-popover-section-gap"
+      data-compact-section-gap-token="--topology-node-popover-compact-section-gap"
       className={`flex max-h-[var(--topology-node-popover-max-height)] min-w-0 w-[var(--topology-node-popover-fluid-width)] max-w-[var(--topology-node-popover-fluid-width)] flex-col overflow-hidden rounded-[var(--topology-node-popover-radius)] border border-[color:var(--topology-node-popover-border)] bg-[color:var(--topology-node-popover-surface)] shadow-[var(--topology-node-popover-shadow)] lg:w-[var(--topology-node-popover-rail-width)] lg:max-w-[var(--topology-node-popover-rail-width)] min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)] min-[1400px]:max-w-[var(--topology-node-popover-wide-rail-width)] min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)] min-[1800px]:max-w-[var(--topology-node-popover-cinema-rail-width)] ${className ?? ""}`}
     >
       <div
@@ -539,7 +543,12 @@ export function TopologyNodePopover({
         data-body-scroll-contract="content-scrolls-above-fixed-footer"
         className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto"
       >
-      <header className="flex items-start justify-between gap-3 px-4 pt-4">
+      <header
+        data-node-popover-section="header"
+        data-section-padding-x-token="--topology-node-popover-section-padding-x"
+        data-header-padding-top-token="--topology-node-popover-header-padding-top"
+        className="flex items-start justify-between gap-3 px-[var(--topology-node-popover-section-padding-x)] pt-[var(--topology-node-popover-header-padding-top)]"
+      >
         <div className="min-w-0">
           <p
             data-selected-node-kind-label
@@ -581,11 +590,14 @@ export function TopologyNodePopover({
       {significance ? (
         <div
           data-testid="topology-node-significance"
+          data-node-popover-section="significance"
+          data-section-padding-x-token="--topology-node-popover-section-padding-x"
+          data-compact-section-gap-token="--topology-node-popover-compact-section-gap"
           data-phone-density-contract="keep-primary-meaning-before-readable-row"
           data-meaning-order-contract="before-raw-summary"
           data-significance-layout="primary-meaning-only"
           data-visible-density-contract="primary-meaning-only-preserve-details-for-agents"
-          className="mt-2.5 flex flex-col gap-1.5 px-4 max-[540px]:mt-2"
+          className="mt-[var(--topology-node-popover-compact-section-gap)] flex flex-col gap-1.5 px-[var(--topology-node-popover-section-padding-x)] max-[540px]:mt-2"
         >
           <p
             data-significance-context-line="what"
@@ -637,17 +649,23 @@ export function TopologyNodePopover({
           data-summary-order-contract={significance ? "after-meaning" : "primary-when-no-meaning"}
           data-summary-visibility={significance ? "metadata-only" : "visible"}
           data-summary-text-token="--topology-node-popover-summary-text"
+          data-section-padding-x-token="--topology-node-popover-section-padding-x"
           className={
             significance
               ? "sr-only"
-              : "mt-1.5 line-clamp-1 px-4 text-[10px] leading-4 text-[color:var(--topology-node-popover-summary-text)] max-[540px]:hidden"
+              : "mt-1.5 line-clamp-1 px-[var(--topology-node-popover-section-padding-x)] text-[10px] leading-4 text-[color:var(--topology-node-popover-summary-text)] max-[540px]:hidden"
           }
         >
           {focus.summary}
         </p>
       ) : null}
 
-      <div className="mt-3 grid grid-cols-2 gap-2 px-4">
+      <div
+        data-node-popover-section="metrics"
+        data-section-padding-x-token="--topology-node-popover-section-padding-x"
+        data-section-gap-token="--topology-node-popover-section-gap"
+        className="mt-[var(--topology-node-popover-section-gap)] grid grid-cols-2 gap-2 px-[var(--topology-node-popover-section-padding-x)]"
+      >
         <Stat label={labels.usedBy} value={focus.usedByCount} />
         <Stat label={labels.dependsOn} value={focus.dependsOnCount} />
       </div>
@@ -660,7 +678,10 @@ export function TopologyNodePopover({
         data-relation-section-border-token="--topology-node-popover-relation-section-border"
         data-relation-section-title-text-token="--topology-node-popover-relation-section-title-text"
         data-relation-section-lens-text-token="--topology-node-popover-relation-section-lens-text"
-        className="mt-2.5 flex min-h-[var(--topology-node-popover-relation-section-min-height)] flex-1 flex-col overflow-hidden border-t border-[color:var(--topology-node-popover-relation-section-border)] px-4 py-3"
+        data-section-padding-x-token="--topology-node-popover-section-padding-x"
+        data-compact-section-gap-token="--topology-node-popover-compact-section-gap"
+        data-relation-section-padding-y-token="--topology-node-popover-relation-section-padding-y"
+        className="mt-[var(--topology-node-popover-compact-section-gap)] flex min-h-[var(--topology-node-popover-relation-section-min-height)] flex-1 flex-col overflow-hidden border-t border-[color:var(--topology-node-popover-relation-section-border)] px-[var(--topology-node-popover-section-padding-x)] py-[var(--topology-node-popover-relation-section-padding-y)]"
       >
         <p
           data-relation-section-title="connections"
@@ -1030,29 +1051,29 @@ export function TopologyNodePopover({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span
-	                        data-relation-primary-line
-	                        data-visible-contract="connected-title-plus-relation-pill"
-	                        className="flex min-w-0 items-center gap-1.5"
-	                      >
+                        data-relation-primary-line
+                        data-visible-contract="connected-title-plus-relation-pill"
+                        className="flex min-w-0 items-center gap-1.5"
+                      >
                         <span
                           data-relation-title
                           data-primary-scan-target="true"
                           data-relation-title-text-token="--topology-node-popover-relation-row-title-text"
                           className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-relation-row-title-text)]"
-	                        >
-	                          {connection.title}
-	                        </span>
-	                        <span
-	                          data-relation-type-label
-	                          data-fact-type-surface-token="--topology-node-popover-fact-type-surface"
-	                          data-fact-type-border-token="--topology-node-popover-fact-type-border"
-	                          data-fact-type-text-token="--topology-node-popover-fact-type-text"
-	                          data-relation-pill-contract="primary-line-typed-fact"
-	                          className="max-w-[96px] shrink-0 truncate rounded-full border border-[color:var(--topology-node-popover-fact-type-border)] bg-[color:var(--topology-node-popover-fact-type-surface)] px-1.5 py-0.5 font-mono text-[10px] leading-3 text-[color:var(--topology-node-popover-fact-type-text)]"
-	                        >
-	                          {relationTypeLabel}
-	                        </span>
-	                      </span>
+                        >
+                          {connection.title}
+                        </span>
+                        <span
+                          data-relation-type-label
+                          data-fact-type-surface-token="--topology-node-popover-fact-type-surface"
+                          data-fact-type-border-token="--topology-node-popover-fact-type-border"
+                          data-fact-type-text-token="--topology-node-popover-fact-type-text"
+                          data-relation-pill-contract="primary-line-typed-fact"
+                          className="max-w-[96px] shrink-0 truncate rounded-full border border-[color:var(--topology-node-popover-fact-type-border)] bg-[color:var(--topology-node-popover-fact-type-surface)] px-1.5 py-0.5 font-mono text-[10px] leading-3 text-[color:var(--topology-node-popover-fact-type-text)]"
+                        >
+                          {relationTypeLabel}
+                        </span>
+                      </span>
                       <span
                         data-relation-row-meta
                         data-row-meta-text-token="--topology-node-popover-relation-row-meta-text"
@@ -1074,7 +1095,7 @@ export function TopologyNodePopover({
                         >
                           {" · "}
                         </span>
-	                        <span
+                        <span
                           data-relation-quality-dot
                           data-dot-token={relationQualityDotToken(connection.relationQuality)}
                           data-glow-token={relationQualityGlowToken(

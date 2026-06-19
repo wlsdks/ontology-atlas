@@ -159,6 +159,52 @@ describe("TopologyNodePopover", () => {
       "data-title-lines-token",
       "--topology-node-popover-title-lines",
     );
+    expect(popover).toHaveAttribute(
+      "data-section-spacing-contract",
+      "shared-inset-and-rhythm-tokens",
+    );
+    expect(popover).toHaveAttribute(
+      "data-section-padding-x-token",
+      "--topology-node-popover-section-padding-x",
+    );
+    expect(popover).toHaveAttribute(
+      "data-section-gap-token",
+      "--topology-node-popover-section-gap",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-section-gap-token",
+      "--topology-node-popover-compact-section-gap",
+    );
+    const header = document.querySelector('[data-node-popover-section="header"]');
+    const metrics = document.querySelector('[data-node-popover-section="metrics"]');
+    expect(header).toHaveAttribute(
+      "data-section-padding-x-token",
+      "--topology-node-popover-section-padding-x",
+    );
+    expect(header).toHaveAttribute(
+      "data-header-padding-top-token",
+      "--topology-node-popover-header-padding-top",
+    );
+    expect(header?.className).toContain(
+      "px-[var(--topology-node-popover-section-padding-x)]",
+    );
+    expect(header?.className).toContain(
+      "pt-[var(--topology-node-popover-header-padding-top)]",
+    );
+    expect(metrics).toHaveAttribute(
+      "data-section-padding-x-token",
+      "--topology-node-popover-section-padding-x",
+    );
+    expect(metrics).toHaveAttribute(
+      "data-section-gap-token",
+      "--topology-node-popover-section-gap",
+    );
+    expect(metrics?.className).toContain(
+      "mt-[var(--topology-node-popover-section-gap)]",
+    );
+    expect(metrics?.className).toContain(
+      "px-[var(--topology-node-popover-section-padding-x)]",
+    );
     const kindLabel = document.querySelector("[data-selected-node-kind-label]");
     const countLine = document.querySelector("[data-selected-node-count-line]");
     const summaryLine = document.querySelector("[data-summary-text-token]");
@@ -232,6 +278,27 @@ describe("TopologyNodePopover", () => {
     expect(connectionSection).toHaveAttribute(
       "data-relation-section-lens-text-token",
       "--topology-node-popover-relation-section-lens-text",
+    );
+    expect(connectionSection).toHaveAttribute(
+      "data-section-padding-x-token",
+      "--topology-node-popover-section-padding-x",
+    );
+    expect(connectionSection).toHaveAttribute(
+      "data-compact-section-gap-token",
+      "--topology-node-popover-compact-section-gap",
+    );
+    expect(connectionSection).toHaveAttribute(
+      "data-relation-section-padding-y-token",
+      "--topology-node-popover-relation-section-padding-y",
+    );
+    expect(connectionSection.className).toContain(
+      "mt-[var(--topology-node-popover-compact-section-gap)]",
+    );
+    expect(connectionSection.className).toContain(
+      "px-[var(--topology-node-popover-section-padding-x)]",
+    );
+    expect(connectionSection.className).toContain(
+      "py-[var(--topology-node-popover-relation-section-padding-y)]",
     );
     expect(connectionSection.className).toContain(
       "border-[color:var(--topology-node-popover-relation-section-border)]",
@@ -604,10 +671,10 @@ describe("TopologyNodePopover", () => {
       "text-[color:var(--topology-node-popover-relation-row-meta-text)]",
     );
     expect(relationMeta?.className).toContain("text-[11px]");
-	    expect(relationMeta?.className).not.toContain("var(--color-text-quaternary)");
-	    expect(relationMeta?.textContent?.replace(/\s+/g, " ").trim()).toBe(
-	      "이 노드가 기대는 곳 · 요소 · 근거 1 · 설명",
-	    );
+    expect(relationMeta?.className).not.toContain("var(--color-text-quaternary)");
+    expect(relationMeta?.textContent?.replace(/\s+/g, " ").trim()).toBe(
+      "이 노드가 기대는 곳 · 요소 · 근거 1 · 설명",
+    );
     expect(handoffLane).toHaveAttribute("data-handoff-lane", "mcp-cli-next-action");
     expect(handoffLane).toHaveAttribute(
       "data-relation-payload-layout",
@@ -667,10 +734,10 @@ describe("TopologyNodePopover", () => {
     expect(list).toHaveAttribute("data-hidden-connection-count", "0");
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveAttribute("data-row-render-source", "map-expanded-proof");
-	    expect(rows[0]).toHaveAttribute(
-	      "data-row-visual-contract",
-	      "title-plus-relation-pill-meta-secondary",
-	    );
+    expect(rows[0]).toHaveAttribute(
+      "data-row-visual-contract",
+      "title-plus-relation-pill-meta-secondary",
+    );
     expect(screen.getByText("MCP SDK")).toBeInTheDocument();
     expect(screen.getByText("AI Agent Partner")).toBeInTheDocument();
   });
@@ -1310,10 +1377,10 @@ describe("TopologyNodePopover", () => {
     expect(relationRows[0]).toHaveAttribute("data-relation-evidence-count", "1");
     expect(relationRows[0]).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(relationRows[0]).toHaveAttribute("data-primary-copy-action", "explain_relation");
-	    expect(relationRows[0]).toHaveAttribute(
-	      "data-row-visual-contract",
-	      "title-plus-relation-pill-meta-secondary",
-	    );
+    expect(relationRows[0]).toHaveAttribute(
+      "data-row-visual-contract",
+      "title-plus-relation-pill-meta-secondary",
+    );
     expect(
       relationRows[0].querySelector("[data-relation-title]")?.compareDocumentPosition(
         relationRows[0].querySelector("[data-relation-type-label]") as Node,
@@ -1373,24 +1440,24 @@ describe("TopologyNodePopover", () => {
       "data-fact-type-border-token",
       "--topology-node-popover-fact-type-border",
     );
-	    expect(
-	      relationRows[0].querySelector("[data-relation-type-label]"),
-	    ).toHaveAttribute(
-	      "data-fact-type-text-token",
-	      "--topology-node-popover-fact-type-text",
-	    );
-	    expect(
-	      relationRows[0].querySelector("[data-relation-type-label]"),
-	    ).toHaveAttribute("data-relation-pill-contract", "primary-line-typed-fact");
-	    expect(
-	      relationRows[0].querySelector("[data-relation-type-label]")?.className,
-	    ).toContain("rounded-full");
-	    expect(
-	      relationRows[0].querySelector("[data-relation-type-label]")?.className,
-	    ).toContain("bg-[color:var(--topology-node-popover-fact-type-surface)]");
-	    expect(
-	      relationRows[0].querySelector("[data-relation-type-label]")?.className,
-	    ).toContain("border-[color:var(--topology-node-popover-fact-type-border)]");
+    expect(
+      relationRows[0].querySelector("[data-relation-type-label]"),
+    ).toHaveAttribute(
+      "data-fact-type-text-token",
+      "--topology-node-popover-fact-type-text",
+    );
+    expect(
+      relationRows[0].querySelector("[data-relation-type-label]"),
+    ).toHaveAttribute("data-relation-pill-contract", "primary-line-typed-fact");
+    expect(
+      relationRows[0].querySelector("[data-relation-type-label]")?.className,
+    ).toContain("rounded-full");
+    expect(
+      relationRows[0].querySelector("[data-relation-type-label]")?.className,
+    ).toContain("bg-[color:var(--topology-node-popover-fact-type-surface)]");
+    expect(
+      relationRows[0].querySelector("[data-relation-type-label]")?.className,
+    ).toContain("border-[color:var(--topology-node-popover-fact-type-border)]");
     expect(
       relationRows[0].querySelector("[data-relation-evidence-glyph]"),
     ).toHaveTextContent("1");
