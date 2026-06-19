@@ -1079,14 +1079,12 @@ export function TopologyNodePopover({
                         >
                           {primaryCopyActionShortLabel}
                         </span>
-                        <span className="shrink-0 text-[color:var(--topology-node-popover-route-separator)]">
-                          ·
-                        </span>
                         <span
                           data-relation-route-chip="payload"
                           data-relation-payload-summary={relationHandoffPayloadSummary}
+                          data-visible-contract="machine-payload-hidden-from-default-row"
                           title={relationHandoffPayloadSummary}
-                          className="shrink-0 text-[color:var(--topology-node-popover-route-chip-text)]"
+                          className="sr-only"
                         >
                           {labels.relationPayloadChipLabel}
                         </span>

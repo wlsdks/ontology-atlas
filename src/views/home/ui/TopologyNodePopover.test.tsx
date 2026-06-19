@@ -1334,6 +1334,15 @@ describe("TopologyNodePopover", () => {
     ).toHaveTextContent("복사");
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="payload"]'),
+    ).toHaveClass("sr-only");
+    expect(
+      relationRows[0].querySelector('[data-relation-route-chip="payload"]'),
+    ).toHaveAttribute(
+      "data-visible-contract",
+      "machine-payload-hidden-from-default-row",
+    );
+    expect(
+      relationRows[0].querySelector('[data-relation-route-chip="payload"]'),
     ).toHaveAttribute(
       "title",
       "query_ontology · explain_relation · capabilities/mcp-server -> elements/mcp-sdk · uses",
