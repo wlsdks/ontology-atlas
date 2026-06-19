@@ -657,22 +657,50 @@ export function TopologyNodePopover({
         >
           {labels.connections} ({total})
         </p>
-        <p
+        <div
           data-testid="topology-relation-lens"
           data-relation-section-lens="typed-fact-summary"
-          data-relation-lens-density-contract="summary-first-proof-strip"
+          data-relation-lens-density-contract="split-metric-proof-strip"
+          data-relation-lens-layout="label-value-metrics"
           data-phone-density-contract="hide-explainer-before-readable-row"
+          data-relation-fact-label={relationFactLabel}
+          data-relation-type-label={relationTypeLabel}
+          data-relation-lens-grid-token="--topology-node-popover-relation-lens-grid"
+          data-relation-lens-gap-token="--topology-node-popover-relation-lens-gap"
+          data-relation-lens-padding-x-token="--topology-node-popover-relation-lens-padding-x"
+          data-relation-lens-padding-y-token="--topology-node-popover-relation-lens-padding-y"
+          data-relation-lens-metric-gap-token="--topology-node-popover-relation-lens-metric-gap"
+          data-relation-lens-metric-min-width-token="--topology-node-popover-relation-lens-metric-min-width"
+          aria-label={`${labels.relationLensTitle}: ${relationFactLabel} · ${relationTypeLabel} · ${labels.relationLensNoScores}`}
           title={`${labels.relationLensTitle}: ${relationFactLabel} · ${relationTypeLabel} · ${labels.relationLensNoScores}`}
-          className="mb-1.5 line-clamp-1 text-[10px] leading-4 text-[color:var(--topology-node-popover-relation-section-lens-text)] max-[540px]:hidden"
+          className="mb-1.5 grid grid-cols-[var(--topology-node-popover-relation-lens-grid)] items-center gap-[var(--topology-node-popover-relation-lens-gap)] rounded-md border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-[var(--topology-node-popover-relation-lens-padding-x)] py-[var(--topology-node-popover-relation-lens-padding-y)] text-[10px] leading-4 text-[color:var(--topology-node-popover-relation-section-lens-text)] max-[540px]:hidden"
         >
-          <span className="font-mono uppercase tracking-[0.08em]">
+          <span className="min-w-0 truncate font-mono uppercase tracking-[0.08em]">
             {labels.relationLensTitle}
           </span>
-          {" · "}
-          {relationFactLabel}
-          {" · "}
-          {relationTypeLabel}
-        </p>
+          <span
+            data-relation-lens-metric="facts"
+            className="inline-flex min-w-[var(--topology-node-popover-relation-lens-metric-min-width)] items-center justify-end gap-[var(--topology-node-popover-relation-lens-metric-gap)] whitespace-nowrap font-mono"
+          >
+            <span className="uppercase tracking-[0.08em]">
+              {labels.relationLensCompactFacts}
+            </span>
+            <span className="tabular-nums text-[color:var(--topology-node-popover-title-text)]">
+              {total}
+            </span>
+          </span>
+          <span
+            data-relation-lens-metric="types"
+            className="inline-flex min-w-[var(--topology-node-popover-relation-lens-metric-min-width)] items-center justify-end gap-[var(--topology-node-popover-relation-lens-metric-gap)] whitespace-nowrap font-mono"
+          >
+            <span className="uppercase tracking-[0.08em]">
+              {labels.relationLensCompactTypes}
+            </span>
+            <span className="tabular-nums text-[color:var(--topology-node-popover-title-text)]">
+              {relationTypeCount}
+            </span>
+          </span>
+        </div>
         <div
           data-testid="topology-relation-quality-lens"
           aria-label={`${labels.relationQualityTitle}: ${relationQualitySummary}`}

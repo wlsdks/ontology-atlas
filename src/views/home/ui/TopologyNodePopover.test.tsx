@@ -309,10 +309,41 @@ describe("TopologyNodePopover", () => {
     );
     expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
       "data-relation-lens-density-contract",
-      "summary-first-proof-strip",
+      "split-metric-proof-strip",
+    );
+    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
+      "data-relation-lens-layout",
+      "label-value-metrics",
+    );
+    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
+      "data-relation-lens-grid-token",
+      "--topology-node-popover-relation-lens-grid",
+    );
+    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
+      "data-relation-lens-gap-token",
+      "--topology-node-popover-relation-lens-gap",
+    );
+    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
+      "data-relation-lens-padding-x-token",
+      "--topology-node-popover-relation-lens-padding-x",
+    );
+    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
+      "data-relation-lens-padding-y-token",
+      "--topology-node-popover-relation-lens-padding-y",
+    );
+    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
+      "data-relation-lens-metric-gap-token",
+      "--topology-node-popover-relation-lens-metric-gap",
+    );
+    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
+      "data-relation-lens-metric-min-width-token",
+      "--topology-node-popover-relation-lens-metric-min-width",
     );
     expect(screen.getByTestId("topology-relation-lens").className).toContain(
-      "line-clamp-1",
+      "grid-cols-[var(--topology-node-popover-relation-lens-grid)]",
+    );
+    expect(screen.getByTestId("topology-relation-lens").className).toContain(
+      "gap-[var(--topology-node-popover-relation-lens-gap)]",
     );
     expect(screen.getByTestId("topology-relation-lens").className).toContain(
       "text-[color:var(--topology-node-popover-relation-section-lens-text)]",
@@ -1581,9 +1612,31 @@ describe("TopologyNodePopover", () => {
     const section = screen.getByTestId("topology-connections-section");
     const lens = screen.getByTestId("topology-relation-lens");
     expect(section).toContainElement(lens);
+    expect(lens).toHaveAttribute(
+      "data-relation-lens-density-contract",
+      "split-metric-proof-strip",
+    );
+    expect(lens).toHaveAttribute("data-relation-lens-layout", "label-value-metrics");
+    expect(lens).toHaveAttribute("data-relation-fact-label", "직접 의미 관계 3개");
+    expect(lens).toHaveAttribute("data-relation-type-label", "관계 유형 2종");
+    expect(lens).toHaveAccessibleName(
+      "관계 렌즈: 직접 의미 관계 3개 · 관계 유형 2종 · 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+    );
     expect(lens).toHaveTextContent("관계 렌즈");
-    expect(lens).toHaveTextContent("직접 의미 관계 3개");
-    expect(lens).toHaveTextContent("관계 유형 2종");
+    expect(lens.querySelector('[data-relation-lens-metric="facts"]')).toHaveTextContent(
+      "관계3",
+    );
+    expect(lens.querySelector('[data-relation-lens-metric="facts"]')?.className).toContain(
+      "min-w-[var(--topology-node-popover-relation-lens-metric-min-width)]",
+    );
+    expect(lens.querySelector('[data-relation-lens-metric="types"]')).toHaveTextContent(
+      "유형2",
+    );
+    expect(lens.querySelector('[data-relation-lens-metric="types"]')?.className).toContain(
+      "gap-[var(--topology-node-popover-relation-lens-metric-gap)]",
+    );
+    expect(lens).not.toHaveTextContent("직접 의미 관계 3개");
+    expect(lens).not.toHaveTextContent("관계 유형 2종");
     expect(lens).toHaveAttribute(
       "title",
       "관계 렌즈: 직접 의미 관계 3개 · 관계 유형 2종 · 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
@@ -1925,13 +1978,19 @@ describe("TopologyNodePopover", () => {
       },
     });
 
-    expect(screen.getByTestId("topology-relation-lens")).toHaveTextContent(
-      "1 direct fact",
+    const lens = screen.getByTestId("topology-relation-lens");
+    expect(lens).toHaveAccessibleName(
+      "관계 렌즈: 1 direct fact · 1 relation type · 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
     );
-    expect(screen.getByTestId("topology-relation-lens")).toHaveTextContent(
-      "1 relation type",
+    expect(lens.querySelector('[data-relation-lens-metric="facts"]')).toHaveTextContent(
+      "Facts1",
     );
-    expect(screen.getByTestId("topology-relation-lens")).not.toHaveTextContent(
+    expect(lens.querySelector('[data-relation-lens-metric="types"]')).toHaveTextContent(
+      "Types1",
+    );
+    expect(lens).not.toHaveTextContent("1 direct fact");
+    expect(lens).not.toHaveTextContent("1 relation type");
+    expect(lens).not.toHaveTextContent(
       "1 relation types",
     );
   });
