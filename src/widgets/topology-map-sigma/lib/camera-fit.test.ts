@@ -191,6 +191,20 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
     );
   });
 
+  it('선택 클릭 전용 정책은 fixed chrome safe rect 가 아니라 viewport 정중앙을 목표로 한다', () => {
+    const fit = resolveSelectedFocusCameraFit({
+      selectedViewport: { x: insets.left + 40, y: insets.top + 120 },
+      viewport,
+      insets,
+      currentRatio: 1.1,
+      targetPolicy: 'viewport-center',
+    });
+    expect(fit).not.toBeNull();
+    expect(fit?.targetRatio).toBe(1.1);
+    expect(fit?.safeTarget.x).toBeCloseTo(viewport.width / 2);
+    expect(fit?.safeTarget.y).toBeCloseTo(viewport.height / 2);
+  });
+
   it('선택 카메라 보정의 의도와 이동 거리를 검증 가능한 proof 로 남긴다', () => {
     const proof = resolveSelectedFocusCameraMotionProof({
       selectedViewport: { x: 100, y: 200 },

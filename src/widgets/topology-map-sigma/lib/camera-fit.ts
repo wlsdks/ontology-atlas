@@ -39,6 +39,7 @@ export interface SafeAreaCameraFit {
 const DEFAULT_MIN_ZOOM_IN_SCALE = 0.55;
 const DEFAULT_SELECTED_FOCUS_COMFORT_PADDING = 24;
 const DEFAULT_SELECTED_FOCUS_READING_RATIO = 0.8;
+const DEFAULT_SELECTED_FOCUS_TARGET_POLICY = 'safe-center';
 const DEFAULT_SELECTED_FOCUS_TOP_INSET = 420;
 const SELECTED_FOCUS_PANEL_CLEAR_TOP_INSET = 224;
 const SELECTED_FANOUT_ROW_TOP_INSET = 32;
@@ -66,6 +67,7 @@ export interface SelectedFocusCameraFitInput {
   currentRatio: number;
   comfortPadding?: number;
   readingRatio?: number;
+  targetPolicy?: 'safe-center' | 'viewport-center';
 }
 
 export interface SelectedFocusCameraFit {
@@ -76,7 +78,7 @@ export interface SelectedFocusCameraFit {
 
 export interface SelectedFocusCameraMotionProof {
   intent: 'selected-focus-safe-rect';
-  targetPolicy: 'readable-safe-center';
+  targetPolicy: 'readable-safe-center' | 'viewport-center';
   selectedViewport: { x: number; y: number };
   safeTarget: { x: number; y: number };
   distancePx: number;
@@ -182,6 +184,7 @@ export function resolveSelectedFocusCameraFit({
   currentRatio,
   comfortPadding = DEFAULT_SELECTED_FOCUS_COMFORT_PADDING,
   readingRatio = DEFAULT_SELECTED_FOCUS_READING_RATIO,
+  targetPolicy = DEFAULT_SELECTED_FOCUS_TARGET_POLICY,
 }: SelectedFocusCameraFitInput): SelectedFocusCameraFit | null {
   const safeWidth = Math.max(1, viewport.width - insets.left - insets.right);
   const safeHeight = Math.max(1, viewport.height - insets.top - insets.bottom);
@@ -193,10 +196,16 @@ export function resolveSelectedFocusCameraFit({
   const right = viewport.width - insets.right - padX;
   const top = insets.top + padY;
   const bottom = viewport.height - insets.bottom - padY;
-  const safeTarget = {
-    x: left + (right - left) / 2,
-    y: top + (bottom - top) / 2,
-  };
+  const safeTarget =
+    targetPolicy === 'viewport-center'
+      ? {
+          x: viewport.width / 2,
+          y: viewport.height / 2,
+        }
+      : {
+          x: left + (right - left) / 2,
+          y: top + (bottom - top) / 2,
+        };
   const centerTolerance = Math.max(1, comfortPadding / 2);
   const alreadyCentered =
     Math.hypot(safeTarget.x - selectedViewport.x, safeTarget.y - selectedViewport.y) <=
@@ -205,7 +214,8 @@ export function resolveSelectedFocusCameraFit({
   if (alreadyCentered) return null;
 
   return {
-    targetRatio: Math.min(currentRatio, readingRatio),
+    targetRatio:
+      targetPolicy === 'viewport-center' ? currentRatio : Math.min(currentRatio, readingRatio),
     safeTarget,
   };
 }
@@ -213,13 +223,15 @@ export function resolveSelectedFocusCameraFit({
 export function resolveSelectedFocusCameraMotionProof({
   selectedViewport,
   safeTarget,
+  targetPolicy = 'readable-safe-center',
 }: {
   selectedViewport: { x: number; y: number };
   safeTarget: { x: number; y: number };
+  targetPolicy?: SelectedFocusCameraMotionProof['targetPolicy'];
 }): SelectedFocusCameraMotionProof {
   return {
     intent: 'selected-focus-safe-rect',
-    targetPolicy: 'readable-safe-center',
+    targetPolicy,
     selectedViewport: {
       x: Math.round(selectedViewport.x),
       y: Math.round(selectedViewport.y),

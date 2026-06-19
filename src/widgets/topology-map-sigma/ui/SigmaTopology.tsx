@@ -592,6 +592,7 @@ function SigmaTopologyImpl({
         viewport: { width, height },
         insets,
         currentRatio: state.ratio,
+        targetPolicy: 'viewport-center',
       });
       const cameraMotionMaxDistancePx =
         resolveSelectedFocusCameraMaxDistancePx(selectedFanoutRows);
@@ -664,6 +665,7 @@ function SigmaTopologyImpl({
       const motionProof = resolveSelectedFocusCameraMotionProof({
         selectedViewport,
         safeTarget: focusFit.safeTarget,
+        targetPolicy: 'viewport-center',
       });
       if (containerRef.current) {
         containerRef.current.dataset.cameraMotionIntent = motionProof.intent;

@@ -2139,6 +2139,10 @@ for (const viewport of VIEWPORTS) {
       await expectSelectedCardRelationSummary(page, "domain:views");
     }
     await expect(page.getByTestId("topology-node-popover")).toBeVisible();
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-camera-motion-target-policy",
+      "viewport-center",
+    );
     await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
       "data-collapsed",
       "true",
@@ -2239,6 +2243,10 @@ for (const viewport of VIEWPORTS) {
       Math.abs(rightInset - expectedRightInset),
       `expanded selected inspector should align to the right inset at ${viewport.label}`,
     ).toBeLessThanOrEqual(2);
+    expect(
+      rightInset,
+      `expanded selected inspector should reserve the right utility rail at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(viewport.width >= 1600 ? 88 : 24);
     await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
       "data-selected-inspector-support-rail",
       "closed",

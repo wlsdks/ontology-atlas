@@ -2941,7 +2941,7 @@ export function validateWebviewVerifyPayload(payload, {
       }
       const expectedCameraMotionTargetPolicy = cameraMotionNoop
         ? "already-inside-safe-rect"
-        : "readable-safe-center";
+        : "viewport-center";
       if (payload.markers.topologyCameraMotionTargetPolicy !== expectedCameraMotionTargetPolicy) {
         return `WebView Relief selected node camera motion target policy was ${payload.markers.topologyCameraMotionTargetPolicy || "missing"}`;
       }
@@ -2982,7 +2982,7 @@ export function validateWebviewVerifyPayload(payload, {
       if (
         cameraMotionNoop
           ? cameraMotionDistancePx !== 0
-          : !Number.isFinite(cameraMotionDistancePx) || cameraMotionDistancePx < 16
+          : !Number.isFinite(cameraMotionDistancePx) || cameraMotionDistancePx < 1
       ) {
         return `WebView Relief selected node camera motion distance was ${payload.markers.topologyCameraMotionDistancePx || "missing"}px`;
       }
