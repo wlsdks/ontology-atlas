@@ -583,12 +583,15 @@ export function TopologyNodePopover({
           data-testid="topology-node-significance"
           data-phone-density-contract="keep-primary-meaning-before-readable-row"
           data-meaning-order-contract="before-raw-summary"
+          data-significance-layout="primary-meaning-only"
+          data-visible-density-contract="primary-meaning-only-preserve-details-for-agents"
           className="mt-2.5 flex flex-col gap-1.5 px-4 max-[540px]:mt-2"
         >
           <p
             data-significance-context-line="what"
+            data-significance-visibility="agent-context"
             data-significance-context-text-token="--topology-node-popover-significance-context-text"
-            className="line-clamp-1 text-[11px] leading-4 text-[color:var(--topology-node-popover-significance-context-text)] max-[540px]:hidden"
+            className="sr-only"
           >
             {significance.whatLine}
           </p>
@@ -610,15 +613,17 @@ export function TopologyNodePopover({
           </p>
           <p
             data-significance-detail-line="depends-on"
+            data-significance-visibility="agent-context"
             data-significance-detail-text-token="--topology-node-popover-significance-detail-text"
-            className="line-clamp-1 text-[12px] leading-4 text-[color:var(--topology-node-popover-significance-detail-text)] max-[540px]:hidden"
+            className="sr-only"
           >
             {significance.dependsOnLine}
           </p>
           <p
             data-significance-detail-line="impact"
+            data-significance-visibility="agent-context"
             data-significance-detail-text-token="--topology-node-popover-significance-detail-text"
-            className="line-clamp-1 text-[12px] leading-4 text-[color:var(--topology-node-popover-significance-detail-text)] max-[540px]:hidden"
+            className="sr-only"
           >
             {significance.impactLine}
           </p>

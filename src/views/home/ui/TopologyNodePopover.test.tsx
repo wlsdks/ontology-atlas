@@ -402,6 +402,10 @@ describe("TopologyNodePopover", () => {
         "data-meaning-order-contract",
         "before-raw-summary",
       );
+      expect(significance).toHaveAttribute(
+        "data-visible-density-contract",
+        "primary-meaning-only-preserve-details-for-agents",
+      );
       expect(significance.className).toContain("max-[540px]:mt-2");
     }
     if (mapContextNote) {
@@ -2278,15 +2282,23 @@ describe("TopologyNodePopover", () => {
     expect(summaryLine).toHaveAttribute("data-summary-order-contract", "after-meaning");
     expect(summaryLine).toHaveAttribute("data-summary-visibility", "metadata-only");
     expect(summaryLine).toHaveClass("sr-only");
+    expect(significance).toHaveAttribute(
+      "data-significance-layout",
+      "primary-meaning-only",
+    );
+    expect(significance).toHaveAttribute(
+      "data-visible-density-contract",
+      "primary-meaning-only-preserve-details-for-agents",
+    );
     expect(contextLine).toBeInTheDocument();
     expect(contextLine).toHaveAttribute(
       "data-significance-context-text-token",
       "--topology-node-popover-significance-context-text",
     );
+    expect(contextLine).toHaveAttribute("data-significance-visibility", "agent-context");
     expect(contextLine.className).toContain(
-      "text-[color:var(--topology-node-popover-significance-context-text)]",
+      "sr-only",
     );
-    expect(contextLine.className).not.toContain("var(--color-text-quaternary)");
     const importanceLine = screen.getByText("12곳이 직접 의존하는 핵심 축이에요");
     expect(importanceLine).toBeInTheDocument();
     expect(importanceLine).toHaveAttribute("data-selected-node-importance-line");
@@ -2307,10 +2319,10 @@ describe("TopologyNodePopover", () => {
         "data-significance-detail-text-token",
         "--topology-node-popover-significance-detail-text",
       );
+      expect(detailLine).toHaveAttribute("data-significance-visibility", "agent-context");
       expect(detailLine.className).toContain(
-        "text-[color:var(--topology-node-popover-significance-detail-text)]",
+        "sr-only",
       );
-      expect(detailLine.className).not.toContain("var(--color-text-tertiary)");
     }
   });
 
