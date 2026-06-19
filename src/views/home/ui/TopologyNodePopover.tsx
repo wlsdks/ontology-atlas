@@ -63,7 +63,7 @@ export interface TopologyNodePopoverLabels {
   actionRailTitle: string;
   /** "Copy" — compact hint that action buttons copy agent handoff packets. */
   actionRailHint: string;
-  /** "{count}개는 왼쪽 지도에 펼쳐져 있어요" — 도킹 열과의 중복 안내. */
+  /** "{count}개는 지도에 펼쳐져 있어요" — 도킹 열과의 중복 안내. */
   expandedNote: string;
   /** "Relation lens" — small block explaining how to read direct ontology edges. */
   relationLensTitle: string;

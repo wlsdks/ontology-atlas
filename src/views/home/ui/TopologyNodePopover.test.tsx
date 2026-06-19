@@ -19,7 +19,7 @@ const labels: TopologyNodePopoverLabels = {
   actionRailTitle: "에이전트 인계",
   actionRailHint: "복사",
   expandedNote:
-    "{count}개 직접 연결은 지도에 펼쳐져 있어요. 지도 보기를 누르면 겹침 없이 확인할 수 있어요.",
+    "{count}개 직접 연결은 이미 지도에 펼쳐져 있어요. 패널 겹침 없이 지도에서 확인할 수 있어요.",
   relationLensTitle: "관계 렌즈",
   relationLensDirectFactOne: "직접 의미 관계 {count}개",
   relationLensDirectFactOther: "직접 의미 관계 {count}개",
@@ -1352,8 +1352,9 @@ describe("TopologyNodePopover", () => {
       "전달 가능 1 · 사전 점검 0 · 검토 0",
     );
     expect(note).toHaveTextContent(
-      "1개 직접 연결은 지도에 펼쳐져 있어요. 지도 보기를 누르면 겹침 없이 확인할 수 있어요.",
+      "1개 직접 연결은 이미 지도에 펼쳐져 있어요. 패널 겹침 없이 지도에서 확인할 수 있어요.",
     );
+    expect(note).not.toHaveTextContent("지도 보기를 누르면");
     expect(note).toHaveAttribute(
       "data-map-context-surface-token",
       "--topology-node-popover-context-surface",
@@ -1382,7 +1383,7 @@ describe("TopologyNodePopover", () => {
       expandedChildIds: new Set(["elements/mcp-sdk", "domains/ai-agent-partner"]),
     });
     expect(screen.getByTestId("topology-map-context-note")).toHaveTextContent(
-      "2개 직접 연결은 지도에 펼쳐져 있어요. 지도 보기를 누르면 겹침 없이 확인할 수 있어요.",
+      "2개 직접 연결은 이미 지도에 펼쳐져 있어요. 패널 겹침 없이 지도에서 확인할 수 있어요.",
     );
     expect(screen.getByTestId("topology-map-context-note")).toHaveAttribute(
       "data-map-context-agent-readiness-summary",

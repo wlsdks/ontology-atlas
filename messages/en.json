@@ -2761,7 +2761,7 @@
       "moreSuffix": "more",
       "actionRailTitle": "Agent handoff",
       "actionRailHint": "Copy",
-      "expandedNote": "{count} direct connections are on the map; use Map view to inspect them without panel overlap.",
+      "expandedNote": "{count} direct connections are already on the map; inspect them there without panel overlap.",
       "relationLensTitle": "Relation lens",
       "relationLensDirectFactOne": "{count} direct fact",
       "relationLensDirectFactOther": "{count} direct facts",
