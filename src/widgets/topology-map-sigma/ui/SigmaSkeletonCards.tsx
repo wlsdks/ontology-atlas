@@ -164,6 +164,12 @@ const TIER_SURFACE_ALPHA: Record<
  */
 const DIM_ANCHOR_OPACITY = '0.24';
 const DIM_CHIP_OPACITY = '0.10';
+const OVERVIEW_CONTEXT_OPACITY: Record<SkeletonCardModel['tier'], string> = {
+  0: '1',
+  1: '1',
+  2: '0.54',
+  3: '0.32',
+};
 /** 펼친 열 카드 주변 충돌 판정 패딩(px). */
 const COLLISION_PAD = 24;
 const ANALYSIS_PANEL_TRAILING_PAD = 12;
@@ -2625,6 +2631,9 @@ export function SigmaSkeletonCards({
           continue;
         }
         el.style.visibility = 'visible';
+        el.style.opacity = OVERVIEW_CONTEXT_OPACITY[
+          Number(el.dataset.tier ?? '3') as SkeletonCardModel['tier']
+        ] ?? OVERVIEW_CONTEXT_OPACITY[3];
         accepted.push(rect);
       }
     }
@@ -2905,6 +2914,10 @@ export function SigmaSkeletonCards({
     container.dataset.dimAnchorOpacity = DIM_ANCHOR_OPACITY;
     container.dataset.dimChipOpacity = DIM_CHIP_OPACITY;
     container.dataset.dimOpacityContract = 'readable-context-geography';
+    container.dataset.overviewContextOpacityContract = 'core-full-support-quiet';
+    container.dataset.overviewContextCoreOpacity = OVERVIEW_CONTEXT_OPACITY[1];
+    container.dataset.overviewContextCapabilityOpacity = OVERVIEW_CONTEXT_OPACITY[2];
+    container.dataset.overviewContextEvidenceOpacity = OVERVIEW_CONTEXT_OPACITY[3];
     const nextVisibilityStats = {
       visible: reportedVisibleCardCount,
       total: orderedEls.length,
@@ -3670,6 +3683,10 @@ export function SigmaSkeletonCards({
       data-dim-anchor-opacity={DIM_ANCHOR_OPACITY}
       data-dim-chip-opacity={DIM_CHIP_OPACITY}
       data-dim-opacity-contract="readable-context-geography"
+      data-overview-context-opacity-contract="core-full-support-quiet"
+      data-overview-context-core-opacity={OVERVIEW_CONTEXT_OPACITY[1]}
+      data-overview-context-capability-opacity={OVERVIEW_CONTEXT_OPACITY[2]}
+      data-overview-context-evidence-opacity={OVERVIEW_CONTEXT_OPACITY[3]}
       data-relation-label-handoff-contract="label-level-mcp-cli-fallback"
       data-relation-label-geometry-contract="frame-positioned-hit-targets"
       data-relation-label-geometry-source="pending-frame"

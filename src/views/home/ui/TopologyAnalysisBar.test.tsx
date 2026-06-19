@@ -1144,6 +1144,11 @@ describe("TopologyAnalysisBar", () => {
     expect(progress).toHaveAttribute("data-overview-signal-compact", "true");
     expect(progress).toHaveAttribute("data-overview-signal-card", "neutral");
     expect(progress).toHaveAttribute(
+      "data-low-height-overview-progress-contract",
+      "sr-only-while-evidence-and-handoff-stay-visible",
+    );
+    expect(progress).toHaveClass("topology-overview-low-height-sr-only");
+    expect(progress).toHaveAttribute(
       "data-surface-token",
       "--topology-overview-signal-neutral-surface",
     );
@@ -1561,7 +1566,7 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-motion-token", "--topology-motion-panel-duration");
     expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
     expect(bar.className).toContain("overflow-x-hidden");
-    expect(bar.className).toContain("overflow-y-auto");
+    expect(bar.className).toContain("overflow-y-hidden");
     expect(bar.className).toContain(
       "data-[analysis-mode=overview]:max-md:max-h-[var(--topology-overview-panel-phone-max-height)]",
     );

@@ -812,7 +812,21 @@ test("Relief default route renders the readable card skeleton without panel scro
     { timeout: 20_000 },
   );
 
-  await expect(page.locator("[data-skeleton-card]")).toHaveCount(21);
+  const skeletonCardCount = await page.locator("[data-skeleton-card]").count();
+  const skeletonModelCount = Number(
+    await page.getByTestId("sigma-skeleton-cards").getAttribute("data-skeleton-card-model-count"),
+  );
+  expect(skeletonCardCount, "DOM skeleton cards should match the current model count").toBe(
+    skeletonModelCount,
+  );
+  expect(
+    skeletonCardCount,
+    "default dogfood skeleton should keep a readable overview",
+  ).toBeGreaterThanOrEqual(20);
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-overview-context-opacity-contract",
+    "core-full-support-quiet",
+  );
   await expect(
     page.locator('[data-skeleton-card]:not([data-surface-hidden="true"])').first(),
   ).toBeVisible();

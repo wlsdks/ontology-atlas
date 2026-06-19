@@ -228,6 +228,98 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
   });
 
+  it("overview 에서는 핵심 계층은 풀 잉크로 두고 기능/근거 카드는 조용한 맥락 잉크로 낮춘다", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        const rects: Record<string, DOMRectInit> = {
+          "project:p": { x: 400, y: 250, width: 140, height: 44 },
+          "domain:d1": { x: 580, y: 220, width: 130, height: 40 },
+          "capability:c1": { x: 740, y: 300, width: 168, height: 38 },
+          "element:e1": { x: 320, y: 390, width: 120, height: 34 },
+        };
+        const rect = slug ? rects[slug] : { x: 0, y: 0, width: 1200, height: 720 };
+        return {
+          left: rect.x ?? 0,
+          top: rect.y ?? 0,
+          right: (rect.x ?? 0) + (rect.width ?? 0),
+          bottom: (rect.y ?? 0) + (rect.height ?? 0),
+          width: rect.width ?? 0,
+          height: rect.height ?? 0,
+          x: rect.x ?? 0,
+          y: rect.y ?? 0,
+          toJSON: () => ({}),
+        };
+      });
+    const graph = makeGraph();
+
+    try {
+      graph.addNode("capability:c1", {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: 120,
+        y: 125,
+        label: "Sync",
+      });
+      graph.addNode("element:e1", {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: 130,
+        y: 180,
+        label: "File evidence",
+      });
+
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            { id: "capability:c1", title: "Sync", kind: "capability", tier: 2 as const },
+            { id: "element:e1", title: "File evidence", kind: "element", tier: 3 as const },
+          ]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const projectCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
+      const domainCard = screen.getByText("Views").closest("[data-skeleton-card]");
+      const capabilityCard = screen.getByText("Sync").closest("[data-skeleton-card]");
+      const elementCard = screen.getByText("File evidence").closest("[data-skeleton-card]");
+
+      await waitFor(() => {
+        expect(layer).toHaveAttribute(
+          "data-overview-context-opacity-contract",
+          "core-full-support-quiet",
+        );
+        expect(layer).toHaveAttribute("data-overview-context-core-opacity", "1");
+        expect(layer).toHaveAttribute("data-overview-context-capability-opacity", "0.54");
+        expect(layer).toHaveAttribute("data-overview-context-evidence-opacity", "0.32");
+        expect(projectCard).toHaveStyle({ opacity: "1" });
+        expect(domainCard).toHaveStyle({ opacity: "1" });
+        expect(capabilityCard).toHaveStyle({ opacity: "0.54" });
+        expect(elementCard).toHaveStyle({ opacity: "0.32" });
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("capability 카드 폭은 별도 토큰으로 제목 lane 을 더 넓게 보존한다", () => {
     const graph = makeGraph();
     graph.addNode("capability:c1", {
