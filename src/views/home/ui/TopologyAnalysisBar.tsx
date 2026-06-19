@@ -2352,7 +2352,9 @@ function RelationProvenanceGate({
         {title}
       </span>
       <span
-        className="min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+        className="topology-overview-proof-summary min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+        data-summary-clamp-contract="single-line-proof-row-summary"
+        data-summary-lines-token="--topology-overview-proof-summary-lines"
         data-signal-summary-contract="human-readable-first"
         data-testid="topology-overview-relation-provenance-summary"
       >
@@ -2435,7 +2437,9 @@ function AgentReadinessGate({
         />
       </div>
       <p
-        className="min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+        className="topology-overview-proof-summary min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+        data-summary-clamp-contract="single-line-proof-row-summary"
+        data-summary-lines-token="--topology-overview-proof-summary-lines"
         data-signal-summary-contract="human-readable-first"
         data-testid="topology-overview-agent-readiness-summary"
       >
@@ -2491,7 +2495,9 @@ function RelationQualityGate({
         {title}
       </span>
       <p
-        className="min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+        className="topology-overview-proof-summary min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+        data-summary-clamp-contract="single-line-proof-row-summary"
+        data-summary-lines-token="--topology-overview-proof-summary-lines"
         data-signal-summary-contract="human-readable-first"
         data-testid="topology-overview-relation-quality-summary"
       >

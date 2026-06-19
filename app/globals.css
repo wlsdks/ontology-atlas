@@ -401,6 +401,7 @@
     --topology-health-panel-scroll-end-reserve: 12px;
     --topology-overview-signal-grid-compact-padding: 8px;
     --topology-overview-signal-grid-compact-gap: 6px;
+    --topology-overview-proof-summary-lines: 1;
     --topology-overview-signal-neutral-surface: rgba(255, 255, 255, 0.028);
     --topology-overview-signal-neutral-border: rgba(255, 255, 255, 0.065);
     --topology-overview-signal-indigo-surface: rgba(139, 151, 255, 0.065);
@@ -755,6 +756,13 @@
    */
   .topology-ui-scale {
     zoom: 1;
+  }
+
+  .topology-overview-proof-summary {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--topology-overview-proof-summary-lines);
   }
 
   /*

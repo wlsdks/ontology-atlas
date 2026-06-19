@@ -315,12 +315,20 @@ describe("TopologyAnalysisBar", () => {
       "data-overview-provenance-layout",
       "single-line-summary",
     );
-    expect(
-      screen.getByTestId("topology-overview-relation-provenance-summary"),
-    ).toHaveAttribute(
+    const provenanceSummary = screen.getByTestId("topology-overview-relation-provenance-summary");
+    expect(provenanceSummary).toHaveAttribute(
       "data-signal-summary-contract",
       "human-readable-first",
     );
+    expect(provenanceSummary).toHaveAttribute(
+      "data-summary-clamp-contract",
+      "single-line-proof-row-summary",
+    );
+    expect(provenanceSummary).toHaveAttribute(
+      "data-summary-lines-token",
+      "--topology-overview-proof-summary-lines",
+    );
+    expect(provenanceSummary.className).toContain("topology-overview-proof-summary");
     expect(
       provenance.querySelector('[data-overview-provenance-row="source-backed"]'),
     ).toHaveTextContent("504");
@@ -1683,13 +1691,21 @@ describe("TopologyAnalysisBar", () => {
       "aria-label",
       expect.stringContaining("Trust: clear 384"),
     );
-    expect(screen.getByTestId("topology-overview-relation-quality-summary")).toHaveAttribute(
+    const qualitySummary = screen.getByTestId("topology-overview-relation-quality-summary");
+    expect(qualitySummary).toHaveAttribute(
       "data-signal-summary-contract",
       "human-readable-first",
     );
-    expect(screen.getByTestId("topology-overview-relation-quality-summary")).toHaveTextContent(
-      "clear 384",
+    expect(qualitySummary).toHaveAttribute(
+      "data-summary-clamp-contract",
+      "single-line-proof-row-summary",
     );
+    expect(qualitySummary).toHaveAttribute(
+      "data-summary-lines-token",
+      "--topology-overview-proof-summary-lines",
+    );
+    expect(qualitySummary.className).toContain("topology-overview-proof-summary");
+    expect(qualitySummary).toHaveTextContent("clear 384");
     expect(
       within(relationQuality).getByTestId("topology-overview-relation-quality-strong")
         .parentElement,
@@ -2305,15 +2321,21 @@ describe("TopologyAnalysisBar", () => {
     expect(readinessGate).toHaveAccessibleName(
       "Agent handoff: ready 82 · check 4 · needs review 2",
     );
-    expect(
-      screen.getByTestId("topology-overview-agent-readiness-summary"),
-    ).toHaveTextContent("ready 82 · check 4 · needs review 2");
-    expect(
-      screen.getByTestId("topology-overview-agent-readiness-summary"),
-    ).toHaveAttribute(
+    const readinessSummary = screen.getByTestId("topology-overview-agent-readiness-summary");
+    expect(readinessSummary).toHaveTextContent("ready 82 · check 4 · needs review 2");
+    expect(readinessSummary).toHaveAttribute(
       "data-signal-summary-contract",
       "human-readable-first",
     );
+    expect(readinessSummary).toHaveAttribute(
+      "data-summary-clamp-contract",
+      "single-line-proof-row-summary",
+    );
+    expect(readinessSummary).toHaveAttribute(
+      "data-summary-lines-token",
+      "--topology-overview-proof-summary-lines",
+    );
+    expect(readinessSummary.className).toContain("topology-overview-proof-summary");
     expect(
       readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
     ).toHaveTextContent("82");
