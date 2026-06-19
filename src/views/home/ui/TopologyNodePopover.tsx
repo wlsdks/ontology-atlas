@@ -985,10 +985,10 @@ export function TopologyNodePopover({
                     data-overflow-contract="no-horizontal-scroll"
                     data-row-density-contract="agent-handoff-scan-row"
                     data-row-render-source={relationPreviewSource}
-                    data-row-surface-contract="flat-divider-row"
-                    data-row-visual-contract="title-first-relation-metadata-secondary"
-                    data-row-min-hit-height="72"
-                    data-row-scan-order="relation>title>direction>endpoint>handoff"
+	                    data-row-surface-contract="flat-divider-row"
+	                    data-row-visual-contract="title-plus-relation-pill-meta-secondary"
+	                    data-row-min-hit-height="72"
+	                    data-row-scan-order="title>relation>direction>proof>handoff"
                     data-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
                     data-row-focus-surface-token="--topology-node-popover-relation-row-focus-surface"
                     data-row-focus-border-token="--topology-node-popover-relation-row-focus-border"
@@ -1029,19 +1029,29 @@ export function TopologyNodePopover({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span
-                        data-relation-primary-line
-                        data-visible-contract="connected-title-first"
-                        className="flex min-w-0 items-center gap-1.5"
-                      >
+	                        data-relation-primary-line
+	                        data-visible-contract="connected-title-plus-relation-pill"
+	                        className="flex min-w-0 items-center gap-1.5"
+	                      >
                         <span
                           data-relation-title
                           data-primary-scan-target="true"
                           data-relation-title-text-token="--topology-node-popover-relation-row-title-text"
                           className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-relation-row-title-text)]"
-                        >
-                          {connection.title}
-                        </span>
-                      </span>
+	                        >
+	                          {connection.title}
+	                        </span>
+	                        <span
+	                          data-relation-type-label
+	                          data-fact-type-surface-token="--topology-node-popover-fact-type-surface"
+	                          data-fact-type-border-token="--topology-node-popover-fact-type-border"
+	                          data-fact-type-text-token="--topology-node-popover-fact-type-text"
+	                          data-relation-pill-contract="primary-line-typed-fact"
+	                          className="max-w-[96px] shrink-0 truncate rounded-full border border-[color:var(--topology-node-popover-fact-type-border)] bg-[color:var(--topology-node-popover-fact-type-surface)] px-1.5 py-0.5 font-mono text-[10px] leading-3 text-[color:var(--topology-node-popover-fact-type-text)]"
+	                        >
+	                          {relationTypeLabel}
+	                        </span>
+	                      </span>
                       <span
                         data-relation-row-meta
                         data-row-meta-text-token="--topology-node-popover-relation-row-meta-text"
@@ -1061,22 +1071,7 @@ export function TopologyNodePopover({
                         >
                           {" · "}
                         </span>
-                        <span
-                          data-relation-type-label
-                          data-fact-type-surface-token="--topology-node-popover-fact-type-surface"
-                          data-fact-type-border-token="--topology-node-popover-fact-type-border"
-                          data-fact-type-text-token="--topology-node-popover-fact-type-text"
-                          className="shrink-0 text-[color:var(--topology-node-popover-fact-type-text)]"
-                        >
-                          {relationTypeLabel}
-                        </span>
-                        <span
-                          aria-hidden="true"
-                          className="text-[color:var(--topology-node-popover-endpoint-separator)]"
-                        >
-                          {" · "}
-                        </span>
-                        <span
+	                        <span
                           data-relation-quality-dot
                           data-dot-token={relationQualityDotToken(connection.relationQuality)}
                           data-glow-token={relationQualityGlowToken(
