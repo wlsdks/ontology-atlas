@@ -238,7 +238,7 @@
      * 14-inch fullscreen geometry or click/focus interaction feel.
      */
     --topology-panel-selected-rail-width: clamp(248px, 18vw, 286px);
-    --topology-panel-overview-rail-width: clamp(320px, 21vw, 340px);
+    --topology-panel-overview-rail-width: clamp(320px, 21vw, 400px);
     --topology-panel-overview-responsive-width: min(
       var(--topology-panel-overview-rail-width),
       calc(100vw - var(--topology-panel-phone-utility-rail-reserve))

@@ -3482,9 +3482,9 @@ export function validateWebviewVerifyPayload(payload, {
         ? payload.markers.topologyOverviewAgentReadinessText.trim()
         : "";
     const overviewAgentReadinessReadable =
-      /(handoff-ready|handoff 가능|전달 가능)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
-      /(preflight|사전 점검)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
-      /(review|검토)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
+      /(handoff-ready|ready|handoff 가능|전달 가능)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
+      /(preflight|check first|사전 점검)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
+      /(needs review|review|검토)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
       /[·,:]/.test(overviewAgentReadinessText);
     const requireOverviewAgentReadiness =
       topologyAnalysisMode !== "path" &&
@@ -3726,7 +3726,11 @@ export function validateWebviewVerifyPayload(payload, {
         }
       }
       if (payload.markers.topologyCreateNodeOpen !== true && isOverviewAnalysis) {
-        if (payload.markers.topologyOverviewRelationQualityDensity !== "scan-facts") {
+        if (
+          !["scan-facts", "summary-first"].includes(
+            payload.markers.topologyOverviewRelationQualityDensity,
+          )
+        ) {
           return `WebView reported malformed Relief overview relation quality density (${payload.markers.topologyOverviewRelationQualityDensity ?? "unknown"})`;
         }
         if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= 455)) {

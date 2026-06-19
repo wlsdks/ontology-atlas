@@ -991,7 +991,7 @@ export function TopologyAnalysisBar({
       }
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 border data-[analysis-mode=overview]:max-md:max-h-[var(--topology-overview-panel-phone-max-height)] data-[analysis-mode=overview]:max-md:overflow-y-auto data-[analysis-mode=overview]:lg:min-h-[455px] data-[analysis-mode=health]:max-md:max-h-[var(--topology-health-panel-phone-max-height)] data-[analysis-mode=health]:max-md:overflow-y-auto md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 border data-[analysis-mode=overview]:max-md:max-h-[var(--topology-overview-panel-phone-max-height)] data-[analysis-mode=overview]:max-md:overflow-y-auto data-[analysis-mode=overview]:lg:min-h-[390px] data-[analysis-mode=health]:max-md:max-h-[var(--topology-health-panel-phone-max-height)] data-[analysis-mode=health]:max-md:overflow-y-auto md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         panelMode === "overview" ? "overflow-x-hidden overflow-y-hidden" : "overflow-y-auto"
       } ${
         createPanelReserved
@@ -1097,7 +1097,8 @@ export function TopologyAnalysisBar({
               data-item-text-token="--topology-overview-reader-lens-item-text"
               data-marker-surface-token="--topology-overview-reader-lens-marker-surface"
               data-marker-border-token="--topology-overview-reader-lens-marker-border"
-              className="mt-2 rounded-lg border border-[color:var(--topology-overview-reader-lens-border)] bg-[color:var(--topology-overview-reader-lens-surface)] px-3 py-2"
+              data-density-contract="inline-read-order-no-nested-card"
+              className="mt-2 px-1 py-1"
             >
               <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
                 {labels.overviewReaderLensTitle}
@@ -1108,7 +1109,7 @@ export function TopologyAnalysisBar({
                   labels.overviewReaderLensCapabilities,
                   labels.overviewReaderLensChangePaths,
                 ].map((item, index) => (
-                  <li key={item} className="flex min-w-0 items-start gap-2">
+                  <li key={item} className="flex min-w-0 items-start gap-1.5">
                     <span
                       aria-hidden
                       className="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border border-[color:var(--topology-overview-reader-lens-marker-border)] bg-[color:var(--topology-overview-reader-lens-marker-surface)] font-mono text-[8px] leading-none text-[color:var(--topology-overview-reader-lens-title-text)]"
@@ -1122,7 +1123,7 @@ export function TopologyAnalysisBar({
               <div
                 data-testid="topology-overview-map-key"
                 data-map-key-contract="compact-node-and-relation-reading"
-                className="mt-2 grid grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-3 border-t border-[color:var(--topology-overview-reader-lens-border)] pt-2"
+                className="mt-2 grid grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-2 border-t border-[color:var(--topology-overview-reader-lens-border)] pt-2"
               >
                 <div
                   data-testid="topology-overview-tier-legend"
@@ -1134,7 +1135,7 @@ export function TopologyAnalysisBar({
                   <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
                     {labels.overviewTierLegendTitle}
                   </p>
-                  <ol className="mt-1.5 grid gap-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
+                  <ol className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
                     {OVERVIEW_TIER_LEGEND_KINDS.map((kind) => {
                       const tone = ONTOLOGY_KIND_TONE[kind];
                       const labelByKind = {
@@ -1165,14 +1166,6 @@ export function TopologyAnalysisBar({
                             {OVERVIEW_TIER_LEGEND_KINDS.indexOf(kind) + 1}
                           </span>
                           <span className="min-w-0 truncate">{labelByKind[kind]}</span>
-                          {kind !== "element" ? (
-                            <span
-                              aria-hidden
-                              className="ml-auto shrink-0 text-[color:var(--topology-overview-reader-lens-title-text)] opacity-60"
-                            >
-                              →
-                            </span>
-                          ) : null}
                         </li>
                       );
                     })}
@@ -1403,11 +1396,12 @@ export function TopologyAnalysisBar({
           {panelMode === "overview" ? (
             <>
               <div
-                className="mt-2 grid min-w-0 gap-[var(--topology-overview-signal-grid-compact-gap)] rounded-lg border border-[color:var(--topology-overview-signal-grid-border)] bg-[color:var(--topology-overview-signal-grid-surface)] p-[var(--topology-overview-signal-grid-compact-padding)]"
+                className="mt-2 grid min-w-0 gap-[var(--topology-overview-signal-grid-compact-gap)] border-y border-[color:var(--topology-overview-signal-grid-border)] bg-transparent py-[var(--topology-overview-signal-grid-compact-padding)]"
                 data-surface-token="--topology-overview-signal-grid-surface"
                 data-border-token="--topology-overview-signal-grid-border"
                 data-compact-padding-token="--topology-overview-signal-grid-compact-padding"
                 data-compact-gap-token="--topology-overview-signal-grid-compact-gap"
+                data-overview-evidence-density-contract="single-surface-proof-rows"
                 data-testid="topology-overview-signal-grid"
               >
                 <div
@@ -2326,11 +2320,12 @@ function RelationProvenanceGate({
   return (
     <div
       aria-label={`${title}: ${summary}`}
-      className="grid min-w-0 gap-1 rounded-md border border-[color:var(--topology-overview-signal-indigo-border)] bg-[color:var(--topology-overview-signal-indigo-surface)] px-2.5 py-2"
+      className="grid min-w-0 gap-1 border-b border-[color:var(--topology-overview-signal-grid-border)] px-0 pb-2"
       data-overview-provenance-contract="summary-first-counts-retained"
       data-overview-provenance-layout="single-line-summary"
       data-overview-signal-card="indigo"
       data-overview-signal-compact="true"
+      data-proof-row-density="quiet-row"
       data-surface-token="--topology-overview-signal-indigo-surface"
       data-border-token="--topology-overview-signal-indigo-border"
       data-testid="topology-overview-relation-provenance"
@@ -2381,11 +2376,12 @@ function AgentReadinessGate({
 }) {
   return (
     <div
-      className="grid gap-1.5 rounded-md border border-[color:var(--topology-overview-readiness-border)] bg-[color:var(--topology-overview-readiness-surface)] px-3 py-1.5"
+      className="grid gap-1 border-b border-[color:var(--topology-overview-signal-grid-border)] px-0 pb-2"
       aria-label={`${title}: ${summary}`}
       data-agent-readiness-summary={summary}
       data-density="summary-first"
       data-overview-signal-card="readiness"
+      data-proof-row-density="quiet-row"
       data-proof-strip-contract="summary-plus-meter"
       data-surface-token="--topology-overview-readiness-surface"
       data-border-token="--topology-overview-readiness-border"
@@ -2460,7 +2456,7 @@ function RelationQualityGate({
   return (
     <div
       {...attrs}
-      className={`grid gap-1.5 rounded-md border border-[color:var(--topology-overview-quality-border)] bg-[color:var(--topology-overview-quality-surface)] px-3 py-1.5 ${
+      className={`grid gap-1 border-b border-[color:var(--topology-overview-signal-grid-border)] px-0 pb-2 ${
         attrs.className ?? ""
       }`}
       aria-label={`${title}: ${summary}`}
@@ -2468,6 +2464,7 @@ function RelationQualityGate({
       data-proof-strip-contract="summary-plus-meter"
       data-quality-meter-contract="distribution-bar-maps-relation-quality"
       data-overview-signal-card="quality"
+      data-proof-row-density="quiet-row"
       data-surface-token="--topology-overview-quality-surface"
       data-border-token="--topology-overview-quality-border"
       data-testid="topology-overview-relation-quality"

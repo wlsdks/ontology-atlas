@@ -1130,7 +1130,12 @@ describe("TopologyAnalysisBar", () => {
 
     const progress = screen.getByTestId("topology-overview-relation-progress");
     const signalGrid = screen.getByTestId("topology-overview-signal-grid");
-    expect(signalGrid.className).toContain("rounded");
+    expect(signalGrid.className).toContain("border-y");
+    expect(signalGrid.className).toContain("bg-transparent");
+    expect(signalGrid).toHaveAttribute(
+      "data-overview-evidence-density-contract",
+      "single-surface-proof-rows",
+    );
     expect(signalGrid).toHaveAttribute(
       "data-surface-token",
       "--topology-overview-signal-grid-surface",
@@ -1565,7 +1570,7 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-radius-token", "--topology-panel-radius");
     expect(bar).toHaveAttribute("data-panel-padding-token", "--topology-panel-padding");
     expect(bar).toHaveAttribute("data-panel-motion-token", "--topology-motion-panel-duration");
-    expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
+    expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[390px]");
     expect(bar.className).toContain("overflow-x-hidden");
     expect(bar.className).toContain("overflow-y-hidden");
     expect(bar.className).toContain(
@@ -1623,6 +1628,10 @@ describe("TopologyAnalysisBar", () => {
     );
     const relationQuality = screen.getByTestId("topology-overview-relation-quality");
     const signalGrid = screen.getByTestId("topology-overview-signal-grid");
+    expect(screen.getByTestId("topology-overview-reader-lens")).toHaveAttribute(
+      "data-density-contract",
+      "inline-read-order-no-nested-card",
+    );
     expect(signalGrid).toHaveAttribute(
       "data-compact-padding-token",
       "--topology-overview-signal-grid-compact-padding",
@@ -1643,6 +1652,7 @@ describe("TopologyAnalysisBar", () => {
       "data-proof-strip-contract",
       "summary-plus-meter",
     );
+    expect(relationQuality).toHaveAttribute("data-proof-row-density", "quiet-row");
     expect(relationQuality).toHaveAttribute(
       "data-quality-meter-contract",
       "distribution-bar-maps-relation-quality",
