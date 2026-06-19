@@ -905,7 +905,7 @@ export function TopologyNodePopover({
             data-overflow-contract="vertical-scroll-only"
             data-row-density-contract="agent-handoff-scan-list"
             data-readable-row-contract="at-least-one-full-relation-row"
-            data-row-min-hit-height="72"
+            data-row-min-hit-height="64"
             data-relation-list-min-height-token="--topology-node-popover-relation-list-min-height"
             data-row-render-contract="capped-preview-plus-remainder"
             data-row-render-source={relationPreviewSource}
@@ -1018,8 +1018,8 @@ export function TopologyNodePopover({
                     data-row-density-contract="agent-handoff-scan-row"
                     data-row-render-source={relationPreviewSource}
                     data-row-surface-contract="flat-divider-row"
-                    data-row-visual-contract="title-plus-relation-pill-meta-secondary"
-                    data-row-min-hit-height="72"
+                    data-row-visual-contract="quiet-title-relation-meta-secondary"
+                    data-row-min-hit-height="64"
                     data-row-min-height-token="--topology-node-popover-relation-row-min-height"
                     data-row-gap-token="--topology-node-popover-relation-row-gap"
                     data-row-padding-x-token="--topology-node-popover-relation-row-padding-x"
@@ -1040,8 +1040,8 @@ export function TopologyNodePopover({
                       data-direction-text-token="--topology-node-popover-direction-text"
                       data-direction-hover-text-token="--topology-node-popover-direction-hover-text"
                       data-direction-shadow-token="--topology-node-popover-direction-shadow"
-                      data-direction-marker-contract="primary-row-scan-anchor"
-                      className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-node-popover-direction-border)] bg-[color:var(--topology-node-popover-direction-surface)] text-[color:var(--topology-node-popover-direction-text)] shadow-[var(--topology-node-popover-direction-shadow)] group-hover:text-[color:var(--topology-node-popover-direction-hover-text)]"
+                      data-direction-marker-contract="quiet-row-scan-glyph"
+                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-[color:var(--topology-node-popover-direction-border)] bg-[color:var(--topology-node-popover-direction-surface)] text-[color:var(--topology-node-popover-direction-text)] shadow-[var(--topology-node-popover-direction-shadow)] group-hover:text-[color:var(--topology-node-popover-direction-hover-text)]"
                     >
                       {connection.direction === "outgoing" ? (
                         <ArrowUpRight size={12} aria-hidden />
@@ -1052,7 +1052,7 @@ export function TopologyNodePopover({
                     <span className="min-w-0 flex-1">
                       <span
                         data-relation-primary-line
-                        data-visible-contract="connected-title-plus-relation-pill"
+                        data-visible-contract="connected-title-plus-quiet-relation-label"
                         className="flex min-w-0 items-center gap-1.5"
                       >
                         <span
@@ -1068,8 +1068,8 @@ export function TopologyNodePopover({
                           data-fact-type-surface-token="--topology-node-popover-fact-type-surface"
                           data-fact-type-border-token="--topology-node-popover-fact-type-border"
                           data-fact-type-text-token="--topology-node-popover-fact-type-text"
-                          data-relation-pill-contract="primary-line-typed-fact"
-                          className="max-w-[96px] shrink-0 truncate rounded-full border border-[color:var(--topology-node-popover-fact-type-border)] bg-[color:var(--topology-node-popover-fact-type-surface)] px-1.5 py-0.5 font-mono text-[10px] leading-3 text-[color:var(--topology-node-popover-fact-type-text)]"
+                          data-relation-pill-contract="plain-typed-fact-label"
+                          className="max-w-[96px] shrink-0 truncate border-l border-[color:var(--topology-node-popover-fact-type-border)] bg-[color:var(--topology-node-popover-fact-type-surface)] pl-2 font-mono text-[10px] leading-4 text-[color:var(--topology-node-popover-fact-type-text)]"
                         >
                           {relationTypeLabel}
                         </span>

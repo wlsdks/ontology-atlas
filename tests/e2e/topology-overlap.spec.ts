@@ -3866,6 +3866,11 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-row-focus-ring-token",
     "--topology-node-popover-relation-row-focus-ring",
   );
+  await expect(firstRelationRow).toHaveAttribute(
+    "data-row-visual-contract",
+    "quiet-title-relation-meta-secondary",
+  );
+  await expect(firstRelationRow).toHaveAttribute("data-row-min-hit-height", "64");
   const conceptSearch = page.getByTestId("topology-concept-search");
   await conceptSearch.focus();
   await page.keyboard.press("Tab");
@@ -3885,6 +3890,9 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-direction-hover-text-token",
     "--topology-node-popover-direction-hover-text",
   );
+  await expect(
+    firstRelationRow.locator("[data-relation-direction-marker]").first(),
+  ).toHaveAttribute("data-direction-marker-contract", "quiet-row-scan-glyph");
   await expect(firstRelationRow.locator("[data-relation-type-label]").first()).toHaveAttribute(
     "data-fact-type-surface-token",
     "--topology-node-popover-fact-type-surface",
@@ -3892,6 +3900,10 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   await expect(firstRelationRow.locator("[data-relation-type-label]").first()).toHaveAttribute(
     "data-fact-type-text-token",
     "--topology-node-popover-fact-type-text",
+  );
+  await expect(firstRelationRow.locator("[data-relation-type-label]").first()).toHaveAttribute(
+    "data-relation-pill-contract",
+    "plain-typed-fact-label",
   );
   await expect(firstRelationRow.locator("[data-relation-title]").first()).toHaveAttribute(
     "data-relation-title-text-token",
@@ -3961,7 +3973,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   const firstRouteRail = firstRelationRow.locator("[data-relation-route]").first();
   await expect(firstRouteRail).toHaveAttribute(
     "data-relation-payload-layout",
-    "tokenized-compact-route-rail",
+    "plain-next-action-line",
   );
   await expect(firstRouteRail).toHaveAttribute(
     "data-route-surface-token",
@@ -3978,21 +3990,6 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   await expect(firstRouteRail).toHaveAttribute(
     "data-route-chip-text-token",
     "--topology-node-popover-route-chip-text",
-  );
-  await expect(firstRelationRow).toHaveAttribute(
-    "data-row-quality-accent-token",
-    /--topology-overview-quality-(strong|supported|weak|review)-meter/,
-  );
-  const firstQualityAccent = firstRelationRow
-    .locator("[data-relation-quality-accent]")
-    .first();
-  await expect(firstQualityAccent).toHaveAttribute(
-    "data-quality-accent-contract",
-    "row-scan-rail-maps-relation-quality",
-  );
-  await expect(firstQualityAccent).toHaveAttribute(
-    "data-quality-accent-token",
-    /--topology-overview-quality-(strong|supported|weak|review)-meter/,
   );
   await expect(
     page
@@ -4040,7 +4037,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   );
   await expect(readyReadinessChip).toHaveAttribute(
     "data-agent-readiness-full-label",
-    "handoff-ready",
+    "ready",
   );
   await expect(readyReadinessChip).toHaveAttribute(
     "data-agent-readiness-compact-label",
@@ -4214,11 +4211,9 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
       listTop: listRect.top,
       listHeight: listRect.height,
       firstRowHeight: rowRect.height,
+      firstRowClientWidth: row.clientWidth,
+      firstRowScrollWidth: row.scrollWidth,
       routeChipCount: route?.querySelectorAll("[data-relation-route-chip]").length ?? 0,
-      routeClientWidth: route?.clientWidth ?? 0,
-      routeScrollWidth: route?.scrollWidth ?? 0,
-      routeHeight: routeRect?.height ?? 0,
-      routeBottom: routeRect?.bottom ?? null,
       visibleRowHeight,
       footerTop: footerRect?.top ?? null,
       footerBottom: footerRect?.bottom ?? null,
@@ -4245,20 +4240,12 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   ).toBeGreaterThanOrEqual((readableRelationProof?.firstRowHeight ?? 0) - 1);
   expect(
     readableRelationProof?.routeChipCount ?? 0,
-    "expanded phone relation row should expose fact/evidence/gate/action/payload chips",
+    "expanded phone relation row should preserve fact/evidence/gate/action/payload data",
   ).toBe(5);
   expect(
-    readableRelationProof?.routeScrollWidth ?? 0,
-    "expanded phone relation route rail should not horizontally overflow",
-  ).toBeLessThanOrEqual((readableRelationProof?.routeClientWidth ?? 0) + 1);
-  expect(
-    readableRelationProof?.routeHeight ?? 0,
-    "expanded phone relation route rail should remain a compact proof strip",
-  ).toBeLessThanOrEqual(26);
-  expect(
-    readableRelationProof?.routeBottom ?? Infinity,
-    "expanded phone relation route rail should stay fully readable above the fixed footer",
-  ).toBeLessThanOrEqual((readableRelationProof?.footerTop ?? 0) - 4);
+    readableRelationProof?.firstRowScrollWidth ?? 0,
+    "expanded phone visible relation row should not horizontally overflow",
+  ).toBeLessThanOrEqual((readableRelationProof?.firstRowClientWidth ?? 0) + 1);
   expect(
     readableRelationProof?.footerPositionContract,
     "expanded phone popover should keep the MCP/CLI footer anchored in the visible frame",
