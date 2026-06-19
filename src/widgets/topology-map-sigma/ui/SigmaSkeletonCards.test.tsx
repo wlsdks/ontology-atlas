@@ -116,6 +116,27 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-card-max-width-token",
       "--topology-card-max-width-domain",
     );
+    expect(domainCard).toHaveAttribute(
+      "data-card-spacing-contract",
+      "css-tokenized-block-rhythm",
+    );
+    expect(domainCard).toHaveAttribute("data-card-gap-token", "--topology-card-gap");
+    expect(domainCard).toHaveAttribute(
+      "data-card-padding-x-token",
+      "--topology-card-padding-x",
+    );
+    expect(domainCard).toHaveAttribute(
+      "data-card-padding-y-token",
+      "--topology-card-padding-y",
+    );
+    expect(domainCard).toHaveAttribute(
+      "data-card-min-block-size-token",
+      "--topology-card-min-block-size",
+    );
+    expect(domainCard).toHaveAttribute(
+      "data-card-radius-token",
+      "--topology-card-radius",
+    );
     expect(screen.getByText("Views")).toHaveAttribute(
       "data-card-title-lane-contract",
       "core-title-keeps-map-readable",
@@ -145,8 +166,18 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(domainCard).toHaveStyle({
       transform: "translate(-50%, -50%) translate3d(120px, 60px, 0)",
       maxWidth: "var(--topology-card-max-width-domain)",
+      "--topology-card-gap": "0.55em",
+      "--topology-card-padding-x": "0.9em",
+      "--topology-card-padding-y": "0.55em",
+      "--topology-card-min-block-size": "2.58em",
+      "--topology-card-radius": "0.5rem",
     });
     const layer = screen.getByTestId("sigma-skeleton-cards");
+    expect(layer).toHaveAttribute(
+      "data-focus-top-safe-area-token",
+      "--topology-focus-hull-top-safe-area",
+    );
+    expect(layer.style.getPropertyValue("--topology-focus-hull-top-safe-area")).toBe("72px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-project")).toBe("280px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-domain")).toBe("272px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-capability")).toBe("360px");
@@ -1316,6 +1347,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(hull).toHaveAttribute(
         "data-focus-hull-line-contract",
         "no-visible-boundary-highlight-dim-rest",
+      );
+      expect(hull).toHaveAttribute(
+        "data-focus-hull-top-safe-area-token",
+        "--topology-focus-hull-top-safe-area",
       );
       expect(hull?.className).toContain("data-[cluster-mode=focus]:border-dashed");
       expect(hull).toHaveAttribute(
@@ -2600,6 +2635,20 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-card-max-width-token",
       "--topology-card-selected-focus-max-width",
     );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-spacing-contract",
+      "css-tokenized-block-rhythm",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-block-padding-contract",
+      "selected-card-balanced-y-padding",
+    );
+    expect(selectedCard).toHaveStyle({
+      "--topology-card-gap": "0.6em",
+      "--topology-card-padding-x": "0.95em",
+      "--topology-card-padding-y": "0.58em",
+      "--topology-card-min-block-size": "2.7em",
+    });
     expect(selectedCardTitle).toHaveAttribute(
       "data-card-title-lane-contract",
       "selected-title-keeps-current-focus-readable",

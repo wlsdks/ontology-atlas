@@ -132,10 +132,58 @@ const TIER_FONT_PX: Record<SkeletonCardModel['tier'], number> = {
 };
 
 const TIER_CARD_CLASS: Record<SkeletonCardModel['tier'], string> = {
-  0: 'gap-[0.6em] rounded-xl px-[1em] py-[0.62em] font-semibold text-[color:var(--color-text-primary)] shadow-[0_1px_3px_var(--topology-card-shadow)]',
-  1: 'gap-[0.55em] rounded-lg px-[0.9em] py-[0.55em] font-medium text-[color:var(--color-text-primary)]',
-  2: 'gap-[0.5em] rounded-md px-[0.85em] py-[0.45em] text-[color:var(--color-text-primary)]',
-  3: 'gap-[0.45em] rounded-md px-[0.8em] py-[0.4em] text-[color:var(--color-text-secondary)]',
+  0: 'gap-[var(--topology-card-gap)] rounded-[var(--topology-card-radius)] px-[var(--topology-card-padding-x)] py-[var(--topology-card-padding-y)] min-h-[var(--topology-card-min-block-size)] font-semibold text-[color:var(--color-text-primary)] shadow-[0_1px_3px_var(--topology-card-shadow)]',
+  1: 'gap-[var(--topology-card-gap)] rounded-[var(--topology-card-radius)] px-[var(--topology-card-padding-x)] py-[var(--topology-card-padding-y)] min-h-[var(--topology-card-min-block-size)] font-medium text-[color:var(--color-text-primary)]',
+  2: 'gap-[var(--topology-card-gap)] rounded-[var(--topology-card-radius)] px-[var(--topology-card-padding-x)] py-[var(--topology-card-padding-y)] min-h-[var(--topology-card-min-block-size)] text-[color:var(--color-text-primary)]',
+  3: 'gap-[var(--topology-card-gap)] rounded-[var(--topology-card-radius)] px-[var(--topology-card-padding-x)] py-[var(--topology-card-padding-y)] min-h-[var(--topology-card-min-block-size)] text-[color:var(--color-text-secondary)]',
+};
+
+const TIER_CARD_SPACING: Record<
+  SkeletonCardModel['tier'],
+  {
+    gap: string;
+    paddingX: string;
+    paddingY: string;
+    minBlockSize: string;
+    radius: string;
+  }
+> = {
+  0: {
+    gap: '0.6em',
+    paddingX: '1em',
+    paddingY: '0.62em',
+    minBlockSize: '2.68em',
+    radius: '0.75rem',
+  },
+  1: {
+    gap: '0.55em',
+    paddingX: '0.9em',
+    paddingY: '0.55em',
+    minBlockSize: '2.58em',
+    radius: '0.5rem',
+  },
+  2: {
+    gap: '0.5em',
+    paddingX: '0.85em',
+    paddingY: '0.45em',
+    minBlockSize: '2.32em',
+    radius: '0.375rem',
+  },
+  3: {
+    gap: '0.45em',
+    paddingX: '0.8em',
+    paddingY: '0.4em',
+    minBlockSize: '2.12em',
+    radius: '0.375rem',
+  },
+};
+
+const SELECTED_FOCUS_CARD_SPACING = {
+  ...TIER_CARD_SPACING[1],
+  gap: '0.6em',
+  paddingX: '0.95em',
+  paddingY: '0.58em',
+  minBlockSize: '2.7em',
 };
 
 const TIER_DOT_EM: Record<SkeletonCardModel['tier'], string> = {
@@ -182,6 +230,7 @@ const SAFE_VIEWPORT_MARGIN = 8;
 const FOCUS_HULL_BREATHING_ROOM_PX = 16;
 const FOCUS_HULL_LABEL_CLEARANCE_PX = 34;
 const FOCUS_HULL_TOP_SAFE_AREA_PX = 72;
+const FOCUS_HULL_TOP_SAFE_AREA_TOKEN = '--topology-focus-hull-top-safe-area';
 const FIXED_SURFACE_GAP = 8;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
@@ -4137,7 +4186,13 @@ export function SigmaSkeletonCards({
         resolvedHealthRepairTargetNodeId ?? undefined
       }
       data-health-repair-audit-target-kind={healthRepairTarget?.kind}
+      data-focus-top-safe-area-token={FOCUS_HULL_TOP_SAFE_AREA_TOKEN}
       className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-100 transition-opacity duration-150 ease-out data-[skeleton-cards-ready=false]:opacity-0 motion-reduce:transition-none"
+      style={
+        {
+          [FOCUS_HULL_TOP_SAFE_AREA_TOKEN]: `${FOCUS_HULL_TOP_SAFE_AREA_PX}px`,
+        } as React.CSSProperties
+      }
     >
       {/* 펼친 가지 커넥터 — 수평 접선 S-커브, 카드 경계 트림. 인디고는
           "활성 가지" 단일 의미 (overview hairline 은 Sigma 캔버스 담당). */}
@@ -4164,6 +4219,7 @@ export function SigmaSkeletonCards({
         data-focus-hull-drag-border-token="--topology-focus-hull-drag-border"
         data-focus-hull-drag-surface-token="--topology-focus-hull-drag-surface"
         data-focus-hull-drag-shadow-token="--topology-focus-hull-drag-shadow"
+        data-focus-hull-top-safe-area-token={FOCUS_HULL_TOP_SAFE_AREA_TOKEN}
         style={{
           opacity: activeHullCluster && activeHullCluster.size > 1
             ? activeDragMotion
@@ -4981,6 +5037,9 @@ export function SigmaSkeletonCards({
         const selectedRelationSummaryOwnsMeta =
           selected && selectedRelationSummary !== null;
         const coreHierarchyCountHidden = card.tier <= 1;
+        const cardSpacing = selectedRelationSummaryOwnsMeta
+          ? SELECTED_FOCUS_CARD_SPACING
+          : TIER_CARD_SPACING[card.tier];
         return (
           <button
             key={card.id}
@@ -5059,6 +5118,17 @@ export function SigmaSkeletonCards({
                 : healthRepairAuditTarget
                 ? HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN
                 : TIER_CARD_MAX_WIDTH_TOKEN[card.tier]
+            }
+            data-card-spacing-contract="css-tokenized-block-rhythm"
+            data-card-gap-token="--topology-card-gap"
+            data-card-padding-x-token="--topology-card-padding-x"
+            data-card-padding-y-token="--topology-card-padding-y"
+            data-card-min-block-size-token="--topology-card-min-block-size"
+            data-card-radius-token="--topology-card-radius"
+            data-card-block-padding-contract={
+              selectedRelationSummaryOwnsMeta
+                ? 'selected-card-balanced-y-padding'
+                : undefined
             }
             onClick={(event) => {
               event.stopPropagation();
@@ -5197,6 +5267,11 @@ export function SigmaSkeletonCards({
                       ? 0
                       : TIER_Z_INDEX[card.tier],
                 fontSize: `calc(${TIER_FONT_PX[card.tier]}px * var(--topology-card-scale, 1))`,
+                '--topology-card-gap': cardSpacing.gap,
+                '--topology-card-padding-x': cardSpacing.paddingX,
+                '--topology-card-padding-y': cardSpacing.paddingY,
+                '--topology-card-min-block-size': cardSpacing.minBlockSize,
+                '--topology-card-radius': cardSpacing.radius,
                 maxWidth:
                   selectedRelationSummaryOwnsMeta
                     ? `var(${SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN})`
