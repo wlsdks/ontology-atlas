@@ -2941,7 +2941,7 @@ export function validateWebviewVerifyPayload(payload, {
       }
       const expectedCameraMotionTargetPolicy = cameraMotionNoop
         ? "already-inside-safe-rect"
-        : "nearest-safe-target";
+        : "readable-safe-center";
       if (payload.markers.topologyCameraMotionTargetPolicy !== expectedCameraMotionTargetPolicy) {
         return `WebView Relief selected node camera motion target policy was ${payload.markers.topologyCameraMotionTargetPolicy || "missing"}`;
       }

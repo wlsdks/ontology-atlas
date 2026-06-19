@@ -51,10 +51,6 @@ const COMPACT_SELECTED_FOCUS_LEFT_RAIL_INSET = 420;
 const MAX_SELECTED_LEFT_RAIL_VIEWPORT_RATIO = 0.32;
 const COMPACT_SELECTED_RIGHT_INSET = 320;
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
 export interface SkeletonSafeInsetOptions {
   /**
    * 선택 노드에 px-docked 로 펼쳐지는 카드 행 수. 없으면 이전처럼 큰
@@ -74,13 +70,13 @@ export interface SelectedFocusCameraFitInput {
 
 export interface SelectedFocusCameraFit {
   targetRatio: number;
-  /** 선택 노드가 이동 후 놓일 viewport px. safe rect 안의 가장 가까운 읽기 지점이다. */
+  /** 선택 노드가 이동 후 놓일 viewport px. fixed chrome 을 뺀 safe rect 의 읽기 중심이다. */
   safeTarget: { x: number; y: number };
 }
 
 export interface SelectedFocusCameraMotionProof {
   intent: 'selected-focus-safe-rect';
-  targetPolicy: 'nearest-safe-target';
+  targetPolicy: 'readable-safe-center';
   selectedViewport: { x: number; y: number };
   safeTarget: { x: number; y: number };
   distancePx: number;
@@ -197,20 +193,20 @@ export function resolveSelectedFocusCameraFit({
   const right = viewport.width - insets.right - padX;
   const top = insets.top + padY;
   const bottom = viewport.height - insets.bottom - padY;
-  const insideComfortRect =
-    selectedViewport.x >= left &&
-    selectedViewport.x <= right &&
-    selectedViewport.y >= top &&
-    selectedViewport.y <= bottom;
+  const safeTarget = {
+    x: left + (right - left) / 2,
+    y: top + (bottom - top) / 2,
+  };
+  const centerTolerance = Math.max(1, comfortPadding / 2);
+  const alreadyCentered =
+    Math.hypot(safeTarget.x - selectedViewport.x, safeTarget.y - selectedViewport.y) <=
+    centerTolerance;
 
-  if (insideComfortRect) return null;
+  if (alreadyCentered) return null;
 
   return {
     targetRatio: Math.min(currentRatio, readingRatio),
-    safeTarget: {
-      x: clamp(selectedViewport.x, left, right),
-      y: clamp(selectedViewport.y, top, bottom),
-    },
+    safeTarget,
   };
 }
 
@@ -223,7 +219,7 @@ export function resolveSelectedFocusCameraMotionProof({
 }): SelectedFocusCameraMotionProof {
   return {
     intent: 'selected-focus-safe-rect',
-    targetPolicy: 'nearest-safe-target',
+    targetPolicy: 'readable-safe-center',
     selectedViewport: {
       x: Math.round(selectedViewport.x),
       y: Math.round(selectedViewport.y),
