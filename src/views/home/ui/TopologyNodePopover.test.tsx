@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import {
@@ -629,8 +629,12 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-relation-row-focus-ring",
     );
     expect(relationRow).toHaveAttribute(
+      "data-row-state-layer-contract",
+      "quiet-hover-keyboard-outline",
+    );
+    expect(relationRow).toHaveAttribute(
       "data-expanded-focus-entry",
-      "selected-node-first-relation-row",
+      "first-readable-relation-row",
     );
     expect(relationRow).toHaveAttribute(
       "data-row-min-height-token",
@@ -677,6 +681,8 @@ describe("TopologyNodePopover", () => {
     expect(relationRow?.className).toContain(
       "focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]",
     );
+    expect(relationRow?.className).toContain("focus-visible:ring-1");
+    expect(relationRow?.className).not.toContain("focus-visible:ring-2");
     expect(relationTitle).toHaveAttribute("data-primary-scan-target", "true");
     expect(
       relationRow?.querySelector("[data-relation-primary-line]"),
@@ -807,14 +813,14 @@ describe("TopologyNodePopover", () => {
     const popover = screen.getByTestId("topology-node-popover");
     expect(popover).toHaveAttribute(
       "data-expanded-focus-contract",
-      "first-relation-row-on-expand",
+      "toggle-keeps-focus-on-expand",
     );
     const firstRelationRow = document.querySelector("[data-relation-row]");
     expect(firstRelationRow).toHaveAttribute(
       "data-expanded-focus-entry",
-      "selected-node-first-relation-row",
+      "first-readable-relation-row",
     );
-    await waitFor(() => expect(document.activeElement).toBe(firstRelationRow));
+    expect(document.activeElement).not.toBe(firstRelationRow);
   });
 
   it("keeps the full-detail footer action compact when hidden relations exist", () => {

@@ -3709,7 +3709,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   );
   await expect(popover).toHaveAttribute(
     "data-expanded-focus-contract",
-    "first-relation-row-on-expand",
+    "toggle-keeps-focus-on-expand",
   );
   await expect(popover).toHaveAttribute("data-responsive-width-contract", "fluid-inspector-to-rail");
   await expect(popover).toHaveAttribute(
@@ -3786,9 +3786,9 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   await expect(firstRelationRow).toBeVisible();
   await expect(firstRelationRow).toHaveAttribute(
     "data-expanded-focus-entry",
-    "selected-node-first-relation-row",
+    "first-readable-relation-row",
   );
-  await expect(firstRelationRow).toBeFocused();
+  await expect(firstRelationRow).not.toBeFocused();
   await expect(firstRelationRow).toHaveAttribute(
     "data-row-hover-surface-token",
     "--topology-node-popover-relation-row-hover-surface",
@@ -3804,6 +3804,10 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   await expect(firstRelationRow).toHaveAttribute(
     "data-row-focus-ring-token",
     "--topology-node-popover-relation-row-focus-ring",
+  );
+  await expect(firstRelationRow).toHaveAttribute(
+    "data-row-state-layer-contract",
+    "quiet-hover-keyboard-outline",
   );
   await expect(firstRelationRow).toHaveAttribute(
     "data-row-visual-contract",

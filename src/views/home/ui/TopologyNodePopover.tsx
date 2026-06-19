@@ -12,7 +12,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import type { TopologyRelationQuality } from "../lib/topology-analysis";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
@@ -153,8 +153,6 @@ export function TopologyNodePopover({
   onToggleCollapsed,
   className,
 }: TopologyNodePopoverProps) {
-  const firstRelationRowRef = useRef<HTMLButtonElement | null>(null);
-  const wasCollapsedRef = useRef(collapsed);
   const total = focus.usedByCount + focus.dependsOnCount;
   const focusKindLabel = labels.kindLabels[focus.kind] ?? focus.kind;
   // 지도에 펼쳐진 자식은 리스트에서 제외 — 팝오버는 캔버스가 못 보여주는
@@ -349,16 +347,6 @@ export function TopologyNodePopover({
     initializeWithValue: false,
   });
 
-  useEffect(() => {
-    const wasCollapsed = wasCollapsedRef.current;
-    wasCollapsedRef.current = collapsed;
-    if (!wasCollapsed || collapsed) return;
-    const frame = window.requestAnimationFrame(() => {
-      firstRelationRowRef.current?.focus();
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [collapsed]);
-
   if (collapsed) {
     return (
       <div
@@ -543,7 +531,7 @@ export function TopologyNodePopover({
       data-popover-scroll-contract="expanded-internal-scroll"
       data-compact-handoff-contract={handoffContract}
       data-title-readability-contract="selected-node-title-readable"
-      data-expanded-focus-contract="first-relation-row-on-expand"
+      data-expanded-focus-contract="toggle-keeps-focus-on-expand"
       data-section-spacing-contract="shared-inset-and-rhythm-tokens"
       data-section-padding-x-token="--topology-node-popover-section-padding-x"
       data-section-gap-token="--topology-node-popover-section-gap"
@@ -994,12 +982,11 @@ export function TopologyNodePopover({
                   className="border-b border-[color:var(--topology-node-popover-relation-row-divider)] last:border-b-0"
                 >
                   <button
-                    ref={index === 0 ? firstRelationRowRef : undefined}
                     type="button"
                     aria-label={relationAccessibleSummary}
                     data-relation-row
                     data-expanded-focus-entry={
-                      index === 0 ? "selected-node-first-relation-row" : undefined
+                      index === 0 ? "first-readable-relation-row" : undefined
                     }
                     data-relation-direction={connection.direction}
                     data-relation-type={connection.relationType}
@@ -1043,8 +1030,9 @@ export function TopologyNodePopover({
                     data-row-focus-surface-token="--topology-node-popover-relation-row-focus-surface"
                     data-row-focus-border-token="--topology-node-popover-relation-row-focus-border"
                     data-row-focus-ring-token="--topology-node-popover-relation-row-focus-ring"
+                    data-row-state-layer-contract="quiet-hover-keyboard-outline"
                     onClick={() => onSelectConnection(connection.id)}
-                    className="group relative flex min-h-[var(--topology-node-popover-relation-row-min-height)] w-full min-w-0 items-stretch gap-[var(--topology-node-popover-relation-row-gap)] overflow-hidden border border-transparent bg-transparent px-[var(--topology-node-popover-relation-row-padding-x)] py-[var(--topology-node-popover-relation-row-padding-y)] text-left transition-[background-color,border-color,box-shadow] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)] focus-visible:border-[color:var(--topology-node-popover-relation-row-focus-border)] focus-visible:bg-[color:var(--topology-node-popover-relation-row-focus-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]"
+                    className="group relative flex min-h-[var(--topology-node-popover-relation-row-min-height)] w-full min-w-0 items-stretch gap-[var(--topology-node-popover-relation-row-gap)] overflow-hidden border border-transparent bg-transparent px-[var(--topology-node-popover-relation-row-padding-x)] py-[var(--topology-node-popover-relation-row-padding-y)] text-left transition-[background-color,border-color,box-shadow] hover:bg-[color:var(--topology-node-popover-relation-row-hover-surface)] focus-visible:border-[color:var(--topology-node-popover-relation-row-focus-border)] focus-visible:bg-[color:var(--topology-node-popover-relation-row-focus-surface)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--topology-node-popover-relation-row-focus-ring)]"
                   >
                     <span
                       data-relation-direction-marker={connection.direction}
