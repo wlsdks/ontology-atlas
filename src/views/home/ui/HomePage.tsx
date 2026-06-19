@@ -843,7 +843,7 @@ export function HomePage() {
   const selectedNodeInspectorExpandedActive =
     selectedNodeFocusActive && !nodePopoverCollapsed;
   const selectedInspectorSupportRailVisible =
-    selectedNodeInspectorExpandedActive && selectedInspectorSupportRailOpen;
+    selectedNodeFocusActive && selectedInspectorSupportRailOpen;
   const selectedNodeOwnsRightRail = selectedNodeFocusActive;
   const topologyUtilityChromeState = selectedRelationActive
     ? "collapsed-active-relation"
@@ -861,10 +861,10 @@ export function HomePage() {
   }, [selectedSlug]);
 
   useEffect(() => {
-    if (!selectedNodeInspectorExpandedActive) {
+    if (!selectedNodeFocusActive) {
       setSelectedInspectorSupportRailOpen(false);
     }
-  }, [selectedNodeInspectorExpandedActive]);
+  }, [selectedNodeFocusActive]);
 
   const handleToggleSelectedInspectorSupportRail = useCallback(() => {
     setSelectedInspectorSupportRailOpen((current) => !current);
@@ -1437,14 +1437,14 @@ export function HomePage() {
                   data-workspace-context-state={
                     selectedRelationActive
                       ? "compact-active-relation"
-                      : selectedNodeInspectorExpandedActive
+                      : selectedNodeFocusActive
                         ? selectedInspectorSupportRailVisible
                           ? "selected-inspector-support-open"
                           : "selected-inspector-support-closed"
                         : "default"
                   }
                   data-selected-inspector-support-rail={
-                    selectedNodeInspectorExpandedActive
+                    selectedNodeFocusActive
                       ? selectedInspectorSupportRailVisible
                         ? "open"
                         : "closed"
@@ -1456,7 +1456,7 @@ export function HomePage() {
                     // 분석 패널만 아래로 점프시켰다(사용자 보고). 드로어가
                     // 열려 있을 때만 "닫기" 동작으로.
                     onExpand={
-                      selectedNodeInspectorExpandedActive
+                      selectedNodeFocusActive
                         ? handleToggleSelectedInspectorSupportRail
                         : drawerOpen
                           ? handleClose
@@ -1472,7 +1472,7 @@ export function HomePage() {
                     }
                     icon={selectedProject?.icon ?? null}
                     ariaLabel={
-                      selectedNodeInspectorExpandedActive
+                      selectedNodeFocusActive
                         ? selectedInspectorSupportRailVisible
                           ? t('hero.collapseLeftPanel')
                           : t('hero.expandLeftPanel')
@@ -1481,7 +1481,7 @@ export function HomePage() {
                           : t('hero.expandLeftPanel')
                     }
                     titleText={
-                      selectedNodeInspectorExpandedActive
+                      selectedNodeFocusActive
                         ? selectedInspectorSupportRailVisible
                           ? t('hero.collapseLeftPanel')
                           : t('hero.expandLeftPanel')
@@ -1766,7 +1766,7 @@ export function HomePage() {
             ) : null}
             {!selectedRelationActive &&
             !topologyCreateNodeBlockingActive &&
-            (!selectedNodeInspectorExpandedActive || selectedInspectorSupportRailVisible) ? (
+            (!selectedNodeFocusActive || selectedInspectorSupportRailVisible) ? (
               <TopologyAnalysisBar
                 mode={analysisMode}
                 summary={analysisSummary}
@@ -2313,7 +2313,7 @@ export function HomePage() {
               {createNodeOpen ||
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
-              selectedNodeInspectorExpandedActive ? null : (
+              selectedNodeFocusActive ? null : (
                 <SigmaControls
                   value={sigmaControls}
                   onChange={setSigmaControls}
@@ -2332,7 +2332,7 @@ export function HomePage() {
               {createNodeOpen ||
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
-              selectedNodeInspectorExpandedActive ? null : (
+              selectedNodeFocusActive ? null : (
                 <Tooltip content={t('controls.shortcutsTooltip')} side="left" withProvider={false}>
                 <button
                   type="button"
@@ -2567,7 +2567,12 @@ export function HomePage() {
               onClose={handleClose}
               actions={nodePopoverActions}
               collapsed={nodePopoverCollapsed}
-              onToggleCollapsed={() => setNodePopoverCollapsed((current) => !current)}
+              onToggleCollapsed={() => {
+                if (nodePopoverCollapsed) {
+                  setSelectedInspectorSupportRailOpen(false);
+                }
+                setNodePopoverCollapsed((current) => !current);
+              }}
               className={
                 nodePopoverCollapsed
                   ? "max-lg:w-[min(560px,calc(100vw-1.5rem))]"

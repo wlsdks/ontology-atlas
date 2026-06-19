@@ -625,6 +625,7 @@ test("Relief Focus selected capability card keeps its title readable in the inst
 }) => {
   await openRelief(page, INSTALLED_APP_WEBVIEW, {
     mode: "focus",
+    requireHud: false,
     selectedSlug: "capability:topology-analysis-modes",
   });
 
@@ -1975,9 +1976,40 @@ for (const viewport of VIEWPORTS) {
   test(`Relief selected node focus uses a compact support rail — ${viewport.label}`, async ({
     page,
   }) => {
-    await openRelief(page, viewport, { mode: "focus", selectedSlug: "domain:views" });
+    await openRelief(page, viewport, {
+      mode: "focus",
+      requireHud: false,
+      selectedSlug: "domain:views",
+    });
 
+    await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
+    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
+      "data-workspace-context-state",
+      "selected-inspector-support-closed",
+    );
+    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
+      "data-selected-inspector-support-rail",
+      "closed",
+    );
+    await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+      "data-command-chrome-state",
+      "selected-node-inspector",
+    );
+    await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+      "data-utility-lane-suppression-contract",
+      "selected-node-inspector-owns-right-rail",
+    );
+    await expect(page.getByTestId("topology-utility-action-lane")).toHaveCount(0);
+    await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
+    await expect(page.getByTestId("topology-shortcuts-help-button")).toHaveCount(0);
+    await expect(page.getByTestId("topology-relation-legend")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Expand the left panel" }).click();
     const selectedFocusPanel = page.getByTestId("topology-analysis-panel");
+    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
+      "data-selected-inspector-support-rail",
+      "open",
+    );
     await expect(selectedFocusPanel).toHaveAttribute("data-analysis-mode", "focus");
     await expect(selectedFocusPanel).toHaveAttribute("data-selected-focus-rail", "true");
     await expect(selectedFocusPanel).toHaveAttribute(
@@ -2021,18 +2053,9 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(page.getByTestId("topology-focus-primary-action")).toBeVisible();
     await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
-      "data-command-chrome-state",
-      "selected-node-inspector",
-    );
-    await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
       "data-utility-lane-height-token",
       "--topology-utility-lane-height",
     );
-    await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
-      "data-utility-lane-suppression-contract",
-      "selected-node-inspector-owns-right-rail",
-    );
-    await expect(page.getByTestId("topology-utility-action-lane")).toHaveCount(0);
     const searchLane = page.getByTestId("topology-search-action-lane");
     await expect(searchLane).toBeVisible();
     await expect(searchLane).toHaveAttribute("data-search-lane-density", "compact-focus");
@@ -2072,36 +2095,6 @@ for (const viewport of VIEWPORTS) {
         "--topology-utility-lane-hover-surface",
       );
     }
-    const controlsStack = page.getByTestId("topology-sigma-controls-stack");
-    await expect(controlsStack).toBeVisible();
-    await expect(controlsStack).toHaveAttribute("data-controls-density", "compact-focus");
-    await expect(controlsStack).toHaveAttribute(
-      "data-controls-contract",
-      "focus-support-utility-stack",
-    );
-    await expect(controlsStack).toHaveAttribute(
-      "data-control-surface-token",
-      "--topology-floating-control-surface",
-    );
-    await expect(controlsStack).toHaveAttribute(
-      "data-control-border-token",
-      "--topology-floating-control-border",
-    );
-    await expect(controlsStack).toHaveAttribute(
-      "data-control-phone-bottom-token",
-      "--topology-floating-control-phone-bottom",
-    );
-    await expect(controlsStack).toHaveAttribute(
-      "data-control-desktop-top-token",
-      "--topology-floating-control-desktop-top",
-    );
-    const helpButton = page.getByTestId("topology-shortcuts-help-button");
-    await expect(helpButton).toBeVisible();
-    await expect(helpButton).toHaveAttribute("data-controls-density", "compact-focus");
-    await expect(helpButton).toHaveAttribute(
-      "data-controls-contract",
-      "focus-support-help-entry",
-    );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-drag-collision-policy",
       "release-settle",
@@ -2197,7 +2190,6 @@ for (const viewport of VIEWPORTS) {
       selectedNodeCountLineFits,
       `selected node count line should keep its own width before compact actions at ${viewport.label}`,
     ).toBe(true);
-    await expect(page.getByTestId("topology-relation-legend")).toHaveCount(0);
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
       "data-relation-legend-state",
       "collapsed-selected-inspector-attention",
@@ -2227,6 +2219,10 @@ for (const viewport of VIEWPORTS) {
 
     await page.locator('[data-node-popover-toggle="expand"]').click();
     await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
+    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
+      "data-selected-inspector-support-rail",
+      "closed",
+    );
     await expect(page.getByTestId("topology-node-popover-positioner")).toHaveAttribute(
       "data-position-contract",
       "selected-inspector-aligns-to-right-inset",
@@ -2257,26 +2253,6 @@ for (const viewport of VIEWPORTS) {
       rightInset,
       `expanded selected inspector should reserve the right utility rail at ${viewport.label}`,
     ).toBeGreaterThanOrEqual(viewport.width >= 1600 ? 88 : 24);
-    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
-      "data-selected-inspector-support-rail",
-      "closed",
-    );
-    const leftPanelToggle = page.getByRole("button", { name: "Expand the left panel" });
-    await leftPanelToggle.click();
-    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
-      "data-selected-inspector-support-rail",
-      "open",
-    );
-    await expect(page.getByTestId("topology-analysis-panel")).toBeVisible();
-    await expect(page.getByTestId("topology-analysis-panel")).toHaveAttribute(
-      "data-analysis-mode",
-      "focus",
-    );
-    await page.getByRole("button", { name: "Collapse the left panel" }).click();
-    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
-      "data-selected-inspector-support-rail",
-      "closed",
-    );
     await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
     await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
     await expect(page.getByTestId("topology-shortcuts-help-button")).toHaveCount(0);
@@ -3227,13 +3203,11 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   });
 
   const selectedFocusPanel = page.getByTestId("topology-analysis-panel");
-  await expect(selectedFocusPanel).toHaveAttribute("data-analysis-mode", "focus");
-  await expect(selectedFocusPanel).toHaveAttribute("data-selected-focus-rail", "true");
-  await expect(selectedFocusPanel).toHaveAttribute(
-    "data-compact-focus-collapse-contract",
-    "selected-focus-support-hidden-under-md",
+  await expect(selectedFocusPanel).toHaveCount(0);
+  await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
+    "data-selected-inspector-support-rail",
+    "closed",
   );
-  await expect(selectedFocusPanel).not.toBeVisible();
 
   const popover = page.getByTestId("topology-node-popover");
   await expect(popover).toBeVisible();
@@ -3412,32 +3386,8 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
 
   const controlsStack = page.getByTestId("topology-sigma-controls-stack");
   const helpButton = page.getByTestId("topology-shortcuts-help-button");
-  await expect(controlsStack).toHaveAttribute("data-controls-density", "compact-focus");
-  await expect(controlsStack).toHaveAttribute(
-    "data-controls-contract",
-    "focus-support-utility-stack",
-  );
-  await expect(controlsStack).toHaveAttribute(
-    "data-control-surface-token",
-    "--topology-floating-control-surface",
-  );
-  await expect(controlsStack).toHaveAttribute(
-    "data-control-border-token",
-    "--topology-floating-control-border",
-  );
-  await expect(controlsStack).toHaveAttribute(
-    "data-control-phone-bottom-token",
-    "--topology-floating-control-phone-bottom",
-  );
-  await expect(controlsStack).toHaveAttribute(
-    "data-control-desktop-top-token",
-    "--topology-floating-control-desktop-top",
-  );
-  await expect(helpButton).toHaveAttribute("data-controls-density", "compact-focus");
-  await expect(helpButton).toHaveAttribute(
-    "data-controls-contract",
-    "focus-support-help-entry",
-  );
+  await expect(controlsStack).toHaveCount(0);
+  await expect(helpButton).toHaveCount(0);
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-drag-collision-policy",
     "release-settle",
@@ -3516,16 +3466,6 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   );
   await expectSelectedCardRelationSummary(page, "domain:views");
 
-  const controlsRect = await rectOf(controlsStack);
-  const helpRect = await rectOf(helpButton);
-  expect(
-    intersects(controlsRect, popoverRect),
-    "compact controls must not overlap selected popover",
-  ).toBe(false);
-  expect(
-    intersects(helpRect, popoverRect),
-    "compact help must not overlap selected popover",
-  ).toBe(false);
   expect(
     await page.evaluate(() => ({
       x: document.documentElement.scrollWidth - window.innerWidth,
@@ -3544,13 +3484,11 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   });
 
   const selectedFocusPanel = page.getByTestId("topology-analysis-panel");
-  await expect(selectedFocusPanel).toHaveAttribute("data-analysis-mode", "focus");
-  await expect(selectedFocusPanel).toHaveAttribute("data-selected-focus-rail", "true");
-  await expect(selectedFocusPanel).toHaveAttribute(
-    "data-compact-focus-collapse-contract",
-    "selected-focus-support-hidden-under-md",
+  await expect(selectedFocusPanel).toHaveCount(0);
+  await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
+    "data-selected-inspector-support-rail",
+    "closed",
   );
-  await expect(selectedFocusPanel).not.toBeVisible();
 
   const popover = page.getByTestId("topology-node-popover");
   await expect(popover).toBeVisible();
@@ -3639,42 +3577,14 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   );
   const helpButton = page.getByTestId("topology-shortcuts-help-button").first();
   const controlsStack = page.getByTestId("topology-sigma-controls-stack");
-  await expect(controlsStack).toBeVisible();
-  await expect(controlsStack).toHaveAttribute(
-    "data-control-phone-bottom-token",
-    "--topology-floating-control-phone-bottom",
-  );
-  await expect(controlsStack).toHaveAttribute(
-    "data-control-desktop-top-token",
-    "--topology-floating-control-desktop-top",
-  );
-  await expect(helpButton).toBeVisible();
-  await expect(helpButton).toHaveAttribute(
-    "data-phone-help-entry-contract",
-    "visible-outside-path-panel",
-  );
-  await expect(helpButton).toHaveAttribute(
-    "data-phone-help-position-contract",
-    "map-card-clearance",
-  );
-  await expect(helpButton).toHaveAttribute(
-    "data-phone-help-top-token",
-    "--topology-shortcuts-help-focus-phone-top",
-  );
+  await expect(controlsStack).toHaveCount(0);
+  await expect(helpButton).toHaveCount(0);
   const searchLane = page.getByTestId("topology-search-action-lane");
   await expect(searchLane).toHaveAttribute(
     "data-phone-focus-utility-contract",
     "hidden-below-md-while-node-popover-owns-focus",
   );
   await expect(searchLane).not.toBeVisible();
-  const helpRect = await rectOf(helpButton);
-  expect(intersects(helpRect, popoverRect), "phone help entry must not overlap focus popover").toBe(
-    false,
-  );
-  const cardsUnderHelp = (await visibleCardRects(page)).filter((card) =>
-    intersects(helpRect, card),
-  );
-  expect(cardsUnderHelp, "phone focus help entry must not cover map cards").toEqual([]);
   const visibleRelationLabels = await visibleRelationLabelCardOverlaps(page);
   const skeletonLayer = page.getByTestId("sigma-skeleton-cards");
   await expect(skeletonLayer).toHaveAttribute(
@@ -3713,58 +3623,6 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
       `${label.id} (${label.text}) relation label must stay above the phone controls reserve`,
     ).toBeLessThanOrEqual(viewport.height - phoneBottomReserve);
   }
-  await controlsStack.locator("button").last().click();
-  const controlsPanel = page.getByTestId("topology-sigma-controls-panel");
-  await expect(controlsPanel).toBeVisible();
-  await expect(controlsPanel).toHaveAttribute(
-    "data-panel-phone-bottom-token",
-    "--topology-floating-panel-phone-bottom",
-  );
-  await expect(controlsPanel).toHaveAttribute(
-    "data-panel-phone-max-height-token",
-    "--topology-floating-panel-phone-max-height",
-  );
-  await expect(controlsPanel).toHaveAttribute(
-    "data-panel-desktop-top-token",
-    "--topology-floating-panel-desktop-top",
-  );
-  await expect(controlsPanel).toHaveAttribute(
-    "data-panel-desktop-max-height-token",
-    "--topology-floating-panel-desktop-max-height",
-  );
-  await expect(controlsPanel).toHaveAttribute(
-    "data-controls-panel-contract",
-    "single-support-sheet",
-  );
-  await expect(controlsPanel).toHaveAttribute(
-    "data-panel-surface-token",
-    "--topology-floating-panel-surface",
-  );
-  await expect(controlsPanel).toHaveAttribute(
-    "data-panel-border-token",
-    "--topology-floating-panel-border",
-  );
-  await expect(controlsPanel).toHaveAttribute(
-    "data-panel-shadow-token",
-    "--topology-floating-panel-shadow",
-  );
-  const controlsPanelRect = await rectOf(controlsPanel);
-  const mobileBottomReserve = await page.evaluate(() => {
-    const probe = document.createElement("div");
-    probe.style.position = "fixed";
-    probe.style.inset = "auto auto 0 0";
-    probe.style.height = "var(--topology-mobile-bottom-tab-reserve)";
-    probe.style.width = "0";
-    probe.style.pointerEvents = "none";
-    document.body.appendChild(probe);
-    const height = probe.getBoundingClientRect().height;
-    probe.remove();
-    return height;
-  });
-  expect(
-    viewport.height - controlsPanelRect.bottom,
-    "expanded phone controls panel should stay above the bottom navigation reserve",
-  ).toBeGreaterThanOrEqual(mobileBottomReserve);
   const scrollOverflow = await page.evaluate(() => ({
     x: document.documentElement.scrollWidth - window.innerWidth,
     y: document.documentElement.scrollHeight - window.innerHeight,
@@ -4595,9 +4453,8 @@ test("Relief Health phone rail owns the read layer without help overlap", async 
 test("Relief shortcut sheet uses a phone sheet instead of an inset help card", async ({ page }) => {
   const viewport = PHONE_VIEWPORT;
   await openRelief(page, viewport, {
-    mode: "focus",
+    mode: "map",
     requireHud: false,
-    selectedSlug: "domain:views",
   });
 
   const helpEntry = page.getByTestId("topology-shortcuts-help-button").first();
