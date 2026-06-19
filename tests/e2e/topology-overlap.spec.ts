@@ -2222,6 +2222,44 @@ for (const viewport of VIEWPORTS) {
 
     await page.locator('[data-node-popover-toggle="expand"]').click();
     await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
+    await expect(page.getByTestId("topology-node-popover-positioner")).toHaveAttribute(
+      "data-position-contract",
+      "selected-inspector-aligns-to-right-inset",
+    );
+    await expect(page.getByTestId("topology-node-popover-positioner")).toHaveAttribute(
+      "data-position-right-inset-token",
+      "--topology-node-popover-right-inset",
+    );
+    const expandedPopoverRect = await rectOf(page.getByTestId("topology-node-popover"));
+    const rightInset = viewport.width - expandedPopoverRect.right;
+    const expectedRightInset = await page.getByTestId("topology-node-popover-positioner").evaluate(
+      (element) => Number.parseFloat(getComputedStyle(element).right),
+    );
+    expect(
+      Math.abs(rightInset - expectedRightInset),
+      `expanded selected inspector should align to the right inset at ${viewport.label}`,
+    ).toBeLessThanOrEqual(2);
+    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
+      "data-selected-inspector-support-rail",
+      "closed",
+    );
+    const leftPanelToggle = page.getByRole("button", { name: "Expand the left panel" });
+    await leftPanelToggle.click();
+    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
+      "data-selected-inspector-support-rail",
+      "open",
+    );
+    await expect(page.getByTestId("topology-analysis-panel")).toBeVisible();
+    await expect(page.getByTestId("topology-analysis-panel")).toHaveAttribute(
+      "data-analysis-mode",
+      "focus",
+    );
+    await page.getByRole("button", { name: "Collapse the left panel" }).click();
+    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
+      "data-selected-inspector-support-rail",
+      "closed",
+    );
+    await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
     await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
     await expect(page.getByTestId("topology-shortcuts-help-button")).toHaveCount(0);
     await expect(page.getByTestId("topology-relation-legend")).toHaveCount(0);

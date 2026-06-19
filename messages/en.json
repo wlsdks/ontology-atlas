@@ -2747,7 +2747,8 @@
     },
     "hero": {
       "closeSelected": "Close selected project",
-      "expandLeftPanel": "Expand the left panel"
+      "expandLeftPanel": "Expand the left panel",
+      "collapseLeftPanel": "Collapse the left panel"
     },
     "nodePopover": {
       "connections": "Connections",

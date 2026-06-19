@@ -733,6 +733,8 @@ export function HomePage() {
   // 때만 드로어 — 다른 노드를 고르면 자동으로 팝오버부터(effect 불필요).
   const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
   const [nodePopoverCollapsed, setNodePopoverCollapsed] = useState(false);
+  const [selectedInspectorSupportRailOpen, setSelectedInspectorSupportRailOpen] =
+    useState(false);
   const interactionSelectedSlugRef = useRef<string | null>(null);
   const [selectedRelationActive, setSelectedRelationActive] = useState(false);
   const fullDetailOpen =
@@ -846,6 +848,22 @@ export function HomePage() {
     );
   const selectedNodeInspectorExpandedActive =
     selectedNodeFocusActive && !nodePopoverCollapsed;
+  const selectedInspectorSupportRailVisible =
+    selectedNodeInspectorExpandedActive && selectedInspectorSupportRailOpen;
+
+  useEffect(() => {
+    setSelectedInspectorSupportRailOpen(false);
+  }, [selectedSlug]);
+
+  useEffect(() => {
+    if (!selectedNodeInspectorExpandedActive) {
+      setSelectedInspectorSupportRailOpen(false);
+    }
+  }, [selectedNodeInspectorExpandedActive]);
+
+  const handleToggleSelectedInspectorSupportRail = useCallback(() => {
+    setSelectedInspectorSupportRailOpen((current) => !current);
+  }, []);
 
   const handleSelect = useCallback(
     (
@@ -1412,14 +1430,33 @@ export function HomePage() {
                   className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8"
                   data-testid="topology-top-left-chrome-group"
                   data-workspace-context-state={
-                    selectedRelationActive ? "compact-active-relation" : "default"
+                    selectedRelationActive
+                      ? "compact-active-relation"
+                      : selectedNodeInspectorExpandedActive
+                        ? selectedInspectorSupportRailVisible
+                          ? "selected-inspector-support-open"
+                          : "selected-inspector-support-closed"
+                        : "default"
+                  }
+                  data-selected-inspector-support-rail={
+                    selectedNodeInspectorExpandedActive
+                      ? selectedInspectorSupportRailVisible
+                        ? "open"
+                        : "closed"
+                      : undefined
                   }
                 >
                   <HeroCollapsed
                     // 확장 hero 가 사라진 surface — 토글은 의미가 없고
                     // 분석 패널만 아래로 점프시켰다(사용자 보고). 드로어가
                     // 열려 있을 때만 "닫기" 동작으로.
-                    onExpand={drawerOpen ? handleClose : undefined}
+                    onExpand={
+                      selectedNodeInspectorExpandedActive
+                        ? handleToggleSelectedInspectorSupportRail
+                        : drawerOpen
+                          ? handleClose
+                          : undefined
+                    }
                     title={selectedProject?.name ?? t('workspace.fallbackTitle')}
                     subtitle={
                       selectedProject
@@ -1430,14 +1467,22 @@ export function HomePage() {
                     }
                     icon={selectedProject?.icon ?? null}
                     ariaLabel={
-                      drawerOpen
-                        ? t('hero.closeSelected')
-                        : t('hero.expandLeftPanel')
+                      selectedNodeInspectorExpandedActive
+                        ? selectedInspectorSupportRailVisible
+                          ? t('hero.collapseLeftPanel')
+                          : t('hero.expandLeftPanel')
+                        : drawerOpen
+                          ? t('hero.closeSelected')
+                          : t('hero.expandLeftPanel')
                     }
                     titleText={
-                      drawerOpen
-                        ? t('hero.closeSelected')
-                        : t('hero.expandLeftPanel')
+                      selectedNodeInspectorExpandedActive
+                        ? selectedInspectorSupportRailVisible
+                          ? t('hero.collapseLeftPanel')
+                          : t('hero.expandLeftPanel')
+                        : drawerOpen
+                          ? t('hero.closeSelected')
+                          : t('hero.expandLeftPanel')
                     }
                     docsVaultHref={selectedRelationActive ? undefined : "/docs/"}
                     ontologyHref={selectedRelationActive ? undefined : "/ontology/"}
@@ -1709,7 +1754,7 @@ export function HomePage() {
             ) : null}
             {!selectedRelationActive &&
             !topologyCreateNodeBlockingActive &&
-            !selectedNodeInspectorExpandedActive ? (
+            (!selectedNodeInspectorExpandedActive || selectedInspectorSupportRailVisible) ? (
               <TopologyAnalysisBar
                 mode={analysisMode}
                 summary={analysisSummary}
@@ -2425,7 +2470,12 @@ export function HomePage() {
         !fullDetailOpen &&
         !selectedRelationActive &&
         !createNodeOpen ? (
-          <div className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[5.5rem] lg:top-[5.5rem] lg:block 2xl:right-24 2xl:top-[5.5rem]">
+          <div
+            data-testid="topology-node-popover-positioner"
+            data-position-contract="selected-inspector-aligns-to-right-inset"
+            data-position-right-inset-token="--topology-node-popover-right-inset"
+            className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[5.5rem] lg:block"
+          >
             <TopologyNodePopover
               focus={nodeFocus}
               significance={nodeSignificancePresentation}

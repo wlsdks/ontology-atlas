@@ -613,6 +613,7 @@
     --topology-shortcuts-help-focus-phone-top: 208px;
     --topology-shortcuts-help-desktop-top: 228px;
     --topology-node-popover-fluid-width: min(568px, calc(100vw - 1.5rem));
+    --topology-node-popover-right-inset: clamp(24px, 2vw, 32px);
     --topology-node-popover-rail-width: clamp(372px, 22vw, 460px);
     --topology-node-popover-wide-rail-width: 432px;
     --topology-node-popover-cinema-rail-width: 460px;
