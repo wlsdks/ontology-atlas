@@ -2192,6 +2192,15 @@ for (const viewport of VIEWPORTS) {
       selectedNodeCountLineFits,
       `selected node count line should keep its own width before compact actions at ${viewport.label}`,
     ).toBe(true);
+    await expect(page.getByTestId("topology-relation-legend")).toHaveCount(0);
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-relation-legend-state",
+      "collapsed-selected-inspector-attention",
+    );
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-selected-inspector-chrome-policy",
+      "selected-inspector-suppresses-map-utility-chrome",
+    );
     const compactRelationFacts = page.getByTestId(
       "topology-node-popover-compact-relation-facts",
     );
@@ -2212,6 +2221,7 @@ for (const viewport of VIEWPORTS) {
     expectCardsClear(await visibleCardRects(page), viewport, selectedFocusPanelRect, null);
 
     await page.locator('[data-node-popover-toggle="expand"]').click();
+    await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
     await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
     await expect(page.getByTestId("topology-shortcuts-help-button")).toHaveCount(0);
     await expect(page.getByTestId("topology-relation-legend")).toHaveCount(0);

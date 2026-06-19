@@ -1707,7 +1707,9 @@ export function HomePage() {
                 </div>
               </>
             ) : null}
-            {!selectedRelationActive && !topologyCreateNodeBlockingActive ? (
+            {!selectedRelationActive &&
+            !topologyCreateNodeBlockingActive &&
+            !selectedNodeInspectorExpandedActive ? (
               <TopologyAnalysisBar
                 mode={analysisMode}
                 summary={analysisSummary}
@@ -2223,7 +2225,7 @@ export function HomePage() {
                         localGraphRoot === null &&
                         !canvasSelectedSlug)
                     }
-                    suppressRelationLegend={selectedNodeInspectorExpandedActive}
+                    suppressRelationLegend={selectedNodeFocusActive}
                     suppressMinimap={
                       createNodeOpen ||
                       selectedRelationActive ||
