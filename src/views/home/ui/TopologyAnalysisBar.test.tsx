@@ -66,9 +66,9 @@ const labels = {
   overviewTierLegendDomain: "Domain",
   overviewTierLegendCapability: "Capability",
   overviewTierLegendElement: "Evidence",
-  overviewRelationLegendTitle: "Relation lines",
-  overviewRelationLegendSpine: "Containment backbone",
-  overviewRelationLegendQuality: "Relations to check",
+  overviewRelationLegendTitle: "Lines",
+  overviewRelationLegendSpine: "Contains",
+  overviewRelationLegendQuality: "Trust",
   overviewBriefCopyAriaLabel: "Copy topology map brief",
   overviewBriefCopiedAriaLabel: "Topology map brief copied",
   overviewReanalyzeCopyAriaLabel: "Copy ontology reanalysis command",
@@ -987,9 +987,11 @@ describe("TopologyAnalysisBar", () => {
       "data-quality-weak-token",
       "--topology-relation-stroke-weak",
     );
-    expect(relationLineLegend).toHaveTextContent("Relation lines");
-    expect(relationLineLegend).toHaveTextContent("Containment backbone");
-    expect(relationLineLegend).toHaveTextContent("Relations to check");
+    expect(relationLineLegend).toHaveTextContent("Lines");
+    expect(relationLineLegend).toHaveTextContent("Contains");
+    expect(relationLineLegend).toHaveTextContent("Trust");
+    expect(relationLineLegend).not.toHaveTextContent("Containment backbone");
+    expect(relationLineLegend).not.toHaveTextContent("Relations to check");
     expect(actions.closest("details")).toBeNull();
     expect(screen.getByText("Copy map brief")).toBeVisible();
     expect(
