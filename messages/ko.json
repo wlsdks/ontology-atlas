@@ -519,7 +519,7 @@
       "routeFactValueShort": "타입",
       "routeEvidence": "근거",
       "routeGate": "게이트",
-      "routeGateHandoffReadyShort": "설명",
+      "routeGateHandoffReadyShort": "MCP/CLI",
       "routeGatePreflightFirstShort": "점검",
       "routeGateReviewFirstShort": "검토",
       "routeAction": "다음",

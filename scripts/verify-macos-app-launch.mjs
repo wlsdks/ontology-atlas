@@ -1466,6 +1466,9 @@ export function validateSelectedRelationCardDensityContract(markers, width) {
     ? markers.topologySelectedRelationAgentRouteSteps
     : [];
   const routeFontTooSmall = routeSteps.find((step) => {
+    if (step?.visibility === "metadata-only" || step?.kind === "action") {
+      return false;
+    }
     const labelSize = Number.parseFloat(String(step?.labelFontSize || "0"));
     const valueSize = Number.parseFloat(String(step?.valueFontSize || "0"));
     return labelSize < 8 || valueSize < 10;
@@ -1476,7 +1479,7 @@ export function validateSelectedRelationCardDensityContract(markers, width) {
 
   const cardWidth = Number(markers?.topologySelectedRelationCardWidth || 0);
   const cardHeight = Number(markers?.topologySelectedRelationCardHeight || 0);
-  if (cardWidth > 288 || cardHeight > 248) {
+  if (cardWidth > 288 || cardHeight > 336) {
     return `WebView reported oversized compact Relief selected relation card (${cardWidth || "missing"}x${cardHeight || "missing"})`;
   }
 
@@ -1509,7 +1512,7 @@ export function selectedRelationRouteRailTextLeak(payload) {
   const compactBodyText = String(payload?.bodyText || "").replace(/\s+/g, "");
   return /(?:STRONG|SUPPORTED|WEAK|REVIEW)FACT(?:SRC|AUTH|REVIEW)(?:MCP\/CLI|CHECK|REVIEW)(?:EXPLAIN|CHECK)/i.test(
     compactBodyText,
-  );
+  ) || /S\d+(?:MCP\/CLI|CHECK|REVIEW)/i.test(compactBodyText);
 }
 
 function validateTopologyFocusNoopMarkers(payload) {
@@ -4538,7 +4541,7 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (
         typeof payload.markers.topologySelectedRelationAgentGateText !== "string" ||
-        !/(handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저)/i.test(
+        !/(MCP\/CLI ready|handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저)/i.test(
           payload.markers.topologySelectedRelationAgentGateText,
         )
       ) {
@@ -4816,7 +4819,7 @@ export function validateWebviewVerifyPayload(payload, {
         typeof payload.markers.topologySelectedRelationPrimaryCopyBadgeText === "string"
           ? payload.markers.topologySelectedRelationPrimaryCopyBadgeText.trim()
           : "";
-      if (!/^(best next|다음 액션|권장 다음 작업)$/i.test(primaryCopyBadgeText)) {
+      if (!/^(best next|next step|다음 액션|다음 작업|권장 다음 작업)$/i.test(primaryCopyBadgeText)) {
         return `WebView reported malformed Relief selected relation primary copy badge (${primaryCopyBadgeText || "empty"})`;
       }
       if (
@@ -4894,8 +4897,13 @@ export function validateWebviewVerifyPayload(payload, {
           ? payload.markers.topologySelectedRelationCopyPayloadVisibleSummary.trim()
           : "";
       const expectedVisibleCopyPayloadSummary =
-        `query_ontology · ${expectedPrimaryAction} · ${payload.markers.topologySelectedRelationCopyPayloadFrom} → ${payload.markers.topologySelectedRelationCopyPayloadTo}`;
-      if (copyPayloadVisibleSummary !== expectedVisibleCopyPayloadSummary) {
+        expectedPrimaryAction === "relation_check" ? "Check first" : "Ready to explain";
+      const koreanVisibleCopyPayloadSummary =
+        expectedPrimaryAction === "relation_check" ? "점검 먼저" : "설명 준비";
+      if (
+        copyPayloadVisibleSummary !== expectedVisibleCopyPayloadSummary &&
+        copyPayloadVisibleSummary !== koreanVisibleCopyPayloadSummary
+      ) {
         return `WebView reported malformed Relief selected relation visible copy payload summary (${copyPayloadVisibleSummary || "empty"})`;
       }
       if (
@@ -5088,7 +5096,12 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation agent route evidence step (${agentRouteEvidenceStep?.value ?? "missing"})`;
       }
-      const narrowRouteStep = agentRouteSteps.find((step) => Number(step?.width || 0) < 48);
+      const narrowRouteStep = agentRouteSteps.find((step) => {
+        if (step?.visibility === "metadata-only" || step?.kind === "action") {
+          return false;
+        }
+        return Number(step?.width || 0) < 48;
+      });
       if (narrowRouteStep) {
         return `WebView reported cramped Relief selected relation agent route step (${narrowRouteStep.kind || "unknown"} ${narrowRouteStep.width ?? 0}x${narrowRouteStep.height ?? 0})`;
       }

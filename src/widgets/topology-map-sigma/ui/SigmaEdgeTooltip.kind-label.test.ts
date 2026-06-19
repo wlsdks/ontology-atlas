@@ -494,11 +494,11 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     expect(route.querySelector('[data-route-step="gate"]')).toHaveAttribute(
       'data-route-step-value',
-      'ready to explain',
+      'MCP/CLI ready',
     );
     expect(route.querySelector('[data-route-step="gate"]')).toHaveAttribute(
       'data-route-step-visible-value',
-      'explain',
+      'MCP/CLI',
     );
     expect(route.querySelector('[data-route-step="action"]')).toHaveAttribute(
       'data-route-step-value',
@@ -512,8 +512,7 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-route-step-visibility',
       'metadata-only',
     );
-    expect(route.querySelector('[data-route-step="action"]')).toHaveClass('min-h-8');
-    expect(route.querySelector('[data-route-step="action"]')).not.toHaveClass('sr-only');
+    expect(route.querySelector('[data-route-step="action"]')).toHaveClass('sr-only');
     expect(
       route.querySelector('[data-route-step="action"] [data-route-step-value-text]'),
     ).toBeNull();
@@ -522,13 +521,11 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     ).toBeNull();
     expect(
       route.querySelector('[data-route-step="action"] [data-route-step-metadata-label-text]'),
-    ).toHaveTextContent('Next');
+    ).toBeNull();
     expect(
       route.querySelector('[data-route-step="action"] [data-route-step-metadata-value-text]'),
-    ).toHaveTextContent('explain');
-    expect(route.querySelector('[data-route-step="action"]')).toHaveTextContent(
-      'explain_relation',
-    );
+    ).toBeNull();
+    expect(route.querySelector('[data-route-step="action"]')).toHaveTextContent('');
     const proofBand = screen.getByTestId('sigma-selected-edge-proof-band');
     const copyPayload = screen.getByTestId('sigma-selected-edge-copy-payload');
     const relationContract = screen.getByTestId('sigma-selected-edge-contract');

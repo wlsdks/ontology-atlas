@@ -4297,9 +4297,7 @@ export function SigmaSkeletonCards({
                 data-border-token="--topology-relation-direction-border"
                 data-text-token="--topology-relation-direction-text"
                 className="sr-only"
-              >
-                →
-              </span>
+              />
               <span
                 data-relation-label-type-text
                 data-relation-label-segment="type"
@@ -4318,21 +4316,17 @@ export function SigmaSkeletonCards({
                 data-border-token="--topology-relation-evidence-chip-border"
                 data-text-token="--topology-relation-evidence-chip-text"
                 className="sr-only"
-              >
-                {evidenceChipText}
-              </span>
+              />
               <span
                 data-relation-label-agent-gate={agentGateKind}
                 data-relation-label-segment="gate"
                 data-primary-copy-action={primaryCopyAction}
-                data-route-chip-text={agentActionChipText}
+                data-route-chip-text={agentGateRouteText}
                 data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
                 data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
                 data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
                 className="sr-only"
-              >
-                {agentActionChipText}
-              </span>
+              />
               {selected ? (
                 <>
                 <span
@@ -4457,9 +4451,7 @@ export function SigmaSkeletonCards({
               data-border-token="--topology-relation-direction-border"
               data-text-token="--topology-relation-direction-text"
               className="sr-only"
-            >
-              →
-            </span>
+            />
             <span
               data-relation-label-type-text
               data-relation-label-segment="type"
@@ -4479,9 +4471,7 @@ export function SigmaSkeletonCards({
               data-border-token="--topology-relation-evidence-chip-border"
               data-text-token="--topology-relation-evidence-chip-text"
               className="sr-only"
-            >
-              {evidenceChipText}
-            </span>
+            />
             <span
               aria-hidden="true"
               data-relation-label-agent-gate={agentGateKind}

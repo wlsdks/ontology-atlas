@@ -1295,7 +1295,8 @@ for (const viewport of VIEWPORTS) {
       "data-relation-evidence-state",
       /source-backed|authored|needs-review/,
     );
-    await expect(relationButton.locator("[data-relation-evidence-glyph]")).toHaveText(
+    await expect(relationButton.locator("[data-relation-evidence-glyph]")).toHaveAttribute(
+      "data-relation-evidence-chip-text",
       /S\d+|S9\+|A|R/,
     );
     await expect(relationButton).toHaveAttribute(
@@ -1342,7 +1343,7 @@ for (const viewport of VIEWPORTS) {
     await expect(scanGateChip).toHaveAttribute("data-relation-label-segment", "gate");
     await expect(scanGateChip).toHaveAttribute(
       "data-route-chip-text",
-      /Explain|Check|Review|설명|점검|검토/,
+      /MCP\/CLI|check|review|점검|검토/,
     );
     const relationButtonBox = await relationButton.boundingBox();
     if (!relationButtonBox) {
@@ -1438,7 +1439,7 @@ for (const viewport of VIEWPORTS) {
     await expect(visibleGateChip).toHaveClass(/sr-only/);
     await expect(visibleGateChip).toHaveAttribute(
       "data-route-chip-text",
-      /Explain|Check|Review|설명|점검|검토/,
+      /MCP\/CLI|check|review|점검|검토/,
     );
     await expect(visibleGateChip).toHaveAttribute(
       "data-surface-token",
@@ -1547,7 +1548,7 @@ for (const viewport of VIEWPORTS) {
       `selected relation contract visible judgment should fit at ${viewport.label}`,
     ).toBe(true);
     const agentGate = page.getByTestId("sigma-selected-edge-agent-gate");
-    await expect(agentGate).toContainText(/ready to explain|handoff ready|preflight first|review first|설명 가능|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저/i);
+    await expect(agentGate).toContainText(/MCP\/CLI ready|ready to explain|handoff ready|preflight first|review first|설명 가능|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저/i);
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
       "data-agent-gate-kind",
       /handoff-ready|preflight-first|review-first/,
@@ -1604,11 +1605,11 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(agentRoute.locator('[data-route-step="gate"]')).toHaveAttribute(
       "data-route-step-value",
-      /ready to explain|handoff ready|preflight first|review first|설명 가능|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저/i,
+      /MCP\/CLI ready|ready to explain|handoff ready|preflight first|review first|설명 가능|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저/i,
     );
     await expect(agentRoute.locator('[data-route-step="gate"]')).toHaveAttribute(
       "data-route-step-visible-value",
-      /explain|handoff|check|review|설명|전달|점검|검토/i,
+      /MCP\/CLI|handoff|check|review|전달|점검|검토/i,
     );
     await expect(agentRoute.locator('[data-route-step="action"]')).toHaveAttribute(
       "data-route-step-value",
@@ -1632,7 +1633,10 @@ for (const viewport of VIEWPORTS) {
       `selected relation route visible values should fit at ${viewport.label}`,
     ).toBe(true);
     await expect(agentRoute).toContainText(/typed ontology fact|타입이 있는 온톨로지 사실/i);
-    await expect(agentRoute).toContainText(/Next|다음/i);
+    await expect(agentRoute).toHaveAttribute(
+      "data-route-action-visibility",
+      "metadata-only",
+    );
     const handleStrip = page.getByTestId("sigma-selected-edge-handle-strip");
     await expect(handleStrip).toHaveAttribute("data-source-handle", /.+/);
     await expect(handleStrip).toHaveAttribute("data-target-handle", /.+/);
@@ -4886,20 +4890,20 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
       };
     }),
   );
+  const visibleRouteStepRects = routeStepRects.filter((rect) => rect.width >= 8 && rect.height >= 8);
   expect(
-    routeStepRects.every((rect) => rect.width <= routeRect.width + 1 && rect.height >= 32),
+    visibleRouteStepRects.every((rect) => rect.width <= routeRect.width + 1 && rect.height >= 32),
     "compact relation route steps should keep readable lanes",
   ).toBe(true);
-  const compactRouteRows = new Set(routeStepRects.map((rect) => rect.top));
+  const compactRouteRows = new Set(visibleRouteStepRects.map((rect) => rect.top));
   expect(
     compactRouteRows.size,
     "compact relation route should use at most two rows before the next-action rail",
   ).toBeLessThanOrEqual(2);
   expect(
-    routeStepRects[1].left > routeStepRects[0].left &&
-      routeStepRects[2].top > routeStepRects[0].top &&
-      routeStepRects[3].left > routeStepRects[2].left,
-    "compact relation route should form a two-column fact/evidence/gate/action grid",
+    visibleRouteStepRects[1].left > visibleRouteStepRects[0].left &&
+      visibleRouteStepRects[2].top > visibleRouteStepRects[0].top,
+    "compact relation route should form a two-column fact/evidence/gate grid",
   ).toBe(true);
   const compactCopyButtons = page.locator("[data-relation-copy-action]");
   await expect(compactCopyButtons).toHaveCount(2);

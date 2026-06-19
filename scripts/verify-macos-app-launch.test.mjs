@@ -81,6 +81,12 @@ test("selected relation hidden route rail text leak detector catches collapsed c
   );
   assert.equal(
     selectedRelationRouteRailTextLeak({
+      bodyText: "CONTAINS 6\ncontains 6\nS1MCP/CLI",
+    }),
+    true,
+  );
+  assert.equal(
+    selectedRelationRouteRailTextLeak({
       bodyText: "CONTAINS ×5 1\nOntology Hub — Mode-Aware\nMCP/CLI",
     }),
     false,
@@ -1459,7 +1465,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationPrimaryCopyActionTitle:
         'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
       topologySelectedRelationPrimaryCopyRecommended: true,
-      topologySelectedRelationPrimaryCopyBadgeText: "Best next",
+      topologySelectedRelationPrimaryCopyBadgeText: "Next step",
       topologySelectedRelationCopyActions: [
         {
           kind: "relation_check",
@@ -1476,7 +1482,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           kind: "explain_relation",
           priority: "primary",
           recommended: true,
-          recommendationLabel: "Best next",
+          recommendationLabel: "Next step",
           call: 'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
           title: 'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
           text: "Copy explain",
@@ -1505,7 +1511,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
       topologySelectedRelationCopyPayloadSummary:
         "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
-      topologySelectedRelationCopyPayloadVisibleSummary: "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes",
+      topologySelectedRelationCopyPayloadVisibleSummary: "Ready to explain",
       topologySelectedRelationCliFallbackCommand:
         "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       topologySelectedRelationCliFallbackSummary:
@@ -6532,7 +6538,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationPrimaryCopyActionTitle:
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationPrimaryCopyRecommended: true,
-        topologySelectedRelationPrimaryCopyBadgeText: "Best next",
+        topologySelectedRelationPrimaryCopyBadgeText: "Next step",
         topologySelectedRelationPrimaryCopyActionWidth: 124,
         topologySelectedRelationPrimaryCopyActionHeight: 32,
         topologySelectedRelationCopyPayloadTool: "query_ontology",
@@ -6546,7 +6552,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationCopyPayloadSummary:
           "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
-        topologySelectedRelationCopyPayloadVisibleSummary: "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes",
+        topologySelectedRelationCopyPayloadVisibleSummary: "Ready to explain",
         topologySelectedRelationCliFallbackCommand:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCliFallbackSummary:
@@ -6796,7 +6802,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationPrimaryCopyActionTitle:
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationPrimaryCopyRecommended: true,
-        topologySelectedRelationPrimaryCopyBadgeText: "Best next",
+        topologySelectedRelationPrimaryCopyBadgeText: "Next step",
         topologySelectedRelationPrimaryCopyActionWidth: 124,
         topologySelectedRelationPrimaryCopyActionHeight: 32,
         topologySelectedRelationCopyPayloadTool: "query_ontology",
@@ -6810,7 +6816,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationCopyPayloadSummary:
           "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
-        topologySelectedRelationCopyPayloadVisibleSummary: "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes",
+        topologySelectedRelationCopyPayloadVisibleSummary: "Ready to explain",
         topologySelectedRelationCliFallbackCommand:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCliFallbackSummary:
@@ -9606,6 +9612,7 @@ test("selected relation card density contract keeps the relation inspector compa
     topologySelectedRelationAgentRouteSteps: [
       { kind: "fact", labelFontSize: "8px", valueFontSize: "10px" },
       { kind: "evidence", labelFontSize: "8px", valueFontSize: "10px" },
+      { kind: "action", visibility: "metadata-only" },
     ],
     topologySelectedRelationCardWidth: 248,
     topologySelectedRelationCardHeight: 222,
@@ -9664,7 +9671,7 @@ test("selected relation card density contract keeps the relation inspector compa
     validateSelectedRelationCardDensityContract(
       {
         ...baseMarkers,
-        topologySelectedRelationCardHeight: 268,
+        topologySelectedRelationCardHeight: 360,
       },
       1512,
     ),

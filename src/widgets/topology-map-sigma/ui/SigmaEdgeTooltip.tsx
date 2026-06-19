@@ -840,18 +840,10 @@ function RouteStep({
       data-route-step-copy-contract="visible-route-value-full-value-accessible"
       data-route-step-visibility={hidden ? 'metadata-only' : 'visible'}
       title={`${label}: ${value}`}
-      className={stepClass}
+      className={hidden ? 'sr-only' : stepClass}
     >
       {hidden ? (
-        <>
-          <span data-route-step-metadata-label-text className="sr-only">
-            {label}
-          </span>
-          <span data-route-step-metadata-value-text className="sr-only">
-            {renderedValue}
-          </span>
-          {renderedValue === value ? null : <span className="sr-only">{value}</span>}
-        </>
+        null
       ) : (
         <>
           <div
