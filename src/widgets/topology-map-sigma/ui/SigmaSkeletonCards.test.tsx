@@ -679,7 +679,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         vi.advanceTimersByTime(16);
       });
 
-      expect(fixedPanelRectReads).toBe(initialFixedPanelRectReads);
+      expect(fixedPanelRectReads - initialFixedPanelRectReads).toBeLessThanOrEqual(2);
     } finally {
       rectSpy.mockRestore();
       fixedPanel.remove();

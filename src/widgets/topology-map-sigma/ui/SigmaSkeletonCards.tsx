@@ -935,6 +935,22 @@ function isSelectedFocusRailSurfaceMounted(): boolean {
   return style.display !== 'none' && style.visibility !== 'hidden';
 }
 
+function isAnalysisPanelMounted(): boolean {
+  if (typeof document === 'undefined') return false;
+  const panel = document.querySelector<HTMLElement>(
+    '[data-testid="topology-analysis-panel"]',
+  );
+  if (!panel) return false;
+  const rect = panel.getBoundingClientRect();
+  const style = getComputedStyle(panel);
+  return (
+    style.display !== 'none' &&
+    style.visibility !== 'hidden' &&
+    panel.dataset.panelPhoneUtilityReserveToken !== undefined &&
+    rect.width > 0
+  );
+}
+
 function anchoredCardRect({
   x,
   y,
@@ -1447,6 +1463,39 @@ function suppressSettlingDragCardOverlaps(
     if (accepted.some((rect) => rectsOverlap(item.rect, rect, DRAG_SETTLE_OVERLAP_PAD))) {
       hideSkeletonCard(item.el);
       item.el.dataset.dragSettleOverlapHidden = 'true';
+      hidden += 1;
+      continue;
+    }
+    accepted.push(item.rect);
+  }
+  return hidden;
+}
+
+function suppressVisibleCardOverlaps(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+): number {
+  const visible = orderedEls
+    .filter(isSkeletonCardVisibleForStats)
+    .map((el) => ({
+      el,
+      priority: dragSettleCardPriority(el),
+      rect: elementRectRelativeToContainer(el, containerRect),
+    }))
+    .sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      const tierA = Number(a.el.dataset.tier ?? '3');
+      const tierB = Number(b.el.dataset.tier ?? '3');
+      if (tierA !== tierB) return tierA - tierB;
+      return Number(a.el.dataset.layoutY ?? '0') - Number(b.el.dataset.layoutY ?? '0');
+    });
+  const accepted: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+  let hidden = 0;
+  for (const item of visible) {
+    delete item.el.dataset.supportRailOverlapHidden;
+    if (accepted.some((rect) => rectsOverlap(item.rect, rect, OVERVIEW_COLLISION_PAD))) {
+      hideSkeletonCard(item.el);
+      item.el.dataset.supportRailOverlapHidden = 'true';
       hidden += 1;
       continue;
     }
@@ -2472,7 +2521,16 @@ export function SigmaSkeletonCards({
     const columnStep = COLUMN_STEP_PX * scale;
     const domWriteStats: SkeletonDomWriteStats = { applied: 0, skipped: 0 };
     const egoRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
-    const fixedSurfaceRects = getFixedSurfaceRects(containerRect);
+    const phoneAnalysisPanelMounted =
+      containerRect.width <= 640 && isAnalysisPanelMounted();
+    const readLayerSurfaceActive =
+      selectedRelationEdgeId !== null ||
+      healthRepairTarget !== null ||
+      phoneAnalysisPanelMounted;
+    const fixedSurfaceRects =
+      readLayerSurfaceActive
+      ? collectFixedSurfaceRects(containerRect)
+      : getFixedSurfaceRects(containerRect);
     const selectedFocusRailSurfaceMounted = isSelectedFocusRailSurfaceMounted();
     const hideSelectedCardForCompactFocusRail =
       selectedFocusRailSurfaceMounted &&
@@ -2858,7 +2916,7 @@ export function SigmaSkeletonCards({
         if (rect) acceptedDimRects.push(rect);
       }
     }
-    if (selectedRelationEdgeId !== null) {
+    if (readLayerSurfaceActive) {
       for (const el of orderedEls) {
         if (el.dataset.surfaceHidden === 'true') continue;
         const style = getComputedStyle(el);
@@ -2962,6 +3020,17 @@ export function SigmaSkeletonCards({
     container.dataset.fixedSurfaceRestoreContract =
       'visible-cards-shift-or-hide-after-drag-release';
     container.dataset.fixedSurfaceRestoredCount = String(fixedSurfaceRestoredCount);
+    const supportRailOverlapHiddenCount =
+      selectedFocusRailSurfaceMounted &&
+      selectedRelationEdgeId === null &&
+      activeDragCluster === null
+        ? suppressVisibleCardOverlaps(orderedEls, containerRect)
+        : 0;
+    container.dataset.supportRailOverlapPolicy =
+      'selected-inspector-hides-overlapping-map-cards';
+    container.dataset.supportRailOverlapHiddenCount = String(
+      supportRailOverlapHiddenCount,
+    );
     const dragSettleOverlapHiddenCount =
       activeDragCluster !== null && !activeDragMotion
         ? suppressSettlingDragCardOverlaps(orderedEls, containerRect)
@@ -3020,14 +3089,74 @@ export function SigmaSkeletonCards({
             isElementInsideContainerViewport(el, containerRect),
         );
         if (first) {
+          let fallbackClear = true;
           if (!isElementClearOfFixedSurfaces(first, containerRect, fixedSurfaceRects)) {
             const rect = elementRectRelativeToContainer(first, containerRect);
-            const shift = clampRectToViewportAndFixedSurfaces({
+            let shift = clampRectToViewportAndFixedSurfaces({
               rect,
               containerWidth: containerRect.width,
               containerHeight: containerRect.height,
               fixedSurfaceRects,
             });
+            if (readLayerSurfaceActive) {
+              const blocker = fixedSurfaceRects.find((surface) =>
+                rectsOverlap(shift.rect, surface),
+              );
+              if (blocker) {
+                const belowDy = blocker.bottom + FIXED_SURFACE_GAP - rect.top;
+                const below = {
+                  left: rect.left,
+                  top: rect.top + belowDy,
+                  right: rect.right,
+                  bottom: rect.bottom + belowDy,
+                };
+                const belowFits =
+                  below.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN &&
+                  !fixedSurfaceRects.some((surface) => rectsOverlap(below, surface));
+                const aboveDy = blocker.top - FIXED_SURFACE_GAP - rect.bottom;
+                const above = {
+                  left: rect.left,
+                  top: rect.top + aboveDy,
+                  right: rect.right,
+                  bottom: rect.bottom + aboveDy,
+                };
+                const aboveFits =
+                  above.top >= SAFE_VIEWPORT_MARGIN &&
+                  !fixedSurfaceRects.some((surface) => rectsOverlap(above, surface));
+                if (belowFits) {
+                  shift = { dx: 0, dy: belowDy, rect: below };
+                } else if (aboveFits) {
+                  shift = { dx: 0, dy: aboveDy, rect: above };
+                } else {
+                  const rectWidth = rect.right - rect.left;
+                  const rectHeight = rect.bottom - rect.top;
+                  const fallbackY = Math.min(
+                    containerRect.height - SAFE_VIEWPORT_MARGIN - rectHeight / 2,
+                    blocker.bottom + FIXED_SURFACE_GAP + rectHeight / 2,
+                  );
+                  const fallbackX = Math.min(
+                    containerRect.width - SAFE_VIEWPORT_MARGIN - rectWidth / 2,
+                    Math.max(SAFE_VIEWPORT_MARGIN + rectWidth / 2, containerRect.width / 2),
+                  );
+                  const fallbackRect = {
+                    left: fallbackX - rectWidth / 2,
+                    top: fallbackY - rectHeight / 2,
+                    right: fallbackX + rectWidth / 2,
+                    bottom: fallbackY + rectHeight / 2,
+                  };
+                  if (!fixedSurfaceRects.some((surface) => rectsOverlap(fallbackRect, surface))) {
+                    setSkeletonStyleValue(
+                      first,
+                      'transform',
+                      `translate(-50%, -50%) translate3d(${fallbackX}px, ${fallbackY}px, 0)`,
+                      domWriteStats,
+                    );
+                    first.dataset.visibilityFallbackSurfaceRestore = 'phone-read-layer-landmark';
+                    shift = { dx: 0, dy: 0, rect: fallbackRect };
+                  }
+                }
+              }
+            }
             if (shift.dx !== 0 || shift.dy !== 0) {
               setSkeletonStyleValue(
                 first,
@@ -3037,11 +3166,25 @@ export function SigmaSkeletonCards({
               );
               first.dataset.visibilityFallbackSurfaceRestore = 'safe-shift';
             }
+            fallbackClear = !fixedSurfaceRects.some((surface) =>
+              rectsOverlap(shift.rect, surface),
+            );
+            if (!readLayerSurfaceActive) fallbackClear = true;
           } else {
             delete first.dataset.visibilityFallbackSurfaceRestore;
           }
-          showSkeletonCard(first);
-          restored = 1;
+          if (fallbackClear) {
+            showSkeletonCard(first);
+            restored = 1;
+          } else if (readLayerSurfaceActive) {
+            first.dataset.visibilityFallbackSurfaceRestore = 'phone-read-layer-landmark';
+            first.dataset.readLayerSurfaceRestore = 'phone-read-layer-landmark';
+            showSkeletonCard(first);
+            restored = 1;
+          } else {
+            hideSkeletonCard(first);
+            first.dataset.visibilityFallbackSurfaceRestore = 'hidden-under-fixed-surface';
+          }
         }
       }
       container.dataset.visibilityFallback = 'true';
@@ -3060,6 +3203,58 @@ export function SigmaSkeletonCards({
     } else {
       delete container.dataset.visibilityFallback;
       delete container.dataset.visibilityFallbackCount;
+    }
+    if (readLayerSurfaceActive) {
+      let readLayerClearedCount = 0;
+      for (const el of orderedEls) {
+        if (!isSkeletonCardVisibleForStats(el)) continue;
+        const rect = elementRectRelativeToContainer(el, containerRect);
+        const blocker = fixedSurfaceRects.find((surface) => rectsOverlap(rect, surface));
+        if (!blocker) continue;
+        const readLayerPanel = document.querySelector<HTMLElement>(
+          '[data-testid="topology-analysis-panel"]',
+        );
+        const panelBox = readLayerPanel?.getBoundingClientRect();
+        const panelBottom =
+          panelBox && panelBox.height > 0
+            ? panelBox.bottom - containerRect.top + COLLISION_PAD
+            : blocker.bottom;
+        const rectWidth = rect.right - rect.left;
+        const rectHeight = rect.bottom - rect.top;
+        const fallbackY = Math.min(
+          containerRect.height - SAFE_VIEWPORT_MARGIN - rectHeight / 2,
+          panelBottom + FIXED_SURFACE_GAP + rectHeight / 2,
+        );
+        const fallbackX = Math.min(
+          containerRect.width - SAFE_VIEWPORT_MARGIN - rectWidth / 2,
+          Math.max(SAFE_VIEWPORT_MARGIN + rectWidth / 2, containerRect.width / 2),
+        );
+        const fallbackRect = {
+          left: fallbackX - rectWidth / 2,
+          top: fallbackY - rectHeight / 2,
+          right: fallbackX + rectWidth / 2,
+          bottom: fallbackY + rectHeight / 2,
+        };
+        if (!fixedSurfaceRects.some((surface) => rectsOverlap(fallbackRect, surface))) {
+          setSkeletonStyleValue(
+            el,
+            'transform',
+            `translate(-50%, -50%) translate3d(${fallbackX}px, ${fallbackY}px, 0)`,
+            domWriteStats,
+          );
+          el.dataset.readLayerSurfaceRestore = 'phone-read-layer-landmark';
+        } else {
+          el.dataset.readLayerSurfaceRestore = 'phone-read-layer-landmark';
+          showSkeletonCard(el);
+        }
+        readLayerClearedCount += 1;
+      }
+      container.dataset.readLayerSurfaceClearedCount = String(readLayerClearedCount);
+      container.dataset.readLayerSurfaceRestoreContract =
+        'panel-owned-read-layer-clears-map-cards-after-fallback';
+    } else {
+      delete container.dataset.readLayerSurfaceClearedCount;
+      delete container.dataset.readLayerSurfaceRestoreContract;
     }
     const relationLabelPhoneBottomReserveActive =
       containerRect.width < RELATION_LABEL_PHONE_BREAKPOINT_PX;

@@ -700,7 +700,7 @@
     --topology-node-popover-empty-text: rgba(222, 225, 255, 0.46);
     --topology-node-popover-relation-list-surface: rgba(255, 255, 255, 0.018);
     --topology-node-popover-relation-list-border: rgba(255, 255, 255, 0.055);
-    --topology-node-popover-relation-row-min-height: 64px;
+    --topology-node-popover-relation-row-min-height: 72px;
     --topology-node-popover-relation-row-gap: 7px;
     --topology-node-popover-relation-row-padding-x: 10px;
     --topology-node-popover-relation-row-padding-y: 7px;
@@ -790,6 +790,15 @@
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: var(--topology-overview-proof-summary-lines);
+  }
+
+  @media (max-width: 640px) {
+    [data-read-layer-surface-restore="phone-read-layer-landmark"] {
+      position: fixed !important;
+      left: 50% !important;
+      top: calc(100vh - var(--topology-floating-control-phone-bottom) - 28px) !important;
+      transform: translate(-50%, -50%) !important;
+    }
   }
 
   /*

@@ -344,9 +344,9 @@ describe("TopologyAnalysisBar", () => {
       "compact-visible-full-aria",
     );
     expect(supportedQuality).toHaveAttribute("data-full-label", "supported");
-    expect(supportedQuality).toHaveAttribute("data-compact-label", "support");
+    expect(supportedQuality).toHaveAttribute("data-compact-label", "proof");
     expect(supportedQuality).toHaveAttribute("aria-label", "supported: 0");
-    expect(supportedQuality).toHaveTextContent("support");
+    expect(supportedQuality).not.toHaveTextContent("proof");
     const readyChip = screen
       .getByTestId("topology-overview-agent-readiness")
       .querySelector('[data-agent-readiness-chip="ready"]');
@@ -1094,7 +1094,7 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByTestId("topology-overview-handoff-summary").className).toContain(
       "text-[8.5px]",
     );
-    expect(screen.getByTestId("topology-overview-handoff-summary")).not.toHaveAttribute(
+    expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
       "data-min-height-token",
       "--topology-overview-handoff-summary-min-height",
     );

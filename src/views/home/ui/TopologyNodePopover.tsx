@@ -905,7 +905,7 @@ export function TopologyNodePopover({
             data-overflow-contract="vertical-scroll-only"
             data-row-density-contract="agent-handoff-scan-list"
             data-readable-row-contract="at-least-one-full-relation-row"
-            data-row-min-hit-height="64"
+            data-row-min-hit-height="72"
             data-relation-list-min-height-token="--topology-node-popover-relation-list-min-height"
             data-row-render-contract="capped-preview-plus-remainder"
             data-row-render-source={relationPreviewSource}
@@ -1019,7 +1019,7 @@ export function TopologyNodePopover({
                     data-row-render-source={relationPreviewSource}
                     data-row-surface-contract="flat-divider-row"
                     data-row-visual-contract="quiet-title-relation-meta-secondary"
-                    data-row-min-hit-height="64"
+                    data-row-min-hit-height="72"
                     data-row-min-height-token="--topology-node-popover-relation-row-min-height"
                     data-row-gap-token="--topology-node-popover-relation-row-gap"
                     data-row-padding-x-token="--topology-node-popover-relation-row-padding-x"

@@ -758,7 +758,7 @@ test("Relief overview panel owns the phone read layer above map cards", async ({
   expect(provenanceRowsFit, "phone overview provenance rows should not truncate").toBe(true);
   await expect(page.getByTestId("topology-overview-relation-quality-supported")).toHaveAttribute(
     "data-compact-label",
-    "support",
+    "proof",
   );
   await expect(page.getByTestId("topology-overview-signal-grid")).toHaveAttribute(
     "data-compact-padding-token",
@@ -2122,6 +2122,14 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-visibility-count-contract",
       "single-pass-unless-fallback",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-support-rail-overlap-policy",
+      "selected-inspector-hides-overlapping-map-cards",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-support-rail-overlap-hidden-count",
+      /^\d+$/,
     );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-fixed-surface-measure-contract",
@@ -3751,7 +3759,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-row-visual-contract",
     "quiet-title-relation-meta-secondary",
   );
-  await expect(firstRelationRow).toHaveAttribute("data-row-min-hit-height", "64");
+  await expect(firstRelationRow).toHaveAttribute("data-row-min-hit-height", "72");
   const conceptSearch = page.getByTestId("topology-concept-search");
   await conceptSearch.focus();
   await page.keyboard.press("Tab");

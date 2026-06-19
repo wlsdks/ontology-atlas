@@ -1264,6 +1264,7 @@ export function TopologyAnalysisBar({
                   <summary
                     data-testid="topology-overview-handoff-summary"
                     className="inline-flex min-h-[var(--topology-overview-secondary-disclosure-min-height)] cursor-pointer list-none items-center gap-1 rounded px-0.5 py-0 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--topology-overview-secondary-disclosure-text)] transition-colors hover:text-[color:var(--topology-overview-secondary-disclosure-hover-text)]"
+                    data-min-height-token="--topology-overview-handoff-summary-min-height"
                     data-secondary-min-height-token="--topology-overview-secondary-disclosure-min-height"
                     data-text-token="--topology-overview-secondary-disclosure-text"
                     data-hover-text-token="--topology-overview-secondary-disclosure-hover-text"
@@ -2552,6 +2553,7 @@ function RelationQualityChip({
           ? "--topology-overview-proof-warning-text"
           : "--topology-overview-proof-review-text";
   const displayLabel = compactOverviewProofLabel(label, tone);
+  const visibleLabel = count === 0 ? "" : displayLabel;
 
   return (
     <span
@@ -2569,8 +2571,8 @@ function RelationQualityChip({
       <span className={`font-mono text-[11px] leading-3 ${toneClass}`}>
         {count}
       </span>
-      <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
-        {displayLabel}
+      <span className="truncate font-mono text-[6.5px] uppercase tracking-0 text-[color:var(--color-text-quaternary)]">
+        {visibleLabel}
       </span>
     </span>
   );
@@ -2598,6 +2600,7 @@ function AgentReadinessChip({
         ? "--topology-overview-proof-warning-text"
         : "--topology-overview-proof-review-text";
   const displayLabel = compactOverviewProofLabel(label, tone);
+  const visibleLabel = count === 0 ? "" : displayLabel;
 
   return (
     <span
@@ -2614,16 +2617,18 @@ function AgentReadinessChip({
       <span className={`font-mono text-[11px] leading-3 ${toneClass}`}>
         {count}
       </span>
-      <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
-        {displayLabel}
+      <span className="truncate font-mono text-[6.5px] uppercase tracking-0 text-[color:var(--color-text-quaternary)]">
+        {visibleLabel}
       </span>
     </span>
   );
 }
 
 function compactOverviewProofLabel(label: string, tone: string): string {
-  if (tone === "supported") return label.replace(/supported/i, "support");
+  if (tone === "supported") return "proof";
   if (tone === "ready") return label.replace(/handoff[-\s]?ready/i, "ready");
+  if (tone === "preflight") return "check";
+  if (tone === "review") return "review";
   return label;
 }
 

@@ -805,6 +805,32 @@ export function expectedRelationLabelAgentGateText(gateKind) {
   return "review";
 }
 
+export function isSelectedRelationAgentGateText(value) {
+  const text = String(value ?? "").trim();
+  return /^(MCP\/CLI ready|handoff ready|Agent gate handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|설명 가능|preflight 먼저|사전 점검 먼저|검토 먼저)$/i.test(
+    text,
+  );
+}
+
+export function isSelectedRelationPrimaryCopyActionText({
+  text,
+  action,
+  locale,
+}) {
+  const label = String(text ?? "").trim();
+  if (action === "explain_relation") {
+    return locale === "ko"
+      ? /^(설명|관계\s*설명(?:\s*복사)?)$/.test(label)
+      : label.toLowerCase().includes("explain");
+  }
+  if (action === "relation_check") {
+    return locale === "ko"
+      ? /^(점검|관계\s*(점검|사전\s*점검))$/.test(label)
+      : label.toLowerCase().includes("relation");
+  }
+  return false;
+}
+
 function installedAppBundleCandidates(appBundleName) {
   return INSTALLED_APP_CANDIDATE_DIRS
     .map((dir) => path.join(dir, appBundleName))
@@ -4593,9 +4619,7 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (
         typeof payload.markers.topologySelectedRelationAgentGateText !== "string" ||
-        !/(MCP\/CLI ready|handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저)/i.test(
-          payload.markers.topologySelectedRelationAgentGateText,
-        )
+        !isSelectedRelationAgentGateText(payload.markers.topologySelectedRelationAgentGateText)
       ) {
         return `WebView reported malformed Relief selected relation agent gate copy (${payload.markers.topologySelectedRelationAgentGateText ?? "unknown text"})`;
       }
@@ -4856,14 +4880,11 @@ export function validateWebviewVerifyPayload(payload, {
           ? payload.markers.topologySelectedRelationPrimaryCopyActionText.trim()
           : "";
       const hrefLocale = payload.href.includes("/ko/") ? "ko" : "en";
-      const primaryCopyTextMatches =
-        expectedPrimaryAction === "explain_relation"
-          ? hrefLocale === "ko"
-            ? /관계\s*설명/.test(primaryCopyText)
-            : primaryCopyText.toLowerCase().includes("explain")
-          : hrefLocale === "ko"
-            ? /관계\s*(점검|사전\s*점검)/.test(primaryCopyText)
-            : primaryCopyText.toLowerCase().includes("relation");
+      const primaryCopyTextMatches = isSelectedRelationPrimaryCopyActionText({
+        text: primaryCopyText,
+        action: expectedPrimaryAction,
+        locale: hrefLocale,
+      });
       if (!primaryCopyTextMatches) {
         return `WebView reported malformed Relief selected relation primary copy action text (${primaryCopyText || "empty"} vs ${expectedPrimaryAction})`;
       }

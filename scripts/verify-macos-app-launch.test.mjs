@@ -18,6 +18,8 @@ import {
   formatVisualEvidenceHandoffLines,
   gracefulQuitCommandOptions,
   gracefulQuitExistingAppCommands,
+  isSelectedRelationAgentGateText,
+  isSelectedRelationPrimaryCopyActionText,
   normalizeWebviewRoute,
   parseAccessibilityWindowRows,
   parseMinWindowSize,
@@ -71,6 +73,59 @@ test("selected relation label agent gate text exposes MCP and CLI for handoff-re
   assert.equal(expectedRelationLabelAgentGateText("handoff-ready"), "MCP/CLI");
   assert.equal(expectedRelationLabelAgentGateText("preflight-first"), "check");
   assert.equal(expectedRelationLabelAgentGateText("review-first"), "review");
+});
+
+test("selected relation inspector agent gate text accepts localized proof copy", () => {
+  assert.equal(isSelectedRelationAgentGateText("MCP/CLI ready"), true);
+  assert.equal(isSelectedRelationAgentGateText("Agent gate handoff ready"), true);
+  assert.equal(isSelectedRelationAgentGateText("설명 가능"), true);
+  assert.equal(isSelectedRelationAgentGateText("사전 점검 먼저"), true);
+  assert.equal(isSelectedRelationAgentGateText("검토 먼저"), true);
+  assert.equal(isSelectedRelationAgentGateText("설명"), false);
+  assert.equal(isSelectedRelationAgentGateText(""), false);
+});
+
+test("selected relation primary copy action text accepts compact localized labels", () => {
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "설명",
+      action: "explain_relation",
+      locale: "ko",
+    }),
+    true,
+  );
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "관계 설명 복사",
+      action: "explain_relation",
+      locale: "ko",
+    }),
+    true,
+  );
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "점검",
+      action: "relation_check",
+      locale: "ko",
+    }),
+    true,
+  );
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "Copy explain",
+      action: "explain_relation",
+      locale: "en",
+    }),
+    true,
+  );
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "설명 가능",
+      action: "explain_relation",
+      locale: "ko",
+    }),
+    false,
+  );
 });
 
 test("selected relation hidden route rail text leak detector catches collapsed chip text", () => {

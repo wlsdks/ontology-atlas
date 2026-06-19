@@ -571,10 +571,10 @@ describe("TopologyNodePopover", () => {
       "data-readable-row-contract",
       "at-least-one-full-relation-row",
     );
-    expect(list).toHaveAttribute("data-row-min-hit-height", "64");
+    expect(list).toHaveAttribute("data-row-min-hit-height", "72");
     expect(relationRow).toHaveAttribute("data-row-density-contract", "agent-handoff-scan-row");
     expect(relationRow).toHaveAttribute("data-row-surface-contract", "flat-divider-row");
-    expect(relationRow).toHaveAttribute("data-row-min-hit-height", "64");
+    expect(relationRow).toHaveAttribute("data-row-min-hit-height", "72");
     expect(relationRow).toHaveAttribute(
       "data-row-hover-surface-token",
       "--topology-node-popover-relation-row-hover-surface",
