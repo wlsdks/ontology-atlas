@@ -2052,6 +2052,8 @@ describe("TopologyNodePopover", () => {
     );
     expect(summaryLine).toHaveAttribute("data-summary-role", "raw-supporting-note");
     expect(summaryLine).toHaveAttribute("data-summary-order-contract", "after-meaning");
+    expect(summaryLine).toHaveAttribute("data-summary-visibility", "metadata-only");
+    expect(summaryLine).toHaveClass("sr-only");
     expect(contextLine).toBeInTheDocument();
     expect(contextLine).toHaveAttribute(
       "data-significance-context-text-token",

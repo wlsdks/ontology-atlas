@@ -596,8 +596,13 @@ export function TopologyNodePopover({
           data-phone-density-contract="hide-summary-before-readable-row"
           data-summary-role="raw-supporting-note"
           data-summary-order-contract={significance ? "after-meaning" : "primary-when-no-meaning"}
+          data-summary-visibility={significance ? "metadata-only" : "visible"}
           data-summary-text-token="--topology-node-popover-summary-text"
-          className="mt-1.5 line-clamp-1 px-4 text-[10px] leading-4 text-[color:var(--topology-node-popover-summary-text)] max-[540px]:hidden"
+          className={
+            significance
+              ? "sr-only"
+              : "mt-1.5 line-clamp-1 px-4 text-[10px] leading-4 text-[color:var(--topology-node-popover-summary-text)] max-[540px]:hidden"
+          }
         >
           {focus.summary}
         </p>
