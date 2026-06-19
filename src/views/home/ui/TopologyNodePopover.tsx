@@ -1283,7 +1283,6 @@ export function TopologyNodePopover({
         data-overflow-contract="no-horizontal-scroll"
         data-popover-footer-surface-token="--topology-node-popover-footer-surface"
         data-popover-footer-border-token="--topology-node-popover-footer-border"
-        data-popover-footer-title-text-token="--topology-node-popover-footer-title-text"
         data-popover-footer-padding-x-token="--topology-node-popover-footer-padding-x"
         data-popover-footer-padding-y-token="--topology-node-popover-footer-padding-y"
         data-footer-density-contract="compact-command-strip"
@@ -1294,8 +1293,6 @@ export function TopologyNodePopover({
           <div
             data-testid="topology-node-popover-action-rail"
             data-action-rail-contract="compact-mcp-cli-handoff"
-            data-action-rail-title-gap-token="--topology-node-popover-action-rail-title-gap"
-            data-action-rail-title-margin-bottom-token="--topology-node-popover-action-rail-title-margin-bottom"
             data-action-rail-action-gap-token="--topology-node-popover-action-rail-action-gap"
             data-action-rail-margin-bottom-token="--topology-node-popover-action-rail-margin-bottom"
             data-action-min-height-token="--topology-node-popover-action-min-height"
@@ -1304,19 +1301,18 @@ export function TopologyNodePopover({
           >
             <div
               data-agent-handoff-title-row="footer"
-              data-agent-handoff-title-row-contract="title-plus-copy-hint"
-              className="mb-[var(--topology-node-popover-action-rail-title-margin-bottom)] flex min-w-0 items-center justify-between gap-[var(--topology-node-popover-action-rail-title-gap)]"
+              data-agent-handoff-title-row-contract="screen-reader-handoff-context"
+              className="sr-only"
             >
               <p
                 data-agent-handoff-title="footer"
-                className="min-w-0 truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--topology-node-popover-footer-title-text)]"
+                className="sr-only"
               >
                 {labels.actionRailTitle}
               </p>
               <span
                 data-agent-handoff-title-hint="copy"
-                data-agent-handoff-title-hint-token="--topology-node-popover-footer-title-text"
-                className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--topology-node-popover-footer-title-text)] opacity-70"
+                className="sr-only"
               >
                 {labels.actionRailHint}
               </span>

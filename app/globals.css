@@ -640,8 +640,6 @@
     --topology-node-popover-relation-lens-gap: clamp(6px, 0.5vw, 10px);
     --topology-node-popover-relation-lens-metric-gap: clamp(3px, 0.24vw, 5px);
     --topology-node-popover-relation-lens-metric-min-width: clamp(44px, 2.9vw, 58px);
-    --topology-node-popover-action-rail-title-gap: clamp(6px, 0.5vw, 10px);
-    --topology-node-popover-action-rail-title-margin-bottom: 4px;
     --topology-node-popover-action-rail-action-gap: 8px;
     --topology-node-popover-compact-action-size: 32px;
     --topology-node-popover-compact-handoff-action-min-width: 64px;
@@ -656,7 +654,6 @@
     --topology-node-popover-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
     --topology-node-popover-footer-surface: rgba(15, 16, 17, 0.96);
     --topology-node-popover-footer-border: rgba(255, 255, 255, 0.075);
-    --topology-node-popover-footer-title-text: rgba(222, 225, 255, 0.54);
     --topology-node-popover-footer-padding-x: 12px;
     --topology-node-popover-footer-padding-y: 8px;
     --topology-node-popover-action-rail-margin-bottom: 6px;
@@ -1290,7 +1287,6 @@
     --topology-node-popover-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
     --topology-node-popover-footer-surface: rgba(255, 255, 255, 0.96);
     --topology-node-popover-footer-border: rgba(15, 23, 42, 0.10);
-    --topology-node-popover-footer-title-text: rgba(71, 85, 105, 0.82);
     --topology-node-popover-footer-padding-x: 12px;
     --topology-node-popover-footer-padding-y: 8px;
     --topology-node-popover-action-rail-margin-bottom: 6px;

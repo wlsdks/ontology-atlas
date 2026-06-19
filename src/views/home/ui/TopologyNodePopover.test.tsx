@@ -542,10 +542,6 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-footer-border",
     );
     expect(footer).toHaveAttribute(
-      "data-popover-footer-title-text-token",
-      "--topology-node-popover-footer-title-text",
-    );
-    expect(footer).toHaveAttribute(
       "data-popover-footer-padding-x-token",
       "--topology-node-popover-footer-padding-x",
     );
@@ -938,14 +934,6 @@ describe("TopologyNodePopover", () => {
     );
     expect(rail).toHaveAttribute("data-action-rail-contract", "compact-mcp-cli-handoff");
     expect(rail).toHaveAttribute(
-      "data-action-rail-title-gap-token",
-      "--topology-node-popover-action-rail-title-gap",
-    );
-    expect(rail).toHaveAttribute(
-      "data-action-rail-title-margin-bottom-token",
-      "--topology-node-popover-action-rail-title-margin-bottom",
-    );
-    expect(rail).toHaveAttribute(
       "data-action-rail-action-gap-token",
       "--topology-node-popover-action-rail-action-gap",
     );
@@ -963,23 +951,16 @@ describe("TopologyNodePopover", () => {
     const handoffTitleRow = footer.querySelector('[data-agent-handoff-title-row="footer"]');
     expect(handoffTitleRow).toHaveAttribute(
       "data-agent-handoff-title-row-contract",
-      "title-plus-copy-hint",
+      "screen-reader-handoff-context",
     );
-    expect(handoffTitleRow?.className).toContain(
-      "mb-[var(--topology-node-popover-action-rail-title-margin-bottom)]",
-    );
+    expect(handoffTitleRow?.className).toContain("sr-only");
     expect(rail.querySelector(".grid")?.className).toContain(
       "gap-[var(--topology-node-popover-action-rail-action-gap)]",
     );
     const handoffTitle = footer.querySelector('[data-agent-handoff-title="footer"]');
-    expect(handoffTitle?.className).toContain(
-      "text-[color:var(--topology-node-popover-footer-title-text)]",
-    );
+    expect(handoffTitle?.className).toContain("sr-only");
     const handoffHint = footer.querySelector('[data-agent-handoff-title-hint="copy"]');
-    expect(handoffHint).toHaveAttribute(
-      "data-agent-handoff-title-hint-token",
-      "--topology-node-popover-footer-title-text",
-    );
+    expect(handoffHint?.className).toContain("sr-only");
     expect(briefAction).toHaveAttribute(
       "data-popover-action-surface-token",
       "--topology-node-popover-action-surface",

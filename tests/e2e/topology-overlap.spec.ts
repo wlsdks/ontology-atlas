@@ -4084,15 +4084,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-popover-footer-border-token",
     "--topology-node-popover-footer-border",
   );
-  await expect(footer).toHaveAttribute(
-    "data-popover-footer-title-text-token",
-    "--topology-node-popover-footer-title-text",
-  );
-  await expect(footer.locator('[data-agent-handoff-title="footer"]')).toBeVisible();
-  await expect(page.getByTestId("topology-node-popover-action-rail")).toHaveAttribute(
-    "data-action-rail-title-margin-bottom-token",
-    "--topology-node-popover-action-rail-title-margin-bottom",
-  );
+  await expect(footer.locator('[data-agent-handoff-title="footer"]')).toHaveClass(/sr-only/);
   await expect(page.getByTestId("topology-node-popover-action-rail")).toHaveAttribute(
     "data-action-rail-action-gap-token",
     "--topology-node-popover-action-rail-action-gap",
