@@ -828,6 +828,9 @@ function RouteStep({
 }) {
   const renderedValue = visibleValue ?? value;
   const valueTone = tone ? relationAgentDecisionLabelTone(tone) : 'text-[color:var(--color-text-secondary)]';
+  const stepClass =
+    'min-h-8 min-w-[var(--topology-selected-relation-route-step-min-width)] border-r border-[color:var(--topology-selected-relation-subtle-border)] px-1.5 py-1 last:border-r-0 max-[960px]:min-w-0 max-[960px]:border-b max-[960px]:even:border-r-0 max-[960px]:[&:nth-last-child(-n+2)]:border-b-0';
+
   return (
     <div
       data-route-step={kind}
@@ -837,25 +840,36 @@ function RouteStep({
       data-route-step-copy-contract="visible-route-value-full-value-accessible"
       data-route-step-visibility={hidden ? 'metadata-only' : 'visible'}
       title={`${label}: ${value}`}
-      className={
-        hidden
-          ? 'sr-only'
-          : 'min-h-8 min-w-[var(--topology-selected-relation-route-step-min-width)] border-r border-[color:var(--topology-selected-relation-subtle-border)] px-1.5 py-1 last:border-r-0 max-[960px]:min-w-0 max-[960px]:border-b max-[960px]:even:border-r-0 max-[960px]:[&:nth-last-child(-n+2)]:border-b-0'
-      }
+      className={stepClass}
     >
-      <div
-        data-route-step-label-text
-        className="truncate font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
-      >
-        {label}
-      </div>
-      <div
-        data-route-step-value-text
-        className={`mt-0.5 truncate text-[length:var(--topology-selected-relation-route-value-font-size)] leading-3 ${valueTone}`}
-      >
-        {renderedValue}
-      </div>
-      {renderedValue === value ? null : <span className="sr-only">{value}</span>}
+      {hidden ? (
+        <>
+          <span data-route-step-metadata-label-text className="sr-only">
+            {label}
+          </span>
+          <span data-route-step-metadata-value-text className="sr-only">
+            {renderedValue}
+          </span>
+          {renderedValue === value ? null : <span className="sr-only">{value}</span>}
+        </>
+      ) : (
+        <>
+          <div
+            data-route-step-label-text
+            className="truncate font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+          >
+            {label}
+          </div>
+          <div
+            data-route-step-visible-value-text
+            data-route-step-value-text
+            className={`mt-0.5 truncate text-[length:var(--topology-selected-relation-route-value-font-size)] leading-3 ${valueTone}`}
+          >
+            {renderedValue}
+          </div>
+          {renderedValue === value ? null : <span className="sr-only">{value}</span>}
+        </>
+      )}
     </div>
   );
 }

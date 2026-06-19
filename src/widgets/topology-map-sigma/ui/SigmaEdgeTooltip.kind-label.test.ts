@@ -512,7 +512,20 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-route-step-visibility',
       'metadata-only',
     );
-    expect(route.querySelector('[data-route-step="action"]')).toHaveClass('sr-only');
+    expect(route.querySelector('[data-route-step="action"]')).toHaveClass('min-h-8');
+    expect(route.querySelector('[data-route-step="action"]')).not.toHaveClass('sr-only');
+    expect(
+      route.querySelector('[data-route-step="action"] [data-route-step-value-text]'),
+    ).toBeNull();
+    expect(
+      route.querySelector('[data-route-step="action"] [data-route-step-label-text]'),
+    ).toBeNull();
+    expect(
+      route.querySelector('[data-route-step="action"] [data-route-step-metadata-label-text]'),
+    ).toHaveTextContent('Next');
+    expect(
+      route.querySelector('[data-route-step="action"] [data-route-step-metadata-value-text]'),
+    ).toHaveTextContent('explain');
     expect(route.querySelector('[data-route-step="action"]')).toHaveTextContent(
       'explain_relation',
     );
