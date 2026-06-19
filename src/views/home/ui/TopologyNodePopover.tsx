@@ -933,7 +933,6 @@ export function TopologyNodePopover({
                 `${directionLabel} · ${kindLabel}`,
                 relationTypeLabel,
                 relationReadableProofLabel,
-                primaryCopyActionShortLabel,
               ].join(" · ");
               const relationHandoffTool = "query_ontology";
               const relationHandoffPayloadSummary = [
@@ -1000,7 +999,7 @@ export function TopologyNodePopover({
 	                    data-row-surface-contract="flat-divider-row"
 	                    data-row-visual-contract="title-plus-relation-pill-meta-secondary"
 	                    data-row-min-hit-height="72"
-	                    data-row-scan-order="title>relation>direction>proof>handoff"
+	                    data-row-scan-order="title>relation>kind>proof"
                     data-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
                     data-row-focus-surface-token="--topology-node-popover-relation-row-focus-surface"
                     data-row-focus-border-token="--topology-node-popover-relation-row-focus-border"
@@ -1079,7 +1078,9 @@ export function TopologyNodePopover({
                         </span>
                         <span
                           aria-hidden="true"
-                          className="text-[color:var(--topology-node-popover-endpoint-separator)]"
+                          data-relation-row-agent-separator
+                          data-visible-contract="agent-action-hidden-from-default-row"
+                          className="sr-only"
                         >
                           {" · "}
                         </span>
@@ -1121,6 +1122,7 @@ export function TopologyNodePopover({
                         <span
                           aria-hidden="true"
                           data-relation-row-agent-gate={agentGateKind}
+                          data-visible-contract="agent-action-hidden-from-default-row"
                           data-primary-copy-action={primaryCopyAction}
                           data-relation-row-action-chip={primaryCopyAction}
                           data-route-chip-text={primaryCopyActionShortLabel}
@@ -1136,7 +1138,7 @@ export function TopologyNodePopover({
                             agentGateKind,
                             "text",
                           )}
-                          className="shrink-0 text-[color:var(--topology-node-popover-relation-row-meta-text)]"
+                          className="sr-only"
                         >
                           {primaryCopyActionShortLabel}
                         </span>

@@ -530,7 +530,7 @@ describe("TopologyNodePopover", () => {
     );
 	    expect(relationRow).toHaveAttribute(
 	      "data-row-scan-order",
-	      "title>relation>direction>proof>handoff",
+	      "title>relation>kind>proof",
 	    );
     expect(relationRow?.className).toContain("min-h-[72px]");
     expect(relationRow?.className).toContain("gap-2");
@@ -1385,6 +1385,12 @@ describe("TopologyNodePopover", () => {
     ).toHaveTextContent("설명");
     expect(
       relationRows[0].querySelector("[data-relation-row-agent-gate]"),
+    ).toHaveAttribute("data-visible-contract", "agent-action-hidden-from-default-row");
+    expect(
+      relationRows[0].querySelector("[data-relation-row-agent-gate]"),
+    ).toHaveClass("sr-only");
+    expect(
+      relationRows[0].querySelector("[data-relation-row-agent-gate]"),
     ).toHaveAttribute("data-relation-row-action-chip", "explain_relation");
     expect(
       relationRows[0].querySelector("[data-relation-row-agent-gate]"),
@@ -1578,7 +1584,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRows[0]).toHaveAttribute(
       "data-relation-readable-summary",
-      "이 노드가 기대는 곳 · 요소 · 사용 · 근거 1 · 설명",
+      "이 노드가 기대는 곳 · 요소 · 사용 · 근거 1",
     );
     expect(relationRows[0]).toHaveAttribute(
       "aria-label",
@@ -1665,6 +1671,9 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRow?.querySelector("[data-relation-row-agent-gate]")).toHaveTextContent(
       "점검",
+    );
+    expect(relationRow?.querySelector("[data-relation-row-agent-gate]")).toHaveClass(
+      "sr-only",
     );
   });
 
