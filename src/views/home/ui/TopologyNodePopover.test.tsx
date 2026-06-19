@@ -343,15 +343,8 @@ describe("TopologyNodePopover", () => {
     expect(connectionSection.className).not.toContain("var(--color-divider)");
     expect(popover.className).toContain("lg:w-[var(--topology-node-popover-rail-width)]");
     expect(popover.className).toContain("lg:max-w-[var(--topology-node-popover-rail-width)]");
-    expect(popover.className).toContain(
-      "min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)]",
-    );
-    expect(popover.className).toContain(
-      "min-[1400px]:max-w-[var(--topology-node-popover-wide-rail-width)]",
-    );
-    expect(popover.className).toContain(
-      "min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)]",
-    );
+    expect(popover.className).not.toContain("min-[1400px]");
+    expect(popover.className).not.toContain("min-[1800px]");
     expect(popover.className).toContain("max-h-[var(--topology-node-popover-max-height)]");
     const title = screen.getByTestId("topology-node-popover-title");
     expect(title).toHaveAttribute(
@@ -1117,12 +1110,8 @@ describe("TopologyNodePopover", () => {
     expect(popover.className).toContain("gap-[var(--topology-node-popover-chip-gap)]");
     expect(popover.className).toContain("flex-wrap");
     expect(popover.className).toContain("lg:w-[var(--topology-node-popover-rail-width)]");
-    expect(popover.className).toContain(
-      "min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)]",
-    );
-    expect(popover.className).toContain(
-      "min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)]",
-    );
+    expect(popover.className).not.toContain("min-[1400px]");
+    expect(popover.className).not.toContain("min-[1800px]");
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     expect(screen.getByText("이 노드를 쓰는 곳 1 · 이 노드가 기대는 곳 2")).toBeInTheDocument();
     const compactFacts = screen.getByTestId("topology-node-popover-compact-relation-facts");
