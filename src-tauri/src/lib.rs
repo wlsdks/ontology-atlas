@@ -15,8 +15,7 @@ const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_D
 const WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV: &str =
     "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_NODE_POPOVER";
 const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
-const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV: &str =
-    "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP";
+const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
@@ -1154,9 +1153,49 @@ pub fn run() {
                                     document.querySelectorAll("[data-drag-cluster-connector]").length
                                   )
                                   : 0;
+                              const visibleTopologyConnectorRelationLabelCount =
+                                Array.from(document.querySelectorAll('[data-connector-relation-label="true"]'))
+                                  .filter((label) => {
+                                    const style = getComputedStyle(label);
+                                    const opacity = Number(label.getAttribute("opacity") || style.opacity || "1");
+                                    return (
+                                      label.getAttribute("aria-hidden") !== "true" &&
+                                      style.display !== "none" &&
+                                      style.visibility !== "hidden" &&
+                                      opacity > 0
+                                    );
+                                  }).length;
+                              const visibleTopologyHtmlRelationLabelCount =
+                                Array.from(document.querySelectorAll("[data-relation-label-button]"))
+                                  .filter((label) => {
+                                    const style = getComputedStyle(label);
+                                    const rect = label.getBoundingClientRect();
+                                    const opacity = Number(style.opacity || "1");
+                                    return (
+                                      label.getAttribute("data-relation-label-visibility") === "visible-clear" &&
+                                      style.display !== "none" &&
+                                      style.visibility !== "hidden" &&
+                                      opacity > 0 &&
+                                      rect.width > 0 &&
+                                      rect.height > 0
+                                    );
+                                  }).length;
+                              const topologyFocusClusterTypedConnectorCount =
+                                topologyFocusClusterActive &&
+                                skeletonCardsLayer?.getAttribute("data-focus-relation-label-density-contract") === "click-focus-uses-ego-label-only"
+                                  ? Array.from(document.querySelectorAll("[data-focus-cluster-connector]"))
+                                    .filter((connector) => {
+                                      const relationType = connector.getAttribute("data-relation-type") || "";
+                                      return relationType.trim().length > 0;
+                                    }).length
+                                  : 0;
                               const topologyFocusClusterRelationLabelCount =
                                 topologyFocusClusterActive
                                   ? (
+                                    Number(skeletonCardsLayer?.getAttribute("data-focus-cluster-relation-label-count") || "0") ||
+                                    visibleTopologyHtmlRelationLabelCount ||
+                                    visibleTopologyConnectorRelationLabelCount ||
+                                    topologyFocusClusterTypedConnectorCount ||
                                     document.querySelectorAll("[data-focus-relation-label]").length ||
                                     document.querySelectorAll("[data-drag-relation-label]").length
                                   )
@@ -1164,7 +1203,11 @@ pub fn run() {
                               const topologyFocusClusterConnectorMarkerCount =
                                 document.querySelectorAll("[data-focus-cluster-connector]").length;
                               const topologyFocusClusterRelationLabelMarkerCount =
-                                document.querySelectorAll("[data-focus-relation-label]").length;
+                                document.querySelectorAll("[data-focus-relation-label]").length ||
+                                visibleTopologyHtmlRelationLabelCount ||
+                                visibleTopologyConnectorRelationLabelCount ||
+                                topologyFocusClusterTypedConnectorCount ||
+                                Number(skeletonCardsLayer?.getAttribute("data-focus-cluster-relation-label-count") || "0");
                               const topologyFocusClusterHullVisible =
                                 Boolean(
                                   topologyFocusClusterHullRect &&

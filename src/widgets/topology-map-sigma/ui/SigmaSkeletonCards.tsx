@@ -158,12 +158,12 @@ const TIER_SURFACE_ALPHA: Record<
 /**
  * dim 잉크 2단계 (디자이너 패널 합의): click-focus 에서는 선택 ego
  * 관계가 먼저 읽혀야 하므로 방향 감각용 상위 anchor(project/domain)는
- * 0.24, 하위 칩은 dot+실루엣 수준 0.10. 펼친 열과 *겹치는* dim 카드는
+ * 0.34, 하위 칩은 dot+실루엣 수준 0.18. 펼친 열과 *겹치는* dim 카드는
  * 0 — "포커스 콘텐츠와 고스트 콘텐츠의 텍스트 충돌"은 디자이너 제품에서
  * 절대 허용되지 않는 픽셀이다.
  */
-const DIM_ANCHOR_OPACITY = '0.24';
-const DIM_CHIP_OPACITY = '0.10';
+const DIM_ANCHOR_OPACITY = '0.34';
+const DIM_CHIP_OPACITY = '0.18';
 const OVERVIEW_CONTEXT_OPACITY: Record<SkeletonCardModel['tier'], string> = {
   0: '1',
   1: '1',
@@ -773,6 +773,13 @@ function rectsOverlap(
     a.top < b.bottom + pad &&
     a.bottom > b.top - pad
   );
+}
+
+function verticalRangesOverlap(
+  a: { top: number; bottom: number },
+  b: { top: number; bottom: number },
+): boolean {
+  return a.top < b.bottom && a.bottom > b.top;
 }
 
 function resolveRelationLabelVerticalPlacement({
@@ -1705,6 +1712,38 @@ function resolveFocusHullRect({
       right: clampedLeft + width,
       bottom: clampedTop + height,
     };
+  }
+  for (const surface of fixedSurfaceRects) {
+    if (!rectsOverlap(adjusted, surface)) continue;
+    const width = adjusted.right - adjusted.left;
+    const shiftedLeft = surface.right + COLLISION_PAD;
+    if (shiftedLeft + width <= containerWidth - SAFE_VIEWPORT_MARGIN) {
+      adjusted = {
+        left: shiftedLeft,
+        top: adjusted.top,
+        right: shiftedLeft + width,
+        bottom: adjusted.bottom,
+      };
+    }
+  }
+  const leftRailRight = fixedSurfaceRects
+    .filter(
+      (surface) =>
+        surface.left < containerWidth * 0.35 &&
+        verticalRangesOverlap(adjusted, surface),
+    )
+    .reduce((right, surface) => Math.max(right, surface.right), 0);
+  if (leftRailRight > 0 && adjusted.left < leftRailRight + COLLISION_PAD) {
+    const width = adjusted.right - adjusted.left;
+    const shiftedLeft = leftRailRight + COLLISION_PAD;
+    if (shiftedLeft + width <= containerWidth - SAFE_VIEWPORT_MARGIN) {
+      adjusted = {
+        left: shiftedLeft,
+        top: adjusted.top,
+        right: shiftedLeft + width,
+        bottom: adjusted.bottom,
+      };
+    }
   }
   return adjusted;
 }
@@ -3148,6 +3187,8 @@ export function SigmaSkeletonCards({
       );
       let relationLabelFrameExpectedCount = 0;
       let relationLabelFrameReadyCount = 0;
+      let focusRelationLabelExpectedCount = 0;
+      let focusRelationLabelVisibleCount = 0;
       for (const label of svg.querySelectorAll<SVGTextElement>('[data-relation-label-from]')) {
         const from = label.dataset.relationLabelFrom;
         const to = label.dataset.relationLabelTo;
@@ -3230,6 +3271,10 @@ export function SigmaSkeletonCards({
         ).length;
         const labelHiddenByCards =
           (labelPlacement.occluded || labelCardOverlapCount > 0) && !selectedRelationLabel;
+        if (activeHullMode === 'focus' && isEgoBadge) {
+          focusRelationLabelExpectedCount += 1;
+          if (!labelHiddenByCards) focusRelationLabelVisibleCount += 1;
+        }
         const placedY = labelPlacement.top + RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2;
         label.setAttribute('x', String(x));
         label.setAttribute('y', String(placedY));
@@ -3345,6 +3390,14 @@ export function SigmaSkeletonCards({
       container.dataset.relationLabelGeometryPendingCount = String(
         Math.max(0, relationLabelFrameExpectedCount - relationLabelFrameReadyCount),
       );
+      container.dataset.focusClusterRelationLabelCount = String(
+        focusRelationLabelVisibleCount,
+      );
+      container.dataset.focusClusterRelationLabelExpectedCount = String(
+        focusRelationLabelExpectedCount,
+      );
+      container.dataset.focusClusterRelationLabelSource =
+        activeHullMode === 'focus' ? 'ego-relation-label-layout-pass' : 'none';
       container.dataset.connectorRectCacheSize = String(connectorCardRectCache.size);
       container.dataset.connectorRectCacheReadCount = String(connectorCardRectReadCount);
       container.dataset.connectorRectCacheHitCount = String(connectorCardRectHitCount);

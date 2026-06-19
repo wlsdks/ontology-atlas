@@ -1336,6 +1336,18 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-focus-relation-label-source",
         "ego-relation-labels",
       );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-focus-cluster-relation-label-count",
+        "1",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-focus-cluster-relation-label-expected-count",
+        "1",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-focus-cluster-relation-label-source",
+        "ego-relation-label-layout-pass",
+      );
     } finally {
       rectSpy.mockRestore();
     }
@@ -1373,9 +1385,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
             left: 0,
             top: 100,
             right: 300,
-            bottom: 380,
+            bottom: 690,
             width: 300,
-            height: 280,
+            height: 590,
             x: 0,
             y: 100,
             toJSON: () => ({}),
@@ -1439,7 +1451,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       expect(hull).toHaveAttribute("data-visible", "true");
       expect(match).not.toBeNull();
-      expect(Number(match?.[2])).toBeGreaterThan(388);
+      expect(Number(match?.[1])).toBeGreaterThan(308);
     } finally {
       rectSpy.mockRestore();
     }
@@ -3023,11 +3035,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       await waitFor(() => {
         expect(layer).toHaveAttribute("data-dim-opacity-contract", "readable-context-geography");
-        expect(layer).toHaveAttribute("data-dim-anchor-opacity", "0.24");
-        expect(layer).toHaveAttribute("data-dim-chip-opacity", "0.10");
-        expect(projectCard).toHaveStyle({ opacity: "0.24" });
-        expect(domainCard).toHaveStyle({ opacity: "0.24" });
-        expect(capabilityCard).toHaveStyle({ opacity: "0.10" });
+        expect(layer).toHaveAttribute("data-dim-anchor-opacity", "0.34");
+        expect(layer).toHaveAttribute("data-dim-chip-opacity", "0.18");
+        expect(projectCard).toHaveStyle({ opacity: "0.34" });
+        expect(domainCard).toHaveStyle({ opacity: "0.34" });
+        expect(capabilityCard).toHaveStyle({ opacity: "0.18" });
       });
     } finally {
       rectSpy.mockRestore();

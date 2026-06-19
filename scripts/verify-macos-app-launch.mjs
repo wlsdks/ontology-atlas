@@ -3418,10 +3418,10 @@ export function validateWebviewVerifyPayload(payload, {
     const relationQualityText =
       overviewRelationQualityText || selectedRelationQualityText || legacyRelationQualityText;
     const isReadableRelationQualityText = (text) =>
-      /(strong|강한)[^\d]+\d+/i.test(text) &&
+      /(strong|clear|강한)[^\d]+\d+/i.test(text) &&
       /(supported|근거)[^\d]+\d+/i.test(text) &&
-      /(weak|약한)[^\d]+\d+/i.test(text) &&
-      /(review|검토)[^\d]+\d+/i.test(text) &&
+      /(weak|thin|약한)[^\d]+\d+/i.test(text) &&
+      /(review|check|검토)[^\d]+\d+/i.test(text) &&
       /[·,:]/.test(text);
     const relationQualityTextReadable = isReadableRelationQualityText(relationQualityText);
     const hasOverviewRelationQuality =
