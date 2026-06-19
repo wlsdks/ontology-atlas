@@ -3044,6 +3044,7 @@
       "overviewBriefWorkspaceCheck": "Workspace check",
       "overviewBriefMcpWorkspaceCheck": "MCP workspace check",
       "focusBriefCopy": "Copy focus brief",
+      "focusBriefCopySummary": "Brief + impact packet",
       "focusBriefCopied": "Focus brief copied",
       "focusMcpCopy": "Copy concept check",
       "focusMcpCopied": "Concept check copied",

@@ -1066,11 +1066,11 @@ describe("TopologyNodePopover", () => {
     );
     expect(popover).toHaveAttribute(
       "data-compact-action-contract",
-      "compact-label-visible-under-480",
+      "icon-only-agent-handoff",
     );
     expect(briefAction).toHaveAttribute(
       "data-popover-action-label-contract",
-      "compact-visible-full-aria",
+      "icon-only-full-aria-title",
     );
     expect(briefAction).toHaveAttribute(
       "data-popover-action-full-label",
@@ -1090,11 +1090,14 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-action-text",
     );
     expect(briefAction).toHaveAttribute(
-      "data-popover-action-max-width-token",
-      "--topology-node-popover-compact-handoff-action-max-width",
+      "data-popover-action-size-token",
+      "--topology-node-popover-compact-action-size",
     );
     expect(briefAction.className).toContain(
-      "max-w-[var(--topology-node-popover-compact-handoff-action-max-width)]",
+      "h-[var(--topology-node-popover-compact-action-size)]",
+    );
+    expect(briefAction.className).toContain(
+      "w-[var(--topology-node-popover-compact-action-size)]",
     );
     expect(briefAction.className).toContain("overflow-hidden");
     expect(briefAction.className).toContain(
@@ -2110,6 +2113,10 @@ describe("TopologyNodePopover", () => {
     expect(action).toHaveAttribute("data-popover-action", "focus-brief");
     expect(action).toHaveAttribute("data-agent-handoff-action", "copy-focus-brief");
     expect(action).toHaveAttribute(
+      "data-popover-action-label-contract",
+      "icon-only-full-aria-title",
+    );
+    expect(action).toHaveAttribute(
       "data-popover-action-surface-token",
       "--topology-node-popover-action-icon-surface",
     );
@@ -2128,6 +2135,13 @@ describe("TopologyNodePopover", () => {
     expect(action).toHaveAttribute(
       "data-popover-action-focus-ring-token",
       "--topology-node-popover-action-focus-ring",
+    );
+    expect(action).toHaveAttribute(
+      "data-popover-action-size-token",
+      "--topology-node-popover-compact-action-size",
+    );
+    expect(action.className).toContain(
+      "w-[var(--topology-node-popover-compact-action-size)]",
     );
     expect(action.className).toContain(
       "text-[color:var(--topology-node-popover-action-text)]",

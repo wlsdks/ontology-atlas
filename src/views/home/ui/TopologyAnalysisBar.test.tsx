@@ -109,6 +109,7 @@ const labels = {
   overviewSkeletonNotice:
     "Showing the readable concept map. Use Focus or Path for exact relation evidence.",
   focusBriefCopy: "Copy focus brief",
+  focusBriefCopySummary: "Brief + impact packet",
   focusBriefCopied: "Focus brief copied",
   focusMcpCopy: "Copy concept check",
   focusMcpCopied: "Concept check copied",
@@ -1472,6 +1473,9 @@ describe("TopologyAnalysisBar", () => {
       name: "Focus review brief copied",
     });
     expect(copiedButton).toHaveTextContent("Copy focus brief");
+    expect(screen.getByTestId("topology-focus-primary-summary")).toHaveTextContent(
+      "Brief + impact packet",
+    );
     expect(copiedButton).not.toHaveTextContent("Focus brief copied");
     expect(copiedButton.className).toContain("active:translate-y-[1px]");
     expect(copiedButton.className).toContain("motion-reduce:transition-none");
@@ -2593,6 +2597,13 @@ describe("TopologyAnalysisBar", () => {
     expect(
       screen.getByRole("button", { name: "Copy focus review brief" }),
     ).toBeInTheDocument();
+    const primarySummary = screen.getByTestId("topology-focus-primary-summary");
+    expect(primarySummary).toHaveTextContent("Brief + impact packet");
+    expect(primarySummary.className).toContain("text-[10px]");
+    expect(primarySummary).toHaveAttribute(
+      "data-command-primary-summary-token",
+      "--topology-command-primary-summary-text",
+    );
     expect(screen.getByRole("link", { name: "Open ontology" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open builder" })).toBeInTheDocument();
     const summary = screen.getByTestId("topology-focus-proof-summary");

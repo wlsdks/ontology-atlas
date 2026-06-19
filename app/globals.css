@@ -378,6 +378,7 @@
     --topology-command-primary-hover-surface: rgba(139, 151, 255, 0.15);
     --topology-command-primary-hover-border: rgba(139, 151, 255, 0.44);
     --topology-command-primary-hover-shadow: 0 12px 28px rgba(20, 24, 54, 0.24);
+    --topology-command-primary-summary-text: rgba(222, 225, 255, 0.56);
     --topology-command-icon-surface: rgba(139, 151, 255, 0.16);
     --topology-command-icon-text: rgba(179, 186, 255, 0.96);
     --topology-command-arrow-text: rgba(179, 186, 255, 0.78);
@@ -1001,6 +1002,7 @@
     --topology-command-primary-hover-surface: rgba(77, 86, 200, 0.14);
     --topology-command-primary-hover-border: rgba(77, 86, 200, 0.40);
     --topology-command-primary-hover-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
+    --topology-command-primary-summary-text: rgba(55, 65, 120, 0.68);
     --topology-command-icon-surface: rgba(77, 86, 200, 0.14);
     --topology-command-icon-text: rgba(40, 50, 175, 0.96);
     --topology-command-arrow-text: rgba(40, 50, 175, 0.78);

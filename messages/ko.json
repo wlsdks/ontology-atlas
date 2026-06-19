@@ -3044,6 +3044,7 @@
       "overviewBriefWorkspaceCheck": "작업공간 점검",
       "overviewBriefMcpWorkspaceCheck": "MCP 작업공간 점검",
       "focusBriefCopy": "선택 브리프 복사",
+      "focusBriefCopySummary": "브리프 + 영향 묶음",
       "focusBriefCopied": "선택 브리프 복사됨",
       "focusMcpCopy": "개념 점검 복사",
       "focusMcpCopied": "개념 점검 복사됨",

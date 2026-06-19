@@ -138,6 +138,7 @@ interface TopologyAnalysisBarLabels {
   overviewRelationPreparingNotice: string;
   overviewSkeletonNotice: string;
   focusBriefCopy: string;
+  focusBriefCopySummary: string;
   focusBriefCopied: string;
   focusMcpCopy: string;
   focusMcpCopied: string;
@@ -2050,8 +2051,12 @@ export function TopologyAnalysisBar({
                         <span className="block truncate text-[12px] font-medium leading-4">
                           {labels.focusBriefCopy}
                         </span>
-                        <span className="block truncate font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                          {labels.focusReviewOrderProfile} · {labels.focusReviewOrderImpact}
+                        <span
+                          data-testid="topology-focus-primary-summary"
+                          data-command-primary-summary-token="--topology-command-primary-summary-text"
+                          className="block truncate text-[10px] leading-4 text-[color:var(--topology-command-primary-summary-text)]"
+                        >
+                          {labels.focusBriefCopySummary}
                         </span>
                       </span>
                     </span>

@@ -1886,6 +1886,7 @@ export function HomePage() {
                   "analysis.overviewSyncCopiedAriaLabel",
                 ),
                 focusBriefCopy: t("analysis.focusBriefCopy"),
+                focusBriefCopySummary: t("analysis.focusBriefCopySummary"),
                 focusBriefCopied: t("analysis.focusBriefCopied"),
                 focusMcpCopy: t("analysis.focusMcpCopy"),
                 focusMcpCopied: t("analysis.focusMcpCopied"),
