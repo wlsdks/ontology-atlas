@@ -488,11 +488,11 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     expect(route.querySelector('[data-route-step="gate"]')).toHaveAttribute(
       'data-route-step-value',
-      'handoff ready',
+      'ready to explain',
     );
     expect(route.querySelector('[data-route-step="gate"]')).toHaveAttribute(
       'data-route-step-visible-value',
-      'handoff',
+      'explain',
     );
     expect(route.querySelector('[data-route-step="action"]')).toHaveAttribute(
       'data-route-step-value',
@@ -532,11 +532,11 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     expect(agentDecision).toHaveAttribute(
       'data-agent-decision-visible-text',
-      'Agent-ready',
+      'Explain',
     );
     expect(
       agentDecision.querySelector('[data-agent-decision-visible-summary]'),
-    ).toHaveTextContent('Agent-ready');
+    ).toHaveTextContent('Explain');
     expect(agentDecision).toHaveTextContent(
       'Include this relation in agent handoff; it has typed evidence.',
     );
@@ -738,8 +738,8 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
 
     const card = screen.getByTestId('sigma-selected-edge-card');
     expect(card).toHaveTextContent('에이전트 게이트');
-    expect(card).toHaveTextContent('전달 준비됨');
-    expect(card).toHaveTextContent('전달');
+    expect(card).toHaveTextContent('설명 가능');
+    expect(card).toHaveTextContent('설명');
     expect(screen.getByTestId('sigma-selected-edge-next-action')).toHaveTextContent(
       '다음 작업',
     );

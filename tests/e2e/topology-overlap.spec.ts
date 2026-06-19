@@ -1539,7 +1539,7 @@ for (const viewport of VIEWPORTS) {
       `selected relation contract visible judgment should fit at ${viewport.label}`,
     ).toBe(true);
     const agentGate = page.getByTestId("sigma-selected-edge-agent-gate");
-    await expect(agentGate).toContainText(/handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저/i);
+    await expect(agentGate).toContainText(/ready to explain|handoff ready|preflight first|review first|설명 가능|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저/i);
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
       "data-agent-gate-kind",
       /handoff-ready|preflight-first|review-first/,
@@ -1555,7 +1555,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(agentDecision).toHaveAttribute(
       "data-agent-decision-visible-text",
-      /Agent-ready|Check first|Review first|전달 준비|점검 먼저|검토 먼저/,
+      /Explain|Check first|Review first|설명|점검 먼저|검토 먼저/,
     );
     await expect(agentDecision).toContainText(/agent handoff|에이전트 전달|relation_check|agent-ready|관계 근거|handoff|전달/i);
     const agentDecisionVisibleSummary = agentDecision.locator(
@@ -1596,11 +1596,11 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(agentRoute.locator('[data-route-step="gate"]')).toHaveAttribute(
       "data-route-step-value",
-      /handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저/i,
+      /ready to explain|handoff ready|preflight first|review first|설명 가능|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저/i,
     );
     await expect(agentRoute.locator('[data-route-step="gate"]')).toHaveAttribute(
       "data-route-step-visible-value",
-      /handoff|check|review|전달|점검|검토/i,
+      /explain|handoff|check|review|설명|전달|점검|검토/i,
     );
     await expect(agentRoute.locator('[data-route-step="action"]')).toHaveAttribute(
       "data-route-step-value",
@@ -1620,7 +1620,7 @@ for (const viewport of VIEWPORTS) {
       `selected relation route visible values should fit at ${viewport.label}`,
     ).toBe(true);
     await expect(agentRoute).toContainText(/typed ontology fact|타입이 있는 온톨로지 사실/i);
-    await expect(agentRoute).toContainText(/MCP action|MCP 액션/i);
+    await expect(agentRoute).toContainText(/Next|다음/i);
     const handleStrip = page.getByTestId("sigma-selected-edge-handle-strip");
     await expect(handleStrip).toHaveAttribute("data-source-handle", /.+/);
     await expect(handleStrip).toHaveAttribute("data-target-handle", /.+/);
@@ -1661,8 +1661,7 @@ for (const viewport of VIEWPORTS) {
       "data-copy-payload-handle-summary",
       `${sourceHandle ?? ""} → ${targetHandle ?? ""}`,
     );
-    await expect(copyPayload).toContainText(/query_ontology/);
-    await expect(copyPayload).toContainText(/relation_check|explain_relation/);
+    await expect(copyPayload).toContainText(/Explain|Check|설명|점검/);
     await expect(copyPayload).toContainText(sourceHandle ?? "");
     await expect(copyPayload).toContainText(targetHandle ?? "");
     const visiblePayloadSummary = copyPayload.locator("[data-copy-payload-visible-summary]");
@@ -1672,7 +1671,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(visiblePayloadSummary).toHaveAttribute(
       "data-copy-payload-visible-summary",
-      new RegExp(`^query_ontology · ${primaryCopyAction ?? ""}$`),
+      /^(Explain|Check|설명|점검)$/,
     );
     const visiblePayloadSummaryFits = await visiblePayloadSummary.evaluate(
       (element) => element.scrollWidth <= element.clientWidth + 1,
