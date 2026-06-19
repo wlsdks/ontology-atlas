@@ -892,11 +892,15 @@ describe("TopologyAnalysisBar", () => {
     const tierLegend = screen.getByTestId("topology-overview-tier-legend");
     expect(tierLegend).toHaveAttribute(
       "data-tier-legend-contract",
-      "map-color-to-ontology-layer",
+      "ordered-product-to-evidence-ladder",
     );
     expect(tierLegend).toHaveAttribute(
       "data-tier-legend-token-source",
       "ONTOLOGY_KIND_TONE",
+    );
+    expect(tierLegend).toHaveAttribute(
+      "data-tier-legend-flow",
+      "project>domain>capability>element",
     );
     expect(tierLegend).toHaveTextContent("Map layers");
     expect(tierLegend).toHaveTextContent("Product/system");
@@ -915,6 +919,13 @@ describe("TopologyAnalysisBar", () => {
     expect(
       tierLegend.querySelector('[data-tier-legend-kind="element"]'),
     ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.element.fill);
+    const tierRows = Array.from(tierLegend.querySelectorAll("[data-tier-legend-kind]"));
+    expect(tierRows.map((row) => row.getAttribute("data-tier-legend-kind"))).toEqual([
+      "project",
+      "domain",
+      "capability",
+      "element",
+    ]);
     const relationLineLegend = screen.getByTestId(
       "topology-overview-relation-line-legend",
     );

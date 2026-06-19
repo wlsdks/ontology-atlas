@@ -1128,14 +1128,15 @@ export function TopologyAnalysisBar({
               >
                 <div
                   data-testid="topology-overview-tier-legend"
-                  data-tier-legend-contract="map-color-to-ontology-layer"
+                  data-tier-legend-contract="ordered-product-to-evidence-ladder"
                   data-tier-legend-token-source="ONTOLOGY_KIND_TONE"
+                  data-tier-legend-flow="project>domain>capability>element"
                   className="min-w-0"
                 >
                   <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
                     {labels.overviewTierLegendTitle}
                   </p>
-                  <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
+                  <ol className="mt-1.5 grid gap-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
                     {OVERVIEW_TIER_LEGEND_KINDS.map((kind) => {
                       const tone = ONTOLOGY_KIND_TONE[kind];
                       const labelByKind = {
@@ -1146,28 +1147,38 @@ export function TopologyAnalysisBar({
                       } satisfies Record<(typeof kind), string>;
 
                       return (
-                        <span
+                        <li
                           key={kind}
                           data-tier-legend-kind={kind}
                           data-kind-tone-fill={tone.fill}
                           data-kind-tone-border={tone.border}
-                          className="flex min-w-0 items-center gap-1.5"
+                          className="group flex min-w-0 items-center gap-1.5"
                         >
                           <span
                             aria-hidden
-                            className="size-1.5 shrink-0 rounded-full ring-1"
+                            className="grid size-4 shrink-0 place-items-center rounded-full border font-mono text-[8px] leading-none"
                             style={
                               {
                                 backgroundColor: tone.fill,
-                                "--tw-ring-color": tone.border,
+                                borderColor: tone.border,
                               } as CSSProperties
                             }
-                          />
+                          >
+                            {OVERVIEW_TIER_LEGEND_KINDS.indexOf(kind) + 1}
+                          </span>
                           <span className="min-w-0 truncate">{labelByKind[kind]}</span>
-                        </span>
+                          {kind !== "element" ? (
+                            <span
+                              aria-hidden
+                              className="ml-auto shrink-0 text-[color:var(--topology-overview-reader-lens-title-text)] opacity-60"
+                            >
+                              →
+                            </span>
+                          ) : null}
+                        </li>
                       );
                     })}
-                  </div>
+                  </ol>
                 </div>
                 <div
                   data-testid="topology-overview-relation-line-legend"
