@@ -12,7 +12,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import type { TopologyRelationQuality } from "../lib/topology-analysis";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
@@ -153,6 +153,8 @@ export function TopologyNodePopover({
   onToggleCollapsed,
   className,
 }: TopologyNodePopoverProps) {
+  const expandedShellRef = useRef<HTMLDivElement | null>(null);
+  const wasCollapsedRef = useRef(collapsed);
   const total = focus.usedByCount + focus.dependsOnCount;
   const focusKindLabel = labels.kindLabels[focus.kind] ?? focus.kind;
   // 지도에 펼쳐진 자식은 리스트에서 제외 — 팝오버는 캔버스가 못 보여주는
@@ -347,6 +349,16 @@ export function TopologyNodePopover({
     initializeWithValue: false,
   });
 
+  useEffect(() => {
+    const wasCollapsed = wasCollapsedRef.current;
+    wasCollapsedRef.current = collapsed;
+    if (!wasCollapsed || collapsed) return;
+    const frame = window.requestAnimationFrame(() => {
+      expandedShellRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [collapsed]);
+
   if (collapsed) {
     return (
       <div
@@ -509,7 +521,9 @@ export function TopologyNodePopover({
 
   return (
     <div
+      ref={expandedShellRef}
       role="dialog"
+      tabIndex={-1}
       aria-label={focus.title}
       {...selectedNodeAttributes}
       data-testid="topology-node-popover"
@@ -531,12 +545,13 @@ export function TopologyNodePopover({
       data-popover-scroll-contract="expanded-internal-scroll"
       data-compact-handoff-contract={handoffContract}
       data-title-readability-contract="selected-node-title-readable"
-      data-expanded-focus-contract="toggle-keeps-focus-on-expand"
+      data-expanded-focus-contract="expanded-shell-focus-anchor"
+      data-expanded-shell-focus="programmatic-no-visible-row-state"
       data-section-spacing-contract="shared-inset-and-rhythm-tokens"
       data-section-padding-x-token="--topology-node-popover-section-padding-x"
       data-section-gap-token="--topology-node-popover-section-gap"
       data-compact-section-gap-token="--topology-node-popover-compact-section-gap"
-      className={`flex max-h-[var(--topology-node-popover-max-height)] min-w-0 w-[var(--topology-node-popover-fluid-width)] max-w-[var(--topology-node-popover-fluid-width)] flex-col overflow-hidden rounded-[var(--topology-node-popover-radius)] border border-[color:var(--topology-node-popover-border)] bg-[color:var(--topology-node-popover-surface)] shadow-[var(--topology-node-popover-shadow)] lg:w-[var(--topology-node-popover-rail-width)] lg:max-w-[var(--topology-node-popover-rail-width)] min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)] min-[1400px]:max-w-[var(--topology-node-popover-wide-rail-width)] min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)] min-[1800px]:max-w-[var(--topology-node-popover-cinema-rail-width)] ${className ?? ""}`}
+      className={`flex max-h-[var(--topology-node-popover-max-height)] min-w-0 w-[var(--topology-node-popover-fluid-width)] max-w-[var(--topology-node-popover-fluid-width)] flex-col overflow-hidden rounded-[var(--topology-node-popover-radius)] border border-[color:var(--topology-node-popover-border)] bg-[color:var(--topology-node-popover-surface)] shadow-[var(--topology-node-popover-shadow)] outline-none lg:w-[var(--topology-node-popover-rail-width)] lg:max-w-[var(--topology-node-popover-rail-width)] min-[1400px]:w-[var(--topology-node-popover-wide-rail-width)] min-[1400px]:max-w-[var(--topology-node-popover-wide-rail-width)] min-[1800px]:w-[var(--topology-node-popover-cinema-rail-width)] min-[1800px]:max-w-[var(--topology-node-popover-cinema-rail-width)] ${className ?? ""}`}
     >
       <div
         data-testid="topology-node-popover-body"

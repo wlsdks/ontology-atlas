@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import {
@@ -813,13 +813,20 @@ describe("TopologyNodePopover", () => {
     const popover = screen.getByTestId("topology-node-popover");
     expect(popover).toHaveAttribute(
       "data-expanded-focus-contract",
-      "toggle-keeps-focus-on-expand",
+      "expanded-shell-focus-anchor",
     );
+    expect(popover).toHaveAttribute(
+      "data-expanded-shell-focus",
+      "programmatic-no-visible-row-state",
+    );
+    expect(popover).toHaveAttribute("tabindex", "-1");
+    expect(popover.className).toContain("outline-none");
     const firstRelationRow = document.querySelector("[data-relation-row]");
     expect(firstRelationRow).toHaveAttribute(
       "data-expanded-focus-entry",
       "first-readable-relation-row",
     );
+    await waitFor(() => expect(document.activeElement).toBe(popover));
     expect(document.activeElement).not.toBe(firstRelationRow);
   });
 

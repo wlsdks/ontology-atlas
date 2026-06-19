@@ -3709,8 +3709,13 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   );
   await expect(popover).toHaveAttribute(
     "data-expanded-focus-contract",
-    "toggle-keeps-focus-on-expand",
+    "expanded-shell-focus-anchor",
   );
+  await expect(popover).toHaveAttribute(
+    "data-expanded-shell-focus",
+    "programmatic-no-visible-row-state",
+  );
+  await expect(popover).toHaveAttribute("tabindex", "-1");
   await expect(popover).toHaveAttribute("data-responsive-width-contract", "fluid-inspector-to-rail");
   await expect(popover).toHaveAttribute(
     "data-max-height-token",
@@ -3788,6 +3793,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-expanded-focus-entry",
     "first-readable-relation-row",
   );
+  await expect(popover).toBeFocused();
   await expect(firstRelationRow).not.toBeFocused();
   await expect(firstRelationRow).toHaveAttribute(
     "data-row-hover-surface-token",
