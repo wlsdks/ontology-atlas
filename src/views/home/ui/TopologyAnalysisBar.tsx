@@ -2342,21 +2342,26 @@ function RelationProvenanceGate({
   return (
     <div
       aria-label={`${title}: ${summary}`}
-      className="grid min-w-0 gap-1 border-b border-[color:var(--topology-overview-signal-grid-border)] px-0 pb-2"
+      className="grid min-w-0 gap-[var(--topology-overview-proof-row-gap)] border-b border-[color:var(--topology-overview-proof-row-divider)] px-0 py-[var(--topology-overview-proof-row-padding-y)] first:pt-0"
       data-overview-provenance-contract="summary-first-counts-retained"
       data-overview-provenance-layout="single-line-summary"
       data-overview-signal-card="indigo"
       data-overview-signal-compact="true"
-      data-proof-row-density="quiet-row"
+      data-proof-row-density="tertiary-evidence-row"
       data-surface-token="--topology-overview-signal-indigo-surface"
       data-border-token="--topology-overview-signal-indigo-border"
+      data-row-divider-token="--topology-overview-proof-row-divider"
+      data-row-padding-y-token="--topology-overview-proof-row-padding-y"
+      data-row-gap-token="--topology-overview-proof-row-gap"
+      data-title-text-token="--topology-overview-proof-title-text"
+      data-summary-text-token="--topology-overview-proof-summary-text"
       data-testid="topology-overview-relation-provenance"
     >
-      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-proof-title-text)]">
         {title}
       </span>
       <span
-        className="topology-overview-proof-summary min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+        className="topology-overview-proof-summary min-w-0 break-keep text-[10.5px] leading-4 text-[color:var(--topology-overview-proof-summary-text)]"
         data-summary-clamp-contract="single-line-proof-row-summary"
         data-summary-lines-token="--topology-overview-proof-summary-lines"
         data-signal-summary-contract="human-readable-first"
@@ -2400,20 +2405,25 @@ function AgentReadinessGate({
 }) {
   return (
     <div
-      className="grid gap-1 border-b border-[color:var(--topology-overview-signal-grid-border)] px-0 pb-2"
+      className="grid gap-[var(--topology-overview-proof-row-gap)] border-b border-[color:var(--topology-overview-proof-row-divider)] px-0 py-[var(--topology-overview-proof-row-padding-y)] last:pb-0"
       aria-label={`${title}: ${summary}`}
       data-agent-readiness-summary={summary}
       data-density="summary-first"
       data-overview-signal-card="readiness"
-      data-proof-row-density="quiet-row"
+      data-proof-row-density="tertiary-evidence-row"
       data-proof-strip-contract="summary-plus-meter"
       data-surface-token="--topology-overview-readiness-surface"
       data-border-token="--topology-overview-readiness-border"
+      data-row-divider-token="--topology-overview-proof-row-divider"
+      data-row-padding-y-token="--topology-overview-proof-row-padding-y"
+      data-row-gap-token="--topology-overview-proof-row-gap"
+      data-title-text-token="--topology-overview-proof-title-text"
+      data-summary-text-token="--topology-overview-proof-summary-text"
       data-testid="topology-overview-agent-readiness"
     >
       <div className="flex min-w-0 items-center">
         <span
-          className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+          className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-proof-title-text)]"
           aria-hidden
         >
           {title}
@@ -2441,7 +2451,7 @@ function AgentReadinessGate({
         />
       </div>
       <p
-        className="topology-overview-proof-summary min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+        className="topology-overview-proof-summary min-w-0 break-keep text-[10.5px] leading-4 text-[color:var(--topology-overview-proof-summary-text)]"
         data-summary-clamp-contract="single-line-proof-row-summary"
         data-summary-lines-token="--topology-overview-proof-summary-lines"
         data-signal-summary-contract="human-readable-first"
@@ -2482,7 +2492,7 @@ function RelationQualityGate({
   return (
     <div
       {...attrs}
-      className={`grid gap-1 border-b border-[color:var(--topology-overview-signal-grid-border)] px-0 pb-2 ${
+      className={`grid gap-[var(--topology-overview-proof-row-gap)] border-b border-[color:var(--topology-overview-proof-row-divider)] px-0 py-[var(--topology-overview-proof-row-padding-y)] ${
         attrs.className ?? ""
       }`}
       aria-label={`${title}: ${summary}`}
@@ -2490,16 +2500,21 @@ function RelationQualityGate({
       data-proof-strip-contract="summary-plus-meter"
       data-quality-meter-contract="distribution-bar-maps-relation-quality"
       data-overview-signal-card="quality"
-      data-proof-row-density="quiet-row"
+      data-proof-row-density="tertiary-evidence-row"
       data-surface-token="--topology-overview-quality-surface"
       data-border-token="--topology-overview-quality-border"
+      data-row-divider-token="--topology-overview-proof-row-divider"
+      data-row-padding-y-token="--topology-overview-proof-row-padding-y"
+      data-row-gap-token="--topology-overview-proof-row-gap"
+      data-title-text-token="--topology-overview-proof-title-text"
+      data-summary-text-token="--topology-overview-proof-summary-text"
       data-testid="topology-overview-relation-quality"
     >
-      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-proof-title-text)]">
         {title}
       </span>
       <p
-        className="topology-overview-proof-summary min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+        className="topology-overview-proof-summary min-w-0 break-keep text-[10.5px] leading-4 text-[color:var(--topology-overview-proof-summary-text)]"
         data-summary-clamp-contract="single-line-proof-row-summary"
         data-summary-lines-token="--topology-overview-proof-summary-lines"
         data-signal-summary-contract="human-readable-first"

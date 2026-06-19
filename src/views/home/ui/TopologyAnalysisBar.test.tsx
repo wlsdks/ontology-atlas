@@ -1693,7 +1693,30 @@ describe("TopologyAnalysisBar", () => {
       "data-proof-strip-contract",
       "summary-plus-meter",
     );
-    expect(relationQuality).toHaveAttribute("data-proof-row-density", "quiet-row");
+    expect(relationQuality).toHaveAttribute(
+      "data-proof-row-density",
+      "tertiary-evidence-row",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-row-divider-token",
+      "--topology-overview-proof-row-divider",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-row-padding-y-token",
+      "--topology-overview-proof-row-padding-y",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-row-gap-token",
+      "--topology-overview-proof-row-gap",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-title-text-token",
+      "--topology-overview-proof-title-text",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-summary-text-token",
+      "--topology-overview-proof-summary-text",
+    );
     expect(relationQuality).toHaveAttribute(
       "data-quality-meter-contract",
       "distribution-bar-maps-relation-quality",

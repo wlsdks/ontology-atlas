@@ -436,6 +436,11 @@
     --topology-overview-quality-supported-meter: rgba(139, 151, 255, 0.72);
     --topology-overview-quality-weak-meter: rgba(217, 161, 65, 0.74);
     --topology-overview-quality-review-meter: rgba(226, 105, 105, 0.76);
+    --topology-overview-proof-row-divider: rgba(255, 255, 255, 0.048);
+    --topology-overview-proof-row-padding-y: 7px;
+    --topology-overview-proof-row-gap: 3px;
+    --topology-overview-proof-title-text: rgba(222, 225, 255, 0.40);
+    --topology-overview-proof-summary-text: rgba(222, 225, 255, 0.58);
     --topology-overview-proof-cell-divider: rgba(255, 255, 255, 0.055);
     --topology-overview-proof-strong-text: rgba(94, 234, 212, 0.92);
     --topology-overview-proof-supported-text: rgba(139, 151, 255, 0.92);
@@ -1054,6 +1059,11 @@
     --topology-overview-quality-supported-meter: rgba(77, 86, 200, 0.72);
     --topology-overview-quality-weak-meter: rgba(181, 118, 0, 0.72);
     --topology-overview-quality-review-meter: rgba(192, 53, 58, 0.74);
+    --topology-overview-proof-row-divider: rgba(15, 23, 42, 0.085);
+    --topology-overview-proof-row-padding-y: 7px;
+    --topology-overview-proof-row-gap: 3px;
+    --topology-overview-proof-title-text: rgba(51, 65, 85, 0.58);
+    --topology-overview-proof-summary-text: rgba(51, 65, 85, 0.72);
     --topology-overview-proof-cell-divider: rgba(15, 23, 42, 0.10);
     --topology-overview-proof-strong-text: rgba(18, 122, 106, 0.96);
     --topology-overview-proof-supported-text: rgba(40, 50, 175, 0.96);
