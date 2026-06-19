@@ -2072,7 +2072,10 @@ export function SigmaSkeletonCards({
   const releaseDrag = useCallback(
     (sourceSlug: string) => {
       const drag = dragRef.current;
-      const moved = Boolean(drag && drag.sourceSlug === sourceSlug && drag.travel > 4);
+      if (!drag || drag.sourceSlug !== sourceSlug) {
+        return;
+      }
+      const moved = drag.travel > 4;
       if (moved) {
         suppressClickRef.current = true;
         activeDockDragSnapshotsRef.current = new Map(drag?.dockDragSnapshots ?? []);
@@ -3391,15 +3394,25 @@ export function SigmaSkeletonCards({
           const includeHiddenFocusAnchor =
             activeHullMode === 'focus' &&
             (slug === selectedSlug || slug === ego?.selected);
-          if (cardEl.dataset.surfaceHidden === 'true' && !includeHiddenFocusAnchor) {
+          const includeHiddenFocusClusterCard =
+            activeHullMode === 'focus' && activeHullCluster.has(slug);
+          if (
+            cardEl.dataset.surfaceHidden === 'true' &&
+            !includeHiddenFocusAnchor &&
+            !includeHiddenFocusClusterCard
+          ) {
             continue;
           }
           const style = getComputedStyle(cardEl);
           const rect = cardEl.getBoundingClientRect();
           if (
             style.display === 'none' ||
-            (!includeHiddenFocusAnchor && style.visibility === 'hidden') ||
-            (!includeHiddenFocusAnchor && Number(style.opacity || '1') <= 0.01) ||
+            (!includeHiddenFocusAnchor &&
+              !includeHiddenFocusClusterCard &&
+              style.visibility === 'hidden') ||
+            (!includeHiddenFocusAnchor &&
+              !includeHiddenFocusClusterCard &&
+              Number(style.opacity || '1') <= 0.01) ||
             rect.width <= 0 ||
             rect.height <= 0
           ) {
