@@ -1093,7 +1093,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(popover).toHaveAttribute(
       "data-compact-action-contract",
-      "icon-only-agent-handoff",
+      "label-visible-above-480",
     );
     expect(briefAction).toHaveAttribute(
       "data-popover-action-label-contract",
@@ -2144,6 +2144,10 @@ describe("TopologyNodePopover", () => {
       "icon-only-full-aria-title",
     );
     expect(action).toHaveAttribute(
+      "data-popover-action-responsive-label-contract",
+      "visible-above-480-icon-only-below",
+    );
+    expect(action).toHaveAttribute(
       "data-popover-action-surface-token",
       "--topology-node-popover-action-icon-surface",
     );
@@ -2167,9 +2171,25 @@ describe("TopologyNodePopover", () => {
       "data-popover-action-size-token",
       "--topology-node-popover-compact-action-size",
     );
-    expect(action.className).toContain(
-      "w-[var(--topology-node-popover-compact-action-size)]",
+    expect(action).toHaveAttribute(
+      "data-popover-action-min-width-token",
+      "--topology-node-popover-compact-handoff-action-min-width",
     );
+    expect(action).toHaveAttribute(
+      "data-popover-action-max-width-token",
+      "--topology-node-popover-compact-handoff-action-max-width",
+    );
+    expect(action.className).toContain(
+      "min-w-[var(--topology-node-popover-compact-handoff-action-min-width)]",
+    );
+    expect(action.className).toContain(
+      "max-w-[var(--topology-node-popover-compact-handoff-action-max-width)]",
+    );
+    expect(action.className).toContain(
+      "max-[480px]:w-[var(--topology-node-popover-compact-action-size)]",
+    );
+    expect(action.querySelector("span")?.className).toContain("max-[480px]:sr-only");
+    expect(action).toHaveTextContent("브리프");
     expect(action.className).toContain(
       "text-[color:var(--topology-node-popover-action-text)]",
     );

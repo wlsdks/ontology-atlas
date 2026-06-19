@@ -301,8 +301,8 @@ function validateTopologyNodePopoverTokenContract(markers) {
     if (
       !Number.isFinite(actionWidth) ||
       !Number.isFinite(actionHeight) ||
-      actionWidth < 28 ||
-      actionWidth > 44 ||
+      actionWidth < 56 ||
+      actionWidth > 88 ||
       actionHeight < 28 ||
       actionHeight > 44
     ) {

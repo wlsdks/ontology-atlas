@@ -3492,7 +3492,7 @@ export function SigmaSkeletonCards({
         const hullViewportMargin =
           activeHullMode === 'focus' ? FOCUS_HULL_BREATHING_ROOM_PX : 0;
         const focusLabelClearancePx =
-          activeHullMode === 'focus' && containerRect.width >= 900
+          activeHullMode === 'focus'
             ? FOCUS_HULL_LABEL_CLEARANCE_PX
             : 0;
         const hullMaxRight = Math.max(

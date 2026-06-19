@@ -1945,7 +1945,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         "--topology-node-popover-action-icon-surface",
       topologyNodePopoverCompactBriefActionBorderToken:
         "--topology-node-popover-action-icon-border",
-      topologyNodePopoverCompactBriefActionWidth: 32,
+      topologyNodePopoverCompactBriefActionWidth: 65,
       topologyNodePopoverCompactBriefActionHeight: 32,
       topologySelectedSkeletonCardRelationSummaryVisible: true,
       topologySelectedSkeletonCardRelationSummaryContract: "selected-card-direct-facts",

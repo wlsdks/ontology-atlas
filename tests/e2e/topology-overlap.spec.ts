@@ -3165,7 +3165,7 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   await expect(popover).toHaveAttribute("data-responsive-width-contract", "fluid-chip-to-rail");
   await expect(popover).toHaveAttribute(
     "data-compact-action-contract",
-    "compact-label-visible-under-480",
+    "label-visible-above-480",
   );
   await expect(popover).toHaveAttribute(
     "data-compact-gap-token",
@@ -3290,12 +3290,20 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "--topology-node-popover-action-hover-text",
   );
   await expect(compactBriefAction).toHaveAttribute(
+    "data-popover-action-responsive-label-contract",
+    "visible-above-480-icon-only-below",
+  );
+  await expect(compactBriefAction).toHaveAttribute(
+    "data-popover-action-min-width-token",
+    "--topology-node-popover-compact-handoff-action-min-width",
+  );
+  await expect(compactBriefAction).toHaveAttribute(
     "data-popover-action-max-width-token",
     "--topology-node-popover-compact-handoff-action-max-width",
   );
   await expect(compactBriefAction).toHaveAttribute(
     "data-popover-action-label-contract",
-    "compact-visible-full-aria",
+    "icon-only-full-aria-title",
   );
   await expect(compactBriefAction).toHaveAttribute("data-popover-action-compact-label", /.+/);
   await expect(compactBriefAction).toHaveText(/.+/);
@@ -3469,12 +3477,20 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   await expect(popover).toBeVisible();
   await expect(popover).toHaveAttribute(
     "data-compact-action-contract",
-    "compact-label-visible-under-480",
+    "label-visible-above-480",
   );
   const compactBriefAction = page.getByTestId("topology-node-popover-compact-brief-action");
   await expect(compactBriefAction).toHaveAttribute(
     "data-popover-action-label-contract",
-    "compact-visible-full-aria",
+    "icon-only-full-aria-title",
+  );
+  await expect(compactBriefAction).toHaveAttribute(
+    "data-popover-action-responsive-label-contract",
+    "visible-above-480-icon-only-below",
+  );
+  await expect(compactBriefAction).toHaveAttribute(
+    "data-popover-action-min-width-token",
+    "--topology-node-popover-compact-handoff-action-min-width",
   );
   await expect(compactBriefAction).toHaveAttribute(
     "data-popover-action-max-width-token",

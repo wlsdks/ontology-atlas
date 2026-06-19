@@ -637,6 +637,7 @@
     --topology-node-popover-relation-lens-metric-min-width: clamp(44px, 2.9vw, 58px);
     --topology-node-popover-action-rail-title-gap: clamp(6px, 0.5vw, 10px);
     --topology-node-popover-compact-action-size: 32px;
+    --topology-node-popover-compact-handoff-action-min-width: 64px;
     --topology-node-popover-compact-handoff-action-max-width: 76px;
     --topology-node-popover-title-lines: 2;
     --topology-node-popover-kind-text: rgba(222, 225, 255, 0.52);

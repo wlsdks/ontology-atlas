@@ -338,7 +338,7 @@ export function TopologyNodePopover({
     [],
   );
   const collapsedActionContract = primaryAction
-    ? "icon-only-agent-handoff"
+    ? "label-visible-above-480"
     : "icon-only-under-480";
 
   useEffect(() => {
@@ -461,16 +461,21 @@ export function TopologyNodePopover({
               data-popover-action-label-contract="icon-only-full-aria-title"
               data-popover-action-full-label={primaryAction.label}
               data-popover-action-compact-label={compactActionLabel(primaryAction)}
+              data-popover-action-responsive-label-contract="visible-above-480-icon-only-below"
               data-popover-action-surface-token="--topology-node-popover-action-icon-surface"
               data-popover-action-border-token="--topology-node-popover-action-icon-border"
               data-popover-action-text-token="--topology-node-popover-action-text"
               data-popover-action-hover-text-token="--topology-node-popover-action-hover-text"
               data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
               data-popover-action-size-token="--topology-node-popover-compact-action-size"
-              className="inline-flex h-[var(--topology-node-popover-compact-action-size)] w-[var(--topology-node-popover-compact-action-size)] shrink-0 items-center justify-center overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-icon-border)] bg-[color:var(--topology-node-popover-action-icon-surface)] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
+              data-popover-action-min-width-token="--topology-node-popover-compact-handoff-action-min-width"
+              data-popover-action-max-width-token="--topology-node-popover-compact-handoff-action-max-width"
+              className="inline-flex h-[var(--topology-node-popover-compact-action-size)] min-w-[var(--topology-node-popover-compact-handoff-action-min-width)] max-w-[var(--topology-node-popover-compact-handoff-action-max-width)] shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-icon-border)] bg-[color:var(--topology-node-popover-action-icon-surface)] px-2 text-[10.5px] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)] max-[480px]:w-[var(--topology-node-popover-compact-action-size)] max-[480px]:min-w-[var(--topology-node-popover-compact-action-size)] max-[480px]:px-0"
             >
               <Clipboard size={14} aria-hidden />
-              <span className="sr-only">{compactActionLabel(primaryAction)}</span>
+              <span className="min-w-0 truncate max-[480px]:sr-only">
+                {compactActionLabel(primaryAction)}
+              </span>
             </button>
           ) : null}
           <button
