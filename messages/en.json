@@ -483,6 +483,7 @@
       "relationTypeDescribes": "describes",
       "relationTypeUses": "uses",
       "relationTypeBelongsTo": "belongs to",
+      "relationBadgeCount": "{label} {count}",
       "relationAriaLabel": "{label} relation",
       "selectedTitle": "Selected relation",
       "closeSelectedAriaLabel": "Close selected relation",

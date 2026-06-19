@@ -483,6 +483,7 @@
       "relationTypeDescribes": "설명",
       "relationTypeUses": "사용",
       "relationTypeBelongsTo": "소속",
+      "relationBadgeCount": "{label} {count}개",
       "relationAriaLabel": "{label} 관계",
       "selectedTitle": "선택한 관계",
       "closeSelectedAriaLabel": "선택한 관계 닫기",

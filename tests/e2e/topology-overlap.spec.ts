@@ -1316,18 +1316,18 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(relationButton).toHaveAttribute(
       "data-relation-label-fact-segmentation",
-      "type>evidence>gate",
+      "type-visible>metadata-hidden",
     );
     await expect(relationButton).toHaveAttribute(
       "data-relation-label-agent-gate-visible",
-      "true",
+      "metadata-only",
     );
     const visibleRelationBadge = relationButton.locator(
       "[data-relation-label-visible-badge]",
     );
     await expect(visibleRelationBadge).toHaveAttribute(
       "data-relation-label-fact-segmentation",
-      "type>evidence>gate",
+      "type-visible>metadata-hidden",
     );
     await expect(visibleRelationBadge).toHaveAttribute(
       "data-relation-label-segment-gap-token",
@@ -1338,7 +1338,7 @@ for (const viewport of VIEWPORTS) {
       "--topology-relation-label-border",
     );
     const scanGateChip = relationButton.locator("[data-relation-label-agent-gate]");
-    await expect(scanGateChip).toBeVisible();
+    await expect(scanGateChip).toHaveClass(/sr-only/);
     await expect(scanGateChip).toHaveAttribute("data-relation-label-segment", "gate");
     await expect(scanGateChip).toHaveAttribute(
       "data-route-chip-text",
@@ -1432,10 +1432,10 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(relationButton).toHaveAttribute(
       "data-relation-label-agent-gate-visible",
-      "true",
+      "metadata-only",
     );
     const visibleGateChip = relationButton.locator("[data-relation-label-agent-gate]");
-    await expect(visibleGateChip).toBeVisible();
+    await expect(visibleGateChip).toHaveClass(/sr-only/);
     await expect(visibleGateChip).toHaveAttribute(
       "data-route-chip-text",
       /Explain|Check|Review|설명|점검|검토/,
@@ -1454,22 +1454,30 @@ for (const viewport of VIEWPORTS) {
       "data-segment-divider-token",
       "--topology-relation-label-border",
     );
-    await expect(relationTypeText).toHaveText(/contains|depends|relates|describes|uses/);
+    await expect(relationTypeText).toHaveText(
+      /contains|depends|relates|describes|uses|포함|의존|연관|설명|사용/,
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-visible-text",
+      /contains|depends|relates|describes|uses|포함|의존|연관|설명|사용/,
+    );
     const relationTypeTextFit = await relationTypeText.evaluate(
       (element) => element.scrollWidth <= element.clientWidth + 1,
     );
     expect(
       relationTypeTextFit,
-      `selected relation type text should not truncate before evidence/gate chips at ${viewport.label}`,
+      `selected relation human-readable text should not truncate at ${viewport.label}`,
     ).toBe(true);
     const visibleRelationSegmentsFit = await relationButton
       .locator("[data-relation-label-segment]")
       .evaluateAll((segments) =>
-        segments.every((segment) => segment.scrollWidth <= segment.clientWidth + 1),
+        segments
+          .filter((segment) => !segment.classList.contains("sr-only"))
+          .every((segment) => segment.scrollWidth <= segment.clientWidth + 1),
       );
     expect(
       visibleRelationSegmentsFit,
-      `relation label type/evidence/gate segments should fit inside the visible badge at ${viewport.label}`,
+      `relation label visible meaning segment should fit inside the badge at ${viewport.label}`,
     ).toBe(true);
     await expect(relationButton.locator('[data-route-chip="fact"]')).toHaveAttribute(
       "data-route-chip-text",
@@ -1575,7 +1583,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(agentRoute).toHaveAttribute(
       "data-route-layout-contract",
-      "compact-two-column-route-grid",
+      "three-step-human-route-action-metadata",
     );
     await expect(agentRoute).toHaveAttribute(
       "data-primary-copy-action",
@@ -1613,7 +1621,11 @@ for (const viewport of VIEWPORTS) {
     const routeVisibleValuesFit = await agentRoute
       .locator("[data-route-step-value-text]")
       .evaluateAll((values) =>
-        values.every((element) => element.scrollWidth <= element.clientWidth + 1),
+        values
+          .filter((element) => element.closest("[data-route-step]")?.getAttribute(
+            "data-route-step-visibility",
+          ) !== "metadata-only")
+          .every((element) => element.scrollWidth <= element.clientWidth + 1),
       );
     expect(
       routeVisibleValuesFit,

@@ -2382,11 +2382,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-glow-token",
       "--topology-relation-quality-weak-glow",
     );
+    expect(qualityDot).toHaveClass("sr-only");
     const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
     const directionGlyph = labelHit?.querySelector("[data-relation-direction-glyph]");
     const typeText = labelHit?.querySelector("[data-relation-label-type-text]");
     expect(typeText).toHaveAttribute("data-relation-label-segment", "type");
     expect(typeText).not.toHaveClass("border-r");
+    expect(typeText).toHaveTextContent("contains");
+    expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains");
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "preflight-first");
     expect(gateChip).toHaveAttribute("data-relation-label-segment", "gate");
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "relation_check");
@@ -2406,11 +2409,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(labelHit).toHaveAttribute(
       "data-relation-label-direction-contract",
-      "edge-source-to-target-glyph",
+      "edge-source-to-target-metadata",
     );
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-direction-contract",
-      "edge-source-to-target-glyph",
+      "edge-source-to-target-metadata",
     );
     expect(visibleBadge).toHaveAttribute(
       "data-relation-direction-surface-token",
@@ -2426,6 +2429,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(directionGlyph).toHaveAttribute("data-relation-direction-glyph", "source-to-target");
     expect(directionGlyph).toHaveAttribute("data-relation-label-segment", "direction");
+    expect(directionGlyph).toHaveClass("sr-only");
     expect(directionGlyph).toHaveAttribute(
       "data-surface-token",
       "--topology-relation-direction-surface",
@@ -2687,18 +2691,19 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(labelHit).toHaveAttribute(
       "data-relation-label-direction-contract",
-      "edge-source-to-target-glyph",
+      "edge-source-to-target-metadata",
     );
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-direction-contract",
-      "edge-source-to-target-glyph",
+      "edge-source-to-target-metadata",
     );
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-direction-contract",
-      "edge-source-to-target-glyph",
+      "edge-source-to-target-metadata",
     );
     expect(directionGlyph).toHaveAttribute("data-relation-direction-glyph", "source-to-target");
     expect(directionGlyph).toHaveAttribute("data-relation-label-segment", "direction");
+    expect(directionGlyph).toHaveClass("sr-only");
     expect(directionGlyph).toHaveTextContent("→");
     expect(selectedOverlayDirectionGlyph).toHaveAttribute(
       "data-relation-direction-glyph",
@@ -2708,6 +2713,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-label-segment",
       "direction",
     );
+    expect(selectedOverlayDirectionGlyph).toHaveClass("sr-only");
     expect(selectedOverlayDirectionGlyph).toHaveAttribute(
       "data-surface-token",
       "--topology-relation-direction-surface",

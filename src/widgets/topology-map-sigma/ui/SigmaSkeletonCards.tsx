@@ -746,6 +746,18 @@ function relationLabelText(
   return count > 1 ? `${visibleLabel} ×${count}` : visibleLabel;
 }
 
+function relationLabelVisibleText({
+  count = 1,
+  label,
+  relationBadgeCount,
+}: {
+  count?: number;
+  label: string;
+  relationBadgeCount: (values: { count: number; label: string }) => string;
+}): string {
+  return count > 1 ? relationBadgeCount({ count, label }) : label;
+}
+
 function isDockConnectorSuppressed(targetEl: HTMLElement | null | undefined): boolean {
   return Boolean(targetEl?.dataset.dockCol && targetEl.dataset.dockCol !== '0');
 }
@@ -1847,6 +1859,15 @@ export function SigmaSkeletonCards({
     (relationType: string, count = 1) =>
       relationLabelText(relationType, count, relationTypeLabels),
     [relationTypeLabels],
+  );
+  const formatRelationVisibleLabel = useCallback(
+    (relationType: string, count = 1) =>
+      relationLabelVisibleText({
+        count,
+        label: relationLabelText(relationType, 1, relationTypeLabels),
+        relationBadgeCount: (values) => tEdgeTooltip('relationBadgeCount', values),
+      }),
+    [relationTypeLabels, tEdgeTooltip],
   );
   const containerRef = useRef<HTMLDivElement | null>(null);
   // hover 간단 팝업 — "이게 어떤 계층인지 + 한 줄 설명" (사용자 요청).
@@ -3951,7 +3972,10 @@ export function SigmaSkeletonCards({
           );
         })}
         {egoRelationLabels.map((label, index) => {
-          const visibleRelationLabel = formatRelationLabel(label.relationType, label.count);
+          const visibleRelationLabel = formatRelationVisibleLabel(
+            label.relationType,
+            label.count,
+          );
           return (
             <g
               key={`ego-label:${label.key}`}
@@ -4065,12 +4089,15 @@ export function SigmaSkeletonCards({
                   data-relation-quality={connector.relationQuality ?? 'supported'}
                   data-relation-type={connector.relationType}
                   data-relation-type-label={formatRelationLabel(connector.relationType)}
+                  data-relation-label-visible-text={formatRelationVisibleLabel(
+                    connector.relationType,
+                  )}
                   dominantBaseline="middle"
                   textAnchor="middle"
                   fill="var(--color-text-secondary)"
                   className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
                 >
-                  {formatRelationLabel(connector.relationType)}
+                  {formatRelationVisibleLabel(connector.relationType)}
                 </text>
               </>
             ) : null}
@@ -4091,6 +4118,10 @@ export function SigmaSkeletonCards({
           state: evidenceState,
         });
         const labelText = formatRelationLabel(label.relationType, label.count);
+        const visibleLabelText = formatRelationVisibleLabel(
+          label.relationType,
+          label.count,
+        );
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentGateText = relationAgentGateChipText(agentGateKind);
@@ -4104,9 +4135,8 @@ export function SigmaSkeletonCards({
         });
         const visibleBadgeWidth = Math.max(
           RELATION_BADGE_MIN_WIDTH_PX,
-          labelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
+          visibleLabelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
             RELATION_BADGE_PAD_X_PX +
-            RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
             RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX,
         );
         return (
@@ -4122,6 +4152,7 @@ export function SigmaSkeletonCards({
             data-relation-evidence-chip-text={evidenceChipText}
             data-relation-type={label.relationType}
             data-relation-type-label={labelText}
+            data-relation-label-visible-text={visibleLabelText}
             data-relation-label-readable-text={`${labelText} · ${evidenceChipText}`}
             data-selected-relation={selected ? 'true' : 'false'}
             data-agent-gate-kind={agentGateKind}
@@ -4133,7 +4164,7 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-gate={agentGateKind}
             data-relation-fact-route-action={primaryCopyAction}
             data-relation-label-fact-segmentation="type-visible>metadata-hidden"
-            data-relation-label-direction-contract="edge-source-to-target-glyph"
+            data-relation-label-direction-contract="edge-source-to-target-metadata"
             data-relation-label-agent-gate-visible="metadata-only"
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             data-label-geometry-source="html-hit-target"
@@ -4217,13 +4248,13 @@ export function SigmaSkeletonCards({
                 selected ? '--topology-relation-label-selected-shadow' : undefined
               }
               data-relation-label-fact-segmentation="type-visible>metadata-hidden"
-              data-relation-label-direction-contract="edge-source-to-target-glyph"
+              data-relation-label-direction-contract="edge-source-to-target-metadata"
               data-relation-label-segment-gap-token="--topology-relation-label-segment-gap"
               data-relation-label-segment-divider-token="--topology-relation-label-border"
               data-relation-direction-surface-token="--topology-relation-direction-surface"
               data-relation-direction-border-token="--topology-relation-direction-border"
               data-relation-direction-text-token="--topology-relation-direction-text"
-              className="inline-flex h-6 max-w-full items-center justify-center gap-1.5 overflow-hidden rounded-full border px-2.5 shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
+              className="inline-flex h-6 max-w-full items-center justify-center gap-1.5 overflow-hidden rounded-[7px] border px-2.5 shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
               style={{
                 backgroundColor: selected
                   ? 'var(--topology-relation-label-selected-surface)'
@@ -4241,7 +4272,7 @@ export function SigmaSkeletonCards({
                 data-dot-token={relationQualityDotToken(quality)}
                 data-glow-token={relationQualityGlowToken(quality)}
                 data-relation-label-segment="quality"
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(
+                className={`sr-only ${relationQualityDotClassName(
                   quality,
                 )}`}
               />
@@ -4252,7 +4283,7 @@ export function SigmaSkeletonCards({
                 data-surface-token="--topology-relation-direction-surface"
                 data-border-token="--topology-relation-direction-border"
                 data-text-token="--topology-relation-direction-text"
-                className="shrink-0 text-[10px] font-semibold leading-none text-[color:var(--topology-relation-direction-text)]"
+                className="sr-only"
               >
                 →
               </span>
@@ -4263,7 +4294,7 @@ export function SigmaSkeletonCards({
                 data-relation-label-type-text-contract="typed-fact-label-stays-readable"
                 className="shrink-0"
               >
-                {labelText}
+                {visibleLabelText}
               </span>
               <span
                 data-relation-evidence-glyph={evidenceState}
@@ -4286,9 +4317,6 @@ export function SigmaSkeletonCards({
                 data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
                 data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
                 className="sr-only"
-                style={{
-                  width: 'max-content',
-                }}
               >
                 {agentActionChipText}
               </span>
@@ -4344,6 +4372,10 @@ export function SigmaSkeletonCards({
           state: evidenceState,
         });
         const labelText = formatRelationLabel(label.relationType, label.count);
+        const visibleLabelText = formatRelationVisibleLabel(
+          label.relationType,
+          label.count,
+        );
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentGateText = relationAgentGateChipText(agentGateKind);
@@ -4362,6 +4394,7 @@ export function SigmaSkeletonCards({
             data-relation-evidence-chip-text={evidenceChipText}
             data-relation-type={label.relationType}
             data-relation-type-label={labelText}
+            data-relation-label-visible-text={visibleLabelText}
             data-relation-label-readable-text={`${labelText} · ${evidenceChipText}`}
             data-agent-gate-kind={agentGateKind}
             data-primary-copy-action={primaryCopyAction}
@@ -4371,7 +4404,7 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-gate={agentGateKind}
             data-relation-fact-route-action={primaryCopyAction}
             data-relation-label-fact-segmentation="type-visible>metadata-hidden"
-            data-relation-label-direction-contract="edge-source-to-target-glyph"
+            data-relation-label-direction-contract="edge-source-to-target-metadata"
             data-relation-label-compact="false"
             data-relation-label-density="focus-token"
             data-relation-label-selected-surface-token="--topology-relation-label-selected-surface"
@@ -4384,7 +4417,7 @@ export function SigmaSkeletonCards({
             data-relation-direction-border-token="--topology-relation-direction-border"
             data-relation-direction-text-token="--topology-relation-direction-text"
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-full border px-2.5 text-[11px] font-medium leading-none tracking-normal text-[color:var(--color-text-secondary)]"
+            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[7px] border px-2.5 text-[11px] font-medium leading-none tracking-normal text-[color:var(--color-text-secondary)]"
             style={{
               backgroundColor: 'var(--topology-relation-label-selected-surface)',
               borderColor: 'var(--topology-relation-label-selected-border)',
@@ -4399,7 +4432,7 @@ export function SigmaSkeletonCards({
               data-dot-token={relationQualityDotToken(quality)}
               data-glow-token={relationQualityGlowToken(quality)}
               data-relation-label-segment="quality"
-              className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(
+              className={`sr-only ${relationQualityDotClassName(
                 quality,
               )}`}
             />
@@ -4410,7 +4443,7 @@ export function SigmaSkeletonCards({
               data-surface-token="--topology-relation-direction-surface"
               data-border-token="--topology-relation-direction-border"
               data-text-token="--topology-relation-direction-text"
-              className="shrink-0 text-[10px] font-semibold leading-none text-[color:var(--topology-relation-direction-text)]"
+              className="sr-only"
             >
               →
             </span>
@@ -4421,7 +4454,7 @@ export function SigmaSkeletonCards({
               data-relation-label-type-text-contract="typed-fact-label-stays-readable"
               className="shrink-0"
             >
-              {labelText}
+              {visibleLabelText}
             </span>
             <span
               aria-hidden="true"
@@ -4433,7 +4466,6 @@ export function SigmaSkeletonCards({
               data-border-token="--topology-relation-evidence-chip-border"
               data-text-token="--topology-relation-evidence-chip-text"
               className="sr-only"
-              style={{ width: 'max-content' }}
             >
               {evidenceChipText}
             </span>
@@ -4447,7 +4479,6 @@ export function SigmaSkeletonCards({
               data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
               data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
               className="sr-only"
-              style={{ width: 'max-content' }}
             />
             <span
               aria-hidden="true"
