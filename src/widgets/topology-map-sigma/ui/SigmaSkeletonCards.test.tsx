@@ -203,6 +203,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "single-pass-rect-read",
     );
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-restore-contract",
+      "visible-cards-shift-or-hide-after-drag-release",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-restored-count",
+      expect.stringMatching(/^\d+$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-relation-label-blocker-contract",
       "reuse-visible-card-rects",
     );

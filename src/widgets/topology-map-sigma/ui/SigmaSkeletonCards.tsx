@@ -1359,6 +1359,60 @@ function restorePathEndpointsFromFixedSurfaces(
   }
 }
 
+function restoreVisibleCardsFromFixedSurfaces(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>,
+  domWriteStats: SkeletonDomWriteStats,
+): number {
+  const occupiedRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+  let restored = 0;
+  for (const el of orderedEls) {
+    if (!isSkeletonCardVisibleForStats(el)) continue;
+    const style = getComputedStyle(el);
+    if (
+      style.display === 'none' ||
+      style.visibility === 'hidden' ||
+      Number(style.opacity || el.style.opacity || '1') <= 0.01
+    ) {
+      continue;
+    }
+    const rect = elementRectRelativeToContainer(el, containerRect);
+    const collidesWithFixedSurface = fixedSurfaceRects.some((surface) =>
+      rectsOverlap(rect, surface),
+    );
+    if (!collidesWithFixedSurface) {
+      occupiedRects.push(rect);
+      delete el.dataset.fixedSurfaceRestore;
+      continue;
+    }
+    const shift = clampRectToViewportAndFixedSurfaces({
+      rect,
+      containerWidth: containerRect.width,
+      containerHeight: containerRect.height,
+      fixedSurfaceRects: [...fixedSurfaceRects, ...occupiedRects],
+    });
+    const cleared =
+      !fixedSurfaceRects.some((surface) => rectsOverlap(shift.rect, surface)) &&
+      !occupiedRects.some((surface) => rectsOverlap(shift.rect, surface));
+    if (cleared && (shift.dx !== 0 || shift.dy !== 0)) {
+      setSkeletonStyleValue(
+        el,
+        'transform',
+        `${el.style.transform} translate(${shift.dx}px, ${shift.dy}px)`,
+        domWriteStats,
+      );
+      el.dataset.fixedSurfaceRestore = 'safe-shift';
+      occupiedRects.push(shift.rect);
+      restored += 1;
+      continue;
+    }
+    hideSkeletonCard(el);
+    el.dataset.fixedSurfaceRestore = 'hidden-under-fixed-surface';
+  }
+  return restored;
+}
+
 function collectPathAnalysisPanelRects(containerRect: DOMRect) {
   if (typeof document === 'undefined') return [];
   const panel = document.querySelector<HTMLElement>(
@@ -2857,6 +2911,15 @@ export function SigmaSkeletonCards({
     container.dataset.overviewDomainSeparatedCount = String(
       overviewDomainSeparatedCount,
     );
+    const fixedSurfaceRestoredCount = restoreVisibleCardsFromFixedSurfaces(
+      orderedEls,
+      containerRect,
+      fixedSurfaceRects,
+      domWriteStats,
+    );
+    container.dataset.fixedSurfaceRestoreContract =
+      'visible-cards-shift-or-hide-after-drag-release';
+    container.dataset.fixedSurfaceRestoredCount = String(fixedSurfaceRestoredCount);
     const relationLabelCardBlockers: Array<{
       left: number;
       top: number;
