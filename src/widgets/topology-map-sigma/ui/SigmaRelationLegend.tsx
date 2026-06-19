@@ -45,12 +45,13 @@ export function SigmaRelationLegend({ labels }: { labels: SigmaRelationLegendLab
       data-relation-legend-attention-role="utility"
       data-relation-legend-density="compact"
       data-relation-legend-layout="single-row-strip"
-      className="topology-ui-scale pointer-events-none absolute bottom-[calc(1.5rem+183px+0.75rem)] right-4 z-10 hidden w-[220px] items-center gap-2 overflow-hidden rounded-lg border border-[color:var(--topology-minimap-border)] bg-[color:var(--topology-minimap-surface)] px-2.5 py-1.5 shadow-[var(--topology-minimap-shadow)] md:right-6 md:flex xl:right-8"
+      data-relation-legend-typography="readable-utility-labels"
+      className="topology-ui-scale pointer-events-none absolute bottom-[calc(1.5rem+183px+0.75rem)] right-4 z-10 hidden w-[300px] items-center gap-2.5 overflow-hidden rounded-lg border border-[color:var(--topology-minimap-border)] bg-[color:var(--topology-minimap-surface)] px-2.5 py-1.5 shadow-[var(--topology-minimap-shadow)] md:right-6 md:flex xl:right-8"
     >
-      <span className="shrink-0 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+      <span className="shrink-0 text-[10px] font-medium leading-none tracking-normal text-[color:var(--color-text-quaternary)]">
         {labels.title}
       </span>
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
         {RELATION_LEGEND_ROWS.map((row) => (
           <div
             key={row.key}
@@ -59,7 +60,7 @@ export function SigmaRelationLegend({ labels }: { labels: SigmaRelationLegendLab
             data-relation-stroke-width-token={row.widthToken}
             title={labels[row.key]}
             aria-label={labels[row.key]}
-            className="flex min-w-0 shrink-0 items-center gap-0.5"
+            className="flex min-w-0 shrink-0 items-center gap-1"
           >
             <svg
               aria-hidden="true"
@@ -74,7 +75,7 @@ export function SigmaRelationLegend({ labels }: { labels: SigmaRelationLegendLab
                 strokeWidth={`var(${row.widthToken})`}
               />
             </svg>
-            <span className="font-mono text-[8.5px] uppercase leading-none tracking-[0.05em] text-[color:var(--color-text-tertiary)]">
+            <span className="text-[10px] font-medium leading-none tracking-normal text-[color:var(--color-text-tertiary)]">
               {labels[row.shortKey]}
             </span>
           </div>

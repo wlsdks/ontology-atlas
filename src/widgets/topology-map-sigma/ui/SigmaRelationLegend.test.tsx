@@ -2,15 +2,15 @@ import { render, screen } from "@testing-library/react";
 import { SigmaRelationLegend } from "./SigmaRelationLegend";
 
 const labels = {
-  title: "관계선",
+  title: "선 의미",
   strong: "강한 구조",
-  strongShort: "강",
+  strongShort: "강함",
   supported: "근거 있음",
-  supportedShort: "근",
+  supportedShort: "근거",
   weak: "약한 관련",
-  weakShort: "약",
+  weakShort: "약함",
   review: "검토 필요",
-  reviewShort: "검",
+  reviewShort: "검토",
 };
 
 describe("SigmaRelationLegend", () => {
@@ -24,11 +24,21 @@ describe("SigmaRelationLegend", () => {
     );
     expect(legend).toHaveAttribute("data-relation-legend-attention-role", "utility");
     expect(legend).toHaveAttribute("data-relation-legend-layout", "single-row-strip");
-    expect(screen.getByText("관계선")).toBeInTheDocument();
-    expect(screen.getByText("강")).toBeInTheDocument();
-    expect(screen.getByText("근")).toBeInTheDocument();
-    expect(screen.getByText("약")).toBeInTheDocument();
-    expect(screen.getByText("검")).toBeInTheDocument();
+    expect(legend).toHaveAttribute(
+      "data-relation-legend-typography",
+      "readable-utility-labels",
+    );
+    expect(screen.getByText("선 의미")).toBeInTheDocument();
+    expect(screen.getByText("강함")).toBeInTheDocument();
+    expect(screen.getByText("근거")).toBeInTheDocument();
+    expect(screen.getByText("약함")).toBeInTheDocument();
+    expect(screen.getByText("검토")).toBeInTheDocument();
+    const legendClasses = [
+      legend.className,
+      ...Array.from(legend.querySelectorAll("[class]"), (element) => element.className),
+    ].join(" ");
+    expect(legendClasses).not.toContain("font-mono");
+    expect(legendClasses).not.toContain("uppercase");
   });
 
   it("binds each relation row to the same stroke tokens used by map connectors", () => {
