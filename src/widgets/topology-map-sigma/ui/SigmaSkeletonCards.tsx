@@ -250,8 +250,6 @@ const RELATION_BADGE_CHAR_WIDTH_PX = 5.8;
 const RELATION_BADGE_PAD_X_PX = 26;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
 const RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX = 18;
-const RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX = 18;
-const RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX = 38;
 const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 32;
 const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 6;
 const RELATION_LABEL_VIEWPORT_INSET_PX = 16;
@@ -4109,9 +4107,7 @@ export function SigmaSkeletonCards({
           labelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
             RELATION_BADGE_PAD_X_PX +
             RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
-            RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX +
-            RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX +
-            RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX,
+            RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX,
         );
         return (
           <button
@@ -4136,9 +4132,9 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-evidence={evidenceState}
             data-relation-fact-route-gate={agentGateKind}
             data-relation-fact-route-action={primaryCopyAction}
-            data-relation-label-fact-segmentation="type>evidence>gate"
+            data-relation-label-fact-segmentation="type-visible>metadata-hidden"
             data-relation-label-direction-contract="edge-source-to-target-glyph"
-            data-relation-label-agent-gate-visible="true"
+            data-relation-label-agent-gate-visible="metadata-only"
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             data-label-geometry-source="html-hit-target"
             data-relation-label-card-clearance-token="--topology-relation-label-card-clearance"
@@ -4220,7 +4216,7 @@ export function SigmaSkeletonCards({
               data-relation-label-selected-shadow-token={
                 selected ? '--topology-relation-label-selected-shadow' : undefined
               }
-              data-relation-label-fact-segmentation="type>evidence>gate"
+              data-relation-label-fact-segmentation="type-visible>metadata-hidden"
               data-relation-label-direction-contract="edge-source-to-target-glyph"
               data-relation-label-segment-gap-token="--topology-relation-label-segment-gap"
               data-relation-label-segment-divider-token="--topology-relation-label-border"
@@ -4277,7 +4273,7 @@ export function SigmaSkeletonCards({
                 data-surface-token="--topology-relation-evidence-chip-surface"
                 data-border-token="--topology-relation-evidence-chip-border"
                 data-text-token="--topology-relation-evidence-chip-text"
-                className="shrink-0 rounded-full border border-[color:var(--topology-relation-evidence-chip-border)] bg-[color:var(--topology-relation-evidence-chip-surface)] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-[color:var(--topology-relation-evidence-chip-text)]"
+                className="sr-only"
               >
                 {evidenceChipText}
               </span>
@@ -4289,11 +4285,9 @@ export function SigmaSkeletonCards({
                 data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
                 data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
                 data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
-                className="shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold leading-none"
+                className="sr-only"
                 style={{
-                  backgroundColor: `var(${relationAgentGateTokenPrefix(agentGateKind)}-surface)`,
-                  borderColor: `var(${relationAgentGateTokenPrefix(agentGateKind)}-border)`,
-                  color: `var(${relationAgentGateTokenPrefix(agentGateKind)}-text)`,
+                  width: 'max-content',
                 }}
               >
                 {agentActionChipText}
@@ -4376,7 +4370,7 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-evidence={evidenceState}
             data-relation-fact-route-gate={agentGateKind}
             data-relation-fact-route-action={primaryCopyAction}
-            data-relation-label-fact-segmentation="type>evidence>gate"
+            data-relation-label-fact-segmentation="type-visible>metadata-hidden"
             data-relation-label-direction-contract="edge-source-to-target-glyph"
             data-relation-label-compact="false"
             data-relation-label-density="focus-token"

@@ -2290,9 +2290,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-fact-route-action", "relation_check");
     expect(labelHit).toHaveAttribute(
       "data-relation-label-fact-segmentation",
-      "type>evidence>gate",
+      "type-visible>metadata-hidden",
     );
-    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "true");
+    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "metadata-only");
     expect(labelHit).toHaveAttribute("data-label-geometry-source", "html-hit-target");
     expect(labelHit?.getAttribute("data-relation-label-viewport-clamp-contract")).toMatch(
       /centered-within-viewport|compacted-to-viewport-edge/,
@@ -2362,7 +2362,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-fact-segmentation",
-      "type>evidence>gate",
+      "type-visible>metadata-hidden",
     );
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-segment-gap-token",
@@ -2391,6 +2391,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(gateChip).toHaveAttribute("data-relation-label-segment", "gate");
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "relation_check");
     expect(gateChip).toHaveAttribute("data-route-chip-text", "Check");
+    expect(gateChip).toHaveClass("sr-only");
     expect(gateChip).toHaveAttribute(
       "data-surface-token",
       "--topology-relation-gate-preflight-surface",
@@ -2510,7 +2511,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-cli-fallback-command",
       "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
     );
-    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "true");
+    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "metadata-only");
     expect(evidenceChip).toHaveAttribute(
       "data-relation-evidence-chip-contract",
       "proof-state-token",
@@ -2521,9 +2522,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "S3");
     expect(evidenceChip).toHaveTextContent("S3");
+    expect(evidenceChip).toHaveClass("sr-only");
     const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
     expect(gateChip).toHaveAttribute("data-route-chip-text", "Explain");
+    expect(gateChip).toHaveClass("sr-only");
   });
 
   it("선택된 source-backed relation label 은 agent handoff gate 를 지도 위에 표시한다", () => {
@@ -2608,7 +2611,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-fact-segmentation",
-      "type>evidence>gate",
+      "type-visible>metadata-hidden",
     );
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-segment-gap-token",
@@ -2642,9 +2645,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-fact-route-action", "explain_relation");
     expect(labelHit).toHaveAttribute(
       "data-relation-label-fact-segmentation",
-      "type>evidence>gate",
+      "type-visible>metadata-hidden",
     );
-    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "true");
+    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "metadata-only");
     expect(labelHit).toHaveAttribute(
       "aria-label",
       "contains relation · strong · 2 sources · ready · explain relation",
@@ -2653,6 +2656,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "explain_relation");
     expect(gateChip).toHaveAttribute("data-route-chip-text", "Explain");
     expect(gateChip).toHaveAttribute("data-relation-label-segment", "gate");
+    expect(gateChip).toHaveClass("sr-only");
     const typeText = labelHit?.querySelector("[data-relation-label-type-text]");
     const directionGlyph = labelHit?.querySelector("[data-relation-direction-glyph]");
     const selectedOverlayTypeText = selectedOverlay?.querySelector(
