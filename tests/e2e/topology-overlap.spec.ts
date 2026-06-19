@@ -2032,6 +2032,32 @@ for (const viewport of VIEWPORTS) {
       selectedSlug: "domain:views",
     });
 
+    const selectedCard = page.locator('[data-skeleton-card][data-slug="domain:views"]');
+    if (viewport.width > 1280) {
+      await expect(selectedCard).toHaveAttribute(
+        "data-selected-focus-center-policy",
+        "viewport-center-anchor",
+      );
+      const selectedRect = await rectOf(selectedCard);
+      const selectedCenterDelta = {
+        x: Math.round(selectedRect.left + selectedRect.width / 2 - viewport.width / 2),
+        y: Math.round(selectedRect.top + selectedRect.height / 2 - viewport.height / 2),
+      };
+      expect(
+        Math.abs(selectedCenterDelta.x),
+        `selected node should center horizontally after focus camera settles at ${viewport.label}`,
+      ).toBeLessThanOrEqual(72);
+      expect(
+        Math.abs(selectedCenterDelta.y),
+        `selected node should center vertically after focus camera settles at ${viewport.label}`,
+      ).toBeLessThanOrEqual(72);
+    } else {
+      await expect(selectedCard).toHaveAttribute(
+        "data-selected-focus-center-policy",
+        "default",
+      );
+    }
+
     await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
     await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
       "data-workspace-context-state",

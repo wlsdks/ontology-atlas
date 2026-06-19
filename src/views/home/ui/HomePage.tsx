@@ -2273,6 +2273,7 @@ export function HomePage() {
                     skeletonSlugs={topologySkeleton?.slugs ?? null}
                     skeletonCards={topologySkeleton?.cards ?? null}
                     pathWorkflowActive={analysisMode === "path"}
+                    selectedFocusCenterActive={analysisMode === "focus"}
                     suppressKindLegend={
                       createNodeOpen ||
                       selectedRelationActive ||

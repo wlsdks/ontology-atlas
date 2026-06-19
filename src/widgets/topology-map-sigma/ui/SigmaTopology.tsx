@@ -374,6 +374,8 @@ interface SigmaTopologyProps {
   showOntologyNodes?: boolean;
   /** true면 Path analysis mode용 primer를 그래프 위에 표시한다. */
   pathWorkflowActive?: boolean;
+  /** Focus analysis mode에서는 선택 DOM 카드가 주의 중심이므로 viewport center anchor를 사용한다. */
+  selectedFocusCenterActive?: boolean;
   pathSelection?: {
     sourceSlug: string | null;
     targetSlug: string | null;
@@ -447,6 +449,7 @@ function SigmaTopologyImpl({
   changedSlugs,
   showOntologyNodes = false,
   pathWorkflowActive = false,
+  selectedFocusCenterActive = false,
   pathSelection = null,
   healthRepairTarget = null,
   onPathSelectionChange,
@@ -3051,6 +3054,7 @@ function SigmaTopologyImpl({
           healthRepairTarget={healthRepairTarget}
           onSelect={(slug) => onSelectProjectRef.current?.(slug)}
           pathWorkflowActive={pathWorkflowActive}
+          selectedFocusCenterActive={selectedFocusCenterActive}
           pathSelection={pathSelection}
           onPathSelectionChange={(selection) => onPathSelectionChangeRef.current?.(selection)}
           onVisibilityChange={onSkeletonCardVisibilityChange}

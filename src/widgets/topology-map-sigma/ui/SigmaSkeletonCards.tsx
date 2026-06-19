@@ -97,6 +97,7 @@ interface SigmaSkeletonCardsProps {
     slug: string;
     kind: 'stale' | 'orphan' | 'promotion';
   } | null;
+  selectedFocusCenterActive?: boolean;
   onSelect?: (slug: string) => void;
   pathWorkflowActive?: boolean;
   pathSelection?: {
@@ -2069,6 +2070,7 @@ export function SigmaSkeletonCards({
   selectedSlug = null,
   selectedRelationEdgeId = null,
   healthRepairTarget = null,
+  selectedFocusCenterActive = false,
   onSelect,
   pathWorkflowActive = false,
   pathSelection = null,
@@ -2724,8 +2726,21 @@ export function SigmaSkeletonCards({
         el.dataset.graphAnchorSurfaceBlocked = graphAnchorBlockedBySurface
           ? 'true'
           : 'false';
+        const selectedFocusViewportCenter =
+          selectedSlug === slug &&
+          selectedFocusCenterActive &&
+          selectedRelationEdgeId === null &&
+          !pathWorkflowActive &&
+          !healthRepairTarget &&
+          !followsActiveGraphDrag &&
+          containerRect.width > SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX;
         const clamped =
-          !followsActiveGraphDrag && ego?.slugs.has(slug)
+          selectedFocusViewportCenter
+            ? {
+                x: containerRect.width / 2,
+                y: containerRect.height / 2,
+              }
+            : !followsActiveGraphDrag && ego?.slugs.has(slug)
             ? clampVisibleAnchorCard({
                 x: vp.x,
                 y: vp.y,
@@ -2737,6 +2752,9 @@ export function SigmaSkeletonCards({
                 fixedSurfaceRects,
               })
             : vp;
+        el.dataset.selectedFocusCenterPolicy = selectedFocusViewportCenter
+          ? 'viewport-center-anchor'
+          : 'default';
         const anchor = ANCHOR_TRANSLATE[safeAnchorKey];
         el.dataset.layoutY = String(clamped.y);
         setSkeletonStyleValue(
