@@ -91,6 +91,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "tokenized-node-scale-signal",
     );
     expect(countChip).toHaveAttribute(
+      "data-count-chip-visibility",
+      "sr-only-core-hierarchy-title",
+    );
+    expect(countChip).toHaveClass("sr-only");
+    expect(countChip).toHaveAttribute(
       "data-surface-token",
       "--topology-card-count-surface",
     );
@@ -104,12 +109,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "tier-token-preserves-title-lane",
     );
     expect(domainCard).toHaveAttribute(
+      "data-card-desktop-title-contract",
+      "core-ontology-label-readable-at-16x9",
+    );
+    expect(domainCard).toHaveAttribute(
       "data-card-max-width-token",
       "--topology-card-max-width-domain",
     );
     expect(screen.getByText("Views")).toHaveAttribute(
       "data-card-title-lane-contract",
-      "title-shrinks-before-meta-chips",
+      "core-title-keeps-map-readable",
     );
     expect(screen.getByText("Views")).toHaveAttribute("data-full-title", "Views");
     const kindBadges = domainCard?.querySelectorAll("[data-card-kind-badge]");
@@ -138,9 +147,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       maxWidth: "var(--topology-card-max-width-domain)",
     });
     const layer = screen.getByTestId("sigma-skeleton-cards");
-    expect(layer.style.getPropertyValue("--topology-card-max-width-project")).toBe("256px");
-    expect(layer.style.getPropertyValue("--topology-card-max-width-domain")).toBe("248px");
-    expect(layer.style.getPropertyValue("--topology-card-max-width-capability")).toBe("312px");
+    expect(layer.style.getPropertyValue("--topology-card-max-width-project")).toBe("280px");
+    expect(layer.style.getPropertyValue("--topology-card-max-width-domain")).toBe("272px");
+    expect(layer.style.getPropertyValue("--topology-card-max-width-capability")).toBe("360px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-element")).toBe("224px");
     expect(layer.style.getPropertyValue("--topology-card-selected-focus-max-width")).toBe("360px");
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(

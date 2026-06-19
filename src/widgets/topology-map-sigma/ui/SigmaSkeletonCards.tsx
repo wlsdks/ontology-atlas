@@ -188,7 +188,7 @@ const DRAG_CLUSTER_HULL_PAD_PX = 14;
 // 커스텀 프로퍼티를 떨구는 동작이 있다.
 /** hover 팝업 폭 추정(px) — flip 판정용 (max-w-[17rem]). */
 const HOVER_POP_W = 272;
-const BASE_ANCHOR_CARD_MAX_WIDTH_PX = 256;
+const BASE_ANCHOR_CARD_MAX_WIDTH_PX = 280;
 const SELECTED_FOCUS_CARD_MAX_WIDTH_PX = 360;
 const HEALTH_REPAIR_CARD_MAX_WIDTH_PX = 320;
 const ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX = 128;
@@ -202,8 +202,8 @@ const TIER_CARD_MAX_WIDTH_TOKEN: Record<SkeletonCardModel['tier'], string> = {
 };
 const TIER_CARD_MAX_WIDTH_PX: Record<SkeletonCardModel['tier'], number> = {
   0: BASE_ANCHOR_CARD_MAX_WIDTH_PX,
-  1: 248,
-  2: 312,
+  1: 272,
+  2: 360,
   3: 224,
 };
 const TIER_CARD_MAX_WIDTH_SCALE_STEP_PX: Record<SkeletonCardModel['tier'], number> = {
@@ -4423,6 +4423,7 @@ export function SigmaSkeletonCards({
             : null;
         const selectedRelationSummaryOwnsMeta =
           selected && selectedRelationSummary !== null;
+        const coreHierarchyCountHidden = card.tier <= 1;
         return (
           <button
             key={card.id}
@@ -4485,6 +4486,9 @@ export function SigmaSkeletonCards({
                 : undefined
             }
             data-card-readable-width-contract="tier-token-preserves-title-lane"
+            data-card-desktop-title-contract={
+              card.tier <= 2 ? 'core-ontology-label-readable-at-16x9' : undefined
+            }
             data-card-selected-title-priority={
               selectedRelationSummaryOwnsMeta
                 ? 'selected-title-before-subtree-count'
@@ -4742,6 +4746,8 @@ export function SigmaSkeletonCards({
                   ? 'selected-title-keeps-current-focus-readable'
                   : healthRepairAuditTarget
                     ? 'health-repair-target-keeps-project-title-readable'
+                  : coreHierarchyCountHidden
+                    ? 'core-title-keeps-map-readable'
                   : 'title-shrinks-before-meta-chips'
               }
               data-full-title={card.title}
@@ -4759,10 +4765,12 @@ export function SigmaSkeletonCards({
                 data-count-chip-visibility={
                   selectedRelationSummaryOwnsMeta
                     ? 'sr-only-selected-relation-summary'
+                    : coreHierarchyCountHidden
+                    ? 'sr-only-core-hierarchy-title'
                     : 'visible'
                 }
                 className={
-                  selectedRelationSummaryOwnsMeta
+                  selectedRelationSummaryOwnsMeta || coreHierarchyCountHidden
                     ? 'sr-only'
                     : 'relative ml-0.5 inline-flex h-[1.42em] min-w-[1.65em] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-card-count-border)] bg-[color:var(--topology-card-count-surface)] px-[0.42em] font-mono text-[0.68em] leading-none text-[color:var(--topology-card-count-text)]'
                 }
