@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-19T16:55:05.951Z",
+  "generatedAt": "2026-06-19T18:08:33.647Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8284,8 +8284,8 @@
         }
       ],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
-      "wordCount": 10261,
-      "updatedAt": "2026-06-19T16:54:38.609Z",
+      "wordCount": 10440,
+      "updatedAt": "2026-06-19T18:08:22.781Z",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
       ]

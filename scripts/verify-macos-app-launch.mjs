@@ -2284,7 +2284,12 @@ export function validateWebviewVerifyPayload(payload, {
     if (!String(payload.markers.topologyTopSearchLabel || "").trim().includes("검색")) {
       return `WebView Korean Relief top search label was ${payload.markers.topologyTopSearchLabel || "missing"}`;
     }
-    if (!String(payload.markers.topologyTopWorkspaceLabel || "").trim().includes("작업공간")) {
+    const workspaceLabel = String(payload.markers.topologyTopWorkspaceLabel || "").trim();
+    if (
+      workspaceLabel &&
+      !workspaceLabel.includes("작업공간") &&
+      payload.markers.topologyCommandChromeState !== "selected-node-inspector"
+    ) {
       return `WebView Korean Relief top workspace label was ${payload.markers.topologyTopWorkspaceLabel || "missing"}`;
     }
     const createLabel = String(payload.markers.topologyTopCreateLabel || "").trim();
@@ -2788,12 +2793,6 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
-      payload.markers.topologyAnalysisPanelMode !== "focus"
-    ) {
-      return `WebView Relief selected node panel stayed in ${payload.markers.topologyAnalysisPanelMode || "unknown"} mode instead of focus support`;
-    }
-    if (
-      payload.markers.topologySelectedNodePopoverVisible === true &&
       (payload.markers.topologyAnalysisPanelSelectedContext === true ||
         payload.markers.topologyAnalysisPanelSelectedFocusRail === true)
     ) {
@@ -2809,6 +2808,25 @@ export function validateWebviewVerifyPayload(payload, {
       const selectedFocusRailMaxWidth = Number(payload.width || 0) <= 1600 ? 322 : 380;
       if (Number(payload.markers.topologyAnalysisPanelWidth || 0) > selectedFocusRailMaxWidth) {
         return `WebView Relief selected node panel was wider than the focus rail contract (${payload.markers.topologyAnalysisPanelWidth}px)`;
+      }
+    } else if (payload.markers.topologySelectedNodePopoverVisible === true) {
+      if (payload.markers.topologyAttentionWinner !== "focus-state") {
+        return `WebView Relief selected node attention winner was ${payload.markers.topologyAttentionWinner || "missing"}`;
+      }
+      if (payload.markers.topologyAnalysisPanelVisible === true) {
+        return "WebView Relief selected node support rail was visible without the focus rail marker";
+      }
+      if (payload.markers.topologyCommandChromeState !== "selected-node-inspector") {
+        return `WebView Relief selected node command chrome state was ${payload.markers.topologyCommandChromeState || "missing"}`;
+      }
+      if (payload.markers.topologyUtilityActionLaneVisible === true) {
+        return "WebView Relief selected node utility action lane was visible while inspector owns focus";
+      }
+      if (payload.markers.topologySigmaControlsStackVisible === true) {
+        return "WebView Relief selected node controls stack was visible while inspector owns focus";
+      }
+      if (payload.markers.topologyShortcutsHelpButtonVisible === true) {
+        return "WebView Relief selected node shortcuts help was visible while inspector owns focus";
       }
     }
     if (payload.markers.topologySelectedNodePopoverVisible === true) {
@@ -3001,8 +3019,17 @@ export function validateWebviewVerifyPayload(payload, {
       const selectedFanoutRows = Number(
         payload.markers.topologyCameraMotionSelectedFanoutRows || 0,
       );
-      const cameraMotionMaxDistancePx =
+      const cameraMotionFanoutMaxDistancePx =
         220 + Math.max(0, selectedFanoutRows - 2) * 16;
+      const cameraMotionViewportWidth = Math.max(0, Number(payload.width || 0));
+      const cameraMotionViewportMaxDistancePx =
+        cameraMotionViewportWidth >= 1800
+          ? Math.round(cameraMotionViewportWidth * 0.18)
+          : 0;
+      const cameraMotionMaxDistancePx = Math.max(
+        cameraMotionFanoutMaxDistancePx,
+        cameraMotionViewportMaxDistancePx,
+      );
       if (
         Number(payload.markers.topologyCameraMotionMaxDistancePx || 0) !==
         cameraMotionMaxDistancePx
@@ -3522,10 +3549,17 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView did not report the Relief overview agent readiness meter marker (${JSON.stringify(payload.markers.topologyOverviewAgentReadinessMeterSegments ?? null)})`;
     }
+    const selectedNodeInspectorWithoutSupport =
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyAnalysisPanelVisible !== true &&
+      payload.markers.topologyCommandChromeState === "selected-node-inspector" &&
+      payload.markers.topologyAnalysisPanelSelectedContext !== true &&
+      payload.markers.topologyAnalysisPanelSelectedFocusRail !== true;
     if (
       Object.hasOwn(payload.markers, "topologyAnalysisPanelVisible") &&
       !selectedRelationContextVisible &&
-      payload.markers.topologyCreateNodeOpen !== true
+      payload.markers.topologyCreateNodeOpen !== true &&
+      !selectedNodeInspectorWithoutSupport
     ) {
       if (payload.markers.topologyAnalysisPanelVisible !== true) {
         return "WebView did not report a visible Relief analysis panel";

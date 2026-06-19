@@ -20,10 +20,18 @@ export function topologyCameraEaseOutQuart(k: number): number {
   return 1 - Math.pow(1 - k, 4);
 }
 
-export function resolveSelectedFocusCameraMaxDistancePx(selectedFanoutRows: number): number {
-  return (
+export function resolveSelectedFocusCameraMaxDistancePx(
+  selectedFanoutRows: number,
+  viewportWidth = 0,
+): number {
+  const fanoutBound =
     SELECTED_FOCUS_CAMERA_BASE_MAX_DISTANCE_PX +
     Math.max(0, selectedFanoutRows - 2) *
-      SELECTED_FOCUS_CAMERA_FANOUT_ROW_DISTANCE_PX
-  );
+      SELECTED_FOCUS_CAMERA_FANOUT_ROW_DISTANCE_PX;
+  const normalizedViewportWidth = Number.isFinite(viewportWidth)
+    ? Math.max(0, viewportWidth)
+    : 0;
+  const viewportBound =
+    normalizedViewportWidth >= 1800 ? Math.round(normalizedViewportWidth * 0.18) : 0;
+  return Math.max(fanoutBound, viewportBound);
 }

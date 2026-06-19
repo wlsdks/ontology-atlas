@@ -2056,10 +2056,82 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverRelationRowVisible: true,
       ...markerOverrides,
     });
+  const selectedNodeClosedSupportPayload = (markerOverrides = {}) =>
+    selectedNodeFocusPayload({
+      topologyAnalysisPanelVisible: false,
+      topologyAnalysisPanelMode: "",
+      topologyAnalysisPanelSelectedContext: false,
+      topologyAnalysisPanelSelectedFocusRail: false,
+      topologyAnalysisPanelAttentionRole: "",
+      topologyAnalysisPanelWidthContract: "",
+      topologyAnalysisPanelWidth: 0,
+      topologyFocusCommandSpineVisible: false,
+      topologyFocusCommandPrimaryActionVisible: false,
+      topologyFocusReviewOrderVisible: false,
+      topologyFocusSecondaryActionsVisible: false,
+      topologyFocusAgentHandoffVisible: false,
+      topologyCommandChromeState: "selected-node-inspector",
+      topologyUtilityActionLaneVisible: false,
+      topologyUtilityActionLaneDensity: "",
+      topologyUtilityActionLaneContract: "",
+      topologyUtilityActionLaneWidth: 0,
+      topologyUtilityActionLaneHeight: 0,
+      topologySigmaControlsStackVisible: false,
+      topologySigmaControlsStackDensity: "",
+      topologySigmaControlsStackContract: "",
+      topologySigmaControlsStackWidth: 0,
+      topologySigmaControlsStackHeight: 0,
+      topologyShortcutsHelpButtonVisible: false,
+      topologyShortcutsHelpButtonDensity: "",
+      topologyShortcutsHelpButtonContract: "",
+      topologyShortcutsHelpButtonWidth: 0,
+      topologyShortcutsHelpButtonHeight: 0,
+      ...markerOverrides,
+    });
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
   assert.equal(validateWebviewVerifyPayload(selectedNodeFocusPayload()), null);
+  assert.equal(validateWebviewVerifyPayload(selectedNodeClosedSupportPayload()), null);
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...selectedNodeClosedSupportPayload({
+          topologyTopWorkspaceLabel: "",
+          topologyTopRelayoutLabel: "자동 정렬",
+          topologyTopSearchLabel: "검색",
+          topologyTopCreateLabel: "",
+        }),
+        href: "tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus",
+      },
+      { expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus" },
+    ),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeClosedSupportPayload({
+        topologyUtilityActionLaneVisible: true,
+      }),
+    ),
+    /selected node utility action lane was visible/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeClosedSupportPayload({
+        topologySigmaControlsStackVisible: true,
+      }),
+    ),
+    /selected node controls stack was visible/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeClosedSupportPayload({
+        topologyShortcutsHelpButtonVisible: true,
+      }),
+    ),
+    /selected node shortcuts help was visible/,
+  );
   assert.match(
     validateWebviewVerifyPayload(
       selectedNodeFocusPayload({
@@ -4410,6 +4482,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedNodeKind: "domain",
           topologySelectedNodeTitle: "Views",
           topologySelectedNodeSummary: "domain:views · 84 relations",
+          topologyAnalysisPanelVisible: true,
           topologyAnalysisPanelMode: "overview",
           topologyAnalysisPanelSelectedContext: false,
           topologyAnalysisPanelAttentionRole: "primary",
@@ -4449,7 +4522,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
-    /selected node panel stayed in overview mode/,
+    /selected node support rail was visible without the focus rail marker/,
   );
   assert.match(
     validateWebviewVerifyPayload(

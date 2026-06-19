@@ -595,7 +595,7 @@ function SigmaTopologyImpl({
         targetPolicy: 'viewport-center',
       });
       const cameraMotionMaxDistancePx =
-        resolveSelectedFocusCameraMaxDistancePx(selectedFanoutRows);
+        resolveSelectedFocusCameraMaxDistancePx(selectedFanoutRows, width);
       if (!focusFit) {
         if (cameraMotionTimerRef.current !== null) {
           window.clearTimeout(cameraMotionTimerRef.current);

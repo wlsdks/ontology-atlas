@@ -818,10 +818,25 @@ Default decision rules:
   relation-card density, camera framing, selected-state dimming, label
   disclosure, overlay collision, or agent handoff visibility. These are Atlas
   product-design problems; replacing the renderer will not solve them.
+- **Treat selected focus as a reducer/camera problem first**. The default
+  selected-node pattern is: center the selected node in the available map
+  viewport, brighten the selected node, direct neighbors, and visible relation
+  path, then dim unrelated nodes/edges. Do not add a large focus hull, extra
+  floating legend, or second support panel unless a verifier proves it helps a
+  user read the ontology fact faster.
 - **Tune the current stack first** when official Sigma/Graphology capabilities
   apply: `nodeReducer`, `edgeReducer`, camera state, `graphToViewport`,
   `viewportToGraph`, ForceAtlas2 settings, worker physics, label density, edge
   level-of-detail, or `autoRescale` / size-reference settings.
+- **Use Force Graph-style products as interaction references, not replacements
+  by default**. Force-directed demos are useful for drag, fit, node/link focus,
+  and 2D/3D exploration patterns, but Atlas still needs typed ontology facts,
+  stable DOM handoff controls, locale text, and deterministic WebView markers.
+  A spike must prove those contracts, not just smoother particles.
+- **Use Cytoscape.js as the analysis/gesture comparator** when the missing
+  need is graph-theory interaction, selection semantics, box gestures, or
+  headless analysis. Do not switch to it to solve spacing, hierarchy, or
+  "AI-looking" card treatment.
 - **Spike an alternative only** when the current stack cannot prove a needed
   capability after one narrow experiment. Good spike questions are concrete:
   "Can force-graph keep selected neighbors collision-free while preserving
@@ -840,6 +855,9 @@ Use these public sources as principle references only:
   interaction, node/link focus, drag, fit, and collision examples.
 - Cytoscape.js: useful comparison for graph theory analysis, gestures,
   selection, and rich interactive network apps.
+- Gephi Lite: useful comparison for network-exploration product lessons, but
+  also a warning that a graph tool can become chaotic when design hierarchy and
+  user moments are not explicit.
 
 Do not copy demo styling, palettes, particle effects, 3D spectacle, or vendor
 component shape. Translate a source into an Atlas verifier: typed ontology
