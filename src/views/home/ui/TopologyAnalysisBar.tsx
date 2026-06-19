@@ -2316,8 +2316,8 @@ function RelationProvenanceGate({
     <div
       aria-label={`${title}: ${summary}`}
       className="grid min-w-0 gap-1 rounded-md border border-[color:var(--topology-overview-signal-indigo-border)] bg-[color:var(--topology-overview-signal-indigo-surface)] px-2.5 py-2"
-      data-overview-provenance-contract="scan-counts-not-wrapped-summary"
-      data-overview-provenance-layout="stacked-fact-rows"
+      data-overview-provenance-contract="summary-first-counts-retained"
+      data-overview-provenance-layout="single-line-summary"
       data-overview-signal-card="indigo"
       data-overview-signal-compact="true"
       data-surface-token="--topology-overview-signal-indigo-surface"
@@ -2327,24 +2327,21 @@ function RelationProvenanceGate({
       <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {title}
       </span>
-      <span className="sr-only">{summary}</span>
-      <span className="grid min-w-0 gap-0.5">
+      <span
+        className="min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+        data-signal-summary-contract="human-readable-first"
+        data-testid="topology-overview-relation-provenance-summary"
+      >
+        {summary}
+      </span>
+      <span className="sr-only">
         {rows.map((row) => (
           <span
             key={row.key}
-            className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-1.5"
             data-overview-provenance-row={row.key}
             data-text-token={row.token}
           >
-            <span
-              className="font-mono text-[11px] leading-3"
-              style={{ color: `var(${row.token})` }}
-            >
-              {row.count}
-            </span>
-            <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-              {row.label}
-            </span>
+            {row.count} {row.label}
           </span>
         ))}
       </span>
@@ -2376,7 +2373,9 @@ function AgentReadinessGate({
       className="grid gap-1.5 rounded-md border border-[color:var(--topology-overview-readiness-border)] bg-[color:var(--topology-overview-readiness-surface)] px-3 py-1.5"
       aria-label={`${title}: ${summary}`}
       data-agent-readiness-summary={summary}
+      data-density="summary-first"
       data-overview-signal-card="readiness"
+      data-proof-strip-contract="summary-plus-meter"
       data-surface-token="--topology-overview-readiness-surface"
       data-border-token="--topology-overview-readiness-border"
       data-testid="topology-overview-agent-readiness"
@@ -2390,8 +2389,9 @@ function AgentReadinessGate({
         </span>
       </div>
       <div
-        className="grid grid-cols-3 gap-1.5"
+        className="sr-only grid-cols-3 gap-1.5"
         aria-label={`${title}: ${summary}`}
+        data-distribution-visibility="sr-only"
       >
         <AgentReadinessChip
           count={counts.ready}
@@ -2409,6 +2409,13 @@ function AgentReadinessGate({
           tone="review"
         />
       </div>
+      <p
+        className="min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+        data-signal-summary-contract="human-readable-first"
+        data-testid="topology-overview-agent-readiness-summary"
+      >
+        {summary}
+      </p>
       <AgentReadinessMeter
         label={`${title}: ${summary}`}
         counts={counts}
@@ -2446,8 +2453,8 @@ function RelationQualityGate({
         attrs.className ?? ""
       }`}
       aria-label={`${title}: ${summary}`}
-      data-density="scan-facts"
-      data-proof-strip-contract="flat-no-nested-cards"
+      data-density="summary-first"
+      data-proof-strip-contract="summary-plus-meter"
       data-quality-meter-contract="distribution-bar-maps-relation-quality"
       data-overview-signal-card="quality"
       data-surface-token="--topology-overview-quality-surface"
@@ -2457,10 +2464,17 @@ function RelationQualityGate({
       <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {title}
       </span>
-      <span className="sr-only">{summary}</span>
+      <p
+        className="min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+        data-signal-summary-contract="human-readable-first"
+        data-testid="topology-overview-relation-quality-summary"
+      >
+        {summary}
+      </p>
       <div
-        className="grid grid-cols-4 overflow-hidden rounded-md border border-[color:var(--topology-overview-proof-cell-divider)]"
+        className="sr-only grid-cols-4 overflow-hidden rounded-md border border-[color:var(--topology-overview-proof-cell-divider)]"
         data-divider-token="--topology-overview-proof-cell-divider"
+        data-distribution-visibility="sr-only"
       >
         <RelationQualityChip count={counts.strong} label={labels.strong} tone="strong" />
         <RelationQualityChip count={counts.supported} label={labels.supported} tone="supported" />
