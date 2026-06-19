@@ -1919,7 +1919,7 @@ describe("TopologyNodePopover", () => {
       "강한 구조 1 · 근거 있는 관계 1 · 약한 관련 0 · 검토 0",
     );
     expect(lens).toHaveAttribute("data-relation-quality-meter-total", "2");
-    expect(lens).toHaveAttribute("data-relation-quality-layout", "meter-only-summary");
+    expect(lens).toHaveAttribute("data-relation-quality-layout", "screen-reader-summary");
     const meter = screen.getByTestId("topology-node-relation-quality-meter");
     expect(meter).toHaveAttribute(
       "data-quality-meter-contract",
@@ -1977,8 +1977,9 @@ describe("TopologyNodePopover", () => {
     );
     expect(lens).toHaveAttribute(
       "data-visible-density-contract",
-      "meter-only-preserve-summary-for-agents",
+      "screen-reader-only-preserve-summary-for-agents",
     );
+    expect(lens.className).toContain("sr-only");
     expect(lens.querySelector('[data-relation-quality-chip="strong"]')).toHaveAttribute(
       "data-relation-quality-surface-token",
       "--topology-selected-relation-quality-strong-surface",
@@ -2040,18 +2041,6 @@ describe("TopologyNodePopover", () => {
     expect(lens).toHaveAttribute(
       "data-agent-readiness-layout",
       "screen-reader-summary",
-    );
-    expect(lens).toHaveAttribute(
-      "data-agent-readiness-strip-surface-token",
-      "--topology-node-popover-context-surface",
-    );
-    expect(lens).toHaveAttribute(
-      "data-agent-readiness-strip-border-token",
-      "--topology-node-popover-context-border",
-    );
-    expect(lens).toHaveAttribute(
-      "data-agent-readiness-strip-title-text-token",
-      "--topology-node-popover-relation-section-title-text",
     );
     expect(lens).toHaveAttribute(
       "data-agent-readiness-summary",

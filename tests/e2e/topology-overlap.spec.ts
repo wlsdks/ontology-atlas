@@ -3948,6 +3948,15 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-quality-meter-contract",
     "distribution-bar-maps-relation-quality",
   );
+  await expect(page.getByTestId("topology-relation-quality-lens")).toHaveAttribute(
+    "data-relation-quality-layout",
+    "screen-reader-summary",
+  );
+  await expect(page.getByTestId("topology-relation-quality-lens")).toHaveAttribute(
+    "data-visible-density-contract",
+    "screen-reader-only-preserve-summary-for-agents",
+  );
+  await expect(page.getByTestId("topology-relation-quality-lens")).toHaveClass(/sr-only/);
   await expect(nodeQualityMeter).toHaveAttribute(
     "data-surface-token",
     "--topology-overview-quality-meter-surface",
@@ -3997,18 +4006,6 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "screen-reader-only-preserve-summary-for-agents",
   );
   await expect(page.getByTestId("topology-node-agent-readiness-lens")).toHaveClass(/sr-only/);
-  await expect(page.getByTestId("topology-node-agent-readiness-lens")).toHaveAttribute(
-    "data-agent-readiness-strip-surface-token",
-    "--topology-node-popover-context-surface",
-  );
-  await expect(page.getByTestId("topology-node-agent-readiness-lens")).toHaveAttribute(
-    "data-agent-readiness-strip-border-token",
-    "--topology-node-popover-context-border",
-  );
-  await expect(page.getByTestId("topology-node-agent-readiness-lens")).toHaveAttribute(
-    "data-agent-readiness-strip-title-text-token",
-    "--topology-node-popover-relation-section-title-text",
-  );
   const nodeReadinessMeter = page.getByTestId("topology-node-agent-readiness-meter");
   await expect(nodeReadinessMeter).toHaveAttribute(
     "data-agent-readiness-meter-contract",
