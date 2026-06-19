@@ -1446,6 +1446,17 @@ const agentDesignGateChecks = [
       /Source -> Atlas rule -> verifier/.test(productDesignDoc),
   ],
   [
+    "graph engine fit gate",
+    /Relief\/Topology Graph Engine Fit Gate/.test(productDesignDoc) &&
+      /Sigma\.js/.test(productDesignDoc) &&
+      /Graphology/.test(productDesignDoc) &&
+      /nodeReducer/.test(productDesignDoc) &&
+      /edgeReducer/.test(productDesignDoc) &&
+      /Force Graph-style products/.test(productDesignDoc) &&
+      /Cytoscape\.js/.test(productDesignDoc) &&
+      /Reject renderer shopping/.test(productDesignDoc),
+  ],
+  [
     "installed app proof",
     /installed macOS app proof/i.test(productDesignDoc) &&
       /WebView marker/.test(productDesignDoc) &&
@@ -1463,7 +1474,7 @@ const missingAgentDesignGate = agentDesignGateChecks
   .map(([label]) => label);
 
 if (missingAgentDesignGate.length === 0) {
-  pass("agent guide requires the Product Design gate, design council, allowed reference policy, and installed-app proof for Relief work");
+  pass("agent guide requires the Product Design gate, design council, graph engine fit gate, allowed reference policy, and installed-app proof for Relief work");
 } else {
   fail(
     `AGENTS.md and docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md must keep the Relief design gate enforceable: missing ${missingAgentDesignGate.join(", ")}`,

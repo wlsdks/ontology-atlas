@@ -845,15 +845,22 @@ Default decision rules:
   rail, popup soup, oversized pills, tokenless spacing, or too much information
   in one panel. Those are design-system failures.
 
-Use these public sources as principle references only:
+Use these public sources as principle references only. This engine packet was
+refreshed on 2026-06-20 against the public project documentation and
+repositories; re-check it before a renderer migration or major graph
+interaction spike:
 
-- Sigma.js: WebGL renderer built on Graphology, reducers for dynamic
+- Sigma.js: https://www.sigmajs.org/ — WebGL renderer built on Graphology, reducers for dynamic
   node/edge appearance, camera and interaction primitives.
-- Graphology: graph model and standard-library algorithms, including
+- Sigma.js lifecycle/customization: https://www.sigmajs.org/docs/advanced/lifecycle/ and
+  https://www.sigmajs.org/docs/advanced/customization/ — `nodeReducer`,
+  `edgeReducer`, scheduled refresh, and camera state are first-class tuning
+  mechanisms before changing renderers.
+- Graphology: https://graphology.github.io/ — graph model and standard-library algorithms, including
   ForceAtlas2 and metrics.
-- react-force-graph / force-graph: useful comparison for force-directed 2D/3D
+- react-force-graph / force-graph: https://github.com/vasturiano/react-force-graph — useful comparison for force-directed 2D/3D
   interaction, node/link focus, drag, fit, and collision examples.
-- Cytoscape.js: useful comparison for graph theory analysis, gestures,
+- Cytoscape.js: https://js.cytoscape.org/ — useful comparison for graph theory analysis, gestures,
   selection, and rich interactive network apps.
 - Gephi Lite: useful comparison for network-exploration product lessons, but
   also a warning that a graph tool can become chaotic when design hierarchy and
