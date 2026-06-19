@@ -82,6 +82,10 @@ export interface TopologyNodePopoverLabels {
   agentReadinessLabels: Record<"ready" | "preflight" | "review", string>;
   /** Compact visible gate chips. Machine-readable gate ids stay in data attributes. */
   agentGateChipLabels: Record<RelationAgentGateKind, string>;
+  /** Compact visible copy action chips. Machine-readable MCP operations stay in data attributes. */
+  relationCopyActionChipLabels: Record<RelationCopyActionKind, string>;
+  /** Compact visible payload chip. The JSON payload stays in data attributes/title. */
+  relationPayloadChipLabel: string;
   /** Display labels for raw ontology kind tokens. Unknown/missing falls back to the raw token. */
   kindLabels: Record<string, string>;
   /** Display labels for raw relation type tokens. Unknown/missing falls back to the raw token. */
@@ -806,13 +810,20 @@ export function TopologyNodePopover({
                 connection.direction === "outgoing" ? connection.id : focus.id;
               const agentGateChipText = labels.agentGateChipLabels[agentGateKind];
               const primaryCopyActionShortLabel =
-                primaryCopyAction === "explain_relation" ? "explain" : "check";
+                labels.relationCopyActionChipLabels[primaryCopyAction];
               const relationHandoffSummary = [
                 `${relationSourceId} > ${relationTargetId}`,
                 relationTypeLabel,
                 evidenceState,
                 agentGateKind,
                 primaryCopyAction,
+              ].join(" · ");
+              const relationAccessibleHandoffSummary = [
+                `${relationSourceId} > ${relationTargetId}`,
+                relationTypeLabel,
+                relationEvidenceGlyph(connection),
+                agentGateChipText,
+                primaryCopyActionShortLabel,
               ].join(" · ");
               const relationHandoffTool = "query_ontology";
               const relationHandoffPayloadSummary = [
@@ -833,7 +844,7 @@ export function TopologyNodePopover({
                 connection.title,
                 directionLabel,
                 kindLabel,
-                relationHandoffSummary,
+                relationAccessibleHandoffSummary,
               ].join(" · ");
               return (
                 <li
@@ -1074,7 +1085,7 @@ export function TopologyNodePopover({
                           title={relationHandoffPayloadSummary}
                           className="shrink-0 rounded border border-[color:var(--topology-node-popover-route-chip-border)] bg-[color:var(--topology-node-popover-route-chip-surface)] px-1 py-px text-[color:var(--topology-node-popover-route-chip-text)]"
                         >
-                          JSON
+                          {labels.relationPayloadChipLabel}
                         </span>
                       </span>
                     </span>

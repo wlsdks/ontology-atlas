@@ -43,6 +43,11 @@ const labels: TopologyNodePopoverLabels = {
     "preflight-first": "점검",
     "review-first": "검토",
   },
+  relationCopyActionChipLabels: {
+    explain_relation: "설명",
+    relation_check: "점검",
+  },
+  relationPayloadChipLabel: "복사",
   kindLabels: {
     capability: "역량",
     domain: "도메인",
@@ -1296,13 +1301,13 @@ describe("TopologyNodePopover", () => {
     ).toHaveTextContent("전달");
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="action"]'),
-    ).toHaveTextContent("explain");
+    ).toHaveTextContent("설명");
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="action"]'),
     ).toHaveAttribute("title", "explain_relation");
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="payload"]'),
-    ).toHaveTextContent("JSON");
+    ).toHaveTextContent("복사");
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="payload"]'),
     ).toHaveAttribute(
@@ -1393,7 +1398,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRows[0]).toHaveAttribute(
       "aria-label",
-      "사용 · MCP SDK · 이 노드가 기대는 곳 · 요소 · capabilities/mcp-server > elements/mcp-sdk · 사용 · source-backed · handoff-ready · explain_relation",
+      "사용 · MCP SDK · 이 노드가 기대는 곳 · 요소 · capabilities/mcp-server > elements/mcp-sdk · 사용 · 1 · 전달 · 설명",
     );
     expect(relationRows[1]).toHaveAttribute(
       "data-relation-handoff-summary",

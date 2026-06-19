@@ -3062,6 +3062,15 @@ function SigmaTopologyImpl({
                   tier: { project: 1, domain: 2, capability: 3, element: 4 }[kind],
                 })}`
           }
+          describeKindBadge={(kind) =>
+            ({
+              project: t('cardKindBadgeProject'),
+              domain: t('cardKindBadgeDomain'),
+              capability: t('cardKindBadgeCapability'),
+              element: t('cardKindBadgeElement'),
+              unknown: t('cardKindBadgeUnknown'),
+            })[kind]
+          }
         />
       ) : null}
 

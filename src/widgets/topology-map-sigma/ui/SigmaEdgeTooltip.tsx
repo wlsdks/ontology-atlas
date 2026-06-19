@@ -395,6 +395,10 @@ export function SigmaSelectedEdgeCard({
     primaryCopyAction === 'explain_relation'
       ? t('actionExplainRelation')
       : t('actionRelationCheck');
+  const primaryCopyActionVisibleLabel =
+    primaryCopyAction === 'explain_relation'
+      ? t('actionExplainRelationVisible')
+      : t('actionRelationCheckVisible');
   const primaryCopyActionRouteLabel =
     primaryCopyAction === 'explain_relation'
       ? t('routeActionExplainRelationShort')
@@ -424,7 +428,7 @@ export function SigmaSelectedEdgeCard({
     evidence: evidenceState,
     gate: agentGateKind,
   });
-  const primaryCopyPayloadVisibleSummary = `query_ontology · ${primaryCopyActionLabel}`;
+  const primaryCopyPayloadVisibleSummary = primaryCopyActionVisibleLabel;
   const primaryCopyPayloadHandleSummary = `${data.source} → ${data.target}`;
   const ontologyHandleSummary = `${data.source} → ${data.target} · ${relationType}`;
   const preflightCopyPayload = {
@@ -504,11 +508,11 @@ export function SigmaSelectedEdgeCard({
       data-motion-contract={TOPOLOGY_RELATION_INSPECTOR_MOTION_CONTRACT}
       data-motion-duration-ms={TOPOLOGY_RELATION_INSPECTOR_DURATION_MS}
       data-motion-easing={TOPOLOGY_RELATION_INSPECTOR_EASING_NAME}
-      className={`pointer-events-auto absolute z-30 flex max-h-[var(--topology-selected-relation-card-max-height)] flex-col gap-1 overflow-x-hidden overflow-y-auto rounded-md border border-[color:var(--topology-selected-relation-card-border)] bg-[color:var(--topology-selected-relation-card-surface)] p-1 text-[10px] text-[color:var(--color-text-primary)] shadow-[var(--topology-selected-relation-card-shadow)] motion-safe:animate-[topology-relation-inspector-enter_180ms_ease-out_1] motion-reduce:animate-none ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
+      className={`pointer-events-auto absolute z-30 flex max-h-[var(--topology-selected-relation-card-max-height)] flex-col gap-1.5 overflow-x-hidden overflow-y-auto rounded-lg border border-[color:var(--topology-selected-relation-card-border)] bg-[color:var(--topology-selected-relation-card-surface)] p-1.5 text-[10px] text-[color:var(--color-text-primary)] shadow-[var(--topology-selected-relation-card-shadow)] motion-safe:animate-[topology-relation-inspector-enter_180ms_ease-out_1] motion-reduce:animate-none ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
     >
       <div className="flex min-w-0 items-start gap-2">
         <div className="min-w-0 flex-1">
-          <div className="font-mono text-[length:var(--topology-selected-relation-kicker-font-size)] uppercase tracking-[0.14em] text-[color:var(--topology-selected-relation-accent-text)]">
+          <div className="font-mono text-[length:var(--topology-selected-relation-kicker-font-size)] uppercase tracking-[0.10em] text-[color:var(--topology-selected-relation-accent-text)]">
             {t('selectedTitle')}
           </div>
           <div
@@ -558,7 +562,7 @@ export function SigmaSelectedEdgeCard({
               {ontologyHandleSummary}
             </div>
           </div>
-          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
+          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1">
             <span className="rounded-full border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-1.5 py-0.5 font-mono text-[length:var(--topology-selected-relation-chip-font-size)] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]">
               {visibleRelationTypeLabel || relationLabel}
             </span>
@@ -587,14 +591,14 @@ export function SigmaSelectedEdgeCard({
           <X size={14} />
         </button>
       </div>
-      <div data-testid="sigma-selected-edge-proof-band" className="grid grid-cols-2 gap-1">
+      <div data-testid="sigma-selected-edge-proof-band" className="grid grid-cols-2 gap-1.5">
         <div
           data-testid="sigma-selected-edge-contract"
           data-relation-contract="typed-fact-not-similarity"
           data-relation-contract-visible-text={semanticFactVisibleHint}
           data-relation-contract-full-text={relationContractFullText}
           data-relation-contract-copy-contract="visible-judgment-full-explanation-accessible"
-          className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-2 py-1"
+          className="min-w-0 rounded-lg border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-2.5 py-1.5"
         >
           <div className="font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {t('relationContractLabel')}
@@ -602,7 +606,7 @@ export function SigmaSelectedEdgeCard({
           <p
             data-relation-contract-visible-summary={semanticFactVisibleHint}
             title={relationContractFullText}
-            className="mt-0.5 truncate text-[10px] leading-3 text-[color:var(--color-text-secondary)]"
+            className="mt-0.5 truncate text-[11px] leading-3.5 text-[color:var(--color-text-secondary)]"
           >
             {semanticFactVisibleHint}
           </p>
@@ -628,7 +632,7 @@ export function SigmaSelectedEdgeCard({
           data-agent-gate-text-token={`--topology-selected-relation-gate-${relationGateToken(
             agentGateKind,
           )}-text`}
-          className={`min-w-0 rounded-md border px-2 py-1 ${relationAgentDecisionTone(
+          className={`min-w-0 rounded-lg border px-2.5 py-1.5 ${relationAgentDecisionTone(
             agentGateKind,
           )}`}
         >
@@ -642,7 +646,7 @@ export function SigmaSelectedEdgeCard({
           <p
             data-agent-decision-visible-summary={agentDecisionVisibleText}
             title={agentDecisionText}
-            className="mt-0.5 truncate text-[10px] leading-3 text-[color:var(--color-text-secondary)]"
+            className="mt-0.5 truncate text-[11px] leading-3.5 text-[color:var(--color-text-secondary)]"
           >
             {agentDecisionVisibleText}
           </p>
@@ -660,7 +664,7 @@ export function SigmaSelectedEdgeCard({
         data-route-layout-contract="compact-two-column-route-grid"
         data-route-step-min-width-token="--topology-selected-relation-route-step-min-width"
         data-overflow-contract="no-horizontal-scroll"
-        className="grid min-w-0 shrink-0 grid-cols-4 overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] max-[960px]:min-h-16 max-[960px]:grid-cols-2"
+        className="grid min-w-0 shrink-0 grid-cols-4 overflow-hidden rounded-lg border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] max-[960px]:min-h-16 max-[960px]:grid-cols-2"
       >
         <RouteStep
           kind="fact"
@@ -700,14 +704,14 @@ export function SigmaSelectedEdgeCard({
         data-next-action-surface-token="--topology-selected-relation-next-action-surface"
         data-next-action-border-token="--topology-selected-relation-next-action-border"
         data-next-action-accent-text-token="--topology-selected-relation-accent-text"
-        className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-next-action-border)] bg-[color:var(--topology-selected-relation-next-action-surface)] p-1"
+        className="min-w-0 rounded-lg border border-[color:var(--topology-selected-relation-next-action-border)] bg-[color:var(--topology-selected-relation-next-action-surface)] p-1.5"
       >
         <div className="mb-1 flex min-w-0 items-center justify-between gap-2">
           <div className="min-w-0 truncate font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.12em] text-[color:var(--topology-selected-relation-accent-text)]">
             {t('primaryCopyBadge')}
           </div>
           <div className="shrink-0 font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-            {primaryCopyActionLabel}
+            {primaryCopyActionVisibleLabel}
           </div>
         </div>
         <div
@@ -723,7 +727,7 @@ export function SigmaSelectedEdgeCard({
             gateKind={agentGateKind}
             label={copied === 'preflight' ? t('copied') : t('copyPreflight')}
             visibleLabel={
-              copied === 'preflight' ? t('copied') : t('actionRelationCheck')
+              copied === 'preflight' ? t('copied') : t('actionRelationCheckVisible')
             }
             onClick={() => void copyCheck('preflight')}
             payloadCall={formatQueryOntologyCall(preflightCopyPayload)}
@@ -736,7 +740,7 @@ export function SigmaSelectedEdgeCard({
             gateKind={agentGateKind}
             label={copied === 'explain' ? t('copied') : t('copyExplain')}
             visibleLabel={
-              copied === 'explain' ? t('copied') : t('actionExplainRelation')
+              copied === 'explain' ? t('copied') : t('actionExplainRelationVisible')
             }
             onClick={() => void copyCheck('explain')}
             payloadCall={formatQueryOntologyCall(explainCopyPayload)}
@@ -759,7 +763,7 @@ export function SigmaSelectedEdgeCard({
           data-min-height-token="--topology-selected-relation-copy-payload-min-height"
           data-copy-payload-accent-muted-token="--topology-selected-relation-accent-muted"
           data-overflow-contract="no-horizontal-scroll"
-          className="mt-1 flex min-h-[var(--topology-selected-relation-copy-payload-min-height)] min-w-0 items-center gap-1 overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-payload-border)] bg-[color:var(--topology-selected-relation-payload-surface)] px-1.5 py-0.5"
+          className="mt-1.5 flex min-h-[var(--topology-selected-relation-copy-payload-min-height)] min-w-0 items-center gap-1.5 overflow-hidden rounded-lg border border-[color:var(--topology-selected-relation-payload-border)] bg-[color:var(--topology-selected-relation-payload-surface)] px-2 py-1"
         >
           <div
             data-copy-payload-label={t('copyPayloadLabel')}

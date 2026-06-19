@@ -112,6 +112,8 @@ interface SigmaSkeletonCardsProps {
   onRelationHover?: (data: SigmaEdgeTooltipData | null) => void;
   /** hover 팝업의 계층 라벨 — 예: "도메인 · 2계층" (i18n 은 호출자 책임). */
   describeKind?: (kind: SkeletonCardModel['kind']) => string;
+  /** 카드 안의 짧은 계층 배지 — overview legend 와 같은 어휘를 쓴다. */
+  describeKindBadge?: (kind: SkeletonCardModel['kind']) => string;
 }
 
 // 카드 가독성이 1순위 — 타이포/패딩을 넉넉하게, 계층 간 크기 차등을 한
@@ -186,7 +188,7 @@ const DRAG_CLUSTER_HULL_PAD_PX = 14;
 // 커스텀 프로퍼티를 떨구는 동작이 있다.
 /** hover 팝업 폭 추정(px) — flip 판정용 (max-w-[17rem]). */
 const HOVER_POP_W = 272;
-const BASE_ANCHOR_CARD_MAX_WIDTH_PX = 224;
+const BASE_ANCHOR_CARD_MAX_WIDTH_PX = 256;
 const SELECTED_FOCUS_CARD_MAX_WIDTH_PX = 360;
 const HEALTH_REPAIR_CARD_MAX_WIDTH_PX = 320;
 const ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX = 128;
@@ -220,11 +222,11 @@ const KIND_RANK: Record<SkeletonCardModel['kind'], number> = {
   unknown: 4,
 };
 
-const KIND_BADGE_LABEL: Record<SkeletonCardModel['kind'], string> = {
-  project: 'P',
-  domain: 'D',
-  capability: 'C',
-  element: 'E',
+const FALLBACK_KIND_BADGE_LABEL: Record<SkeletonCardModel['kind'], string> = {
+  project: 'Project',
+  domain: 'Domain',
+  capability: 'Capability',
+  element: 'Evidence',
   unknown: '?',
 };
 
@@ -236,9 +238,9 @@ const TIER_Z_INDEX: Record<SkeletonCardModel['tier'], number> = {
 };
 
 const RELATION_BADGE_HEIGHT_PX = 24;
-const RELATION_BADGE_MIN_WIDTH_PX = 96;
+const RELATION_BADGE_MIN_WIDTH_PX = 72;
 const RELATION_BADGE_CHAR_WIDTH_PX = 5.8;
-const RELATION_BADGE_PAD_X_PX = 10;
+const RELATION_BADGE_PAD_X_PX = 26;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
 const RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX = 18;
 const RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX = 18;
@@ -465,7 +467,7 @@ function relationQualityGlowToken(
 }
 
 function relationAgentGateChipText(gateKind: RelationAgentGateKind): string {
-  if (gateKind === 'handoff-ready') return 'explain';
+  if (gateKind === 'handoff-ready') return 'ready';
   if (gateKind === 'preflight-first') return 'check';
   return 'review';
 }
@@ -1725,6 +1727,7 @@ export function SigmaSkeletonCards({
   onRelationSelect,
   onRelationHover,
   describeKind,
+  describeKindBadge,
 }: SigmaSkeletonCardsProps) {
   const tEdgeTooltip = useTranslations('topologyWidgets.edgeTooltip');
   const relationTypeLabels = useMemo<RelationTypeLabels>(
@@ -3041,8 +3044,7 @@ export function SigmaSkeletonCards({
               RELATION_BADGE_PAD_X_PX +
             (isEgoBadge
               ? RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
-                RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX +
-                RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX
+                RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX
               : 0),
         );
         const usesHtmlBadge = isEgoBadge && labelButton !== null;
@@ -3969,9 +3971,7 @@ export function SigmaSkeletonCards({
           labelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
             RELATION_BADGE_PAD_X_PX +
             RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
-            RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX +
-            RELATION_BADGE_EVIDENCE_CHIP_WIDTH_PX +
-            RELATION_BADGE_AGENT_GATE_CHIP_WIDTH_PX,
+            RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX,
         );
         return (
           <button
@@ -4087,7 +4087,7 @@ export function SigmaSkeletonCards({
               data-relation-direction-surface-token="--topology-relation-direction-surface"
               data-relation-direction-border-token="--topology-relation-direction-border"
               data-relation-direction-text-token="--topology-relation-direction-text"
-              className="inline-flex h-6 max-w-full items-center justify-center gap-[var(--topology-relation-label-segment-gap)] overflow-hidden rounded-full border px-2 shadow-[0_5px_14px_rgba(0,0,0,0.20)]"
+              className="inline-flex h-6 max-w-full items-center justify-center gap-1.5 overflow-hidden rounded-full border px-2.5 shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
               style={{
                 backgroundColor: selected
                   ? 'var(--topology-relation-label-selected-surface)'
@@ -4116,7 +4116,7 @@ export function SigmaSkeletonCards({
                 data-surface-token="--topology-relation-direction-surface"
                 data-border-token="--topology-relation-direction-border"
                 data-text-token="--topology-relation-direction-text"
-                className="inline-flex h-3.5 min-w-[1.05rem] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-relation-direction-border)] bg-[color:var(--topology-relation-direction-surface)] px-1 text-[8px] font-semibold leading-none text-[color:var(--topology-relation-direction-text)]"
+                className="shrink-0 text-[10px] font-semibold leading-none text-[color:var(--topology-relation-direction-text)]"
               >
                 →
               </span>
@@ -4124,8 +4124,7 @@ export function SigmaSkeletonCards({
                 data-relation-label-type-text
                 data-relation-label-segment="type"
                 data-relation-label-type-text-contract="typed-fact-label-stays-readable"
-                data-segment-divider-token="--topology-relation-label-border"
-                className="shrink-0 border-r border-[color:var(--topology-relation-label-border)] pr-1.5"
+                className="shrink-0"
               >
                 {labelText}
               </span>
@@ -4137,7 +4136,7 @@ export function SigmaSkeletonCards({
                 data-surface-token="--topology-relation-evidence-chip-surface"
                 data-border-token="--topology-relation-evidence-chip-border"
                 data-text-token="--topology-relation-evidence-chip-text"
-                className="inline-flex h-3.5 min-w-[1.2rem] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-relation-evidence-chip-border)] bg-[color:var(--topology-relation-evidence-chip-surface)] px-1 text-[8px] font-semibold leading-none tracking-normal text-[color:var(--topology-relation-evidence-chip-text)]"
+                className="sr-only"
               >
                 {evidenceChipText}
               </span>
@@ -4149,9 +4148,7 @@ export function SigmaSkeletonCards({
                 data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
                 data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
                 data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
-                className={`inline-flex h-3.5 min-w-[1.55rem] shrink-0 items-center justify-center rounded-full border px-0.5 text-[7px] font-semibold leading-none tracking-normal ${relationAgentGateChipTone(
-                  agentGateKind,
-                )}`}
+                className="sr-only"
               >
                 {agentGateText}
               </span>
@@ -4246,7 +4243,7 @@ export function SigmaSkeletonCards({
             data-relation-direction-border-token="--topology-relation-direction-border"
             data-relation-direction-text-token="--topology-relation-direction-text"
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-[var(--topology-relation-label-segment-gap)] overflow-hidden whitespace-nowrap rounded-full border px-2 font-mono text-[9px] uppercase tracking-[0.07em] text-[color:var(--color-text-secondary)]"
+            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-full border px-2.5 font-mono text-[9px] uppercase tracking-[0.07em] text-[color:var(--color-text-secondary)]"
             style={{
               backgroundColor: 'var(--topology-relation-label-selected-surface)',
               borderColor: 'var(--topology-relation-label-selected-border)',
@@ -4272,7 +4269,7 @@ export function SigmaSkeletonCards({
               data-surface-token="--topology-relation-direction-surface"
               data-border-token="--topology-relation-direction-border"
               data-text-token="--topology-relation-direction-text"
-              className="inline-flex h-3.5 min-w-[1.05rem] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-relation-direction-border)] bg-[color:var(--topology-relation-direction-surface)] px-1 text-[8px] font-semibold leading-none text-[color:var(--topology-relation-direction-text)]"
+              className="shrink-0 text-[10px] font-semibold leading-none text-[color:var(--topology-relation-direction-text)]"
             >
               →
             </span>
@@ -4280,8 +4277,7 @@ export function SigmaSkeletonCards({
               data-relation-label-type-text
               data-relation-label-segment="type"
               data-relation-label-type-text-contract="typed-fact-label-stays-readable"
-              data-segment-divider-token="--topology-relation-label-border"
-              className="shrink-0 border-r border-[color:var(--topology-relation-label-border)] pr-1.5"
+              className="shrink-0"
             >
               {labelText}
             </span>
@@ -4294,7 +4290,7 @@ export function SigmaSkeletonCards({
               data-surface-token="--topology-relation-evidence-chip-surface"
               data-border-token="--topology-relation-evidence-chip-border"
               data-text-token="--topology-relation-evidence-chip-text"
-              className="inline-flex h-3.5 min-w-[1.2rem] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-relation-evidence-chip-border)] bg-[color:var(--topology-relation-evidence-chip-surface)] px-1 text-[8px] font-semibold leading-none tracking-normal text-[color:var(--topology-relation-evidence-chip-text)]"
+              className="sr-only"
             >
               {evidenceChipText}
             </span>
@@ -4307,9 +4303,7 @@ export function SigmaSkeletonCards({
               data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
               data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
               data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
-              className={`inline-flex h-3.5 min-w-[1.55rem] shrink-0 items-center justify-center rounded-full border px-0.5 text-[7px] font-semibold leading-none tracking-normal ${relationAgentGateChipTone(
-                agentGateKind,
-              )}`}
+              className="sr-only"
             >
               {agentGateText}
             </span>
@@ -4400,6 +4394,11 @@ export function SigmaSkeletonCards({
               : 'dock-follower';
         const dragSettled = dragSettledSlugs.has(nodeId);
         const pathEndpoint = pathRole === 'source' || pathRole === 'target';
+        const kindDescription = describeKind?.(card.kind) ?? card.kind;
+        const kindBadgeLabel =
+          describeKindBadge?.(card.kind) ??
+          kindDescription.split('·')[0]?.trim() ??
+          FALLBACK_KIND_BADGE_LABEL[card.kind];
         // 카드 표면 = kind 틴트 × tier alpha 의 *정량 토큰*.
         // 상위 개념일수록 표면을 더 세게 주어 지도가 태그 더미가 아니라
         // project → domain → capability → element 위계로 먼저 읽히게 한다.
@@ -4722,15 +4721,15 @@ export function SigmaSkeletonCards({
               data-surface-token="--topology-card-kind-surface"
               data-border-token="--card-kind-border"
               data-accent-token="--card-kind-accent"
-              aria-label={describeKind?.(card.kind) ?? card.kind}
-              title={describeKind?.(card.kind) ?? card.kind}
-              className="relative inline-flex h-[1.42em] min-w-[1.42em] shrink-0 items-center justify-center rounded-[0.38em] border border-[color:var(--card-kind-border)] bg-[color:var(--topology-card-kind-surface)] px-[0.3em] font-mono text-[0.62em] font-semibold leading-none text-[color:var(--card-kind-accent)]"
+              aria-label={kindDescription}
+              title={kindDescription}
+              className="relative inline-flex h-[1.42em] max-w-[5.8em] shrink-0 items-center justify-center truncate rounded-[0.38em] border border-[color:var(--card-kind-border)] bg-[color:var(--topology-card-kind-surface)] px-[0.36em] text-[0.62em] font-semibold leading-none text-[color:var(--card-kind-accent)]"
               style={{
                 '--card-kind-accent': fill,
                 '--card-kind-border': withAlpha(fill, 0.34),
               } as React.CSSProperties}
             >
-              {KIND_BADGE_LABEL[card.kind]}
+              {kindBadgeLabel}
             </span>
             <span
               data-card-title

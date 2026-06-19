@@ -2459,6 +2459,11 @@ export function HomePage() {
                   "preflight-first": t("nodePopover.agentGatePreflightFirstShort"),
                   "review-first": t("nodePopover.agentGateReviewFirstShort"),
                 },
+                relationCopyActionChipLabels: {
+                  explain_relation: t("nodePopover.relationCopyExplainShort"),
+                  relation_check: t("nodePopover.relationCopyCheckShort"),
+                },
+                relationPayloadChipLabel: t("nodePopover.relationPayloadCopyShort"),
                 kindLabels: {
                   project: tKinds(normalizeKindLabelKey("project")),
                   domain: tKinds(normalizeKindLabelKey("domain")),
