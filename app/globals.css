@@ -688,8 +688,6 @@
     --topology-node-popover-action-icon-surface: rgba(139, 151, 255, 0.1);
     --topology-node-popover-action-icon-border: rgba(139, 151, 255, 0.3);
     --topology-node-popover-action-focus-ring: rgba(94, 106, 210, 0.50);
-    --topology-node-popover-chrome-action-border: rgba(255, 255, 255, 0.10);
-    --topology-node-popover-chrome-action-hover-border: rgba(139, 151, 255, 0.28);
     --topology-node-popover-chrome-action-text: rgba(222, 225, 255, 0.52);
     --topology-node-popover-chrome-action-hover-text: rgba(222, 225, 255, 0.86);
     --topology-node-popover-footer-action-border: rgba(255, 255, 255, 0.10);
@@ -1328,8 +1326,6 @@
     --topology-node-popover-action-icon-surface: rgba(77, 86, 200, 0.10);
     --topology-node-popover-action-icon-border: rgba(77, 86, 200, 0.28);
     --topology-node-popover-action-focus-ring: rgba(77, 86, 200, 0.46);
-    --topology-node-popover-chrome-action-border: rgba(15, 23, 42, 0.10);
-    --topology-node-popover-chrome-action-hover-border: rgba(77, 86, 200, 0.26);
     --topology-node-popover-chrome-action-text: rgba(40, 50, 175, 0.52);
     --topology-node-popover-chrome-action-hover-text: rgba(40, 50, 175, 0.86);
     --topology-node-popover-footer-action-border: rgba(15, 23, 42, 0.11);

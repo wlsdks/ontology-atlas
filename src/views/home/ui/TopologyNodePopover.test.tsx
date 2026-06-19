@@ -1212,15 +1212,8 @@ describe("TopologyNodePopover", () => {
 
     const expand = screen.getByRole("button", { name: "상세 보기" });
     expect(expand).toHaveAttribute("data-node-popover-toggle", "expand");
-    expect(expand).toHaveAttribute("data-compact-action-contract", "icon-only-under-480");
-    expect(expand).toHaveAttribute(
-      "data-chrome-action-border-token",
-      "--topology-node-popover-chrome-action-border",
-    );
-    expect(expand).toHaveAttribute(
-      "data-chrome-action-hover-border-token",
-      "--topology-node-popover-chrome-action-hover-border",
-    );
+    expect(expand).toHaveAttribute("data-compact-action-contract", "quiet-inline-disclosure");
+    expect(expand).toHaveAttribute("data-chrome-action-treatment", "quiet-inline-disclosure");
     expect(expand).toHaveAttribute(
       "data-chrome-action-text-token",
       "--topology-node-popover-chrome-action-text",
@@ -1230,9 +1223,7 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-chrome-action-hover-text",
     );
     expect(expand.className).toContain("h-[var(--topology-node-popover-compact-action-size)]");
-    expect(expand.className).toContain(
-      "border-[color:var(--topology-node-popover-chrome-action-border)]",
-    );
+    expect(expand.className).not.toContain("border-[color");
     expect(expand.className).toContain(
       "text-[color:var(--topology-node-popover-chrome-action-text)]",
     );

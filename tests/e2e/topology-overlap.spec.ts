@@ -3420,12 +3420,12 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   await expect(compactBriefAction).toHaveText(/.+/);
   await expect(page.locator('[data-node-popover-toggle="expand"]')).toHaveAttribute(
     "data-compact-action-contract",
-    "icon-only-under-480",
+    "quiet-inline-disclosure",
   );
   const compactExpandAction = page.locator('[data-node-popover-toggle="expand"]');
   await expect(compactExpandAction).toHaveAttribute(
-    "data-chrome-action-border-token",
-    "--topology-node-popover-chrome-action-border",
+    "data-chrome-action-treatment",
+    "quiet-inline-disclosure",
   );
   await expect(compactExpandAction).toHaveAttribute(
     "data-chrome-action-text-token",
