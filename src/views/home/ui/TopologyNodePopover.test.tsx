@@ -476,7 +476,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRow).toHaveAttribute(
       "data-row-scan-order",
-      "relation>title>direction>endpoint>handoff",
+      "title>relation-metadata>direction>endpoint>handoff",
     );
     expect(relationRow?.className).toContain("min-h-16");
     expect(relationRow?.className).toContain("gap-2");
@@ -496,6 +496,10 @@ describe("TopologyNodePopover", () => {
     expect(relationRow?.className).toContain("px-2");
     expect(relationRow?.className).toContain("py-2");
     expect(relationTitle).toHaveAttribute("data-primary-scan-target", "true");
+    expect(relationRow?.querySelector("[data-relation-primary-line]")).toHaveAttribute(
+      "data-visible-contract",
+      "connected-title-first",
+    );
     expect(relationTitle).toHaveAttribute(
       "data-relation-title-text-token",
       "--topology-node-popover-relation-row-title-text",
@@ -507,6 +511,10 @@ describe("TopologyNodePopover", () => {
     expect(relationMeta).toHaveAttribute(
       "data-row-meta-text-token",
       "--topology-node-popover-relation-row-meta-text",
+    );
+    expect(relationMeta).toHaveAttribute(
+      "data-visible-contract",
+      "relation-facts-secondary-to-connected-title",
     );
     expect(relationMeta?.className).toContain(
       "text-[color:var(--topology-node-popover-relation-row-meta-text)]",
@@ -547,9 +555,7 @@ describe("TopologyNodePopover", () => {
     expect(handoffLane?.className).not.toContain(
       "border-[color:var(--topology-node-popover-route-border)]",
     );
-    expect(handoffLane?.className).toContain(
-      "text-[color:var(--topology-node-popover-route-text)]",
-    );
+    expect(handoffLane?.className).toContain("sr-only");
     expect(
       handoffLane?.querySelector('[data-relation-route-chip="fact"]')?.className,
     ).toContain("sr-only");
@@ -1139,7 +1145,7 @@ describe("TopologyNodePopover", () => {
     ).toBeInTheDocument();
   });
 
-  it("surfaces relation type as the first scan target in each connection row", () => {
+  it("surfaces the connected title before relation metadata in each connection row", () => {
     setup();
     const relationRows = document.querySelectorAll("[data-relation-row]");
     expect(relationRows).toHaveLength(2);
@@ -1152,8 +1158,13 @@ describe("TopologyNodePopover", () => {
     expect(relationRows[0]).toHaveAttribute("data-primary-copy-action", "explain_relation");
     expect(relationRows[0]).toHaveAttribute(
       "data-row-visual-contract",
-      "direction-quality-fact-spine",
+      "title-first-relation-metadata-secondary",
     );
+    expect(
+      relationRows[0].querySelector("[data-relation-title]")?.compareDocumentPosition(
+        relationRows[0].querySelector("[data-relation-type-label]") as Node,
+      ) ?? 0,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(
       relationRows[0].querySelector("[data-relation-direction-marker]"),
     ).toHaveAttribute("data-relation-direction-marker", "outgoing");

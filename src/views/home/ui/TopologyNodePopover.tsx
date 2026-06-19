@@ -894,9 +894,9 @@ export function TopologyNodePopover({
                     data-overflow-contract="no-horizontal-scroll"
                     data-row-density-contract="agent-handoff-scan-row"
                     data-row-surface-contract="flat-divider-row"
-                    data-row-visual-contract="direction-quality-fact-spine"
+                    data-row-visual-contract="title-first-relation-metadata-secondary"
                     data-row-min-hit-height="64"
-                    data-row-scan-order="relation>title>direction>endpoint>handoff"
+                    data-row-scan-order="title>relation-metadata>direction>endpoint>handoff"
                     data-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
                     data-row-focus-surface-token="--topology-node-popover-relation-row-focus-surface"
                     data-row-focus-border-token="--topology-node-popover-relation-row-focus-border"
@@ -936,13 +936,32 @@ export function TopologyNodePopover({
                       )}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="flex min-w-0 items-center gap-1.5">
+                      <span
+                        data-relation-primary-line
+                        data-visible-contract="connected-title-first"
+                        className="flex min-w-0 items-center gap-1.5"
+                      >
+                        <span
+                          data-relation-title
+                          data-primary-scan-target="true"
+                          data-relation-title-text-token="--topology-node-popover-relation-row-title-text"
+                          className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-relation-row-title-text)]"
+                        >
+                          {connection.title}
+                        </span>
+                      </span>
+                      <span
+                        data-relation-row-meta
+                        data-row-meta-text-token="--topology-node-popover-relation-row-meta-text"
+                        data-visible-contract="relation-facts-secondary-to-connected-title"
+                        className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] leading-4 text-[color:var(--topology-node-popover-relation-row-meta-text)]"
+                      >
                         <span
                           data-relation-type-label
                           data-fact-type-surface-token="--topology-node-popover-fact-type-surface"
                           data-fact-type-border-token="--topology-node-popover-fact-type-border"
                           data-fact-type-text-token="--topology-node-popover-fact-type-text"
-                          className="shrink-0 rounded-full border border-[color:var(--topology-node-popover-fact-type-border)] bg-[color:var(--topology-node-popover-fact-type-surface)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--topology-node-popover-fact-type-text)]"
+                          className="shrink-0 rounded-[5px] border border-[color:var(--topology-node-popover-fact-type-border)] bg-[color:var(--topology-node-popover-fact-type-surface)] px-1.5 py-0.5 text-[10px] text-[color:var(--topology-node-popover-fact-type-text)]"
                         >
                           {relationTypeLabel}
                         </span>
@@ -970,7 +989,7 @@ export function TopologyNodePopover({
                             evidenceState,
                             "text",
                           )}
-                          className={`inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full border px-1 font-mono text-[8px] leading-none ${relationEvidenceGlyphClassName(evidenceState)}`}
+                          className={`inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-[5px] border px-1 font-mono text-[8px] leading-none ${relationEvidenceGlyphClassName(evidenceState)}`}
                         >
                           {relationEvidenceGlyph(connection)}
                         </span>
@@ -992,25 +1011,16 @@ export function TopologyNodePopover({
                             agentGateKind,
                             "text",
                           )}
-                          className={`inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-full border px-1 font-mono text-[8px] uppercase leading-none ${relationAgentGateChipClassName(agentGateKind)}`}
+                          className={`inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-[5px] border px-1 text-[9px] leading-none ${relationAgentGateChipClassName(agentGateKind)}`}
                         >
                           {primaryCopyActionShortLabel}
                         </span>
                         <span
-                          data-relation-title
-                          data-primary-scan-target="true"
-                          data-relation-title-text-token="--topology-node-popover-relation-row-title-text"
-                          className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-relation-row-title-text)]"
+                          data-relation-row-context
+                          className="min-w-0 truncate"
                         >
-                          {connection.title}
+                          {directionLabel} · {kindLabel}
                         </span>
-                      </span>
-                      <span
-                        data-relation-row-meta
-                        data-row-meta-text-token="--topology-node-popover-relation-row-meta-text"
-                        className="mt-0.5 block truncate text-[10px] text-[color:var(--topology-node-popover-relation-row-meta-text)]"
-                      >
-                        {directionLabel} · {kindLabel}
                       </span>
                       <span
                         aria-hidden="true"
@@ -1051,7 +1061,7 @@ export function TopologyNodePopover({
                         data-route-text-token="--topology-node-popover-route-text"
                         data-route-chip-text-token="--topology-node-popover-route-chip-text"
                         data-route-separator-token="--topology-node-popover-route-separator"
-                        className="mt-1 flex min-w-0 items-center gap-1.5 overflow-hidden text-[10px] leading-4 text-[color:var(--topology-node-popover-route-text)]"
+                        className="sr-only"
                       >
                         <span
                           data-relation-route-chip="fact"
