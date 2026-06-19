@@ -28,6 +28,38 @@ describe("SigmaRelationLegend", () => {
       "data-relation-legend-typography",
       "readable-utility-labels",
     );
+    expect(legend).toHaveAttribute(
+      "data-relation-legend-width-token",
+      "--topology-relation-legend-width",
+    );
+    expect(legend).toHaveAttribute(
+      "data-relation-legend-max-width-token",
+      "--topology-relation-legend-max-width",
+    );
+    expect(legend).toHaveAttribute(
+      "data-relation-legend-inset-token",
+      "--topology-relation-legend-inset",
+    );
+    expect(legend).toHaveAttribute(
+      "data-relation-legend-bottom-token",
+      "--topology-relation-legend-bottom",
+    );
+    expect(legend).toHaveAttribute(
+      "data-relation-legend-minimap-gap-token",
+      "--topology-relation-legend-minimap-gap",
+    );
+    expect(legend).toHaveAttribute(
+      "data-relation-legend-surface-token",
+      "--topology-relation-legend-surface",
+    );
+    expect(legend).toHaveAttribute(
+      "data-relation-legend-border-token",
+      "--topology-relation-legend-border",
+    );
+    expect(legend).toHaveAttribute(
+      "data-relation-legend-shadow-token",
+      "--topology-relation-legend-shadow",
+    );
     expect(screen.getByText("선 의미")).toBeInTheDocument();
     expect(screen.getByText("강함")).toBeInTheDocument();
     expect(screen.getByText("근거")).toBeInTheDocument();
@@ -39,6 +71,9 @@ describe("SigmaRelationLegend", () => {
     ].join(" ");
     expect(legendClasses).not.toContain("font-mono");
     expect(legendClasses).not.toContain("uppercase");
+    expect(legendClasses).not.toContain("w-[300px]");
+    expect(legendClasses).not.toContain("right-4");
+    expect(legendClasses).not.toContain("bottom-[calc");
   });
 
   it("binds each relation row to the same stroke tokens used by map connectors", () => {

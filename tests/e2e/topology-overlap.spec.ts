@@ -908,7 +908,9 @@ test("Relief minimap pans the viewport with visible feedback", async ({
   await openRelief(page, { width: 1920, height: 1080 }, { mode: "map" });
 
   const minimap = page.getByTestId("topology-minimap");
+  const relationLegend = page.getByTestId("topology-relation-legend");
   await expect(minimap).toBeVisible();
+  await expect(relationLegend).toBeVisible();
   await expect(minimap).toHaveAttribute(
     "data-minimap-camera-sync-contract",
     "raf-coalesced-camera-updates",
@@ -921,6 +923,40 @@ test("Relief minimap pans the viewport with visible feedback", async ({
     "data-minimap-pan-search-contract",
     "precomputed-navigation-targets",
   );
+  await expect(relationLegend).toHaveAttribute(
+    "data-relation-legend-width-token",
+    "--topology-relation-legend-width",
+  );
+  await expect(relationLegend).toHaveAttribute(
+    "data-relation-legend-inset-token",
+    "--topology-relation-legend-inset",
+  );
+  await expect(relationLegend).toHaveAttribute(
+    "data-relation-legend-bottom-token",
+    "--topology-relation-legend-bottom",
+  );
+  await expect(relationLegend).toHaveAttribute(
+    "data-relation-legend-minimap-gap-token",
+    "--topology-relation-legend-minimap-gap",
+  );
+  await expect(relationLegend).toHaveAttribute(
+    "data-relation-legend-surface-token",
+    "--topology-relation-legend-surface",
+  );
+  const minimapRect = await rectOf(minimap);
+  const relationLegendRect = await rectOf(relationLegend);
+  expect(
+    Math.abs(relationLegendRect.right - minimapRect.right),
+    "relation legend should share the minimap right inset rhythm",
+  ).toBeLessThanOrEqual(1);
+  expect(
+    minimapRect.top - relationLegendRect.bottom,
+    "relation legend should sit one tokenized gap above the minimap",
+  ).toBeGreaterThanOrEqual(12);
+  expect(
+    minimapRect.top - relationLegendRect.bottom,
+    "relation legend gap should stay visually tied to the minimap, not float away",
+  ).toBeLessThanOrEqual(16);
   const beforeTick = Number(await minimap.getAttribute("data-camera-tick"));
   const beforeFrameCount = Number(await minimap.getAttribute("data-camera-frame-count"));
   const beforePanSearchCount = Number(

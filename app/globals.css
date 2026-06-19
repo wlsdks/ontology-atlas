@@ -550,6 +550,16 @@
     --topology-minimap-active-shadow:
       0 0 0 1px rgba(139, 151, 255, 0.22), 0 16px 36px rgba(0, 0, 0, 0.34);
     --topology-minimap-grid-glow: rgba(139, 151, 255, 0.08);
+    --topology-relation-legend-width: clamp(252px, 18vw, 304px);
+    --topology-relation-legend-max-width: calc(100vw - 48px);
+    --topology-relation-legend-inset: 24px;
+    --topology-relation-legend-minimap-gap: 12px;
+    --topology-relation-legend-bottom: calc(
+      24px + 183px + var(--topology-relation-legend-minimap-gap)
+    );
+    --topology-relation-legend-surface: var(--topology-minimap-surface);
+    --topology-relation-legend-border: var(--topology-minimap-border);
+    --topology-relation-legend-shadow: var(--topology-minimap-shadow);
     --topology-floating-control-phone-bottom: calc(
       var(--topology-mobile-bottom-tab-reserve) + 56px
     );
@@ -885,6 +895,11 @@
   }
 
   @media (min-width: 1920px) {
+    :root {
+      --topology-relation-legend-inset: 32px;
+      --topology-relation-legend-max-width: calc(100vw - 64px);
+    }
+
     .topology-ui-scale {
       zoom: 1.15;
     }
@@ -1201,6 +1216,9 @@
     --topology-minimap-active-shadow:
       0 0 0 1px rgba(77, 86, 200, 0.18), 0 16px 36px rgba(15, 23, 42, 0.12);
     --topology-minimap-grid-glow: rgba(77, 86, 200, 0.08);
+    --topology-relation-legend-surface: var(--topology-minimap-surface);
+    --topology-relation-legend-border: var(--topology-minimap-border);
+    --topology-relation-legend-shadow: var(--topology-minimap-shadow);
     --topology-floating-panel-surface: rgba(255, 255, 255, 0.92);
     --topology-floating-panel-border: rgba(15, 23, 42, 0.12);
     --topology-floating-panel-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);

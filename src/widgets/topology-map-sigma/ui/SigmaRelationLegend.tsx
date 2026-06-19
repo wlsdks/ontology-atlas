@@ -46,7 +46,15 @@ export function SigmaRelationLegend({ labels }: { labels: SigmaRelationLegendLab
       data-relation-legend-density="compact"
       data-relation-legend-layout="single-row-strip"
       data-relation-legend-typography="readable-utility-labels"
-      className="topology-ui-scale pointer-events-none absolute bottom-[calc(1.5rem+183px+0.75rem)] right-4 z-10 hidden w-[300px] items-center gap-2.5 overflow-hidden rounded-lg border border-[color:var(--topology-minimap-border)] bg-[color:var(--topology-minimap-surface)] px-2.5 py-1.5 shadow-[var(--topology-minimap-shadow)] md:right-6 md:flex xl:right-8"
+      data-relation-legend-width-token="--topology-relation-legend-width"
+      data-relation-legend-max-width-token="--topology-relation-legend-max-width"
+      data-relation-legend-inset-token="--topology-relation-legend-inset"
+      data-relation-legend-bottom-token="--topology-relation-legend-bottom"
+      data-relation-legend-minimap-gap-token="--topology-relation-legend-minimap-gap"
+      data-relation-legend-surface-token="--topology-relation-legend-surface"
+      data-relation-legend-border-token="--topology-relation-legend-border"
+      data-relation-legend-shadow-token="--topology-relation-legend-shadow"
+      className="topology-ui-scale pointer-events-none absolute bottom-[var(--topology-relation-legend-bottom)] right-[var(--topology-relation-legend-inset)] z-10 hidden w-[var(--topology-relation-legend-width)] max-w-[var(--topology-relation-legend-max-width)] items-center gap-2 overflow-hidden rounded-lg border border-[color:var(--topology-relation-legend-border)] bg-[color:var(--topology-relation-legend-surface)] px-2.5 py-1.5 shadow-[var(--topology-relation-legend-shadow)] md:flex"
     >
       <span className="shrink-0 text-[10px] font-medium leading-none tracking-normal text-[color:var(--color-text-quaternary)]">
         {labels.title}
