@@ -4010,6 +4010,8 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-parent-rect-read-count") || "0"),
                                   topologyCardPlacementSizeReadCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-read-count") || "0"),
+                                  topologyCardPlacementLayoutRectContract:
+                                    skeletonCardsLayer?.getAttribute("data-card-placement-layout-rect-contract") || "",
                                   topologyCardPlacementSizeCacheContract:
                                     skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-contract") || "",
                                   topologyCardPlacementSizeCacheSize:

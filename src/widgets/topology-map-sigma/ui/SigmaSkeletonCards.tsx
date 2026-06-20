@@ -375,6 +375,7 @@ type FixedSurfaceRectCache = {
 };
 
 type CardPlacementSizeCacheEntry = {
+  fallbackRect?: ConnectorRect;
   height: number;
   key: string;
   width: number;
@@ -651,6 +652,15 @@ type ConnectorRect = {
   right: number;
   bottom: number;
 };
+
+function expandConnectorRect(rect: ConnectorRect, pad: number): ConnectorRect {
+  return {
+    left: rect.left - pad,
+    top: rect.top - pad,
+    right: rect.right + pad,
+    bottom: rect.bottom + pad,
+  };
+}
 
 function connectorPorts(
   source: ConnectorRect,
@@ -2607,7 +2617,21 @@ export function SigmaSkeletonCards({
     const els = container.querySelectorAll<HTMLElement>('[data-skeleton-card]');
     // pass 1 — 카드 배치 + ego(풀 잉크) 카드 rect 수집. DOM 순서 = 도킹 깊이
     // 순(builder 가 정렬)이라 부모 카드의 transform 이 자식보다 먼저 잡힌다.
-    const containerRect = container.getBoundingClientRect();
+    const measuredContainerRect = container.getBoundingClientRect();
+    const fallbackContainerWidth =
+      typeof window === 'undefined' ? 1024 : window.innerWidth || 1024;
+    const fallbackContainerHeight =
+      typeof window === 'undefined' ? 768 : window.innerHeight || 768;
+    const containerRect =
+      measuredContainerRect.width > 0 && measuredContainerRect.height > 0
+        ? measuredContainerRect
+        : ({
+            ...measuredContainerRect,
+            width: fallbackContainerWidth,
+            height: fallbackContainerHeight,
+            right: measuredContainerRect.left + fallbackContainerWidth,
+            bottom: measuredContainerRect.top + fallbackContainerHeight,
+          } as DOMRect);
     // 반응형 스케일 — 카드 폰트(inline calc)와 도킹 간격/열 step 이 같은
     // 배수를 탄다. 컨테이너에 변수 주입(JS 가 진실원).
     const scale = resolveTopologyUiScale(
@@ -2654,7 +2678,29 @@ export function SigmaSkeletonCards({
     const dockGap = 56 * scale;
     const columnStep = COLUMN_STEP_PX * scale;
     const domWriteStats: SkeletonDomWriteStats = { applied: 0, skipped: 0 };
-    const cardPlacementParentRectCache = new Map<HTMLElement, DOMRect>();
+    const cardPlacementFrameRectCache = new Map<HTMLElement, ConnectorRect>();
+    let cardPlacementFrameRectCacheHitCount = 0;
+    let cardPlacementFrameRectDirectReadCount = 0;
+    const seedCardPlacementFrameRect = (el: HTMLElement, rect: ConnectorRect) => {
+      cardPlacementFrameRectCache.set(el, rect);
+      return rect;
+    };
+    const readCardPlacementFrameRect = (el: HTMLElement) => {
+      const cached = cardPlacementFrameRectCache.get(el);
+      if (cached) {
+        cardPlacementFrameRectCacheHitCount += 1;
+        return cached;
+      }
+      cardPlacementFrameRectDirectReadCount += 1;
+      const r = el.getBoundingClientRect();
+      return seedCardPlacementFrameRect(el, {
+        left: r.left - containerRect.left,
+        top: r.top - containerRect.top,
+        right: r.right - containerRect.left,
+        bottom: r.bottom - containerRect.top,
+      });
+    };
+    const cardPlacementParentRectCache = new Map<HTMLElement, ConnectorRect>();
     const cardPlacementSizeCache = cardPlacementSizeCacheRef.current;
     const cardPlacementSizeCacheSeen = new Set<string>();
     let cardPlacementParentRectReadCount = 0;
@@ -2664,10 +2710,22 @@ export function SigmaSkeletonCards({
     const readCardPlacementParentRect = (el: HTMLElement) => {
       const cached = cardPlacementParentRectCache.get(el);
       if (cached) return cached;
+      const frameRect = cardPlacementFrameRectCache.get(el);
+      if (frameRect) {
+        cardPlacementFrameRectCacheHitCount += 1;
+        cardPlacementParentRectCache.set(el, frameRect);
+        return frameRect;
+      }
       cardPlacementParentRectReadCount += 1;
       const rect = el.getBoundingClientRect();
-      cardPlacementParentRectCache.set(el, rect);
-      return rect;
+      const next = {
+        left: rect.left - containerRect.left,
+        top: rect.top - containerRect.top,
+        right: rect.right - containerRect.left,
+        bottom: rect.bottom - containerRect.top,
+      };
+      cardPlacementParentRectCache.set(el, next);
+      return next;
     };
     const readCardPlacementSize = (el: HTMLElement, slug: string) => {
       const key = `${el.dataset.cardLayoutSizeKey ?? ''}|scale:${scale}`;
@@ -2679,10 +2737,28 @@ export function SigmaSkeletonCards({
       }
       cardPlacementSizeCacheMissCount += 1;
       cardPlacementSizeReadCount += 2;
+      let width = el.offsetWidth;
+      let height = el.offsetHeight;
+      let fallbackRect: ConnectorRect | undefined;
+      if (width <= 0 || height <= 0) {
+        cardPlacementFrameRectDirectReadCount += 1;
+        const rect = el.getBoundingClientRect();
+        width = rect.width;
+        height = rect.height;
+        if (rect.width > 0 && rect.height > 0) {
+          fallbackRect = {
+            left: rect.left - containerRect.left,
+            top: rect.top - containerRect.top,
+            right: rect.right - containerRect.left,
+            bottom: rect.bottom - containerRect.top,
+          };
+        }
+      }
       const next = {
-        height: el.offsetHeight,
+        fallbackRect,
+        height,
         key,
-        width: el.offsetWidth,
+        width,
       };
       cardPlacementSizeCache.set(slug, next);
       return next;
@@ -2722,28 +2798,6 @@ export function SigmaSkeletonCards({
     const dimEls: HTMLElement[] = [];
     const overviewEls: HTMLElement[] = [];
     const elBySlug = new Map<string, HTMLElement>();
-    const cardPlacementFrameRectCache = new Map<HTMLElement, ConnectorRect>();
-    let cardPlacementFrameRectCacheHitCount = 0;
-    let cardPlacementFrameRectDirectReadCount = 0;
-    const seedCardPlacementFrameRect = (el: HTMLElement, rect: ConnectorRect) => {
-      cardPlacementFrameRectCache.set(el, rect);
-      return rect;
-    };
-    const readCardPlacementFrameRect = (el: HTMLElement) => {
-      const cached = cardPlacementFrameRectCache.get(el);
-      if (cached) {
-        cardPlacementFrameRectCacheHitCount += 1;
-        return cached;
-      }
-      cardPlacementFrameRectDirectReadCount += 1;
-      const r = el.getBoundingClientRect();
-      return seedCardPlacementFrameRect(el, {
-        left: r.left - containerRect.left,
-        top: r.top - containerRect.top,
-        right: r.right - containerRect.left,
-        bottom: r.bottom - containerRect.top,
-      });
-    };
     const isDragClusterCard = (slug: string, dockParent?: string | null) =>
       Boolean(
         activeDragCluster?.has(slug) ||
@@ -2791,6 +2845,8 @@ export function SigmaSkeletonCards({
         continue;
       }
       const parentEl = dockParent ? elBySlug.get(dockParent) : undefined;
+      let layoutVisibleRect: ConnectorRect | null = null;
+      let flippedLayoutVisibleRect: ConnectorRect | null = null;
       if (dockParent && parentEl) {
         // px 도킹 — 부모 카드 rect 기준 고정 밀도 (줌 배율 무관). 열 간격
         // 56px, 행 pitch = 카드 높이 + 10px. 열의 중심은 부모를 따르되,
@@ -2800,7 +2856,11 @@ export function SigmaSkeletonCards({
         const side = el.dataset.dockSide === 'left' ? -1 : 1;
         const index = Number(el.dataset.dockIndex ?? '0');
         const total = Math.max(1, Number(el.dataset.dockTotal ?? '1'));
-        const { height: cardHeight } = readCardPlacementSize(el, slug);
+        const {
+          fallbackRect: cardPlacementFallbackRect,
+          width: cardWidth,
+          height: cardHeight,
+        } = readCardPlacementSize(el, slug);
         const pitch = cardHeight + 10;
         const safeH = Math.max(pitch, containerRect.height - 96 - 56);
         const perColumn = Math.max(1, Math.floor(safeH / pitch));
@@ -2808,7 +2868,7 @@ export function SigmaSkeletonCards({
         const row = index % perColumn;
         const rowsInCol = Math.min(perColumn, total - col * perColumn);
         el.dataset.dockCol = String(col);
-        const parentCenterX = (p.left + p.right) / 2 - containerRect.left;
+        const parentCenterX = (p.left + p.right) / 2;
         const safeTop = 96;
         const selectedFocusDock =
           selectedFocusCenterActive &&
@@ -2829,7 +2889,7 @@ export function SigmaSkeletonCards({
         delete el.dataset.selectedFocusEgoReadingBandYRatio;
         delete el.dataset.selectedFocusCenterYRatio;
         const halfColumn = ((rowsInCol - 1) * pitch + cardHeight) / 2;
-        const parentCenterY = (p.top + p.bottom) / 2 - containerRect.top;
+        const parentCenterY = (p.top + p.bottom) / 2;
         const dockSnapshot = slug
           ? dragRef.current?.dockDragSnapshots.get(slug) ??
             activeDockDragSnapshotsRef.current.get(slug)
@@ -2844,8 +2904,8 @@ export function SigmaSkeletonCards({
         const x = followsActiveDrag && dockSnapshot
           ? dockSnapshot.childStartX + parentCenterX - dockSnapshot.parentStartX
           : side === 1
-            ? p.right - containerRect.left + dockGap + col * columnStep
-            : p.left - containerRect.left - dockGap - col * columnStep;
+            ? p.right + dockGap + col * columnStep
+            : p.left - dockGap - col * columnStep;
         const columnCenterY = followsActiveDrag && dockSnapshot
           ? dockSnapshot.childStartY + parentCenterY - dockSnapshot.parentStartY
           : Math.min(
@@ -2861,14 +2921,15 @@ export function SigmaSkeletonCards({
         } else {
           delete el.dataset.dockParentDeltaY;
         }
-        const anchor = side === 1 ? ANCHOR_TRANSLATE.left : ANCHOR_TRANSLATE.right;
+        const dockAnchorKey = side === 1 ? 'left' : 'right';
+        const anchor = ANCHOR_TRANSLATE[dockAnchorKey];
         const flippedSide = side === 1 ? -1 : 1;
+        const flippedAnchorKey = flippedSide === 1 ? 'left' : 'right';
         const flippedX =
           flippedSide === 1
-            ? p.right - containerRect.left + dockGap + col * columnStep
-            : p.left - containerRect.left - dockGap - col * columnStep;
-        const flippedAnchor =
-          flippedSide === 1 ? ANCHOR_TRANSLATE.left : ANCHOR_TRANSLATE.right;
+            ? p.right + dockGap + col * columnStep
+            : p.left - dockGap - col * columnStep;
+        const flippedAnchor = ANCHOR_TRANSLATE[flippedAnchorKey];
         el.dataset.dockFlipTransform = `${flippedAnchor} translate3d(${flippedX}px, ${y}px, 0)`;
         setSkeletonStyleValue(
           el,
@@ -2876,6 +2937,24 @@ export function SigmaSkeletonCards({
           `${anchor} translate3d(${x}px, ${y}px, 0)`,
           domWriteStats,
         );
+        layoutVisibleRect = seedCardPlacementFrameRect(
+          el,
+          cardPlacementFallbackRect ??
+            anchoredCardRect({
+              x,
+              y,
+              width: cardWidth,
+              height: cardHeight,
+              anchor: dockAnchorKey,
+            }),
+        );
+        flippedLayoutVisibleRect = anchoredCardRect({
+          x: flippedX,
+          y,
+          width: cardWidth,
+          height: cardHeight,
+          anchor: flippedAnchorKey,
+        });
       } else {
         delete el.dataset.dockDragFollow;
         delete el.dataset.dockParentDeltaY;
@@ -2885,7 +2964,11 @@ export function SigmaSkeletonCards({
         const anchorKey = el.dataset.anchor as SkeletonCardModel['anchor'];
         const safeAnchorKey = anchorKey && ANCHOR_TRANSLATE[anchorKey] ? anchorKey : 'center';
         const followsActiveGraphDrag = activeDragCluster?.has(slug) === true;
-        const { width: cardWidth, height: cardHeight } = readCardPlacementSize(el, slug);
+        const {
+          fallbackRect: cardPlacementFallbackRect,
+          width: cardWidth,
+          height: cardHeight,
+        } = readCardPlacementSize(el, slug);
         const graphAnchorRect = anchoredCardRect({
           x: vp.x,
           y: vp.y,
@@ -2966,23 +3049,23 @@ export function SigmaSkeletonCards({
           `${anchor} translate3d(${clamped.x}px, ${clamped.y}px, 0)`,
           domWriteStats,
         );
+        layoutVisibleRect = seedCardPlacementFrameRect(
+          el,
+          cardPlacementFallbackRect ??
+            anchoredCardRect({
+              x: clamped.x,
+              y: clamped.y,
+              width: cardWidth,
+              height: cardHeight,
+              anchor: safeAnchorKey,
+            }),
+        );
       }
       if (el.dataset.dimmed === 'true') {
         dimEls.push(el);
       } else {
-        const r = el.getBoundingClientRect();
-        let visibleRect = seedCardPlacementFrameRect(el, {
-          left: r.left - containerRect.left,
-          top: r.top - containerRect.top,
-          right: r.right - containerRect.left,
-          bottom: r.bottom - containerRect.top,
-        });
-        let rect = {
-          left: r.left - containerRect.left - COLLISION_PAD,
-          top: r.top - containerRect.top - COLLISION_PAD,
-          right: r.right - containerRect.left + COLLISION_PAD,
-          bottom: r.bottom - containerRect.top + COLLISION_PAD,
-        };
+        let visibleRect = layoutVisibleRect ?? readCardPlacementFrameRect(el);
+        let rect = expandConnectorRect(visibleRect, COLLISION_PAD);
         const surfaceBlockers =
           ego !== null && dockParent
             ? [...fixedSurfaceRects, ...acceptedSurfaceRects]
@@ -3013,19 +3096,11 @@ export function SigmaSkeletonCards({
           if (flipTransform) {
             const originalTransform = el.style.transform;
             setSkeletonStyleValue(el, 'transform', flipTransform, domWriteStats);
-            const flipped = el.getBoundingClientRect();
-            const flippedVisibleRect = seedCardPlacementFrameRect(el, {
-              left: flipped.left - containerRect.left,
-              top: flipped.top - containerRect.top,
-              right: flipped.right - containerRect.left,
-              bottom: flipped.bottom - containerRect.top,
-            });
-            const flippedRect = {
-              left: flipped.left - containerRect.left - COLLISION_PAD,
-              top: flipped.top - containerRect.top - COLLISION_PAD,
-              right: flipped.right - containerRect.left + COLLISION_PAD,
-              bottom: flipped.bottom - containerRect.top + COLLISION_PAD,
-            };
+            const flippedVisibleRect = seedCardPlacementFrameRect(
+              el,
+              flippedLayoutVisibleRect ?? readCardPlacementFrameRect(el),
+            );
+            const flippedRect = expandConnectorRect(flippedVisibleRect, COLLISION_PAD);
             const flippedClipped =
               flippedVisibleRect.left < 0 ||
               flippedVisibleRect.top < 0 ||
@@ -3218,6 +3293,8 @@ export function SigmaSkeletonCards({
       cardPlacementParentRectReadCount,
     );
     container.dataset.cardPlacementSizeReadCount = String(cardPlacementSizeReadCount);
+    container.dataset.cardPlacementLayoutRectContract =
+      'computed-from-transform-and-size';
     container.dataset.cardPlacementSizeCacheContract =
       'stable-card-size-key-reuses-offset-dimensions';
     container.dataset.cardPlacementSizeCacheHitCount = String(
