@@ -387,6 +387,14 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
     "data-card-hidden-count-policy",
     "direct-relation-summary-replaces-subtree-count",
   );
+  await expect(selectedCard).toHaveAttribute(
+    "data-card-accessible-label-contract",
+    "selected-card-kind-title-relation-summary",
+  );
+  await expect(selectedCard).toHaveAttribute(
+    "aria-label",
+    /Views.+\d+ relations? · \d+ types? · inspect/,
+  );
   const subtreeCount = selectedCard.locator("[data-skeleton-card-count]");
   await expect(subtreeCount).toHaveCount(0);
   const summary = selectedCard.getByTestId("sigma-selected-card-relation-summary");

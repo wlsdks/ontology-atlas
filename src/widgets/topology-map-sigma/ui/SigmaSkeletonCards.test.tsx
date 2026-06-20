@@ -2675,6 +2675,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-card-hidden-count-policy",
       "direct-relation-summary-replaces-subtree-count",
     );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-accessible-label-contract",
+      "selected-card-kind-title-relation-summary",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "aria-label",
+      "project · Atlas · 1 relation · 1 type · inspect",
+    );
     expect(selectedCard).toHaveStyle({
       "--topology-card-gap": "0.6em",
       "--topology-card-padding-x": "0.95em",

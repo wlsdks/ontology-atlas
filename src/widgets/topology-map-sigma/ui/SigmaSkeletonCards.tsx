@@ -4932,6 +4932,10 @@ export function SigmaSkeletonCards({
             : null;
         const selectedRelationSummaryOwnsMeta =
           selected && selectedRelationSummary !== null;
+        const selectedCardAccessibleLabel =
+          selectedRelationSummaryOwnsMeta && selectedRelationSummaryText
+            ? `${kindDescription} · ${card.title} · ${selectedRelationSummaryText}`
+            : undefined;
         const coreHierarchyCountHidden = card.tier <= 1;
         const cardSpacing = selectedRelationSummaryOwnsMeta
           ? SELECTED_FOCUS_CARD_SPACING
@@ -5031,6 +5035,12 @@ export function SigmaSkeletonCards({
                 ? 'direct-relation-summary-replaces-subtree-count'
                 : undefined
             }
+            data-card-accessible-label-contract={
+              selectedRelationSummaryOwnsMeta
+                ? 'selected-card-kind-title-relation-summary'
+                : undefined
+            }
+            aria-label={selectedCardAccessibleLabel}
             onClick={(event) => {
               event.stopPropagation();
               if (event.currentTarget.dataset.surfaceHidden === 'true') return;
