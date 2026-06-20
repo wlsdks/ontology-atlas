@@ -4239,7 +4239,10 @@ export function validateWebviewVerifyPayload(payload, {
           return `WebView Relief selected relation label handoff fact markers mismatched the badge (${payload.markers.topologySelectedRelationLabelHandoffQuality || "missing"}/${payload.markers.topologySelectedRelationLabelHandoffEvidence || "missing"})`;
         }
       }
-      if (payload.markers.topologyNodePopoverVisible === true) {
+      if (
+        payload.markers.topologyNodePopoverVisible === true &&
+        payload.markers.topologyCommandChromeState !== "collapsed-active-relation"
+      ) {
       if (payload.markers.topologyNodePopoverCollapsed === true) {
         return "WebView Relief selected node popover stayed collapsed after expand verification";
       }
@@ -4254,6 +4257,21 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (payload.markers.topologyNodePopoverHierarchyContract !== "click-focus-detail-support") {
         return `WebView Relief selected node popover hierarchy contract was ${payload.markers.topologyNodePopoverHierarchyContract || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverPositionContract !== "selected-inspector-aligns-to-right-inset") {
+        return `WebView Relief selected node popover position contract was ${payload.markers.topologyNodePopoverPositionContract || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverGutterContract !== "no-phantom-utility-rail") {
+        return `WebView Relief selected node popover gutter contract was ${payload.markers.topologyNodePopoverGutterContract || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverRightInsetToken !== "--topology-node-popover-right-inset") {
+        return `WebView Relief selected node popover right inset token was ${payload.markers.topologyNodePopoverRightInsetToken || "missing"}`;
+      }
+      if (
+        payload.markers.topologyTopLeftChromeGroupSupportContract !==
+        "left-panel-collapsed-until-user-expands"
+      ) {
+        return `WebView Relief selected node support contract was ${payload.markers.topologyTopLeftChromeGroupSupportContract || "missing"}`;
       }
       if (payload.markers.topologyNodePopoverSizePolicy !== "inspector-rail") {
         return `WebView Relief selected node popover used ${payload.markers.topologyNodePopoverSizePolicy || "no"} size policy`;
@@ -4270,10 +4288,6 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (Number(payload.markers.topologyNodePopoverLeft) < 8) {
         return `WebView Relief selected node popover overflowed the viewport left (${payload.markers.topologyNodePopoverLeft ?? "missing"}px)`;
-      }
-      const popoverRightInset = viewportWidth - Number(payload.markers.topologyNodePopoverRight);
-      if (popoverRightInset < (viewportWidth >= 1400 ? 72 : 8)) {
-        return `WebView Relief selected node popover overflowed the right control rail (right inset ${Number.isFinite(popoverRightInset) ? popoverRightInset : "missing"}px)`;
       }
       if (!(Number(payload.markers.topologyNodePopoverTop) <= 130)) {
         return `WebView Relief selected node popover was placed too low (${payload.markers.topologyNodePopoverTop ?? "missing"}px)`;
@@ -6368,6 +6382,19 @@ export function buildWebviewEvidencePayload(
             markers.topologyNodePopoverCompactMeaningContract ?? null,
           compactMeaningResponsiveContract:
             markers.topologyNodePopoverCompactMeaningResponsiveContract ?? null,
+          positionContract:
+            markers.topologyNodePopoverPositionContract ?? null,
+          gutterContract:
+            markers.topologyNodePopoverGutterContract ?? null,
+          rightInsetToken:
+            markers.topologyNodePopoverRightInsetToken ?? null,
+          rightInset:
+            markerNumber(markers, "topologyNodePopoverRight") > 0
+              ? Number(payload?.width || 0) -
+                markerNumber(markers, "topologyNodePopoverRight")
+              : null,
+          supportContract:
+            markers.topologyTopLeftChromeGroupSupportContract ?? null,
           commandRowContract:
             markers.topologyNodePopoverCompactCommandRowContract ?? null,
           commandRowGapToken:

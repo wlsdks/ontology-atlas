@@ -733,8 +733,10 @@ export function HomePage() {
   // 때만 드로어 — 다른 노드를 고르면 자동으로 팝오버부터(effect 불필요).
   const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
   const [nodePopoverCollapsed, setNodePopoverCollapsed] = useState(false);
-  const [selectedInspectorSupportRailOpen, setSelectedInspectorSupportRailOpen] =
-    useState(false);
+  const [
+    selectedInspectorSupportRailSlug,
+    setSelectedInspectorSupportRailSlug,
+  ] = useState<string | null>(null);
   const interactionSelectedSlugRef = useRef<string | null>(null);
   const [selectedRelationActive, setSelectedRelationActive] = useState(false);
   const fullDetailOpen =
@@ -840,10 +842,8 @@ export function HomePage() {
         !fullDetailOpen &&
         analysisMode !== "path",
     );
-  const selectedNodeInspectorExpandedActive =
-    selectedNodeFocusActive && !nodePopoverCollapsed;
   const selectedInspectorSupportRailVisible =
-    selectedNodeFocusActive && selectedInspectorSupportRailOpen;
+    selectedNodeFocusActive && selectedInspectorSupportRailSlug === selectedSlug;
   const selectedNodeOwnsRightRail = selectedNodeFocusActive;
   const topologyUtilityChromeState = selectedRelationActive
     ? "collapsed-active-relation"
@@ -856,19 +856,12 @@ export function HomePage() {
     topologyUtilityChromeState === "compact-focus" ||
     topologyUtilityChromeState === "selected-node-inspector";
 
-  useEffect(() => {
-    setSelectedInspectorSupportRailOpen(false);
-  }, [selectedSlug]);
-
-  useEffect(() => {
-    if (!selectedNodeFocusActive) {
-      setSelectedInspectorSupportRailOpen(false);
-    }
-  }, [selectedNodeFocusActive]);
-
   const handleToggleSelectedInspectorSupportRail = useCallback(() => {
-    setSelectedInspectorSupportRailOpen((current) => !current);
-  }, []);
+    if (!selectedSlug) return;
+    setSelectedInspectorSupportRailSlug((current) =>
+      current === selectedSlug ? null : selectedSlug,
+    );
+  }, [selectedSlug]);
 
   const handleSelect = useCallback(
     (
@@ -988,8 +981,12 @@ export function HomePage() {
   ]);
 
   const drawerOpen = drawerProject !== null || selectedOntologyNode !== null;
-  const analysisSelectedTitle = compactTopologyPanelTitle(
-    selectedProject?.name ?? selectedOntologyNode?.title ?? null,
+  const analysisSelectedTitle = useMemo(
+    () =>
+      compactTopologyPanelTitle(
+        selectedProject?.name ?? selectedOntologyNode?.title ?? null,
+      ),
+    [selectedOntologyNode?.title, selectedProject?.name],
   );
   const pathSourceTitle = useMemo(
     () =>
@@ -1448,6 +1445,11 @@ export function HomePage() {
                       ? selectedInspectorSupportRailVisible
                         ? "open"
                         : "closed"
+                      : undefined
+                  }
+                  data-selected-inspector-support-contract={
+                    selectedNodeFocusActive
+                      ? "left-panel-collapsed-until-user-expands"
                       : undefined
                   }
                 >
@@ -2486,6 +2488,7 @@ export function HomePage() {
           <div
             data-testid="topology-node-popover-positioner"
             data-position-contract="selected-inspector-aligns-to-right-inset"
+            data-selected-inspector-gutter-contract="no-phantom-utility-rail"
             data-position-top-token="--topology-node-popover-top"
             data-position-right-inset-token="--topology-node-popover-right-inset"
             className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
@@ -2570,7 +2573,7 @@ export function HomePage() {
               collapsed={nodePopoverCollapsed}
               onToggleCollapsed={() => {
                 if (nodePopoverCollapsed) {
-                  setSelectedInspectorSupportRailOpen(false);
+                  setSelectedInspectorSupportRailSlug(null);
                 }
                 setNodePopoverCollapsed((current) => !current);
               }}

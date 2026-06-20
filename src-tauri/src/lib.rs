@@ -1292,6 +1292,8 @@ pub fn run() {
                               const topologyCommandChrome = document.querySelector('[data-testid="topology-command-chrome"]');
                               const topologyCommandChromeState =
                                 topologyCommandChrome?.getAttribute("data-command-chrome-state") || "";
+                              const topologyNodePopoverPositioner =
+                                document.querySelector('[data-testid="topology-node-popover-positioner"]');
                               const topologyUtilityActionLane =
                                 document.querySelector('[data-testid="topology-utility-action-lane"]');
                               const topologyUtilityActionLaneRect =
@@ -1302,6 +1304,8 @@ pub fn run() {
                               const topologyTopLeftChromeGroup = document.querySelector('[data-testid="topology-top-left-chrome-group"]');
                               const topologyTopLeftChromeGroupState =
                                 topologyTopLeftChromeGroup?.getAttribute("data-workspace-context-state") || "";
+                              const topologyTopLeftChromeGroupSupportContract =
+                                topologyTopLeftChromeGroup?.getAttribute("data-selected-inspector-support-contract") || "";
                               const topologyTopLeftChromeGroupRect = topologyTopLeftChromeGroup?.getBoundingClientRect();
                               const topologyTopLeftChromeGroupStyle = topologyTopLeftChromeGroup
                                 ? getComputedStyle(topologyTopLeftChromeGroup)
@@ -3223,6 +3227,13 @@ pub fn run() {
                                   topologyNodePopoverAttentionRole,
                                   topologyNodePopoverFocusPrimary,
                                   topologyNodePopoverHierarchyContract,
+                                  topologyNodePopoverPositionContract:
+                                    topologyNodePopoverPositioner?.getAttribute("data-position-contract") || "",
+                                  topologyNodePopoverGutterContract:
+                                    topologyNodePopoverPositioner?.getAttribute("data-selected-inspector-gutter-contract") || "",
+                                  topologyNodePopoverRightInsetToken:
+                                    topologyNodePopoverPositioner?.getAttribute("data-position-right-inset-token") || "",
+                                  topologyTopLeftChromeGroupSupportContract,
                                   topologyNodePopoverSizePolicy:
                                     topologyNodePopover?.getAttribute("data-size-policy") || "",
                                   topologyNodePopoverWidthToken:

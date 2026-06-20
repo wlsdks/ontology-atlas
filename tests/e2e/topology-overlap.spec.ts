@@ -1917,6 +1917,10 @@ for (const viewport of VIEWPORTS) {
       "data-selected-inspector-support-rail",
       "closed",
     );
+    await expect(page.getByTestId("topology-top-left-chrome-group")).toHaveAttribute(
+      "data-selected-inspector-support-contract",
+      "left-panel-collapsed-until-user-expands",
+    );
     await expect(page.getByTestId("topology-node-popover")).toBeVisible();
     await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
       "data-size-policy",
@@ -2341,6 +2345,10 @@ for (const viewport of VIEWPORTS) {
       "selected-inspector-aligns-to-right-inset",
     );
     await expect(page.getByTestId("topology-node-popover-positioner")).toHaveAttribute(
+      "data-selected-inspector-gutter-contract",
+      "no-phantom-utility-rail",
+    );
+    await expect(page.getByTestId("topology-node-popover-positioner")).toHaveAttribute(
       "data-position-top-token",
       "--topology-node-popover-top",
     );
@@ -2364,8 +2372,12 @@ for (const viewport of VIEWPORTS) {
     ).toBeLessThanOrEqual(2);
     expect(
       rightInset,
-      `expanded selected inspector should reserve the right utility rail at ${viewport.label}`,
-    ).toBeGreaterThanOrEqual(viewport.width >= 1600 ? 88 : 24);
+      `expanded selected inspector should avoid a phantom right utility gutter at ${viewport.label}`,
+    ).toBeLessThanOrEqual(viewport.width >= 1600 ? 52 : 40);
+    expect(
+      rightInset,
+      `expanded selected inspector should keep a readable viewport edge inset at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(20);
     await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
     await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
     await expect(page.getByTestId("topology-shortcuts-help-button")).toHaveCount(0);
