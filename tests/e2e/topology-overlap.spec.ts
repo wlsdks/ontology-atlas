@@ -2837,7 +2837,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-handoff-layout-contract",
-      "compact-proof-strip",
+      "phone-paired-desktop-stacked-actions",
     );
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-primary-evidence-visible",
@@ -3132,7 +3132,7 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   expect(
     collapsedPanelRect.height,
     "phone Path panel should not carry the bottom-tab reserve while proof is collapsed",
-  ).toBeLessThanOrEqual(470);
+  ).toBeLessThanOrEqual(440);
   await expect(route).toBeVisible();
   await expect(route).toHaveAttribute(
     "data-route-contract",
@@ -3196,12 +3196,22 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "data-route-compact-min-height-token",
     "--topology-path-route-compact-min-height",
   );
+  await expect(route).toHaveAttribute(
+    "data-path-rail-spacing-contract",
+    "parent-gap-owns-path-stack",
+  );
   await expect(route.locator('[data-route-endpoint-marker="source"]')).toHaveText("A");
   await expect(route.locator('[data-route-endpoint-marker="target"]')).toHaveText("B");
   await expect(route).toHaveAttribute(
     "data-route-responsive-contract",
-    "target-weighted-endpoints",
+    "phone-weighted-desktop-stacked-endpoints",
   );
+  const routeUsesPhoneWeightedLayout = await route.evaluate(
+    (el) =>
+      Array.from(el.classList).some((className) => className.startsWith("grid-cols-[")) &&
+      el.classList.contains("md:grid-cols-1"),
+  );
+  expect(routeUsesPhoneWeightedLayout, "path route should keep phone compact layout").toBe(true);
   await expect(candidateVisibility).toBeVisible();
   await expect(candidateVisibility).toHaveAttribute(
     "data-surface-token",
@@ -3215,6 +3225,10 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "data-copy-contract",
     "reader-facing-map-readability",
   );
+  await expect(candidateVisibility).toHaveAttribute(
+    "data-path-rail-spacing-contract",
+    "parent-gap-owns-path-stack",
+  );
   await expect(candidateVisibility).toContainText("map stays readable");
   await expect(candidateVisibility).not.toContainText(/panel clearance|hidden/i);
   const routeDoesNotOverflow = await route.evaluate(
@@ -3225,7 +3239,18 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     .locator('[data-route-endpoint-title="target"]')
     .evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
   expect(routeTargetTitleFits, "phone path route target title should not truncate").toBe(true);
-  await expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
+  await expect(handoff).toHaveAttribute(
+    "data-handoff-layout-contract",
+    "phone-paired-desktop-stacked-actions",
+  );
+  const handoffUsesPhonePairedLayout = await handoff.evaluate(
+    (el) => el.classList.contains("grid-cols-2") && el.classList.contains("md:grid-cols-1"),
+  );
+  expect(handoffUsesPhonePairedLayout, "path handoff should keep phone compact layout").toBe(true);
+  await expect(handoff).toHaveAttribute(
+    "data-path-rail-spacing-contract",
+    "parent-gap-owns-path-stack",
+  );
   await expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
   await expect(handoff).toHaveAttribute(
     "data-compact-padding-y-token",
@@ -3272,6 +3297,14 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   await expect(page.getByTestId("topology-path-proof-summary")).toHaveAttribute(
     "data-min-height-token",
     "--topology-path-proof-summary-min-height",
+  );
+  await expect(page.getByTestId("topology-path-proof-disclosure")).toHaveAttribute(
+    "data-path-proof-disclosure-contract",
+    "closed-by-default-path-rail-proof",
+  );
+  await expect(page.getByTestId("topology-path-proof-disclosure")).toHaveAttribute(
+    "data-path-rail-spacing-contract",
+    "parent-gap-owns-path-stack",
   );
   const preProofPanelRect = await rectOf(panel);
   const preProofVisibleCards = await visibleCardRects(page);
@@ -3403,7 +3436,10 @@ test("Relief Path accepts short from/to shared-link aliases", async ({ page }) =
   await expect(panel).toHaveAttribute("data-analysis-mode", "path");
   await expect(panel).toContainText("Views");
   await expect(panel).toContainText("Agent Graph Readiness");
-  await expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
+  await expect(handoff).toHaveAttribute(
+    "data-handoff-layout-contract",
+    "phone-paired-desktop-stacked-actions",
+  );
   await expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
   await expect(page.getByTestId("topology-path-handoff-mcp-chip")).toHaveAttribute(
     "data-text-token",

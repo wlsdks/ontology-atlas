@@ -1408,6 +1408,49 @@ function restorePathEndpointsFromFixedSurfaces(
   }
 }
 
+function suppressCardsOverlappingPathEndpoints(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+) {
+  const endpointRects = orderedEls
+    .filter((el) => {
+      if (el.dataset.pathRole !== 'source' && el.dataset.pathRole !== 'target') return false;
+      if (el.dataset.surfaceHidden === 'true') return false;
+      const style = getComputedStyle(el);
+      return style.visibility !== 'hidden' && Number(style.opacity || el.style.opacity || '1') > 0.01;
+    })
+    .map((el) => {
+      const box = el.getBoundingClientRect();
+      return {
+        left: box.left - containerRect.left,
+        top: box.top - containerRect.top,
+        right: box.right - containerRect.left,
+        bottom: box.bottom - containerRect.top,
+      };
+    });
+  if (endpointRects.length === 0) return;
+
+  for (const el of orderedEls) {
+    if (el.dataset.pathRole === 'source' || el.dataset.pathRole === 'target') continue;
+    if (el.dataset.surfaceHidden === 'true') continue;
+    const style = getComputedStyle(el);
+    if (style.visibility === 'hidden' || Number(style.opacity || el.style.opacity || '1') <= 0.01) {
+      continue;
+    }
+    const box = el.getBoundingClientRect();
+    const rect = {
+      left: box.left - containerRect.left,
+      top: box.top - containerRect.top,
+      right: box.right - containerRect.left,
+      bottom: box.bottom - containerRect.top,
+    };
+    if (endpointRects.some((endpointRect) => rectsOverlap(endpointRect, rect))) {
+      hideSkeletonCard(el);
+      el.dataset.pathEndpointOverlapSuppressed = 'true';
+    }
+  }
+}
+
 function restoreVisibleCardsFromFixedSurfaces(
   orderedEls: readonly HTMLElement[],
   containerRect: DOMRect,
@@ -3006,6 +3049,7 @@ export function SigmaSkeletonCards({
         fixedSurfaceRects,
         domWriteStats,
       );
+      suppressCardsOverlappingPathEndpoints(orderedEls, containerRect);
     }
     const projectOverviewDomainSeparationActive = Boolean(
       selectedRelationEdgeId === null &&

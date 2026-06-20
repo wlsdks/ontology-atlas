@@ -253,7 +253,12 @@
       calc(100vw - var(--topology-panel-phone-utility-rail-reserve))
     );
     --topology-panel-overview-reserved-width: clamp(380px, calc(38vw - 170px), 420px);
-    --topology-panel-path-rail-width: clamp(320px, 23vw, 360px);
+    --topology-ui-scale-factor: 1;
+    --topology-panel-path-rail-width: clamp(
+      calc(320px / var(--topology-ui-scale-factor)),
+      calc(23vw / var(--topology-ui-scale-factor)),
+      calc(360px / var(--topology-ui-scale-factor))
+    );
     --topology-panel-phone-utility-rail-reserve: 82px;
     --topology-panel-path-responsive-width: min(
       var(--topology-panel-path-rail-width),
@@ -962,6 +967,7 @@
     :root {
       --topology-relation-legend-inset: 32px;
       --topology-relation-legend-max-width: calc(100vw - 64px);
+      --topology-ui-scale-factor: 1.15;
     }
 
     .topology-ui-scale {
@@ -970,6 +976,10 @@
   }
 
   @media (min-width: 2400px) {
+    :root {
+      --topology-ui-scale-factor: 1.3;
+    }
+
     .topology-ui-scale {
       zoom: 1.3;
     }

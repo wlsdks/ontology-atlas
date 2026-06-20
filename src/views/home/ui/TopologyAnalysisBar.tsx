@@ -1343,10 +1343,11 @@ export function TopologyAnalysisBar({
               data-visible={pathCandidateVisibility?.visible}
               data-total={pathCandidateVisibility?.total}
               data-copy-contract="reader-facing-map-readability"
+              data-path-rail-spacing-contract="parent-gap-owns-path-stack"
               data-surface-token="--topology-path-candidate-visibility-surface"
               data-border-token="--topology-path-candidate-visibility-border"
               data-notice-text-token="--topology-analysis-panel-notice-text"
-              className="mt-3 rounded-md border border-[color:var(--topology-path-candidate-visibility-border)] bg-[color:var(--topology-path-candidate-visibility-surface)] px-2.5 py-2 text-[11px] leading-4 tracking-normal text-[color:var(--topology-analysis-panel-notice-text)]"
+              className="rounded-md border border-[color:var(--topology-path-candidate-visibility-border)] bg-[color:var(--topology-path-candidate-visibility-surface)] px-2.5 py-2 text-[11px] leading-4 tracking-normal text-[color:var(--topology-analysis-panel-notice-text)]"
             >
               {pathCandidateVisibilityText}
             </p>
@@ -1378,11 +1379,12 @@ export function TopologyAnalysisBar({
               data-route-compact-min-height-token="--topology-path-route-compact-min-height"
               data-route-source-min-width-token="--topology-path-route-source-min-width"
               data-route-target-min-width-token="--topology-path-route-target-min-width"
-              data-route-responsive-contract="target-weighted-endpoints"
-              className="mt-3 grid min-w-0 grid-cols-[minmax(var(--topology-path-route-source-min-width),0.62fr)_auto_minmax(var(--topology-path-route-target-min-width),1.9fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5"
+              data-route-responsive-contract="phone-weighted-desktop-stacked-endpoints"
+              data-path-rail-spacing-contract="parent-gap-owns-path-stack"
+              className="grid min-w-0 grid-cols-[minmax(var(--topology-path-route-source-min-width),0.62fr)_auto_minmax(var(--topology-path-route-target-min-width),1.9fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5 md:grid-cols-1 md:gap-1"
             >
               <span
-                className="min-h-[var(--topology-path-route-compact-min-height)] min-w-0 rounded border border-[color:var(--topology-path-route-source-border)] bg-[color:var(--topology-path-route-source-surface)] px-1.5 py-1"
+                className="min-h-[var(--topology-path-route-compact-min-height)] min-w-0 rounded border border-[color:var(--topology-path-route-source-border)] bg-[color:var(--topology-path-route-source-surface)] px-2 py-1"
                 data-route-endpoint="source"
                 data-route-endpoint-marker-contract="source-a-marker"
               >
@@ -1409,23 +1411,23 @@ export function TopologyAnalysisBar({
               <ArrowRight
                 size={12}
                 aria-hidden
-                className="text-[color:var(--topology-path-route-arrow-text)]"
+                className="text-[color:var(--topology-path-route-arrow-text)] md:mx-auto md:rotate-90"
               />
               <span
-                className="min-h-[var(--topology-path-route-compact-min-height)] min-w-0 rounded border border-[color:var(--topology-path-route-target-border)] bg-[color:var(--topology-path-route-target-surface)] px-1.5 py-1 text-right"
+                className="min-h-[var(--topology-path-route-compact-min-height)] min-w-0 rounded border border-[color:var(--topology-path-route-target-border)] bg-[color:var(--topology-path-route-target-surface)] px-2 py-1"
                 data-route-endpoint="target"
                 data-route-endpoint-marker-contract="target-b-marker"
               >
-                <span className="flex min-w-0 items-center justify-end gap-1">
-                  <span className="block truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--topology-path-route-chip-text)]">
-                    {labels.pathEvidenceTarget}
-                  </span>
+                <span className="flex min-w-0 items-center gap-1">
                   <span
                     aria-hidden
                     data-route-endpoint-marker="target"
                     className="grid size-3.5 shrink-0 place-items-center rounded-full border border-[color:var(--topology-path-route-endpoint-marker-border)] bg-[color:var(--topology-path-route-endpoint-marker-surface)] font-mono text-[7px] font-semibold leading-none text-[color:var(--topology-path-route-endpoint-marker-text)]"
                   >
                     B
+                  </span>
+                  <span className="block truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--topology-path-route-chip-text)]">
+                    {labels.pathEvidenceTarget}
                   </span>
                 </span>
                 <span
@@ -1445,7 +1447,7 @@ export function TopologyAnalysisBar({
               data-guidance-owner="analysis-rail"
               data-path-prompt-policy="panel-owned-when-card-mode"
               data-handoff-contract="route-proof-action-visible"
-              data-handoff-layout-contract="compact-proof-strip"
+              data-handoff-layout-contract="phone-paired-desktop-stacked-actions"
               data-overflow-contract="no-horizontal-scroll"
               data-surface-token="--topology-path-handoff-surface"
               data-border-token="--topology-path-handoff-border"
@@ -1465,9 +1467,10 @@ export function TopologyAnalysisBar({
               }
               data-mcp-action="find_path"
               data-cli-fallback="ontology-atlas path"
-              className="mt-2 grid min-w-0 grid-cols-2 items-center gap-1 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2.5 py-[var(--topology-path-handoff-compact-padding-y)] font-mono text-[10px] text-[color:var(--topology-path-handoff-text)]"
+              data-path-rail-spacing-contract="parent-gap-owns-path-stack"
+              className="grid min-w-0 grid-cols-2 items-center gap-1 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2.5 py-[var(--topology-path-handoff-compact-padding-y)] font-mono text-[10px] text-[color:var(--topology-path-handoff-text)] md:grid-cols-1"
             >
-              <span className="col-span-2 min-w-0 uppercase tracking-[0.12em] text-[color:var(--topology-path-handoff-label-text)]">
+              <span className="col-span-2 min-w-0 uppercase tracking-[0.12em] text-[color:var(--topology-path-handoff-label-text)] md:col-span-1">
                 {labels.pathHandoffLabel}
               </span>
               {pathSourceSlug && pathTargetSlug ? (
@@ -1482,7 +1485,7 @@ export function TopologyAnalysisBar({
                   data-hover-surface-token="--topology-path-primary-evidence-hover-surface"
                   data-hover-border-token="--topology-path-primary-evidence-hover-border"
                   data-hover-text-token="--topology-path-primary-evidence-hover-text"
-                  className="col-span-2 inline-flex min-h-[var(--topology-path-primary-evidence-min-height)] min-w-0 items-center justify-between gap-2 rounded-md border border-[color:var(--topology-path-primary-evidence-border)] bg-[color:var(--topology-path-primary-evidence-surface)] px-2.5 py-1 text-left text-[10.5px] text-[color:var(--topology-path-primary-evidence-text)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--topology-path-primary-evidence-hover-border)] hover:bg-[color:var(--topology-path-primary-evidence-hover-surface)] hover:text-[color:var(--topology-path-primary-evidence-hover-text)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
+                  className="col-span-2 inline-flex min-h-[var(--topology-path-primary-evidence-min-height)] min-w-0 items-center justify-between gap-2 rounded-md border border-[color:var(--topology-path-primary-evidence-border)] bg-[color:var(--topology-path-primary-evidence-surface)] px-2.5 py-1 text-left text-[10.5px] text-[color:var(--topology-path-primary-evidence-text)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--topology-path-primary-evidence-hover-border)] hover:bg-[color:var(--topology-path-primary-evidence-hover-surface)] hover:text-[color:var(--topology-path-primary-evidence-hover-text)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none md:col-span-1"
                   aria-label={
                     pathEvidenceCopied
                       ? labels.pathEvidenceCopiedAriaLabel
@@ -1502,7 +1505,7 @@ export function TopologyAnalysisBar({
                 data-surface-token="--topology-path-handoff-mcp-surface"
                 data-border-token="--topology-path-handoff-mcp-border"
                 data-text-token="--topology-path-handoff-mcp-text"
-                className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-mcp-border)] bg-[color:var(--topology-path-handoff-mcp-surface)] px-1.5 py-0.5 text-center uppercase tracking-[0.10em] text-[color:var(--topology-path-handoff-mcp-text)]"
+                className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-mcp-border)] bg-[color:var(--topology-path-handoff-mcp-surface)] px-2 py-0.5 text-center uppercase tracking-[0.10em] text-[color:var(--topology-path-handoff-mcp-text)]"
               >
                 {labels.pathHandoffMcpAction}
               </span>
@@ -1511,7 +1514,7 @@ export function TopologyAnalysisBar({
                 data-surface-token="--topology-path-handoff-cli-surface"
                 data-border-token="--topology-path-handoff-cli-border"
                 data-text-token="--topology-path-handoff-cli-text"
-                className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] px-1.5 py-0.5 text-center uppercase tracking-[0.10em] text-[color:var(--topology-path-handoff-cli-text)]"
+                className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] px-2 py-0.5 text-center uppercase tracking-[0.10em] text-[color:var(--topology-path-handoff-cli-text)]"
               >
                 {labels.pathHandoffCliFallback}
               </span>
@@ -1814,7 +1817,12 @@ export function TopologyAnalysisBar({
             </>
           ) : null}
           {panelMode === "path" && pathSourceSlug && pathTargetSlug ? (
-            <details className="group mt-1.5 border-t border-[color:var(--color-border-soft)] pt-1.5">
+            <details
+              className="group border-t border-[color:var(--color-border-soft)] pt-1.5"
+              data-testid="topology-path-proof-disclosure"
+              data-path-proof-disclosure-contract="closed-by-default-path-rail-proof"
+              data-path-rail-spacing-contract="parent-gap-owns-path-stack"
+            >
               <summary
                 className="flex min-h-[var(--topology-path-proof-summary-min-height)] w-full cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:var(--topology-path-proof-summary-border)] bg-[color:var(--topology-path-proof-summary-surface)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--topology-path-proof-summary-text)] transition-colors hover:border-[color:var(--topology-path-proof-summary-hover-border)] hover:bg-[color:var(--topology-path-proof-summary-hover-surface)] hover:text-[color:var(--topology-path-proof-summary-hover-text)]"
                 data-testid="topology-path-proof-summary"

@@ -2164,6 +2164,10 @@ describe("TopologyAnalysisBar", () => {
       "data-copy-contract",
       "reader-facing-map-readability",
     );
+    expect(visibility).toHaveAttribute(
+      "data-path-rail-spacing-contract",
+      "parent-gap-owns-path-stack",
+    );
     expect(visibility).toHaveAttribute("data-visible", "10");
     expect(visibility).toHaveAttribute("data-total", "21");
     expect(visibility).toHaveAttribute(
@@ -2182,6 +2186,7 @@ describe("TopologyAnalysisBar", () => {
       "text-[color:var(--topology-analysis-panel-notice-text)]",
     );
     expect(visibility.className).toContain("tracking-normal");
+    expect(visibility.className).not.toContain("mt-");
     expect(visibility.className).not.toContain("uppercase");
     expect(visibility.className).not.toContain("font-mono");
     expect(visibility.className).not.toContain("--color-text-tertiary");
@@ -2217,8 +2222,15 @@ describe("TopologyAnalysisBar", () => {
       "data-handoff-contract",
       "route-proof-action-visible",
     );
-    expect(handoff).toHaveAttribute("data-handoff-layout-contract", "compact-proof-strip");
+    expect(handoff).toHaveAttribute(
+      "data-handoff-layout-contract",
+      "phone-paired-desktop-stacked-actions",
+    );
     expect(handoff).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+    expect(handoff).toHaveAttribute(
+      "data-path-rail-spacing-contract",
+      "parent-gap-owns-path-stack",
+    );
     expect(handoff).toHaveAttribute("data-surface-token", "--topology-path-handoff-surface");
     expect(handoff).toHaveAttribute("data-border-token", "--topology-path-handoff-border");
     expect(handoff).toHaveAttribute("data-text-token", "--topology-path-handoff-text");
@@ -2229,6 +2241,9 @@ describe("TopologyAnalysisBar", () => {
     expect(handoff.className).toContain(
       "text-[color:var(--topology-path-handoff-text)]",
     );
+    expect(handoff.className).toContain("grid-cols-2");
+    expect(handoff.className).toContain("md:grid-cols-1");
+    expect(handoff.className).not.toContain("mt-");
     expect(handoff.className).not.toContain("--color-text-tertiary");
     expect(handoff).toHaveAttribute(
       "data-action-min-height-token",
@@ -2365,6 +2380,17 @@ describe("TopologyAnalysisBar", () => {
       "data-route-compact-min-height-token",
       "--topology-path-route-compact-min-height",
     );
+    expect(route).toHaveAttribute(
+      "data-path-rail-spacing-contract",
+      "parent-gap-owns-path-stack",
+    );
+    expect(route).toHaveAttribute(
+      "data-route-responsive-contract",
+      "phone-weighted-desktop-stacked-endpoints",
+    );
+    expect(route.className).toContain("grid-cols-[");
+    expect(route.className).toContain("md:grid-cols-1");
+    expect(route.className).not.toContain("mt-");
     expect(within(route).getByText("Source")).toBeInTheDocument();
     expect(within(route).getByText("Views")).toBeInTheDocument();
     expect(within(route).getByText("Target")).toBeInTheDocument();
@@ -3034,8 +3060,9 @@ describe("TopologyAnalysisBar", () => {
     const visibleRoute = screen.getByTestId("topology-path-visible-route");
     expect(visibleRoute).toHaveAttribute(
       "data-route-responsive-contract",
-      "target-weighted-endpoints",
+      "phone-weighted-desktop-stacked-endpoints",
     );
+    expect(visibleRoute.className).toContain("md:grid-cols-1");
     expect(visibleRoute.querySelector('[data-route-endpoint-title="target"]')).toHaveAttribute(
       "data-route-endpoint-title-contract",
       "weighted-route-title",
@@ -3208,6 +3235,16 @@ describe("TopologyAnalysisBar", () => {
     );
 
     const summary = screen.getByTestId("topology-path-proof-summary");
+    const disclosure = screen.getByTestId("topology-path-proof-disclosure");
+    expect(disclosure).toHaveAttribute(
+      "data-path-proof-disclosure-contract",
+      "closed-by-default-path-rail-proof",
+    );
+    expect(disclosure).toHaveAttribute(
+      "data-path-rail-spacing-contract",
+      "parent-gap-owns-path-stack",
+    );
+    expect(disclosure.className).not.toContain("mt-");
     expect(summary).toHaveTextContent("Path proof");
     expect(summary).toHaveClass("w-full");
     expect(summary).toHaveAttribute(
