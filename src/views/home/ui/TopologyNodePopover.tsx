@@ -1086,7 +1086,7 @@ export function TopologyNodePopover({
                     data-row-density-contract="agent-handoff-scan-row"
                     data-row-render-source={relationPreviewSource}
                     data-row-surface-contract="flat-divider-row"
-                    data-row-visual-contract="title-relation-proof-action"
+                    data-row-visual-contract="quiet-title-secondary-facts"
                     data-row-min-hit-height="72"
                     data-row-min-height-token="--topology-node-popover-relation-row-min-height"
                     data-row-gap-token="--topology-node-popover-relation-row-gap"
@@ -1106,6 +1106,7 @@ export function TopologyNodePopover({
                       data-relation-direction-marker={connection.direction}
                       data-direction-text-token="--topology-node-popover-relation-row-meta-text"
                       data-direction-marker-contract="inline-relation-direction-glyph"
+                      data-direction-affordance-contract="no-badge-no-accent-rail"
                       data-direction-offset-token="--topology-node-popover-relation-direction-offset"
                       data-direction-size-token="--topology-node-popover-relation-direction-size"
                       className="mt-[var(--topology-node-popover-relation-direction-offset)] inline-flex h-[var(--topology-node-popover-relation-direction-size)] w-[var(--topology-node-popover-relation-direction-size)] shrink-0 items-center justify-center text-[color:var(--topology-node-popover-relation-row-meta-text)] opacity-70 transition-opacity group-hover:opacity-90"
@@ -1205,7 +1206,7 @@ export function TopologyNodePopover({
                             evidenceState,
                             "text",
                           )}
-                          className={`inline-flex h-[var(--topology-node-popover-row-chip-height)] shrink-0 items-center rounded border px-[var(--topology-node-popover-row-chip-padding-x)] font-mono text-[length:var(--topology-node-popover-row-chip-text-size)] leading-none ${relationEvidenceGlyphClassName(evidenceState)}`}
+                          className={`inline-flex h-[var(--topology-node-popover-row-chip-height)] shrink-0 items-center rounded-sm border px-[var(--topology-node-popover-row-chip-padding-x)] font-mono text-[length:var(--topology-node-popover-row-chip-text-size)] leading-none ${relationEvidenceGlyphClassName(evidenceState)}`}
                         >
                           {labels.relationEvidenceChipLabel} {relationEvidenceGlyph(connection)}
                         </span>
@@ -1239,7 +1240,7 @@ export function TopologyNodePopover({
                             "text",
                           )}
                           title={agentGateChipText}
-                          className={`inline-flex h-[var(--topology-node-popover-row-chip-height)] shrink-0 items-center rounded border px-[var(--topology-node-popover-row-chip-padding-x)] font-mono text-[length:var(--topology-node-popover-row-chip-text-size)] leading-none ${relationAgentGateChipClassName(agentGateKind)}`}
+                          className={`inline-flex h-[var(--topology-node-popover-row-chip-height)] shrink-0 items-center rounded-sm border px-[var(--topology-node-popover-row-chip-padding-x)] font-mono text-[length:var(--topology-node-popover-row-chip-text-size)] leading-none ${relationAgentGateChipClassName(agentGateKind)}`}
                         >
                           {primaryCopyActionShortLabel}
                         </span>
