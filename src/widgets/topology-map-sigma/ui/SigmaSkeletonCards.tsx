@@ -2685,6 +2685,18 @@ export function SigmaSkeletonCards({
         activeDragCluster?.has(slug) ||
           (dockParent && activeDragCluster?.has(dockParent)),
       );
+    const focusContextSilhouetteSuppressionActive =
+      selectedFocusCenterActive &&
+      selectedFocusCluster !== null &&
+      selectedRelationEdgeId === null &&
+      activeDragCluster === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
+    let focusContextSilhouetteHiddenCount = 0;
+    container.dataset.focusContextSilhouettePolicy =
+      'click-focus-keeps-orientation-anchors-only';
+    container.dataset.focusContextSilhouetteActive =
+      focusContextSilhouetteSuppressionActive ? 'true' : 'false';
     const orderedEls = Array.from(els).sort((a, b) => {
       const aDocked = a.dataset.dockParent ? 1 : 0;
       const bDocked = b.dataset.dockParent ? 1 : 0;
@@ -2702,6 +2714,18 @@ export function SigmaSkeletonCards({
       const dockParent = el.dataset.dockParent;
       const lockedForDrag = isDragClusterCard(slug, dockParent);
       el.dataset.dragVisibilityLock = lockedForDrag ? 'true' : 'false';
+      const suppressFocusContextSilhouette =
+        focusContextSilhouetteSuppressionActive &&
+        el.dataset.dimmed === 'true' &&
+        Number(el.dataset.tier ?? '3') > 1 &&
+        !lockedForDrag;
+      if (suppressFocusContextSilhouette) {
+        el.dataset.dimOpacityRole = 'suppressed-focus-context';
+        el.dataset.dimOpacityToken = 'none';
+        hideSkeletonCard(el, domWriteStats);
+        focusContextSilhouetteHiddenCount += 1;
+        continue;
+      }
       const parentEl = dockParent ? elBySlug.get(dockParent) : undefined;
       if (dockParent && parentEl) {
         // px 도킹 — 부모 카드 rect 기준 고정 밀도 (줌 배율 무관). 열 간격
@@ -3059,18 +3083,6 @@ export function SigmaSkeletonCards({
       container.dataset.layoutAnimate === 'true' &&
       activeDragCluster === null &&
       selectedRelationEdgeId === null;
-    const focusContextSilhouetteSuppressionActive =
-      selectedFocusCenterActive &&
-      selectedFocusCluster !== null &&
-      selectedRelationEdgeId === null &&
-      activeDragCluster === null &&
-      !pathWorkflowActive &&
-      !healthRepairTarget;
-    let focusContextSilhouetteHiddenCount = 0;
-    container.dataset.focusContextSilhouettePolicy =
-      'click-focus-keeps-orientation-anchors-only';
-    container.dataset.focusContextSilhouetteActive =
-      focusContextSilhouetteSuppressionActive ? 'true' : 'false';
     const acceptedDimRects = [...egoRects];
     const orderedDimEls = dimEls.slice().sort((a, b) => {
       const tierA = Number(a.dataset.tier ?? '3');
