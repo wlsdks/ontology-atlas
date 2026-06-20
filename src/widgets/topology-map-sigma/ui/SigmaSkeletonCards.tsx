@@ -240,8 +240,6 @@ const FIXED_SURFACE_GAP = 8;
 const COLUMN_STEP_PX = 320;
 /** 카드 밖으로 삐져나온 Sigma edge 를 지우는 clearance halo(px). */
 const EDGE_CLEARANCE_MASK_PX = 10;
-/** 드래그 묶음 hull 여백(px) — 카드 clearance 보다 조금 넓게 branch 를 감싼다. */
-const DRAG_CLUSTER_HULL_PAD_PX = 14;
 
 // 반응형 카드 스케일 — resolveTopologyUiScale 이 단일 기준 (chrome zoom ·
 // safe inset 과 동일 단계). 폰트가 배수를 타고(인라인 calc) 패딩/dot 은 em.
@@ -1175,18 +1173,38 @@ function clampRectToViewportAndFixedSurfaces({
   return { dx, dy, rect: shifted() };
 }
 
-function showSkeletonCard(el: HTMLElement, opacity = '1') {
-  delete el.dataset.surfaceHidden;
-  el.style.opacity = opacity;
-  el.style.visibility = 'visible';
-  el.style.pointerEvents = '';
+function showSkeletonCard(
+  el: HTMLElement,
+  opacity = '1',
+  stats?: SkeletonDomWriteStats,
+) {
+  if (el.dataset.surfaceHidden === 'true') {
+    delete el.dataset.surfaceHidden;
+  }
+  if (stats) {
+    setSkeletonStyleValue(el, 'opacity', opacity, stats);
+    setSkeletonStyleValue(el, 'visibility', 'visible', stats);
+    setSkeletonStyleValue(el, 'pointerEvents', '', stats);
+    return;
+  }
+  if (el.style.opacity !== opacity) el.style.opacity = opacity;
+  if (el.style.visibility !== 'visible') el.style.visibility = 'visible';
+  if (el.style.pointerEvents !== '') el.style.pointerEvents = '';
 }
 
-function hideSkeletonCard(el: HTMLElement) {
-  el.dataset.surfaceHidden = 'true';
-  el.style.opacity = '0';
-  el.style.visibility = 'hidden';
-  el.style.pointerEvents = 'none';
+function hideSkeletonCard(el: HTMLElement, stats?: SkeletonDomWriteStats) {
+  if (el.dataset.surfaceHidden !== 'true') {
+    el.dataset.surfaceHidden = 'true';
+  }
+  if (stats) {
+    setSkeletonStyleValue(el, 'opacity', '0', stats);
+    setSkeletonStyleValue(el, 'visibility', 'hidden', stats);
+    setSkeletonStyleValue(el, 'pointerEvents', 'none', stats);
+    return;
+  }
+  if (el.style.opacity !== '0') el.style.opacity = '0';
+  if (el.style.visibility !== 'hidden') el.style.visibility = 'hidden';
+  if (el.style.pointerEvents !== 'none') el.style.pointerEvents = 'none';
 }
 
 function isSkeletonCardVisibleForStats(el: HTMLElement): boolean {
@@ -1401,10 +1419,10 @@ function restorePathEndpointsFromFixedSurfaces(
       delete el.dataset.pathEndpointRestored;
     }
     if (pathAnalysisPanelRects.some((surface) => rectsOverlap(endpointShift.rect, surface))) {
-      hideSkeletonCard(el);
+      hideSkeletonCard(el, domWriteStats);
       el.dataset.pathEndpointPanelClearance = 'hidden-under-expanded-panel';
     } else {
-      showSkeletonCard(el);
+      showSkeletonCard(el, '1', domWriteStats);
       delete el.dataset.pathEndpointPanelClearance;
     }
   }
@@ -1501,7 +1519,7 @@ function restoreVisibleCardsFromFixedSurfaces(
       restored += 1;
       continue;
     }
-    hideSkeletonCard(el);
+    hideSkeletonCard(el, domWriteStats);
     el.dataset.fixedSurfaceRestore = 'hidden-under-fixed-surface';
   }
   return restored;
@@ -2070,7 +2088,6 @@ export function SigmaSkeletonCards({
   const [activeDragCluster, setActiveDragCluster] = useState<Set<string> | null>(null);
   const [activeDragMotion, setActiveDragMotion] = useState(false);
   const [activeDragRootSlug, setActiveDragRootSlug] = useState("");
-  const [activeDragRootTitle, setActiveDragRootTitle] = useState("");
   const [dragSettledSlugs, setDragSettledSlugs] = useState<Set<string>>(() => new Set());
   const dragReleaseTimerRef = useRef<number | null>(null);
   const activeDragMotionRef = useRef(false);
@@ -2080,7 +2097,6 @@ export function SigmaSkeletonCards({
   const dragRef = useRef<{
     sourceSlug: string;
     rootSlug: string;
-    rootTitle: string;
     lastX: number;
     lastY: number;
     travel: number;
@@ -2239,7 +2255,6 @@ export function SigmaSkeletonCards({
     setActiveDragMotion(false);
     activeDragMotionRef.current = false;
     setActiveDragRootSlug("");
-    setActiveDragRootTitle("");
     activeDockDragSnapshotsRef.current = new Map();
   }, []);
 
@@ -2253,7 +2268,6 @@ export function SigmaSkeletonCards({
     if (!linger) {
       setActiveDragCluster(null);
       setActiveDragRootSlug("");
-      setActiveDragRootTitle("");
       activeDockDragSnapshotsRef.current = new Map();
       return;
     }
@@ -2261,7 +2275,6 @@ export function SigmaSkeletonCards({
       dragReleaseTimerRef.current = null;
       setActiveDragCluster(null);
       setActiveDragRootSlug("");
-      setActiveDragRootTitle("");
       activeDockDragSnapshotsRef.current = new Map();
     }, DRAG_GROUP_RELEASE_FEEDBACK_MS);
   }, []);
@@ -2480,15 +2493,6 @@ export function SigmaSkeletonCards({
 
   const activeHullCluster = activeDragCluster;
   const activeHullMode = activeDragCluster ? 'drag' : 'none';
-  const activeHullTitle =
-    activeHullMode === 'none' ? '' : activeDragRootTitle;
-  const activeHullLabel =
-    activeHullMode === 'drag'
-      ? activeDragMotion
-        ? 'moving linked cards'
-        : 'linked cards move together'
-      : '';
-
   const activeHullConnectors = useMemo(() => {
     if (!activeHullCluster || activeHullCluster.size < 2) return [];
     const pairs: RelationConnector[] = [];
@@ -2923,12 +2927,12 @@ export function SigmaSkeletonCards({
             } else {
               delete el.dataset.dockFlipped;
               setSkeletonStyleValue(el, 'transform', originalTransform, domWriteStats);
-              hideSkeletonCard(el);
+              hideSkeletonCard(el, domWriteStats);
               continue;
             }
           } else {
             delete el.dataset.dockFlipped;
-            hideSkeletonCard(el);
+            hideSkeletonCard(el, domWriteStats);
             continue;
           }
         } else {
@@ -2940,7 +2944,7 @@ export function SigmaSkeletonCards({
           !pathEndpoint &&
           !lockedForDrag
         ) {
-          hideSkeletonCard(el);
+          hideSkeletonCard(el, domWriteStats);
           continue;
         }
         const protectSelectedCard =
@@ -2949,10 +2953,10 @@ export function SigmaSkeletonCards({
           !lockedForDrag &&
           (blockedBySurface || (!protectSelectedCard && clipped))
         ) {
-          hideSkeletonCard(el);
+          hideSkeletonCard(el, domWriteStats);
           continue;
         }
-        showSkeletonCard(el);
+        showSkeletonCard(el, '1', domWriteStats);
         overviewEls.push(el);
         egoRects.push(rect);
         acceptedSurfaceRects.push(rect);
@@ -3064,7 +3068,7 @@ export function SigmaSkeletonCards({
         }
       }
       if (collides) {
-        hideSkeletonCard(el);
+        hideSkeletonCard(el, domWriteStats);
       } else {
         const dimOpacity =
           el.dataset.tier === '0' || el.dataset.tier === '1'
@@ -3078,9 +3082,9 @@ export function SigmaSkeletonCards({
           el.dataset.dimOpacityRole === 'orientation-anchor'
             ? DIM_ANCHOR_OPACITY_TOKEN
             : DIM_CHIP_OPACITY_TOKEN;
-        el.style.opacity = lockedForDrag ? '1' : dimOpacity;
-        el.style.visibility = 'visible';
-        el.style.pointerEvents = lockedForDrag ? '' : 'none';
+        setSkeletonStyleValue(el, 'opacity', lockedForDrag ? '1' : dimOpacity, domWriteStats);
+        setSkeletonStyleValue(el, 'visibility', 'visible', domWriteStats);
+        setSkeletonStyleValue(el, 'pointerEvents', lockedForDrag ? '' : 'none', domWriteStats);
         if (rect) acceptedDimRects.push(rect);
       }
     }
@@ -3102,7 +3106,7 @@ export function SigmaSkeletonCards({
           bottom: r.bottom - containerRect.top + COLLISION_PAD,
         };
         if (fixedSurfaceRects.some((surface) => rectsOverlap(rect, surface))) {
-          hideSkeletonCard(el);
+          hideSkeletonCard(el, domWriteStats);
         }
       }
     }
@@ -3128,7 +3132,7 @@ export function SigmaSkeletonCards({
           bottom: endpointBox.bottom - containerRect.top,
         };
         if (fixedSurfaceRects.some((surface) => rectsOverlap(endpointRect, surface))) {
-          showSkeletonCard(el);
+          showSkeletonCard(el, '1', domWriteStats);
           continue;
         }
         for (const other of orderedEls) {
@@ -3144,10 +3148,10 @@ export function SigmaSkeletonCards({
             bottom: otherBox.bottom - containerRect.top,
           };
           if (rectsOverlap(endpointRect, otherRect)) {
-            hideSkeletonCard(other);
+            hideSkeletonCard(other, domWriteStats);
           }
         }
-        showSkeletonCard(el);
+        showSkeletonCard(el, '1', domWriteStats);
       }
       separatePathEndpointCards(orderedEls, containerRect, fixedSurfaceRects);
       restorePathEndpointsFromFixedSurfaces(
@@ -3258,7 +3262,7 @@ export function SigmaSkeletonCards({
         }
         if (!isElementInsideContainerViewport(el, containerRect)) continue;
         if (!isElementClearOfFixedSurfaces(el, containerRect, fixedSurfaceRects)) continue;
-        showSkeletonCard(el);
+        showSkeletonCard(el, '1', domWriteStats);
         restored += 1;
       }
       if (restored === 0) {
@@ -3354,15 +3358,15 @@ export function SigmaSkeletonCards({
             delete first.dataset.visibilityFallbackSurfaceRestore;
           }
           if (fallbackClear) {
-            showSkeletonCard(first);
+            showSkeletonCard(first, '1', domWriteStats);
             restored = 1;
           } else if (readLayerSurfaceActive) {
             first.dataset.visibilityFallbackSurfaceRestore = 'phone-read-layer-landmark';
             first.dataset.readLayerSurfaceRestore = 'phone-read-layer-landmark';
-            showSkeletonCard(first);
+            showSkeletonCard(first, '1', domWriteStats);
             restored = 1;
           } else {
-            hideSkeletonCard(first);
+            hideSkeletonCard(first, domWriteStats);
             first.dataset.visibilityFallbackSurfaceRestore = 'hidden-under-fixed-surface';
           }
         }
@@ -3425,7 +3429,7 @@ export function SigmaSkeletonCards({
           el.dataset.readLayerSurfaceRestore = 'phone-read-layer-landmark';
         } else {
           el.dataset.readLayerSurfaceRestore = 'phone-read-layer-landmark';
-          showSkeletonCard(el);
+          showSkeletonCard(el, '1', domWriteStats);
         }
         readLayerClearedCount += 1;
       }
@@ -3897,6 +3901,7 @@ export function SigmaSkeletonCards({
       container.dataset.connectorRectCacheHitCount = String(connectorCardRectHitCount);
       container.dataset.connectorRectCacheAccounting = 'reads-plus-hits';
       container.dataset.domWriteDedupeContract = 'skip-unchanged-transform-and-path';
+      container.dataset.visibilityStyleWriteContract = 'dedupe-show-hide-state';
       container.dataset.domWriteAppliedCount = String(domWriteStats.applied);
       container.dataset.domWriteSkippedCount = String(domWriteStats.skipped);
       const finalVisibleCardCount = orderedEls.filter(isSkeletonCardVisibleForStats).length;
@@ -3930,83 +3935,12 @@ export function SigmaSkeletonCards({
     // flip + 세로 클램프. 매 프레임 카드 rect 파생이라 팬/줌을 따라간다.
     const hull = dragClusterHullRef.current;
     if (hull) {
-      const clusterRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+      hull.dataset.visible = 'false';
+      hull.dataset.clusterMode = activeHullMode;
+      hull.dataset.renderPolicy = 'suppressed-boxless-connectors';
       if (activeHullCluster && activeHullCluster.size > 1) {
-        for (const slug of activeHullCluster) {
-          const cardEl = elBySlug.get(slug);
-          if (!cardEl) continue;
-          if (cardEl.dataset.surfaceHidden === 'true') {
-            continue;
-          }
-          const style = getComputedStyle(cardEl);
-          const rect = cardEl.getBoundingClientRect();
-          if (
-            style.display === 'none' ||
-            style.visibility === 'hidden' ||
-            Number(style.opacity || '1') <= 0.01 ||
-            rect.width <= 0 ||
-            rect.height <= 0
-          ) {
-            continue;
-          }
-          clusterRects.push({
-            left: rect.left - containerRect.left,
-            top: rect.top - containerRect.top,
-            right: rect.right - containerRect.left,
-            bottom: rect.bottom - containerRect.top,
-          });
-        }
-      }
-      if (clusterRects.length > 1) {
-        const bounds = clusterRects.reduce(
-          (acc, rect) => ({
-            left: Math.min(acc.left, rect.left),
-            top: Math.min(acc.top, rect.top),
-            right: Math.max(acc.right, rect.right),
-            bottom: Math.max(acc.bottom, rect.bottom),
-          }),
-          { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
-        );
-        const hullViewportMargin = 0;
-        const hullMaxRight = Math.max(
-          hullViewportMargin + 1,
-          containerRect.width - hullViewportMargin,
-        );
-        const hullMaxBottom = Math.max(
-          hullViewportMargin + 1,
-          containerRect.height - hullViewportMargin,
-        );
-        const hullTopPadPx = DRAG_CLUSTER_HULL_PAD_PX;
-        const rawHullRect = {
-          left: Math.min(
-            Math.max(hullViewportMargin, bounds.left - DRAG_CLUSTER_HULL_PAD_PX),
-            hullMaxRight - 1,
-          ),
-          top: Math.min(
-            Math.max(hullViewportMargin, bounds.top - hullTopPadPx),
-            hullMaxBottom - 1,
-          ),
-          right: Math.min(
-            hullMaxRight,
-            bounds.right + DRAG_CLUSTER_HULL_PAD_PX,
-          ),
-          bottom: Math.min(
-            hullMaxBottom,
-            bounds.bottom + DRAG_CLUSTER_HULL_PAD_PX,
-          ),
-        };
-        const hullRect = rawHullRect;
-        hull.style.transform = `translate3d(${hullRect.left}px, ${hullRect.top}px, 0)`;
-        hull.style.width = `${Math.max(1, hullRect.right - hullRect.left)}px`;
-        hull.style.height = `${Math.max(1, hullRect.bottom - hullRect.top)}px`;
-        hull.style.opacity = activeDragMotion ? '0.95' : '0.8';
-        hull.dataset.visible = 'true';
-        hull.dataset.clusterMode = activeHullMode;
-        hull.dataset.dragClusterSize = String(clusterRects.length);
+        hull.dataset.dragClusterSize = String(activeHullCluster.size);
       } else {
-        hull.style.opacity = '0';
-        hull.dataset.visible = 'false';
-        hull.dataset.clusterMode = 'none';
         delete hull.dataset.dragClusterSize;
       }
     }
@@ -4305,6 +4239,7 @@ export function SigmaSkeletonCards({
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
       data-drag-collision-policy="release-settle"
       data-drag-frame-cache-contract="pointer-move-reuses-drag-indexes"
+      data-drag-hull-render-policy="suppressed-boxless-connectors"
       data-drag-dom-index-contract="drag-release-reuses-card-elements"
       data-drag-dom-index-size={lastDragDomIndexSizeRef.current}
       data-drag-frame-cache-snapshot-count={lastDockDragSnapshotSizeRef.current}
@@ -4319,6 +4254,7 @@ export function SigmaSkeletonCards({
       data-initial-load-reposition-throttle-ms={INITIAL_LOAD_REPOSITION_THROTTLE_MS}
       data-responsive-reposition-contract="resize-immediate-and-settled"
       data-dom-write-dedupe-contract="skip-unchanged-transform-and-path"
+      data-visibility-style-write-contract="dedupe-show-hide-state"
       data-dom-write-applied-count="0"
       data-dom-write-skipped-count="0"
       data-fixed-surface-measure-contract="single-pass-rect-read"
@@ -4384,44 +4320,11 @@ export function SigmaSkeletonCards({
         data-visible="false"
         data-drag-active={activeDragMotion ? 'true' : 'false'}
         data-cluster-mode={activeHullMode}
-        data-focus-hull-border-token="--topology-focus-hull-border"
-        data-focus-hull-surface-token="--topology-focus-hull-surface"
-        data-focus-hull-shadow-token="--topology-focus-hull-shadow"
-        data-focus-hull-drag-border-token="--topology-focus-hull-drag-border"
-        data-focus-hull-drag-surface-token="--topology-focus-hull-drag-surface"
-        data-focus-hull-drag-shadow-token="--topology-focus-hull-drag-shadow"
-        style={{
-          opacity: activeHullCluster && activeHullCluster.size > 1
-            ? activeDragMotion
-              ? 0.95
-              : 0.8
-            : 0,
-        }}
+        data-render-policy="suppressed-boxless-connectors"
+        style={{ display: 'none', opacity: 0 }}
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-[color:var(--topology-focus-hull-border)] bg-[color:var(--topology-focus-hull-surface)] shadow-[var(--topology-focus-hull-shadow)] transition-[opacity,box-shadow,border-color,background-color] duration-100 data-[drag-active=true]:border-solid data-[drag-active=true]:border-[color:var(--topology-focus-hull-drag-border)] data-[drag-active=true]:bg-[color:var(--topology-focus-hull-drag-surface)] data-[drag-active=true]:shadow-[var(--topology-focus-hull-drag-shadow)] motion-reduce:transition-none"
-      >
-        {activeHullMode === 'drag' ? (
-          <>
-            <div className="absolute left-2 top-0 z-[2] inline-flex max-w-[min(18rem,calc(100%-3.25rem))] -translate-y-1/2 items-center gap-1.5 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-canvas)] px-2 py-1 text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]">
-              <span
-                data-drag-cluster-state-label
-                className="shrink-0 whitespace-nowrap font-mono uppercase tracking-[0.08em] text-[9px] text-[color:var(--color-text-quaternary)]"
-              >
-                {activeHullLabel}
-              </span>
-              <span data-drag-cluster-title className="sr-only">
-                {activeHullTitle}
-              </span>
-            </div>
-            <span
-              data-drag-cluster-count
-              className="absolute right-2 top-0 z-[2] inline-flex h-5 min-w-5 -translate-y-1/2 items-center justify-center rounded-full border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--color-canvas)] px-1.5 font-mono text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]"
-            >
-              {activeHullCluster ? `${activeHullCluster.size} linked` : ""}
-            </span>
-          </>
-        ) : null}
-      </div>
+        className="pointer-events-none absolute left-0 top-0 size-0 overflow-hidden"
+      />
       <svg
         data-skeleton-connectors
         aria-hidden="true"
@@ -5401,7 +5304,6 @@ export function SigmaSkeletonCards({
               dragRef.current = {
                 sourceSlug: nodeId,
                 rootSlug,
-                rootTitle: event.currentTarget.title || nodeId,
                 lastX: event.clientX,
                 lastY: event.clientY,
                 travel: 0,
@@ -5412,7 +5314,6 @@ export function SigmaSkeletonCards({
                 tierByNodeId,
               };
               setActiveDragRootSlug(rootSlug);
-              setActiveDragRootTitle(event.currentTarget.title || nodeId);
               setActiveDragMotion(false);
               activeDragMotionRef.current = false;
               setActiveDragCluster(movingGroup);

@@ -727,6 +727,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-visibility-stats-report-contract",
         "dedupe-and-debounce-stable-counts",
       );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-visibility-style-write-contract",
+        "dedupe-show-hide-state",
+      );
       const initialCalls = onVisibilityChange.mock.calls.length;
       const initialReportCount = screen
         .getByTestId("sigma-skeleton-cards")
@@ -1456,6 +1460,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       expect(hull).toHaveAttribute("data-visible", "false");
       expect(hull).toHaveAttribute("data-cluster-mode", "none");
+      expect(hull).toHaveAttribute(
+        "data-render-policy",
+        "suppressed-boxless-connectors",
+      );
       expect(hull).not.toHaveAttribute("data-focus-cluster-density");
       expect(hull).not.toHaveAttribute("data-focus-stage");
       expect(hull).not.toHaveAttribute("data-focus-attention-label");
@@ -1463,7 +1471,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(hull).toBeEmptyDOMElement();
       expect(document.querySelector("[data-drag-cluster-title]")).not.toBeInTheDocument();
       expect(document.querySelector("[data-drag-cluster-count]")).not.toBeInTheDocument();
-      expect(hull).toHaveStyle({ opacity: "0" });
+      expect(hull).toHaveStyle({ display: "none", opacity: "0" });
       expect(document.querySelector("[data-relation-hit-path]")).toBeInTheDocument();
       expect(document.querySelector("[data-focus-relation-label]")).not.toBeInTheDocument();
       expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
@@ -1592,6 +1600,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       expect(hull).toHaveAttribute("data-visible", "false");
       expect(hull).toHaveAttribute("data-cluster-mode", "none");
+      expect(hull).toHaveAttribute(
+        "data-render-policy",
+        "suppressed-boxless-connectors",
+      );
       expect(hull.style.transform).toBe("");
       expect(layer).toHaveAttribute("data-focus-cluster-size", "2");
       expect(layer).toHaveAttribute(
@@ -1727,6 +1739,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       const hull = document.querySelector("[data-drag-cluster-hull]");
       expect(hull).toHaveAttribute("data-visible", "false");
       expect(hull).toHaveAttribute("data-cluster-mode", "none");
+      expect(hull).toHaveAttribute(
+        "data-render-policy",
+        "suppressed-boxless-connectors",
+      );
       expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
         "data-focus-cluster-size",
         "2",
@@ -3949,22 +3965,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-drag-cluster",
       "true",
     );
-    expect(screen.getByText("linked cards move together")).toBeInTheDocument();
-    expect(document.querySelector("[data-drag-cluster-state-label]")).toHaveTextContent(
-      "linked cards move together",
-    );
+    expect(document.querySelector("[data-drag-cluster-state-label]")).not.toBeInTheDocument();
     expect(screen.getByText("Disconnected").closest("[data-skeleton-card]")).toHaveAttribute(
       "data-drag-cluster",
       "false",
     );
     expect(document.querySelector("[data-drag-cluster-connector]")).toBeInTheDocument();
     expect(document.querySelector("[data-drag-relation-label]")).toBeInTheDocument();
-    expect(document.querySelector("[data-drag-cluster-title]")).toHaveTextContent(
-      "Views",
-    );
-    expect(document.querySelector("[data-drag-cluster-count]")).toHaveTextContent(
-      "2 linked",
-    );
+    expect(document.querySelector("[data-drag-cluster-title]")).not.toBeInTheDocument();
+    expect(document.querySelector("[data-drag-cluster-count]")).not.toBeInTheDocument();
     expect(
       document.querySelector('[data-relation-label-bg="drag:domain:d1→project:p"]'),
     ).toBeInTheDocument();
@@ -3975,7 +3984,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-drag-active",
       "true",
     );
-    expect(screen.getByText("moving linked cards")).toBeInTheDocument();
+    expect(document.querySelector("[data-drag-cluster-hull]")).toHaveAttribute(
+      "data-visible",
+      "false",
+    );
+    expect(document.querySelector("[data-drag-cluster-hull]")).toHaveAttribute(
+      "data-render-policy",
+      "suppressed-boxless-connectors",
+    );
+    expect(screen.queryByText("moving linked cards")).not.toBeInTheDocument();
     fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
 
     expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
@@ -4016,10 +4033,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       expect(card).toHaveAttribute("data-drag-cluster", "true");
       expect(layer).toHaveAttribute("data-dragging-active", "false");
-      expect(screen.getByText("linked cards move together")).toBeInTheDocument();
-      expect(document.querySelector("[data-drag-cluster-state-label]")).toHaveTextContent(
-        "linked cards move together",
-      );
+      expect(screen.queryByText("linked cards move together")).not.toBeInTheDocument();
+      expect(document.querySelector("[data-drag-cluster-state-label]")).not.toBeInTheDocument();
 
       act(() => {
         vi.advanceTimersByTime(520);

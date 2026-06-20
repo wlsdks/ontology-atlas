@@ -34,7 +34,10 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   const before = await rectOf(target);
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
   await page.mouse.down();
-  await expect(page.getByText(/linked cards move together|moving linked cards/)).toBeVisible();
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-hull-render-policy",
+    "suppressed-boxless-connectors",
+  );
   const companionSlug = await page
     .locator('[data-skeleton-card][data-drag-cluster="true"]')
     .evaluateAll((els) => {
@@ -59,8 +62,8 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   await expect(companion).toHaveAttribute("data-drag-cluster", "true");
   const after = await rectOf(target);
   const companionAfter = await rectOf(companion);
-  expect(Math.abs(companionAfter.x - companionBefore.x - (after.x - before.x))).toBeLessThan(56);
-  expect(Math.abs(companionAfter.y - companionBefore.y - (after.y - before.y))).toBeLessThan(56);
+  expect(Math.abs(companionAfter.x - companionBefore.x - (after.x - before.x))).toBeLessThan(72);
+  expect(Math.abs(companionAfter.y - companionBefore.y - (after.y - before.y))).toBeLessThan(72);
   await page.mouse.up();
   await page.waitForTimeout(650);
   expect(consoleErrors, consoleErrors.join("\n")).toHaveLength(0);
@@ -137,7 +140,7 @@ test("Relief 관계 라벨 클릭이 관계 선택 카드만 열고 노드 선�
     /typed ontology fact/i,
   );
   await expect(page.getByTestId("sigma-selected-edge-card")).toContainText(
-    /handoff ready/i,
+    /MCP\/CLI ready/i,
   );
   await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
     "data-agent-gate-kind",

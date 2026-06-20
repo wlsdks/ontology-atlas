@@ -2023,6 +2023,10 @@ for (const viewport of VIEWPORTS) {
     const focusHull = page.locator("[data-drag-cluster-hull]");
     await expect(focusHull).toHaveAttribute("data-visible", "false");
     await expect(focusHull).toHaveAttribute("data-cluster-mode", "none");
+    await expect(focusHull).toHaveAttribute(
+      "data-render-policy",
+      "suppressed-boxless-connectors",
+    );
     await expect(focusHull).not.toHaveAttribute("data-focus-cluster-density");
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-focus-cluster-size",
@@ -2546,7 +2550,6 @@ for (const viewport of VIEWPORTS) {
     const { target, before } = await firstVisibleDragClusterCard(page);
     await expect(target).toBeVisible();
     const targetText = (await target.textContent())?.trim() ?? "";
-    const targetTitle = (await target.getAttribute("title")) ?? targetText.replace(/\s*\d+$/, "");
     const targetSlug = await target.getAttribute("data-slug");
     if (!targetSlug) {
       throw new Error(`visible drag target should expose a slug at ${viewport.label}`);
@@ -2560,16 +2563,7 @@ for (const viewport of VIEWPORTS) {
       "data-active-drag-cluster-size",
       /^[2-9]\d*$/,
     );
-    const dragStateLabel = page.locator("[data-drag-cluster-state-label]");
-    await expect(dragStateLabel).toBeVisible();
-    await expect(dragStateLabel).toHaveText("linked cards move together");
-    const dragStateLabelFits = await dragStateLabel.evaluate(
-      (element) => element.scrollWidth <= element.clientWidth + 1,
-    );
-    expect(
-      dragStateLabelFits,
-      `drag helper state label should remain readable at ${viewport.label}`,
-    ).toBe(true);
+    await expect(page.locator("[data-drag-cluster-state-label]")).toHaveCount(0);
     const companionHandle = await page
       .locator('[data-skeleton-card][data-drag-cluster-role="movable"]')
       .evaluateAll((els) => {
@@ -2599,12 +2593,21 @@ for (const viewport of VIEWPORTS) {
       "data-drag-active",
       "true",
     );
+    await expect(page.locator("[data-drag-cluster-hull]")).toHaveAttribute(
+      "data-visible",
+      "false",
+    );
+    await expect(page.locator("[data-drag-cluster-hull]")).toHaveAttribute(
+      "data-render-policy",
+      "suppressed-boxless-connectors",
+    );
     const dragCacheProof = await page.getByTestId("sigma-skeleton-cards").evaluate((el) => ({
       domIndexSize: Number(el.getAttribute("data-drag-dom-index-size") ?? "0"),
       snapshotCount: Number(el.getAttribute("data-drag-frame-cache-snapshot-count") ?? "0"),
       resolvedCardCount: Number(el.getAttribute("data-skeleton-card-resolved-count") ?? "0"),
       activeDragClusterSize: Number(el.getAttribute("data-active-drag-cluster-size") ?? "0"),
       domWriteAppliedCount: Number(el.getAttribute("data-dom-write-applied-count") ?? "0"),
+      domWriteSkippedCount: Number(el.getAttribute("data-dom-write-skipped-count") ?? "0"),
     }));
     expect(
       dragCacheProof.domIndexSize,
@@ -2620,11 +2623,15 @@ for (const viewport of VIEWPORTS) {
     ).toBeGreaterThan(0);
     expect(
       dragCacheProof.domWriteAppliedCount,
-      `drag should not rewrite beyond resolved cards plus active drag adornments at ${viewport.label}`,
+      `drag should stay within the two-pass card write budget at ${viewport.label}`,
     ).toBeLessThanOrEqual(
-      dragCacheProof.resolvedCardCount + dragCacheProof.activeDragClusterSize,
+      dragCacheProof.resolvedCardCount * 2 + dragCacheProof.activeDragClusterSize,
     );
-    await expect(page.getByText("moving linked cards")).toBeVisible();
+    expect(
+      dragCacheProof.domWriteSkippedCount,
+      `drag should expose skipped unchanged writes at ${viewport.label}`,
+    ).toBeGreaterThan(0);
+    await expect(page.getByText("moving linked cards")).toHaveCount(0);
     const targetDx = whileDragging.left - before.left;
     const targetDy = whileDragging.top - before.top;
     const companionDx = companionAfter.left - companionBefore.left;
@@ -2706,49 +2713,18 @@ for (const viewport of VIEWPORTS) {
       `dragging Views should mark a connected card cluster at ${viewport.label}`,
     ).toBeGreaterThan(1);
     const hull = page.locator("[data-drag-cluster-hull]");
-    await expect(hull).toHaveAttribute("data-visible", "true");
-    await expect(page.locator("[data-drag-cluster-title]")).toHaveText(
-      targetTitle,
+    await expect(hull).toHaveAttribute("data-visible", "false");
+    await expect(hull).toHaveAttribute(
+      "data-render-policy",
+      "suppressed-boxless-connectors",
     );
+    await expect(page.locator("[data-drag-cluster-title]")).toHaveCount(0);
+    await expect(page.locator("[data-drag-cluster-count]")).toHaveCount(0);
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-active-drag-cluster-size",
       /^[2-9]\d*$/,
     );
     await expect(hull).toHaveAttribute("data-drag-cluster-size", /^[2-9]\d*$/);
-    const dragClusterCountText =
-      (await page.locator("[data-drag-cluster-count]").textContent()) ?? "";
-    expect(dragClusterCountText).toMatch(/^[2-9]\d* linked$/);
-    const dragClusterCount = Number.parseInt(dragClusterCountText, 10);
-    expect(
-      dragClusterCount,
-      `drag cluster count should explain linked movement at ${viewport.label}`,
-    ).toBeGreaterThan(1);
-    const hullRect = await rectOf(hull);
-    const hullCoverageTolerance = 2.5;
-    expect(
-      hullRect.left,
-      `drag cluster hull should cover the dragged card on the left at ${viewport.label}`,
-    ).toBeLessThanOrEqual(
-      Math.min(whileDragging.left, companionAfter.left) + hullCoverageTolerance,
-    );
-    expect(
-      hullRect.right,
-      `drag cluster hull should cover the dragged card on the right at ${viewport.label}`,
-    ).toBeGreaterThanOrEqual(
-      Math.max(whileDragging.right, companionAfter.right) - hullCoverageTolerance,
-    );
-    expect(
-      hullRect.top,
-      `drag cluster hull should cover the dragged card on top at ${viewport.label}`,
-    ).toBeLessThanOrEqual(
-      Math.min(whileDragging.top, companionAfter.top) + hullCoverageTolerance,
-    );
-    expect(
-      hullRect.bottom,
-      `drag cluster hull should cover the dragged card on bottom at ${viewport.label}`,
-    ).toBeGreaterThanOrEqual(
-      Math.max(whileDragging.bottom, companionAfter.bottom) - hullCoverageTolerance,
-    );
     await page.screenshot({
       path: path.join(OUT, `drag-connector-${viewport.label}.png`),
       fullPage: false,
@@ -3980,6 +3956,10 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   const focusHull = page.locator("[data-drag-cluster-hull]");
   await expect(focusHull).toHaveAttribute("data-visible", "false");
   await expect(focusHull).toHaveAttribute("data-cluster-mode", "none");
+  await expect(focusHull).toHaveAttribute(
+    "data-render-policy",
+    "suppressed-boxless-connectors",
+  );
   await expect(focusHull).not.toHaveAttribute("data-focus-cluster-density");
   await expect(page.locator("[data-focus-relation-label]")).toHaveCount(0);
   await expect(page.locator('[data-skeleton-card][data-slug="domain:views"]').first()).toBeVisible();

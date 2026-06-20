@@ -2498,6 +2498,10 @@ pub fn run() {
                                       : topologyFocusClusterHull?.getAttribute("data-cluster-mode") || "",
                                   topologyFocusClusterStage,
                                   topologyFocusClusterAttentionLabel,
+                                  topologyDragHullRenderPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-drag-hull-render-policy") ||
+                                    topologyFocusClusterHull?.getAttribute("data-render-policy") ||
+                                    "",
                                   topologyFocusClusterBreathingRoomContract:
                                     topologyFocusClusterHull?.getAttribute("data-focus-breathing-room-contract") || "",
                                   topologyFocusClusterBreathingRoomPx:
@@ -3989,6 +3993,8 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-read-count") || "0"),
                                   topologyConnectorRectCacheHitCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-hit-count") || "0"),
+                                  topologyVisibilityStyleWriteContract:
+                                    skeletonCardsLayer?.getAttribute("data-visibility-style-write-contract") || "",
                                   topologyRelationLabelBlockerContract:
                                     skeletonCardsLayer?.getAttribute("data-relation-label-blocker-contract") || "",
                                   topologyRelationLabelBlockerSource:
