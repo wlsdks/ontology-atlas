@@ -1089,6 +1089,10 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-chip-gap",
     );
     expect(popover).toHaveAttribute(
+      "data-compact-command-row-gap-token",
+      "--topology-node-popover-compact-command-row-gap",
+    );
+    expect(popover).toHaveAttribute(
       "data-compact-action-size-token",
       "--topology-node-popover-compact-action-size",
     );
@@ -1165,7 +1169,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(popover).toHaveAttribute(
       "data-compact-facts-layout-contract",
-      "facts-before-actions",
+      "meaning-then-command-row",
     );
     expect(popover).toHaveAttribute(
       "data-phone-layout-contract",
@@ -1255,17 +1259,30 @@ describe("TopologyNodePopover", () => {
     );
     expect(factPriority).toHaveAttribute(
       "data-node-popover-compact-fact-priority",
-      "selected-node-facts-before-actions",
+      "selected-node-meaning-before-command-row",
     );
     expect(factPriority).toHaveAttribute(
       "data-phone-layout-contract",
       "title-keeps-full-width-before-actions",
     );
     expect(factPriority?.className).toContain("basis-full");
+    const commandRow = screen.getByTestId("topology-node-popover-compact-command-row");
+    expect(commandRow).toHaveAttribute(
+      "data-compact-command-row-contract",
+      "facts-and-actions-share-final-scanline",
+    );
+    expect(commandRow).toHaveAttribute(
+      "data-compact-command-row-gap-token",
+      "--topology-node-popover-compact-command-row-gap",
+    );
+    expect(commandRow.className).toContain("justify-between");
+    expect(commandRow.className).toContain(
+      "gap-[var(--topology-node-popover-compact-command-row-gap)]",
+    );
     const actions = screen.getByTestId("topology-node-popover-compact-actions");
     expect(actions).toHaveAttribute(
       "data-compact-actions-layout-contract",
-      "actions-after-facts",
+      "actions-share-command-row-with-facts",
     );
     expect(actions).toHaveAttribute(
       "data-compact-actions-hierarchy-contract",
@@ -1279,7 +1296,8 @@ describe("TopologyNodePopover", () => {
       "data-phone-layout-contract",
       "actions-wrap-below-title",
     );
-    expect(actions.className).toContain("w-full");
+    expect(actions.className).toContain("ml-auto");
+    expect(actions.className).toContain("shrink-0");
     expect(actions.className).toContain("justify-end");
     expect(actions.className).toContain(
       "gap-[var(--topology-node-popover-compact-action-gap)]",
@@ -2514,15 +2532,19 @@ describe("TopologyNodePopover", () => {
     );
     expect(popover).toHaveAttribute(
       "data-compact-facts-layout-contract",
-      "facts-before-actions",
+      "meaning-then-command-row",
     );
     expect(popover).toHaveAttribute(
       "data-phone-layout-contract",
       "title-row-before-actions",
     );
+    expect(screen.getByTestId("topology-node-popover-compact-command-row")).toHaveAttribute(
+      "data-compact-command-row-contract",
+      "facts-and-actions-share-final-scanline",
+    );
     expect(screen.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
       "data-compact-actions-layout-contract",
-      "actions-after-facts",
+      "actions-share-command-row-with-facts",
     );
     expect(screen.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
       "data-phone-layout-contract",

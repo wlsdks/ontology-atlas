@@ -1983,6 +1983,18 @@ pub fn run() {
                                 topologyNodePopover?.querySelector('[data-testid="topology-node-popover-action-rail"]');
                               const topologyNodePopoverActionRailRect =
                                 topologyNodePopoverActionRail?.getBoundingClientRect();
+                              const topologyNodePopoverCompactCommandRow =
+                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-command-row"]');
+                              const topologyNodePopoverCompactCommandRowRect =
+                                topologyNodePopoverCompactCommandRow?.getBoundingClientRect();
+                              const topologyNodePopoverCompactActions =
+                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-actions"]');
+                              const topologyNodePopoverCompactActionsRect =
+                                topologyNodePopoverCompactActions?.getBoundingClientRect();
+                              const topologyNodePopoverCompactRelationFacts =
+                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-relation-facts"]');
+                              const topologyNodePopoverCompactRelationFactsRect =
+                                topologyNodePopoverCompactRelationFacts?.getBoundingClientRect();
                               const topologyNodePopoverVisibleRelationRowHeight =
                                 topologyNodePopoverRelationRowRect && topologyNodePopoverBodyRect
                                   ? Math.max(
@@ -3345,6 +3357,38 @@ pub fn run() {
                                     topologyNodePopoverActionRail?.getAttribute("data-action-rail-contract") || "",
                                   topologyNodePopoverActionRailCount:
                                     Number(topologyNodePopoverActionRail?.getAttribute("data-action-count") || "0"),
+                                  topologyNodePopoverCompactCommandRowVisible:
+                                    Boolean(topologyNodePopoverCompactCommandRowRect) &&
+                                    topologyNodePopoverCompactCommandRowRect.width > 0 &&
+                                    topologyNodePopoverCompactCommandRowRect.height > 0,
+                                  topologyNodePopoverCompactCommandRowContract:
+                                    topologyNodePopoverCompactCommandRow?.getAttribute("data-compact-command-row-contract") || "",
+                                  topologyNodePopoverCompactCommandRowGapToken:
+                                    topologyNodePopoverCompactCommandRow?.getAttribute("data-compact-command-row-gap-token") || "",
+                                  topologyNodePopoverCompactCommandRowTop:
+                                    topologyNodePopoverCompactCommandRowRect?.top || 0,
+                                  topologyNodePopoverCompactCommandRowBottom:
+                                    topologyNodePopoverCompactCommandRowRect?.bottom || 0,
+                                  topologyNodePopoverCompactCommandRowHeight:
+                                    topologyNodePopoverCompactCommandRowRect?.height || 0,
+                                  topologyNodePopoverCompactActionsVisible:
+                                    Boolean(topologyNodePopoverCompactActionsRect) &&
+                                    topologyNodePopoverCompactActionsRect.width > 0 &&
+                                    topologyNodePopoverCompactActionsRect.height > 0,
+                                  topologyNodePopoverCompactActionsContract:
+                                    topologyNodePopoverCompactActions?.getAttribute("data-compact-actions-layout-contract") || "",
+                                  topologyNodePopoverCompactActionsTop:
+                                    topologyNodePopoverCompactActionsRect?.top || 0,
+                                  topologyNodePopoverCompactActionsBottom:
+                                    topologyNodePopoverCompactActionsRect?.bottom || 0,
+                                  topologyNodePopoverCompactRelationFactsVisible:
+                                    Boolean(topologyNodePopoverCompactRelationFactsRect) &&
+                                    topologyNodePopoverCompactRelationFactsRect.width > 0 &&
+                                    topologyNodePopoverCompactRelationFactsRect.height > 0,
+                                  topologyNodePopoverCompactRelationFactsTop:
+                                    topologyNodePopoverCompactRelationFactsRect?.top || 0,
+                                  topologyNodePopoverCompactRelationFactsBottom:
+                                    topologyNodePopoverCompactRelationFactsRect?.bottom || 0,
                                   topologyNodePopoverCompactBriefActionVisible:
                                     Boolean(topologyNodePopoverCompactBriefActionRect) &&
                                     topologyNodePopoverCompactBriefActionRect.width > 0 &&

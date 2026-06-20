@@ -248,6 +248,33 @@ function validateTopologyNodePopoverTokenContract(markers) {
     return `WebView Relief selected node popover compact handoff contract was ${markers.topologyNodePopoverCompactHandoffContract || "missing"}`;
   }
   if (collapsed) {
+    if (markers.topologyNodePopoverCompactCommandRowVisible !== true) {
+      return "WebView Relief selected node popover compact command row was not visible";
+    }
+    if (
+      markers.topologyNodePopoverCompactCommandRowContract !==
+      "facts-and-actions-share-final-scanline"
+    ) {
+      return `WebView Relief selected node popover compact command row contract was ${markers.topologyNodePopoverCompactCommandRowContract || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactCommandRowGapToken !==
+      "--topology-node-popover-compact-command-row-gap"
+    ) {
+      return `WebView Relief selected node popover compact command row gap token was ${markers.topologyNodePopoverCompactCommandRowGapToken || "missing"}`;
+    }
+    if (markers.topologyNodePopoverCompactActionsContract !== "actions-share-command-row-with-facts") {
+      return `WebView Relief selected node popover compact actions contract was ${markers.topologyNodePopoverCompactActionsContract || "missing"}`;
+    }
+    const factsTop = Number(markers.topologyNodePopoverCompactRelationFactsTop || 0);
+    const actionsTop = Number(markers.topologyNodePopoverCompactActionsTop || 0);
+    if (
+      markers.topologyNodePopoverCompactRelationFactsVisible === true &&
+      markers.topologyNodePopoverCompactActionsVisible === true &&
+      Math.abs(factsTop - actionsTop) > 8
+    ) {
+      return `WebView Relief selected node popover compact facts/actions were not on one scanline (${factsTop} vs ${actionsTop})`;
+    }
     if (markers.topologyNodePopoverCompactMeaningContract !== "plain-language-meaning-before-typed-facts") {
       return `WebView Relief selected node popover compact meaning contract was ${markers.topologyNodePopoverCompactMeaningContract || "missing"}`;
     }
@@ -6341,6 +6368,20 @@ export function buildWebviewEvidencePayload(
             markers.topologyNodePopoverCompactMeaningContract ?? null,
           compactMeaningResponsiveContract:
             markers.topologyNodePopoverCompactMeaningResponsiveContract ?? null,
+          commandRowContract:
+            markers.topologyNodePopoverCompactCommandRowContract ?? null,
+          commandRowGapToken:
+            markers.topologyNodePopoverCompactCommandRowGapToken ?? null,
+          actionsContract:
+            markers.topologyNodePopoverCompactActionsContract ?? null,
+          factsAndActionsShareScanline:
+            markers.topologyNodePopoverCompactRelationFactsVisible === true &&
+            markers.topologyNodePopoverCompactActionsVisible === true
+              ? Math.abs(
+                markerNumber(markers, "topologyNodePopoverCompactRelationFactsTop") -
+                  markerNumber(markers, "topologyNodePopoverCompactActionsTop"),
+              ) <= 8
+              : null,
           relationshipContext: markers.topologyClickFocusRelationshipContext ?? null,
           relationshipContextSource:
             markers.topologyClickFocusRelationshipContextSource ?? null,

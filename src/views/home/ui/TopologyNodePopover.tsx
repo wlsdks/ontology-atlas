@@ -377,6 +377,7 @@ export function TopologyNodePopover({
         data-width-token="--topology-node-popover-fluid-width"
         data-rail-width-token="--topology-node-popover-rail-width"
         data-compact-gap-token="--topology-node-popover-chip-gap"
+        data-compact-command-row-gap-token="--topology-node-popover-compact-command-row-gap"
         data-compact-action-gap-token="--topology-node-popover-compact-action-gap"
         data-compact-action-size-token="--topology-node-popover-compact-action-size"
         data-compact-title-size-token="--topology-node-popover-compact-title-size"
@@ -397,12 +398,12 @@ export function TopologyNodePopover({
         data-compact-handoff-contract={handoffContract}
         data-compact-action-contract={collapsedActionContract}
         data-title-readability-contract="selected-node-title-readable"
-        data-compact-facts-layout-contract="facts-before-actions"
+        data-compact-facts-layout-contract="meaning-then-command-row"
         data-phone-layout-contract="title-row-before-actions"
         className={`flex min-w-0 w-[var(--topology-node-popover-fluid-width)] max-w-[var(--topology-node-popover-fluid-width)] flex-wrap items-start gap-[var(--topology-node-popover-chip-gap)] overflow-hidden rounded-[var(--topology-node-popover-radius)] border border-[color:var(--topology-node-popover-border)] bg-[color:var(--topology-node-popover-surface)] px-[var(--topology-node-popover-chip-padding-x)] py-[var(--topology-node-popover-chip-padding-y)] shadow-[var(--topology-node-popover-shadow)] max-[540px]:items-start lg:w-[var(--topology-node-popover-rail-width)] lg:max-w-[var(--topology-node-popover-rail-width)] ${className ?? ""}`}
       >
         <div
-          data-node-popover-compact-fact-priority="selected-node-facts-before-actions"
+          data-node-popover-compact-fact-priority="selected-node-meaning-before-command-row"
           data-phone-layout-contract="title-keeps-full-width-before-actions"
           className="min-w-0 basis-full"
         >
@@ -445,6 +446,14 @@ export function TopologyNodePopover({
               {significance.importanceLine}
             </p>
           ) : null}
+        </div>
+        <div
+          data-testid="topology-node-popover-compact-command-row"
+          data-compact-command-row-contract="facts-and-actions-share-final-scanline"
+          data-compact-command-row-gap-token="--topology-node-popover-compact-command-row-gap"
+          data-phone-layout-contract="actions-wrap-below-title"
+          className="flex min-w-0 w-full items-center justify-between gap-[var(--topology-node-popover-compact-command-row-gap)]"
+        >
           <p
             data-testid="topology-node-popover-compact-relation-facts"
             data-compact-relation-facts-contract="collapsed-dock-surfaces-typed-facts"
@@ -459,7 +468,7 @@ export function TopologyNodePopover({
             data-compact-relation-facts-text-token="--topology-node-popover-context-text"
             data-compact-relation-facts-size-token="--topology-node-popover-compact-fact-size"
             aria-label={`${relationFactLabel} · ${relationTypeLabel}`}
-            className="mt-1 inline-flex max-w-full items-center gap-1 overflow-hidden rounded-full border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-1.5 py-0.5 font-mono text-[length:var(--topology-node-popover-compact-fact-size)] text-[color:var(--topology-node-popover-context-text)] max-[540px]:hidden"
+            className="inline-flex max-w-full min-w-0 items-center gap-1 overflow-hidden rounded-full border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-1.5 py-0.5 font-mono text-[length:var(--topology-node-popover-compact-fact-size)] text-[color:var(--topology-node-popover-context-text)] max-[540px]:hidden"
           >
             <span className="shrink-0 uppercase tracking-[0.08em]">
               {labels.relationLensCompactFacts}
@@ -480,73 +489,73 @@ export function TopologyNodePopover({
             {" "}
             <span className="min-w-0 truncate tabular-nums">{relationTypeCount}</span>
           </p>
-        </div>
-        <div
-          data-testid="topology-node-popover-compact-actions"
-          data-compact-actions-layout-contract="actions-after-facts"
-          data-compact-actions-hierarchy-contract="primary-brief-then-quiet-chrome"
-          data-compact-action-gap-token="--topology-node-popover-compact-action-gap"
-          data-phone-layout-contract="actions-wrap-below-title"
-          className="flex min-w-0 w-full items-center justify-end gap-[var(--topology-node-popover-compact-action-gap)]"
-        >
-          {primaryAction ? (
+          <div
+            data-testid="topology-node-popover-compact-actions"
+            data-compact-actions-layout-contract="actions-share-command-row-with-facts"
+            data-compact-actions-hierarchy-contract="primary-brief-then-quiet-chrome"
+            data-compact-action-gap-token="--topology-node-popover-compact-action-gap"
+            data-phone-layout-contract="actions-wrap-below-title"
+            className="ml-auto flex min-w-0 shrink-0 items-center justify-end gap-[var(--topology-node-popover-compact-action-gap)]"
+          >
+            {primaryAction ? (
+              <button
+                type="button"
+                onClick={primaryAction.onClick}
+                aria-label={primaryAction.ariaLabel}
+                title={primaryAction.label}
+                data-testid="topology-node-popover-compact-brief-action"
+                data-popover-action={primaryAction.kind}
+                data-agent-handoff-action="copy-focus-brief"
+                data-popover-action-label-contract="icon-only-full-aria-title"
+                data-popover-action-full-label={primaryAction.label}
+                data-popover-action-compact-label={compactActionLabel(primaryAction)}
+                data-popover-action-responsive-label-contract="visible-above-480-icon-only-below"
+                data-popover-action-surface-token="--topology-node-popover-action-icon-surface"
+                data-popover-action-border-token="--topology-node-popover-action-icon-border"
+                data-popover-action-text-token="--topology-node-popover-action-text"
+                data-popover-action-hover-text-token="--topology-node-popover-action-hover-text"
+                data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
+                data-popover-action-size-token="--topology-node-popover-compact-action-size"
+                data-popover-action-gap-token="--topology-node-popover-compact-action-gap"
+                data-popover-action-padding-x-token="--topology-node-popover-compact-action-padding-x"
+                data-popover-action-min-width-token="--topology-node-popover-compact-handoff-action-min-width"
+                data-popover-action-max-width-token="--topology-node-popover-compact-handoff-action-max-width"
+                data-popover-action-label-size-token="--topology-node-popover-compact-action-label-size"
+                className="inline-flex h-[var(--topology-node-popover-compact-action-size)] min-w-[var(--topology-node-popover-compact-handoff-action-min-width)] max-w-[var(--topology-node-popover-compact-handoff-action-max-width)] shrink-0 items-center justify-center gap-[var(--topology-node-popover-compact-action-gap)] overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-icon-border)] bg-[color:var(--topology-node-popover-action-icon-surface)] px-[var(--topology-node-popover-compact-action-padding-x)] text-[length:var(--topology-node-popover-compact-action-label-size)] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)] max-[480px]:w-[var(--topology-node-popover-compact-action-size)] max-[480px]:min-w-[var(--topology-node-popover-compact-action-size)] max-[480px]:px-0"
+              >
+                <Clipboard size={14} aria-hidden />
+                <span className="min-w-0 truncate max-[480px]:sr-only">
+                  {compactActionLabel(primaryAction)}
+                </span>
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={primaryAction.onClick}
-              aria-label={primaryAction.ariaLabel}
-              title={primaryAction.label}
-              data-testid="topology-node-popover-compact-brief-action"
-              data-popover-action={primaryAction.kind}
-              data-agent-handoff-action="copy-focus-brief"
-              data-popover-action-label-contract="icon-only-full-aria-title"
-              data-popover-action-full-label={primaryAction.label}
-              data-popover-action-compact-label={compactActionLabel(primaryAction)}
-              data-popover-action-responsive-label-contract="visible-above-480-icon-only-below"
-              data-popover-action-surface-token="--topology-node-popover-action-icon-surface"
-              data-popover-action-border-token="--topology-node-popover-action-icon-border"
-              data-popover-action-text-token="--topology-node-popover-action-text"
-              data-popover-action-hover-text-token="--topology-node-popover-action-hover-text"
-              data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
-              data-popover-action-size-token="--topology-node-popover-compact-action-size"
-              data-popover-action-gap-token="--topology-node-popover-compact-action-gap"
-              data-popover-action-padding-x-token="--topology-node-popover-compact-action-padding-x"
-              data-popover-action-min-width-token="--topology-node-popover-compact-handoff-action-min-width"
-              data-popover-action-max-width-token="--topology-node-popover-compact-handoff-action-max-width"
-              data-popover-action-label-size-token="--topology-node-popover-compact-action-label-size"
-              className="inline-flex h-[var(--topology-node-popover-compact-action-size)] min-w-[var(--topology-node-popover-compact-handoff-action-min-width)] max-w-[var(--topology-node-popover-compact-handoff-action-max-width)] shrink-0 items-center justify-center gap-[var(--topology-node-popover-compact-action-gap)] overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-icon-border)] bg-[color:var(--topology-node-popover-action-icon-surface)] px-[var(--topology-node-popover-compact-action-padding-x)] text-[length:var(--topology-node-popover-compact-action-label-size)] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)] max-[480px]:w-[var(--topology-node-popover-compact-action-size)] max-[480px]:min-w-[var(--topology-node-popover-compact-action-size)] max-[480px]:px-0"
+              onClick={onToggleCollapsed}
+              aria-label={labels.expand}
+              data-node-popover-toggle="expand"
+              data-compact-action-contract="quiet-inline-disclosure"
+              data-chrome-action-treatment="quiet-inline-disclosure"
+              data-chrome-action-text-token="--topology-node-popover-chrome-action-text"
+              data-chrome-action-hover-text-token="--topology-node-popover-chrome-action-hover-text"
+              data-chrome-action-label-size-token="--topology-node-popover-compact-chrome-label-size"
+              className="inline-flex h-[var(--topology-node-popover-compact-action-size)] shrink-0 items-center justify-center gap-1 rounded-md px-1.5 text-[length:var(--topology-node-popover-compact-chrome-label-size)] text-[color:var(--topology-node-popover-chrome-action-text)] transition-colors hover:text-[color:var(--topology-node-popover-chrome-action-hover-text)] max-[480px]:w-[var(--topology-node-popover-compact-action-size)] max-[480px]:px-0"
             >
-              <Clipboard size={14} aria-hidden />
-              <span className="min-w-0 truncate max-[480px]:sr-only">
-                {compactActionLabel(primaryAction)}
-              </span>
+              <ChevronUp size={13} aria-hidden />
+              <span className="max-[480px]:sr-only">{labels.expand}</span>
             </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={onToggleCollapsed}
-            aria-label={labels.expand}
-            data-node-popover-toggle="expand"
-            data-compact-action-contract="quiet-inline-disclosure"
-            data-chrome-action-treatment="quiet-inline-disclosure"
-            data-chrome-action-text-token="--topology-node-popover-chrome-action-text"
-            data-chrome-action-hover-text-token="--topology-node-popover-chrome-action-hover-text"
-            data-chrome-action-label-size-token="--topology-node-popover-compact-chrome-label-size"
-            className="inline-flex h-[var(--topology-node-popover-compact-action-size)] shrink-0 items-center justify-center gap-1 rounded-md px-1.5 text-[length:var(--topology-node-popover-compact-chrome-label-size)] text-[color:var(--topology-node-popover-chrome-action-text)] transition-colors hover:text-[color:var(--topology-node-popover-chrome-action-hover-text)] max-[480px]:w-[var(--topology-node-popover-compact-action-size)] max-[480px]:px-0"
-          >
-            <ChevronUp size={13} aria-hidden />
-            <span className="max-[480px]:sr-only">{labels.expand}</span>
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={labels.close}
-            data-node-popover-close="true"
-            data-chrome-action-text-token="--topology-node-popover-chrome-action-text"
-            data-chrome-action-hover-text-token="--topology-node-popover-chrome-action-hover-text"
-            className="shrink-0 rounded-md p-1 text-[color:var(--topology-node-popover-chrome-action-text)] transition-colors hover:text-[color:var(--topology-node-popover-chrome-action-hover-text)]"
-          >
-            <X size={14} aria-hidden />
-          </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={labels.close}
+              data-node-popover-close="true"
+              data-chrome-action-text-token="--topology-node-popover-chrome-action-text"
+              data-chrome-action-hover-text-token="--topology-node-popover-chrome-action-hover-text"
+              className="shrink-0 rounded-md p-1 text-[color:var(--topology-node-popover-chrome-action-text)] transition-colors hover:text-[color:var(--topology-node-popover-chrome-action-hover-text)]"
+            >
+              <X size={14} aria-hidden />
+            </button>
+          </div>
         </div>
       </div>
     );

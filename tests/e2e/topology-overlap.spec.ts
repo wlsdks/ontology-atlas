@@ -2281,11 +2281,19 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
       "data-compact-facts-layout-contract",
-      "facts-before-actions",
+      "meaning-then-command-row",
+    );
+    await expect(page.getByTestId("topology-node-popover-compact-command-row")).toHaveAttribute(
+      "data-compact-command-row-contract",
+      "facts-and-actions-share-final-scanline",
+    );
+    await expect(page.getByTestId("topology-node-popover-compact-command-row")).toHaveAttribute(
+      "data-compact-command-row-gap-token",
+      "--topology-node-popover-compact-command-row-gap",
     );
     await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
       "data-compact-actions-layout-contract",
-      "actions-after-facts",
+      "actions-share-command-row-with-facts",
     );
     const selectedNodeCountLine = page.locator("[data-selected-node-count-line]");
     const selectedNodeCountLineFits = await selectedNodeCountLine.evaluate(
@@ -3384,15 +3392,23 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   );
   await expect(popover).toHaveAttribute(
     "data-compact-facts-layout-contract",
-    "facts-before-actions",
+    "meaning-then-command-row",
   );
   await expect(popover).toHaveAttribute(
     "data-phone-layout-contract",
     "title-row-before-actions",
   );
+  await expect(page.getByTestId("topology-node-popover-compact-command-row")).toHaveAttribute(
+    "data-compact-command-row-contract",
+    "facts-and-actions-share-final-scanline",
+  );
+  await expect(page.getByTestId("topology-node-popover-compact-command-row")).toHaveAttribute(
+    "data-compact-command-row-gap-token",
+    "--topology-node-popover-compact-command-row-gap",
+  );
   await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
     "data-compact-actions-layout-contract",
-    "actions-after-facts",
+    "actions-share-command-row-with-facts",
   );
   await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
     "data-compact-actions-hierarchy-contract",
@@ -3449,6 +3465,7 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   ).toBe(false);
   const popoverRect = await rectOf(popover);
   const titleRect = await rectOf(popoverTitle);
+  const commandRowRect = await rectOf(page.getByTestId("topology-node-popover-compact-command-row"));
   const actionRect = await rectOf(page.getByTestId("topology-node-popover-compact-actions"));
   expect(
     titleRect.right,
@@ -3460,6 +3477,15 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   ).toBeGreaterThanOrEqual(titleRect.bottom - 1);
   const compactRelationFacts = page.getByTestId("topology-node-popover-compact-relation-facts");
   await expect(compactRelationFacts).toBeVisible();
+  const compactRelationFactsRect = await rectOf(compactRelationFacts);
+  expect(
+    Math.abs(compactRelationFactsRect.top - actionRect.top),
+    "compact facts and actions should share the final scanline",
+  ).toBeLessThanOrEqual(6);
+  expect(
+    commandRowRect.bottom,
+    "compact command row should keep the popover height tight",
+  ).toBeLessThanOrEqual(popoverRect.bottom - 8);
   await expect(compactRelationFacts).toHaveAttribute(
     "data-compact-relation-facts-contract",
     "collapsed-dock-surfaces-typed-facts",
