@@ -3999,6 +3999,12 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-visibility-style-write-contract") || "",
                                   topologyVisibleCardStateCacheContract:
                                     skeletonCardsLayer?.getAttribute("data-visible-card-state-cache-contract") || "",
+                                  topologyVisibleCardRectReadPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-visible-card-rect-read-policy") || "",
+                                  topologyVisibleCardRectReadCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-visible-card-rect-read-count") || "0"),
+                                  topologyVisibleCardHiddenRectSkipCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-visible-card-hidden-rect-skip-count") || "0"),
                                   topologyRelationLabelBlockerContract:
                                     skeletonCardsLayer?.getAttribute("data-relation-label-blocker-contract") || "",
                                   topologyRelationLabelBlockerSource:

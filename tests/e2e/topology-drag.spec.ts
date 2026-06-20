@@ -47,6 +47,10 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
     "rect-and-visibility-single-pass",
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-visible-card-rect-read-policy",
+    "visible-only-after-style-check",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-active-drag-cluster-size",
     /^[2-9]\d*$/,
   );

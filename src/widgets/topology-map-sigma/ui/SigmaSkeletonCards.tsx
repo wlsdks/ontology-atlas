@@ -3227,14 +3227,23 @@ export function SigmaSkeletonCards({
     const visibleCardRectCache = new Map<
       HTMLElement,
       {
-        rect: { left: number; top: number; right: number; bottom: number };
+        rect: { left: number; top: number; right: number; bottom: number } | null;
         visible: boolean;
       }
     >();
+    let visibleCardRectReadCount = 0;
+    let visibleCardHiddenRectSkipCount = 0;
     const readVisibleCardRect = (el: HTMLElement) => {
       const cached = visibleCardRectCache.get(el);
       if (cached) return cached;
       const visible = isSkeletonCardVisibleForStats(el);
+      if (!visible) {
+        visibleCardHiddenRectSkipCount += 1;
+        const next = { rect: null, visible };
+        visibleCardRectCache.set(el, next);
+        return next;
+      }
+      visibleCardRectReadCount += 1;
       const rect = el.getBoundingClientRect();
       const next = {
         rect: {
@@ -3250,7 +3259,7 @@ export function SigmaSkeletonCards({
     };
     const recordRelationLabelCardBlocker = (el: HTMLElement) => {
       const next = readVisibleCardRect(el);
-      if (!next.visible) return false;
+      if (!next.visible || !next.rect) return false;
       relationLabelCardBlockers.push(next.rect);
       return true;
     };
@@ -3406,7 +3415,7 @@ export function SigmaSkeletonCards({
       let readLayerClearedCount = 0;
       for (const el of orderedEls) {
         const cached = readVisibleCardRect(el);
-        if (!cached.visible) continue;
+        if (!cached.visible || !cached.rect) continue;
         const rect = cached.rect;
         const blocker = fixedSurfaceRects.find((surface) => rectsOverlap(rect, surface));
         if (!blocker) continue;
@@ -3486,6 +3495,11 @@ export function SigmaSkeletonCards({
     container.dataset.relationLabelBlockerCount = String(
       relationLabelCardBlockers.length,
     );
+    container.dataset.visibleCardRectReadPolicy = 'visible-only-after-style-check';
+    container.dataset.visibleCardRectReadCount = String(visibleCardRectReadCount);
+    container.dataset.visibleCardHiddenRectSkipCount = String(
+      visibleCardHiddenRectSkipCount,
+    );
     container.dataset.totalCardCount = String(orderedEls.length);
     container.dataset.dimAnchorOpacity = DIM_ANCHOR_OPACITY;
     container.dataset.dimChipOpacity = DIM_CHIP_OPACITY;
@@ -3557,7 +3571,7 @@ export function SigmaSkeletonCards({
         return cached;
       }
       const visibleCached = visibleCardRectCache.get(el);
-      if (visibleCached?.visible) {
+      if (visibleCached?.visible && visibleCached.rect) {
         connectorCardRectHitCount += 1;
         connectorCardRectCache.set(el, visibleCached.rect);
         return visibleCached.rect;
@@ -3911,7 +3925,11 @@ export function SigmaSkeletonCards({
       container.dataset.connectorRectCacheSize = String(connectorCardRectCache.size);
       container.dataset.connectorRectCacheSeedContract =
         'visible-card-rects-seed-connector-cache';
-      container.dataset.connectorRectCacheSeedCount = String(visibleCardRectCache.size);
+      container.dataset.connectorRectCacheSeedCount = String(
+        Array.from(visibleCardRectCache.values()).filter(
+          (entry) => entry.visible && entry.rect,
+        ).length,
+      );
       container.dataset.connectorRectCacheReadCount = String(connectorCardRectReadCount);
       container.dataset.connectorRectCacheHitCount = String(connectorCardRectHitCount);
       container.dataset.connectorRectCacheAccounting = 'reads-plus-hits';

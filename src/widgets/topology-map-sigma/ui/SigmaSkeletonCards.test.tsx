@@ -3376,6 +3376,91 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("숨겨진 context 카드가 많은 focus 에서 visibility pass 는 rect 측정을 건너뛴다", async () => {
+    const graph = makeGraph();
+    const hiddenContextCards = Array.from({ length: 18 }, (_, index) => {
+      const id = `capability:hidden-${index}`;
+      graph.addNode(id, {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: 520 + index * 8,
+        y: 420 + index * 6,
+        label: `Hidden Context ${index}`,
+      });
+      return {
+        id,
+        title: `Hidden Context ${index}`,
+        kind: "capability" as const,
+        tier: 2 as const,
+      };
+    });
+    graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (!slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 800,
+            bottom: 600,
+            width: 800,
+            height: 600,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        const attrs = graph.getNodeAttributes(slug);
+        const center = stubSigma.graphToViewport(attrs);
+        const width = 120;
+        const height = 40;
+        return {
+          left: center.x - width / 2,
+          top: center.y - height / 2,
+          right: center.x + width / 2,
+          bottom: center.y + height / 2,
+          width,
+          height,
+          x: center.x - width / 2,
+          y: center.y - height / 2,
+          toJSON: () => ({}),
+        };
+      });
+
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[...CARDS, ...hiddenContextCards]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      await waitFor(() => {
+        expect(layer).toHaveAttribute(
+          "data-visible-card-rect-read-policy",
+          "visible-only-after-style-check",
+        );
+        expect(
+          Number(layer.getAttribute("data-visible-card-hidden-rect-skip-count")),
+        ).toBeGreaterThan(0);
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("선택의 자식 카드로 SVG 커넥터 path 를 그린다 (MindNode S-커브)", () => {
     const graph = makeGraph();
     graph.addNode("capability:c1", {
