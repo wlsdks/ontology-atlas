@@ -4048,6 +4048,8 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-path-endpoint-ms") || "0"),
                                   topologyCardPlacementSubphaseOverviewDomainMs:
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-overview-domain-ms") || "0"),
+                                  topologyOverviewDomainRectReadPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-overview-domain-rect-read-policy") || "",
                                   topologyCardPlacementSubphaseFixedRestoreMs:
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-fixed-restore-ms") || "0"),
                                   topologyCardPlacementSizeCacheContract:

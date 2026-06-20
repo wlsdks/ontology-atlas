@@ -1321,31 +1321,20 @@ function separateOverviewDomainCards(
   orderedEls: readonly HTMLElement[],
   containerRect: DOMRect,
   fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>,
+  readCardPlacementFrameRect: (el: HTMLElement) => ConnectorRect,
 ): number {
-  const records = orderedEls
-    .filter((el) => {
-      if (el.dataset.tier !== '1' || el.dataset.dockParent) return false;
-      if (el.dataset.surfaceHidden === 'true') return false;
-      const style = getComputedStyle(el);
-      if (style.visibility === 'hidden' || Number(style.opacity || '1') <= 0.01) {
-        return false;
-      }
-      const rect = el.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    })
-    .map((el) => {
-      const rect = el.getBoundingClientRect();
-      return {
-        el,
-        rect: {
-          left: rect.left - containerRect.left,
-          top: rect.top - containerRect.top,
-          right: rect.right - containerRect.left,
-          bottom: rect.bottom - containerRect.top,
-        },
-      };
-    })
-    .sort((a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left);
+  const records: Array<{ el: HTMLElement; rect: ConnectorRect }> = [];
+  for (const el of orderedEls) {
+    if (el.dataset.tier !== '1' || el.dataset.dockParent) continue;
+    if (el.dataset.surfaceHidden === 'true') continue;
+    if (el.style.visibility === 'hidden' || Number(el.style.opacity || '1') <= 0.01) {
+      continue;
+    }
+    const rect = readCardPlacementFrameRect(el);
+    if (rect.right <= rect.left || rect.bottom <= rect.top) continue;
+    records.push({ el, rect });
+  }
+  records.sort((a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left);
 
   const accepted: Array<{ left: number; top: number; right: number; bottom: number }> =
     [];
@@ -3434,10 +3423,17 @@ export function SigmaSkeletonCards({
     );
     container.dataset.overviewDomainSeparationContract =
       'project-overview-domain-labels-do-not-overlap';
+    container.dataset.overviewDomainRectReadPolicy =
+      'reuse-pass1-card-placement-frame-rects';
     container.dataset.overviewDomainSeparationActive =
       projectOverviewDomainSeparationActive ? 'true' : 'false';
     const overviewDomainSeparatedCount = projectOverviewDomainSeparationActive
-      ? separateOverviewDomainCards(orderedEls, containerRect, fixedSurfaceRects)
+      ? separateOverviewDomainCards(
+          orderedEls,
+          containerRect,
+          fixedSurfaceRects,
+          readCardPlacementFrameRect,
+        )
       : 0;
     container.dataset.overviewDomainSeparatedCount = String(
       overviewDomainSeparatedCount,

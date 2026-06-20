@@ -182,6 +182,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-overview-domain-separation-contract",
       "project-overview-domain-labels-do-not-overlap",
     );
+    expect(layer).toHaveAttribute(
+      "data-overview-domain-rect-read-policy",
+      "reuse-pass1-card-placement-frame-rects",
+    );
     expect(layer).toHaveAttribute("data-overview-domain-separation-active", "true");
     expect(layer).toHaveAttribute("data-overview-domain-separated-count", "0");
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
