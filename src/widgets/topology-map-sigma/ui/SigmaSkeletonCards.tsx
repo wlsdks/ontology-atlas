@@ -5045,6 +5045,11 @@ export function SigmaSkeletonCards({
                 ? 'selected-card-kind-title-relation-summary'
                 : undefined
             }
+            data-card-accessible-child-policy={
+              selectedRelationSummaryOwnsMeta
+                ? 'single-button-label-owns-visible-fragments'
+                : undefined
+            }
             aria-label={selectedCardAccessibleLabel}
             onClick={(event) => {
               event.stopPropagation();
@@ -5172,7 +5177,7 @@ export function SigmaSkeletonCards({
               clearActiveDragCluster();
             }}
             onLostPointerCapture={() => releaseDrag(nodeId)}
-            title={card.title}
+            title={selectedCardAccessibleLabel ?? card.title}
             style={
               {
                 zIndex: dragging
@@ -5273,7 +5278,8 @@ export function SigmaSkeletonCards({
               data-surface-token="--topology-card-kind-surface"
               data-border-token="--card-kind-border"
               data-accent-token="--card-kind-accent"
-              aria-label={kindDescription}
+              aria-label={selectedRelationSummaryOwnsMeta ? undefined : kindDescription}
+              aria-hidden={selectedRelationSummaryOwnsMeta ? 'true' : undefined}
               title={kindDescription}
               className="relative inline-flex h-[1.42em] max-w-[5.8em] shrink-0 items-center justify-center truncate rounded-[0.38em] border border-[color:var(--card-kind-border)] bg-[color:var(--topology-card-kind-surface)] px-[0.36em] text-[0.62em] font-semibold leading-none text-[color:var(--card-kind-accent)]"
               style={{
@@ -5299,6 +5305,7 @@ export function SigmaSkeletonCards({
                   : 'title-shrinks-before-meta-chips'
               }
               data-full-title={card.title}
+              aria-hidden={selectedRelationSummaryOwnsMeta ? 'true' : undefined}
               className="relative min-w-0 truncate"
             >
               {card.title}
@@ -5348,7 +5355,12 @@ export function SigmaSkeletonCards({
                 data-relation-summary-text-token="--topology-relation-summary-text"
                 data-relation-count={selectedRelationSummary.relationCount}
                 data-relation-type-count={selectedRelationSummary.typeCount}
-                aria-label={selectedRelationSummaryText ?? undefined}
+                aria-label={
+                  selectedRelationSummaryOwnsMeta
+                    ? undefined
+                    : selectedRelationSummaryText ?? undefined
+                }
+                aria-hidden={selectedRelationSummaryOwnsMeta ? 'true' : undefined}
                 title={selectedRelationSummaryText ?? undefined}
                 className="relative ml-0.5 inline-flex h-[1.55em] shrink-0 items-center rounded-full border border-[color:var(--topology-relation-summary-border)] bg-[color:var(--topology-relation-summary-surface)] px-[0.52em] font-mono text-[0.72em] leading-none text-[color:var(--topology-relation-summary-text)]"
               >

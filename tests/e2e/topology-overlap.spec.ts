@@ -392,6 +392,10 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
     "selected-card-kind-title-relation-summary",
   );
   await expect(selectedCard).toHaveAttribute(
+    "data-card-accessible-child-policy",
+    "single-button-label-owns-visible-fragments",
+  );
+  await expect(selectedCard).toHaveAttribute(
     "aria-label",
     /Views.+\d+ relations? · \d+ types? · inspect/,
   );
@@ -433,6 +437,13 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
     "data-relation-summary-visible-text",
     /\d+ relations?/,
   );
+  await expect(selectedTitle).toHaveAttribute("aria-hidden", "true");
+  await expect(selectedCard.locator("[data-card-kind-badge]")).toHaveAttribute(
+    "aria-hidden",
+    "true",
+  );
+  await expect(summary).toHaveAttribute("aria-hidden", "true");
+  await expect(summary).not.toHaveAttribute("aria-label");
   await expect(summary).not.toHaveText(/^\d+f · \d+t$/);
 }
 

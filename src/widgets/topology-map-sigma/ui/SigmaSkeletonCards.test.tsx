@@ -448,9 +448,35 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "selected-card-keeps-action-when-map-labels-collapse",
     );
     expect(summary).toHaveAttribute("data-relation-summary-visible-text", "1 relation");
-    expect(summary).toHaveAttribute("aria-label", "1 relation · 1 type · inspect");
+    expect(summary).toHaveAttribute("aria-hidden", "true");
+    expect(summary).not.toHaveAttribute("aria-label");
     expect(summary).toHaveAttribute("title", "1 relation · 1 type · inspect");
     expect(summary).toHaveTextContent("1 relation");
+    const selectedCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
+    expect(selectedCard).toHaveAttribute(
+      "data-card-accessible-label-contract",
+      "selected-card-kind-title-relation-summary",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-accessible-child-policy",
+      "single-button-label-owns-visible-fragments",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "aria-label",
+      "project · Atlas · 1 relation · 1 type · inspect",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "title",
+      "project · Atlas · 1 relation · 1 type · inspect",
+    );
+    expect(selectedCard?.querySelector("[data-card-kind-badge]")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+    expect(selectedCard?.querySelector("[data-card-title]")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
   });
 
   it("health repair target 을 카드 표면의 audit target 으로 표시한다", () => {
