@@ -611,6 +611,49 @@ describe("TopologyAnalysisBar", () => {
     }
   });
 
+  it("keeps the unselected focus guidance as a compact map support rail", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="focus"
+        summary={{
+          mode: "focus",
+          primaryMetric: 22,
+          secondaryMetric: 504,
+          needsSelection: true,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const panel = screen.getByTestId("topology-analysis-panel");
+    expect(panel).toHaveAttribute("data-analysis-mode", "focus");
+    expect(panel).toHaveAttribute("data-attention-role", "support");
+    expect(panel).toHaveAttribute("data-panel-width-policy", "mode-compact");
+    expect(panel).toHaveAttribute("data-panel-width-target", "focus-support-rail");
+    expect(panel).toHaveAttribute(
+      "data-panel-width-contract",
+      "focus-support-rail-max-360-map-centered",
+    );
+    expect(panel).toHaveAttribute(
+      "data-panel-width-css",
+      "var(--topology-panel-focus-rail-width)",
+    );
+    expect(panel).toHaveAttribute(
+      "data-panel-width-token",
+      "--topology-panel-focus-rail-width",
+    );
+    expect(screen.getByTestId("topology-focus-review-order")).toBeVisible();
+  });
+
   it("keeps analysis modes reachable on mobile while preserving the desktop breakpoint", () => {
     render(
       <TopologyAnalysisBar

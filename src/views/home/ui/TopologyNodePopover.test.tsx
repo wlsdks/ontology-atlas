@@ -170,6 +170,8 @@ describe("TopologyNodePopover", () => {
     expect(popover).toHaveAttribute("data-attention-role", "supporting-detail");
     expect(popover).toHaveAttribute("data-focus-primary", "linked-focus-cluster");
     expect(popover).toHaveAttribute("data-hierarchy-contract", "click-focus-detail-support");
+    expect(popover).toHaveAccessibleName("역량: MCP Server");
+    expect(popover).toHaveAttribute("data-selected-node-readable-label", "역량: MCP Server");
     expect(popover).toHaveAttribute("data-density", "readable");
     expect(popover).toHaveAttribute("data-size-policy", "inspector-rail");
     expect(popover).toHaveAttribute(
@@ -1349,6 +1351,21 @@ describe("TopologyNodePopover", () => {
       "text-[color:var(--topology-node-popover-kind-text)]",
     );
     expect(kindLabel?.className).not.toContain("var(--color-text-quaternary)");
+    expect(
+      screen
+        .getByTestId("topology-node-popover")
+        .querySelector("[data-selected-node-kind-title-separator]"),
+    ).toHaveAttribute("data-selected-node-kind-title-separator", "kind-to-title");
+    expect(screen.getByTestId("topology-node-popover")).toHaveAccessibleName(
+      "역량: MCP Server",
+    );
+    expect(screen.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-selected-node-readable-label",
+      "역량: MCP Server",
+    );
+    expect(screen.getByTestId("topology-node-popover")).toHaveTextContent(
+      "역량 · MCP Server",
+    );
     const title = screen.getByTestId("topology-node-popover-title");
     expect(title).toHaveAttribute(
       "data-title-readability-contract",

@@ -752,7 +752,9 @@ function SigmaTopologyImpl({
     const fit = resolveSafeAreaCameraFit({
       bbox: { minX, minY, maxX, maxY },
       viewport: { width, height },
-      insets: resolveSkeletonSafeInsets(width, Boolean(selectedSlugRef.current)),
+      insets: resolveSkeletonSafeInsets(width, Boolean(selectedSlugRef.current), {
+        compactFocusRail: selectedFocusCenterActive && !selectedSlugRef.current,
+      }),
     });
     const camera = renderer.getCamera();
     const state = camera.getState();
@@ -775,7 +777,7 @@ function SigmaTopologyImpl({
       ),
     );
     return true;
-  }, [cameraMotion, reduceMotionRef]);
+  }, [cameraMotion, reduceMotionRef, selectedFocusCenterActive]);
 
   useEffect(() => {
     const rerunSelectedFocusFit = () => {

@@ -2432,6 +2432,45 @@ for (const viewport of VIEWPORTS) {
     );
   });
 
+  test(`Relief unselected focus keeps the support rail compact and map centered — ${viewport.label}`, async ({
+    page,
+  }) => {
+    await openRelief(page, viewport, {
+      mode: "focus",
+      requireHud: true,
+    });
+
+    const panel = page.getByTestId("topology-analysis-panel");
+    await expect(panel).toHaveAttribute("data-analysis-mode", "focus");
+    await expect(panel).toHaveAttribute("data-panel-width-target", "focus-support-rail");
+    await expect(panel).toHaveAttribute(
+      "data-panel-width-token",
+      "--topology-panel-focus-rail-width",
+    );
+    await expect(panel).toHaveAttribute(
+      "data-panel-width-contract",
+      "focus-support-rail-max-360-map-centered",
+    );
+    const panelRect = await rectOf(panel);
+    expect(
+      panelRect.width,
+      `unselected focus support rail should not dominate the map at ${viewport.label}`,
+    ).toBeLessThanOrEqual(viewport.width >= 2400 ? 430 : 390);
+    expectCardsClear(await visibleCardRects(page), viewport, panelRect, null);
+
+    if (viewport.width >= 1920) {
+      const projectCard = page.locator('[data-skeleton-card][data-tier="0"]');
+      const projectRect = await rectOf(projectCard);
+      const projectCenterDelta = Math.round(
+        projectRect.left + projectRect.width / 2 - viewport.width / 2,
+      );
+      expect(
+        Math.abs(projectCenterDelta),
+        `unselected focus project anchor should stay near viewport center at ${viewport.label}`,
+      ).toBeLessThanOrEqual(Math.round(viewport.width * 0.13));
+    }
+  });
+
   test(`Relief skeleton cards remain separated after dragging a card — ${viewport.label}`, async ({
     page,
   }) => {
@@ -3437,6 +3476,14 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   await expect(popover.locator("[data-selected-node-kind-label]").first()).toHaveAttribute(
     "data-kind-size-token",
     "--topology-node-popover-compact-kind-size",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-selected-node-readable-label",
+    /.+: .+/,
+  );
+  await expect(popover.locator("[data-selected-node-kind-title-separator]")).toHaveAttribute(
+    "data-selected-node-kind-title-separator",
+    "kind-to-title",
   );
   await expect(popover).toHaveAttribute(
     "data-title-readability-contract",

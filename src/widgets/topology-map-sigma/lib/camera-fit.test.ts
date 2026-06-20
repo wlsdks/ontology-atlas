@@ -44,6 +44,18 @@ describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
     expect(resolveSkeletonSafeInsets(2560, false).left).toBeCloseTo(640 * 1.32);
   });
 
+  it('선택 전 focus 안내 rail 은 overview HUD 보다 좁은 safe inset 을 쓴다', () => {
+    expect(
+      resolveSkeletonSafeInsets(1920, false, { compactFocusRail: true }).left,
+    ).toBeCloseTo(360 * 1.18);
+    expect(
+      resolveSkeletonSafeInsets(2560, false, { compactFocusRail: true }).left,
+    ).toBeCloseTo(360 * 1.32);
+    expect(
+      resolveSkeletonSafeInsets(1920, false, { compactFocusRail: true }).left,
+    ).toBeLessThan(resolveSkeletonSafeInsets(1920, false).left);
+  });
+
   it('선택 focus rail 이 활성일 때는 좌측 overview HUD 대신 compact rail 폭만 예약한다', () => {
     const insets = resolveSkeletonSafeInsets(1512, true, { selectedFanoutRows: 4 });
     expect(insets.left).toBeLessThanOrEqual(360);

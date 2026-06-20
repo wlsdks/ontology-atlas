@@ -259,6 +259,7 @@
       var(--topology-panel-path-rail-width),
       calc(100vw - var(--topology-panel-phone-utility-rail-reserve))
     );
+    --topology-panel-focus-rail-width: clamp(292px, 16vw, 320px);
     --topology-panel-standard-width: clamp(460px, 31vw, 560px);
     --topology-panel-standard-reserved-width: clamp(440px, calc(44vw - 190px), 560px);
     --topology-panel-compact-width: clamp(380px, calc(50vw - 270px), 560px);

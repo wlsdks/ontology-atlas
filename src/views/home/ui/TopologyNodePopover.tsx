@@ -327,12 +327,14 @@ export function TopologyNodePopover({
     .map(({ label, count }) => `${label} ${count}`)
     .join(" · ");
   const selectedNodeSummary = `${focus.kind} ${focus.id} · ${focus.title}`;
+  const selectedNodeReadableLabel = `${focusKindLabel}: ${focus.title}`;
   const selectedNodeAttributes = {
     "data-selected-node-id": focus.id,
     "data-selected-node-kind": focus.kind,
     "data-selected-node-title": focus.title,
     "data-selected-node-source": focus.sourceSlug ?? "",
     "data-selected-node-summary": selectedNodeSummary,
+    "data-selected-node-readable-label": selectedNodeReadableLabel,
   };
   const primaryAction = actions[0] ?? null;
   const handoffContract =
@@ -369,7 +371,7 @@ export function TopologyNodePopover({
     return (
       <div
         role="dialog"
-        aria-label={focus.title}
+        aria-label={selectedNodeReadableLabel}
         {...selectedNodeAttributes}
         data-testid="topology-node-popover"
         data-topology-node-popover="selected-node-inspector"
@@ -421,6 +423,12 @@ export function TopologyNodePopover({
           >
             {focusKindLabel}
           </p>
+          <span
+            data-selected-node-kind-title-separator="kind-to-title"
+            className="sr-only"
+          >
+            {" · "}
+          </span>
           <h2
             data-testid="topology-node-popover-title"
             data-title-readability-contract="selected-node-title-readable"
@@ -590,7 +598,7 @@ export function TopologyNodePopover({
       ref={expandedShellRef}
       role="dialog"
       tabIndex={-1}
-      aria-label={focus.title}
+      aria-label={selectedNodeReadableLabel}
       {...selectedNodeAttributes}
       data-testid="topology-node-popover"
       data-topology-node-popover="selected-node-inspector"
@@ -640,6 +648,12 @@ export function TopologyNodePopover({
           >
             {focusKindLabel}
           </p>
+          <span
+            data-selected-node-kind-title-separator="kind-to-title"
+            className="sr-only"
+          >
+            {" · "}
+          </span>
           <h2
             data-testid="topology-node-popover-title"
             data-title-readability-contract="selected-node-title-readable"

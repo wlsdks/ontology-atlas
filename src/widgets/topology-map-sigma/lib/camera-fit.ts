@@ -47,6 +47,7 @@ const SELECTED_FANOUT_ROW_TOP_INSET = 32;
 const BASE_TOP_INSET = 176;
 const BASE_BOTTOM_INSET = 136;
 const BASE_LEFT_HUD_INSET = 640;
+const FOCUS_SUPPORT_RAIL_LEFT_INSET = 360;
 const MAX_LEFT_HUD_VIEWPORT_RATIO = 0.46;
 const SELECTED_FOCUS_LEFT_RAIL_INSET = 320;
 const COMPACT_SELECTED_FOCUS_LEFT_RAIL_INSET = 420;
@@ -59,6 +60,8 @@ export interface SkeletonSafeInsetOptions {
    * fan-out 안전값을 사용해 호출부 마이그레이션 중에도 잘림을 피한다.
    */
   selectedFanoutRows?: number;
+  /** Focus mode before selection uses a compact guidance rail, not the overview HUD. */
+  compactFocusRail?: boolean;
 }
 
 export interface SelectedFocusCameraFitInput {
@@ -139,6 +142,11 @@ export function resolveSkeletonSafeInsets(
           : SELECTED_FOCUS_LEFT_RAIL_INSET * scale,
         Math.max(48 * scale, viewportWidth * MAX_SELECTED_LEFT_RAIL_VIEWPORT_RATIO),
       )
+    : options.compactFocusRail
+      ? Math.min(
+          FOCUS_SUPPORT_RAIL_LEFT_INSET * scale,
+          Math.max(48 * scale, viewportWidth * MAX_LEFT_HUD_VIEWPORT_RATIO),
+        )
     : Math.min(
         BASE_LEFT_HUD_INSET * scale,
         Math.max(48 * scale, viewportWidth * MAX_LEFT_HUD_VIEWPORT_RATIO),
