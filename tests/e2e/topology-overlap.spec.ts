@@ -4534,6 +4534,11 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-remainder-text-token",
     "--topology-node-popover-remainder-text",
   );
+  await expect(relationRemainder).toHaveAttribute(
+    "data-remainder-visibility-contract",
+    "footer-owns-visible-overflow-action",
+  );
+  await expect(relationRemainder).toHaveClass(/sr-only/);
   await expect(page.locator("[data-footer-hidden-count]").first()).toHaveAttribute(
     "data-footer-count-text-token",
     "--topology-node-popover-footer-count-text",

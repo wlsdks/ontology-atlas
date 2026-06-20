@@ -1387,11 +1387,12 @@ export function TopologyNodePopover({
       {hiddenConnectionCount > 0 ? (
           <p
             data-relation-hidden-remainder
+            data-remainder-visibility-contract="footer-owns-visible-overflow-action"
             data-remainder-text-token="--topology-node-popover-remainder-text"
             data-remainder-margin-top-token="--topology-node-popover-remainder-margin-top"
             data-remainder-padding-x-token="--topology-node-popover-remainder-padding-x"
             data-remainder-size-token="--topology-node-popover-remainder-size"
-            className="mt-[var(--topology-node-popover-remainder-margin-top)] px-[var(--topology-node-popover-remainder-padding-x)] text-[length:var(--topology-node-popover-remainder-size)] text-[color:var(--topology-node-popover-remainder-text)]"
+            className="sr-only"
           >
             +{hiddenConnectionCount} {labels.moreSuffix}
           </p>

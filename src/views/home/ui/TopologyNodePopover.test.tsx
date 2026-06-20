@@ -911,6 +911,15 @@ describe("TopologyNodePopover", () => {
     );
     expect(openFullDetail).toHaveTextContent("+77 더");
     expect(openFullDetail.querySelector(".truncate")).toHaveTextContent("전체 상세");
+    const relationHiddenRemainder = document.querySelector(
+      "[data-relation-hidden-remainder]",
+    );
+    expect(relationHiddenRemainder).toHaveAttribute(
+      "data-remainder-visibility-contract",
+      "footer-owns-visible-overflow-action",
+    );
+    expect(relationHiddenRemainder?.className).toContain("sr-only");
+    expect(relationHiddenRemainder).toHaveTextContent("+77 더");
     const hiddenCount = openFullDetail.querySelector("[data-footer-hidden-count]");
     expect(hiddenCount).toHaveAttribute(
       "data-footer-count-border-token",
@@ -2576,10 +2585,14 @@ describe("TopologyNodePopover", () => {
       "data-remainder-text-token",
       "--topology-node-popover-remainder-text",
     );
-    expect(relationRemainder?.className).toContain(
+    expect(relationRemainder).toHaveAttribute(
+      "data-remainder-visibility-contract",
+      "footer-owns-visible-overflow-action",
+    );
+    expect(relationRemainder?.className).toContain("sr-only");
+    expect(relationRemainder?.className).not.toContain(
       "text-[color:var(--topology-node-popover-remainder-text)]",
     );
-    expect(relationRemainder?.className).not.toContain("var(--color-text-quaternary)");
   });
 
   it("keeps the primary focus brief action visible in collapsed compact focus", () => {
