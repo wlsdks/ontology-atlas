@@ -3038,14 +3038,19 @@ export function SigmaSkeletonCards({
     container.dataset.fixedSurfaceRestoreContract =
       'visible-cards-shift-or-hide-after-drag-release';
     container.dataset.fixedSurfaceRestoredCount = String(fixedSurfaceRestoredCount);
-    const supportRailOverlapHiddenCount =
-      selectedFocusRailSurfaceMounted &&
+    const selectedFocusOverlapSuppressionActive =
+      (selectedFocusRailSurfaceMounted ||
+        (selectedFocusCenterActive && selectedFocusCluster !== null)) &&
       selectedRelationEdgeId === null &&
-      activeDragCluster === null
+      activeDragCluster === null;
+    const supportRailOverlapHiddenCount =
+      selectedFocusOverlapSuppressionActive
         ? suppressVisibleCardOverlaps(orderedEls, containerRect)
         : 0;
     container.dataset.supportRailOverlapPolicy =
-      'selected-inspector-hides-overlapping-map-cards';
+      'selected-inspector-or-focus-cluster-hides-overlapping-map-cards';
+    container.dataset.supportRailOverlapActive =
+      selectedFocusOverlapSuppressionActive ? 'true' : 'false';
     container.dataset.supportRailOverlapHiddenCount = String(
       supportRailOverlapHiddenCount,
     );

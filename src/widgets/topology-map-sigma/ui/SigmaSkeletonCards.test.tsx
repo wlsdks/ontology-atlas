@@ -916,6 +916,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-click-focus-relationship-context-source",
           "selected-dock-companions",
         );
+        expect(layer).toHaveAttribute(
+          "data-support-rail-overlap-policy",
+          "selected-inspector-or-focus-cluster-hides-overlapping-map-cards",
+        );
+        expect(layer).toHaveAttribute("data-support-rail-overlap-active", "false");
         expect(dockedCard).toHaveAttribute("data-selected-focus-dock-band", "true");
         expect(dockedCard).toHaveAttribute("data-dock-bottom-inset-px", "180");
       });
@@ -2314,11 +2319,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "metadata-only");
     expect(labelHit).toHaveAttribute("data-label-geometry-source", "html-hit-target");
-    expect(labelHit?.getAttribute("data-relation-label-viewport-clamp-contract")).toMatch(
-      /centered-within-viewport|compacted-to-viewport-edge/,
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-viewport-clamp-contract",
+      expect.stringMatching(/centered-within-viewport|compacted-to-viewport-edge/),
     );
-    expect(labelHit?.getAttribute("data-relation-label-viewport-clamp-side")).toMatch(
-      /left|right|none/,
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-viewport-clamp-side",
+      expect.stringMatching(/left|right|none/),
     );
     expect(skeletonLayer).toHaveAttribute(
       "data-relation-label-geometry-contract",

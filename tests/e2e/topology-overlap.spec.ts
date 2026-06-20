@@ -2252,7 +2252,11 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-support-rail-overlap-policy",
-      "selected-inspector-hides-overlapping-map-cards",
+      "selected-inspector-or-focus-cluster-hides-overlapping-map-cards",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-support-rail-overlap-active",
+      "true",
     );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-support-rail-overlap-hidden-count",
@@ -4015,7 +4019,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   );
   await expect(firstRelationRow).toHaveAttribute(
     "data-row-visual-contract",
-    "title-relation-proof-action",
+    "quiet-title-secondary-facts",
   );
   await expect(firstRelationRow).toHaveAttribute("data-row-min-hit-height", "72");
   const conceptSearch = page.getByTestId("topology-concept-search");
@@ -4073,7 +4077,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   );
   await expect(relationLens).toHaveAttribute(
     "data-relation-lens-layout",
-    "inline-label-value-metrics",
+    "plain-language-label-counts",
   );
   await expect(relationLens).toHaveAttribute(
     "data-relation-lens-gap-token",
