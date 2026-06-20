@@ -201,6 +201,22 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "reads-plus-hits",
     );
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-seed-contract",
+      "visible-card-rects-seed-connector-cache",
+    );
+    const connectorReadCount = Number(
+      screen
+        .getByTestId("sigma-skeleton-cards")
+        .getAttribute("data-connector-rect-cache-read-count") ?? "0",
+    );
+    const connectorSeedCount = Number(
+      screen
+        .getByTestId("sigma-skeleton-cards")
+        .getAttribute("data-connector-rect-cache-seed-count") ?? "0",
+    );
+    expect(connectorSeedCount).toBeGreaterThan(0);
+    expect(connectorReadCount).toBeLessThanOrEqual(connectorSeedCount);
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-connector-rect-cache-read-count",
       expect.stringMatching(/^\d+$/),
     );

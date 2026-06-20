@@ -3854,9 +3854,21 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "reads-plus-hits",
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-connector-rect-cache-seed-contract",
+    "visible-card-rects-seed-connector-cache",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-connector-rect-cache-read-count",
     /^\d+$/,
   );
+  const connectorReadCount = Number(
+    await page.getByTestId("sigma-skeleton-cards").getAttribute("data-connector-rect-cache-read-count"),
+  );
+  const connectorSeedCount = Number(
+    await page.getByTestId("sigma-skeleton-cards").getAttribute("data-connector-rect-cache-seed-count"),
+  );
+  expect(connectorSeedCount).toBeGreaterThan(0);
+  expect(connectorReadCount).toBeLessThanOrEqual(connectorSeedCount);
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-connector-rect-cache-hit-count",
     /^\d+$/,

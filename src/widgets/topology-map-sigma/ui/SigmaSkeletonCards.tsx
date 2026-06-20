@@ -3176,14 +3176,20 @@ export function SigmaSkeletonCards({
       right: number;
       bottom: number;
     }> = [];
+    const visibleCardRectCache = new Map<
+      HTMLElement,
+      { left: number; top: number; right: number; bottom: number }
+    >();
     const recordRelationLabelCardBlocker = (el: HTMLElement) => {
       const rect = el.getBoundingClientRect();
-      relationLabelCardBlockers.push({
+      const next = {
         left: rect.left - containerRect.left,
         top: rect.top - containerRect.top,
         right: rect.right - containerRect.left,
         bottom: rect.bottom - containerRect.top,
-      });
+      };
+      visibleCardRectCache.set(el, next);
+      relationLabelCardBlockers.push(next);
     };
     let visibleCardCount = 0;
     for (const el of orderedEls) {
@@ -3482,6 +3488,12 @@ export function SigmaSkeletonCards({
       if (cached) {
         connectorCardRectHitCount += 1;
         return cached;
+      }
+      const visibleCached = visibleCardRectCache.get(el);
+      if (visibleCached) {
+        connectorCardRectHitCount += 1;
+        connectorCardRectCache.set(el, visibleCached);
+        return visibleCached;
       }
       connectorCardRectReadCount += 1;
       const rect = el.getBoundingClientRect();
@@ -3830,6 +3842,9 @@ export function SigmaSkeletonCards({
       container.dataset.focusClusterRelationLabelSource =
         selectedFocusCluster ? 'ego-relation-label-layout-pass' : 'none';
       container.dataset.connectorRectCacheSize = String(connectorCardRectCache.size);
+      container.dataset.connectorRectCacheSeedContract =
+        'visible-card-rects-seed-connector-cache';
+      container.dataset.connectorRectCacheSeedCount = String(visibleCardRectCache.size);
       container.dataset.connectorRectCacheReadCount = String(connectorCardRectReadCount);
       container.dataset.connectorRectCacheHitCount = String(connectorCardRectHitCount);
       container.dataset.connectorRectCacheAccounting = 'reads-plus-hits';
