@@ -51,6 +51,10 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
     "visible-only-after-style-check",
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-frame-budget-contract",
+    "measured-reposition-duration",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-active-drag-cluster-size",
     /^[2-9]\d*$/,
   );
@@ -74,6 +78,14 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
     "data-dragging-active",
     "true",
   );
+  const dragFrameBudgetProof = await page.getByTestId("sigma-skeleton-cards").evaluate((el) => ({
+    lastMs: Number(el.getAttribute("data-reposition-duration-last-ms") ?? "NaN"),
+    maxMs: Number(el.getAttribute("data-reposition-duration-max-ms") ?? "NaN"),
+  }));
+  expect(Number.isFinite(dragFrameBudgetProof.lastMs)).toBe(true);
+  expect(Number.isFinite(dragFrameBudgetProof.maxMs)).toBe(true);
+  expect(dragFrameBudgetProof.lastMs).toBeGreaterThanOrEqual(0);
+  expect(dragFrameBudgetProof.maxMs).toBeGreaterThanOrEqual(dragFrameBudgetProof.lastMs);
   await expect(target).toHaveAttribute("data-dragging-active", "true");
   await expect(companion).toHaveAttribute("data-drag-cluster", "true");
   const after = await rectOf(target);

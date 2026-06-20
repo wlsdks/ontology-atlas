@@ -19,6 +19,7 @@ const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_
 const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX = 2.5;
+const TOPOLOGY_DRAG_FOCUS_MIN_DELTA_PX = 20;
 const TOPOLOGY_DRAG_FOCUS_MAX_REASONABLE_DELTA_PX = 560;
 const TOPOLOGY_DIM_OPACITY_CONTRACT = "readable-context-geography";
 const TOPOLOGY_DIM_ANCHOR_MIN_OPACITY = 0.26;
@@ -4056,7 +4057,7 @@ export function validateWebviewVerifyPayload(payload, {
       );
       if (focusDeltaVector && companionDeltaVector) {
         if (
-          focusDeltaVector.magnitude < 24 ||
+          focusDeltaVector.magnitude < TOPOLOGY_DRAG_FOCUS_MIN_DELTA_PX ||
           focusDeltaVector.magnitude > TOPOLOGY_DRAG_FOCUS_MAX_REASONABLE_DELTA_PX
         ) {
           return `WebView Relief drag moved the focus card by an implausible distance (${Math.round(focusDeltaVector.magnitude)}px)`;

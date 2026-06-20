@@ -817,7 +817,7 @@ pub fn run() {
                                             : companionsDuring[0]
                                               ? { x: companionsDuring[0].dx, y: companionsDuring[0].dy }
                                                 : null;
-                                          result.focusMoved = Math.abs(focusDx) > 24 || Math.abs(focusDy) > 24;
+                                          result.focusMoved = Math.hypot(focusDx, focusDy) >= 20;
                                           result.companionVisible = visibleDuringCompanions.length > 0;
                                           result.companionAligned = Boolean(alignedCompanion);
                                         } catch (error) {
@@ -3975,6 +3975,12 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-drag-collision-policy") || "",
                                   topologyDragFrameCacheContract:
                                     skeletonCardsLayer?.getAttribute("data-drag-frame-cache-contract") || "",
+                                  topologyDragFrameBudgetContract:
+                                    skeletonCardsLayer?.getAttribute("data-drag-frame-budget-contract") || "",
+                                  topologyRepositionDurationLastMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-duration-last-ms") || "0"),
+                                  topologyRepositionDurationMaxMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-duration-max-ms") || "0"),
                                   topologyDragRepositionPolicy:
                                     skeletonCardsLayer?.getAttribute("data-drag-reposition-policy") || "",
                                   topologyDragDomIndexContract:

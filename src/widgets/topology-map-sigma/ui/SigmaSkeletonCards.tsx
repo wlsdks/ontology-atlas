@@ -2128,6 +2128,7 @@ export function SigmaSkeletonCards({
   const lastAppliedTopologyUiScaleRef = useRef<number | null>(null);
   const lastDragDomIndexSizeRef = useRef(0);
   const lastDockDragSnapshotSizeRef = useRef(0);
+  const maxRepositionDurationMsRef = useRef(0);
 
   const invalidateFixedSurfaceRectCache = useCallback(() => {
     fixedSurfaceRectCacheRef.current = null;
@@ -2568,6 +2569,10 @@ export function SigmaSkeletonCards({
   const reposition = useCallback(() => {
     const container = containerRef.current;
     if (!container || !sigma) return;
+    const repositionStartedAt =
+      typeof performance !== 'undefined' && typeof performance.now === 'function'
+        ? performance.now()
+        : Date.now();
     const els = container.querySelectorAll<HTMLElement>('[data-skeleton-card]');
     // pass 1 — 카드 배치 + ego(풀 잉크) 카드 rect 수집. DOM 순서 = 도킹 깊이
     // 순(builder 가 정렬)이라 부모 카드의 transform 이 자식보다 먼저 잡힌다.
@@ -4003,6 +4008,19 @@ export function SigmaSkeletonCards({
         popup.style.top = `${y}px`;
       }
     }
+    const repositionFinishedAt =
+      typeof performance !== 'undefined' && typeof performance.now === 'function'
+        ? performance.now()
+        : Date.now();
+    const repositionDurationMs = Math.max(0, repositionFinishedAt - repositionStartedAt);
+    maxRepositionDurationMsRef.current = Math.max(
+      maxRepositionDurationMsRef.current,
+      repositionDurationMs,
+    );
+    container.dataset.dragFrameBudgetContract = 'measured-reposition-duration';
+    container.dataset.repositionDurationLastMs = repositionDurationMs.toFixed(2);
+    container.dataset.repositionDurationMaxMs =
+      maxRepositionDurationMsRef.current.toFixed(2);
   }, [
     graph,
     sigma,
