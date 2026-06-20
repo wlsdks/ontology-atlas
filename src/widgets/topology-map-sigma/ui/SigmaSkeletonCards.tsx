@@ -2816,6 +2816,10 @@ export function SigmaSkeletonCards({
       'click-focus-keeps-orientation-anchors-only';
     container.dataset.focusContextSilhouetteActive =
       focusContextSilhouetteSuppressionActive ? 'true' : 'false';
+    const cardPlacementSetupDurationMs = Math.max(
+      0,
+      measureRepositionNow() - repositionStartedAt,
+    );
     const orderedEls = Array.from(els).sort((a, b) => {
       const aDocked = a.dataset.dockParent ? 1 : 0;
       const bDocked = b.dataset.dockParent ? 1 : 0;
@@ -2825,6 +2829,7 @@ export function SigmaSkeletonCards({
       const slug = el.dataset.slug;
       if (slug) elBySlug.set(slug, el);
     }
+    const cardPlacementCoreLoopStartedAt = measureRepositionNow();
     for (const el of orderedEls) {
       const slug = el.dataset.slug;
       if (!slug || !graph.hasNode(slug)) continue;
@@ -3154,6 +3159,11 @@ export function SigmaSkeletonCards({
         acceptedSurfaceRects.push(rect);
       }
     }
+    const cardPlacementCoreLoopDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementCoreLoopStartedAt,
+    );
+    const cardPlacementOverviewCollisionStartedAt = measureRepositionNow();
     // Overview 에서는 모든 카드가 풀 잉크라 가까운 landmark 끼리 텍스트가
     // 부딪힐 수 있다. 상위 anchor(project/domain)를 우선 보존하고, 충돌하는
     // 하위 capability/element 칩은 숨겨 지형의 읽기 순서를 지킨다.
@@ -3209,6 +3219,11 @@ export function SigmaSkeletonCards({
         accepted.push(rect);
       }
     }
+    const cardPlacementOverviewCollisionDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementOverviewCollisionStartedAt,
+    );
+    const cardPlacementDimPassStartedAt = measureRepositionNow();
     // pass 2 — dim 카드: 펼친 열과 겹치면 0(충돌 금지), 아니면 tier 별 dim.
     // 고정 HUD/범례와 겹치는 dim 카드도 0 — 선택 상태에서 배경 landmark 가
     // 패널 밑으로 비쳐 보이면 지형의 깊이감보다 UI 충돌이 먼저 읽힌다.
@@ -3282,6 +3297,10 @@ export function SigmaSkeletonCards({
         if (rect) acceptedDimRects.push(rect);
       }
     }
+    const cardPlacementDimPassDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementDimPassStartedAt,
+    );
     container.dataset.focusContextSilhouetteHiddenCount = String(
       focusContextSilhouetteHiddenCount,
     );
@@ -3310,6 +3329,7 @@ export function SigmaSkeletonCards({
       }
     }
     container.dataset.cardPlacementSizeCacheSize = String(cardPlacementSizeCache.size);
+    const cardPlacementReadLayerStartedAt = measureRepositionNow();
     if (readLayerSurfaceActive) {
       for (const el of orderedEls) {
         if (el.dataset.surfaceHidden === 'true') continue;
@@ -3332,6 +3352,11 @@ export function SigmaSkeletonCards({
         }
       }
     }
+    const cardPlacementReadLayerDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementReadLayerStartedAt,
+    );
+    const cardPlacementPathEndpointStartedAt = measureRepositionNow();
     const pathEndpointPostprocessActive =
       selectedRelationEdgeId === null &&
       orderedEls.some(
@@ -3393,6 +3418,11 @@ export function SigmaSkeletonCards({
       );
       suppressCardsOverlappingPathEndpoints(orderedEls, containerRect);
     }
+    const cardPlacementPathEndpointDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementPathEndpointStartedAt,
+    );
+    const cardPlacementOverviewDomainStartedAt = measureRepositionNow();
     const projectOverviewDomainSeparationActive = Boolean(
       selectedRelationEdgeId === null &&
         !pathWorkflowActive &&
@@ -3415,6 +3445,11 @@ export function SigmaSkeletonCards({
     container.dataset.overviewDomainSeparatedCount = String(
       overviewDomainSeparatedCount,
     );
+    const cardPlacementOverviewDomainDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementOverviewDomainStartedAt,
+    );
+    const cardPlacementFixedRestoreStartedAt = measureRepositionNow();
     const fixedSurfaceRestoredCount = restoreVisibleCardsFromFixedSurfaces(
       orderedEls,
       containerRect,
@@ -3427,10 +3462,49 @@ export function SigmaSkeletonCards({
     container.dataset.fixedSurfaceRestoreReadPolicy =
       'reuse-card-placement-frame-rects';
     container.dataset.fixedSurfaceRestoredCount = String(fixedSurfaceRestoredCount);
+    const cardPlacementFixedRestoreDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementFixedRestoreStartedAt,
+    );
     const cardPlacementDurationMs = Math.max(
       0,
       measureRepositionNow() - repositionStartedAt,
     );
+    const cardPlacementSubphases = [
+      ['setup', cardPlacementSetupDurationMs],
+      ['core-loop', cardPlacementCoreLoopDurationMs],
+      ['overview-collision', cardPlacementOverviewCollisionDurationMs],
+      ['dim-pass', cardPlacementDimPassDurationMs],
+      ['read-layer', cardPlacementReadLayerDurationMs],
+      ['path-endpoint', cardPlacementPathEndpointDurationMs],
+      ['overview-domain', cardPlacementOverviewDomainDurationMs],
+      ['fixed-restore', cardPlacementFixedRestoreDurationMs],
+    ] as const;
+    const [cardPlacementSlowestSubphase, cardPlacementSlowestSubphaseMs] =
+      cardPlacementSubphases.reduce(
+        (slowest, current) => (current[1] > slowest[1] ? current : slowest),
+        cardPlacementSubphases[0],
+      );
+    container.dataset.cardPlacementSubphaseContract = 'phase-breakdown';
+    container.dataset.cardPlacementSubphaseSetupMs =
+      cardPlacementSetupDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseCoreLoopMs =
+      cardPlacementCoreLoopDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseOverviewCollisionMs =
+      cardPlacementOverviewCollisionDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseDimPassMs =
+      cardPlacementDimPassDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseReadLayerMs =
+      cardPlacementReadLayerDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphasePathEndpointMs =
+      cardPlacementPathEndpointDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseOverviewDomainMs =
+      cardPlacementOverviewDomainDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseFixedRestoreMs =
+      cardPlacementFixedRestoreDurationMs.toFixed(2);
+    container.dataset.cardPlacementSlowestSubphase = cardPlacementSlowestSubphase;
+    container.dataset.cardPlacementSlowestSubphaseMs =
+      cardPlacementSlowestSubphaseMs.toFixed(2);
     const visibilityCacheStartedAt = measureRepositionNow();
     const relationLabelCardBlockers: Array<{
       left: number;

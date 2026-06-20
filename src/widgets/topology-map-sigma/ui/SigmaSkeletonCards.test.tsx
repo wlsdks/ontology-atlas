@@ -277,6 +277,20 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "reuse-card-placement-frame-rects",
     );
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-card-placement-subphase-contract",
+      "phase-breakdown",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-card-placement-slowest-subphase",
+      expect.stringMatching(
+        /^(setup|core-loop|overview-collision|dim-pass|read-layer|path-endpoint|overview-domain|fixed-restore)$/,
+      ),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-card-placement-subphase-core-loop-ms",
+      expect.stringMatching(/^\d+(\.\d+)?$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-fixed-surface-restored-count",
       expect.stringMatching(/^\d+$/),
     );

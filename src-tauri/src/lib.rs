@@ -4026,6 +4026,28 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-path-endpoint-postprocess-policy") || "",
                                   topologyFixedSurfaceRestoreReadPolicy:
                                     skeletonCardsLayer?.getAttribute("data-fixed-surface-restore-read-policy") || "",
+                                  topologyCardPlacementSubphaseContract:
+                                    skeletonCardsLayer?.getAttribute("data-card-placement-subphase-contract") || "",
+                                  topologyCardPlacementSlowestSubphase:
+                                    skeletonCardsLayer?.getAttribute("data-card-placement-slowest-subphase") || "",
+                                  topologyCardPlacementSlowestSubphaseMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-slowest-subphase-ms") || "0"),
+                                  topologyCardPlacementSubphaseSetupMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-setup-ms") || "0"),
+                                  topologyCardPlacementSubphaseCoreLoopMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-core-loop-ms") || "0"),
+                                  topologyCardPlacementSubphaseOverviewCollisionMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-overview-collision-ms") || "0"),
+                                  topologyCardPlacementSubphaseDimPassMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-dim-pass-ms") || "0"),
+                                  topologyCardPlacementSubphaseReadLayerMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-read-layer-ms") || "0"),
+                                  topologyCardPlacementSubphasePathEndpointMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-path-endpoint-ms") || "0"),
+                                  topologyCardPlacementSubphaseOverviewDomainMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-overview-domain-ms") || "0"),
+                                  topologyCardPlacementSubphaseFixedRestoreMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-fixed-restore-ms") || "0"),
                                   topologyCardPlacementSizeCacheContract:
                                     skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-contract") || "",
                                   topologyCardPlacementSizeCacheSize:
