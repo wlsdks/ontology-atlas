@@ -732,6 +732,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "dedupe-show-hide-state",
       );
       expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-visible-card-state-cache-contract",
+        "rect-and-visibility-single-pass",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
         "data-drag-reposition-policy",
         "raf-coalesced-pointer-move",
       );

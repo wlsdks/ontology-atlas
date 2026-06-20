@@ -3226,24 +3226,38 @@ export function SigmaSkeletonCards({
     }> = [];
     const visibleCardRectCache = new Map<
       HTMLElement,
-      { left: number; top: number; right: number; bottom: number }
+      {
+        rect: { left: number; top: number; right: number; bottom: number };
+        visible: boolean;
+      }
     >();
-    const recordRelationLabelCardBlocker = (el: HTMLElement) => {
+    const readVisibleCardRect = (el: HTMLElement) => {
+      const cached = visibleCardRectCache.get(el);
+      if (cached) return cached;
+      const visible = isSkeletonCardVisibleForStats(el);
       const rect = el.getBoundingClientRect();
       const next = {
-        left: rect.left - containerRect.left,
-        top: rect.top - containerRect.top,
-        right: rect.right - containerRect.left,
-        bottom: rect.bottom - containerRect.top,
+        rect: {
+          left: rect.left - containerRect.left,
+          top: rect.top - containerRect.top,
+          right: rect.right - containerRect.left,
+          bottom: rect.bottom - containerRect.top,
+        },
+        visible,
       };
       visibleCardRectCache.set(el, next);
-      relationLabelCardBlockers.push(next);
+      return next;
+    };
+    const recordRelationLabelCardBlocker = (el: HTMLElement) => {
+      const next = readVisibleCardRect(el);
+      if (!next.visible) return false;
+      relationLabelCardBlockers.push(next.rect);
+      return true;
     };
     let visibleCardCount = 0;
     for (const el of orderedEls) {
-      if (isSkeletonCardVisibleForStats(el)) {
+      if (recordRelationLabelCardBlocker(el)) {
         visibleCardCount += 1;
-        recordRelationLabelCardBlocker(el);
       }
     }
     let reportedVisibleCardCount = visibleCardCount;
@@ -3376,10 +3390,10 @@ export function SigmaSkeletonCards({
       if (restored > 0) {
         reportedVisibleCardCount = 0;
         relationLabelCardBlockers.length = 0;
+        visibleCardRectCache.clear();
         for (const el of orderedEls) {
-          if (isSkeletonCardVisibleForStats(el)) {
+          if (recordRelationLabelCardBlocker(el)) {
             reportedVisibleCardCount += 1;
-            recordRelationLabelCardBlocker(el);
           }
         }
         visibilityCountSource = 'fallback-recount';
@@ -3391,8 +3405,9 @@ export function SigmaSkeletonCards({
     if (readLayerSurfaceActive) {
       let readLayerClearedCount = 0;
       for (const el of orderedEls) {
-        if (!isSkeletonCardVisibleForStats(el)) continue;
-        const rect = elementRectRelativeToContainer(el, containerRect);
+        const cached = readVisibleCardRect(el);
+        if (!cached.visible) continue;
+        const rect = cached.rect;
         const blocker = fixedSurfaceRects.find((surface) => rectsOverlap(rect, surface));
         if (!blocker) continue;
         const readLayerPanel = document.querySelector<HTMLElement>(
@@ -3542,10 +3557,10 @@ export function SigmaSkeletonCards({
         return cached;
       }
       const visibleCached = visibleCardRectCache.get(el);
-      if (visibleCached) {
+      if (visibleCached?.visible) {
         connectorCardRectHitCount += 1;
-        connectorCardRectCache.set(el, visibleCached);
-        return visibleCached;
+        connectorCardRectCache.set(el, visibleCached.rect);
+        return visibleCached.rect;
       }
       connectorCardRectReadCount += 1;
       const rect = el.getBoundingClientRect();
@@ -3904,7 +3919,10 @@ export function SigmaSkeletonCards({
       container.dataset.visibilityStyleWriteContract = 'dedupe-show-hide-state';
       container.dataset.domWriteAppliedCount = String(domWriteStats.applied);
       container.dataset.domWriteSkippedCount = String(domWriteStats.skipped);
-      const finalVisibleCardCount = orderedEls.filter(isSkeletonCardVisibleForStats).length;
+      const finalVisibleCardCount = orderedEls.reduce(
+        (count, el) => count + (readVisibleCardRect(el).visible ? 1 : 0),
+        0,
+      );
       if (finalVisibleCardCount !== reportedVisibleCardCount) {
         reportedVisibleCardCount = finalVisibleCardCount;
         container.dataset.visibleCardCount = String(reportedVisibleCardCount);
@@ -4247,6 +4265,7 @@ export function SigmaSkeletonCards({
       data-drag-frame-cache-snapshot-count={lastDockDragSnapshotSizeRef.current}
       data-dock-drag-snapshot-contract="single-pass-card-rect-read"
       data-visibility-count-contract="single-pass-unless-fallback"
+      data-visible-card-state-cache-contract="rect-and-visibility-single-pass"
       data-visibility-stats-report-contract="dedupe-and-debounce-stable-counts"
       data-visibility-stats-report-count={visibilityStatsReportCountRef.current}
       data-layout-transition-contract="stable-card-state-key"

@@ -3997,6 +3997,8 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-hit-count") || "0"),
                                   topologyVisibilityStyleWriteContract:
                                     skeletonCardsLayer?.getAttribute("data-visibility-style-write-contract") || "",
+                                  topologyVisibleCardStateCacheContract:
+                                    skeletonCardsLayer?.getAttribute("data-visible-card-state-cache-contract") || "",
                                   topologyRelationLabelBlockerContract:
                                     skeletonCardsLayer?.getAttribute("data-relation-label-blocker-contract") || "",
                                   topologyRelationLabelBlockerSource:
