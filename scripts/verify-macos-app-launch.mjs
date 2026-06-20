@@ -2001,10 +2001,18 @@ export function validateWebviewVerifyPayload(payload, {
     if (
       ![
         "compact-proof-strip",
-        "phone-and-wide-desktop-paired-tablet-stacked-actions",
+        "evidence-first-agent-handoff-compact",
       ].includes(payload.markers.topologyPathHandoffLayoutContract)
     ) {
       return `WebView Path mode handoff layout contract was ${payload.markers.topologyPathHandoffLayoutContract || "missing"}`;
+    }
+    if (
+      payload.markers.topologyPathHandoffLayoutContract ===
+        "evidence-first-agent-handoff-compact" &&
+      payload.markers.topologyPathHandoffHierarchy !==
+        "primary-evidence-secondary-agent-checks"
+    ) {
+      return `WebView Path mode handoff hierarchy was ${payload.markers.topologyPathHandoffHierarchy || "missing"}`;
     }
     if (
       payload.markers.topologyPathHandoffSurfaceToken !== "--topology-path-handoff-surface" ||
@@ -2316,7 +2324,7 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       payload.markers.topologyPathResultRouteChainCompactContract !==
-      "endpoint-badges-visible-relation-chips-truncated"
+      "endpoint-badges-visible-relation-chips-readable"
     ) {
       return `WebView Path result route chain compact contract was ${payload.markers.topologyPathResultRouteChainCompactContract || "missing"}`;
     }

@@ -1447,7 +1447,8 @@ export function TopologyAnalysisBar({
               data-guidance-owner="analysis-rail"
               data-path-prompt-policy="panel-owned-when-card-mode"
               data-handoff-contract="route-proof-action-visible"
-              data-handoff-layout-contract="phone-and-wide-desktop-paired-tablet-stacked-actions"
+              data-handoff-layout-contract="evidence-first-agent-handoff-compact"
+              data-handoff-hierarchy="primary-evidence-secondary-agent-checks"
               data-overflow-contract="no-horizontal-scroll"
               data-surface-token="--topology-path-handoff-surface"
               data-border-token="--topology-path-handoff-border"
@@ -1468,11 +1469,17 @@ export function TopologyAnalysisBar({
               data-mcp-action="find_path"
               data-cli-fallback="ontology-atlas path"
               data-path-rail-spacing-contract="parent-gap-owns-path-stack"
-              className="grid min-w-0 grid-cols-2 items-center gap-1 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2.5 py-[var(--topology-path-handoff-compact-padding-y)] font-mono text-[10px] text-[color:var(--topology-path-handoff-text)] md:grid-cols-1 2xl:grid-cols-2 2xl:gap-0"
+              className="grid min-w-0 gap-1 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2 py-[var(--topology-path-handoff-compact-padding-y)] font-mono text-[10px] text-[color:var(--topology-path-handoff-text)]"
             >
-              <span className="col-span-2 min-w-0 uppercase tracking-[0.12em] text-[color:var(--topology-path-handoff-label-text)] md:col-span-1 2xl:col-span-2">
-                {labels.pathHandoffLabel}
-              </span>
+              <div
+                className="flex min-w-0 items-center justify-between gap-2"
+                data-testid="topology-path-handoff-header"
+                data-path-handoff-header-contract="share-label-before-actions"
+              >
+                <span className="min-w-0 truncate uppercase tracking-[0.12em] text-[color:var(--topology-path-handoff-label-text)]">
+                  {labels.pathHandoffLabel}
+                </span>
+              </div>
               {pathSourceSlug && pathTargetSlug ? (
                 <button
                   type="button"
@@ -1485,7 +1492,7 @@ export function TopologyAnalysisBar({
                   data-hover-surface-token="--topology-path-primary-evidence-hover-surface"
                   data-hover-border-token="--topology-path-primary-evidence-hover-border"
                   data-hover-text-token="--topology-path-primary-evidence-hover-text"
-                  className="col-span-2 inline-flex min-h-[var(--topology-path-primary-evidence-min-height)] min-w-0 items-center justify-between gap-2 rounded-md border border-[color:var(--topology-path-primary-evidence-border)] bg-[color:var(--topology-path-primary-evidence-surface)] px-2.5 py-1 text-left text-[10.5px] text-[color:var(--topology-path-primary-evidence-text)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--topology-path-primary-evidence-hover-border)] hover:bg-[color:var(--topology-path-primary-evidence-hover-surface)] hover:text-[color:var(--topology-path-primary-evidence-hover-text)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none md:col-span-1 2xl:col-span-2"
+                  className="inline-flex min-h-[var(--topology-path-primary-evidence-min-height)] min-w-0 items-center justify-between gap-2 rounded-md border border-[color:var(--topology-path-primary-evidence-border)] bg-[color:var(--topology-path-primary-evidence-surface)] px-2 py-0.5 text-left text-[10.5px] text-[color:var(--topology-path-primary-evidence-text)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--topology-path-primary-evidence-hover-border)] hover:bg-[color:var(--topology-path-primary-evidence-hover-surface)] hover:text-[color:var(--topology-path-primary-evidence-hover-text)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
                   aria-label={
                     pathEvidenceCopied
                       ? labels.pathEvidenceCopiedAriaLabel
@@ -1500,24 +1507,30 @@ export function TopologyAnalysisBar({
                   )}
                 </button>
               ) : null}
-              <span
-                data-testid="topology-path-handoff-mcp-chip"
-                data-surface-token="--topology-path-handoff-mcp-surface"
-                data-border-token="--topology-path-handoff-mcp-border"
-                data-text-token="--topology-path-handoff-mcp-text"
-                className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-mcp-border)] bg-[color:var(--topology-path-handoff-mcp-surface)] px-2 py-0.5 text-center uppercase tracking-[0.10em] text-[color:var(--topology-path-handoff-mcp-text)]"
+              <div
+                className="grid min-w-0 grid-cols-2 gap-1"
+                data-testid="topology-path-handoff-secondary-row"
+                data-path-handoff-secondary-contract="agent-actions-demoted-after-evidence"
               >
-                {labels.pathHandoffMcpAction}
-              </span>
-              <span
-                data-testid="topology-path-handoff-cli-chip"
-                data-surface-token="--topology-path-handoff-cli-surface"
-                data-border-token="--topology-path-handoff-cli-border"
-                data-text-token="--topology-path-handoff-cli-text"
-                className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] px-2 py-0.5 text-center uppercase tracking-[0.10em] text-[color:var(--topology-path-handoff-cli-text)]"
-              >
-                {labels.pathHandoffCliFallback}
-              </span>
+                <span
+                  data-testid="topology-path-handoff-mcp-chip"
+                  data-surface-token="--topology-path-handoff-mcp-surface"
+                  data-border-token="--topology-path-handoff-mcp-border"
+                  data-text-token="--topology-path-handoff-mcp-text"
+                  className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-mcp-border)] bg-[color:var(--topology-path-handoff-mcp-surface)] px-1.5 py-0 text-center uppercase tracking-[0.10em] text-[color:var(--topology-path-handoff-mcp-text)]"
+                >
+                  {labels.pathHandoffMcpAction}
+                </span>
+                <span
+                  data-testid="topology-path-handoff-cli-chip"
+                  data-surface-token="--topology-path-handoff-cli-surface"
+                  data-border-token="--topology-path-handoff-cli-border"
+                  data-text-token="--topology-path-handoff-cli-text"
+                  className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] px-1.5 py-0 text-center uppercase tracking-[0.10em] text-[color:var(--topology-path-handoff-cli-text)]"
+                >
+                  {labels.pathHandoffCliFallback}
+                </span>
+              </div>
             </div>
           ) : null}
           {panelMode === "overview" ? (

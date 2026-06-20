@@ -2709,6 +2709,8 @@ pub fn run() {
                                     topologyPathAgentHandoff?.getAttribute("data-handoff-contract") || "",
                                   topologyPathHandoffLayoutContract:
                                     topologyPathAgentHandoff?.getAttribute("data-handoff-layout-contract") || "",
+                                  topologyPathHandoffHierarchy:
+                                    topologyPathAgentHandoff?.getAttribute("data-handoff-hierarchy") || "",
                                   topologyPathHandoffOverflowContract:
                                     topologyPathAgentHandoff?.getAttribute("data-overflow-contract") || "",
                                   topologyPathHandoffSurfaceToken:

@@ -2864,7 +2864,11 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-handoff-layout-contract",
-      "phone-and-wide-desktop-paired-tablet-stacked-actions",
+      "evidence-first-agent-handoff-compact",
+    );
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-handoff-hierarchy",
+      "primary-evidence-secondary-agent-checks",
     );
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-primary-evidence-visible",
@@ -3273,12 +3277,20 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   expect(routeTargetTitleFits, "phone path route target title should not truncate").toBe(true);
   await expect(handoff).toHaveAttribute(
     "data-handoff-layout-contract",
-    "phone-and-wide-desktop-paired-tablet-stacked-actions",
+    "evidence-first-agent-handoff-compact",
   );
-  const handoffUsesPhonePairedLayout = await handoff.evaluate(
-    (el) => el.classList.contains("grid-cols-2") && el.classList.contains("md:grid-cols-1"),
+  await expect(handoff).toHaveAttribute(
+    "data-handoff-hierarchy",
+    "primary-evidence-secondary-agent-checks",
   );
-  expect(handoffUsesPhonePairedLayout, "path handoff should keep phone compact layout").toBe(true);
+  await expect(page.getByTestId("topology-path-handoff-header")).toHaveAttribute(
+    "data-path-handoff-header-contract",
+    "share-label-before-actions",
+  );
+  await expect(page.getByTestId("topology-path-handoff-secondary-row")).toHaveAttribute(
+    "data-path-handoff-secondary-contract",
+    "agent-actions-demoted-after-evidence",
+  );
   await expect(handoff).toHaveAttribute(
     "data-path-rail-spacing-contract",
     "parent-gap-owns-path-stack",
@@ -3470,7 +3482,7 @@ test("Relief Path accepts short from/to shared-link aliases", async ({ page }) =
   await expect(panel).toContainText("Agent Graph Readiness");
   await expect(handoff).toHaveAttribute(
     "data-handoff-layout-contract",
-    "phone-and-wide-desktop-paired-tablet-stacked-actions",
+    "evidence-first-agent-handoff-compact",
   );
   await expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
   await expect(page.getByTestId("topology-path-handoff-mcp-chip")).toHaveAttribute(

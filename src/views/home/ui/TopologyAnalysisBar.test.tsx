@@ -2224,7 +2224,11 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(handoff).toHaveAttribute(
       "data-handoff-layout-contract",
-      "phone-and-wide-desktop-paired-tablet-stacked-actions",
+      "evidence-first-agent-handoff-compact",
+    );
+    expect(handoff).toHaveAttribute(
+      "data-handoff-hierarchy",
+      "primary-evidence-secondary-agent-checks",
     );
     expect(handoff).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
     expect(handoff).toHaveAttribute(
@@ -2241,10 +2245,7 @@ describe("TopologyAnalysisBar", () => {
     expect(handoff.className).toContain(
       "text-[color:var(--topology-path-handoff-text)]",
     );
-    expect(handoff.className).toContain("grid-cols-2");
-    expect(handoff.className).toContain("md:grid-cols-1");
-    expect(handoff.className).toContain("2xl:grid-cols-2");
-    expect(handoff.className).toContain("2xl:gap-0");
+    expect(handoff.className).toContain("gap-1");
     expect(handoff.className).not.toContain("mt-");
     expect(handoff.className).not.toContain("--color-text-tertiary");
     expect(handoff).toHaveAttribute(
@@ -2266,6 +2267,14 @@ describe("TopologyAnalysisBar", () => {
     expect(handoff).toHaveAttribute("data-primary-evidence-visible", "false");
     expect(handoff).toHaveAttribute("data-mcp-action", "find_path");
     expect(handoff).toHaveAttribute("data-cli-fallback", "ontology-atlas path");
+    expect(screen.getByTestId("topology-path-handoff-header")).toHaveAttribute(
+      "data-path-handoff-header-contract",
+      "share-label-before-actions",
+    );
+    expect(screen.getByTestId("topology-path-handoff-secondary-row")).toHaveAttribute(
+      "data-path-handoff-secondary-contract",
+      "agent-actions-demoted-after-evidence",
+    );
     const mcpChip = screen.getByTestId("topology-path-handoff-mcp-chip");
     expect(mcpChip).toHaveAttribute(
       "data-surface-token",

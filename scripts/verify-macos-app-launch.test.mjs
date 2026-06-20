@@ -3870,7 +3870,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "route-proof-action-visible",
           topologyPathHandoffLayoutContract:
-            "phone-and-wide-desktop-paired-tablet-stacked-actions",
+            "evidence-first-agent-handoff-compact",
+          topologyPathHandoffHierarchy:
+            "primary-evidence-secondary-agent-checks",
           topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
           topologyPathHandoffBorderToken: "--topology-path-handoff-border",
           topologyPathHandoffActionMinHeightToken:
@@ -5662,7 +5664,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
           topologyPathResultRouteChainCompactContract:
-            "endpoint-badges-visible-relation-chips-truncated",
+            "endpoint-badges-visible-relation-chips-readable",
           topologyPathResultRouteChainWidth: 260,
           topologyPathResultRouteChainHeight: 24,
           topologyPathResultRouteChainClientWidth: 260,
@@ -5764,7 +5766,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
           topologyPathResultRouteChainCompactContract:
-            "endpoint-badges-visible-relation-chips-truncated",
+            "endpoint-badges-visible-relation-chips-readable",
           topologyPathResultRouteChainClientWidth: 260,
           topologyPathResultRouteChainScrollWidth: 320,
           topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
@@ -5835,7 +5837,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
           topologyPathResultRouteChainCompactContract:
-            "endpoint-badges-visible-relation-chips-truncated",
+            "endpoint-badges-visible-relation-chips-readable",
           topologyPathResultRouteChainClientWidth: 260,
           topologyPathResultRouteChainScrollWidth: 260,
           topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
@@ -5868,7 +5870,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
           topologyPathResultRouteChainCompactContract:
-            "endpoint-badges-visible-relation-chips-truncated",
+            "endpoint-badges-visible-relation-chips-readable",
           topologyPathResultRouteChainClientWidth: 260,
           topologyPathResultRouteChainScrollWidth: 260,
           topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
@@ -5909,7 +5911,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
           topologyPathResultRouteChainCompactContract:
-            "endpoint-badges-visible-relation-chips-truncated",
+            "endpoint-badges-visible-relation-chips-readable",
           topologyPathResultRouteChainClientWidth: 260,
           topologyPathResultRouteChainScrollWidth: 260,
           topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
