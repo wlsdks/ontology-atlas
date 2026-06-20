@@ -142,6 +142,10 @@ names in component data markers and tests whenever a surface depends on
 - `--topology-card-selected-focus-max-width`: selected focus map card width;
   keeps the current node title readable before secondary subtree count metadata
   while the direct relation facts chip stays visible.
+- `--topology-map-dim-anchor-opacity` /
+  `--topology-map-dim-context-opacity`: selected focus background map opacity;
+  keeps product/domain landmarks as quiet orientation anchors while unrelated
+  capability/evidence cards become non-interactive context silhouettes.
 - `--topology-selected-relation-card-width` /
   `--topology-selected-relation-card-max-height`: compact selected relation
   inspector geometry; keeps MCP/CLI handoff visible without turning the card

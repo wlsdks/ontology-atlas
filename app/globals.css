@@ -569,6 +569,8 @@
     --topology-relation-legend-surface: var(--topology-minimap-surface);
     --topology-relation-legend-border: var(--topology-minimap-border);
     --topology-relation-legend-shadow: var(--topology-minimap-shadow);
+    --topology-map-dim-anchor-opacity: 0.26;
+    --topology-map-dim-context-opacity: 0.08;
     --topology-floating-control-phone-bottom: calc(
       var(--topology-mobile-bottom-tab-reserve) + 56px
     );

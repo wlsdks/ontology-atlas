@@ -210,12 +210,14 @@ const TIER_SURFACE_ALPHA: Record<
 /**
  * dim 잉크 2단계 (디자이너 패널 합의): click-focus 에서는 선택 ego
  * 관계가 먼저 읽혀야 하므로 방향 감각용 상위 anchor(project/domain)는
- * 0.34, 하위 칩은 dot+실루엣 수준 0.18. 펼친 열과 *겹치는* dim 카드는
+ * 0.26, 하위 칩은 dot+실루엣 수준 0.08. 펼친 열과 *겹치는* dim 카드는
  * 0 — "포커스 콘텐츠와 고스트 콘텐츠의 텍스트 충돌"은 디자이너 제품에서
  * 절대 허용되지 않는 픽셀이다.
  */
-const DIM_ANCHOR_OPACITY = '0.34';
-const DIM_CHIP_OPACITY = '0.18';
+const DIM_ANCHOR_OPACITY = '0.26';
+const DIM_CHIP_OPACITY = '0.08';
+const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
+const DIM_CHIP_OPACITY_TOKEN = '--topology-map-dim-context-opacity';
 const OVERVIEW_CONTEXT_OPACITY: Record<SkeletonCardModel['tier'], string> = {
   0: '1',
   1: '1',
@@ -3038,13 +3040,21 @@ export function SigmaSkeletonCards({
       if (collides) {
         hideSkeletonCard(el);
       } else {
-        el.style.opacity = lockedForDrag
-          ? '1'
-          : (el.dataset.tier === '0' || el.dataset.tier === '1')
+        const dimOpacity =
+          el.dataset.tier === '0' || el.dataset.tier === '1'
             ? DIM_ANCHOR_OPACITY
             : DIM_CHIP_OPACITY;
+        el.dataset.dimOpacityRole =
+          el.dataset.tier === '0' || el.dataset.tier === '1'
+            ? 'orientation-anchor'
+            : 'context-silhouette';
+        el.dataset.dimOpacityToken =
+          el.dataset.dimOpacityRole === 'orientation-anchor'
+            ? DIM_ANCHOR_OPACITY_TOKEN
+            : DIM_CHIP_OPACITY_TOKEN;
+        el.style.opacity = lockedForDrag ? '1' : dimOpacity;
         el.style.visibility = 'visible';
-        el.style.pointerEvents = '';
+        el.style.pointerEvents = lockedForDrag ? '' : 'none';
         if (rect) acceptedDimRects.push(rect);
       }
     }
@@ -3422,6 +3432,8 @@ export function SigmaSkeletonCards({
     container.dataset.totalCardCount = String(orderedEls.length);
     container.dataset.dimAnchorOpacity = DIM_ANCHOR_OPACITY;
     container.dataset.dimChipOpacity = DIM_CHIP_OPACITY;
+    container.dataset.dimAnchorOpacityToken = DIM_ANCHOR_OPACITY_TOKEN;
+    container.dataset.dimChipOpacityToken = DIM_CHIP_OPACITY_TOKEN;
     container.dataset.dimOpacityContract = 'readable-context-geography';
     container.dataset.overviewContextOpacityContract = 'core-full-support-quiet';
     container.dataset.overviewContextCoreOpacity = OVERVIEW_CONTEXT_OPACITY[1];
@@ -4238,6 +4250,8 @@ export function SigmaSkeletonCards({
       data-click-focus-relationship-context-source="none"
       data-dim-anchor-opacity={DIM_ANCHOR_OPACITY}
       data-dim-chip-opacity={DIM_CHIP_OPACITY}
+      data-dim-anchor-opacity-token={DIM_ANCHOR_OPACITY_TOKEN}
+      data-dim-chip-opacity-token={DIM_CHIP_OPACITY_TOKEN}
       data-dim-opacity-contract="readable-context-geography"
       data-overview-context-opacity-contract="core-full-support-quiet"
       data-overview-context-core-opacity={OVERVIEW_CONTEXT_OPACITY[1]}

@@ -3087,7 +3087,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     ).toHaveAttribute("data-dimmed", "true");
   });
 
-  it("선택 focus 의 dimmed context 카드는 지형 맥락을 읽을 수 있는 최소 opacity 를 유지한다", async () => {
+  it("선택 focus 의 dimmed context 카드는 조용한 지형 실루엣으로 남고 상호작용을 받지 않는다", async () => {
     const rectSpy = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")
       .mockImplementation(function getMockRect(this: HTMLElement) {
@@ -3206,11 +3206,35 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       await waitFor(() => {
         expect(layer).toHaveAttribute("data-dim-opacity-contract", "readable-context-geography");
-        expect(layer).toHaveAttribute("data-dim-anchor-opacity", "0.34");
-        expect(layer).toHaveAttribute("data-dim-chip-opacity", "0.18");
-        expect(projectCard).toHaveStyle({ opacity: "0.34" });
-        expect(domainCard).toHaveStyle({ opacity: "0.34" });
-        expect(capabilityCard).toHaveStyle({ opacity: "0.18" });
+        expect(layer).toHaveAttribute("data-dim-anchor-opacity", "0.26");
+        expect(layer).toHaveAttribute("data-dim-chip-opacity", "0.08");
+        expect(layer).toHaveAttribute(
+          "data-dim-anchor-opacity-token",
+          "--topology-map-dim-anchor-opacity",
+        );
+        expect(layer).toHaveAttribute(
+          "data-dim-chip-opacity-token",
+          "--topology-map-dim-context-opacity",
+        );
+        expect(projectCard).toHaveAttribute(
+          "data-dim-opacity-role",
+          "orientation-anchor",
+        );
+        expect(projectCard).toHaveAttribute(
+          "data-dim-opacity-token",
+          "--topology-map-dim-anchor-opacity",
+        );
+        expect(capabilityCard).toHaveAttribute(
+          "data-dim-opacity-role",
+          "context-silhouette",
+        );
+        expect(capabilityCard).toHaveAttribute(
+          "data-dim-opacity-token",
+          "--topology-map-dim-context-opacity",
+        );
+        expect(projectCard).toHaveStyle({ opacity: "0.26", pointerEvents: "none" });
+        expect(domainCard).toHaveStyle({ opacity: "0.26", pointerEvents: "none" });
+        expect(capabilityCard).toHaveStyle({ opacity: "0.08", pointerEvents: "none" });
       });
     } finally {
       rectSpy.mockRestore();
