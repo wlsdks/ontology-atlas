@@ -1315,6 +1315,11 @@ describe("TopologyNodePopover", () => {
       "selected-node-facts-to-agent-handoff",
     );
     expect(actions).toHaveAttribute(
+      "data-compact-actions-readable-label",
+      "상세 보기",
+    );
+    expect(actions).toHaveAccessibleName("상세 보기");
+    expect(actions).toHaveAttribute(
       "data-compact-action-gap-token",
       "--topology-node-popover-compact-action-gap",
     );
@@ -2597,6 +2602,21 @@ describe("TopologyNodePopover", () => {
       "data-compact-actions-layout-contract",
       "actions-share-command-row-with-facts",
     );
+    expect(screen.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
+      "data-compact-actions-readable-label",
+      "에이전트 인계: 브리프 · 상세 보기",
+    );
+    expect(screen.getByTestId("topology-node-popover-compact-actions")).toHaveAccessibleName(
+      "에이전트 인계: 브리프 · 상세 보기",
+    );
+    expect(screen.getByTestId("topology-node-popover-compact-actions")).toHaveTextContent(
+      "브리프 · 상세 보기",
+    );
+    expect(
+      screen
+        .getByTestId("topology-node-popover-compact-actions")
+        .querySelector("[data-compact-action-text-separator]"),
+    ).toHaveAttribute("data-compact-action-text-separator", "handoff-to-detail");
     expect(screen.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
       "data-phone-layout-contract",
       "actions-wrap-below-title",

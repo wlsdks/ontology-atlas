@@ -2335,6 +2335,10 @@ for (const viewport of VIEWPORTS) {
       "data-compact-actions-layout-contract",
       "actions-share-command-row-with-facts",
     );
+    await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
+      "data-compact-actions-readable-label",
+      /.+ · .+/,
+    );
     const selectedNodeCountLine = page.locator("[data-selected-node-count-line]");
     const selectedNodeCountLineFits = await selectedNodeCountLine.evaluate(
       (element) => element.scrollWidth <= element.clientWidth + 1,
@@ -3466,6 +3470,15 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "data-compact-actions-readable-flow",
     "selected-node-facts-to-agent-handoff",
   );
+  await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
+    "data-compact-actions-readable-label",
+    /.+ · .+/,
+  );
+  await expect(
+    page
+      .getByTestId("topology-node-popover-compact-actions")
+      .locator("[data-compact-action-text-separator]"),
+  ).toHaveAttribute("data-compact-action-text-separator", "handoff-to-detail");
   await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
     "data-compact-action-gap-token",
     "--topology-node-popover-compact-action-gap",

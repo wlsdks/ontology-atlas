@@ -345,6 +345,12 @@ export function TopologyNodePopover({
   const collapsedActionContract = primaryAction
     ? "label-visible-above-480"
     : "icon-only-under-480";
+  const collapsedActionFlowLabel = primaryAction
+    ? `${labels.actionRailTitle}: ${compactNodePopoverActionLabel(
+        primaryAction.kind,
+        primaryAction.label,
+      )} · ${labels.expand}`
+    : labels.expand;
   const showCompactMapReturn = useMediaQuery("(max-width: 1023px)", {
     initializeWithValue: false,
   });
@@ -497,8 +503,11 @@ export function TopologyNodePopover({
             data-compact-actions-layout-contract="actions-share-command-row-with-facts"
             data-compact-actions-hierarchy-contract="primary-brief-then-quiet-chrome"
             data-compact-actions-readable-flow="selected-node-facts-to-agent-handoff"
+            data-compact-actions-readable-label={collapsedActionFlowLabel}
             data-compact-action-gap-token="--topology-node-popover-compact-action-gap"
             data-phone-layout-contract="actions-wrap-below-title"
+            role="group"
+            aria-label={collapsedActionFlowLabel}
             className="ml-auto flex min-w-0 shrink-0 items-center justify-end gap-[var(--topology-node-popover-compact-action-gap)]"
           >
             {primaryAction ? (
@@ -534,6 +543,15 @@ export function TopologyNodePopover({
                   {compactActionLabel(primaryAction)}
                 </span>
               </button>
+            ) : null}
+            {primaryAction ? (
+              <span
+                aria-hidden="true"
+                data-compact-action-text-separator="handoff-to-detail"
+                className="sr-only"
+              >
+                {" · "}
+              </span>
             ) : null}
             <button
               type="button"
