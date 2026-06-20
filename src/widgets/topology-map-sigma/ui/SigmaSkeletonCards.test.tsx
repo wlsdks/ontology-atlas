@@ -3514,6 +3514,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-visible-card-rect-read-policy",
           "visible-only-after-style-check",
         );
+        expect(layer).toHaveAttribute(
+          "data-card-placement-frame-rect-cache-contract",
+          "reuse-pass1-card-rects-for-visibility",
+        );
+        expect(
+          Number(layer.getAttribute("data-card-placement-frame-rect-cache-hit-count")),
+        ).toBeGreaterThan(0);
         expect(
           Number(layer.getAttribute("data-visible-card-hidden-rect-skip-count")),
         ).toBeGreaterThan(0);

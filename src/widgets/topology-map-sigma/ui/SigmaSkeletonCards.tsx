@@ -2722,6 +2722,28 @@ export function SigmaSkeletonCards({
     const dimEls: HTMLElement[] = [];
     const overviewEls: HTMLElement[] = [];
     const elBySlug = new Map<string, HTMLElement>();
+    const cardPlacementFrameRectCache = new Map<HTMLElement, ConnectorRect>();
+    let cardPlacementFrameRectCacheHitCount = 0;
+    let cardPlacementFrameRectDirectReadCount = 0;
+    const seedCardPlacementFrameRect = (el: HTMLElement, rect: ConnectorRect) => {
+      cardPlacementFrameRectCache.set(el, rect);
+      return rect;
+    };
+    const readCardPlacementFrameRect = (el: HTMLElement) => {
+      const cached = cardPlacementFrameRectCache.get(el);
+      if (cached) {
+        cardPlacementFrameRectCacheHitCount += 1;
+        return cached;
+      }
+      cardPlacementFrameRectDirectReadCount += 1;
+      const r = el.getBoundingClientRect();
+      return seedCardPlacementFrameRect(el, {
+        left: r.left - containerRect.left,
+        top: r.top - containerRect.top,
+        right: r.right - containerRect.left,
+        bottom: r.bottom - containerRect.top,
+      });
+    };
     const isDragClusterCard = (slug: string, dockParent?: string | null) =>
       Boolean(
         activeDragCluster?.has(slug) ||
@@ -2949,12 +2971,12 @@ export function SigmaSkeletonCards({
         dimEls.push(el);
       } else {
         const r = el.getBoundingClientRect();
-        let visibleRect = {
+        let visibleRect = seedCardPlacementFrameRect(el, {
           left: r.left - containerRect.left,
           top: r.top - containerRect.top,
           right: r.right - containerRect.left,
           bottom: r.bottom - containerRect.top,
-        };
+        });
         let rect = {
           left: r.left - containerRect.left - COLLISION_PAD,
           top: r.top - containerRect.top - COLLISION_PAD,
@@ -2992,12 +3014,12 @@ export function SigmaSkeletonCards({
             const originalTransform = el.style.transform;
             setSkeletonStyleValue(el, 'transform', flipTransform, domWriteStats);
             const flipped = el.getBoundingClientRect();
-            const flippedVisibleRect = {
+            const flippedVisibleRect = seedCardPlacementFrameRect(el, {
               left: flipped.left - containerRect.left,
               top: flipped.top - containerRect.top,
               right: flipped.right - containerRect.left,
               bottom: flipped.bottom - containerRect.top,
-            };
+            });
             const flippedRect = {
               left: flipped.left - containerRect.left - COLLISION_PAD,
               top: flipped.top - containerRect.top - COLLISION_PAD,
@@ -3076,14 +3098,8 @@ export function SigmaSkeletonCards({
         return Number(a.dataset.layoutY ?? 0) - Number(b.dataset.layoutY ?? 0);
       });
       for (const el of ordered) {
-        const r = el.getBoundingClientRect();
         const selected = el.dataset.selected === 'true';
-        const rect = {
-          left: r.left - containerRect.left,
-          top: r.top - containerRect.top,
-          right: r.right - containerRect.left,
-          bottom: r.bottom - containerRect.top,
-        };
+        const rect = readCardPlacementFrameRect(el);
         const clipped =
           rect.left < 0 ||
           rect.top < 0 ||
@@ -3153,7 +3169,7 @@ export function SigmaSkeletonCards({
         const top = r.top - containerRect.top;
         const right = r.right - containerRect.left;
         const bottom = r.bottom - containerRect.top;
-        rect = { left, top, right, bottom };
+        rect = seedCardPlacementFrameRect(el, { left, top, right, bottom });
         const clipped =
           rect.left < 0 ||
           rect.top < 0 ||
@@ -3348,6 +3364,16 @@ export function SigmaSkeletonCards({
       if (!visible) {
         visibleCardHiddenRectSkipCount += 1;
         const next = { rect: null, visible };
+        visibleCardRectCache.set(el, next);
+        return next;
+      }
+      const seededRect = cardPlacementFrameRectCache.get(el);
+      if (seededRect) {
+        cardPlacementFrameRectCacheHitCount += 1;
+        const next = {
+          rect: seededRect,
+          visible,
+        };
         visibleCardRectCache.set(el, next);
         return next;
       }
@@ -3634,6 +3660,17 @@ export function SigmaSkeletonCards({
     container.dataset.visibleCardRectReadCount = String(visibleCardRectReadCount);
     container.dataset.visibleCardHiddenRectSkipCount = String(
       visibleCardHiddenRectSkipCount,
+    );
+    container.dataset.cardPlacementFrameRectCacheContract =
+      'reuse-pass1-card-rects-for-visibility';
+    container.dataset.cardPlacementFrameRectCacheSize = String(
+      cardPlacementFrameRectCache.size,
+    );
+    container.dataset.cardPlacementFrameRectCacheHitCount = String(
+      cardPlacementFrameRectCacheHitCount,
+    );
+    container.dataset.cardPlacementFrameRectDirectReadCount = String(
+      cardPlacementFrameRectDirectReadCount,
     );
     const visibilityCacheDurationMs = Math.max(
       0,

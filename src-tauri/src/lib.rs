@@ -4018,6 +4018,14 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-hit-count") || "0"),
                                   topologyCardPlacementSizeCacheMissCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-miss-count") || "0"),
+                                  topologyCardPlacementFrameRectCacheContract:
+                                    skeletonCardsLayer?.getAttribute("data-card-placement-frame-rect-cache-contract") || "",
+                                  topologyCardPlacementFrameRectCacheSize:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-frame-rect-cache-size") || "0"),
+                                  topologyCardPlacementFrameRectCacheHitCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-frame-rect-cache-hit-count") || "0"),
+                                  topologyCardPlacementFrameRectDirectReadCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-frame-rect-direct-read-count") || "0"),
                                   topologyDragRepositionPolicy:
                                     skeletonCardsLayer?.getAttribute("data-drag-reposition-policy") || "",
                                   topologyDragDomIndexContract:
