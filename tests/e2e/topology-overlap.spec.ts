@@ -1564,6 +1564,14 @@ for (const viewport of VIEWPORTS) {
       "data-relation-label-visible-text",
       /contains|depends|relates|describes|uses|포함|의존|연관|설명|사용/,
     );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-visible-count-policy",
+      "selected-card-summary-owns-count",
+    );
+    await expect(relationButton).not.toHaveAttribute(
+      "data-relation-label-visible-text",
+      /\d/,
+    );
     const relationTypeTextFit = await relationTypeText.evaluate(
       (element) => element.scrollWidth <= element.clientWidth + 1,
     );
@@ -3670,6 +3678,15 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-relation-label-query-contract",
     "indexed-once",
+  );
+  const compactRelationButton = page.locator("[data-relation-label-button]").first();
+  await expect(compactRelationButton).toHaveAttribute(
+    "data-relation-label-visible-count-policy",
+    "selected-card-summary-owns-count",
+  );
+  await expect(compactRelationButton).not.toHaveAttribute(
+    "data-relation-label-visible-text",
+    /\d/,
   );
   await expectSelectedCardRelationSummary(page, "domain:views");
 

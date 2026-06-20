@@ -4435,10 +4435,17 @@ export function SigmaSkeletonCards({
           state: evidenceState,
         });
         const labelText = formatRelationLabel(label.relationType, label.count);
-        const visibleLabelText = formatRelationVisibleLabel(
-          label.relationType,
-          label.count,
-        );
+        const selectedCardOwnsRelationSummary =
+          selectedSlug != null &&
+          (selectedSlug === label.edgeSource || selectedSlug === label.edgeTarget);
+        const relationLabelVisibleCountPolicy =
+          selected || selectedCardOwnsRelationSummary
+            ? 'selected-card-summary-owns-count'
+            : 'relation-label-shows-count';
+        const visibleLabelText =
+          relationLabelVisibleCountPolicy === 'selected-card-summary-owns-count'
+            ? formatRelationVisibleLabel(label.relationType)
+            : formatRelationVisibleLabel(label.relationType, label.count);
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentGateText = relationAgentGateChipText(agentGateKind);
@@ -4470,6 +4477,7 @@ export function SigmaSkeletonCards({
             data-relation-type={label.relationType}
             data-relation-type-label={labelText}
             data-relation-label-visible-text={visibleLabelText}
+            data-relation-label-visible-count-policy={relationLabelVisibleCountPolicy}
             data-relation-label-readable-text={`${labelText} · ${evidenceChipText}`}
             data-selected-relation={selected ? 'true' : 'false'}
             data-agent-gate-kind={agentGateKind}
@@ -4702,10 +4710,7 @@ export function SigmaSkeletonCards({
           state: evidenceState,
         });
         const labelText = formatRelationLabel(label.relationType, label.count);
-        const visibleLabelText = formatRelationVisibleLabel(
-          label.relationType,
-          label.count,
-        );
+        const visibleLabelText = formatRelationVisibleLabel(label.relationType);
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentActionChipText = relationActionChipText(primaryCopyAction);
@@ -4724,6 +4729,7 @@ export function SigmaSkeletonCards({
             data-relation-type={label.relationType}
             data-relation-type-label={labelText}
             data-relation-label-visible-text={visibleLabelText}
+            data-relation-label-visible-count-policy="selected-card-summary-owns-count"
             data-relation-label-readable-text={`${labelText} · ${evidenceChipText}`}
             data-agent-gate-kind={agentGateKind}
             data-primary-copy-action={primaryCopyAction}

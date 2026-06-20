@@ -2473,6 +2473,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(typeText).not.toHaveClass("border-r");
     expect(typeText).toHaveTextContent("contains");
     expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-visible-count-policy",
+      "selected-card-summary-owns-count",
+    );
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "preflight-first");
     expect(gateChip).toHaveAttribute("data-relation-label-segment", "gate");
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "relation_check");
@@ -2688,6 +2692,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(labelHit).toHaveAttribute("data-selected-relation", "true");
     expect(labelHit).toHaveAttribute("data-relation-label-density", "focus-token");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-visible-count-policy",
+      "selected-card-summary-owns-count",
+    );
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-selected-surface-token",
       "--topology-relation-label-selected-surface",
@@ -2715,6 +2723,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-selected-text-token",
       "--topology-relation-label-selected-text",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-visible-count-policy",
+      "selected-card-summary-owns-count",
     );
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-text-size-token",
