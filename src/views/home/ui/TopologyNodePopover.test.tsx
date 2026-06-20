@@ -20,7 +20,7 @@ const labels: TopologyNodePopoverLabels = {
   actionRailHint: "복사",
   expandedNote:
     "{count}개 직접 연결은 이미 지도에 펼쳐져 있어요. 패널 겹침 없이 지도에서 확인할 수 있어요.",
-  relationLensTitle: "관계 렌즈",
+  relationLensTitle: "직접 의미",
   relationLensDirectFactOne: "직접 의미 관계 {count}개",
   relationLensDirectFactOther: "직접 의미 관계 {count}개",
   relationLensTypeOne: "관계 유형 {count}종",
@@ -411,7 +411,11 @@ describe("TopologyNodePopover", () => {
     );
     expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
       "data-relation-lens-layout",
-      "inline-label-value-metrics",
+      "plain-language-label-counts",
+    );
+    expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
+      "data-relation-lens-readable-contract",
+      "human-first-direct-facts",
     );
     expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
       "data-relation-lens-gap-token",
@@ -2108,13 +2112,17 @@ describe("TopologyNodePopover", () => {
       "data-relation-lens-density-contract",
       "quiet-inline-fact-strip",
     );
-    expect(lens).toHaveAttribute("data-relation-lens-layout", "inline-label-value-metrics");
+    expect(lens).toHaveAttribute("data-relation-lens-layout", "plain-language-label-counts");
+    expect(lens).toHaveAttribute(
+      "data-relation-lens-readable-contract",
+      "human-first-direct-facts",
+    );
     expect(lens).toHaveAttribute("data-relation-fact-label", "직접 의미 관계 3개");
     expect(lens).toHaveAttribute("data-relation-type-label", "관계 유형 2종");
     expect(lens).toHaveAccessibleName(
-      "관계 렌즈: 직접 의미 관계 3개 · 관계 유형 2종 · 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+      "직접 의미: 직접 의미 관계 3개 · 관계 유형 2종 · 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
     );
-    expect(lens).toHaveTextContent("관계 렌즈");
+    expect(lens).toHaveTextContent("직접 의미");
     expect(lens.querySelector('[data-relation-lens-metric="facts"]')).toHaveTextContent(
       "관계3",
     );
@@ -2131,7 +2139,7 @@ describe("TopologyNodePopover", () => {
     expect(lens).not.toHaveTextContent("관계 유형 2종");
     expect(lens).toHaveAttribute(
       "title",
-      "관계 렌즈: 직접 의미 관계 3개 · 관계 유형 2종 · 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+      "직접 의미: 직접 의미 관계 3개 · 관계 유형 2종 · 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
     );
   });
 
@@ -2465,20 +2473,20 @@ describe("TopologyNodePopover", () => {
         relationLensDirectFactOther: "{count} direct facts",
         relationLensTypeOne: "{count} relation type",
         relationLensTypeOther: "{count} relation types",
-        relationLensCompactFacts: "Facts",
-        relationLensCompactTypes: "Types",
+        relationLensCompactFacts: "facts",
+        relationLensCompactTypes: "types",
       },
     });
 
     const lens = screen.getByTestId("topology-relation-lens");
     expect(lens).toHaveAccessibleName(
-      "관계 렌즈: 1 direct fact · 1 relation type · 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+      "직접 의미: 1 direct fact · 1 relation type · 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
     );
     expect(lens.querySelector('[data-relation-lens-metric="facts"]')).toHaveTextContent(
-      "Facts1",
+      "facts1",
     );
     expect(lens.querySelector('[data-relation-lens-metric="types"]')).toHaveTextContent(
-      "Types1",
+      "types1",
     );
     expect(lens).not.toHaveTextContent("1 direct fact");
     expect(lens).not.toHaveTextContent("1 relation type");

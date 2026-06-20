@@ -764,7 +764,8 @@ export function TopologyNodePopover({
           data-testid="topology-relation-lens"
           data-relation-section-lens="typed-fact-summary"
           data-relation-lens-density-contract="quiet-inline-fact-strip"
-          data-relation-lens-layout="inline-label-value-metrics"
+          data-relation-lens-layout="plain-language-label-counts"
+          data-relation-lens-readable-contract="human-first-direct-facts"
           data-phone-density-contract="hide-explainer-before-readable-row"
           data-relation-fact-label={relationFactLabel}
           data-relation-type-label={relationTypeLabel}
@@ -778,28 +779,28 @@ export function TopologyNodePopover({
           title={`${labels.relationLensTitle}: ${relationFactLabel} · ${relationTypeLabel} · ${labels.relationLensNoScores}`}
           className="mb-[var(--topology-node-popover-relation-lens-margin-bottom)] flex items-center justify-between gap-[var(--topology-node-popover-relation-lens-gap)] text-[length:var(--topology-node-popover-relation-lens-size)] leading-[var(--topology-node-popover-relation-lens-leading)] text-[color:var(--topology-node-popover-relation-section-lens-text)] max-[540px]:hidden"
         >
-          <span className="min-w-0 truncate font-mono uppercase tracking-[0.08em]">
+          <span className="min-w-0 truncate font-medium">
             {labels.relationLensTitle}
           </span>
           <span
             data-relation-lens-metric="facts"
-            className="inline-flex min-w-[var(--topology-node-popover-relation-lens-metric-min-width)] items-center justify-end gap-[var(--topology-node-popover-relation-lens-metric-gap)] whitespace-nowrap font-mono"
+            className="inline-flex min-w-[var(--topology-node-popover-relation-lens-metric-min-width)] items-center justify-end gap-[var(--topology-node-popover-relation-lens-metric-gap)] whitespace-nowrap"
           >
-            <span className="uppercase tracking-[0.08em]">
+            <span>
               {labels.relationLensCompactFacts}
             </span>
-            <span className="tabular-nums text-[color:var(--topology-node-popover-title-text)]">
+            <span className="font-mono tabular-nums text-[color:var(--topology-node-popover-title-text)]">
               {total}
             </span>
           </span>
           <span
             data-relation-lens-metric="types"
-            className="inline-flex min-w-[var(--topology-node-popover-relation-lens-metric-min-width)] items-center justify-end gap-[var(--topology-node-popover-relation-lens-metric-gap)] whitespace-nowrap font-mono"
+            className="inline-flex min-w-[var(--topology-node-popover-relation-lens-metric-min-width)] items-center justify-end gap-[var(--topology-node-popover-relation-lens-metric-gap)] whitespace-nowrap"
           >
-            <span className="uppercase tracking-[0.08em]">
+            <span>
               {labels.relationLensCompactTypes}
             </span>
-            <span className="tabular-nums text-[color:var(--topology-node-popover-title-text)]">
+            <span className="font-mono tabular-nums text-[color:var(--topology-node-popover-title-text)]">
               {relationTypeCount}
             </span>
           </span>
