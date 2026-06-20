@@ -259,7 +259,8 @@
       var(--topology-panel-path-rail-width),
       calc(100vw - var(--topology-panel-phone-utility-rail-reserve))
     );
-    --topology-panel-focus-rail-width: clamp(260px, 14vw, 286px);
+    --topology-panel-focus-rail-width: clamp(250px, 13vw, 270px);
+    --topology-panel-focus-rail-padding: 10px;
     --topology-panel-standard-width: clamp(460px, 31vw, 560px);
     --topology-panel-standard-reserved-width: clamp(440px, calc(44vw - 190px), 560px);
     --topology-panel-compact-width: clamp(380px, calc(50vw - 270px), 560px);
@@ -372,6 +373,8 @@
     --topology-analysis-panel-metric-label-text: rgba(222, 225, 255, 0.44);
     --topology-analysis-panel-metric-value-text: rgba(222, 225, 255, 0.72);
     --topology-analysis-panel-notice-text: rgba(222, 225, 255, 0.56);
+    --topology-analysis-focus-body-gap: 8px;
+    --topology-analysis-mode-tab-height: clamp(28px, 1.7vw, 30px);
     --topology-command-spine-padding: clamp(8px, 0.56vw, 10px);
     --topology-command-spine-gap: clamp(6px, 0.48vw, 8px);
     --topology-command-spine-radius: 12px;
@@ -401,8 +404,8 @@
     --topology-command-step-index-border: rgba(139, 151, 255, 0.18);
     --topology-command-step-index-text: rgba(179, 186, 255, 0.82);
     --topology-command-primary-min-height: clamp(40px, 2.6vw, 44px);
-    --topology-command-step-min-height: clamp(24px, 1.6vw, 28px);
-    --topology-command-step-index-size: clamp(18px, 1.2vw, 21px);
+    --topology-command-step-min-height: clamp(22px, 1.35vw, 24px);
+    --topology-command-step-index-size: clamp(17px, 1.05vw, 19px);
     --topology-overview-signal-grid-surface: rgba(255, 255, 255, 0.025);
     --topology-overview-signal-grid-border: rgba(255, 255, 255, 0.065);
     --topology-overview-panel-compact-gap: 8px;

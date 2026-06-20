@@ -3778,7 +3778,7 @@ export function validateWebviewVerifyPayload(payload, {
       const usesFocusSupportRail =
         topologyAnalysisMode === "focus" &&
         payload.markers.topologyAnalysisPanelWidthContract ===
-          "focus-support-rail-max-320-map-centered";
+          "focus-support-rail-max-300-map-centered";
       const analysisPanelMinWidth = usesPathRailWidth
         ? 320
         : usesFocusSupportRail || focusSelectedNodeRoute
@@ -3793,7 +3793,9 @@ export function validateWebviewVerifyPayload(payload, {
       const analysisPanelMinHeight =
         topologyAnalysisMode === "path"
           ? 120
-          : usesFocusSupportRail || focusSelectedNodeRoute
+          : usesFocusSupportRail
+            ? 220
+          : focusSelectedNodeRoute
             ? 260
             : 320;
       if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= analysisPanelMinHeight)) {

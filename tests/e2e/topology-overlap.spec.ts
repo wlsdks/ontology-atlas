@@ -2449,7 +2449,11 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(panel).toHaveAttribute(
       "data-panel-width-contract",
-      "focus-support-rail-max-320-map-centered",
+      "focus-support-rail-max-300-map-centered",
+    );
+    await expect(panel).toHaveAttribute(
+      "data-panel-padding-token",
+      "--topology-panel-focus-rail-padding",
     );
     const panelRect = await rectOf(panel);
     expect(

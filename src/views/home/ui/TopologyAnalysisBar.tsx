@@ -841,6 +841,10 @@ export function TopologyAnalysisBar({
     attentionRole === "support"
       ? "--topology-panel-support-shadow"
       : "--topology-panel-primary-shadow";
+  const panelPaddingToken =
+    panelMode === "focus" && !selectedFocusRailActive
+      ? "--topology-panel-focus-rail-padding"
+      : "--topology-panel-padding";
   const panelStyle: CSSProperties = {
     width:
       selectedFocusRailActive
@@ -863,7 +867,7 @@ export function TopologyAnalysisBar({
           ? "var(--topology-panel-compact-reserved-width)"
           : "var(--topology-panel-compact-width)",
     borderRadius: "var(--topology-panel-radius)",
-    padding: "var(--topology-panel-padding)",
+    padding: `var(${panelPaddingToken})`,
     borderColor: "var(--topology-panel-border)",
     background: `var(${panelSurfaceToken})`,
     boxShadow: `var(${panelShadowToken})`,
@@ -917,7 +921,7 @@ export function TopologyAnalysisBar({
       data-panel-layer-contract="read-surface-above-map-cards"
       data-panel-z-index-token="--topology-panel-read-layer-z-index"
       data-panel-radius-token="--topology-panel-radius"
-      data-panel-padding-token="--topology-panel-padding"
+      data-panel-padding-token={panelPaddingToken}
       data-panel-motion-token="--topology-motion-panel-duration"
       data-command-spine-padding-token={
         panelMode === "focus" ? "--topology-command-spine-padding" : undefined
@@ -938,7 +942,7 @@ export function TopologyAnalysisBar({
         selectedFocusRailActive
           ? "selected-focus-rail-max-320"
           : panelMode === "focus"
-            ? "focus-support-rail-max-320-map-centered"
+            ? "focus-support-rail-max-300-map-centered"
           : panelMode === "overview"
             ? "overview-support-max-360-phone-utility-reserve"
             : panelMode === "health"
@@ -1004,7 +1008,7 @@ export function TopologyAnalysisBar({
         data-testid="topology-analysis-panel-body"
         data-panel-body-scroll-contract="compact-scrolls-above-bottom-tab"
         data-panel-body-scroll-end-reserve-token={panelBodyScrollEndReserveToken}
-        className="flex flex-col gap-3 data-[analysis-body-mode=overview]:gap-[var(--topology-overview-panel-compact-gap)] data-[analysis-body-mode=path]:gap-[var(--topology-path-panel-compact-gap)] max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-path-collapsed-scroll-end-reserve)] data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=focus]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=health]:max-md:pb-[var(--topology-health-panel-scroll-end-reserve)] max-md:pr-1"
+        className="flex flex-col gap-3 data-[analysis-body-mode=focus]:gap-[var(--topology-analysis-focus-body-gap)] data-[analysis-body-mode=overview]:gap-[var(--topology-overview-panel-compact-gap)] data-[analysis-body-mode=path]:gap-[var(--topology-path-panel-compact-gap)] max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-path-collapsed-scroll-end-reserve)] data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=focus]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=health]:max-md:pb-[var(--topology-health-panel-scroll-end-reserve)] max-md:pr-1"
         data-analysis-body-mode={panelMode}
       >
         <div
@@ -1012,6 +1016,7 @@ export function TopologyAnalysisBar({
           data-testid="topology-analysis-mode-rail"
           data-mode-rail-contract="four-icon-tabs-tooltip-labels"
           data-surface-token="--topology-analysis-mode-rail-surface"
+          data-mode-tab-height-token="--topology-analysis-mode-tab-height"
           data-active-surface-token="--topology-analysis-mode-active-surface"
           data-active-border-token="--topology-analysis-mode-active-border"
           data-active-text-token="--topology-analysis-mode-active-text"
@@ -1045,7 +1050,7 @@ export function TopologyAnalysisBar({
                   }
                   data-hover-surface-token="--topology-analysis-mode-hover-surface"
                   data-focus-ring-token="--topology-analysis-mode-focus-ring"
-                  className={`inline-flex h-9 w-full items-center justify-center rounded-md border px-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-analysis-mode-focus-ring)] ${
+                  className={`inline-flex h-[var(--topology-analysis-mode-tab-height)] w-full items-center justify-center rounded-md border px-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-analysis-mode-focus-ring)] ${
                     active
                       ? "border-[color:var(--topology-analysis-mode-active-border)] bg-[color:var(--topology-analysis-mode-active-surface)] text-[color:var(--topology-analysis-mode-active-text)]"
                       : "border-transparent text-[color:var(--topology-analysis-mode-idle-text)] hover:bg-[color:var(--topology-analysis-mode-hover-surface)] hover:text-[color:var(--topology-analysis-mode-active-text)]"
@@ -1061,8 +1066,12 @@ export function TopologyAnalysisBar({
           <p
             data-testid="topology-analysis-panel-prompt"
             data-prompt-text-token="--topology-analysis-panel-prompt-text"
-            className={`line-clamp-3 break-keep text-[13.5px] text-[color:var(--topology-analysis-panel-prompt-text)] ${
-              panelMode === "overview" ? "leading-5 max-md:line-clamp-2" : "leading-6"
+            className={`break-keep text-[13.5px] text-[color:var(--topology-analysis-panel-prompt-text)] ${
+              panelMode === "overview"
+                ? "line-clamp-3 leading-5 max-md:line-clamp-2"
+                : panelMode === "focus"
+                  ? "line-clamp-2 leading-5"
+                  : "line-clamp-3 leading-6"
             }`}
           >
             {prompt}
@@ -1071,7 +1080,9 @@ export function TopologyAnalysisBar({
             data-testid="topology-analysis-panel-metrics"
             data-metric-label-text-token="--topology-analysis-panel-metric-label-text"
             data-metric-value-text-token="--topology-analysis-panel-metric-value-text"
-            className="mt-3 grid grid-cols-2 gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--topology-analysis-panel-metric-label-text)]"
+            className={`grid grid-cols-2 gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--topology-analysis-panel-metric-label-text)] ${
+              panelMode === "focus" ? "mt-2" : "mt-3"
+            }`}
           >
             <span>
               <span className="text-[color:var(--topology-analysis-panel-metric-value-text)]">

@@ -656,7 +656,11 @@ describe("TopologyAnalysisBar", () => {
     expect(panel).toHaveAttribute("data-panel-width-target", "focus-support-rail");
     expect(panel).toHaveAttribute(
       "data-panel-width-contract",
-      "focus-support-rail-max-320-map-centered",
+      "focus-support-rail-max-300-map-centered",
+    );
+    expect(panel).toHaveAttribute(
+      "data-panel-padding-token",
+      "--topology-panel-focus-rail-padding",
     );
     expect(panel).toHaveAttribute(
       "data-panel-width-css",
@@ -721,6 +725,10 @@ describe("TopologyAnalysisBar", () => {
       "--topology-analysis-mode-rail-surface",
     );
     expect(modeRail).toHaveAttribute(
+      "data-mode-tab-height-token",
+      "--topology-analysis-mode-tab-height",
+    );
+    expect(modeRail).toHaveAttribute(
       "data-active-surface-token",
       "--topology-analysis-mode-active-surface",
     );
@@ -740,10 +748,18 @@ describe("TopologyAnalysisBar", () => {
       "data-focus-ring-token",
       "--topology-analysis-mode-focus-ring",
     );
-    expect(screen.getByRole("button", { name: "Overview" }).className).toContain("h-9");
-    expect(screen.getByRole("button", { name: "Focus" }).className).toContain("h-9");
-    expect(screen.getByRole("button", { name: "Path" }).className).toContain("h-9");
-    expect(screen.getByRole("button", { name: "Health" }).className).toContain("h-9");
+    expect(screen.getByRole("button", { name: "Overview" }).className).toContain(
+      "h-[var(--topology-analysis-mode-tab-height)]",
+    );
+    expect(screen.getByRole("button", { name: "Focus" }).className).toContain(
+      "h-[var(--topology-analysis-mode-tab-height)]",
+    );
+    expect(screen.getByRole("button", { name: "Path" }).className).toContain(
+      "h-[var(--topology-analysis-mode-tab-height)]",
+    );
+    expect(screen.getByRole("button", { name: "Health" }).className).toContain(
+      "h-[var(--topology-analysis-mode-tab-height)]",
+    );
     expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute(
       "data-mode-tab-state",
       "active",
