@@ -132,6 +132,7 @@ import {
 import { useHomeRouteState } from "../model/use-home-route-state";
 import {
   selectTopologyNodeRouteState,
+  selectTopologyPathRouteState,
   type TopologyAnalysisMode,
 } from "../model/url-state";
 import {
@@ -1298,13 +1299,7 @@ export function HomePage() {
 
   const handlePathSelectionChange = useCallback(
     (selection: { sourceSlug: string | null; targetSlug: string | null }) => {
-      setRouteState((current) => ({
-        ...current,
-        analysisMode: "path",
-        selectedSlug: selection.sourceSlug ?? current.selectedSlug,
-        pathSourceSlug: selection.sourceSlug,
-        pathTargetSlug: selection.targetSlug,
-      }));
+      setRouteState((current) => selectTopologyPathRouteState(current, selection));
     },
     [setRouteState],
   );

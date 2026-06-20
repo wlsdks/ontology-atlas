@@ -4,6 +4,7 @@ import {
   DEFAULT_HOME_ROUTE_STATE,
   parseHomeRouteState,
   selectTopologyNodeRouteState,
+  selectTopologyPathRouteState,
 } from "./url-state";
 
 describe("parseHomeRouteState", () => {
@@ -13,15 +14,28 @@ describe("parseHomeRouteState", () => {
     );
 
     expect(parseHomeRouteState(params)).toEqual({
-      selectedSlug: "iam",
+      selectedSlug: null,
       activeCategory: "in-progress",
-      focusedHubSlug: "iam",
-      impactMode: "downstream",
+      focusedHubSlug: null,
+      impactMode: "none",
       pulseMode: "30d",
       analysisMode: "path",
       pathSourceSlug: "domain:views",
       pathTargetSlug: "capability:topology-analysis-modes",
       createNodeIntent: true,
+    });
+  });
+
+  it("ignores stale selected node drawer state when a Path result is complete", () => {
+    const params = new URLSearchParams(
+      "mode=path&p=ontology-atlas&pathFrom=ontology-atlas&pathTo=domain%3Aai-agent-partner",
+    );
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      selectedSlug: null,
+      analysisMode: "path",
+      pathSourceSlug: "ontology-atlas",
+      pathTargetSlug: "domain:ai-agent-partner",
     });
   });
 
@@ -225,5 +239,54 @@ describe("selectTopologyNodeRouteState", () => {
       selectedSlug: "capabilities/orphan",
       analysisMode: "health",
     });
+  });
+});
+
+describe("selectTopologyPathRouteState", () => {
+  it("keeps the source drawer context while the path target is still missing", () => {
+    expect(
+      selectTopologyPathRouteState(DEFAULT_HOME_ROUTE_STATE, {
+        sourceSlug: "project:ontology-atlas",
+        targetSlug: null,
+      }),
+    ).toMatchObject({
+      analysisMode: "path",
+      selectedSlug: "project:ontology-atlas",
+      pathSourceSlug: "project:ontology-atlas",
+      pathTargetSlug: null,
+    });
+  });
+
+  it("clears stale node drawer state once Path result evidence owns the screen", () => {
+    const next = selectTopologyPathRouteState(
+      {
+        ...DEFAULT_HOME_ROUTE_STATE,
+        selectedSlug: "project:ontology-atlas",
+        focusedHubSlug: "project:ontology-atlas",
+        impactMode: "network",
+      },
+      {
+        sourceSlug: "project:ontology-atlas",
+        targetSlug: "domain:ai-agent-partner",
+      },
+    );
+
+    expect(next).toMatchObject({
+      analysisMode: "path",
+      selectedSlug: null,
+      focusedHubSlug: null,
+      impactMode: "none",
+      pathSourceSlug: "project:ontology-atlas",
+      pathTargetSlug: "domain:ai-agent-partner",
+    });
+
+    expect(
+      applyHomeRouteState(
+        new URLSearchParams("p=project%3Aontology-atlas"),
+        next,
+      ).toString(),
+    ).toBe(
+      "mode=path&pathFrom=project%3Aontology-atlas&pathTo=domain%3Aai-agent-partner",
+    );
   });
 });

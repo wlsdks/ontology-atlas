@@ -62,7 +62,7 @@ export function parseHomeRouteState(
   const impactParam = searchParams.get(HOME_QUERY_KEYS.impact);
   const pulseParam = searchParams.get(HOME_QUERY_KEYS.pulse);
   const modeParam = searchParams.get(HOME_QUERY_KEYS.mode);
-  const selectedSlug = searchParams.get(HOME_QUERY_KEYS.project);
+  const rawSelectedSlug = searchParams.get(HOME_QUERY_KEYS.project);
   // 딥링크는 명시된 mode 를 존중한다. selectedSlug 만으로 parse 단계에서
   // focus 로 승격하지 않는다. click selection 의 승격은 아래
   // selectTopologyNodeRouteState 에서만 수행해 load 와 interaction 을 분리한다.
@@ -72,23 +72,36 @@ export function parseHomeRouteState(
   const pathSourceSlug =
     searchParams.get(HOME_QUERY_KEYS.pathSource) ??
     searchParams.get(HOME_QUERY_KEYS.pathSourceAlias) ??
-    (analysisMode === "path" ? selectedSlug : null);
+    (analysisMode === "path" ? rawSelectedSlug : null);
+  const pathTargetSlug =
+    searchParams.get(HOME_QUERY_KEYS.pathTarget) ??
+    searchParams.get(HOME_QUERY_KEYS.pathTargetAlias);
+  const selectedSlug =
+    analysisMode === "path" && pathSourceSlug && pathTargetSlug
+      ? null
+      : rawSelectedSlug;
+  const pathResultComplete = Boolean(
+    analysisMode === "path" && pathSourceSlug && pathTargetSlug,
+  );
+  const impactMode = pathResultComplete
+    ? DEFAULT_HOME_ROUTE_STATE.impactMode
+    : VALID_IMPACT.includes(impactParam as ProjectImpactMode)
+      ? (impactParam as ProjectImpactMode)
+      : DEFAULT_HOME_ROUTE_STATE.impactMode;
 
   return {
     selectedSlug,
     activeCategory: searchParams.get(HOME_QUERY_KEYS.category),
-    focusedHubSlug: searchParams.get(HOME_QUERY_KEYS.hub),
-    impactMode: VALID_IMPACT.includes(impactParam as ProjectImpactMode)
-      ? (impactParam as ProjectImpactMode)
-      : DEFAULT_HOME_ROUTE_STATE.impactMode,
+    focusedHubSlug: pathResultComplete
+      ? null
+      : searchParams.get(HOME_QUERY_KEYS.hub),
+    impactMode,
     pulseMode: VALID_PULSE.includes(pulseParam as HomePulseMode)
       ? (pulseParam as HomePulseMode)
       : DEFAULT_HOME_ROUTE_STATE.pulseMode,
     analysisMode,
     pathSourceSlug,
-    pathTargetSlug:
-      searchParams.get(HOME_QUERY_KEYS.pathTarget) ??
-      searchParams.get(HOME_QUERY_KEYS.pathTargetAlias),
+    pathTargetSlug,
     createNodeIntent: searchParams.get(HOME_QUERY_KEYS.create) === "concept",
   };
 }
@@ -108,6 +121,24 @@ export function selectTopologyNodeRouteState(
     // 사용자가 시작한 워크플로라 선택만 갱신하고 mode 는 보존한다.
     analysisMode:
       current.analysisMode === "overview" ? "focus" : current.analysisMode,
+  };
+}
+
+export function selectTopologyPathRouteState(
+  current: HomeRouteState,
+  selection: { sourceSlug: string | null; targetSlug: string | null },
+): HomeRouteState {
+  const hasCompletePath = Boolean(selection.sourceSlug && selection.targetSlug);
+  return {
+    ...current,
+    analysisMode: "path",
+    selectedSlug: hasCompletePath
+      ? null
+      : selection.sourceSlug ?? current.selectedSlug,
+    focusedHubSlug: hasCompletePath ? null : current.focusedHubSlug,
+    impactMode: hasCompletePath ? "none" : current.impactMode,
+    pathSourceSlug: selection.sourceSlug,
+    pathTargetSlug: selection.targetSlug,
   };
 }
 
