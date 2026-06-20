@@ -490,10 +490,12 @@ export function TopologyNodePopover({
               data-popover-action-hover-text-token="--topology-node-popover-action-hover-text"
               data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
               data-popover-action-size-token="--topology-node-popover-compact-action-size"
+              data-popover-action-gap-token="--topology-node-popover-compact-action-gap"
+              data-popover-action-padding-x-token="--topology-node-popover-compact-action-padding-x"
               data-popover-action-min-width-token="--topology-node-popover-compact-handoff-action-min-width"
               data-popover-action-max-width-token="--topology-node-popover-compact-handoff-action-max-width"
               data-popover-action-label-size-token="--topology-node-popover-compact-action-label-size"
-              className="inline-flex h-[var(--topology-node-popover-compact-action-size)] min-w-[var(--topology-node-popover-compact-handoff-action-min-width)] max-w-[var(--topology-node-popover-compact-handoff-action-max-width)] shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-icon-border)] bg-[color:var(--topology-node-popover-action-icon-surface)] px-2 text-[length:var(--topology-node-popover-compact-action-label-size)] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)] max-[480px]:w-[var(--topology-node-popover-compact-action-size)] max-[480px]:min-w-[var(--topology-node-popover-compact-action-size)] max-[480px]:px-0"
+              className="inline-flex h-[var(--topology-node-popover-compact-action-size)] min-w-[var(--topology-node-popover-compact-handoff-action-min-width)] max-w-[var(--topology-node-popover-compact-handoff-action-max-width)] shrink-0 items-center justify-center gap-[var(--topology-node-popover-compact-action-gap)] overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-icon-border)] bg-[color:var(--topology-node-popover-action-icon-surface)] px-[var(--topology-node-popover-compact-action-padding-x)] text-[length:var(--topology-node-popover-compact-action-label-size)] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)] max-[480px]:w-[var(--topology-node-popover-compact-action-size)] max-[480px]:min-w-[var(--topology-node-popover-compact-action-size)] max-[480px]:px-0"
             >
               <Clipboard size={14} aria-hidden />
               <span className="min-w-0 truncate max-[480px]:sr-only">
@@ -575,13 +577,15 @@ export function TopologyNodePopover({
         data-node-popover-section="header"
         data-section-padding-x-token="--topology-node-popover-section-padding-x"
         data-header-padding-top-token="--topology-node-popover-header-padding-top"
-        className="flex items-start justify-between gap-3 px-[var(--topology-node-popover-section-padding-x)] pt-[var(--topology-node-popover-header-padding-top)]"
+        data-header-gap-token="--topology-node-popover-header-gap"
+        className="flex items-start justify-between gap-[var(--topology-node-popover-header-gap)] px-[var(--topology-node-popover-section-padding-x)] pt-[var(--topology-node-popover-header-padding-top)]"
       >
         <div className="min-w-0">
           <p
             data-selected-node-kind-label
             data-kind-text-token="--topology-node-popover-kind-text"
-            className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-node-popover-kind-text)]"
+            data-kind-size-token="--topology-node-popover-kind-size"
+            className="font-mono text-[length:var(--topology-node-popover-kind-size)] uppercase tracking-[0.12em] text-[color:var(--topology-node-popover-kind-text)]"
           >
             {focusKindLabel}
           </p>
@@ -590,14 +594,17 @@ export function TopologyNodePopover({
             data-title-readability-contract="selected-node-title-readable"
             data-title-lines-token="--topology-node-popover-title-lines"
             data-title-text-token="--topology-node-popover-title-text"
-            className="mt-0.5 line-clamp-[var(--topology-node-popover-title-lines)] text-sm font-[var(--font-weight-signature)] leading-5 text-[color:var(--topology-node-popover-title-text)]"
+            data-title-size-token="--topology-node-popover-title-size"
+            data-title-leading-token="--topology-node-popover-title-leading"
+            className="mt-0.5 line-clamp-[var(--topology-node-popover-title-lines)] text-[length:var(--topology-node-popover-title-size)] font-[var(--font-weight-signature)] leading-[var(--topology-node-popover-title-leading)] text-[color:var(--topology-node-popover-title-text)]"
           >
             {focus.title}
           </h2>
           <p
             data-selected-node-count-line
             data-count-text-token="--topology-node-popover-count-text"
-            className="mt-0.5 truncate text-[11px] text-[color:var(--topology-node-popover-count-text)]"
+            data-count-size-token="--topology-node-popover-count-size"
+            className="mt-0.5 truncate text-[length:var(--topology-node-popover-count-size)] text-[color:var(--topology-node-popover-count-text)]"
           >
             {labels.usedBy} {focus.usedByCount} · {labels.dependsOn} {focus.dependsOnCount}
           </p>
@@ -625,7 +632,9 @@ export function TopologyNodePopover({
           data-meaning-order-contract="before-raw-summary"
           data-significance-layout="primary-meaning-only"
           data-visible-density-contract="primary-meaning-only-preserve-details-for-agents"
-          className="mt-[var(--topology-node-popover-compact-section-gap)] flex flex-col gap-1.5 px-[var(--topology-node-popover-section-padding-x)] max-[540px]:mt-2"
+          data-significance-gap-token="--topology-node-popover-significance-gap"
+          data-phone-section-gap-token="--topology-node-popover-phone-section-gap"
+          className="mt-[var(--topology-node-popover-compact-section-gap)] flex flex-col gap-[var(--topology-node-popover-significance-gap)] px-[var(--topology-node-popover-section-padding-x)] max-[540px]:mt-[var(--topology-node-popover-phone-section-gap)]"
         >
           <p
             data-significance-context-line="what"
@@ -643,10 +652,12 @@ export function TopologyNodePopover({
                 ? "--topology-node-popover-significance-core-text"
                 : "--topology-node-popover-significance-support-text"
             }
+            data-importance-size-token="--topology-node-popover-significance-size"
+            data-importance-leading-token="--topology-node-popover-significance-leading"
             className={
               significance.level === "core"
-                ? "line-clamp-2 text-[13px] leading-5 font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-significance-core-text)]"
-                : "line-clamp-2 text-[13px] leading-5 text-[color:var(--topology-node-popover-significance-support-text)]"
+                ? "line-clamp-2 text-[length:var(--topology-node-popover-significance-size)] leading-[var(--topology-node-popover-significance-leading)] font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-significance-core-text)]"
+                : "line-clamp-2 text-[length:var(--topology-node-popover-significance-size)] leading-[var(--topology-node-popover-significance-leading)] text-[color:var(--topology-node-popover-significance-support-text)]"
             }
           >
             {significance.importanceLine}
@@ -677,11 +688,13 @@ export function TopologyNodePopover({
           data-summary-order-contract={significance ? "after-meaning" : "primary-when-no-meaning"}
           data-summary-visibility={significance ? "metadata-only" : "visible"}
           data-summary-text-token="--topology-node-popover-summary-text"
+          data-summary-size-token="--topology-node-popover-summary-size"
+          data-summary-leading-token="--topology-node-popover-summary-leading"
           data-section-padding-x-token="--topology-node-popover-section-padding-x"
           className={
             significance
               ? "sr-only"
-              : "mt-1.5 line-clamp-1 px-[var(--topology-node-popover-section-padding-x)] text-[10px] leading-4 text-[color:var(--topology-node-popover-summary-text)] max-[540px]:hidden"
+              : "mt-[var(--topology-node-popover-significance-gap)] line-clamp-1 px-[var(--topology-node-popover-section-padding-x)] text-[length:var(--topology-node-popover-summary-size)] leading-[var(--topology-node-popover-summary-leading)] text-[color:var(--topology-node-popover-summary-text)] max-[540px]:hidden"
           }
         >
           {focus.summary}
@@ -692,7 +705,8 @@ export function TopologyNodePopover({
         data-node-popover-section="metrics"
         data-section-padding-x-token="--topology-node-popover-section-padding-x"
         data-section-gap-token="--topology-node-popover-section-gap"
-        className="mt-[var(--topology-node-popover-section-gap)] grid grid-cols-2 gap-2 px-[var(--topology-node-popover-section-padding-x)]"
+        data-metric-gap-token="--topology-node-popover-metric-gap"
+        className="mt-[var(--topology-node-popover-section-gap)] grid grid-cols-2 gap-[var(--topology-node-popover-metric-gap)] px-[var(--topology-node-popover-section-padding-x)]"
       >
         <Stat label={labels.usedBy} value={focus.usedByCount} />
         <Stat label={labels.dependsOn} value={focus.dependsOnCount} />
@@ -713,7 +727,9 @@ export function TopologyNodePopover({
       >
         <p
           data-relation-section-title="connections"
-          className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-node-popover-relation-section-title-text)]"
+          data-relation-section-title-margin-bottom-token="--topology-node-popover-relation-section-title-margin-bottom"
+          data-relation-section-title-size-token="--topology-node-popover-relation-section-title-size"
+          className="mb-[var(--topology-node-popover-relation-section-title-margin-bottom)] font-mono text-[length:var(--topology-node-popover-relation-section-title-size)] uppercase tracking-[0.12em] text-[color:var(--topology-node-popover-relation-section-title-text)]"
         >
           {labels.connections} ({total})
         </p>
@@ -728,9 +744,12 @@ export function TopologyNodePopover({
           data-relation-lens-gap-token="--topology-node-popover-relation-lens-gap"
           data-relation-lens-metric-gap-token="--topology-node-popover-relation-lens-metric-gap"
           data-relation-lens-metric-min-width-token="--topology-node-popover-relation-lens-metric-min-width"
+          data-relation-lens-margin-bottom-token="--topology-node-popover-relation-lens-margin-bottom"
+          data-relation-lens-size-token="--topology-node-popover-relation-lens-size"
+          data-relation-lens-leading-token="--topology-node-popover-relation-lens-leading"
           aria-label={`${labels.relationLensTitle}: ${relationFactLabel} · ${relationTypeLabel} · ${labels.relationLensNoScores}`}
           title={`${labels.relationLensTitle}: ${relationFactLabel} · ${relationTypeLabel} · ${labels.relationLensNoScores}`}
-          className="mb-1.5 flex items-center justify-between gap-[var(--topology-node-popover-relation-lens-gap)] text-[10px] leading-4 text-[color:var(--topology-node-popover-relation-section-lens-text)] max-[540px]:hidden"
+          className="mb-[var(--topology-node-popover-relation-lens-margin-bottom)] flex items-center justify-between gap-[var(--topology-node-popover-relation-lens-gap)] text-[length:var(--topology-node-popover-relation-lens-size)] leading-[var(--topology-node-popover-relation-lens-leading)] text-[color:var(--topology-node-popover-relation-section-lens-text)] max-[540px]:hidden"
         >
           <span className="min-w-0 truncate font-mono uppercase tracking-[0.08em]">
             {labels.relationLensTitle}
@@ -1060,7 +1079,9 @@ export function TopologyNodePopover({
                       data-relation-direction-marker={connection.direction}
                       data-direction-text-token="--topology-node-popover-relation-row-meta-text"
                       data-direction-marker-contract="inline-relation-direction-glyph"
-                      className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--topology-node-popover-relation-row-meta-text)] opacity-70 transition-opacity group-hover:opacity-90"
+                      data-direction-offset-token="--topology-node-popover-relation-direction-offset"
+                      data-direction-size-token="--topology-node-popover-relation-direction-size"
+                      className="mt-[var(--topology-node-popover-relation-direction-offset)] inline-flex h-[var(--topology-node-popover-relation-direction-size)] w-[var(--topology-node-popover-relation-direction-size)] shrink-0 items-center justify-center text-[color:var(--topology-node-popover-relation-row-meta-text)] opacity-70 transition-opacity group-hover:opacity-90"
                     >
                       {connection.direction === "outgoing" ? (
                         <ArrowUpRight size={12} aria-hidden />
@@ -1078,7 +1099,8 @@ export function TopologyNodePopover({
                           data-relation-title
                           data-primary-scan-target="true"
                           data-relation-title-text-token="--topology-node-popover-relation-row-title-text"
-                          className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-relation-row-title-text)]"
+                          data-relation-title-size-token="--topology-node-popover-relation-row-title-size"
+                          className="min-w-0 truncate text-[length:var(--topology-node-popover-relation-row-title-size)] font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-relation-row-title-text)]"
                         >
                           {connection.title}
                         </span>
@@ -1086,18 +1108,25 @@ export function TopologyNodePopover({
                       <span
                         data-relation-row-meta
                         data-row-meta-text-token="--topology-node-popover-relation-row-meta-text"
+                        data-row-meta-size-token="--topology-node-popover-relation-row-meta-size"
+                        data-row-meta-leading-token="--topology-node-popover-relation-row-meta-leading"
+                        data-row-meta-gap-x-token="--topology-node-popover-relation-row-meta-gap-x"
+                        data-row-meta-gap-y-token="--topology-node-popover-relation-row-meta-gap-y"
                         data-visible-contract="relation-facts-secondary-to-connected-title"
                         data-readable-summary-contract="plain-language-proof-before-machine-route"
-                        className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-4 text-[color:var(--topology-node-popover-relation-row-meta-text)]"
+                        className="mt-[var(--topology-node-popover-remainder-margin-top)] flex min-w-0 flex-wrap items-center gap-x-[var(--topology-node-popover-relation-row-meta-gap-x)] gap-y-[var(--topology-node-popover-relation-row-meta-gap-y)] text-[length:var(--topology-node-popover-relation-row-meta-size)] leading-[var(--topology-node-popover-relation-row-meta-leading)] text-[color:var(--topology-node-popover-relation-row-meta-text)]"
                       >
                         <span
                           data-relation-type-label
                           data-fact-type-surface-token="--topology-node-popover-fact-type-surface"
                           data-fact-type-border-token="--topology-node-popover-fact-type-border"
                           data-fact-type-text-token="--topology-node-popover-fact-type-text"
+                          data-fact-type-max-width-token="--topology-node-popover-relation-type-max-width"
+                          data-fact-type-size-token="--topology-node-popover-relation-type-size"
+                          data-fact-type-leading-token="--topology-node-popover-relation-type-leading"
                           data-relation-pill-contract="plain-inline-typed-fact-label"
                           data-visible-contract="relation-type-belongs-to-secondary-facts"
-                          className="max-w-[96px] shrink-0 truncate font-mono text-[10px] leading-4 text-[color:var(--topology-node-popover-fact-type-text)]"
+                          className="max-w-[var(--topology-node-popover-relation-type-max-width)] shrink-0 truncate font-mono text-[length:var(--topology-node-popover-relation-type-size)] leading-[var(--topology-node-popover-relation-type-leading)] text-[color:var(--topology-node-popover-fact-type-text)]"
                         >
                           {relationTypeLabel}
                         </span>
@@ -1280,7 +1309,10 @@ export function TopologyNodePopover({
           <p
             data-relation-empty-state
             data-empty-text-token="--topology-node-popover-empty-text"
-            className="px-2 py-1 text-[12px] text-[color:var(--topology-node-popover-empty-text)]"
+            data-empty-padding-x-token="--topology-node-popover-empty-padding-x"
+            data-empty-padding-y-token="--topology-node-popover-empty-padding-y"
+            data-empty-size-token="--topology-node-popover-empty-size"
+            className="px-[var(--topology-node-popover-empty-padding-x)] py-[var(--topology-node-popover-empty-padding-y)] text-[length:var(--topology-node-popover-empty-size)] text-[color:var(--topology-node-popover-empty-text)]"
           >
             {labels.noConnections}
           </p>
@@ -1289,7 +1321,10 @@ export function TopologyNodePopover({
           <p
             data-relation-hidden-remainder
             data-remainder-text-token="--topology-node-popover-remainder-text"
-            className="mt-1 px-2 text-[11px] text-[color:var(--topology-node-popover-remainder-text)]"
+            data-remainder-margin-top-token="--topology-node-popover-remainder-margin-top"
+            data-remainder-padding-x-token="--topology-node-popover-remainder-padding-x"
+            data-remainder-size-token="--topology-node-popover-remainder-size"
+            className="mt-[var(--topology-node-popover-remainder-margin-top)] px-[var(--topology-node-popover-remainder-padding-x)] text-[length:var(--topology-node-popover-remainder-size)] text-[color:var(--topology-node-popover-remainder-text)]"
           >
             +{hiddenConnectionCount} {labels.moreSuffix}
           </p>
@@ -1362,7 +1397,11 @@ export function TopologyNodePopover({
                     data-popover-action-text-token="--topology-node-popover-action-text"
                     data-popover-action-hover-text-token="--topology-node-popover-action-hover-text"
                     data-popover-action-focus-ring-token="--topology-node-popover-action-focus-ring"
-                    className="inline-flex min-h-[var(--topology-node-popover-action-min-height)] min-w-0 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-border)] bg-[color:var(--topology-node-popover-action-surface)] px-2 py-1 text-[10.5px] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
+                    data-popover-action-gap-token="--topology-node-popover-action-gap"
+                    data-popover-action-padding-x-token="--topology-node-popover-action-padding-x"
+                    data-popover-action-padding-y-token="--topology-node-popover-action-padding-y"
+                    data-popover-action-text-size-token="--topology-node-popover-action-text-size"
+                    className="inline-flex min-h-[var(--topology-node-popover-action-min-height)] min-w-0 items-center justify-center gap-[var(--topology-node-popover-action-gap)] overflow-hidden rounded-md border border-[color:var(--topology-node-popover-action-border)] bg-[color:var(--topology-node-popover-action-surface)] px-[var(--topology-node-popover-action-padding-x)] py-[var(--topology-node-popover-action-padding-y)] text-[length:var(--topology-node-popover-action-text-size)] text-[color:var(--topology-node-popover-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-action-hover-border)] hover:text-[color:var(--topology-node-popover-action-hover-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-node-popover-action-focus-ring)]"
                   >
                     <span
                       aria-hidden="true"
@@ -1378,7 +1417,7 @@ export function TopologyNodePopover({
             </div>
           </div>
         ) : null}
-        <div className="flex min-w-0 gap-2 overflow-hidden">
+        <div className="flex min-w-0 gap-[var(--topology-node-popover-metric-gap)] overflow-hidden">
           {onToggleCollapsed && showCompactMapReturn ? (
             <button
               type="button"
@@ -1391,7 +1430,10 @@ export function TopologyNodePopover({
               data-footer-action-hover-text-token="--topology-node-popover-footer-action-hover-text"
               data-footer-action-min-height-token="--topology-node-popover-footer-secondary-action-min-height"
               data-footer-map-return-visibility="rendered-small-screen"
-              className="inline-flex min-h-[var(--topology-node-popover-footer-secondary-action-min-height)] min-w-0 max-w-[48%] shrink-0 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-md border border-[color:var(--topology-node-popover-footer-action-border)] px-2 text-[11px] text-[color:var(--topology-node-popover-footer-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-footer-action-hover-border)] hover:text-[color:var(--topology-node-popover-footer-action-hover-text)]"
+              data-footer-action-gap-token="--topology-node-popover-footer-action-gap"
+              data-footer-action-padding-x-token="--topology-node-popover-footer-action-padding-x"
+              data-footer-action-text-size-token="--topology-node-popover-footer-action-text-size"
+              className="inline-flex min-h-[var(--topology-node-popover-footer-secondary-action-min-height)] min-w-0 max-w-[48%] shrink-0 items-center justify-center gap-[var(--topology-node-popover-footer-action-gap)] overflow-hidden whitespace-nowrap rounded-md border border-[color:var(--topology-node-popover-footer-action-border)] px-[var(--topology-node-popover-footer-action-padding-x)] text-[length:var(--topology-node-popover-footer-action-text-size)] text-[color:var(--topology-node-popover-footer-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-footer-action-hover-border)] hover:text-[color:var(--topology-node-popover-footer-action-hover-text)]"
             >
               <ChevronDown size={14} aria-hidden />
               <span className="truncate">{labels.collapse}</span>
@@ -1410,7 +1452,11 @@ export function TopologyNodePopover({
             data-footer-action-text-token="--topology-node-popover-footer-action-text"
             data-footer-action-hover-text-token="--topology-node-popover-footer-action-hover-text"
             data-footer-action-min-height-token="--topology-node-popover-footer-secondary-action-min-height"
-            className="flex min-h-[var(--topology-node-popover-footer-secondary-action-min-height)] min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-node-popover-footer-action-border)] px-2 py-1 text-[11px] text-[color:var(--topology-node-popover-footer-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-footer-action-hover-border)] hover:text-[color:var(--topology-node-popover-footer-action-hover-text)]"
+            data-footer-action-gap-token="--topology-node-popover-footer-action-gap"
+            data-footer-action-padding-x-token="--topology-node-popover-footer-action-padding-x"
+            data-footer-action-padding-y-token="--topology-node-popover-footer-action-padding-y"
+            data-footer-action-text-size-token="--topology-node-popover-footer-action-text-size"
+            className="flex min-h-[var(--topology-node-popover-footer-secondary-action-min-height)] min-w-0 flex-1 items-center justify-center gap-[var(--topology-node-popover-footer-action-gap)] overflow-hidden rounded-md border border-[color:var(--topology-node-popover-footer-action-border)] px-[var(--topology-node-popover-footer-action-padding-x)] py-[var(--topology-node-popover-footer-action-padding-y)] text-[length:var(--topology-node-popover-footer-action-text-size)] text-[color:var(--topology-node-popover-footer-action-text)] transition-colors hover:border-[color:var(--topology-node-popover-footer-action-hover-border)] hover:text-[color:var(--topology-node-popover-footer-action-hover-text)]"
           >
             <span className="min-w-0 truncate">{labels.openFullDetail}</span>
             {hiddenConnectionCount > 0 ? (
@@ -1418,7 +1464,10 @@ export function TopologyNodePopover({
                 data-footer-hidden-count
                 data-footer-count-border-token="--topology-node-popover-footer-count-border"
                 data-footer-count-text-token="--topology-node-popover-footer-count-text"
-                className="shrink-0 whitespace-nowrap rounded-full border border-[color:var(--topology-node-popover-footer-count-border)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--topology-node-popover-footer-count-text)]"
+                data-footer-count-padding-x-token="--topology-node-popover-footer-count-padding-x"
+                data-footer-count-padding-y-token="--topology-node-popover-footer-count-padding-y"
+                data-footer-count-size-token="--topology-node-popover-footer-count-size"
+                className="shrink-0 whitespace-nowrap rounded-full border border-[color:var(--topology-node-popover-footer-count-border)] px-[var(--topology-node-popover-footer-count-padding-x)] py-[var(--topology-node-popover-footer-count-padding-y)] font-mono text-[length:var(--topology-node-popover-footer-count-size)] text-[color:var(--topology-node-popover-footer-count-text)]"
               >
                 +{hiddenConnectionCount} {labels.moreSuffix}
               </span>
@@ -1582,12 +1631,21 @@ function Stat({ label, value }: { label: string; value: number }) {
       data-metric-border-token="--topology-node-popover-metric-border"
       data-metric-label-text-token="--topology-node-popover-metric-label-text"
       data-metric-value-text-token="--topology-node-popover-metric-value-text"
-      className="rounded-lg border border-[color:var(--topology-node-popover-metric-border)] bg-[color:var(--topology-node-popover-metric-surface)] px-3 py-2"
+      data-metric-padding-x-token="--topology-node-popover-metric-padding-x"
+      data-metric-padding-y-token="--topology-node-popover-metric-padding-y"
+      className="rounded-lg border border-[color:var(--topology-node-popover-metric-border)] bg-[color:var(--topology-node-popover-metric-surface)] px-[var(--topology-node-popover-metric-padding-x)] py-[var(--topology-node-popover-metric-padding-y)]"
     >
-      <p className="text-[10px] leading-4 text-[color:var(--topology-node-popover-metric-label-text)]">
+      <p
+        data-metric-label-size-token="--topology-node-popover-metric-label-size"
+        data-metric-label-leading-token="--topology-node-popover-metric-label-leading"
+        className="text-[length:var(--topology-node-popover-metric-label-size)] leading-[var(--topology-node-popover-metric-label-leading)] text-[color:var(--topology-node-popover-metric-label-text)]"
+      >
         {label}
       </p>
-      <p className="mt-0.5 text-sm font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-metric-value-text)]">
+      <p
+        data-metric-value-size-token="--topology-node-popover-metric-value-size"
+        className="mt-0.5 text-[length:var(--topology-node-popover-metric-value-size)] font-[var(--font-weight-signature)] text-[color:var(--topology-node-popover-metric-value-text)]"
+      >
         {value}
       </p>
     </div>

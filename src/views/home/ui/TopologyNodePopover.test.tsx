@@ -691,6 +691,22 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-relation-row-meta-text",
     );
     expect(relationMeta).toHaveAttribute(
+      "data-row-meta-size-token",
+      "--topology-node-popover-relation-row-meta-size",
+    );
+    expect(relationMeta).toHaveAttribute(
+      "data-row-meta-leading-token",
+      "--topology-node-popover-relation-row-meta-leading",
+    );
+    expect(relationMeta).toHaveAttribute(
+      "data-row-meta-gap-x-token",
+      "--topology-node-popover-relation-row-meta-gap-x",
+    );
+    expect(relationMeta).toHaveAttribute(
+      "data-row-meta-gap-y-token",
+      "--topology-node-popover-relation-row-meta-gap-y",
+    );
+    expect(relationMeta).toHaveAttribute(
       "data-visible-contract",
       "relation-facts-secondary-to-connected-title",
     );
@@ -701,7 +717,12 @@ describe("TopologyNodePopover", () => {
     expect(relationMeta?.className).toContain(
       "text-[color:var(--topology-node-popover-relation-row-meta-text)]",
     );
-    expect(relationMeta?.className).toContain("text-[11px]");
+    expect(relationMeta?.className).toContain(
+      "text-[length:var(--topology-node-popover-relation-row-meta-size)]",
+    );
+    expect(relationMeta?.className).toContain(
+      "leading-[var(--topology-node-popover-relation-row-meta-leading)]",
+    );
     expect(relationMeta?.className).not.toContain("var(--color-text-quaternary)");
     expect(relationMeta).toContainElement(
       relationRow?.querySelector("[data-relation-type-label]") ?? null,
@@ -1544,11 +1565,17 @@ describe("TopologyNodePopover", () => {
       "inline-relation-direction-glyph",
     );
     expect(
-      relationRows[0].querySelector("[data-relation-direction-marker]")?.className,
-    ).toContain("h-4");
+      relationRows[0].querySelector("[data-relation-direction-marker]"),
+    ).toHaveAttribute(
+      "data-direction-size-token",
+      "--topology-node-popover-relation-direction-size",
+    );
     expect(
       relationRows[0].querySelector("[data-relation-direction-marker]")?.className,
-    ).toContain("w-4");
+    ).toContain("h-[var(--topology-node-popover-relation-direction-size)]");
+    expect(
+      relationRows[0].querySelector("[data-relation-direction-marker]")?.className,
+    ).toContain("w-[var(--topology-node-popover-relation-direction-size)]");
     expect(
       relationRows[0].querySelector("[data-relation-direction-marker]")?.className,
     ).toContain(
