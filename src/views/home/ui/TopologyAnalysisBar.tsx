@@ -1381,7 +1381,7 @@ export function TopologyAnalysisBar({
               data-route-target-min-width-token="--topology-path-route-target-min-width"
               data-route-responsive-contract="phone-and-wide-desktop-weighted-tablet-stacked-endpoints"
               data-path-rail-spacing-contract="parent-gap-owns-path-stack"
-              className="grid min-w-0 grid-cols-[minmax(var(--topology-path-route-source-min-width),0.62fr)_auto_minmax(var(--topology-path-route-target-min-width),1.9fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5 md:grid-cols-1 md:gap-1 2xl:grid-cols-[minmax(5.75rem,0.9fr)_auto_minmax(7rem,1.5fr)] 2xl:gap-1"
+              className="grid min-w-0 grid-cols-[minmax(var(--topology-path-route-source-min-width),0.62fr)_auto_minmax(var(--topology-path-route-target-min-width),1.9fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5 md:grid-cols-1 md:gap-1 2xl:grid-cols-[minmax(5.75rem,0.9fr)_auto_minmax(7rem,1.5fr)] 2xl:gap-0"
             >
               <span
                 className="min-h-[var(--topology-path-route-compact-min-height)] min-w-0 rounded border border-[color:var(--topology-path-route-source-border)] bg-[color:var(--topology-path-route-source-surface)] px-2 py-1"
@@ -1468,7 +1468,7 @@ export function TopologyAnalysisBar({
               data-mcp-action="find_path"
               data-cli-fallback="ontology-atlas path"
               data-path-rail-spacing-contract="parent-gap-owns-path-stack"
-              className="grid min-w-0 grid-cols-2 items-center gap-1 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2.5 py-[var(--topology-path-handoff-compact-padding-y)] font-mono text-[10px] text-[color:var(--topology-path-handoff-text)] md:grid-cols-1 2xl:grid-cols-2"
+              className="grid min-w-0 grid-cols-2 items-center gap-1 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2.5 py-[var(--topology-path-handoff-compact-padding-y)] font-mono text-[10px] text-[color:var(--topology-path-handoff-text)] md:grid-cols-1 2xl:grid-cols-2 2xl:gap-0"
             >
               <span className="col-span-2 min-w-0 uppercase tracking-[0.12em] text-[color:var(--topology-path-handoff-label-text)] md:col-span-1 2xl:col-span-2">
                 {labels.pathHandoffLabel}

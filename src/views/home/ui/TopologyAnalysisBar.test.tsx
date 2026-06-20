@@ -2244,6 +2244,7 @@ describe("TopologyAnalysisBar", () => {
     expect(handoff.className).toContain("grid-cols-2");
     expect(handoff.className).toContain("md:grid-cols-1");
     expect(handoff.className).toContain("2xl:grid-cols-2");
+    expect(handoff.className).toContain("2xl:gap-0");
     expect(handoff.className).not.toContain("mt-");
     expect(handoff.className).not.toContain("--color-text-tertiary");
     expect(handoff).toHaveAttribute(
@@ -2392,6 +2393,7 @@ describe("TopologyAnalysisBar", () => {
     expect(route.className).toContain("grid-cols-[");
     expect(route.className).toContain("md:grid-cols-1");
     expect(route.className).toContain("2xl:grid-cols-[");
+    expect(route.className).toContain("2xl:gap-0");
     expect(route.className).not.toContain("mt-");
     expect(within(route).getByText("Source")).toBeInTheDocument();
     expect(within(route).getByText("Views")).toBeInTheDocument();

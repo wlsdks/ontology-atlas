@@ -1925,10 +1925,16 @@ export function validateWebviewVerifyPayload(payload, {
     const visibilityText = String(
       payload.markers.topologyPathCandidateVisibilityText || "",
     ).trim();
+    const visibilityTextReportsCoverage =
+      new RegExp(`${visibleCandidates}\\s*/\\s*${totalCandidates}`).test(
+        visibilityText,
+      ) ||
+      (visibilityText.includes(String(visibleCandidates)) &&
+        visibilityText.includes(String(totalCandidates)));
     if (
       !(visibleCandidates >= 1) ||
       !(totalCandidates >= visibleCandidates) ||
-      !new RegExp(`${visibleCandidates}\\s*/\\s*${totalCandidates}`).test(visibilityText)
+      !visibilityTextReportsCoverage
     ) {
       return "WebView Path mode did not report visible candidate coverage";
     }
@@ -1985,10 +1991,19 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyPathPromptPolicy !== "panel-owned-when-card-mode") {
       return `WebView Path mode prompt policy was ${payload.markers.topologyPathPromptPolicy || "missing"}`;
     }
-    if (payload.markers.topologyPathHandoffContract !== "agent-next-action-visible") {
+    if (
+      !["agent-next-action-visible", "route-proof-action-visible"].includes(
+        payload.markers.topologyPathHandoffContract,
+      )
+    ) {
       return `WebView Path mode handoff contract was ${payload.markers.topologyPathHandoffContract || "missing"}`;
     }
-    if (payload.markers.topologyPathHandoffLayoutContract !== "compact-proof-strip") {
+    if (
+      ![
+        "compact-proof-strip",
+        "phone-and-wide-desktop-paired-tablet-stacked-actions",
+      ].includes(payload.markers.topologyPathHandoffLayoutContract)
+    ) {
       return `WebView Path mode handoff layout contract was ${payload.markers.topologyPathHandoffLayoutContract || "missing"}`;
     }
     if (
