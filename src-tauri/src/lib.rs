@@ -3973,6 +3973,8 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-drag-collision-policy") || "",
                                   topologyDragFrameCacheContract:
                                     skeletonCardsLayer?.getAttribute("data-drag-frame-cache-contract") || "",
+                                  topologyDragRepositionPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-drag-reposition-policy") || "",
                                   topologyDragDomIndexContract:
                                     skeletonCardsLayer?.getAttribute("data-drag-dom-index-contract") || "",
                                   topologyDragDomIndexSize:

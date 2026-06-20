@@ -4239,6 +4239,8 @@ export function SigmaSkeletonCards({
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
       data-drag-collision-policy="release-settle"
       data-drag-frame-cache-contract="pointer-move-reuses-drag-indexes"
+      data-drag-reposition-policy="raf-coalesced-pointer-move"
+      data-drag-reposition-coalesced="false"
       data-drag-hull-render-policy="suppressed-boxless-connectors"
       data-drag-dom-index-contract="drag-release-reuses-card-elements"
       data-drag-dom-index-size={lastDragDomIndexSizeRef.current}
@@ -5359,7 +5361,28 @@ export function SigmaSkeletonCards({
                 movingGroup,
               );
               drag.movedGroup = movedGroup;
-              reposition();
+              const container = containerRef.current;
+              if (repositionRafRef.current !== null) {
+                if (container) {
+                  container.dataset.dragRepositionPolicy = 'raf-coalesced-pointer-move';
+                  container.dataset.dragRepositionCoalesced = 'true';
+                }
+                return;
+              }
+              if (container) {
+                container.dataset.dragRepositionPolicy = 'raf-coalesced-pointer-move';
+                container.dataset.dragRepositionCoalesced = 'false';
+              }
+              repositionRafRef.current = window.requestAnimationFrame(() => {
+                repositionRafRef.current = null;
+                const currentContainer = containerRef.current;
+                if (currentContainer) {
+                  currentContainer.dataset.dragRepositionPolicy =
+                    'raf-coalesced-pointer-move';
+                  currentContainer.dataset.dragRepositionCoalesced = 'false';
+                }
+                reposition();
+              });
             }}
             onPointerUp={(event) => {
               event.preventDefault();

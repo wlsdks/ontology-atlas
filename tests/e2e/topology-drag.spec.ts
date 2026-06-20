@@ -38,6 +38,14 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
     "data-drag-hull-render-policy",
     "suppressed-boxless-connectors",
   );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-reposition-policy",
+    "raf-coalesced-pointer-move",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-active-drag-cluster-size",
+    /^[2-9]\d*$/,
+  );
   const companionSlug = await page
     .locator('[data-skeleton-card][data-drag-cluster="true"]')
     .evaluateAll((els) => {

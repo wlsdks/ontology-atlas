@@ -2296,6 +2296,10 @@ for (const viewport of VIEWPORTS) {
       "pointer-move-reuses-drag-indexes",
     );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-reposition-policy",
+      "raf-coalesced-pointer-move",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-drag-dom-index-contract",
       "drag-release-reuses-card-elements",
     );
@@ -3804,6 +3808,10 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-drag-frame-cache-contract",
     "pointer-move-reuses-drag-indexes",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-reposition-policy",
+    "raf-coalesced-pointer-move",
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-drag-dom-index-contract",
