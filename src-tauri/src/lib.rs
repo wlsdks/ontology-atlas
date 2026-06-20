@@ -4020,6 +4020,10 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-layout-effect-reposition-run-count") || "0"),
                                   topologyLayoutEffectRepositionSkippedCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-layout-effect-reposition-skipped-count") || "0"),
+                                  topologyPathEndpointPostprocessContract:
+                                    skeletonCardsLayer?.getAttribute("data-path-endpoint-postprocess-contract") || "",
+                                  topologyPathEndpointPostprocessPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-path-endpoint-postprocess-policy") || "",
                                   topologyCardPlacementSizeCacheContract:
                                     skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-contract") || "",
                                   topologyCardPlacementSizeCacheSize:

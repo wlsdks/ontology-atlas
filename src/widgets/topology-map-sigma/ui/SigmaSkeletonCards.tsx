@@ -3334,7 +3334,16 @@ export function SigmaSkeletonCards({
         }
       }
     }
-    if (selectedRelationEdgeId === null) {
+    const pathEndpointPostprocessActive =
+      selectedRelationEdgeId === null &&
+      orderedEls.some(
+        (el) => el.dataset.pathRole === 'source' || el.dataset.pathRole === 'target',
+      );
+    container.dataset.pathEndpointPostprocessContract =
+      'skip-unless-source-or-target-visible';
+    container.dataset.pathEndpointPostprocessPolicy =
+      pathEndpointPostprocessActive ? 'run-path-endpoints' : 'skip-no-path-endpoints';
+    if (pathEndpointPostprocessActive) {
       restorePathEndpointsFromFixedSurfaces(
         orderedEls,
         containerRect,

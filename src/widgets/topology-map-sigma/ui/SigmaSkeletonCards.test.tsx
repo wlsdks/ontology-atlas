@@ -220,6 +220,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-layout-effect-reposition-run-count",
       "1",
     );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-path-endpoint-postprocess-contract",
+      "skip-unless-source-or-target-visible",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-path-endpoint-postprocess-policy",
+      "skip-no-path-endpoints",
+    );
     const connectorReadCount = Number(
       screen
         .getByTestId("sigma-skeleton-cards")
@@ -2210,6 +2218,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       await waitFor(() => {
         expect(targetDomainCard).not.toHaveAttribute("data-surface-hidden", "true");
       });
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-path-endpoint-postprocess-policy",
+        "run-path-endpoints",
+      );
       expect(targetDomainCard).toHaveAttribute("data-path-role", "target");
       expect(targetDomainCard).toHaveAttribute(
         "data-path-role-contract",
