@@ -20,6 +20,9 @@ const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_F
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX = 2.5;
 const TOPOLOGY_DRAG_FOCUS_MAX_REASONABLE_DELTA_PX = 560;
+const TOPOLOGY_DIM_OPACITY_CONTRACT = "readable-context-geography";
+const TOPOLOGY_DIM_ANCHOR_MIN_OPACITY = 0.26;
+const TOPOLOGY_DIM_CONTEXT_MIN_OPACITY = 0.08;
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 const WEBVIEW_VERIFY_TIMEOUT_MS = 15000;
 const GRACEFUL_QUIT_COMMAND_TIMEOUT_MS = 1200;
@@ -3321,7 +3324,8 @@ export function validateWebviewVerifyPayload(payload, {
     }
     const selectedFocusContext =
       payload.markers.topologySelectedNodePopoverVisible === true &&
-      payload.markers.topologyFocusClusterVisible === true &&
+      payload.markers.topologyFocusClusterMode === "focus" &&
+      payload.markers.topologyFocusClusterStage === "click-focus" &&
       Number(payload.markers.topologyFocusClusterSize) >= 2;
     const hasDimOpacityProof =
       payload.markers.topologyDimOpacityContract !== undefined ||
@@ -3335,19 +3339,19 @@ export function validateWebviewVerifyPayload(payload, {
       const dimChipVisibleCount = Number(payload.markers.topologyDimChipVisibleCount || 0);
       const dimAnchorMinOpacity = Number(payload.markers.topologyDimAnchorMinOpacity || 0);
       const dimChipMinOpacity = Number(payload.markers.topologyDimChipMinOpacity || 0);
-      if (payload.markers.topologyDimOpacityContract !== "readable-context-geography") {
+      if (payload.markers.topologyDimOpacityContract !== TOPOLOGY_DIM_OPACITY_CONTRACT) {
         return `WebView dimmed Relief context opacity contract was ${payload.markers.topologyDimOpacityContract || "missing"}`;
       }
-      if (!(dimAnchorOpacity >= 0.34)) {
+      if (!(dimAnchorOpacity >= TOPOLOGY_DIM_ANCHOR_MIN_OPACITY)) {
         return `WebView dimmed Relief anchor opacity token was ${payload.markers.topologyDimAnchorOpacity ?? "missing"}`;
       }
-      if (!(dimChipOpacity >= 0.18)) {
+      if (!(dimChipOpacity >= TOPOLOGY_DIM_CONTEXT_MIN_OPACITY)) {
         return `WebView dimmed Relief chip opacity token was ${payload.markers.topologyDimChipOpacity ?? "missing"}`;
       }
-      if (dimAnchorVisibleCount > 0 && !(dimAnchorMinOpacity >= 0.34)) {
+      if (dimAnchorVisibleCount > 0 && !(dimAnchorMinOpacity >= TOPOLOGY_DIM_ANCHOR_MIN_OPACITY)) {
         return `WebView dimmed Relief anchor opacity was ${payload.markers.topologyDimAnchorMinOpacity ?? "missing"}`;
       }
-      if (dimChipVisibleCount > 0 && !(dimChipMinOpacity >= 0.18)) {
+      if (dimChipVisibleCount > 0 && !(dimChipMinOpacity >= TOPOLOGY_DIM_CONTEXT_MIN_OPACITY)) {
         return `WebView dimmed Relief chip opacity was ${payload.markers.topologyDimChipMinOpacity ?? "missing"}`;
       }
     }
@@ -6257,6 +6261,54 @@ export function buildWebviewEvidencePayload(
         agentNextAction: "use-selected-node-expanded-popover-handoff",
       }
       : null;
+  const selectedFocusDimProof =
+    markers.topologySelectedNodePopoverVisible === true &&
+    markers.topologyFocusClusterMode === "focus" &&
+    markers.topologyFocusClusterStage === "click-focus" &&
+    markerNumber(markers, "topologyFocusClusterSize") >= 2
+      ? {
+        proof: "topology-selected-focus-dim-context",
+        status:
+          markers.topologyDimOpacityContract === TOPOLOGY_DIM_OPACITY_CONTRACT &&
+          markerNumber(markers, "topologyDimAnchorOpacity") >= TOPOLOGY_DIM_ANCHOR_MIN_OPACITY &&
+          markerNumber(markers, "topologyDimChipOpacity") >= TOPOLOGY_DIM_CONTEXT_MIN_OPACITY &&
+          (
+            markerNumber(markers, "topologyDimAnchorVisibleCount") === 0 ||
+            markerNumber(markers, "topologyDimAnchorMinOpacity") >= TOPOLOGY_DIM_ANCHOR_MIN_OPACITY
+          ) &&
+          (
+            markerNumber(markers, "topologyDimChipVisibleCount") === 0 ||
+            markerNumber(markers, "topologyDimChipMinOpacity") >= TOPOLOGY_DIM_CONTEXT_MIN_OPACITY
+          )
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        attention: {
+          winner: markers.topologyAttentionWinner ?? null,
+          selectedNodeId: markers.topologySelectedNodeId ?? null,
+          selectedNodeTitle: markers.topologySelectedNodeTitle ?? null,
+          focusClusterMode: markers.topologyFocusClusterMode ?? null,
+          focusClusterStage: markers.topologyFocusClusterStage ?? null,
+          focusClusterSize: markerNumber(markers, "topologyFocusClusterSize"),
+          focusClusterVisible: markers.topologyFocusClusterVisible === true,
+          hull: markers.topologyFocusClusterVisible === true ? "rendered" : "not-rendered",
+        },
+        dim: {
+          contract: markers.topologyDimOpacityContract ?? null,
+          anchorOpacity: markerNumber(markers, "topologyDimAnchorOpacity"),
+          contextOpacity: markerNumber(markers, "topologyDimChipOpacity"),
+          anchorVisibleCount: markerNumber(markers, "topologyDimAnchorVisibleCount"),
+          contextVisibleCount: markerNumber(markers, "topologyDimChipVisibleCount"),
+          anchorMinOpacity: markerNumber(markers, "topologyDimAnchorMinOpacity"),
+          contextMinOpacity: markerNumber(markers, "topologyDimChipMinOpacity"),
+          anchorMinContract: TOPOLOGY_DIM_ANCHOR_MIN_OPACITY,
+          contextMinContract: TOPOLOGY_DIM_CONTEXT_MIN_OPACITY,
+          anchorToken: "--topology-map-dim-anchor-opacity",
+          contextToken: "--topology-map-dim-context-opacity",
+        },
+        agentNextAction: "read-selected-node-popover-before-background-map-context",
+      }
+      : null;
 
   return {
     capturedAt,
@@ -6265,6 +6317,7 @@ export function buildWebviewEvidencePayload(
     relationLabelHandoffProof,
     relationLabelFrameGeometryProof,
     nodePopoverExpandedProof,
+    selectedFocusDimProof,
   };
 }
 

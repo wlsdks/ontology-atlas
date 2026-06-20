@@ -948,6 +948,62 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
   });
 });
 
+test("WebView evidence summarizes selected focus dim context proof for agent handoff", () => {
+  const evidence = verifier.buildWebviewEvidencePayload(
+    {
+      href: "tauri://localhost/en/topology/?p=domain%3Aviews&mode=focus",
+      markers: {
+        topologyAttentionWinner: "focus-state",
+        topologySelectedNodePopoverVisible: true,
+        topologySelectedNodeId: "domain:views",
+        topologySelectedNodeTitle: "Views",
+        topologyFocusClusterMode: "focus",
+        topologyFocusClusterStage: "click-focus",
+        topologyFocusClusterSize: 6,
+        topologyFocusClusterVisible: false,
+        topologyDimOpacityContract: "readable-context-geography",
+        topologyDimAnchorOpacity: 0.26,
+        topologyDimChipOpacity: 0.08,
+        topologyDimAnchorVisibleCount: 3,
+        topologyDimChipVisibleCount: 4,
+        topologyDimAnchorMinOpacity: 0.26,
+        topologyDimChipMinOpacity: 0.08,
+      },
+    },
+    { capturedAt: "2026-06-20T12:00:00.000Z" },
+  );
+
+  assert.deepEqual(evidence.selectedFocusDimProof, {
+    proof: "topology-selected-focus-dim-context",
+    status: "proved",
+    route: "/en/topology/?p=domain%3Aviews&mode=focus",
+    attention: {
+      winner: "focus-state",
+      selectedNodeId: "domain:views",
+      selectedNodeTitle: "Views",
+      focusClusterMode: "focus",
+      focusClusterStage: "click-focus",
+      focusClusterSize: 6,
+      focusClusterVisible: false,
+      hull: "not-rendered",
+    },
+    dim: {
+      contract: "readable-context-geography",
+      anchorOpacity: 0.26,
+      contextOpacity: 0.08,
+      anchorVisibleCount: 3,
+      contextVisibleCount: 4,
+      anchorMinOpacity: 0.26,
+      contextMinOpacity: 0.08,
+      anchorMinContract: 0.26,
+      contextMinContract: 0.08,
+      anchorToken: "--topology-map-dim-anchor-opacity",
+      contextToken: "--topology-map-dim-context-opacity",
+    },
+    agentNextAction: "read-selected-node-popover-before-background-map-context",
+  });
+});
+
 test("WebView evidence records unavailable visual evidence diagnostics for agent handoff", () => {
   const evidence = verifier.buildWebviewEvidencePayload(
     {
@@ -1904,12 +1960,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyCardsReady: true,
       topologyCardCount: 21,
       topologyDimOpacityContract: "readable-context-geography",
-      topologyDimAnchorOpacity: 0.34,
-      topologyDimChipOpacity: 0.18,
+      topologyDimAnchorOpacity: 0.26,
+      topologyDimChipOpacity: 0.08,
       topologyDimAnchorVisibleCount: 3,
       topologyDimChipVisibleCount: 4,
-      topologyDimAnchorMinOpacity: 0.34,
-      topologyDimChipMinOpacity: 0.18,
+      topologyDimAnchorMinOpacity: 0.26,
+      topologyDimChipMinOpacity: 0.08,
       topologySelectedNodePopoverVisible: true,
       topologySelectedNodeId: "domain:views",
       topologySelectedNodeKind: "domain",
@@ -2147,6 +2203,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
   assert.equal(validateWebviewVerifyPayload(selectedNodeFocusPayload()), null);
+  assert.equal(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({ topologyFocusClusterVisible: false }),
+    ),
+    null,
+  );
   assert.equal(validateWebviewVerifyPayload(selectedNodeClosedSupportPayload()), null);
   assert.equal(
     validateWebviewVerifyPayload(
@@ -2312,6 +2374,20 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({ topologyDimAnchorOpacity: 0.25 }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /dimmed Relief anchor opacity token/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({ topologyDimChipOpacity: 0.07 }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /dimmed Relief chip opacity token/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
       selectedNodeFocusPayload({ topologyDimAnchorMinOpacity: 0.25 }),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
@@ -2319,7 +2395,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload(
-      selectedNodeFocusPayload({ topologyDimChipMinOpacity: 0.12 }),
+      selectedNodeFocusPayload({ topologyDimChipMinOpacity: 0.07 }),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     /dimmed Relief chip opacity/,
