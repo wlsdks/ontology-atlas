@@ -4102,6 +4102,8 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-visible-card-state-cache-contract") || "",
                                   topologyVisibleCardRectReadPolicy:
                                     skeletonCardsLayer?.getAttribute("data-visible-card-rect-read-policy") || "",
+                                  topologyVisibleCardStateReadPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-visible-card-state-read-policy") || "",
                                   topologyVisibleCardRectReadCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-visible-card-rect-read-count") || "0"),
                                   topologyVisibleCardHiddenRectSkipCount:

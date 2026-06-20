@@ -3514,10 +3514,15 @@ export function SigmaSkeletonCards({
     >();
     let visibleCardRectReadCount = 0;
     let visibleCardHiddenRectSkipCount = 0;
+    const visibleCardStateReadPolicy =
+      activeDragMotion ? 'frame-state-during-drag' : 'computed-style';
     const readVisibleCardRect = (el: HTMLElement) => {
       const cached = visibleCardRectCache.get(el);
       if (cached) return cached;
-      const visible = isSkeletonCardVisibleForStats(el);
+      const visible =
+        visibleCardStateReadPolicy === 'frame-state-during-drag'
+          ? isSkeletonCardVisibleFromFrameState(el)
+          : isSkeletonCardVisibleForStats(el);
       if (!visible) {
         visibleCardHiddenRectSkipCount += 1;
         const next = { rect: null, visible };
@@ -3814,6 +3819,7 @@ export function SigmaSkeletonCards({
       relationLabelCardBlockers.length,
     );
     container.dataset.visibleCardRectReadPolicy = 'visible-only-after-style-check';
+    container.dataset.visibleCardStateReadPolicy = visibleCardStateReadPolicy;
     container.dataset.visibleCardRectReadCount = String(visibleCardRectReadCount);
     container.dataset.visibleCardHiddenRectSkipCount = String(
       visibleCardHiddenRectSkipCount,
