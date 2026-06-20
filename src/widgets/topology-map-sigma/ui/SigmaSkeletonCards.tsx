@@ -2645,6 +2645,17 @@ export function SigmaSkeletonCards({
     const dockGap = 56 * scale;
     const columnStep = COLUMN_STEP_PX * scale;
     const domWriteStats: SkeletonDomWriteStats = { applied: 0, skipped: 0 };
+    const cardPlacementParentRectCache = new Map<HTMLElement, DOMRect>();
+    let cardPlacementParentRectReadCount = 0;
+    let cardPlacementSizeReadCount = 0;
+    const readCardPlacementParentRect = (el: HTMLElement) => {
+      const cached = cardPlacementParentRectCache.get(el);
+      if (cached) return cached;
+      cardPlacementParentRectReadCount += 1;
+      const rect = el.getBoundingClientRect();
+      cardPlacementParentRectCache.set(el, rect);
+      return rect;
+    };
     const egoRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     const phoneAnalysisPanelMounted =
       containerRect.width <= 640 && isAnalysisPanelMounted();
@@ -2732,11 +2743,12 @@ export function SigmaSkeletonCards({
         // 56px, 행 pitch = 카드 높이 + 10px. 열의 중심은 부모를 따르되,
         // 전체 열이 상/하단 chrome 밖으로 잘리면 safe band 안으로 이동한다.
         // 자식이 safe 높이를 넘으면 멀티 컬럼으로 랩핑(상/하단 chrome 관통 방지).
-        const p = parentEl.getBoundingClientRect();
+        const p = readCardPlacementParentRect(parentEl);
         const side = el.dataset.dockSide === 'left' ? -1 : 1;
         const index = Number(el.dataset.dockIndex ?? '0');
         const total = Math.max(1, Number(el.dataset.dockTotal ?? '1'));
         const cardHeight = el.offsetHeight;
+        cardPlacementSizeReadCount += 1;
         const pitch = cardHeight + 10;
         const safeH = Math.max(pitch, containerRect.height - 96 - 56);
         const perColumn = Math.max(1, Math.floor(safeH / pitch));
@@ -2821,11 +2833,14 @@ export function SigmaSkeletonCards({
         const anchorKey = el.dataset.anchor as SkeletonCardModel['anchor'];
         const safeAnchorKey = anchorKey && ANCHOR_TRANSLATE[anchorKey] ? anchorKey : 'center';
         const followsActiveGraphDrag = activeDragCluster?.has(slug) === true;
+        const cardWidth = el.offsetWidth;
+        const cardHeight = el.offsetHeight;
+        cardPlacementSizeReadCount += 2;
         const graphAnchorRect = anchoredCardRect({
           x: vp.x,
           y: vp.y,
-          width: el.offsetWidth,
-          height: el.offsetHeight,
+          width: cardWidth,
+          height: cardHeight,
           anchor: safeAnchorKey,
         });
         const graphAnchorBlockedBySurface = fixedSurfaceRects.some((surface) =>
@@ -2861,8 +2876,8 @@ export function SigmaSkeletonCards({
             ? clampVisibleAnchorCard({
                 x: vp.x,
                 y: vp.y,
-                width: el.offsetWidth,
-                height: el.offsetHeight,
+                width: cardWidth,
+                height: cardHeight,
                 anchor: safeAnchorKey,
                 containerWidth: containerRect.width,
                 containerHeight: containerRect.height,
@@ -3150,6 +3165,15 @@ export function SigmaSkeletonCards({
     container.dataset.focusContextSilhouetteHiddenCount = String(
       focusContextSilhouetteHiddenCount,
     );
+    container.dataset.cardPlacementParentRectCacheContract =
+      'frame-local-parent-card-rects';
+    container.dataset.cardPlacementParentRectCacheSize = String(
+      cardPlacementParentRectCache.size,
+    );
+    container.dataset.cardPlacementParentRectReadCount = String(
+      cardPlacementParentRectReadCount,
+    );
+    container.dataset.cardPlacementSizeReadCount = String(cardPlacementSizeReadCount);
     if (readLayerSurfaceActive) {
       for (const el of orderedEls) {
         if (el.dataset.surfaceHidden === 'true') continue;

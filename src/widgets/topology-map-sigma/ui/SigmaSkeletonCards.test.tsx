@@ -1070,6 +1070,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "selected-inspector-or-focus-cluster-hides-overlapping-map-cards",
         );
         expect(layer).toHaveAttribute("data-support-rail-overlap-active", "false");
+        expect(layer).toHaveAttribute(
+          "data-card-placement-parent-rect-cache-contract",
+          "frame-local-parent-card-rects",
+        );
+        expect(layer).toHaveAttribute("data-card-placement-parent-rect-cache-size", "1");
+        expect(layer).toHaveAttribute("data-card-placement-parent-rect-read-count", "1");
+        expect(Number(layer.dataset.cardPlacementSizeReadCount ?? "0")).toBeGreaterThan(0);
         expect(dockedCard).toHaveAttribute("data-selected-focus-dock-band", "true");
         expect(dockedCard).toHaveAttribute("data-dock-bottom-inset-px", "180");
       });

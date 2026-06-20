@@ -4002,6 +4002,14 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-focus-context-silhouette-active") || "",
                                   topologyFocusContextSilhouetteHiddenCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-focus-context-silhouette-hidden-count") || "0"),
+                                  topologyCardPlacementParentRectCacheContract:
+                                    skeletonCardsLayer?.getAttribute("data-card-placement-parent-rect-cache-contract") || "",
+                                  topologyCardPlacementParentRectCacheSize:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-parent-rect-cache-size") || "0"),
+                                  topologyCardPlacementParentRectReadCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-parent-rect-read-count") || "0"),
+                                  topologyCardPlacementSizeReadCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-read-count") || "0"),
                                   topologyDragRepositionPolicy:
                                     skeletonCardsLayer?.getAttribute("data-drag-reposition-policy") || "",
                                   topologyDragDomIndexContract:
