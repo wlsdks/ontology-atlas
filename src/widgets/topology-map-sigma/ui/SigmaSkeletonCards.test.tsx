@@ -273,6 +273,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "visible-cards-shift-or-hide-after-drag-release",
     );
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-restore-read-policy",
+      "reuse-card-placement-frame-rects",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-fixed-surface-restored-count",
       expect.stringMatching(/^\d+$/),
     );

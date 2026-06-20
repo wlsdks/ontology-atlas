@@ -1500,20 +1500,18 @@ function restoreVisibleCardsFromFixedSurfaces(
   containerRect: DOMRect,
   fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>,
   domWriteStats: SkeletonDomWriteStats,
+  readPlacedCardRect?: (el: HTMLElement) => {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  },
 ): number {
   const occupiedRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
   let restored = 0;
   for (const el of orderedEls) {
-    if (!isSkeletonCardVisibleForStats(el)) continue;
-    const style = getComputedStyle(el);
-    if (
-      style.display === 'none' ||
-      style.visibility === 'hidden' ||
-      Number(style.opacity || el.style.opacity || '1') <= 0.01
-    ) {
-      continue;
-    }
-    const rect = elementRectRelativeToContainer(el, containerRect);
+    if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+    const rect = readPlacedCardRect?.(el) ?? elementRectRelativeToContainer(el, containerRect);
     const collidesWithFixedSurface = fixedSurfaceRects.some((surface) =>
       rectsOverlap(rect, surface),
     );
@@ -3422,9 +3420,12 @@ export function SigmaSkeletonCards({
       containerRect,
       fixedSurfaceRects,
       domWriteStats,
+      readCardPlacementFrameRect,
     );
     container.dataset.fixedSurfaceRestoreContract =
       'visible-cards-shift-or-hide-after-drag-release';
+    container.dataset.fixedSurfaceRestoreReadPolicy =
+      'reuse-card-placement-frame-rects';
     container.dataset.fixedSurfaceRestoredCount = String(fixedSurfaceRestoredCount);
     const cardPlacementDurationMs = Math.max(
       0,

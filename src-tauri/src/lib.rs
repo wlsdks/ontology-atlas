@@ -4024,6 +4024,8 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-path-endpoint-postprocess-contract") || "",
                                   topologyPathEndpointPostprocessPolicy:
                                     skeletonCardsLayer?.getAttribute("data-path-endpoint-postprocess-policy") || "",
+                                  topologyFixedSurfaceRestoreReadPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-fixed-surface-restore-read-policy") || "",
                                   topologyCardPlacementSizeCacheContract:
                                     skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-contract") || "",
                                   topologyCardPlacementSizeCacheSize:
