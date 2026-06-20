@@ -38,6 +38,10 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
     "data-drag-hull-render-policy",
     "suppressed-boxless-connectors",
   );
+  await expect(target).toHaveAttribute(
+    "data-card-selection-box-policy",
+    "boxless-border-state",
+  );
   await expect(page.locator("[data-drag-cluster-hull]")).toHaveCount(0);
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-drag-reposition-policy",
@@ -87,6 +91,17 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   expect(Number.isFinite(dragFrameBudgetProof.maxMs)).toBe(true);
   expect(dragFrameBudgetProof.lastMs).toBeGreaterThanOrEqual(0);
   expect(dragFrameBudgetProof.maxMs).toBeGreaterThanOrEqual(dragFrameBudgetProof.lastMs);
+  const workerFrameProof = await page.getByTestId("sigma-topology-viewport").evaluate((el) => ({
+    applied: Number(el.getAttribute("data-layout-worker-position-frame-applied-count") ?? "0"),
+    contract: el.getAttribute("data-layout-worker-frame-stats-contract") ?? "",
+    epsilon: Number(el.getAttribute("data-layout-worker-position-frame-epsilon-px") ?? "0"),
+    received: Number(el.getAttribute("data-layout-worker-position-frame-received-count") ?? "0"),
+    skipped: Number(el.getAttribute("data-layout-worker-position-frame-skipped-count") ?? "0"),
+  }));
+  expect(workerFrameProof.contract).toBe("epsilon-skip-position-frames");
+  expect(workerFrameProof.epsilon).toBe(0.05);
+  expect(workerFrameProof.received).toBeGreaterThanOrEqual(0);
+  expect(workerFrameProof.applied + workerFrameProof.skipped).toBe(workerFrameProof.received);
   await expect(target).toHaveAttribute("data-dragging-active", "true");
   await expect(companion).toHaveAttribute("data-drag-cluster", "true");
   const after = await rectOf(target);

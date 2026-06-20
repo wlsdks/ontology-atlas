@@ -57,7 +57,10 @@ import {
   STAGE_PAN_CLICK_CANCEL_PX,
   surfacesToDismissBeforeOpening,
 } from '../lib/stage-interaction';
-import { createWorkerLayoutController } from '../lib/worker-layout-controller';
+import {
+  createWorkerLayoutController,
+  type WorkerLayoutFrameStats,
+} from '../lib/worker-layout-controller';
 import { extractDomainLabel } from '../lib/labels';
 import {
   BOUNCE_DURATION_MS,
@@ -1610,6 +1613,15 @@ function SigmaTopologyImpl({
       physics = createWorkerLayoutController(graph, layoutWorker, {
         autoStart: autoStartPhysics,
         initialAlpha: autoStartPhysics ? 0.65 : 0.25,
+        onFrameStats: (stats: WorkerLayoutFrameStats) => {
+          const container = containerRef.current;
+          if (!container) return;
+          container.dataset.layoutWorkerFrameStatsContract = 'epsilon-skip-position-frames';
+          container.dataset.layoutWorkerPositionFrameReceivedCount = String(stats.received);
+          container.dataset.layoutWorkerPositionFrameAppliedCount = String(stats.applied);
+          container.dataset.layoutWorkerPositionFrameSkippedCount = String(stats.skipped);
+          container.dataset.layoutWorkerPositionFrameEpsilonPx = String(stats.epsilon);
+        },
       });
     } catch {
       physics = startPhysics(graph, undefined, {
@@ -2956,6 +2968,11 @@ function SigmaTopologyImpl({
         data-skeleton-mode={skeletonMode ? 'true' : 'false'}
         data-skeleton-cards-active={skeletonCardsActive ? 'true' : 'false'}
         data-skeleton-card-model-count={skeletonCards?.length ?? 0}
+        data-layout-worker-frame-stats-contract="epsilon-skip-position-frames"
+        data-layout-worker-position-frame-received-count="0"
+        data-layout-worker-position-frame-applied-count="0"
+        data-layout-worker-position-frame-skipped-count="0"
+        data-layout-worker-position-frame-epsilon-px="0.05"
         data-kind-legend-state={suppressKindLegend ? 'collapsed-support-chrome' : 'visible-support-chrome'}
         data-relation-legend-state={
           suppressRelationLegend

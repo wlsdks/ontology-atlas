@@ -2364,6 +2364,16 @@ pub fn run() {
                                     sigmaViewport?.getAttribute("data-skeleton-cards-active") === "true",
                                   topologySkeletonCardModelCount:
                                     Number(sigmaViewport?.getAttribute("data-skeleton-card-model-count") || "0"),
+                                  topologyLayoutWorkerFrameStatsContract:
+                                    sigmaViewport?.getAttribute("data-layout-worker-frame-stats-contract") || "",
+                                  topologyLayoutWorkerPositionFrameReceivedCount:
+                                    Number(sigmaViewport?.getAttribute("data-layout-worker-position-frame-received-count") || "0"),
+                                  topologyLayoutWorkerPositionFrameAppliedCount:
+                                    Number(sigmaViewport?.getAttribute("data-layout-worker-position-frame-applied-count") || "0"),
+                                  topologyLayoutWorkerPositionFrameSkippedCount:
+                                    Number(sigmaViewport?.getAttribute("data-layout-worker-position-frame-skipped-count") || "0"),
+                                  topologyLayoutWorkerPositionFrameEpsilonPx:
+                                    Number(sigmaViewport?.getAttribute("data-layout-worker-position-frame-epsilon-px") || "0"),
                                   topologyHealthRepairMapTargetContract:
                                     sigmaViewport?.getAttribute("data-health-repair-map-target-contract") || "",
                                   topologyHealthRepairMapTargetSlug:

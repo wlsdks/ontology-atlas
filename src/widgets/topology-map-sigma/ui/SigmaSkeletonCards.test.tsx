@@ -3740,11 +3740,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     fireEvent.pointerMove(dragCard, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.mouseEnter(hoverTarget);
 
-    expect(dragCard).toHaveAttribute("data-drag-glow-token", "--topology-card-drag-glow");
-    expect(dragCard).toHaveAttribute(
-      "data-drag-active-glow-token",
-      "--topology-card-drag-active-glow",
-    );
+    expect(dragCard).toHaveAttribute("data-card-selection-box-policy", "boxless-border-state");
+    expect(dragCard).not.toHaveAttribute("data-drag-glow-token");
+    expect(dragCard).not.toHaveAttribute("data-drag-active-glow-token");
     expect(dragCard).toHaveAttribute(
       "data-drag-wash-token",
       "--topology-card-drag-active-wash",

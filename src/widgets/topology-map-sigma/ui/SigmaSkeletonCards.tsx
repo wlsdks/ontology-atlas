@@ -5229,13 +5229,7 @@ export function SigmaSkeletonCards({
             data-drag-cluster-role={dragRole}
             data-dragging-active={dragging && activeDragMotion ? 'true' : 'false'}
             data-drag-pushed={dragSettled ? 'true' : 'false'}
-            data-drag-glow-token={dragging ? '--topology-card-drag-glow' : undefined}
-            data-drag-active-glow-token={
-              dragging ? '--topology-card-drag-active-glow' : undefined
-            }
-            data-drag-settle-glow-token={
-              dragSettled ? '--topology-card-drag-settle-glow' : undefined
-            }
+            data-card-selection-box-policy="boxless-border-state"
             data-drag-wash-token={
               dragging || dragSettled
                 ? activeDragMotion && dragging
@@ -5471,7 +5465,7 @@ export function SigmaSkeletonCards({
             }
             className={`pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
               selected
-                ? 'shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_14px_36px_var(--topology-card-selected-shadow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
+                ? 'border-[color:var(--topology-card-border-selected-strong)] shadow-none outline-none'
                 : ''
             } ${
               healthRepairAuditTarget && !selected
@@ -5479,11 +5473,11 @@ export function SigmaSkeletonCards({
                 : ''
             } ${
               dragging
-                ? 'border-[color:var(--topology-card-border-selected-strong)] shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_10px_26px_var(--topology-card-selected-shadow),0_0_28px_var(--topology-card-drag-glow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)] data-[dragging-active=true]:shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_16px_38px_var(--topology-card-selected-shadow),0_0_34px_var(--topology-card-drag-active-glow)]'
+                ? 'border-[color:var(--topology-card-border-selected-strong)] shadow-none outline-none'
                 : ''
             } ${
               dragSettled
-                ? 'border-[color:var(--topology-card-border-selected)] shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_0_24px_var(--topology-card-drag-settle-glow)] motion-safe:animate-[topology-drag-settle_720ms_ease-out_1]'
+                ? 'border-[color:var(--topology-card-border-selected)] shadow-none outline-none'
                 : ''
             } ${TIER_CARD_CLASS[card.tier]}`}
           >

@@ -5,6 +5,13 @@ import type { MainToWorker, WorkerToMain } from './layout-protocol';
 
 const POSITION_FRAME_EPSILON = 0.05;
 
+export interface WorkerLayoutFrameStats {
+  applied: number;
+  epsilon: number;
+  received: number;
+  skipped: number;
+}
+
 /**
  * Main-thread controller that drives the layout worker while exposing the
  * EXACT `PhysicsController` interface (pin/drag/release/tune/reheat/stop) so
@@ -16,12 +23,25 @@ const POSITION_FRAME_EPSILON = 0.05;
 export function createWorkerLayoutController(
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
   worker: Worker,
-  options: { autoStart: boolean; initialAlpha: number },
+  options: {
+    autoStart: boolean;
+    initialAlpha: number;
+    onFrameStats?: (stats: WorkerLayoutFrameStats) => void;
+  },
 ): PhysicsController {
   let indexById = new Map<string, number>();
+  const frameStats: WorkerLayoutFrameStats = {
+    applied: 0,
+    epsilon: POSITION_FRAME_EPSILON,
+    received: 0,
+    skipped: 0,
+  };
   const send = (m: MainToWorker) => worker.postMessage(m);
   const serializePositions = (positions: ReadonlyMap<string, { x: number; y: number }>) =>
     Array.from(positions, ([id, pos]) => ({ id, x: pos.x, y: pos.y }));
+  const publishFrameStats = () => {
+    options.onFrameStats?.({ ...frameStats });
+  };
 
   const nodes = graph.mapNodes((id, a) => ({ id, x: a.x ?? 0, y: a.y ?? 0, size: a.size ?? 4 }));
   const links: { source: string; target: string }[] = [];
@@ -38,6 +58,7 @@ export function createWorkerLayoutController(
       return;
     }
     if (m.type === 'positions') {
+      frameStats.received += 1;
       const { x, y } = m;
       let hasMeaningfulChange = false;
       graph.forEachNode((id, attrs) => {
@@ -50,7 +71,13 @@ export function createWorkerLayoutController(
           Math.abs(prevX - x[i]) >= POSITION_FRAME_EPSILON ||
           Math.abs(prevY - y[i]) >= POSITION_FRAME_EPSILON;
       });
-      if (!hasMeaningfulChange) return;
+      if (!hasMeaningfulChange) {
+        frameStats.skipped += 1;
+        publishFrameStats();
+        return;
+      }
+      frameStats.applied += 1;
+      publishFrameStats();
       // Same batch path as physics.ts onTick: one 'eachNodeAttributesUpdated'.
       graph.updateEachNodeAttributes((id, attrs) => {
         const i = indexById.get(id);
