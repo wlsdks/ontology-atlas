@@ -3953,7 +3953,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   );
   await expect(firstRelationRow).toHaveAttribute(
     "data-row-visual-contract",
-    "title-and-relation-only-secondary",
+    "title-relation-proof-action",
   );
   await expect(firstRelationRow).toHaveAttribute("data-row-min-hit-height", "72");
   const conceptSearch = page.getByTestId("topology-concept-search");
@@ -4055,8 +4055,20 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     "data-evidence-text-token",
     /--topology-node-popover-evidence-(source|authored|review)-text/,
   );
+  await expect(
+    firstRelationRow.locator("[data-relation-evidence-glyph]").first(),
+  ).toHaveAttribute(
+    "data-visible-contract",
+    "proof-chip-visible-with-secondary-facts",
+  );
+  await expect(
+    firstRelationRow.locator("[data-relation-evidence-glyph]").first(),
+  ).toHaveAttribute(
+    "data-row-chip-height-token",
+    "--topology-node-popover-row-chip-height",
+  );
   await expect(firstRelationRow.locator("[data-relation-evidence-glyph]").first()).toHaveClass(
-    /sr-only/,
+    /h-\[var\(--topology-node-popover-row-chip-height\)\]/,
   );
   const firstEndpointRoute = firstRelationRow
     .locator("[data-relation-endpoint-route-label]")
@@ -4078,6 +4090,18 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   ).toHaveAttribute(
     "data-agent-gate-surface-token",
     /--topology-node-popover-gate-(handoff|preflight|review)-surface/,
+  );
+  await expect(
+    firstRelationRow.locator("[data-relation-row-agent-gate]").first(),
+  ).toHaveAttribute(
+    "data-visible-contract",
+    "agent-action-chip-visible-with-secondary-facts",
+  );
+  await expect(
+    firstRelationRow.locator("[data-relation-row-agent-gate]").first(),
+  ).toHaveAttribute(
+    "data-row-chip-text-size-token",
+    "--topology-node-popover-row-chip-text-size",
   );
   const firstRouteRail = firstRelationRow.locator("[data-relation-route]").first();
   await expect(firstRouteRail).toHaveAttribute(

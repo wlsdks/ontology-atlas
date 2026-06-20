@@ -272,9 +272,12 @@ names in component data markers and tests whenever a surface depends on
   in the same token family as the fixed footer, while focus tokens make keyboard
   selection visible without adding a competing panel. The row title marks the
   clicked ontology target and the row meta text keeps direction and kind as
-  secondary reading context. Relation rows should remain a readable handoff
-  list instead of ad hoc translucent bands, visible proof dots/glows, or generic
-  page/helper text.
+  secondary reading context. `--topology-node-popover-row-chip-height` /
+  `--topology-node-popover-row-chip-padding-x` /
+  `--topology-node-popover-row-chip-text-size` define the only visible row
+  microchips: one proof chip and one agent-action chip. Relation rows should
+  remain a readable handoff list instead of ad hoc translucent bands, proof
+  glows, large badges, or generic page/helper text.
 - `--topology-node-popover-action-*` /
   `--topology-node-popover-context-surface` /
   `--topology-node-popover-context-border` /
@@ -357,9 +360,9 @@ names in component data markers and tests whenever a surface depends on
   payloads, so it must expose `data-endpoint-*-token` markers and remain tied
   to the relation row instead of generic helper text.
 - `--topology-node-popover-evidence-*`: selected node inspector relation
-  evidence states (`source`, `authored`, `review`). These stay available through
-  aria/data markers in relation rows, but the visible scan row should not turn
-  into proof chips; the proof state belongs to the lens and handoff payload.
+  evidence states (`source`, `authored`, `review`). Use these for the visible
+  row proof microchip and its data markers; the long evidence route and machine
+  payload still stay in the hidden handoff rail.
 - `--topology-selected-relation-quality-*` and
   `--topology-relation-quality-*-dot` / `*-glow`: selected relation labels and
   map labels reuse the same semantic quality token family. Selected-node list

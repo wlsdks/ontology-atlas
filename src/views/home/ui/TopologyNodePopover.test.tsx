@@ -782,7 +782,7 @@ describe("TopologyNodePopover", () => {
     expect(rows[0]).toHaveAttribute("data-row-render-source", "map-expanded-proof");
     expect(rows[0]).toHaveAttribute(
       "data-row-visual-contract",
-      "title-and-relation-only-secondary",
+      "title-relation-proof-action",
     );
     expect(screen.getByText("MCP SDK")).toBeInTheDocument();
     expect(screen.getByText("AI Agent Partner")).toBeInTheDocument();
@@ -1517,7 +1517,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRows[0]).toHaveAttribute(
       "data-row-visual-contract",
-      "title-and-relation-only-secondary",
+      "title-relation-proof-action",
     );
     expect(relationRows[0].querySelector("[data-relation-primary-line]")).toHaveAttribute(
       "data-visible-contract",
@@ -1631,10 +1631,31 @@ describe("TopologyNodePopover", () => {
     ).toHaveTextContent("설명");
     expect(
       relationRows[0].querySelector("[data-relation-row-agent-gate]"),
-    ).toHaveAttribute("data-visible-contract", "agent-action-hidden-from-default-row");
+    ).toHaveAttribute("data-visible-contract", "agent-action-chip-visible-with-secondary-facts");
     expect(
       relationRows[0].querySelector("[data-relation-row-agent-gate]"),
-    ).toHaveClass("sr-only");
+    ).toHaveAttribute(
+      "data-row-chip-height-token",
+      "--topology-node-popover-row-chip-height",
+    );
+    expect(
+      relationRows[0].querySelector("[data-relation-row-agent-gate]"),
+    ).toHaveAttribute(
+      "data-row-chip-padding-x-token",
+      "--topology-node-popover-row-chip-padding-x",
+    );
+    expect(
+      relationRows[0].querySelector("[data-relation-row-agent-gate]"),
+    ).toHaveAttribute(
+      "data-row-chip-text-size-token",
+      "--topology-node-popover-row-chip-text-size",
+    );
+    expect(
+      relationRows[0].querySelector("[data-relation-row-agent-gate]")?.className,
+    ).toContain("h-[var(--topology-node-popover-row-chip-height)]");
+    expect(
+      relationRows[0].querySelector("[data-relation-row-agent-gate]")?.className,
+    ).not.toContain("sr-only");
     expect(
       relationRows[0].querySelector("[data-relation-row-agent-gate]"),
     ).toHaveAttribute("data-relation-row-action-chip", "explain_relation");
@@ -1900,7 +1921,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRow).toHaveAttribute(
       "data-row-emphasis-contract",
-      "semantic-state-hidden-from-visual-row",
+      "visible-proof-action-microchips",
     );
     expect(relationRow?.querySelector("[data-relation-quality-accent]")).toBeNull();
     expect(relationRow?.querySelector("[data-relation-quality-dot]")).toHaveAttribute(
@@ -1908,8 +1929,24 @@ describe("TopologyNodePopover", () => {
       "--topology-relation-quality-weak-dot",
     );
     expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveTextContent("!");
-    expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveClass(
-      "sr-only",
+    expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveAttribute(
+      "data-visible-contract",
+      "proof-chip-visible-with-secondary-facts",
+    );
+    expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveAttribute(
+      "data-row-chip-height-token",
+      "--topology-node-popover-row-chip-height",
+    );
+    expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveAttribute(
+      "data-row-chip-padding-x-token",
+      "--topology-node-popover-row-chip-padding-x",
+    );
+    expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveAttribute(
+      "data-row-chip-text-size-token",
+      "--topology-node-popover-row-chip-text-size",
+    );
+    expect(relationRow?.querySelector("[data-relation-evidence-glyph]")?.className).toContain(
+      "h-[var(--topology-node-popover-row-chip-height)]",
     );
     expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveAttribute(
       "data-evidence-surface-token",
@@ -1922,8 +1959,12 @@ describe("TopologyNodePopover", () => {
     expect(relationRow?.querySelector("[data-relation-row-agent-gate]")).toHaveTextContent(
       "점검",
     );
-    expect(relationRow?.querySelector("[data-relation-row-agent-gate]")).toHaveClass(
-      "sr-only",
+    expect(relationRow?.querySelector("[data-relation-row-agent-gate]")).toHaveAttribute(
+      "data-agent-gate-label",
+      "점검",
+    );
+    expect(relationRow?.querySelector("[data-relation-row-agent-gate]")?.className).toContain(
+      "h-[var(--topology-node-popover-row-chip-height)]",
     );
   });
 

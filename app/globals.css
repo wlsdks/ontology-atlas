@@ -719,6 +719,9 @@
     --topology-node-popover-relation-row-gap: 7px;
     --topology-node-popover-relation-row-padding-x: 10px;
     --topology-node-popover-relation-row-padding-y: 7px;
+    --topology-node-popover-row-chip-height: 18px;
+    --topology-node-popover-row-chip-padding-x: 5px;
+    --topology-node-popover-row-chip-text-size: 9.5px;
     --topology-node-popover-relation-row-divider: rgba(255, 255, 255, 0.055);
     --topology-node-popover-relation-row-hover-surface: rgba(255, 255, 255, 0.028);
     --topology-node-popover-relation-row-focus-surface: rgba(139, 151, 255, 0.035);
