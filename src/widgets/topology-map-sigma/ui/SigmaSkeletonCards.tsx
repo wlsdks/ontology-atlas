@@ -374,6 +374,12 @@ type FixedSurfaceRectCache = {
   width: number;
 };
 
+type CardPlacementSizeCacheEntry = {
+  height: number;
+  key: string;
+  width: number;
+};
+
 type SkeletonVisibilityStats = { visible: number; total: number };
 
 type SkeletonDomWriteStats = { applied: number; skipped: number };
@@ -2147,6 +2153,9 @@ export function SigmaSkeletonCards({
   const initialLayoutTransitionResolvedRef = useRef(false);
   const initialLoadRepositionThrottleUntilRef = useRef(0);
   const lastAppliedTopologyUiScaleRef = useRef<number | null>(null);
+  const cardPlacementSizeCacheRef = useRef(
+    new Map<string, CardPlacementSizeCacheEntry>(),
+  );
   const lastDragDomIndexSizeRef = useRef(0);
   const lastDockDragSnapshotSizeRef = useRef(0);
   const maxRepositionDurationMsRef = useRef(0);
@@ -2646,8 +2655,12 @@ export function SigmaSkeletonCards({
     const columnStep = COLUMN_STEP_PX * scale;
     const domWriteStats: SkeletonDomWriteStats = { applied: 0, skipped: 0 };
     const cardPlacementParentRectCache = new Map<HTMLElement, DOMRect>();
+    const cardPlacementSizeCache = cardPlacementSizeCacheRef.current;
+    const cardPlacementSizeCacheSeen = new Set<string>();
     let cardPlacementParentRectReadCount = 0;
     let cardPlacementSizeReadCount = 0;
+    let cardPlacementSizeCacheHitCount = 0;
+    let cardPlacementSizeCacheMissCount = 0;
     const readCardPlacementParentRect = (el: HTMLElement) => {
       const cached = cardPlacementParentRectCache.get(el);
       if (cached) return cached;
@@ -2655,6 +2668,24 @@ export function SigmaSkeletonCards({
       const rect = el.getBoundingClientRect();
       cardPlacementParentRectCache.set(el, rect);
       return rect;
+    };
+    const readCardPlacementSize = (el: HTMLElement, slug: string) => {
+      const key = `${el.dataset.cardLayoutSizeKey ?? ''}|scale:${scale}`;
+      cardPlacementSizeCacheSeen.add(slug);
+      const cached = cardPlacementSizeCache.get(slug);
+      if (cached?.key === key) {
+        cardPlacementSizeCacheHitCount += 1;
+        return cached;
+      }
+      cardPlacementSizeCacheMissCount += 1;
+      cardPlacementSizeReadCount += 2;
+      const next = {
+        height: el.offsetHeight,
+        key,
+        width: el.offsetWidth,
+      };
+      cardPlacementSizeCache.set(slug, next);
+      return next;
     };
     const egoRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     const phoneAnalysisPanelMounted =
@@ -2747,8 +2778,7 @@ export function SigmaSkeletonCards({
         const side = el.dataset.dockSide === 'left' ? -1 : 1;
         const index = Number(el.dataset.dockIndex ?? '0');
         const total = Math.max(1, Number(el.dataset.dockTotal ?? '1'));
-        const cardHeight = el.offsetHeight;
-        cardPlacementSizeReadCount += 1;
+        const { height: cardHeight } = readCardPlacementSize(el, slug);
         const pitch = cardHeight + 10;
         const safeH = Math.max(pitch, containerRect.height - 96 - 56);
         const perColumn = Math.max(1, Math.floor(safeH / pitch));
@@ -2833,9 +2863,7 @@ export function SigmaSkeletonCards({
         const anchorKey = el.dataset.anchor as SkeletonCardModel['anchor'];
         const safeAnchorKey = anchorKey && ANCHOR_TRANSLATE[anchorKey] ? anchorKey : 'center';
         const followsActiveGraphDrag = activeDragCluster?.has(slug) === true;
-        const cardWidth = el.offsetWidth;
-        const cardHeight = el.offsetHeight;
-        cardPlacementSizeReadCount += 2;
+        const { width: cardWidth, height: cardHeight } = readCardPlacementSize(el, slug);
         const graphAnchorRect = anchoredCardRect({
           x: vp.x,
           y: vp.y,
@@ -3174,6 +3202,20 @@ export function SigmaSkeletonCards({
       cardPlacementParentRectReadCount,
     );
     container.dataset.cardPlacementSizeReadCount = String(cardPlacementSizeReadCount);
+    container.dataset.cardPlacementSizeCacheContract =
+      'stable-card-size-key-reuses-offset-dimensions';
+    container.dataset.cardPlacementSizeCacheHitCount = String(
+      cardPlacementSizeCacheHitCount,
+    );
+    container.dataset.cardPlacementSizeCacheMissCount = String(
+      cardPlacementSizeCacheMissCount,
+    );
+    for (const slug of cardPlacementSizeCache.keys()) {
+      if (!cardPlacementSizeCacheSeen.has(slug)) {
+        cardPlacementSizeCache.delete(slug);
+      }
+    }
+    container.dataset.cardPlacementSizeCacheSize = String(cardPlacementSizeCache.size);
     if (readLayerSurfaceActive) {
       for (const el of orderedEls) {
         if (el.dataset.surfaceHidden === 'true') continue;
@@ -5339,6 +5381,25 @@ export function SigmaSkeletonCards({
               pathEndpoint ? '--topology-path-endpoint-card-max-width' : undefined
             }
             data-path-next-action={pathNextAction}
+            data-card-layout-size-key={[
+              card.title,
+              card.kind,
+              card.tier,
+              card.count ?? '',
+              card.anchor ?? 'center',
+              dockParentNodeId ?? '',
+              card.dock?.side ?? '',
+              card.dock?.index ?? '',
+              card.dock?.total ?? '',
+              selected ? 'selected' : 'default',
+              selectedRelationSummaryOwnsMeta
+                ? `${selectedRelationSummary?.relationCount ?? 0}:${
+                    selectedRelationSummary?.typeCount ?? 0
+                  }`
+                : '',
+              pathRole,
+              healthRepairAuditTarget ? healthRepairTarget?.kind ?? 'repair' : '',
+            ].join('|')}
             data-path-attention-layer={
               pathWorkflowActive && pathRole !== 'none' ? 'focus-path-state' : undefined
             }

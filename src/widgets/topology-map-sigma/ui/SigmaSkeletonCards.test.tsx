@@ -1076,6 +1076,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         );
         expect(layer).toHaveAttribute("data-card-placement-parent-rect-cache-size", "1");
         expect(layer).toHaveAttribute("data-card-placement-parent-rect-read-count", "1");
+        expect(layer).toHaveAttribute(
+          "data-card-placement-size-cache-contract",
+          "stable-card-size-key-reuses-offset-dimensions",
+        );
+        expect(Number(layer.dataset.cardPlacementSizeCacheSize ?? "0")).toBeGreaterThan(0);
+        expect(Number(layer.dataset.cardPlacementSizeCacheMissCount ?? "0")).toBeGreaterThan(0);
         expect(Number(layer.dataset.cardPlacementSizeReadCount ?? "0")).toBeGreaterThan(0);
         expect(dockedCard).toHaveAttribute("data-selected-focus-dock-band", "true");
         expect(dockedCard).toHaveAttribute("data-dock-bottom-inset-px", "180");

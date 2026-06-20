@@ -4010,6 +4010,14 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-parent-rect-read-count") || "0"),
                                   topologyCardPlacementSizeReadCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-read-count") || "0"),
+                                  topologyCardPlacementSizeCacheContract:
+                                    skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-contract") || "",
+                                  topologyCardPlacementSizeCacheSize:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-size") || "0"),
+                                  topologyCardPlacementSizeCacheHitCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-hit-count") || "0"),
+                                  topologyCardPlacementSizeCacheMissCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-miss-count") || "0"),
                                   topologyDragRepositionPolicy:
                                     skeletonCardsLayer?.getAttribute("data-drag-reposition-policy") || "",
                                   topologyDragDomIndexContract:
