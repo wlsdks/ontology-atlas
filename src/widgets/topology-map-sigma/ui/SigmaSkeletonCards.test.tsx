@@ -2407,16 +2407,47 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "--topology-relation-label-shadow",
     );
     expect(labelHit).toHaveAttribute(
+      "data-relation-label-text-token",
+      "--topology-relation-label-text",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-text-size-token",
+      "--topology-relation-label-text-size",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-hit-min-height-token",
+      "--topology-relation-label-hit-min-height",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-badge-height-token",
+      "--topology-relation-label-badge-height",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-padding-x-token",
+      "--topology-relation-label-padding-x",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-radius-token",
+      "--topology-relation-label-radius",
+    );
+    expect(labelHit).toHaveAttribute(
       "data-relation-label-focus-ring-token",
       "--topology-relation-label-focus-ring",
     );
     expect(labelHit?.className).toContain("pointer-events-auto");
+    expect(labelHit?.className).toContain(
+      "min-h-[var(--topology-relation-label-hit-min-height)]",
+    );
+    expect(labelHit?.className).toContain(
+      "text-[length:var(--topology-relation-label-text-size)]",
+    );
     expect(labelHit?.className).toContain("data-[drag-hit-disabled=true]:pointer-events-none");
     expect(labelHit?.className).toContain("font-medium");
     expect(labelHit?.className).not.toContain("font-mono");
     expect(labelHit?.className).not.toContain("uppercase");
     expect(labelHit).toHaveStyle({ pointerEvents: "auto" });
     expect(labelHit).toHaveStyle({ visibility: "visible" });
+    expect(labelHit).toHaveStyle({ color: "var(--topology-relation-label-text)" });
     expect(labelHit?.className).toContain("inline-flex");
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-surface-token",
@@ -2429,6 +2460,38 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-shadow-token",
       "--topology-relation-label-shadow",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-text-token",
+      "--topology-relation-label-text",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-text-size-token",
+      "--topology-relation-label-text-size",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-badge-height-token",
+      "--topology-relation-label-badge-height",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-padding-x-token",
+      "--topology-relation-label-padding-x",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-radius-token",
+      "--topology-relation-label-radius",
+    );
+    expect(visibleBadge?.className).toContain(
+      "h-[var(--topology-relation-label-badge-height)]",
+    );
+    expect(visibleBadge?.className).toContain(
+      "rounded-[var(--topology-relation-label-radius)]",
+    );
+    expect(visibleBadge?.className).toContain(
+      "px-[var(--topology-relation-label-padding-x)]",
+    );
+    expect(visibleBadge?.className).toContain(
+      "shadow-[var(--topology-relation-label-shadow)]",
     );
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-fact-segmentation",
@@ -2689,6 +2752,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-label-selected-shadow-token",
       "--topology-relation-label-selected-shadow",
     );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-selected-text-token",
+      "--topology-relation-label-selected-text",
+    );
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-selected-surface-token",
       "--topology-relation-label-selected-surface",
@@ -2696,6 +2763,38 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(selectedOverlay).toHaveAttribute(
       "data-selected-relation-halo-token",
       "--topology-relation-label-selected-surface",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-selected-text-token",
+      "--topology-relation-label-selected-text",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-text-size-token",
+      "--topology-relation-label-text-size",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-hit-min-height-token",
+      "--topology-relation-label-hit-min-height",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-padding-x-token",
+      "--topology-relation-label-padding-x",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-radius-token",
+      "--topology-relation-label-radius",
+    );
+    expect(selectedOverlay?.className).toContain(
+      "min-h-[var(--topology-relation-label-hit-min-height)]",
+    );
+    expect(selectedOverlay?.className).toContain(
+      "text-[length:var(--topology-relation-label-text-size)]",
+    );
+    expect(selectedOverlay?.className).toContain(
+      "rounded-[var(--topology-relation-label-radius)]",
+    );
+    expect(selectedOverlay?.className).toContain(
+      "px-[var(--topology-relation-label-padding-x)]",
     );
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-fact-segmentation",
@@ -3215,6 +3314,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(document.querySelector("[data-connector-relation-label]")).toHaveAttribute(
         "data-relation-label-to",
         "capability:c1",
+      );
+      expect(document.querySelector("[data-connector-relation-label]")).toHaveAttribute(
+        "data-relation-label-svg-text-token",
+        "--topology-relation-label-svg-text",
+      );
+      expect(document.querySelector("[data-connector-relation-label]")).toHaveAttribute(
+        "data-relation-label-svg-text-size-token",
+        "--topology-relation-label-svg-text-size",
+      );
+      expect(document.querySelector("[data-connector-relation-label]")?.getAttribute("class")).toContain(
+        "text-[length:var(--topology-relation-label-svg-text-size)]",
       );
       expect(document.querySelector("[data-relation-label-bg]")).toHaveAttribute(
         "data-relation-label-bg",

@@ -4570,10 +4570,12 @@ export function SigmaSkeletonCards({
                 data-relation-type={label.relationType}
                 data-relation-type-label={visibleRelationLabel}
                 data-relation-count={label.count}
+                data-relation-label-svg-text-token="--topology-relation-label-svg-text"
+                data-relation-label-svg-text-size-token="--topology-relation-label-svg-text-size"
                 dominantBaseline="middle"
                 textAnchor="middle"
-                fill="var(--color-text-secondary)"
-                className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
+                fill="var(--topology-relation-label-svg-text)"
+                className="pointer-events-none select-none font-mono text-[length:var(--topology-relation-label-svg-text-size)] uppercase tracking-[0.08em]"
               >
                 {visibleRelationLabel}
               </text>
@@ -4631,10 +4633,12 @@ export function SigmaSkeletonCards({
                   data-relation-label-visible-text={formatRelationVisibleLabel(
                     connector.relationType,
                   )}
+                  data-relation-label-svg-text-token="--topology-relation-label-svg-text"
+                  data-relation-label-svg-text-size-token="--topology-relation-label-svg-text-size"
                   dominantBaseline="middle"
                   textAnchor="middle"
-                  fill="var(--color-text-secondary)"
-                  className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
+                  fill="var(--topology-relation-label-svg-text)"
+                  className="pointer-events-none select-none font-mono text-[length:var(--topology-relation-label-svg-text-size)] uppercase tracking-[0.08em]"
                 >
                   {formatRelationVisibleLabel(connector.relationType)}
                 </text>
@@ -4715,6 +4719,15 @@ export function SigmaSkeletonCards({
             data-relation-label-surface-token="--topology-relation-label-surface"
             data-relation-label-border-token="--topology-relation-label-border"
             data-relation-label-shadow-token="--topology-relation-label-shadow"
+            data-relation-label-text-token="--topology-relation-label-text"
+            data-relation-label-selected-text-token={
+              selected ? '--topology-relation-label-selected-text' : undefined
+            }
+            data-relation-label-text-size-token="--topology-relation-label-text-size"
+            data-relation-label-hit-min-height-token="--topology-relation-label-hit-min-height"
+            data-relation-label-badge-height-token="--topology-relation-label-badge-height"
+            data-relation-label-padding-x-token="--topology-relation-label-padding-x"
+            data-relation-label-radius-token="--topology-relation-label-radius"
             data-relation-label-selected-surface-token={
               selected ? '--topology-relation-label-selected-surface' : undefined
             }
@@ -4731,9 +4744,11 @@ export function SigmaSkeletonCards({
             aria-label={`${tEdgeTooltip('relationAriaLabel', { label: labelText })} · ${quality} · ${evidenceText}${
               ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
             }`}
-            className="pointer-events-auto absolute left-0 top-0 z-[4] inline-flex min-h-[33px] items-center justify-center overflow-visible whitespace-nowrap bg-transparent text-[11px] font-medium leading-none tracking-normal transition-[opacity] duration-150 data-[drag-hit-disabled=true]:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-relation-label-focus-ring)] motion-reduce:transition-none"
+            className="pointer-events-auto absolute left-0 top-0 z-[4] inline-flex min-h-[var(--topology-relation-label-hit-min-height)] items-center justify-center overflow-visible whitespace-nowrap bg-transparent text-[length:var(--topology-relation-label-text-size)] font-medium leading-none tracking-normal transition-[opacity] duration-150 data-[drag-hit-disabled=true]:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-relation-label-focus-ring)] motion-reduce:transition-none"
             style={{
-              color: 'var(--color-text-secondary)',
+              color: selected
+                ? 'var(--topology-relation-label-selected-text)'
+                : 'var(--topology-relation-label-text)',
               opacity: selected ? 1 : 0,
               pointerEvents: activeDragCluster !== null ? 'none' : 'auto',
             }}
@@ -4777,6 +4792,14 @@ export function SigmaSkeletonCards({
               data-relation-label-surface-token="--topology-relation-label-surface"
               data-relation-label-border-token="--topology-relation-label-border"
               data-relation-label-shadow-token="--topology-relation-label-shadow"
+              data-relation-label-text-token="--topology-relation-label-text"
+              data-relation-label-selected-text-token={
+                selected ? '--topology-relation-label-selected-text' : undefined
+              }
+              data-relation-label-text-size-token="--topology-relation-label-text-size"
+              data-relation-label-badge-height-token="--topology-relation-label-badge-height"
+              data-relation-label-padding-x-token="--topology-relation-label-padding-x"
+              data-relation-label-radius-token="--topology-relation-label-radius"
               data-relation-label-selected-surface-token={
                 selected ? '--topology-relation-label-selected-surface' : undefined
               }
@@ -4793,7 +4816,7 @@ export function SigmaSkeletonCards({
               data-relation-direction-surface-token="--topology-relation-direction-surface"
               data-relation-direction-border-token="--topology-relation-direction-border"
               data-relation-direction-text-token="--topology-relation-direction-text"
-              className="inline-flex h-5 max-w-full items-center justify-center gap-1.5 overflow-hidden rounded-md border px-2 shadow-[0_3px_10px_rgba(0,0,0,0.14)]"
+              className="inline-flex h-[var(--topology-relation-label-badge-height)] max-w-full items-center justify-center gap-1.5 overflow-hidden rounded-[var(--topology-relation-label-radius)] border px-[var(--topology-relation-label-padding-x)] shadow-[var(--topology-relation-label-shadow)]"
               style={{
                 backgroundColor: selected
                   ? 'var(--topology-relation-label-selected-surface)'
@@ -4943,6 +4966,11 @@ export function SigmaSkeletonCards({
             data-relation-label-selected-surface-token="--topology-relation-label-selected-surface"
             data-relation-label-selected-border-token="--topology-relation-label-selected-border"
             data-relation-label-selected-shadow-token="--topology-relation-label-selected-shadow"
+            data-relation-label-selected-text-token="--topology-relation-label-selected-text"
+            data-relation-label-text-size-token="--topology-relation-label-text-size"
+            data-relation-label-hit-min-height-token="--topology-relation-label-hit-min-height"
+            data-relation-label-padding-x-token="--topology-relation-label-padding-x"
+            data-relation-label-radius-token="--topology-relation-label-radius"
             data-selected-relation-halo-token="--topology-relation-label-selected-surface"
             data-relation-label-segment-gap-token="--topology-relation-label-segment-gap"
             data-relation-label-segment-divider-token="--topology-relation-label-border"
@@ -4950,7 +4978,7 @@ export function SigmaSkeletonCards({
             data-relation-direction-border-token="--topology-relation-direction-border"
             data-relation-direction-text-token="--topology-relation-direction-text"
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-md border px-2 text-[11px] font-medium leading-none tracking-normal text-[color:var(--color-text-secondary)]"
+            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[var(--topology-relation-label-hit-min-height)] items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[var(--topology-relation-label-radius)] border px-[var(--topology-relation-label-padding-x)] text-[length:var(--topology-relation-label-text-size)] font-medium leading-none tracking-normal text-[color:var(--topology-relation-label-selected-text)]"
             style={{
               backgroundColor: 'var(--topology-relation-label-selected-surface)',
               borderColor: 'var(--topology-relation-label-selected-border)',

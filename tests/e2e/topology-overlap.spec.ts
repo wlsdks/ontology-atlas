@@ -1293,6 +1293,30 @@ for (const viewport of VIEWPORTS) {
       "--topology-relation-label-shadow",
     );
     await expect(relationButton).toHaveAttribute(
+      "data-relation-label-text-token",
+      "--topology-relation-label-text",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-text-size-token",
+      "--topology-relation-label-text-size",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-hit-min-height-token",
+      "--topology-relation-label-hit-min-height",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-badge-height-token",
+      "--topology-relation-label-badge-height",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-padding-x-token",
+      "--topology-relation-label-padding-x",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-radius-token",
+      "--topology-relation-label-radius",
+    );
+    await expect(relationButton).toHaveAttribute(
       "data-relation-label-focus-ring-token",
       "--topology-relation-label-focus-ring",
     );
@@ -1366,6 +1390,24 @@ for (const viewport of VIEWPORTS) {
     await expect(visibleRelationBadge).toHaveAttribute(
       "data-relation-label-fact-segmentation",
       "type-visible>metadata-hidden",
+    );
+    await expect(visibleRelationBadge).toHaveAttribute(
+      "data-relation-label-badge-height-token",
+      "--topology-relation-label-badge-height",
+    );
+    await expect(visibleRelationBadge).toHaveAttribute(
+      "data-relation-label-padding-x-token",
+      "--topology-relation-label-padding-x",
+    );
+    await expect(visibleRelationBadge).toHaveAttribute(
+      "data-relation-label-radius-token",
+      "--topology-relation-label-radius",
+    );
+    await expect(visibleRelationBadge).toHaveClass(
+      /h-\[var\(--topology-relation-label-badge-height\)\]/,
+    );
+    await expect(visibleRelationBadge).toHaveClass(
+      /rounded-\[var\(--topology-relation-label-radius\)\]/,
     );
     await expect(visibleRelationBadge).toHaveAttribute(
       "data-relation-label-segment-gap-token",

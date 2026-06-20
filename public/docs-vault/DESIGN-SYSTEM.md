@@ -183,13 +183,23 @@ names in component data markers and tests whenever a surface depends on
   a topology annotation instead of a clipped card badge.
 - `--topology-relation-label-surface` / `--topology-relation-label-border` /
   `--topology-relation-label-shadow` /
-  `--topology-relation-label-focus-ring`: scan-level relation label treatment
-  that separates typed relation facts from selected-card surfaces. The HTML hit
-  target and visible badge both expose the same token contract so screen proof
-  can verify the clickable graph mark, not only its inner badge.
+  `--topology-relation-label-focus-ring` /
+  `--topology-relation-label-hit-min-height` /
+  `--topology-relation-label-badge-height` /
+  `--topology-relation-label-padding-x` /
+  `--topology-relation-label-radius` /
+  `--topology-relation-label-text-size` /
+  `--topology-relation-label-svg-text-size` /
+  `--topology-relation-label-text` /
+  `--topology-relation-label-svg-text`: scan-level relation label treatment
+  that separates typed relation facts from selected-card surfaces. The label
+  should read as a quiet map annotation, not a floating panel. The HTML hit
+  target, visible badge, and SVG fallback text expose the same token contract so
+  screen proof can verify the clickable graph mark, not only its inner badge.
 - `--topology-relation-label-selected-surface` /
   `--topology-relation-label-selected-border` /
-  `--topology-relation-label-selected-shadow`: focus-level selected relation
+  `--topology-relation-label-selected-shadow` /
+  `--topology-relation-label-selected-text`: focus-level selected relation
   label treatment. A selected relation is the active ontology fact on the map,
   so its halo must be token-backed instead of embedded RGBA in the renderer.
 - `--topology-relation-stroke-*`: SVG relation line ink and width for selected,
