@@ -4011,6 +4011,8 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-visibility-style-write-contract") || "",
                                   topologyFinalVisibleCountPolicy:
                                     skeletonCardsLayer?.getAttribute("data-final-visible-count-policy") || "",
+                                  topologySupportRailOverlapReadPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-support-rail-overlap-read-policy") || "",
                                   topologyVisibleCardStateCacheContract:
                                     skeletonCardsLayer?.getAttribute("data-visible-card-state-cache-contract") || "",
                                   topologyVisibleCardRectReadPolicy:

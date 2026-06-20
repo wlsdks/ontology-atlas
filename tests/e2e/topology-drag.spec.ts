@@ -136,6 +136,8 @@ test("Relief dogfood graph exposes scale and bounded visible-card rect reads", a
     finalVisibleCountPolicy: el.getAttribute("data-final-visible-count-policy") ?? "",
     selectedDockVisibilityPolicy:
       el.getAttribute("data-selected-dock-visibility-policy") ?? "",
+    supportRailOverlapReadPolicy:
+      el.getAttribute("data-support-rail-overlap-read-policy") ?? "",
     activeDragClusterSize: Number(el.getAttribute("data-active-drag-cluster-size") ?? "0"),
   }));
   expect(proof.modelCount, "dogfood focus route should expose a non-trivial card model").toBeGreaterThanOrEqual(20);
@@ -147,6 +149,9 @@ test("Relief dogfood graph exposes scale and bounded visible-card rect reads", a
   );
   expect(proof.selectedDockVisibilityPolicy, "selected dock visibility should avoid rect reads").toBe(
     "state-only-no-rect-read",
+  );
+  expect(proof.supportRailOverlapReadPolicy, "support rail overlap pass should reuse visible rects").toBe(
+    "reuse-visible-card-rect-cache",
   );
   expect(proof.visibleRectReads, "rect reads should be bounded by currently visible cards").toBeLessThanOrEqual(
     proof.visibleCount,

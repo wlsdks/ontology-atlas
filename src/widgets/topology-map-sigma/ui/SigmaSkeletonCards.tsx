@@ -1577,15 +1577,22 @@ function suppressSettlingDragCardOverlaps(
 
 function suppressVisibleCardOverlaps(
   orderedEls: readonly HTMLElement[],
-  containerRect: DOMRect,
+  readCardRect: (el: HTMLElement) => {
+    rect: { left: number; top: number; right: number; bottom: number } | null;
+    visible: boolean;
+  },
 ): number {
   const visible = orderedEls
-    .filter(isSkeletonCardVisibleForStats)
-    .map((el) => ({
-      el,
-      priority: dragSettleCardPriority(el),
-      rect: elementRectRelativeToContainer(el, containerRect),
-    }))
+    .map((el) => {
+      const cached = readCardRect(el);
+      if (!cached.visible || !cached.rect) return null;
+      return {
+        el,
+        priority: dragSettleCardPriority(el),
+        rect: cached.rect,
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
     .sort((a, b) => {
       if (a.priority !== b.priority) return a.priority - b.priority;
       const tierA = Number(a.el.dataset.tier ?? '3');
@@ -3206,31 +3213,6 @@ export function SigmaSkeletonCards({
     container.dataset.fixedSurfaceRestoreContract =
       'visible-cards-shift-or-hide-after-drag-release';
     container.dataset.fixedSurfaceRestoredCount = String(fixedSurfaceRestoredCount);
-    const selectedFocusOverlapSuppressionActive =
-      (selectedFocusRailSurfaceMounted ||
-        (selectedFocusCenterActive && selectedFocusCluster !== null)) &&
-      selectedRelationEdgeId === null &&
-      activeDragCluster === null;
-    const supportRailOverlapHiddenCount =
-      selectedFocusOverlapSuppressionActive
-        ? suppressVisibleCardOverlaps(orderedEls, containerRect)
-        : 0;
-    container.dataset.supportRailOverlapPolicy =
-      'selected-inspector-or-focus-cluster-hides-overlapping-map-cards';
-    container.dataset.supportRailOverlapActive =
-      selectedFocusOverlapSuppressionActive ? 'true' : 'false';
-    container.dataset.supportRailOverlapHiddenCount = String(
-      supportRailOverlapHiddenCount,
-    );
-    const dragSettleOverlapHiddenCount =
-      activeDragCluster !== null && !activeDragMotion
-        ? suppressSettlingDragCardOverlaps(orderedEls, containerRect)
-        : 0;
-    container.dataset.dragSettleOverlapPolicy =
-      'released-cluster-hides-lower-priority-overlaps';
-    container.dataset.dragSettleOverlapHiddenCount = String(
-      dragSettleOverlapHiddenCount,
-    );
     const relationLabelCardBlockers: Array<{
       left: number;
       top: number;
@@ -3270,6 +3252,32 @@ export function SigmaSkeletonCards({
       visibleCardRectCache.set(el, next);
       return next;
     };
+    const selectedFocusOverlapSuppressionActive =
+      (selectedFocusRailSurfaceMounted ||
+        (selectedFocusCenterActive && selectedFocusCluster !== null)) &&
+      selectedRelationEdgeId === null &&
+      activeDragCluster === null;
+    const supportRailOverlapHiddenCount =
+      selectedFocusOverlapSuppressionActive
+        ? suppressVisibleCardOverlaps(orderedEls, readVisibleCardRect)
+        : 0;
+    container.dataset.supportRailOverlapPolicy =
+      'selected-inspector-or-focus-cluster-hides-overlapping-map-cards';
+    container.dataset.supportRailOverlapReadPolicy = 'reuse-visible-card-rect-cache';
+    container.dataset.supportRailOverlapActive =
+      selectedFocusOverlapSuppressionActive ? 'true' : 'false';
+    container.dataset.supportRailOverlapHiddenCount = String(
+      supportRailOverlapHiddenCount,
+    );
+    const dragSettleOverlapHiddenCount =
+      activeDragCluster !== null && !activeDragMotion
+        ? suppressSettlingDragCardOverlaps(orderedEls, containerRect)
+        : 0;
+    container.dataset.dragSettleOverlapPolicy =
+      'released-cluster-hides-lower-priority-overlaps';
+    container.dataset.dragSettleOverlapHiddenCount = String(
+      dragSettleOverlapHiddenCount,
+    );
     const recordRelationLabelCardBlocker = (el: HTMLElement) => {
       const next = readVisibleCardRect(el);
       if (!next.visible || !next.rect) return false;
