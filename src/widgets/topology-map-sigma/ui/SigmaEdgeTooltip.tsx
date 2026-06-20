@@ -500,12 +500,17 @@ export function SigmaSelectedEdgeCard({
       data-route-value-font-size-token="--topology-selected-relation-route-value-font-size"
       data-payload-font-size-token="--topology-selected-relation-payload-font-size"
       data-elevation-contract="solid-active-inspector-over-map"
+      data-information-hierarchy="fact-proof-route-handoff"
       data-motion-contract={TOPOLOGY_RELATION_INSPECTOR_MOTION_CONTRACT}
       data-motion-duration-ms={TOPOLOGY_RELATION_INSPECTOR_DURATION_MS}
       data-motion-easing={TOPOLOGY_RELATION_INSPECTOR_EASING_NAME}
-      className={`pointer-events-auto absolute z-30 flex max-h-[var(--topology-selected-relation-card-max-height)] flex-col gap-1.5 overflow-x-hidden overflow-y-auto rounded-lg border border-[color:var(--topology-selected-relation-card-border)] bg-[color:var(--topology-selected-relation-card-surface)] p-1.5 text-[10px] text-[color:var(--color-text-primary)] shadow-[var(--topology-selected-relation-card-shadow)] motion-safe:animate-[topology-relation-inspector-enter_180ms_ease-out_1] motion-reduce:animate-none ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
+      className={`pointer-events-auto absolute z-30 flex max-h-[var(--topology-selected-relation-card-max-height)] flex-col gap-1.5 overflow-x-hidden overflow-y-auto rounded-lg border border-[color:var(--topology-selected-relation-card-border)] bg-[color:var(--topology-selected-relation-card-surface)] p-2 text-[10px] text-[color:var(--color-text-primary)] shadow-[var(--topology-selected-relation-card-shadow)] motion-safe:animate-[topology-relation-inspector-enter_180ms_ease-out_1] motion-reduce:animate-none ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
     >
-      <div className="flex min-w-0 items-start gap-2">
+      <div
+        data-testid="sigma-selected-edge-fact-header"
+        data-header-contract="selected-fact-first"
+        className="flex min-w-0 items-start gap-2 border-b border-[color:var(--topology-selected-relation-subtle-border)] pb-1.5"
+      >
         <div className="min-w-0 flex-1">
           <div className="font-mono text-[length:var(--topology-selected-relation-kicker-font-size)] uppercase tracking-[0.10em] text-[color:var(--topology-selected-relation-accent-text)]">
             {t('selectedTitle')}
@@ -586,7 +591,11 @@ export function SigmaSelectedEdgeCard({
           <X size={14} />
         </button>
       </div>
-      <div data-testid="sigma-selected-edge-proof-band" className="grid grid-cols-2 gap-1.5">
+      <div
+        data-testid="sigma-selected-edge-proof-band"
+        data-proof-band-contract="parallel-compact-proof-and-agent-gate"
+        className="grid grid-cols-2 gap-1.5"
+      >
         <div
           data-testid="sigma-selected-edge-contract"
           data-relation-contract="typed-fact-not-similarity"
@@ -661,7 +670,7 @@ export function SigmaSelectedEdgeCard({
         data-route-action-visibility="metadata-only"
         data-route-step-min-width-token="--topology-selected-relation-route-step-min-width"
         data-overflow-contract="no-horizontal-scroll"
-        className="grid min-w-0 shrink-0 grid-cols-3 overflow-hidden rounded-lg border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] max-[960px]:min-h-16 max-[960px]:grid-cols-2"
+        className="grid min-w-0 shrink-0 grid-cols-3 overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] max-[960px]:min-h-16 max-[960px]:grid-cols-2"
       >
         <RouteStep
           kind="fact"
@@ -697,12 +706,13 @@ export function SigmaSelectedEdgeCard({
       </div>
       <div
         data-testid="sigma-selected-edge-next-action"
-        data-next-action-contract="primary-action-first"
+        data-next-action-contract="primary-handoff-first-secondary-preflight-compact"
         data-next-action={primaryCopyAction}
+        data-next-action-hierarchy="primary-copy-dominates-secondary-check"
         data-next-action-surface-token="--topology-selected-relation-next-action-surface"
         data-next-action-border-token="--topology-selected-relation-next-action-border"
         data-next-action-accent-text-token="--topology-selected-relation-accent-text"
-        className="min-w-0 rounded-lg border border-[color:var(--topology-selected-relation-next-action-border)] bg-[color:var(--topology-selected-relation-next-action-surface)] p-1.5"
+        className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-next-action-border)] bg-[color:var(--topology-selected-relation-next-action-surface)] p-1.5"
       >
         <div className="mb-1 flex min-w-0 items-center justify-between gap-2">
           <div className="min-w-0 truncate font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.12em] text-[color:var(--topology-selected-relation-accent-text)]">
@@ -921,7 +931,7 @@ function CopyButton({
       title={payloadCall}
       aria-label={primary ? `${label} · ${primaryBadge}` : label}
       onClick={onClick}
-      className={`inline-flex min-h-7 min-w-[var(--topology-selected-relation-action-min-width)] flex-1 basis-0 items-center justify-center gap-1 overflow-hidden rounded-md border px-2 py-0.5 text-[11px] font-medium leading-none tracking-normal transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-selected-relation-focus-ring)] ${primary ? 'shadow-[var(--topology-selected-relation-copy-primary-shadow)]' : ''} ${relationCopyButtonTone({
+      className={`inline-flex min-h-7 min-w-[var(--topology-selected-relation-action-min-width)] items-center justify-center gap-1 overflow-hidden rounded-md border px-2 py-0.5 text-[11px] font-medium leading-none tracking-normal transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-selected-relation-focus-ring)] ${primary ? 'flex-[1_1_auto] shadow-[var(--topology-selected-relation-copy-primary-shadow)]' : 'min-w-[92px] flex-[0_0_92px] px-1.5'} ${relationCopyButtonTone({
         gateKind,
         primary,
       })}`}

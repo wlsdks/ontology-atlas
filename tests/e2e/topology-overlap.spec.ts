@@ -1843,7 +1843,11 @@ for (const viewport of VIEWPORTS) {
     const nextActionRail = page.getByTestId("sigma-selected-edge-next-action");
     await expect(nextActionRail).toHaveAttribute(
       "data-next-action-contract",
-      "primary-action-first",
+      "primary-handoff-first-secondary-preflight-compact",
+    );
+    await expect(nextActionRail).toHaveAttribute(
+      "data-next-action-hierarchy",
+      "primary-copy-dominates-secondary-check",
     );
     await expect(nextActionRail).toHaveAttribute("data-next-action", primaryCopyAction ?? "");
     await expect(nextActionRail).toHaveAttribute(
@@ -5204,6 +5208,14 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
     "data-typography-contract",
     "legible-compact-relation-inspector",
   );
+  await expect(selectedEdgeCard).toHaveAttribute(
+    "data-information-hierarchy",
+    "fact-proof-route-handoff",
+  );
+  await expect(page.getByTestId("sigma-selected-edge-fact-header")).toHaveAttribute(
+    "data-header-contract",
+    "selected-fact-first",
+  );
   const selectedRelationQuality = await selectedEdgeCard.getAttribute("data-relation-quality");
   if (!selectedRelationQuality) {
     throw new Error("selected relation card should expose relation quality");
@@ -5241,6 +5253,10 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
   ).toHaveAttribute(
     "data-relation-quality-tone-token",
     `--topology-selected-relation-quality-${selectedRelationQuality}`,
+  );
+  await expect(page.getByTestId("sigma-selected-edge-proof-band")).toHaveAttribute(
+    "data-proof-band-contract",
+    "parallel-compact-proof-and-agent-gate",
   );
   const agentDecision = page.getByTestId("sigma-selected-edge-agent-decision");
   const agentGateKind = await agentDecision.getAttribute("data-agent-gate-kind");
@@ -5315,6 +5331,10 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
     "data-copy-surface-token",
     "--topology-selected-relation-copy-secondary-surface",
   );
+  await expect(page.getByTestId("sigma-selected-edge-copy-actions")).toHaveAttribute(
+    "data-density-contract",
+    "single-row-compact",
+  );
   const routeRect = await rectOf(agentRoute);
   const nextActionRect = await rectOf(page.getByTestId("sigma-selected-edge-next-action"));
   expect(routeRect.left, "compact relation route should stay inside the viewport").toBeGreaterThanOrEqual(8);
@@ -5325,6 +5345,12 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
     routeRect.bottom,
     "compact relation route should clear the next-action rail",
   ).toBeLessThanOrEqual(nextActionRect.top + 1);
+  const primaryCopyRect = await rectOf(page.locator('[data-relation-copy-priority="primary"]'));
+  const secondaryCopyRect = await rectOf(page.locator('[data-relation-copy-priority="secondary"]'));
+  expect(
+    primaryCopyRect.width,
+    "compact selected relation primary handoff action should visually dominate the secondary preflight action",
+  ).toBeGreaterThan(secondaryCopyRect.width);
   const routeStepRects = await agentRoute.locator("[data-route-step]").evaluateAll((steps) =>
     steps.map((step) => {
       const rect = step.getBoundingClientRect();

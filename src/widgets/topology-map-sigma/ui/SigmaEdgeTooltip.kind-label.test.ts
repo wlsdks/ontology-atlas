@@ -330,7 +330,14 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(secondary).toHaveTextContent('Check');
 
     const nextAction = screen.getByTestId('sigma-selected-edge-next-action');
-    expect(nextAction).toHaveAttribute('data-next-action-contract', 'primary-action-first');
+    expect(nextAction).toHaveAttribute(
+      'data-next-action-contract',
+      'primary-handoff-first-secondary-preflight-compact',
+    );
+    expect(nextAction).toHaveAttribute(
+      'data-next-action-hierarchy',
+      'primary-copy-dominates-secondary-check',
+    );
     expect(nextAction).toHaveAttribute('data-next-action', 'explain_relation');
     expect(nextAction).toHaveAttribute(
       'data-next-action-surface-token',
@@ -453,6 +460,14 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
 
     const route = screen.getByTestId('sigma-selected-edge-agent-route');
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-information-hierarchy',
+      'fact-proof-route-handoff',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-fact-header')).toHaveAttribute(
+      'data-header-contract',
+      'selected-fact-first',
+    );
     expect(route).toHaveAttribute('data-relation-evidence-state', 'source-backed');
     expect(route).toHaveAttribute('data-route-density', 'micro-rail');
     expect(route).toHaveAttribute(
@@ -530,6 +545,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     const copyPayload = screen.getByTestId('sigma-selected-edge-copy-payload');
     const relationContract = screen.getByTestId('sigma-selected-edge-contract');
     const agentDecision = screen.getByTestId('sigma-selected-edge-agent-decision');
+    expect(proofBand).toHaveAttribute(
+      'data-proof-band-contract',
+      'parallel-compact-proof-and-agent-gate',
+    );
     expect(proofBand).toContainElement(relationContract);
     expect(proofBand).toContainElement(agentDecision);
     expect(relationContract).toHaveAttribute(
@@ -705,6 +724,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-copy-action-min-width-token',
       '--topology-selected-relation-action-min-width',
     );
+    expect(copyActions).toHaveAttribute(
+      'data-density-contract',
+      'single-row-compact',
+    );
     expect(copyActions).toHaveAttribute('data-overflow-contract', 'no-horizontal-scroll');
     expect(copyActions).toHaveClass('min-w-0');
     expect(copyActions).toHaveClass('overflow-hidden');
@@ -721,6 +744,12 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(relationCheckCopy).toHaveAttribute('data-copy-visible-label', 'Check');
     expect(relationCheckCopy).toHaveAttribute('data-copy-full-label', 'Copy relation check');
     expect(relationCheckCopy).toHaveTextContent('Check');
+    expect(relationCheckCopy?.className).toContain(
+      'min-w-[var(--topology-selected-relation-action-min-width)]',
+    );
+    expect(relationCheckCopy?.className).toContain('min-w-[92px]');
+    expect(relationCheckCopy?.className).toContain('flex-[0_0_92px]');
+    expect(relationCheckCopy?.className).toContain('px-1.5');
     expect(explainCopy).toHaveAttribute(
       'data-copy-label-contract',
       'visible-action-full-label-accessible',
@@ -728,6 +757,7 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(explainCopy).toHaveAttribute('data-copy-visible-label', 'Explain');
     expect(explainCopy).toHaveAttribute('data-copy-full-label', 'Copy explanation');
     expect(explainCopy).toHaveTextContent('Explain');
+    expect(explainCopy?.className).toContain('flex-[1_1_auto]');
     expect(metricStrip).toHaveClass('sr-only');
     expect(metricStrip).toContainElement(
       screen.getByTestId('sigma-selected-edge-agent-gate'),

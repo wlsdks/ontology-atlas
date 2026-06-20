@@ -2095,6 +2095,8 @@ export function SigmaSkeletonCards({
   const collisionFreezeRef = useRef(new Map<string, boolean>());
   const lastVisibilityStatsRef = useRef<{ visible: number; total: number } | null>(null);
   const visibilityStatsReportCountRef = useRef(0);
+  const pendingVisibilityStatsRef = useRef<{ visible: number; total: number } | null>(null);
+  const visibilityStatsFlushTimerRef = useRef<number | null>(null);
   const hoverPopupRef = useRef<HTMLDivElement | null>(null);
   const dragClusterHullRef = useRef<HTMLDivElement | null>(null);
   const repositionRafRef = useRef<number | null>(null);
@@ -2128,6 +2130,67 @@ export function SigmaSkeletonCards({
     };
     return rects;
   }, []);
+
+  const emitVisibilityStats = useCallback(
+    (
+      container: HTMLElement,
+      nextVisibilityStats: { visible: number; total: number },
+      options: { deferDuringLayout: boolean },
+    ) => {
+      container.dataset.visibilityStatsReportPolicy = options.deferDuringLayout
+        ? 'defer-during-layout-animate'
+        : 'immediate-stable-counts';
+      if (
+        !shouldReportSkeletonVisibilityStats(
+          lastVisibilityStatsRef.current,
+          nextVisibilityStats,
+        )
+      ) {
+        return;
+      }
+      if (options.deferDuringLayout) {
+        pendingVisibilityStatsRef.current = nextVisibilityStats;
+        container.dataset.visibilityStatsReportDeferred = 'true';
+        if (visibilityStatsFlushTimerRef.current !== null) return;
+        visibilityStatsFlushTimerRef.current = window.setTimeout(() => {
+          visibilityStatsFlushTimerRef.current = null;
+          const pending = pendingVisibilityStatsRef.current;
+          pendingVisibilityStatsRef.current = null;
+          const currentContainer = containerRef.current;
+          if (!pending || !currentContainer) return;
+          if (
+            !shouldReportSkeletonVisibilityStats(
+              lastVisibilityStatsRef.current,
+              pending,
+            )
+          ) {
+            return;
+          }
+          lastVisibilityStatsRef.current = pending;
+          visibilityStatsReportCountRef.current += 1;
+          currentContainer.dataset.visibilityStatsReportCount = String(
+            visibilityStatsReportCountRef.current,
+          );
+          currentContainer.dataset.visibilityStatsReportDeferred = 'false';
+          onVisibilityChange?.(pending);
+        }, 520);
+        return;
+      }
+      if (visibilityStatsFlushTimerRef.current !== null) {
+        window.clearTimeout(visibilityStatsFlushTimerRef.current);
+        visibilityStatsFlushTimerRef.current = null;
+      }
+      pendingVisibilityStatsRef.current = null;
+      container.dataset.visibilityStatsReportDeferred = 'false';
+      lastVisibilityStatsRef.current = nextVisibilityStats;
+      visibilityStatsReportCountRef.current += 1;
+      container.dataset.visibilityStatsReportCount = String(
+        visibilityStatsReportCountRef.current,
+      );
+      onVisibilityChange?.(nextVisibilityStats);
+    },
+    [onVisibilityChange],
+  );
 
   const clearActiveDragCluster = useCallback(() => {
     if (dragReleaseTimerRef.current !== null) {
@@ -3368,22 +3431,12 @@ export function SigmaSkeletonCards({
       visible: reportedVisibleCardCount,
       total: orderedEls.length,
     };
-    if (
-      shouldReportSkeletonVisibilityStats(
-        lastVisibilityStatsRef.current,
-        nextVisibilityStats,
-      )
-    ) {
-      lastVisibilityStatsRef.current = nextVisibilityStats;
-      visibilityStatsReportCountRef.current += 1;
-      container.dataset.visibilityStatsReportCount = String(
-        visibilityStatsReportCountRef.current,
-      );
-      onVisibilityChange?.({
-        visible: reportedVisibleCardCount,
-        total: orderedEls.length,
-      });
-    }
+    emitVisibilityStats(container, nextVisibilityStats, {
+      deferDuringLayout:
+        container.dataset.layoutAnimate === 'true' &&
+        activeDragCluster === null &&
+        selectedRelationEdgeId === null,
+    });
     const selectedNodeId = selectedSlug
       ? (resolveNodeId(selectedSlug) ?? selectedSlug)
       : null;
@@ -3792,19 +3845,12 @@ export function SigmaSkeletonCards({
           visible: reportedVisibleCardCount,
           total: orderedEls.length,
         };
-        if (
-          shouldReportSkeletonVisibilityStats(
-            lastVisibilityStatsRef.current,
-            nextVisibilityStats,
-          )
-        ) {
-          lastVisibilityStatsRef.current = nextVisibilityStats;
-          visibilityStatsReportCountRef.current += 1;
-          container.dataset.visibilityStatsReportCount = String(
-            visibilityStatsReportCountRef.current,
-          );
-          onVisibilityChange?.(nextVisibilityStats);
-        }
+        emitVisibilityStats(container, nextVisibilityStats, {
+          deferDuringLayout:
+            container.dataset.layoutAnimate === 'true' &&
+            activeDragCluster === null &&
+            selectedRelationEdgeId === null,
+        });
       }
       for (const overlay of container.querySelectorAll<HTMLElement>(
         '[data-selected-relation-overlay][data-selected-relation-halo="true"]',
@@ -3932,7 +3978,7 @@ export function SigmaSkeletonCards({
     selectedFocusCluster,
     selectedRelationEdgeId,
     selectedSlug,
-    onVisibilityChange,
+    emitVisibilityStats,
     getFixedSurfaceRects,
   ]);
   repositionNowRef.current = reposition;
@@ -4020,6 +4066,16 @@ export function SigmaSkeletonCards({
       }
     };
   }, [sigma, scheduleReposition, invalidateFixedSurfaceRectCache]);
+
+  useEffect(
+    () => () => {
+      if (visibilityStatsFlushTimerRef.current !== null) {
+        window.clearTimeout(visibilityStatsFlushTimerRef.current);
+        visibilityStatsFlushTimerRef.current = null;
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     const container = containerRef.current;
