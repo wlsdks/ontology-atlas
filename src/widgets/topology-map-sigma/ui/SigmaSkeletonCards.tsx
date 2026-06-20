@@ -2135,11 +2135,13 @@ export function SigmaSkeletonCards({
     (
       container: HTMLElement,
       nextVisibilityStats: { visible: number; total: number },
-      options: { deferDuringLayout: boolean },
+      options: { debounceStable: boolean; deferDuringLayout: boolean },
     ) => {
       container.dataset.visibilityStatsReportPolicy = options.deferDuringLayout
         ? 'defer-during-layout-animate'
-        : 'immediate-stable-counts';
+        : options.debounceStable
+          ? 'debounce-stable-counts'
+          : 'immediate-stable-counts';
       if (
         !shouldReportSkeletonVisibilityStats(
           lastVisibilityStatsRef.current,
@@ -2174,6 +2176,35 @@ export function SigmaSkeletonCards({
           currentContainer.dataset.visibilityStatsReportDeferred = 'false';
           onVisibilityChange?.(pending);
         }, 520);
+        return;
+      }
+      if (options.debounceStable && lastVisibilityStatsRef.current !== null) {
+        pendingVisibilityStatsRef.current = nextVisibilityStats;
+        container.dataset.visibilityStatsReportDeferred = 'true';
+        if (visibilityStatsFlushTimerRef.current !== null) return;
+        visibilityStatsFlushTimerRef.current = window.setTimeout(() => {
+          visibilityStatsFlushTimerRef.current = null;
+          const pending = pendingVisibilityStatsRef.current;
+          pendingVisibilityStatsRef.current = null;
+          const currentContainer = containerRef.current;
+          if (!pending || !currentContainer) return;
+          if (
+            !shouldReportSkeletonVisibilityStats(
+              lastVisibilityStatsRef.current,
+              pending,
+            )
+          ) {
+            currentContainer.dataset.visibilityStatsReportDeferred = 'false';
+            return;
+          }
+          lastVisibilityStatsRef.current = pending;
+          visibilityStatsReportCountRef.current += 1;
+          currentContainer.dataset.visibilityStatsReportCount = String(
+            visibilityStatsReportCountRef.current,
+          );
+          currentContainer.dataset.visibilityStatsReportDeferred = 'false';
+          onVisibilityChange?.(pending);
+        }, 360);
         return;
       }
       if (visibilityStatsFlushTimerRef.current !== null) {
@@ -3438,6 +3469,10 @@ export function SigmaSkeletonCards({
       total: orderedEls.length,
     };
     emitVisibilityStats(container, nextVisibilityStats, {
+      debounceStable:
+        activeDragCluster === null &&
+        selectedRelationEdgeId === null &&
+        container.dataset.skeletonCardsReady === 'true',
       deferDuringLayout:
         container.dataset.layoutAnimate === 'true' &&
         activeDragCluster === null &&
@@ -3861,6 +3896,10 @@ export function SigmaSkeletonCards({
           total: orderedEls.length,
         };
         emitVisibilityStats(container, nextVisibilityStats, {
+          debounceStable:
+            activeDragCluster === null &&
+            selectedRelationEdgeId === null &&
+            container.dataset.skeletonCardsReady === 'true',
           deferDuringLayout:
             container.dataset.layoutAnimate === 'true' &&
             activeDragCluster === null &&
@@ -4179,7 +4218,7 @@ export function SigmaSkeletonCards({
       data-drag-frame-cache-snapshot-count={lastDockDragSnapshotSizeRef.current}
       data-dock-drag-snapshot-contract="single-pass-card-rect-read"
       data-visibility-count-contract="single-pass-unless-fallback"
-      data-visibility-stats-report-contract="dedupe-stable-counts"
+      data-visibility-stats-report-contract="dedupe-and-debounce-stable-counts"
       data-visibility-stats-report-count={visibilityStatsReportCountRef.current}
       data-layout-transition-contract="stable-card-state-key"
       data-responsive-reposition-contract="resize-immediate-and-settled"

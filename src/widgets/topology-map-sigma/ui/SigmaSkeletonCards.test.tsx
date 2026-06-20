@@ -238,7 +238,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-visibility-stats-report-contract",
-      "dedupe-stable-counts",
+      "dedupe-and-debounce-stable-counts",
     );
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-dom-write-dedupe-contract",
@@ -635,7 +635,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       );
       expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
         "data-visibility-stats-report-contract",
-        "dedupe-stable-counts",
+        "dedupe-and-debounce-stable-counts",
       );
       const initialCalls = onVisibilityChange.mock.calls.length;
       const initialReportCount = screen

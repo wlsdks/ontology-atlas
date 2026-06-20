@@ -3862,6 +3862,10 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "stable-card-state-key",
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-visibility-stats-report-contract",
+    "dedupe-and-debounce-stable-counts",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-connector-rect-cache-read-count",
     /^\d+$/,
   );
