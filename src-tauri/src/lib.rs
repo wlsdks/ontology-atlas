@@ -3970,6 +3970,32 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-reposition-duration-last-ms") || "0"),
                                   topologyRepositionDurationMaxMs:
                                     Number(skeletonCardsLayer?.getAttribute("data-reposition-duration-max-ms") || "0"),
+                                  topologyRepositionPassDurationContract:
+                                    skeletonCardsLayer?.getAttribute("data-reposition-pass-duration-contract") || "",
+                                  topologyRepositionPassSlowest:
+                                    skeletonCardsLayer?.getAttribute("data-reposition-pass-slowest") || "",
+                                  topologyRepositionPassSlowestMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-pass-slowest-ms") || "0"),
+                                  topologyRepositionPassCardPlacementMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-pass-card-placement-ms") || "0"),
+                                  topologyRepositionPassVisibilityCacheMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-pass-visibility-cache-ms") || "0"),
+                                  topologyRepositionPassConnectorLabelMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-pass-connector-label-ms") || "0"),
+                                  topologyRepositionPassPopupMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-pass-popup-ms") || "0"),
+                                  topologyRepositionMaxPassSlowest:
+                                    skeletonCardsLayer?.getAttribute("data-reposition-max-pass-slowest") || "",
+                                  topologyRepositionMaxPassSlowestMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-max-pass-slowest-ms") || "0"),
+                                  topologyRepositionMaxPassCardPlacementMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-max-pass-card-placement-ms") || "0"),
+                                  topologyRepositionMaxPassVisibilityCacheMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-max-pass-visibility-cache-ms") || "0"),
+                                  topologyRepositionMaxPassConnectorLabelMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-max-pass-connector-label-ms") || "0"),
+                                  topologyRepositionMaxPassPopupMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-reposition-max-pass-popup-ms") || "0"),
                                   topologyDragRepositionPolicy:
                                     skeletonCardsLayer?.getAttribute("data-drag-reposition-policy") || "",
                                   topologyDragDomIndexContract:

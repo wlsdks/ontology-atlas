@@ -96,6 +96,11 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   const dragFrameBudgetProof = await page.getByTestId("sigma-skeleton-cards").evaluate((el) => ({
     lastMs: Number(el.getAttribute("data-reposition-duration-last-ms") ?? "NaN"),
     maxMs: Number(el.getAttribute("data-reposition-duration-max-ms") ?? "NaN"),
+    passContract: el.getAttribute("data-reposition-pass-duration-contract") ?? "",
+    slowestPass: el.getAttribute("data-reposition-pass-slowest") ?? "",
+    slowestPassMs: Number(el.getAttribute("data-reposition-pass-slowest-ms") ?? "NaN"),
+    maxSlowestPass: el.getAttribute("data-reposition-max-pass-slowest") ?? "",
+    maxSlowestPassMs: Number(el.getAttribute("data-reposition-max-pass-slowest-ms") ?? "NaN"),
     relationLabelDragLayoutPolicy:
       el.getAttribute("data-relation-label-drag-layout-policy") ?? "",
     relationLabelGeometrySource:
@@ -103,8 +108,19 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   }));
   expect(Number.isFinite(dragFrameBudgetProof.lastMs)).toBe(true);
   expect(Number.isFinite(dragFrameBudgetProof.maxMs)).toBe(true);
+  expect(Number.isFinite(dragFrameBudgetProof.slowestPassMs)).toBe(true);
+  expect(Number.isFinite(dragFrameBudgetProof.maxSlowestPassMs)).toBe(true);
   expect(dragFrameBudgetProof.lastMs).toBeGreaterThanOrEqual(0);
   expect(dragFrameBudgetProof.maxMs).toBeGreaterThanOrEqual(dragFrameBudgetProof.lastMs);
+  expect(dragFrameBudgetProof.passContract).toBe("phase-duration-breakdown");
+  expect(["card-placement", "visibility-cache", "connector-label", "popup"]).toContain(
+    dragFrameBudgetProof.slowestPass,
+  );
+  expect(["card-placement", "visibility-cache", "connector-label", "popup"]).toContain(
+    dragFrameBudgetProof.maxSlowestPass,
+  );
+  expect(dragFrameBudgetProof.slowestPassMs).toBeGreaterThanOrEqual(0);
+  expect(dragFrameBudgetProof.maxSlowestPassMs).toBeGreaterThanOrEqual(0);
   expect(dragFrameBudgetProof.relationLabelDragLayoutPolicy).toBe("drag-only-svg-labels");
   expect(dragFrameBudgetProof.relationLabelGeometrySource).toBe("drag-only-label-layout-pass");
   const workerFrameProof = await page.getByTestId("sigma-topology-viewport").evaluate((el) => ({

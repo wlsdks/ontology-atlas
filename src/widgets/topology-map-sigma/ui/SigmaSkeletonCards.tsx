@@ -2590,10 +2590,11 @@ export function SigmaSkeletonCards({
   const reposition = useCallback(() => {
     const container = containerRef.current;
     if (!container || !sigma) return;
-    const repositionStartedAt =
+    const measureRepositionNow = () =>
       typeof performance !== 'undefined' && typeof performance.now === 'function'
         ? performance.now()
         : Date.now();
+    const repositionStartedAt = measureRepositionNow();
     const els = container.querySelectorAll<HTMLElement>('[data-skeleton-card]');
     // pass 1 — 카드 배치 + ego(풀 잉크) 카드 rect 수집. DOM 순서 = 도킹 깊이
     // 순(builder 가 정렬)이라 부모 카드의 transform 이 자식보다 먼저 잡힌다.
@@ -3219,6 +3220,11 @@ export function SigmaSkeletonCards({
     container.dataset.fixedSurfaceRestoreContract =
       'visible-cards-shift-or-hide-after-drag-release';
     container.dataset.fixedSurfaceRestoredCount = String(fixedSurfaceRestoredCount);
+    const cardPlacementDurationMs = Math.max(
+      0,
+      measureRepositionNow() - repositionStartedAt,
+    );
+    const visibilityCacheStartedAt = measureRepositionNow();
     const relationLabelCardBlockers: Array<{
       left: number;
       top: number;
@@ -3528,6 +3534,10 @@ export function SigmaSkeletonCards({
     container.dataset.visibleCardHiddenRectSkipCount = String(
       visibleCardHiddenRectSkipCount,
     );
+    const visibilityCacheDurationMs = Math.max(
+      0,
+      measureRepositionNow() - visibilityCacheStartedAt,
+    );
     container.dataset.totalCardCount = String(orderedEls.length);
     container.dataset.dimAnchorOpacity = DIM_ANCHOR_OPACITY;
     container.dataset.dimChipOpacity = DIM_CHIP_OPACITY;
@@ -3647,6 +3657,7 @@ export function SigmaSkeletonCards({
     // pass 3 — 커넥터: 포트를 카드 안쪽으로 넣고 edge mask 아래에서
     // 시작/종료시킨다. 밝은 선이 카드 바깥으로 삐져나와 보이는 현상을 막는다.
     const svg = container.querySelector<SVGSVGElement>('[data-skeleton-connectors]');
+    const connectorLabelStartedAt = measureRepositionNow();
     if (svg) {
       container.dataset.connectorDomIndexContract = 'reuse-card-index';
       container.dataset.connectorRectCacheContract = 'frame-local-card-rect-cache';
@@ -4012,8 +4023,13 @@ export function SigmaSkeletonCards({
         overlay.style.visibility = 'visible';
       }
     }
+    const connectorLabelDurationMs = Math.max(
+      0,
+      measureRepositionNow() - connectorLabelStartedAt,
+    );
     // pass 4 — hover 팝업 위치: 카드 우측 +10, 화면/우측 패널에 닿으면 좌측
     // flip + 세로 클램프. 매 프레임 카드 rect 파생이라 팬/줌을 따라간다.
+    const popupPassStartedAt = measureRepositionNow();
     const popup = hoverPopupRef.current;
     if (popup) {
       const hoverSlug = popup.dataset.hoverFor;
@@ -4036,16 +4052,40 @@ export function SigmaSkeletonCards({
         popup.style.top = `${y}px`;
       }
     }
-    const repositionFinishedAt =
-      typeof performance !== 'undefined' && typeof performance.now === 'function'
-        ? performance.now()
-        : Date.now();
+    const popupDurationMs = Math.max(0, measureRepositionNow() - popupPassStartedAt);
+    const repositionFinishedAt = measureRepositionNow();
     const repositionDurationMs = Math.max(0, repositionFinishedAt - repositionStartedAt);
-    maxRepositionDurationMsRef.current = Math.max(
-      maxRepositionDurationMsRef.current,
-      repositionDurationMs,
+    const passDurations = [
+      ['card-placement', cardPlacementDurationMs],
+      ['visibility-cache', visibilityCacheDurationMs],
+      ['connector-label', connectorLabelDurationMs],
+      ['popup', popupDurationMs],
+    ] as const;
+    const [slowestPassName, slowestPassDurationMs] = passDurations.reduce(
+      (slowest, current) => (current[1] > slowest[1] ? current : slowest),
+      passDurations[0],
     );
+    const previousMaxRepositionDurationMs = maxRepositionDurationMsRef.current;
+    if (repositionDurationMs >= previousMaxRepositionDurationMs) {
+      maxRepositionDurationMsRef.current = repositionDurationMs;
+      container.dataset.repositionMaxPassSlowest = slowestPassName;
+      container.dataset.repositionMaxPassSlowestMs = slowestPassDurationMs.toFixed(2);
+      container.dataset.repositionMaxPassCardPlacementMs =
+        cardPlacementDurationMs.toFixed(2);
+      container.dataset.repositionMaxPassVisibilityCacheMs =
+        visibilityCacheDurationMs.toFixed(2);
+      container.dataset.repositionMaxPassConnectorLabelMs =
+        connectorLabelDurationMs.toFixed(2);
+      container.dataset.repositionMaxPassPopupMs = popupDurationMs.toFixed(2);
+    }
     container.dataset.dragFrameBudgetContract = 'measured-reposition-duration';
+    container.dataset.repositionPassDurationContract = 'phase-duration-breakdown';
+    container.dataset.repositionPassSlowest = slowestPassName;
+    container.dataset.repositionPassSlowestMs = slowestPassDurationMs.toFixed(2);
+    container.dataset.repositionPassCardPlacementMs = cardPlacementDurationMs.toFixed(2);
+    container.dataset.repositionPassVisibilityCacheMs = visibilityCacheDurationMs.toFixed(2);
+    container.dataset.repositionPassConnectorLabelMs = connectorLabelDurationMs.toFixed(2);
+    container.dataset.repositionPassPopupMs = popupDurationMs.toFixed(2);
     container.dataset.repositionDurationLastMs = repositionDurationMs.toFixed(2);
     container.dataset.repositionDurationMaxMs =
       maxRepositionDurationMsRef.current.toFixed(2);
