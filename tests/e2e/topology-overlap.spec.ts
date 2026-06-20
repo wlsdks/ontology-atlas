@@ -383,11 +383,12 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
     selectedTitleFits,
     `selected map card title should stay readable for ${selectedSlug}`,
   ).toBe(true);
-  const subtreeCount = selectedCard.locator("[data-skeleton-card-count]");
-  await expect(subtreeCount).toHaveAttribute(
-    "data-count-chip-visibility",
-    "sr-only-selected-relation-summary",
+  await expect(selectedCard).toHaveAttribute(
+    "data-card-hidden-count-policy",
+    "direct-relation-summary-replaces-subtree-count",
   );
+  const subtreeCount = selectedCard.locator("[data-skeleton-card-count]");
+  await expect(subtreeCount).toHaveCount(0);
   const summary = selectedCard.getByTestId("sigma-selected-card-relation-summary");
   await expect(summary).toBeVisible();
   await expect(summary).toHaveAttribute(

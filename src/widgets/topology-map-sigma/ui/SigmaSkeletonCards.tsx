@@ -5020,6 +5020,11 @@ export function SigmaSkeletonCards({
                 ? 'selected-card-balanced-y-padding'
                 : undefined
             }
+            data-card-hidden-count-policy={
+              selectedRelationSummaryOwnsMeta
+                ? 'direct-relation-summary-replaces-subtree-count'
+                : undefined
+            }
             onClick={(event) => {
               event.stopPropagation();
               if (event.currentTarget.dataset.surfaceHidden === 'true') return;
@@ -5277,7 +5282,7 @@ export function SigmaSkeletonCards({
             >
               {card.title}
             </span>
-            {card.count !== undefined ? (
+            {card.count !== undefined && !selectedRelationSummaryOwnsMeta ? (
               <span
                 data-skeleton-card-count
                 data-count-chip-contract="tokenized-node-scale-signal"
@@ -5285,14 +5290,12 @@ export function SigmaSkeletonCards({
                 data-border-token="--topology-card-count-border"
                 data-text-token="--topology-card-count-text"
                 data-count-chip-visibility={
-                  selectedRelationSummaryOwnsMeta
-                    ? 'sr-only-selected-relation-summary'
-                    : coreHierarchyCountHidden
+                  coreHierarchyCountHidden
                     ? 'sr-only-core-hierarchy-title'
                     : 'visible'
                 }
                 className={
-                  selectedRelationSummaryOwnsMeta || coreHierarchyCountHidden
+                  coreHierarchyCountHidden
                     ? 'sr-only'
                     : 'relative ml-0.5 inline-flex h-[1.42em] min-w-[1.65em] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-card-count-border)] bg-[color:var(--topology-card-count-surface)] px-[0.42em] font-mono text-[0.68em] leading-none text-[color:var(--topology-card-count-text)]'
                 }

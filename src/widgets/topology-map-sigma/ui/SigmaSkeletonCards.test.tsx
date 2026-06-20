@@ -2667,6 +2667,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-card-block-padding-contract",
       "selected-card-balanced-y-padding",
     );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-hidden-count-policy",
+      "direct-relation-summary-replaces-subtree-count",
+    );
     expect(selectedCard).toHaveStyle({
       "--topology-card-gap": "0.6em",
       "--topology-card-padding-x": "0.95em",
@@ -2677,13 +2681,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-card-title-lane-contract",
       "selected-title-keeps-current-focus-readable",
     );
-    if (selectedCountChip) {
-      expect(selectedCountChip).toHaveAttribute(
-        "data-count-chip-visibility",
-        "sr-only-selected-relation-summary",
-      );
-      expect(selectedCountChip).toHaveClass("sr-only");
-    }
+    expect(selectedCountChip).not.toBeInTheDocument();
     expect(selectedRelationSummary).toHaveAttribute(
       "data-relation-summary-contract",
       "selected-card-direct-facts",
