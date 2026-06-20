@@ -4012,6 +4012,14 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-size-read-count") || "0"),
                                   topologyCardPlacementLayoutRectContract:
                                     skeletonCardsLayer?.getAttribute("data-card-placement-layout-rect-contract") || "",
+                                  topologyLayoutEffectRepositionContract:
+                                    skeletonCardsLayer?.getAttribute("data-layout-effect-reposition-contract") || "",
+                                  topologyLayoutEffectRepositionPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-layout-effect-reposition-policy") || "",
+                                  topologyLayoutEffectRepositionRunCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-layout-effect-reposition-run-count") || "0"),
+                                  topologyLayoutEffectRepositionSkippedCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-layout-effect-reposition-skipped-count") || "0"),
                                   topologyCardPlacementSizeCacheContract:
                                     skeletonCardsLayer?.getAttribute("data-card-placement-size-cache-contract") || "",
                                   topologyCardPlacementSizeCacheSize:

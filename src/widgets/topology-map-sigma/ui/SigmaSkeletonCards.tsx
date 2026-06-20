@@ -2166,6 +2166,9 @@ export function SigmaSkeletonCards({
   const cardPlacementSizeCacheRef = useRef(
     new Map<string, CardPlacementSizeCacheEntry>(),
   );
+  const lastLayoutEffectRepositionKeyRef = useRef<string | null>(null);
+  const layoutEffectRepositionRunCountRef = useRef(0);
+  const layoutEffectRepositionSkipCountRef = useRef(0);
   const lastDragDomIndexSizeRef = useRef(0);
   const lastDockDragSnapshotSizeRef = useRef(0);
   const maxRepositionDurationMsRef = useRef(0);
@@ -4415,17 +4418,77 @@ export function SigmaSkeletonCards({
     selectedRelationEdgeId,
     selectedSlug,
   ]);
+  const activeDragClusterLayoutKey = useMemo(
+    () =>
+      activeDragCluster
+        ? Array.from(activeDragCluster).sort().join('|')
+        : '',
+    [activeDragCluster],
+  );
+  const layoutEffectRepositionKey = useMemo(
+    () =>
+      [
+        layoutTransitionKey,
+        sigma ? 'sigma-ready' : 'sigma-missing',
+        activeDragClusterLayoutKey,
+        activeDragMotion ? 'drag-motion' : '',
+        activeDragRootSlug,
+      ].join('||'),
+    [
+      activeDragClusterLayoutKey,
+      activeDragMotion,
+      activeDragRootSlug,
+      layoutTransitionKey,
+      sigma,
+    ],
+  );
 
   useEffect(() => {
     repositionNowRef.current = reposition;
   }, [reposition]);
 
-  // 카드 목록이 바뀌는 렌더마다 paint 전에 배치 (확장으로 새 카드 등장 시).
+  // 카드/선택/드래그 구조가 실제로 바뀔 때만 paint 전에 배치한다.
+  // hover/visibility bookkeeping 같은 렌더까지 즉시 배치를 반복하면 큰
+  // 화면에서 초기 로딩과 드래그가 끊겨 보인다.
   useLayoutEffect(() => {
     const container = containerRef.current;
+    const measuredContainerRect = container?.getBoundingClientRect();
+    const layoutEffectViewportKey = measuredContainerRect
+      ? `${Math.round(measuredContainerRect.width)}x${Math.round(measuredContainerRect.height)}`
+      : 'no-container';
+    const currentLayoutEffectRepositionKey = [
+      layoutEffectRepositionKey,
+      layoutEffectViewportKey,
+    ].join('||');
+    if (container) {
+      container.dataset.layoutEffectRepositionContract =
+        'keyed-structural-render-only';
+      container.dataset.layoutEffectRepositionKeySize = String(
+        currentLayoutEffectRepositionKey.length,
+      );
+    }
+    if (lastLayoutEffectRepositionKeyRef.current === currentLayoutEffectRepositionKey) {
+      layoutEffectRepositionSkipCountRef.current += 1;
+      if (container) {
+        container.dataset.layoutEffectRepositionPolicy = 'skip-same-structural-key';
+        container.dataset.layoutEffectRepositionSkippedCount = String(
+          layoutEffectRepositionSkipCountRef.current,
+        );
+      }
+      return;
+    }
+    lastLayoutEffectRepositionKeyRef.current = currentLayoutEffectRepositionKey;
+    layoutEffectRepositionRunCountRef.current += 1;
     invalidateFixedSurfaceRectCache();
     reposition();
     if (container) {
+      container.dataset.layoutEffectRepositionPolicy = 'run-structural-key-change';
+      container.dataset.layoutEffectRepositionRunCount = String(
+        layoutEffectRepositionRunCountRef.current,
+      );
+      container.dataset.layoutEffectRepositionSkippedCount = String(
+        layoutEffectRepositionSkipCountRef.current,
+      );
       container.dataset.skeletonCardsReady = 'true';
     }
   });
@@ -4590,6 +4653,10 @@ export function SigmaSkeletonCards({
       data-layout-transition-reposition-policy="immediate-after-render"
       data-layout-transition-reposition-throttle-ms={LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS}
       data-layout-transition-reposition-deferred="false"
+      data-layout-effect-reposition-contract="keyed-structural-render-only"
+      data-layout-effect-reposition-policy="pending"
+      data-layout-effect-reposition-run-count="0"
+      data-layout-effect-reposition-skipped-count="0"
       data-initial-load-reposition-throttle-ms={INITIAL_LOAD_REPOSITION_THROTTLE_MS}
       data-responsive-reposition-contract="resize-immediate-and-settled"
       data-dom-write-dedupe-contract="skip-unchanged-transform-and-path"
