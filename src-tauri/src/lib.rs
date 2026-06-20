@@ -4016,6 +4016,8 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-relation-label-query-contract") || "",
                                   topologyRelationLabelQueryIndexCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-relation-label-query-index-count") || "0"),
+                                  topologyRelationLabelDragLayoutPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-relation-label-drag-layout-policy") || "",
                                   topologyRelationLabelGeometryContract:
                                     skeletonCardsLayer?.getAttribute("data-relation-label-geometry-contract") || "",
                                   topologyRelationLabelGeometrySource:

@@ -4055,6 +4055,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     expect(layer).toHaveAttribute("data-dragging-active", "true");
     expect(card).toHaveAttribute("data-dragging-active", "true");
+    expect(layer).toHaveAttribute(
+      "data-relation-label-drag-layout-policy",
+      "drag-only-svg-labels",
+    );
+    expect(layer).toHaveAttribute(
+      "data-relation-label-geometry-source",
+      "drag-only-label-layout-pass",
+    );
     expect(document.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
     expect(layer).toHaveAttribute("data-drag-hull-render-policy", "suppressed-boxless-connectors");
     expect(layer).toHaveAttribute("data-drag-cluster-hull-dom-policy", "not-rendered");

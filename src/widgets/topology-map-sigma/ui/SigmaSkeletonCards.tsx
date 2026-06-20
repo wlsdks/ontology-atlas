@@ -3692,24 +3692,45 @@ export function SigmaSkeletonCards({
         const toEl = to ? elBySlug.get(to) : null;
         drawConnectorTerminal(terminal, fromEl, toEl);
       }
+      const dragOnlyRelationLabelLayout = activeDragCluster !== null;
+      if (dragOnlyRelationLabelLayout) {
+        for (const button of container.querySelectorAll<HTMLElement>(
+          '[data-relation-label-button]',
+        )) {
+          setSkeletonStyleValue(button, 'opacity', '0', domWriteStats);
+          setSkeletonStyleValue(button, 'pointerEvents', 'none', domWriteStats);
+          setSkeletonStyleValue(button, 'visibility', 'hidden', domWriteStats);
+          button.dataset.relationLabelVisibility = 'suppressed-during-drag';
+        }
+        for (const overlay of container.querySelectorAll<HTMLElement>(
+          '[data-selected-relation-overlay]',
+        )) {
+          setSkeletonStyleValue(overlay, 'opacity', '0', domWriteStats);
+          setSkeletonStyleValue(overlay, 'visibility', 'hidden', domWriteStats);
+        }
+      }
       const relationLabelBadgesById = new Map<string, SVGRectElement>();
       for (const badge of svg.querySelectorAll<SVGRectElement>('[data-relation-label-bg]')) {
         const id = badge.dataset.relationLabelBg;
         if (id) relationLabelBadgesById.set(id, badge);
       }
       const relationLabelButtonsById = new Map<string, HTMLElement>();
-      for (const button of container.querySelectorAll<HTMLElement>(
-        '[data-relation-label-button]',
-      )) {
-        const id = button.dataset.relationLabelButton;
-        if (id) relationLabelButtonsById.set(id, button);
+      if (!dragOnlyRelationLabelLayout) {
+        for (const button of container.querySelectorAll<HTMLElement>(
+          '[data-relation-label-button]',
+        )) {
+          const id = button.dataset.relationLabelButton;
+          if (id) relationLabelButtonsById.set(id, button);
+        }
       }
       const selectedRelationOverlaysById = new Map<string, HTMLElement>();
-      for (const overlay of container.querySelectorAll<HTMLElement>(
-        '[data-selected-relation-overlay]',
-      )) {
-        const id = overlay.dataset.selectedRelationOverlay;
-        if (id) selectedRelationOverlaysById.set(id, overlay);
+      if (!dragOnlyRelationLabelLayout) {
+        for (const overlay of container.querySelectorAll<HTMLElement>(
+          '[data-selected-relation-overlay]',
+        )) {
+          const id = overlay.dataset.selectedRelationOverlay;
+          if (id) selectedRelationOverlaysById.set(id, overlay);
+        }
       }
       container.dataset.relationLabelQueryContract = 'indexed-once';
       container.dataset.relationLabelQueryIndexCount = String(
@@ -3717,17 +3738,30 @@ export function SigmaSkeletonCards({
           relationLabelButtonsById.size +
           selectedRelationOverlaysById.size,
       );
+      container.dataset.relationLabelDragLayoutPolicy = dragOnlyRelationLabelLayout
+        ? 'drag-only-svg-labels'
+        : 'all-relation-labels';
       let relationLabelFrameExpectedCount = 0;
       let relationLabelFrameReadyCount = 0;
       let focusRelationLabelExpectedCount = 0;
       let focusRelationLabelVisibleCount = 0;
       for (const label of svg.querySelectorAll<SVGTextElement>('[data-relation-label-from]')) {
+        const dragRelationLabel = label.dataset.dragRelationLabel === 'true';
         const from = label.dataset.relationLabelFrom;
         const to = label.dataset.relationLabelTo;
         const relationLabelId = label.dataset.relationLabelId;
         const badge = relationLabelId
           ? (relationLabelBadgesById.get(relationLabelId) ?? null)
           : null;
+        if (dragOnlyRelationLabelLayout && !dragRelationLabel) {
+          label.setAttribute('opacity', '0');
+          label.setAttribute('aria-hidden', 'true');
+          badge?.setAttribute('opacity', '0');
+          badge?.setAttribute('pointer-events', 'none');
+          const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
+          if (labelGroup) labelGroup.style.pointerEvents = 'none';
+          continue;
+        }
         const labelButton = relationLabelId
           ? (relationLabelButtonsById.get(relationLabelId) ?? null)
           : null;
@@ -3912,7 +3946,9 @@ export function SigmaSkeletonCards({
         }
       }
       container.dataset.relationLabelGeometryContract = 'frame-positioned-hit-targets';
-      container.dataset.relationLabelGeometrySource = 'after-render-layout-pass';
+      container.dataset.relationLabelGeometrySource = dragOnlyRelationLabelLayout
+        ? 'drag-only-label-layout-pass'
+        : 'after-render-layout-pass';
       container.dataset.relationLabelGeometryExpectedCount = String(
         relationLabelFrameExpectedCount,
       );

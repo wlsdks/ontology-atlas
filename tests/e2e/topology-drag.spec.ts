@@ -86,11 +86,17 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   const dragFrameBudgetProof = await page.getByTestId("sigma-skeleton-cards").evaluate((el) => ({
     lastMs: Number(el.getAttribute("data-reposition-duration-last-ms") ?? "NaN"),
     maxMs: Number(el.getAttribute("data-reposition-duration-max-ms") ?? "NaN"),
+    relationLabelDragLayoutPolicy:
+      el.getAttribute("data-relation-label-drag-layout-policy") ?? "",
+    relationLabelGeometrySource:
+      el.getAttribute("data-relation-label-geometry-source") ?? "",
   }));
   expect(Number.isFinite(dragFrameBudgetProof.lastMs)).toBe(true);
   expect(Number.isFinite(dragFrameBudgetProof.maxMs)).toBe(true);
   expect(dragFrameBudgetProof.lastMs).toBeGreaterThanOrEqual(0);
   expect(dragFrameBudgetProof.maxMs).toBeGreaterThanOrEqual(dragFrameBudgetProof.lastMs);
+  expect(dragFrameBudgetProof.relationLabelDragLayoutPolicy).toBe("drag-only-svg-labels");
+  expect(dragFrameBudgetProof.relationLabelGeometrySource).toBe("drag-only-label-layout-pass");
   const workerFrameProof = await page.getByTestId("sigma-topology-viewport").evaluate((el) => ({
     applied: Number(el.getAttribute("data-layout-worker-position-frame-applied-count") ?? "0"),
     contract: el.getAttribute("data-layout-worker-frame-stats-contract") ?? "",
