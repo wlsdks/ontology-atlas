@@ -4,9 +4,19 @@ test.use({ viewport: { width: 1920, height: 1080 } });
 
 async function openTopology(page: Page) {
   await page.goto("/en/topology/");
-  await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
+  const viewport = page.getByTestId("sigma-topology-viewport");
+  await expect(viewport).toBeVisible({
     timeout: 20_000,
   });
+  await expect(viewport).toHaveAttribute(
+    "data-initial-reveal-motion-contract",
+    "opacity-only-fast-ready-reveal",
+  );
+  await expect(viewport).toHaveAttribute(
+    "data-initial-reveal-transform-policy",
+    "no-scale-during-initial-load",
+  );
+  await expect(viewport).toHaveAttribute("data-initial-reveal-duration-ms", "180");
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-skeleton-cards-ready",
     "true",

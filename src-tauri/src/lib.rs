@@ -2441,6 +2441,12 @@ pub fn run() {
                                   topologyCameraMotionSelectedFanoutRows:
                                     Number(sigmaViewport?.getAttribute("data-camera-motion-selected-fanout-rows") || "0"),
                                   topologySkeletonLayerPresent: Boolean(skeletonCardsLayer),
+                                  topologyInitialRevealMotionContract:
+                                    sigmaViewport?.getAttribute("data-initial-reveal-motion-contract") || "",
+                                  topologyInitialRevealTransformPolicy:
+                                    sigmaViewport?.getAttribute("data-initial-reveal-transform-policy") || "",
+                                  topologyInitialRevealDurationMs:
+                                    Number(sigmaViewport?.getAttribute("data-initial-reveal-duration-ms") || "0"),
                                   topologySkeletonLayerModelCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-skeleton-card-model-count") || "0"),
                                   topologySkeletonLayerResolvedCount:

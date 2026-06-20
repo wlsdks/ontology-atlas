@@ -58,6 +58,12 @@ import {
   surfacesToDismissBeforeOpening,
 } from '../lib/stage-interaction';
 import {
+  TOPOLOGY_INITIAL_REVEAL_DURATION_MS,
+  TOPOLOGY_INITIAL_REVEAL_MOTION_CONTRACT,
+  TOPOLOGY_INITIAL_REVEAL_TRANSFORM_POLICY,
+  topologyInitialRevealTransition,
+} from '../lib/topology-reveal-motion';
+import {
   createWorkerLayoutController,
   type WorkerLayoutFrameStats,
 } from '../lib/worker-layout-controller';
@@ -2968,6 +2974,9 @@ function SigmaTopologyImpl({
         data-skeleton-mode={skeletonMode ? 'true' : 'false'}
         data-skeleton-cards-active={skeletonCardsActive ? 'true' : 'false'}
         data-skeleton-card-model-count={skeletonCards?.length ?? 0}
+        data-initial-reveal-motion-contract={TOPOLOGY_INITIAL_REVEAL_MOTION_CONTRACT}
+        data-initial-reveal-transform-policy={TOPOLOGY_INITIAL_REVEAL_TRANSFORM_POLICY}
+        data-initial-reveal-duration-ms={TOPOLOGY_INITIAL_REVEAL_DURATION_MS}
         data-layout-worker-frame-stats-contract="epsilon-skip-position-frames"
         data-layout-worker-position-frame-received-count="0"
         data-layout-worker-position-frame-applied-count="0"
@@ -3005,15 +3014,11 @@ function SigmaTopologyImpl({
         className="relative h-full w-full"
         style={{
           background: 'transparent',
-          // 첫 진입 cinematic — sigma 준비 전에는 투명 + 살짝 축소 상태.
-          // 준비되면 700ms 동안 스프링-like cubic-bezier 로 scale 1 + 불투명도
-          // 1 로 부드럽게 드러남. 애플·토스 의 "팝이 아닌 emergence" 감성.
-          // transform: scale 변화는 GPU 합성 경로라 성능 영향 미미.
+          // 첫 진입은 읽기 준비 신호여야 하므로 scale cinematic 없이 짧은 opacity
+          // 전환만 사용한다. 긴 transform reveal 은 준비 완료 후에도 렉처럼 보인다.
           opacity: sigmaInstance ? 1 : 0,
-          transform: sigmaInstance ? 'scale(1)' : 'scale(0.97)',
-          transition:
-            'opacity 700ms cubic-bezier(0.22, 1, 0.36, 1), transform 700ms cubic-bezier(0.22, 1, 0.36, 1)',
-          transformOrigin: 'center center',
+          transform: 'none',
+          transition: topologyInitialRevealTransition(),
         }}
       />
       {sigmaBootError ? (
