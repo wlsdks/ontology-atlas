@@ -1119,6 +1119,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "computed-from-transform-and-size",
         );
         expect(layer).toHaveAttribute(
+          "data-card-placement-dim-rect-read-policy",
+          "reuse-pass1-card-placement-frame-rects",
+        );
+        expect(layer).toHaveAttribute(
           "data-card-placement-size-cache-contract",
           "stable-card-size-key-reuses-offset-dimensions",
         );

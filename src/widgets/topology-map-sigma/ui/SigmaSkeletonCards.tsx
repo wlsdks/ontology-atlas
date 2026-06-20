@@ -3255,12 +3255,7 @@ export function SigmaSkeletonCards({
       if (lockedForDrag) {
         collides = false;
       } else {
-        const r = el.getBoundingClientRect();
-        const left = r.left - containerRect.left;
-        const top = r.top - containerRect.top;
-        const right = r.right - containerRect.left;
-        const bottom = r.bottom - containerRect.top;
-        rect = seedCardPlacementFrameRect(el, { left, top, right, bottom });
+        rect = readCardPlacementFrameRect(el);
         const clipped =
           rect.left < 0 ||
           rect.top < 0 ||
@@ -3301,6 +3296,8 @@ export function SigmaSkeletonCards({
       0,
       measureRepositionNow() - cardPlacementDimPassStartedAt,
     );
+    container.dataset.cardPlacementDimRectReadPolicy =
+      'reuse-pass1-card-placement-frame-rects';
     container.dataset.focusContextSilhouetteHiddenCount = String(
       focusContextSilhouetteHiddenCount,
     );

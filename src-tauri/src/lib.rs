@@ -4040,6 +4040,8 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-overview-collision-ms") || "0"),
                                   topologyCardPlacementSubphaseDimPassMs:
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-dim-pass-ms") || "0"),
+                                  topologyCardPlacementDimRectReadPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-card-placement-dim-rect-read-policy") || "",
                                   topologyCardPlacementSubphaseReadLayerMs:
                                     Number(skeletonCardsLayer?.getAttribute("data-card-placement-subphase-read-layer-ms") || "0"),
                                   topologyCardPlacementSubphasePathEndpointMs:
