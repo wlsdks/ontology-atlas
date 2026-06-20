@@ -196,11 +196,19 @@ names in component data markers and tests whenever a surface depends on
   strong, supported, weak, and review relations. Relation strokes are topology
   facts, not ambient decoration; tune their contrast with tokens so the map can
   become more legible without touching renderer logic.
-- `--topology-focus-hull-*`: selected focus/drag cluster hull treatment. The
-  quiet focus outline and active drag hull must be token-backed so the map reads
-  as a relationship boundary, not a second panel or an ungoverned glow. At the
-  1280px compact-focus rail, the selected map anchor is hidden by an explicit
-  visibility contract so the support rail owns the selected fact.
+- `--topology-focus-hull-*`: drag cluster hull treatment plus click-focus
+  measurement markers. Click focus must not render a box or dashed panel; it
+  keeps the DOM hull only for clearance/overlap proof while dimmed context,
+  ego connectors, and relation labels carry the visible relationship meaning.
+  Active drag may render the token-backed hull because it is a movement state.
+  The selected focus camera and selected DOM anchor share the same desktop
+  reading center, slightly above mathematical center, so the whole ego cluster
+  stays in the first scan band while the right inspector is open.
+  Selected focus dock companions use a stricter bottom inset than drag docking
+  so the focus cluster stays in the first reading band on 14-inch and 16:9
+  desktop viewports.
+  At the 1280px compact-focus rail, the selected map anchor is hidden by an
+  explicit visibility contract so the support rail owns the selected fact.
 - `--topology-card-drag-*`: drag, active drag, and settle feedback for map
   cards. Drag motion is an interaction state in the topology grammar, so the
   wash/glow tokens must stay separate from generic selected-card elevation.

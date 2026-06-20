@@ -896,12 +896,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
             },
           ]}
           selectedSlug="domain:d1"
+          selectedFocusCenterActive
           onSelect={vi.fn()}
         />,
       );
       const layer = screen.getByTestId("sigma-skeleton-cards");
+      const dockedCard = screen
+        .getByText("Agent handoff")
+        .closest("[data-skeleton-card]");
 
       await waitFor(() => {
+        expect(layer).toHaveAttribute("data-selected-focus-dock-bottom-inset-px", "180");
         expect(layer).toHaveAttribute("data-selected-dock-companion-count", "1");
         expect(layer).toHaveAttribute(
           "data-selected-dock-visible-companion-count",
@@ -916,6 +921,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-click-focus-relationship-context-source",
           "selected-dock-companions",
         );
+        expect(dockedCard).toHaveAttribute("data-selected-focus-dock-band", "true");
+        expect(dockedCard).toHaveAttribute("data-dock-bottom-inset-px", "180");
       });
     } finally {
       rectSpy.mockRestore();
@@ -1346,13 +1353,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       );
       expect(hull).toHaveAttribute(
         "data-focus-hull-line-contract",
-        "no-visible-boundary-highlight-dim-rest",
+        "no-rendered-boundary-rely-on-dimmed-context",
       );
+      expect(hull).toHaveAttribute("data-focus-hull-visual-state", "not-rendered");
       expect(hull).toHaveAttribute(
         "data-focus-hull-top-safe-area-token",
         "--topology-focus-hull-top-safe-area",
       );
-      expect(hull?.className).toContain("data-[cluster-mode=focus]:border-dashed");
+      expect(hull?.className).toContain("data-[cluster-mode=focus]:border-transparent");
+      expect(hull?.className).toContain("data-[cluster-mode=focus]:bg-transparent");
+      expect(hull?.className).toContain("data-[cluster-mode=focus]:shadow-none");
       expect(hull).toHaveAttribute(
         "data-focus-breathing-room-contract",
         "viewport-edge-clearance",
@@ -1495,8 +1505,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(hull).toHaveAttribute("data-visible", "false");
       expect(hull).toHaveAttribute(
         "data-focus-hull-line-contract",
-        "no-visible-boundary-highlight-dim-rest",
+        "no-rendered-boundary-rely-on-dimmed-context",
       );
+      expect(hull).toHaveAttribute("data-focus-hull-visual-state", "not-rendered");
       expect(match).not.toBeNull();
       expect(Number(match?.[1])).toBeGreaterThan(308);
     } finally {

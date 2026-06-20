@@ -1870,8 +1870,9 @@ for (const viewport of VIEWPORTS) {
     await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "no-boundary");
     await expect(focusHull).toHaveAttribute(
       "data-focus-hull-line-contract",
-      "no-visible-boundary-highlight-dim-rest",
+      "no-rendered-boundary-rely-on-dimmed-context",
     );
+    await expect(focusHull).toHaveAttribute("data-focus-hull-visual-state", "not-rendered");
     await expect(focusHull).toHaveAttribute(
       "data-focus-breathing-room-contract",
       "viewport-edge-clearance",
@@ -2038,10 +2039,12 @@ for (const viewport of VIEWPORTS) {
         "data-selected-focus-center-policy",
         "viewport-center-anchor",
       );
+      await expect(selectedCard).toHaveAttribute("data-selected-focus-center-y-ratio", "0.48");
       const selectedRect = await rectOf(selectedCard);
+      const selectedReadingCenterY = viewport.height * 0.48;
       const selectedCenterDelta = {
         x: Math.round(selectedRect.left + selectedRect.width / 2 - viewport.width / 2),
-        y: Math.round(selectedRect.top + selectedRect.height / 2 - viewport.height / 2),
+        y: Math.round(selectedRect.top + selectedRect.height / 2 - selectedReadingCenterY),
       };
       expect(
         Math.abs(selectedCenterDelta.x),
@@ -2049,7 +2052,7 @@ for (const viewport of VIEWPORTS) {
       ).toBeLessThanOrEqual(72);
       expect(
         Math.abs(selectedCenterDelta.y),
-        `selected node should center vertically after focus camera settles at ${viewport.label}`,
+        `selected node should land on the reading center after focus camera settles at ${viewport.label}`,
       ).toBeLessThanOrEqual(72);
     } else {
       await expect(selectedCard).toHaveAttribute(
@@ -3604,8 +3607,9 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "no-boundary");
   await expect(focusHull).toHaveAttribute(
     "data-focus-hull-line-contract",
-    "no-visible-boundary-highlight-dim-rest",
+    "no-rendered-boundary-rely-on-dimmed-context",
   );
+  await expect(focusHull).toHaveAttribute("data-focus-hull-visual-state", "not-rendered");
   await expect(focusHull).toHaveAttribute(
     "data-focus-label-clearance-contract",
     "no-hull-boundary-uses-ego-labels",
@@ -3698,10 +3702,12 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
       label.overlapsCards,
       `${label.id} (${label.text}) relation label must not overlap visible map cards`,
     ).toEqual([]);
-    expect(
-      label.hullBorderOverlaps,
-      `${label.id} (${label.text}) relation label must not sit on the focus hull stroke`,
-    ).toEqual([]);
+    if ((await focusHull.getAttribute("data-visible")) !== "false") {
+      expect(
+        label.hullBorderOverlaps,
+        `${label.id} (${label.text}) relation label must not sit on the focus hull stroke`,
+      ).toEqual([]);
+    }
     expect(
       label.bottom,
       `${label.id} (${label.text}) relation label must stay above the phone controls reserve`,

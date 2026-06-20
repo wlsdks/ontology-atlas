@@ -40,6 +40,7 @@ const DEFAULT_MIN_ZOOM_IN_SCALE = 0.55;
 const DEFAULT_SELECTED_FOCUS_COMFORT_PADDING = 24;
 const DEFAULT_SELECTED_FOCUS_READING_RATIO = 0.8;
 const DEFAULT_SELECTED_FOCUS_TARGET_POLICY = 'safe-center';
+export const SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO = 0.48;
 const DEFAULT_SELECTED_FOCUS_TOP_INSET = 420;
 const SELECTED_FOCUS_PANEL_CLEAR_TOP_INSET = 224;
 const SELECTED_FANOUT_ROW_TOP_INSET = 32;
@@ -200,7 +201,7 @@ export function resolveSelectedFocusCameraFit({
     targetPolicy === 'viewport-center'
       ? {
           x: viewport.width / 2,
-          y: viewport.height / 2,
+          y: viewport.height * SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
         }
       : {
           x: left + (right - left) / 2,

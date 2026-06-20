@@ -11,7 +11,10 @@ import {
 import type Graph from 'graphology';
 import { useTranslations } from 'next-intl';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
-import { resolveTopologyUiScale } from '../lib/camera-fit';
+import {
+  SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
+  resolveTopologyUiScale,
+} from '../lib/camera-fit';
 import {
   TOPOLOGY_DRAG_SETTLE_DURATION_MS,
   TOPOLOGY_DRAG_SETTLE_EASING_NAME,
@@ -232,6 +235,8 @@ const FOCUS_HULL_BREATHING_ROOM_PX = 16;
 const FOCUS_HULL_LABEL_CLEARANCE_PX = 34;
 const FOCUS_HULL_TOP_SAFE_AREA_PX = 72;
 const FOCUS_HULL_TOP_SAFE_AREA_TOKEN = '--topology-focus-hull-top-safe-area';
+const SELECTED_FOCUS_DOCK_BOTTOM_INSET_PX = 180;
+const SELECTED_FOCUS_EGO_READING_BAND_Y_RATIO = 0.56;
 const FIXED_SURFACE_GAP = 8;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
@@ -2609,6 +2614,9 @@ export function SigmaSkeletonCards({
         : selectedFocusRailSurfaceMounted
           ? 'show-selected-card'
           : 'default';
+    container.dataset.selectedFocusDockBottomInsetPx = String(
+      SELECTED_FOCUS_DOCK_BOTTOM_INSET_PX,
+    );
     const acceptedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     const dimEls: HTMLElement[] = [];
     const overviewEls: HTMLElement[] = [];
@@ -2655,7 +2663,24 @@ export function SigmaSkeletonCards({
         el.dataset.dockCol = String(col);
         const parentCenterX = (p.left + p.right) / 2 - containerRect.left;
         const safeTop = 96;
-        const safeBottom = Math.max(safeTop + cardHeight, containerRect.height - 56);
+        const selectedFocusDock =
+          selectedFocusCenterActive &&
+          selectedRelationEdgeId === null &&
+          dockParent === selectedSlug &&
+          !pathWorkflowActive &&
+          !healthRepairTarget;
+        const dockBottomInset = selectedFocusDock
+          ? SELECTED_FOCUS_DOCK_BOTTOM_INSET_PX
+          : 56;
+        const safeBottom = Math.max(
+          safeTop + cardHeight,
+          containerRect.height - dockBottomInset,
+        );
+        el.dataset.dockBottomInsetPx = String(dockBottomInset);
+        el.dataset.selectedFocusDockBand = selectedFocusDock ? 'true' : 'false';
+        delete el.dataset.selectedFocusEgoReadingBand;
+        delete el.dataset.selectedFocusEgoReadingBandYRatio;
+        delete el.dataset.selectedFocusCenterYRatio;
         const halfColumn = ((rowsInCol - 1) * pitch + cardHeight) / 2;
         const parentCenterY = (p.top + p.bottom) / 2 - containerRect.top;
         const dockSnapshot = slug
@@ -2734,11 +2759,20 @@ export function SigmaSkeletonCards({
           !healthRepairTarget &&
           !followsActiveGraphDrag &&
           containerRect.width > SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX;
+        const selectedFocusEgoBand =
+          selectedFocusCenterActive &&
+          selectedRelationEdgeId === null &&
+          !pathWorkflowActive &&
+          !healthRepairTarget &&
+          !followsActiveGraphDrag &&
+          ego?.slugs.has(slug) === true;
         const clamped =
           selectedFocusViewportCenter
             ? {
                 x: containerRect.width / 2,
-                y: containerRect.height / 2,
+                y:
+                  containerRect.height *
+                  SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
               }
             : !followsActiveGraphDrag && ego?.slugs.has(slug)
             ? clampVisibleAnchorCard({
@@ -2752,9 +2786,30 @@ export function SigmaSkeletonCards({
                 fixedSurfaceRects,
               })
             : vp;
+        if (selectedFocusEgoBand && !selectedFocusViewportCenter) {
+          clamped.y = Math.min(
+            clamped.y,
+            containerRect.height * SELECTED_FOCUS_EGO_READING_BAND_Y_RATIO,
+          );
+        }
         el.dataset.selectedFocusCenterPolicy = selectedFocusViewportCenter
           ? 'viewport-center-anchor'
           : 'default';
+        el.dataset.selectedFocusEgoReadingBand = selectedFocusEgoBand ? 'true' : 'false';
+        if (selectedFocusEgoBand) {
+          el.dataset.selectedFocusEgoReadingBandYRatio = String(
+            SELECTED_FOCUS_EGO_READING_BAND_Y_RATIO,
+          );
+        } else {
+          delete el.dataset.selectedFocusEgoReadingBandYRatio;
+        }
+        if (selectedFocusViewportCenter) {
+          el.dataset.selectedFocusCenterYRatio = String(
+            SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
+          );
+        } else {
+          delete el.dataset.selectedFocusCenterYRatio;
+        }
         const anchor = ANCHOR_TRANSLATE[safeAnchorKey];
         el.dataset.layoutY = String(clamped.y);
         setSkeletonStyleValue(
@@ -3833,8 +3888,21 @@ export function SigmaSkeletonCards({
           const includeHiddenFocusAnchor =
             activeHullMode === 'focus' &&
             (slug === selectedSlug || slug === ego?.selected);
+          const includeFocusReadingGroupCard =
+            cardEl.dataset.selectedFocusEgoReadingBand === 'true' &&
+            !cardEl.dataset.dockParent;
+          const includeLegacyFocusFixtureCard =
+            activeHullMode === 'focus' &&
+            !selectedFocusCenterActive &&
+            cardEl.dataset.dimmed !== 'true';
+          const includeFocusMeasurementCard =
+            activeHullMode !== 'focus' ||
+            includeHiddenFocusAnchor ||
+            includeFocusReadingGroupCard ||
+            includeLegacyFocusFixtureCard;
           const includeHiddenFocusClusterCard =
-            activeHullMode === 'focus' && activeHullCluster.has(slug);
+            activeHullMode === 'focus' && includeFocusMeasurementCard;
+          if (!includeFocusMeasurementCard) continue;
           if (
             cardEl.dataset.surfaceHidden === 'true' &&
             !includeHiddenFocusAnchor &&
@@ -3933,7 +4001,8 @@ export function SigmaSkeletonCards({
           hull.dataset.focusClusterSize = String(clusterRects.length);
           hull.dataset.focusStage = 'click-focus';
           hull.dataset.focusAttentionLabel = 'linked-focus';
-          hull.dataset.focusHullLineContract = 'no-visible-boundary-highlight-dim-rest';
+          hull.dataset.focusHullLineContract = 'no-rendered-boundary-rely-on-dimmed-context';
+          hull.dataset.focusHullVisualState = 'not-rendered';
           hull.dataset.focusHullQuietOpacityToken = '--topology-focus-hull-quiet-opacity';
           hull.dataset.focusBreathingRoomContract = 'viewport-edge-clearance';
           hull.dataset.focusBreathingRoomPx = String(FOCUS_HULL_BREATHING_ROOM_PX);
@@ -3953,6 +4022,7 @@ export function SigmaSkeletonCards({
           delete hull.dataset.focusStage;
           delete hull.dataset.focusAttentionLabel;
           delete hull.dataset.focusHullLineContract;
+          delete hull.dataset.focusHullVisualState;
           delete hull.dataset.focusHullQuietOpacityToken;
           delete hull.dataset.focusBreathingRoomContract;
           delete hull.dataset.focusBreathingRoomPx;
@@ -3973,6 +4043,7 @@ export function SigmaSkeletonCards({
         delete hull.dataset.focusStage;
         delete hull.dataset.focusAttentionLabel;
         delete hull.dataset.focusHullLineContract;
+        delete hull.dataset.focusHullVisualState;
         delete hull.dataset.focusHullQuietOpacityToken;
         delete hull.dataset.focusBreathingRoomContract;
         delete hull.dataset.focusBreathingRoomPx;
@@ -4248,7 +4319,7 @@ export function SigmaSkeletonCards({
             : 0,
         }}
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-[color:var(--topology-focus-hull-border)] bg-[color:var(--topology-focus-hull-surface)] shadow-[var(--topology-focus-hull-shadow)] transition-[opacity,box-shadow,border-color,background-color] duration-100 data-[cluster-mode=focus]:border-dashed data-[cluster-mode=focus]:border-[color:var(--topology-focus-hull-quiet-border)] data-[cluster-mode=focus]:bg-[color:var(--topology-focus-hull-quiet-surface)] data-[cluster-mode=focus]:shadow-[var(--topology-focus-hull-quiet-shadow)] data-[drag-active=true]:border-solid data-[drag-active=true]:border-[color:var(--topology-focus-hull-drag-border)] data-[drag-active=true]:bg-[color:var(--topology-focus-hull-drag-surface)] data-[drag-active=true]:shadow-[var(--topology-focus-hull-drag-shadow)] motion-reduce:transition-none"
+        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-[color:var(--topology-focus-hull-border)] bg-[color:var(--topology-focus-hull-surface)] shadow-[var(--topology-focus-hull-shadow)] transition-[opacity,box-shadow,border-color,background-color] duration-100 data-[cluster-mode=focus]:border-transparent data-[cluster-mode=focus]:bg-transparent data-[cluster-mode=focus]:shadow-none data-[drag-active=true]:border-solid data-[drag-active=true]:border-[color:var(--topology-focus-hull-drag-border)] data-[drag-active=true]:bg-[color:var(--topology-focus-hull-drag-surface)] data-[drag-active=true]:shadow-[var(--topology-focus-hull-drag-shadow)] motion-reduce:transition-none"
       >
         {activeHullMode === 'drag' ? (
           <>

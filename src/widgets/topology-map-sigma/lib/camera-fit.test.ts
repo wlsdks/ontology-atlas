@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
   resolveSafeAreaCameraFit,
   resolveSelectedFocusCameraFit,
   resolveSelectedFocusCameraMotionProof,
@@ -191,7 +192,7 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
     );
   });
 
-  it('선택 클릭 전용 정책은 fixed chrome safe rect 가 아니라 viewport 정중앙을 목표로 한다', () => {
+  it('선택 클릭 전용 정책은 fixed chrome safe rect 가 아니라 viewport reading center 를 목표로 한다', () => {
     const fit = resolveSelectedFocusCameraFit({
       selectedViewport: { x: insets.left + 40, y: insets.top + 120 },
       viewport,
@@ -202,7 +203,9 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
     expect(fit).not.toBeNull();
     expect(fit?.targetRatio).toBe(1.1);
     expect(fit?.safeTarget.x).toBeCloseTo(viewport.width / 2);
-    expect(fit?.safeTarget.y).toBeCloseTo(viewport.height / 2);
+    expect(fit?.safeTarget.y).toBeCloseTo(
+      viewport.height * SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
+    );
   });
 
   it('선택 카메라 보정의 의도와 이동 거리를 검증 가능한 proof 로 남긴다', () => {
