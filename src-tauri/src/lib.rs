@@ -3996,6 +3996,12 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-reposition-max-pass-connector-label-ms") || "0"),
                                   topologyRepositionMaxPassPopupMs:
                                     Number(skeletonCardsLayer?.getAttribute("data-reposition-max-pass-popup-ms") || "0"),
+                                  topologyFocusContextSilhouettePolicy:
+                                    skeletonCardsLayer?.getAttribute("data-focus-context-silhouette-policy") || "",
+                                  topologyFocusContextSilhouetteActive:
+                                    skeletonCardsLayer?.getAttribute("data-focus-context-silhouette-active") || "",
+                                  topologyFocusContextSilhouetteHiddenCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-focus-context-silhouette-hidden-count") || "0"),
                                   topologyDragRepositionPolicy:
                                     skeletonCardsLayer?.getAttribute("data-drag-reposition-policy") || "",
                                   topologyDragDomIndexContract:

@@ -1610,6 +1610,71 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("click focus suppresses lower-tier background silhouettes instead of drawing a focus box", async () => {
+    const graph = makeGraph();
+    graph.addNode("capability:c1", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 120,
+      y: 80,
+      label: "Background Capability",
+    });
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 0,
+      authored: false,
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "capability:c1",
+            title: "Background Capability",
+            kind: "capability",
+            tier: 2 as const,
+          },
+        ]}
+        selectedSlug="project:p"
+        selectedFocusCenterActive
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const backgroundCard = screen
+      .getByText("Background Capability")
+      .closest("[data-skeleton-card]");
+
+    await waitFor(() => {
+      expect(layer).toHaveAttribute(
+        "data-focus-context-silhouette-policy",
+        "click-focus-keeps-orientation-anchors-only",
+      );
+      expect(layer).toHaveAttribute("data-focus-context-silhouette-active", "true");
+      expect(layer).toHaveAttribute("data-focus-context-silhouette-hidden-count", "1");
+      expect(backgroundCard).toHaveAttribute(
+        "data-dim-opacity-role",
+        "suppressed-focus-context",
+      );
+      expect(backgroundCard).toHaveAttribute("data-surface-hidden", "true");
+      expect(document.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
+    });
+  });
+
   it("선택 카드라도 fixed surface 와 겹치면 카드 대신 focus panel/popover 가 선택 맥락을 대표한다", async () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {

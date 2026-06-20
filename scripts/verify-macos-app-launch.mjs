@@ -3059,9 +3059,12 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node click-focus context was ${payload.markers.topologyClickFocusRelationshipContext || "missing"}`;
       }
+      const focusClusterStage = String(
+        payload.markers.topologyFocusClusterStage || "",
+      );
       if (
         payload.markers.topologyFocusClusterMode === "focus" &&
-        payload.markers.topologyFocusClusterStage !== "click-focus"
+        !/^(click-focus|click-focus-boxless)$/.test(focusClusterStage)
       ) {
         return `WebView Relief selected node focus cluster stage was ${payload.markers.topologyFocusClusterStage || "missing"}`;
       }
@@ -3343,7 +3346,7 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView Relief selected node focus cluster overlapped the analysis panel (${focusClusterLeft}, ${focusClusterTop}, ${focusClusterRight}, ${focusClusterBottom} vs ${panelLeft}, ${panelTop}, ${panelRight}, ${panelBottom})`;
       }
       if (
-        payload.markers.topologyFocusClusterMode === "focus" &&
+        focusHullRendered &&
         payload.markers.topologyFocusClusterBreathingRoomContract !==
         "viewport-edge-clearance"
       ) {
@@ -3359,7 +3362,7 @@ export function validateWebviewVerifyPayload(payload, {
         payload.markers.topologyFocusClusterBottomClearance || 0,
       );
       if (
-        payload.markers.topologyFocusClusterMode === "focus" &&
+        focusHullRendered &&
         (focusClusterBreathingRoom < 12 ||
           focusClusterRightClearance < focusClusterBreathingRoom ||
           focusClusterBottomClearance < focusClusterBreathingRoom)

@@ -3059,6 +3059,18 @@ export function SigmaSkeletonCards({
       container.dataset.layoutAnimate === 'true' &&
       activeDragCluster === null &&
       selectedRelationEdgeId === null;
+    const focusContextSilhouetteSuppressionActive =
+      selectedFocusCenterActive &&
+      selectedFocusCluster !== null &&
+      selectedRelationEdgeId === null &&
+      activeDragCluster === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
+    let focusContextSilhouetteHiddenCount = 0;
+    container.dataset.focusContextSilhouettePolicy =
+      'click-focus-keeps-orientation-anchors-only';
+    container.dataset.focusContextSilhouetteActive =
+      focusContextSilhouetteSuppressionActive ? 'true' : 'false';
     const acceptedDimRects = [...egoRects];
     const orderedDimEls = dimEls.slice().sort((a, b) => {
       const tierA = Number(a.dataset.tier ?? '3');
@@ -3070,6 +3082,14 @@ export function SigmaSkeletonCards({
       const lockedForDrag = isDragClusterCard(slug, el.dataset.dockParent);
       let rect: { left: number; top: number; right: number; bottom: number } | null = null;
       let collides: boolean;
+      const tier = Number(el.dataset.tier ?? '3');
+      if (focusContextSilhouetteSuppressionActive && tier > 1 && !lockedForDrag) {
+        el.dataset.dimOpacityRole = 'suppressed-focus-context';
+        el.dataset.dimOpacityToken = 'none';
+        hideSkeletonCard(el, domWriteStats);
+        focusContextSilhouetteHiddenCount += 1;
+        continue;
+      }
       if (lockedForDrag) {
         collides = false;
       } else {
@@ -3115,6 +3135,9 @@ export function SigmaSkeletonCards({
         if (rect) acceptedDimRects.push(rect);
       }
     }
+    container.dataset.focusContextSilhouetteHiddenCount = String(
+      focusContextSilhouetteHiddenCount,
+    );
     if (readLayerSurfaceActive) {
       for (const el of orderedEls) {
         if (el.dataset.surfaceHidden === 'true') continue;
