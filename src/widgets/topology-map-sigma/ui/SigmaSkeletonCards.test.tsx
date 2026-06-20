@@ -561,6 +561,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     expect(layer).toHaveAttribute("data-skeleton-cards-ready", "true");
     expect(layer.className).toContain("data-[skeleton-cards-ready=false]:opacity-0");
+    expect(layer).toHaveAttribute("data-initial-load-reposition-throttle-ms", "640");
   });
 
   it("afterRender 배치 작업을 같은 frame 안에서 한 번으로 합친다", () => {
@@ -651,7 +652,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-layout-transition-reposition-policy",
         "throttle-after-render-during-initial-load",
       );
-      expect(layer).toHaveAttribute("data-initial-load-reposition-throttle-ms", "1000");
+      expect(layer).toHaveAttribute("data-initial-load-reposition-throttle-ms", "640");
       expect(graphToViewport).toHaveBeenCalledTimes(initialCallsBeforeWarmup);
 
       rerender(
