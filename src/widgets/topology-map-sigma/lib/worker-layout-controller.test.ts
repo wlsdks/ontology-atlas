@@ -57,6 +57,36 @@ describe('WorkerLayoutController', () => {
     expect(g.getNodeAttribute('b', 'y')).toBe(400);
   });
 
+  it('skips worker position batches when every node stays within the frame epsilon', () => {
+    const g = makeGraph();
+    const updateSpy = vi.spyOn(g, 'updateEachNodeAttributes');
+    const fake = new FakeWorker();
+    createWorkerLayoutController(g, fake as unknown as Worker, {
+      autoStart: true,
+      initialAlpha: 0.6,
+    });
+    fake.emit({ type: 'ids', ids: ['a', 'b'] });
+
+    fake.emit({
+      type: 'positions',
+      x: Float32Array.from([0.01, 1.02]),
+      y: Float32Array.from([0.02, 1.01]),
+      active: true,
+    });
+
+    expect(updateSpy).not.toHaveBeenCalled();
+
+    fake.emit({
+      type: 'positions',
+      x: Float32Array.from([0.08, 1.02]),
+      y: Float32Array.from([0.02, 1.01]),
+      active: true,
+    });
+
+    expect(updateSpy).toHaveBeenCalledOnce();
+    expect(g.getNodeAttribute('a', 'x')).toBeCloseTo(0.08);
+  });
+
   it('forwards pin/drag/release/reheat/tune as worker messages', () => {
     const fake = new FakeWorker();
     const c = createWorkerLayoutController(makeGraph(), fake as unknown as Worker, {

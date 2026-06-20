@@ -3,6 +3,8 @@ import type { PhysicsController } from './physics';
 import type { SigmaNodeAttrs, SigmaEdgeAttrs } from './graph-build';
 import type { MainToWorker, WorkerToMain } from './layout-protocol';
 
+const POSITION_FRAME_EPSILON = 0.05;
+
 /**
  * Main-thread controller that drives the layout worker while exposing the
  * EXACT `PhysicsController` interface (pin/drag/release/tune/reheat/stop) so
@@ -37,6 +39,18 @@ export function createWorkerLayoutController(
     }
     if (m.type === 'positions') {
       const { x, y } = m;
+      let hasMeaningfulChange = false;
+      graph.forEachNode((id, attrs) => {
+        if (hasMeaningfulChange) return;
+        const i = indexById.get(id);
+        if (i === undefined) return;
+        const prevX = attrs.x ?? 0;
+        const prevY = attrs.y ?? 0;
+        hasMeaningfulChange =
+          Math.abs(prevX - x[i]) >= POSITION_FRAME_EPSILON ||
+          Math.abs(prevY - y[i]) >= POSITION_FRAME_EPSILON;
+      });
+      if (!hasMeaningfulChange) return;
       // Same batch path as physics.ts onTick: one 'eachNodeAttributesUpdated'.
       graph.updateEachNodeAttributes((id, attrs) => {
         const i = indexById.get(id);
