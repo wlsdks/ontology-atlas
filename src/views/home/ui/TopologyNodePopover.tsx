@@ -382,6 +382,9 @@ export function TopologyNodePopover({
         data-compact-title-size-token="--topology-node-popover-compact-title-size"
         data-compact-title-leading-token="--topology-node-popover-compact-title-leading"
         data-compact-meta-size-token="--topology-node-popover-compact-meta-size"
+        data-compact-meaning-size-token="--topology-node-popover-compact-meaning-size"
+        data-compact-meaning-leading-token="--topology-node-popover-compact-meaning-leading"
+        data-compact-meaning-gap-token="--topology-node-popover-compact-meaning-gap"
         data-compact-kind-size-token="--topology-node-popover-compact-kind-size"
         data-compact-fact-size-token="--topology-node-popover-compact-fact-size"
         data-compact-action-label-size-token="--topology-node-popover-compact-action-label-size"
@@ -427,6 +430,21 @@ export function TopologyNodePopover({
           >
             {labels.usedBy} {focus.usedByCount} · {labels.dependsOn} {focus.dependsOnCount}
           </p>
+          {significance ? (
+            <p
+              data-testid="topology-node-popover-compact-meaning"
+              data-compact-meaning-contract="plain-language-meaning-before-typed-facts"
+              data-compact-meaning-responsive-contract="visible-desktop-sr-only-compact"
+              data-compact-meaning-level={significance.level}
+              data-compact-meaning-text-token="--topology-node-popover-compact-meaning-text"
+              data-compact-meaning-size-token="--topology-node-popover-compact-meaning-size"
+              data-compact-meaning-leading-token="--topology-node-popover-compact-meaning-leading"
+              data-compact-meaning-gap-token="--topology-node-popover-compact-meaning-gap"
+              className="mt-[var(--topology-node-popover-compact-meaning-gap)] line-clamp-1 text-[length:var(--topology-node-popover-compact-meaning-size)] leading-[var(--topology-node-popover-compact-meaning-leading)] text-[color:var(--topology-node-popover-compact-meaning-text)] max-[1280px]:sr-only"
+            >
+              {significance.importanceLine}
+            </p>
+          ) : null}
           <p
             data-testid="topology-node-popover-compact-relation-facts"
             data-compact-relation-facts-contract="collapsed-dock-surfaces-typed-facts"

@@ -660,6 +660,9 @@
     --topology-node-popover-compact-title-size: 16px;
     --topology-node-popover-compact-title-leading: 21px;
     --topology-node-popover-compact-meta-size: 11.5px;
+    --topology-node-popover-compact-meaning-size: 12px;
+    --topology-node-popover-compact-meaning-leading: 17px;
+    --topology-node-popover-compact-meaning-gap: 3px;
     --topology-node-popover-compact-kind-size: 10px;
     --topology-node-popover-compact-fact-size: 9.5px;
     --topology-node-popover-compact-action-label-size: 11px;
@@ -667,6 +670,7 @@
     --topology-node-popover-title-lines: 2;
     --topology-node-popover-kind-text: rgba(222, 225, 255, 0.52);
     --topology-node-popover-title-text: rgba(255, 255, 255, 0.94);
+    --topology-node-popover-compact-meaning-text: rgba(222, 225, 255, 0.68);
     --topology-node-popover-significance-core-text: rgba(255, 255, 255, 0.90);
     --topology-node-popover-significance-support-text: rgba(222, 225, 255, 0.72);
     --topology-node-popover-surface: rgba(15, 16, 17, 0.99);
@@ -1377,6 +1381,9 @@
     --topology-node-popover-compact-title-size: 16px;
     --topology-node-popover-compact-title-leading: 21px;
     --topology-node-popover-compact-meta-size: 11.5px;
+    --topology-node-popover-compact-meaning-size: 12px;
+    --topology-node-popover-compact-meaning-leading: 17px;
+    --topology-node-popover-compact-meaning-gap: 3px;
     --topology-node-popover-compact-kind-size: 10px;
     --topology-node-popover-compact-fact-size: 9.5px;
     --topology-node-popover-compact-action-label-size: 11px;
@@ -1390,6 +1397,7 @@
     --topology-node-popover-metric-border: rgba(15, 23, 42, 0.10);
     --topology-node-popover-kind-text: rgba(71, 85, 105, 0.74);
     --topology-node-popover-title-text: rgba(15, 23, 42, 0.92);
+    --topology-node-popover-compact-meaning-text: rgba(51, 65, 85, 0.72);
     --topology-node-popover-significance-core-text: rgba(15, 23, 42, 0.88);
     --topology-node-popover-significance-support-text: rgba(71, 85, 105, 0.78);
     --topology-node-popover-metric-label-text: rgba(71, 85, 105, 0.76);

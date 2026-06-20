@@ -1048,7 +1048,17 @@ describe("TopologyNodePopover", () => {
 
   it("can collapse into a low map chip without losing the selected node context", () => {
     const onToggleCollapsed = vi.fn();
-    setup({ collapsed: true, onToggleCollapsed });
+    setup({
+      collapsed: true,
+      onToggleCollapsed,
+      significance: {
+        whatLine: "AI Agent Partner 영역에 속한 역량",
+        importanceLine: "핵심 허브 — 7곳이 이 노드에 기대요",
+        dependsOnLine: "2곳에 기대요",
+        impactLine: "변경 영향이 큽니다",
+        level: "core",
+      },
+    });
 
     const popover = screen.getByTestId("topology-node-popover");
     expect(popover).toHaveAttribute("data-topology-node-popover", "selected-node-inspector");
@@ -1097,6 +1107,18 @@ describe("TopologyNodePopover", () => {
     expect(popover).toHaveAttribute(
       "data-compact-meta-size-token",
       "--topology-node-popover-compact-meta-size",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-meaning-size-token",
+      "--topology-node-popover-compact-meaning-size",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-meaning-leading-token",
+      "--topology-node-popover-compact-meaning-leading",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-meaning-gap-token",
+      "--topology-node-popover-compact-meaning-gap",
     );
     expect(popover).toHaveAttribute(
       "data-compact-kind-size-token",
@@ -1156,6 +1178,44 @@ describe("TopologyNodePopover", () => {
     expect(popover.className).not.toContain("min-[1800px]");
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     expect(screen.getByText("이 노드를 쓰는 곳 1 · 이 노드가 기대는 곳 2")).toBeInTheDocument();
+    const compactMeaning = screen.getByTestId("topology-node-popover-compact-meaning");
+    expect(compactMeaning).toHaveTextContent("핵심 허브 — 7곳이 이 노드에 기대요");
+    expect(compactMeaning).toHaveAttribute(
+      "data-compact-meaning-contract",
+      "plain-language-meaning-before-typed-facts",
+    );
+    expect(compactMeaning).toHaveAttribute(
+      "data-compact-meaning-responsive-contract",
+      "visible-desktop-sr-only-compact",
+    );
+    expect(compactMeaning).toHaveAttribute("data-compact-meaning-level", "core");
+    expect(compactMeaning).toHaveAttribute(
+      "data-compact-meaning-text-token",
+      "--topology-node-popover-compact-meaning-text",
+    );
+    expect(compactMeaning).toHaveAttribute(
+      "data-compact-meaning-size-token",
+      "--topology-node-popover-compact-meaning-size",
+    );
+    expect(compactMeaning).toHaveAttribute(
+      "data-compact-meaning-leading-token",
+      "--topology-node-popover-compact-meaning-leading",
+    );
+    expect(compactMeaning).toHaveAttribute(
+      "data-compact-meaning-gap-token",
+      "--topology-node-popover-compact-meaning-gap",
+    );
+    expect(compactMeaning.className).toContain("line-clamp-1");
+    expect(compactMeaning.className).toContain(
+      "text-[length:var(--topology-node-popover-compact-meaning-size)]",
+    );
+    expect(compactMeaning.className).toContain(
+      "leading-[var(--topology-node-popover-compact-meaning-leading)]",
+    );
+    expect(compactMeaning.className).toContain(
+      "text-[color:var(--topology-node-popover-compact-meaning-text)]",
+    );
+    expect(compactMeaning.className).toContain("max-[1280px]:sr-only");
     const compactFacts = screen.getByTestId("topology-node-popover-compact-relation-facts");
     expect(compactFacts).toHaveAttribute(
       "data-compact-relation-facts-contract",
