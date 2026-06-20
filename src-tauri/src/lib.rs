@@ -4007,6 +4007,8 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-hit-count") || "0"),
                                   topologyVisibilityStyleWriteContract:
                                     skeletonCardsLayer?.getAttribute("data-visibility-style-write-contract") || "",
+                                  topologyFinalVisibleCountPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-final-visible-count-policy") || "",
                                   topologyVisibleCardStateCacheContract:
                                     skeletonCardsLayer?.getAttribute("data-visible-card-state-cache-contract") || "",
                                   topologyVisibleCardRectReadPolicy:

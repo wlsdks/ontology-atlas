@@ -133,12 +133,16 @@ test("Relief dogfood graph exposes scale and bounded visible-card rect reads", a
     visibleRectReads: Number(el.getAttribute("data-visible-card-rect-read-count") ?? "0"),
     hiddenRectSkips: Number(el.getAttribute("data-visible-card-hidden-rect-skip-count") ?? "0"),
     cacheSeedCount: Number(el.getAttribute("data-connector-rect-cache-seed-count") ?? "0"),
+    finalVisibleCountPolicy: el.getAttribute("data-final-visible-count-policy") ?? "",
     activeDragClusterSize: Number(el.getAttribute("data-active-drag-cluster-size") ?? "0"),
   }));
   expect(proof.modelCount, "dogfood focus route should expose a non-trivial card model").toBeGreaterThanOrEqual(20);
   expect(proof.resolvedCount, "all dogfood skeleton card models should resolve to graph nodes").toBe(proof.modelCount);
   expect(proof.totalCount, "visibility pass should account for every card model").toBe(proof.modelCount);
   expect(proof.activeDragClusterSize, "drag should exercise linked ontology facts").toBeGreaterThanOrEqual(2);
+  expect(proof.finalVisibleCountPolicy, "final visibility recount should avoid rect reads").toBe(
+    "state-only-no-rect-read",
+  );
   expect(proof.visibleRectReads, "rect reads should be bounded by currently visible cards").toBeLessThanOrEqual(
     proof.visibleCount,
   );

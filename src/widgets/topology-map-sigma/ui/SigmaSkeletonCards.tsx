@@ -1216,6 +1216,14 @@ function isSkeletonCardVisibleForStats(el: HTMLElement): boolean {
   );
 }
 
+function isSkeletonCardVisibleFromFrameState(el: HTMLElement): boolean {
+  return (
+    el.dataset.surfaceHidden !== 'true' &&
+    el.style.visibility !== 'hidden' &&
+    Number(el.style.opacity || '1') > 0.01
+  );
+}
+
 function separatePathEndpointCards(
   orderedEls: readonly HTMLElement[],
   containerRect: DOMRect,
@@ -3515,20 +3523,6 @@ export function SigmaSkeletonCards({
     container.dataset.overviewContextCoreOpacity = OVERVIEW_CONTEXT_OPACITY[1];
     container.dataset.overviewContextCapabilityOpacity = OVERVIEW_CONTEXT_OPACITY[2];
     container.dataset.overviewContextEvidenceOpacity = OVERVIEW_CONTEXT_OPACITY[3];
-    const nextVisibilityStats = {
-      visible: reportedVisibleCardCount,
-      total: orderedEls.length,
-    };
-    emitVisibilityStats(container, nextVisibilityStats, {
-      debounceStable:
-        activeDragCluster === null &&
-        selectedRelationEdgeId === null &&
-        container.dataset.skeletonCardsReady === 'true',
-      deferDuringLayout:
-        container.dataset.layoutAnimate === 'true' &&
-        activeDragCluster === null &&
-        selectedRelationEdgeId === null,
-    });
     const selectedNodeId = selectedSlug
       ? (resolveNodeId(selectedSlug) ?? selectedSlug)
       : null;
@@ -3942,29 +3936,30 @@ export function SigmaSkeletonCards({
       container.dataset.visibilityStyleWriteContract = 'dedupe-show-hide-state';
       container.dataset.domWriteAppliedCount = String(domWriteStats.applied);
       container.dataset.domWriteSkippedCount = String(domWriteStats.skipped);
+      container.dataset.finalVisibleCountPolicy = 'state-only-no-rect-read';
       const finalVisibleCardCount = orderedEls.reduce(
-        (count, el) => count + (readVisibleCardRect(el).visible ? 1 : 0),
+        (count, el) => count + (isSkeletonCardVisibleFromFrameState(el) ? 1 : 0),
         0,
       );
       if (finalVisibleCardCount !== reportedVisibleCardCount) {
         reportedVisibleCardCount = finalVisibleCardCount;
         container.dataset.visibleCardCount = String(reportedVisibleCardCount);
         container.dataset.visibilityCountSource = `${visibilityCountSource}-final-recount`;
-        const nextVisibilityStats = {
-          visible: reportedVisibleCardCount,
-          total: orderedEls.length,
-        };
-        emitVisibilityStats(container, nextVisibilityStats, {
-          debounceStable:
-            activeDragCluster === null &&
-            selectedRelationEdgeId === null &&
-            container.dataset.skeletonCardsReady === 'true',
-          deferDuringLayout:
-            container.dataset.layoutAnimate === 'true' &&
-            activeDragCluster === null &&
-            selectedRelationEdgeId === null,
-        });
       }
+      const nextVisibilityStats = {
+        visible: reportedVisibleCardCount,
+        total: orderedEls.length,
+      };
+      emitVisibilityStats(container, nextVisibilityStats, {
+        debounceStable:
+          activeDragCluster === null &&
+          selectedRelationEdgeId === null &&
+          container.dataset.skeletonCardsReady === 'true',
+        deferDuringLayout:
+          container.dataset.layoutAnimate === 'true' &&
+          activeDragCluster === null &&
+          selectedRelationEdgeId === null,
+      });
       for (const overlay of container.querySelectorAll<HTMLElement>(
         '[data-selected-relation-overlay][data-selected-relation-halo="true"]',
       )) {
