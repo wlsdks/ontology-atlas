@@ -587,6 +587,27 @@ pub fn run() {
                                     }));
                                     if (typeof focus.click === "function") focus.click();
                                   };
+                                  const captureCompactSnapshot = (popover) => {
+                                    const facts = popover?.querySelector('[data-testid="topology-node-popover-compact-relation-facts"]');
+                                    const actions = popover?.querySelector('[data-testid="topology-node-popover-compact-actions"]');
+                                    const brief = popover?.querySelector('[data-testid="topology-node-popover-compact-brief-action"]');
+                                    result.compact = {
+                                      factsVisible: visible(facts),
+                                      factsContract: facts?.getAttribute("data-compact-relation-facts-contract") || "",
+                                      factsReadableContract: facts?.getAttribute("data-compact-relation-facts-readable-contract") || "",
+                                      factsAccessibleName: facts?.getAttribute("aria-label") || "",
+                                      factsTitle: facts?.getAttribute("title") || "",
+                                      factsNoScores: facts?.getAttribute("data-relation-lens-no-scores") || "",
+                                      actionsVisible: visible(actions),
+                                      actionsContract: actions?.getAttribute("data-compact-actions-layout-contract") || "",
+                                      actionsReadableFlow: actions?.getAttribute("data-compact-actions-readable-flow") || "",
+                                      briefVisible: visible(brief),
+                                      briefAction: brief?.getAttribute("data-agent-handoff-action") || "",
+                                      briefReadableFlow: brief?.getAttribute("data-agent-handoff-readable-flow") || "",
+                                      briefRailLabel: brief?.getAttribute("data-agent-handoff-rail-label") || "",
+                                      briefTitle: brief?.getAttribute("title") || ""
+                                    };
+                                  };
                                   const expandWhenReady = (attempt = 0) => {
                                     const popover = document.querySelector('[data-testid="topology-node-popover"]');
                                     const expand = document.querySelector('[data-node-popover-toggle="expand"]');
@@ -596,6 +617,7 @@ pub fn run() {
                                       return;
                                     }
                                     if (expand && typeof expand.click === "function") {
+                                      captureCompactSnapshot(popover);
                                       expand.click();
                                       result.reason = "clicked-expand";
                                       window.setTimeout(() => expandWhenReady(attempt + 1), 180);
@@ -3388,6 +3410,8 @@ pub fn run() {
                                     topologyNodePopoverCompactActionsRect.height > 0,
                                   topologyNodePopoverCompactActionsContract:
                                     topologyNodePopoverCompactActions?.getAttribute("data-compact-actions-layout-contract") || "",
+                                  topologyNodePopoverCompactActionsReadableFlow:
+                                    topologyNodePopoverCompactActions?.getAttribute("data-compact-actions-readable-flow") || "",
                                   topologyNodePopoverCompactActionsTop:
                                     topologyNodePopoverCompactActionsRect?.top || 0,
                                   topologyNodePopoverCompactActionsBottom:
@@ -3396,6 +3420,16 @@ pub fn run() {
                                     Boolean(topologyNodePopoverCompactRelationFactsRect) &&
                                     topologyNodePopoverCompactRelationFactsRect.width > 0 &&
                                     topologyNodePopoverCompactRelationFactsRect.height > 0,
+                                  topologyNodePopoverCompactRelationFactsContract:
+                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-contract") || "",
+                                  topologyNodePopoverCompactRelationFactsReadableContract:
+                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-readable-contract") || "",
+                                  topologyNodePopoverCompactRelationFactsNoScores:
+                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-relation-lens-no-scores") || "",
+                                  topologyNodePopoverCompactRelationFactsAccessibleName:
+                                    topologyNodePopoverCompactRelationFacts?.getAttribute("aria-label") || "",
+                                  topologyNodePopoverCompactRelationFactsTitle:
+                                    topologyNodePopoverCompactRelationFacts?.getAttribute("title") || "",
                                   topologyNodePopoverCompactRelationFactsTop:
                                     topologyNodePopoverCompactRelationFactsRect?.top || 0,
                                   topologyNodePopoverCompactRelationFactsBottom:
@@ -3408,6 +3442,12 @@ pub fn run() {
                                     topologyNodePopoverCompactBriefAction?.getAttribute("data-popover-action") || "",
                                   topologyNodePopoverCompactBriefActionContract:
                                     topologyNodePopoverCompactBriefAction?.getAttribute("data-agent-handoff-action") || "",
+                                  topologyNodePopoverCompactBriefActionReadableFlow:
+                                    topologyNodePopoverCompactBriefAction?.getAttribute("data-agent-handoff-readable-flow") || "",
+                                  topologyNodePopoverCompactBriefActionRailLabel:
+                                    topologyNodePopoverCompactBriefAction?.getAttribute("data-agent-handoff-rail-label") || "",
+                                  topologyNodePopoverCompactBriefActionTitle:
+                                    topologyNodePopoverCompactBriefAction?.getAttribute("title") || "",
                                   topologyNodePopoverCompactBriefActionSurfaceToken:
                                     topologyNodePopoverCompactBriefAction?.getAttribute("data-popover-action-surface-token") || "",
                                   topologyNodePopoverCompactBriefActionBorderToken:
@@ -3874,6 +3914,34 @@ pub fn run() {
                                     topologyNodePopoverVerification?.reason || "",
                                   topologyNodePopoverVerifyExpanded:
                                     topologyNodePopoverVerification?.expanded === true,
+                                  topologyNodePopoverVerifyCompactFactsVisible:
+                                    topologyNodePopoverVerification?.compact?.factsVisible === true,
+                                  topologyNodePopoverVerifyCompactFactsContract:
+                                    topologyNodePopoverVerification?.compact?.factsContract || "",
+                                  topologyNodePopoverVerifyCompactFactsReadableContract:
+                                    topologyNodePopoverVerification?.compact?.factsReadableContract || "",
+                                  topologyNodePopoverVerifyCompactFactsAccessibleName:
+                                    topologyNodePopoverVerification?.compact?.factsAccessibleName || "",
+                                  topologyNodePopoverVerifyCompactFactsTitle:
+                                    topologyNodePopoverVerification?.compact?.factsTitle || "",
+                                  topologyNodePopoverVerifyCompactFactsNoScores:
+                                    topologyNodePopoverVerification?.compact?.factsNoScores || "",
+                                  topologyNodePopoverVerifyCompactActionsVisible:
+                                    topologyNodePopoverVerification?.compact?.actionsVisible === true,
+                                  topologyNodePopoverVerifyCompactActionsContract:
+                                    topologyNodePopoverVerification?.compact?.actionsContract || "",
+                                  topologyNodePopoverVerifyCompactActionsReadableFlow:
+                                    topologyNodePopoverVerification?.compact?.actionsReadableFlow || "",
+                                  topologyNodePopoverVerifyCompactBriefVisible:
+                                    topologyNodePopoverVerification?.compact?.briefVisible === true,
+                                  topologyNodePopoverVerifyCompactBriefAction:
+                                    topologyNodePopoverVerification?.compact?.briefAction || "",
+                                  topologyNodePopoverVerifyCompactBriefReadableFlow:
+                                    topologyNodePopoverVerification?.compact?.briefReadableFlow || "",
+                                  topologyNodePopoverVerifyCompactBriefRailLabel:
+                                    topologyNodePopoverVerification?.compact?.briefRailLabel || "",
+                                  topologyNodePopoverVerifyCompactBriefTitle:
+                                    topologyNodePopoverVerification?.compact?.briefTitle || "",
                                   topologyDragCompanionVisible: topologyDragVerification?.companionVisible === true,
                                   topologyDragCompanionAligned: topologyDragVerification?.companionAligned === true,
                                   topologyDragCompanionDelta: topologyDragVerification?.companionDelta || null,

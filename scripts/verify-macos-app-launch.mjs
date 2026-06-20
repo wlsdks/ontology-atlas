@@ -266,6 +266,42 @@ function validateTopologyNodePopoverTokenContract(markers) {
     if (markers.topologyNodePopoverCompactActionsContract !== "actions-share-command-row-with-facts") {
       return `WebView Relief selected node popover compact actions contract was ${markers.topologyNodePopoverCompactActionsContract || "missing"}`;
     }
+    if (
+      markers.topologyNodePopoverCompactActionsReadableFlow !==
+      "selected-node-facts-to-agent-handoff"
+    ) {
+      return `WebView Relief selected node popover compact actions readable flow was ${markers.topologyNodePopoverCompactActionsReadableFlow || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactRelationFactsContract !==
+      "collapsed-dock-surfaces-typed-facts"
+    ) {
+      return `WebView Relief selected node popover compact relation facts contract was ${markers.topologyNodePopoverCompactRelationFactsContract || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactRelationFactsReadableContract !==
+      "direct-typed-facts-not-scores"
+    ) {
+      return `WebView Relief selected node popover compact relation facts readable contract was ${markers.topologyNodePopoverCompactRelationFactsReadableContract || "missing"}`;
+    }
+    const relationFactsNoScores = String(
+      markers.topologyNodePopoverCompactRelationFactsNoScores || "",
+    ).trim();
+    if (!relationFactsNoScores) {
+      return "WebView Relief selected node popover compact relation facts no-scores text was missing";
+    }
+    const relationFactsAccessibleName = String(
+      markers.topologyNodePopoverCompactRelationFactsAccessibleName || "",
+    ).trim();
+    if (!relationFactsAccessibleName.includes(relationFactsNoScores)) {
+      return `WebView Relief selected node popover compact relation facts accessible name did not include no-scores text (${relationFactsAccessibleName || "missing"})`;
+    }
+    if (
+      String(markers.topologyNodePopoverCompactRelationFactsTitle || "").trim() !==
+      relationFactsAccessibleName
+    ) {
+      return "WebView Relief selected node popover compact relation facts title did not match accessible name";
+    }
     const factsTop = Number(markers.topologyNodePopoverCompactRelationFactsTop || 0);
     const actionsTop = Number(markers.topologyNodePopoverCompactActionsTop || 0);
     if (
@@ -354,6 +390,22 @@ function validateTopologyNodePopoverTokenContract(markers) {
     }
     if (markers.topologyNodePopoverCompactBriefActionContract !== "copy-focus-brief") {
       return `WebView Relief selected node popover compact brief action contract was ${markers.topologyNodePopoverCompactBriefActionContract || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactBriefActionReadableFlow !==
+      "selected-node-facts-to-agent-brief"
+    ) {
+      return `WebView Relief selected node popover compact brief action readable flow was ${markers.topologyNodePopoverCompactBriefActionReadableFlow || "missing"}`;
+    }
+    if (!String(markers.topologyNodePopoverCompactBriefActionRailLabel || "").trim()) {
+      return "WebView Relief selected node popover compact brief action rail label was missing";
+    }
+    if (
+      !String(markers.topologyNodePopoverCompactBriefActionTitle || "").includes(
+        String(markers.topologyNodePopoverCompactBriefActionRailLabel || ""),
+      )
+    ) {
+      return `WebView Relief selected node popover compact brief action title did not include rail label (${markers.topologyNodePopoverCompactBriefActionTitle || "missing"})`;
     }
     if (
       markers.topologyNodePopoverCompactBriefActionSurfaceToken !==
@@ -3320,6 +3372,46 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (payload.markers.topologyNodePopoverVerifyExpanded !== true) {
         return `WebView did not finish selected node popover expansion (${payload.markers.topologyNodePopoverVerifyReason || "unknown reason"})`;
+      }
+      if (payload.markers.topologyNodePopoverVerifyCompactFactsVisible !== true) {
+        return "WebView did not capture compact selected node relation facts before expansion";
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactFactsContract !==
+        "collapsed-dock-surfaces-typed-facts"
+      ) {
+        return `WebView compact selected node relation facts contract was ${payload.markers.topologyNodePopoverVerifyCompactFactsContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactFactsReadableContract !==
+        "direct-typed-facts-not-scores"
+      ) {
+        return `WebView compact selected node relation facts readable contract was ${payload.markers.topologyNodePopoverVerifyCompactFactsReadableContract || "missing"}`;
+      }
+      const compactVerifyNoScores = String(
+        payload.markers.topologyNodePopoverVerifyCompactFactsNoScores || "",
+      ).trim();
+      if (!compactVerifyNoScores) {
+        return "WebView compact selected node relation facts no-scores text was missing";
+      }
+      if (
+        !String(payload.markers.topologyNodePopoverVerifyCompactFactsAccessibleName || "").includes(
+          compactVerifyNoScores,
+        )
+      ) {
+        return "WebView compact selected node relation facts accessible name did not include no-scores text";
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactActionsReadableFlow !==
+        "selected-node-facts-to-agent-handoff"
+      ) {
+        return `WebView compact selected node actions readable flow was ${payload.markers.topologyNodePopoverVerifyCompactActionsReadableFlow || "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactBriefReadableFlow !==
+        "selected-node-facts-to-agent-brief"
+      ) {
+        return `WebView compact selected node brief readable flow was ${payload.markers.topologyNodePopoverVerifyCompactBriefReadableFlow || "missing"}`;
       }
       if (payload.markers.topologySelectedNodePopoverVisible !== true) {
         return "WebView did not expose the selected node popover during node popover verification";
@@ -6401,6 +6493,14 @@ export function buildWebviewEvidencePayload(
             markers.topologyNodePopoverCompactCommandRowGapToken ?? null,
           actionsContract:
             markers.topologyNodePopoverCompactActionsContract ?? null,
+          actionsReadableFlow:
+            markers.topologyNodePopoverCompactActionsReadableFlow ?? null,
+          relationFactsReadableContract:
+            markers.topologyNodePopoverCompactRelationFactsReadableContract ?? null,
+          relationFactsAccessibleName:
+            markers.topologyNodePopoverCompactRelationFactsAccessibleName ?? null,
+          briefActionReadableFlow:
+            markers.topologyNodePopoverCompactBriefActionReadableFlow ?? null,
           factsAndActionsShareScanline:
             markers.topologyNodePopoverCompactRelationFactsVisible === true &&
             markers.topologyNodePopoverCompactActionsVisible === true

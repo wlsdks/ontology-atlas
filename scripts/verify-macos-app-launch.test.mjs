@@ -964,6 +964,20 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
         topologyNodePopoverCompactCommandRowGapToken:
           "--topology-node-popover-compact-command-row-gap",
         topologyNodePopoverCompactActionsContract: "actions-share-command-row-with-facts",
+        topologyNodePopoverCompactActionsReadableFlow:
+          "selected-node-facts-to-agent-handoff",
+        topologyNodePopoverCompactBriefActionReadableFlow:
+          "selected-node-facts-to-agent-brief",
+        topologyNodePopoverCompactRelationFactsContract:
+          "collapsed-dock-surfaces-typed-facts",
+        topologyNodePopoverCompactRelationFactsReadableContract:
+          "direct-typed-facts-not-scores",
+        topologyNodePopoverCompactRelationFactsNoScores:
+          "Typed ontology facts, not inferred similarity scores.",
+        topologyNodePopoverCompactRelationFactsAccessibleName:
+          "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+        topologyNodePopoverCompactRelationFactsTitle:
+          "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
         topologyNodePopoverCompactRelationFactsVisible: true,
         topologyNodePopoverCompactActionsVisible: true,
         topologyNodePopoverCompactRelationFactsTop: 212,
@@ -1005,6 +1019,11 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
       commandRowContract: "facts-and-actions-share-final-scanline",
       commandRowGapToken: "--topology-node-popover-compact-command-row-gap",
       actionsContract: "actions-share-command-row-with-facts",
+      actionsReadableFlow: "selected-node-facts-to-agent-handoff",
+      relationFactsReadableContract: "direct-typed-facts-not-scores",
+      relationFactsAccessibleName:
+        "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      briefActionReadableFlow: "selected-node-facts-to-agent-brief",
       factsAndActionsShareScanline: true,
       relationshipContext: "durable",
       relationshipContextSource: "selected-dock-companions",
@@ -2087,6 +2106,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverCompactBriefActionVisible: true,
       topologyNodePopoverCompactBriefActionKind: "focus-brief",
       topologyNodePopoverCompactBriefActionContract: "copy-focus-brief",
+      topologyNodePopoverCompactBriefActionReadableFlow:
+        "selected-node-facts-to-agent-brief",
+      topologyNodePopoverCompactBriefActionRailLabel: "Agent handoff",
+      topologyNodePopoverCompactBriefActionTitle: "Agent handoff: Copy focus brief",
       topologyNodePopoverCompactBriefActionSurfaceToken:
         "--topology-node-popover-action-icon-surface",
       topologyNodePopoverCompactBriefActionBorderToken:
@@ -2099,8 +2122,20 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         "--topology-node-popover-compact-command-row-gap",
       topologyNodePopoverCompactActionsVisible: true,
       topologyNodePopoverCompactActionsContract: "actions-share-command-row-with-facts",
+      topologyNodePopoverCompactActionsReadableFlow:
+        "selected-node-facts-to-agent-handoff",
       topologyNodePopoverCompactActionsTop: 206,
       topologyNodePopoverCompactRelationFactsVisible: true,
+      topologyNodePopoverCompactRelationFactsContract:
+        "collapsed-dock-surfaces-typed-facts",
+      topologyNodePopoverCompactRelationFactsReadableContract:
+        "direct-typed-facts-not-scores",
+      topologyNodePopoverCompactRelationFactsNoScores:
+        "Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverCompactRelationFactsAccessibleName:
+        "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverCompactRelationFactsTitle:
+        "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
       topologyNodePopoverCompactRelationFactsTop: 212,
       topologyNodePopoverCompactMeaningVisible: true,
       topologyNodePopoverCompactMeaningText: "A core hub — 10 places depend on it",
@@ -2226,6 +2261,25 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverVerifyAttempted: true,
       topologyNodePopoverVerifyReason: "done",
       topologyNodePopoverVerifyExpanded: true,
+      topologyNodePopoverVerifyCompactFactsVisible: true,
+      topologyNodePopoverVerifyCompactFactsContract: "collapsed-dock-surfaces-typed-facts",
+      topologyNodePopoverVerifyCompactFactsReadableContract: "direct-typed-facts-not-scores",
+      topologyNodePopoverVerifyCompactFactsAccessibleName:
+        "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverVerifyCompactFactsTitle:
+        "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverVerifyCompactFactsNoScores:
+        "Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverVerifyCompactActionsVisible: true,
+      topologyNodePopoverVerifyCompactActionsContract: "actions-share-command-row-with-facts",
+      topologyNodePopoverVerifyCompactActionsReadableFlow:
+        "selected-node-facts-to-agent-handoff",
+      topologyNodePopoverVerifyCompactBriefVisible: true,
+      topologyNodePopoverVerifyCompactBriefAction: "copy-focus-brief",
+      topologyNodePopoverVerifyCompactBriefReadableFlow:
+        "selected-node-facts-to-agent-brief",
+      topologyNodePopoverVerifyCompactBriefRailLabel: "Agent handoff",
+      topologyNodePopoverVerifyCompactBriefTitle: "Agent handoff: Copy focus brief",
       topologyNodePopoverConnectionListReadableRowContract:
         "at-least-one-full-relation-row",
       topologyNodePopoverFooterPositionContract: "anchored-bottom-visible",
