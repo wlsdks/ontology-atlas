@@ -428,6 +428,16 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
   await expect(summary).not.toHaveText(/^\d+f · \d+t$/);
 }
 
+async function expectSelectedFocusVignetteSuppressed(page: Page) {
+  const vignette = page.locator("[data-topology-vignette]");
+  await expect(vignette).toHaveAttribute("data-vignette-visible", "false");
+  await expect(vignette).toHaveAttribute(
+    "data-vignette-policy",
+    "selected-focus-dimmed-context-owns-attention",
+  );
+  await expect(vignette).toHaveCSS("background-image", "none");
+}
+
 async function expectSelectedCardHiddenForCompactRail(page: Page, selectedSlug: string) {
   const layer = page.getByTestId("sigma-skeleton-cards");
   await expect(layer).toHaveAttribute(
@@ -2249,6 +2259,7 @@ for (const viewport of VIEWPORTS) {
     } else {
       await expectSelectedCardRelationSummary(page, "domain:views");
     }
+    await expectSelectedFocusVignetteSuppressed(page);
     await expect(page.getByTestId("topology-node-popover")).toBeVisible();
     await expectCompactMeaningContract(page);
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
@@ -3689,6 +3700,7 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     /\d/,
   );
   await expectSelectedCardRelationSummary(page, "domain:views");
+  await expectSelectedFocusVignetteSuppressed(page);
 
   expect(
     await page.evaluate(() => ({
@@ -3745,6 +3757,7 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   await expect(page.locator("[data-focus-relation-label]")).toHaveCount(0);
   await expect(page.locator('[data-skeleton-card][data-slug="domain:views"]').first()).toBeVisible();
   await expectSelectedCardRelationSummary(page, "domain:views");
+  await expectSelectedFocusVignetteSuppressed(page);
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-visibility-count-contract",
     "single-pass-unless-fallback",

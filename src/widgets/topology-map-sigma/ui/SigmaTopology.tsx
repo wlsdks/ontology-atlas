@@ -2923,6 +2923,8 @@ function SigmaTopologyImpl({
     onVisibleCountChange(count);
   }, [activeCategory, hubsOnly, searchQuery, selectedSlug, depthLimit, graph, onVisibleCountChange]);
 
+  const selectedFocusVignetteSuppressed = Boolean(selectedSlug);
+
   return (
     <div className={`relative h-full w-full overflow-hidden ${className ?? ''}`}>
       {/* 깔끔한 solid canvas — 이전 radial dot grid 는 1979 노드의 원형
@@ -3007,10 +3009,18 @@ function SigmaTopologyImpl({
           토큰 사용 — 다크에선 dark fade, 라이트에선 거의 invisible (까만
           vignette 가 흰 캔버스 위에선 grey smudge 로 보이던 fix). */}
       <div
+        data-topology-vignette
+        data-vignette-policy={
+          selectedFocusVignetteSuppressed
+            ? 'selected-focus-dimmed-context-owns-attention'
+            : 'overview-edge-focus'
+        }
+        data-vignette-visible={selectedFocusVignetteSuppressed ? 'false' : 'true'}
         className="pointer-events-none absolute inset-0"
         style={{
-          background:
-            'radial-gradient(ellipse at center, transparent 60%, var(--color-vignette) 100%)',
+          background: selectedFocusVignetteSuppressed
+            ? 'transparent'
+            : 'radial-gradient(ellipse at center, transparent 60%, var(--color-vignette) 100%)',
         }}
       />
 
