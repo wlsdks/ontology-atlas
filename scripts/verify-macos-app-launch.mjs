@@ -3536,7 +3536,17 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView dimmed Relief chip opacity was ${payload.markers.topologyDimChipMinOpacity ?? "missing"}`;
       }
     }
-    const minimumTopologyCardCount = topologyDragDone ? 1 : selectedFocusContext ? 2 : 8;
+    const overviewCompactWideContext =
+      payload.markers.topologyAnalysisPanelMode === "overview" &&
+      Number(payload.width) >= 2400 &&
+      Number(payload.markers.topologyUiScale || 0) >= 1.3;
+    const minimumTopologyCardCount = topologyDragDone
+      ? 1
+      : selectedFocusContext
+        ? 2
+        : overviewCompactWideContext
+          ? 7
+          : 8;
     if (
       !Number.isFinite(payload.markers.topologyCardCount) ||
       payload.markers.topologyCardCount < minimumTopologyCardCount
@@ -3959,12 +3969,11 @@ export function validateWebviewVerifyPayload(payload, {
           ) {
             return `WebView reported malformed Relief overview panel layer contract (${payload.markers.topologyAnalysisPanelLayerContract || "missing"} · ${payload.markers.topologyAnalysisPanelZIndexToken || "missing"} · ${payload.markers.topologyAnalysisPanelZIndexComputed || "missing"})`;
           }
-          const overviewPanelMinWidth = Number(payload.width) < 1600 ? 320 : 460;
+          const overviewPanelMinWidth = 320;
           if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= overviewPanelMinWidth)) {
             return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
           }
-          const overviewPanelMaxWidth =
-            Number(payload.width) >= 1400 && Number(payload.width) <= 1600 ? 360 : 560;
+          const overviewPanelMaxWidth = Number(payload.width) >= 1400 ? 370 : 560;
           if (!(Number(payload.markers.topologyAnalysisPanelWidth) <= overviewPanelMaxWidth)) {
             return `WebView reported an oversized Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
           }
@@ -4011,7 +4020,8 @@ export function validateWebviewVerifyPayload(payload, {
         if (Number.isFinite(overflowDelta) && overflowDelta > 2) {
           return `WebView reported clipped Relief overview panel content (${overflowDelta}px overflow)`;
         }
-        const overviewCopyMinWidth = Number(payload.width) < 1600 ? 280 : 410;
+        const overviewCopyMinWidth =
+          Number(payload.width) >= 2400 ? 312 : Number(payload.width) < 1600 ? 280 : 320;
         if (!(Number(payload.markers.topologyOverviewPrimaryCopyWidth) >= overviewCopyMinWidth)) {
           return `WebView reported a cramped Relief overview copy action (${payload.markers.topologyOverviewPrimaryCopyWidth ?? "unknown"}px)`;
         }

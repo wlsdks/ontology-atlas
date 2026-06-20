@@ -690,6 +690,33 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   ).toBe(true);
 });
 
+test("Relief overview support rail stays compact on wide desktop viewports", async ({
+  page,
+}) => {
+  for (const viewport of VIEWPORTS.filter(({ width }) => width >= 1920)) {
+    await openRelief(page, viewport, { mode: "map" });
+
+    const panel = page.getByTestId("topology-analysis-panel");
+    const panelRect = await rectOf(panel);
+    await expect(panel).toHaveAttribute(
+      "data-panel-width-contract",
+      "overview-support-max-360-phone-utility-reserve",
+    );
+    await expect(panel).toHaveAttribute(
+      "data-panel-width-token",
+      "--topology-panel-overview-responsive-width",
+    );
+    expect(
+      panelRect.width,
+      `${viewport.label} overview rail should not grow with topology-ui-scale zoom`,
+    ).toBeLessThanOrEqual(370);
+    expect(
+      panelRect.right,
+      `${viewport.label} overview rail should leave the map center as the dominant surface`,
+    ).toBeLessThanOrEqual(410);
+  }
+});
+
 test("Relief Focus selected capability card keeps its title readable in the installed app WebView size", async ({
   page,
 }) => {
