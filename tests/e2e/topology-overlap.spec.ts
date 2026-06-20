@@ -2020,14 +2020,11 @@ for (const viewport of VIEWPORTS) {
       "collapsed-support-chrome",
     );
     await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
-    const focusHull = page.locator("[data-drag-cluster-hull]");
-    await expect(focusHull).toHaveAttribute("data-visible", "false");
-    await expect(focusHull).toHaveAttribute("data-cluster-mode", "none");
-    await expect(focusHull).toHaveAttribute(
-      "data-render-policy",
-      "suppressed-boxless-connectors",
+    await expect(page.locator("[data-drag-cluster-hull]")).toHaveCount(0);
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-cluster-hull-dom-policy",
+      "not-rendered",
     );
-    await expect(focusHull).not.toHaveAttribute("data-focus-cluster-density");
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-focus-cluster-size",
       /[2-9]\d*/,
@@ -2593,16 +2590,13 @@ for (const viewport of VIEWPORTS) {
       "true",
     );
     await expect(target).toHaveAttribute("data-dragging-active", "true");
-    await expect(page.locator("[data-drag-cluster-hull]")).toHaveAttribute(
-      "data-drag-active",
-      "true",
+    await expect(page.locator("[data-drag-cluster-hull]")).toHaveCount(0);
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-cluster-hull-dom-policy",
+      "not-rendered",
     );
-    await expect(page.locator("[data-drag-cluster-hull]")).toHaveAttribute(
-      "data-visible",
-      "false",
-    );
-    await expect(page.locator("[data-drag-cluster-hull]")).toHaveAttribute(
-      "data-render-policy",
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-hull-render-policy",
       "suppressed-boxless-connectors",
     );
     const dragCacheProof = await page.getByTestId("sigma-skeleton-cards").evaluate((el) => ({
@@ -2716,10 +2710,13 @@ for (const viewport of VIEWPORTS) {
       await page.locator('[data-skeleton-card][data-drag-cluster="true"]').count(),
       `dragging Views should mark a connected card cluster at ${viewport.label}`,
     ).toBeGreaterThan(1);
-    const hull = page.locator("[data-drag-cluster-hull]");
-    await expect(hull).toHaveAttribute("data-visible", "false");
-    await expect(hull).toHaveAttribute(
-      "data-render-policy",
+    await expect(page.locator("[data-drag-cluster-hull]")).toHaveCount(0);
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-cluster-hull-dom-policy",
+      "not-rendered",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-hull-render-policy",
       "suppressed-boxless-connectors",
     );
     await expect(page.locator("[data-drag-cluster-title]")).toHaveCount(0);
@@ -2728,7 +2725,10 @@ for (const viewport of VIEWPORTS) {
       "data-active-drag-cluster-size",
       /^[2-9]\d*$/,
     );
-    await expect(hull).toHaveAttribute("data-drag-cluster-size", /^[2-9]\d*$/);
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-active-drag-cluster-size",
+      /^[2-9]\d*$/,
+    );
     await page.screenshot({
       path: path.join(OUT, `drag-connector-${viewport.label}.png`),
       fullPage: false,
@@ -3961,14 +3961,15 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
     "--topology-node-popover-compact-handoff-action-max-width",
   );
   await expect(compactBriefAction).toHaveText(/.+/);
-  const focusHull = page.locator("[data-drag-cluster-hull]");
-  await expect(focusHull).toHaveAttribute("data-visible", "false");
-  await expect(focusHull).toHaveAttribute("data-cluster-mode", "none");
-  await expect(focusHull).toHaveAttribute(
-    "data-render-policy",
+  await expect(page.locator("[data-drag-cluster-hull]")).toHaveCount(0);
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-cluster-hull-dom-policy",
+    "not-rendered",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-hull-render-policy",
     "suppressed-boxless-connectors",
   );
-  await expect(focusHull).not.toHaveAttribute("data-focus-cluster-density");
   await expect(page.locator("[data-focus-relation-label]")).toHaveCount(0);
   await expect(page.locator('[data-skeleton-card][data-slug="domain:views"]').first()).toBeVisible();
   await expectSelectedCardRelationSummary(page, "domain:views");
@@ -4058,12 +4059,10 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
       label.overlapsCards,
       `${label.id} (${label.text}) relation label must not overlap visible map cards`,
     ).toEqual([]);
-    if ((await focusHull.getAttribute("data-visible")) !== "false") {
-      expect(
-        label.hullBorderOverlaps,
-        `${label.id} (${label.text}) relation label must not sit on the focus hull stroke`,
-      ).toEqual([]);
-    }
+    expect(
+      label.hullBorderOverlaps,
+      `${label.id} (${label.text}) relation label has no focus hull stroke to overlap`,
+    ).toEqual([]);
     expect(
       label.bottom,
       `${label.id} (${label.text}) relation label must stay above the phone controls reserve`,

@@ -1464,22 +1464,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         />,
       );
 
-      const hull = container.querySelector("[data-drag-cluster-hull]");
+      const layer = screen.getByTestId("sigma-skeleton-cards");
 
-      expect(hull).toHaveAttribute("data-visible", "false");
-      expect(hull).toHaveAttribute("data-cluster-mode", "none");
-      expect(hull).toHaveAttribute(
-        "data-render-policy",
-        "suppressed-boxless-connectors",
-      );
-      expect(hull).not.toHaveAttribute("data-focus-cluster-density");
-      expect(hull).not.toHaveAttribute("data-focus-stage");
-      expect(hull).not.toHaveAttribute("data-focus-attention-label");
-      expect(hull).not.toHaveAttribute("data-drag-cluster-size");
-      expect(hull).toBeEmptyDOMElement();
+      expect(container.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
+      expect(layer).toHaveAttribute("data-drag-hull-render-policy", "suppressed-boxless-connectors");
+      expect(layer).toHaveAttribute("data-drag-cluster-hull-dom-policy", "not-rendered");
       expect(document.querySelector("[data-drag-cluster-title]")).not.toBeInTheDocument();
       expect(document.querySelector("[data-drag-cluster-count]")).not.toBeInTheDocument();
-      expect(hull).toHaveStyle({ display: "none", opacity: "0" });
       expect(document.querySelector("[data-relation-hit-path]")).toBeInTheDocument();
       expect(document.querySelector("[data-focus-relation-label]")).not.toBeInTheDocument();
       expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
@@ -1604,15 +1595,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       );
 
       const layer = screen.getByTestId("sigma-skeleton-cards");
-      const hull = container.querySelector("[data-drag-cluster-hull]") as HTMLElement;
 
-      expect(hull).toHaveAttribute("data-visible", "false");
-      expect(hull).toHaveAttribute("data-cluster-mode", "none");
-      expect(hull).toHaveAttribute(
-        "data-render-policy",
-        "suppressed-boxless-connectors",
-      );
-      expect(hull.style.transform).toBe("");
+      expect(container.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
+      expect(layer).toHaveAttribute("data-drag-hull-render-policy", "suppressed-boxless-connectors");
+      expect(layer).toHaveAttribute("data-drag-cluster-hull-dom-policy", "not-rendered");
       expect(layer).toHaveAttribute("data-focus-cluster-size", "2");
       expect(layer).toHaveAttribute(
         "data-focus-relation-label-source",
@@ -1744,14 +1730,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       await waitFor(() => {
         expect(selectedCard).toHaveAttribute("data-surface-hidden", "true");
       });
-      const hull = document.querySelector("[data-drag-cluster-hull]");
-      expect(hull).toHaveAttribute("data-visible", "false");
-      expect(hull).toHaveAttribute("data-cluster-mode", "none");
-      expect(hull).toHaveAttribute(
-        "data-render-policy",
-        "suppressed-boxless-connectors",
-      );
-      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      expect(document.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
+      expect(layer).toHaveAttribute("data-drag-hull-render-policy", "suppressed-boxless-connectors");
+      expect(layer).toHaveAttribute("data-drag-cluster-hull-dom-policy", "not-rendered");
+      expect(layer).toHaveAttribute(
         "data-focus-cluster-size",
         "2",
       );
@@ -4073,18 +4056,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     expect(layer).toHaveAttribute("data-dragging-active", "true");
     expect(card).toHaveAttribute("data-dragging-active", "true");
-    expect(document.querySelector("[data-drag-cluster-hull]")).toHaveAttribute(
-      "data-drag-active",
-      "true",
-    );
-    expect(document.querySelector("[data-drag-cluster-hull]")).toHaveAttribute(
-      "data-visible",
-      "false",
-    );
-    expect(document.querySelector("[data-drag-cluster-hull]")).toHaveAttribute(
-      "data-render-policy",
-      "suppressed-boxless-connectors",
-    );
+    expect(document.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
+    expect(layer).toHaveAttribute("data-drag-hull-render-policy", "suppressed-boxless-connectors");
+    expect(layer).toHaveAttribute("data-drag-cluster-hull-dom-policy", "not-rendered");
     expect(screen.queryByText("moving linked cards")).not.toBeInTheDocument();
     fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
 

@@ -2138,7 +2138,6 @@ export function SigmaSkeletonCards({
   const pendingVisibilityStatsRef = useRef<{ visible: number; total: number } | null>(null);
   const visibilityStatsFlushTimerRef = useRef<number | null>(null);
   const hoverPopupRef = useRef<HTMLDivElement | null>(null);
-  const dragClusterHullRef = useRef<HTMLDivElement | null>(null);
   const repositionRafRef = useRef<number | null>(null);
   const repositionNowRef = useRef<(() => void) | null>(null);
   const responsiveRepositionTimerRef = useRef<number | null>(null);
@@ -3979,18 +3978,6 @@ export function SigmaSkeletonCards({
     }
     // pass 4 — hover 팝업 위치: 카드 우측 +10, 화면/우측 패널에 닿으면 좌측
     // flip + 세로 클램프. 매 프레임 카드 rect 파생이라 팬/줌을 따라간다.
-    const hull = dragClusterHullRef.current;
-    if (hull) {
-      hull.dataset.visible = 'false';
-      hull.dataset.clusterMode = activeHullMode;
-      hull.dataset.renderPolicy = 'suppressed-boxless-connectors';
-      if (activeHullCluster && activeHullCluster.size > 1) {
-        hull.dataset.dragClusterSize = String(activeHullCluster.size);
-      } else {
-        delete hull.dataset.dragClusterSize;
-      }
-    }
-
     const popup = hoverPopupRef.current;
     if (popup) {
       const hoverSlug = popup.dataset.hoverFor;
@@ -4032,8 +4019,6 @@ export function SigmaSkeletonCards({
     ego,
     activeDragCluster,
     activeDragMotion,
-    activeHullCluster,
-    activeHullMode,
     cards,
     healthRepairTarget,
     pathWorkflowActive,
@@ -4301,6 +4286,7 @@ export function SigmaSkeletonCards({
       data-drag-reposition-policy="raf-coalesced-pointer-move"
       data-drag-reposition-coalesced="false"
       data-drag-hull-render-policy="suppressed-boxless-connectors"
+      data-drag-cluster-hull-dom-policy="not-rendered"
       data-drag-dom-index-contract="drag-release-reuses-card-elements"
       data-drag-dom-index-size={lastDragDomIndexSizeRef.current}
       data-drag-frame-cache-snapshot-count={lastDockDragSnapshotSizeRef.current}
@@ -4376,17 +4362,6 @@ export function SigmaSkeletonCards({
     >
       {/* 펼친 가지 커넥터 — 수평 접선 S-커브, 카드 경계 트림. 인디고는
           "활성 가지" 단일 의미 (overview hairline 은 Sigma 캔버스 담당). */}
-      <div
-        ref={dragClusterHullRef}
-        data-drag-cluster-hull
-        data-visible="false"
-        data-drag-active={activeDragMotion ? 'true' : 'false'}
-        data-cluster-mode={activeHullMode}
-        data-render-policy="suppressed-boxless-connectors"
-        style={{ display: 'none', opacity: 0 }}
-        aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 size-0 overflow-hidden"
-      />
       <svg
         data-skeleton-connectors
         aria-hidden="true"

@@ -1134,40 +1134,23 @@ pub fn run() {
                               const sigmaLoadingFallbackRect = sigmaLoadingFallback?.getBoundingClientRect();
                               const sigmaLoadingFallbackStyle = sigmaLoadingFallback ? getComputedStyle(sigmaLoadingFallback) : null;
                               const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
-                              const topologyFocusClusterHull =
-                                skeletonCardsLayer?.querySelector("[data-drag-cluster-hull]");
-                              const topologyFocusClusterHullStyle = topologyFocusClusterHull
-                                ? getComputedStyle(topologyFocusClusterHull)
-                                : null;
-                              const topologyFocusClusterHullRect =
-                                topologyFocusClusterHull?.getBoundingClientRect();
-                              const topologyFocusClusterHullText =
-                                topologyFocusClusterHull?.textContent || "";
+                              const topologyDragClusterHullDomPolicy =
+                                skeletonCardsLayer?.getAttribute("data-drag-cluster-hull-dom-policy") || "";
                               const topologyFocusClusterSize =
                                 Number(
-                                  topologyFocusClusterHull?.getAttribute("data-focus-cluster-size") ||
-                                    topologyFocusClusterHull?.getAttribute("data-drag-cluster-size") ||
-                                    skeletonCardsLayer?.getAttribute("data-focus-cluster-size") ||
+                                  skeletonCardsLayer?.getAttribute("data-focus-cluster-size") ||
+                                    skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") ||
                                     "0"
                                 );
                               const topologyFocusClusterActive =
-                                topologyFocusClusterHull?.getAttribute("data-cluster-mode") === "focus" ||
                                 (
                                   topologyFocusClusterSize >= 2 &&
-                                  /linked\s+focus/i.test(
-                                    `${topologyFocusClusterHullText} ${bodyText}`
-                                  )
+                                  skeletonCardsLayer?.getAttribute("data-click-focus-relationship-context") === "durable"
                                 );
                               const topologyFocusClusterStage =
-                                topologyFocusClusterHull?.getAttribute("data-focus-stage") || "";
+                                topologyFocusClusterActive ? "click-focus-boxless" : "";
                               const topologyFocusClusterAttentionLabel =
-                                topologyFocusClusterHull?.getAttribute("data-focus-attention-label") ||
-                                (
-                                  topologyFocusClusterActive &&
-                                  /linked\s+focus/i.test(`${topologyFocusClusterHullText} ${bodyText}`)
-                                    ? "linked-focus"
-                                    : ""
-                                );
+                                topologyFocusClusterActive ? "relationship-context" : "";
                               const topologyFocusClusterConnectorCount =
                                 topologyFocusClusterActive
                                   ? (
@@ -1231,19 +1214,7 @@ pub fn run() {
                                 topologyFocusClusterTypedConnectorCount ||
                                 Number(skeletonCardsLayer?.getAttribute("data-focus-cluster-relation-label-count") || "0");
                               const topologyFocusClusterHullVisible =
-                                Boolean(
-                                  topologyFocusClusterHullRect &&
-                                  topologyFocusClusterHullStyle &&
-                                  topologyFocusClusterHull?.getAttribute("data-visible") === "true" &&
-                                  topologyFocusClusterHullStyle.display !== "none" &&
-                                  topologyFocusClusterHullStyle.visibility !== "hidden" &&
-                                  topologyFocusClusterHullRect.width > 0 &&
-                                  topologyFocusClusterHullRect.height > 0 &&
-                                  (
-                                    topologyFocusClusterHull?.getAttribute("data-cluster-mode") !== "focus" ||
-                                    topologyFocusClusterConnectorCount > 0
-                                  )
-                                );
+                                false;
                               const topologyUiScale = Number(
                                 skeletonCardsLayer?.getAttribute("data-topology-ui-scale") || "0"
                               );
@@ -2499,37 +2470,37 @@ pub fn run() {
                                   topologyFocusClusterMode:
                                     topologyFocusClusterActive
                                       ? "focus"
-                                      : topologyFocusClusterHull?.getAttribute("data-cluster-mode") || "",
+                                      : "",
                                   topologyFocusClusterStage,
                                   topologyFocusClusterAttentionLabel,
                                   topologyDragHullRenderPolicy:
-                                    skeletonCardsLayer?.getAttribute("data-drag-hull-render-policy") ||
-                                    topologyFocusClusterHull?.getAttribute("data-render-policy") ||
-                                    "",
+                                    skeletonCardsLayer?.getAttribute("data-drag-hull-render-policy") || "",
+                                  topologyDragClusterHullDomPolicy:
+                                    topologyDragClusterHullDomPolicy,
                                   topologyFocusClusterBreathingRoomContract:
-                                    topologyFocusClusterHull?.getAttribute("data-focus-breathing-room-contract") || "",
+                                    "",
                                   topologyFocusClusterBreathingRoomPx:
-                                    Number(topologyFocusClusterHull?.getAttribute("data-focus-breathing-room-px") || "0"),
+                                    0,
                                   topologyFocusClusterRightClearance:
-                                    Number(topologyFocusClusterHull?.getAttribute("data-focus-right-clearance") || "0"),
+                                    0,
                                   topologyFocusClusterBottomClearance:
-                                    Number(topologyFocusClusterHull?.getAttribute("data-focus-bottom-clearance") || "0"),
+                                    0,
                                   topologyFocusClusterVisible:
                                     topologyFocusClusterHullVisible,
                                   topologyFocusClusterSize:
                                     topologyFocusClusterSize,
                                   topologyFocusClusterWidth:
-                                    topologyFocusClusterHullRect?.width || 0,
+                                    0,
                                   topologyFocusClusterHeight:
-                                    topologyFocusClusterHullRect?.height || 0,
+                                    0,
                                   topologyFocusClusterLeft:
-                                    topologyFocusClusterHullRect?.left || 0,
+                                    0,
                                   topologyFocusClusterTop:
-                                    topologyFocusClusterHullRect?.top || 0,
+                                    0,
                                   topologyFocusClusterRight:
-                                    topologyFocusClusterHullRect?.right || 0,
+                                    0,
                                   topologyFocusClusterBottom:
-                                    topologyFocusClusterHullRect?.bottom || 0,
+                                    0,
                                   topologyFocusClusterConnectorCount,
                                   topologyFocusClusterRelationLabelCount,
                                   topologyFocusClusterConnectorMarkerCount,
@@ -4177,7 +4148,7 @@ mod tests {
         assert!(source.contains("온톨로지 지형도"));
         assert!(source.contains("후보 \\d+\\/\\d+개 표시"));
         assert!(source.contains("data-focus-cluster-size"));
-        assert!(source.contains("linked\\s+focus"));
+        assert!(source.contains("data-drag-cluster-hull-dom-policy"));
         assert!(source.contains("dragHandleSlug"));
         assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
         assert!(source.contains("__ontologyAtlasTopologyFocusNoopVerify"));
