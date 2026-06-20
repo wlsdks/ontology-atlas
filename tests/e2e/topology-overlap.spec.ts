@@ -2837,7 +2837,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-handoff-layout-contract",
-      "phone-paired-desktop-stacked-actions",
+      "phone-and-wide-desktop-paired-tablet-stacked-actions",
     );
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-primary-evidence-visible",
@@ -3204,7 +3204,7 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   await expect(route.locator('[data-route-endpoint-marker="target"]')).toHaveText("B");
   await expect(route).toHaveAttribute(
     "data-route-responsive-contract",
-    "phone-weighted-desktop-stacked-endpoints",
+    "phone-and-wide-desktop-weighted-tablet-stacked-endpoints",
   );
   const routeUsesPhoneWeightedLayout = await route.evaluate(
     (el) =>
@@ -3241,7 +3241,7 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   expect(routeTargetTitleFits, "phone path route target title should not truncate").toBe(true);
   await expect(handoff).toHaveAttribute(
     "data-handoff-layout-contract",
-    "phone-paired-desktop-stacked-actions",
+    "phone-and-wide-desktop-paired-tablet-stacked-actions",
   );
   const handoffUsesPhonePairedLayout = await handoff.evaluate(
     (el) => el.classList.contains("grid-cols-2") && el.classList.contains("md:grid-cols-1"),
@@ -3438,7 +3438,7 @@ test("Relief Path accepts short from/to shared-link aliases", async ({ page }) =
   await expect(panel).toContainText("Agent Graph Readiness");
   await expect(handoff).toHaveAttribute(
     "data-handoff-layout-contract",
-    "phone-paired-desktop-stacked-actions",
+    "phone-and-wide-desktop-paired-tablet-stacked-actions",
   );
   await expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
   await expect(page.getByTestId("topology-path-handoff-mcp-chip")).toHaveAttribute(

@@ -1379,9 +1379,9 @@ export function TopologyAnalysisBar({
               data-route-compact-min-height-token="--topology-path-route-compact-min-height"
               data-route-source-min-width-token="--topology-path-route-source-min-width"
               data-route-target-min-width-token="--topology-path-route-target-min-width"
-              data-route-responsive-contract="phone-weighted-desktop-stacked-endpoints"
+              data-route-responsive-contract="phone-and-wide-desktop-weighted-tablet-stacked-endpoints"
               data-path-rail-spacing-contract="parent-gap-owns-path-stack"
-              className="grid min-w-0 grid-cols-[minmax(var(--topology-path-route-source-min-width),0.62fr)_auto_minmax(var(--topology-path-route-target-min-width),1.9fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5 md:grid-cols-1 md:gap-1"
+              className="grid min-w-0 grid-cols-[minmax(var(--topology-path-route-source-min-width),0.62fr)_auto_minmax(var(--topology-path-route-target-min-width),1.9fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5 md:grid-cols-1 md:gap-1 2xl:grid-cols-[minmax(5.75rem,0.9fr)_auto_minmax(7rem,1.5fr)] 2xl:gap-1"
             >
               <span
                 className="min-h-[var(--topology-path-route-compact-min-height)] min-w-0 rounded border border-[color:var(--topology-path-route-source-border)] bg-[color:var(--topology-path-route-source-surface)] px-2 py-1"
@@ -1411,7 +1411,7 @@ export function TopologyAnalysisBar({
               <ArrowRight
                 size={12}
                 aria-hidden
-                className="text-[color:var(--topology-path-route-arrow-text)] md:mx-auto md:rotate-90"
+                className="text-[color:var(--topology-path-route-arrow-text)] md:mx-auto md:rotate-90 2xl:mx-0 2xl:rotate-0"
               />
               <span
                 className="min-h-[var(--topology-path-route-compact-min-height)] min-w-0 rounded border border-[color:var(--topology-path-route-target-border)] bg-[color:var(--topology-path-route-target-surface)] px-2 py-1"
@@ -1447,7 +1447,7 @@ export function TopologyAnalysisBar({
               data-guidance-owner="analysis-rail"
               data-path-prompt-policy="panel-owned-when-card-mode"
               data-handoff-contract="route-proof-action-visible"
-              data-handoff-layout-contract="phone-paired-desktop-stacked-actions"
+              data-handoff-layout-contract="phone-and-wide-desktop-paired-tablet-stacked-actions"
               data-overflow-contract="no-horizontal-scroll"
               data-surface-token="--topology-path-handoff-surface"
               data-border-token="--topology-path-handoff-border"
@@ -1468,9 +1468,9 @@ export function TopologyAnalysisBar({
               data-mcp-action="find_path"
               data-cli-fallback="ontology-atlas path"
               data-path-rail-spacing-contract="parent-gap-owns-path-stack"
-              className="grid min-w-0 grid-cols-2 items-center gap-1 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2.5 py-[var(--topology-path-handoff-compact-padding-y)] font-mono text-[10px] text-[color:var(--topology-path-handoff-text)] md:grid-cols-1"
+              className="grid min-w-0 grid-cols-2 items-center gap-1 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2.5 py-[var(--topology-path-handoff-compact-padding-y)] font-mono text-[10px] text-[color:var(--topology-path-handoff-text)] md:grid-cols-1 2xl:grid-cols-2"
             >
-              <span className="col-span-2 min-w-0 uppercase tracking-[0.12em] text-[color:var(--topology-path-handoff-label-text)] md:col-span-1">
+              <span className="col-span-2 min-w-0 uppercase tracking-[0.12em] text-[color:var(--topology-path-handoff-label-text)] md:col-span-1 2xl:col-span-2">
                 {labels.pathHandoffLabel}
               </span>
               {pathSourceSlug && pathTargetSlug ? (
@@ -1485,7 +1485,7 @@ export function TopologyAnalysisBar({
                   data-hover-surface-token="--topology-path-primary-evidence-hover-surface"
                   data-hover-border-token="--topology-path-primary-evidence-hover-border"
                   data-hover-text-token="--topology-path-primary-evidence-hover-text"
-                  className="col-span-2 inline-flex min-h-[var(--topology-path-primary-evidence-min-height)] min-w-0 items-center justify-between gap-2 rounded-md border border-[color:var(--topology-path-primary-evidence-border)] bg-[color:var(--topology-path-primary-evidence-surface)] px-2.5 py-1 text-left text-[10.5px] text-[color:var(--topology-path-primary-evidence-text)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--topology-path-primary-evidence-hover-border)] hover:bg-[color:var(--topology-path-primary-evidence-hover-surface)] hover:text-[color:var(--topology-path-primary-evidence-hover-text)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none md:col-span-1"
+                  className="col-span-2 inline-flex min-h-[var(--topology-path-primary-evidence-min-height)] min-w-0 items-center justify-between gap-2 rounded-md border border-[color:var(--topology-path-primary-evidence-border)] bg-[color:var(--topology-path-primary-evidence-surface)] px-2.5 py-1 text-left text-[10.5px] text-[color:var(--topology-path-primary-evidence-text)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--topology-path-primary-evidence-hover-border)] hover:bg-[color:var(--topology-path-primary-evidence-hover-surface)] hover:text-[color:var(--topology-path-primary-evidence-hover-text)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none md:col-span-1 2xl:col-span-2"
                   aria-label={
                     pathEvidenceCopied
                       ? labels.pathEvidenceCopiedAriaLabel

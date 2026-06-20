@@ -2224,7 +2224,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(handoff).toHaveAttribute(
       "data-handoff-layout-contract",
-      "phone-paired-desktop-stacked-actions",
+      "phone-and-wide-desktop-paired-tablet-stacked-actions",
     );
     expect(handoff).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
     expect(handoff).toHaveAttribute(
@@ -2243,6 +2243,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(handoff.className).toContain("grid-cols-2");
     expect(handoff.className).toContain("md:grid-cols-1");
+    expect(handoff.className).toContain("2xl:grid-cols-2");
     expect(handoff.className).not.toContain("mt-");
     expect(handoff.className).not.toContain("--color-text-tertiary");
     expect(handoff).toHaveAttribute(
@@ -2386,10 +2387,11 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(route).toHaveAttribute(
       "data-route-responsive-contract",
-      "phone-weighted-desktop-stacked-endpoints",
+      "phone-and-wide-desktop-weighted-tablet-stacked-endpoints",
     );
     expect(route.className).toContain("grid-cols-[");
     expect(route.className).toContain("md:grid-cols-1");
+    expect(route.className).toContain("2xl:grid-cols-[");
     expect(route.className).not.toContain("mt-");
     expect(within(route).getByText("Source")).toBeInTheDocument();
     expect(within(route).getByText("Views")).toBeInTheDocument();
@@ -3060,9 +3062,10 @@ describe("TopologyAnalysisBar", () => {
     const visibleRoute = screen.getByTestId("topology-path-visible-route");
     expect(visibleRoute).toHaveAttribute(
       "data-route-responsive-contract",
-      "phone-weighted-desktop-stacked-endpoints",
+      "phone-and-wide-desktop-weighted-tablet-stacked-endpoints",
     );
     expect(visibleRoute.className).toContain("md:grid-cols-1");
+    expect(visibleRoute.className).toContain("2xl:grid-cols-[");
     expect(visibleRoute.querySelector('[data-route-endpoint-title="target"]')).toHaveAttribute(
       "data-route-endpoint-title-contract",
       "weighted-route-title",
