@@ -206,8 +206,10 @@ names in component data markers and tests whenever a surface depends on
   wash/glow tokens must stay separate from generic selected-card elevation.
 - `--topology-relation-quality-*-dot` /
   `--topology-relation-quality-*-glow`: relation quality dots inside map labels.
-  Strong, supported, weak, and review states must be visible as semantic graph
-  marks rather than Tailwind color classes.
+  Strong, supported, weak, and review states may be visible as semantic graph
+  marks on map relation labels, but selected-node list rows keep that state in
+  aria/data attributes so the row reads as title + typed relation, not a status
+  chip strip.
 - `--topology-relation-gate-*-surface` /
   `--topology-relation-gate-*-border` /
   `--topology-relation-gate-*-text`: relation label gate chips for MCP/CLI,
@@ -253,7 +255,8 @@ names in component data markers and tests whenever a surface depends on
   selection visible without adding a competing panel. The row title marks the
   clicked ontology target and the row meta text keeps direction and kind as
   secondary reading context. Relation rows should remain a readable handoff
-  list instead of ad hoc translucent bands or generic page/helper text.
+  list instead of ad hoc translucent bands, visible proof dots/glows, or generic
+  page/helper text.
 - `--topology-node-popover-action-*` /
   `--topology-node-popover-context-surface` /
   `--topology-node-popover-context-border` /
@@ -328,16 +331,16 @@ names in component data markers and tests whenever a surface depends on
   payloads, so it must expose `data-endpoint-*-token` markers and remain tied
   to the relation row instead of generic helper text.
 - `--topology-node-popover-evidence-*`: selected node inspector relation
-  evidence glyphs (`source`, `authored`, `review`). These sit between relation
-  quality and agent gate in the scan row, so they must expose
-  `data-evidence-*-token` markers and read as proof state, not generic neutral
-  badges.
+  evidence states (`source`, `authored`, `review`). These stay available through
+  aria/data markers in relation rows, but the visible scan row should not turn
+  into proof chips; the proof state belongs to the lens and handoff payload.
 - `--topology-selected-relation-quality-*` and
-  `--topology-relation-quality-*-dot` / `*-glow`: selected node inspector
-  relation quality chips and row dots reuse the same semantic quality token
-  family as selected relation labels. Do not reintroduce raw Tailwind hue
-  classes for strong/supported/weak/review states; tests should assert the
-  visible token names through `data-relation-quality-*` markers.
+  `--topology-relation-quality-*-dot` / `*-glow`: selected relation labels and
+  map labels reuse the same semantic quality token family. Selected-node list
+  rows preserve quality as aria/data state rather than a visible dot/glow. Do
+  not reintroduce raw Tailwind hue classes for strong/supported/weak/review
+  states; tests should assert the token names through `data-relation-quality-*`
+  markers.
 - `--topology-node-popover-agent-*` /
   `--topology-node-popover-gate-*`: selected node inspector agent readiness
   and row gate chips. These encode MCP/CLI handoff readiness, preflight-first,

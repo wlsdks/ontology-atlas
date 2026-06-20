@@ -642,7 +642,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRow).toHaveAttribute(
       "data-row-scan-order",
-      "title>relation>direction>proof>handoff",
+      "title>relation>kind",
     );
     expect(relationRow?.className).toContain(
       "min-h-[var(--topology-node-popover-relation-row-min-height)]",
@@ -782,7 +782,7 @@ describe("TopologyNodePopover", () => {
     expect(rows[0]).toHaveAttribute("data-row-render-source", "map-expanded-proof");
     expect(rows[0]).toHaveAttribute(
       "data-row-visual-contract",
-      "title-only-relation-facts-secondary",
+      "title-and-relation-only-secondary",
     );
     expect(screen.getByText("MCP SDK")).toBeInTheDocument();
     expect(screen.getByText("AI Agent Partner")).toBeInTheDocument();
@@ -1457,7 +1457,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRows[0]).toHaveAttribute(
       "data-row-visual-contract",
-      "title-only-relation-facts-secondary",
+      "title-and-relation-only-secondary",
     );
     expect(relationRows[0].querySelector("[data-relation-primary-line]")).toHaveAttribute(
       "data-visible-contract",
@@ -1508,7 +1508,10 @@ describe("TopologyNodePopover", () => {
     ).toHaveAttribute("data-dot-token", "--topology-relation-quality-strong-dot");
     expect(
       relationRows[0].querySelector("[data-relation-quality-dot]"),
-    ).toHaveAttribute("data-glow-token", "--topology-relation-quality-strong-glow");
+    ).toHaveAttribute("data-relation-quality-state-contract", "semantic-sr-only");
+    expect(relationRows[0].querySelector("[data-relation-quality-dot]")).toHaveClass(
+      "sr-only",
+    );
     expect(
       relationRows[0].querySelector("[data-relation-type-label]"),
     ).toHaveTextContent("사용");
@@ -1837,7 +1840,7 @@ describe("TopologyNodePopover", () => {
     );
     expect(relationRow).toHaveAttribute(
       "data-row-emphasis-contract",
-      "state-layer-no-fluorescent-rail",
+      "semantic-state-hidden-from-visual-row",
     );
     expect(relationRow?.querySelector("[data-relation-quality-accent]")).toBeNull();
     expect(relationRow?.querySelector("[data-relation-quality-dot]")).toHaveAttribute(
@@ -1845,6 +1848,9 @@ describe("TopologyNodePopover", () => {
       "--topology-relation-quality-weak-dot",
     );
     expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveTextContent("!");
+    expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveClass(
+      "sr-only",
+    );
     expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveAttribute(
       "data-evidence-surface-token",
       "--topology-node-popover-evidence-review-surface",

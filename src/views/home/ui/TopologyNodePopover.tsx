@@ -1026,14 +1026,14 @@ export function TopologyNodePopover({
                     data-row-density-contract="agent-handoff-scan-row"
                     data-row-render-source={relationPreviewSource}
                     data-row-surface-contract="flat-divider-row"
-                    data-row-visual-contract="title-only-relation-facts-secondary"
+                    data-row-visual-contract="title-and-relation-only-secondary"
                     data-row-min-hit-height="72"
                     data-row-min-height-token="--topology-node-popover-relation-row-min-height"
                     data-row-gap-token="--topology-node-popover-relation-row-gap"
                     data-row-padding-x-token="--topology-node-popover-relation-row-padding-x"
                     data-row-padding-y-token="--topology-node-popover-relation-row-padding-y"
-                    data-row-scan-order="title>relation>direction>proof>handoff"
-                    data-row-emphasis-contract="state-layer-no-fluorescent-rail"
+                    data-row-scan-order="title>relation>kind"
+                    data-row-emphasis-contract="semantic-state-hidden-from-visual-row"
                     data-row-hover-surface-token="--topology-node-popover-relation-row-hover-surface"
                     data-row-focus-surface-token="--topology-node-popover-relation-row-focus-surface"
                     data-row-focus-border-token="--topology-node-popover-relation-row-focus-border"
@@ -1111,11 +1111,9 @@ export function TopologyNodePopover({
                         <span
                           data-relation-quality-dot
                           data-dot-token={relationQualityDotToken(connection.relationQuality)}
-                          data-glow-token={relationQualityGlowToken(
-                            connection.relationQuality,
-                          )}
+                          data-relation-quality-state-contract="semantic-sr-only"
                           aria-label={labels.relationQualityLabels[connection.relationQuality]}
-                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(connection.relationQuality)}`}
+                          className="sr-only"
                         />
                         <span
                           aria-hidden="true"
@@ -1133,7 +1131,7 @@ export function TopologyNodePopover({
                             evidenceState,
                             "text",
                           )}
-                          className="shrink-0 text-[color:var(--topology-node-popover-relation-row-meta-text)]"
+                          className="sr-only"
                         >
                           {relationReadableProofLabel}
                         </span>
@@ -1443,26 +1441,8 @@ function relationQualityChipToken(
   return `--topology-selected-relation-quality-${quality}-${slot}`;
 }
 
-function relationQualityDotClassName(quality: TopologyRelationQuality) {
-  const tone = {
-    strong:
-      "bg-[color:var(--topology-relation-quality-strong-dot)] shadow-[var(--topology-relation-quality-strong-glow)]",
-    supported:
-      "bg-[color:var(--topology-relation-quality-supported-dot)] shadow-[var(--topology-relation-quality-supported-glow)]",
-    weak:
-      "bg-[color:var(--topology-relation-quality-weak-dot)] shadow-[var(--topology-relation-quality-weak-glow)]",
-    review:
-      "bg-[color:var(--topology-relation-quality-review-dot)] shadow-[var(--topology-relation-quality-review-glow)]",
-  } satisfies Record<TopologyRelationQuality, string>;
-  return tone[quality];
-}
-
 function relationQualityDotToken(quality: TopologyRelationQuality): string {
   return `--topology-relation-quality-${quality}-dot`;
-}
-
-function relationQualityGlowToken(quality: TopologyRelationQuality): string {
-  return `--topology-relation-quality-${quality}-glow`;
 }
 
 function agentReadinessToken(

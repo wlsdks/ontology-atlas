@@ -2790,7 +2790,7 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node popover relation row hit height token was ${payload.markers.topologyNodePopoverRelationRowMinHitHeight ?? "missing"}`;
       }
-      if (payload.markers.topologyNodePopoverRelationRowScanOrder !== "title>relation>direction>proof>handoff") {
+      if (payload.markers.topologyNodePopoverRelationRowScanOrder !== "title>relation>kind") {
         return `WebView Relief selected node popover relation row scan order was ${payload.markers.topologyNodePopoverRelationRowScanOrder || "missing"}`;
       }
       if (payload.markers.topologyNodePopoverRelationTitlePrimaryScanTarget !== "true") {

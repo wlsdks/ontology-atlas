@@ -656,7 +656,7 @@ test("Relief Focus selected capability card keeps its title readable in the inst
   ).toEqual([]);
 
   const contextDomainCard = page
-    .locator('[data-skeleton-card][data-slug="domain:mode-aware-adapters"]')
+    .locator('[data-skeleton-card][data-slug="domain:views"]:not([data-surface-hidden="true"])')
     .first();
   await expect(contextDomainCard).toBeVisible();
   await expect(contextDomainCard).toHaveAttribute(
@@ -3843,7 +3843,7 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   );
   await expect(firstRelationRow).toHaveAttribute(
     "data-row-visual-contract",
-    "title-only-relation-facts-secondary",
+    "title-and-relation-only-secondary",
   );
   await expect(firstRelationRow).toHaveAttribute("data-row-min-hit-height", "72");
   const conceptSearch = page.getByTestId("topology-concept-search");
@@ -3927,8 +3927,11 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     /--topology-relation-quality-(strong|supported|weak|review)-dot/,
   );
   await expect(firstRelationRow.locator("[data-relation-quality-dot]").first()).toHaveAttribute(
-    "data-glow-token",
-    /--topology-relation-quality-(strong|supported|weak|review)-glow/,
+    "data-relation-quality-state-contract",
+    "semantic-sr-only",
+  );
+  await expect(firstRelationRow.locator("[data-relation-quality-dot]").first()).toHaveClass(
+    /sr-only/,
   );
   await expect(
     firstRelationRow.locator("[data-relation-evidence-glyph]").first(),
@@ -3941,6 +3944,9 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
   ).toHaveAttribute(
     "data-evidence-text-token",
     /--topology-node-popover-evidence-(source|authored|review)-text/,
+  );
+  await expect(firstRelationRow.locator("[data-relation-evidence-glyph]").first()).toHaveClass(
+    /sr-only/,
   );
   const firstEndpointRoute = firstRelationRow
     .locator("[data-relation-endpoint-route-label]")

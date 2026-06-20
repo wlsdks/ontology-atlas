@@ -1732,7 +1732,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverRelationRowScrollWidth: 250,
       topologyNodePopoverRelationRowDensityContract: "agent-handoff-scan-row",
       topologyNodePopoverRelationRowMinHitHeight: 72,
-      topologyNodePopoverRelationRowScanOrder: "title>relation>direction>proof>handoff",
+      topologyNodePopoverRelationRowScanOrder: "title>relation>kind",
       topologyNodePopoverRelationTitlePrimaryScanTarget: "true",
       topologyNodePopoverRelationHandoffLane: "mcp-cli-next-action",
       topologyNodePopoverRelationQuality: "strong",
