@@ -2296,6 +2296,10 @@ for (const viewport of VIEWPORTS) {
       "copy-focus-brief",
     );
     await expect(page.getByTestId("topology-node-popover-compact-brief-action")).toHaveAttribute(
+      "data-agent-handoff-readable-flow",
+      "selected-node-facts-to-agent-brief",
+    );
+    await expect(page.getByTestId("topology-node-popover-compact-brief-action")).toHaveAttribute(
       "data-popover-action-surface-token",
       "--topology-node-popover-action-icon-surface",
     );
@@ -3455,6 +3459,10 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "primary-brief-then-quiet-chrome",
   );
   await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
+    "data-compact-actions-readable-flow",
+    "selected-node-facts-to-agent-handoff",
+  );
+  await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
     "data-compact-action-gap-token",
     "--topology-node-popover-compact-action-gap",
   );
@@ -3530,8 +3538,13 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "data-compact-relation-facts-contract",
     "collapsed-dock-surfaces-typed-facts",
   );
+  await expect(compactRelationFacts).toHaveAttribute(
+    "data-compact-relation-facts-readable-contract",
+    "direct-typed-facts-not-scores",
+  );
   await expect(compactRelationFacts).toHaveAttribute("data-relation-fact-count", /^[1-9]\d*$/);
   await expect(compactRelationFacts).toHaveAttribute("data-relation-type-count", /^[1-9]\d*$/);
+  await expect(compactRelationFacts).toHaveAttribute("data-relation-lens-no-scores", /.+/);
   await expect(compactRelationFacts).toHaveAttribute(
     "data-compact-relation-facts-surface-token",
     "--topology-node-popover-context-surface",
@@ -3555,6 +3568,10 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   await expect(compactBriefAction).toHaveAttribute(
     "data-agent-handoff-action",
     "copy-focus-brief",
+  );
+  await expect(compactBriefAction).toHaveAttribute(
+    "data-agent-handoff-readable-flow",
+    "selected-node-facts-to-agent-brief",
   );
   await expect(compactBriefAction).toHaveAttribute(
     "data-popover-action-surface-token",

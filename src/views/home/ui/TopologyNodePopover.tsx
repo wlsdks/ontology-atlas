@@ -457,17 +457,20 @@ export function TopologyNodePopover({
           <p
             data-testid="topology-node-popover-compact-relation-facts"
             data-compact-relation-facts-contract="collapsed-dock-surfaces-typed-facts"
+            data-compact-relation-facts-readable-contract="direct-typed-facts-not-scores"
             data-relation-fact-count={total}
             data-relation-type-count={relationTypeCount}
             data-relation-fact-label={relationFactLabel}
             data-relation-type-label={relationTypeLabel}
+            data-relation-lens-no-scores={labels.relationLensNoScores}
             data-compact-relation-fact-label={labels.relationLensCompactFacts}
             data-compact-relation-type-label={labels.relationLensCompactTypes}
             data-compact-relation-facts-surface-token="--topology-node-popover-context-surface"
             data-compact-relation-facts-border-token="--topology-node-popover-context-border"
             data-compact-relation-facts-text-token="--topology-node-popover-context-text"
             data-compact-relation-facts-size-token="--topology-node-popover-compact-fact-size"
-            aria-label={`${relationFactLabel} · ${relationTypeLabel}`}
+            aria-label={`${relationFactLabel} · ${relationTypeLabel} · ${labels.relationLensNoScores}`}
+            title={`${relationFactLabel} · ${relationTypeLabel} · ${labels.relationLensNoScores}`}
             className="inline-flex max-w-full min-w-0 items-center gap-1 overflow-hidden rounded-full border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-1.5 py-0.5 font-mono text-[length:var(--topology-node-popover-compact-fact-size)] text-[color:var(--topology-node-popover-context-text)] max-[540px]:hidden"
           >
             <span className="shrink-0 uppercase tracking-[0.08em]">
@@ -493,6 +496,7 @@ export function TopologyNodePopover({
             data-testid="topology-node-popover-compact-actions"
             data-compact-actions-layout-contract="actions-share-command-row-with-facts"
             data-compact-actions-hierarchy-contract="primary-brief-then-quiet-chrome"
+            data-compact-actions-readable-flow="selected-node-facts-to-agent-handoff"
             data-compact-action-gap-token="--topology-node-popover-compact-action-gap"
             data-phone-layout-contract="actions-wrap-below-title"
             className="ml-auto flex min-w-0 shrink-0 items-center justify-end gap-[var(--topology-node-popover-compact-action-gap)]"
@@ -502,10 +506,12 @@ export function TopologyNodePopover({
                 type="button"
                 onClick={primaryAction.onClick}
                 aria-label={primaryAction.ariaLabel}
-                title={primaryAction.label}
+                title={`${labels.actionRailTitle}: ${primaryAction.label}`}
                 data-testid="topology-node-popover-compact-brief-action"
                 data-popover-action={primaryAction.kind}
                 data-agent-handoff-action="copy-focus-brief"
+                data-agent-handoff-readable-flow="selected-node-facts-to-agent-brief"
+                data-agent-handoff-rail-label={labels.actionRailTitle}
                 data-popover-action-label-contract="icon-only-full-aria-title"
                 data-popover-action-full-label={primaryAction.label}
                 data-popover-action-compact-label={compactActionLabel(primaryAction)}

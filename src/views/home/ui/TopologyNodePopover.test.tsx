@@ -1233,13 +1233,27 @@ describe("TopologyNodePopover", () => {
       "data-compact-relation-facts-contract",
       "collapsed-dock-surfaces-typed-facts",
     );
+    expect(compactFacts).toHaveAttribute(
+      "data-compact-relation-facts-readable-contract",
+      "direct-typed-facts-not-scores",
+    );
     expect(compactFacts).toHaveAttribute("data-relation-fact-count", "3");
     expect(compactFacts).toHaveAttribute("data-relation-type-count", "2");
     expect(compactFacts).toHaveAttribute("data-relation-fact-label", "직접 의미 관계 3개");
     expect(compactFacts).toHaveAttribute("data-relation-type-label", "관계 유형 2종");
+    expect(compactFacts).toHaveAttribute(
+      "data-relation-lens-no-scores",
+      "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+    );
     expect(compactFacts).toHaveAttribute("data-compact-relation-fact-label", "관계");
     expect(compactFacts).toHaveAttribute("data-compact-relation-type-label", "유형");
-    expect(compactFacts).toHaveAccessibleName("직접 의미 관계 3개 · 관계 유형 2종");
+    expect(compactFacts).toHaveAccessibleName(
+      "직접 의미 관계 3개 · 관계 유형 2종 · 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+    );
+    expect(compactFacts).toHaveAttribute(
+      "title",
+      "직접 의미 관계 3개 · 관계 유형 2종 · 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+    );
     expect(compactFacts).toHaveAttribute(
       "data-compact-relation-facts-surface-token",
       "--topology-node-popover-context-surface",
@@ -1295,6 +1309,10 @@ describe("TopologyNodePopover", () => {
     expect(actions).toHaveAttribute(
       "data-compact-actions-hierarchy-contract",
       "primary-brief-then-quiet-chrome",
+    );
+    expect(actions).toHaveAttribute(
+      "data-compact-actions-readable-flow",
+      "selected-node-facts-to-agent-handoff",
     );
     expect(actions).toHaveAttribute(
       "data-compact-action-gap-token",
@@ -2585,6 +2603,12 @@ describe("TopologyNodePopover", () => {
     );
     expect(action).toHaveAttribute("data-popover-action", "focus-brief");
     expect(action).toHaveAttribute("data-agent-handoff-action", "copy-focus-brief");
+    expect(action).toHaveAttribute(
+      "data-agent-handoff-readable-flow",
+      "selected-node-facts-to-agent-brief",
+    );
+    expect(action).toHaveAttribute("data-agent-handoff-rail-label", "에이전트 인계");
+    expect(action).toHaveAttribute("title", "에이전트 인계: 선택 브리프 복사");
     expect(action).toHaveAttribute(
       "data-popover-action-label-contract",
       "icon-only-full-aria-title",
