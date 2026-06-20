@@ -37,24 +37,54 @@ import { useTaxonomy } from "@/features/taxonomy";
 // 끌고 와 chunk 가 큼. 첫 진입 / 캐시 비었을 때 chunk 다운로드 동안 빈
 // 화면이 그대로 보여 "멈춤" 느낌이라, 데이터 구독 skeleton 과 동일 톤
 // fallback 을 모듈 로드 단계에도 표시.
-function TopologyLoadingFallback() {
+function TopologyLoadingFallback({
+  concepts = 0,
+  mode = "overview",
+  relations = 0,
+}: {
+  concepts?: number;
+  mode?: TopologyAnalysisMode;
+  relations?: number;
+}) {
   const t = useTranslations('topology');
   return (
     <div
-      className="absolute inset-0 z-10 flex items-center justify-center"
+      className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-6"
       data-testid="topology-engine-loading"
+      data-loading-contract="product-hierarchy-before-engine"
+      data-loading-flow="product-system>domain>capability>evidence>agent-handoff"
+      data-loading-motion-policy="quiet-no-pulse"
+      data-loading-mode={mode}
+      data-concept-count={concepts}
+      data-relation-count={relations}
       role="status"
       aria-live="polite"
     >
-      <div className="flex items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:var(--color-panel)] px-4 py-2 shadow-[0_12px_28px_rgba(0,0,0,0.45)]">
-        <span className="flex gap-1">
-          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--color-indigo-accent)] [animation-delay:0ms]" />
-          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--color-indigo-accent)] [animation-delay:150ms]" />
-          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--color-indigo-accent)] [animation-delay:300ms]" />
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-tertiary)]">
+      <div className="flex w-[min(520px,calc(100vw-48px))] flex-col gap-3 rounded-lg border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(13,15,21,0.92)] px-4 py-3 shadow-[0_16px_36px_rgba(0,0,0,0.34)]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)]">
           {t('loadingEngine')}
-        </span>
+          </span>
+          <span className="rounded-md border border-[color:rgba(139,151,255,0.22)] px-2 py-1 font-mono text-[10px] uppercase tracking-normal text-[color:rgba(199,205,255,0.92)]">
+            {mode}
+          </span>
+        </div>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[12px] font-medium text-[color:var(--color-text-primary)]">
+          <span>{t('loadingFlowProductSystem')}</span>
+          <span className="text-[color:var(--color-text-tertiary)]">-&gt;</span>
+          <span>{t('loadingFlowDomains')}</span>
+          <span className="text-[color:var(--color-text-tertiary)]">-&gt;</span>
+          <span>{t('loadingFlowCapabilities')}</span>
+          <span className="text-[color:var(--color-text-tertiary)]">-&gt;</span>
+          <span>{t('loadingFlowEvidence')}</span>
+          <span className="text-[color:var(--color-text-tertiary)]">-&gt;</span>
+          <span>{t('loadingFlowAgentHandoff')}</span>
+        </div>
+        <div className="flex items-center gap-2 font-mono text-[11px] text-[color:var(--color-text-secondary)]">
+          <span>{t('loadingConceptCount', { count: concepts })}</span>
+          <span className="text-[color:var(--color-text-tertiary)]">·</span>
+          <span>{t('loadingRelationCount', { count: relations })}</span>
+        </div>
       </div>
     </div>
   );
@@ -62,7 +92,7 @@ function TopologyLoadingFallback() {
 
 const SigmaTopology = dynamic(
   () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaTopology),
-  { ssr: false, loading: () => <TopologyLoadingFallback /> },
+  { ssr: false, loading: () => null },
 );
 /** 안정 참조 빈 set — 영향 보기 비활성 시 매 render 새 Set 생성 회피. */
 const EMPTY_IMPACT_SET: ReadonlySet<string> = new Set();
@@ -2233,6 +2263,13 @@ export function HomePage() {
                   <TopologyNoMatchesState
                     onClearFilters={clearTopologyFilters}
                     variant="sparse"
+                  />
+                ) : null}
+                {topologyRenderState.renderCanvas && !currentSigmaGraphStats ? (
+                  <TopologyLoadingFallback
+                    concepts={visibleTopologyNodeCount}
+                    relations={visibleTopologyRelationCount}
+                    mode={analysisMode}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (

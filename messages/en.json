@@ -2725,6 +2725,13 @@
   },
   "topology": {
     "loadingEngine": "Loading topology engine",
+    "loadingFlowProductSystem": "Product/system",
+    "loadingFlowDomains": "Domains",
+    "loadingFlowCapabilities": "Capabilities",
+    "loadingFlowEvidence": "Evidence",
+    "loadingFlowAgentHandoff": "Agent handoff",
+    "loadingConceptCount": "{count, plural, one {# concept} other {# concepts}}",
+    "loadingRelationCount": "{count, plural, one {# relation} other {# relations}}",
     "documentTitle": "Relief",
     "srHeading": "Ontology relief map",
     "selectionAnnouncement": "{name} selected. {deps, plural, one {# dependency} other {# dependencies}}, {referenced, plural, one {# reference} other {# references}}.",

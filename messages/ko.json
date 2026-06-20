@@ -2725,6 +2725,13 @@
   },
   "topology": {
     "loadingEngine": "지형도 불러오는 중",
+    "loadingFlowProductSystem": "제품/시스템",
+    "loadingFlowDomains": "영역",
+    "loadingFlowCapabilities": "기능",
+    "loadingFlowEvidence": "구현 근거",
+    "loadingFlowAgentHandoff": "에이전트 인계",
+    "loadingConceptCount": "개념 {count}개",
+    "loadingRelationCount": "관계 {count}개",
     "documentTitle": "지형도",
     "srHeading": "온톨로지 지형도",
     "selectionAnnouncement": "{name} 선택됨. 의존 {deps}개, 연결 {referenced}개.",
