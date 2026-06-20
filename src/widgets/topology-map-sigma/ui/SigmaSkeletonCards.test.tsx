@@ -609,6 +609,96 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("layout transition 중 afterRender full 배치를 throttle 해 초기 로딩 reflow 를 줄인다", () => {
+    vi.useFakeTimers();
+    const handlers = new Set<() => void>();
+    const graphToViewport = vi.fn(stubSigma.graphToViewport);
+    const sigma = {
+      ...stubSigma,
+      graphToViewport,
+      on: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.add(handler);
+      }),
+      off: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.delete(handler);
+      }),
+    };
+    try {
+      const { rerender } = render(
+        <SigmaSkeletonCards
+          sigma={sigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      expect(layer).toHaveAttribute(
+        "data-layout-transition-reposition-policy",
+        "skip-initial-transition",
+      );
+      const initialCallsBeforeWarmup = graphToViewport.mock.calls.length;
+      const handler = [...handlers][0];
+      expect(handler).toBeDefined();
+
+      act(() => {
+        handler?.();
+        handler?.();
+      });
+
+      expect(layer).toHaveAttribute(
+        "data-layout-transition-reposition-policy",
+        "throttle-after-render-during-initial-load",
+      );
+      expect(layer).toHaveAttribute("data-initial-load-reposition-throttle-ms", "1000");
+      expect(graphToViewport).toHaveBeenCalledTimes(initialCallsBeforeWarmup);
+
+      rerender(
+        <SigmaSkeletonCards
+          sigma={sigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug="project:p"
+          selectedFocusCenterActive
+          onSelect={vi.fn()}
+        />,
+      );
+      const initialCalls = graphToViewport.mock.calls.length;
+
+      act(() => {
+        handler?.();
+        handler?.();
+        handler?.();
+      });
+
+      expect(layer).toHaveAttribute(
+        "data-layout-transition-reposition-policy",
+        "throttle-after-render-during-transition",
+      );
+      expect(layer).toHaveAttribute(
+        "data-layout-transition-reposition-throttle-ms",
+        "160",
+      );
+      expect(graphToViewport).toHaveBeenCalledTimes(initialCalls);
+
+      act(() => {
+        vi.advanceTimersByTime(160);
+        vi.advanceTimersByTime(16);
+      });
+
+      expect(graphToViewport.mock.calls.length).toBeLessThanOrEqual(
+        initialCalls + CARDS.length,
+      );
+      expect(layer).toHaveAttribute(
+        "data-layout-transition-reposition-deferred",
+        "false",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("afterRender stable visibility stats 는 부모 갱신을 반복하지 않는다", () => {
     vi.useFakeTimers();
     const handlers = new Set<() => void>();

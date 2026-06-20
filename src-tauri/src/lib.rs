@@ -2527,6 +2527,16 @@ pub fn run() {
                                   topologyFocusClusterConnectorMarkerCount,
                                   topologyFocusClusterRelationLabelMarkerCount,
                                   topologyUiScale,
+                                  topologyUiScaleWritePolicy:
+                                    skeletonCardsLayer?.getAttribute("data-topology-ui-scale-write-policy") || "",
+                                  topologyLayoutTransitionRepositionPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-layout-transition-reposition-policy") || "",
+                                  topologyLayoutTransitionRepositionThrottleMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-layout-transition-reposition-throttle-ms") || "0"),
+                                  topologyLayoutTransitionRepositionDeferred:
+                                    skeletonCardsLayer?.getAttribute("data-layout-transition-reposition-deferred") || "",
+                                  topologyInitialLoadRepositionThrottleMs:
+                                    Number(skeletonCardsLayer?.getAttribute("data-initial-load-reposition-throttle-ms") || "0"),
                                   topologySkeletonLayoutError:
                                     skeletonCardsLayer?.getAttribute("data-layout-error") || "",
                                   topologySigmaCanvasCount: sigmaCanvases.length,

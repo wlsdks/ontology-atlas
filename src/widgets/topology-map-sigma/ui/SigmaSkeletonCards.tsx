@@ -317,6 +317,8 @@ const CONNECTOR_PORT_MIN_CLEARANCE_PX = 6;
 const CONNECTOR_PORT_TARGET_CLEARANCE_PX = EDGE_CLEARANCE_MASK_PX + 2;
 const DRAG_COLLISION_SETTLE_PASSES = 4;
 const FIXED_SURFACE_RECT_CACHE_MS = 180;
+const LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS = 160;
+const INITIAL_LOAD_REPOSITION_THROTTLE_MS = 1000;
 
 type RelationConnector = {
   from: string;
@@ -2103,6 +2105,11 @@ export function SigmaSkeletonCards({
   const repositionNowRef = useRef<(() => void) | null>(null);
   const responsiveRepositionTimerRef = useRef<number | null>(null);
   const fixedSurfaceRectCacheRef = useRef<FixedSurfaceRectCache | null>(null);
+  const layoutTransitionRepositionTimerRef = useRef<number | null>(null);
+  const lastLayoutTransitionRepositionAtRef = useRef(0);
+  const initialLayoutTransitionResolvedRef = useRef(false);
+  const initialLoadRepositionThrottleUntilRef = useRef(0);
+  const lastAppliedTopologyUiScaleRef = useRef<number | null>(null);
   const lastDragDomIndexSizeRef = useRef(0);
   const lastDockDragSnapshotSizeRef = useRef(0);
 
@@ -2566,38 +2573,44 @@ export function SigmaSkeletonCards({
     const scale = resolveTopologyUiScale(
       typeof window === 'undefined' ? 0 : window.innerWidth,
     );
-    container.dataset.topologyUiScale = String(scale);
-    container.style.setProperty('--topology-card-scale', String(scale));
-    container.style.setProperty(
-      '--topology-anchor-card-max-width',
-      `${
-        BASE_ANCHOR_CARD_MAX_WIDTH_PX +
-        (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
-      }px`,
-    );
-    for (const tier of [0, 1, 2, 3] as const) {
+    if (lastAppliedTopologyUiScaleRef.current !== scale) {
+      lastAppliedTopologyUiScaleRef.current = scale;
+      container.dataset.topologyUiScale = String(scale);
+      container.style.setProperty('--topology-card-scale', String(scale));
       container.style.setProperty(
-        TIER_CARD_MAX_WIDTH_TOKEN[tier],
+        '--topology-anchor-card-max-width',
         `${
-          TIER_CARD_MAX_WIDTH_PX[tier] +
-          (scale - 1) * TIER_CARD_MAX_WIDTH_SCALE_STEP_PX[tier]
+          BASE_ANCHOR_CARD_MAX_WIDTH_PX +
+          (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
         }px`,
       );
+      for (const tier of [0, 1, 2, 3] as const) {
+        container.style.setProperty(
+          TIER_CARD_MAX_WIDTH_TOKEN[tier],
+          `${
+            TIER_CARD_MAX_WIDTH_PX[tier] +
+            (scale - 1) * TIER_CARD_MAX_WIDTH_SCALE_STEP_PX[tier]
+          }px`,
+        );
+      }
+      container.style.setProperty(
+        SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN,
+        `${
+          SELECTED_FOCUS_CARD_MAX_WIDTH_PX +
+          (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
+        }px`,
+      );
+      container.style.setProperty(
+        HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN,
+        `${
+          HEALTH_REPAIR_CARD_MAX_WIDTH_PX +
+          (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
+        }px`,
+      );
+      container.dataset.topologyUiScaleWritePolicy = 'write-on-scale-change';
+    } else {
+      container.dataset.topologyUiScaleWritePolicy = 'reuse-stable-scale';
     }
-    container.style.setProperty(
-      SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN,
-      `${
-        SELECTED_FOCUS_CARD_MAX_WIDTH_PX +
-        (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
-      }px`,
-    );
-    container.style.setProperty(
-      HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN,
-      `${
-        HEALTH_REPAIR_CARD_MAX_WIDTH_PX +
-        (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
-      }px`,
-    );
     const dockGap = 56 * scale;
     const columnStep = COLUMN_STEP_PX * scale;
     const domWriteStats: SkeletonDomWriteStats = { applied: 0, skipped: 0 };
@@ -4040,12 +4053,60 @@ export function SigmaSkeletonCards({
     getFixedSurfaceRects,
   ]);
   const scheduleReposition = useCallback(() => {
+    const container = containerRef.current;
+    const now = Date.now();
+    const throttleDuringLayout =
+      container?.dataset.layoutAnimate === 'true' &&
+      activeDragCluster === null &&
+      selectedRelationEdgeId === null;
+    const throttleDuringInitialLoad =
+      container !== null &&
+      now < initialLoadRepositionThrottleUntilRef.current &&
+      activeDragCluster === null &&
+      selectedRelationEdgeId === null;
+    if (throttleDuringLayout || throttleDuringInitialLoad) {
+      container.dataset.layoutTransitionRepositionPolicy =
+        throttleDuringLayout
+          ? 'throttle-after-render-during-transition'
+          : 'throttle-after-render-during-initial-load';
+      container.dataset.layoutTransitionRepositionThrottleMs = String(
+        LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS,
+      );
+      if (layoutTransitionRepositionTimerRef.current !== null) {
+        container.dataset.layoutTransitionRepositionDeferred = 'true';
+        return;
+      }
+      const elapsed = now - lastLayoutTransitionRepositionAtRef.current;
+      const delay = Math.max(0, LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS - elapsed);
+      container.dataset.layoutTransitionRepositionDeferred = delay > 0 ? 'true' : 'false';
+      layoutTransitionRepositionTimerRef.current = window.setTimeout(() => {
+        layoutTransitionRepositionTimerRef.current = null;
+        lastLayoutTransitionRepositionAtRef.current = Date.now();
+        const currentContainer = containerRef.current;
+        if (currentContainer) {
+          currentContainer.dataset.layoutTransitionRepositionDeferred = 'false';
+        }
+        if (repositionRafRef.current !== null) return;
+        repositionRafRef.current = window.requestAnimationFrame(() => {
+          repositionRafRef.current = null;
+          reposition();
+        });
+      }, delay);
+      return;
+    }
+    if (container) {
+      container.dataset.layoutTransitionRepositionPolicy = 'immediate-after-render';
+      container.dataset.layoutTransitionRepositionThrottleMs = String(
+        LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS,
+      );
+      container.dataset.layoutTransitionRepositionDeferred = 'false';
+    }
     if (repositionRafRef.current !== null) return;
     repositionRafRef.current = window.requestAnimationFrame(() => {
       repositionRafRef.current = null;
       reposition();
     });
-  }, [reposition]);
+  }, [activeDragCluster, reposition, selectedRelationEdgeId]);
 
   const layoutTransitionKey = useMemo(() => {
     const cardKey = cards
@@ -4106,8 +4167,23 @@ export function SigmaSkeletonCards({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    container.dataset.layoutAnimate = 'true';
     container.dataset.layoutTransitionKeySize = String(layoutTransitionKey.length);
+    if (!initialLayoutTransitionResolvedRef.current) {
+      initialLayoutTransitionResolvedRef.current = true;
+      initialLoadRepositionThrottleUntilRef.current =
+        Date.now() + INITIAL_LOAD_REPOSITION_THROTTLE_MS;
+      delete container.dataset.layoutAnimate;
+      container.dataset.layoutTransitionPhase = 'initial-layout-ready';
+      container.dataset.layoutTransitionRepositionPolicy = 'skip-initial-transition';
+      container.dataset.layoutTransitionRepositionDeferred = 'false';
+      container.dataset.initialLoadRepositionThrottleMs = String(
+        INITIAL_LOAD_REPOSITION_THROTTLE_MS,
+      );
+      container.dataset.skeletonCardsReady = 'true';
+      return;
+    }
+    container.dataset.layoutAnimate = 'true';
+    container.dataset.layoutTransitionPhase = 'transition-window';
     if (container.dataset.skeletonCardsReady !== 'true') {
       container.dataset.skeletonCardsReady = 'false';
     }
@@ -4118,6 +4194,10 @@ export function SigmaSkeletonCards({
       collisionFreezeRef.current.clear();
       try {
         invalidateFixedSurfaceRectCache();
+        if (layoutTransitionRepositionTimerRef.current !== null) {
+          window.clearTimeout(layoutTransitionRepositionTimerRef.current);
+          layoutTransitionRepositionTimerRef.current = null;
+        }
         repositionNowRef.current?.();
         delete container.dataset.layoutError;
       } catch (error) {
@@ -4130,6 +4210,10 @@ export function SigmaSkeletonCards({
     }, 480);
     return () => {
       window.clearTimeout(timer);
+      if (layoutTransitionRepositionTimerRef.current !== null) {
+        window.clearTimeout(layoutTransitionRepositionTimerRef.current);
+        layoutTransitionRepositionTimerRef.current = null;
+      }
       delete container.dataset.layoutAnimate;
       if (container.dataset.skeletonCardsReady !== 'true') {
         container.dataset.skeletonCardsReady = 'false';
@@ -4164,6 +4248,10 @@ export function SigmaSkeletonCards({
         window.cancelAnimationFrame(repositionRafRef.current);
         repositionRafRef.current = null;
       }
+      if (layoutTransitionRepositionTimerRef.current !== null) {
+        window.clearTimeout(layoutTransitionRepositionTimerRef.current);
+        layoutTransitionRepositionTimerRef.current = null;
+      }
     };
   }, [sigma, scheduleReposition, invalidateFixedSurfaceRectCache]);
 
@@ -4172,6 +4260,10 @@ export function SigmaSkeletonCards({
       if (visibilityStatsFlushTimerRef.current !== null) {
         window.clearTimeout(visibilityStatsFlushTimerRef.current);
         visibilityStatsFlushTimerRef.current = null;
+      }
+      if (layoutTransitionRepositionTimerRef.current !== null) {
+        window.clearTimeout(layoutTransitionRepositionTimerRef.current);
+        layoutTransitionRepositionTimerRef.current = null;
       }
     },
     [],
@@ -4221,6 +4313,10 @@ export function SigmaSkeletonCards({
       data-visibility-stats-report-contract="dedupe-and-debounce-stable-counts"
       data-visibility-stats-report-count={visibilityStatsReportCountRef.current}
       data-layout-transition-contract="stable-card-state-key"
+      data-layout-transition-reposition-policy="immediate-after-render"
+      data-layout-transition-reposition-throttle-ms={LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS}
+      data-layout-transition-reposition-deferred="false"
+      data-initial-load-reposition-throttle-ms={INITIAL_LOAD_REPOSITION_THROTTLE_MS}
       data-responsive-reposition-contract="resize-immediate-and-settled"
       data-dom-write-dedupe-contract="skip-unchanged-transform-and-path"
       data-dom-write-applied-count="0"
