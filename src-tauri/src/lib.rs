@@ -4053,6 +4053,8 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-visibility-count-source") || "",
                                   topologyDragSettleMotionContract:
                                     skeletonCardsLayer?.getAttribute("data-drag-settle-motion-contract") || "",
+                                  topologyDragSettleOverlapReadPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-drag-settle-overlap-read-policy") || "",
                                   topologyDragSettleMotionDurationMs:
                                     Number(skeletonCardsLayer?.getAttribute("data-drag-settle-motion-duration-ms") || "0"),
                                   topologyDragSettleMotionEasing:

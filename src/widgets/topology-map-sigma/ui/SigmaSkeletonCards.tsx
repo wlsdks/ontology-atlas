@@ -1544,15 +1544,22 @@ function dragSettleCardPriority(el: HTMLElement): number {
 
 function suppressSettlingDragCardOverlaps(
   orderedEls: readonly HTMLElement[],
-  containerRect: DOMRect,
+  readCardRect: (el: HTMLElement) => {
+    rect: { left: number; top: number; right: number; bottom: number } | null;
+    visible: boolean;
+  },
 ): number {
   const visible = orderedEls
-    .filter(isSkeletonCardVisibleForStats)
-    .map((el) => ({
-      el,
-      priority: dragSettleCardPriority(el),
-      rect: elementRectRelativeToContainer(el, containerRect),
-    }))
+    .map((el) => {
+      const cached = readCardRect(el);
+      if (!cached.visible || !cached.rect) return null;
+      return {
+        el,
+        priority: dragSettleCardPriority(el),
+        rect: cached.rect,
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
     .sort((a, b) => {
       if (a.priority !== b.priority) return a.priority - b.priority;
       const tierA = Number(a.el.dataset.tier ?? '3');
@@ -3271,10 +3278,11 @@ export function SigmaSkeletonCards({
     );
     const dragSettleOverlapHiddenCount =
       activeDragCluster !== null && !activeDragMotion
-        ? suppressSettlingDragCardOverlaps(orderedEls, containerRect)
+        ? suppressSettlingDragCardOverlaps(orderedEls, readVisibleCardRect)
         : 0;
     container.dataset.dragSettleOverlapPolicy =
       'released-cluster-hides-lower-priority-overlaps';
+    container.dataset.dragSettleOverlapReadPolicy = 'reuse-visible-card-rect-cache';
     container.dataset.dragSettleOverlapHiddenCount = String(
       dragSettleOverlapHiddenCount,
     );

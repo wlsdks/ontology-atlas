@@ -94,6 +94,10 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   expect(Math.abs(companionAfter.y - companionBefore.y - (after.y - before.y))).toBeLessThan(72);
   await page.mouse.up();
   await page.waitForTimeout(650);
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-settle-overlap-read-policy",
+    "reuse-visible-card-rect-cache",
+  );
   expect(consoleErrors, consoleErrors.join("\n")).toHaveLength(0);
 });
 
