@@ -3660,6 +3660,7 @@ export function validateWebviewVerifyPayload(payload, {
     if (
       topologyAnalysisMode !== "path" &&
       topologyAnalysisMode !== "health" &&
+      topologyAnalysisMode !== "focus" &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen &&
       payload.markers.topologyRelationQualityLensVisible !== true &&
@@ -3676,6 +3677,7 @@ export function validateWebviewVerifyPayload(payload, {
     if (
       topologyAnalysisMode !== "path" &&
       topologyAnalysisMode !== "health" &&
+      topologyAnalysisMode !== "focus" &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen &&
       Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
@@ -3686,6 +3688,7 @@ export function validateWebviewVerifyPayload(payload, {
     if (
       topologyAnalysisMode !== "path" &&
       topologyAnalysisMode !== "health" &&
+      topologyAnalysisMode !== "focus" &&
       Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
       overviewRelationQualityText.length > 0 &&
       !isReadableRelationQualityText(overviewRelationQualityText)
@@ -3719,6 +3722,7 @@ export function validateWebviewVerifyPayload(payload, {
     const requireOverviewAgentReadiness =
       topologyAnalysisMode !== "path" &&
       topologyAnalysisMode !== "health" &&
+      topologyAnalysisMode !== "focus" &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen;
     if (
@@ -3771,9 +3775,13 @@ export function validateWebviewVerifyPayload(payload, {
         topologyAnalysisMode === "path" ||
         payload.markers.topologyAnalysisPanelWidthContract ===
           "path-support-rail-max-360-phone-utility-reserve";
+      const usesFocusSupportRail =
+        topologyAnalysisMode === "focus" &&
+        payload.markers.topologyAnalysisPanelWidthContract ===
+          "focus-support-rail-max-320-map-centered";
       const analysisPanelMinWidth = usesPathRailWidth
         ? 320
-        : focusSelectedNodeRoute
+        : usesFocusSupportRail || focusSelectedNodeRoute
           ? 240
           : 360;
       if (
@@ -3783,7 +3791,11 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView reported a cramped Relief analysis panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
       }
       const analysisPanelMinHeight =
-        topologyAnalysisMode === "path" ? 120 : focusSelectedNodeRoute ? 260 : 320;
+        topologyAnalysisMode === "path"
+          ? 120
+          : usesFocusSupportRail || focusSelectedNodeRoute
+            ? 260
+            : 320;
       if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= analysisPanelMinHeight)) {
         return `WebView reported a cramped Relief analysis panel height (${payload.markers.topologyAnalysisPanelHeight ?? "unknown"})`;
       }

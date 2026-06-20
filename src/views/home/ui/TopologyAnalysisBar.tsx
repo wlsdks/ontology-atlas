@@ -938,7 +938,7 @@ export function TopologyAnalysisBar({
         selectedFocusRailActive
           ? "selected-focus-rail-max-320"
           : panelMode === "focus"
-            ? "focus-support-rail-max-360-map-centered"
+            ? "focus-support-rail-max-320-map-centered"
           : panelMode === "overview"
             ? "overview-support-max-360-phone-utility-reserve"
             : panelMode === "health"
@@ -2075,14 +2075,35 @@ export function TopologyAnalysisBar({
                 <ol
                   data-testid="topology-focus-review-order"
                   data-review-order-contract="flat-numbered-rail"
+                  data-review-order-density={
+                    selectedSlug ? "selected-detail" : "unselected-compact"
+                  }
                   data-command-step-surface-token="--topology-command-step-surface"
                   data-command-step-border-token="--topology-command-step-border"
-                  className="mt-1.5 grid min-w-0 overflow-hidden rounded-md border border-[color:var(--topology-command-step-border)] bg-[color:var(--topology-command-step-surface)]"
+                  className={`mt-1.5 grid min-w-0 overflow-hidden rounded-md border border-[color:var(--topology-command-step-border)] bg-[color:var(--topology-command-step-surface)] ${
+                    selectedSlug ? "" : "grid-cols-2"
+                  }`}
                 >
-                  <FocusReviewStep index={1} label={labels.focusReviewOrderProfile} />
-                  <FocusReviewStep index={2} label={labels.focusReviewOrderImpact} />
-                  <FocusReviewStep index={3} label={labels.focusReviewOrderRepair} />
-                  <FocusReviewStep index={4} label={labels.focusReviewOrderSync} />
+                  <FocusReviewStep
+                    compact={!selectedSlug}
+                    index={1}
+                    label={labels.focusReviewOrderProfile}
+                  />
+                  <FocusReviewStep
+                    compact={!selectedSlug}
+                    index={2}
+                    label={labels.focusReviewOrderImpact}
+                  />
+                  <FocusReviewStep
+                    compact={!selectedSlug}
+                    index={3}
+                    label={labels.focusReviewOrderRepair}
+                  />
+                  <FocusReviewStep
+                    compact={!selectedSlug}
+                    index={4}
+                    label={labels.focusReviewOrderSync}
+                  />
                 </ol>
               </div>
               {selectedSlug ? (
@@ -2771,9 +2792,11 @@ function OverviewWorkStep({
 }
 
 function FocusReviewStep({
+  compact,
   index,
   label,
 }: {
+  compact?: boolean;
   index: number;
   label: string;
 }) {
@@ -2781,7 +2804,10 @@ function FocusReviewStep({
     <li
       data-focus-review-step={index}
       data-command-step-contract="flat-numbered-row"
-      className="grid min-h-[var(--topology-command-step-min-height)] grid-cols-[var(--topology-command-step-index-size)_minmax(0,1fr)] items-center gap-2 border-b border-[color:var(--topology-command-step-border)] px-2 py-1 last:border-b-0"
+      data-command-step-density={compact ? "compact-two-column" : "detail-row"}
+      className={`grid min-h-[var(--topology-command-step-min-height)] grid-cols-[var(--topology-command-step-index-size)_minmax(0,1fr)] items-center border-b border-[color:var(--topology-command-step-border)] py-1 last:border-b-0 ${
+        compact ? "gap-1.5 px-1.5 even:border-l" : "gap-2 px-2"
+      }`}
     >
       <span
         aria-hidden

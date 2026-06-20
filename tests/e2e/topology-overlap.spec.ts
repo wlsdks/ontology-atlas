@@ -2449,13 +2449,13 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(panel).toHaveAttribute(
       "data-panel-width-contract",
-      "focus-support-rail-max-360-map-centered",
+      "focus-support-rail-max-320-map-centered",
     );
     const panelRect = await rectOf(panel);
     expect(
       panelRect.width,
       `unselected focus support rail should not dominate the map at ${viewport.label}`,
-    ).toBeLessThanOrEqual(viewport.width >= 2400 ? 430 : 390);
+    ).toBeLessThanOrEqual(viewport.width >= 2400 ? 390 : 350);
     expectCardsClear(await visibleCardRects(page), viewport, panelRect, null);
 
     if (viewport.width >= 1920) {

@@ -401,7 +401,14 @@ describe("TopologyAnalysisBar", () => {
     expect(panel).toHaveAttribute("data-selected-context", "true");
     expect(panel).toHaveAttribute("data-attention-role", "support");
     expect(screen.getByText("Focused on Views.")).toBeInTheDocument();
-    expect(screen.getByTestId("topology-focus-review-order")).toBeVisible();
+    const selectedContextReviewOrder = screen.getByTestId(
+      "topology-focus-review-order",
+    );
+    expect(selectedContextReviewOrder).toBeVisible();
+    expect(selectedContextReviewOrder).toHaveAttribute(
+      "data-review-order-density",
+      "selected-detail",
+    );
     expect(screen.queryByTestId("topology-overview-signal-grid")).not.toBeInTheDocument();
   });
 
@@ -551,6 +558,10 @@ describe("TopologyAnalysisBar", () => {
       "flat-numbered-rail",
     );
     expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
+      "data-review-order-density",
+      "selected-detail",
+    );
+    expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
       "data-command-step-surface-token",
       "--topology-command-step-surface",
     );
@@ -561,6 +572,10 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText("Read concept brief").closest("li")).toHaveAttribute(
       "data-command-step-contract",
       "flat-numbered-row",
+    );
+    expect(screen.getByText("Read concept brief").closest("li")).toHaveAttribute(
+      "data-command-step-density",
+      "detail-row",
     );
     expect(screen.getByTestId("topology-focus-secondary-actions")).toBeVisible();
     expect(screen.getByTestId("topology-focus-secondary-actions")).toHaveAttribute(
@@ -641,7 +656,7 @@ describe("TopologyAnalysisBar", () => {
     expect(panel).toHaveAttribute("data-panel-width-target", "focus-support-rail");
     expect(panel).toHaveAttribute(
       "data-panel-width-contract",
-      "focus-support-rail-max-360-map-centered",
+      "focus-support-rail-max-320-map-centered",
     );
     expect(panel).toHaveAttribute(
       "data-panel-width-css",
@@ -651,7 +666,17 @@ describe("TopologyAnalysisBar", () => {
       "data-panel-width-token",
       "--topology-panel-focus-rail-width",
     );
-    expect(screen.getByTestId("topology-focus-review-order")).toBeVisible();
+    const reviewOrder = screen.getByTestId("topology-focus-review-order");
+    expect(reviewOrder).toBeVisible();
+    expect(reviewOrder).toHaveClass("grid-cols-2");
+    expect(reviewOrder).toHaveAttribute(
+      "data-review-order-density",
+      "unselected-compact",
+    );
+    expect(screen.getByText("Read concept brief").closest("li")).toHaveAttribute(
+      "data-command-step-density",
+      "compact-two-column",
+    );
   });
 
   it("keeps analysis modes reachable on mobile while preserving the desktop breakpoint", () => {
@@ -2692,7 +2717,12 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByText("Focus review order")).toBeInTheDocument();
-    expect(screen.getByTestId("topology-focus-review-order")).toBeVisible();
+    const selectedReviewOrder = screen.getByTestId("topology-focus-review-order");
+    expect(selectedReviewOrder).toBeVisible();
+    expect(selectedReviewOrder).toHaveAttribute(
+      "data-review-order-density",
+      "selected-detail",
+    );
     expect(screen.getByText("Read concept brief")).toBeInTheDocument();
     expect(screen.getByText("Trace incoming impact")).toBeInTheDocument();
     expect(screen.getByText("Edit or confirm meaning")).toBeInTheDocument();
@@ -2744,6 +2774,11 @@ describe("TopologyAnalysisBar", () => {
 
     expect(screen.getByText("Select a node.")).toBeInTheDocument();
     const reviewOrder = screen.getByTestId("topology-focus-review-order");
+    expect(reviewOrder).toHaveClass("grid-cols-2");
+    expect(reviewOrder).toHaveAttribute(
+      "data-review-order-density",
+      "unselected-compact",
+    );
     expect(reviewOrder).toHaveTextContent("Read concept brief");
     expect(reviewOrder).toHaveTextContent("Trace incoming impact");
     expect(reviewOrder).toHaveTextContent("Edit or confirm meaning");
