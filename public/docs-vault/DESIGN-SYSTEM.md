@@ -296,6 +296,14 @@ names in component data markers and tests whenever a surface depends on
   actions stay subdued inside the node inspector layer and do not borrow generic
   page-button color while relation facts, evidence, and handoff actions remain
   the primary scan targets.
+- `--topology-node-popover-compact-*`: collapsed selected-node popover sizing
+  and typography tokens. Use these for compact kind label, title
+  size/leading, count text, relation fact pill text, action gap, action size,
+  primary handoff action width/label size, and quiet chrome label size. The
+  collapsed state must read as one compact support rail: ontology title first,
+  typed facts second, executable `Brief` action third, with expand/close
+  treated as quiet utility chrome. Do not reintroduce raw `text-[Npx]`,
+  `leading-N`, or ad hoc `gap-*` values in this layer.
 - `--topology-node-popover-metric-*`: selected node inspector metric cards for
   `Used by` and `Depends on`. Use these for the first read of ontology
   directionality above the relation list; the cards should read as quiet

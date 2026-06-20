@@ -1062,6 +1062,38 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-compact-action-size",
     );
     expect(popover).toHaveAttribute(
+      "data-compact-action-gap-token",
+      "--topology-node-popover-compact-action-gap",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-title-size-token",
+      "--topology-node-popover-compact-title-size",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-title-leading-token",
+      "--topology-node-popover-compact-title-leading",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-meta-size-token",
+      "--topology-node-popover-compact-meta-size",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-kind-size-token",
+      "--topology-node-popover-compact-kind-size",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-fact-size-token",
+      "--topology-node-popover-compact-fact-size",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-action-label-size-token",
+      "--topology-node-popover-compact-action-label-size",
+    );
+    expect(popover).toHaveAttribute(
+      "data-compact-chrome-label-size-token",
+      "--topology-node-popover-compact-chrome-label-size",
+    );
+    expect(popover).toHaveAttribute(
       "data-title-lines-token",
       "--topology-node-popover-title-lines",
     );
@@ -1127,6 +1159,10 @@ describe("TopologyNodePopover", () => {
       "data-compact-relation-facts-text-token",
       "--topology-node-popover-context-text",
     );
+    expect(compactFacts).toHaveAttribute(
+      "data-compact-relation-facts-size-token",
+      "--topology-node-popover-compact-fact-size",
+    );
     expect(compactFacts).toHaveTextContent("관계");
     expect(compactFacts).toHaveTextContent("3");
     expect(compactFacts).toHaveTextContent("유형");
@@ -1151,15 +1187,33 @@ describe("TopologyNodePopover", () => {
       "actions-after-facts",
     );
     expect(actions).toHaveAttribute(
+      "data-compact-actions-hierarchy-contract",
+      "primary-brief-then-quiet-chrome",
+    );
+    expect(actions).toHaveAttribute(
+      "data-compact-action-gap-token",
+      "--topology-node-popover-compact-action-gap",
+    );
+    expect(actions).toHaveAttribute(
       "data-phone-layout-contract",
       "actions-wrap-below-title",
     );
     expect(actions.className).toContain("w-full");
     expect(actions.className).toContain("justify-end");
+    expect(actions.className).toContain(
+      "gap-[var(--topology-node-popover-compact-action-gap)]",
+    );
     const kindLabel = document.querySelector("[data-selected-node-kind-label]");
     expect(kindLabel).toHaveAttribute(
       "data-kind-text-token",
       "--topology-node-popover-kind-text",
+    );
+    expect(kindLabel).toHaveAttribute(
+      "data-kind-size-token",
+      "--topology-node-popover-compact-kind-size",
+    );
+    expect(kindLabel?.className).toContain(
+      "text-[length:var(--topology-node-popover-compact-kind-size)]",
     );
     expect(kindLabel?.className).toContain(
       "text-[color:var(--topology-node-popover-kind-text)]",
@@ -1179,6 +1233,12 @@ describe("TopologyNodePopover", () => {
       "--topology-node-popover-title-text",
     );
     expect(title.className).toContain("line-clamp-[var(--topology-node-popover-title-lines)]");
+    expect(title.className).toContain(
+      "text-[length:var(--topology-node-popover-compact-title-size)]",
+    );
+    expect(title.className).toContain(
+      "leading-[var(--topology-node-popover-compact-title-leading)]",
+    );
     expect(title.className).toContain(
       "text-[color:var(--topology-node-popover-title-text)]",
     );
@@ -2382,6 +2442,10 @@ describe("TopologyNodePopover", () => {
       "data-popover-action-max-width-token",
       "--topology-node-popover-compact-handoff-action-max-width",
     );
+    expect(action).toHaveAttribute(
+      "data-popover-action-label-size-token",
+      "--topology-node-popover-compact-action-label-size",
+    );
     expect(action.className).toContain(
       "min-w-[var(--topology-node-popover-compact-handoff-action-min-width)]",
     );
@@ -2391,6 +2455,9 @@ describe("TopologyNodePopover", () => {
     expect(action.className).toContain(
       "max-[480px]:w-[var(--topology-node-popover-compact-action-size)]",
     );
+    expect(action.className).toContain(
+      "text-[length:var(--topology-node-popover-compact-action-label-size)]",
+    );
     expect(action.querySelector("span")?.className).toContain("max-[480px]:sr-only");
     expect(action).toHaveTextContent("브리프");
     expect(action.className).toContain(
@@ -2398,6 +2465,14 @@ describe("TopologyNodePopover", () => {
     );
     expect(action.className).toContain(
       "hover:text-[color:var(--topology-node-popover-action-hover-text)]",
+    );
+    const expand = screen.getByRole("button", { name: "상세 보기" });
+    expect(expand).toHaveAttribute(
+      "data-chrome-action-label-size-token",
+      "--topology-node-popover-compact-chrome-label-size",
+    );
+    expect(expand.className).toContain(
+      "text-[length:var(--topology-node-popover-compact-chrome-label-size)]",
     );
     fireEvent.click(action);
     expect(copyBrief).toHaveBeenCalledTimes(1);

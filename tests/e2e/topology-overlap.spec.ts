@@ -3316,12 +3316,48 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "--topology-node-popover-compact-action-size",
   );
   await expect(popover).toHaveAttribute(
+    "data-compact-action-gap-token",
+    "--topology-node-popover-compact-action-gap",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-compact-title-size-token",
+    "--topology-node-popover-compact-title-size",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-compact-title-leading-token",
+    "--topology-node-popover-compact-title-leading",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-compact-meta-size-token",
+    "--topology-node-popover-compact-meta-size",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-compact-kind-size-token",
+    "--topology-node-popover-compact-kind-size",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-compact-fact-size-token",
+    "--topology-node-popover-compact-fact-size",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-compact-action-label-size-token",
+    "--topology-node-popover-compact-action-label-size",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-compact-chrome-label-size-token",
+    "--topology-node-popover-compact-chrome-label-size",
+  );
+  await expect(popover).toHaveAttribute(
     "data-title-lines-token",
     "--topology-node-popover-title-lines",
   );
   await expect(popover.locator("[data-selected-node-kind-label]").first()).toHaveAttribute(
     "data-kind-text-token",
     "--topology-node-popover-kind-text",
+  );
+  await expect(popover.locator("[data-selected-node-kind-label]").first()).toHaveAttribute(
+    "data-kind-size-token",
+    "--topology-node-popover-compact-kind-size",
   );
   await expect(popover).toHaveAttribute(
     "data-title-readability-contract",
@@ -3338,6 +3374,14 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
     "data-compact-actions-layout-contract",
     "actions-after-facts",
+  );
+  await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
+    "data-compact-actions-hierarchy-contract",
+    "primary-brief-then-quiet-chrome",
+  );
+  await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
+    "data-compact-action-gap-token",
+    "--topology-node-popover-compact-action-gap",
   );
   await expect(page.getByTestId("topology-node-popover-compact-actions")).toHaveAttribute(
     "data-phone-layout-contract",
@@ -3365,6 +3409,12 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   await expect(popoverTitle).toHaveAttribute(
     "data-title-text-token",
     "--topology-node-popover-title-text",
+  );
+  await expect(popoverTitle).toHaveClass(
+    /text-\[length:var\(--topology-node-popover-compact-title-size\)\]/,
+  );
+  await expect(popoverTitle).toHaveClass(
+    /leading-\[var\(--topology-node-popover-compact-title-leading\)\]/,
   );
   const titleReadability = await popoverTitle.evaluate((el) => {
     const style = window.getComputedStyle(el);
@@ -3409,6 +3459,10 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "data-compact-relation-facts-text-token",
     "--topology-node-popover-context-text",
   );
+  await expect(compactRelationFacts).toHaveAttribute(
+    "data-compact-relation-facts-size-token",
+    "--topology-node-popover-compact-fact-size",
+  );
   const compactRelationFactsFit = await compactRelationFacts.evaluate(
     (el) => el.scrollWidth <= el.clientWidth + 1,
   );
@@ -3442,6 +3496,10 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     "--topology-node-popover-compact-handoff-action-max-width",
   );
   await expect(compactBriefAction).toHaveAttribute(
+    "data-popover-action-label-size-token",
+    "--topology-node-popover-compact-action-label-size",
+  );
+  await expect(compactBriefAction).toHaveAttribute(
     "data-popover-action-label-contract",
     "icon-only-full-aria-title",
   );
@@ -3459,6 +3517,10 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   await expect(compactExpandAction).toHaveAttribute(
     "data-chrome-action-text-token",
     "--topology-node-popover-chrome-action-text",
+  );
+  await expect(compactExpandAction).toHaveAttribute(
+    "data-chrome-action-label-size-token",
+    "--topology-node-popover-compact-chrome-label-size",
   );
   const compactCloseAction = page.locator('[data-node-popover-close="true"]');
   await expect(compactCloseAction).toHaveAttribute(
