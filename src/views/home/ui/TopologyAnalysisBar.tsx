@@ -1379,9 +1379,9 @@ export function TopologyAnalysisBar({
               data-route-compact-min-height-token="--topology-path-route-compact-min-height"
               data-route-source-min-width-token="--topology-path-route-source-min-width"
               data-route-target-min-width-token="--topology-path-route-target-min-width"
-              data-route-responsive-contract="phone-and-wide-desktop-weighted-tablet-stacked-endpoints"
+              data-route-responsive-contract="phone-fluid-tablet-stacked-wide-desktop-weighted-endpoints"
               data-path-rail-spacing-contract="parent-gap-owns-path-stack"
-              className="grid min-w-0 grid-cols-[minmax(var(--topology-path-route-source-min-width),0.62fr)_auto_minmax(var(--topology-path-route-target-min-width),1.9fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5 md:grid-cols-1 md:gap-1 2xl:grid-cols-[minmax(5.75rem,0.9fr)_auto_minmax(7rem,1.5fr)] 2xl:gap-0"
+              className="grid min-w-0 grid-cols-[minmax(0,0.68fr)_auto_minmax(0,1.42fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5 md:grid-cols-1 md:gap-1 2xl:grid-cols-[minmax(5.75rem,0.9fr)_auto_minmax(7rem,1.5fr)] 2xl:gap-0"
             >
               <span
                 className="min-h-[var(--topology-path-route-compact-min-height)] min-w-0 rounded border border-[color:var(--topology-path-route-source-border)] bg-[color:var(--topology-path-route-source-surface)] px-2 py-1"

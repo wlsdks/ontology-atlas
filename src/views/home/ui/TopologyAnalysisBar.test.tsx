@@ -2388,7 +2388,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(route).toHaveAttribute(
       "data-route-responsive-contract",
-      "phone-and-wide-desktop-weighted-tablet-stacked-endpoints",
+      "phone-fluid-tablet-stacked-wide-desktop-weighted-endpoints",
     );
     expect(route.className).toContain("grid-cols-[");
     expect(route.className).toContain("md:grid-cols-1");
@@ -3064,7 +3064,7 @@ describe("TopologyAnalysisBar", () => {
     const visibleRoute = screen.getByTestId("topology-path-visible-route");
     expect(visibleRoute).toHaveAttribute(
       "data-route-responsive-contract",
-      "phone-and-wide-desktop-weighted-tablet-stacked-endpoints",
+      "phone-fluid-tablet-stacked-wide-desktop-weighted-endpoints",
     );
     expect(visibleRoute.className).toContain("md:grid-cols-1");
     expect(visibleRoute.className).toContain("2xl:grid-cols-[");

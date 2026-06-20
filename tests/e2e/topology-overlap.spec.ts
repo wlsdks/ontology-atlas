@@ -3231,14 +3231,19 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   await expect(route.locator('[data-route-endpoint-marker="target"]')).toHaveText("B");
   await expect(route).toHaveAttribute(
     "data-route-responsive-contract",
-    "phone-and-wide-desktop-weighted-tablet-stacked-endpoints",
+    "phone-fluid-tablet-stacked-wide-desktop-weighted-endpoints",
   );
-  const routeUsesPhoneWeightedLayout = await route.evaluate(
+  const routeUsesPhoneFluidLayout = await route.evaluate(
     (el) =>
-      Array.from(el.classList).some((className) => className.startsWith("grid-cols-[")) &&
-      el.classList.contains("md:grid-cols-1"),
+      Array.from(el.classList).some((className) =>
+        className.startsWith("grid-cols-[minmax(0,"),
+      ) &&
+      el.classList.contains("md:grid-cols-1") &&
+      Array.from(el.classList).some((className) => className.startsWith("2xl:grid-cols-[")),
   );
-  expect(routeUsesPhoneWeightedLayout, "path route should keep phone compact layout").toBe(true);
+  expect(routeUsesPhoneFluidLayout, "path route should use fluid endpoint columns in the phone rail").toBe(
+    true,
+  );
   await expect(candidateVisibility).toBeVisible();
   await expect(candidateVisibility).toHaveAttribute(
     "data-surface-token",
