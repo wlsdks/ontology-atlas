@@ -1117,7 +1117,14 @@ describe("TopologyAnalysisBar", () => {
       screen.getByText(
         "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
       ),
-    ).toBeVisible();
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("topology-overview-proof-disclosure")).toHaveAttribute(
+      "data-overview-proof-disclosure-contract",
+      "closed-by-default-map-first",
+    );
+    expect(screen.getByTestId("topology-overview-proof-summary")).toHaveTextContent(
+      "Evidence source · Agent handoff",
+    );
   });
 
   it("names the overview command rail as the next step before agent handoff tools", () => {
@@ -1248,7 +1255,15 @@ describe("TopologyAnalysisBar", () => {
     expect(signalGrid.className).toContain("bg-transparent");
     expect(signalGrid).toHaveAttribute(
       "data-overview-evidence-density-contract",
-      "single-surface-proof-rows",
+      "disclosed-proof-rows-map-first",
+    );
+    expect(screen.getByTestId("topology-overview-proof-disclosure")).toHaveAttribute(
+      "data-overview-proof-default-state",
+      "closed",
+    );
+    expect(screen.getByTestId("topology-overview-proof-summary")).toHaveAttribute(
+      "data-overview-proof-summary-contract",
+      "relation-proof-disclosed-on-demand",
     );
     expect(signalGrid).toHaveAttribute(
       "data-surface-token",

@@ -1518,14 +1518,38 @@ export function TopologyAnalysisBar({
             </div>
           ) : null}
           {panelMode === "overview" ? (
-            <>
+            <details
+              className="topology-overview-proof-disclosure group mt-2 border-t border-[color:var(--topology-overview-signal-grid-border)] pt-1.5"
+              data-testid="topology-overview-proof-disclosure"
+              data-overview-proof-disclosure-contract="closed-by-default-map-first"
+              data-overview-proof-default-state="closed"
+              data-border-token="--topology-overview-signal-grid-border"
+            >
+              <summary
+                data-testid="topology-overview-proof-summary"
+                data-overview-proof-summary-contract="relation-proof-disclosed-on-demand"
+                className="inline-flex min-h-[var(--topology-overview-secondary-disclosure-min-height)] cursor-pointer list-none items-center gap-1 rounded px-0.5 py-0 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--topology-overview-secondary-disclosure-text)] transition-colors hover:text-[color:var(--topology-overview-secondary-disclosure-hover-text)]"
+                data-secondary-min-height-token="--topology-overview-secondary-disclosure-min-height"
+                data-text-token="--topology-overview-secondary-disclosure-text"
+                data-hover-text-token="--topology-overview-secondary-disclosure-hover-text"
+              >
+                <ChevronDown
+                  size={10}
+                  aria-hidden
+                  className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
+                  data-testid="topology-overview-proof-chevron"
+                />
+                <span>
+                  {labels.overviewBriefRelationProvenance} · {labels.overviewAgentReadiness}
+                </span>
+              </summary>
               <div
-                className="mt-2 grid min-w-0 gap-[var(--topology-overview-signal-grid-compact-gap)] border-y border-[color:var(--topology-overview-signal-grid-border)] bg-transparent py-[var(--topology-overview-signal-grid-compact-padding)]"
+                className="mt-1.5 grid min-w-0 gap-[var(--topology-overview-signal-grid-compact-gap)] border-y border-[color:var(--topology-overview-signal-grid-border)] bg-transparent py-[var(--topology-overview-signal-grid-compact-padding)]"
                 data-surface-token="--topology-overview-signal-grid-surface"
                 data-border-token="--topology-overview-signal-grid-border"
                 data-compact-padding-token="--topology-overview-signal-grid-compact-padding"
                 data-compact-gap-token="--topology-overview-signal-grid-compact-gap"
-                data-overview-evidence-density-contract="single-surface-proof-rows"
+                data-overview-evidence-density-contract="disclosed-proof-rows-map-first"
                 data-testid="topology-overview-signal-grid"
               >
                 <div
@@ -1613,7 +1637,7 @@ export function TopologyAnalysisBar({
                   {overviewRelationNotice}
                 </p>
               </div>
-            </>
+            </details>
           ) : null}
           {panelMode === "health" ? (
             <>

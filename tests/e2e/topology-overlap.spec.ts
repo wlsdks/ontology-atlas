@@ -538,14 +538,43 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-kind-legend-state",
     "collapsed-support-chrome",
   );
-  await expect(panel.getByText(/Evidence source|관계 근거/i)).toBeVisible();
-  await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
+  await expect(page.getByTestId("topology-overview-proof-disclosure")).toHaveAttribute(
+    "data-overview-proof-disclosure-contract",
+    "closed-by-default-map-first",
+  );
+  await expect(page.getByTestId("topology-overview-proof-summary")).toBeVisible();
+  await expect(page.getByTestId("topology-overview-proof-summary")).toContainText(
+    /Evidence source|관계 근거/i,
+  );
+  await expect(page.getByTestId("topology-overview-proof-summary")).toContainText(
     /Agent handoff|에이전트 인계/i,
   );
+  await expect(page.getByTestId("topology-overview-signal-grid")).toBeHidden();
+  const panelOverflow = await panel.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+    overflowY: window.getComputedStyle(element).overflowY,
+  }));
+  expect(panelOverflow.overflowY, "overview panel should not introduce its own scrollbar").toBe("hidden");
+  expect(
+    panelOverflow.scrollHeight - panelOverflow.clientHeight,
+    "overview panel content should fit the first MacBook 14-inch view",
+  ).toBeLessThanOrEqual(2);
+  await page.getByTestId("topology-overview-proof-summary").click();
   await expect(page.getByTestId("topology-overview-signal-grid")).toBeVisible();
   await expect(page.getByTestId("topology-overview-signal-grid")).toHaveAttribute(
     "data-surface-token",
     "--topology-overview-signal-grid-surface",
+  );
+  await expect(page.getByTestId("topology-overview-signal-grid")).toHaveAttribute(
+    "data-overview-evidence-density-contract",
+    "disclosed-proof-rows-map-first",
+  );
+  await expect(page.getByTestId("topology-overview-relation-provenance")).toContainText(
+    /Evidence source|관계 근거/i,
+  );
+  await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
+    /Agent handoff|에이전트 인계/i,
   );
   await expect(page.getByTestId("topology-overview-relation-progress")).toHaveAttribute(
     "data-surface-token",
@@ -599,17 +628,6 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-divider-token",
     "--topology-overview-handoff-divider",
   );
-  const panelOverflow = await panel.evaluate((element) => ({
-    clientHeight: element.clientHeight,
-    scrollHeight: element.scrollHeight,
-    overflowY: window.getComputedStyle(element).overflowY,
-  }));
-  expect(panelOverflow.overflowY, "overview panel should not introduce its own scrollbar").toBe("hidden");
-  expect(
-    panelOverflow.scrollHeight - panelOverflow.clientHeight,
-    "overview panel content should fit the first MacBook 14-inch view",
-  ).toBeLessThanOrEqual(2);
-
   const copyButtonRect = await rectOf(
     panel.getByRole("button", { name: /Copy topology map brief|지형도 지도 요약/i }),
   );
@@ -1257,6 +1275,7 @@ for (const viewport of VIEWPORTS) {
     page,
   }) => {
     await openRelief(page, viewport, { mode: "map" });
+    await page.getByTestId("topology-overview-proof-summary").click();
 
     await expect(page.getByTestId("topology-overview-agent-readiness")).toHaveAttribute(
       "data-agent-readiness-summary",
