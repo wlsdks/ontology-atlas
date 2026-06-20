@@ -3989,21 +3989,66 @@ export function SigmaSkeletonCards({
     activeDragMotion,
     activeHullCluster,
     activeHullMode,
+    cards,
+    healthRepairTarget,
+    pathWorkflowActive,
     resolveNodeId,
+    selectedFocusCenterActive,
     selectedFocusCluster,
     selectedRelationEdgeId,
     selectedSlug,
     emitVisibilityStats,
     getFixedSurfaceRects,
   ]);
-  repositionNowRef.current = reposition;
-
   const scheduleReposition = useCallback(() => {
     if (repositionRafRef.current !== null) return;
     repositionRafRef.current = window.requestAnimationFrame(() => {
       repositionRafRef.current = null;
       reposition();
     });
+  }, [reposition]);
+
+  const layoutTransitionKey = useMemo(() => {
+    const cardKey = cards
+      .map((card) =>
+        [
+          card.id,
+          card.kind,
+          card.tier,
+          card.title,
+          card.count ?? '',
+          card.anchor ?? '',
+          card.dock
+            ? `${card.dock.parentId}:${card.dock.side}:${card.dock.index}:${card.dock.total}`
+            : '',
+        ].join(':'),
+      )
+      .join('|');
+    return [
+      cardKey,
+      selectedSlug ?? '',
+      selectedRelationEdgeId ?? '',
+      pathWorkflowActive ? 'path' : 'map',
+      pathSelection?.sourceSlug ?? '',
+      pathSelection?.targetSlug ?? '',
+      healthRepairTarget
+        ? `${healthRepairTarget.kind}:${healthRepairTarget.slug}`
+        : '',
+      selectedFocusCenterActive ? 'focus-center' : '',
+    ].join('||');
+  }, [
+    cards,
+    healthRepairTarget,
+    pathSelection?.sourceSlug,
+    pathSelection?.targetSlug,
+    pathWorkflowActive,
+    selectedFocusCenterActive,
+    selectedRelationEdgeId,
+    selectedSlug,
+  ]);
+
+  useEffect(() => {
+    repositionNowRef.current = reposition;
   }, [reposition]);
 
   // 카드 목록이 바뀌는 렌더마다 paint 전에 배치 (확장으로 새 카드 등장 시).
@@ -4023,6 +4068,7 @@ export function SigmaSkeletonCards({
     const container = containerRef.current;
     if (!container) return;
     container.dataset.layoutAnimate = 'true';
+    container.dataset.layoutTransitionKeySize = String(layoutTransitionKey.length);
     if (container.dataset.skeletonCardsReady !== 'true') {
       container.dataset.skeletonCardsReady = 'false';
     }
@@ -4033,7 +4079,7 @@ export function SigmaSkeletonCards({
       collisionFreezeRef.current.clear();
       try {
         invalidateFixedSurfaceRectCache();
-        reposition();
+        repositionNowRef.current?.();
         delete container.dataset.layoutError;
       } catch (error) {
         container.dataset.layoutError =
@@ -4050,7 +4096,7 @@ export function SigmaSkeletonCards({
         container.dataset.skeletonCardsReady = 'false';
       }
     };
-  }, [cards, reposition]);
+  }, [layoutTransitionKey, invalidateFixedSurfaceRectCache]);
 
   useEffect(() => {
     if (!sigma) return;
@@ -4135,6 +4181,7 @@ export function SigmaSkeletonCards({
       data-visibility-count-contract="single-pass-unless-fallback"
       data-visibility-stats-report-contract="dedupe-stable-counts"
       data-visibility-stats-report-count={visibilityStatsReportCountRef.current}
+      data-layout-transition-contract="stable-card-state-key"
       data-responsive-reposition-contract="resize-immediate-and-settled"
       data-dom-write-dedupe-contract="skip-unchanged-transform-and-path"
       data-dom-write-applied-count="0"

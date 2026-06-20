@@ -204,6 +204,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-connector-rect-cache-seed-contract",
       "visible-card-rects-seed-connector-cache",
     );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-layout-transition-contract",
+      "stable-card-state-key",
+    );
     const connectorReadCount = Number(
       screen
         .getByTestId("sigma-skeleton-cards")
