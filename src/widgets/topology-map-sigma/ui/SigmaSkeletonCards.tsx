@@ -3529,24 +3529,18 @@ export function SigmaSkeletonCards({
     const selectedDockChildren = selectedNodeId
       ? orderedEls.filter((el) => el.dataset.dockParent === selectedNodeId)
       : [];
-    const selectedVisibleDockChildren = selectedDockChildren.filter((el) => {
-      const style = getComputedStyle(el);
-      const rect = el.getBoundingClientRect();
-      return (
-        el.dataset.surfaceHidden !== 'true' &&
-        style.visibility !== 'hidden' &&
-        Number(style.opacity || el.style.opacity || '1') > 0.01 &&
-        rect.width > 0 &&
-        rect.height > 0
-      );
-    });
+    const selectedVisibleDockChildCount = selectedDockChildren.reduce(
+      (count, el) => count + (isSkeletonCardVisibleFromFrameState(el) ? 1 : 0),
+      0,
+    );
+    container.dataset.selectedDockVisibilityPolicy = 'state-only-no-rect-read';
     container.dataset.selectedDockCompanionCount = String(selectedDockChildren.length);
     container.dataset.selectedDockVisibleCompanionCount = String(
-      selectedVisibleDockChildren.length,
+      selectedVisibleDockChildCount,
     );
     container.dataset.selectedDockCompanionVisible =
-      selectedVisibleDockChildren.length > 0 ? 'true' : 'false';
-    if (selectedVisibleDockChildren.length > 0) {
+      selectedVisibleDockChildCount > 0 ? 'true' : 'false';
+    if (selectedVisibleDockChildCount > 0) {
       container.dataset.clickFocusRelationshipContext = 'durable';
       container.dataset.clickFocusRelationshipContextSource = 'selected-dock-companions';
     } else if (selectedFocusCluster && selectedFocusCluster.size >= 2) {
