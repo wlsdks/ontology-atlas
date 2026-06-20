@@ -1907,64 +1907,17 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
     const focusHull = page.locator("[data-drag-cluster-hull]");
-    await expect(focusHull).toHaveAttribute("data-cluster-mode", "focus");
     await expect(focusHull).toHaveAttribute("data-visible", "false");
-    await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "no-boundary");
-    await expect(focusHull).toHaveAttribute(
-      "data-focus-hull-line-contract",
-      "no-rendered-boundary-rely-on-dimmed-context",
-    );
-    await expect(focusHull).toHaveAttribute("data-focus-hull-visual-state", "not-rendered");
-    await expect(focusHull).toHaveAttribute(
-      "data-focus-breathing-room-contract",
-      "viewport-edge-clearance",
-    );
-    await expect(focusHull).toHaveAttribute(
-      "data-focus-label-clearance-contract",
-      "no-hull-boundary-uses-ego-labels",
+    await expect(focusHull).toHaveAttribute("data-cluster-mode", "none");
+    await expect(focusHull).not.toHaveAttribute("data-focus-cluster-density");
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-focus-cluster-size",
+      /[2-9]\d*/,
     );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-click-focus-relationship-context",
       "durable",
     );
-    const focusHullBreathingRoom = Number(
-      await focusHull.getAttribute("data-focus-breathing-room-px"),
-    );
-    await expect(focusHull).toHaveAttribute(
-      "data-focus-top-safe-area-contract",
-      "top-chrome-clearance",
-    );
-    const focusHullTopSafeArea = Number(
-      await focusHull.getAttribute("data-focus-top-safe-area-px"),
-    );
-    const focusHullTopClearance = Number(
-      await focusHull.getAttribute("data-focus-top-clearance"),
-    );
-    expect(
-      focusHullTopClearance,
-      `selected focus hull should clear top chrome at ${viewport.label}`,
-    ).toBeGreaterThanOrEqual(focusHullTopSafeArea);
-    const focusHullLabelClearance = Number(
-      await focusHull.getAttribute("data-focus-label-clearance-px"),
-    );
-    expect(
-      focusHullLabelClearance,
-      `selected focus hull should expose label clearance at ${viewport.label}`,
-    ).toBeGreaterThanOrEqual(32);
-    const focusHullRightClearance = Number(
-      await focusHull.getAttribute("data-focus-right-clearance"),
-    );
-    const focusHullBottomClearance = Number(
-      await focusHull.getAttribute("data-focus-bottom-clearance"),
-    );
-    expect(
-      focusHullRightClearance,
-      `selected focus hull should leave viewport right breathing room at ${viewport.label}`,
-    ).toBeGreaterThanOrEqual(focusHullBreathingRoom);
-    expect(
-      focusHullBottomClearance,
-      `selected focus hull should leave viewport bottom breathing room at ${viewport.label}`,
-    ).toBeGreaterThanOrEqual(focusHullBreathingRoom);
     expect(
       await visibleCardScrollWidthViolations(page),
       `visible skeleton cards should keep edge masks paint-only at ${viewport.label}`,
@@ -3706,18 +3659,9 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
   );
   await expect(compactBriefAction).toHaveText(/.+/);
   const focusHull = page.locator("[data-drag-cluster-hull]");
-  await expect(focusHull).toHaveAttribute("data-cluster-mode", "focus");
   await expect(focusHull).toHaveAttribute("data-visible", "false");
-  await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "no-boundary");
-  await expect(focusHull).toHaveAttribute(
-    "data-focus-hull-line-contract",
-    "no-rendered-boundary-rely-on-dimmed-context",
-  );
-  await expect(focusHull).toHaveAttribute("data-focus-hull-visual-state", "not-rendered");
-  await expect(focusHull).toHaveAttribute(
-    "data-focus-label-clearance-contract",
-    "no-hull-boundary-uses-ego-labels",
-  );
+  await expect(focusHull).toHaveAttribute("data-cluster-mode", "none");
+  await expect(focusHull).not.toHaveAttribute("data-focus-cluster-density");
   await expect(page.locator("[data-focus-relation-label]")).toHaveCount(0);
   await expect(page.locator('[data-skeleton-card][data-slug="domain:views"]').first()).toBeVisible();
   await expectSelectedCardRelationSummary(page, "domain:views");

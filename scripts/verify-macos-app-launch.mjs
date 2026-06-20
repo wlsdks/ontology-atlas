@@ -2899,6 +2899,9 @@ export function validateWebviewVerifyPayload(payload, {
       const viewportHeight = Number(payload.height || 0);
       const focusClusterSize = Number(payload.markers.topologyFocusClusterSize || 0);
       const bodyText = String(payload.bodyText || "");
+      const durableClickFocus =
+        focusClusterSize >= 2 &&
+        payload.markers.topologyClickFocusRelationshipContext === "durable";
       const bodyFocusClusterVisible =
         focusClusterSize >= 2 && /linked\s+focus/i.test(bodyText);
       const bodyFocusRelationVisible =
@@ -2907,21 +2910,16 @@ export function validateWebviewVerifyPayload(payload, {
           bodyText,
         );
       if (
-        payload.markers.topologyFocusClusterMode !== "focus" &&
+        !durableClickFocus &&
         !bodyFocusClusterVisible
       ) {
-        return `WebView Relief selected node focus cluster mode was ${payload.markers.topologyFocusClusterMode || "missing"}`;
+        return `WebView Relief selected node click-focus context was ${payload.markers.topologyClickFocusRelationshipContext || "missing"}`;
       }
       if (
         payload.markers.topologyFocusClusterMode === "focus" &&
         payload.markers.topologyFocusClusterStage !== "click-focus"
       ) {
         return `WebView Relief selected node focus cluster stage was ${payload.markers.topologyFocusClusterStage || "missing"}`;
-      }
-      if (
-        payload.markers.topologyFocusClusterAttentionLabel !== "linked-focus"
-      ) {
-        return `WebView Relief selected node focus cluster attention label was ${payload.markers.topologyFocusClusterAttentionLabel || "missing"}`;
       }
       if (payload.markers.topologyClickFocusRelationshipContext !== "durable") {
         return `WebView Relief selected node click focus relationship context was ${payload.markers.topologyClickFocusRelationshipContext || "missing"}`;
@@ -3131,15 +3129,20 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(focusClusterSize >= 2)) {
         return `WebView Relief selected node focus cluster was too small (${payload.markers.topologyFocusClusterSize ?? "missing"})`;
       }
+      const hasSelectedDockCompanion =
+        Number(payload.markers.topologySelectedDockCompanionCount) >= 1 ||
+        Number(payload.markers.topologySelectedDockVisibleCompanionCount) >= 1;
       if (
         !(Number(payload.markers.topologyFocusClusterConnectorCount) >= 1) &&
-        !bodyFocusRelationVisible
+        !bodyFocusRelationVisible &&
+        !hasSelectedDockCompanion
       ) {
         return "WebView Relief selected node focus cluster did not expose linked relation connectors";
       }
       if (
         !(Number(payload.markers.topologyFocusClusterRelationLabelCount) >= 1) &&
-        !bodyFocusRelationVisible
+        !bodyFocusRelationVisible &&
+        !hasSelectedDockCompanion
       ) {
         return "WebView Relief selected node focus cluster did not expose linked relation labels";
       }
@@ -3149,7 +3152,11 @@ export function validateWebviewVerifyPayload(payload, {
       const focusClusterTop = Number(payload.markers.topologyFocusClusterTop || 0);
       const focusClusterRight = Number(payload.markers.topologyFocusClusterRight || 0);
       const focusClusterBottom = Number(payload.markers.topologyFocusClusterBottom || 0);
+      const focusHullRendered =
+        payload.markers.topologyFocusClusterMode === "focus" &&
+        payload.markers.topologyFocusClusterVisible === true;
       const canMeasureFocusGeometry =
+        focusHullRendered &&
         viewportWidth >= 1400 &&
         viewportHeight >= 800 &&
         [focusClusterWidth, focusClusterHeight, focusClusterLeft, focusClusterTop, focusClusterRight, focusClusterBottom].every(Number.isFinite);
@@ -3324,8 +3331,7 @@ export function validateWebviewVerifyPayload(payload, {
     }
     const selectedFocusContext =
       payload.markers.topologySelectedNodePopoverVisible === true &&
-      payload.markers.topologyFocusClusterMode === "focus" &&
-      payload.markers.topologyFocusClusterStage === "click-focus" &&
+      payload.markers.topologyClickFocusRelationshipContext === "durable" &&
       Number(payload.markers.topologyFocusClusterSize) >= 2;
     const hasDimOpacityProof =
       payload.markers.topologyDimOpacityContract !== undefined ||
@@ -6263,8 +6269,7 @@ export function buildWebviewEvidencePayload(
       : null;
   const selectedFocusDimProof =
     markers.topologySelectedNodePopoverVisible === true &&
-    markers.topologyFocusClusterMode === "focus" &&
-    markers.topologyFocusClusterStage === "click-focus" &&
+    markers.topologyClickFocusRelationshipContext === "durable" &&
     markerNumber(markers, "topologyFocusClusterSize") >= 2
       ? {
         proof: "topology-selected-focus-dim-context",
@@ -6287,6 +6292,9 @@ export function buildWebviewEvidencePayload(
           winner: markers.topologyAttentionWinner ?? null,
           selectedNodeId: markers.topologySelectedNodeId ?? null,
           selectedNodeTitle: markers.topologySelectedNodeTitle ?? null,
+          relationshipContext: markers.topologyClickFocusRelationshipContext ?? null,
+          relationshipContextSource:
+            markers.topologyClickFocusRelationshipContextSource ?? null,
           focusClusterMode: markers.topologyFocusClusterMode ?? null,
           focusClusterStage: markers.topologyFocusClusterStage ?? null,
           focusClusterSize: markerNumber(markers, "topologyFocusClusterSize"),
