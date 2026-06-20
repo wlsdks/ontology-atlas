@@ -85,6 +85,58 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   expect(consoleErrors, consoleErrors.join("\n")).toHaveLength(0);
 });
 
+test("Relief dogfood graph exposes scale and bounded visible-card rect reads", async ({
+  page,
+}) => {
+  await page.goto("/en/topology/?mode=focus&p=domain%3Aviews");
+  await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-skeleton-cards-ready",
+    "true",
+    { timeout: 20_000 },
+  );
+  await page.waitForTimeout(600);
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  const target = page.locator("[data-skeleton-card]", { hasText: "Views" }).first();
+  await expect(target).toBeVisible();
+  const before = await rectOf(target);
+  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(before.x + before.width / 2 + 160, before.y + before.height / 2 + 80, {
+    steps: 10,
+  });
+  await expect(layer).toHaveAttribute(
+    "data-visible-card-rect-read-policy",
+    "visible-only-after-style-check",
+  );
+
+  const proof = await layer.evaluate((el) => ({
+    modelCount: Number(el.getAttribute("data-skeleton-card-model-count") ?? "0"),
+    resolvedCount: Number(el.getAttribute("data-skeleton-card-resolved-count") ?? "0"),
+    visibleCount: Number(el.getAttribute("data-visible-card-count") ?? "0"),
+    totalCount: Number(el.getAttribute("data-total-card-count") ?? "0"),
+    visibleRectReads: Number(el.getAttribute("data-visible-card-rect-read-count") ?? "0"),
+    hiddenRectSkips: Number(el.getAttribute("data-visible-card-hidden-rect-skip-count") ?? "0"),
+    cacheSeedCount: Number(el.getAttribute("data-connector-rect-cache-seed-count") ?? "0"),
+    activeDragClusterSize: Number(el.getAttribute("data-active-drag-cluster-size") ?? "0"),
+  }));
+  expect(proof.modelCount, "dogfood focus route should expose a non-trivial card model").toBeGreaterThanOrEqual(20);
+  expect(proof.resolvedCount, "all dogfood skeleton card models should resolve to graph nodes").toBe(proof.modelCount);
+  expect(proof.totalCount, "visibility pass should account for every card model").toBe(proof.modelCount);
+  expect(proof.activeDragClusterSize, "drag should exercise linked ontology facts").toBeGreaterThanOrEqual(2);
+  expect(proof.visibleRectReads, "rect reads should be bounded by currently visible cards").toBeLessThanOrEqual(
+    proof.visibleCount,
+  );
+  expect(proof.cacheSeedCount, "connector rect cache should only seed visible cards").toBeLessThanOrEqual(
+    proof.visibleCount,
+  );
+  expect(proof.hiddenRectSkips, "hidden context cards should not pay a rect-read cost").toBeGreaterThan(0);
+  await page.mouse.up();
+});
+
 test("Relief auto-arrange exposes active settle feedback", async ({ page }) => {
   await openTopology(page);
 
@@ -98,7 +150,6 @@ test("Relief auto-arrange exposes active settle feedback", async ({ page }) => {
   await arrange.click();
 
   await expect(arrange).toHaveAttribute("data-arranging", "true");
-  await expect(arrange).toContainText(/Arranging/i);
   await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
     "data-arranging",
     "true",

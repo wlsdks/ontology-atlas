@@ -2464,6 +2464,8 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-skeleton-card-model-count") || "0"),
                                   topologySkeletonLayerResolvedCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-skeleton-card-resolved-count") || "0"),
+                                  topologySkeletonCardResolvedCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-skeleton-card-resolved-count") || "0"),
                                   topologySkeletonVisibilityFallback:
                                     skeletonCardsLayer?.getAttribute("data-visibility-fallback") === "true",
                                   topologySkeletonVisibilityFallbackCount:
@@ -3991,6 +3993,8 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-connector-rect-cache-accounting") || "",
                                   topologyConnectorRectCacheSize:
                                     Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-size") || "0"),
+                                  topologyConnectorRectCacheSeedCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-seed-count") || "0"),
                                   topologyConnectorRectCacheReadCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-connector-rect-cache-read-count") || "0"),
                                   topologyConnectorRectCacheHitCount:
