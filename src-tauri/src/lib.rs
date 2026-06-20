@@ -2004,6 +2004,13 @@ pub fn run() {
                               const topologyNodePopoverCompactBriefActionStyle = topologyNodePopoverCompactBriefAction
                                 ? getComputedStyle(topologyNodePopoverCompactBriefAction)
                                 : null;
+                              const topologyNodePopoverCompactMeaning =
+                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-meaning"]');
+                              const topologyNodePopoverCompactMeaningRect =
+                                topologyNodePopoverCompactMeaning?.getBoundingClientRect();
+                              const topologyNodePopoverCompactMeaningStyle = topologyNodePopoverCompactMeaning
+                                ? getComputedStyle(topologyNodePopoverCompactMeaning)
+                                : null;
                               const topologySelectedSkeletonCardRelationSummary =
                                 document.querySelector('[data-skeleton-card][data-slug="domain:views"] [data-testid="sigma-selected-card-relation-summary"]');
                               const topologySelectedSkeletonCardRelationSummaryRect =
@@ -3358,6 +3365,29 @@ pub fn run() {
                                     topologyNodePopoverCompactBriefActionRect?.width || 0,
                                   topologyNodePopoverCompactBriefActionHeight:
                                     topologyNodePopoverCompactBriefActionRect?.height || 0,
+                                  topologyNodePopoverCompactMeaningVisible:
+                                    Boolean(topologyNodePopoverCompactMeaningRect) &&
+                                    topologyNodePopoverCompactMeaningRect.width > 0 &&
+                                    topologyNodePopoverCompactMeaningRect.height > 0 &&
+                                    topologyNodePopoverCompactMeaningStyle?.display !== "none" &&
+                                    topologyNodePopoverCompactMeaningStyle?.visibility !== "hidden" &&
+                                    Number(topologyNodePopoverCompactMeaningStyle?.opacity || "1") > 0.01,
+                                  topologyNodePopoverCompactMeaningText:
+                                    topologyNodePopoverCompactMeaning?.textContent?.trim() || "",
+                                  topologyNodePopoverCompactMeaningContract:
+                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-contract") || "",
+                                  topologyNodePopoverCompactMeaningResponsiveContract:
+                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-responsive-contract") || "",
+                                  topologyNodePopoverCompactMeaningLevel:
+                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-level") || "",
+                                  topologyNodePopoverCompactMeaningTextToken:
+                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-text-token") || "",
+                                  topologyNodePopoverCompactMeaningSizeToken:
+                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-size-token") || "",
+                                  topologyNodePopoverCompactMeaningLeadingToken:
+                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-leading-token") || "",
+                                  topologyNodePopoverCompactMeaningGapToken:
+                                    topologyNodePopoverCompactMeaning?.getAttribute("data-compact-meaning-gap-token") || "",
                                   topologySelectedSkeletonCardRelationSummaryVisible:
                                     Boolean(topologySelectedSkeletonCardRelationSummaryRect) &&
                                     topologySelectedSkeletonCardRelationSummaryRect.width > 0 &&

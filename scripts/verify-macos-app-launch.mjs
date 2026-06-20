@@ -247,6 +247,47 @@ function validateTopologyNodePopoverTokenContract(markers) {
   if (markers.topologyNodePopoverCompactHandoffContract !== "selected-node-actions-visible") {
     return `WebView Relief selected node popover compact handoff contract was ${markers.topologyNodePopoverCompactHandoffContract || "missing"}`;
   }
+  if (collapsed) {
+    if (markers.topologyNodePopoverCompactMeaningContract !== "plain-language-meaning-before-typed-facts") {
+      return `WebView Relief selected node popover compact meaning contract was ${markers.topologyNodePopoverCompactMeaningContract || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactMeaningResponsiveContract !==
+      "visible-desktop-sr-only-compact"
+    ) {
+      return `WebView Relief selected node popover compact meaning responsive contract was ${markers.topologyNodePopoverCompactMeaningResponsiveContract || "missing"}`;
+    }
+    if (!String(markers.topologyNodePopoverCompactMeaningText || "").trim()) {
+      return "WebView Relief selected node popover compact meaning text was missing";
+    }
+    if (!/^(core|support|leaf)$/.test(String(markers.topologyNodePopoverCompactMeaningLevel || ""))) {
+      return `WebView Relief selected node popover compact meaning level was ${markers.topologyNodePopoverCompactMeaningLevel || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactMeaningTextToken !==
+      "--topology-node-popover-compact-meaning-text"
+    ) {
+      return `WebView Relief selected node popover compact meaning text token was ${markers.topologyNodePopoverCompactMeaningTextToken || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactMeaningSizeToken !==
+      "--topology-node-popover-compact-meaning-size"
+    ) {
+      return `WebView Relief selected node popover compact meaning size token was ${markers.topologyNodePopoverCompactMeaningSizeToken || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactMeaningLeadingToken !==
+      "--topology-node-popover-compact-meaning-leading"
+    ) {
+      return `WebView Relief selected node popover compact meaning leading token was ${markers.topologyNodePopoverCompactMeaningLeadingToken || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactMeaningGapToken !==
+      "--topology-node-popover-compact-meaning-gap"
+    ) {
+      return `WebView Relief selected node popover compact meaning gap token was ${markers.topologyNodePopoverCompactMeaningGapToken || "missing"}`;
+    }
+  }
   if (
     markers.topologyNodePopoverScrollContract !==
     (collapsed ? "collapsed-chip-no-scroll" : "expanded-internal-scroll")
@@ -6292,6 +6333,14 @@ export function buildWebviewEvidencePayload(
           winner: markers.topologyAttentionWinner ?? null,
           selectedNodeId: markers.topologySelectedNodeId ?? null,
           selectedNodeTitle: markers.topologySelectedNodeTitle ?? null,
+          compactMeaning:
+            typeof markers.topologyNodePopoverCompactMeaningText === "string"
+              ? markers.topologyNodePopoverCompactMeaningText.trim()
+              : null,
+          compactMeaningContract:
+            markers.topologyNodePopoverCompactMeaningContract ?? null,
+          compactMeaningResponsiveContract:
+            markers.topologyNodePopoverCompactMeaningResponsiveContract ?? null,
           relationshipContext: markers.topologyClickFocusRelationshipContext ?? null,
           relationshipContextSource:
             markers.topologyClickFocusRelationshipContextSource ?? null,

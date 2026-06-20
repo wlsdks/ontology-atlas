@@ -957,6 +957,9 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
         topologySelectedNodePopoverVisible: true,
         topologySelectedNodeId: "domain:views",
         topologySelectedNodeTitle: "Views",
+        topologyNodePopoverCompactMeaningText: "A core hub — 10 places depend on it",
+        topologyNodePopoverCompactMeaningContract: "plain-language-meaning-before-typed-facts",
+        topologyNodePopoverCompactMeaningResponsiveContract: "visible-desktop-sr-only-compact",
         topologyClickFocusRelationshipContext: "durable",
         topologyClickFocusRelationshipContextSource: "selected-dock-companions",
         topologyFocusClusterMode: "none",
@@ -983,6 +986,9 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
       winner: "focus-state",
       selectedNodeId: "domain:views",
       selectedNodeTitle: "Views",
+      compactMeaning: "A core hub — 10 places depend on it",
+      compactMeaningContract: "plain-language-meaning-before-typed-facts",
+      compactMeaningResponsiveContract: "visible-desktop-sr-only-compact",
       relationshipContext: "durable",
       relationshipContextSource: "selected-dock-companions",
       focusClusterMode: "none",
@@ -2062,6 +2068,19 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         "--topology-node-popover-action-icon-border",
       topologyNodePopoverCompactBriefActionWidth: 65,
       topologyNodePopoverCompactBriefActionHeight: 32,
+      topologyNodePopoverCompactMeaningVisible: true,
+      topologyNodePopoverCompactMeaningText: "A core hub — 10 places depend on it",
+      topologyNodePopoverCompactMeaningContract: "plain-language-meaning-before-typed-facts",
+      topologyNodePopoverCompactMeaningResponsiveContract: "visible-desktop-sr-only-compact",
+      topologyNodePopoverCompactMeaningLevel: "core",
+      topologyNodePopoverCompactMeaningTextToken:
+        "--topology-node-popover-compact-meaning-text",
+      topologyNodePopoverCompactMeaningSizeToken:
+        "--topology-node-popover-compact-meaning-size",
+      topologyNodePopoverCompactMeaningLeadingToken:
+        "--topology-node-popover-compact-meaning-leading",
+      topologyNodePopoverCompactMeaningGapToken:
+        "--topology-node-popover-compact-meaning-gap",
       topologySelectedSkeletonCardRelationSummaryVisible: true,
       topologySelectedSkeletonCardRelationSummaryContract: "selected-card-direct-facts",
       topologySelectedSkeletonCardRelationSummarySurfaceToken:

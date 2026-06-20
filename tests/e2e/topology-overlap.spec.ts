@@ -311,28 +311,6 @@ async function visibleRelationLabelCardOverlaps(page: Page) {
   });
 }
 
-async function firstVisibleSkeletonCard(page: Page) {
-  const slug = await page.locator("[data-skeleton-card]").evaluateAll((els) => {
-    const visible = els.find((el) => {
-      const rect = el.getBoundingClientRect();
-      const style = window.getComputedStyle(el);
-      return (
-        el.getAttribute("data-surface-hidden") !== "true" &&
-        style.display !== "none" &&
-        style.visibility !== "hidden" &&
-        Number(style.opacity || "1") > 0.05 &&
-        rect.width > 0 &&
-        rect.height > 0
-      );
-    });
-    return visible?.getAttribute("data-slug") ?? null;
-  });
-  if (!slug) {
-    throw new Error("Relief should expose at least one visible skeleton card");
-  }
-  return page.locator(`[data-skeleton-card][data-slug="${slug}"]`).first();
-}
-
 async function firstVisibleDragClusterCard(page: Page) {
   const candidates = await page.locator("[data-skeleton-card]").evaluateAll((els) =>
     els
@@ -468,6 +446,50 @@ async function expectSelectedCardHiddenForCompactRail(page: Page, selectedSlug: 
     .first();
   await expect(selectedCard).toHaveAttribute("data-selected", "true");
   await expect(selectedCard).toHaveAttribute("data-surface-hidden", "true");
+}
+
+async function expectCompactMeaningContract(page: Page) {
+  const compactMeaning = page.getByTestId("topology-node-popover-compact-meaning");
+  await expect(compactMeaning).toHaveAttribute(
+    "data-compact-meaning-contract",
+    "plain-language-meaning-before-typed-facts",
+  );
+  await expect(compactMeaning).toHaveAttribute(
+    "data-compact-meaning-responsive-contract",
+    "visible-desktop-sr-only-compact",
+  );
+  await expect(compactMeaning).toHaveAttribute(
+    "data-compact-meaning-text-token",
+    "--topology-node-popover-compact-meaning-text",
+  );
+  await expect(compactMeaning).toHaveAttribute(
+    "data-compact-meaning-size-token",
+    "--topology-node-popover-compact-meaning-size",
+  );
+  await expect(compactMeaning).toHaveAttribute(
+    "data-compact-meaning-leading-token",
+    "--topology-node-popover-compact-meaning-leading",
+  );
+  await expect(compactMeaning).toHaveAttribute(
+    "data-compact-meaning-gap-token",
+    "--topology-node-popover-compact-meaning-gap",
+  );
+  await expect(compactMeaning).toHaveAttribute("data-compact-meaning-level", /core|support|leaf/);
+  await expect(compactMeaning).toContainText(/\S/);
+  await expect(compactMeaning).toBeVisible();
+  await expect(compactMeaning).toHaveClass(/line-clamp-1/);
+  await expect(compactMeaning).toHaveClass(
+    /text-\[length:var\(--topology-node-popover-compact-meaning-size\)\]/,
+  );
+  const compactMeaningClamp = await compactMeaning.evaluate((el) => {
+    const style = window.getComputedStyle(el);
+    return {
+      lineClamp: style.getPropertyValue("-webkit-line-clamp"),
+      overflowX: style.overflowX,
+    };
+  });
+  expect(compactMeaningClamp.lineClamp, "compact meaning should stay to one scan line").toBe("1");
+  expect(compactMeaningClamp.overflowX, "compact meaning overflow should be clipped").toBe("hidden");
 }
 
 test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async ({
@@ -2215,6 +2237,7 @@ for (const viewport of VIEWPORTS) {
       await expectSelectedCardRelationSummary(page, "domain:views");
     }
     await expect(page.getByTestId("topology-node-popover")).toBeVisible();
+    await expectCompactMeaningContract(page);
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
       "data-camera-motion-target-policy",
       "viewport-center",
@@ -3293,6 +3316,7 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
 
   const popover = page.getByTestId("topology-node-popover");
   await expect(popover).toBeVisible();
+  await expectCompactMeaningContract(page);
   await expect(popover).toHaveAttribute(
     "data-compact-handoff-contract",
     "selected-node-actions-visible",
@@ -4274,7 +4298,6 @@ test("Relief selected node expanded detail scrolls internally on phone", async (
     const rootRect = root.getBoundingClientRect();
     const listRect = list.getBoundingClientRect();
     const rowRect = row.getBoundingClientRect();
-    const routeRect = route?.getBoundingClientRect() ?? null;
     const footerRect = footer?.getBoundingClientRect() ?? null;
     const actionRailRect = actionRail?.getBoundingClientRect() ?? null;
     const visibleRowHeight = Math.max(
