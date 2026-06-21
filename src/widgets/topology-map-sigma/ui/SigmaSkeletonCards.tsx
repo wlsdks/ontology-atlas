@@ -865,6 +865,55 @@ function countRectPairOverlaps(
   return count;
 }
 
+function rectContains(
+  outer: { left: number; top: number; right: number; bottom: number },
+  inner: { left: number; top: number; right: number; bottom: number },
+): boolean {
+  return (
+    outer.left <= inner.left &&
+    outer.top <= inner.top &&
+    outer.right >= inner.right &&
+    outer.bottom >= inner.bottom
+  );
+}
+
+function countNonContainedRectPairOverlaps(
+  rects: ReadonlyArray<{
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    visualLeft?: number;
+    visualTop?: number;
+    visualRight?: number;
+    visualBottom?: number;
+  }>,
+  pad = 0,
+): number {
+  let count = 0;
+  for (let i = 0; i < rects.length; i += 1) {
+    for (let j = i + 1; j < rects.length; j += 1) {
+      const first = {
+        left: rects[i].visualLeft ?? rects[i].left,
+        top: rects[i].visualTop ?? rects[i].top,
+        right: rects[i].visualRight ?? rects[i].right,
+        bottom: rects[i].visualBottom ?? rects[i].bottom,
+      };
+      const second = {
+        left: rects[j].visualLeft ?? rects[j].left,
+        top: rects[j].visualTop ?? rects[j].top,
+        right: rects[j].visualRight ?? rects[j].right,
+        bottom: rects[j].visualBottom ?? rects[j].bottom,
+      };
+      if (rectContains(first, second) || rectContains(second, first)) {
+        continue;
+      }
+      if (rectsOverlap(first, second, pad)) count += 1;
+    }
+  }
+  return count;
+}
+
 function countRectSurfaceOverlaps(
   rects: ReadonlyArray<{ left: number; top: number; right: number; bottom: number }>,
   surfaces: ReadonlyArray<{ left: number; top: number; right: number; bottom: number }>,
@@ -947,6 +996,10 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
   top: number;
   right: number;
   bottom: number;
+  visualLeft: number;
+  visualTop: number;
+  visualRight: number;
+  visualBottom: number;
 }> {
   if (typeof document === 'undefined') return [];
   const fixedSurfaceRects: Array<{
@@ -954,6 +1007,10 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
     top: number;
     right: number;
     bottom: number;
+    visualLeft: number;
+    visualTop: number;
+    visualRight: number;
+    visualBottom: number;
   }> = [];
   const analysisPanel = document.querySelector<HTMLElement>(
     '[data-testid="topology-analysis-panel"]',
@@ -1016,6 +1073,10 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
           rect.bottom -
           containerRect.top +
           (isAnalysisPanel ? ANALYSIS_PANEL_BLOCK_END_PAD : COLLISION_PAD),
+        visualLeft: rect.left - containerRect.left,
+        visualTop: rect.top - containerRect.top,
+        visualRight: rect.right - containerRect.left,
+        visualBottom: rect.bottom - containerRect.top,
       });
     });
 
@@ -4176,7 +4237,8 @@ export function SigmaSkeletonCards({
       residualOverlapRects,
       OVERVIEW_COLLISION_PAD,
     );
-    const fixedSurfaceOverlapCount = countRectPairOverlaps(fixedSurfaceRects);
+    const fixedSurfaceOverlapCount =
+      countNonContainedRectPairOverlaps(fixedSurfaceRects);
     const cardFixedSurfaceOverlapCount = countRectSurfaceOverlaps(
       residualOverlapRects,
       fixedSurfaceRects,
@@ -4186,6 +4248,8 @@ export function SigmaSkeletonCards({
     container.dataset.residualOverlapReadPolicy = 'reuse-visible-card-rect-cache';
     container.dataset.visibleCardOverlapCount = String(visibleCardOverlapCount);
     container.dataset.fixedSurfaceOverlapCount = String(fixedSurfaceOverlapCount);
+    container.dataset.fixedSurfaceOverlapPolicy =
+      'ignore-contained-structural-surfaces';
     container.dataset.cardFixedSurfaceOverlapCount = String(
       cardFixedSurfaceOverlapCount,
     );

@@ -663,6 +663,14 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-fixed-surface-event-reposition-policy",
     "raf-after-fixed-surface-event",
   );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-fixed-surface-overlap-policy",
+    "ignore-contained-structural-surfaces",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-fixed-surface-overlap-count",
+    "0",
+  );
   expectCardsClear(
     await visibleCardRects(page),
     MBP14_FULLSCREEN,
@@ -1390,8 +1398,13 @@ for (const viewport of VIEWPORTS) {
       "data-residual-overlap-read-policy",
       "reuse-visible-card-rect-cache",
     );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-fixed-surface-overlap-policy",
+      "ignore-contained-structural-surfaces",
+    );
     await expect(skeletonCards).toHaveAttribute("data-residual-overlap-clear", "true");
     await expect(skeletonCards).toHaveAttribute("data-visible-card-overlap-count", "0");
+    await expect(skeletonCards).toHaveAttribute("data-fixed-surface-overlap-count", "0");
     await expect(skeletonCards).toHaveAttribute("data-card-fixed-surface-overlap-count", "0");
     if ((await relationButton.count()) === 0) {
       const suppressedLabel = page.locator("[data-relation-label-button]").first();
@@ -2085,11 +2098,19 @@ for (const viewport of VIEWPORTS) {
       "reuse-visible-card-rect-cache",
     );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-overlap-policy",
+      "ignore-contained-structural-surfaces",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-residual-overlap-clear",
       "true",
     );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-visible-card-overlap-count",
+      "0",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-overlap-count",
       "0",
     );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(

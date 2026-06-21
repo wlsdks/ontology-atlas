@@ -3651,6 +3651,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-residual-overlap-read-policy",
           "reuse-visible-card-rect-cache",
         );
+        expect(layer).toHaveAttribute(
+          "data-fixed-surface-overlap-policy",
+          "ignore-contained-structural-surfaces",
+        );
         expect(layer).toHaveAttribute("data-residual-overlap-clear", "true");
         expect(layer).toHaveAttribute(
           "data-card-placement-frame-rect-cache-contract",
