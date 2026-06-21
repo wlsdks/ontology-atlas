@@ -3078,8 +3078,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-label-density", "focus-token");
     expect(labelHit).toHaveAttribute(
       "data-relation-label-visible-count-policy",
-      "selected-card-summary-owns-count",
+      "selected-relation-shows-count-and-evidence",
     );
+    expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains ×1 · S2");
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-selected-surface-token",
       "--topology-relation-label-selected-surface",
@@ -3110,7 +3111,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-visible-count-policy",
-      "selected-card-summary-owns-count",
+      "selected-relation-shows-count-and-evidence",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-visible-text",
+      "contains ×1 · S2",
     );
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-text-size-token",
@@ -3201,6 +3206,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "typed-fact-label-stays-readable",
     );
     expect(typeText).toHaveTextContent("contains");
+    expect(typeText).toHaveTextContent("×1");
+    expect(typeText).toHaveTextContent("S2");
     expect(typeText).toHaveClass("shrink-0");
     expect(typeText).toHaveAttribute("data-relation-label-segment", "type");
     expect(typeText).not.toHaveClass("border-r");
@@ -3208,7 +3215,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-label-type-text-contract",
       "typed-fact-label-stays-readable",
     );
-    expect(selectedOverlayTypeText).toHaveTextContent("contains");
+    expect(selectedOverlayTypeText).toHaveTextContent("contains ×1 · S2");
     expect(selectedOverlayTypeText).toHaveClass("shrink-0");
     expect(selectedOverlayTypeText).toHaveAttribute("data-relation-label-segment", "type");
     expect(selectedOverlayTypeText).not.toHaveClass("border-r");

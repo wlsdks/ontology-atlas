@@ -1697,11 +1697,11 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(relationButton).toHaveAttribute(
       "data-relation-label-visible-count-policy",
-      "selected-card-summary-owns-count",
+      "selected-relation-shows-count-and-evidence",
     );
-    await expect(relationButton).not.toHaveAttribute(
+    await expect(relationButton).toHaveAttribute(
       "data-relation-label-visible-text",
-      /\d/,
+      /×\d+ · (S\d+|S9\+|A|R)/,
     );
     const relationTypeTextFit = await relationTypeText.evaluate(
       (element) => element.scrollWidth <= element.clientWidth + 1,
