@@ -185,6 +185,14 @@ test("Relief dogfood graph exposes scale and bounded visible-card rect reads", a
     visibleRectReads: Number(el.getAttribute("data-visible-card-rect-read-count") ?? "0"),
     hiddenRectSkips: Number(el.getAttribute("data-visible-card-hidden-rect-skip-count") ?? "0"),
     cacheSeedCount: Number(el.getAttribute("data-connector-rect-cache-seed-count") ?? "0"),
+    connectorLabelPassMs: Number(
+      el.getAttribute("data-reposition-pass-connector-label-ms") ?? "NaN",
+    ),
+    connectorRectCacheFrameFallbackContract:
+      el.getAttribute("data-connector-rect-cache-frame-fallback-contract") ?? "",
+    connectorRectCacheReadCount: Number(
+      el.getAttribute("data-connector-rect-cache-read-count") ?? "NaN",
+    ),
     finalVisibleCountPolicy: el.getAttribute("data-final-visible-count-policy") ?? "",
     selectedDockVisibilityPolicy:
       el.getAttribute("data-selected-dock-visibility-policy") ?? "",
@@ -205,6 +213,22 @@ test("Relief dogfood graph exposes scale and bounded visible-card rect reads", a
   expect(proof.supportRailOverlapReadPolicy, "support rail overlap pass should reuse visible rects").toBe(
     "reuse-visible-card-rect-cache",
   );
+  expect(
+    proof.connectorRectCacheFrameFallbackContract,
+    "connector rect fallback should reuse same-frame card placement rects before any DOM read",
+  ).toBe("reuse-card-placement-frame-rects-before-dom-read");
+  expect(
+    proof.connectorRectCacheReadCount,
+    "connector label pass should not fall back to direct DOM rect reads",
+  ).toBe(0);
+  expect(
+    Number.isFinite(proof.connectorLabelPassMs),
+    "connector label pass timing should be exposed for regression proof",
+  ).toBe(true);
+  expect(
+    proof.connectorLabelPassMs,
+    "connector label pass should stay below the 3ms regression threshold at 1920 focus",
+  ).toBeLessThan(3);
   expect(proof.visibleRectReads, "rect reads should be bounded by currently visible cards").toBeLessThanOrEqual(
     proof.visibleCount,
   );
