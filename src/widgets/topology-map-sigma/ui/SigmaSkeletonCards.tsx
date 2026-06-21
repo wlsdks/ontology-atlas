@@ -1667,7 +1667,9 @@ function restoreVisibleCardsFromFixedSurfaces(
       rect.bottom > containerRect.height - SAFE_VIEWPORT_MARGIN;
     if (!collidesWithFixedSurface && !outsideViewport) {
       occupiedRects.push(rect);
-      delete el.dataset.fixedSurfaceRestore;
+      if (el.dataset.fixedSurfaceRestore !== undefined) {
+        delete el.dataset.fixedSurfaceRestore;
+      }
       continue;
     }
     const shift = clampRectToViewportAndFixedSurfaces({
@@ -1702,6 +1704,43 @@ function restoreVisibleCardsFromFixedSurfaces(
     el.dataset.fixedSurfaceRestore = 'hidden-under-fixed-surface';
   }
   return restored;
+}
+
+function resolveFixedSurfaceRestoreNoop({
+  orderedEls,
+  containerRect,
+  fixedSurfaceRects,
+  readPlacedCardRect,
+}: {
+  orderedEls: readonly HTMLElement[];
+  containerRect: DOMRect;
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>;
+  readPlacedCardRect?: (el: HTMLElement) => ConnectorRect;
+}): { checkedCount: number; skip: boolean } {
+  if (!readPlacedCardRect) {
+    return { checkedCount: 0, skip: false };
+  }
+  let checkedCount = 0;
+  for (const el of orderedEls) {
+    if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+    checkedCount += 1;
+    if (el.dataset.fixedSurfaceRestore !== undefined) {
+      return { checkedCount, skip: false };
+    }
+    const rect = readPlacedCardRect(el);
+    const collidesWithFixedSurface = fixedSurfaceRects.some((surface) =>
+      rectsOverlap(rect, surface),
+    );
+    const outsideViewport =
+      rect.left < SAFE_VIEWPORT_MARGIN ||
+      rect.top < SAFE_VIEWPORT_MARGIN ||
+      rect.right > containerRect.width - SAFE_VIEWPORT_MARGIN ||
+      rect.bottom > containerRect.height - SAFE_VIEWPORT_MARGIN;
+    if (collidesWithFixedSurface || outsideViewport) {
+      return { checkedCount, skip: false };
+    }
+  }
+  return { checkedCount, skip: true };
 }
 
 function suppressLiveCardsOverlappingFixedSurfaces(
@@ -3773,23 +3812,44 @@ export function SigmaSkeletonCards({
       measureRepositionNow() - cardPlacementOverviewPostDomainStartedAt,
     );
     const cardPlacementFixedRestoreStartedAt = measureRepositionNow();
-    const fixedSurfaceRestoredCount = restoreVisibleCardsFromFixedSurfaces(
-      orderedEls,
-      containerRect,
-      fixedSurfaceRects,
-      domWriteStats,
-      selectedBlockingSurfaceActive ? undefined : readCardPlacementFrameRect,
-      (el, rect) => {
-        cardPlacementFrameRectCache.set(el, rect);
-      },
-    );
+    const readFixedSurfaceRestoreFrameRect = selectedBlockingSurfaceActive
+      ? undefined
+      : readCardPlacementFrameRect;
+    const fixedSurfaceRestoreNoop = selectedBlockingSurfaceActive
+      ? { checkedCount: 0, skip: false }
+      : resolveFixedSurfaceRestoreNoop({
+          containerRect,
+          fixedSurfaceRects,
+          orderedEls,
+          readPlacedCardRect: readFixedSurfaceRestoreFrameRect,
+        });
+    const fixedSurfaceRestoredCount = fixedSurfaceRestoreNoop.skip
+      ? 0
+      : restoreVisibleCardsFromFixedSurfaces(
+          orderedEls,
+          containerRect,
+          fixedSurfaceRects,
+          domWriteStats,
+          readFixedSurfaceRestoreFrameRect,
+          (el, rect) => {
+            cardPlacementFrameRectCache.set(el, rect);
+          },
+        );
     container.dataset.fixedSurfaceRestoreContract =
       'visible-cards-shift-or-hide-after-drag-release';
     container.dataset.fixedSurfaceRestoreReadPolicy =
       'reuse-card-placement-frame-rects';
+    container.dataset.fixedSurfaceRestoreNoopPolicy =
+      'preflight-frame-rects-before-restore-loop';
+    container.dataset.fixedSurfaceRestoreNoopSkipped = fixedSurfaceRestoreNoop.skip
+      ? 'true'
+      : 'false';
+    container.dataset.fixedSurfaceRestoreNoopCheckedCount = String(
+      fixedSurfaceRestoreNoop.checkedCount,
+    );
     container.dataset.fixedSurfaceRestoredCount = String(fixedSurfaceRestoredCount);
     const fixedSurfaceLiveSuppression =
-      activeDragCluster === null
+      activeDragCluster === null && !fixedSurfaceRestoreNoop.skip
         ? suppressLiveCardsOverlappingFixedSurfaces(
             orderedEls,
             containerRect,
@@ -3803,7 +3863,9 @@ export function SigmaSkeletonCards({
     container.dataset.fixedSurfaceLiveSuppressionContract =
       'final-live-dom-rects-hide-hud-overlaps';
     container.dataset.fixedSurfaceLiveSuppressionReadPolicy =
-      'reuse-card-placement-frame-rects-before-dom-read';
+      fixedSurfaceRestoreNoop.skip
+        ? 'skipped-after-fixed-restore-noop-preflight'
+        : 'reuse-card-placement-frame-rects-before-dom-read';
     container.dataset.fixedSurfaceLiveSuppressedCount = String(
       fixedSurfaceLiveSuppression.hidden,
     );

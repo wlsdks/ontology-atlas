@@ -254,7 +254,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(connectorReadCount).toBe(0);
     expect(layer).toHaveAttribute(
       "data-fixed-surface-live-suppression-read-policy",
-      "reuse-card-placement-frame-rects-before-dom-read",
+      expect.stringMatching(
+        /^(reuse-card-placement-frame-rects-before-dom-read|skipped-after-fixed-restore-noop-preflight)$/,
+      ),
     );
     expect(layer).toHaveAttribute(
       "data-fixed-surface-live-suppression-read-count",
@@ -303,6 +305,18 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-fixed-surface-restore-read-policy",
       "reuse-card-placement-frame-rects",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-restore-noop-policy",
+      "preflight-frame-rects-before-restore-loop",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-restore-noop-skipped",
+      expect.stringMatching(/^(true|false)$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-restore-noop-checked-count",
+      expect.stringMatching(/^\d+$/),
     );
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-card-placement-subphase-contract",
