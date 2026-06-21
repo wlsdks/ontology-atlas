@@ -1350,6 +1350,7 @@ function separateOverviewDomainCards(
   containerRect: DOMRect,
   fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>,
   readCardPlacementFrameRect: (el: HTMLElement) => ConnectorRect,
+  onPlacedCardRectChange?: (el: HTMLElement, rect: ConnectorRect) => void,
 ): number {
   const records: Array<{ el: HTMLElement; rect: ConnectorRect }> = [];
   for (const el of orderedEls) {
@@ -1417,6 +1418,7 @@ function separateOverviewDomainCards(
     if (clampedDy !== 0) {
       record.el.style.transform = `${record.el.style.transform} translate(0, ${clampedDy}px)`;
       record.el.dataset.overviewDomainSeparated = 'true';
+      onPlacedCardRectChange?.(record.el, acceptedRect);
       separated += 1;
     }
     accepted.push(acceptedRect);
@@ -3481,10 +3483,58 @@ export function SigmaSkeletonCards({
           containerRect,
           fixedSurfaceRects,
           readCardPlacementFrameRect,
+          (el, rect) => {
+            cardPlacementFrameRectCache.set(el, rect);
+          },
         )
       : 0;
     container.dataset.overviewDomainSeparatedCount = String(
       overviewDomainSeparatedCount,
+    );
+    let overviewPostDomainOverlapHiddenCount = 0;
+    let overviewPostDomainOverlapReadCount = 0;
+    if (!ego) {
+      const accepted: ConnectorRect[] = [];
+      const overviewCollisionRank = (el: HTMLElement) => {
+        const tier = Number(el.dataset.tier ?? '3');
+        return tier === 3 && !el.dataset.dockParent ? 1.5 : tier;
+      };
+      const ordered = overviewEls.slice().sort((a, b) => {
+        const rankA = overviewCollisionRank(a);
+        const rankB = overviewCollisionRank(b);
+        if (rankA !== rankB) return rankA - rankB;
+        return Number(a.dataset.layoutY ?? 0) - Number(b.dataset.layoutY ?? 0);
+      });
+      for (const el of ordered) {
+        delete el.dataset.overviewPostDomainOverlapHidden;
+        if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+        const box = el.getBoundingClientRect();
+        overviewPostDomainOverlapReadCount += 1;
+        const rect = {
+          left: box.left - containerRect.left,
+          top: box.top - containerRect.top,
+          right: box.right - containerRect.left,
+          bottom: box.bottom - containerRect.top,
+        };
+        if (
+          accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD))
+        ) {
+          setSkeletonStyleValue(el, 'opacity', '0', domWriteStats);
+          setSkeletonStyleValue(el, 'pointerEvents', 'none', domWriteStats);
+          el.dataset.overviewPostDomainOverlapHidden = 'true';
+          overviewPostDomainOverlapHiddenCount += 1;
+          continue;
+        }
+        accepted.push(rect);
+      }
+    }
+    container.dataset.overviewPostDomainOverlapPolicy =
+      'final-dom-rects-hide-lower-priority-overlaps';
+    container.dataset.overviewPostDomainOverlapHiddenCount = String(
+      overviewPostDomainOverlapHiddenCount,
+    );
+    container.dataset.overviewPostDomainOverlapReadCount = String(
+      overviewPostDomainOverlapReadCount,
     );
     const cardPlacementOverviewDomainDurationMs = Math.max(
       0,
