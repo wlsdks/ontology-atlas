@@ -907,6 +907,11 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyRelationLabelGeometryExpectedCount: 1,
         topologyRelationLabelGeometryReadyCount: 1,
         topologyRelationLabelGeometryPendingCount: 0,
+        topologySelectedBlockingSurfaceOverlapActive: true,
+        topologyVisibleCardRectReadPolicy: "frame-state-no-computed-style",
+        topologyVisibleCardSelectedSurfaceRectPolicy:
+          "live-rects-for-postprocess-overlap-safety",
+        topologyVisibleCardRectReadCount: 10,
         topologyConnectorDomIndexContract: "reuse-card-index",
         topologyConnectorRectCacheContract: "frame-local-card-rect-cache",
         topologyConnectorRectCacheFrameFallbackContract:
@@ -994,6 +999,15 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     budgetMs: 3,
     maxPassMs: 0.42,
     slowestPass: "card-placement",
+  });
+  assert.deepEqual(evidence.visibleCardSelectedSurfaceRectProof, {
+    proof: "topology-visible-card-selected-surface-rect-policy",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    selectedBlockingSurfaceOverlapActive: true,
+    readPolicy: "frame-state-no-computed-style",
+    selectedSurfaceRectPolicy: "live-rects-for-postprocess-overlap-safety",
+    readCount: 10,
   });
   assert.deepEqual(evidence.residualOverlapProof, {
     proof: "topology-residual-overlap-clear",

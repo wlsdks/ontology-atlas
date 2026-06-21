@@ -4151,6 +4151,9 @@ export function SigmaSkeletonCards({
       relationLabelCardBlockers.length,
     );
     container.dataset.visibleCardRectReadPolicy = 'frame-state-no-computed-style';
+    container.dataset.visibleCardSelectedSurfaceRectPolicy = selectedBlockingSurfaceActive
+      ? 'live-rects-for-postprocess-overlap-safety'
+      : 'reuse-card-placement-frame-rects-before-dom-read';
     container.dataset.visibleCardStateReadPolicy = visibleCardStateReadPolicy;
     container.dataset.visibleCardRectReadCount = String(visibleCardRectReadCount);
     container.dataset.visibleCardHiddenRectSkipCount = String(

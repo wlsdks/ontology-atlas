@@ -4157,6 +4157,13 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView Relief relation label blocker contract was ${payload.markers.topologyRelationLabelBlockerContract || "missing"}`;
       }
       if (
+        payload.markers.topologySelectedBlockingSurfaceOverlapActive === true &&
+        payload.markers.topologyVisibleCardSelectedSurfaceRectPolicy !==
+          "live-rects-for-postprocess-overlap-safety"
+      ) {
+        return `WebView Relief selected-surface visible-card rect policy was ${payload.markers.topologyVisibleCardSelectedSurfaceRectPolicy || "missing"}`;
+      }
+      if (
         payload.markers.topologyRelationLabelBlockerSource &&
         !["visibility-pass", "fallback-visibility-pass"].includes(
           payload.markers.topologyRelationLabelBlockerSource,
@@ -6512,6 +6519,29 @@ export function buildWebviewEvidencePayload(
         slowestPass: markers.topologyRepositionPassSlowest ?? null,
       }
       : null;
+  const visibleCardSelectedSurfaceRectProof =
+    markers.topologyVisibleCardSelectedSurfaceRectPolicy
+      ? {
+        proof: "topology-visible-card-selected-surface-rect-policy",
+        status:
+          markers.topologySelectedBlockingSurfaceOverlapActive === true
+            ? markers.topologyVisibleCardSelectedSurfaceRectPolicy ===
+              "live-rects-for-postprocess-overlap-safety"
+              ? "proved"
+              : "incomplete"
+            : markers.topologyVisibleCardSelectedSurfaceRectPolicy ===
+                "reuse-card-placement-frame-rects-before-dom-read"
+              ? "proved"
+              : "incomplete",
+        route: evidenceRoute(payload?.href),
+        selectedBlockingSurfaceOverlapActive:
+          markers.topologySelectedBlockingSurfaceOverlapActive ?? null,
+        readPolicy: markers.topologyVisibleCardRectReadPolicy ?? null,
+        selectedSurfaceRectPolicy:
+          markers.topologyVisibleCardSelectedSurfaceRectPolicy ?? null,
+        readCount: markerNumber(markers, "topologyVisibleCardRectReadCount"),
+      }
+      : null;
   const residualOverlapProof =
     markers.topologyRelief === true || markers.topologySkeletonCardsActive === true
       ? {
@@ -6696,6 +6726,7 @@ export function buildWebviewEvidencePayload(
     relationLabelFrameGeometryProof,
     connectorCacheProof,
     connectorLabelPassProof,
+    visibleCardSelectedSurfaceRectProof,
     residualOverlapProof,
     nodePopoverExpandedProof,
     selectedFocusDimProof,

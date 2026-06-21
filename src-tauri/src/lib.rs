@@ -4100,6 +4100,10 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-final-visible-count-policy") || "",
                                   topologySupportRailOverlapReadPolicy:
                                     skeletonCardsLayer?.getAttribute("data-support-rail-overlap-read-policy") || "",
+                                  topologySupportRailOverlapActive:
+                                    skeletonCardsLayer?.getAttribute("data-support-rail-overlap-active") === "true",
+                                  topologySelectedBlockingSurfaceOverlapActive:
+                                    skeletonCardsLayer?.getAttribute("data-selected-blocking-surface-overlap-active") === "true",
                                   topologyFixedSurfaceLiveSuppressionReadPolicy:
                                     skeletonCardsLayer?.getAttribute("data-fixed-surface-live-suppression-read-policy") || "",
                                   topologyFixedSurfaceLiveSuppressionReadCount:
@@ -4110,6 +4114,8 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-visible-card-state-cache-contract") || "",
                                   topologyVisibleCardRectReadPolicy:
                                     skeletonCardsLayer?.getAttribute("data-visible-card-rect-read-policy") || "",
+                                  topologyVisibleCardSelectedSurfaceRectPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-visible-card-selected-surface-rect-policy") || "",
                                   topologyVisibleCardStateReadPolicy:
                                     skeletonCardsLayer?.getAttribute("data-visible-card-state-read-policy") || "",
                                   topologyVisibleCardRectReadCount:

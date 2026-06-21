@@ -3640,6 +3640,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "frame-state-no-computed-style",
         );
         expect(layer).toHaveAttribute(
+          "data-visible-card-selected-surface-rect-policy",
+          "reuse-card-placement-frame-rects-before-dom-read",
+        );
+        expect(layer).toHaveAttribute(
           "data-card-placement-frame-rect-cache-contract",
           "reuse-pass1-card-rects-for-visibility",
         );

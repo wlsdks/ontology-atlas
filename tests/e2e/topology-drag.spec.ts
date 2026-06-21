@@ -183,6 +183,8 @@ test("Relief dogfood graph exposes scale and bounded visible-card rect reads", a
     visibleCount: Number(el.getAttribute("data-visible-card-count") ?? "0"),
     totalCount: Number(el.getAttribute("data-total-card-count") ?? "0"),
     visibleRectReads: Number(el.getAttribute("data-visible-card-rect-read-count") ?? "0"),
+    visibleSelectedSurfaceRectPolicy:
+      el.getAttribute("data-visible-card-selected-surface-rect-policy") ?? "",
     hiddenRectSkips: Number(el.getAttribute("data-visible-card-hidden-rect-skip-count") ?? "0"),
     cacheSeedCount: Number(el.getAttribute("data-connector-rect-cache-seed-count") ?? "0"),
     connectorLabelPassMs: Number(
@@ -232,6 +234,10 @@ test("Relief dogfood graph exposes scale and bounded visible-card rect reads", a
   expect(proof.visibleRectReads, "rect reads should be bounded by currently visible cards").toBeLessThanOrEqual(
     proof.visibleCount,
   );
+  expect(
+    proof.visibleSelectedSurfaceRectPolicy,
+    "selected focus surfaces should use current postprocess geometry for overlap safety",
+  ).toBe("live-rects-for-postprocess-overlap-safety");
   expect(proof.cacheSeedCount, "connector rect cache should only seed visible cards").toBeLessThanOrEqual(
     proof.visibleCount,
   );
