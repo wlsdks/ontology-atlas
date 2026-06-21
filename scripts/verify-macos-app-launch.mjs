@@ -6247,6 +6247,8 @@ function markerNumber(markers, key) {
   return Number.isFinite(value) ? value : null;
 }
 
+const TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS = 3;
+
 function extractBackdropAlpha(background) {
   const value = String(background || "");
   const alpha = Number(
@@ -6483,6 +6485,22 @@ export function buildWebviewEvidencePayload(
         visibleCardClippedCount: markerNumber(markers, "topologyCardClippedCount"),
       }
       : null;
+  const connectorLabelPassProof =
+    markerNumber(markers, "topologyRepositionPassConnectorLabelMs") !== null
+      ? {
+        proof: "topology-connector-label-pass-budget",
+        status:
+          markerNumber(markers, "topologyRepositionPassConnectorLabelMs") <
+          TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        passMs: markerNumber(markers, "topologyRepositionPassConnectorLabelMs"),
+        budgetMs: TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS,
+        maxPassMs: markerNumber(markers, "topologyRepositionMaxPassConnectorLabelMs"),
+        slowestPass: markers.topologyRepositionPassSlowest ?? null,
+      }
+      : null;
   const residualOverlapProof =
     markers.topologyRelief === true || markers.topologySkeletonCardsActive === true
       ? {
@@ -6653,6 +6671,7 @@ export function buildWebviewEvidencePayload(
     relationLabelHandoffProof,
     relationLabelFrameGeometryProof,
     connectorCacheProof,
+    connectorLabelPassProof,
     residualOverlapProof,
     nodePopoverExpandedProof,
     selectedFocusDimProof,

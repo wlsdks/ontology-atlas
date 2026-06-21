@@ -916,6 +916,9 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyConnectorRectCacheSeedCount: 6,
         topologyConnectorRectCacheReadCount: 0,
         topologyConnectorRectCacheHitCount: 26,
+        topologyRepositionPassConnectorLabelMs: 0.18,
+        topologyRepositionMaxPassConnectorLabelMs: 0.42,
+        topologyRepositionPassSlowest: "card-placement",
         topologyRelief: true,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
@@ -979,6 +982,15 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     hitCount: 26,
     visibleCardClippedCount: 0,
   });
+  assert.deepEqual(evidence.connectorLabelPassProof, {
+    proof: "topology-connector-label-pass-budget",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    passMs: 0.18,
+    budgetMs: 3,
+    maxPassMs: 0.42,
+    slowestPass: "card-placement",
+  });
   assert.deepEqual(evidence.residualOverlapProof, {
     proof: "topology-residual-overlap-clear",
     status: "proved",
@@ -989,6 +1001,30 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     cardFixedSurfaceOverlapCount: 0,
     supportRailOverlapReadPolicy: "reuse-visible-card-rect-cache",
     dragSettleOverlapReadPolicy: "reuse-visible-card-rect-cache",
+  });
+});
+
+test("WebView evidence flags slow connector label pass budget regressions", () => {
+  const evidence = verifier.buildWebviewEvidencePayload(
+    {
+      href: "tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus",
+      markers: {
+        topologyRepositionPassConnectorLabelMs: 3.2,
+        topologyRepositionMaxPassConnectorLabelMs: 3.2,
+        topologyRepositionPassSlowest: "connector-label",
+      },
+    },
+    { capturedAt: "2026-06-17T12:00:00.000Z" },
+  );
+
+  assert.deepEqual(evidence.connectorLabelPassProof, {
+    proof: "topology-connector-label-pass-budget",
+    status: "incomplete",
+    route: "/ko/topology/?p=domain%3Aviews&mode=focus",
+    passMs: 3.2,
+    budgetMs: 3,
+    maxPassMs: 3.2,
+    slowestPass: "connector-label",
   });
 });
 
