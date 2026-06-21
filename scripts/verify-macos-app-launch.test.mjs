@@ -30,6 +30,7 @@ import {
   validateSelectedRelationCardAttentionLane,
   validateSelectedRelationCardDensityContract,
   validateRelationLabelFrameGeometryMarkers,
+  validateTopologyConnectorCacheMarkers,
   validateSelectedRelationLabelCompactMarkers,
   topologyDragCompanionVectorTolerance,
   validateAccessibilityWindowRows,
@@ -906,6 +907,15 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyRelationLabelGeometryExpectedCount: 1,
         topologyRelationLabelGeometryReadyCount: 1,
         topologyRelationLabelGeometryPendingCount: 0,
+        topologyConnectorDomIndexContract: "reuse-card-index",
+        topologyConnectorRectCacheContract: "frame-local-card-rect-cache",
+        topologyConnectorRectCacheFrameFallbackContract:
+          "reuse-card-placement-frame-rects-before-dom-read",
+        topologyConnectorRectCacheAccounting: "reads-plus-hits",
+        topologyConnectorRectCacheSize: 7,
+        topologyConnectorRectCacheSeedCount: 6,
+        topologyConnectorRectCacheReadCount: 0,
+        topologyConnectorRectCacheHitCount: 26,
       },
     },
     { capturedAt: "2026-06-17T12:00:00.000Z" },
@@ -947,6 +957,19 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     expected: 1,
     ready: 1,
     pending: 0,
+  });
+  assert.deepEqual(evidence.connectorCacheProof, {
+    proof: "topology-connector-cache-frame-fallback",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    domIndexContract: "reuse-card-index",
+    cacheContract: "frame-local-card-rect-cache",
+    frameFallbackContract: "reuse-card-placement-frame-rects-before-dom-read",
+    accounting: "reads-plus-hits",
+    size: 7,
+    seedCount: 6,
+    readCount: 0,
+    hitCount: 26,
   });
 });
 
@@ -9856,6 +9879,42 @@ test("relation label frame geometry markers require after-render ready counts", 
       topologyRelationLabelGeometryPendingCount: 1,
     }),
     /pending labels/,
+  );
+});
+
+test("topology connector cache markers require frame fallback with zero DOM reads", () => {
+  const markers = {
+    topologyConnectorDomIndexContract: "reuse-card-index",
+    topologyConnectorRectCacheContract: "frame-local-card-rect-cache",
+    topologyConnectorRectCacheFrameFallbackContract:
+      "reuse-card-placement-frame-rects-before-dom-read",
+    topologyConnectorRectCacheAccounting: "reads-plus-hits",
+    topologyConnectorRectCacheSize: 7,
+    topologyConnectorRectCacheReadCount: 0,
+    topologyConnectorRectCacheHitCount: 26,
+  };
+
+  assert.equal(validateTopologyConnectorCacheMarkers(markers), null);
+  assert.match(
+    validateTopologyConnectorCacheMarkers({
+      ...markers,
+      topologyConnectorRectCacheFrameFallbackContract: "direct-dom-read",
+    }),
+    /frame fallback contract/,
+  );
+  assert.match(
+    validateTopologyConnectorCacheMarkers({
+      ...markers,
+      topologyConnectorRectCacheReadCount: 1,
+    }),
+    /connector rect cache proof/,
+  );
+  assert.match(
+    validateTopologyConnectorCacheMarkers({
+      ...markers,
+      topologyConnectorRectCacheHitCount: 0,
+    }),
+    /connector rect cache proof/,
   );
 });
 

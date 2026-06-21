@@ -1537,6 +1537,42 @@ export function validateRelationLabelFrameGeometryMarkers(markers) {
   return null;
 }
 
+export function validateTopologyConnectorCacheMarkers(markers) {
+  if (markers?.topologyConnectorDomIndexContract !== "reuse-card-index") {
+    return `WebView Relief connector DOM index contract was ${markers?.topologyConnectorDomIndexContract || "missing"}`;
+  }
+  if (markers?.topologyConnectorRectCacheContract !== "frame-local-card-rect-cache") {
+    return `WebView Relief connector rect cache contract was ${markers?.topologyConnectorRectCacheContract || "missing"}`;
+  }
+  if (
+    markers?.topologyConnectorRectCacheFrameFallbackContract !==
+    "reuse-card-placement-frame-rects-before-dom-read"
+  ) {
+    return `WebView Relief connector rect cache frame fallback contract was ${markers?.topologyConnectorRectCacheFrameFallbackContract || "missing"}`;
+  }
+  if (markers?.topologyConnectorRectCacheAccounting !== "reads-plus-hits") {
+    return `WebView Relief connector rect cache accounting was ${markers?.topologyConnectorRectCacheAccounting || "missing"}`;
+  }
+  const connectorRectCacheSize = Number(markers?.topologyConnectorRectCacheSize || 0);
+  const connectorRectCacheReadCount = Number(
+    markers?.topologyConnectorRectCacheReadCount || 0,
+  );
+  const connectorRectCacheHitCount = Number(
+    markers?.topologyConnectorRectCacheHitCount || 0,
+  );
+  if (
+    !Number.isFinite(connectorRectCacheSize) ||
+    !Number.isFinite(connectorRectCacheReadCount) ||
+    !Number.isFinite(connectorRectCacheHitCount) ||
+    connectorRectCacheSize < 2 ||
+    connectorRectCacheReadCount !== 0 ||
+    connectorRectCacheHitCount < 1
+  ) {
+    return `WebView Relief connector rect cache proof was incomplete (${connectorRectCacheSize} size / ${connectorRectCacheReadCount} reads / ${connectorRectCacheHitCount} hits)`;
+  }
+  return null;
+}
+
 export function validateSelectedRelationCardAttentionLane(markers, width) {
   if (markers?.topologySelectedRelationCardDockContract !== "right-compact-relation-rail") {
     return `WebView Relief selected relation card dock contract was ${markers?.topologySelectedRelationCardDockContract || "missing"}`;
@@ -4104,38 +4140,8 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyDockDragSnapshotContract !== "single-pass-card-rect-read") {
         return `WebView Relief dock drag snapshot contract was ${payload.markers.topologyDockDragSnapshotContract || "missing"}`;
       }
-      if (payload.markers.topologyConnectorDomIndexContract !== "reuse-card-index") {
-        return `WebView Relief connector DOM index contract was ${payload.markers.topologyConnectorDomIndexContract || "missing"}`;
-      }
-      if (payload.markers.topologyConnectorRectCacheContract !== "frame-local-card-rect-cache") {
-        return `WebView Relief connector rect cache contract was ${payload.markers.topologyConnectorRectCacheContract || "missing"}`;
-      }
-      if (
-        payload.markers.topologyConnectorRectCacheFrameFallbackContract !==
-        "reuse-card-placement-frame-rects-before-dom-read"
-      ) {
-        return `WebView Relief connector rect cache frame fallback contract was ${payload.markers.topologyConnectorRectCacheFrameFallbackContract || "missing"}`;
-      }
-      if (payload.markers.topologyConnectorRectCacheAccounting !== "reads-plus-hits") {
-        return `WebView Relief connector rect cache accounting was ${payload.markers.topologyConnectorRectCacheAccounting || "missing"}`;
-      }
-      const connectorRectCacheSize = Number(payload.markers.topologyConnectorRectCacheSize || 0);
-      const connectorRectCacheReadCount = Number(
-        payload.markers.topologyConnectorRectCacheReadCount || 0,
-      );
-      const connectorRectCacheHitCount = Number(
-        payload.markers.topologyConnectorRectCacheHitCount || 0,
-      );
-      if (
-        !Number.isFinite(connectorRectCacheSize) ||
-        !Number.isFinite(connectorRectCacheReadCount) ||
-        !Number.isFinite(connectorRectCacheHitCount) ||
-        connectorRectCacheSize < 2 ||
-        connectorRectCacheReadCount !== 0 ||
-        connectorRectCacheHitCount < 1
-      ) {
-        return `WebView Relief connector rect cache proof was incomplete (${connectorRectCacheSize} size / ${connectorRectCacheReadCount} reads / ${connectorRectCacheHitCount} hits)`;
-      }
+      const connectorCacheError = validateTopologyConnectorCacheMarkers(payload.markers);
+      if (connectorCacheError) return connectorCacheError;
       if (payload.markers.topologyRelationLabelBlockerContract !== "reuse-visible-card-rects") {
         return `WebView Relief relation label blocker contract was ${payload.markers.topologyRelationLabelBlockerContract || "missing"}`;
       }
@@ -6459,6 +6465,23 @@ export function buildWebviewEvidencePayload(
         pending: markerNumber(markers, "topologyRelationLabelGeometryPendingCount"),
       }
       : null;
+  const connectorCacheProof =
+    markers.topologyConnectorRectCacheContract === "frame-local-card-rect-cache"
+      ? {
+        proof: "topology-connector-cache-frame-fallback",
+        status: validateTopologyConnectorCacheMarkers(markers) === null ? "proved" : "incomplete",
+        route: evidenceRoute(payload?.href),
+        domIndexContract: markers.topologyConnectorDomIndexContract ?? null,
+        cacheContract: markers.topologyConnectorRectCacheContract ?? null,
+        frameFallbackContract:
+          markers.topologyConnectorRectCacheFrameFallbackContract ?? null,
+        accounting: markers.topologyConnectorRectCacheAccounting ?? null,
+        size: markerNumber(markers, "topologyConnectorRectCacheSize"),
+        seedCount: markerNumber(markers, "topologyConnectorRectCacheSeedCount"),
+        readCount: markerNumber(markers, "topologyConnectorRectCacheReadCount"),
+        hitCount: markerNumber(markers, "topologyConnectorRectCacheHitCount"),
+      }
+      : null;
   const nodePopoverExpandedProof =
     markers.topologyNodePopoverVisible === true &&
     markers.topologyNodePopoverCollapsed === false &&
@@ -6603,6 +6626,7 @@ export function buildWebviewEvidencePayload(
     composerBlockingProof,
     relationLabelHandoffProof,
     relationLabelFrameGeometryProof,
+    connectorCacheProof,
     nodePopoverExpandedProof,
     selectedFocusDimProof,
   };
