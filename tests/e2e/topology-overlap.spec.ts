@@ -1806,6 +1806,34 @@ for (const viewport of VIEWPORTS) {
       "data-agent-gate-kind",
       /handoff-ready|preflight-first|review-first/,
     );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-agent-handoff-contract",
+      "selected-relation-card-carries-mcp-cli-fallback",
+    );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-selected-relation-route",
+      "source>target>type>action",
+    );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-selected-relation-primary-action",
+      /relation_check|explain_relation/,
+    );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-selected-relation-cli-fallback",
+      /ontology-atlas (relation-check|explain)/,
+    );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-selected-relation-source",
+      /.+/,
+    );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-selected-relation-target",
+      /.+/,
+    );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-selected-relation-type",
+      /contains|dependsOn|relates|describes|uses|belongsTo/,
+    );
     const agentDecision = page.getByTestId("sigma-selected-edge-agent-decision");
     await expect(agentDecision).toHaveAttribute(
       "data-agent-gate-kind",

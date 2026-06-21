@@ -472,6 +472,13 @@ export function SigmaSelectedEdgeCard({
       data-agent-gate={agentGateLabel}
       data-agent-gate-kind={agentGateKind}
       data-agent-decision={agentDecisionText}
+      data-agent-handoff-contract="selected-relation-card-carries-mcp-cli-fallback"
+      data-selected-relation-route="source>target>type>action"
+      data-selected-relation-primary-action={primaryCopyAction}
+      data-selected-relation-cli-fallback={cliFallbackCommand}
+      data-selected-relation-source={data.source}
+      data-selected-relation-target={data.target}
+      data-selected-relation-type={relationType}
       data-surface-role="active-relation-inspector"
       data-card-density="compact"
       data-density-contract="mini-relation-inspector"

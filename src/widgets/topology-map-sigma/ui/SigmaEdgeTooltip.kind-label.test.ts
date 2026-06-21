@@ -464,6 +464,34 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-information-hierarchy',
       'fact-proof-route-handoff',
     );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-agent-handoff-contract',
+      'selected-relation-card-carries-mcp-cli-fallback',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-route',
+      'source>target>type>action',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-primary-action',
+      'explain_relation',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-cli-fallback',
+      "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-source',
+      'domain:views',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-target',
+      'capability:topology-analysis-modes',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-type',
+      'contains',
+    );
     expect(screen.getByTestId('sigma-selected-edge-fact-header')).toHaveAttribute(
       'data-header-contract',
       'selected-fact-first',
