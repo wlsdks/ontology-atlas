@@ -248,6 +248,24 @@ function validateTopologyNodePopoverTokenContract(markers) {
   if (markers.topologyNodePopoverCompactHandoffContract !== "selected-node-actions-visible") {
     return `WebView Relief selected node popover compact handoff contract was ${markers.topologyNodePopoverCompactHandoffContract || "missing"}`;
   }
+  if (markers.topologyNodePopoverAgentHandoffContract !== "selected-node-actions-visible") {
+    return `WebView Relief selected node popover root handoff contract was ${markers.topologyNodePopoverAgentHandoffContract || "missing"}`;
+  }
+  if (markers.topologyNodePopoverAgentHandoffRoute !== "selected-node>facts>actions") {
+    return `WebView Relief selected node popover root handoff route was ${markers.topologyNodePopoverAgentHandoffRoute || "missing"}`;
+  }
+  if (markers.topologyNodePopoverAgentHandoffPrimaryAction !== "focus-brief") {
+    return `WebView Relief selected node popover root handoff primary action was ${markers.topologyNodePopoverAgentHandoffPrimaryAction || "missing"}`;
+  }
+  if (Number(markers.topologyNodePopoverAgentHandoffActionCount || 0) < 1) {
+    return `WebView Relief selected node popover root handoff action count was ${markers.topologyNodePopoverAgentHandoffActionCount || "missing"}`;
+  }
+  if (Number(markers.topologyNodePopoverAgentHandoffRelationFactCount || 0) < 1) {
+    return `WebView Relief selected node popover root handoff relation fact count was ${markers.topologyNodePopoverAgentHandoffRelationFactCount || "missing"}`;
+  }
+  if (Number(markers.topologyNodePopoverAgentHandoffRelationTypeCount || 0) < 1) {
+    return `WebView Relief selected node popover root handoff relation type count was ${markers.topologyNodePopoverAgentHandoffRelationTypeCount || "missing"}`;
+  }
   if (collapsed) {
     if (markers.topologyNodePopoverCompactCommandRowVisible !== true) {
       return "WebView Relief selected node popover compact command row was not visible";

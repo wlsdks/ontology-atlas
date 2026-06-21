@@ -1248,6 +1248,24 @@ pub fn run() {
                               const topologyNodePopoverHierarchyContract =
                                 topologySelectedNodePopover?.getAttribute("data-hierarchy-contract") ||
                                 "";
+                              const topologyNodePopoverAgentHandoffContract =
+                                topologySelectedNodePopover?.getAttribute("data-agent-handoff-contract") ||
+                                "";
+                              const topologyNodePopoverAgentHandoffRoute =
+                                topologySelectedNodePopover?.getAttribute("data-agent-handoff-route") ||
+                                "";
+                              const topologyNodePopoverAgentHandoffPrimaryAction =
+                                topologySelectedNodePopover?.getAttribute("data-agent-handoff-primary-action") ||
+                                "";
+                              const topologyNodePopoverAgentHandoffActionCount =
+                                topologySelectedNodePopover?.getAttribute("data-agent-handoff-action-count") ||
+                                "";
+                              const topologyNodePopoverAgentHandoffRelationFactCount =
+                                topologySelectedNodePopover?.getAttribute("data-agent-handoff-relation-fact-count") ||
+                                "";
+                              const topologyNodePopoverAgentHandoffRelationTypeCount =
+                                topologySelectedNodePopover?.getAttribute("data-agent-handoff-relation-type-count") ||
+                                "";
                               const markerSummary = (element, attributeName) =>
                                 element?.getAttribute(attributeName) ||
                                 element?.getAttribute("aria-label") ||
@@ -3324,6 +3342,12 @@ pub fn run() {
                                     topologyNodePopover?.getAttribute("data-responsive-width-contract") || "",
                                   topologyNodePopoverCompactHandoffContract:
                                     topologyNodePopover?.getAttribute("data-compact-handoff-contract") || "",
+                                  topologyNodePopoverAgentHandoffContract,
+                                  topologyNodePopoverAgentHandoffRoute,
+                                  topologyNodePopoverAgentHandoffPrimaryAction,
+                                  topologyNodePopoverAgentHandoffActionCount,
+                                  topologyNodePopoverAgentHandoffRelationFactCount,
+                                  topologyNodePopoverAgentHandoffRelationTypeCount,
                                   topologyNodePopoverWidth:
                                     topologyNodePopoverRect?.width || 0,
                                   topologyNodePopoverHeight:

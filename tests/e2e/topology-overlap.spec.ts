@@ -2514,6 +2514,30 @@ for (const viewport of VIEWPORTS) {
       "data-compact-handoff-contract",
       "selected-node-actions-visible",
     );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-agent-handoff-contract",
+      "selected-node-actions-visible",
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-agent-handoff-route",
+      "selected-node>facts>actions",
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-agent-handoff-primary-action",
+      "focus-brief",
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-agent-handoff-action-count",
+      /^\d+$/,
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-agent-handoff-relation-fact-count",
+      /^\d+$/,
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-agent-handoff-relation-type-count",
+      /^\d+$/,
+    );
     await expect(page.getByTestId("topology-node-popover-positioner")).toHaveAttribute(
       "data-fixed-surface-role",
       "selected-node-inspector",
@@ -3693,6 +3717,18 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
   await expect(popover).toHaveAttribute(
     "data-compact-handoff-contract",
     "selected-node-actions-visible",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-agent-handoff-contract",
+    "selected-node-actions-visible",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-agent-handoff-route",
+    "selected-node>facts>actions",
+  );
+  await expect(popover).toHaveAttribute(
+    "data-agent-handoff-primary-action",
+    "focus-brief",
   );
   await expect(popover).toHaveAttribute("data-responsive-width-contract", "fluid-chip-to-rail");
   await expect(popover).toHaveAttribute(

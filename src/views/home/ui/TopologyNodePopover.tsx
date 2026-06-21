@@ -339,6 +339,16 @@ export function TopologyNodePopover({
   const primaryAction = actions[0] ?? null;
   const handoffContract =
     actions.length > 0 ? "selected-node-actions-visible" : "detail-only";
+  const handoffRoute =
+    actions.length > 0 ? "selected-node>facts>actions" : "selected-node>details";
+  const selectedNodeHandoffAttributes = {
+    "data-agent-handoff-contract": handoffContract,
+    "data-agent-handoff-route": handoffRoute,
+    "data-agent-handoff-primary-action": primaryAction?.kind ?? "",
+    "data-agent-handoff-action-count": actions.length,
+    "data-agent-handoff-relation-fact-count": total,
+    "data-agent-handoff-relation-type-count": relationTypeCount,
+  };
   const compactActionLabel = useCallback(
     (action: TopologyNodePopoverAction) =>
       compactNodePopoverActionLabel(action.kind, action.label),
@@ -373,6 +383,7 @@ export function TopologyNodePopover({
         role="dialog"
         aria-label={selectedNodeReadableLabel}
         {...selectedNodeAttributes}
+        {...selectedNodeHandoffAttributes}
         data-testid="topology-node-popover"
         data-topology-node-popover="selected-node-inspector"
         data-node-popover-shell-contract="selected-node-inspector-shell"
@@ -619,6 +630,7 @@ export function TopologyNodePopover({
       tabIndex={-1}
       aria-label={selectedNodeReadableLabel}
       {...selectedNodeAttributes}
+      {...selectedNodeHandoffAttributes}
       data-testid="topology-node-popover"
       data-topology-node-popover="selected-node-inspector"
       data-node-popover-shell-contract="selected-node-inspector-shell"

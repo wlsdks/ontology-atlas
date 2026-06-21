@@ -2649,6 +2649,18 @@ describe("TopologyNodePopover", () => {
       "selected-node-actions-visible",
     );
     expect(popover).toHaveAttribute(
+      "data-agent-handoff-contract",
+      "selected-node-actions-visible",
+    );
+    expect(popover).toHaveAttribute(
+      "data-agent-handoff-route",
+      "selected-node>facts>actions",
+    );
+    expect(popover).toHaveAttribute("data-agent-handoff-primary-action", "focus-brief");
+    expect(popover).toHaveAttribute("data-agent-handoff-action-count", "1");
+    expect(popover).toHaveAttribute("data-agent-handoff-relation-fact-count", "3");
+    expect(popover).toHaveAttribute("data-agent-handoff-relation-type-count", "2");
+    expect(popover).toHaveAttribute(
       "data-compact-facts-layout-contract",
       "meaning-then-command-row",
     );
