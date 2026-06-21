@@ -6086,7 +6086,7 @@ export function SigmaSkeletonCards({
               color: selected
                 ? 'var(--topology-relation-label-selected-text)'
                 : 'var(--topology-relation-label-text)',
-              opacity: selected ? 1 : 0,
+              opacity: selected ? 1 : undefined,
               pointerEvents: activeDragCluster !== null ? 'none' : 'auto',
             }}
             onClick={(event) => {

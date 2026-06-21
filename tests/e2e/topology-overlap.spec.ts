@@ -1430,6 +1430,7 @@ for (const viewport of VIEWPORTS) {
     }
     await expect(relationButton).toHaveAttribute("data-label-geometry-source", "html-hit-target");
     await expect(relationButton).toHaveAttribute("data-relation-label-visibility", "visible-clear");
+    await expect(relationButton).toHaveCSS("opacity", "1");
     await expect(relationButton).toHaveAttribute(
       "data-relation-label-token-contract",
       "hit-target-and-visible-badge-share-relation-label-tokens",

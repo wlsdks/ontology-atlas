@@ -2707,6 +2707,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "html-hit-target-click-selects-relation",
     );
     expect(labelHit).toHaveAttribute("data-relation-label-visibility", "visible-clear");
+    expect(labelHit).toHaveStyle({ opacity: "1" });
     expect(labelHit).toHaveAttribute(
       "data-relation-label-surface-token",
       "--topology-relation-label-surface",
