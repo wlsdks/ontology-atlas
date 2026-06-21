@@ -106,6 +106,11 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   const cameraUpdateEventCountRef = useRef(0);
   const cameraFrameCountRef = useRef(0);
   const panSearchCountRef = useRef(0);
+  const [markerCounts, setMarkerCounts] = useState({
+    cameraFrameCount: 0,
+    cameraUpdateEventCount: 0,
+    panSearchCount: 0,
+  });
   const model = useMemo(() => buildMinimapModel(graph), [graph]);
 
   const pulseNavigationFeedback = useCallback(() => {
@@ -134,6 +139,11 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
     // setTick → 미니맵 전체 리렌더는 낭비라, rAF 로 합쳐 프레임당 1회만 리렌더.
     const coalesced = createMinimapCameraFrameScheduler(() => {
       cameraFrameCountRef.current += 1;
+      setMarkerCounts((current) => ({
+        ...current,
+        cameraFrameCount: cameraFrameCountRef.current,
+        cameraUpdateEventCount: cameraUpdateEventCountRef.current,
+      }));
       setTick((t) => (t + 1) % 1_000_000);
     });
     const onCameraUpdated = () => {
@@ -164,6 +174,10 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
       let nearestId: string | null = null;
       let nearestDist = Infinity;
       panSearchCountRef.current += 1;
+      setMarkerCounts((current) => ({
+        ...current,
+        panSearchCount: panSearchCountRef.current,
+      }));
       for (const target of model.navigationTargets) {
         const dx = target.graphX - graphX;
         const dy = target.graphY - graphY;
@@ -265,10 +279,10 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
       data-navigating={navigating ? 'true' : 'false'}
       data-camera-tick={tick}
       data-minimap-camera-sync-contract="raf-coalesced-camera-updates"
-      data-camera-update-event-count={cameraUpdateEventCountRef.current}
-      data-camera-frame-count={cameraFrameCountRef.current}
+      data-camera-update-event-count={markerCounts.cameraUpdateEventCount}
+      data-camera-frame-count={markerCounts.cameraFrameCount}
       data-minimap-pan-search-contract="precomputed-navigation-targets"
-      data-minimap-pan-search-count={panSearchCountRef.current}
+      data-minimap-pan-search-count={markerCounts.panSearchCount}
       data-minimap-pan-target-count={model.navigationTargets.length}
       data-viewport-frame-state={viewportFrameState}
       data-viewport-frame-width={Math.round(rectW)}

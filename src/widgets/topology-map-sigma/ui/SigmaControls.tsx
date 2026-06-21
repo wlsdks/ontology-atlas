@@ -47,8 +47,10 @@ export function SigmaControls({
   const valueRef = useRef(value);
   const onChangeRef = useRef(onChange);
 
-  valueRef.current = value;
-  onChangeRef.current = onChange;
+  useEffect(() => {
+    valueRef.current = value;
+    onChangeRef.current = onChange;
+  }, [value, onChange]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {

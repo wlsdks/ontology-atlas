@@ -2152,6 +2152,10 @@ export function SigmaSkeletonCards({
   const [activeDragMotion, setActiveDragMotion] = useState(false);
   const [activeDragRootSlug, setActiveDragRootSlug] = useState("");
   const [dragSettledSlugs, setDragSettledSlugs] = useState<Set<string>>(() => new Set());
+  const [dragFrameMarkerSnapshot, setDragFrameMarkerSnapshot] = useState({
+    domIndexSize: 0,
+    snapshotCount: 0,
+  });
   const dragReleaseTimerRef = useRef<number | null>(null);
   const activeDragMotionRef = useRef(false);
   // 카드 드래그 — 골격 anchor 카드를 손으로 옮길 수 있게(과거 토폴로지의
@@ -2416,9 +2420,10 @@ export function SigmaSkeletonCards({
     () => (pathSelectionTargetSlug ? resolveNodeId(pathSelectionTargetSlug) : null),
     [pathSelectionTargetSlug, resolveNodeId],
   );
+  const healthRepairTargetSlug = healthRepairTarget?.slug ?? null;
   const resolvedHealthRepairTargetNodeId = useMemo(
-    () => (healthRepairTarget?.slug ? resolveNodeId(healthRepairTarget.slug) : null),
-    [healthRepairTarget?.slug, resolveNodeId],
+    () => (healthRepairTargetSlug ? resolveNodeId(healthRepairTargetSlug) : null),
+    [healthRepairTargetSlug, resolveNodeId],
   );
 
   const buildVisibleCardTierByNodeId = useCallback(() => {
@@ -4923,13 +4928,13 @@ export function SigmaSkeletonCards({
       data-drag-hull-render-policy="suppressed-boxless-connectors"
       data-drag-cluster-hull-dom-policy="not-rendered"
       data-drag-dom-index-contract="drag-release-reuses-card-elements"
-      data-drag-dom-index-size={lastDragDomIndexSizeRef.current}
-      data-drag-frame-cache-snapshot-count={lastDockDragSnapshotSizeRef.current}
+      data-drag-dom-index-size={dragFrameMarkerSnapshot.domIndexSize}
+      data-drag-frame-cache-snapshot-count={dragFrameMarkerSnapshot.snapshotCount}
       data-dock-drag-snapshot-contract="single-pass-card-rect-read"
       data-visibility-count-contract="single-pass-unless-fallback"
       data-visible-card-state-cache-contract="rect-and-visibility-single-pass"
       data-visibility-stats-report-contract="dedupe-and-debounce-stable-counts"
-      data-visibility-stats-report-count={visibilityStatsReportCountRef.current}
+      data-visibility-stats-report-count="0"
       data-layout-transition-contract="stable-card-state-key"
       data-layout-transition-reposition-policy="immediate-after-render"
       data-layout-transition-reposition-throttle-ms={LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS}
@@ -6005,6 +6010,10 @@ export function SigmaSkeletonCards({
               );
               lastDragDomIndexSizeRef.current = cardElements.all.length;
               lastDockDragSnapshotSizeRef.current = dockDragSnapshots.size;
+              setDragFrameMarkerSnapshot({
+                domIndexSize: cardElements.all.length,
+                snapshotCount: dockDragSnapshots.size,
+              });
               dragRef.current = {
                 sourceSlug: nodeId,
                 rootSlug,
