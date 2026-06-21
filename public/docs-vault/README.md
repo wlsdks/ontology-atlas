@@ -15,6 +15,11 @@ those tools cannot infer alone: which domain or capability a code artifact
 proves, why a change matters, and which validation path an agent should run
 before trusting the result.
 
+The minimum supported setup is also narrow: plain Claude Code or Codex connected
+to Atlas MCP/CLI must be enough to use the product. Extra source-intelligence
+tools can accelerate lookup, but they cannot be required for onboarding,
+workspace briefs, graph health, handoff packets, or memory update diffs.
+
 ## Current Canon
 
 | Document | Use it for | Status |

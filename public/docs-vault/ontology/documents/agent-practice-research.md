@@ -95,8 +95,12 @@ repeatable boundary is:
 - Atlas answers "which product/system capability does this code prove, why does
   the change matter, and what should the human or agent verify next?"
 
-This keeps CodeGraph, AST indexes, grep, language servers, and source search as
-complementary structural tools rather than competitors. Atlas should store only
+This keeps CodeGraph, Serena, AST indexes, grep, language servers, and source
+search as complementary structural tools rather than competitors or
+preconditions. Atlas must still be useful when plain Claude Code or Codex is
+connected only to Atlas MCP/CLI. Source tools can accelerate the follow-up code
+lookup, but the first value must come from Atlas' own workspace brief, graph
+health, handoff packet, and reviewable memory diff. Atlas should store only
 meaningful implementation evidence: source paths, classes, functions, routes,
 commands, tests, and MCP tools when they connect a capability, impact path, or
 handoff. It should not store every symbol or local call edge as ontology truth.

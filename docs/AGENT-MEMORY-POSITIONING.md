@@ -24,6 +24,13 @@ codebase between sessions:
 Without a shared memory layer, every agent session starts by re-discovering the
 same project shape from source files and chat history.
 
+The minimum supported path is intentionally plain: connect Atlas MCP or run the
+Atlas CLI from Claude Code, Codex, Cursor, or another coding agent, and the agent
+should already receive a useful workspace brief, graph health check, handoff
+packet, and reviewable memory-diff workflow. No CodeGraph, Serena, language
+server, grep wrapper, or external source-index service is required for the
+product to be usable.
+
 Atlas should not promise to replace code-reading tools. Built-in source search,
 grep, language servers, Serena, CodeGraph, AST indexes, and similar tools are
 good at structural facts: definitions, callers, imports, routes, and local

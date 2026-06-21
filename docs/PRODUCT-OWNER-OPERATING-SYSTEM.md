@@ -361,7 +361,8 @@ design, graph, CLI, MCP, and workflow changes cannot.
 5. Agent value: Which MCP, CLI, source-intelligence, or handoff workflow becomes
    easier for Claude Code, Codex, Cursor, or another agent? CodeGraph, Serena,
    language servers, grep, and built-in source search are optional structural
-   tools; Atlas must still work without any one of them.
+   tools; Atlas must still work without any one of them. The minimum acceptable
+   agent path is plain Claude Code or Codex connected only to Atlas MCP/CLI.
 6. Outcome: What behavior should change after release? Prefer "users can trace
    X without reading source" over "add a panel."
 7. Evidence: What user report, screenshot, dogfood run, metric, or repeated
@@ -462,6 +463,8 @@ decision:
 - the agent value gives Claude Code, Codex, Cursor, MCP, CLI, or a structural
   source tool a better next action without making any external code index a
   product dependency;
+- plain Claude Code or Codex can still use the slice when Atlas MCP/CLI is the
+  only connected tool surface;
 - the slice removes or quiets something when addition is not necessary;
 - verification matches the shipped surface and can catch stale builds,
   responsive breakage, graph overlap, or handoff drift.

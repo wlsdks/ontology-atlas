@@ -46,6 +46,13 @@ and design decisions.
 `ontology-atlas` gives agents a durable local memory they can query before
 touching code and update after real changes.
 
+The minimum useful setup is just Atlas plus a normal agent. If Claude Code,
+Codex, Cursor, or another MCP-capable agent can connect to the Atlas MCP server
+or run the Atlas CLI, the product must already work. CodeGraph, Serena, language
+servers, grep, and other source tools can make investigation faster, but none of
+them are required for Atlas to deliver the first graph brief, handoff packet,
+health check, or memory update diff.
+
 It helps coding agents by giving them the right starting point, product
 meaning, and verification path before they inspect code. It is not trying to
 replace CodeGraph, Serena, grep, AST indexes, language servers, or source search. Those tools answer
@@ -94,6 +101,9 @@ Implementation evidence:
 Recommended code lookup:
 - Use the available source tool: built-in search, grep, language server,
   Serena, CodeGraph, or another local code index.
+- If no source tool is available beyond the agent's normal file access, start
+  from the Atlas MCP/CLI packet and inspect only the implementation evidence it
+  names.
 Verification path:
 - focused unit test for the topology label contract
 - macOS app verification when desktop topology behavior changes

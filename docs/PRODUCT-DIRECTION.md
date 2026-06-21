@@ -96,13 +96,15 @@ The coding-agent promise is not that Atlas replaces source search or stores an
 exhaustive symbol graph. Built-in search, grep, language servers, Serena,
 CodeGraph, and AST indexes should remain optional structural layers for
 definitions, callers, imports, and local code impact. Atlas must work for plain
-Claude Code or Codex without any external code index. It should tell the agent
-which structural question to ask, which capability or domain gives that code
-meaning, and which verification path makes the answer safe to use. The ontology
-should therefore store meaningful implementation evidence, not every code fact:
-files, classes, commands, routes, tests, and MCP tools become `element` nodes
-only when they help trace a business/product capability, impact path, or agent
-handoff.
+Claude Code or Codex after only the Atlas MCP server or CLI is connected; no
+external code index, source-intelligence service, or extra agent plugin may be a
+precondition for first value. Source tools are accelerators after the Atlas
+meaning packet has narrowed the work. Atlas should tell the agent which
+structural question to ask, which capability or domain gives that code meaning,
+and which verification path makes the answer safe to use. The ontology should
+therefore store meaningful implementation evidence, not every code fact: files,
+classes, commands, routes, tests, and MCP tools become `element` nodes only when
+they help trace a business/product capability, impact path, or agent handoff.
 
 ### Expanded excellence target (2026-06-05)
 
