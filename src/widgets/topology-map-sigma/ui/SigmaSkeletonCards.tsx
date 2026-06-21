@@ -1466,7 +1466,9 @@ function separateOverviewDomainCards(
     [];
   let separated = 0;
   for (const record of records) {
-    delete record.el.dataset.overviewDomainSeparated;
+    if (record.el.dataset.overviewDomainSeparated !== undefined) {
+      delete record.el.dataset.overviewDomainSeparated;
+    }
     let dy = 0;
     for (const blocker of accepted) {
       const moved = {
@@ -3696,6 +3698,8 @@ export function SigmaSkeletonCards({
       'project-overview-domain-labels-do-not-overlap';
     container.dataset.overviewDomainRectReadPolicy =
       'reuse-pass1-card-placement-frame-rects';
+    container.dataset.overviewDomainAttributeWritePolicy =
+      'dedupe-separated-marker';
     container.dataset.overviewDomainSeparationActive =
       projectOverviewDomainSeparationActive ? 'true' : 'false';
     const overviewDomainSeparatedCount = projectOverviewDomainSeparationActive
