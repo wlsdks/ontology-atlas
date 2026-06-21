@@ -2474,6 +2474,18 @@ for (const viewport of VIEWPORTS) {
       "data-compact-handoff-contract",
       "selected-node-actions-visible",
     );
+    await expect(page.getByTestId("topology-node-popover-positioner")).toHaveAttribute(
+      "data-fixed-surface-role",
+      "selected-node-inspector",
+    );
+    await expect(page.getByTestId("topology-node-popover-positioner")).toHaveAttribute(
+      "data-fixed-surface-measure-target",
+      "topology-node-popover",
+    );
+    await expect(page.getByTestId("topology-node-popover-positioner")).toHaveAttribute(
+      "data-selected-inspector-overlap-contract",
+      "fixed-surface-hides-overlapping-map-cards",
+    );
     await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
       "data-popover-surface-token",
       "--topology-node-popover-surface",
@@ -2554,6 +2566,8 @@ for (const viewport of VIEWPORTS) {
       compactRelationFactsFit,
       `compact relation fact pill should keep direct facts readable at ${viewport.label}`,
     ).toBe(true);
+    const compactPopoverRect = await rectOf(page.getByTestId("topology-node-popover"));
+    expectCardsClear(await visibleCardRects(page), viewport, compactPopoverRect, null);
     const selectedFocusPanelRect = await rectOf(selectedFocusPanel);
     const selectedFocusPanelMaxWidth = viewport.width <= 1600 ? 322 : 380;
     expect(

@@ -2520,6 +2520,9 @@ export function HomePage() {
           <div
             data-testid="topology-node-popover-positioner"
             data-position-contract="selected-inspector-aligns-to-right-inset"
+            data-fixed-surface-role="selected-node-inspector"
+            data-fixed-surface-measure-target="topology-node-popover"
+            data-selected-inspector-overlap-contract="fixed-surface-hides-overlapping-map-cards"
             data-selected-inspector-gutter-contract="no-phantom-utility-rail"
             data-position-top-token="--topology-node-popover-top"
             data-position-right-inset-token="--topology-node-popover-right-inset"
