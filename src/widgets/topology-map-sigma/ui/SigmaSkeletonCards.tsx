@@ -1272,6 +1272,7 @@ function separatePathEndpointCards(
   orderedEls: readonly HTMLElement[],
   containerRect: DOMRect,
   fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }> = [],
+  onPlacedCardRectChange?: (el: HTMLElement, rect: ConnectorRect) => void,
 ) {
   const source = orderedEls.find(
     (el) =>
@@ -1341,8 +1342,16 @@ function separatePathEndpointCards(
     .filter((candidate) => candidate.dy !== 0 && candidate.inside && candidate.clear);
   const best = candidates[0];
   if (!best) return;
-  best.el.style.transform = `${best.el.style.transform} translate(0, ${best.dy}px)`;
+  const nextTransform = `${best.el.style.transform} translate(0, ${best.dy}px)`;
+  const endpointRestoreBase = best.el.dataset.pathEndpointRestoreBaseTransform;
+  if (endpointRestoreBase) {
+    best.el.dataset.pathEndpointRestoreBaseTransform =
+      `${endpointRestoreBase} translate(0, ${best.dy}px)`;
+    best.el.dataset.pathEndpointRestoreAppliedTransform = nextTransform;
+  }
+  best.el.style.transform = nextTransform;
   best.el.dataset.pathEndpointPairSeparated = best.marker;
+  onPlacedCardRectChange?.(best.el, best.moved);
 }
 
 function separateOverviewDomainCards(
@@ -1431,6 +1440,7 @@ function restorePathEndpointsFromFixedSurfaces(
   containerRect: DOMRect,
   fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>,
   domWriteStats: SkeletonDomWriteStats,
+  onPlacedCardRectChange?: (el: HTMLElement, rect: ConnectorRect) => void,
 ) {
   const pathAnalysisPanelRects = collectPathAnalysisPanelRects(containerRect);
   for (const el of orderedEls) {
@@ -1438,6 +1448,12 @@ function restorePathEndpointsFromFixedSurfaces(
       continue;
     }
     const endpointBox = el.getBoundingClientRect();
+    const previousAppliedTransform = el.dataset.pathEndpointRestoreAppliedTransform;
+    let baseTransform = el.dataset.pathEndpointRestoreBaseTransform;
+    if (!baseTransform || el.style.transform !== previousAppliedTransform) {
+      baseTransform = el.style.transform;
+      el.dataset.pathEndpointRestoreBaseTransform = baseTransform;
+    }
     const endpointRect = {
       left: endpointBox.left - containerRect.left,
       top: endpointBox.top - containerRect.top,
@@ -1451,22 +1467,38 @@ function restorePathEndpointsFromFixedSurfaces(
       fixedSurfaceRects,
     });
     if (endpointShift.dx !== 0 || endpointShift.dy !== 0) {
+      const nextTransform =
+        `${baseTransform} translate(${endpointShift.dx}px, ${endpointShift.dy}px)`;
       setSkeletonStyleValue(
         el,
         'transform',
-        `${el.style.transform} translate(${endpointShift.dx}px, ${endpointShift.dy}px)`,
+        nextTransform,
         domWriteStats,
       );
+      el.dataset.pathEndpointRestoreAppliedTransform = nextTransform;
       el.dataset.pathEndpointRestored = 'safe-shift';
     } else {
+      setSkeletonStyleValue(el, 'transform', baseTransform, domWriteStats);
+      el.dataset.pathEndpointRestoreAppliedTransform = baseTransform;
       delete el.dataset.pathEndpointRestored;
     }
-    if (pathAnalysisPanelRects.some((surface) => rectsOverlap(endpointShift.rect, surface))) {
+    onPlacedCardRectChange?.(el, endpointShift.rect);
+    const overlapsPathPanel = pathAnalysisPanelRects.some((surface) =>
+      rectsOverlap(endpointShift.rect, surface),
+    );
+    const expandedPathPanelOwnsRoute = pathAnalysisPanelRects.some(
+      (surface) => surface.bottom - surface.top > containerRect.height * 0.62,
+    );
+    if (overlapsPathPanel && !expandedPathPanelOwnsRoute) {
       hideSkeletonCard(el, domWriteStats);
       el.dataset.pathEndpointPanelClearance = 'hidden-under-expanded-panel';
     } else {
       showSkeletonCard(el, '1', domWriteStats);
-      delete el.dataset.pathEndpointPanelClearance;
+      if (overlapsPathPanel) {
+        el.dataset.pathEndpointPanelClearance = 'panel-owned-expanded-visible';
+      } else {
+        delete el.dataset.pathEndpointPanelClearance;
+      }
     }
   }
 }
@@ -1568,6 +1600,12 @@ function restoreVisibleCardsFromFixedSurfaces(
       onPlacedCardRectChange?.(el, shift.rect);
       occupiedRects.push(shift.rect);
       restored += 1;
+      continue;
+    }
+    if (el.dataset.pathEndpointPanelClearance === 'panel-owned-expanded-visible') {
+      showSkeletonCard(el, '1', domWriteStats);
+      el.dataset.fixedSurfaceRestore = 'path-endpoint-panel-owned-visible';
+      occupiedRects.push(rect);
       continue;
     }
     hideSkeletonCard(el, domWriteStats);
@@ -3408,6 +3446,9 @@ export function SigmaSkeletonCards({
         containerRect,
         fixedSurfaceRects,
         domWriteStats,
+        (el, rect) => {
+          cardPlacementFrameRectCache.set(el, rect);
+        },
       );
       for (const el of orderedEls) {
         if (el.dataset.pathRole !== 'source' && el.dataset.pathRole !== 'target') {
@@ -3445,12 +3486,13 @@ export function SigmaSkeletonCards({
         }
         showSkeletonCard(el, '1', domWriteStats);
       }
-      separatePathEndpointCards(orderedEls, containerRect, fixedSurfaceRects);
-      restorePathEndpointsFromFixedSurfaces(
+      separatePathEndpointCards(
         orderedEls,
         containerRect,
         fixedSurfaceRects,
-        domWriteStats,
+        (el, rect) => {
+          cardPlacementFrameRectCache.set(el, rect);
+        },
       );
       suppressCardsOverlappingPathEndpoints(orderedEls, containerRect);
     }
@@ -4372,23 +4414,57 @@ export function SigmaSkeletonCards({
           top: y - RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2,
           width: labelGeometry.hitTargetWidth,
         });
+        const labelGeometryFinite =
+          Number.isFinite(labelGeometry.left) &&
+          Number.isFinite(labelGeometry.hitTargetWidth) &&
+          Number.isFinite(labelPlacement.top);
+        const labelLeft = labelGeometryFinite ? labelGeometry.left : 0;
+        const labelTop = labelGeometryFinite ? labelPlacement.top : 0;
+        const labelWidth = labelGeometryFinite ? labelGeometry.hitTargetWidth : 0;
         const labelHitRect = {
-          left: labelGeometry.left,
-          top: labelPlacement.top,
-          right: labelGeometry.left + labelGeometry.hitTargetWidth,
-          bottom: labelPlacement.top + RELATION_LABEL_HIT_TARGET_HEIGHT_PX,
+          left: labelLeft,
+          top: labelTop,
+          right: labelLeft + labelWidth,
+          bottom: labelTop + RELATION_LABEL_HIT_TARGET_HEIGHT_PX,
         };
-        const labelCardOverlapCount = relationLabelCardBlockers.filter((blocker) =>
+        let labelCardOverlapCount = relationLabelCardBlockers.filter((blocker) =>
           rectsOverlap(labelHitRect, blocker),
         ).length;
-        const labelHiddenByCards =
+        let labelHiddenByCards =
           (labelPlacement.occluded || labelCardOverlapCount > 0) && !selectedRelationLabel;
+        if (!labelGeometryFinite && !selectedRelationLabel) {
+          labelCardOverlapCount = Math.max(labelCardOverlapCount, 1);
+          labelHiddenByCards = true;
+        }
+        if (
+          !labelHiddenByCards &&
+          !selectedRelationLabel &&
+          isEgoBadge &&
+          containerRect.width < RELATION_LABEL_PHONE_BREAKPOINT_PX
+        ) {
+          let liveOverlapCount = 0;
+          for (const el of orderedEls) {
+            if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+            const box = el.getBoundingClientRect();
+            const liveRect = {
+              left: box.left - containerRect.left,
+              top: box.top - containerRect.top,
+              right: box.right - containerRect.left,
+              bottom: box.bottom - containerRect.top,
+            };
+            if (rectsOverlap(labelHitRect, liveRect)) liveOverlapCount += 1;
+          }
+          if (liveOverlapCount > 0) {
+            labelCardOverlapCount = liveOverlapCount;
+            labelHiddenByCards = true;
+          }
+        }
         if (selectedFocusCluster && isEgoBadge) {
           focusRelationLabelExpectedCount += 1;
           if (!labelHiddenByCards) focusRelationLabelVisibleCount += 1;
         }
-        const placedY = labelPlacement.top + RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2;
-        label.setAttribute('x', String(x));
+        const placedY = labelTop + RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2;
+        label.setAttribute('x', String(Number.isFinite(x) ? x : 0));
         label.setAttribute('y', String(placedY));
         label.setAttribute('opacity', usesHtmlBadge || labelHiddenByCards ? '0' : '1');
         label.setAttribute('aria-hidden', usesHtmlBadge || labelHiddenByCards ? 'true' : 'false');
@@ -4412,13 +4488,13 @@ export function SigmaSkeletonCards({
           setSkeletonStyleValue(
             labelButton,
             'transform',
-            `translate3d(${labelGeometry.left}px, ${labelPlacement.top}px, 0)`,
+            `translate3d(${labelLeft}px, ${labelTop}px, 0)`,
             domWriteStats,
           );
           setSkeletonStyleValue(
             labelButton,
             'width',
-            `${labelGeometry.hitTargetWidth}px`,
+            `${labelWidth}px`,
             domWriteStats,
           );
           setSkeletonStyleValue(
