@@ -4224,7 +4224,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
     expect(card).toHaveAttribute("data-drag-cluster", "true");
     expect(layer).toHaveAttribute("data-dragging-active", "false");
-    expect(layer).toHaveAttribute("data-visible-card-state-read-policy", "computed-style");
+    expect(layer).toHaveAttribute(
+      "data-visible-card-state-read-policy",
+      "frame-state-during-drag",
+    );
     expect(document.querySelector("[data-drag-cluster-connector]")).toBeInTheDocument();
   });
 
