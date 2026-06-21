@@ -324,5 +324,66 @@ test("Relief 관계 라벨 클릭이 관계 선택 카드만 열고 노드 선�
   await expect(
     page.locator('button[data-relation-label-hit="true"][data-selected-relation="true"]'),
   ).toHaveCount(1);
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  const dragTargetSlug = await page.locator("[data-skeleton-card]").evaluateAll((els) => {
+    const target = els.find((el) => {
+      const rect = el.getBoundingClientRect();
+      return (
+        el.getAttribute("data-selected") === "false" &&
+        el.getAttribute("data-surface-hidden") !== "true" &&
+        !el.textContent?.includes("ontology-atlas") &&
+        rect.width > 8 &&
+        rect.height > 8
+      );
+    });
+    return target?.getAttribute("data-slug") ?? null;
+  });
+  if (!dragTargetSlug) {
+    throw new Error("selected relation drag should find a visible non-selected card");
+  }
+  const dragTarget = page.locator(
+    `[data-skeleton-card][data-slug="${dragTargetSlug}"]`,
+  );
+  await expect(dragTarget).toBeVisible();
+  const beforeDrag = await rectOf(dragTarget);
+  await page.mouse.move(
+    beforeDrag.x + beforeDrag.width / 2,
+    beforeDrag.y + beforeDrag.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    beforeDrag.x + beforeDrag.width / 2 + 96,
+    beforeDrag.y + beforeDrag.height / 2 + 36,
+    { steps: 8 },
+  );
+  await page.mouse.up();
+  await page.waitForTimeout(750);
+
+  const dragReleaseProof = await layer.evaluate((el) => ({
+    connectorRectCacheReadCount: Number(
+      el.getAttribute("data-connector-rect-cache-read-count") ?? "NaN",
+    ),
+    lastDomIndexSize: Number(el.getAttribute("data-drag-last-dom-index-size") ?? "0"),
+    lastFrameCacheContract: el.getAttribute("data-drag-last-frame-cache-contract") ?? "",
+    lastSnapshotCount: Number(
+      el.getAttribute("data-drag-last-frame-cache-snapshot-count") ?? "0",
+    ),
+    selectedRelationHandoff: el.getAttribute("data-selected-relation-label-handoff") ?? "",
+  }));
+  expect(dragReleaseProof.lastFrameCacheContract).toBe(
+    "release-keeps-last-pointer-down-cache-proof",
+  );
+  expect(
+    dragReleaseProof.lastDomIndexSize,
+    "selected relation drag should keep the last pointer-down card index proof",
+  ).toBeGreaterThan(0);
+  expect(
+    dragReleaseProof.lastSnapshotCount,
+    "selected relation drag should keep last dock snapshot accounting visible",
+  ).toBeGreaterThanOrEqual(0);
+  expect(dragReleaseProof.selectedRelationHandoff).toBe("ready");
+  expect(dragReleaseProof.connectorRectCacheReadCount).toBe(0);
+  await expect(page.getByTestId("sigma-selected-edge-card")).toBeVisible();
   expect(consoleErrors, consoleErrors.join("\n")).toHaveLength(0);
 });

@@ -2804,7 +2804,15 @@ export function SigmaSkeletonCards({
 
   const selectedRelationLabelHandoff = useMemo(() => {
     const selectedLabel = selectedRelationEdgeId
-      ? egoRelationLabels.find((label) => label.edgeId === selectedRelationEdgeId)
+      ? egoRelationLabels.find((label) => label.edgeId === selectedRelationEdgeId) ??
+        (() => {
+          if (!graph.hasEdge(selectedRelationEdgeId)) return null;
+          const [source, target] = graph.extremities(selectedRelationEdgeId);
+          return {
+            ...relationConnector(graph, source, target),
+            count: 1,
+          };
+        })()
       : null;
     if (!selectedLabel) return null;
     const gateKind = relationAgentGateKind(selectedLabel);
@@ -2822,7 +2830,7 @@ export function SigmaSkeletonCards({
       quality: selectedLabel.relationQuality ?? 'supported',
       route: 'fact>evidence>gate>action',
     };
-  }, [egoRelationLabels, selectedRelationEdgeId]);
+  }, [egoRelationLabels, graph, selectedRelationEdgeId]);
 
   const selectedRelationSummary = useMemo(() => {
     if (!ego || egoRelationConnectors.length === 0) return null;
@@ -5547,6 +5555,9 @@ export function SigmaSkeletonCards({
       data-drag-dom-index-contract="drag-release-reuses-card-elements"
       data-drag-dom-index-size={dragFrameMarkerSnapshot.domIndexSize}
       data-drag-frame-cache-snapshot-count={dragFrameMarkerSnapshot.snapshotCount}
+      data-drag-last-frame-cache-contract="release-keeps-last-pointer-down-cache-proof"
+      data-drag-last-dom-index-size={lastDragDomIndexSizeRef.current}
+      data-drag-last-frame-cache-snapshot-count={lastDockDragSnapshotSizeRef.current}
       data-dock-drag-snapshot-contract="single-pass-card-rect-read"
       data-visibility-count-contract="single-pass-unless-fallback"
       data-visible-card-state-cache-contract="rect-and-visibility-single-pass"
@@ -6688,6 +6699,7 @@ export function SigmaSkeletonCards({
               drag.lastY = event.clientY;
               drag.travel += Math.abs(dx) + Math.abs(dy);
               if (drag.travel <= 4) return;
+              suppressClickRef.current = true;
               setHovered(null);
               if (!activeDragMotionRef.current) {
                 activeDragMotionRef.current = true;
