@@ -32,7 +32,7 @@ const pkg = JSON.parse(readText("package.json"));
 const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
 const rootLayout = readText("app/layout.tsx");
-const webManifest = readText("app/manifest.ts");
+const webManifest = JSON.parse(readText("public/manifest.webmanifest"));
 const cargoToml = readText("src-tauri/Cargo.toml");
 const desktopDoc = readText("docs/DESKTOP-MACOS.md");
 const agentsDoc = readText("AGENTS.md");
@@ -1591,8 +1591,10 @@ if (missingBundleIcons.length === 0) {
 
 if (
   rootLayout.includes("title: 'Ontology Atlas'") &&
+  rootLayout.includes("manifest: '/manifest.webmanifest'") &&
   rootLayout.includes("alternateName: 'ontology-atlas'") &&
-  webManifest.includes("name: 'Ontology Atlas'") &&
+  webManifest.name === "Ontology Atlas" &&
+  webManifest.short_name === "Ontology Atlas" &&
   enMessages.metadata.siteName === "Ontology Atlas" &&
   koMessages.metadata.siteName === "Ontology Atlas" &&
   landingPage.includes("Ontology Atlas")

@@ -18,6 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  manifest: '/manifest.webmanifest',
   // Title template is owned by app/[locale]/layout.tsx so the locale-aware
   // string ends up in <title>. We only set a fallback default here for the
   // root `/` redirect page (which the user sees for ~50ms before redirect).

@@ -1,0 +1,23 @@
+{
+  "id": "/",
+  "scope": "/",
+  "name": "Ontology Atlas",
+  "short_name": "Ontology Atlas",
+  "description": "사람과 AI 에이전트가 같이 키우는 코드베이스 온톨로지 워크벤치.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#08090a",
+  "theme_color": "#08090a",
+  "lang": "ko-KR",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
