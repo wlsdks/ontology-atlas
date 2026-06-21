@@ -4316,6 +4316,20 @@ export function SigmaSkeletonCards({
       delete container.dataset.relationLabelPhoneBottomReservePx;
       delete container.dataset.relationLabelPhoneBottomReserveToken;
     }
+    const relationLabelFixedSurfaceBlockerCount = fixedSurfaceRects.length;
+    relationLabelCardBlockers.push(
+      ...fixedSurfaceRects.map((rect) => ({
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+      })),
+    );
+    container.dataset.relationLabelFixedSurfaceBlockerContract =
+      'selected-inspector-surfaces-block-relation-labels';
+    container.dataset.relationLabelFixedSurfaceBlockerCount = String(
+      relationLabelFixedSurfaceBlockerCount,
+    );
     const residualOverlapRects = Array.from(visibleCardRectCache.values())
       .filter((entry): entry is { rect: DOMRect; visible: true } =>
         entry.visible && entry.rect !== null,

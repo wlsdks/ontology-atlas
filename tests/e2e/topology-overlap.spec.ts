@@ -1633,6 +1633,14 @@ for (const viewport of VIEWPORTS) {
       "label-level-mcp-cli-fallback",
     );
     await expect(skeletonCards).toHaveAttribute(
+      "data-relation-label-fixed-surface-blocker-contract",
+      "selected-inspector-surfaces-block-relation-labels",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-relation-label-fixed-surface-blocker-count",
+      /[1-9]\d*/,
+    );
+    await expect(skeletonCards).toHaveAttribute(
       "data-selected-relation-label-handoff",
       "ready",
     );
