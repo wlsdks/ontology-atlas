@@ -85,6 +85,28 @@ Public anchors:
 
 Product consequence: use deterministic indexing as candidate evidence and performance baseline, then require a human/agent meaning decision before writing `domain` or `capability` ontology facts. A file path alone is not a capability; it is evidence until the business/product workflow, ownership boundary, or decision relevance is clear.
 
+## Coding-agent memory boundary decided on 2026-06-21
+
+Atlas should help coding agents, but not by becoming a full code indexer. The
+repeatable boundary is:
+
+- code-intelligence tools answer "where is this defined, what calls it, and
+  what code path changes?";
+- Atlas answers "which product/system capability does this code prove, why does
+  the change matter, and what should the human or agent verify next?"
+
+This keeps CodeGraph, AST indexes, grep, language servers, and source search as
+complementary structural tools rather than competitors. Atlas should store only
+meaningful implementation evidence: source paths, classes, functions, routes,
+commands, tests, and MCP tools when they connect a capability, impact path, or
+handoff. It should not store every symbol or local call edge as ontology truth.
+
+Product consequence: agent-facing packets should start with the relevant
+domain/capability and then cite implementation evidence plus the next
+verification path. A good handoff tells Claude Code, Codex, Cursor, or another
+MCP-connected agent what to inspect, why it matters, and how to prove the result
+before committing memory back to the vault.
+
 ## MCP client connection UX check on 2026-06-05
 
 Current MCP clients separate configuration from live proof. Claude surfaces connectors in Settings / Connectors and still expects agent-side connection checks for local MCP servers. VS Code documents MCP server management, enable/disable controls, trust, cached-tool reset, and troubleshooting/debug commands. Cursor exposes MCP servers and tool toggles from settings and chat, and its CLI has an MCP list command for configured server status. Windsurf-oriented MCP docs describe a green-dot server state plus an available tool count.

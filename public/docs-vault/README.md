@@ -9,6 +9,12 @@ Claude Code, Cursor, and Codex**. The ontology is not a separate SaaS database.
 It is a local, git-backed markdown vault that an AI coding agent can read,
 query, and maintain through MCP.
 
+The code-facing promise is intentionally narrow: Atlas does not replace
+CodeGraph, grep, AST indexes, or source search. It preserves the meaning layer
+those tools cannot infer alone: which domain or capability a code artifact
+proves, why a change matters, and which validation path an agent should run
+before trusting the result.
+
 ## Current Canon
 
 | Document | Use it for | Status |
@@ -47,7 +53,11 @@ The normative product model is:
    download, and read-only demo.
 6. The product promise is durable coding-agent memory, not a manual ontology
    editor.
-7. User-facing graph workflow docs must explain what works without MCP, what
+7. Atlas stores meaningful implementation evidence, not exhaustive code facts.
+   Structural code tools find symbols and callers; Atlas gives humans and AI
+   agents the task starting point, product meaning, impact boundary, and
+   verification path.
+8. User-facing graph workflow docs must explain what works without MCP, what
    MCP adds, how the local graph differs from a graph database, and which
    commands prove the setup on the current machine.
 

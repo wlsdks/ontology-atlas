@@ -6,6 +6,12 @@
 
 `ontology-atlas` is **a local-first ontology workbench for understanding a product/system from business core to implementation evidence**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Planners, marketers, C-level decision-makers, developers, and AI agents should be able to read the same graph: business/product domains, capabilities, ownership, dependencies, evidence, and impact. Developers edit via CLI (`ontology-atlas` 45 commands — vault scaffold, agent setup repair, agent activity heartbeat, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (24 tools).
 
+Atlas does not try to replace CodeGraph, grep, AST indexes, language servers,
+or source search. Those tools answer structural code questions. Atlas gives
+coding agents the durable meaning layer above them: the task starting point,
+domain/capability context, implementation evidence, impact boundary, and
+verification path that explain why a code artifact matters.
+
 In this project, **ontology** means the executable meaning model of a
 business/product and the codebase that realizes it: `project`, `domain`,
 `capability`, and `element` nodes plus typed relations that explain intent,

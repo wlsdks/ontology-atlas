@@ -91,6 +91,16 @@ and product meaning layer on top: what the organization is trying to do, which
 capabilities carry it, which implementation proves it, what changes affect it,
 and what a human or AI agent should verify before acting.
 
+The coding-agent promise is not that Atlas replaces source search or stores an
+exhaustive symbol graph. CodeGraph, AST indexes, grep, and language servers
+should remain the structural layer for definitions, callers, imports, and local
+code impact. Atlas should tell the agent which structural question to ask, which
+capability or domain gives that code meaning, and which verification path makes
+the answer safe to use. The ontology should therefore store meaningful
+implementation evidence, not every code fact: files, classes, commands, routes,
+tests, and MCP tools become `element` nodes only when they help trace a
+business/product capability, impact path, or agent handoff.
+
 ### Expanded excellence target (2026-06-05)
 
 Ontology Atlas should make ontology feel operational, not academic. The UI must

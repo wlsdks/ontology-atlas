@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-21T03:59:42.329Z",
+  "generatedAt": "2026-06-21T11:51:53.017Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -118,9 +118,9 @@
           "slug": "positioning-guardrail"
         }
       ],
-      "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-06-05. A repo-native memory layer for Claude Code, Cursor, and Codex. ontology-atlas keeps a local, git-backed mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, ",
-      "wordCount": 1077,
-      "updatedAt": "2026-06-05T17:11:07.668Z",
+      "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-06-21. A repo-native memory layer for Claude Code, Cursor, and Codex. ontology-atlas keeps a local, git-backed mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, ",
+      "wordCount": 1219,
+      "updatedAt": "2026-06-21T11:51:21.933Z",
       "linksOut": []
     },
     {
@@ -6314,13 +6314,18 @@
         },
         {
           "depth": 2,
+          "text": "Coding-agent memory boundary decided on 2026-06-21",
+          "slug": "coding-agent-memory-boundary-decided-on-2026-06-21"
+        },
+        {
+          "depth": 2,
           "text": "MCP client connection UX check on 2026-06-05",
           "slug": "mcp-client-connection-ux-check-on-2026-06-05"
         }
       ],
       "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback. OpenAI Codex operating guid",
-      "wordCount": 1285,
-      "updatedAt": "2026-06-06T06:44:22.164Z",
+      "wordCount": 1457,
+      "updatedAt": "2026-06-21T11:51:22.142Z",
       "linksOut": []
     },
     {
@@ -8474,8 +8479,8 @@
         }
       ],
       "excerpt": "Written (v2): 2026-05-01 Decisions captured: the user confirmed Direction A (ontology-first) and added dogfooding + AI-agent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology,",
-      "wordCount": 4605,
-      "updatedAt": "2026-06-07T02:22:04.128Z",
+      "wordCount": 4705,
+      "updatedAt": "2026-06-21T11:51:22.002Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -8740,8 +8745,8 @@
         }
       ],
       "excerpt": "Current as of 2026-05-18. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontology-engine.mjs, and cli/src/index.mjs first. ontology-atlas is now best described as a repo-native memory layer for Claude Code, Cursor,",
-      "wordCount": 675,
-      "updatedAt": "2026-06-14T16:26:38.831Z",
+      "wordCount": 760,
+      "updatedAt": "2026-06-21T11:51:22.093Z",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",
@@ -9184,7 +9189,7 @@
     "../README": [
       {
         "fromSlug": "README",
-        "context": "agent can read, query, and maintain through MCP. ## Current Canon | Document | Use it for | Status | |---|---|---| | **[`../README.md`]** | Public overview, quick start, workflows, verification promises | Canonical public entry | | [`PRODUCT-OWNER-OPERATING",
+        "context": "h an agent should run before trusting the result. ## Current Canon | Document | Use it for | Status | |---|---|---| | **[`../README.md`]** | Public overview, quick start, workflows, verification promises | Canonical public entry | | [`PRODUCT-OWNER-OPERATING",
         "linkText": "`../README.md`"
       }
     ],

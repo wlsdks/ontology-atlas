@@ -46,6 +46,14 @@ and design decisions.
 `ontology-atlas` gives agents a durable local memory they can query before
 touching code and update after real changes.
 
+It helps coding agents by giving them the right starting point, product
+meaning, and verification path before they inspect code. It is not trying to
+replace CodeGraph, grep, AST indexes, or source search. Those tools answer
+structural questions such as where a symbol lives and what calls it. Atlas
+answers meaning questions: which domain or capability the code proves, why the
+change matters, what impact to check, and which validation path should run
+before the memory is trusted.
+
 The product is not "please maintain an ontology." The useful loop is:
 
 1. Open a repo.
@@ -82,6 +90,13 @@ files belong as `element` nodes when they prove or realize a higher-level
 `domain` or `capability`. The daily target is the layer that connects those two
 worlds: a durable map of what the business/system means, why it matters, and
 which implementation carries it.
+
+That means Atlas stores meaningful implementation evidence, not every code
+fact. A class, route, command, test, or file path is useful when it helps an AI
+agent start a task with the right capability, trace the change impact, or run
+the right proof. Exhaustive symbol graphs remain the job of code-intelligence
+tools; Atlas keeps the repo-native meaning layer those tools cannot infer on
+their own.
 
 Every markdown file is one graph node. Frontmatter is the machine-readable
 record; the body is the human-readable explanation.
