@@ -561,6 +561,10 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     /Agent handoff|에이전트 인계/i,
   );
   await expect(page.getByTestId("topology-overview-signal-grid")).toBeHidden();
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-fixed-surface-event-reposition-contract",
+    "fixed-surface-events-rerun-card-placement",
+  );
   const panelOverflow = await panel.evaluate((element) => ({
     clientHeight: element.clientHeight,
     scrollHeight: element.scrollHeight,
@@ -655,6 +659,10 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     minimapRect.left,
     "overview minimap should stay on the map side, not inside the analysis rail",
   ).toBeGreaterThan(panelRect.right);
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-fixed-surface-event-reposition-policy",
+    "raf-after-fixed-surface-event",
+  );
   expectCardsClear(
     await visibleCardRects(page),
     MBP14_FULLSCREEN,
@@ -1374,6 +1382,17 @@ for (const viewport of VIEWPORTS) {
       "data-visible-card-rect-read-policy",
       "frame-state-no-computed-style",
     );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-residual-overlap-clear-contract",
+      "visibility-cache-proves-selected-surfaces-clear",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-residual-overlap-read-policy",
+      "reuse-visible-card-rect-cache",
+    );
+    await expect(skeletonCards).toHaveAttribute("data-residual-overlap-clear", "true");
+    await expect(skeletonCards).toHaveAttribute("data-visible-card-overlap-count", "0");
+    await expect(skeletonCards).toHaveAttribute("data-card-fixed-surface-overlap-count", "0");
     if ((await relationButton.count()) === 0) {
       const suppressedLabel = page.locator("[data-relation-label-button]").first();
       await expect(suppressedLabel).toHaveAttribute(
@@ -2056,6 +2075,26 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-visible-card-rect-read-policy",
       "frame-state-no-computed-style",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-residual-overlap-clear-contract",
+      "visibility-cache-proves-selected-surfaces-clear",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-residual-overlap-read-policy",
+      "reuse-visible-card-rect-cache",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-residual-overlap-clear",
+      "true",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-visible-card-overlap-count",
+      "0",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-card-fixed-surface-overlap-count",
+      "0",
     );
     expect(
       await visibleCardScrollWidthViolations(page),

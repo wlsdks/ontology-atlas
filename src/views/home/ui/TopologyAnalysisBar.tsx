@@ -1540,6 +1540,9 @@ export function TopologyAnalysisBar({
               data-overview-proof-disclosure-contract="closed-by-default-map-first"
               data-overview-proof-default-state="closed"
               data-border-token="--topology-overview-signal-grid-border"
+              onToggle={() => {
+                window.dispatchEvent(new CustomEvent("topology:fixed-surface-resize"));
+              }}
             >
               <summary
                 data-testid="topology-overview-proof-summary"
@@ -1548,6 +1551,41 @@ export function TopologyAnalysisBar({
                 data-secondary-min-height-token="--topology-overview-secondary-disclosure-min-height"
                 data-text-token="--topology-overview-secondary-disclosure-text"
                 data-hover-text-token="--topology-overview-secondary-disclosure-hover-text"
+                onClick={() => {
+                  window.requestAnimationFrame(() => {
+                    window.dispatchEvent(new CustomEvent("topology:fixed-surface-resize"));
+                    const layer = document.querySelector<HTMLElement>(
+                      '[data-testid="sigma-skeleton-cards"]',
+                    );
+                    const panel = document.querySelector<HTMLElement>(
+                      '[data-testid="topology-analysis-panel"]',
+                    );
+                    if (!layer || !panel) return;
+                    const panelRect = panel.getBoundingClientRect();
+                    let hiddenCount = 0;
+                    layer
+                      .querySelectorAll<HTMLElement>(
+                        '[data-skeleton-card]:not([data-surface-hidden="true"])',
+                      )
+                      .forEach((card) => {
+                        const rect = card.getBoundingClientRect();
+                        const overlaps =
+                          rect.left < panelRect.right + 8 &&
+                          rect.right > panelRect.left - 8 &&
+                          rect.top < panelRect.bottom + 8 &&
+                          rect.bottom > panelRect.top - 8;
+                        if (!overlaps) return;
+                        card.dataset.surfaceHidden = "true";
+                        card.dataset.fixedSurfaceEventHidden = "overview-proof-panel";
+                        card.style.opacity = "0";
+                        card.style.visibility = "hidden";
+                        hiddenCount += 1;
+                      });
+                    layer.dataset.fixedSurfaceEventRepositionPolicy =
+                      "raf-after-fixed-surface-event";
+                    layer.dataset.fixedSurfaceEventHiddenCount = String(hiddenCount);
+                  });
+                }}
               >
                 <ChevronDown
                   size={10}

@@ -6578,6 +6578,23 @@ export function buildWebviewEvidencePayload(
         ),
         dragSettleOverlapReadPolicy:
           markers.topologyDragSettleOverlapReadPolicy ?? null,
+        domMarker: {
+          clearContract: markers.topologyResidualOverlapClearContract ?? null,
+          readPolicy: markers.topologyResidualOverlapReadPolicy ?? null,
+          clear: markers.topologyResidualOverlapClear ?? null,
+          visibleCardOverlapCount: markerNumber(
+            markers,
+            "topologyResidualVisibleCardOverlapCount",
+          ),
+          fixedSurfaceOverlapCount: markerNumber(
+            markers,
+            "topologyResidualFixedSurfaceOverlapCount",
+          ),
+          cardFixedSurfaceOverlapCount: markerNumber(
+            markers,
+            "topologyResidualCardFixedSurfaceOverlapCount",
+          ),
+        },
       }
       : null;
   const nodePopoverExpandedProof =

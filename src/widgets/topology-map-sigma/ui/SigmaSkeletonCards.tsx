@@ -852,6 +852,33 @@ function rectsOverlap(
   );
 }
 
+function countRectPairOverlaps(
+  rects: ReadonlyArray<{ left: number; top: number; right: number; bottom: number }>,
+  pad = 0,
+): number {
+  let count = 0;
+  for (let i = 0; i < rects.length; i += 1) {
+    for (let j = i + 1; j < rects.length; j += 1) {
+      if (rectsOverlap(rects[i], rects[j], pad)) count += 1;
+    }
+  }
+  return count;
+}
+
+function countRectSurfaceOverlaps(
+  rects: ReadonlyArray<{ left: number; top: number; right: number; bottom: number }>,
+  surfaces: ReadonlyArray<{ left: number; top: number; right: number; bottom: number }>,
+  pad = 0,
+): number {
+  let count = 0;
+  for (const rect of rects) {
+    for (const surface of surfaces) {
+      if (rectsOverlap(rect, surface, pad)) count += 1;
+    }
+  }
+  return count;
+}
+
 function resolveRelationLabelVerticalPlacement({
   blockers,
   containerHeight,
@@ -4140,6 +4167,34 @@ export function SigmaSkeletonCards({
       delete container.dataset.relationLabelPhoneBottomReservePx;
       delete container.dataset.relationLabelPhoneBottomReserveToken;
     }
+    const residualOverlapRects = Array.from(visibleCardRectCache.values())
+      .filter((entry): entry is { rect: DOMRect; visible: true } =>
+        entry.visible && entry.rect !== null,
+      )
+      .map((entry) => entry.rect);
+    const visibleCardOverlapCount = countRectPairOverlaps(
+      residualOverlapRects,
+      OVERVIEW_COLLISION_PAD,
+    );
+    const fixedSurfaceOverlapCount = countRectPairOverlaps(fixedSurfaceRects);
+    const cardFixedSurfaceOverlapCount = countRectSurfaceOverlaps(
+      residualOverlapRects,
+      fixedSurfaceRects,
+    );
+    container.dataset.residualOverlapClearContract =
+      'visibility-cache-proves-selected-surfaces-clear';
+    container.dataset.residualOverlapReadPolicy = 'reuse-visible-card-rect-cache';
+    container.dataset.visibleCardOverlapCount = String(visibleCardOverlapCount);
+    container.dataset.fixedSurfaceOverlapCount = String(fixedSurfaceOverlapCount);
+    container.dataset.cardFixedSurfaceOverlapCount = String(
+      cardFixedSurfaceOverlapCount,
+    );
+    container.dataset.residualOverlapClear =
+      visibleCardOverlapCount === 0 &&
+      fixedSurfaceOverlapCount === 0 &&
+      cardFixedSurfaceOverlapCount === 0
+        ? 'true'
+        : 'false';
     container.dataset.visibleCardCount = String(reportedVisibleCardCount);
     container.dataset.visibilityCountSource = visibilityCountSource;
     container.dataset.relationLabelBlockerSource =
@@ -4969,6 +5024,97 @@ export function SigmaSkeletonCards({
     repositionNowRef.current = reposition;
   }, [reposition]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let frame: number | null = null;
+    const handleFixedSurfaceResize = () => {
+      const currentContainer = containerRef.current;
+      if (!currentContainer || frame !== null) return;
+      currentContainer.dataset.fixedSurfaceEventRepositionPolicy =
+        'raf-after-fixed-surface-event';
+      invalidateFixedSurfaceRectCache();
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        repositionNowRef.current?.();
+      });
+    };
+    window.addEventListener('topology:fixed-surface-resize', handleFixedSurfaceResize);
+    return () => {
+      window.removeEventListener(
+        'topology:fixed-surface-resize',
+        handleFixedSurfaceResize,
+      );
+      if (frame !== null) {
+        window.cancelAnimationFrame(frame);
+      }
+    };
+  }, [invalidateFixedSurfaceRectCache]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (
+      !container ||
+      typeof ResizeObserver === 'undefined' ||
+      selectedSlug !== null ||
+      selectedRelationEdgeId !== null
+    ) {
+      return;
+    }
+    let frame: number | null = null;
+    const observer = new ResizeObserver(() => {
+      const currentContainer = containerRef.current;
+      if (!currentContainer || frame !== null) return;
+      currentContainer.dataset.fixedSurfaceResizeRepositionPolicy =
+        'raf-after-fixed-surface-resize';
+      invalidateFixedSurfaceRectCache();
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        repositionNowRef.current?.();
+      });
+    });
+    let observed = false;
+    const observeSurfaces = () => {
+      if (observed) return;
+      const currentContainer = containerRef.current;
+      if (!currentContainer) return;
+      const surfaces = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          [
+            '[data-testid="topology-analysis-panel"]',
+            '[data-testid="topology-minimap"]',
+            '[data-testid="topology-kind-legend"]',
+            '[data-testid="topology-relation-legend"]',
+          ].join(', '),
+        ),
+      );
+      if (surfaces.length === 0) return;
+      observed = true;
+      currentContainer.dataset.fixedSurfaceResizeRepositionContract =
+        'fixed-surface-resize-reruns-card-placement';
+      currentContainer.dataset.fixedSurfaceResizeObservedCount = String(
+        surfaces.length,
+      );
+      surfaces.forEach((surface) => observer.observe(surface));
+    };
+    const attachFrame = window.requestAnimationFrame(observeSurfaces);
+    const attachTimers = [120, 480].map((delay) =>
+      window.setTimeout(observeSurfaces, delay),
+    );
+    return () => {
+      window.cancelAnimationFrame(attachFrame);
+      attachTimers.forEach((timer) => window.clearTimeout(timer));
+      observer.disconnect();
+      if (frame !== null) {
+        window.cancelAnimationFrame(frame);
+      }
+    };
+  }, [
+    invalidateFixedSurfaceRectCache,
+    selectedRelationEdgeId,
+    selectedSlug,
+  ]);
+
   // 카드/선택/드래그 구조가 실제로 바뀔 때만 paint 전에 배치한다.
   // hover/visibility bookkeeping 같은 렌더까지 즉시 배치를 반복하면 큰
   // 화면에서 초기 로딩과 드래그가 끊겨 보인다.
@@ -5255,6 +5401,7 @@ export function SigmaSkeletonCards({
       data-dom-write-applied-count="0"
       data-dom-write-skipped-count="0"
       data-fixed-surface-measure-contract="single-pass-rect-read"
+      data-fixed-surface-event-reposition-contract="fixed-surface-events-rerun-card-placement"
       data-path-endpoint-separation-contract="source-target-min-gap"
       data-drag-settle-motion-contract={TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT}
       data-drag-settle-motion-duration-ms={TOPOLOGY_DRAG_SETTLE_DURATION_MS}

@@ -4104,6 +4104,18 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-support-rail-overlap-active") === "true",
                                   topologySelectedBlockingSurfaceOverlapActive:
                                     skeletonCardsLayer?.getAttribute("data-selected-blocking-surface-overlap-active") === "true",
+                                  topologyResidualOverlapClearContract:
+                                    skeletonCardsLayer?.getAttribute("data-residual-overlap-clear-contract") || "",
+                                  topologyResidualOverlapReadPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-residual-overlap-read-policy") || "",
+                                  topologyResidualOverlapClear:
+                                    skeletonCardsLayer?.getAttribute("data-residual-overlap-clear") === "true",
+                                  topologyResidualVisibleCardOverlapCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-visible-card-overlap-count") || "0"),
+                                  topologyResidualFixedSurfaceOverlapCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-fixed-surface-overlap-count") || "0"),
+                                  topologyResidualCardFixedSurfaceOverlapCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-card-fixed-surface-overlap-count") || "0"),
                                   topologyFixedSurfaceLiveSuppressionReadPolicy:
                                     skeletonCardsLayer?.getAttribute("data-fixed-surface-live-suppression-read-policy") || "",
                                   topologyFixedSurfaceLiveSuppressionReadCount:
