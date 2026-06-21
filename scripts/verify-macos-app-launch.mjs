@@ -6480,6 +6480,7 @@ export function buildWebviewEvidencePayload(
         seedCount: markerNumber(markers, "topologyConnectorRectCacheSeedCount"),
         readCount: markerNumber(markers, "topologyConnectorRectCacheReadCount"),
         hitCount: markerNumber(markers, "topologyConnectorRectCacheHitCount"),
+        visibleCardClippedCount: markerNumber(markers, "topologyCardClippedCount"),
       }
       : null;
   const nodePopoverExpandedProof =

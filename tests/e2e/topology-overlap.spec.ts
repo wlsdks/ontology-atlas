@@ -3870,6 +3870,14 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     /^\d+$/,
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-visible-card-clipped-count-source",
+    "frame-state-cache-no-dom-read",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-visible-card-clipped-count",
+    "0",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-dock-drag-snapshot-contract",
     "single-pass-card-rect-read",
   );

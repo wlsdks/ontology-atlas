@@ -916,6 +916,7 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyConnectorRectCacheSeedCount: 6,
         topologyConnectorRectCacheReadCount: 0,
         topologyConnectorRectCacheHitCount: 26,
+        topologyCardClippedCount: 0,
       },
     },
     { capturedAt: "2026-06-17T12:00:00.000Z" },
@@ -970,6 +971,7 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     seedCount: 6,
     readCount: 0,
     hitCount: 26,
+    visibleCardClippedCount: 0,
   });
 });
 

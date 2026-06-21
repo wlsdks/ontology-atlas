@@ -257,6 +257,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect.stringMatching(/^\d+$/),
     );
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-visible-card-clipped-count-source",
+      "frame-state-cache-no-dom-read",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-visible-card-clipped-count",
+      "0",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-dock-drag-snapshot-contract",
       "single-pass-card-rect-read",
     );

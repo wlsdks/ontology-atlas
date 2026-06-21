@@ -4638,6 +4638,19 @@ export function SigmaSkeletonCards({
       0,
       measureRepositionNow() - connectorLabelStartedAt,
     );
+    const visibleCardClippedCount = orderedEls.reduce((count, el) => {
+      if (!isSkeletonCardVisibleFromFrameState(el)) return count;
+      const rect = cardPlacementFrameRectCache.get(el);
+      if (!rect) return count;
+      return rect.left < 0 ||
+        rect.top < 0 ||
+        rect.right > containerRect.width ||
+        rect.bottom > containerRect.height
+        ? count + 1
+        : count;
+    }, 0);
+    container.dataset.visibleCardClippedCountSource = 'frame-state-cache-no-dom-read';
+    container.dataset.visibleCardClippedCount = String(visibleCardClippedCount);
     // pass 4 — hover 팝업 위치: 카드 우측 +10, 화면/우측 패널에 닿으면 좌측
     // flip + 세로 클램프. 매 프레임 카드 rect 파생이라 팬/줌을 따라간다.
     const popupPassStartedAt = measureRepositionNow();
