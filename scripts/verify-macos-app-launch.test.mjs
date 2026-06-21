@@ -6662,6 +6662,21 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ...payload,
       href: "tauri://localhost/en/topology/",
       title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyRepositionPassConnectorLabelMs: 3.2,
+      },
+    }),
+    /connector-label pass took 3\.2ms/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
       width: 1512,
       height: 917,
       bodyText:

@@ -1872,6 +1872,17 @@ export function validateWebviewVerifyPayload(payload, {
   if (webviewPath.includes("/topology") && payload.markers.topologyRelief !== true) {
     return "WebView did not report the Relief topology marker";
   }
+  const connectorLabelPassMs = markerNumber(
+    payload.markers,
+    "topologyRepositionPassConnectorLabelMs",
+  );
+  if (
+    webviewPath.includes("/topology") &&
+    connectorLabelPassMs !== null &&
+    connectorLabelPassMs >= TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS
+  ) {
+    return `WebView Relief connector-label pass took ${connectorLabelPassMs}ms, expected < ${TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS}ms`;
+  }
   if (
     webviewPath.includes("/topology") &&
     webviewUrl.searchParams.get("mode") === "path" &&
