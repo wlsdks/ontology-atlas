@@ -1362,6 +1362,18 @@ for (const viewport of VIEWPORTS) {
       )
       .first();
     const skeletonCards = page.getByTestId("sigma-skeleton-cards");
+    await expect(skeletonCards).toHaveAttribute(
+      "data-connector-rect-cache-frame-fallback-contract",
+      "reuse-card-placement-frame-rects-before-dom-read",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-connector-rect-cache-read-count",
+      "0",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-visible-card-rect-read-policy",
+      "frame-state-no-computed-style",
+    );
     if ((await relationButton.count()) === 0) {
       const suppressedLabel = page.locator("[data-relation-label-button]").first();
       await expect(suppressedLabel).toHaveAttribute(
@@ -2032,6 +2044,18 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-click-focus-relationship-context",
       "durable",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-frame-fallback-contract",
+      "reuse-card-placement-frame-rects-before-dom-read",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-read-count",
+      "0",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-visible-card-rect-read-policy",
+      "frame-state-no-computed-style",
     );
     expect(
       await visibleCardScrollWidthViolations(page),
