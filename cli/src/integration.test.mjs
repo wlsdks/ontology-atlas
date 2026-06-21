@@ -396,8 +396,8 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
       'run focused tests',
       '--mcp',
       'validate_vault',
-      '--codegraph',
-      'codegraph_context cli agent activity',
+      '--source',
+      'serena symbol overview cli agent activity',
       '--verify',
       'pnpm integration:cli:entry',
       '--updated-at',
@@ -428,10 +428,10 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
       count: 3,
       sources: {
         mcp: 1,
-        codegraph: 1,
+        source: 1,
         verification: 1,
       },
-      label: 'MCP · 1, CodeGraph · 1, Verify · 1',
+      label: 'MCP · 1, Source · 1, Verify · 1',
     });
     assert.deepEqual(data.heartbeat.focus.files, [
       'cli/src/commands/agent-activity.mjs',
@@ -439,7 +439,7 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     ]);
     assert.deepEqual(data.heartbeat.plan, ['run focused tests']);
     assert.deepEqual(data.heartbeat.evidence.mcp, ['validate_vault']);
-    assert.deepEqual(data.heartbeat.evidence.codegraph, ['codegraph_context cli agent activity']);
+    assert.deepEqual(data.heartbeat.evidence.source, ['serena symbol overview cli agent activity']);
     assert.deepEqual(data.heartbeat.evidence.verification, ['pnpm integration:cli:entry']);
 
     const onDisk = JSON.parse(
@@ -476,7 +476,7 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     assert.match(shown.refreshRequest.command, /--ontology-slug capabilities\/agent-live-activity-contract/);
     assert.match(shown.refreshRequest.command, /--file cli\/src\/commands\/agent-activity\.mjs/);
     assert.match(shown.refreshRequest.command, /--mcp validate_vault/);
-    assert.match(shown.refreshRequest.command, /--codegraph 'codegraph_context cli agent activity'/);
+    assert.match(shown.refreshRequest.command, /--source 'serena symbol overview cli agent activity'/);
     assert.match(shown.refreshRequest.command, /--verify 'pnpm integration:cli:entry'/);
     assert.match(shown.refreshRequest.command, /--json/);
     assert.match(
@@ -494,7 +494,7 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
       stripAnsi(humanShow.stdout),
       /review target · ontology · capabilities\/agent-live-activity-contract/,
     );
-    assert.match(stripAnsi(humanShow.stdout), /proof · MCP · 1, CodeGraph · 1, Verify · 1/);
+    assert.match(stripAnsi(humanShow.stdout), /proof · MCP · 1, Source · 1, Verify · 1/);
 
     const sourceOnlyWrite = await run([
       'agent-activity',
@@ -538,6 +538,37 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
       stripAnsi(humanSourceOnlyWrite.stdout),
       /review target · source · cli\/src\/commands\/agent-activity\.mjs/,
     );
+
+    const legacyCodegraphWrite = await run([
+      'agent-activity',
+      root,
+      '--agent',
+      'codex',
+      '--state',
+      'editing',
+      '--focus',
+      'Legacy CodeGraph proof still behaves as source evidence',
+      '--codegraph',
+      'codegraph_context legacy lookup',
+      '--json',
+    ]);
+    assert.equal(legacyCodegraphWrite.code, 0);
+    const legacyCodegraphData = JSON.parse(legacyCodegraphWrite.stdout);
+    assert.deepEqual(legacyCodegraphData.heartbeat.evidence.source, [
+      'codegraph_context legacy lookup',
+    ]);
+    assert.deepEqual(legacyCodegraphData.heartbeat.evidence.codegraph, [
+      'codegraph_context legacy lookup',
+    ]);
+    assert.deepEqual(legacyCodegraphData.proof, {
+      count: 1,
+      sources: {
+        mcp: 0,
+        source: 1,
+        verification: 0,
+      },
+      label: 'Source · 1',
+    });
 
     const clear = await run(['agent-activity', root, '--clear', '--json']);
     assert.equal(clear.code, 0);
@@ -630,6 +661,7 @@ await test('agent-activity — show normalizes handwritten heartbeat summary fie
         evidence: {
           mcp: ['  node_profile capabilities/agent-live-activity-contract  ', null],
           codegraph: ['  codegraph_context agent activity  '],
+          source: ['  rg agent activity  '],
           verification: ['  pnpm integration:cli:entry  '],
         },
         updatedAt: new Date().toISOString(),
@@ -649,13 +681,13 @@ await test('agent-activity — show normalizes handwritten heartbeat summary fie
       label: 'source · cli/src/commands/agent-activity.mjs',
     });
     assert.deepEqual(data.proof, {
-      count: 3,
+      count: 4,
       sources: {
         mcp: 1,
-        codegraph: 1,
+        source: 2,
         verification: 1,
       },
-      label: 'MCP · 1, CodeGraph · 1, Verify · 1',
+      label: 'MCP · 1, Source · 2, Verify · 1',
     });
 
     const human = await run(['agent-activity', root, '--show']);
@@ -664,7 +696,7 @@ await test('agent-activity — show normalizes handwritten heartbeat summary fie
       stripAnsi(human.stdout),
       /review target · source · cli\/src\/commands\/agent-activity\.mjs/,
     );
-    assert.match(stripAnsi(human.stdout), /proof · MCP · 1, CodeGraph · 1, Verify · 1/);
+    assert.match(stripAnsi(human.stdout), /proof · MCP · 1, Source · 2, Verify · 1/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -710,6 +742,7 @@ await test('agent-activity — show normalizes handwritten heartbeat scalar fiel
     assert.deepEqual(data.heartbeat.plan, ['run focused test']);
     assert.deepEqual(data.heartbeat.evidence, {
       mcp: ['node_profile capabilities/agent-live-activity-contract'],
+      source: ['codegraph_context agent activity'],
       codegraph: ['codegraph_context agent activity'],
       verification: [
         'node --test --test-name-pattern agent-activity cli/src/integration.test.mjs',

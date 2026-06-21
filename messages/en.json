@@ -189,7 +189,7 @@
     "agentChipCurrent": "agent",
     "agentProofChip": "proof · {count}",
     "agentMcp": "MCP",
-    "agentCodegraph": "CodeGraph",
+    "agentCodegraph": "Source",
     "agentVerification": "Verify",
     "agentProofTrail": "Proof trail",
     "close": "Close live activity popover",

@@ -189,7 +189,7 @@
     "agentChipCurrent": "AI",
     "agentProofChip": "근거 · {count}",
     "agentMcp": "MCP",
-    "agentCodegraph": "CodeGraph",
+    "agentCodegraph": "소스",
     "agentVerification": "검증",
     "agentProofTrail": "근거 흐름",
     "close": "실시간 활동 닫기",

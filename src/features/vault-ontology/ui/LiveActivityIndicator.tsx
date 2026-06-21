@@ -39,7 +39,8 @@ interface LiveAgentActivityStatus {
     count: number;
     sources: {
       mcp: number;
-      codegraph: number;
+      source?: number;
+      codegraph?: number;
       verification: number;
     };
     label: string;
@@ -67,7 +68,8 @@ interface LiveAgentActivityStatus {
     plan: string[];
     evidence: {
       mcp: string[];
-      codegraph: string[];
+      source?: string[];
+      codegraph?: string[];
       verification: string[];
     };
     updatedAt: string;
@@ -219,14 +221,14 @@ export function LiveActivityBadge({
   const evidenceCounts = heartbeat
     ? [
         [labels.agentMcp, heartbeat.evidence.mcp.length],
-        [labels.agentCodegraph, heartbeat.evidence.codegraph.length],
+        [labels.agentCodegraph, sourceEvidence(heartbeat.evidence).length],
         [labels.agentVerification, heartbeat.evidence.verification.length],
       ] as const
     : [];
   const evidenceTrail = heartbeat
     ? [
         [labels.agentMcp, heartbeat.evidence.mcp] as const,
-        [labels.agentCodegraph, heartbeat.evidence.codegraph] as const,
+        [labels.agentCodegraph, sourceEvidence(heartbeat.evidence)] as const,
         [labels.agentVerification, heartbeat.evidence.verification] as const,
       ].flatMap(([label, items]) =>
         items[0]
@@ -583,7 +585,9 @@ function formatLiveAgentRefreshRequestPacket({
   const fileArgs = heartbeat.focus.files.map((file) => `--file ${shellArg(file)}`);
   const evidenceArgs = [
     heartbeat.evidence.mcp[0] ? `--mcp ${shellArg(heartbeat.evidence.mcp[0])}` : null,
-    heartbeat.evidence.codegraph[0] ? `--codegraph ${shellArg(heartbeat.evidence.codegraph[0])}` : null,
+    sourceEvidence(heartbeat.evidence)[0]
+      ? `--source ${shellArg(sourceEvidence(heartbeat.evidence)[0])}`
+      : null,
     heartbeat.evidence.verification[0] ? `--verify ${shellArg(heartbeat.evidence.verification[0])}` : null,
   ].filter(Boolean);
   const slugArg = heartbeat.focus.ontologySlug
@@ -626,6 +630,10 @@ function formatLiveAgentRefreshRequestPacket({
     "## Verification rule",
     ...verificationRules,
   ].join("\n");
+}
+
+function sourceEvidence(evidence: NonNullable<LiveAgentActivityStatus["heartbeat"]>["evidence"]): string[] {
+  return evidence.source?.length ? evidence.source : evidence.codegraph ?? [];
 }
 
 function formatLiveAgentFocusCheckPacket({

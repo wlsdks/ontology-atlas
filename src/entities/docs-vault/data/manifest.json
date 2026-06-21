@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-21T11:51:53.017Z",
+  "generatedAt": "2026-06-21T12:03:37.344Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -119,8 +119,8 @@
         }
       ],
       "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-06-21. A repo-native memory layer for Claude Code, Cursor, and Codex. ontology-atlas keeps a local, git-backed mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, ",
-      "wordCount": 1219,
-      "updatedAt": "2026-06-21T11:51:21.933Z",
+      "wordCount": 1231,
+      "updatedAt": "2026-06-21T12:03:29.863Z",
       "linksOut": []
     },
     {
@@ -4998,8 +4998,8 @@
       },
       "headings": [],
       "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
-      "wordCount": 1125,
-      "updatedAt": "2026-06-11T15:33:17.276Z",
+      "wordCount": 1158,
+      "updatedAt": "2026-06-21T12:03:29.872Z",
       "linksOut": []
     },
     {
@@ -5343,8 +5343,8 @@
         }
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
-      "wordCount": 10467,
-      "updatedAt": "2026-06-14T07:43:31.855Z",
+      "wordCount": 10485,
+      "updatedAt": "2026-06-21T12:03:29.876Z",
       "linksOut": []
     },
     {
@@ -6270,9 +6270,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "cli/src/commands/agent-activity.mjs is the terminal writer for Atlas live agent activity. It writes, shows, and clears .ontology-atlas/agent-activity.json in the selected vault. The command validates the planning / editing / verifying / blocked / complete state enum, accepts repeated file, plan, MCP, CodeGraph, and ver",
-      "wordCount": 400,
-      "updatedAt": "2026-06-07T07:06:20.185Z",
+      "excerpt": "cli/src/commands/agent-activity.mjs is the terminal writer for Atlas live agent activity. It writes, shows, and clears .ontology-atlas/agent-activity.json in the selected vault. The command validates the planning / editing / verifying / blocked / complete state enum, accepts repeated file, plan, MCP, source lookup, and",
+      "wordCount": 431,
+      "updatedAt": "2026-06-21T12:03:29.870Z",
       "linksOut": []
     },
     {
@@ -7917,8 +7917,8 @@
       },
       "headings": [],
       "excerpt": "src/features/docs-vault-local/model/agent-activity-status.ts defines the local-first heartbeat contract used by the /ontology live activity lane. It owns the reserved source path .ontology-atlas/agent-activity.json, validates the agent heartbeat JSON shape, normalizes current focus fields, reports heartbeat age, and ma",
-      "wordCount": 130,
-      "updatedAt": "2026-06-07T06:43:12.356Z",
+      "wordCount": 148,
+      "updatedAt": "2026-06-21T12:03:29.871Z",
       "linksOut": []
     },
     {
@@ -7933,9 +7933,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx renders the operations-nav Live badge that explains changed ontology nodes and the current AI-agent heartbeat. Dogfood evidence, 2026-06-06: Codex used CodeGraph to locate LiveActivityBadge, Atlas MCP to inspect capabilities/agent-live-activity-contract, and macO",
-      "wordCount": 540,
-      "updatedAt": "2026-06-07T08:44:31.858Z",
+      "excerpt": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx renders the operations-nav Live badge that explains changed ontology nodes and the current AI-agent heartbeat. Dogfood evidence, 2026-06-06: Codex used source lookup to locate LiveActivityBadge, Atlas MCP to inspect capabilities/agent-live-activity-contract, and ",
+      "wordCount": 541,
+      "updatedAt": "2026-06-21T12:03:29.874Z",
       "linksOut": []
     },
     {
@@ -8479,8 +8479,8 @@
         }
       ],
       "excerpt": "Written (v2): 2026-05-01 Decisions captured: the user confirmed Direction A (ontology-first) and added dogfooding + AI-agent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology,",
-      "wordCount": 4705,
-      "updatedAt": "2026-06-21T11:51:22.002Z",
+      "wordCount": 4730,
+      "updatedAt": "2026-06-21T12:03:29.864Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -8614,8 +8614,8 @@
         }
       ],
       "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens before implementation is treated as valuable. Ontology Atlas does not need a backlog clerk. It needs a product owner that protects th",
-      "wordCount": 4868,
-      "updatedAt": "2026-06-13T16:35:18.365Z",
+      "wordCount": 4902,
+      "updatedAt": "2026-06-21T12:03:29.855Z",
       "linksOut": []
     },
     {
@@ -8745,8 +8745,8 @@
         }
       ],
       "excerpt": "Current as of 2026-05-18. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontology-engine.mjs, and cli/src/index.mjs first. ontology-atlas is now best described as a repo-native memory layer for Claude Code, Cursor,",
-      "wordCount": 760,
-      "updatedAt": "2026-06-21T11:51:22.093Z",
+      "wordCount": 763,
+      "updatedAt": "2026-06-21T12:03:29.864Z",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",

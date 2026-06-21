@@ -81,7 +81,8 @@ evidence trace -> human/agent meaning decision -> git-backed ontology update
 the same model
 ```
 
-AST/code-index tools such as CodeGraph are reference points for the
+AST/code-index and source-intelligence tools such as language servers, Serena,
+CodeGraph, and built-in search are reference points for the
 implementation-evidence side of that loop: parse deterministically, index
 locally, answer structural questions without re-reading the repo. Atlas should
 learn from those properties without copying implementation: local-first
@@ -92,14 +93,16 @@ capabilities carry it, which implementation proves it, what changes affect it,
 and what a human or AI agent should verify before acting.
 
 The coding-agent promise is not that Atlas replaces source search or stores an
-exhaustive symbol graph. CodeGraph, AST indexes, grep, and language servers
-should remain the structural layer for definitions, callers, imports, and local
-code impact. Atlas should tell the agent which structural question to ask, which
-capability or domain gives that code meaning, and which verification path makes
-the answer safe to use. The ontology should therefore store meaningful
-implementation evidence, not every code fact: files, classes, commands, routes,
-tests, and MCP tools become `element` nodes only when they help trace a
-business/product capability, impact path, or agent handoff.
+exhaustive symbol graph. Built-in search, grep, language servers, Serena,
+CodeGraph, and AST indexes should remain optional structural layers for
+definitions, callers, imports, and local code impact. Atlas must work for plain
+Claude Code or Codex without any external code index. It should tell the agent
+which structural question to ask, which capability or domain gives that code
+meaning, and which verification path makes the answer safe to use. The ontology
+should therefore store meaningful implementation evidence, not every code fact:
+files, classes, commands, routes, tests, and MCP tools become `element` nodes
+only when they help trace a business/product capability, impact path, or agent
+handoff.
 
 ### Expanded excellence target (2026-06-05)
 

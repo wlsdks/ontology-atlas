@@ -358,8 +358,10 @@ design, graph, CLI, MCP, and workflow changes cannot.
    error-prone without this change?
 4. Ontology value: Which concept, relation, evidence path, impact path, or
    project-to-code meaning layer becomes clearer?
-5. Agent value: Which MCP, CLI, CodeGraph, or handoff workflow becomes easier for
-   Claude Code, Codex, Cursor, or another agent?
+5. Agent value: Which MCP, CLI, source-intelligence, or handoff workflow becomes
+   easier for Claude Code, Codex, Cursor, or another agent? CodeGraph, Serena,
+   language servers, grep, and built-in source search are optional structural
+   tools; Atlas must still work without any one of them.
 6. Outcome: What behavior should change after release? Prefer "users can trace
    X without reading source" over "add a panel."
 7. Evidence: What user report, screenshot, dogfood run, metric, or repeated
@@ -427,7 +429,7 @@ ontology value, agent value, or verification.
 | User moment | Generic "users" | One audience named | Specific audience, moment, trigger, and blocked decision |
 | Differentiation | Could be any note/graph app | Some Atlas relevance | Deepens local-first ontology + agent-memory wedge |
 | Ontology value | No graph meaning improved | Improves a label or view | Clarifies concept, relation, evidence, provenance, impact, ownership, or update path |
-| Agent value | No agent consequence | Copy text or command exists | Agent gets a better MCP/CLI/CodeGraph handoff or validation path |
+| Agent value | No agent consequence | Copy text or command exists | Agent gets a better MCP/CLI/source-intelligence handoff or validation path |
 | Verification | Intent-only | Unit or browser check only | Runtime proof matches the affected surface, including installed macOS app when relevant |
 
 If the score is low, do not inflate scope. Sharpen the phenomenon, inspect
@@ -457,8 +459,9 @@ decision:
 - the current substitute is named honestly;
 - the ontology value is specific to concepts, relations, evidence, provenance,
   impact, ownership, or update paths;
-- the agent value gives Claude Code, Codex, Cursor, MCP, CLI, or CodeGraph a
-  better next action;
+- the agent value gives Claude Code, Codex, Cursor, MCP, CLI, or a structural
+  source tool a better next action without making any external code index a
+  product dependency;
 - the slice removes or quiets something when addition is not necessary;
 - verification matches the shipped surface and can catch stale builds,
   responsive breakage, graph overlap, or handoff drift.
@@ -475,7 +478,7 @@ editing product-facing files, the agent must do this:
    simplification, and verification.
 3. **Choose the slice from value, not convenience.** Do not select work because
    the file is nearby or the test is easy.
-4. **Use product evidence.** Screenshots, dogfood failures, CodeGraph/MCP
+4. **Use product evidence.** Screenshots, dogfood failures, MCP/CLI/source-tool
    friction, installed-app verification, and user reports outrank internal
    preference.
 5. **Check for subtraction.** If the same value can be achieved by deleting,

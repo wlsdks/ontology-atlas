@@ -48,7 +48,7 @@ touching code and update after real changes.
 
 It helps coding agents by giving them the right starting point, product
 meaning, and verification path before they inspect code. It is not trying to
-replace CodeGraph, grep, AST indexes, or source search. Those tools answer
+replace CodeGraph, Serena, grep, AST indexes, language servers, or source search. Those tools answer
 structural questions such as where a symbol lives and what calls it. Atlas
 answers meaning questions: which domain or capability the code proves, why the
 change matters, what impact to check, and which validation path should run
@@ -74,7 +74,7 @@ so those tools are aimed at the right problem.
 flowchart LR
   A["User asks: improve or add something"] --> B["Atlas finds the related domain and capability"]
   B --> C["Atlas returns implementation evidence: files, commands, tests, MCP tools"]
-  C --> D["Agent uses CodeGraph, grep, or the language server on that narrow code area"]
+  C --> D["Agent uses available source tools on that narrow code area"]
   D --> E["Agent changes code and runs the named verification path"]
   E --> F["Agent proposes ontology updates as a markdown diff"]
   F --> G["Next session starts from the updated meaning model"]
@@ -92,7 +92,8 @@ Implementation evidence:
 - src/widgets/topology-map-sigma/ui/SigmaSkeletonCards.test.tsx
 - scripts/verify-macos-app-launch.mjs
 Recommended code lookup:
-- Ask CodeGraph for the focused component context and callers.
+- Use the available source tool: built-in search, grep, language server,
+  Serena, CodeGraph, or another local code index.
 Verification path:
 - focused unit test for the topology label contract
 - macOS app verification when desktop topology behavior changes

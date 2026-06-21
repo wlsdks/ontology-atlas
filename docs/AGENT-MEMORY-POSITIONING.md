@@ -24,12 +24,12 @@ codebase between sessions:
 Without a shared memory layer, every agent session starts by re-discovering the
 same project shape from source files and chat history.
 
-Atlas should not promise to replace code-reading tools. CodeGraph, grep, AST
-indexes, and source search are good at structural facts: definitions, callers,
-imports, routes, and local impact paths. Atlas helps the coding agent one layer
-above that: it preserves the task starting point, product meaning, capability
-boundary, implementation evidence, and validation path that explain why those
-code facts matter.
+Atlas should not promise to replace code-reading tools. Built-in source search,
+grep, language servers, Serena, CodeGraph, AST indexes, and similar tools are
+good at structural facts: definitions, callers, imports, routes, and local
+impact paths. Atlas helps the coding agent one layer above that: it preserves
+the task starting point, product meaning, capability boundary, implementation
+evidence, and validation path that explain why those code facts matter.
 
 ## Product Bet
 
@@ -193,7 +193,8 @@ that their AI coding agent stops starting from zero.
 When explaining the code side, use this boundary:
 
 ```text
-CodeGraph and source indexes find code structure.
+Built-in search, grep, language servers, Serena, CodeGraph, and source indexes
+find code structure.
 Ontology Atlas preserves product/system meaning, implementation evidence, and
 the next verification path for humans and AI agents.
 ```

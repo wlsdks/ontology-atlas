@@ -35,7 +35,7 @@ describe("agent activity status", () => {
         plan: ["run focused tests", "sync ontology"],
         evidence: {
           mcp: ["validate_vault"],
-          codegraph: ["codegraph_context OntologyViewPage"],
+          source: ["serena symbols OntologyViewPage"],
           verification: ["pnpm exec vitest run ..."],
         },
         updatedAt,
@@ -58,10 +58,10 @@ describe("agent activity status", () => {
       count: 3,
       sources: {
         mcp: 1,
-        codegraph: 1,
+        source: 1,
         verification: 1,
       },
-      label: "MCP · 1, CodeGraph · 1, Verify · 1",
+      label: "MCP · 1, Source · 1, Verify · 1",
     });
     expect(status.heartbeat).toMatchObject({
       agent: "codex",
@@ -111,7 +111,7 @@ describe("agent activity status", () => {
       count: 0,
       sources: {
         mcp: 0,
-        codegraph: 0,
+        source: 0,
         verification: 0,
       },
       label: "",
@@ -157,6 +157,7 @@ describe("agent activity status", () => {
         evidence: {
           mcp: ["query_ontology node_profile"],
           codegraph: ["codegraph_context LiveActivityIndicator"],
+          source: ["rg LiveActivityIndicator"],
           verification: ["pnpm exec vitest run LiveActivityIndicator.test.tsx"],
         },
         updatedAt: "2026-06-06T05:00:00.000Z",
@@ -185,7 +186,7 @@ describe("agent activity status", () => {
     );
     expect(status.refreshRequest.command).toContain("--mcp 'query_ontology node_profile'");
     expect(status.refreshRequest.command).toContain(
-      "--codegraph 'codegraph_context LiveActivityIndicator'",
+      "--source 'rg LiveActivityIndicator'",
     );
     expect(status.refreshRequest.command).toContain(
       "--verify 'pnpm exec vitest run LiveActivityIndicator.test.tsx'",

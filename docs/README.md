@@ -10,7 +10,7 @@ It is a local, git-backed markdown vault that an AI coding agent can read,
 query, and maintain through MCP.
 
 The code-facing promise is intentionally narrow: Atlas does not replace
-CodeGraph, grep, AST indexes, or source search. It preserves the meaning layer
+CodeGraph, Serena, grep, AST indexes, language servers, or source search. It preserves the meaning layer
 those tools cannot infer alone: which domain or capability a code artifact
 proves, why a change matters, and which validation path an agent should run
 before trusting the result.
