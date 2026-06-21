@@ -387,6 +387,25 @@ type SkeletonVisibilityStats = { visible: number; total: number };
 
 type SkeletonDomWriteStats = { applied: number; skipped: number };
 
+type VisibleCardFrameEntry = {
+  rect: { left: number; top: number; right: number; bottom: number } | null;
+  visible: boolean;
+};
+
+type VisibilityFrameSnapshot = {
+  blockers: Array<{ left: number; top: number; right: number; bottom: number }>;
+  entries: Map<HTMLElement, VisibleCardFrameEntry>;
+  fixedSurfaceKey: string;
+  geometryKey: string;
+  height: number;
+  orderedKey: string;
+  supportRailOverlapHiddenCount: number;
+  visibleCardStateReadPolicy: string;
+  visibleCount: number;
+  visibilityCountSource: string;
+  width: number;
+};
+
 function shouldReportSkeletonVisibilityStats(
   previous: SkeletonVisibilityStats | null,
   next: SkeletonVisibilityStats,
@@ -1223,15 +1242,6 @@ function hideSkeletonCard(el: HTMLElement, stats?: SkeletonDomWriteStats) {
   if (el.style.opacity !== '0') el.style.opacity = '0';
   if (el.style.visibility !== 'hidden') el.style.visibility = 'hidden';
   if (el.style.pointerEvents !== 'none') el.style.pointerEvents = 'none';
-}
-
-function isSkeletonCardVisibleForStats(el: HTMLElement): boolean {
-  const style = getComputedStyle(el);
-  return (
-    el.dataset.surfaceHidden !== 'true' &&
-    style.visibility !== 'hidden' &&
-    Number(style.opacity || el.style.opacity || '1') > 0.01
-  );
 }
 
 function isSkeletonCardVisibleFromFrameState(el: HTMLElement): boolean {
@@ -2147,6 +2157,7 @@ export function SigmaSkeletonCards({
   const repositionNowRef = useRef<(() => void) | null>(null);
   const responsiveRepositionTimerRef = useRef<number | null>(null);
   const fixedSurfaceRectCacheRef = useRef<FixedSurfaceRectCache | null>(null);
+  const visibilityFrameSnapshotRef = useRef<VisibilityFrameSnapshot | null>(null);
   const layoutTransitionRepositionTimerRef = useRef<number | null>(null);
   const lastLayoutTransitionRepositionAtRef = useRef(0);
   const initialLayoutTransitionResolvedRef = useRef(false);
@@ -2164,6 +2175,7 @@ export function SigmaSkeletonCards({
 
   const invalidateFixedSurfaceRectCache = useCallback(() => {
     fixedSurfaceRectCacheRef.current = null;
+    visibilityFrameSnapshotRef.current = null;
   }, []);
 
   const getFixedSurfaceRects = useCallback((containerRect: DOMRect) => {
@@ -3520,13 +3532,35 @@ export function SigmaSkeletonCards({
       activeDragCluster !== null
         ? 'frame-state-during-drag'
         : 'frame-state-after-placement';
+    const visibilityFixedSurfaceKey = fixedSurfaceRects
+      .map(
+        (rect) =>
+          `${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(
+            rect.right,
+          )}:${Math.round(rect.bottom)}`,
+      )
+      .join('|');
+    const visibilityOrderedKey = orderedEls
+      .map(
+        (el) =>
+          `${el.dataset.slug ?? ''}:${el.dataset.selected ?? ''}:${
+            el.dataset.surfaceHidden ?? ''
+          }:${el.dataset.graphAnchorSurfaceBlocked ?? ''}`,
+      )
+      .join('|');
+    const visibilityGeometryKey = orderedEls
+      .map((el) => {
+        const rect = cardPlacementFrameRectCache.get(el);
+        if (!rect) return 'none';
+        return `${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(
+          rect.right,
+        )}:${Math.round(rect.bottom)}`;
+      })
+      .join('|');
     const readVisibleCardRect = (el: HTMLElement) => {
       const cached = visibleCardRectCache.get(el);
       if (cached) return cached;
-      const visible =
-        visibleCardStateReadPolicy === 'frame-state-during-drag'
-          ? isSkeletonCardVisibleFromFrameState(el)
-          : isSkeletonCardVisibleForStats(el);
+      const visible = isSkeletonCardVisibleFromFrameState(el);
       if (!visible) {
         visibleCardHiddenRectSkipCount += 1;
         const next = { rect: null, visible };
@@ -3562,10 +3596,44 @@ export function SigmaSkeletonCards({
         (selectedFocusCenterActive && selectedFocusCluster !== null)) &&
       selectedRelationEdgeId === null &&
       activeDragCluster === null;
-    const supportRailOverlapHiddenCount =
-      selectedFocusOverlapSuppressionActive
-        ? suppressVisibleCardOverlaps(orderedEls, readVisibleCardRect)
-        : 0;
+    const cachedVisibilityFrame = visibilityFrameSnapshotRef.current;
+    const canReuseVisibilityFrame =
+      activeDragCluster === null &&
+      !activeDragMotion &&
+      !readLayerSurfaceActive &&
+      !pathWorkflowActive &&
+      containerRect.width >= RELATION_LABEL_PHONE_BREAKPOINT_PX &&
+      cachedVisibilityFrame !== null &&
+      cachedVisibilityFrame.width === containerRect.width &&
+      cachedVisibilityFrame.height === containerRect.height &&
+      cachedVisibilityFrame.fixedSurfaceKey === visibilityFixedSurfaceKey &&
+      cachedVisibilityFrame.geometryKey === visibilityGeometryKey &&
+      cachedVisibilityFrame.orderedKey === visibilityOrderedKey &&
+      cachedVisibilityFrame.visibleCardStateReadPolicy === visibleCardStateReadPolicy &&
+      orderedEls.every((el) => cachedVisibilityFrame.entries.has(el));
+    let visibilityFrameCacheState = 'miss';
+    let supportRailOverlapHiddenCount = 0;
+    let dragSettleOverlapHiddenCount = 0;
+    let reportedVisibleCardCount = 0;
+    let visibilityCountSource = 'single-pass';
+    if (canReuseVisibilityFrame && cachedVisibilityFrame) {
+      visibilityFrameCacheState = 'hit';
+      for (const el of orderedEls) {
+        const entry = cachedVisibilityFrame.entries.get(el);
+        if (entry) visibleCardRectCache.set(el, entry);
+      }
+      relationLabelCardBlockers.push(...cachedVisibilityFrame.blockers);
+      reportedVisibleCardCount = cachedVisibilityFrame.visibleCount;
+      visibilityCountSource = cachedVisibilityFrame.visibilityCountSource;
+      supportRailOverlapHiddenCount =
+        cachedVisibilityFrame.supportRailOverlapHiddenCount;
+    } else {
+      visibilityFrameSnapshotRef.current = null;
+      supportRailOverlapHiddenCount =
+        selectedFocusOverlapSuppressionActive
+          ? suppressVisibleCardOverlaps(orderedEls, readVisibleCardRect)
+          : 0;
+    }
     container.dataset.supportRailOverlapPolicy =
       'selected-inspector-or-focus-cluster-hides-overlapping-map-cards';
     container.dataset.supportRailOverlapReadPolicy = 'reuse-visible-card-rect-cache';
@@ -3574,10 +3642,12 @@ export function SigmaSkeletonCards({
     container.dataset.supportRailOverlapHiddenCount = String(
       supportRailOverlapHiddenCount,
     );
-    const dragSettleOverlapHiddenCount =
-      activeDragCluster !== null && !activeDragMotion
-        ? suppressSettlingDragCardOverlaps(orderedEls, readVisibleCardRect)
-        : 0;
+    if (visibilityFrameCacheState !== 'hit') {
+      dragSettleOverlapHiddenCount =
+        activeDragCluster !== null && !activeDragMotion
+          ? suppressSettlingDragCardOverlaps(orderedEls, readVisibleCardRect)
+          : 0;
+    }
     container.dataset.dragSettleOverlapPolicy =
       'released-cluster-hides-lower-priority-overlaps';
     container.dataset.dragSettleOverlapReadPolicy = 'reuse-visible-card-rect-cache';
@@ -3590,16 +3660,22 @@ export function SigmaSkeletonCards({
       relationLabelCardBlockers.push(next.rect);
       return true;
     };
-    let visibleCardCount = 0;
-    for (const el of orderedEls) {
-      if (recordRelationLabelCardBlocker(el)) {
-        visibleCardCount += 1;
-      }
-    }
-    let reportedVisibleCardCount = visibleCardCount;
-    let visibilityCountSource = 'single-pass';
     container.dataset.visibilityFallbackSurfaceContract = 'restore-clear-or-shifted-landmark';
-    if (visibleCardCount === 0 && orderedEls.length > 0) {
+    let visibleCardCount = reportedVisibleCardCount;
+    if (visibilityFrameCacheState !== 'hit') {
+      visibleCardCount = 0;
+      for (const el of orderedEls) {
+        if (recordRelationLabelCardBlocker(el)) {
+          visibleCardCount += 1;
+        }
+      }
+      reportedVisibleCardCount = visibleCardCount;
+    }
+    if (
+      visibilityFrameCacheState !== 'hit' &&
+      visibleCardCount === 0 &&
+      orderedEls.length > 0
+    ) {
       let restored = 0;
       for (const el of orderedEls) {
         const tier = Number(el.dataset.tier ?? '3');
@@ -3738,7 +3814,7 @@ export function SigmaSkeletonCards({
       delete container.dataset.visibilityFallback;
       delete container.dataset.visibilityFallbackCount;
     }
-    if (readLayerSurfaceActive) {
+    if (visibilityFrameCacheState !== 'hit' && readLayerSurfaceActive) {
       let readLayerClearedCount = 0;
       for (const el of orderedEls) {
         const cached = readVisibleCardRect(el);
@@ -3822,7 +3898,7 @@ export function SigmaSkeletonCards({
     container.dataset.relationLabelBlockerCount = String(
       relationLabelCardBlockers.length,
     );
-    container.dataset.visibleCardRectReadPolicy = 'visible-only-after-style-check';
+    container.dataset.visibleCardRectReadPolicy = 'frame-state-no-computed-style';
     container.dataset.visibleCardStateReadPolicy = visibleCardStateReadPolicy;
     container.dataset.visibleCardRectReadCount = String(visibleCardRectReadCount);
     container.dataset.visibleCardHiddenRectSkipCount = String(
@@ -3839,6 +3915,31 @@ export function SigmaSkeletonCards({
     container.dataset.cardPlacementFrameRectDirectReadCount = String(
       cardPlacementFrameRectDirectReadCount,
     );
+    container.dataset.visibilityFrameCacheContract =
+      'reuse-stable-no-dom-write-frame';
+    container.dataset.visibilityFrameCacheState = visibilityFrameCacheState;
+    if (visibilityFrameCacheState !== 'hit') {
+      visibilityFrameSnapshotRef.current =
+        activeDragCluster === null &&
+        !activeDragMotion &&
+        !readLayerSurfaceActive &&
+        !pathWorkflowActive &&
+        containerRect.width >= RELATION_LABEL_PHONE_BREAKPOINT_PX
+          ? {
+              blockers: relationLabelCardBlockers.map((rect) => ({ ...rect })),
+              entries: new Map(visibleCardRectCache),
+              fixedSurfaceKey: visibilityFixedSurfaceKey,
+              geometryKey: visibilityGeometryKey,
+              height: containerRect.height,
+              orderedKey: visibilityOrderedKey,
+              supportRailOverlapHiddenCount,
+              visibleCardStateReadPolicy,
+              visibleCount: reportedVisibleCardCount,
+              visibilityCountSource,
+              width: containerRect.width,
+            }
+          : null;
+    }
     const visibilityCacheDurationMs = Math.max(
       0,
       measureRepositionNow() - visibilityCacheStartedAt,

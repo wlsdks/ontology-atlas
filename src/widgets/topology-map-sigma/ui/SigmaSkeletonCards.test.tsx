@@ -779,6 +779,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "rect-and-visibility-single-pass",
       );
       expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-visibility-frame-cache-contract",
+        "reuse-stable-no-dom-write-frame",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
         "data-drag-reposition-policy",
         "raf-coalesced-pointer-move",
       );
@@ -802,6 +806,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
         "data-visibility-stats-report-count",
         initialReportCount,
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-visibility-frame-cache-state",
+        "hit",
       );
       expect(
         Number(
@@ -3583,7 +3591,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       await waitFor(() => {
         expect(layer).toHaveAttribute(
           "data-visible-card-rect-read-policy",
-          "visible-only-after-style-check",
+          "frame-state-no-computed-style",
         );
         expect(layer).toHaveAttribute(
           "data-card-placement-frame-rect-cache-contract",

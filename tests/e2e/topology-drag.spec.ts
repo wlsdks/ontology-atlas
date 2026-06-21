@@ -63,7 +63,7 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-visible-card-rect-read-policy",
-    "visible-only-after-style-check",
+    "frame-state-no-computed-style",
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-drag-frame-budget-contract",
@@ -174,7 +174,7 @@ test("Relief dogfood graph exposes scale and bounded visible-card rect reads", a
   });
   await expect(layer).toHaveAttribute(
     "data-visible-card-rect-read-policy",
-    "visible-only-after-style-check",
+    "frame-state-no-computed-style",
   );
 
   const proof = await layer.evaluate((el) => ({
