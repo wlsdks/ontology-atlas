@@ -542,10 +542,19 @@ export function SigmaSelectedEdgeCard({
             </span>
             <span className="sr-only">{claimLensText}</span>
           </div>
-          <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[11px] font-semibold leading-3.5">
-            <span className="truncate">{data.sourceName}</span>
+          <div
+            data-testid="sigma-selected-edge-endpoint-route"
+            data-endpoint-route-contract="visible-source-target-names-wrap"
+            data-source-name={data.sourceName}
+            data-target-name={data.targetName}
+            data-source-handle={data.source}
+            data-target-handle={data.target}
+            data-handle-summary={primaryCopyPayloadHandleSummary}
+            className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] font-semibold leading-3.5"
+          >
+            <span className="min-w-0 max-w-full break-words">{data.sourceName}</span>
             <span className="shrink-0 text-[color:var(--topology-selected-relation-accent-muted)]">→</span>
-            <span className="truncate">{data.targetName}</span>
+            <span className="min-w-0 max-w-full break-words">{data.targetName}</span>
           </div>
           <div
             data-testid="sigma-selected-edge-handle-strip"

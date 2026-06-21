@@ -1889,6 +1889,32 @@ for (const viewport of VIEWPORTS) {
     const targetHandle = await handleStrip.getAttribute("data-target-handle");
     await expect(handleStrip).toContainText(sourceHandle ?? "");
     await expect(handleStrip).toContainText(targetHandle ?? "");
+    const endpointRoute = page.getByTestId("sigma-selected-edge-endpoint-route");
+    await expect(endpointRoute).toHaveAttribute(
+      "data-endpoint-route-contract",
+      "visible-source-target-names-wrap",
+    );
+    await expect(endpointRoute).toHaveAttribute("data-source-name", /.+/);
+    await expect(endpointRoute).toHaveAttribute("data-target-name", /.+/);
+    await expect(endpointRoute).toHaveAttribute("data-source-handle", sourceHandle ?? "");
+    await expect(endpointRoute).toHaveAttribute("data-target-handle", targetHandle ?? "");
+    await expect(endpointRoute).toHaveAttribute(
+      "data-handle-summary",
+      `${sourceHandle ?? ""} → ${targetHandle ?? ""}`,
+    );
+    await expect(endpointRoute).toContainText(
+      (await endpointRoute.getAttribute("data-source-name")) ?? "",
+    );
+    await expect(endpointRoute).toContainText(
+      (await endpointRoute.getAttribute("data-target-name")) ?? "",
+    );
+    const endpointRouteFits = await endpointRoute.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    );
+    expect(
+      endpointRouteFits,
+      `selected relation endpoint route should not horizontally truncate at ${viewport.label}`,
+    ).toBe(true);
     await expect(page.locator('[data-relation-copy-priority="primary"]')).toHaveAttribute(
       "data-relation-copy-action",
       /relation_check|explain_relation/,
