@@ -5214,6 +5214,18 @@ export function validateWebviewVerifyPayload(payload, {
           ? "explain_relation"
           : "relation_check";
       if (
+        payload.markers.topologySelectedRelationCardHandoffContract !==
+        "selected-relation-card-carries-mcp-cli-fallback"
+      ) {
+        return `WebView reported malformed Relief selected relation card handoff contract (${payload.markers.topologySelectedRelationCardHandoffContract || "missing"})`;
+      }
+      if (payload.markers.topologySelectedRelationCardRoute !== "source>target>type>action") {
+        return `WebView reported malformed Relief selected relation card route (${payload.markers.topologySelectedRelationCardRoute || "missing"})`;
+      }
+      if (payload.markers.topologySelectedRelationCardPrimaryAction !== expectedPrimaryAction) {
+        return `WebView reported mismatched Relief selected relation card primary action (${payload.markers.topologySelectedRelationCardPrimaryAction ?? "unknown marker"} vs ${expectedPrimaryAction})`;
+      }
+      if (
         payload.markers.topologySelectedRelationPrimaryCopyActionKind !==
         expectedPrimaryAction
       ) {
@@ -5279,6 +5291,16 @@ export function validateWebviewVerifyPayload(payload, {
         payload.markers.topologySelectedRelationCopyPayloadTo.trim().length === 0
       ) {
         return `WebView reported malformed Relief selected relation copy payload endpoints (${payload.markers.topologySelectedRelationCopyPayloadFrom ?? "unknown from"} -> ${payload.markers.topologySelectedRelationCopyPayloadTo ?? "unknown to"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationCardSource !==
+          payload.markers.topologySelectedRelationCopyPayloadFrom ||
+        payload.markers.topologySelectedRelationCardTarget !==
+          payload.markers.topologySelectedRelationCopyPayloadTo ||
+        payload.markers.topologySelectedRelationCardType !==
+          payload.markers.topologySelectedRelationCopyPayloadType
+      ) {
+        return `WebView reported mismatched Relief selected relation card route handles (${payload.markers.topologySelectedRelationCardSource ?? "unknown source"} -> ${payload.markers.topologySelectedRelationCardTarget ?? "unknown target"} · ${payload.markers.topologySelectedRelationCardType ?? "unknown type"})`;
       }
       if (
         payload.markers.topologySelectedRelationHandleStripSource !==
@@ -5361,6 +5383,13 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (cliFallbackSummary !== expectedCliFallbackCommand) {
         return `WebView reported malformed Relief selected relation CLI fallback summary (${cliFallbackSummary || "empty"})`;
+      }
+      const cardCliFallback =
+        typeof payload.markers.topologySelectedRelationCardCliFallback === "string"
+          ? payload.markers.topologySelectedRelationCardCliFallback.trim()
+          : "";
+      if (cardCliFallback !== expectedCliFallbackCommand) {
+        return `WebView reported malformed Relief selected relation card CLI fallback (${cardCliFallback || "empty"})`;
       }
       const primaryCopyActionCall =
         typeof payload.markers.topologySelectedRelationPrimaryCopyActionCall === "string"
@@ -6526,6 +6555,15 @@ export function buildWebviewEvidencePayload(
           evidence: markers.topologySelectedRelationLabelEvidenceState ?? null,
           type: markers.topologySelectedRelationLabelType ?? null,
           typeLabel: markers.topologySelectedRelationLabelTypeLabel ?? null,
+        },
+        card: {
+          contract: markers.topologySelectedRelationCardHandoffContract ?? null,
+          route: markers.topologySelectedRelationCardRoute ?? null,
+          primaryAction: markers.topologySelectedRelationCardPrimaryAction ?? null,
+          cliFallback: markers.topologySelectedRelationCardCliFallback ?? null,
+          source: markers.topologySelectedRelationCardSource ?? null,
+          target: markers.topologySelectedRelationCardTarget ?? null,
+          type: markers.topologySelectedRelationCardType ?? null,
         },
         aggregate: {
           gate: markers.topologySelectedRelationLabelHandoffGate ?? null,

@@ -903,6 +903,15 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologySelectedRelationLabelEvidenceState: "source-backed",
         topologySelectedRelationLabelType: "contains",
         topologySelectedRelationLabelTypeLabel: "포함 ×4",
+        topologySelectedRelationCardHandoffContract:
+          "selected-relation-card-carries-mcp-cli-fallback",
+        topologySelectedRelationCardRoute: "source>target>type>action",
+        topologySelectedRelationCardPrimaryAction: "explain_relation",
+        topologySelectedRelationCardCliFallback:
+          "ontology-atlas explain 'domain:ai-agent-partner' 'capability:agent-config-onboarding' [vault] --type 'contains'",
+        topologySelectedRelationCardSource: "domain:ai-agent-partner",
+        topologySelectedRelationCardTarget: "capability:agent-config-onboarding",
+        topologySelectedRelationCardType: "contains",
         topologyRelationLabelGeometryContract: "frame-positioned-hit-targets",
         topologyRelationLabelGeometrySource: "after-render-layout-pass",
         topologyRelationLabelGeometryExpectedCount: 1,
@@ -963,6 +972,16 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
       evidence: "source-backed",
       type: "contains",
       typeLabel: "포함 ×4",
+    },
+    card: {
+      contract: "selected-relation-card-carries-mcp-cli-fallback",
+      route: "source>target>type>action",
+      primaryAction: "explain_relation",
+      cliFallback:
+        "ontology-atlas explain 'domain:ai-agent-partner' 'capability:agent-config-onboarding' [vault] --type 'contains'",
+      source: "domain:ai-agent-partner",
+      target: "capability:agent-config-onboarding",
+      type: "contains",
     },
     aggregate: {
       gate: "handoff-ready",
@@ -1710,6 +1729,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelViewportClampSide: "none",
       topologySelectedRelationLabelViewportInset: 16,
       topologySelectedRelationCardMaxHeightToken: "--topology-selected-relation-card-max-height",
+      topologySelectedRelationCardHandoffContract:
+        "selected-relation-card-carries-mcp-cli-fallback",
+      topologySelectedRelationCardRoute: "source>target>type>action",
+      topologySelectedRelationCardPrimaryAction: "explain_relation",
+      topologySelectedRelationCardCliFallback:
+        "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+      topologySelectedRelationCardSource: "domain:views",
+      topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
+      topologySelectedRelationCardType: "contains",
       topologySelectedRelationLabelQualityChipText: "support",
       topologySelectedRelationLabelPrimaryCopyAction: "explain_relation",
       topologySelectedRelationLabelAgentGateText: "MCP/CLI",
@@ -2112,6 +2140,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardAgentGateKind: "handoff-ready",
       topologySelectedRelationCardAgentDecision:
         "Include this relation in agent handoff; it has typed evidence.",
+      topologySelectedRelationCardHandoffContract:
+        "selected-relation-card-carries-mcp-cli-fallback",
+      topologySelectedRelationCardRoute: "source>target>type>action",
+      topologySelectedRelationCardPrimaryAction: "explain_relation",
+      topologySelectedRelationCardCliFallback:
+        "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+      topologySelectedRelationCardSource: "domain:views",
+      topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
       topologySelectedRelationAgentGateText: "Agent gate handoff ready",
       topologySelectedRelationAgentDecisionText:
         "Include this relation in agent handoff; it has typed evidence.",
@@ -6937,6 +6973,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
           topologySelectedRelationCardEvidenceState: "source-backed",
+        topologySelectedRelationCardType: "contains",
+        topologySelectedRelationCardHandoffContract:
+          "selected-relation-card-carries-mcp-cli-fallback",
+        topologySelectedRelationCardRoute: "source>target>type>action",
+        topologySelectedRelationCardPrimaryAction: "explain_relation",
+        topologySelectedRelationCardCliFallback:
+          "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+        topologySelectedRelationCardSource: "domain:views",
+        topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
@@ -7212,6 +7257,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
           topologySelectedRelationCardEvidenceState: "source-backed",
+        topologySelectedRelationCardType: "contains",
+        topologySelectedRelationCardHandoffContract:
+          "selected-relation-card-carries-mcp-cli-fallback",
+        topologySelectedRelationCardRoute: "source>target>type>action",
+        topologySelectedRelationCardPrimaryAction: "explain_relation",
+        topologySelectedRelationCardCliFallback:
+          "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+        topologySelectedRelationCardSource: "domain:views",
+        topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
         topologySelectedRelationCardAgentGate: "handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:

@@ -1514,6 +1514,24 @@ pub fn run() {
                               const topologySelectedRelationCardAgentDecision =
                                 topologySelectedRelationCard?.getAttribute("data-agent-decision") ||
                                 "";
+                              const topologySelectedRelationCardHandoffContract =
+                                topologySelectedRelationCard?.getAttribute("data-agent-handoff-contract") ||
+                                "";
+                              const topologySelectedRelationCardRoute =
+                                topologySelectedRelationCard?.getAttribute("data-selected-relation-route") ||
+                                "";
+                              const topologySelectedRelationCardPrimaryAction =
+                                topologySelectedRelationCard?.getAttribute("data-selected-relation-primary-action") ||
+                                "";
+                              const topologySelectedRelationCardCliFallback =
+                                topologySelectedRelationCard?.getAttribute("data-selected-relation-cli-fallback") ||
+                                "";
+                              const topologySelectedRelationCardSource =
+                                topologySelectedRelationCard?.getAttribute("data-selected-relation-source") ||
+                                "";
+                              const topologySelectedRelationCardTarget =
+                                topologySelectedRelationCard?.getAttribute("data-selected-relation-target") ||
+                                "";
                               const topologySelectedRelationCardSurfaceRole =
                                 topologySelectedRelationCard?.getAttribute("data-surface-role") ||
                                 "";
@@ -3707,6 +3725,12 @@ pub fn run() {
                                   topologySelectedRelationCardEvidenceState,
                                   topologySelectedRelationCardType,
                                   topologySelectedRelationCardTypeLabel,
+                                  topologySelectedRelationCardHandoffContract,
+                                  topologySelectedRelationCardRoute,
+                                  topologySelectedRelationCardPrimaryAction,
+                                  topologySelectedRelationCardCliFallback,
+                                  topologySelectedRelationCardSource,
+                                  topologySelectedRelationCardTarget,
                                   topologySelectedRelationCardSurfaceRole,
                                   topologySelectedRelationCardDensity,
                                   topologySelectedRelationCardDensityContract:
