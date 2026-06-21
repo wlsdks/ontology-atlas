@@ -1823,6 +1823,55 @@ export function validateSelectedRelationEndpointRouteMarkers(markers) {
   return null;
 }
 
+export function validateSelectedRelationEndpointVisibilityMarkers(markers) {
+  if (
+    markers?.topologySelectedRelationEndpointVisibilityContract !==
+    "selected-relation-keeps-source-target-readable"
+  ) {
+    return `WebView reported malformed Relief selected relation endpoint visibility contract (${markers?.topologySelectedRelationEndpointVisibilityContract || "missing"})`;
+  }
+  const expectedCount = Number(
+    markers?.topologySelectedRelationEndpointExpectedCount || 0,
+  );
+  const visibleCount = Number(markers?.topologySelectedRelationEndpointVisibleCount || 0);
+  const hiddenCount = Number(markers?.topologySelectedRelationEndpointHiddenCount || 0);
+  const endpointCards = Array.isArray(markers?.topologySelectedRelationEndpointCards)
+    ? markers.topologySelectedRelationEndpointCards
+    : [];
+  const source =
+    typeof markers?.topologySelectedRelationCardSource === "string"
+      ? markers.topologySelectedRelationCardSource.trim()
+      : "";
+  const target =
+    typeof markers?.topologySelectedRelationCardTarget === "string"
+      ? markers.topologySelectedRelationCardTarget.trim()
+      : "";
+  const endpointSlugs = new Set(
+    endpointCards.map((card) => card?.slug).filter((slug) => typeof slug === "string"),
+  );
+  if (
+    !Number.isFinite(expectedCount) ||
+    !Number.isFinite(visibleCount) ||
+    !Number.isFinite(hiddenCount) ||
+    expectedCount < 2 ||
+    visibleCount < 2 ||
+    hiddenCount !== 0 ||
+    endpointCards.length < 2
+  ) {
+    return `WebView reported incomplete Relief selected relation endpoint visibility proof (${visibleCount}/${expectedCount} visible, ${hiddenCount} hidden)`;
+  }
+  if (!source || !target || !endpointSlugs.has(source) || !endpointSlugs.has(target)) {
+    return `WebView reported Relief selected relation endpoint cards without source and target (${source || "missing source"} -> ${target || "missing target"})`;
+  }
+  const hiddenEndpoint = endpointCards.find(
+    (card) => card?.surfaceHidden === "true" || card?.visible === false,
+  );
+  if (hiddenEndpoint) {
+    return `WebView reported hidden Relief selected relation endpoint card (${hiddenEndpoint.slug || "unknown endpoint"})`;
+  }
+  return null;
+}
+
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
   minWebviewSize = null,
@@ -5100,6 +5149,11 @@ export function validateWebviewVerifyPayload(payload, {
         if (selectedRelationEndpointRouteError) {
           return selectedRelationEndpointRouteError;
         }
+        const selectedRelationEndpointVisibilityError =
+          validateSelectedRelationEndpointVisibilityMarkers(payload.markers);
+        if (selectedRelationEndpointVisibilityError) {
+          return selectedRelationEndpointVisibilityError;
+        }
         if (
           payload.markers.topologySelectedRelationCardElevationContract !==
           "solid-active-inspector-over-map"
@@ -6597,6 +6651,42 @@ export function buildWebviewEvidencePayload(
             : "run-explain-relation-for-handoff",
       }
       : null;
+  const relationEndpointVisibilityProof =
+    markers.topologySelectedRelationEndpointVisibilityContract ===
+    "selected-relation-keeps-source-target-readable"
+      ? {
+        proof: "topology-selected-relation-endpoint-visibility",
+        status:
+          validateSelectedRelationEndpointVisibilityMarkers(markers) === null
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        contract: markers.topologySelectedRelationEndpointVisibilityContract ?? null,
+        expectedCount: markerNumber(
+          markers,
+          "topologySelectedRelationEndpointExpectedCount",
+        ),
+        visibleCount: markerNumber(
+          markers,
+          "topologySelectedRelationEndpointVisibleCount",
+        ),
+        hiddenCount: markerNumber(
+          markers,
+          "topologySelectedRelationEndpointHiddenCount",
+        ),
+        source: markers.topologySelectedRelationCardSource ?? null,
+        target: markers.topologySelectedRelationCardTarget ?? null,
+        cards: Array.isArray(markers.topologySelectedRelationEndpointCards)
+          ? markers.topologySelectedRelationEndpointCards.map((card) => ({
+            slug: card?.slug ?? null,
+            visible: card?.visible === true,
+            surfaceHidden: card?.surfaceHidden ?? null,
+            shift: card?.shift ?? null,
+          }))
+          : [],
+        agentNextAction: "read-selected-relation-with-source-and-target-cards",
+      }
+      : null;
   const relationLabelFrameGeometryProof =
     markers.topologyRelationLabelGeometryContract === "frame-positioned-hit-targets"
       ? {
@@ -6914,6 +7004,7 @@ export function buildWebviewEvidencePayload(
     payload,
     composerBlockingProof,
     relationLabelHandoffProof,
+    relationEndpointVisibilityProof,
     relationLabelFrameGeometryProof,
     connectorCacheProof,
     connectorLabelPassProof,

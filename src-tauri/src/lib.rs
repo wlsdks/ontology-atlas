@@ -1732,6 +1732,41 @@ pub fn run() {
                               const topologySelectedRelationEndpointRoute = document.querySelector('[data-testid="sigma-selected-edge-endpoint-route"]');
                               const topologySelectedRelationEndpointRouteRect =
                                 topologySelectedRelationEndpointRoute?.getBoundingClientRect();
+                              const topologySelectedRelationEndpointVisibilityContract =
+                                skeletonCardsLayer?.getAttribute("data-selected-relation-endpoint-visibility-contract") || "";
+                              const topologySelectedRelationEndpointExpectedCount =
+                                Number(skeletonCardsLayer?.getAttribute("data-selected-relation-endpoint-count") || "0");
+                              const topologySelectedRelationEndpointCards = Array.from(
+                                document.querySelectorAll('[data-skeleton-card][data-selected-relation-endpoint="true"]')
+                              ).map((card) => {
+                                const style = getComputedStyle(card);
+                                const rect = card.getBoundingClientRect();
+                                const opacity = Number(style.opacity || "1");
+                                const surfaceHidden = card.getAttribute("data-surface-hidden") || "";
+                                return {
+                                  slug: card.getAttribute("data-slug") || "",
+                                  surfaceHidden,
+                                  shift: card.getAttribute("data-selected-relation-endpoint-surface-shift") || "",
+                                  visible:
+                                    surfaceHidden !== "true" &&
+                                    style.display !== "none" &&
+                                    style.visibility !== "hidden" &&
+                                    Number.isFinite(opacity) &&
+                                    opacity > 0.01 &&
+                                    rect.width > 0 &&
+                                    rect.height > 0,
+                                  left: rect.left,
+                                  top: rect.top,
+                                  right: rect.right,
+                                  bottom: rect.bottom,
+                                  width: rect.width,
+                                  height: rect.height
+                                };
+                              });
+                              const topologySelectedRelationEndpointVisibleCount =
+                                topologySelectedRelationEndpointCards.filter((card) => card.visible).length;
+                              const topologySelectedRelationEndpointHiddenCount =
+                                topologySelectedRelationEndpointCards.filter((card) => !card.visible).length;
                               const topologyAnalysisPanel = document.querySelector('[data-testid="topology-analysis-panel"]');
                               const topologyAnalysisPanelStyle = topologyAnalysisPanel
                                 ? getComputedStyle(topologyAnalysisPanel)
@@ -3968,6 +4003,11 @@ pub fn run() {
                                     topologySelectedRelationEndpointRoute?.clientWidth || 0,
                                   topologySelectedRelationEndpointRouteScrollWidth:
                                     topologySelectedRelationEndpointRoute?.scrollWidth || 0,
+                                  topologySelectedRelationEndpointVisibilityContract,
+                                  topologySelectedRelationEndpointExpectedCount,
+                                  topologySelectedRelationEndpointVisibleCount,
+                                  topologySelectedRelationEndpointHiddenCount,
+                                  topologySelectedRelationEndpointCards,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyFocusNoopAttempted:
@@ -4370,6 +4410,9 @@ mod tests {
         assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
         assert!(source.contains("__ontologyAtlasTopologyFocusNoopVerify"));
         assert!(source.contains("ontology-atlas:verify-selected-focus-safe-fit"));
+        assert!(source.contains("data-selected-relation-endpoint-visibility-contract"));
+        assert!(source.contains("data-selected-relation-endpoint=\"true\""));
+        assert!(source.contains("topologySelectedRelationEndpointCards"));
     }
 
     #[test]

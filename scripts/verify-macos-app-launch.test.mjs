@@ -29,6 +29,7 @@ import {
   selectedRelationRouteRailTextLeak,
   validateSelectedRelationCardAttentionLane,
   validateSelectedRelationCardDensityContract,
+  validateSelectedRelationEndpointVisibilityMarkers,
   validateSelectedRelationEndpointRouteMarkers,
   validateRelationLabelFrameGeometryMarkers,
   validateTopologyConnectorCacheMarkers,
@@ -912,6 +913,25 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologySelectedRelationCardSource: "domain:ai-agent-partner",
         topologySelectedRelationCardTarget: "capability:agent-config-onboarding",
         topologySelectedRelationCardType: "contains",
+        topologySelectedRelationEndpointVisibilityContract:
+          "selected-relation-keeps-source-target-readable",
+        topologySelectedRelationEndpointExpectedCount: 2,
+        topologySelectedRelationEndpointVisibleCount: 2,
+        topologySelectedRelationEndpointHiddenCount: 0,
+        topologySelectedRelationEndpointCards: [
+          {
+            slug: "domain:ai-agent-partner",
+            visible: true,
+            surfaceHidden: "",
+            shift: "safe-shift",
+          },
+          {
+            slug: "capability:agent-config-onboarding",
+            visible: true,
+            surfaceHidden: "",
+            shift: "safe-shift",
+          },
+        ],
         topologyRelationLabelGeometryContract: "frame-positioned-hit-targets",
         topologyRelationLabelGeometrySource: "after-render-layout-pass",
         topologyRelationLabelGeometryExpectedCount: 1,
@@ -993,6 +1013,32 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
       evidence: "source-backed",
     },
     agentNextAction: "run-explain-relation-for-handoff",
+  });
+  assert.deepEqual(evidence.relationEndpointVisibilityProof, {
+    proof: "topology-selected-relation-endpoint-visibility",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    contract: "selected-relation-keeps-source-target-readable",
+    expectedCount: 2,
+    visibleCount: 2,
+    hiddenCount: 0,
+    source: "domain:ai-agent-partner",
+    target: "capability:agent-config-onboarding",
+    cards: [
+      {
+        slug: "domain:ai-agent-partner",
+        visible: true,
+        surfaceHidden: "",
+        shift: "safe-shift",
+      },
+      {
+        slug: "capability:agent-config-onboarding",
+        visible: true,
+        surfaceHidden: "",
+        shift: "safe-shift",
+      },
+    ],
+    agentNextAction: "read-selected-relation-with-source-and-target-cards",
   });
   assert.deepEqual(evidence.relationLabelFrameGeometryProof, {
     proof: "topology-relation-label-frame-geometry",
@@ -10234,6 +10280,88 @@ test("selected relation endpoint route markers prove visible source and target n
       topologySelectedRelationEndpointRouteScrollWidth: 212,
     }),
     /overflowing Relief selected relation endpoint route/,
+  );
+});
+
+test("selected relation endpoint visibility markers prove source and target cards stay readable", () => {
+  const baseMarkers = {
+    topologySelectedRelationCardSource: "domain:views",
+    topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
+    topologySelectedRelationEndpointVisibilityContract:
+      "selected-relation-keeps-source-target-readable",
+    topologySelectedRelationEndpointExpectedCount: 2,
+    topologySelectedRelationEndpointVisibleCount: 2,
+    topologySelectedRelationEndpointHiddenCount: 0,
+    topologySelectedRelationEndpointCards: [
+      {
+        slug: "domain:views",
+        visible: true,
+        surfaceHidden: "",
+        shift: "safe-shift",
+      },
+      {
+        slug: "capability:topology-analysis-modes",
+        visible: true,
+        surfaceHidden: "",
+        shift: "safe-shift",
+      },
+    ],
+  };
+
+  assert.equal(validateSelectedRelationEndpointVisibilityMarkers(baseMarkers), null);
+  assert.match(
+    validateSelectedRelationEndpointVisibilityMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointVisibilityContract: "best-effort",
+    }),
+    /endpoint visibility contract/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointVisibilityMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointHiddenCount: 1,
+    }),
+    /endpoint visibility proof/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointVisibilityMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointCards: [
+        {
+          slug: "domain:views",
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+        {
+          slug: "capability:wrong",
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+      ],
+    }),
+    /without source and target/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointVisibilityMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointCards: [
+        {
+          slug: "domain:views",
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+        {
+          slug: "capability:topology-analysis-modes",
+          visible: false,
+          surfaceHidden: "true",
+          shift: "safe-shift",
+        },
+      ],
+    }),
+    /hidden Relief selected relation endpoint card/,
   );
 });
 
