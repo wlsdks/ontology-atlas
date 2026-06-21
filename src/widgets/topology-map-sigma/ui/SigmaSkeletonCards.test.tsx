@@ -209,6 +209,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "visible-card-rects-seed-connector-cache",
     );
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-frame-fallback-contract",
+      "reuse-card-placement-frame-rects-before-dom-read",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-layout-transition-contract",
       "stable-card-state-key",
     );
@@ -243,7 +247,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         .getAttribute("data-connector-rect-cache-seed-count") ?? "0",
     );
     expect(connectorSeedCount).toBeGreaterThan(0);
-    expect(connectorReadCount).toBeLessThanOrEqual(connectorSeedCount);
+    expect(connectorReadCount).toBe(0);
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-connector-rect-cache-read-count",
       expect.stringMatching(/^\d+$/),

@@ -4110,6 +4110,12 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyConnectorRectCacheContract !== "frame-local-card-rect-cache") {
         return `WebView Relief connector rect cache contract was ${payload.markers.topologyConnectorRectCacheContract || "missing"}`;
       }
+      if (
+        payload.markers.topologyConnectorRectCacheFrameFallbackContract !==
+        "reuse-card-placement-frame-rects-before-dom-read"
+      ) {
+        return `WebView Relief connector rect cache frame fallback contract was ${payload.markers.topologyConnectorRectCacheFrameFallbackContract || "missing"}`;
+      }
       if (payload.markers.topologyConnectorRectCacheAccounting !== "reads-plus-hits") {
         return `WebView Relief connector rect cache accounting was ${payload.markers.topologyConnectorRectCacheAccounting || "missing"}`;
       }
@@ -4125,7 +4131,7 @@ export function validateWebviewVerifyPayload(payload, {
         !Number.isFinite(connectorRectCacheReadCount) ||
         !Number.isFinite(connectorRectCacheHitCount) ||
         connectorRectCacheSize < 2 ||
-        connectorRectCacheReadCount < 2 ||
+        connectorRectCacheReadCount !== 0 ||
         connectorRectCacheHitCount < 1
       ) {
         return `WebView Relief connector rect cache proof was incomplete (${connectorRectCacheSize} size / ${connectorRectCacheReadCount} reads / ${connectorRectCacheHitCount} hits)`;

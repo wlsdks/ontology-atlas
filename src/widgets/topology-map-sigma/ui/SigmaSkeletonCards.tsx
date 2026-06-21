@@ -4000,6 +4000,12 @@ export function SigmaSkeletonCards({
         connectorCardRectCache.set(el, visibleCached.rect);
         return visibleCached.rect;
       }
+      const frameRect = cardPlacementFrameRectCache.get(el);
+      if (frameRect) {
+        connectorCardRectHitCount += 1;
+        connectorCardRectCache.set(el, frameRect);
+        return frameRect;
+      }
       connectorCardRectReadCount += 1;
       const rect = el.getBoundingClientRect();
       const next = {
@@ -4067,6 +4073,8 @@ export function SigmaSkeletonCards({
     if (svg) {
       container.dataset.connectorDomIndexContract = 'reuse-card-index';
       container.dataset.connectorRectCacheContract = 'frame-local-card-rect-cache';
+      container.dataset.connectorRectCacheFrameFallbackContract =
+        'reuse-card-placement-frame-rects-before-dom-read';
       const parentEl = ego?.selected ? (elBySlug.get(ego.selected) ?? null) : null;
       for (const path of svg.querySelectorAll<SVGPathElement>('[data-connector]')) {
         const childSlug = path.dataset.connector;

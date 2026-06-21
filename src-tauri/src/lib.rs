@@ -4082,6 +4082,8 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-connector-dom-index-contract") || "",
                                   topologyConnectorRectCacheContract:
                                     skeletonCardsLayer?.getAttribute("data-connector-rect-cache-contract") || "",
+                                  topologyConnectorRectCacheFrameFallbackContract:
+                                    skeletonCardsLayer?.getAttribute("data-connector-rect-cache-frame-fallback-contract") || "",
                                   topologyConnectorRectCacheAccounting:
                                     skeletonCardsLayer?.getAttribute("data-connector-rect-cache-accounting") || "",
                                   topologyConnectorRectCacheSize:

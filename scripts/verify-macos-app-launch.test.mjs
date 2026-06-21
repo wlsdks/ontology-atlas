@@ -290,9 +290,11 @@ test("WebView verification requires Add Concept backdrop when the composer is op
           topologyDockDragSnapshotContract: "single-pass-card-rect-read",
           topologyConnectorDomIndexContract: "reuse-card-index",
           topologyConnectorRectCacheContract: "frame-local-card-rect-cache",
+          topologyConnectorRectCacheFrameFallbackContract:
+            "reuse-card-placement-frame-rects-before-dom-read",
           topologyConnectorRectCacheAccounting: "reads-plus-hits",
           topologyConnectorRectCacheSize: 8,
-          topologyConnectorRectCacheReadCount: 8,
+          topologyConnectorRectCacheReadCount: 0,
           topologyConnectorRectCacheHitCount: 6,
           topologyRelationLabelBlockerContract: "reuse-visible-card-rects",
           topologyRelationLabelBlockerSource: "visibility-pass",
@@ -1557,9 +1559,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyDockDragSnapshotContract: "single-pass-card-rect-read",
       topologyConnectorDomIndexContract: "reuse-card-index",
       topologyConnectorRectCacheContract: "frame-local-card-rect-cache",
+      topologyConnectorRectCacheFrameFallbackContract:
+        "reuse-card-placement-frame-rects-before-dom-read",
       topologyConnectorRectCacheAccounting: "reads-plus-hits",
       topologyConnectorRectCacheSize: 8,
-      topologyConnectorRectCacheReadCount: 8,
+      topologyConnectorRectCacheReadCount: 0,
       topologyConnectorRectCacheHitCount: 6,
       topologyRelationLabelBlockerContract: "reuse-visible-card-rects",
       topologyRelationLabelBlockerSource: "visibility-pass",
@@ -2677,6 +2681,26 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
     /drag frame cache snapshot count/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyConnectorRectCacheFrameFallbackContract: "",
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /connector rect cache frame fallback contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyConnectorRectCacheReadCount: 1,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /connector rect cache proof/,
   );
   assert.match(
     validateWebviewVerifyPayload({
