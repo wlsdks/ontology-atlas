@@ -255,10 +255,20 @@ describe("TopologyNodePopover", () => {
       "text-[color:var(--topology-node-popover-kind-text)]",
     );
     expect(kindLabel?.className).not.toContain("var(--color-text-quaternary)");
+    expect(
+      document.querySelector("[data-selected-node-title-line-separator]"),
+    ).toHaveAttribute("data-selected-node-title-line-separator", "title-to-count-line");
     expect(countLine).toHaveAttribute(
       "data-count-text-token",
       "--topology-node-popover-count-text",
     );
+    expect(countLine).toHaveAttribute(
+      "data-count-line-readability-contract",
+      "separated-from-following-meaning",
+    );
+    expect(
+      document.querySelector("[data-selected-node-count-line-separator]"),
+    ).toHaveAttribute("data-selected-node-count-line-separator", "count-line-to-meaning");
     expect(countLine?.className).toContain(
       "text-[color:var(--topology-node-popover-count-text)]",
     );
@@ -1201,6 +1211,25 @@ describe("TopologyNodePopover", () => {
     expect(popover.className).not.toContain("min-[1800px]");
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     expect(screen.getByText("이 노드를 쓰는 곳 1 · 이 노드가 기대는 곳 2")).toBeInTheDocument();
+    expect(
+      document.querySelector("[data-selected-node-title-line-separator]"),
+    ).toHaveAttribute("data-selected-node-title-line-separator", "title-to-count-line");
+    const countLine = document.querySelector("[data-selected-node-count-line]");
+    expect(countLine).toHaveAttribute(
+      "data-count-line-readability-contract",
+      "separated-from-following-meaning",
+    );
+    expect(
+      document.querySelector("[data-selected-node-count-line-separator]"),
+    ).toHaveAttribute("data-selected-node-count-line-separator", "count-line-to-meaning");
+    expect(popover.textContent).toContain("이 노드가 기대는 곳 2 핵심 허브");
+    expect(popover.textContent).toContain("MCP Server 이 노드를 쓰는 곳");
+    expect(popover.textContent).toContain("이 노드에 기대요 관계");
+    expect(popover.textContent).toContain("유형 2 상세 보기");
+    expect(popover.textContent).not.toContain("MCP Server이 노드를 쓰는 곳");
+    expect(popover.textContent).not.toContain("이 노드가 기대는 곳 2핵심 허브");
+    expect(popover.textContent).not.toContain("이 노드에 기대요관계");
+    expect(popover.textContent).not.toContain("유형 2상세 보기");
     const compactMeaning = screen.getByTestId("topology-node-popover-compact-meaning");
     expect(compactMeaning).toHaveTextContent("핵심 허브 — 7곳이 이 노드에 기대요");
     expect(compactMeaning).toHaveAttribute(
@@ -1285,6 +1314,9 @@ describe("TopologyNodePopover", () => {
     expect(compactFacts).toHaveTextContent("3");
     expect(compactFacts).toHaveTextContent("유형");
     expect(compactFacts).toHaveTextContent("2");
+    expect(
+      document.querySelector("[data-selected-node-relation-facts-action-separator]"),
+    ).toHaveAttribute("data-selected-node-relation-facts-action-separator", "facts-to-actions");
     expect(compactFacts).not.toHaveTextContent("직접 의미 관계 3개");
     expect(compactFacts).not.toHaveTextContent("관계 유형 2종");
     const factPriority = document.querySelector(
@@ -2804,6 +2836,27 @@ describe("TopologyNodePopover", () => {
     expect(summaryLine).toHaveAttribute("data-summary-order-contract", "after-meaning");
     expect(summaryLine).toHaveAttribute("data-summary-visibility", "metadata-only");
     expect(summaryLine).toHaveClass("sr-only");
+    expect(document.querySelector("[data-selected-node-count-line]")).toHaveAttribute(
+      "data-count-line-readability-contract",
+      "separated-from-following-meaning",
+    );
+    expect(
+      document.querySelector("[data-selected-node-title-line-separator]"),
+    ).toHaveAttribute("data-selected-node-title-line-separator", "title-to-count-line");
+    expect(
+      document.querySelector("[data-selected-node-count-line-separator]"),
+    ).toHaveAttribute("data-selected-node-count-line-separator", "count-line-to-meaning");
+    const popoverText = screen.getByTestId("topology-node-popover").textContent ?? "";
+    expect(popoverText).toContain("MCP Server 이 노드를 쓰는 곳");
+    expect(popoverText).toContain("이 노드가 기대는 곳 2 AI Agent Partner");
+    expect(popoverText).toContain("AI Agent Partner 영역에 속한 역량 12곳이 직접 의존");
+    expect(popoverText).toContain("12곳이 직접 의존하는 핵심 축이에요 2곳에 기댑니다");
+    expect(popoverText).toContain("MCP SDK, Parser 바꾸면 최대 7곳");
+    expect(popoverText).not.toContain("이 노드가 기대는 곳 2AI Agent Partner");
+    expect(popoverText).not.toContain("MCP Server이 노드를 쓰는 곳");
+    expect(popoverText).not.toContain("역량12곳이 직접 의존");
+    expect(popoverText).not.toContain("축이에요2곳에 기댑니다");
+    expect(popoverText).not.toContain("Parser바꾸면 최대 7곳");
     expect(significance).toHaveAttribute(
       "data-significance-layout",
       "primary-meaning-only",

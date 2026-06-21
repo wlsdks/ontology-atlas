@@ -438,13 +438,26 @@ export function TopologyNodePopover({
           >
             {focus.title}
           </h2>
+          <span
+            data-selected-node-title-line-separator="title-to-count-line"
+            className="sr-only"
+          >
+            {" "}
+          </span>
           <p
             data-selected-node-count-line
+            data-count-line-readability-contract="separated-from-following-meaning"
             data-count-text-token="--topology-node-popover-count-text"
             className="mt-0.5 truncate text-[length:var(--topology-node-popover-compact-meta-size)] text-[color:var(--topology-node-popover-count-text)]"
           >
             {labels.usedBy} {focus.usedByCount} · {labels.dependsOn} {focus.dependsOnCount}
           </p>
+          <span
+            data-selected-node-count-line-separator="count-line-to-meaning"
+            className="sr-only"
+          >
+            {" "}
+          </span>
           {significance ? (
             <p
               data-testid="topology-node-popover-compact-meaning"
@@ -457,7 +470,7 @@ export function TopologyNodePopover({
               data-compact-meaning-gap-token="--topology-node-popover-compact-meaning-gap"
               className="mt-[var(--topology-node-popover-compact-meaning-gap)] line-clamp-1 text-[length:var(--topology-node-popover-compact-meaning-size)] leading-[var(--topology-node-popover-compact-meaning-leading)] text-[color:var(--topology-node-popover-compact-meaning-text)] max-[1280px]:sr-only"
             >
-              {significance.importanceLine}
+              {significance.importanceLine}{" "}
             </p>
           ) : null}
         </div>
@@ -506,6 +519,12 @@ export function TopologyNodePopover({
             {" "}
             <span className="min-w-0 truncate tabular-nums">{relationTypeCount}</span>
           </p>
+          <span
+            data-selected-node-relation-facts-action-separator="facts-to-actions"
+            className="sr-only"
+          >
+            {" "}
+          </span>
           <div
             data-testid="topology-node-popover-compact-actions"
             data-compact-actions-layout-contract="actions-share-command-row-with-facts"
@@ -665,14 +684,27 @@ export function TopologyNodePopover({
           >
             {focus.title}
           </h2>
+          <span
+            data-selected-node-title-line-separator="title-to-count-line"
+            className="sr-only"
+          >
+            {" "}
+          </span>
           <p
             data-selected-node-count-line
+            data-count-line-readability-contract="separated-from-following-meaning"
             data-count-text-token="--topology-node-popover-count-text"
             data-count-size-token="--topology-node-popover-count-size"
             className="mt-0.5 truncate text-[length:var(--topology-node-popover-count-size)] text-[color:var(--topology-node-popover-count-text)]"
           >
             {labels.usedBy} {focus.usedByCount} · {labels.dependsOn} {focus.dependsOnCount}
           </p>
+          <span
+            data-selected-node-count-line-separator="count-line-to-meaning"
+            className="sr-only"
+          >
+            {" "}
+          </span>
         </div>
         <button
           type="button"
@@ -707,7 +739,7 @@ export function TopologyNodePopover({
             data-significance-context-text-token="--topology-node-popover-significance-context-text"
             className="sr-only"
           >
-            {significance.whatLine}
+            {significance.whatLine}{" "}
           </p>
           <p
             data-selected-node-importance-line
@@ -725,7 +757,7 @@ export function TopologyNodePopover({
                 : "line-clamp-2 text-[length:var(--topology-node-popover-significance-size)] leading-[var(--topology-node-popover-significance-leading)] text-[color:var(--topology-node-popover-significance-support-text)]"
             }
           >
-            {significance.importanceLine}
+            {significance.importanceLine}{" "}
           </p>
           <p
             data-significance-detail-line="depends-on"
@@ -733,7 +765,7 @@ export function TopologyNodePopover({
             data-significance-detail-text-token="--topology-node-popover-significance-detail-text"
             className="sr-only"
           >
-            {significance.dependsOnLine}
+            {significance.dependsOnLine}{" "}
           </p>
           <p
             data-significance-detail-line="impact"
@@ -741,7 +773,7 @@ export function TopologyNodePopover({
             data-significance-detail-text-token="--topology-node-popover-significance-detail-text"
             className="sr-only"
           >
-            {significance.impactLine}
+            {significance.impactLine}{" "}
           </p>
         </div>
       ) : null}
