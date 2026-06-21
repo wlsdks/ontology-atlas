@@ -4172,6 +4172,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const layer = screen.getByTestId("sigma-skeleton-cards");
     fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
     expect(layer).toHaveAttribute("data-dragging-active", "false");
+    expect(layer).toHaveAttribute(
+      "data-visible-card-state-read-policy",
+      "frame-state-during-drag",
+    );
     expect(card).toHaveAttribute("data-drag-cluster", "true");
     expect(card).toHaveAttribute("data-dragging-active", "false");
     expect(card).toHaveStyle({ zIndex: "9" });

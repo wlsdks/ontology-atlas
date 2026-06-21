@@ -3515,7 +3515,7 @@ export function SigmaSkeletonCards({
     let visibleCardRectReadCount = 0;
     let visibleCardHiddenRectSkipCount = 0;
     const visibleCardStateReadPolicy =
-      activeDragMotion ? 'frame-state-during-drag' : 'computed-style';
+      dragRef.current !== null ? 'frame-state-during-drag' : 'computed-style';
     const readVisibleCardRect = (el: HTMLElement) => {
       const cached = visibleCardRectCache.get(el);
       if (cached) return cached;
