@@ -6483,6 +6483,31 @@ export function buildWebviewEvidencePayload(
         visibleCardClippedCount: markerNumber(markers, "topologyCardClippedCount"),
       }
       : null;
+  const residualOverlapProof =
+    markers.topologyRelief === true || markers.topologySkeletonCardsActive === true
+      ? {
+        proof: "topology-residual-overlap-clear",
+        status:
+          markerNumber(markers, "topologyCardOverlapCount") === 0 &&
+          markerNumber(markers, "topologyCardClippedCount") === 0 &&
+          markerNumber(markers, "topologyFixedSurfaceOverlapCount") === 0 &&
+          markerNumber(markers, "topologyCardFixedSurfaceOverlapCount") === 0
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        visibleCardOverlapCount: markerNumber(markers, "topologyCardOverlapCount"),
+        visibleCardClippedCount: markerNumber(markers, "topologyCardClippedCount"),
+        fixedSurfaceOverlapCount: markerNumber(markers, "topologyFixedSurfaceOverlapCount"),
+        cardFixedSurfaceOverlapCount: markerNumber(
+          markers,
+          "topologyCardFixedSurfaceOverlapCount",
+        ),
+        supportRailOverlapReadPolicy:
+          markers.topologySupportRailOverlapReadPolicy ?? null,
+        dragSettleOverlapReadPolicy:
+          markers.topologyDragSettleOverlapReadPolicy ?? null,
+      }
+      : null;
   const nodePopoverExpandedProof =
     markers.topologyNodePopoverVisible === true &&
     markers.topologyNodePopoverCollapsed === false &&
@@ -6628,6 +6653,7 @@ export function buildWebviewEvidencePayload(
     relationLabelHandoffProof,
     relationLabelFrameGeometryProof,
     connectorCacheProof,
+    residualOverlapProof,
     nodePopoverExpandedProof,
     selectedFocusDimProof,
   };

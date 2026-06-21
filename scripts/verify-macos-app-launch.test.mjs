@@ -916,7 +916,13 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyConnectorRectCacheSeedCount: 6,
         topologyConnectorRectCacheReadCount: 0,
         topologyConnectorRectCacheHitCount: 26,
+        topologyRelief: true,
+        topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
+        topologyFixedSurfaceOverlapCount: 0,
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologySupportRailOverlapReadPolicy: "reuse-visible-card-rect-cache",
+        topologyDragSettleOverlapReadPolicy: "reuse-visible-card-rect-cache",
       },
     },
     { capturedAt: "2026-06-17T12:00:00.000Z" },
@@ -972,6 +978,17 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     readCount: 0,
     hitCount: 26,
     visibleCardClippedCount: 0,
+  });
+  assert.deepEqual(evidence.residualOverlapProof, {
+    proof: "topology-residual-overlap-clear",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    visibleCardOverlapCount: 0,
+    visibleCardClippedCount: 0,
+    fixedSurfaceOverlapCount: 0,
+    cardFixedSurfaceOverlapCount: 0,
+    supportRailOverlapReadPolicy: "reuse-visible-card-rect-cache",
+    dragSettleOverlapReadPolicy: "reuse-visible-card-rect-cache",
   });
 });
 
