@@ -311,11 +311,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-card-placement-slowest-subphase",
       expect.stringMatching(
-        /^(setup|core-loop|overview-collision|dim-pass|read-layer|path-endpoint|overview-domain|fixed-restore)$/,
+        /^(setup|core-loop|overview-collision|dim-pass|read-layer|path-endpoint|overview-domain|overview-post-domain|fixed-restore)$/,
       ),
     );
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-card-placement-subphase-core-loop-ms",
+      expect.stringMatching(/^\d+(\.\d+)?$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-card-placement-subphase-overview-post-domain-ms",
       expect.stringMatching(/^\d+(\.\d+)?$/),
     );
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(

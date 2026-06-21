@@ -675,6 +675,10 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-overview-domain-attribute-write-policy",
     "dedupe-separated-marker",
   );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-card-placement-subphase-overview-post-domain-ms",
+    /\d+(\.\d+)?/,
+  );
   expectCardsClear(
     await visibleCardRects(page),
     MBP14_FULLSCREEN,

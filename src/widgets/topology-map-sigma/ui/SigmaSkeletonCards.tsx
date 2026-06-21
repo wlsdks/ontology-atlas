@@ -3716,6 +3716,11 @@ export function SigmaSkeletonCards({
     container.dataset.overviewDomainSeparatedCount = String(
       overviewDomainSeparatedCount,
     );
+    const cardPlacementOverviewDomainDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementOverviewDomainStartedAt,
+    );
+    const cardPlacementOverviewPostDomainStartedAt = measureRepositionNow();
     let overviewPostDomainOverlapHiddenCount = 0;
     let overviewPostDomainOverlapReadCount = 0;
     if (!ego) {
@@ -3731,7 +3736,9 @@ export function SigmaSkeletonCards({
         return Number(a.dataset.layoutY ?? 0) - Number(b.dataset.layoutY ?? 0);
       });
       for (const el of ordered) {
-        delete el.dataset.overviewPostDomainOverlapHidden;
+        if (el.dataset.overviewPostDomainOverlapHidden !== undefined) {
+          delete el.dataset.overviewPostDomainOverlapHidden;
+        }
         if (!isSkeletonCardVisibleFromFrameState(el)) continue;
         const box = el.getBoundingClientRect();
         overviewPostDomainOverlapReadCount += 1;
@@ -3761,9 +3768,9 @@ export function SigmaSkeletonCards({
     container.dataset.overviewPostDomainOverlapReadCount = String(
       overviewPostDomainOverlapReadCount,
     );
-    const cardPlacementOverviewDomainDurationMs = Math.max(
+    const cardPlacementOverviewPostDomainDurationMs = Math.max(
       0,
-      measureRepositionNow() - cardPlacementOverviewDomainStartedAt,
+      measureRepositionNow() - cardPlacementOverviewPostDomainStartedAt,
     );
     const cardPlacementFixedRestoreStartedAt = measureRepositionNow();
     const fixedSurfaceRestoredCount = restoreVisibleCardsFromFixedSurfaces(
@@ -3819,6 +3826,7 @@ export function SigmaSkeletonCards({
       ['read-layer', cardPlacementReadLayerDurationMs],
       ['path-endpoint', cardPlacementPathEndpointDurationMs],
       ['overview-domain', cardPlacementOverviewDomainDurationMs],
+      ['overview-post-domain', cardPlacementOverviewPostDomainDurationMs],
       ['fixed-restore', cardPlacementFixedRestoreDurationMs],
     ] as const;
     const [cardPlacementSlowestSubphase, cardPlacementSlowestSubphaseMs] =
@@ -3841,6 +3849,8 @@ export function SigmaSkeletonCards({
       cardPlacementPathEndpointDurationMs.toFixed(2);
     container.dataset.cardPlacementSubphaseOverviewDomainMs =
       cardPlacementOverviewDomainDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseOverviewPostDomainMs =
+      cardPlacementOverviewPostDomainDurationMs.toFixed(2);
     container.dataset.cardPlacementSubphaseFixedRestoreMs =
       cardPlacementFixedRestoreDurationMs.toFixed(2);
     container.dataset.cardPlacementSlowestSubphase = cardPlacementSlowestSubphase;
