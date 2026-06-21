@@ -4029,6 +4029,29 @@ export function SigmaSkeletonCards({
       container.dataset.clickFocusRelationshipContext = 'none';
       container.dataset.clickFocusRelationshipContextSource = 'none';
     }
+    let dragConnectorFrameRectSyncReadCount = 0;
+    if (activeDragCluster !== null) {
+      for (const el of orderedEls) {
+        const slug = el.dataset.slug ?? '';
+        if (!isDragClusterCard(slug, el.dataset.dockParent)) continue;
+        if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+        const rect = el.getBoundingClientRect();
+        dragConnectorFrameRectSyncReadCount += 1;
+        cardPlacementFrameRectCache.set(el, {
+          left: rect.left - containerRect.left,
+          top: rect.top - containerRect.top,
+          right: rect.right - containerRect.left,
+          bottom: rect.bottom - containerRect.top,
+        });
+      }
+    }
+    container.dataset.dragConnectorFrameRectSyncPolicy =
+      activeDragCluster !== null
+        ? 'live-drag-cluster-rects-before-connector-layout'
+        : 'not-needed';
+    container.dataset.dragConnectorFrameRectSyncReadCount = String(
+      dragConnectorFrameRectSyncReadCount,
+    );
     const connectorCardRectCache = new Map<
       HTMLElement,
       { left: number; top: number; right: number; bottom: number }
@@ -4042,17 +4065,17 @@ export function SigmaSkeletonCards({
         connectorCardRectHitCount += 1;
         return cached;
       }
-      const visibleCached = visibleCardRectCache.get(el);
-      if (visibleCached?.visible && visibleCached.rect) {
-        connectorCardRectHitCount += 1;
-        connectorCardRectCache.set(el, visibleCached.rect);
-        return visibleCached.rect;
-      }
       const frameRect = cardPlacementFrameRectCache.get(el);
       if (frameRect) {
         connectorCardRectHitCount += 1;
         connectorCardRectCache.set(el, frameRect);
         return frameRect;
+      }
+      const visibleCached = visibleCardRectCache.get(el);
+      if (visibleCached?.visible && visibleCached.rect) {
+        connectorCardRectHitCount += 1;
+        connectorCardRectCache.set(el, visibleCached.rect);
+        return visibleCached.rect;
       }
       connectorCardRectReadCount += 1;
       const rect = el.getBoundingClientRect();
