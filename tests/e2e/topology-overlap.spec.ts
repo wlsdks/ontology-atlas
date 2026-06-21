@@ -397,7 +397,7 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
   );
   await expect(selectedCard).toHaveAttribute(
     "aria-label",
-    /Views.+\d+ relations? · \d+ types? · inspect/,
+    /Views.+\d+ shown relations? · \d+ types? · inspect/,
   );
   const subtreeCount = selectedCard.locator("[data-skeleton-card-count]");
   await expect(subtreeCount).toHaveCount(0);
@@ -423,7 +423,7 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
   await expect(summary).toHaveAttribute("data-relation-type-count", /^[1-9]\d*$/);
   await expect(summary).toHaveAttribute(
     "data-relation-summary-readable-text",
-    /\d+ relations? · \d+ types? · inspect/,
+    /\d+ shown relations? · \d+ types? · inspect/,
   );
   await expect(summary).toHaveAttribute(
     "data-relation-summary-visible-contract",
@@ -435,7 +435,7 @@ async function expectSelectedCardRelationSummary(page: Page, selectedSlug: strin
   );
   await expect(summary).toHaveAttribute(
     "data-relation-summary-visible-text",
-    /\d+ relations?/,
+    /\d+ shown/,
   );
   await expect(selectedTitle).toHaveAttribute("aria-hidden", "true");
   await expect(selectedCard.locator("[data-card-kind-badge]")).toHaveAttribute(

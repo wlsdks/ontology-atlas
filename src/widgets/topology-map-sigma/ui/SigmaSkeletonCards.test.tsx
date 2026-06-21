@@ -541,7 +541,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(summary).toHaveAttribute("data-relation-type-count", "1");
     expect(summary).toHaveAttribute(
       "data-relation-summary-readable-text",
-      "1 relation · 1 type · inspect",
+      "1 shown relation · 1 type · inspect",
     );
     expect(summary).toHaveAttribute(
       "data-relation-summary-visible-contract",
@@ -551,11 +551,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-summary-map-label-fallback",
       "selected-card-keeps-action-when-map-labels-collapse",
     );
-    expect(summary).toHaveAttribute("data-relation-summary-visible-text", "1 relation");
+    expect(summary).toHaveAttribute("data-relation-summary-visible-text", "1 shown");
     expect(summary).toHaveAttribute("aria-hidden", "true");
     expect(summary).not.toHaveAttribute("aria-label");
-    expect(summary).toHaveAttribute("title", "1 relation · 1 type · inspect");
-    expect(summary).toHaveTextContent("1 relation");
+    expect(summary).toHaveAttribute("title", "1 shown relation · 1 type · inspect");
+    expect(summary).toHaveTextContent("1 shown");
     const selectedCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
     expect(selectedCard).toHaveAttribute(
       "data-card-accessible-label-contract",
@@ -575,16 +575,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "title-to-relation-summary",
     );
     expect(selectedCard?.textContent).toContain("project Atlas");
-    expect(selectedCard?.textContent).toContain("Atlas 1 relation");
+    expect(selectedCard?.textContent).toContain("Atlas 1 shown");
     expect(selectedCard?.textContent).not.toContain("projectAtlas");
-    expect(selectedCard?.textContent).not.toContain("Atlas1 relation");
+    expect(selectedCard?.textContent).not.toContain("Atlas1 shown");
     expect(selectedCard).toHaveAttribute(
       "aria-label",
-      "project · Atlas · 1 relation · 1 type · inspect",
+      "project · Atlas · 1 shown relation · 1 type · inspect",
     );
     expect(selectedCard).toHaveAttribute(
       "title",
-      "project · Atlas · 1 relation · 1 type · inspect",
+      "project · Atlas · 1 shown relation · 1 type · inspect",
     );
     expect(selectedCard?.querySelector("[data-card-kind-badge]")).toHaveAttribute(
       "aria-hidden",
