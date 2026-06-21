@@ -1665,6 +1665,18 @@ for (const viewport of VIEWPORTS) {
       /relation_check|explain_relation/,
     );
     await expect(relationButton).toHaveAttribute(
+      "data-relation-label-handoff-contract",
+      "label-button-carries-mcp-cli-fallback",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-primary-action",
+      /relation_check|explain_relation/,
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-cli-fallback",
+      /ontology-atlas (relation-check|explain)/,
+    );
+    await expect(relationButton).toHaveAttribute(
       "data-relation-label-agent-gate-visible",
       "metadata-only",
     );

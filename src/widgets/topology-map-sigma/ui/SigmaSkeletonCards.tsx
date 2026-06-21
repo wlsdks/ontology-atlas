@@ -5979,6 +5979,9 @@ export function SigmaSkeletonCards({
             data-agent-gate-kind={agentGateKind}
             data-primary-copy-action={primaryCopyAction}
             data-cli-fallback-command={cliFallbackCommand}
+            data-relation-label-handoff-contract="label-button-carries-mcp-cli-fallback"
+            data-relation-label-primary-action={primaryCopyAction}
+            data-relation-label-cli-fallback={cliFallbackCommand}
             data-relation-fact-route="fact>evidence>gate>action"
             data-relation-fact-route-quality={quality}
             data-relation-fact-route-evidence={evidenceState}
