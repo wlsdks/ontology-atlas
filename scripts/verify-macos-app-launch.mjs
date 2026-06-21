@@ -6728,6 +6728,49 @@ export function buildWebviewEvidencePayload(
         },
       }
       : null;
+  const nodePopoverCompactHandoffProof =
+    markers.topologyNodePopoverVisible === true &&
+    markers.topologyNodePopoverCollapsed === true &&
+    markers.topologyNodePopoverAgentHandoffRoute === "selected-node>facts>actions"
+      ? {
+        proof: "topology-node-popover-compact-handoff-root",
+        status:
+          markers.topologyNodePopoverAgentHandoffContract ===
+            "selected-node-actions-visible" &&
+          markers.topologyNodePopoverAgentHandoffPrimaryAction === "focus-brief" &&
+          markerNumber(markers, "topologyNodePopoverAgentHandoffActionCount") >= 1 &&
+          markerNumber(markers, "topologyNodePopoverAgentHandoffRelationFactCount") >= 1 &&
+          markerNumber(markers, "topologyNodePopoverAgentHandoffRelationTypeCount") >= 1
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        selectedNode: {
+          id: markers.topologySelectedNodeId ?? null,
+          title: markers.topologySelectedNodeTitle ?? null,
+          compactMeaning:
+            typeof markers.topologyNodePopoverCompactMeaningText === "string"
+              ? markers.topologyNodePopoverCompactMeaningText.trim()
+              : null,
+        },
+        handoff: {
+          contract: markers.topologyNodePopoverAgentHandoffContract ?? null,
+          route: markers.topologyNodePopoverAgentHandoffRoute ?? null,
+          primaryAction: markers.topologyNodePopoverAgentHandoffPrimaryAction ?? null,
+          actionCount: markerNumber(markers, "topologyNodePopoverAgentHandoffActionCount"),
+          relationFactCount: markerNumber(
+            markers,
+            "topologyNodePopoverAgentHandoffRelationFactCount",
+          ),
+          relationTypeCount: markerNumber(
+            markers,
+            "topologyNodePopoverAgentHandoffRelationTypeCount",
+          ),
+          readableFlow: markers.topologyNodePopoverCompactActionsReadableFlow ?? null,
+          briefActionFlow: markers.topologyNodePopoverCompactBriefActionReadableFlow ?? null,
+        },
+        agentNextAction: "copy-selected-node-focus-brief-or-expand-detail",
+      }
+      : null;
   const nodePopoverExpandedProof =
     markers.topologyNodePopoverVisible === true &&
     markers.topologyNodePopoverCollapsed === false &&
@@ -6876,6 +6919,7 @@ export function buildWebviewEvidencePayload(
     connectorLabelPassProof,
     visibleCardSelectedSurfaceRectProof,
     residualOverlapProof,
+    nodePopoverCompactHandoffProof,
     nodePopoverExpandedProof,
     selectedFocusDimProof,
   };

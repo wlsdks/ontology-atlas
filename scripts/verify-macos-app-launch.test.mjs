@@ -1091,6 +1091,8 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
       href: "tauri://localhost/en/topology/?p=domain%3Aviews&mode=focus",
       markers: {
         topologyAttentionWinner: "focus-state",
+        topologyNodePopoverVisible: true,
+        topologyNodePopoverCollapsed: true,
         topologySelectedNodePopoverVisible: true,
         topologySelectedNodeId: "domain:views",
         topologySelectedNodeTitle: "Views",
@@ -1105,6 +1107,12 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
           "selected-node-facts-to-agent-handoff",
         topologyNodePopoverCompactBriefActionReadableFlow:
           "selected-node-facts-to-agent-brief",
+        topologyNodePopoverAgentHandoffContract: "selected-node-actions-visible",
+        topologyNodePopoverAgentHandoffRoute: "selected-node>facts>actions",
+        topologyNodePopoverAgentHandoffPrimaryAction: "focus-brief",
+        topologyNodePopoverAgentHandoffActionCount: "3",
+        topologyNodePopoverAgentHandoffRelationFactCount: "3",
+        topologyNodePopoverAgentHandoffRelationTypeCount: "2",
         topologyNodePopoverCompactRelationFactsContract:
           "collapsed-dock-surfaces-typed-facts",
         topologyNodePopoverCompactRelationFactsReadableContract:
@@ -1184,6 +1192,27 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
       contextToken: "--topology-map-dim-context-opacity",
     },
     agentNextAction: "read-selected-node-popover-before-background-map-context",
+  });
+  assert.deepEqual(evidence.nodePopoverCompactHandoffProof, {
+    proof: "topology-node-popover-compact-handoff-root",
+    status: "proved",
+    route: "/en/topology/?p=domain%3Aviews&mode=focus",
+    selectedNode: {
+      id: "domain:views",
+      title: "Views",
+      compactMeaning: "A core hub — 10 places depend on it",
+    },
+    handoff: {
+      contract: "selected-node-actions-visible",
+      route: "selected-node>facts>actions",
+      primaryAction: "focus-brief",
+      actionCount: 3,
+      relationFactCount: 3,
+      relationTypeCount: 2,
+      readableFlow: "selected-node-facts-to-agent-handoff",
+      briefActionFlow: "selected-node-facts-to-agent-brief",
+    },
+    agentNextAction: "copy-selected-node-focus-brief-or-expand-detail",
   });
 });
 
