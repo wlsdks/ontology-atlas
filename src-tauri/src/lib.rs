@@ -2649,6 +2649,10 @@ pub fn run() {
                                   topologyPathCandidateCardCount,
                                   topologyPathSourceCardCount,
                                   topologyPathTargetCardCount,
+                                  topologyPathResultCandidateSuppressionPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-path-result-candidate-suppression-policy") || "",
+                                  topologyPathResultCandidateSuppressionActive:
+                                    skeletonCardsLayer?.getAttribute("data-path-result-candidate-suppression-active") || "",
                                   topologyPathSourceCardSlug: topologyPathSourceCard?.slug || "",
                                   topologyPathSourceCardRoleContract:
                                     topologyPathSourceCard?.pathRoleContract || "",

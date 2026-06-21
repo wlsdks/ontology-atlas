@@ -4389,6 +4389,67 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("Path result 에서는 비엔드포인트 카드의 candidate affordance 를 숨긴다", () => {
+    const graph = makeGraph();
+    const base = {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+    };
+    graph.addNode("capability:c1", {
+      ...base,
+      x: 20,
+      y: 10,
+      label: "Graph Readiness",
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "capability:c1",
+            title: "Graph Readiness",
+            kind: "capability",
+            tier: 2 as const,
+          },
+        ]}
+        selectedSlug="project:p"
+        onSelect={vi.fn()}
+        pathWorkflowActive
+        pathSelection={{ sourceSlug: "project:p", targetSlug: "domain:d1" }}
+        onPathSelectionChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-path-result-candidate-suppression-active",
+      "true",
+    );
+    expect(screen.getByText("Atlas").closest("[data-skeleton-card]")).toHaveAttribute(
+      "data-path-role",
+      "source",
+    );
+    expect(screen.getByText("Views").closest("[data-skeleton-card]")).toHaveAttribute(
+      "data-path-role",
+      "target",
+    );
+    const backgroundCard = screen
+      .getByText("Graph Readiness")
+      .closest("[data-skeleton-card]");
+    expect(backgroundCard).toHaveAttribute("data-path-role", "none");
+    expect(backgroundCard).toHaveAttribute("data-path-role-contract", "none");
+    expect(backgroundCard).toHaveAttribute("data-path-next-action", "none");
+    expect(backgroundCard).not.toHaveAttribute("data-path-attention-layer");
+  });
+
   it("Path mode 에서도 카드 드래그 후 click 은 경로 선택을 발화하지 않는다", () => {
     const onPathSelectionChange = vi.fn();
     render(

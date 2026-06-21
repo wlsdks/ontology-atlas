@@ -2465,6 +2465,18 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyPathResultBannerHandoffContract !== "agent-next-action-visible") {
       return `WebView Path result banner handoff contract was ${payload.markers.topologyPathResultBannerHandoffContract || "missing"}`;
     }
+    if (
+      payload.markers.topologyPathResultCandidateSuppressionPolicy !==
+      "source-target-result-hides-candidate-affordance"
+    ) {
+      return `WebView Path result candidate suppression policy was ${payload.markers.topologyPathResultCandidateSuppressionPolicy || "missing"}`;
+    }
+    if (payload.markers.topologyPathResultCandidateSuppressionActive !== "true") {
+      return `WebView Path result candidate suppression was ${payload.markers.topologyPathResultCandidateSuppressionActive || "missing"}`;
+    }
+    if (Number(payload.markers.topologyPathCandidateCardCount || 0) !== 0) {
+      return `WebView Path result left ${Number(payload.markers.topologyPathCandidateCardCount || 0)} candidate cards active`;
+    }
     if (payload.markers.topologyPathResultBannerOverflowContract !== "no-horizontal-scroll") {
       return `WebView Path result banner overflow contract was ${payload.markers.topologyPathResultBannerOverflowContract || "missing"}`;
     }

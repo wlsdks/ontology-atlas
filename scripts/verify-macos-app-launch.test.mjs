@@ -2247,6 +2247,44 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       topologySelectedRelationCardSource: "domain:views",
       topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
+      topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
+      topologySelectedRelationEndpointRouteSourceName: "Views",
+      topologySelectedRelationEndpointRouteTargetName: "Topology Analysis Modes",
+      topologySelectedRelationEndpointRouteSourceHandle: "domain:views",
+      topologySelectedRelationEndpointRouteTargetHandle:
+        "capability:topology-analysis-modes",
+      topologySelectedRelationEndpointRouteHandleSummary:
+        "domain:views → capability:topology-analysis-modes",
+      topologySelectedRelationEndpointRouteText: "Views→Topology Analysis Modes",
+      topologySelectedRelationEndpointRouteWidth: 212,
+      topologySelectedRelationEndpointRouteHeight: 30,
+      topologySelectedRelationEndpointRouteClientWidth: 212,
+      topologySelectedRelationEndpointRouteScrollWidth: 212,
+      topologySelectedRelationEndpointVisibilityContract:
+        "selected-relation-keeps-source-target-readable",
+      topologySelectedRelationEndpointExpectedCount: 2,
+      topologySelectedRelationEndpointVisibleCount: 2,
+      topologySelectedRelationEndpointHiddenCount: 0,
+      topologySelectedRelationEndpointCards: [
+        {
+          slug: "domain:views",
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+        {
+          slug: "capability:topology-analysis-modes",
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+      ],
+      topologySelectedRelationContextSilhouettePolicy:
+        "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+      topologySelectedRelationContextSilhouetteActive: true,
+      topologySelectedRelationContextSilhouetteHiddenCount: 10,
+      topologySelectedRelationLowerPriorityVisibleDimmedCount: 0,
+      topologySelectedRelationVisibleOrientationAnchorCount: 5,
       topologySelectedRelationAgentGateText: "Agent gate handoff ready",
       topologySelectedRelationAgentDecisionText:
         "Include this relation in agent handoff; it has typed evidence.",
@@ -5845,7 +5883,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     topologyCardsReady: true,
     topologySkeletonCardsActive: true,
     topologyCardCount: 21,
-    topologyPathCandidateCardCount: 19,
+    topologyPathCandidateCardCount: 0,
+    topologyPathResultCandidateSuppressionPolicy:
+      "source-target-result-hides-candidate-affordance",
+    topologyPathResultCandidateSuppressionActive: "true",
     topologyPathSourceCardCount: 1,
     topologyPathSourceCardSlug: "domain:views",
     topologyPathSourceCardRoleContract: "source-anchor-visible",

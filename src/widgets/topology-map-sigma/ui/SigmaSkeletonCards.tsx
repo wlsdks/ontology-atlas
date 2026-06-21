@@ -2701,6 +2701,9 @@ export function SigmaSkeletonCards({
     () => (pathSelectionTargetSlug ? resolveNodeId(pathSelectionTargetSlug) : null),
     [pathSelectionTargetSlug, resolveNodeId],
   );
+  const pathResultReady = Boolean(
+    pathWorkflowActive && resolvedPathSourceNodeId && resolvedPathTargetNodeId,
+  );
   const healthRepairTargetSlug = healthRepairTarget?.slug ?? null;
   const resolvedHealthRepairTargetNodeId = useMemo(
     () => (healthRepairTargetSlug ? resolveNodeId(healthRepairTargetSlug) : null),
@@ -5702,6 +5705,8 @@ export function SigmaSkeletonCards({
       data-fixed-surface-measure-contract="single-pass-rect-read"
       data-fixed-surface-event-reposition-contract="fixed-surface-events-rerun-card-placement"
       data-path-endpoint-separation-contract="source-target-min-gap"
+      data-path-result-candidate-suppression-policy="source-target-result-hides-candidate-affordance"
+      data-path-result-candidate-suppression-active={pathResultReady ? 'true' : 'false'}
       data-drag-settle-motion-contract={TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT}
       data-drag-settle-motion-duration-ms={TOPOLOGY_DRAG_SETTLE_DURATION_MS}
       data-drag-settle-motion-easing={TOPOLOGY_DRAG_SETTLE_EASING_NAME}
@@ -6523,7 +6528,7 @@ export function SigmaSkeletonCards({
             ? 'source'
             : resolvedPathTargetNodeId === nodeId
               ? 'target'
-              : pathWorkflowActive
+              : pathWorkflowActive && !pathResultReady
                 ? 'candidate'
                 : 'none';
         const pathRoleContract =

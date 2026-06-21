@@ -3678,6 +3678,14 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "data-path-endpoint-separation-contract",
     "source-target-min-gap",
   );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-path-result-candidate-suppression-policy",
+    "source-target-result-hides-candidate-affordance",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-path-result-candidate-suppression-active",
+    "true",
+  );
 
   const sourceCard = page
     .locator('[data-skeleton-card][data-slug="domain:views"][data-path-role="source"]')
@@ -3691,6 +3699,7 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
     "data-path-endpoint-max-width-token",
     "--topology-path-endpoint-card-max-width",
   );
+  await expect(page.locator('[data-skeleton-card][data-path-role="candidate"]')).toHaveCount(0);
   const targetTitleFits = await targetCard.locator("[data-card-title]").evaluate(
     (el) => el.scrollWidth <= el.clientWidth + 1,
   );
