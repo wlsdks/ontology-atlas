@@ -6383,6 +6383,14 @@ export function SigmaSkeletonCards({
             >
               {kindBadgeLabel}
             </span>
+            {selectedRelationSummaryOwnsMeta ? (
+              <span
+                data-selected-card-kind-title-separator="kind-to-title"
+                className="sr-only"
+              >
+                {" "}
+              </span>
+            ) : null}
             <span
               data-card-title
               data-path-endpoint-title={pathEndpoint ? pathRole : undefined}
@@ -6404,6 +6412,14 @@ export function SigmaSkeletonCards({
             >
               {card.title}
             </span>
+            {selectedRelationSummaryOwnsMeta ? (
+              <span
+                data-selected-card-title-summary-separator="title-to-relation-summary"
+                className="sr-only"
+              >
+                {" "}
+              </span>
+            ) : null}
             {card.count !== undefined && !selectedRelationSummaryOwnsMeta ? (
               <span
                 data-skeleton-card-count

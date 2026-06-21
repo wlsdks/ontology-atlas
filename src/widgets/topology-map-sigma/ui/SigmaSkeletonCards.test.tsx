@@ -535,6 +535,19 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-card-accessible-child-policy",
       "single-button-label-owns-visible-fragments",
     );
+    expect(
+      selectedCard?.querySelector("[data-selected-card-kind-title-separator]"),
+    ).toHaveAttribute("data-selected-card-kind-title-separator", "kind-to-title");
+    expect(
+      selectedCard?.querySelector("[data-selected-card-title-summary-separator]"),
+    ).toHaveAttribute(
+      "data-selected-card-title-summary-separator",
+      "title-to-relation-summary",
+    );
+    expect(selectedCard?.textContent).toContain("project Atlas");
+    expect(selectedCard?.textContent).toContain("Atlas 1 relation");
+    expect(selectedCard?.textContent).not.toContain("projectAtlas");
+    expect(selectedCard?.textContent).not.toContain("Atlas1 relation");
     expect(selectedCard).toHaveAttribute(
       "aria-label",
       "project · Atlas · 1 relation · 1 type · inspect",
@@ -3003,6 +3016,19 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "aria-label",
       "project · Atlas · 1 relation · 1 type · inspect",
     );
+    expect(
+      selectedCard?.querySelector("[data-selected-card-kind-title-separator]"),
+    ).toHaveAttribute("data-selected-card-kind-title-separator", "kind-to-title");
+    expect(
+      selectedCard?.querySelector("[data-selected-card-title-summary-separator]"),
+    ).toHaveAttribute(
+      "data-selected-card-title-summary-separator",
+      "title-to-relation-summary",
+    );
+    expect(selectedCard?.textContent).toContain("project Atlas");
+    expect(selectedCard?.textContent).toContain("Atlas 1 relation");
+    expect(selectedCard?.textContent).not.toContain("projectAtlas");
+    expect(selectedCard?.textContent).not.toContain("Atlas1 relation");
     expect(selectedCard).toHaveStyle({
       "--topology-card-gap": "0.6em",
       "--topology-card-padding-x": "0.95em",
