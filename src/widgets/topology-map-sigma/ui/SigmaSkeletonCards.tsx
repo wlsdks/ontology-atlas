@@ -1021,6 +1021,22 @@ function isAnalysisPanelMounted(): boolean {
   );
 }
 
+function isSelectedNodePopoverMounted(): boolean {
+  if (typeof document === 'undefined') return false;
+  const popover = document.querySelector<HTMLElement>(
+    '[data-testid="topology-node-popover"]',
+  );
+  if (!popover) return false;
+  const rect = popover.getBoundingClientRect();
+  const style = getComputedStyle(popover);
+  return (
+    style.display !== 'none' &&
+    style.visibility !== 'hidden' &&
+    rect.width > 0 &&
+    rect.height > 0
+  );
+}
+
 function anchoredCardRect({
   x,
   y,
@@ -1507,6 +1523,10 @@ function restoreVisibleCardsFromFixedSurfaces(
     right: number;
     bottom: number;
   },
+  onPlacedCardRectChange?: (
+    el: HTMLElement,
+    rect: { left: number; top: number; right: number; bottom: number },
+  ) => void,
 ): number {
   const occupiedRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
   let restored = 0;
@@ -1516,7 +1536,12 @@ function restoreVisibleCardsFromFixedSurfaces(
     const collidesWithFixedSurface = fixedSurfaceRects.some((surface) =>
       rectsOverlap(rect, surface),
     );
-    if (!collidesWithFixedSurface) {
+    const outsideViewport =
+      rect.left < SAFE_VIEWPORT_MARGIN ||
+      rect.top < SAFE_VIEWPORT_MARGIN ||
+      rect.right > containerRect.width - SAFE_VIEWPORT_MARGIN ||
+      rect.bottom > containerRect.height - SAFE_VIEWPORT_MARGIN;
+    if (!collidesWithFixedSurface && !outsideViewport) {
       occupiedRects.push(rect);
       delete el.dataset.fixedSurfaceRestore;
       continue;
@@ -1538,6 +1563,7 @@ function restoreVisibleCardsFromFixedSurfaces(
         domWriteStats,
       );
       el.dataset.fixedSurfaceRestore = 'safe-shift';
+      onPlacedCardRectChange?.(el, shift.rect);
       occupiedRects.push(shift.rect);
       restored += 1;
       continue;
@@ -2774,10 +2800,13 @@ export function SigmaSkeletonCards({
       selectedRelationEdgeId !== null ||
       healthRepairTarget !== null ||
       phoneAnalysisPanelMounted;
+    const selectedBlockingSurfaceActive =
+      selectedRelationEdgeId !== null ||
+      (selectedSlug !== null && isSelectedNodePopoverMounted());
     const fixedSurfaceRects =
-      readLayerSurfaceActive
-      ? collectFixedSurfaceRects(containerRect)
-      : getFixedSurfaceRects(containerRect);
+      readLayerSurfaceActive || selectedBlockingSurfaceActive
+        ? collectFixedSurfaceRects(containerRect)
+        : getFixedSurfaceRects(containerRect);
     const selectedFocusRailSurfaceMounted = isSelectedFocusRailSurfaceMounted();
     const hideSelectedCardForCompactFocusRail =
       selectedFocusRailSurfaceMounted &&
@@ -3462,7 +3491,10 @@ export function SigmaSkeletonCards({
       containerRect,
       fixedSurfaceRects,
       domWriteStats,
-      readCardPlacementFrameRect,
+      selectedBlockingSurfaceActive ? undefined : readCardPlacementFrameRect,
+      (el, rect) => {
+        cardPlacementFrameRectCache.set(el, rect);
+      },
     );
     container.dataset.fixedSurfaceRestoreContract =
       'visible-cards-shift-or-hide-after-drag-release';
@@ -3567,7 +3599,9 @@ export function SigmaSkeletonCards({
         visibleCardRectCache.set(el, next);
         return next;
       }
-      const seededRect = cardPlacementFrameRectCache.get(el);
+      const seededRect = selectedBlockingSurfaceActive
+        ? undefined
+        : cardPlacementFrameRectCache.get(el);
       if (seededRect) {
         cardPlacementFrameRectCacheHitCount += 1;
         const next = {
@@ -3592,15 +3626,16 @@ export function SigmaSkeletonCards({
       return next;
     };
     const selectedFocusOverlapSuppressionActive =
-      (selectedFocusRailSurfaceMounted ||
+      (selectedBlockingSurfaceActive ||
+        selectedFocusRailSurfaceMounted ||
         (selectedFocusCenterActive && selectedFocusCluster !== null)) &&
-      selectedRelationEdgeId === null &&
       activeDragCluster === null;
     const cachedVisibilityFrame = visibilityFrameSnapshotRef.current;
     const canReuseVisibilityFrame =
       activeDragCluster === null &&
       !activeDragMotion &&
       !readLayerSurfaceActive &&
+      !selectedBlockingSurfaceActive &&
       !pathWorkflowActive &&
       containerRect.width >= RELATION_LABEL_PHONE_BREAKPOINT_PX &&
       cachedVisibilityFrame !== null &&
@@ -3633,12 +3668,19 @@ export function SigmaSkeletonCards({
         selectedFocusOverlapSuppressionActive
           ? suppressVisibleCardOverlaps(orderedEls, readVisibleCardRect)
           : 0;
+      if (supportRailOverlapHiddenCount > 0) {
+        visibleCardRectCache.clear();
+      }
     }
     container.dataset.supportRailOverlapPolicy =
       'selected-inspector-or-focus-cluster-hides-overlapping-map-cards';
     container.dataset.supportRailOverlapReadPolicy = 'reuse-visible-card-rect-cache';
     container.dataset.supportRailOverlapActive =
       selectedFocusOverlapSuppressionActive ? 'true' : 'false';
+    container.dataset.selectedBlockingSurfaceOverlapContract =
+      'selected-node-or-relation-surface-hides-lower-priority-card-overlaps';
+    container.dataset.selectedBlockingSurfaceOverlapActive =
+      selectedBlockingSurfaceActive ? 'true' : 'false';
     container.dataset.supportRailOverlapHiddenCount = String(
       supportRailOverlapHiddenCount,
     );
@@ -3923,6 +3965,7 @@ export function SigmaSkeletonCards({
         activeDragCluster === null &&
         !activeDragMotion &&
         !readLayerSurfaceActive &&
+        !selectedBlockingSurfaceActive &&
         !pathWorkflowActive &&
         containerRect.width >= RELATION_LABEL_PHONE_BREAKPOINT_PX
           ? {
@@ -4800,6 +4843,9 @@ export function SigmaSkeletonCards({
   useEffect(() => {
     const container = containerRef.current;
     if (!container || selectedRelationEdgeId === null) return;
+    container.dataset.skeletonCardsReady = 'false';
+    container.dataset.selectedBlockingSurfaceSettleContract =
+      'ready-after-selected-relation-surface-reposition';
     const frame = window.requestAnimationFrame(() => {
       for (const overlay of container.querySelectorAll<HTMLElement>(
         '[data-selected-relation-overlay][data-selected-relation-halo="true"]',
@@ -4809,17 +4855,56 @@ export function SigmaSkeletonCards({
         overlay.style.display = 'inline-flex';
       }
       invalidateFixedSurfaceRectCache();
-      reposition();
+      repositionNowRef.current?.();
     });
     const settleFrame = window.requestAnimationFrame(() => {
       invalidateFixedSurfaceRectCache();
-      reposition();
+      repositionNowRef.current?.();
     });
+    const settleTimer = window.setTimeout(() => {
+      invalidateFixedSurfaceRectCache();
+      repositionNowRef.current?.();
+      window.requestAnimationFrame(() => {
+        container.dataset.skeletonCardsReady = 'true';
+      });
+    }, 520);
     return () => {
       window.cancelAnimationFrame(frame);
       window.cancelAnimationFrame(settleFrame);
+      window.clearTimeout(settleTimer);
     };
-  }, [reposition, selectedRelationEdgeId, invalidateFixedSurfaceRectCache]);
+  }, [selectedRelationEdgeId, invalidateFixedSurfaceRectCache]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || selectedSlug === null || selectedRelationEdgeId !== null) return;
+    if (!isSelectedNodePopoverMounted()) return;
+    container.dataset.skeletonCardsReady = 'false';
+    container.dataset.selectedBlockingSurfaceSettleContract =
+      'ready-after-selected-popover-surface-reposition';
+    const frame = window.requestAnimationFrame(() => {
+      container.dataset.selectedFocusSurfaceRepositionContract =
+        'invalidate-fixed-surfaces-after-selected-popover-mount';
+      invalidateFixedSurfaceRectCache();
+      repositionNowRef.current?.();
+    });
+    const settleFrame = window.requestAnimationFrame(() => {
+      invalidateFixedSurfaceRectCache();
+      repositionNowRef.current?.();
+    });
+    const settleTimer = window.setTimeout(() => {
+      invalidateFixedSurfaceRectCache();
+      repositionNowRef.current?.();
+      window.requestAnimationFrame(() => {
+        container.dataset.skeletonCardsReady = 'true';
+      });
+    }, 520);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(settleFrame);
+      window.clearTimeout(settleTimer);
+    };
+  }, [selectedRelationEdgeId, selectedSlug, invalidateFixedSurfaceRectCache]);
 
   if (!sigma) return null;
 
