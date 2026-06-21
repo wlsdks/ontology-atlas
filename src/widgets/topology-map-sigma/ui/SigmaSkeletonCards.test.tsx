@@ -248,6 +248,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(connectorSeedCount).toBeGreaterThan(0);
     expect(connectorReadCount).toBe(0);
+    expect(layer).toHaveAttribute(
+      "data-fixed-surface-live-suppression-read-policy",
+      "reuse-card-placement-frame-rects-before-dom-read",
+    );
+    expect(layer).toHaveAttribute(
+      "data-fixed-surface-live-suppression-read-count",
+      "0",
+    );
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-connector-rect-cache-read-count",
       expect.stringMatching(/^\d+$/),

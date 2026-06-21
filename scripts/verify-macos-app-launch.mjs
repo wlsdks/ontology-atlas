@@ -6520,7 +6520,10 @@ export function buildWebviewEvidencePayload(
           markerNumber(markers, "topologyCardOverlapCount") === 0 &&
           markerNumber(markers, "topologyCardClippedCount") === 0 &&
           markerNumber(markers, "topologyFixedSurfaceOverlapCount") === 0 &&
-          markerNumber(markers, "topologyCardFixedSurfaceOverlapCount") === 0
+          markerNumber(markers, "topologyCardFixedSurfaceOverlapCount") === 0 &&
+          markers.topologyFixedSurfaceLiveSuppressionReadPolicy ===
+            "reuse-card-placement-frame-rects-before-dom-read" &&
+          markerNumber(markers, "topologyFixedSurfaceLiveSuppressionReadCount") === 0
             ? "proved"
             : "incomplete",
         route: evidenceRoute(payload?.href),
@@ -6533,6 +6536,16 @@ export function buildWebviewEvidencePayload(
         ),
         supportRailOverlapReadPolicy:
           markers.topologySupportRailOverlapReadPolicy ?? null,
+        fixedSurfaceLiveSuppressionReadPolicy:
+          markers.topologyFixedSurfaceLiveSuppressionReadPolicy ?? null,
+        fixedSurfaceLiveSuppressionReadCount: markerNumber(
+          markers,
+          "topologyFixedSurfaceLiveSuppressionReadCount",
+        ),
+        fixedSurfaceLiveSuppressedCount: markerNumber(
+          markers,
+          "topologyFixedSurfaceLiveSuppressedCount",
+        ),
         dragSettleOverlapReadPolicy:
           markers.topologyDragSettleOverlapReadPolicy ?? null,
       }

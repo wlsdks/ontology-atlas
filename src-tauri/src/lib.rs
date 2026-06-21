@@ -4100,6 +4100,12 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-final-visible-count-policy") || "",
                                   topologySupportRailOverlapReadPolicy:
                                     skeletonCardsLayer?.getAttribute("data-support-rail-overlap-read-policy") || "",
+                                  topologyFixedSurfaceLiveSuppressionReadPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-fixed-surface-live-suppression-read-policy") || "",
+                                  topologyFixedSurfaceLiveSuppressionReadCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-fixed-surface-live-suppression-read-count") || "0"),
+                                  topologyFixedSurfaceLiveSuppressedCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-fixed-surface-live-suppressed-count") || "0"),
                                   topologyVisibleCardStateCacheContract:
                                     skeletonCardsLayer?.getAttribute("data-visible-card-state-cache-contract") || "",
                                   topologyVisibleCardRectReadPolicy:

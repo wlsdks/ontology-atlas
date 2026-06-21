@@ -1616,7 +1616,10 @@ function restoreVisibleCardsFromFixedSurfaces(
 
 function suppressLiveCardsOverlappingFixedSurfaces(
   orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
   domWriteStats: SkeletonDomWriteStats,
+  readPlacedCardRect?: (el: HTMLElement) => ConnectorRect | null,
+  onPlacedCardRectRead?: (el: HTMLElement, rect: ConnectorRect) => void,
 ): { hidden: number; read: number } {
   if (typeof document === 'undefined') return { hidden: 0, read: 0 };
   const fixedSurfaceSelector = [
@@ -1648,11 +1651,16 @@ function suppressLiveCardsOverlappingFixedSurfaces(
       }
       const isAnalysisPanel = surface.dataset.testid === 'topology-analysis-panel';
       return {
-        left: box.left - COLLISION_PAD,
-        top: box.top - COLLISION_PAD,
-        right: box.right + (isAnalysisPanel ? ANALYSIS_PANEL_TRAILING_PAD : COLLISION_PAD),
+        left: box.left - containerRect.left - COLLISION_PAD,
+        top: box.top - containerRect.top - COLLISION_PAD,
+        right:
+          box.right -
+          containerRect.left +
+          (isAnalysisPanel ? ANALYSIS_PANEL_TRAILING_PAD : COLLISION_PAD),
         bottom:
-          box.bottom + (isAnalysisPanel ? ANALYSIS_PANEL_BLOCK_END_PAD : COLLISION_PAD),
+          box.bottom -
+          containerRect.top +
+          (isAnalysisPanel ? ANALYSIS_PANEL_BLOCK_END_PAD : COLLISION_PAD),
       };
     })
     .filter((rect): rect is { left: number; top: number; right: number; bottom: number } =>
@@ -1671,14 +1679,21 @@ function suppressLiveCardsOverlappingFixedSurfaces(
       delete el.dataset.fixedSurfaceLiveSuppressed;
       continue;
     }
-    const box = el.getBoundingClientRect();
-    read += 1;
-    const rect = {
-      left: box.left,
-      top: box.top,
-      right: box.right,
-      bottom: box.bottom,
-    };
+    const cachedRect = readPlacedCardRect?.(el) ?? null;
+    const rect =
+      cachedRect ??
+      (() => {
+        const box = el.getBoundingClientRect();
+        read += 1;
+        const next = {
+          left: box.left - containerRect.left,
+          top: box.top - containerRect.top,
+          right: box.right - containerRect.left,
+          bottom: box.bottom - containerRect.top,
+        };
+        onPlacedCardRectRead?.(el, next);
+        return next;
+      })();
     if (!liveSurfaceRects.some((surface) => rectsOverlap(rect, surface))) {
       delete el.dataset.fixedSurfaceLiveSuppressed;
       continue;
@@ -3678,13 +3693,18 @@ export function SigmaSkeletonCards({
       activeDragCluster === null
         ? suppressLiveCardsOverlappingFixedSurfaces(
             orderedEls,
+            containerRect,
             domWriteStats,
+            (el) => cardPlacementFrameRectCache.get(el) ?? null,
+            (el, rect) => {
+              cardPlacementFrameRectCache.set(el, rect);
+            },
           )
         : { hidden: 0, read: 0 };
     container.dataset.fixedSurfaceLiveSuppressionContract =
       'final-live-dom-rects-hide-hud-overlaps';
     container.dataset.fixedSurfaceLiveSuppressionReadPolicy =
-      'final-visible-card-rect-sanity-check';
+      'reuse-card-placement-frame-rects-before-dom-read';
     container.dataset.fixedSurfaceLiveSuppressedCount = String(
       fixedSurfaceLiveSuppression.hidden,
     );

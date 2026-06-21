@@ -925,6 +925,10 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyFixedSurfaceOverlapCount: 0,
         topologyCardFixedSurfaceOverlapCount: 0,
         topologySupportRailOverlapReadPolicy: "reuse-visible-card-rect-cache",
+        topologyFixedSurfaceLiveSuppressionReadPolicy:
+          "reuse-card-placement-frame-rects-before-dom-read",
+        topologyFixedSurfaceLiveSuppressionReadCount: 0,
+        topologyFixedSurfaceLiveSuppressedCount: 0,
         topologyDragSettleOverlapReadPolicy: "reuse-visible-card-rect-cache",
       },
     },
@@ -1000,6 +1004,10 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     fixedSurfaceOverlapCount: 0,
     cardFixedSurfaceOverlapCount: 0,
     supportRailOverlapReadPolicy: "reuse-visible-card-rect-cache",
+    fixedSurfaceLiveSuppressionReadPolicy:
+      "reuse-card-placement-frame-rects-before-dom-read",
+    fixedSurfaceLiveSuppressionReadCount: 0,
+    fixedSurfaceLiveSuppressedCount: 0,
     dragSettleOverlapReadPolicy: "reuse-visible-card-rect-cache",
   });
 });
