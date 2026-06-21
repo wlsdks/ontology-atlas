@@ -142,6 +142,10 @@ names in component data markers and tests whenever a surface depends on
 - `--topology-card-selected-focus-max-width`: selected focus map card width;
   keeps the current node title readable before secondary subtree count metadata
   while the direct relation facts chip stays visible.
+- `--topology-card-selected-quiet-border` /
+  `--topology-card-selected-quiet-wash`: selected focus map card treatment.
+  Click focus should read as the current ontology fact, not as another panel or
+  hull box; drag and selected relation states keep their stronger tokens.
 - `--topology-map-dim-anchor-opacity` /
   `--topology-map-dim-context-opacity`: selected focus background map opacity;
   keeps product/domain landmarks as quiet orientation anchors while unrelated

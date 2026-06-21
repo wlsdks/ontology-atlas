@@ -252,6 +252,8 @@ const SELECTED_FOCUS_CARD_MAX_WIDTH_PX = 440;
 const HEALTH_REPAIR_CARD_MAX_WIDTH_PX = 320;
 const ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX = 128;
 const SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN = '--topology-card-selected-focus-max-width';
+const SELECTED_FOCUS_QUIET_BORDER_TOKEN = '--topology-card-selected-quiet-border';
+const SELECTED_FOCUS_QUIET_WASH_TOKEN = '--topology-card-selected-quiet-wash';
 const HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN = '--topology-health-repair-card-max-width';
 const TIER_CARD_MAX_WIDTH_TOKEN: Record<SkeletonCardModel['tier'], string> = {
   0: '--topology-card-max-width-project',
@@ -3515,7 +3517,9 @@ export function SigmaSkeletonCards({
     let visibleCardRectReadCount = 0;
     let visibleCardHiddenRectSkipCount = 0;
     const visibleCardStateReadPolicy =
-      activeDragCluster !== null ? 'frame-state-during-drag' : 'computed-style';
+      activeDragCluster !== null
+        ? 'frame-state-during-drag'
+        : 'frame-state-after-placement';
     const readVisibleCardRect = (el: HTMLElement) => {
       const cached = visibleCardRectCache.get(el);
       if (cached) return cached;
@@ -5731,6 +5735,21 @@ export function SigmaSkeletonCards({
                 ? 'direct-relation-summary-replaces-subtree-count'
                 : undefined
             }
+            data-card-selected-quiet-state={
+              selected && !dragging && !dragSettled
+                ? 'relation-first-borderless-focus'
+                : undefined
+            }
+            data-card-selected-quiet-border-token={
+              selected && !dragging && !dragSettled
+                ? SELECTED_FOCUS_QUIET_BORDER_TOKEN
+                : undefined
+            }
+            data-card-selected-quiet-wash-token={
+              selected && !dragging && !dragSettled
+                ? SELECTED_FOCUS_QUIET_WASH_TOKEN
+                : undefined
+            }
             data-card-accessible-label-contract={
               selectedRelationSummaryOwnsMeta
                 ? 'selected-card-kind-title-relation-summary'
@@ -5912,12 +5931,12 @@ export function SigmaSkeletonCards({
                     ? `var(${HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN})`
                     : `var(${TIER_CARD_MAX_WIDTH_TOKEN[card.tier]})`,
                 '--card-border': selected
-                  ? 'var(--topology-card-border-selected)'
+                  ? `var(${SELECTED_FOCUS_QUIET_BORDER_TOKEN})`
                   : healthRepairAuditTarget
                     ? 'var(--topology-health-repair-card-border)'
                   : tintBorder,
                 '--card-border-hover': selected
-                  ? 'var(--topology-card-border-selected-strong)'
+                  ? `var(${SELECTED_FOCUS_QUIET_BORDER_TOKEN})`
                   : healthRepairAuditTarget
                     ? 'var(--topology-health-repair-card-border-strong)'
                   : tintBorderHover,
@@ -5925,7 +5944,7 @@ export function SigmaSkeletonCards({
             }
             className={`pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
               selected
-                ? 'border-[color:var(--topology-card-border-selected-strong)] shadow-none outline-none'
+                ? 'shadow-none outline-none'
                 : ''
             } ${
               healthRepairAuditTarget && !selected
@@ -5956,7 +5975,7 @@ export function SigmaSkeletonCards({
               className="pointer-events-none absolute inset-0 rounded-[inherit]"
               style={{
                 background: selected
-                  ? `linear-gradient(0deg, var(--topology-card-selected-wash), var(--topology-card-selected-wash)), ${tintBg}`
+                  ? `linear-gradient(0deg, var(${SELECTED_FOCUS_QUIET_WASH_TOKEN}), var(${SELECTED_FOCUS_QUIET_WASH_TOKEN})), ${tintBg}`
                   : healthRepairAuditTarget
                     ? `linear-gradient(0deg, var(--topology-health-repair-card-wash), var(--topology-health-repair-card-wash)), ${tintBg}`
                   : dragging || dragSettled

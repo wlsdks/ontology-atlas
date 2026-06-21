@@ -4174,7 +4174,12 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (
         payload.markers.topologyVisibilityCountSource &&
-        !["single-pass", "fallback-recount"].includes(payload.markers.topologyVisibilityCountSource)
+        ![
+          "single-pass",
+          "single-pass-final-recount",
+          "fallback-recount",
+          "fallback-recount-final-recount",
+        ].includes(payload.markers.topologyVisibilityCountSource)
       ) {
         return `WebView Relief visibility count source was ${payload.markers.topologyVisibilityCountSource}`;
       }

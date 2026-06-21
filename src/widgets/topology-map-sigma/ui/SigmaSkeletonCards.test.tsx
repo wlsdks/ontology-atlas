@@ -1141,7 +1141,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("선택된 카드는 다른 골격 카드보다 위에 뜨고 selected wash 를 쓴다", () => {
+  it("선택된 카드는 다른 골격 카드보다 위에 뜨고 조용한 selected token 을 쓴다", () => {
     render(
       <SigmaSkeletonCards
         sigma={stubSigma}
@@ -1157,11 +1157,28 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const projectCard = screen
       .getByText("Atlas")
       .closest("[data-skeleton-card]") as HTMLElement;
+    const layer = screen.getByTestId("sigma-skeleton-cards");
     const tint = selectedCard.querySelector("[data-kind-tint]") as HTMLElement;
     expect(selectedCard).toHaveStyle({ zIndex: "8" });
     expect(projectCard).toHaveStyle({ zIndex: "0" });
+    expect(layer).toHaveAttribute(
+      "data-visible-card-state-read-policy",
+      "frame-state-after-placement",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-selected-quiet-state",
+      "relation-first-borderless-focus",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-selected-quiet-border-token",
+      "--topology-card-selected-quiet-border",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-selected-quiet-wash-token",
+      "--topology-card-selected-quiet-wash",
+    );
     expect(tint.style.background).toContain(
-      "var(--topology-card-selected-wash)",
+      "var(--topology-card-selected-quiet-wash)",
     );
   });
 

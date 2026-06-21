@@ -1571,7 +1571,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyRelationLabelGeometryReadyCount: 1,
       topologyRelationLabelGeometryPendingCount: 0,
       topologyVisibilityCountContract: "single-pass-unless-fallback",
-      topologyVisibilityCountSource: "single-pass",
+      topologyVisibilityCountSource: "single-pass-final-recount",
       topologyDragSettleMotionContract: "linked-cluster-drag-settle",
       topologyDragSettleMotionDurationMs: 720,
       topologyDragSettleMotionEasing: "ease-out",
