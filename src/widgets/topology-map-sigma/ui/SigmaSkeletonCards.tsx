@@ -1902,6 +1902,7 @@ function suppressVisibleCardOverlaps(
     rect: { left: number; top: number; right: number; bottom: number } | null;
     visible: boolean;
   },
+  isProtectedCard: (el: HTMLElement) => boolean = () => false,
 ): number {
   const visible = orderedEls
     .map((el) => {
@@ -1926,11 +1927,17 @@ function suppressVisibleCardOverlaps(
   for (const item of visible) {
     delete item.el.dataset.supportRailOverlapHidden;
     if (accepted.some((rect) => rectsOverlap(item.rect, rect, OVERVIEW_COLLISION_PAD))) {
+      if (isProtectedCard(item.el)) {
+        item.el.dataset.supportRailOverlapProtected = 'selected-relation-endpoint';
+        accepted.push(item.rect);
+        continue;
+      }
       hideSkeletonCard(item.el);
       item.el.dataset.supportRailOverlapHidden = 'true';
       hidden += 1;
       continue;
     }
+    delete item.el.dataset.supportRailOverlapProtected;
     accepted.push(item.rect);
   }
   return hidden;
@@ -3169,11 +3176,38 @@ export function SigmaSkeletonCards({
       const slug = el.dataset.slug;
       if (slug) elBySlug.set(slug, el);
     }
+    const selectedRelationEndpointSlugs = new Set<string>();
+    if (selectedRelationEdgeId) {
+      if (graph.hasEdge(selectedRelationEdgeId)) {
+        const [source, target] = graph.extremities(selectedRelationEdgeId);
+        selectedRelationEndpointSlugs.add(source);
+        selectedRelationEndpointSlugs.add(target);
+      } else if (selectedRelationData) {
+        selectedRelationEndpointSlugs.add(selectedRelationData.source);
+        selectedRelationEndpointSlugs.add(selectedRelationData.target);
+      }
+    }
+    const isSelectedRelationEndpointCard = (el: HTMLElement) => {
+      const slug = el.dataset.slug;
+      return Boolean(slug && selectedRelationEndpointSlugs.has(slug));
+    };
+    container.dataset.selectedRelationEndpointVisibilityContract =
+      'selected-relation-keeps-source-target-readable';
+    container.dataset.selectedRelationEndpointCount = String(
+      selectedRelationEndpointSlugs.size,
+    );
     const cardPlacementCoreLoopStartedAt = measureRepositionNow();
     for (const el of orderedEls) {
       const slug = el.dataset.slug;
       if (!slug || !graph.hasNode(slug)) continue;
+      const selectedRelationEndpoint = selectedRelationEndpointSlugs.has(slug);
       delete el.dataset.surfaceHidden;
+      if (selectedRelationEndpoint) {
+        el.dataset.selectedRelationEndpoint = 'true';
+      } else {
+        delete el.dataset.selectedRelationEndpoint;
+      }
+      delete el.dataset.selectedRelationEndpointSurfaceShift;
       el.style.visibility = 'visible';
       const dockParent = el.dataset.dockParent;
       const lockedForDrag = isDragClusterCard(slug, dockParent);
@@ -3433,6 +3467,41 @@ export function SigmaSkeletonCards({
               !pathEndpoint &&
               el.dataset.graphAnchorSurfaceBlocked === 'true'));
         if (
+          selectedRelationEndpoint &&
+          blockedBySurface &&
+          !lockedForDrag &&
+          !followsActiveDockDrag
+        ) {
+          const shift = clampRectToViewportAndFixedSurfaces({
+            rect,
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            fixedSurfaceRects: surfaceBlockers,
+          });
+          if (shift.dx !== 0 || shift.dy !== 0) {
+            setSkeletonStyleValue(
+              el,
+              'transform',
+              `${el.style.transform} translate(${shift.dx}px, ${shift.dy}px)`,
+              domWriteStats,
+            );
+            visibleRect = {
+              left: visibleRect.left + shift.dx,
+              top: visibleRect.top + shift.dy,
+              right: visibleRect.right + shift.dx,
+              bottom: visibleRect.bottom + shift.dy,
+            };
+            rect = shift.rect;
+            cardPlacementFrameRectCache.set(el, visibleRect);
+            el.dataset.selectedRelationEndpointSurfaceShift = 'safe-shift';
+            blockedBySurface = surfaceBlockers.some((surface) =>
+              rectsOverlap(rect, surface),
+            );
+          } else {
+            el.dataset.selectedRelationEndpointSurfaceShift = 'none';
+          }
+        }
+        if (
           dockParent &&
           !lockedForDrag &&
           !followsActiveDockDrag &&
@@ -3485,7 +3554,8 @@ export function SigmaSkeletonCards({
           continue;
         }
         const protectSelectedCard =
-          (selected || pathEndpoint) && selectedRelationEdgeId === null;
+          ((selected || pathEndpoint) && selectedRelationEdgeId === null) ||
+          selectedRelationEndpoint;
         if (
           !lockedForDrag &&
           (blockedBySurface || (!protectSelectedCard && clipped))
@@ -4083,7 +4153,11 @@ export function SigmaSkeletonCards({
       visibilityFrameSnapshotRef.current = null;
       supportRailOverlapHiddenCount =
         selectedFocusOverlapSuppressionActive
-          ? suppressVisibleCardOverlaps(orderedEls, readVisibleCardRect)
+          ? suppressVisibleCardOverlaps(
+              orderedEls,
+              readVisibleCardRect,
+              isSelectedRelationEndpointCard,
+            )
           : 0;
       if (supportRailOverlapHiddenCount > 0) {
         visibleCardRectCache.clear();
@@ -5093,6 +5167,7 @@ export function SigmaSkeletonCards({
     resolveNodeId,
     selectedFocusCenterActive,
     selectedFocusCluster,
+    selectedRelationData,
     selectedRelationEdgeId,
     selectedSlug,
     emitVisibilityStats,

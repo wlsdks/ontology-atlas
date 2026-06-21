@@ -1858,6 +1858,37 @@ for (const viewport of VIEWPORTS) {
       "data-selected-relation-target",
       /.+/,
     );
+    const selectedRelationSource = await page
+      .getByTestId("sigma-selected-edge-card")
+      .getAttribute("data-selected-relation-source");
+    const selectedRelationTarget = await page
+      .getByTestId("sigma-selected-edge-card")
+      .getAttribute("data-selected-relation-target");
+    if (!selectedRelationSource || !selectedRelationTarget) {
+      throw new Error("selected relation should expose source and target slugs");
+    }
+    const selectedRelationSourceCard = page.locator(
+      `[data-skeleton-card][data-slug="${selectedRelationSource}"]`,
+    );
+    const selectedRelationTargetCard = page.locator(
+      `[data-skeleton-card][data-slug="${selectedRelationTarget}"]`,
+    );
+    await expect(selectedRelationSourceCard).toHaveAttribute(
+      "data-selected-relation-endpoint",
+      "true",
+    );
+    await expect(selectedRelationTargetCard).toHaveAttribute(
+      "data-selected-relation-endpoint",
+      "true",
+    );
+    await expect(selectedRelationSourceCard).not.toHaveAttribute(
+      "data-surface-hidden",
+      "true",
+    );
+    await expect(selectedRelationTargetCard).not.toHaveAttribute(
+      "data-surface-hidden",
+      "true",
+    );
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
       "data-selected-relation-type",
       /contains|dependsOn|relates|describes|uses|belongsTo/,
