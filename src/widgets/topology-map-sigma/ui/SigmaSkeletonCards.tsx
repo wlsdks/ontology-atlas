@@ -1614,6 +1614,82 @@ function restoreVisibleCardsFromFixedSurfaces(
   return restored;
 }
 
+function suppressLiveCardsOverlappingFixedSurfaces(
+  orderedEls: readonly HTMLElement[],
+  domWriteStats: SkeletonDomWriteStats,
+): { hidden: number; read: number } {
+  if (typeof document === 'undefined') return { hidden: 0, read: 0 };
+  const fixedSurfaceSelector = [
+    '[data-testid="topology-analysis-panel"]',
+    '[data-testid="topology-kind-legend"]',
+    '[data-testid="topology-relation-legend"]',
+    '[data-testid="topology-minimap"]',
+    '[data-testid="topology-node-popover"]',
+    '[data-testid="sigma-selected-edge-card"]',
+    '[data-testid="topology-path-start-prompt"]',
+    '[data-testid="topology-path-anchor-prompt"]',
+    '[data-testid="topology-path-result-banner"]',
+  ].join(', ');
+  const liveSurfaceRects = Array.from(
+    document.querySelectorAll<HTMLElement>(fixedSurfaceSelector),
+  )
+    .map((surface) => {
+      const style = getComputedStyle(surface);
+      const box = surface.getBoundingClientRect();
+      if (
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        (Number(style.opacity || '1') <= 0.01 &&
+          !isMountedTopologyBlockingSurface(surface)) ||
+        box.width <= 0 ||
+        box.height <= 0
+      ) {
+        return null;
+      }
+      const isAnalysisPanel = surface.dataset.testid === 'topology-analysis-panel';
+      return {
+        left: box.left - COLLISION_PAD,
+        top: box.top - COLLISION_PAD,
+        right: box.right + (isAnalysisPanel ? ANALYSIS_PANEL_TRAILING_PAD : COLLISION_PAD),
+        bottom:
+          box.bottom + (isAnalysisPanel ? ANALYSIS_PANEL_BLOCK_END_PAD : COLLISION_PAD),
+      };
+    })
+    .filter((rect): rect is { left: number; top: number; right: number; bottom: number } =>
+      rect !== null,
+    );
+  let hidden = 0;
+  let read = 0;
+  if (liveSurfaceRects.length === 0) return { hidden, read };
+  for (const el of orderedEls) {
+    if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+    if (
+      el.dataset.pathRole === 'source' ||
+      el.dataset.pathRole === 'target' ||
+      el.dataset.pathEndpointPanelClearance === 'panel-owned-expanded-visible'
+    ) {
+      delete el.dataset.fixedSurfaceLiveSuppressed;
+      continue;
+    }
+    const box = el.getBoundingClientRect();
+    read += 1;
+    const rect = {
+      left: box.left,
+      top: box.top,
+      right: box.right,
+      bottom: box.bottom,
+    };
+    if (!liveSurfaceRects.some((surface) => rectsOverlap(rect, surface))) {
+      delete el.dataset.fixedSurfaceLiveSuppressed;
+      continue;
+    }
+    hideSkeletonCard(el, domWriteStats);
+    el.dataset.fixedSurfaceLiveSuppressed = 'hidden-under-fixed-surface';
+    hidden += 1;
+  }
+  return { hidden, read };
+}
+
 function dragSettleCardPriority(el: HTMLElement): number {
   if (el.dataset.selected === 'true') return 0;
   if (el.dataset.pathRole === 'source' || el.dataset.pathRole === 'target') return 0;
@@ -3598,6 +3674,23 @@ export function SigmaSkeletonCards({
     container.dataset.fixedSurfaceRestoreReadPolicy =
       'reuse-card-placement-frame-rects';
     container.dataset.fixedSurfaceRestoredCount = String(fixedSurfaceRestoredCount);
+    const fixedSurfaceLiveSuppression =
+      activeDragCluster === null
+        ? suppressLiveCardsOverlappingFixedSurfaces(
+            orderedEls,
+            domWriteStats,
+          )
+        : { hidden: 0, read: 0 };
+    container.dataset.fixedSurfaceLiveSuppressionContract =
+      'final-live-dom-rects-hide-hud-overlaps';
+    container.dataset.fixedSurfaceLiveSuppressionReadPolicy =
+      'final-visible-card-rect-sanity-check';
+    container.dataset.fixedSurfaceLiveSuppressedCount = String(
+      fixedSurfaceLiveSuppression.hidden,
+    );
+    container.dataset.fixedSurfaceLiveSuppressionReadCount = String(
+      fixedSurfaceLiveSuppression.read,
+    );
     const cardPlacementFixedRestoreDurationMs = Math.max(
       0,
       measureRepositionNow() - cardPlacementFixedRestoreStartedAt,
@@ -4906,6 +4999,24 @@ export function SigmaSkeletonCards({
     const container = containerRef.current;
     if (!container) return;
     container.dataset.layoutTransitionKeySize = String(layoutTransitionKey.length);
+    const fixedSurfaceSettleRepositionActive =
+      selectedSlug === null && selectedRelationEdgeId === null && activeDragCluster === null;
+    container.dataset.fixedSurfaceSettleRepositionContract =
+      'initial-hud-size-settle-reruns-card-placement';
+    container.dataset.fixedSurfaceSettleRepositionActive =
+      fixedSurfaceSettleRepositionActive ? 'true' : 'false';
+    const settleTimers = fixedSurfaceSettleRepositionActive
+      ? [360, 760].map((delay) =>
+          window.setTimeout(() => {
+            const currentContainer = containerRef.current;
+            if (!currentContainer) return;
+            currentContainer.dataset.fixedSurfaceSettleRepositionPolicy =
+              'delayed-fixed-surface-sanity-pass';
+            invalidateFixedSurfaceRectCache();
+            repositionNowRef.current?.();
+          }, delay),
+        )
+      : [];
     if (!initialLayoutTransitionResolvedRef.current) {
       initialLayoutTransitionResolvedRef.current = true;
       initialLoadRepositionThrottleUntilRef.current =
@@ -4918,7 +5029,9 @@ export function SigmaSkeletonCards({
         INITIAL_LOAD_REPOSITION_THROTTLE_MS,
       );
       container.dataset.skeletonCardsReady = 'true';
-      return;
+      return () => {
+        settleTimers.forEach((timer) => window.clearTimeout(timer));
+      };
     }
     container.dataset.layoutAnimate = 'true';
     container.dataset.layoutTransitionPhase = 'transition-window';
@@ -4952,12 +5065,19 @@ export function SigmaSkeletonCards({
         window.clearTimeout(layoutTransitionRepositionTimerRef.current);
         layoutTransitionRepositionTimerRef.current = null;
       }
+      settleTimers.forEach((settleTimer) => window.clearTimeout(settleTimer));
       delete container.dataset.layoutAnimate;
       if (container.dataset.skeletonCardsReady !== 'true') {
         container.dataset.skeletonCardsReady = 'false';
       }
     };
-  }, [layoutTransitionKey, invalidateFixedSurfaceRectCache]);
+  }, [
+    activeDragCluster,
+    layoutTransitionKey,
+    invalidateFixedSurfaceRectCache,
+    selectedRelationEdgeId,
+    selectedSlug,
+  ]);
 
   useEffect(() => {
     if (!sigma) return;
