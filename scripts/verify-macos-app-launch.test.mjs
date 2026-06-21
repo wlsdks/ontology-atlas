@@ -29,6 +29,7 @@ import {
   selectedRelationRouteRailTextLeak,
   validateSelectedRelationCardAttentionLane,
   validateSelectedRelationCardDensityContract,
+  validateSelectedRelationEndpointRouteMarkers,
   validateRelationLabelFrameGeometryMarkers,
   validateTopologyConnectorCacheMarkers,
   validateSelectedRelationLabelCompactMarkers,
@@ -1875,6 +1876,18 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         "domain:views → capability:topology-analysis-modes · contains",
       topologySelectedRelationHandleStripWidth: 1,
       topologySelectedRelationHandleStripHeight: 1,
+      topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
+      topologySelectedRelationEndpointRouteSourceName: "Views",
+      topologySelectedRelationEndpointRouteTargetName: "Topology Analysis Modes",
+      topologySelectedRelationEndpointRouteSourceHandle: "domain:views",
+      topologySelectedRelationEndpointRouteTargetHandle: "capability:topology-analysis-modes",
+      topologySelectedRelationEndpointRouteHandleSummary:
+        "domain:views → capability:topology-analysis-modes",
+      topologySelectedRelationEndpointRouteText: "Views→Topology Analysis Modes",
+      topologySelectedRelationEndpointRouteWidth: 212,
+      topologySelectedRelationEndpointRouteHeight: 30,
+      topologySelectedRelationEndpointRouteClientWidth: 212,
+      topologySelectedRelationEndpointRouteScrollWidth: 212,
       topologyDragNodePopoverExpandClicked: true,
       topologyNodePopoverVisible: true,
       topologyNodePopoverSurfaceRole: "active-node-inspector",
@@ -10068,6 +10081,58 @@ test("selected relation card attention lane keeps map label and support panel cl
       1512,
     ),
     /crowded the support panel/,
+  );
+});
+
+test("selected relation endpoint route markers prove visible source and target names", () => {
+  const baseMarkers = {
+    topologySelectedRelationCopyPayloadFrom: "domain:views",
+    topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
+    topologySelectedRelationHandleStripSource: "domain:views",
+    topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
+    topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
+    topologySelectedRelationEndpointRouteSourceName: "Views",
+    topologySelectedRelationEndpointRouteTargetName: "Topology Analysis Modes",
+    topologySelectedRelationEndpointRouteSourceHandle: "domain:views",
+    topologySelectedRelationEndpointRouteTargetHandle: "capability:topology-analysis-modes",
+    topologySelectedRelationEndpointRouteHandleSummary:
+      "domain:views → capability:topology-analysis-modes",
+    topologySelectedRelationEndpointRouteText: "Views→Topology Analysis Modes",
+    topologySelectedRelationEndpointRouteWidth: 212,
+    topologySelectedRelationEndpointRouteHeight: 30,
+    topologySelectedRelationEndpointRouteClientWidth: 212,
+    topologySelectedRelationEndpointRouteScrollWidth: 212,
+  };
+
+  assert.equal(validateSelectedRelationEndpointRouteMarkers(baseMarkers), null);
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteContract: "hidden-handles-only",
+    }),
+    /endpoint route contract/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteText: "Views",
+    }),
+    /endpoint names not visible/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteTargetHandle: "capability:wrong",
+    }),
+    /visible endpoint handles/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteClientWidth: 180,
+      topologySelectedRelationEndpointRouteScrollWidth: 212,
+    }),
+    /overflowing Relief selected relation endpoint route/,
   );
 });
 

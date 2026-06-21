@@ -1735,6 +1735,76 @@ function validateTopologyFocusNoopMarkers(payload) {
   return null;
 }
 
+export function validateSelectedRelationEndpointRouteMarkers(markers) {
+  if (
+    markers?.topologySelectedRelationEndpointRouteContract !==
+    "visible-source-target-names-wrap"
+  ) {
+    return `WebView reported malformed Relief selected relation endpoint route contract (${markers?.topologySelectedRelationEndpointRouteContract || "missing"})`;
+  }
+  const sourceName =
+    typeof markers?.topologySelectedRelationEndpointRouteSourceName === "string"
+      ? markers.topologySelectedRelationEndpointRouteSourceName.trim()
+      : "";
+  const targetName =
+    typeof markers?.topologySelectedRelationEndpointRouteTargetName === "string"
+      ? markers.topologySelectedRelationEndpointRouteTargetName.trim()
+      : "";
+  const sourceHandle =
+    typeof markers?.topologySelectedRelationEndpointRouteSourceHandle === "string"
+      ? markers.topologySelectedRelationEndpointRouteSourceHandle.trim()
+      : "";
+  const targetHandle =
+    typeof markers?.topologySelectedRelationEndpointRouteTargetHandle === "string"
+      ? markers.topologySelectedRelationEndpointRouteTargetHandle.trim()
+      : "";
+  if (!sourceName || !targetName) {
+    return `WebView reported empty Relief selected relation endpoint names (${sourceName || "missing"} -> ${targetName || "missing"})`;
+  }
+  if (
+    sourceHandle !== markers?.topologySelectedRelationCopyPayloadFrom ||
+    targetHandle !== markers?.topologySelectedRelationCopyPayloadTo ||
+    sourceHandle !== markers?.topologySelectedRelationHandleStripSource ||
+    targetHandle !== markers?.topologySelectedRelationHandleStripTarget
+  ) {
+    return `WebView reported mismatched Relief selected relation visible endpoint handles (${sourceHandle || "missing source"} -> ${targetHandle || "missing target"})`;
+  }
+  const handleSummary =
+    typeof markers?.topologySelectedRelationEndpointRouteHandleSummary === "string"
+      ? markers.topologySelectedRelationEndpointRouteHandleSummary.trim()
+      : "";
+  if (handleSummary !== `${sourceHandle} → ${targetHandle}`) {
+    return `WebView reported malformed Relief selected relation visible endpoint handle summary (${handleSummary || "empty"})`;
+  }
+  const routeText =
+    typeof markers?.topologySelectedRelationEndpointRouteText === "string"
+      ? markers.topologySelectedRelationEndpointRouteText.trim()
+      : "";
+  if (!routeText.includes(sourceName) || !routeText.includes(targetName)) {
+    return `WebView reported Relief selected relation endpoint names not visible in route (${routeText || "empty"})`;
+  }
+  const routeWidth = Number(markers?.topologySelectedRelationEndpointRouteWidth || 0);
+  const routeHeight = Number(markers?.topologySelectedRelationEndpointRouteHeight || 0);
+  const routeClientWidth = Number(
+    markers?.topologySelectedRelationEndpointRouteClientWidth || 0,
+  );
+  const routeScrollWidth = Number(
+    markers?.topologySelectedRelationEndpointRouteScrollWidth || 0,
+  );
+  if (
+    !Number.isFinite(routeWidth) ||
+    !Number.isFinite(routeHeight) ||
+    !Number.isFinite(routeClientWidth) ||
+    !Number.isFinite(routeScrollWidth) ||
+    routeWidth < 120 ||
+    routeHeight < 12 ||
+    routeScrollWidth - routeClientWidth > 2
+  ) {
+    return `WebView reported overflowing Relief selected relation endpoint route (${routeClientWidth} client / ${routeScrollWidth} scroll, ${routeWidth}x${routeHeight})`;
+  }
+  return null;
+}
+
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
   minWebviewSize = null,
@@ -5006,6 +5076,11 @@ export function validateWebviewVerifyPayload(payload, {
           selectedRelationCardScrollWidth - selectedRelationCardClientWidth > 2
         ) {
           return `WebView reported overflowing Relief selected relation card (${selectedRelationCardClientWidth} client / ${selectedRelationCardScrollWidth} scroll)`;
+        }
+        const selectedRelationEndpointRouteError =
+          validateSelectedRelationEndpointRouteMarkers(payload.markers);
+        if (selectedRelationEndpointRouteError) {
+          return selectedRelationEndpointRouteError;
         }
         if (
           payload.markers.topologySelectedRelationCardElevationContract !==

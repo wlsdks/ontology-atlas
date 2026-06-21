@@ -1693,6 +1693,9 @@ pub fn run() {
                               const topologySelectedRelationHandleStrip = document.querySelector('[data-testid="sigma-selected-edge-handle-strip"]');
                               const topologySelectedRelationHandleStripRect =
                                 topologySelectedRelationHandleStrip?.getBoundingClientRect();
+                              const topologySelectedRelationEndpointRoute = document.querySelector('[data-testid="sigma-selected-edge-endpoint-route"]');
+                              const topologySelectedRelationEndpointRouteRect =
+                                topologySelectedRelationEndpointRoute?.getBoundingClientRect();
                               const topologyAnalysisPanel = document.querySelector('[data-testid="topology-analysis-panel"]');
                               const topologyAnalysisPanelStyle = topologyAnalysisPanel
                                 ? getComputedStyle(topologyAnalysisPanel)
@@ -3895,6 +3898,28 @@ pub fn run() {
                                     topologySelectedRelationHandleStripRect?.width || 0,
                                   topologySelectedRelationHandleStripHeight:
                                     topologySelectedRelationHandleStripRect?.height || 0,
+                                  topologySelectedRelationEndpointRouteContract:
+                                    topologySelectedRelationEndpointRoute?.getAttribute("data-endpoint-route-contract") || "",
+                                  topologySelectedRelationEndpointRouteSourceName:
+                                    topologySelectedRelationEndpointRoute?.getAttribute("data-source-name") || "",
+                                  topologySelectedRelationEndpointRouteTargetName:
+                                    topologySelectedRelationEndpointRoute?.getAttribute("data-target-name") || "",
+                                  topologySelectedRelationEndpointRouteSourceHandle:
+                                    topologySelectedRelationEndpointRoute?.getAttribute("data-source-handle") || "",
+                                  topologySelectedRelationEndpointRouteTargetHandle:
+                                    topologySelectedRelationEndpointRoute?.getAttribute("data-target-handle") || "",
+                                  topologySelectedRelationEndpointRouteHandleSummary:
+                                    topologySelectedRelationEndpointRoute?.getAttribute("data-handle-summary") || "",
+                                  topologySelectedRelationEndpointRouteText:
+                                    topologySelectedRelationEndpointRoute?.textContent || "",
+                                  topologySelectedRelationEndpointRouteWidth:
+                                    topologySelectedRelationEndpointRouteRect?.width || 0,
+                                  topologySelectedRelationEndpointRouteHeight:
+                                    topologySelectedRelationEndpointRouteRect?.height || 0,
+                                  topologySelectedRelationEndpointRouteClientWidth:
+                                    topologySelectedRelationEndpointRoute?.clientWidth || 0,
+                                  topologySelectedRelationEndpointRouteScrollWidth:
+                                    topologySelectedRelationEndpointRoute?.scrollWidth || 0,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyFocusNoopAttempted:
