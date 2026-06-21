@@ -2908,10 +2908,7 @@ function SigmaTopologyImpl({
       return;
     }
     setArranging(true);
-    const timer = window.setTimeout(
-      () => setArranging(false),
-      reduceMotionRef.current ? 180 : ARRANGE_FEEDBACK_MS,
-    );
+    const timer = window.setTimeout(() => setArranging(false), ARRANGE_FEEDBACK_MS);
     return () => window.clearTimeout(timer);
   }, [relayoutToken, reduceMotionRef]);
 
