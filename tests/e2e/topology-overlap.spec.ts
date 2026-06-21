@@ -1677,6 +1677,25 @@ for (const viewport of VIEWPORTS) {
       "label-button-carries-mcp-cli-fallback",
     );
     await expect(relationButton).toHaveAttribute(
+      "data-relation-label-visual-owner",
+      "selected-relation-overlay",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-hit-target-contract",
+      "button-keeps-click-handoff-overlay-owns-visible-badge",
+    );
+    const selectedRelationOverlay = page.locator(
+      '[data-selected-relation-overlay][data-selected-relation="true"]',
+    );
+    await expect(selectedRelationOverlay).toHaveAttribute(
+      "data-relation-label-visual-owner",
+      "selected-relation-overlay",
+    );
+    await expect(selectedRelationOverlay).toHaveAttribute(
+      "data-relation-label-hit-target-contract",
+      "button-keeps-click-handoff-overlay-owns-visible-badge",
+    );
+    await expect(relationButton).toHaveAttribute(
       "data-relation-label-primary-action",
       /relation_check|explain_relation/,
     );

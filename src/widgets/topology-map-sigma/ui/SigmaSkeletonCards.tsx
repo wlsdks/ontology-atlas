@@ -6009,6 +6009,14 @@ export function SigmaSkeletonCards({
             data-relation-label-card-clearance-token="--topology-relation-label-card-clearance"
             data-relation-label-density={selected ? 'focus-token' : 'scan-token'}
             data-relation-label-compact={selected ? 'false' : undefined}
+            data-relation-label-visual-owner={
+              selected ? 'selected-relation-overlay' : 'button-visible-badge'
+            }
+            data-relation-label-hit-target-contract={
+              selected
+                ? 'button-keeps-click-handoff-overlay-owns-visible-badge'
+                : 'button-owns-click-and-visible-badge'
+            }
             data-relation-label-token-contract="hit-target-and-visible-badge-share-relation-label-tokens"
             data-relation-label-pointer-contract="html-hit-target-click-selects-relation"
             data-relation-label-surface-token="--topology-relation-label-surface"
@@ -6259,6 +6267,8 @@ export function SigmaSkeletonCards({
             data-relation-label-direction-contract="edge-source-to-target-metadata"
             data-relation-label-compact="false"
             data-relation-label-density="focus-token"
+            data-relation-label-visual-owner="selected-relation-overlay"
+            data-relation-label-hit-target-contract="button-keeps-click-handoff-overlay-owns-visible-badge"
             data-relation-label-selected-surface-token="--topology-relation-label-selected-surface"
             data-relation-label-selected-border-token="--topology-relation-label-selected-border"
             data-relation-label-selected-shadow-token="--topology-relation-label-selected-shadow"
