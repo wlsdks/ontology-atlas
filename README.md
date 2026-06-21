@@ -64,6 +64,48 @@ The product is not "please maintain an ontology." The useful loop is:
 5. Review the markdown diff.
 6. The next agent session starts with better context.
 
+## How It Helps A Coding Agent
+
+Atlas helps before, during, and after a coding task. It does not replace the
+agent's source-code tools; it gives the agent a smaller, better starting packet
+so those tools are aimed at the right problem.
+
+```mermaid
+flowchart LR
+  A["User asks: improve or add something"] --> B["Atlas finds the related domain and capability"]
+  B --> C["Atlas returns implementation evidence: files, commands, tests, MCP tools"]
+  C --> D["Agent uses CodeGraph, grep, or the language server on that narrow code area"]
+  D --> E["Agent changes code and runs the named verification path"]
+  E --> F["Agent proposes ontology updates as a markdown diff"]
+  F --> G["Next session starts from the updated meaning model"]
+```
+
+For a request like "improve the topology relation labels," the useful memory is
+not every symbol in the graph renderer. The useful memory is a compact handoff:
+
+```text
+Relevant capability: topology ontology inspection
+Meaning: relation labels must expose typed ontology facts without covering the
+graph or hiding the next action.
+Implementation evidence:
+- src/widgets/topology-map-sigma/ui/SigmaSkeletonCards.tsx
+- src/widgets/topology-map-sigma/ui/SigmaSkeletonCards.test.tsx
+- scripts/verify-macos-app-launch.mjs
+Recommended code lookup:
+- Ask CodeGraph for the focused component context and callers.
+Verification path:
+- focused unit test for the topology label contract
+- macOS app verification when desktop topology behavior changes
+Memory update rule:
+- update the ontology only if the change adds, renames, or clarifies a domain,
+  capability, element, relation, or verification contract.
+```
+
+That packet saves tokens because the agent no longer has to rebuild the whole
+product story from source files and chat history. More importantly, it reduces
+wrong edits: the agent knows what the code is for, which proof matters, and
+when the durable repo memory should change.
+
 ## What It Does
 
 | Surface | What you use it for |
