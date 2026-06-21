@@ -1872,6 +1872,37 @@ export function validateSelectedRelationEndpointVisibilityMarkers(markers) {
   return null;
 }
 
+export function validateSelectedRelationContextSilhouetteMarkers(markers) {
+  if (
+    markers?.topologySelectedRelationContextSilhouettePolicy !==
+    "selected-relation-keeps-endpoints-and-orientation-anchors-only"
+  ) {
+    return `WebView reported malformed Relief selected relation context silhouette policy (${markers?.topologySelectedRelationContextSilhouettePolicy || "missing"})`;
+  }
+  if (markers?.topologySelectedRelationContextSilhouetteActive !== true) {
+    return "WebView did not activate Relief selected relation context silhouette suppression";
+  }
+  const hiddenCount = Number(
+    markers?.topologySelectedRelationContextSilhouetteHiddenCount || 0,
+  );
+  const lowerPriorityVisibleDimmedCount = Number(
+    markers?.topologySelectedRelationLowerPriorityVisibleDimmedCount || 0,
+  );
+  const visibleOrientationAnchorCount = Number(
+    markers?.topologySelectedRelationVisibleOrientationAnchorCount || 0,
+  );
+  if (
+    !Number.isFinite(hiddenCount) ||
+    !Number.isFinite(lowerPriorityVisibleDimmedCount) ||
+    !Number.isFinite(visibleOrientationAnchorCount) ||
+    hiddenCount < 1 ||
+    lowerPriorityVisibleDimmedCount !== 0
+  ) {
+    return `WebView reported noisy Relief selected relation context (${hiddenCount} hidden / ${lowerPriorityVisibleDimmedCount} lower-priority visible / ${visibleOrientationAnchorCount} anchors)`;
+  }
+  return null;
+}
+
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
   minWebviewSize = null,
@@ -5154,6 +5185,11 @@ export function validateWebviewVerifyPayload(payload, {
         if (selectedRelationEndpointVisibilityError) {
           return selectedRelationEndpointVisibilityError;
         }
+        const selectedRelationContextSilhouetteError =
+          validateSelectedRelationContextSilhouetteMarkers(payload.markers);
+        if (selectedRelationContextSilhouetteError) {
+          return selectedRelationContextSilhouetteError;
+        }
         if (
           payload.markers.topologySelectedRelationCardElevationContract !==
           "solid-active-inspector-over-map"
@@ -6687,6 +6723,33 @@ export function buildWebviewEvidencePayload(
         agentNextAction: "read-selected-relation-with-source-and-target-cards",
       }
       : null;
+  const relationContextSilhouetteProof =
+    markers.topologySelectedRelationContextSilhouettePolicy ===
+    "selected-relation-keeps-endpoints-and-orientation-anchors-only"
+      ? {
+        proof: "topology-selected-relation-context-silhouette",
+        status:
+          validateSelectedRelationContextSilhouetteMarkers(markers) === null
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        policy: markers.topologySelectedRelationContextSilhouettePolicy ?? null,
+        active: markers.topologySelectedRelationContextSilhouetteActive === true,
+        hiddenCount: markerNumber(
+          markers,
+          "topologySelectedRelationContextSilhouetteHiddenCount",
+        ),
+        lowerPriorityVisibleDimmedCount: markerNumber(
+          markers,
+          "topologySelectedRelationLowerPriorityVisibleDimmedCount",
+        ),
+        visibleOrientationAnchorCount: markerNumber(
+          markers,
+          "topologySelectedRelationVisibleOrientationAnchorCount",
+        ),
+        agentNextAction: "read-selected-relation-before-background-context",
+      }
+      : null;
   const relationLabelFrameGeometryProof =
     markers.topologyRelationLabelGeometryContract === "frame-positioned-hit-targets"
       ? {
@@ -7005,6 +7068,7 @@ export function buildWebviewEvidencePayload(
     composerBlockingProof,
     relationLabelHandoffProof,
     relationEndpointVisibilityProof,
+    relationContextSilhouetteProof,
     relationLabelFrameGeometryProof,
     connectorCacheProof,
     connectorLabelPassProof,

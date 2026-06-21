@@ -3641,6 +3641,163 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("선택 relation 의 lower-priority dimmed context 는 endpoint 읽기를 방해하지 않도록 숨긴다", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (slug === "project:p") {
+          return {
+            left: 100,
+            top: 120,
+            right: 220,
+            bottom: 164,
+            width: 120,
+            height: 44,
+            x: 100,
+            y: 120,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "domain:d1") {
+          return {
+            left: 360,
+            top: 220,
+            right: 500,
+            bottom: 268,
+            width: 140,
+            height: 48,
+            x: 360,
+            y: 220,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "domain:d2") {
+          return {
+            left: 100,
+            top: 340,
+            right: 220,
+            bottom: 384,
+            width: 120,
+            height: 44,
+            x: 100,
+            y: 340,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "capability:c1") {
+          return {
+            left: 560,
+            top: 420,
+            right: 700,
+            bottom: 460,
+            width: 140,
+            height: 40,
+            x: 560,
+            y: 420,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 0,
+          top: 0,
+          right: 1000,
+          bottom: 700,
+          width: 1000,
+          height: 700,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      });
+    const graph = makeGraph();
+    try {
+      graph.addNode("domain:d2", {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: -10,
+        y: -5,
+        label: "Agent",
+      });
+      graph.addNode("capability:c1", {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: 140,
+        y: 160,
+        label: "Sync",
+      });
+      const edgeId = graph.addEdge("project:p", "domain:d1", {
+        size: 1,
+        color: "#aaa",
+        kind: "contains",
+        relationType: "contains",
+        relationQuality: "strong",
+        evidenceCount: 1,
+      });
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            { id: "domain:d2", title: "Agent", kind: "domain", tier: 1 as const },
+            { id: "capability:c1", title: "Sync", kind: "capability", tier: 2 as const },
+          ]}
+          selectedSlug="project:p"
+          selectedRelationEdgeId={edgeId}
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const sourceCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
+      const targetCard = screen.getByText("Views").closest("[data-skeleton-card]");
+      const anchorCard = screen.getByText("Agent").closest("[data-skeleton-card]");
+      const lowerPriorityCard = screen.getByText("Sync").closest("[data-skeleton-card]");
+
+      await waitFor(() => {
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-context-silhouette-policy",
+          "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-context-silhouette-active",
+          "true",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-context-silhouette-hidden-count",
+          "1",
+        );
+        expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint", "true");
+        expect(targetCard).toHaveAttribute("data-selected-relation-endpoint", "true");
+        expect(sourceCard).not.toHaveAttribute("data-surface-hidden", "true");
+        expect(targetCard).not.toHaveAttribute("data-surface-hidden", "true");
+        expect(anchorCard).toHaveAttribute("data-dim-opacity-role", "orientation-anchor");
+        expect(anchorCard).toHaveStyle({ pointerEvents: "none" });
+        expect(lowerPriorityCard).toHaveAttribute(
+          "data-dim-opacity-role",
+          "suppressed-selected-relation-context",
+        );
+        expect(lowerPriorityCard).toHaveAttribute("data-surface-hidden", "true");
+        expect(lowerPriorityCard).toHaveStyle({ opacity: "0", pointerEvents: "none" });
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("숨겨진 context 카드가 많은 focus 에서 visibility pass 는 rect 측정을 건너뛴다", async () => {
     const graph = makeGraph();
     const hiddenContextCards = Array.from({ length: 18 }, (_, index) => {

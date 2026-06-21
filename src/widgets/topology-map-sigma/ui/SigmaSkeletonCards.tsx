@@ -3158,11 +3158,21 @@ export function SigmaSkeletonCards({
       activeDragCluster === null &&
       !pathWorkflowActive &&
       !healthRepairTarget;
+    const selectedRelationContextSilhouetteSuppressionActive =
+      selectedRelationEdgeId !== null &&
+      activeDragCluster === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
     let focusContextSilhouetteHiddenCount = 0;
+    let selectedRelationContextSilhouetteHiddenCount = 0;
     container.dataset.focusContextSilhouettePolicy =
       'click-focus-keeps-orientation-anchors-only';
     container.dataset.focusContextSilhouetteActive =
       focusContextSilhouetteSuppressionActive ? 'true' : 'false';
+    container.dataset.selectedRelationContextSilhouettePolicy =
+      'selected-relation-keeps-endpoints-and-orientation-anchors-only';
+    container.dataset.selectedRelationContextSilhouetteActive =
+      selectedRelationContextSilhouetteSuppressionActive ? 'true' : 'false';
     const cardPlacementSetupDurationMs = Math.max(
       0,
       measureRepositionNow() - repositionStartedAt,
@@ -3662,6 +3672,17 @@ export function SigmaSkeletonCards({
         focusContextSilhouetteHiddenCount += 1;
         continue;
       }
+      if (
+        selectedRelationContextSilhouetteSuppressionActive &&
+        tier > 1 &&
+        !lockedForDrag
+      ) {
+        el.dataset.dimOpacityRole = 'suppressed-selected-relation-context';
+        el.dataset.dimOpacityToken = 'none';
+        hideSkeletonCard(el, domWriteStats);
+        selectedRelationContextSilhouetteHiddenCount += 1;
+        continue;
+      }
       if (lockedForDrag) {
         collides = false;
       } else {
@@ -3710,6 +3731,9 @@ export function SigmaSkeletonCards({
       'reuse-pass1-card-placement-frame-rects';
     container.dataset.focusContextSilhouetteHiddenCount = String(
       focusContextSilhouetteHiddenCount,
+    );
+    container.dataset.selectedRelationContextSilhouetteHiddenCount = String(
+      selectedRelationContextSilhouetteHiddenCount,
     );
     container.dataset.cardPlacementParentRectCacheContract =
       'frame-local-parent-card-rects';

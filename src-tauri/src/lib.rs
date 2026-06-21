@@ -2259,6 +2259,11 @@ pub fn run() {
                                       card.querySelector("[data-path-card-badge]")?.textContent?.trim() ||
                                       "",
                                     pathWorkflow: card.getAttribute("data-path-workflow") || "",
+                                    tier: Number(card.getAttribute("data-tier") || "3"),
+                                    dimmed: card.getAttribute("data-dimmed") === "true",
+                                    dimOpacityRole: card.getAttribute("data-dim-opacity-role") || "",
+                                    selectedRelationEndpoint:
+                                      card.getAttribute("data-selected-relation-endpoint") === "true",
                                     visible:
                                       style.display !== "none" &&
                                       style.visibility !== "hidden" &&
@@ -2274,6 +2279,20 @@ pub fn run() {
                                   };
                                 })
                                 .filter((card) => card.visible);
+                              const topologySelectedRelationLowerPriorityVisibleDimmedCount =
+                                topologyCards.filter(
+                                  (card) =>
+                                    card.dimmed &&
+                                    !card.selectedRelationEndpoint &&
+                                    card.tier > 1
+                                ).length;
+                              const topologySelectedRelationVisibleOrientationAnchorCount =
+                                topologyCards.filter(
+                                  (card) =>
+                                    card.dimmed &&
+                                    !card.selectedRelationEndpoint &&
+                                    card.tier <= 1
+                                ).length;
                               const topologyRawCards = Array.from(document.querySelectorAll("[data-skeleton-card]"))
                                 .slice(0, 5)
                                 .map((card) => {
@@ -4008,6 +4027,14 @@ pub fn run() {
                                   topologySelectedRelationEndpointVisibleCount,
                                   topologySelectedRelationEndpointHiddenCount,
                                   topologySelectedRelationEndpointCards,
+                                  topologySelectedRelationContextSilhouettePolicy:
+                                    skeletonCardsLayer?.getAttribute("data-selected-relation-context-silhouette-policy") || "",
+                                  topologySelectedRelationContextSilhouetteActive:
+                                    skeletonCardsLayer?.getAttribute("data-selected-relation-context-silhouette-active") === "true",
+                                  topologySelectedRelationContextSilhouetteHiddenCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-selected-relation-context-silhouette-hidden-count") || "0"),
+                                  topologySelectedRelationLowerPriorityVisibleDimmedCount,
+                                  topologySelectedRelationVisibleOrientationAnchorCount,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyFocusNoopAttempted:
@@ -4413,6 +4440,8 @@ mod tests {
         assert!(source.contains("data-selected-relation-endpoint-visibility-contract"));
         assert!(source.contains("data-selected-relation-endpoint=\"true\""));
         assert!(source.contains("topologySelectedRelationEndpointCards"));
+        assert!(source.contains("data-selected-relation-context-silhouette-policy"));
+        assert!(source.contains("topologySelectedRelationLowerPriorityVisibleDimmedCount"));
     }
 
     #[test]

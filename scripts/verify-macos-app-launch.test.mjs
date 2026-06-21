@@ -29,6 +29,7 @@ import {
   selectedRelationRouteRailTextLeak,
   validateSelectedRelationCardAttentionLane,
   validateSelectedRelationCardDensityContract,
+  validateSelectedRelationContextSilhouetteMarkers,
   validateSelectedRelationEndpointVisibilityMarkers,
   validateSelectedRelationEndpointRouteMarkers,
   validateRelationLabelFrameGeometryMarkers,
@@ -932,6 +933,12 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
             shift: "safe-shift",
           },
         ],
+        topologySelectedRelationContextSilhouettePolicy:
+          "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+        topologySelectedRelationContextSilhouetteActive: true,
+        topologySelectedRelationContextSilhouetteHiddenCount: 8,
+        topologySelectedRelationLowerPriorityVisibleDimmedCount: 0,
+        topologySelectedRelationVisibleOrientationAnchorCount: 3,
         topologyRelationLabelGeometryContract: "frame-positioned-hit-targets",
         topologyRelationLabelGeometrySource: "after-render-layout-pass",
         topologyRelationLabelGeometryExpectedCount: 1,
@@ -1039,6 +1046,17 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
       },
     ],
     agentNextAction: "read-selected-relation-with-source-and-target-cards",
+  });
+  assert.deepEqual(evidence.relationContextSilhouetteProof, {
+    proof: "topology-selected-relation-context-silhouette",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    policy: "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+    active: true,
+    hiddenCount: 8,
+    lowerPriorityVisibleDimmedCount: 0,
+    visibleOrientationAnchorCount: 3,
+    agentNextAction: "read-selected-relation-before-background-context",
   });
   assert.deepEqual(evidence.relationLabelFrameGeometryProof, {
     proof: "topology-relation-label-frame-geometry",
@@ -10362,6 +10380,40 @@ test("selected relation endpoint visibility markers prove source and target card
       ],
     }),
     /hidden Relief selected relation endpoint card/,
+  );
+});
+
+test("selected relation context silhouette markers suppress lower-priority background cards", () => {
+  const baseMarkers = {
+    topologySelectedRelationContextSilhouettePolicy:
+      "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+    topologySelectedRelationContextSilhouetteActive: true,
+    topologySelectedRelationContextSilhouetteHiddenCount: 6,
+    topologySelectedRelationLowerPriorityVisibleDimmedCount: 0,
+    topologySelectedRelationVisibleOrientationAnchorCount: 3,
+  };
+
+  assert.equal(validateSelectedRelationContextSilhouetteMarkers(baseMarkers), null);
+  assert.match(
+    validateSelectedRelationContextSilhouetteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationContextSilhouettePolicy: "all-context-visible",
+    }),
+    /context silhouette policy/,
+  );
+  assert.match(
+    validateSelectedRelationContextSilhouetteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationContextSilhouetteActive: false,
+    }),
+    /did not activate/,
+  );
+  assert.match(
+    validateSelectedRelationContextSilhouetteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationLowerPriorityVisibleDimmedCount: 2,
+    }),
+    /noisy Relief selected relation context/,
   );
 });
 
