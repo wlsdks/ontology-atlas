@@ -3082,6 +3082,7 @@ function SigmaTopologyImpl({
           cards={skeletonCards}
           selectedSlug={selectedSlug}
           selectedRelationEdgeId={visibleSelectedEdge?.edgeId ?? null}
+          selectedRelationData={visibleSelectedEdge}
           healthRepairTarget={healthRepairTarget}
           onSelect={(slug) => onSelectProjectRef.current?.(slug)}
           pathWorkflowActive={pathWorkflowActive}

@@ -96,6 +96,7 @@ interface SigmaSkeletonCardsProps {
   cards: readonly SkeletonCardModel[];
   selectedSlug?: string | null;
   selectedRelationEdgeId?: string | null;
+  selectedRelationData?: SigmaEdgeTooltipData | null;
   healthRepairTarget?: {
     slug: string;
     kind: 'stale' | 'orphan' | 'promotion';
@@ -2367,6 +2368,7 @@ export function SigmaSkeletonCards({
   cards,
   selectedSlug = null,
   selectedRelationEdgeId = null,
+  selectedRelationData = null,
   healthRepairTarget = null,
   selectedFocusCenterActive = false,
   onSelect,
@@ -2814,23 +2816,44 @@ export function SigmaSkeletonCards({
           };
         })()
       : null;
-    if (!selectedLabel) return null;
-    const gateKind = relationAgentGateKind(selectedLabel);
+    const selectedRelationFallbackLabel =
+      selectedLabel ??
+      (selectedRelationData
+        ? {
+            count: 1,
+            edgeId: selectedRelationData.edgeId,
+            edgeSource: selectedRelationData.source,
+            edgeTarget: selectedRelationData.target,
+            from: selectedRelationData.source,
+            to: selectedRelationData.target,
+            key: [selectedRelationData.source, selectedRelationData.target].sort().join('→'),
+            kind: selectedRelationData.kind ?? selectedRelationData.relationType ?? 'depends-on',
+            relationType:
+              selectedRelationData.relationType ??
+              selectedRelationData.kind ??
+              'depends-on',
+            relationQuality: selectedRelationData.relationQuality,
+            evidenceCount: selectedRelationData.evidenceCount,
+            authored: selectedRelationData.authored,
+          }
+        : null);
+    if (!selectedRelationFallbackLabel) return null;
+    const gateKind = relationAgentGateKind(selectedRelationFallbackLabel);
     const primaryCopyAction = relationPrimaryCopyAction(gateKind);
     return {
       action: primaryCopyAction,
       cliFallbackCommand: relationLabelCliFallbackCommand({
         action: primaryCopyAction,
-        from: selectedLabel.edgeSource,
-        relationType: selectedLabel.relationType,
-        to: selectedLabel.edgeTarget,
+        from: selectedRelationFallbackLabel.edgeSource,
+        relationType: selectedRelationFallbackLabel.relationType,
+        to: selectedRelationFallbackLabel.edgeTarget,
       }),
-      evidence: relationEvidenceState(selectedLabel),
+      evidence: relationEvidenceState(selectedRelationFallbackLabel),
       gate: gateKind,
-      quality: selectedLabel.relationQuality ?? 'supported',
+      quality: selectedRelationFallbackLabel.relationQuality ?? 'supported',
       route: 'fact>evidence>gate>action',
     };
-  }, [egoRelationLabels, graph, selectedRelationEdgeId]);
+  }, [egoRelationLabels, graph, selectedRelationData, selectedRelationEdgeId]);
 
   const selectedRelationSummary = useMemo(() => {
     if (!ego || egoRelationConnectors.length === 0) return null;

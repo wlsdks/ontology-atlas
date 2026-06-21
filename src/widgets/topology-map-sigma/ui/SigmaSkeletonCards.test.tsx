@@ -3313,6 +3313,42 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(root).toHaveAttribute("data-selected-relation-label-evidence", "source-backed");
   });
 
+  it("selected relation card data keeps root handoff ready when ego label is hidden", () => {
+    const graph = makeGraph();
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        selectedRelationEdgeId="stale-visible-edge-id"
+        selectedRelationData={{
+          edgeId: "stale-visible-edge-id",
+          source: "project:p",
+          target: "domain:d1",
+          sourceName: "Atlas",
+          targetName: "Views",
+          kind: "contains",
+          relationType: "contains",
+          relationQuality: "strong",
+          evidenceCount: 1,
+          x: 0,
+          y: 0,
+        }}
+      />,
+    );
+
+    const root = container.querySelector("[data-testid='sigma-skeleton-cards']");
+    expect(root).toHaveAttribute("data-selected-relation-label-handoff", "ready");
+    expect(root).toHaveAttribute("data-selected-relation-label-gate", "handoff-ready");
+    expect(root).toHaveAttribute(
+      "data-selected-relation-label-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(root).toHaveAttribute("data-selected-relation-label-quality", "strong");
+    expect(root).toHaveAttribute("data-selected-relation-label-evidence", "source-backed");
+  });
+
   it("선택된 weak relation label 은 먼저 relation_check 를 안내한다", () => {
     const graph = makeGraph();
     const edgeId = graph.addEdge("project:p", "domain:d1", {
