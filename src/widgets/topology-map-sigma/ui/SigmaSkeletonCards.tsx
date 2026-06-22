@@ -2889,6 +2889,28 @@ export function SigmaSkeletonCards({
     };
   }, [ego, egoRelationConnectors]);
 
+  const isSelectedRelationSurface = useCallback(
+    (relation: Pick<RelationConnector, 'edgeId' | 'edgeSource' | 'edgeTarget' | 'kind' | 'relationType'>) => {
+      if (selectedRelationEdgeId !== null && relation.edgeId === selectedRelationEdgeId) {
+        return true;
+      }
+      if (!selectedRelationData) return false;
+      const selectedType =
+        selectedRelationData.relationType ?? selectedRelationData.kind ?? 'depends-on';
+      const relationTypeMatches =
+        relation.relationType === selectedType || relation.kind === selectedType;
+      if (!relationTypeMatches) return false;
+      const sameDirection =
+        relation.edgeSource === selectedRelationData.source &&
+        relation.edgeTarget === selectedRelationData.target;
+      const reverseDirection =
+        relation.edgeSource === selectedRelationData.target &&
+        relation.edgeTarget === selectedRelationData.source;
+      return sameDirection || reverseDirection;
+    },
+    [selectedRelationData, selectedRelationEdgeId],
+  );
+
   const selectedFocusCluster = useMemo(() => {
     if (!ego || ego.slugs.size < 2) return null;
     return ego.slugs;
@@ -5820,8 +5842,7 @@ export function SigmaSkeletonCards({
       >
         {!ego && !activeDragCluster
           ? overviewBackboneConnectors.map((connector) => {
-              const selected =
-                selectedRelationEdgeId !== null && connector.edgeId === selectedRelationEdgeId;
+              const selected = isSelectedRelationSurface(connector);
               const tone = relationConnectorTone(connector, selected);
               return (
                 <g key={`overview:${connector.key}`}>
@@ -5922,8 +5943,7 @@ export function SigmaSkeletonCards({
             })
           : null}
         {egoRelationConnectors.map((connector) => {
-          const selected =
-            selectedRelationEdgeId !== null && connector.edgeId === selectedRelationEdgeId;
+          const selected = isSelectedRelationSurface(connector);
           const tone = relationConnectorTone(connector, selected);
           return (
             <g key={`ego:${connector.key}`}>
@@ -5981,6 +6001,7 @@ export function SigmaSkeletonCards({
           );
         })}
         {egoRelationLabels.map((label, index) => {
+          const selected = isSelectedRelationSurface(label);
           const visibleRelationLabel = formatRelationVisibleLabel(
             label.relationType,
             label.count,
@@ -6010,18 +6031,14 @@ export function SigmaSkeletonCards({
             >
               <rect
                 data-relation-label-bg={`ego:${label.key}`}
-                data-selected-relation={
-                  selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
-                    ? 'true'
-                    : 'false'
-                }
+                data-selected-relation={selected ? 'true' : 'false'}
                 fill={
-                  selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
+                  selected
                     ? 'rgba(139,151,255,0.16)'
                     : 'var(--color-canvas)'
                 }
                 stroke={
-                  selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
+                  selected
                     ? 'rgba(139,151,255,0.92)'
                     : 'var(--topology-card-border-selected-strong)'
                 }
@@ -6115,8 +6132,7 @@ export function SigmaSkeletonCards({
         ))}
       </svg>
       {egoRelationLabels.map((label) => {
-        const selected =
-          selectedRelationEdgeId !== null && label.edgeId === selectedRelationEdgeId;
+        const selected = isSelectedRelationSurface(label);
         const quality = label.relationQuality ?? 'supported';
         const evidenceState = relationEvidenceState(label);
         const evidenceChipText = relationEvidenceChipText({
@@ -6426,8 +6442,7 @@ export function SigmaSkeletonCards({
         );
       })}
       {egoRelationLabels.map((label) => {
-        const selected =
-          selectedRelationEdgeId !== null && label.edgeId === selectedRelationEdgeId;
+        const selected = isSelectedRelationSurface(label);
         if (!selected) return null;
         const quality = label.relationQuality ?? 'supported';
         const evidenceState = relationEvidenceState(label);

@@ -3388,6 +3388,67 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(root).toHaveAttribute("data-selected-relation-label-evidence", "source-backed");
   });
 
+  it("selected relation data restores the map label when the edge id is stale", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        selectedRelationEdgeId="stale-visible-edge-id"
+        selectedRelationData={{
+          edgeId: "stale-visible-edge-id",
+          source: "project:p",
+          target: "domain:d1",
+          sourceName: "Atlas",
+          targetName: "Views",
+          kind: "contains",
+          relationType: "contains",
+          relationQuality: "strong",
+          evidenceCount: 1,
+          x: 0,
+          y: 0,
+        }}
+      />,
+    );
+
+    const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+    const selectedOverlay = container.querySelector("[data-selected-relation-overlay]");
+    const selectedPath = container.querySelector(
+      'path[data-selected-relation="true"]:not([data-relation-hit-path])',
+    );
+    const root = screen.getByTestId("sigma-skeleton-cards");
+
+    expect(labelHit).toHaveAttribute("data-selected-relation", "true");
+    expect(labelHit).toHaveAttribute("data-relation-label-density", "focus-token");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-visual-owner",
+      "selected-relation-overlay",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-handoff-contract",
+      "visible-overlay-carries-mcp-cli-fallback",
+    );
+    expect(selectedPath).toHaveAttribute(
+      "data-relation-stroke-token",
+      "--topology-relation-stroke-selected",
+    );
+    expect(root).toHaveAttribute("data-selected-relation-label-handoff", "ready");
+    expect(root).toHaveAttribute(
+      "data-selected-relation-label-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+  });
+
   it("선택된 weak relation label 은 먼저 relation_check 를 안내한다", () => {
     const graph = makeGraph();
     const edgeId = graph.addEdge("project:p", "domain:d1", {
