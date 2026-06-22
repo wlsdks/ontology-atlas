@@ -1067,12 +1067,12 @@ export function isSelectedRelationPrimaryCopyActionText({
   const label = String(text ?? "").trim();
   if (action === "explain_relation") {
     return locale === "ko"
-      ? /^(설명|관계\s*설명(?:\s*복사)?)$/.test(label)
+      ? /^(설명(?:\s*복사)?|관계\s*설명(?:\s*복사)?)$/.test(label)
       : label.toLowerCase().includes("explain");
   }
   if (action === "relation_check") {
     return locale === "ko"
-      ? /^(점검|관계\s*(점검|사전\s*점검))$/.test(label)
+      ? /^(점검(?:\s*복사)?|관계\s*(점검|사전\s*점검)(?:\s*복사)?)$/.test(label)
       : label.toLowerCase().includes("relation");
   }
   return false;

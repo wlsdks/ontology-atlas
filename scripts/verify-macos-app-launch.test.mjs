@@ -103,8 +103,24 @@ test("selected relation primary copy action text accepts compact localized label
   );
   assert.equal(
     isSelectedRelationPrimaryCopyActionText({
+      text: "설명 복사",
+      action: "explain_relation",
+      locale: "ko",
+    }),
+    true,
+  );
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
       text: "관계 설명 복사",
       action: "explain_relation",
+      locale: "ko",
+    }),
+    true,
+  );
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "점검 복사",
+      action: "relation_check",
       locale: "ko",
     }),
     true,

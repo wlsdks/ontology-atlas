@@ -856,7 +856,12 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     const primary = screen.getByRole('button', { name: /관계 설명 복사/ });
     expect(primary).toHaveAttribute('data-copy-recommendation-label', '다음 작업');
+    expect(primary).toHaveAttribute('data-copy-visible-label', '설명 복사');
     expect(primary).toHaveAccessibleName('관계 설명 복사 · 다음 작업');
+    expect(primary).toHaveTextContent('설명 복사');
+    const secondary = screen.getByRole('button', { name: /관계 점검 복사/ });
+    expect(secondary).toHaveAttribute('data-copy-visible-label', '점검 복사');
+    expect(secondary).toHaveTextContent('점검 복사');
     expect(card).toHaveTextContent('온톨로지 핸들');
     expect(card).toHaveTextContent('전달');
     expect(card).toHaveTextContent('설명 준비');
