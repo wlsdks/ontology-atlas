@@ -3678,6 +3678,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const root = screen.getByTestId("sigma-skeleton-cards");
 
     expect(labelHit).toHaveAttribute("data-selected-relation", "true");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
     expect(labelHit).toHaveAttribute("data-relation-label-density", "focus-token");
     expect(labelHit).toHaveAttribute(
       "data-relation-label-visual-owner",
@@ -3694,6 +3698,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(root).toHaveAttribute("data-selected-relation-label-handoff", "ready");
     expect(root).toHaveAttribute(
       "data-selected-relation-label-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(root).toHaveAttribute(
+      "data-topology-selected-relation-label-cli-fallback-command",
       "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
     );
   });
