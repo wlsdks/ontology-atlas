@@ -348,6 +348,12 @@ export function TopologyNodePopover({
     "data-agent-handoff-action-count": actions.length,
     "data-agent-handoff-relation-fact-count": total,
     "data-agent-handoff-relation-type-count": relationTypeCount,
+    "data-node-popover-handoff-contract": handoffContract,
+    "data-node-popover-handoff-route": handoffRoute,
+    "data-node-popover-handoff-primary-action": primaryAction?.kind ?? "",
+    "data-node-popover-handoff-action-count": actions.length,
+    "data-node-popover-handoff-relation-fact-count": total,
+    "data-node-popover-handoff-relation-type-count": relationTypeCount,
   };
   const selectedNodeHandoffVisibleSummary = primaryAction
     ? `MCP/CLI · ${compactNodePopoverActionLabel(primaryAction.kind, primaryAction.label)}`
@@ -360,6 +366,12 @@ export function TopologyNodePopover({
     "data-agent-handoff-visible-summary": selectedNodeHandoffVisibleSummary,
     "data-agent-handoff-visible-label": selectedNodeHandoffVisibleLabel,
     "data-agent-handoff-selected-node": focus.id,
+    "data-node-popover-handoff-summary-contract": primaryAction
+      ? "visible-mcp-cli-focus-brief"
+      : "detail-only",
+    "data-node-popover-handoff-visible-summary": selectedNodeHandoffVisibleSummary,
+    "data-node-popover-handoff-visible-label": selectedNodeHandoffVisibleLabel,
+    "data-node-popover-handoff-selected-node": focus.id,
   };
   const compactActionLabel = useCallback(
     (action: TopologyNodePopoverAction) =>

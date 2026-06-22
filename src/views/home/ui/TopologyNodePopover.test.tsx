@@ -172,6 +172,11 @@ describe("TopologyNodePopover", () => {
     expect(popover).toHaveAttribute("data-hierarchy-contract", "click-focus-detail-support");
     expect(popover).toHaveAccessibleName("역량: MCP Server");
     expect(popover).toHaveAttribute("data-selected-node-readable-label", "역량: MCP Server");
+    expect(popover).toHaveAttribute("data-node-popover-handoff-contract", "detail-only");
+    expect(popover).toHaveAttribute("data-node-popover-handoff-route", "selected-node>details");
+    expect(popover).toHaveAttribute("data-node-popover-handoff-primary-action", "");
+    expect(popover).toHaveAttribute("data-node-popover-handoff-action-count", "0");
+    expect(popover).toHaveAttribute("data-node-popover-handoff-selected-node", "capabilities/mcp-server");
     expect(popover).toHaveAttribute("data-density", "readable");
     expect(popover).toHaveAttribute("data-size-policy", "inspector-rail");
     expect(popover).toHaveAttribute(
@@ -981,6 +986,31 @@ describe("TopologyNodePopover", () => {
     expect(popover).toHaveAttribute(
       "data-compact-handoff-contract",
       "selected-node-actions-visible",
+    );
+    expect(popover).toHaveAttribute(
+      "data-node-popover-handoff-contract",
+      "selected-node-actions-visible",
+    );
+    expect(popover).toHaveAttribute(
+      "data-node-popover-handoff-route",
+      "selected-node>facts>actions",
+    );
+    expect(popover).toHaveAttribute(
+      "data-node-popover-handoff-primary-action",
+      "focus-brief",
+    );
+    expect(popover).toHaveAttribute("data-node-popover-handoff-action-count", "3");
+    expect(popover).toHaveAttribute(
+      "data-node-popover-handoff-summary-contract",
+      "visible-mcp-cli-focus-brief",
+    );
+    expect(popover).toHaveAttribute(
+      "data-node-popover-handoff-visible-summary",
+      "MCP/CLI · 브리프",
+    );
+    expect(popover).toHaveAttribute(
+      "data-node-popover-handoff-selected-node",
+      "capabilities/mcp-server",
     );
     expect(rail).toHaveAttribute("data-action-rail-contract", "compact-mcp-cli-handoff");
     expect(rail).toHaveAttribute(

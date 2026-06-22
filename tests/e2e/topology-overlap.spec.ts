@@ -2656,6 +2656,18 @@ for (const viewport of VIEWPORTS) {
       "focus-brief",
     );
     await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-node-popover-handoff-contract",
+      "selected-node-actions-visible",
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-node-popover-handoff-route",
+      "selected-node>facts>actions",
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-node-popover-handoff-primary-action",
+      "focus-brief",
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
       "data-agent-handoff-summary-contract",
       "visible-mcp-cli-focus-brief",
     );

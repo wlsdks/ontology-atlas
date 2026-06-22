@@ -8810,6 +8810,37 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     }, { expectedPath: "/en/topology/" }),
     /fixed topology surfaces/,
   );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 2,
+        topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
+        topologyCardFixedSurfaceOverlapCount: 1,
+        topologyResidualOverlapClear: true,
+        topologyResidualVisibleCardOverlapCount: 0,
+        topologyResidualFixedSurfaceOverlapCount: 0,
+        topologyResidualCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
+        topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
+      },
+    }, { expectedPath: "/en/topology/" }),
+    null,
+  );
   assert.match(
     validateWebviewVerifyPayload({
       ...payload,

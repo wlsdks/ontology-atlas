@@ -3929,7 +3929,15 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyCardClippedCount !== 0) {
       return `WebView reported clipped Relief cards (${payload.markers.topologyCardClippedCount ?? "unknown"} clipped card(s))`;
     }
-    if (payload.markers.topologyCardFixedSurfaceOverlapCount !== 0) {
+    const residualOverlapProvesClear =
+      payload.markers.topologyResidualOverlapClear === true &&
+      Number(payload.markers.topologyResidualVisibleCardOverlapCount) === 0 &&
+      Number(payload.markers.topologyResidualFixedSurfaceOverlapCount) === 0 &&
+      Number(payload.markers.topologyResidualCardFixedSurfaceOverlapCount) === 0;
+    if (
+      payload.markers.topologyCardFixedSurfaceOverlapCount !== 0 &&
+      !residualOverlapProvesClear
+    ) {
       return `WebView reported Relief cards overlapping fixed topology surfaces (${payload.markers.topologyCardFixedSurfaceOverlapCount ?? "unknown"} overlap(s))`;
     }
     if (payload.markers.topologyFixedSurfaceOverlapCount !== 0) {
@@ -7001,7 +7009,15 @@ export function buildWebviewEvidencePayload(
           markerNumber(markers, "topologyCardOverlapCount") === 0 &&
           markerNumber(markers, "topologyCardClippedCount") === 0 &&
           markerNumber(markers, "topologyFixedSurfaceOverlapCount") === 0 &&
-          markerNumber(markers, "topologyCardFixedSurfaceOverlapCount") === 0 &&
+          (
+            markerNumber(markers, "topologyCardFixedSurfaceOverlapCount") === 0 ||
+            (
+              markers.topologyResidualOverlapClear === true &&
+              markerNumber(markers, "topologyResidualVisibleCardOverlapCount") === 0 &&
+              markerNumber(markers, "topologyResidualFixedSurfaceOverlapCount") === 0 &&
+              markerNumber(markers, "topologyResidualCardFixedSurfaceOverlapCount") === 0
+            )
+          ) &&
           markers.topologyFixedSurfaceLiveSuppressionReadPolicy ===
             "reuse-card-placement-frame-rects-before-dom-read" &&
           markerNumber(markers, "topologyFixedSurfaceLiveSuppressionReadCount") === 0

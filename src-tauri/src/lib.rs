@@ -1320,30 +1320,39 @@ pub fn run() {
                                 topologySelectedNodePopover?.getAttribute("data-hierarchy-contract") ||
                                 "";
                               const topologyNodePopoverAgentHandoffContract =
+                                topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-contract") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-contract") ||
                                 "";
                               const topologyNodePopoverAgentHandoffRoute =
+                                topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-route") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-route") ||
                                 "";
                               const topologyNodePopoverAgentHandoffPrimaryAction =
+                                topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-primary-action") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-primary-action") ||
                                 "";
                               const topologyNodePopoverAgentHandoffActionCount =
+                                topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-action-count") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-action-count") ||
                                 "";
                               const topologyNodePopoverAgentHandoffRelationFactCount =
+                                topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-relation-fact-count") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-relation-fact-count") ||
                                 "";
                               const topologyNodePopoverAgentHandoffRelationTypeCount =
+                                topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-relation-type-count") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-relation-type-count") ||
                                 "";
                               const topologyNodePopoverAgentHandoffSummaryContract =
+                                topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-summary-contract") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-summary-contract") ||
                                 "";
                               const topologyNodePopoverAgentHandoffVisibleSummary =
+                                topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-visible-summary") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-visible-summary") ||
                                 "";
                               const topologyNodePopoverAgentHandoffSelectedNode =
+                                topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-selected-node") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-selected-node") ||
                                 "";
                               const markerSummary = (element, attributeName) =>
