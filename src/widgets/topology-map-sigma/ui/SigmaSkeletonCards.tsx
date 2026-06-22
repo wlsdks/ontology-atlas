@@ -1316,6 +1316,7 @@ function showSkeletonCard(
   if (el.dataset.surfaceHidden === 'true') {
     delete el.dataset.surfaceHidden;
   }
+  delete el.dataset.surfaceHiddenReason;
   if (stats) {
     setSkeletonStyleValue(el, 'opacity', opacity, stats);
     setSkeletonStyleValue(el, 'visibility', 'visible', stats);
@@ -1334,6 +1335,7 @@ function showSelectedRelationEndpointCard(
   if (el.dataset.surfaceHidden === 'true') {
     delete el.dataset.surfaceHidden;
   }
+  delete el.dataset.surfaceHiddenReason;
   if (
     el.style.getPropertyValue('opacity') !== '1' ||
     el.style.getPropertyPriority('opacity') !== 'important'
@@ -1375,6 +1377,8 @@ function hideSkeletonCard(el: HTMLElement, stats?: SkeletonDomWriteStats) {
   if (el.dataset.surfaceHidden !== 'true') {
     el.dataset.surfaceHidden = 'true';
   }
+  el.dataset.surfaceHiddenReason =
+    el.dataset.surfaceHiddenReason ?? 'layout-surface-collision';
   if (
     el.dataset.dimOpacityRole === 'orientation-anchor' ||
     el.dataset.dimOpacityRole === 'context-silhouette'
@@ -3400,6 +3404,7 @@ export function SigmaSkeletonCards({
       if (suppressFocusContextSilhouette) {
         el.dataset.dimOpacityRole = 'suppressed-focus-context';
         el.dataset.dimOpacityToken = 'none';
+        el.dataset.surfaceHiddenReason = 'focus-context-suppression';
         hideSkeletonCard(el, domWriteStats);
         focusContextSilhouetteHiddenCount += 1;
         continue;
@@ -3857,6 +3862,7 @@ export function SigmaSkeletonCards({
       if (focusContextSilhouetteSuppressionActive && tier > 1 && !lockedForDrag) {
         el.dataset.dimOpacityRole = 'suppressed-focus-context';
         el.dataset.dimOpacityToken = 'none';
+        el.dataset.surfaceHiddenReason = 'focus-context-suppression';
         hideSkeletonCard(el, domWriteStats);
         focusContextSilhouetteHiddenCount += 1;
         continue;
@@ -3868,6 +3874,7 @@ export function SigmaSkeletonCards({
       ) {
         el.dataset.dimOpacityRole = 'suppressed-selected-relation-context';
         el.dataset.dimOpacityToken = 'none';
+        el.dataset.surfaceHiddenReason = 'selected-relation-context-suppression';
         hideSkeletonCard(el, domWriteStats);
         selectedRelationContextSilhouetteHiddenCount += 1;
         continue;

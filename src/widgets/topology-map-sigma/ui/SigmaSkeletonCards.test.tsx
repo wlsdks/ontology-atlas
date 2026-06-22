@@ -1386,6 +1386,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(layer).toHaveAttribute("data-visibility-fallback-count", "1");
       expect(projectCard).not.toHaveAttribute("data-surface-hidden", "true");
       expect(domainCard).toHaveAttribute("data-surface-hidden", "true");
+      expect(domainCard).toHaveAttribute(
+        "data-surface-hidden-reason",
+        "layout-surface-collision",
+      );
       expect(projectCard.style.visibility).toBe("visible");
       expect(domainCard.style.visibility).toBe("hidden");
       expect(container.querySelectorAll('[data-skeleton-card][style*="opacity: 1"]')).toHaveLength(1);
@@ -1869,6 +1873,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "suppressed-focus-context",
       );
       expect(backgroundCard).toHaveAttribute("data-surface-hidden", "true");
+      expect(backgroundCard).toHaveAttribute(
+        "data-surface-hidden-reason",
+        "focus-context-suppression",
+      );
       expect(document.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
     });
   });
