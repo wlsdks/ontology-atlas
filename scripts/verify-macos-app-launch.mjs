@@ -5472,6 +5472,18 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation card handoff contract (${payload.markers.topologySelectedRelationCardHandoffContract || "missing"})`;
       }
+      if (payload.markers.topologyRootAttentionWinner !== "active-relation-inspector") {
+        return `WebView reported malformed Relief root attention winner (${payload.markers.topologyRootAttentionWinner || "missing"})`;
+      }
+      if (payload.markers.topologyAgentCurrentSurface !== "selected-relation") {
+        return `WebView reported malformed Relief root current surface (${payload.markers.topologyAgentCurrentSurface || "missing"})`;
+      }
+      if (
+        payload.markers.topologyAgentCurrentSurfaceRole !==
+        payload.markers.topologySelectedRelationCardSurfaceRole
+      ) {
+        return `WebView reported mismatched Relief root current surface role (${payload.markers.topologyAgentCurrentSurfaceRole || "missing"} vs ${payload.markers.topologySelectedRelationCardSurfaceRole || "missing"})`;
+      }
       if (
         payload.markers.topologySelectedRelationCardHandoffAliasContract !==
         payload.markers.topologySelectedRelationCardHandoffContract
@@ -5486,6 +5498,12 @@ export function validateWebviewVerifyPayload(payload, {
         `${payload.markers.topologySelectedRelationCardSource}>${payload.markers.topologySelectedRelationCardTarget}`
       ) {
         return `WebView reported malformed Relief selected relation card endpoint route (${payload.markers.topologySelectedRelationCardEndpointRoute || "missing"})`;
+      }
+      if (
+        payload.markers.topologyAgentCurrentSurfaceRoute !==
+        payload.markers.topologySelectedRelationCardEndpointRoute
+      ) {
+        return `WebView reported mismatched Relief root current surface route (${payload.markers.topologyAgentCurrentSurfaceRoute || "missing"} vs ${payload.markers.topologySelectedRelationCardEndpointRoute || "missing"})`;
       }
       if (payload.markers.topologySelectedRelationCardPrimaryAction !== expectedPrimaryAction) {
         return `WebView reported mismatched Relief selected relation card primary action (${payload.markers.topologySelectedRelationCardPrimaryAction ?? "unknown marker"} vs ${expectedPrimaryAction})`;
@@ -6862,6 +6880,12 @@ export function buildWebviewEvidencePayload(
           source: markers.topologySelectedRelationCardSource ?? null,
           target: markers.topologySelectedRelationCardTarget ?? null,
           type: markers.topologySelectedRelationCardType ?? null,
+        },
+        root: {
+          attentionWinner: markers.topologyRootAttentionWinner ?? null,
+          currentSurface: markers.topologyAgentCurrentSurface ?? null,
+          currentSurfaceRole: markers.topologyAgentCurrentSurfaceRole ?? null,
+          currentSurfaceRoute: markers.topologyAgentCurrentSurfaceRoute ?? null,
         },
         aggregate: {
           gate: markers.topologySelectedRelationLabelHandoffGate ?? null,

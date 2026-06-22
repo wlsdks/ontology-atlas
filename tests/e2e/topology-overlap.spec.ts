@@ -1855,6 +1855,18 @@ for (const viewport of VIEWPORTS) {
       "data-agent-handoff-contract",
       "selected-relation-card-carries-mcp-cli-fallback",
     );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-topology-attention-winner",
+      "active-relation-inspector",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-agent-current-surface",
+      "selected-relation",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-agent-current-surface-role",
+      "active-relation-inspector",
+    );
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
       "data-selected-relation-handoff-contract",
       "selected-relation-card-carries-mcp-cli-fallback",
@@ -1890,6 +1902,10 @@ for (const viewport of VIEWPORTS) {
     }
     expect(relationLabelSource).toBe(selectedRelationSource);
     expect(relationLabelTarget).toBe(selectedRelationTarget);
+    await expect(skeletonCards).toHaveAttribute(
+      "data-agent-current-surface-route",
+      `${selectedRelationSource}>${selectedRelationTarget}`,
+    );
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
       "data-selected-relation-endpoint-route",
       `${selectedRelationSource}>${selectedRelationTarget}`,

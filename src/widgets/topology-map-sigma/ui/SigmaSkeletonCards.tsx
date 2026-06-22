@@ -2922,6 +2922,41 @@ export function SigmaSkeletonCards({
       route: 'fact>evidence>gate>action',
     };
   }, [egoRelationLabels, graph, selectedRelationData, selectedRelationEdgeId]);
+  const selectedRelationSurfaceRoute = useMemo(() => {
+    if (selectedRelationData) {
+      return `${selectedRelationData.source}>${selectedRelationData.target}`;
+    }
+    if (!selectedRelationEdgeId || !graph.hasEdge(selectedRelationEdgeId)) {
+      return null;
+    }
+    const [source, target] = graph.extremities(selectedRelationEdgeId);
+    return `${source}>${target}`;
+  }, [graph, selectedRelationData, selectedRelationEdgeId]);
+  const topologyAttentionWinner =
+    selectedRelationSurfaceRoute !== null
+      ? 'active-relation-inspector'
+      : pathWorkflowActive
+        ? 'focus-path-state'
+        : selectedSlug
+          ? 'focus-state'
+          : 'map-layer';
+  const agentCurrentSurface =
+    selectedRelationSurfaceRoute !== null
+      ? 'selected-relation'
+      : pathWorkflowActive
+        ? pathResultReady
+          ? 'path-result'
+          : 'path-selection'
+        : selectedSlug
+          ? 'selected-node'
+          : 'map-overview';
+  const agentCurrentSurfaceRoute =
+    selectedRelationSurfaceRoute ??
+    (pathWorkflowActive && pathSelectionSourceSlug
+      ? pathSelectionTargetSlug
+        ? `${pathSelectionSourceSlug}>${pathSelectionTargetSlug}`
+        : pathSelectionSourceSlug
+      : selectedSlug ?? undefined);
 
   const selectedRelationSummary = useMemo(() => {
     if (!ego || egoRelationConnectors.length === 0) return null;
@@ -5911,6 +5946,10 @@ export function SigmaSkeletonCards({
       data-skeleton-cards-ready="false"
       data-skeleton-card-model-count={cards.length}
       data-skeleton-card-resolved-count={resolvedCardCount}
+      data-topology-attention-winner={topologyAttentionWinner}
+      data-agent-current-surface={agentCurrentSurface}
+      data-agent-current-surface-role={topologyAttentionWinner}
+      data-agent-current-surface-route={agentCurrentSurfaceRoute}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
       data-drag-collision-policy="release-settle"
       data-drag-frame-cache-contract="pointer-move-reuses-drag-indexes"

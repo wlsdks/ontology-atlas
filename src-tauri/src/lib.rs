@@ -2532,6 +2532,14 @@ pub fn run() {
                                   : topologySelectedNodePopover
                                     ? "focus-state"
                                     : "map-layer";
+                              const topologyRootAttentionWinner =
+                                skeletonCardsLayer?.getAttribute("data-topology-attention-winner") || "";
+                              const topologyAgentCurrentSurface =
+                                skeletonCardsLayer?.getAttribute("data-agent-current-surface") || "";
+                              const topologyAgentCurrentSurfaceRole =
+                                skeletonCardsLayer?.getAttribute("data-agent-current-surface-role") || "";
+                              const topologyAgentCurrentSurfaceRoute =
+                                skeletonCardsLayer?.getAttribute("data-agent-current-surface-route") || "";
                               return JSON.stringify({
                                 href: location.href,
                                 title: document.title,
@@ -2556,6 +2564,10 @@ pub fn run() {
                                     location.pathname.includes("/topology") &&
                                     /Relief|Ontology relief map|concept cards|온톨로지 지형도|대표 카드|카드 골격|후보 \d+\/\d+개 표시/.test(bodyText),
                                   topologyAttentionWinner,
+                                  topologyRootAttentionWinner,
+                                  topologyAgentCurrentSurface,
+                                  topologyAgentCurrentSurfaceRole,
+                                  topologyAgentCurrentSurfaceRoute,
                                   topologySigmaViewportVisible: Boolean(
                                     sigmaViewportRect &&
                                     sigmaViewportStyle &&

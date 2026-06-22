@@ -3352,6 +3352,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-label-handoff-contract",
       "label-level-mcp-cli-fallback",
     );
+    expect(root).toHaveAttribute("data-topology-attention-winner", "active-relation-inspector");
+    expect(root).toHaveAttribute("data-agent-current-surface", "selected-relation");
+    expect(root).toHaveAttribute("data-agent-current-surface-role", "active-relation-inspector");
+    expect(root).toHaveAttribute("data-agent-current-surface-route", "project:p>domain:d1");
     expect(root).toHaveAttribute("data-selected-relation-label-handoff", "ready");
     expect(root).toHaveAttribute("data-selected-relation-label-gate", "handoff-ready");
     expect(root).toHaveAttribute(
@@ -3396,6 +3400,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
 
     const root = container.querySelector("[data-testid='sigma-skeleton-cards']");
+    expect(root).toHaveAttribute("data-topology-attention-winner", "active-relation-inspector");
+    expect(root).toHaveAttribute("data-agent-current-surface", "selected-relation");
+    expect(root).toHaveAttribute("data-agent-current-surface-role", "active-relation-inspector");
+    expect(root).toHaveAttribute("data-agent-current-surface-route", "project:p>domain:d1");
     expect(root).toHaveAttribute("data-selected-relation-label-handoff", "ready");
     expect(root).toHaveAttribute("data-selected-relation-label-gate", "handoff-ready");
     expect(root).toHaveAttribute(

@@ -891,6 +891,11 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
       markers: {
         topologyCardsReady: true,
         topologyRelationLabelHandoffContract: "label-level-mcp-cli-fallback",
+        topologyRootAttentionWinner: "active-relation-inspector",
+        topologyAgentCurrentSurface: "selected-relation",
+        topologyAgentCurrentSurfaceRole: "active-relation-inspector",
+        topologyAgentCurrentSurfaceRoute:
+          "domain:ai-agent-partner>capability:agent-config-onboarding",
         topologySelectedRelationLabelHandoffState: "ready",
         topologySelectedRelationLabelHandoffGate: "handoff-ready",
         topologySelectedRelationLabelHandoffPrimaryAction: "explain_relation",
@@ -1027,6 +1032,12 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
       source: "domain:ai-agent-partner",
       target: "capability:agent-config-onboarding",
       type: "contains",
+    },
+    root: {
+      attentionWinner: "active-relation-inspector",
+      currentSurface: "selected-relation",
+      currentSurfaceRole: "active-relation-inspector",
+      currentSurfaceRoute: "domain:ai-agent-partner>capability:agent-config-onboarding",
     },
     aggregate: {
       gate: "handoff-ready",
