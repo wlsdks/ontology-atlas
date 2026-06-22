@@ -2930,7 +2930,11 @@ export function SigmaSkeletonCards({
       evidence: relationEvidenceState(selectedRelationFallbackLabel),
       gate: gateKind,
       quality: selectedRelationFallbackLabel.relationQuality ?? 'supported',
+      relationRoute: `${selectedRelationFallbackLabel.edgeSource}>${selectedRelationFallbackLabel.edgeTarget}`,
       route: 'fact>evidence>gate>action',
+      source: selectedRelationFallbackLabel.edgeSource,
+      target: selectedRelationFallbackLabel.edgeTarget,
+      type: selectedRelationFallbackLabel.relationType,
     };
   }, [egoRelationLabels, graph, selectedRelationData, selectedRelationEdgeId]);
   const selectedRelationSurfaceRoute = useMemo(() => {
@@ -6014,6 +6018,16 @@ export function SigmaSkeletonCards({
       data-agent-current-surface={agentCurrentSurface}
       data-agent-current-surface-role={agentCurrentSurfaceRole}
       data-agent-current-surface-route={agentCurrentSurfaceRoute}
+      data-relation-source={selectedRelationLabelHandoff?.source}
+      data-relation-target={selectedRelationLabelHandoff?.target}
+      data-relation-type={selectedRelationLabelHandoff?.type}
+      data-relation-route={selectedRelationLabelHandoff?.relationRoute}
+      data-relation-mcp-action={selectedRelationLabelHandoff?.action}
+      data-relation-cli-fallback={selectedRelationLabelHandoff?.cliFallbackCommand}
+      data-relation-fact-route={selectedRelationLabelHandoff?.route}
+      data-relation-quality={selectedRelationLabelHandoff?.quality}
+      data-relation-evidence-state={selectedRelationLabelHandoff?.evidence}
+      data-agent-gate-kind={selectedRelationLabelHandoff?.gate}
       data-topology-selected-node-id={selectedSlug ?? undefined}
       data-topology-selected-relation-edge-id={selectedRelationSurfaceEdgeId}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}

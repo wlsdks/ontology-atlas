@@ -3538,6 +3538,19 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(root).toHaveAttribute("data-agent-current-surface", "selected-relation");
     expect(root).toHaveAttribute("data-agent-current-surface-role", "active-relation-inspector");
     expect(root).toHaveAttribute("data-agent-current-surface-route", "project:p>domain:d1");
+    expect(root).toHaveAttribute("data-relation-source", "project:p");
+    expect(root).toHaveAttribute("data-relation-target", "domain:d1");
+    expect(root).toHaveAttribute("data-relation-type", "contains");
+    expect(root).toHaveAttribute("data-relation-route", "project:p>domain:d1");
+    expect(root).toHaveAttribute("data-relation-mcp-action", "explain_relation");
+    expect(root).toHaveAttribute(
+      "data-relation-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(root).toHaveAttribute("data-relation-fact-route", "fact>evidence>gate>action");
+    expect(root).toHaveAttribute("data-relation-quality", "strong");
+    expect(root).toHaveAttribute("data-relation-evidence-state", "source-backed");
+    expect(root).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(root).toHaveAttribute("data-selected-relation-label-handoff", "ready");
     expect(root).toHaveAttribute("data-selected-relation-label-gate", "handoff-ready");
     expect(root).toHaveAttribute(
