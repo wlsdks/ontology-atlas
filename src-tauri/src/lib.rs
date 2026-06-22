@@ -12,6 +12,8 @@ use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
+const WEBVIEW_VERIFY_TOPOLOGY_SELECTED_RELATION_ENV: &str =
+    "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_SELECTED_RELATION";
 const WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV: &str =
     "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_NODE_POPOVER";
 const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
@@ -531,6 +533,8 @@ pub fn run() {
                         .filter(|route| is_safe_webview_verify_route(route));
                     let verify_topology_drag =
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV).is_some();
+                    let verify_topology_selected_relation =
+                        std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_SELECTED_RELATION_ENV).is_some();
                     let verify_topology_node_popover =
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV).is_some();
                     let verify_topology_create_node =
@@ -553,6 +557,61 @@ pub fn run() {
                             }
                         } else {
                             std::thread::sleep(Duration::from_millis(2000));
+                        }
+                        if verify_topology_selected_relation {
+                            let _ = verify_window.eval(
+                                r#"(() => {
+                                  const result = {
+                                    attempted: true,
+                                    reason: "scheduled",
+                                    clicked: false,
+                                    attempts: 0,
+                                    selected: false
+                                  };
+                                  window.__ontologyAtlasTopologySelectedRelationVerify = result;
+
+                                  const visible = (el) => {
+                                    if (!el) return false;
+                                    const style = getComputedStyle(el);
+                                    const rect = el.getBoundingClientRect();
+                                    return style.display !== "none" &&
+                                      style.visibility !== "hidden" &&
+                                      Number(style.opacity || "1") > 0.01 &&
+                                      rect.width > 0 &&
+                                      rect.height > 0;
+                                  };
+                                  const clickRelationLabel = (attempt = 0) => {
+                                    result.attempts = attempt + 1;
+                                    const selected = document.querySelector('[data-relation-label-hit="true"][data-selected-relation="true"]');
+                                    if (visible(selected)) {
+                                      result.reason = "already-selected";
+                                      result.selected = true;
+                                      result.clicked = true;
+                                      return;
+                                    }
+                                    const relationLabel = Array.from(
+                                      document.querySelectorAll('button[data-relation-label-hit="true"]')
+                                    ).find((candidate) => visible(candidate));
+                                    if (relationLabel && typeof relationLabel.click === "function") {
+                                      relationLabel.click();
+                                      result.clicked = true;
+                                      result.reason = "clicked-relation-label";
+                                      window.setTimeout(() => clickRelationLabel(attempt + 1), 220);
+                                      return;
+                                    }
+                                    if (attempt >= 36) {
+                                      result.reason = relationLabel
+                                        ? "relation label not visible"
+                                        : "missing relation label";
+                                      return;
+                                    }
+                                    result.reason = "waiting for relation label";
+                                    window.setTimeout(() => clickRelationLabel(attempt + 1), 250);
+                                  };
+                                  clickRelationLabel();
+                                })()"#,
+                            );
+                            std::thread::sleep(Duration::from_millis(3200));
                         }
                         if verify_topology_node_popover {
                             let _ = verify_window.eval(
@@ -1105,6 +1164,8 @@ pub fn run() {
                                 document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
                               );
                               const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
+                              const topologySelectedRelationVerification =
+                                window.__ontologyAtlasTopologySelectedRelationVerify || null;
                               const topologyNodePopoverVerification =
                                 window.__ontologyAtlasTopologyNodePopoverVerify || null;
                               const topologyFocusNoopVerification =
@@ -1303,6 +1364,8 @@ pub fn run() {
                               const topologyCommandChrome = document.querySelector('[data-testid="topology-command-chrome"]');
                               const topologyCommandChromeState =
                                 topologyCommandChrome?.getAttribute("data-command-chrome-state") || "";
+                              const topologyUtilityLaneSuppressionContract =
+                                topologyCommandChrome?.getAttribute("data-utility-lane-suppression-contract") || "";
                               const topologyNodePopoverPositioner =
                                 document.querySelector('[data-testid="topology-node-popover-positioner"]');
                               const topologyUtilityActionLane =
@@ -3013,6 +3076,7 @@ pub fn run() {
                                   topologyShortcutsHelpButtonHeight:
                                     topologyShortcutsHelpButtonRect?.height || 0,
                                   topologyCommandChromeState,
+                                  topologyUtilityLaneSuppressionContract,
                                   topologyUtilityLaneHeightToken:
                                     topologyCommandChrome?.getAttribute("data-utility-lane-height-token") || "",
                                   topologyUtilityLaneGapToken:
@@ -4039,6 +4103,16 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-selected-relation-context-silhouette-hidden-count") || "0"),
                                   topologySelectedRelationLowerPriorityVisibleDimmedCount,
                                   topologySelectedRelationVisibleOrientationAnchorCount,
+                                  topologySelectedRelationVerifyAttempted:
+                                    topologySelectedRelationVerification?.attempted === true,
+                                  topologySelectedRelationVerifyReason:
+                                    topologySelectedRelationVerification?.reason || "",
+                                  topologySelectedRelationVerifyClicked:
+                                    topologySelectedRelationVerification?.clicked === true,
+                                  topologySelectedRelationVerifySelected:
+                                    topologySelectedRelationVerification?.selected === true,
+                                  topologySelectedRelationVerifyAttempts:
+                                    topologySelectedRelationVerification?.attempts || 0,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyFocusNoopAttempted:

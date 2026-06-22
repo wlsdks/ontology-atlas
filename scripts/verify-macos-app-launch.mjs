@@ -13,6 +13,8 @@ const { appBundleName } = names;
 const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
+const WEBVIEW_VERIFY_TOPOLOGY_SELECTED_RELATION_ENV =
+  "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_SELECTED_RELATION";
 const WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV =
   "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_NODE_POPOVER";
 const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
@@ -749,6 +751,7 @@ export function parseVerifyAppLaunchArgs(argv, {
       : null,
     printWindowDiagnostics: argv.includes("--print-window-diagnostics"),
     verifyTopologyDrag: argv.includes("--verify-topology-drag"),
+    verifyTopologySelectedRelation: argv.includes("--verify-topology-selected-relation"),
     verifyTopologyNodePopover: argv.includes("--verify-topology-node-popover"),
     verifyTopologyCreateNode: argv.includes("--verify-topology-create-node"),
     verifyTopologyFocusNoop: argv.includes("--verify-topology-focus-noop"),
@@ -781,7 +784,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--verify-topology-selected-relation] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -911,6 +914,7 @@ function readBundleIdentifier(appPath) {
 export function webviewVerifyEnvPatch({
   requireWebviewRoute = null,
   verifyTopologyDrag = false,
+  verifyTopologySelectedRelation = false,
   verifyTopologyNodePopover = false,
   verifyTopologyCreateNode = false,
   verifyTopologyFocusNoop = false,
@@ -920,6 +924,9 @@ export function webviewVerifyEnvPatch({
     [WEBVIEW_VERIFY_ENV]: "1",
     ...(requireWebviewRoute ? { [WEBVIEW_VERIFY_ROUTE_ENV]: requireWebviewRoute } : {}),
     ...(verifyTopologyDrag ? { [WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV]: "1" } : {}),
+    ...(verifyTopologySelectedRelation
+      ? { [WEBVIEW_VERIFY_TOPOLOGY_SELECTED_RELATION_ENV]: "1" }
+      : {}),
     ...(verifyTopologyNodePopover
       ? { [WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV]: "1" }
       : {}),
@@ -1908,6 +1915,7 @@ export function validateWebviewVerifyPayload(payload, {
   minWebviewSize = null,
   maxWebviewSize = null,
   requireTopologyDrag = false,
+  requireTopologySelectedRelation = false,
   requireTopologyNodePopover = false,
   requireTopologyCreateNode = false,
   requireTopologyFocusNoop = false,
@@ -2022,6 +2030,23 @@ export function validateWebviewVerifyPayload(payload, {
     Boolean(topologySelectedParam) &&
     (selectedRelationSource === topologySelectedParam ||
       selectedRelationTarget === topologySelectedParam);
+  if (requireTopologySelectedRelation) {
+    if (payload.markers.topologySelectedRelationVerifyAttempted !== true) {
+      return `WebView did not attempt the Relief selected relation verification (${payload.markers.topologySelectedRelationVerifyReason || "missing reason"})`;
+    }
+    if (payload.markers.topologySelectedRelationVerifyClicked !== true) {
+      return `WebView did not click a Relief relation label during selected relation verification (${payload.markers.topologySelectedRelationVerifyReason || "missing reason"})`;
+    }
+    if (!selectedRelationContextVisible) {
+      return "WebView did not expose the Relief selected relation inspector during selected relation verification";
+    }
+    if (
+      payload.markers.topologyUtilityLaneSuppressionContract !==
+      "selected-relation-inspector-owns-right-rail"
+    ) {
+      return `WebView Relief selected relation utility suppression contract was ${payload.markers.topologyUtilityLaneSuppressionContract || "missing"}`;
+    }
+  }
   const koreanTopologyRoute = webviewPath.startsWith("/ko/topology");
   const rawRelationTypePattern =
     /^(contains|depends_on|depends-on|depends|relates|relates_to|related_to|describes|uses|belongs_to|belongs-to)$/i;
@@ -7229,6 +7254,7 @@ async function verifyExecutableLaunch({
   requireWebviewContent,
   requireWebviewRoute,
   verifyTopologyDrag,
+  verifyTopologySelectedRelation,
   verifyTopologyNodePopover,
   verifyTopologyCreateNode,
   verifyTopologyFocusNoop,
@@ -7251,6 +7277,7 @@ async function verifyExecutableLaunch({
           ...webviewVerifyEnvPatch({
             requireWebviewRoute,
             verifyTopologyDrag,
+            verifyTopologySelectedRelation,
             verifyTopologyNodePopover,
             verifyTopologyCreateNode,
             verifyTopologyFocusNoop,
@@ -7308,6 +7335,7 @@ async function verifyExecutableLaunch({
       minWebviewSize,
       maxWebviewSize,
       requireTopologyDrag: verifyTopologyDrag,
+      requireTopologySelectedRelation: verifyTopologySelectedRelation,
       requireTopologyNodePopover: verifyTopologyNodePopover,
       requireTopologyCreateNode: verifyTopologyCreateNode,
       requireTopologyFocusNoop: verifyTopologyFocusNoop,
@@ -7420,6 +7448,7 @@ async function main() {
     requireWebviewContent,
     requireWebviewRoute,
     verifyTopologyDrag,
+    verifyTopologySelectedRelation,
     verifyTopologyNodePopover,
     verifyTopologyCreateNode,
     verifyTopologyFocusNoop,
@@ -7489,6 +7518,9 @@ async function main() {
   if (verifyTopologyDrag && openApp) {
     fail("--verify-topology-drag is only supported for direct executable launch; omit --open-app.");
   }
+  if (verifyTopologySelectedRelation && openApp) {
+    fail("--verify-topology-selected-relation is only supported for direct executable launch; omit --open-app.");
+  }
   if (verifyTopologyNodePopover && openApp) {
     fail("--verify-topology-node-popover is only supported for direct executable launch; omit --open-app.");
   }
@@ -7509,6 +7541,9 @@ async function main() {
   }
   if (verifyTopologyDrag && !normalizedWebviewRoute?.includes("/topology")) {
     fail("--verify-topology-drag requires --require-webview-route pointing at a /topology route.");
+  }
+  if (verifyTopologySelectedRelation && !normalizedWebviewRoute?.includes("/topology")) {
+    fail("--verify-topology-selected-relation requires --require-webview-route pointing at a /topology route.");
   }
   if (verifyTopologyNodePopover && !normalizedWebviewRoute?.includes("/topology")) {
     fail("--verify-topology-node-popover requires --require-webview-route pointing at a /topology route.");
@@ -7590,6 +7625,7 @@ async function main() {
         requireWebviewContent,
         requireWebviewRoute: normalizedWebviewRoute,
         verifyTopologyDrag,
+        verifyTopologySelectedRelation,
         verifyTopologyNodePopover,
         verifyTopologyCreateNode,
         verifyTopologyFocusNoop,

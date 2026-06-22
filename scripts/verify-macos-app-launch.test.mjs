@@ -56,6 +56,7 @@ test("WebView verification env patch carries route, drag, composer, and requeste
     webviewVerifyEnvPatch({
       requireWebviewRoute: "/en/topology/",
       verifyTopologyDrag: true,
+      verifyTopologySelectedRelation: true,
       verifyTopologyNodePopover: true,
       verifyTopologyCreateNode: true,
       verifyTopologyFocusNoop: true,
@@ -65,6 +66,7 @@ test("WebView verification env patch carries route, drag, composer, and requeste
       ONTOLOGY_ATLAS_VERIFY_WEBVIEW: "1",
       ONTOLOGY_ATLAS_VERIFY_ROUTE: "/en/topology/",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG: "1",
+      ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_SELECTED_RELATION: "1",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_NODE_POPOVER: "1",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE: "1",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP: "1",
@@ -1395,6 +1397,7 @@ test("verify app launch args keep executable launch defaults", () => {
       requireWebviewContent: true,
       requireWebviewRoute: null,
       verifyTopologyDrag: false,
+      verifyTopologySelectedRelation: false,
       verifyTopologyNodePopover: false,
       verifyTopologyCreateNode: false,
       verifyTopologyFocusNoop: false,
@@ -1434,6 +1437,7 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       requireWebviewContent: false,
       requireWebviewRoute: null,
       verifyTopologyDrag: false,
+      verifyTopologySelectedRelation: false,
       verifyTopologyNodePopover: false,
       verifyTopologyCreateNode: false,
       verifyTopologyFocusNoop: false,
@@ -1493,6 +1497,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       requireWebviewContent: true,
       requireWebviewRoute: "/en/topology/",
       verifyTopologyDrag: true,
+      verifyTopologySelectedRelation: false,
       verifyTopologyNodePopover: false,
       verifyTopologyCreateNode: true,
       verifyTopologyFocusNoop: true,
@@ -1538,6 +1543,7 @@ test("verify app launch args normalize direct WebView route checks and allow rou
       requireWebviewContent: true,
       requireWebviewRoute: "/en/topology/",
       verifyTopologyDrag: false,
+      verifyTopologySelectedRelation: false,
       verifyTopologyNodePopover: false,
       verifyTopologyCreateNode: false,
       verifyTopologyFocusNoop: false,
@@ -2209,6 +2215,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyCardCount: 21,
       topologyUiScale: 1.12,
       topologyCommandChromeState: "collapsed-active-relation",
+      topologyUtilityLaneSuppressionContract: "selected-relation-inspector-owns-right-rail",
       topologyTopLeftChromeGroupState: "compact-active-relation",
       topologyTopLeftChromeGroupWidth: 188,
       topologySelectedRelationLabelHitWidth: 124,
@@ -2221,6 +2228,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyDragRelationLabelClicked: true,
       topologyDragConnectorDrawable: true,
       topologyDragConnectorClearance: 12,
+      topologySelectedRelationVerifyAttempted: true,
+      topologySelectedRelationVerifyReason: "already-selected",
+      topologySelectedRelationVerifyClicked: true,
+      topologySelectedRelationVerifySelected: true,
+      topologySelectedRelationVerifyAttempts: 1,
       topologySelectedRelationHaloVisible: true,
       topologySelectedRelationHaloQuality: "supported",
       topologySelectedRelationLabelHitAligned: true,
@@ -2801,6 +2813,46 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
     /selected relation card as a fixed topology surface/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(selectedRelationPayload, {
+      expectedPath: "/en/topology/?p=domain%3Aviews",
+      requireTopologySelectedRelation: true,
+    }),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...selectedRelationPayload,
+        markers: {
+          ...selectedRelationPayload.markers,
+          topologySelectedRelationVerifyClicked: false,
+          topologySelectedRelationVerifyReason: "missing relation label",
+        },
+      },
+      {
+        expectedPath: "/en/topology/?p=domain%3Aviews",
+        requireTopologySelectedRelation: true,
+      },
+    ),
+    /did not click a Relief relation label/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...selectedRelationPayload,
+        markers: {
+          ...selectedRelationPayload.markers,
+          topologyUtilityLaneSuppressionContract: "",
+        },
+      },
+      {
+        expectedPath: "/en/topology/?p=domain%3Aviews",
+        requireTopologySelectedRelation: true,
+      },
+    ),
+    /selected relation utility suppression contract/,
   );
   assert.equal(
     validateWebviewVerifyPayload({
