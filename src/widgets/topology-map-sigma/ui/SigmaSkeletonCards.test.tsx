@@ -3279,6 +3279,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-label-type", "contains");
     expect(labelHit).toHaveAttribute("data-relation-label-count", "1");
     expect(labelHit).toHaveAttribute("data-relation-label-route", "project:p>domain:d1");
+    expect(labelHit).toHaveAttribute("data-relation-route", "project:p>domain:d1");
+    expect(labelHit).toHaveAttribute("data-relation-mcp-action", "explain_relation");
     expect(labelHit).toHaveAttribute(
       "data-relation-label-visible-count-policy",
       "selected-relation-shows-count-and-evidence",
@@ -3305,6 +3307,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-route",
       "project:p>domain:d1",
+    );
+    expect(selectedOverlay).toHaveAttribute("data-relation-route", "project:p>domain:d1");
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-mcp-action",
+      "explain_relation",
     );
     expect(selectedOverlay).toHaveAttribute(
       "data-selected-relation-attention-contract",

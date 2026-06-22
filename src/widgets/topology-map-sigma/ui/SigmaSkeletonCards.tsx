@@ -6505,6 +6505,8 @@ export function SigmaSkeletonCards({
             data-relation-label-type={label.relationType}
             data-relation-label-count={label.count}
             data-relation-label-route={`${label.edgeSource}>${label.edgeTarget}`}
+            data-relation-route={`${label.edgeSource}>${label.edgeTarget}`}
+            data-relation-mcp-action={primaryCopyAction}
             data-relation-fact-route="fact>evidence>gate>action"
             data-relation-fact-route-quality={quality}
             data-relation-fact-route-evidence={evidenceState}
@@ -6794,6 +6796,8 @@ export function SigmaSkeletonCards({
             data-relation-label-type={label.relationType}
             data-relation-label-count={label.count}
             data-relation-label-route={`${label.edgeSource}>${label.edgeTarget}`}
+            data-relation-route={`${label.edgeSource}>${label.edgeTarget}`}
+            data-relation-mcp-action={primaryCopyAction}
             data-relation-fact-route="fact>evidence>gate>action"
             data-relation-fact-route-quality={quality}
             data-relation-fact-route-evidence={evidenceState}
