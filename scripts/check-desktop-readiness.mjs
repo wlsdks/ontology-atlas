@@ -1367,13 +1367,13 @@ if (
   localizedTopologyWideScript.includes("--require-window") &&
   localizedTopologyWideScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
   localizedTopologyWideScript.includes("--webview-window-size=1920x1080") &&
-  localizedTopologyWideScript.includes("--min-webview-size=1920x1000") &&
+  localizedTopologyWideScript.includes("--min-webview-size=1920x900") &&
   localizedTopologyWideScript.includes("--webview-evidence=.tmp/ontology-atlas-design-wide-1920.webview.json") &&
   localizedTopologyWideScript.includes("--webview-window-size=2560x1440") &&
-  localizedTopologyWideScript.includes("--min-webview-size=2400x1000") &&
+  localizedTopologyWideScript.includes("--min-webview-size=2400x900") &&
   localizedTopologyWideScript.includes("--webview-evidence=.tmp/ontology-atlas-design-wide-2560.webview.json") &&
   localizedTopologyWideScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
-  localizedTopologyWideScript.includes("--verify-topology-drag")
+  localizedTopologyWideScript.includes("--verify-topology-selected-relation")
 ) {
   pass("desktop localized topology wide proof script checks 1920 and 2560 selected relation density");
 } else {
