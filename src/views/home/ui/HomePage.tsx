@@ -1124,6 +1124,15 @@ export function HomePage() {
           : { ...currentSigmaRelationVisibility, total: topologyTotalRelations }
         : null
       : null;
+  const pathCandidateVisibility =
+    analysisMode === "path"
+      ? topologyCardVisibility && topologyCardVisibility.total > 0
+        ? topologyCardVisibility
+        : {
+            visible: sigmaVisibleCount ?? topologyTotalNodes,
+            total: sigmaVisibleCount ?? topologyTotalNodes,
+          }
+      : null;
   const topologyOverlayState = resolveTopologyOverlayState({
     dataReady: projectsQuery.loaded,
     totalNodes: currentSigmaGraphStats?.nodes ?? visibleTopologyNodeCount,
@@ -1808,9 +1817,7 @@ export function HomePage() {
                 pathSourceTitle={pathSourceTitle}
                 pathTargetTitle={pathTargetTitle}
                 overviewRelationVisibility={overviewRelationVisibility}
-                pathCandidateVisibility={
-                  analysisMode === "path" ? topologyCardVisibility : null
-                }
+                pathCandidateVisibility={pathCandidateVisibility}
                 rightPanelReserved={drawerOpen}
                 leftPanelExpanded={false}
                 createPanelReserved={createNodeOpen}
