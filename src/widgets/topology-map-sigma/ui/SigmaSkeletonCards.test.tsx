@@ -3104,6 +3104,30 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "selected-overlay",
     );
     expect(visibleBadge).toHaveClass("hidden");
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-handoff-contract",
+      "visible-overlay-carries-mcp-cli-fallback",
+    );
+    expect(selectedOverlay).toHaveAttribute("data-selected-relation-label-handoff", "ready");
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-label-primary-action",
+      "explain_relation",
+    );
+    expect(selectedOverlay).toHaveAttribute("data-selected-relation-mcp-action", "explain_relation");
+    expect(selectedOverlay).toHaveAttribute(
+      "data-cli-fallback-command",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-label-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(selectedOverlay).toHaveAttribute("data-selected-relation-endpoint-source", "project:p");
+    expect(selectedOverlay).toHaveAttribute("data-selected-relation-endpoint-target", "domain:d1");
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-endpoint-route",
+      "project:p>domain:d1",
+    );
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-selected-surface-token",
       "--topology-relation-label-selected-surface",

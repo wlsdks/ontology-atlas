@@ -6408,6 +6408,12 @@ export function SigmaSkeletonCards({
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentActionChipText = relationActionChipText(primaryCopyAction);
         const agentGateRouteText = relationAgentGateRouteText(agentGateKind);
+        const cliFallbackCommand = relationLabelCliFallbackCommand({
+          action: primaryCopyAction,
+          from: label.edgeSource,
+          relationType: label.relationType,
+          to: label.edgeTarget,
+        });
         return (
           <div
             key={`selected-relation-overlay:${label.key}`}
@@ -6426,11 +6432,25 @@ export function SigmaSkeletonCards({
             data-relation-label-readable-text={`${labelText} · ${evidenceChipText}`}
             data-agent-gate-kind={agentGateKind}
             data-primary-copy-action={primaryCopyAction}
+            data-cli-fallback-command={cliFallbackCommand}
+            data-relation-label-cli-fallback={cliFallbackCommand}
             data-relation-fact-route="fact>evidence>gate>action"
             data-relation-fact-route-quality={quality}
             data-relation-fact-route-evidence={evidenceState}
             data-relation-fact-route-gate={agentGateKind}
             data-relation-fact-route-action={primaryCopyAction}
+            data-selected-relation-label-handoff="ready"
+            data-selected-relation-label-gate={agentGateKind}
+            data-selected-relation-label-primary-action={primaryCopyAction}
+            data-selected-relation-label-cli-fallback={cliFallbackCommand}
+            data-selected-relation-label-fact-route="fact>evidence>gate>action"
+            data-selected-relation-label-quality={quality}
+            data-selected-relation-label-evidence={evidenceState}
+            data-selected-relation-handoff-contract="visible-overlay-carries-mcp-cli-fallback"
+            data-selected-relation-mcp-action={primaryCopyAction}
+            data-selected-relation-endpoint-source={label.edgeSource}
+            data-selected-relation-endpoint-target={label.edgeTarget}
+            data-selected-relation-endpoint-route={`${label.edgeSource}>${label.edgeTarget}`}
             data-relation-label-fact-segmentation="type-visible>metadata-hidden"
             data-relation-label-direction-contract="edge-source-to-target-metadata"
             data-relation-label-compact="false"
