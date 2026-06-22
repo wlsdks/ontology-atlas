@@ -2098,6 +2098,9 @@ function collectDraggedCluster(
       directChildren.push(neighbor);
     }
   }
+  if (rootTier === 0) {
+    return group;
+  }
   for (const child of directChildren) {
     const childTier = tierByNodeId.get(child);
     for (const grandchild of graph.neighbors(child)) {
@@ -2118,6 +2121,7 @@ function clampDraggedClusterDelta(
   dy: number,
   cardElements: readonly HTMLElement[] | null = null,
   rootSlug?: string,
+  rootPriorityClampOverride = false,
 ): { dx: number; dy: number } {
   if (!container) return { dx, dy };
   const containerRect = container.getBoundingClientRect();
@@ -2152,7 +2156,8 @@ function clampDraggedClusterDelta(
   if (movingRects.length === 0) return { dx, dy };
   const fixedSurfaceRects = collectFixedSurfaceRects(containerRect);
   const rootPriorityClamp =
-    group.size >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD && rootRects.length > 0;
+    (rootPriorityClampOverride || group.size >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD) &&
+    rootRects.length > 0;
   const clampRects = rootPriorityClamp ? rootRects : movingRects;
   container.dataset.dragClampScope = rootPriorityClamp
     ? 'root-card-for-large-cluster'
@@ -2572,6 +2577,8 @@ export function SigmaSkeletonCards({
     nodeId: string;
   } | null>(null);
   const [activeDragCluster, setActiveDragCluster] = useState<Set<string> | null>(null);
+  const [activeDragClusterPolicy, setActiveDragClusterPolicy] = useState('idle');
+  const [activeDragFreeContextCount, setActiveDragFreeContextCount] = useState(0);
   const [activeDragMotion, setActiveDragMotion] = useState(false);
   const [activeDragRootSlug, setActiveDragRootSlug] = useState("");
   const [dragPhysicsSyncActive, setDragPhysicsSyncActive] = useState(false);
@@ -2596,6 +2603,7 @@ export function SigmaSkeletonCards({
     viewportPreviewActive: boolean;
     viewportPreviewDx: number;
     viewportPreviewDy: number;
+    rootPriorityClamp: boolean;
     dockDragSnapshots: Map<string, DockDragSnapshot>;
     cardElements: SkeletonCardElementIndex;
     movedGroup: Set<string>;
@@ -2755,6 +2763,8 @@ export function SigmaSkeletonCards({
       dragReleaseTimerRef.current = null;
     }
     setActiveDragCluster(null);
+    setActiveDragClusterPolicy('idle');
+    setActiveDragFreeContextCount(0);
     setActiveDragMotion(false);
     activeDragMotionRef.current = false;
     setActiveDragRootSlug("");
@@ -2779,6 +2789,8 @@ export function SigmaSkeletonCards({
     activeDragMotionRef.current = false;
     if (!linger) {
       setActiveDragCluster(null);
+      setActiveDragClusterPolicy('idle');
+      setActiveDragFreeContextCount(0);
       setActiveDragRootSlug("");
       if (dragRef.current) {
         dragRef.current.viewportPreviewDx = 0;
@@ -2795,6 +2807,8 @@ export function SigmaSkeletonCards({
     dragReleaseTimerRef.current = window.setTimeout(() => {
       dragReleaseTimerRef.current = null;
       setActiveDragCluster(null);
+      setActiveDragClusterPolicy('idle');
+      setActiveDragFreeContextCount(0);
       setActiveDragRootSlug("");
       if (dragRef.current) {
         dragRef.current.viewportPreviewDx = 0;
@@ -5282,19 +5296,27 @@ export function SigmaSkeletonCards({
       sourceEl: HTMLElement | null | undefined,
       targetEl: HTMLElement | null | undefined,
     ) => {
+      const dragConnector = path.dataset.dragConnectorFrom !== undefined;
+      const clearConnector = () => {
+        setSkeletonPathData(path, '', domWriteStats);
+        path.dataset.connectorDrawable = 'false';
+        if (dragConnector) {
+          delete path.dataset.dragClusterConnector;
+        }
+      };
       if (
         !sourceEl ||
         !targetEl ||
         sourceEl.dataset.surfaceHidden === 'true' ||
         targetEl.dataset.surfaceHidden === 'true'
       ) {
-        setSkeletonPathData(path, '', domWriteStats);
+        clearConnector();
         return;
       }
       const source = connectorCardRect(sourceEl);
       const target = connectorCardRect(targetEl);
       if (!source || !target) {
-        setSkeletonPathData(path, '', domWriteStats);
+        clearConnector();
         return;
       }
       const ports = connectorPorts(source, target);
@@ -5303,6 +5325,10 @@ export function SigmaSkeletonCards({
         connectorPath(ports.sx, ports.sy, ports.ex, ports.ey, ports.axis),
         domWriteStats,
       );
+      path.dataset.connectorDrawable = 'true';
+      if (dragConnector) {
+        path.dataset.dragClusterConnector = 'true';
+      }
       path.dataset.connectorAxis = ports.axis;
       path.dataset.connectorClearance = String(ports.clearance);
     };
@@ -6405,6 +6431,10 @@ export function SigmaSkeletonCards({
 
   if (!sigma) return null;
 
+  const activeDragUsesRootPreview =
+    activeDragClusterPolicy === 'root-direct-neighbors-pin-free-context' ||
+    (activeDragCluster?.size ?? 0) >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD;
+
   return (
     <div
       ref={containerRef}
@@ -6429,6 +6459,8 @@ export function SigmaSkeletonCards({
       data-topology-selected-node-id={selectedSlug ?? undefined}
       data-topology-selected-relation-edge-id={selectedRelationSurfaceEdgeId}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
+      data-drag-cluster-policy={activeDragClusterPolicy}
+      data-drag-free-context-count={activeDragFreeContextCount}
       data-drag-dynamic-motion-contract="cluster-follows-pointer-connectors-update"
       data-drag-physics-sync-contract={
         onDragClusterStart && onDragClusterMove && onDragClusterEnd
@@ -6452,7 +6484,7 @@ export function SigmaSkeletonCards({
       data-drag-clamp-contract="large-cluster-root-card-priority"
       data-drag-clamp-scope={
         activeDragCluster
-          ? activeDragCluster.size >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD
+          ? activeDragUsesRootPreview
             ? 'root-card-for-large-cluster'
             : 'cluster-bounds'
           : 'idle'
@@ -7686,6 +7718,14 @@ export function SigmaSkeletonCards({
                 movableNodeIds,
                 tierByNodeId,
               );
+              const rootTier = tierByNodeId.get(rootSlug);
+              const freeContextCount = Array.from(movableNodeIds).filter(
+                (movableNodeId) => !movingGroup.has(movableNodeId),
+              ).length;
+              const dragClusterPolicy =
+                rootTier === 0 && freeContextCount > 0
+                  ? 'root-direct-neighbors-pin-free-context'
+                  : 'connected-cluster-pin';
               const dockDragSnapshots = snapshotDockDragPositions(
                 containerRef.current,
                 movingGroup,
@@ -7704,7 +7744,10 @@ export function SigmaSkeletonCards({
                 lastY: event.clientY,
                 travel: 0,
                 viewportPreviewActive:
-                  movingGroup.size >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD,
+                  movingGroup.size >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD ||
+                  dragClusterPolicy === 'root-direct-neighbors-pin-free-context',
+                rootPriorityClamp:
+                  dragClusterPolicy === 'root-direct-neighbors-pin-free-context',
                 viewportPreviewDx: 0,
                 viewportPreviewDy: 0,
 	                dockDragSnapshots,
@@ -7714,6 +7757,8 @@ export function SigmaSkeletonCards({
                 tierByNodeId,
               };
               setActiveDragRootSlug(rootSlug);
+              setActiveDragClusterPolicy(dragClusterPolicy);
+              setActiveDragFreeContextCount(freeContextCount);
               setActiveDragMotion(false);
               activeDragMotionRef.current = false;
               setActiveDragCluster(movingGroup);
@@ -7761,6 +7806,7 @@ export function SigmaSkeletonCards({
                 dy,
                 drag.cardElements.all,
                 drag.rootSlug,
+                drag.rootPriorityClamp,
               );
               const container = containerRef.current;
               if (container) {
