@@ -919,6 +919,20 @@ pub fn run() {
                                             ) - workerAppliedBefore;
                                           result.workerAppliedFrameChangeCount =
                                             workerAppliedFrameChangeCount;
+                                          result.dragRelationLabelVisibilityContract =
+                                            skeletonCardsLayer?.getAttribute("data-drag-relation-label-visibility-contract") || "";
+                                          result.dragRelationLabelExpectedCount = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-relation-label-expected-count") || "0"
+                                          );
+                                          result.dragRelationLabelVisibleCount = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-relation-label-visible-count") || "0"
+                                          );
+                                          result.dragRelationLabelVisible = Array.from(
+                                            document.querySelectorAll("[data-drag-relation-label]")
+                                          ).some((label) =>
+                                            label.getAttribute("data-relation-label-visibility") === "visible-during-drag" &&
+                                            label.getAttribute("opacity") === "1"
+                                          );
                                           result.clusterSize = Number(
                                             skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"
                                           );
@@ -4499,6 +4513,24 @@ pub fn run() {
                                     Number(topologyDragVerification?.workerAppliedFrameDelta || 0),
                                   topologyDragWorkerAppliedFrameChangeCount:
                                     Number(topologyDragVerification?.workerAppliedFrameChangeCount || 0),
+                                  topologyDragRelationLabelVisibilityContract:
+                                    topologyDragVerification?.dragRelationLabelVisibilityContract ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-relation-label-visibility-contract") ||
+                                    "",
+                                  topologyDragRelationLabelExpectedCount:
+                                    Number(
+                                      topologyDragVerification?.dragRelationLabelExpectedCount ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-relation-label-expected-count") ||
+                                        "0"
+                                    ),
+                                  topologyDragRelationLabelVisibleCount:
+                                    Number(
+                                      topologyDragVerification?.dragRelationLabelVisibleCount ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-relation-label-visible-count") ||
+                                        "0"
+                                    ),
+                                  topologyDragRelationLabelVisibleDuringDrag:
+                                    topologyDragVerification?.dragRelationLabelVisible === true,
                                   topologyDragDynamicState:
                                     skeletonCardsLayer?.getAttribute("data-drag-dynamic-state") || "",
                                   topologyDragDynamicRoot:
@@ -4849,6 +4881,8 @@ mod tests {
         assert!(source.contains("topologyDragPhysicsSyncActiveDuring"));
         assert!(source.contains("topologyDragWorkerAppliedFrameDelta"));
         assert!(source.contains("topologyDragWorkerAppliedFrameChangeCount"));
+        assert!(source.contains("topologyDragRelationLabelVisibilityContract"));
+        assert!(source.contains("topologyDragRelationLabelVisibleDuringDrag"));
         assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
         assert!(source.contains("__ontologyAtlasTopologyFocusNoopVerify"));
         assert!(source.contains("ontology-atlas:verify-selected-focus-safe-fit"));

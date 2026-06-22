@@ -5303,14 +5303,16 @@ export function SigmaSkeletonCards({
           selectedRelationOverlaysById.size,
       );
       container.dataset.relationLabelDragLayoutPolicy = dragOnlyRelationLabelLayout
-        ? 'drag-connector-only-labels-suppressed'
+        ? 'drag-connector-labels-follow-cluster'
         : 'all-relation-labels';
       container.dataset.relationLabelDragSuppressionPolicy =
         dragOnlyRelationLabelLayout
-          ? 'suppress-floating-labels-during-node-drag'
+          ? 'suppress-html-labels-keep-drag-svg-facts'
           : 'not-needed';
       let relationLabelFrameExpectedCount = 0;
       let relationLabelFrameReadyCount = 0;
+      let dragRelationLabelExpectedCount = 0;
+      let dragRelationLabelVisibleCount = 0;
       let focusRelationLabelExpectedCount = 0;
       let focusRelationLabelVisibleCount = 0;
       let focusEgoHandoffFallbackButton: HTMLElement | null = null;
@@ -5325,16 +5327,6 @@ export function SigmaSkeletonCards({
         if (dragOnlyRelationLabelLayout && !dragRelationLabel) {
           label.setAttribute('opacity', '0');
           label.setAttribute('aria-hidden', 'true');
-          badge?.setAttribute('opacity', '0');
-          badge?.setAttribute('pointer-events', 'none');
-          const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
-          if (labelGroup) labelGroup.style.pointerEvents = 'none';
-          continue;
-        }
-        if (dragOnlyRelationLabelLayout && dragRelationLabel) {
-          label.setAttribute('opacity', '0');
-          label.setAttribute('aria-hidden', 'true');
-          label.dataset.relationLabelVisibility = 'suppressed-during-drag-motion';
           badge?.setAttribute('opacity', '0');
           badge?.setAttribute('pointer-events', 'none');
           const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
@@ -5387,6 +5379,9 @@ export function SigmaSkeletonCards({
           : (fromRect.top + fromRect.bottom + toRect.top + toRect.bottom) / 4 -
             8;
         const relationHitDisabled = activeDragCluster !== null;
+        const activeDragRelationLabel =
+          dragOnlyRelationLabelLayout && dragRelationLabel;
+        if (activeDragRelationLabel) dragRelationLabelExpectedCount += 1;
         const badgeWidth = Math.max(
             RELATION_BADGE_MIN_WIDTH_PX,
             (label.textContent?.length ?? 0) * RELATION_BADGE_CHAR_WIDTH_PX +
@@ -5435,6 +5430,10 @@ export function SigmaSkeletonCards({
           labelCardOverlapCount = Math.max(labelCardOverlapCount, 1);
           labelHiddenByCards = true;
         }
+        if (activeDragRelationLabel) {
+          labelCardOverlapCount = 0;
+          labelHiddenByCards = false;
+        }
         if (
           !labelHiddenByCards &&
           !selectedRelationLabel &&
@@ -5472,24 +5471,39 @@ export function SigmaSkeletonCards({
           if (!labelHiddenByCards) focusRelationLabelVisibleCount += 1;
         }
         const placedY = labelTop + RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2;
+        const svgLabelHidden = usesHtmlBadge || labelHiddenByCards;
         label.setAttribute('x', String(Number.isFinite(x) ? x : 0));
         label.setAttribute('y', String(placedY));
-        label.setAttribute('opacity', usesHtmlBadge || labelHiddenByCards ? '0' : '1');
-        label.setAttribute('aria-hidden', usesHtmlBadge || labelHiddenByCards ? 'true' : 'false');
+        label.setAttribute('opacity', svgLabelHidden ? '0' : '1');
+        label.setAttribute('aria-hidden', svgLabelHidden ? 'true' : 'false');
+        label.dataset.relationLabelVisibility = svgLabelHidden
+          ? activeDragRelationLabel
+            ? 'drag-fact-hidden'
+            : 'suppressed-card-overlap'
+          : activeDragRelationLabel
+            ? 'visible-during-drag'
+            : 'visible-clear';
         const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
         if (labelGroup) {
-          labelGroup.style.pointerEvents = usesHtmlBadge || labelHiddenByCards ? 'none' : 'auto';
+          labelGroup.style.pointerEvents =
+            activeDragRelationLabel || svgLabelHidden ? 'none' : 'auto';
         }
         if (badge) {
           badge.setAttribute('x', String(x - badgeWidth / 2));
           badge.setAttribute('y', String(placedY - RELATION_BADGE_HEIGHT_PX / 2));
           badge.setAttribute('width', String(badgeWidth));
           badge.setAttribute('height', String(RELATION_BADGE_HEIGHT_PX));
-          badge.setAttribute('opacity', usesHtmlBadge || labelHiddenByCards ? '0' : '1');
+          badge.setAttribute('opacity', svgLabelHidden ? '0' : '1');
           badge.setAttribute(
             'pointer-events',
-            usesHtmlBadge || relationHitDisabled || labelHiddenByCards ? 'none' : 'auto',
+            activeDragRelationLabel || usesHtmlBadge || relationHitDisabled || labelHiddenByCards
+              ? 'none'
+              : 'auto',
           );
+        }
+        if (activeDragRelationLabel) {
+          if (!svgLabelHidden) dragRelationLabelVisibleCount += 1;
+          continue;
         }
         if (labelButton) {
           if (!labelHiddenByCards) relationLabelFrameExpectedCount += 1;
@@ -5612,7 +5626,7 @@ export function SigmaSkeletonCards({
       }
       container.dataset.relationLabelGeometryContract = 'frame-positioned-hit-targets';
       container.dataset.relationLabelGeometrySource = dragOnlyRelationLabelLayout
-        ? 'drag-connector-only-suppression-pass'
+        ? 'drag-connector-label-follow-pass'
         : 'after-render-layout-pass';
       container.dataset.relationLabelGeometryExpectedCount = String(
         relationLabelFrameExpectedCount,
@@ -5622,6 +5636,16 @@ export function SigmaSkeletonCards({
       );
       container.dataset.relationLabelGeometryPendingCount = String(
         Math.max(0, relationLabelFrameExpectedCount - relationLabelFrameReadyCount),
+      );
+      container.dataset.dragRelationLabelVisibilityContract =
+        dragOnlyRelationLabelLayout
+          ? 'active-drag-connector-labels-remain-readable'
+          : 'not-needed';
+      container.dataset.dragRelationLabelExpectedCount = String(
+        dragRelationLabelExpectedCount,
+      );
+      container.dataset.dragRelationLabelVisibleCount = String(
+        dragRelationLabelVisibleCount,
       );
       container.dataset.focusClusterRelationLabelCount = String(
         focusRelationLabelVisibleCount,

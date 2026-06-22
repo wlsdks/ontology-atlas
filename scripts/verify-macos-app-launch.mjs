@@ -4676,6 +4676,21 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyDragWorkerAppliedFrameChangeCount || 0) >= 1)) {
         return `WebView Relief drag did not update worker layout frames during drag (${payload.markers.topologyDragWorkerAppliedFrameChangeCount ?? "missing"}, delta ${payload.markers.topologyDragWorkerAppliedFrameDelta ?? "missing"})`;
       }
+      if (
+        payload.markers.topologyDragRelationLabelVisibilityContract !==
+        "active-drag-connector-labels-remain-readable"
+      ) {
+        return `WebView Relief drag relation label visibility contract was ${payload.markers.topologyDragRelationLabelVisibilityContract || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragRelationLabelExpectedCount || 0) >= 1)) {
+        return `WebView Relief drag did not expose relation labels to verify (${payload.markers.topologyDragRelationLabelExpectedCount ?? "missing"} expected)`;
+      }
+      if (!(Number(payload.markers.topologyDragRelationLabelVisibleCount || 0) >= 1)) {
+        return `WebView Relief drag did not keep relation labels visible (${payload.markers.topologyDragRelationLabelVisibleCount ?? "missing"} visible)`;
+      }
+      if (payload.markers.topologyDragRelationLabelVisibleDuringDrag !== true) {
+        return "WebView Relief drag relation label was not visibly attached during drag";
+      }
       if (payload.markers.topologyDragFrameCacheContract !== "pointer-move-reuses-drag-indexes") {
         return `WebView Relief drag frame cache contract was ${payload.markers.topologyDragFrameCacheContract || "missing"}`;
       }

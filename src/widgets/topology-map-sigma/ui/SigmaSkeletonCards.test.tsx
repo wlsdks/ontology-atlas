@@ -5139,10 +5139,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(document.querySelector("[data-drag-cluster-connector]")).toBeInTheDocument();
     const dragRelationLabel = document.querySelector("[data-drag-relation-label]");
     expect(dragRelationLabel).toBeInTheDocument();
-    expect(dragRelationLabel).toHaveAttribute("opacity", "0");
+    expect(dragRelationLabel).toHaveAttribute("opacity", "1");
     expect(dragRelationLabel).toHaveAttribute(
       "data-relation-label-visibility",
-      "suppressed-during-drag-motion",
+      "visible-during-drag",
     );
     expect(document.querySelector("[data-drag-cluster-title]")).not.toBeInTheDocument();
     expect(document.querySelector("[data-drag-cluster-count]")).not.toBeInTheDocument();
@@ -5150,22 +5150,33 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       '[data-relation-label-bg="drag:domain:d1→project:p"]',
     );
     expect(dragRelationBadge).toBeInTheDocument();
-    expect(dragRelationBadge).toHaveAttribute("opacity", "0");
+    expect(dragRelationBadge).toHaveAttribute("opacity", "1");
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     expect(layer).toHaveAttribute("data-dragging-active", "true");
     expect(layer).toHaveAttribute("data-drag-dynamic-state", "active-cluster-follow");
     expect(card).toHaveAttribute("data-dragging-active", "true");
     expect(layer).toHaveAttribute(
       "data-relation-label-drag-layout-policy",
-      "drag-connector-only-labels-suppressed",
+      "drag-connector-labels-follow-cluster",
     );
     expect(layer).toHaveAttribute(
       "data-relation-label-drag-suppression-policy",
-      "suppress-floating-labels-during-node-drag",
+      "suppress-html-labels-keep-drag-svg-facts",
     );
     expect(layer).toHaveAttribute(
       "data-relation-label-geometry-source",
-      "drag-connector-only-suppression-pass",
+      "drag-connector-label-follow-pass",
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-relation-label-visibility-contract",
+      "active-drag-connector-labels-remain-readable",
+    );
+    expect(Number(layer.getAttribute("data-drag-relation-label-expected-count"))).toBeGreaterThan(0);
+    expect(Number(layer.getAttribute("data-drag-relation-label-visible-count"))).toBeGreaterThan(0);
+    expect(dragRelationLabel).toHaveAttribute("opacity", "1");
+    expect(dragRelationLabel).toHaveAttribute(
+      "data-relation-label-visibility",
+      "visible-during-drag",
     );
     expect(layer).toHaveAttribute(
       "data-visible-card-state-read-policy",

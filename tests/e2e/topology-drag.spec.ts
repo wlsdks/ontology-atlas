@@ -121,6 +121,12 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
       el.getAttribute("data-relation-label-drag-layout-policy") ?? "",
     relationLabelGeometrySource:
       el.getAttribute("data-relation-label-geometry-source") ?? "",
+    dragRelationLabelVisibilityContract:
+      el.getAttribute("data-drag-relation-label-visibility-contract") ?? "",
+    dragRelationLabelExpectedCount:
+      Number(el.getAttribute("data-drag-relation-label-expected-count") ?? "0"),
+    dragRelationLabelVisibleCount:
+      Number(el.getAttribute("data-drag-relation-label-visible-count") ?? "0"),
   }));
   expect(Number.isFinite(dragFrameBudgetProof.lastMs)).toBe(true);
   expect(Number.isFinite(dragFrameBudgetProof.maxMs)).toBe(true);
@@ -138,10 +144,19 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   expect(dragFrameBudgetProof.slowestPassMs).toBeGreaterThanOrEqual(0);
   expect(dragFrameBudgetProof.maxSlowestPassMs).toBeGreaterThanOrEqual(0);
   expect(dragFrameBudgetProof.relationLabelDragLayoutPolicy).toBe(
-    "drag-connector-only-labels-suppressed",
+    "drag-connector-labels-follow-cluster",
   );
   expect(dragFrameBudgetProof.relationLabelGeometrySource).toBe(
-    "drag-connector-only-suppression-pass",
+    "drag-connector-label-follow-pass",
+  );
+  expect(dragFrameBudgetProof.dragRelationLabelVisibilityContract).toBe(
+    "active-drag-connector-labels-remain-readable",
+  );
+  expect(dragFrameBudgetProof.dragRelationLabelExpectedCount).toBeGreaterThan(0);
+  expect(dragFrameBudgetProof.dragRelationLabelVisibleCount).toBeGreaterThan(0);
+  await expect(page.locator("[data-drag-relation-label]").first()).toHaveAttribute(
+    "data-relation-label-visibility",
+    "visible-during-drag",
   );
   const workerFrameProof = await page.getByTestId("sigma-topology-viewport").evaluate((el) => ({
     applied: Number(el.getAttribute("data-layout-worker-position-frame-applied-count") ?? "0"),
