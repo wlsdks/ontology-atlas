@@ -3204,12 +3204,18 @@ export function SigmaSkeletonCards({
       if (slug) elBySlug.set(slug, el);
     }
     const selectedRelationEndpointRoles = new Map<string, 'source' | 'target'>();
+    let selectedRelationEndpointSource: string | null = null;
+    let selectedRelationEndpointTarget: string | null = null;
     if (selectedRelationEdgeId) {
       if (graph.hasEdge(selectedRelationEdgeId)) {
         const [source, target] = graph.extremities(selectedRelationEdgeId);
+        selectedRelationEndpointSource = source;
+        selectedRelationEndpointTarget = target;
         selectedRelationEndpointRoles.set(source, 'source');
         selectedRelationEndpointRoles.set(target, 'target');
       } else if (selectedRelationData) {
+        selectedRelationEndpointSource = selectedRelationData.source;
+        selectedRelationEndpointTarget = selectedRelationData.target;
         selectedRelationEndpointRoles.set(selectedRelationData.source, 'source');
         selectedRelationEndpointRoles.set(selectedRelationData.target, 'target');
       }
@@ -3233,9 +3239,22 @@ export function SigmaSkeletonCards({
       if (selectedRelationEndpoint) {
         el.dataset.selectedRelationEndpoint = 'true';
         el.dataset.selectedRelationEndpointRole = selectedRelationEndpointRole;
+        el.dataset.selectedRelationEndpointRoleContract =
+          'card-carries-source-target-route';
+        el.dataset.selectedRelationEndpointCounterpart =
+          selectedRelationEndpointRole === 'source'
+            ? selectedRelationEndpointTarget ?? ''
+            : selectedRelationEndpointSource ?? '';
+        el.dataset.selectedRelationEndpointRoute =
+          selectedRelationEndpointSource && selectedRelationEndpointTarget
+            ? `${selectedRelationEndpointSource}>${selectedRelationEndpointTarget}`
+            : '';
       } else {
         delete el.dataset.selectedRelationEndpoint;
         delete el.dataset.selectedRelationEndpointRole;
+        delete el.dataset.selectedRelationEndpointRoleContract;
+        delete el.dataset.selectedRelationEndpointCounterpart;
+        delete el.dataset.selectedRelationEndpointRoute;
       }
       delete el.dataset.selectedRelationEndpointSurfaceShift;
       el.style.visibility = 'visible';
