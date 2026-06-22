@@ -1314,7 +1314,7 @@ if (
   localizedTopologySelectedRelationScript.includes("--min-webview-size=1400x860") &&
   localizedTopologySelectedRelationScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
   localizedTopologySelectedRelationScript.includes("--webview-evidence=.tmp/ontology-atlas-selected-relation-density-ko.webview.json") &&
-  localizedTopologySelectedRelationScript.includes("--verify-topology-drag")
+  localizedTopologySelectedRelationScript.includes("--verify-topology-selected-relation")
 ) {
   pass("desktop localized topology selected relation proof script checks compact relation density");
 } else {

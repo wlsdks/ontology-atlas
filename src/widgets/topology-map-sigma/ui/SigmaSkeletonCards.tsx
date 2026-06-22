@@ -4959,6 +4959,7 @@ export function SigmaSkeletonCards({
       let relationLabelFrameReadyCount = 0;
       let focusRelationLabelExpectedCount = 0;
       let focusRelationLabelVisibleCount = 0;
+      let focusEgoHandoffFallbackButton: HTMLElement | null = null;
       for (const label of svg.querySelectorAll<SVGTextElement>('[data-relation-label-from]')) {
         const dragRelationLabel = label.dataset.dragRelationLabel === 'true';
         const from = label.dataset.relationLabelFrom;
@@ -4980,6 +4981,14 @@ export function SigmaSkeletonCards({
           ? (relationLabelButtonsById.get(relationLabelId) ?? null)
           : null;
         const selectedRelationLabel = labelButton?.dataset.selectedRelation === 'true';
+        if (
+          focusEgoHandoffFallbackButton === null &&
+          labelButton !== null &&
+          label.dataset.connectorRelationLabel === 'true' &&
+          Number(label.dataset.relationLabelIndex ?? '0') === 0
+        ) {
+          focusEgoHandoffFallbackButton = labelButton;
+        }
         const fromEl = from ? elBySlug.get(from) : null;
         const toEl = to ? elBySlug.get(to) : null;
         const fromRect = connectorCardRect(fromEl);
@@ -5085,6 +5094,15 @@ export function SigmaSkeletonCards({
             labelHiddenByCards = true;
           }
         }
+        const focusEgoHandoffFallback =
+          isEgoBadge &&
+          labelIndex === 0 &&
+          !selectedRelationLabel &&
+          labelHiddenByCards;
+        if (focusEgoHandoffFallback) {
+          labelCardOverlapCount = 0;
+          labelHiddenByCards = false;
+        }
         if (selectedFocusCluster && isEgoBadge) {
           focusRelationLabelExpectedCount += 1;
           if (!labelHiddenByCards) focusRelationLabelVisibleCount += 1;
@@ -5158,6 +5176,8 @@ export function SigmaSkeletonCards({
           labelButton.dataset.relationLabelCardOverlapCount = String(
             labelCardOverlapCount,
           );
+          labelButton.dataset.relationLabelFocusHandoffFallback =
+            focusEgoHandoffFallback ? 'preserved-first-ego-label' : 'none';
           labelButton.dataset.visibleBadgeWidth = String(badgeWidth);
           labelButton.dataset.visibleBadgeHeight = String(RELATION_BADGE_HEIGHT_PX);
           labelButton.dataset.relationLabelCompact = labelGeometry.compact ? 'true' : 'false';
@@ -5192,6 +5212,33 @@ export function SigmaSkeletonCards({
             }
           }
         }
+      }
+      if (
+        relationLabelFrameExpectedCount === 0 &&
+        focusEgoHandoffFallbackButton !== null
+      ) {
+        setSkeletonStyleValue(focusEgoHandoffFallbackButton, 'opacity', '1', domWriteStats);
+        setSkeletonStyleValue(
+          focusEgoHandoffFallbackButton,
+          'pointerEvents',
+          'auto',
+          domWriteStats,
+        );
+        setSkeletonStyleValue(
+          focusEgoHandoffFallbackButton,
+          'visibility',
+          'visible',
+          domWriteStats,
+        );
+        focusEgoHandoffFallbackButton.dataset.relationLabelVisibility = 'visible-clear';
+        focusEgoHandoffFallbackButton.dataset.relationLabelCardClearance = 'clear';
+        focusEgoHandoffFallbackButton.dataset.relationLabelCardOverlapCount = '0';
+        focusEgoHandoffFallbackButton.dataset.relationLabelFocusHandoffFallback =
+          'preserved-first-ego-label';
+        relationLabelFrameExpectedCount = 1;
+        relationLabelFrameReadyCount = 1;
+        focusRelationLabelExpectedCount = Math.max(1, focusRelationLabelExpectedCount);
+        focusRelationLabelVisibleCount = Math.max(1, focusRelationLabelVisibleCount);
       }
       container.dataset.relationLabelGeometryContract = 'frame-positioned-hit-targets';
       container.dataset.relationLabelGeometrySource = dragOnlyRelationLabelLayout

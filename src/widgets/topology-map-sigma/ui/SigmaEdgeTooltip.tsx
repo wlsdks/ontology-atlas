@@ -816,7 +816,7 @@ export function SigmaSelectedEdgeCard({
             data-copy-payload-visible-handle-summary={primaryCopyPayloadVisibleHandleSummary}
             data-copy-payload-visible-contract="visible-relation-handles-no-horizontal-scroll"
             title={primaryCopyPayloadHandleSummary}
-            className="col-span-2 min-w-0 truncate font-mono text-[9px] leading-3 text-[color:var(--color-text-quaternary)]"
+            className="col-span-2 min-w-0 truncate text-[9px] font-medium leading-3 tracking-normal text-[color:var(--color-text-quaternary)]"
           >
             {primaryCopyPayloadVisibleHandleSummary}
           </div>
