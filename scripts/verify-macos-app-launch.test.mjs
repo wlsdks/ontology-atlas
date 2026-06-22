@@ -948,6 +948,31 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologySelectedRelationCardSource: "domain:ai-agent-partner",
         topologySelectedRelationCardTarget: "capability:agent-config-onboarding",
         topologySelectedRelationCardType: "contains",
+        topologySelectedRelationCopyPayloadFrom: "domain:ai-agent-partner",
+        topologySelectedRelationCopyPayloadTo: "capability:agent-config-onboarding",
+        topologySelectedRelationHandleStripSource: "domain:ai-agent-partner",
+        topologySelectedRelationHandleStripTarget: "capability:agent-config-onboarding",
+        topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
+        topologySelectedRelationEndpointRouteWrapPolicy:
+          "wrap-allowed-no-horizontal-overflow",
+        topologySelectedRelationEndpointRouteLineBudget: "2",
+        topologySelectedRelationEndpointRouteSourceName: "AI Agent Partner",
+        topologySelectedRelationEndpointRouteTargetName: "Agent Config Onboarding",
+        topologySelectedRelationEndpointRouteSourceHandle: "domain:ai-agent-partner",
+        topologySelectedRelationEndpointRouteTargetHandle:
+          "capability:agent-config-onboarding",
+        topologySelectedRelationEndpointRouteHandleSummary:
+          "domain:ai-agent-partner → capability:agent-config-onboarding",
+        topologySelectedRelationEndpointRouteText:
+          "AI Agent Partner→Agent Config Onboarding",
+        topologySelectedRelationEndpointRouteReadableText:
+          "AI Agent Partner → Agent Config Onboarding",
+        topologySelectedRelationEndpointReadableRoute:
+          "AI Agent Partner → Agent Config Onboarding",
+        topologySelectedRelationEndpointRouteWidth: 213,
+        topologySelectedRelationEndpointRouteHeight: 30,
+        topologySelectedRelationEndpointRouteClientWidth: 213,
+        topologySelectedRelationEndpointRouteScrollWidth: 213,
         topologySelectedRelationEndpointVisibilityContract:
           "selected-relation-keeps-source-target-readable",
         topologySelectedRelationEndpointExpectedCount: 2,
@@ -1077,6 +1102,16 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     hiddenCount: 0,
     source: "domain:ai-agent-partner",
     target: "capability:agent-config-onboarding",
+    readableRoute: "AI Agent Partner → Agent Config Onboarding",
+    layerReadableRoute: "AI Agent Partner → Agent Config Onboarding",
+    routeProof: {
+      contract: "visible-source-target-names-wrap",
+      wrapPolicy: "wrap-allowed-no-horizontal-overflow",
+      lineBudget: 2,
+      clientWidth: 213,
+      scrollWidth: 213,
+      horizontalOverflow: 0,
+    },
     cards: [
       {
         slug: "domain:ai-agent-partner",

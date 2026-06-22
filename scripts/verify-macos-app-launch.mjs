@@ -7109,7 +7109,8 @@ export function buildWebviewEvidencePayload(
       ? {
         proof: "topology-selected-relation-endpoint-visibility",
         status:
-          validateSelectedRelationEndpointVisibilityMarkers(markers) === null
+          validateSelectedRelationEndpointVisibilityMarkers(markers) === null &&
+          validateSelectedRelationEndpointRouteMarkers(markers) === null
             ? "proved"
             : "incomplete",
         route: evidenceRoute(payload?.href),
@@ -7128,6 +7129,37 @@ export function buildWebviewEvidencePayload(
         ),
         source: markers.topologySelectedRelationCardSource ?? null,
         target: markers.topologySelectedRelationCardTarget ?? null,
+        readableRoute:
+          markers.topologySelectedRelationEndpointRouteReadableText ?? null,
+        layerReadableRoute:
+          markers.topologySelectedRelationEndpointReadableRoute ?? null,
+        routeProof: {
+          contract:
+            markers.topologySelectedRelationEndpointRouteContract ?? null,
+          wrapPolicy:
+            markers.topologySelectedRelationEndpointRouteWrapPolicy ?? null,
+          lineBudget: markerNumber(
+            markers,
+            "topologySelectedRelationEndpointRouteLineBudget",
+          ),
+          clientWidth: markerNumber(
+            markers,
+            "topologySelectedRelationEndpointRouteClientWidth",
+          ),
+          scrollWidth: markerNumber(
+            markers,
+            "topologySelectedRelationEndpointRouteScrollWidth",
+          ),
+          horizontalOverflow:
+            markerNumber(
+              markers,
+              "topologySelectedRelationEndpointRouteScrollWidth",
+            ) -
+            markerNumber(
+              markers,
+              "topologySelectedRelationEndpointRouteClientWidth",
+            ),
+        },
         cards: Array.isArray(markers.topologySelectedRelationEndpointCards)
           ? markers.topologySelectedRelationEndpointCards.map((card) => ({
             slug: card?.slug ?? null,
