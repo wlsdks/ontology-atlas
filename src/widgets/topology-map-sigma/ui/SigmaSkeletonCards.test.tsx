@@ -4147,6 +4147,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-relation-endpoint-route",
           "project:p>domain:d1",
         );
+        expect(sourceCard).toHaveAttribute("data-relation-source", "project:p");
+        expect(sourceCard).toHaveAttribute("data-relation-target", "domain:d1");
+        expect(sourceCard).toHaveAttribute("data-relation-type", "contains");
         expect(sourceCard).toHaveAttribute(
           "data-selected-relation-handoff-contract",
           "endpoint-card-carries-selected-relation-action",
@@ -4177,6 +4180,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-relation-endpoint-route",
           "project:p>domain:d1",
         );
+        expect(targetCard).toHaveAttribute("data-relation-source", "project:p");
+        expect(targetCard).toHaveAttribute("data-relation-target", "domain:d1");
+        expect(targetCard).toHaveAttribute("data-relation-type", "contains");
         expect(targetCard).toHaveAttribute(
           "data-selected-relation-handoff-contract",
           "endpoint-card-carries-selected-relation-action",

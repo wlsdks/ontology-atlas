@@ -3341,16 +3341,21 @@ export function SigmaSkeletonCards({
     const selectedRelationEndpointRoles = new Map<string, 'source' | 'target'>();
     let selectedRelationEndpointSource: string | null = null;
     let selectedRelationEndpointTarget: string | null = null;
+    let selectedRelationEndpointType: string | null = null;
     if (selectedRelationEdgeId) {
       if (graph.hasEdge(selectedRelationEdgeId)) {
         const [source, target] = graph.extremities(selectedRelationEdgeId);
+        const attrs = graph.getEdgeAttributes(selectedRelationEdgeId) as SigmaEdgeAttrs;
         selectedRelationEndpointSource = source;
         selectedRelationEndpointTarget = target;
+        selectedRelationEndpointType = attrs.relationType ?? attrs.kind ?? null;
         selectedRelationEndpointRoles.set(source, 'source');
         selectedRelationEndpointRoles.set(target, 'target');
       } else if (selectedRelationData) {
         selectedRelationEndpointSource = selectedRelationData.source;
         selectedRelationEndpointTarget = selectedRelationData.target;
+        selectedRelationEndpointType =
+          selectedRelationData.relationType ?? selectedRelationData.kind ?? null;
         selectedRelationEndpointRoles.set(selectedRelationData.source, 'source');
         selectedRelationEndpointRoles.set(selectedRelationData.target, 'target');
       }
@@ -3384,6 +3389,9 @@ export function SigmaSkeletonCards({
           selectedRelationEndpointSource && selectedRelationEndpointTarget
             ? `${selectedRelationEndpointSource}>${selectedRelationEndpointTarget}`
             : '';
+        el.dataset.relationSource = selectedRelationEndpointSource ?? '';
+        el.dataset.relationTarget = selectedRelationEndpointTarget ?? '';
+        el.dataset.relationType = selectedRelationEndpointType ?? '';
         el.dataset.selectedRelationHandoffContract =
           'endpoint-card-carries-selected-relation-action';
         el.dataset.selectedRelationPrimaryAction =
@@ -3399,6 +3407,9 @@ export function SigmaSkeletonCards({
         delete el.dataset.selectedRelationEndpointRoleContract;
         delete el.dataset.selectedRelationEndpointCounterpart;
         delete el.dataset.selectedRelationEndpointRoute;
+        delete el.dataset.relationSource;
+        delete el.dataset.relationTarget;
+        delete el.dataset.relationType;
         delete el.dataset.selectedRelationHandoffContract;
         delete el.dataset.selectedRelationPrimaryAction;
         delete el.dataset.selectedRelationCliFallback;
