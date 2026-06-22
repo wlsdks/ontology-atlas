@@ -3916,6 +3916,7 @@ export function SigmaSkeletonCards({
             ? DIM_ANCHOR_OPACITY_TOKEN
             : DIM_CHIP_OPACITY_TOKEN;
         delete el.dataset.surfaceHidden;
+        delete el.dataset.surfaceHiddenReason;
         setSkeletonStyleValue(el, 'opacity', lockedForDrag ? '1' : dimOpacity, domWriteStats);
         setSkeletonStyleValue(el, 'visibility', 'visible', domWriteStats);
         setSkeletonStyleValue(el, 'pointerEvents', lockedForDrag ? '' : 'none', domWriteStats);

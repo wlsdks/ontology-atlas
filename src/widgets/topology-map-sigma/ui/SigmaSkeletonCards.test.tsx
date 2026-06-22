@@ -1949,6 +1949,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-dim-opacity-token",
         "--topology-map-dim-anchor-opacity",
       );
+      projectCard?.setAttribute("data-surface-hidden-reason", "layout-surface-collision");
 
       rerender(
         <>
@@ -1974,6 +1975,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           hidden: "true",
           role: "orientation-anchor",
         });
+        expect(currentProjectCard).not.toHaveAttribute("data-surface-hidden-reason");
       });
     } finally {
       rectSpy.mockRestore();
