@@ -1594,17 +1594,24 @@ describe("TopologyNodePopover", () => {
     expect(copyBrief).toHaveBeenCalledTimes(1);
   });
 
-  it("does not render the map return control as a hidden desktop button", () => {
+  it("keeps the map return control accessible when expanded on desktop", async () => {
     const onToggleCollapsed = vi.fn();
     setup({ onToggleCollapsed });
 
     const footer = screen.getByTestId("topology-node-popover-footer");
     expect(footer).toHaveAttribute(
       "data-footer-map-return-render-contract",
-      "small-screen-only-no-desktop-hidden-button",
+      "always-rendered-expanded-map-return",
     );
-    expect(screen.queryByRole("button", { name: "지도 보기" })).not.toBeInTheDocument();
-    expect(document.querySelector('[data-node-popover-toggle="collapse"]')).not.toBeInTheDocument();
+    const collapse = await screen.findByRole("button", { name: "지도 보기" });
+    expect(collapse).toHaveAttribute("data-node-popover-toggle", "collapse");
+    expect(collapse).toHaveAttribute(
+      "data-footer-map-return-visibility",
+      "rendered-all-viewports",
+    );
+
+    fireEvent.click(collapse);
+    expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
   });
 
   it("shows a readable compact map return control when expanded on small screens", async () => {
@@ -1616,7 +1623,7 @@ describe("TopologyNodePopover", () => {
     expect(collapse).toHaveAttribute("data-node-popover-toggle", "collapse");
     expect(collapse).toHaveAttribute(
       "data-footer-map-return-visibility",
-      "rendered-small-screen",
+      "rendered-all-viewports",
     );
     expect(collapse).toHaveAttribute(
       "data-footer-action-border-token",

@@ -13,7 +13,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
-import { useMediaQuery } from "usehooks-ts";
 import type { TopologyRelationQuality } from "../lib/topology-analysis";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import type { NodeSignificanceLevel } from "../lib/topology-node-significance";
@@ -396,10 +395,6 @@ export function TopologyNodePopover({
         primaryAction.label,
       )} · ${labels.expand}`
     : labels.expand;
-  const showCompactMapReturn = useMediaQuery("(max-width: 1023px)", {
-    initializeWithValue: false,
-  });
-
   useEffect(() => {
     const wasCollapsed = wasCollapsedRef.current;
     wasCollapsedRef.current = collapsed;
@@ -1527,7 +1522,7 @@ export function TopologyNodePopover({
         data-popover-footer-padding-x-token="--topology-node-popover-footer-padding-x"
         data-popover-footer-padding-y-token="--topology-node-popover-footer-padding-y"
         data-footer-density-contract="compact-command-strip"
-        data-footer-map-return-render-contract="small-screen-only-no-desktop-hidden-button"
+        data-footer-map-return-render-contract="always-rendered-expanded-map-return"
         className="shrink-0 overflow-hidden border-t border-[color:var(--topology-node-popover-footer-border)] bg-[color:var(--topology-node-popover-footer-surface)] px-[var(--topology-node-popover-footer-padding-x)] py-[var(--topology-node-popover-footer-padding-y)]"
       >
         {actions.length > 0 ? (
@@ -1603,7 +1598,7 @@ export function TopologyNodePopover({
           </div>
         ) : null}
         <div className="flex min-w-0 gap-[var(--topology-node-popover-metric-gap)] overflow-hidden">
-          {onToggleCollapsed && showCompactMapReturn ? (
+          {onToggleCollapsed ? (
             <button
               type="button"
               onClick={onToggleCollapsed}
@@ -1614,7 +1609,7 @@ export function TopologyNodePopover({
               data-footer-action-text-token="--topology-node-popover-footer-action-text"
               data-footer-action-hover-text-token="--topology-node-popover-footer-action-hover-text"
               data-footer-action-min-height-token="--topology-node-popover-footer-secondary-action-min-height"
-              data-footer-map-return-visibility="rendered-small-screen"
+              data-footer-map-return-visibility="rendered-all-viewports"
               data-footer-action-gap-token="--topology-node-popover-footer-action-gap"
               data-footer-action-padding-x-token="--topology-node-popover-footer-action-padding-x"
               data-footer-action-text-size-token="--topology-node-popover-footer-action-text-size"
