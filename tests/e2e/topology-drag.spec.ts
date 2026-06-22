@@ -201,7 +201,15 @@ test("Relief map project drag stays responsive for large connected clusters", as
   );
   await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
     "data-layout-worker-position-frame-skip-policy",
-    "skip-while-skeleton-card-drag-active",
+    "skip-only-unsynced-skeleton-card-drag",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-drag-physics-sync-contract",
+    "skeleton-card-drag-pins-worker-layout-group",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-drag-physics-sync-active",
+    "true",
   );
   await expect(layer).toHaveAttribute("data-active-drag-cluster-size", /^[1-9]\d+$/);
   await page.mouse.move(
@@ -218,10 +226,13 @@ test("Relief map project drag stays responsive for large connected clusters", as
     "viewport-offset-for-large-cluster",
   );
   expect(dragResponsivenessProof.previewOffsetX).toBeGreaterThan(120);
-  const workerDragSkipProof = await page.getByTestId("sigma-topology-viewport").evaluate((el) => ({
+  const workerDynamicDragProof = await page.getByTestId("sigma-topology-viewport").evaluate((el) => ({
+    applied: Number(el.getAttribute("data-layout-worker-position-frame-applied-count") ?? "0"),
+    received: Number(el.getAttribute("data-layout-worker-position-frame-received-count") ?? "0"),
     skipped: Number(el.getAttribute("data-layout-worker-position-frame-skipped-count") ?? "0"),
   }));
-  expect(workerDragSkipProof.skipped).toBeGreaterThan(0);
+  expect(workerDynamicDragProof.received).toBeGreaterThan(0);
+  expect(workerDynamicDragProof.applied).toBeGreaterThan(0);
   const after = await rectOf(target);
   expect(
     after.x - before.x,
@@ -229,6 +240,10 @@ test("Relief map project drag stays responsive for large connected clusters", as
   ).toBeGreaterThan(120);
   await page.mouse.up();
   await page.waitForTimeout(120);
+  await expect(layer).toHaveAttribute(
+    "data-drag-physics-sync-active",
+    "false",
+  );
   const releaseSettle = await rectOf(target);
   expect(
     Math.abs(releaseSettle.x - after.x),

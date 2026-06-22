@@ -115,6 +115,9 @@ interface SigmaSkeletonCardsProps {
   onVisibilityChange?: (stats: { visible: number; total: number }) => void;
   onRelationSelect?: (data: SigmaEdgeTooltipData) => void;
   onRelationHover?: (data: SigmaEdgeTooltipData | null) => void;
+  onDragClusterStart?: (positions: ReadonlyMap<string, { x: number; y: number }>) => void;
+  onDragClusterMove?: (positions: ReadonlyMap<string, { x: number; y: number }>) => void;
+  onDragClusterEnd?: (nodeIds: Iterable<string>) => void;
   /** hover 팝업의 계층 라벨 — 예: "도메인 · 2계층" (i18n 은 호출자 책임). */
   describeKind?: (kind: SkeletonCardModel['kind']) => string;
   /** 카드 안의 짧은 계층 배지 — overview legend 와 같은 어휘를 쓴다. */
@@ -2228,6 +2231,19 @@ function moveDraggedCluster(
   return group;
 }
 
+function snapshotDraggedClusterPositions(
+  graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
+  nodeIds: Iterable<string>,
+): Map<string, { x: number; y: number }> {
+  const positions = new Map<string, { x: number; y: number }>();
+  for (const nodeId of nodeIds) {
+    if (!graph.hasNode(nodeId)) continue;
+    const attrs = graph.getNodeAttributes(nodeId);
+    positions.set(nodeId, { x: attrs.x ?? 0, y: attrs.y ?? 0 });
+  }
+  return positions;
+}
+
 function applyViewportDeltaToNode(
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
   sigma: SkeletonCardsCamera,
@@ -2446,6 +2462,9 @@ export function SigmaSkeletonCards({
   onVisibilityChange,
   onRelationSelect,
   onRelationHover,
+  onDragClusterStart,
+  onDragClusterMove,
+  onDragClusterEnd,
   describeKind,
   describeKindBadge,
 }: SigmaSkeletonCardsProps) {
@@ -2526,6 +2545,7 @@ export function SigmaSkeletonCards({
   const [activeDragCluster, setActiveDragCluster] = useState<Set<string> | null>(null);
   const [activeDragMotion, setActiveDragMotion] = useState(false);
   const [activeDragRootSlug, setActiveDragRootSlug] = useState("");
+  const [dragPhysicsSyncActive, setDragPhysicsSyncActive] = useState(false);
   const [dragSettledSlugs, setDragSettledSlugs] = useState<Set<string>>(() => new Set());
   const [dragFrameMarkerSnapshot, setDragFrameMarkerSnapshot] = useState({
     domIndexSize: 0,
@@ -2714,6 +2734,11 @@ export function SigmaSkeletonCards({
       dragRef.current.viewportPreviewDy = 0;
     }
     activeDockDragSnapshotsRef.current = new Map();
+    const container = containerRef.current;
+    if (container) {
+      container.dataset.dragPhysicsSyncActive = 'false';
+    }
+    setDragPhysicsSyncActive(false);
   }, []);
 
   const settleActiveDragCluster = useCallback((linger: boolean) => {
@@ -2731,6 +2756,11 @@ export function SigmaSkeletonCards({
         dragRef.current.viewportPreviewDy = 0;
       }
       activeDockDragSnapshotsRef.current = new Map();
+      const container = containerRef.current;
+      if (container) {
+        container.dataset.dragPhysicsSyncActive = 'false';
+      }
+      setDragPhysicsSyncActive(false);
       return;
     }
     dragReleaseTimerRef.current = window.setTimeout(() => {
@@ -2742,6 +2772,11 @@ export function SigmaSkeletonCards({
         dragRef.current.viewportPreviewDy = 0;
       }
       activeDockDragSnapshotsRef.current = new Map();
+      const container = containerRef.current;
+      if (container) {
+        container.dataset.dragPhysicsSyncActive = 'false';
+      }
+      setDragPhysicsSyncActive(false);
     }, DRAG_GROUP_RELEASE_FEEDBACK_MS);
   }, []);
 
@@ -2887,9 +2922,15 @@ export function SigmaSkeletonCards({
       if (moved) {
         repositionNowRef.current?.();
       }
+      onDragClusterEnd?.(drag.movedGroup);
+      const container = containerRef.current;
+      if (container) {
+        container.dataset.dragPhysicsSyncActive = 'false';
+      }
+      setDragPhysicsSyncActive(false);
       settleActiveDragCluster(moved);
     },
-    [graph, markDragSettled, settleActiveDragCluster, sigma],
+    [graph, markDragSettled, onDragClusterEnd, settleActiveDragCluster, sigma],
   );
 
   useEffect(() => {
@@ -6236,6 +6277,12 @@ export function SigmaSkeletonCards({
       data-topology-selected-relation-edge-id={selectedRelationSurfaceEdgeId}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
       data-drag-dynamic-motion-contract="cluster-follows-pointer-connectors-update"
+      data-drag-physics-sync-contract={
+        onDragClusterStart && onDragClusterMove && onDragClusterEnd
+          ? 'skeleton-card-drag-pins-worker-layout-group'
+          : 'skeleton-card-drag-worker-sync-unavailable'
+      }
+      data-drag-physics-sync-active={dragPhysicsSyncActive ? 'true' : 'false'}
       data-drag-dynamic-state={
         activeDragMotion
           ? 'active-cluster-follow'
@@ -7470,6 +7517,19 @@ export function SigmaSkeletonCards({
               setActiveDragMotion(false);
               activeDragMotionRef.current = false;
               setActiveDragCluster(movingGroup);
+              onDragClusterStart?.(
+                snapshotDraggedClusterPositions(graph, movingGroup),
+              );
+              const physicsSynced = Boolean(
+                onDragClusterStart && onDragClusterMove && onDragClusterEnd,
+              );
+              setDragPhysicsSyncActive(physicsSynced);
+              const container = containerRef.current;
+              if (container) {
+                container.dataset.dragPhysicsSyncActive = physicsSynced
+                  ? 'true'
+                  : 'false';
+              }
               try {
                 event.currentTarget.setPointerCapture(event.pointerId);
               } catch {
@@ -7531,6 +7591,9 @@ export function SigmaSkeletonCards({
                 movingGroup,
               );
               drag.movedGroup = movedGroup;
+              onDragClusterMove?.(
+                snapshotDraggedClusterPositions(graph, movedGroup),
+              );
               if (repositionRafRef.current !== null) {
                 if (container) {
                   container.dataset.dragRepositionPolicy = 'raf-coalesced-pointer-move';
@@ -7563,6 +7626,10 @@ export function SigmaSkeletonCards({
             onPointerCancel={(event) => {
               event.preventDefault();
               event.stopPropagation();
+              const drag = dragRef.current;
+              if (drag) {
+                onDragClusterEnd?.(drag.movedGroup);
+              }
               dragRef.current = null;
               clearActiveDragCluster();
             }}

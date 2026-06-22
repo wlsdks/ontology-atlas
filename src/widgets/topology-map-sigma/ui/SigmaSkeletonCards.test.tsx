@@ -5431,8 +5431,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           y: center.y - height / 2,
           toJSON: () => ({}),
         };
-      });
+    });
     try {
+      const onDragClusterStart = vi.fn();
+      const onDragClusterMove = vi.fn();
+      const onDragClusterEnd = vi.fn();
       render(
         <SigmaSkeletonCards
           sigma={stubSigma}
@@ -5440,6 +5443,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           cards={cards}
           selectedSlug={null}
           onSelect={vi.fn()}
+          onDragClusterStart={onDragClusterStart}
+          onDragClusterMove={onDragClusterMove}
+          onDragClusterEnd={onDragClusterEnd}
         />,
       );
       const projectCard = screen.getByText("Atlas").closest("[data-skeleton-card]")!;
@@ -5455,6 +5461,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-drag-clamp-scope",
         "root-card-for-large-cluster",
       );
+      expect(layer).toHaveAttribute(
+        "data-drag-physics-sync-contract",
+        "skeleton-card-drag-pins-worker-layout-group",
+      );
+      expect(layer).toHaveAttribute("data-drag-physics-sync-active", "true");
+      expect(onDragClusterStart).toHaveBeenCalledOnce();
+      expect(onDragClusterStart.mock.calls[0][0].size).toBe(13);
       expect(layer).toHaveAttribute("data-active-drag-cluster-size", "13");
       fireEvent.pointerMove(projectCard, { clientX: 280, clientY: 50, pointerId: 1 });
       fireEvent.pointerUp(projectCard, { clientX: 280, clientY: 50, pointerId: 1 });
@@ -5473,6 +5486,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-drag-clamp-scope",
         "root-card-for-large-cluster",
       );
+      expect(layer).toHaveAttribute("data-drag-physics-sync-active", "false");
+      expect(onDragClusterMove).toHaveBeenCalled();
+      expect(onDragClusterMove.mock.calls.at(-1)?.[0].get("project:p")).toEqual({
+        x: 90,
+        y: 0,
+      });
+      expect(onDragClusterEnd).toHaveBeenCalledWith(expect.any(Set));
       expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(90);
       expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(100);
       expect(graph.getNodeAttributes("capability:c6").x).toBeCloseTo(430);

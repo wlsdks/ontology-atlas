@@ -1620,17 +1620,22 @@ function SigmaTopologyImpl({
         autoStart: autoStartPhysics,
         initialAlpha: autoStartPhysics ? 0.65 : 0.25,
         shouldSkipFrame: () => {
-          const dragState = document
-            .querySelector<HTMLElement>('[data-testid="sigma-skeleton-cards"]')
-            ?.dataset.dragDynamicState;
-          return dragState === 'armed-cluster-follow' || dragState === 'active-cluster-follow';
+          const dragDataset = document.querySelector<HTMLElement>(
+            '[data-testid="sigma-skeleton-cards"]',
+          )?.dataset;
+          const dragState = dragDataset?.dragDynamicState;
+          const dragPhysicsSynced = dragDataset?.dragPhysicsSyncActive === 'true';
+          return (
+            !dragPhysicsSynced &&
+            (dragState === 'armed-cluster-follow' || dragState === 'active-cluster-follow')
+          );
         },
         onFrameStats: (stats: WorkerLayoutFrameStats) => {
           const container = containerRef.current;
           if (!container) return;
           container.dataset.layoutWorkerFrameStatsContract = 'epsilon-skip-position-frames';
           container.dataset.layoutWorkerPositionFrameSkipPolicy =
-            'skip-while-skeleton-card-drag-active';
+            'skip-only-unsynced-skeleton-card-drag';
           container.dataset.layoutWorkerPositionFrameReceivedCount = String(stats.received);
           container.dataset.layoutWorkerPositionFrameAppliedCount = String(stats.applied);
           container.dataset.layoutWorkerPositionFrameSkippedCount = String(stats.skipped);
@@ -3112,6 +3117,15 @@ function SigmaTopologyImpl({
           onRelationHover={(data) => {
             setEdgeHover(data);
             if (data) setHoverLabel(null);
+          }}
+          onDragClusterStart={(positions) => {
+            physicsRef.current?.pinGroup(positions);
+          }}
+          onDragClusterMove={(positions) => {
+            physicsRef.current?.dragGroup(positions);
+          }}
+          onDragClusterEnd={(nodeIds) => {
+            physicsRef.current?.releaseGroup(nodeIds);
           }}
           describeKind={(kind) =>
             kind === 'unknown'
