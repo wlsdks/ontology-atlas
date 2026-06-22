@@ -2038,6 +2038,10 @@ for (const viewport of VIEWPORTS) {
     const copyPayload = page.getByTestId("sigma-selected-edge-copy-payload");
     await expect(copyPayload).toHaveAttribute("data-copy-payload-tool", "query_ontology");
     await expect(copyPayload).toHaveAttribute(
+      "data-layout-contract",
+      "visible-summary-and-handle-readable",
+    );
+    await expect(copyPayload).toHaveAttribute(
       "data-copy-payload-action",
       primaryCopyAction ?? "",
     );
@@ -2061,12 +2065,30 @@ for (const viewport of VIEWPORTS) {
       "data-copy-payload-visible-summary",
       /^(Ready to explain|Check first|설명 준비|점검 먼저)$/,
     );
+    const visibleSourceHandle = (sourceHandle ?? "").split(":").pop() ?? sourceHandle ?? "";
+    const visibleTargetHandle = (targetHandle ?? "").split(":").pop() ?? targetHandle ?? "";
+    const visiblePayloadHandle = copyPayload.locator("[data-copy-payload-visible-handle-summary]");
+    await expect(visiblePayloadHandle).toHaveAttribute(
+      "data-copy-payload-visible-handle-summary",
+      `${visibleSourceHandle} → ${visibleTargetHandle}`,
+    );
+    await expect(visiblePayloadHandle).toHaveAttribute(
+      "data-copy-payload-visible-contract",
+      "visible-relation-handles-no-horizontal-scroll",
+    );
     const visiblePayloadSummaryFits = await visiblePayloadSummary.evaluate(
       (element) => element.scrollWidth <= element.clientWidth + 1,
     );
     expect(
       visiblePayloadSummaryFits,
       `selected relation payload visible summary should fit the MCP action at ${viewport.label}`,
+    ).toBe(true);
+    const visiblePayloadHandleFits = await visiblePayloadHandle.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    );
+    expect(
+      visiblePayloadHandleFits,
+      `selected relation payload visible handle should fit the source-target route at ${viewport.label}`,
     ).toBe(true);
     await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
     await expect(page.getByTestId("topology-minimap")).toHaveCount(0);

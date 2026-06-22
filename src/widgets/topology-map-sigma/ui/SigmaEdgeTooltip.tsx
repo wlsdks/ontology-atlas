@@ -425,6 +425,7 @@ export function SigmaSelectedEdgeCard({
     gate: agentGateKind,
   });
   const primaryCopyPayloadHandleSummary = `${data.source} → ${data.target}`;
+  const primaryCopyPayloadVisibleHandleSummary = `${compactOntologyHandle(data.source)} → ${compactOntologyHandle(data.target)}`;
   const ontologyHandleSummary = `${data.source} → ${data.target} · ${relationType}`;
   const preflightCopyPayload = {
     operation: 'relation_check',
@@ -789,13 +790,15 @@ export function SigmaSelectedEdgeCard({
           data-min-height-token="--topology-selected-relation-copy-payload-min-height"
           data-copy-payload-accent-muted-token="--topology-selected-relation-accent-muted"
           data-overflow-contract="no-horizontal-scroll"
-          className="mt-1.5 flex min-h-[var(--topology-selected-relation-copy-payload-min-height)] min-w-0 items-center gap-1.5 overflow-hidden rounded-lg border border-[color:var(--topology-selected-relation-payload-border)] bg-[color:var(--topology-selected-relation-payload-surface)] px-2 py-1"
+          data-layout-contract="visible-summary-and-handle-readable"
+          data-copy-payload-layout-contract="visible-summary-and-handle-readable"
+          className="mt-1.5 grid min-h-[var(--topology-selected-relation-copy-payload-min-height)] min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-x-1.5 gap-y-0.5 overflow-hidden rounded-lg border border-[color:var(--topology-selected-relation-payload-border)] bg-[color:var(--topology-selected-relation-payload-surface)] px-2 py-1.5"
         >
           <div
             data-copy-payload-label={t('copyPayloadLabel')}
             data-copy-payload-visible-label={primaryCopyPayloadVisibleLabel}
             data-copy-payload-label-contract="compact-visible-label-full-label-accessible"
-            className="shrink-0 text-[10px] font-medium leading-3 text-[color:var(--topology-selected-relation-accent-muted)]"
+            className="text-[10px] font-medium leading-3 text-[color:var(--topology-selected-relation-accent-muted)]"
           >
             <span aria-hidden="true">{primaryCopyPayloadVisibleLabel}</span>
             <span className="sr-only">{t('copyPayloadLabel')}</span>
@@ -805,9 +808,17 @@ export function SigmaSelectedEdgeCard({
             data-copy-payload-visible-summary={primaryCopyPayloadVisibleSummary}
             data-copy-payload-visible-contract="tool-action-visible-handles-accessible"
             title={primaryCopyPayloadSummary}
-            className="min-w-0 flex-1 truncate font-mono text-[length:var(--topology-selected-relation-payload-font-size)] leading-3 text-[color:var(--color-text-secondary)]"
+            className="min-w-0 truncate font-mono text-[length:var(--topology-selected-relation-payload-font-size)] leading-3 text-[color:var(--color-text-secondary)]"
           >
             {primaryCopyPayloadVisibleSummary}
+          </div>
+          <div
+            data-copy-payload-visible-handle-summary={primaryCopyPayloadVisibleHandleSummary}
+            data-copy-payload-visible-contract="visible-relation-handles-no-horizontal-scroll"
+            title={primaryCopyPayloadHandleSummary}
+            className="col-span-2 min-w-0 truncate font-mono text-[9px] leading-3 text-[color:var(--color-text-quaternary)]"
+          >
+            {primaryCopyPayloadVisibleHandleSummary}
           </div>
           <span
             data-copy-payload-handle-summary={primaryCopyPayloadHandleSummary}
@@ -828,6 +839,11 @@ export function SigmaSelectedEdgeCard({
 
 function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+function compactOntologyHandle(value: string): string {
+  const separatorIndex = value.indexOf(':');
+  return separatorIndex >= 0 ? value.slice(separatorIndex + 1) : value;
 }
 
 function RouteStep({

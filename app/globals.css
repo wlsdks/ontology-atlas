@@ -288,7 +288,7 @@
     --topology-selected-relation-card-inset: clamp(16px, 2vw, 32px);
     --topology-selected-relation-card-top: 104px;
     --topology-selected-relation-action-min-width: 86px;
-    --topology-selected-relation-copy-payload-min-height: 30px;
+    --topology-selected-relation-copy-payload-min-height: 42px;
     --topology-selected-relation-route-step-min-width: 48px;
     --topology-selected-relation-card-surface: rgba(13, 15, 21, 0.98);
     --topology-selected-relation-card-border: rgba(139, 151, 255, 0.28);

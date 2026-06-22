@@ -1925,12 +1925,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCopyPayloadSummary:
         "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
       topologySelectedRelationCopyPayloadVisibleSummary: "Ready to explain",
+      topologySelectedRelationCopyPayloadLayoutContract: "visible-summary-and-handle-readable",
+      topologySelectedRelationCopyPayloadVisibleHandleSummary: "views → topology-analysis-modes",
       topologySelectedRelationCliFallbackCommand:
         "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       topologySelectedRelationCliFallbackSummary:
         "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       topologySelectedRelationCopyPayloadWidth: 236,
-      topologySelectedRelationCopyPayloadHeight: 31,
+      topologySelectedRelationCopyPayloadHeight: 42,
       topologySelectedRelationCopyPayloadClientWidth: 236,
       topologySelectedRelationCopyPayloadScrollWidth: 236,
       topologySelectedRelationCopyPayloadOverflowContract: "no-horizontal-scroll",
@@ -1979,7 +1981,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardRouteStepMinWidthToken:
         "--topology-selected-relation-route-step-min-width",
       topologySelectedRelationActionMinWidthTokenValue: "86px",
-      topologySelectedRelationCopyPayloadMinHeightTokenValue: "30px",
+      topologySelectedRelationCopyPayloadMinHeightTokenValue: "42px",
       topologySelectedRelationRouteStepMinWidthTokenValue: "48px",
       topologySelectedRelationKickerFontSizeTokenValue: "9px",
       topologySelectedRelationChipFontSizeTokenValue: "9px",
@@ -3407,6 +3409,27 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
     /overflowing Relief selected relation copy payload strip/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationCopyPayloadLayoutContract: "single-line-payload",
+      },
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
+    /copy payload layout contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationCopyPayloadVisibleHandleSummary:
+          "domain:views → capability:topology-analysis-modes",
+      },
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
+    /visible copy payload handle/,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -7292,12 +7315,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCopyPayloadSummary:
           "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
         topologySelectedRelationCopyPayloadVisibleSummary: "Ready to explain",
+        topologySelectedRelationCopyPayloadLayoutContract: "visible-summary-and-handle-readable",
+        topologySelectedRelationCopyPayloadVisibleHandleSummary: "views → topology-analysis-modes",
         topologySelectedRelationCliFallbackCommand:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCliFallbackSummary:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCopyPayloadWidth: 240,
-        topologySelectedRelationCopyPayloadHeight: 31,
+        topologySelectedRelationCopyPayloadHeight: 42,
         topologySelectedRelationHandleStripSource: "domain:views",
         topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
         topologySelectedRelationHandleStripType: "contains",
@@ -7576,12 +7601,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCopyPayloadSummary:
           "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
         topologySelectedRelationCopyPayloadVisibleSummary: "Ready to explain",
+        topologySelectedRelationCopyPayloadLayoutContract: "visible-summary-and-handle-readable",
+        topologySelectedRelationCopyPayloadVisibleHandleSummary: "views → topology-analysis-modes",
         topologySelectedRelationCliFallbackCommand:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCliFallbackSummary:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCopyPayloadWidth: 240,
-        topologySelectedRelationCopyPayloadHeight: 31,
+        topologySelectedRelationCopyPayloadHeight: 42,
         topologySelectedRelationHandleStripSource: "domain:views",
         topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
         topologySelectedRelationHandleStripType: "contains",
@@ -10652,7 +10679,7 @@ test("selected relation card density contract keeps the relation inspector compa
     topologySelectedRelationCardHeight: 222,
     topologySelectedRelationProofBandHeight: 36,
     topologySelectedRelationCopyActionRailHeight: 29,
-    topologySelectedRelationCopyPayloadHeight: 31,
+    topologySelectedRelationCopyPayloadHeight: 42,
     topologySelectedRelationAgentRouteHeight: 29,
   };
 
@@ -10759,7 +10786,7 @@ test("selected relation card density contract keeps the relation inspector compa
     validateSelectedRelationCardDensityContract(
       {
         ...baseMarkers,
-        topologySelectedRelationCopyPayloadHeight: 48,
+        topologySelectedRelationCopyPayloadHeight: 56,
       },
       1512,
     ),

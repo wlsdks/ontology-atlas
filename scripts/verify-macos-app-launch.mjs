@@ -944,6 +944,12 @@ function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
+function compactOntologyHandle(value) {
+  const text = String(value || "");
+  const separatorIndex = text.indexOf(":");
+  return separatorIndex >= 0 ? text.slice(separatorIndex + 1) : text;
+}
+
 export function gracefulQuitCommandOptions() {
   return { stdio: "ignore", timeout: GRACEFUL_QUIT_COMMAND_TIMEOUT_MS };
 }
@@ -1727,7 +1733,7 @@ export function validateSelectedRelationCardDensityContract(markers, width) {
   }
 
   const copyPayloadHeight = Number(markers?.topologySelectedRelationCopyPayloadHeight || 0);
-  if (copyPayloadHeight > 38) {
+  if (copyPayloadHeight > 48) {
     return `WebView reported oversized Relief selected relation copy payload strip (${copyPayloadHeight || "missing"}px)`;
   }
 
@@ -5287,7 +5293,7 @@ export function validateWebviewVerifyPayload(payload, {
         }
         if (
           payload.markers.topologySelectedRelationActionMinWidthTokenValue !== "86px" ||
-          payload.markers.topologySelectedRelationCopyPayloadMinHeightTokenValue !== "30px" ||
+          payload.markers.topologySelectedRelationCopyPayloadMinHeightTokenValue !== "42px" ||
           payload.markers.topologySelectedRelationRouteStepMinWidthTokenValue !== "48px"
         ) {
           return `WebView reported malformed Relief selected relation density token values (${payload.markers.topologySelectedRelationActionMinWidthTokenValue || "missing"} / ${payload.markers.topologySelectedRelationCopyPayloadMinHeightTokenValue || "missing"} / ${payload.markers.topologySelectedRelationRouteStepMinWidthTokenValue || "missing"})`;
@@ -5515,6 +5521,32 @@ export function validateWebviewVerifyPayload(payload, {
         copyPayloadVisibleSummary.includes(payload.markers.topologySelectedRelationCardAgentGateKind)
       ) {
         return `WebView reported cramped Relief selected relation visible copy payload summary (${copyPayloadVisibleSummary})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationCopyPayloadLayoutContract !==
+        "visible-summary-and-handle-readable"
+      ) {
+        return `WebView reported malformed Relief selected relation copy payload layout contract (${payload.markers.topologySelectedRelationCopyPayloadLayoutContract || "missing"})`;
+      }
+      const copyPayloadVisibleHandleSummary =
+        typeof payload.markers.topologySelectedRelationCopyPayloadVisibleHandleSummary === "string"
+          ? payload.markers.topologySelectedRelationCopyPayloadVisibleHandleSummary.trim()
+          : "";
+      const expectedVisibleCopyPayloadHandleSummary = `${compactOntologyHandle(
+        payload.markers.topologySelectedRelationCopyPayloadFrom,
+      )} → ${compactOntologyHandle(payload.markers.topologySelectedRelationCopyPayloadTo)}`;
+      if (copyPayloadVisibleHandleSummary !== expectedVisibleCopyPayloadHandleSummary) {
+        return `WebView reported malformed Relief selected relation visible copy payload handle (${copyPayloadVisibleHandleSummary || "empty"} vs ${expectedVisibleCopyPayloadHandleSummary})`;
+      }
+      if (
+        copyPayloadVisibleHandleSummary.includes(
+          payload.markers.topologySelectedRelationCopyPayloadFrom,
+        ) ||
+        copyPayloadVisibleHandleSummary.includes(
+          payload.markers.topologySelectedRelationCopyPayloadTo,
+        )
+      ) {
+        return `WebView reported cramped Relief selected relation visible copy payload handle (${copyPayloadVisibleHandleSummary})`;
       }
       const copyPayloadCall =
         typeof payload.markers.topologySelectedRelationCopyPayloadCall === "string"

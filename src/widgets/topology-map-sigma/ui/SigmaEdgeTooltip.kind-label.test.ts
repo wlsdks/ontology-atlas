@@ -370,6 +370,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
 
     const payload = screen.getByTestId('sigma-selected-edge-copy-payload');
     expect(payload).toHaveAttribute('data-copy-payload-tool', 'query_ontology');
+    expect(payload).toHaveAttribute(
+      'data-layout-contract',
+      'visible-summary-and-handle-readable',
+    );
     expect(payload).toHaveAttribute('data-copy-payload-action', 'explain_relation');
     expect(payload).toHaveAttribute('data-copy-payload-from', 'domain:views');
     expect(payload).toHaveAttribute('data-copy-payload-to', 'capability:topology-analysis-modes');
@@ -387,6 +391,18 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(payload).toHaveAttribute(
       'data-copy-payload-call',
       'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
+    );
+    expect(payload.querySelector('[data-copy-payload-visible-summary]')).toHaveAttribute(
+      'data-copy-payload-visible-contract',
+      'tool-action-visible-handles-accessible',
+    );
+    expect(payload.querySelector('[data-copy-payload-visible-handle-summary]')).toHaveAttribute(
+      'data-copy-payload-visible-contract',
+      'visible-relation-handles-no-horizontal-scroll',
+    );
+    expect(payload.querySelector('[data-copy-payload-visible-handle-summary]')).toHaveAttribute(
+      'data-copy-payload-visible-handle-summary',
+      'views → topology-analysis-modes',
     );
     expect(payload).toHaveAttribute(
       'data-copy-payload-accent-muted-token',
@@ -846,6 +862,11 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
         .getByTestId('sigma-selected-edge-copy-payload')
         .querySelector('[data-copy-payload-label]'),
     ).toHaveAttribute('data-copy-payload-visible-label', '전달');
+    expect(
+      screen
+        .getByTestId('sigma-selected-edge-copy-payload')
+        .querySelector('[data-copy-payload-visible-handle-summary]'),
+    ).toHaveTextContent('views → topology-analysis-modes');
     expect(screen.getByTestId('sigma-selected-edge-copy-payload')).toHaveAttribute(
       'data-cli-fallback-command',
       "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",

@@ -1787,6 +1787,8 @@ pub fn run() {
                                 topologySelectedRelationCopyPayload?.getBoundingClientRect();
                               const topologySelectedRelationCopyPayloadSummary =
                                 topologySelectedRelationCopyPayload?.querySelector("[data-copy-payload-summary]");
+                              const topologySelectedRelationCopyPayloadVisibleHandle =
+                                topologySelectedRelationCopyPayload?.querySelector("[data-copy-payload-visible-handle-summary]");
                               const topologySelectedRelationCliFallback =
                                 topologySelectedRelationCopyPayload?.querySelector("[data-cli-fallback-summary]");
                               const topologySelectedRelationHandleStrip = document.querySelector('[data-testid="sigma-selected-edge-handle-strip"]');
@@ -4041,6 +4043,14 @@ pub fn run() {
                                   topologySelectedRelationCopyPayloadVisibleSummary:
                                     topologySelectedRelationCopyPayloadSummary?.getAttribute("data-copy-payload-visible-summary") ||
                                     topologySelectedRelationCopyPayloadSummary?.textContent ||
+                                    "",
+                                  topologySelectedRelationCopyPayloadLayoutContract:
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-layout-contract") ||
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-layout-contract") ||
+                                    "",
+                                  topologySelectedRelationCopyPayloadVisibleHandleSummary:
+                                    topologySelectedRelationCopyPayloadVisibleHandle?.getAttribute("data-copy-payload-visible-handle-summary") ||
+                                    topologySelectedRelationCopyPayloadVisibleHandle?.textContent ||
                                     "",
                                   topologySelectedRelationCliFallbackCommand:
                                     topologySelectedRelationCopyPayload?.getAttribute("data-cli-fallback-command") || "",
