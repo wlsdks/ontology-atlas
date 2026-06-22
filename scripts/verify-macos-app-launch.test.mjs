@@ -2129,6 +2129,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationEndpointRouteHandleSummary:
         "domain:views → capability:topology-analysis-modes",
       topologySelectedRelationEndpointRouteText: "Views→Topology Analysis Modes",
+      topologySelectedRelationEndpointRouteReadableText: "Views → Topology Analysis Modes",
       topologySelectedRelationEndpointRouteWidth: 212,
       topologySelectedRelationEndpointRouteHeight: 30,
       topologySelectedRelationEndpointRouteClientWidth: 212,
@@ -2439,6 +2440,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationEndpointRouteHandleSummary:
         "domain:views → capability:topology-analysis-modes",
       topologySelectedRelationEndpointRouteText: "Views→Topology Analysis Modes",
+      topologySelectedRelationEndpointRouteReadableText: "Views → Topology Analysis Modes",
       topologySelectedRelationEndpointRouteWidth: 212,
       topologySelectedRelationEndpointRouteHeight: 30,
       topologySelectedRelationEndpointRouteClientWidth: 212,
@@ -10790,6 +10792,8 @@ test("selected relation endpoint route markers prove visible source and target n
     topologySelectedRelationEndpointRouteTargetHandle: "capability:topology-analysis-modes",
     topologySelectedRelationEndpointRouteHandleSummary:
       "domain:views → capability:topology-analysis-modes",
+    topologySelectedRelationEndpointRouteReadableText:
+      "Views → Topology Analysis Modes",
     topologySelectedRelationEndpointRouteText: "Views→Topology Analysis Modes",
     topologySelectedRelationEndpointRouteWidth: 212,
     topologySelectedRelationEndpointRouteHeight: 30,
@@ -10811,6 +10815,13 @@ test("selected relation endpoint route markers prove visible source and target n
       topologySelectedRelationEndpointRouteText: "Views",
     }),
     /endpoint names not visible/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteReadableText: "Views",
+    }),
+    /endpoint readable route/,
   );
   assert.match(
     validateSelectedRelationEndpointRouteMarkers({

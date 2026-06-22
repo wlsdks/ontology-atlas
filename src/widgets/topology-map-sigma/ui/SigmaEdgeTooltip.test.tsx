@@ -51,6 +51,10 @@ describe("SigmaSelectedEdgeCard", () => {
       "data-handle-summary",
       "domain:views → capability:ontology-hub-mode-aware",
     );
+    expect(endpointRoute).toHaveAttribute(
+      "data-endpoint-route-readable-text",
+      "Views (Topology · Browse · Builder) → Ontology Hub — Mode-Aware",
+    );
     expect(endpointRoute).toHaveTextContent("Views (Topology · Browse · Builder)");
     expect(endpointRoute).toHaveTextContent("Ontology Hub — Mode-Aware");
     expect(endpointRoute.className).toContain("flex-wrap");

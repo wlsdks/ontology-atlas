@@ -1911,6 +1911,13 @@ export function validateSelectedRelationEndpointRouteMarkers(markers) {
   if (!routeText.includes(sourceName) || !routeText.includes(targetName)) {
     return `WebView reported Relief selected relation endpoint names not visible in route (${routeText || "empty"})`;
   }
+  const readableRouteText =
+    typeof markers?.topologySelectedRelationEndpointRouteReadableText === "string"
+      ? markers.topologySelectedRelationEndpointRouteReadableText.trim()
+      : "";
+  if (readableRouteText !== `${sourceName} → ${targetName}`) {
+    return `WebView reported malformed Relief selected relation endpoint readable route (${readableRouteText || "empty"})`;
+  }
   const routeWidth = Number(markers?.topologySelectedRelationEndpointRouteWidth || 0);
   const routeHeight = Number(markers?.topologySelectedRelationEndpointRouteHeight || 0);
   const routeClientWidth = Number(

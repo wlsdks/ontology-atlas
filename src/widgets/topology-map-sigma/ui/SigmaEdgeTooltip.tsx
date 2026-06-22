@@ -426,6 +426,7 @@ export function SigmaSelectedEdgeCard({
   });
   const primaryCopyPayloadHandleSummary = `${data.source} → ${data.target}`;
   const primaryCopyPayloadVisibleHandleSummary = `${compactOntologyHandle(data.source)} → ${compactOntologyHandle(data.target)}`;
+  const endpointRouteReadableText = `${data.sourceName} → ${data.targetName}`;
   const ontologyHandleSummary = `${data.source} → ${data.target} · ${relationType}`;
   const preflightCopyPayload = {
     operation: 'relation_check',
@@ -562,6 +563,7 @@ export function SigmaSelectedEdgeCard({
             data-source-handle={data.source}
             data-target-handle={data.target}
             data-handle-summary={primaryCopyPayloadHandleSummary}
+            data-endpoint-route-readable-text={endpointRouteReadableText}
             className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] font-semibold leading-3.5"
           >
             <span className="min-w-0 max-w-full break-words">{data.sourceName}</span>

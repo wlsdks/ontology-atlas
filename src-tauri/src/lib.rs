@@ -4263,6 +4263,8 @@ pub fn run() {
                                     topologySelectedRelationEndpointRoute?.getAttribute("data-target-handle") || "",
                                   topologySelectedRelationEndpointRouteHandleSummary:
                                     topologySelectedRelationEndpointRoute?.getAttribute("data-handle-summary") || "",
+                                  topologySelectedRelationEndpointRouteReadableText:
+                                    topologySelectedRelationEndpointRoute?.getAttribute("data-endpoint-route-readable-text") || "",
                                   topologySelectedRelationEndpointRouteText:
                                     topologySelectedRelationEndpointRoute?.textContent || "",
                                   topologySelectedRelationEndpointRouteWidth:
