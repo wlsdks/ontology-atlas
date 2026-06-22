@@ -3345,6 +3345,8 @@ export function SigmaSkeletonCards({
     const selectedRelationEndpointRoles = new Map<string, 'source' | 'target'>();
     let selectedRelationEndpointSource: string | null = null;
     let selectedRelationEndpointTarget: string | null = null;
+    let selectedRelationEndpointSourceName: string | null = null;
+    let selectedRelationEndpointTargetName: string | null = null;
     let selectedRelationEndpointType: string | null = null;
     if (selectedRelationEdgeId) {
       if (graph.hasEdge(selectedRelationEdgeId)) {
@@ -3352,18 +3354,30 @@ export function SigmaSkeletonCards({
         const attrs = graph.getEdgeAttributes(selectedRelationEdgeId) as SigmaEdgeAttrs;
         selectedRelationEndpointSource = source;
         selectedRelationEndpointTarget = target;
+        selectedRelationEndpointSourceName = graph.hasNode(source)
+          ? graph.getNodeAttributes(source).label
+          : source;
+        selectedRelationEndpointTargetName = graph.hasNode(target)
+          ? graph.getNodeAttributes(target).label
+          : target;
         selectedRelationEndpointType = attrs.relationType ?? attrs.kind ?? null;
         selectedRelationEndpointRoles.set(source, 'source');
         selectedRelationEndpointRoles.set(target, 'target');
       } else if (selectedRelationData) {
         selectedRelationEndpointSource = selectedRelationData.source;
         selectedRelationEndpointTarget = selectedRelationData.target;
+        selectedRelationEndpointSourceName = selectedRelationData.sourceName;
+        selectedRelationEndpointTargetName = selectedRelationData.targetName;
         selectedRelationEndpointType =
           selectedRelationData.relationType ?? selectedRelationData.kind ?? null;
         selectedRelationEndpointRoles.set(selectedRelationData.source, 'source');
         selectedRelationEndpointRoles.set(selectedRelationData.target, 'target');
       }
     }
+    const selectedRelationEndpointReadableRoute =
+      selectedRelationEndpointSourceName && selectedRelationEndpointTargetName
+        ? `${selectedRelationEndpointSourceName} → ${selectedRelationEndpointTargetName}`
+        : '';
     const isSelectedRelationEndpointCard = (el: HTMLElement) => {
       const slug = el.dataset.slug;
       return Boolean(slug && selectedRelationEndpointRoles.has(slug));
@@ -3393,6 +3407,8 @@ export function SigmaSkeletonCards({
           selectedRelationEndpointSource && selectedRelationEndpointTarget
             ? `${selectedRelationEndpointSource}>${selectedRelationEndpointTarget}`
             : '';
+        el.dataset.selectedRelationEndpointReadableRoute =
+          selectedRelationEndpointReadableRoute;
         el.dataset.relationSource = selectedRelationEndpointSource ?? '';
         el.dataset.relationTarget = selectedRelationEndpointTarget ?? '';
         el.dataset.relationType = selectedRelationEndpointType ?? '';
@@ -3419,6 +3435,7 @@ export function SigmaSkeletonCards({
         delete el.dataset.selectedRelationEndpointRoleContract;
         delete el.dataset.selectedRelationEndpointCounterpart;
         delete el.dataset.selectedRelationEndpointRoute;
+        delete el.dataset.selectedRelationEndpointReadableRoute;
         delete el.dataset.relationSource;
         delete el.dataset.relationTarget;
         delete el.dataset.relationType;
@@ -4421,6 +4438,8 @@ export function SigmaSkeletonCards({
       selectedRelationEndpointSource && selectedRelationEndpointTarget
         ? `${selectedRelationEndpointSource}>${selectedRelationEndpointTarget}`
         : '';
+    container.dataset.selectedRelationEndpointReadableRoute =
+      selectedRelationEndpointReadableRoute;
     const cachedVisibilityFrame = visibilityFrameSnapshotRef.current;
     const canReuseVisibilityFrame =
       activeDragCluster === null &&

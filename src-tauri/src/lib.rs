@@ -1876,6 +1876,8 @@ pub fn run() {
                                 topologySelectedRelationEndpointRoute?.getBoundingClientRect();
                               const topologySelectedRelationEndpointVisibilityContract =
                                 skeletonCardsLayer?.getAttribute("data-selected-relation-endpoint-visibility-contract") || "";
+                              const topologySelectedRelationEndpointReadableRoute =
+                                skeletonCardsLayer?.getAttribute("data-selected-relation-endpoint-readable-route") || "";
                               const topologySelectedRelationEndpointExpectedCount =
                                 Number(skeletonCardsLayer?.getAttribute("data-selected-relation-endpoint-count") || "0");
                               const topologySelectedRelationEndpointCards = Array.from(
@@ -4276,6 +4278,7 @@ pub fn run() {
                                   topologySelectedRelationEndpointRouteScrollWidth:
                                     topologySelectedRelationEndpointRoute?.scrollWidth || 0,
                                   topologySelectedRelationEndpointVisibilityContract,
+                                  topologySelectedRelationEndpointReadableRoute,
                                   topologySelectedRelationEndpointExpectedCount,
                                   topologySelectedRelationEndpointVisibleCount,
                                   topologySelectedRelationEndpointHiddenCount,

@@ -4193,6 +4193,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "selected-relation-keeps-endpoints-and-orientation-anchors-only",
         );
         expect(layer).toHaveAttribute(
+          "data-selected-relation-endpoint-readable-route",
+          "Atlas → Views",
+        );
+        expect(layer).toHaveAttribute(
           "data-selected-relation-context-silhouette-active",
           "true",
         );
@@ -4213,6 +4217,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         expect(sourceCard).toHaveAttribute(
           "data-selected-relation-endpoint-route",
           "project:p>domain:d1",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-endpoint-readable-route",
+          "Atlas → Views",
         );
         expect(sourceCard).toHaveAttribute("data-relation-route", "project:p>domain:d1");
         expect(sourceCard).toHaveAttribute("data-relation-source", "project:p");
@@ -4256,6 +4264,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         expect(targetCard).toHaveAttribute(
           "data-selected-relation-endpoint-route",
           "project:p>domain:d1",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-endpoint-readable-route",
+          "Atlas → Views",
         );
         expect(targetCard).toHaveAttribute("data-relation-route", "project:p>domain:d1");
         expect(targetCard).toHaveAttribute("data-relation-source", "project:p");

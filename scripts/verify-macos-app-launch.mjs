@@ -1918,6 +1918,13 @@ export function validateSelectedRelationEndpointRouteMarkers(markers) {
   if (readableRouteText !== `${sourceName} → ${targetName}`) {
     return `WebView reported malformed Relief selected relation endpoint readable route (${readableRouteText || "empty"})`;
   }
+  const layerReadableRoute =
+    typeof markers?.topologySelectedRelationEndpointReadableRoute === "string"
+      ? markers.topologySelectedRelationEndpointReadableRoute.trim()
+      : "";
+  if (layerReadableRoute !== `${sourceName} → ${targetName}`) {
+    return `WebView reported malformed Relief selected relation endpoint layer readable route (${layerReadableRoute || "empty"})`;
+  }
   const routeWidth = Number(markers?.topologySelectedRelationEndpointRouteWidth || 0);
   const routeHeight = Number(markers?.topologySelectedRelationEndpointRouteHeight || 0);
   const routeClientWidth = Number(
