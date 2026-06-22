@@ -2449,6 +2449,8 @@ export function SigmaSkeletonCards({
   const [dragSettledSlugs, setDragSettledSlugs] = useState<Set<string>>(() => new Set());
   const [dragFrameMarkerSnapshot, setDragFrameMarkerSnapshot] = useState({
     domIndexSize: 0,
+    lastDomIndexSize: 0,
+    lastSnapshotCount: 0,
     snapshotCount: 0,
   });
   const dragReleaseTimerRef = useRef<number | null>(null);
@@ -2494,8 +2496,6 @@ export function SigmaSkeletonCards({
   const lastLayoutEffectRepositionKeyRef = useRef<string | null>(null);
   const layoutEffectRepositionRunCountRef = useRef(0);
   const layoutEffectRepositionSkipCountRef = useRef(0);
-  const lastDragDomIndexSizeRef = useRef(0);
-  const lastDockDragSnapshotSizeRef = useRef(0);
   const maxRepositionDurationMsRef = useRef(0);
 
   const invalidateFixedSurfaceRectCache = useCallback(() => {
@@ -5695,8 +5695,8 @@ export function SigmaSkeletonCards({
       data-drag-dom-index-size={dragFrameMarkerSnapshot.domIndexSize}
       data-drag-frame-cache-snapshot-count={dragFrameMarkerSnapshot.snapshotCount}
       data-drag-last-frame-cache-contract="release-keeps-last-pointer-down-cache-proof"
-      data-drag-last-dom-index-size={lastDragDomIndexSizeRef.current}
-      data-drag-last-frame-cache-snapshot-count={lastDockDragSnapshotSizeRef.current}
+      data-drag-last-dom-index-size={dragFrameMarkerSnapshot.lastDomIndexSize}
+      data-drag-last-frame-cache-snapshot-count={dragFrameMarkerSnapshot.lastSnapshotCount}
       data-dock-drag-snapshot-contract="single-pass-card-rect-read"
       data-visibility-count-contract="single-pass-unless-fallback"
       data-visible-card-state-cache-contract="rect-and-visibility-single-pass"
@@ -6805,10 +6805,10 @@ export function SigmaSkeletonCards({
                 movingGroup,
                 cardElements.all,
               );
-              lastDragDomIndexSizeRef.current = cardElements.all.length;
-              lastDockDragSnapshotSizeRef.current = dockDragSnapshots.size;
               setDragFrameMarkerSnapshot({
                 domIndexSize: cardElements.all.length,
+                lastDomIndexSize: cardElements.all.length,
+                lastSnapshotCount: dockDragSnapshots.size,
                 snapshotCount: dockDragSnapshots.size,
               });
               dragRef.current = {
