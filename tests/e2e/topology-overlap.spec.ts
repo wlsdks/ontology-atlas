@@ -1867,6 +1867,26 @@ for (const viewport of VIEWPORTS) {
     if (!selectedRelationSource || !selectedRelationTarget) {
       throw new Error("selected relation should expose source and target slugs");
     }
+    await expect(skeletonCards).toHaveAttribute(
+      "data-selected-relation-endpoint-visibility-contract",
+      "selected-relation-keeps-source-target-readable",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-selected-relation-endpoint-route",
+      `${selectedRelationSource}>${selectedRelationTarget}`,
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-selected-relation-endpoint-expected-count",
+      "2",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-selected-relation-endpoint-visible-count",
+      "2",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-selected-relation-endpoint-hidden-count",
+      "0",
+    );
     const selectedRelationSourceCard = page.locator(
       `[data-skeleton-card][data-slug="${selectedRelationSource}"]`,
     );
@@ -3476,6 +3496,22 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
   if (!source || !target) {
     throw new Error("selected relation should expose source and target slugs");
   }
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-endpoint-route",
+    `${source}>${target}`,
+  );
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-endpoint-expected-count",
+    "2",
+  );
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-endpoint-visible-count",
+    "2",
+  );
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-endpoint-hidden-count",
+    "0",
+  );
 
   const endpointState = await page.locator("[data-skeleton-card]").evaluateAll(
     (cards, endpointSlugs) =>

@@ -4289,9 +4289,35 @@ export function SigmaSkeletonCards({
       showSelectedRelationEndpointCard(el, domWriteStats);
       selectedRelationEndpointFinalVisibleGuardCount += 1;
     }
+    const selectedRelationEndpointVisibleCount = orderedEls.reduce(
+      (count, el) =>
+        count +
+        (isSelectedRelationEndpointCard(el) && isSkeletonCardVisibleFromFrameState(el)
+          ? 1
+          : 0),
+      0,
+    );
+    const selectedRelationEndpointExpectedCount = selectedRelationEndpointRoles.size;
+    const selectedRelationEndpointHiddenCount = Math.max(
+      0,
+      selectedRelationEndpointExpectedCount - selectedRelationEndpointVisibleCount,
+    );
     container.dataset.selectedRelationEndpointFinalVisibleGuardCount = String(
       selectedRelationEndpointFinalVisibleGuardCount,
     );
+    container.dataset.selectedRelationEndpointExpectedCount = String(
+      selectedRelationEndpointExpectedCount,
+    );
+    container.dataset.selectedRelationEndpointVisibleCount = String(
+      selectedRelationEndpointVisibleCount,
+    );
+    container.dataset.selectedRelationEndpointHiddenCount = String(
+      selectedRelationEndpointHiddenCount,
+    );
+    container.dataset.selectedRelationEndpointRoute =
+      selectedRelationEndpointSource && selectedRelationEndpointTarget
+        ? `${selectedRelationEndpointSource}>${selectedRelationEndpointTarget}`
+        : '';
     const cachedVisibilityFrame = visibilityFrameSnapshotRef.current;
     const canReuseVisibilityFrame =
       activeDragCluster === null &&
