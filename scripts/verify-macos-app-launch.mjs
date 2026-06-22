@@ -7339,6 +7339,7 @@ export function buildWebviewEvidencePayload(
             "topologyResidualCardFixedSurfaceOverlapCount",
           ),
         },
+        agentNextAction: "read-relation-surfaces-after-residual-overlap-clear",
       }
       : null;
   const nodePopoverCompactHandoffProof =

@@ -1207,6 +1207,7 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
       fixedSurfaceOverlapCount: 0,
       cardFixedSurfaceOverlapCount: 0,
     },
+    agentNextAction: "read-relation-surfaces-after-residual-overlap-clear",
   });
 });
 
