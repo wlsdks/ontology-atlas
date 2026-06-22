@@ -4597,6 +4597,25 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView Relief selected relation label CLI fallback was ${relationLabelCliFallbackCommand || "missing"}, expected ${expectedRelationLabelCliFallbackCommand}`;
       }
       if (
+        payload.markers.topologySelectedRelationLabelSource !==
+          payload.markers.topologySelectedRelationCopyPayloadFrom ||
+        payload.markers.topologySelectedRelationLabelTarget !==
+          payload.markers.topologySelectedRelationCopyPayloadTo ||
+        payload.markers.topologySelectedRelationLabelType !==
+          payload.markers.topologySelectedRelationCopyPayloadType
+      ) {
+        return `WebView Relief selected relation label direct route markers mismatched the copy payload (${payload.markers.topologySelectedRelationLabelSource || "missing"} -> ${payload.markers.topologySelectedRelationLabelTarget || "missing"} / ${payload.markers.topologySelectedRelationLabelType || "missing"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationLabelRoute !==
+        `${payload.markers.topologySelectedRelationCopyPayloadFrom}>${payload.markers.topologySelectedRelationCopyPayloadTo}`
+      ) {
+        return `WebView Relief selected relation label route marker was ${payload.markers.topologySelectedRelationLabelRoute || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologySelectedRelationLabelCount || 0) >= 1)) {
+        return `WebView Relief selected relation label count marker was ${payload.markers.topologySelectedRelationLabelCount ?? "missing"}`;
+      }
+      if (
         typeof payload.markers.topologySelectedRelationLabelAgentGateText !== "string" ||
         payload.markers.topologySelectedRelationLabelAgentGateText.trim().length === 0
       ) {
@@ -6805,7 +6824,11 @@ export function buildWebviewEvidencePayload(
           factRoute: markers.topologySelectedRelationLabelFactRoute ?? null,
           quality: markers.topologySelectedRelationLabelQuality ?? null,
           evidence: markers.topologySelectedRelationLabelEvidenceState ?? null,
+          source: markers.topologySelectedRelationLabelSource ?? null,
+          target: markers.topologySelectedRelationLabelTarget ?? null,
           type: markers.topologySelectedRelationLabelType ?? null,
+          count: markerNumber(markers, "topologySelectedRelationLabelCount"),
+          route: markers.topologySelectedRelationLabelRoute ?? null,
           typeLabel: markers.topologySelectedRelationLabelTypeLabel ?? null,
         },
         card: {

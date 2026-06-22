@@ -2836,6 +2836,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(typeText).toHaveAttribute("data-relation-label-segment", "type");
     expect(typeText).not.toHaveClass("border-r");
     expect(typeText).toHaveTextContent("contains");
+    expect(labelHit).toHaveAttribute("data-relation-label-source", "project:p");
+    expect(labelHit).toHaveAttribute("data-relation-label-target", "domain:d1");
+    expect(labelHit).toHaveAttribute("data-relation-label-type", "contains");
+    expect(labelHit).toHaveAttribute("data-relation-label-count", "1");
+    expect(labelHit).toHaveAttribute("data-relation-label-route", "project:p>domain:d1");
     expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains");
     expect(labelHit).toHaveAttribute(
       "data-relation-label-visible-count-policy",
@@ -3089,6 +3094,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-label-cli-fallback",
       "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
     );
+    expect(labelHit).toHaveAttribute("data-relation-label-source", "project:p");
+    expect(labelHit).toHaveAttribute("data-relation-label-target", "domain:d1");
+    expect(labelHit).toHaveAttribute("data-relation-label-type", "contains");
+    expect(labelHit).toHaveAttribute("data-relation-label-count", "1");
+    expect(labelHit).toHaveAttribute("data-relation-label-route", "project:p>domain:d1");
     expect(labelHit).toHaveAttribute(
       "data-relation-label-visible-count-policy",
       "selected-relation-shows-count-and-evidence",
@@ -3107,6 +3117,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(selectedOverlay).toHaveAttribute(
       "data-selected-relation-handoff-contract",
       "visible-overlay-carries-mcp-cli-fallback",
+    );
+    expect(selectedOverlay).toHaveAttribute("data-relation-label-source", "project:p");
+    expect(selectedOverlay).toHaveAttribute("data-relation-label-target", "domain:d1");
+    expect(selectedOverlay).toHaveAttribute("data-relation-label-type", "contains");
+    expect(selectedOverlay).toHaveAttribute("data-relation-label-count", "1");
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-route",
+      "project:p>domain:d1",
     );
     expect(selectedOverlay).toHaveAttribute(
       "data-selected-relation-attention-contract",

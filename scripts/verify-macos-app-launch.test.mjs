@@ -906,7 +906,12 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologySelectedRelationLabelFactRoute: "fact>evidence>gate>action",
         topologySelectedRelationLabelQuality: "strong",
         topologySelectedRelationLabelEvidenceState: "source-backed",
+        topologySelectedRelationLabelSource: "domain:ai-agent-partner",
+        topologySelectedRelationLabelTarget: "capability:agent-config-onboarding",
         topologySelectedRelationLabelType: "contains",
+        topologySelectedRelationLabelCount: 4,
+        topologySelectedRelationLabelRoute:
+          "domain:ai-agent-partner>capability:agent-config-onboarding",
         topologySelectedRelationLabelTypeLabel: "포함 ×4",
         topologySelectedRelationCardHandoffContract:
           "selected-relation-card-carries-mcp-cli-fallback",
@@ -1000,7 +1005,11 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
       factRoute: "fact>evidence>gate>action",
       quality: "strong",
       evidence: "source-backed",
+      source: "domain:ai-agent-partner",
+      target: "capability:agent-config-onboarding",
       type: "contains",
+      count: 4,
+      route: "domain:ai-agent-partner>capability:agent-config-onboarding",
       typeLabel: "포함 ×4",
     },
     card: {
@@ -1865,6 +1874,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelAgentGateText: "MCP/CLI",
       topologySelectedRelationLabelCliFallbackCommand:
         "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+      topologySelectedRelationLabelSource: "domain:views",
+      topologySelectedRelationLabelTarget: "capability:topology-analysis-modes",
+      topologySelectedRelationLabelType: "contains",
+      topologySelectedRelationLabelCount: 1,
+      topologySelectedRelationLabelRoute: "domain:views>capability:topology-analysis-modes",
       topologySelectedRelationLabelFactRoute: "fact>evidence>gate>action",
       topologySelectedRelationLabelFactRouteQuality: "supported",
       topologySelectedRelationLabelFactRouteEvidence: "source-backed",

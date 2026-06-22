@@ -1431,6 +1431,23 @@ for (const viewport of VIEWPORTS) {
     await expect(relationButton).toHaveAttribute("data-label-geometry-source", "html-hit-target");
     await expect(relationButton).toHaveAttribute("data-relation-label-visibility", "visible-clear");
     await expect(relationButton).toHaveCSS("opacity", "1");
+    await expect(relationButton).toHaveAttribute("data-relation-label-source", /.+/);
+    await expect(relationButton).toHaveAttribute("data-relation-label-target", /.+/);
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-type",
+      /contains|depends_on|relates|describes|uses/,
+    );
+    await expect(relationButton).toHaveAttribute("data-relation-label-count", /\d+/);
+    const relationLabelSource = await relationButton.getAttribute(
+      "data-relation-label-source",
+    );
+    const relationLabelTarget = await relationButton.getAttribute(
+      "data-relation-label-target",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-label-route",
+      `${relationLabelSource}>${relationLabelTarget}`,
+    );
     await expect(relationButton).toHaveAttribute(
       "data-relation-label-token-contract",
       "hit-target-and-visible-badge-share-relation-label-tokens",
@@ -1867,6 +1884,8 @@ for (const viewport of VIEWPORTS) {
     if (!selectedRelationSource || !selectedRelationTarget) {
       throw new Error("selected relation should expose source and target slugs");
     }
+    expect(relationLabelSource).toBe(selectedRelationSource);
+    expect(relationLabelTarget).toBe(selectedRelationTarget);
     await expect(skeletonCards).toHaveAttribute(
       "data-selected-relation-endpoint-visibility-contract",
       "selected-relation-keeps-source-target-readable",

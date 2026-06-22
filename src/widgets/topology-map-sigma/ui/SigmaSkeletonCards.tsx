@@ -6365,6 +6365,11 @@ export function SigmaSkeletonCards({
             data-relation-label-handoff-contract="label-button-carries-mcp-cli-fallback"
             data-relation-label-primary-action={primaryCopyAction}
             data-relation-label-cli-fallback={cliFallbackCommand}
+            data-relation-label-source={label.edgeSource}
+            data-relation-label-target={label.edgeTarget}
+            data-relation-label-type={label.relationType}
+            data-relation-label-count={label.count}
+            data-relation-label-route={`${label.edgeSource}>${label.edgeTarget}`}
             data-relation-fact-route="fact>evidence>gate>action"
             data-relation-fact-route-quality={quality}
             data-relation-fact-route-evidence={evidenceState}
@@ -6646,6 +6651,11 @@ export function SigmaSkeletonCards({
             data-primary-copy-action={primaryCopyAction}
             data-cli-fallback-command={cliFallbackCommand}
             data-relation-label-cli-fallback={cliFallbackCommand}
+            data-relation-label-source={label.edgeSource}
+            data-relation-label-target={label.edgeTarget}
+            data-relation-label-type={label.relationType}
+            data-relation-label-count={label.count}
+            data-relation-label-route={`${label.edgeSource}>${label.edgeTarget}`}
             data-relation-fact-route="fact>evidence>gate>action"
             data-relation-fact-route-quality={quality}
             data-relation-fact-route-evidence={evidenceState}

@@ -1525,6 +1525,14 @@ pub fn run() {
                                 topologySelectedRelationLabelHit?.getAttribute("data-relation-fact-route-action") || "";
                               const topologySelectedRelationLabelType =
                                 topologySelectedRelationLabelHit?.getAttribute("data-relation-type") || "";
+                              const topologySelectedRelationLabelSource =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-label-source") || "";
+                              const topologySelectedRelationLabelTarget =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-label-target") || "";
+                              const topologySelectedRelationLabelCount =
+                                Number(topologySelectedRelationLabelHit?.getAttribute("data-relation-label-count") || "0");
+                              const topologySelectedRelationLabelRoute =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-label-route") || "";
                               const topologySelectedRelationLabelTypeLabel =
                                 topologySelectedRelationLabelHit?.getAttribute("data-relation-type-label") || "";
                               const topologySelectedRelationLabelFactRouteChips = Array.from(
@@ -3887,7 +3895,11 @@ pub fn run() {
                                   topologySelectedRelationLabelQualityChipText,
                                   topologySelectedRelationLabelEvidenceState,
                                   topologySelectedRelationLabelEvidenceGlyph,
+                                  topologySelectedRelationLabelSource,
+                                  topologySelectedRelationLabelTarget,
                                   topologySelectedRelationLabelType,
+                                  topologySelectedRelationLabelCount,
+                                  topologySelectedRelationLabelRoute,
                                   topologySelectedRelationLabelTypeLabel,
                                   topologySelectedRelationLabelAgentGateKind,
                                   topologySelectedRelationLabelPrimaryCopyAction,
