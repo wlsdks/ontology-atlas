@@ -7175,6 +7175,89 @@ export function buildWebviewEvidencePayload(
             : "run-explain-relation-for-handoff",
       }
       : null;
+  const selectedRelationVisibleFactRouteProof =
+    markers.topologyAgentCurrentSurface === "selected-relation" &&
+    markers.topologySelectedRelationCardHandoffContract ===
+      "selected-relation-card-carries-mcp-cli-fallback"
+      ? {
+        proof: "topology-selected-relation-visible-fact-route",
+        status:
+          markers.topologySelectedRelationCardRoute === "source>target>type>action" &&
+          markers.topologySelectedRelationClaimLensVisible === true &&
+          markers.topologySelectedRelationContractKind === "typed-fact-not-similarity" &&
+          markerNumber(markers, "topologySelectedRelationProofBandWidth") > 0 &&
+          markerNumber(markers, "topologySelectedRelationProofBandHeight") > 0 &&
+          markers.topologySelectedRelationEndpointRouteContract ===
+            "visible-source-target-names-wrap" &&
+          markers.topologySelectedRelationCopyPayloadTool === "query_ontology" &&
+          markers.topologySelectedRelationCopyPayloadLayoutContract ===
+            "visible-summary-and-handle-readable"
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        root: {
+          attentionWinner: markers.topologyRootAttentionWinner ?? null,
+          currentSurface: markers.topologyAgentCurrentSurface ?? null,
+          currentSurfaceRole: markers.topologyAgentCurrentSurfaceRole ?? null,
+          currentSurfaceRoute: markers.topologyAgentCurrentSurfaceRoute ?? null,
+        },
+        card: {
+          contract: markers.topologySelectedRelationCardHandoffContract ?? null,
+          route: markers.topologySelectedRelationCardRoute ?? null,
+          endpointRoute: markers.topologySelectedRelationCardEndpointRoute ?? null,
+          primaryAction: markers.topologySelectedRelationCardPrimaryAction ?? null,
+          cliFallback: markers.topologySelectedRelationCardCliFallback ?? null,
+          source: markers.topologySelectedRelationCardSource ?? null,
+          target: markers.topologySelectedRelationCardTarget ?? null,
+          type: markers.topologySelectedRelationCardType ?? null,
+        },
+        visibleFactRoute: {
+          claimLensVisible: markers.topologySelectedRelationClaimLensVisible === true,
+          claimLensText: markerText(markers, "topologySelectedRelationClaimLensText"),
+          claimLensQuality: markerText(markers, "topologySelectedRelationClaimLensQuality"),
+          contractKind: markerText(markers, "topologySelectedRelationContractKind"),
+          contractText: markerText(markers, "topologySelectedRelationContractText"),
+          proofBandWidth: markerNumber(markers, "topologySelectedRelationProofBandWidth"),
+          proofBandHeight: markerNumber(markers, "topologySelectedRelationProofBandHeight"),
+          agentDecisionText: markerText(markers, "topologySelectedRelationAgentDecisionText"),
+          agentGateKind:
+            markerText(markers, "topologySelectedRelationAgentGateKind") ??
+            markerText(markers, "topologySelectedRelationCopyPayloadGate"),
+          endpointRouteContract: markerText(
+            markers,
+            "topologySelectedRelationEndpointRouteContract",
+          ),
+          readableRoute: markerText(
+            markers,
+            "topologySelectedRelationEndpointRouteReadableText",
+          ),
+        },
+        copyPayload: {
+          tool: markerText(markers, "topologySelectedRelationCopyPayloadTool"),
+          action: markerText(markers, "topologySelectedRelationCopyPayloadAction"),
+          from: markerText(markers, "topologySelectedRelationCopyPayloadFrom"),
+          to: markerText(markers, "topologySelectedRelationCopyPayloadTo"),
+          type: markerText(markers, "topologySelectedRelationCopyPayloadType"),
+          evidence: markerText(markers, "topologySelectedRelationCopyPayloadEvidence"),
+          gate: markerText(markers, "topologySelectedRelationCopyPayloadGate"),
+          call: markerText(markers, "topologySelectedRelationCopyPayloadCall"),
+          summary: markerText(markers, "topologySelectedRelationCopyPayloadSummary"),
+          visibleSummary: markerText(
+            markers,
+            "topologySelectedRelationCopyPayloadVisibleSummary",
+          ),
+          visibleHandleSummary: markerText(
+            markers,
+            "topologySelectedRelationCopyPayloadVisibleHandleSummary",
+          ),
+          layoutContract: markerText(
+            markers,
+            "topologySelectedRelationCopyPayloadLayoutContract",
+          ),
+        },
+        agentNextAction: "run-selected-relation-copy-payload",
+      }
+      : null;
   const relationEndpointVisibilityProof =
     markers.topologySelectedRelationEndpointVisibilityContract ===
     "selected-relation-keeps-source-target-readable"
@@ -7763,6 +7846,7 @@ export function buildWebviewEvidencePayload(
     agentUiScaleStabilityProof,
     composerBlockingProof,
     relationLabelHandoffProof,
+    selectedRelationVisibleFactRouteProof,
     relationEndpointVisibilityProof,
     relationContextSilhouetteProof,
     relationLabelFrameGeometryProof,

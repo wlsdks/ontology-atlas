@@ -1244,6 +1244,118 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
   });
 });
 
+test("WebView evidence summarizes selected relation visible fact route proof for agent handoff", () => {
+  const evidence = verifier.buildWebviewEvidencePayload(
+    {
+      href: "tauri://localhost/ko/topology/?p=capability%3Aagent-config-onboarding&mode=focus",
+      width: 1512,
+      height: 917,
+      markers: {
+        topologyRootAttentionWinner: "active-relation-inspector",
+        topologyAgentCurrentSurface: "selected-relation",
+        topologyAgentCurrentSurfaceRole: "active-relation-inspector",
+        topologyAgentCurrentSurfaceRoute:
+          "capability:agent-config-onboarding>element:operations-nav",
+        topologySelectedRelationCardHandoffContract:
+          "selected-relation-card-carries-mcp-cli-fallback",
+        topologySelectedRelationCardRoute: "source>target>type>action",
+        topologySelectedRelationCardEndpointRoute:
+          "capability:agent-config-onboarding>element:operations-nav",
+        topologySelectedRelationCardPrimaryAction: "explain_relation",
+        topologySelectedRelationCardCliFallback:
+          "ontology-atlas explain 'capability:agent-config-onboarding' 'element:operations-nav' [vault] --type 'contains'",
+        topologySelectedRelationCardSource: "capability:agent-config-onboarding",
+        topologySelectedRelationCardTarget: "element:operations-nav",
+        topologySelectedRelationCardType: "contains",
+        topologySelectedRelationClaimLensVisible: true,
+        topologySelectedRelationClaimLensText:
+          "강한 구조 · 출처 1개 · 타입이 있는 온톨로지 사실",
+        topologySelectedRelationClaimLensQuality: "strong",
+        topologySelectedRelationContractKind: "typed-fact-not-similarity",
+        topologySelectedRelationContractText:
+          "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+        topologySelectedRelationProofBandWidth: 236,
+        topologySelectedRelationProofBandHeight: 42,
+        topologySelectedRelationAgentDecisionText:
+          "타입과 근거가 있어 에이전트 전달에 포함할 수 있습니다.",
+        topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
+        topologySelectedRelationEndpointRouteReadableText:
+          "Agent Config Onboarding → Operations Nav",
+        topologySelectedRelationCopyPayloadTool: "query_ontology",
+        topologySelectedRelationCopyPayloadAction: "explain_relation",
+        topologySelectedRelationCopyPayloadFrom: "capability:agent-config-onboarding",
+        topologySelectedRelationCopyPayloadTo: "element:operations-nav",
+        topologySelectedRelationCopyPayloadType: "contains",
+        topologySelectedRelationCopyPayloadEvidence: "source-backed",
+        topologySelectedRelationCopyPayloadGate: "handoff-ready",
+        topologySelectedRelationCopyPayloadCall:
+          'query_ontology({"operation":"explain_relation","from":"capability:agent-config-onboarding","to":"element:operations-nav","direction":"undirected","maxHops":5,"limit":10})',
+        topologySelectedRelationCopyPayloadSummary:
+          "query_ontology · explain_relation · capability:agent-config-onboarding → element:operations-nav · contains · source-backed · handoff-ready",
+        topologySelectedRelationCopyPayloadVisibleSummary: "설명 준비",
+        topologySelectedRelationCopyPayloadVisibleHandleSummary:
+          "agent-config-onboarding → operations-nav",
+        topologySelectedRelationCopyPayloadLayoutContract:
+          "visible-summary-and-handle-readable",
+      },
+    },
+    { capturedAt: "2026-06-22T12:00:00.000Z" },
+  );
+
+  assert.deepEqual(evidence.selectedRelationVisibleFactRouteProof, {
+    proof: "topology-selected-relation-visible-fact-route",
+    status: "proved",
+    route: "/ko/topology/?p=capability%3Aagent-config-onboarding&mode=focus",
+    root: {
+      attentionWinner: "active-relation-inspector",
+      currentSurface: "selected-relation",
+      currentSurfaceRole: "active-relation-inspector",
+      currentSurfaceRoute: "capability:agent-config-onboarding>element:operations-nav",
+    },
+    card: {
+      contract: "selected-relation-card-carries-mcp-cli-fallback",
+      route: "source>target>type>action",
+      endpointRoute: "capability:agent-config-onboarding>element:operations-nav",
+      primaryAction: "explain_relation",
+      cliFallback:
+        "ontology-atlas explain 'capability:agent-config-onboarding' 'element:operations-nav' [vault] --type 'contains'",
+      source: "capability:agent-config-onboarding",
+      target: "element:operations-nav",
+      type: "contains",
+    },
+    visibleFactRoute: {
+      claimLensVisible: true,
+      claimLensText: "강한 구조 · 출처 1개 · 타입이 있는 온톨로지 사실",
+      claimLensQuality: "strong",
+      contractKind: "typed-fact-not-similarity",
+      contractText: "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+      proofBandWidth: 236,
+      proofBandHeight: 42,
+      agentDecisionText: "타입과 근거가 있어 에이전트 전달에 포함할 수 있습니다.",
+      agentGateKind: "handoff-ready",
+      endpointRouteContract: "visible-source-target-names-wrap",
+      readableRoute: "Agent Config Onboarding → Operations Nav",
+    },
+    copyPayload: {
+      tool: "query_ontology",
+      action: "explain_relation",
+      from: "capability:agent-config-onboarding",
+      to: "element:operations-nav",
+      type: "contains",
+      evidence: "source-backed",
+      gate: "handoff-ready",
+      call:
+        'query_ontology({"operation":"explain_relation","from":"capability:agent-config-onboarding","to":"element:operations-nav","direction":"undirected","maxHops":5,"limit":10})',
+      summary:
+        "query_ontology · explain_relation · capability:agent-config-onboarding → element:operations-nav · contains · source-backed · handoff-ready",
+      visibleSummary: "설명 준비",
+      visibleHandleSummary: "agent-config-onboarding → operations-nav",
+      layoutContract: "visible-summary-and-handle-readable",
+    },
+    agentNextAction: "run-selected-relation-copy-payload",
+  });
+});
+
 test("WebView evidence flags slow connector label pass budget regressions", () => {
   const evidence = verifier.buildWebviewEvidencePayload(
     {
