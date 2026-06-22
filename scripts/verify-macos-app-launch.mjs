@@ -7234,6 +7234,7 @@ export function buildWebviewEvidencePayload(
         readCount: markerNumber(markers, "topologyConnectorRectCacheReadCount"),
         hitCount: markerNumber(markers, "topologyConnectorRectCacheHitCount"),
         visibleCardClippedCount: markerNumber(markers, "topologyCardClippedCount"),
+        agentNextAction: "trust-frame-local-connector-rect-cache-before-reading-labels",
       }
       : null;
   const connectorLabelPassProof =

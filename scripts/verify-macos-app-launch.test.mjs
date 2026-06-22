@@ -1163,6 +1163,7 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     readCount: 0,
     hitCount: 26,
     visibleCardClippedCount: 0,
+    agentNextAction: "trust-frame-local-connector-rect-cache-before-reading-labels",
   });
   assert.deepEqual(evidence.connectorLabelPassProof, {
     proof: "topology-connector-label-pass-budget",
