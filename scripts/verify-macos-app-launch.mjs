@@ -4661,6 +4661,21 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyDragCollisionPolicy !== "release-settle") {
         return `WebView Relief drag collision policy was ${payload.markers.topologyDragCollisionPolicy || "missing"}`;
       }
+      if (
+        payload.markers.topologyDragPhysicsSyncContract !==
+        "skeleton-card-drag-pins-worker-layout-group"
+      ) {
+        return `WebView Relief drag physics sync contract was ${payload.markers.topologyDragPhysicsSyncContract || "missing"}`;
+      }
+      if (payload.markers.topologyDragPhysicsSyncActiveDuring !== true) {
+        return "WebView Relief drag physics sync was not active during drag verification";
+      }
+      if (payload.markers.topologyLayoutWorkerPositionFrameSkipPolicy !== "skip-only-unsynced-skeleton-card-drag") {
+        return `WebView Relief worker frame skip policy was ${payload.markers.topologyLayoutWorkerPositionFrameSkipPolicy || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragWorkerAppliedFrameChangeCount || 0) >= 1)) {
+        return `WebView Relief drag did not update worker layout frames during drag (${payload.markers.topologyDragWorkerAppliedFrameChangeCount ?? "missing"}, delta ${payload.markers.topologyDragWorkerAppliedFrameDelta ?? "missing"})`;
+      }
       if (payload.markers.topologyDragFrameCacheContract !== "pointer-move-reuses-drag-indexes") {
         return `WebView Relief drag frame cache contract was ${payload.markers.topologyDragFrameCacheContract || "missing"}`;
       }

@@ -831,6 +831,28 @@ pub fn run() {
                                       const focusBefore = rectOf(trackedFocus());
                                       const startX = focusBefore.left + focusBefore.width / 2;
                                       const startY = focusBefore.top + focusBefore.height / 2;
+                                      const topologyViewport = document.querySelector('[data-testid="sigma-topology-viewport"]');
+                                      const workerAppliedBefore = Number(
+                                        topologyViewport?.getAttribute("data-layout-worker-position-frame-applied-count") || "0"
+                                      );
+                                      let workerAppliedFrameChangeCount = 0;
+                                      let lastWorkerAppliedFrameCount =
+                                        topologyViewport?.getAttribute("data-layout-worker-position-frame-applied-count") || "";
+                                      const workerAppliedFrameObserver =
+                                        topologyViewport && typeof MutationObserver === "function"
+                                          ? new MutationObserver(() => {
+                                            const nextWorkerAppliedFrameCount =
+                                              topologyViewport.getAttribute("data-layout-worker-position-frame-applied-count") || "";
+                                            if (nextWorkerAppliedFrameCount !== lastWorkerAppliedFrameCount) {
+                                              workerAppliedFrameChangeCount += 1;
+                                              lastWorkerAppliedFrameCount = nextWorkerAppliedFrameCount;
+                                            }
+                                          })
+                                          : null;
+                                      workerAppliedFrameObserver?.observe(topologyViewport, {
+                                        attributes: true,
+                                        attributeFilter: ["data-layout-worker-position-frame-applied-count"]
+                                      });
                                       const pointerBase = pointerBaseFor(19);
                                       const dispatchPointer = (target, type, x, y, buttons) => {
                                         target.dispatchEvent(new PointerEvent(type, {
@@ -844,6 +866,7 @@ pub fn run() {
                                       const latestFocus = trackedFocus;
                                       const finish = () => {
                                         try {
+                                          workerAppliedFrameObserver?.disconnect();
                                           const focusAfter = latestFocus();
                                           const focusDuring = rectOf(focusAfter);
                                           const focusDx = focusDuring.left - focusBefore.left;
@@ -879,10 +902,23 @@ pub fn run() {
                                           const dragConnector = document.querySelector("[data-drag-cluster-connector]");
                                           const dragConnectorD = dragConnector?.getAttribute("d") || "";
                                           const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
+                                          const topologyViewport = document.querySelector('[data-testid="sigma-topology-viewport"]');
                                           result.connectorDrawable = dragConnectorD.startsWith("M ");
                                           result.connectorClearance = Number(
                                             dragConnector?.getAttribute("data-connector-clearance") || "0"
                                           );
+                                          result.dragPhysicsSyncContract =
+                                            skeletonCardsLayer?.getAttribute("data-drag-physics-sync-contract") || "";
+                                          result.dragPhysicsSyncActiveDuring =
+                                            skeletonCardsLayer?.getAttribute("data-drag-physics-sync-active") === "true";
+                                          result.workerFrameSkipPolicy =
+                                            topologyViewport?.getAttribute("data-layout-worker-position-frame-skip-policy") || "";
+                                          result.workerAppliedFrameDelta =
+                                            Number(
+                                              topologyViewport?.getAttribute("data-layout-worker-position-frame-applied-count") || "0"
+                                            ) - workerAppliedBefore;
+                                          result.workerAppliedFrameChangeCount =
+                                            workerAppliedFrameChangeCount;
                                           result.clusterSize = Number(
                                             skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"
                                           );
@@ -4453,6 +4489,16 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"),
                                   topologyDragDynamicMotionContract:
                                     skeletonCardsLayer?.getAttribute("data-drag-dynamic-motion-contract") || "",
+                                  topologyDragPhysicsSyncContract:
+                                    topologyDragVerification?.dragPhysicsSyncContract ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-physics-sync-contract") ||
+                                    "",
+                                  topologyDragPhysicsSyncActiveDuring:
+                                    topologyDragVerification?.dragPhysicsSyncActiveDuring === true,
+                                  topologyDragWorkerAppliedFrameDelta:
+                                    Number(topologyDragVerification?.workerAppliedFrameDelta || 0),
+                                  topologyDragWorkerAppliedFrameChangeCount:
+                                    Number(topologyDragVerification?.workerAppliedFrameChangeCount || 0),
                                   topologyDragDynamicState:
                                     skeletonCardsLayer?.getAttribute("data-drag-dynamic-state") || "",
                                   topologyDragDynamicRoot:
@@ -4467,6 +4513,10 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-drag-frame-cache-contract") || "",
                                   topologyDragFrameBudgetContract:
                                     skeletonCardsLayer?.getAttribute("data-drag-frame-budget-contract") || "",
+                                  topologyLayoutWorkerPositionFrameSkipPolicy:
+                                    topologyDragVerification?.workerFrameSkipPolicy ||
+                                    sigmaViewport?.getAttribute("data-layout-worker-position-frame-skip-policy") ||
+                                    "",
                                   topologyRepositionDurationLastMs:
                                     Number(skeletonCardsLayer?.getAttribute("data-reposition-duration-last-ms") || "0"),
                                   topologyRepositionDurationMaxMs:
@@ -4795,6 +4845,10 @@ mod tests {
         assert!(source.contains("data-focus-cluster-size"));
         assert!(source.contains("data-drag-cluster-hull-dom-policy"));
         assert!(source.contains("dragHandleSlug"));
+        assert!(source.contains("data-drag-physics-sync-contract"));
+        assert!(source.contains("topologyDragPhysicsSyncActiveDuring"));
+        assert!(source.contains("topologyDragWorkerAppliedFrameDelta"));
+        assert!(source.contains("topologyDragWorkerAppliedFrameChangeCount"));
         assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
         assert!(source.contains("__ontologyAtlasTopologyFocusNoopVerify"));
         assert!(source.contains("ontology-atlas:verify-selected-focus-safe-fit"));
