@@ -3311,6 +3311,24 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyAttentionWinner !== "focus-state") {
         return `WebView Relief selected node attention winner was ${payload.markers.topologyAttentionWinner || "missing"}`;
       }
+      if (
+        payload.markers.topologyAgentCurrentSurface &&
+        payload.markers.topologyAgentCurrentSurface !== "selected-node"
+      ) {
+        return `WebView Relief selected node root current surface was ${payload.markers.topologyAgentCurrentSurface || "missing"}`;
+      }
+      if (
+        payload.markers.topologyAgentCurrentSurfaceRole &&
+        payload.markers.topologyAgentCurrentSurfaceRole !== payload.markers.topologyNodePopoverSurfaceRole
+      ) {
+        return `WebView Relief selected node root current surface role mismatched popover (${payload.markers.topologyAgentCurrentSurfaceRole || "missing"} vs ${payload.markers.topologyNodePopoverSurfaceRole || "missing"})`;
+      }
+      if (
+        payload.markers.topologyAgentCurrentSurfaceRoute &&
+        payload.markers.topologyAgentCurrentSurfaceRoute !== payload.markers.topologySelectedNodeId
+      ) {
+        return `WebView Relief selected node root current surface route mismatched selected node (${payload.markers.topologyAgentCurrentSurfaceRoute || "missing"} vs ${payload.markers.topologySelectedNodeId || "missing"})`;
+      }
       if (payload.markers.topologyAnalysisPanelVisible === true) {
         return "WebView Relief selected node support rail was visible without the focus rail marker";
       }
@@ -7136,6 +7154,12 @@ export function buildWebviewEvidencePayload(
             typeof markers.topologyNodePopoverCompactMeaningText === "string"
               ? markers.topologyNodePopoverCompactMeaningText.trim()
               : null,
+        },
+        root: {
+          attentionWinner: markers.topologyRootAttentionWinner ?? null,
+          currentSurface: markers.topologyAgentCurrentSurface ?? null,
+          currentSurfaceRole: markers.topologyAgentCurrentSurfaceRole ?? null,
+          currentSurfaceRoute: markers.topologyAgentCurrentSurfaceRoute ?? null,
         },
         handoff: {
           contract: markers.topologyNodePopoverAgentHandoffContract ?? null,

@@ -2950,6 +2950,14 @@ export function SigmaSkeletonCards({
         : selectedSlug
           ? 'selected-node'
           : 'map-overview';
+  const agentCurrentSurfaceRole =
+    selectedRelationSurfaceRoute !== null
+      ? 'active-relation-inspector'
+      : pathWorkflowActive
+        ? 'focus-path-state'
+        : selectedSlug
+          ? 'active-node-inspector'
+          : 'map-layer';
   const agentCurrentSurfaceRoute =
     selectedRelationSurfaceRoute ??
     (pathWorkflowActive && pathSelectionSourceSlug
@@ -5948,7 +5956,7 @@ export function SigmaSkeletonCards({
       data-skeleton-card-resolved-count={resolvedCardCount}
       data-topology-attention-winner={topologyAttentionWinner}
       data-agent-current-surface={agentCurrentSurface}
-      data-agent-current-surface-role={topologyAttentionWinner}
+      data-agent-current-surface-role={agentCurrentSurfaceRole}
       data-agent-current-surface-route={agentCurrentSurfaceRoute}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
       data-drag-collision-policy="release-settle"

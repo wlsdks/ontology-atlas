@@ -1184,7 +1184,12 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
       href: "tauri://localhost/en/topology/?p=domain%3Aviews&mode=focus",
       markers: {
         topologyAttentionWinner: "focus-state",
+        topologyRootAttentionWinner: "focus-state",
+        topologyAgentCurrentSurface: "selected-node",
+        topologyAgentCurrentSurfaceRole: "active-node-inspector",
+        topologyAgentCurrentSurfaceRoute: "domain:views",
         topologyNodePopoverVisible: true,
+        topologyNodePopoverSurfaceRole: "active-node-inspector",
         topologyNodePopoverCollapsed: true,
         topologySelectedNodePopoverVisible: true,
         topologySelectedNodeId: "domain:views",
@@ -1305,6 +1310,12 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
       id: "domain:views",
       title: "Views",
       compactMeaning: "A core hub — 10 places depend on it",
+    },
+    root: {
+      attentionWinner: "focus-state",
+      currentSurface: "selected-node",
+      currentSurfaceRole: "active-node-inspector",
+      currentSurfaceRoute: "domain:views",
     },
     handoff: {
       contract: "selected-node-actions-visible",

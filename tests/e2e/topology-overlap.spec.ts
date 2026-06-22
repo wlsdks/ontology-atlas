@@ -2654,6 +2654,22 @@ for (const viewport of VIEWPORTS) {
     }
     await expectSelectedFocusVignetteSuppressed(page);
     await expect(page.getByTestId("topology-node-popover")).toBeVisible();
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-topology-attention-winner",
+      "focus-state",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-agent-current-surface",
+      "selected-node",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-agent-current-surface-role",
+      "active-node-inspector",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-agent-current-surface-route",
+      "domain:views",
+    );
     await expectCompactMeaningContract(page);
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
       "data-camera-motion-target-policy",

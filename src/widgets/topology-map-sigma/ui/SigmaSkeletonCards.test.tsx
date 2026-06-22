@@ -1943,6 +1943,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(document.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
       expect(layer).toHaveAttribute("data-drag-hull-render-policy", "suppressed-boxless-connectors");
       expect(layer).toHaveAttribute("data-drag-cluster-hull-dom-policy", "not-rendered");
+      expect(layer).toHaveAttribute("data-topology-attention-winner", "focus-state");
+      expect(layer).toHaveAttribute("data-agent-current-surface", "selected-node");
+      expect(layer).toHaveAttribute("data-agent-current-surface-role", "active-node-inspector");
+      expect(layer).toHaveAttribute("data-agent-current-surface-route", "project:p");
       expect(layer).toHaveAttribute(
         "data-focus-cluster-size",
         "2",
