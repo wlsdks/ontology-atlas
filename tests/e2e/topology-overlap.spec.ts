@@ -2617,6 +2617,14 @@ for (const viewport of VIEWPORTS) {
       "focus-brief",
     );
     await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-agent-handoff-summary-contract",
+      "visible-mcp-cli-focus-brief",
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-agent-handoff-visible-summary",
+      /MCP\/CLI · .+/,
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
       "data-agent-handoff-action-count",
       /^\d+$/,
     );
@@ -2657,6 +2665,29 @@ for (const viewport of VIEWPORTS) {
       "data-agent-handoff-readable-flow",
       "selected-node-facts-to-agent-brief",
     );
+    const compactHandoffSummary = page.getByTestId(
+      "topology-node-popover-compact-handoff-summary",
+    );
+    await expect(compactHandoffSummary).toBeVisible();
+    await expect(compactHandoffSummary).toHaveAttribute(
+      "data-agent-handoff-summary-contract",
+      "visible-mcp-cli-focus-brief",
+    );
+    await expect(compactHandoffSummary).toHaveAttribute(
+      "data-agent-handoff-visible-summary",
+      /MCP\/CLI · .+/,
+    );
+    await expect(compactHandoffSummary).toHaveAttribute(
+      "data-agent-handoff-selected-node",
+      "domain:views",
+    );
+    const compactHandoffSummaryFits = await compactHandoffSummary.evaluate(
+      (el) => el.scrollWidth <= el.clientWidth + 1,
+    );
+    expect(
+      compactHandoffSummaryFits,
+      `compact selected node handoff summary should not overflow at ${viewport.label}`,
+    ).toBe(true);
     await expect(page.getByTestId("topology-node-popover-compact-brief-action")).toHaveAttribute(
       "data-popover-action-surface-token",
       "--topology-node-popover-action-icon-surface",

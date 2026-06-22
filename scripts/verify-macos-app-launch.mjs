@@ -268,6 +268,20 @@ function validateTopologyNodePopoverTokenContract(markers) {
   if (Number(markers.topologyNodePopoverAgentHandoffRelationTypeCount || 0) < 1) {
     return `WebView Relief selected node popover root handoff relation type count was ${markers.topologyNodePopoverAgentHandoffRelationTypeCount || "missing"}`;
   }
+  if (markers.topologyNodePopoverAgentHandoffSummaryContract !== "visible-mcp-cli-focus-brief") {
+    return `WebView Relief selected node popover root handoff summary contract was ${markers.topologyNodePopoverAgentHandoffSummaryContract || "missing"}`;
+  }
+  const rootHandoffSummary = String(
+    markers.topologyNodePopoverAgentHandoffVisibleSummary || "",
+  ).trim();
+  if (!rootHandoffSummary.includes("MCP/CLI") || !rootHandoffSummary.length) {
+    return `WebView Relief selected node popover root handoff summary was ${rootHandoffSummary || "missing"}`;
+  }
+  if (
+    markers.topologyNodePopoverAgentHandoffSelectedNode !== markers.topologySelectedNodeId
+  ) {
+    return `WebView Relief selected node popover root handoff selected node was ${markers.topologyNodePopoverAgentHandoffSelectedNode || "missing"}`;
+  }
   if (collapsed) {
     if (markers.topologyNodePopoverCompactCommandRowVisible !== true) {
       return "WebView Relief selected node popover compact command row was not visible";
@@ -331,6 +345,48 @@ function validateTopologyNodePopoverTokenContract(markers) {
       Math.abs(factsTop - actionsTop) > 8
     ) {
       return `WebView Relief selected node popover compact facts/actions were not on one scanline (${factsTop} vs ${actionsTop})`;
+    }
+    if (markers.topologyNodePopoverCompactHandoffSummaryVisible !== true) {
+      return "WebView Relief selected node popover compact handoff summary was not visible";
+    }
+    if (
+      markers.topologyNodePopoverCompactHandoffSummaryContract !==
+      "visible-mcp-cli-focus-brief"
+    ) {
+      return `WebView Relief selected node popover compact handoff summary contract was ${markers.topologyNodePopoverCompactHandoffSummaryContract || "missing"}`;
+    }
+    const compactHandoffSummary = String(
+      markers.topologyNodePopoverCompactHandoffSummaryText || "",
+    ).trim();
+    if (compactHandoffSummary !== rootHandoffSummary) {
+      return `WebView Relief selected node popover compact handoff summary was ${compactHandoffSummary || "missing"} vs ${rootHandoffSummary}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactHandoffSummarySelectedNode !==
+      markers.topologySelectedNodeId
+    ) {
+      return `WebView Relief selected node popover compact handoff selected node was ${markers.topologyNodePopoverCompactHandoffSummarySelectedNode || "missing"}`;
+    }
+    const handoffSummaryClientWidth = Number(
+      markers.topologyNodePopoverCompactHandoffSummaryClientWidth || 0,
+    );
+    const handoffSummaryScrollWidth = Number(
+      markers.topologyNodePopoverCompactHandoffSummaryScrollWidth || 0,
+    );
+    if (
+      !Number.isFinite(handoffSummaryClientWidth) ||
+      !Number.isFinite(handoffSummaryScrollWidth) ||
+      handoffSummaryClientWidth < 72 ||
+      handoffSummaryScrollWidth - handoffSummaryClientWidth > 2
+    ) {
+      return `WebView Relief selected node popover compact handoff summary overflowed (${handoffSummaryClientWidth} client / ${handoffSummaryScrollWidth} scroll)`;
+    }
+    const handoffSummaryTop = Number(markers.topologyNodePopoverCompactHandoffSummaryTop || 0);
+    if (
+      markers.topologyNodePopoverCompactRelationFactsVisible === true &&
+      Math.abs(factsTop - handoffSummaryTop) > 8
+    ) {
+      return `WebView Relief selected node popover compact facts/handoff summary were not on one scanline (${factsTop} vs ${handoffSummaryTop})`;
     }
     if (markers.topologyNodePopoverCompactMeaningContract !== "plain-language-meaning-before-typed-facts") {
       return `WebView Relief selected node popover compact meaning contract was ${markers.topologyNodePopoverCompactMeaningContract || "missing"}`;
@@ -6976,6 +7032,15 @@ export function buildWebviewEvidencePayload(
           markers.topologyNodePopoverAgentHandoffContract ===
             "selected-node-actions-visible" &&
           markers.topologyNodePopoverAgentHandoffPrimaryAction === "focus-brief" &&
+          markers.topologyNodePopoverAgentHandoffSummaryContract ===
+            "visible-mcp-cli-focus-brief" &&
+          String(markers.topologyNodePopoverAgentHandoffVisibleSummary || "").includes(
+            "MCP/CLI",
+          ) &&
+          markers.topologyNodePopoverCompactHandoffSummaryContract ===
+            "visible-mcp-cli-focus-brief" &&
+          markers.topologyNodePopoverCompactHandoffSummaryText ===
+            markers.topologyNodePopoverAgentHandoffVisibleSummary &&
           markerNumber(markers, "topologyNodePopoverAgentHandoffActionCount") >= 1 &&
           markerNumber(markers, "topologyNodePopoverAgentHandoffRelationFactCount") >= 1 &&
           markerNumber(markers, "topologyNodePopoverAgentHandoffRelationTypeCount") >= 1
@@ -6994,6 +7059,8 @@ export function buildWebviewEvidencePayload(
           contract: markers.topologyNodePopoverAgentHandoffContract ?? null,
           route: markers.topologyNodePopoverAgentHandoffRoute ?? null,
           primaryAction: markers.topologyNodePopoverAgentHandoffPrimaryAction ?? null,
+          summaryContract: markers.topologyNodePopoverAgentHandoffSummaryContract ?? null,
+          visibleSummary: markers.topologyNodePopoverAgentHandoffVisibleSummary ?? null,
           actionCount: markerNumber(markers, "topologyNodePopoverAgentHandoffActionCount"),
           relationFactCount: markerNumber(
             markers,
@@ -7005,6 +7072,20 @@ export function buildWebviewEvidencePayload(
           ),
           readableFlow: markers.topologyNodePopoverCompactActionsReadableFlow ?? null,
           briefActionFlow: markers.topologyNodePopoverCompactBriefActionReadableFlow ?? null,
+          compactSummary: {
+            visible: markers.topologyNodePopoverCompactHandoffSummaryVisible ?? null,
+            contract: markers.topologyNodePopoverCompactHandoffSummaryContract ?? null,
+            text: markers.topologyNodePopoverCompactHandoffSummaryText ?? null,
+            selectedNode: markers.topologyNodePopoverCompactHandoffSummarySelectedNode ?? null,
+            clientWidth: markerNumber(
+              markers,
+              "topologyNodePopoverCompactHandoffSummaryClientWidth",
+            ),
+            scrollWidth: markerNumber(
+              markers,
+              "topologyNodePopoverCompactHandoffSummaryScrollWidth",
+            ),
+          },
         },
         agentNextAction: "copy-selected-node-focus-brief-or-expand-detail",
       }

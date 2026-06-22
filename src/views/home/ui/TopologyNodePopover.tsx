@@ -349,6 +349,16 @@ export function TopologyNodePopover({
     "data-agent-handoff-relation-fact-count": total,
     "data-agent-handoff-relation-type-count": relationTypeCount,
   };
+  const selectedNodeHandoffVisibleSummary = primaryAction
+    ? `MCP/CLI · ${compactNodePopoverActionLabel(primaryAction.kind, primaryAction.label)}`
+    : "";
+  const selectedNodeHandoffSummaryAttributes = {
+    "data-agent-handoff-summary-contract": primaryAction
+      ? "visible-mcp-cli-focus-brief"
+      : "detail-only",
+    "data-agent-handoff-visible-summary": selectedNodeHandoffVisibleSummary,
+    "data-agent-handoff-selected-node": focus.id,
+  };
   const compactActionLabel = useCallback(
     (action: TopologyNodePopoverAction) =>
       compactNodePopoverActionLabel(action.kind, action.label),
@@ -384,6 +394,7 @@ export function TopologyNodePopover({
         aria-label={selectedNodeReadableLabel}
         {...selectedNodeAttributes}
         {...selectedNodeHandoffAttributes}
+        {...selectedNodeHandoffSummaryAttributes}
         data-testid="topology-node-popover"
         data-topology-node-popover="selected-node-inspector"
         data-node-popover-shell-contract="selected-node-inspector-shell"
@@ -509,7 +520,7 @@ export function TopologyNodePopover({
             data-compact-relation-facts-size-token="--topology-node-popover-compact-fact-size"
             aria-label={`${relationFactLabel} · ${relationTypeLabel} · ${labels.relationLensNoScores}`}
             title={`${relationFactLabel} · ${relationTypeLabel} · ${labels.relationLensNoScores}`}
-            className="inline-flex max-w-full min-w-0 items-center gap-1 overflow-hidden rounded-full border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-1.5 py-0.5 font-mono text-[length:var(--topology-node-popover-compact-fact-size)] text-[color:var(--topology-node-popover-context-text)] max-[540px]:hidden"
+            className="inline-flex max-w-full min-w-0 shrink-0 items-center gap-1 overflow-hidden rounded-full border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-1.5 py-0.5 font-mono text-[length:var(--topology-node-popover-compact-fact-size)] text-[color:var(--topology-node-popover-context-text)] max-[540px]:hidden"
           >
             <span className="shrink-0 uppercase tracking-[0.08em]">
               {labels.relationLensCompactFacts}
@@ -536,6 +547,27 @@ export function TopologyNodePopover({
           >
             {" "}
           </span>
+          {primaryAction ? (
+            <p
+              data-testid="topology-node-popover-compact-handoff-summary"
+              {...selectedNodeHandoffSummaryAttributes}
+              title={`${labels.actionRailTitle}: ${primaryAction.label}`}
+              className="inline-flex min-w-0 max-w-[8.5rem] shrink items-center gap-1 overflow-hidden rounded-full border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-1.5 py-0.5 font-mono text-[length:var(--topology-node-popover-compact-fact-size)] text-[color:var(--topology-node-popover-context-text)] max-[760px]:hidden"
+            >
+              <span className="shrink-0 uppercase tracking-[0.08em]">MCP/CLI</span>
+              {" "}
+              <span
+                aria-hidden="true"
+                className="shrink-0 text-[color:var(--topology-node-popover-endpoint-separator)]"
+              >
+                ·
+              </span>
+              {" "}
+              <span className="min-w-0 truncate">
+                {compactNodePopoverActionLabel(primaryAction.kind, primaryAction.label)}
+              </span>
+            </p>
+          ) : null}
           <div
             data-testid="topology-node-popover-compact-actions"
             data-compact-actions-layout-contract="actions-share-command-row-with-facts"
@@ -631,6 +663,7 @@ export function TopologyNodePopover({
       aria-label={selectedNodeReadableLabel}
       {...selectedNodeAttributes}
       {...selectedNodeHandoffAttributes}
+      {...selectedNodeHandoffSummaryAttributes}
       data-testid="topology-node-popover"
       data-topology-node-popover="selected-node-inspector"
       data-node-popover-shell-contract="selected-node-inspector-shell"

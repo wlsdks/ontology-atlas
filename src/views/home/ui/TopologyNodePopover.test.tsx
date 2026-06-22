@@ -2661,6 +2661,14 @@ describe("TopologyNodePopover", () => {
     expect(popover).toHaveAttribute("data-agent-handoff-relation-fact-count", "3");
     expect(popover).toHaveAttribute("data-agent-handoff-relation-type-count", "2");
     expect(popover).toHaveAttribute(
+      "data-agent-handoff-summary-contract",
+      "visible-mcp-cli-focus-brief",
+    );
+    expect(popover).toHaveAttribute(
+      "data-agent-handoff-visible-summary",
+      "MCP/CLI · 브리프",
+    );
+    expect(popover).toHaveAttribute(
       "data-compact-facts-layout-contract",
       "meaning-then-command-row",
     );
@@ -2695,6 +2703,20 @@ describe("TopologyNodePopover", () => {
       "data-phone-layout-contract",
       "actions-wrap-below-title",
     );
+    const handoffSummary = screen.getByTestId("topology-node-popover-compact-handoff-summary");
+    expect(handoffSummary).toHaveAttribute(
+      "data-agent-handoff-summary-contract",
+      "visible-mcp-cli-focus-brief",
+    );
+    expect(handoffSummary).toHaveAttribute(
+      "data-agent-handoff-visible-summary",
+      "MCP/CLI · 브리프",
+    );
+    expect(handoffSummary).toHaveAttribute(
+      "data-agent-handoff-selected-node",
+      "capabilities/mcp-server",
+    );
+    expect(handoffSummary).toHaveTextContent("MCP/CLI · 브리프");
     expect(action).toHaveAttribute("data-popover-action", "focus-brief");
     expect(action).toHaveAttribute("data-agent-handoff-action", "copy-focus-brief");
     expect(action).toHaveAttribute(

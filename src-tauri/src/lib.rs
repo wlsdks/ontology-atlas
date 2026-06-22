@@ -649,6 +649,7 @@ pub fn run() {
                                   const captureCompactSnapshot = (popover) => {
                                     const facts = popover?.querySelector('[data-testid="topology-node-popover-compact-relation-facts"]');
                                     const actions = popover?.querySelector('[data-testid="topology-node-popover-compact-actions"]');
+                                    const handoffSummary = popover?.querySelector('[data-testid="topology-node-popover-compact-handoff-summary"]');
                                     const brief = popover?.querySelector('[data-testid="topology-node-popover-compact-brief-action"]');
                                     result.compact = {
                                       factsVisible: visible(facts),
@@ -660,6 +661,12 @@ pub fn run() {
                                       actionsVisible: visible(actions),
                                       actionsContract: actions?.getAttribute("data-compact-actions-layout-contract") || "",
                                       actionsReadableFlow: actions?.getAttribute("data-compact-actions-readable-flow") || "",
+                                      handoffSummaryVisible: visible(handoffSummary),
+                                      handoffSummaryContract: handoffSummary?.getAttribute("data-agent-handoff-summary-contract") || "",
+                                      handoffSummaryText: handoffSummary?.getAttribute("data-agent-handoff-visible-summary") ||
+                                        handoffSummary?.textContent ||
+                                        "",
+                                      handoffSummarySelectedNode: handoffSummary?.getAttribute("data-agent-handoff-selected-node") || "",
                                       briefVisible: visible(brief),
                                       briefAction: brief?.getAttribute("data-agent-handoff-action") || "",
                                       briefReadableFlow: brief?.getAttribute("data-agent-handoff-readable-flow") || "",
@@ -1326,6 +1333,15 @@ pub fn run() {
                                 "";
                               const topologyNodePopoverAgentHandoffRelationTypeCount =
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-relation-type-count") ||
+                                "";
+                              const topologyNodePopoverAgentHandoffSummaryContract =
+                                topologySelectedNodePopover?.getAttribute("data-agent-handoff-summary-contract") ||
+                                "";
+                              const topologyNodePopoverAgentHandoffVisibleSummary =
+                                topologySelectedNodePopover?.getAttribute("data-agent-handoff-visible-summary") ||
+                                "";
+                              const topologyNodePopoverAgentHandoffSelectedNode =
+                                topologySelectedNodePopover?.getAttribute("data-agent-handoff-selected-node") ||
                                 "";
                               const markerSummary = (element, attributeName) =>
                                 element?.getAttribute(attributeName) ||
@@ -2137,6 +2153,10 @@ pub fn run() {
                                 topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-relation-facts"]');
                               const topologyNodePopoverCompactRelationFactsRect =
                                 topologyNodePopoverCompactRelationFacts?.getBoundingClientRect();
+                              const topologyNodePopoverCompactHandoffSummary =
+                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-compact-handoff-summary"]');
+                              const topologyNodePopoverCompactHandoffSummaryRect =
+                                topologyNodePopoverCompactHandoffSummary?.getBoundingClientRect();
                               const topologyNodePopoverVisibleRelationRowHeight =
                                 topologyNodePopoverRelationRowRect && topologyNodePopoverBodyRect
                                   ? Math.max(
@@ -3478,6 +3498,9 @@ pub fn run() {
                                   topologyNodePopoverAgentHandoffActionCount,
                                   topologyNodePopoverAgentHandoffRelationFactCount,
                                   topologyNodePopoverAgentHandoffRelationTypeCount,
+                                  topologyNodePopoverAgentHandoffSummaryContract,
+                                  topologyNodePopoverAgentHandoffVisibleSummary,
+                                  topologyNodePopoverAgentHandoffSelectedNode,
                                   topologyNodePopoverWidth:
                                     topologyNodePopoverRect?.width || 0,
                                   topologyNodePopoverHeight:
@@ -3616,6 +3639,26 @@ pub fn run() {
                                     topologyNodePopoverCompactRelationFactsRect?.top || 0,
                                   topologyNodePopoverCompactRelationFactsBottom:
                                     topologyNodePopoverCompactRelationFactsRect?.bottom || 0,
+                                  topologyNodePopoverCompactHandoffSummaryVisible:
+                                    Boolean(topologyNodePopoverCompactHandoffSummaryRect) &&
+                                    topologyNodePopoverCompactHandoffSummaryRect.width > 0 &&
+                                    topologyNodePopoverCompactHandoffSummaryRect.height > 0,
+                                  topologyNodePopoverCompactHandoffSummaryContract:
+                                    topologyNodePopoverCompactHandoffSummary?.getAttribute("data-agent-handoff-summary-contract") || "",
+                                  topologyNodePopoverCompactHandoffSummaryText:
+                                    topologyNodePopoverCompactHandoffSummary?.getAttribute("data-agent-handoff-visible-summary") ||
+                                    topologyNodePopoverCompactHandoffSummary?.textContent ||
+                                    "",
+                                  topologyNodePopoverCompactHandoffSummarySelectedNode:
+                                    topologyNodePopoverCompactHandoffSummary?.getAttribute("data-agent-handoff-selected-node") || "",
+                                  topologyNodePopoverCompactHandoffSummaryClientWidth:
+                                    topologyNodePopoverCompactHandoffSummary?.clientWidth || 0,
+                                  topologyNodePopoverCompactHandoffSummaryScrollWidth:
+                                    topologyNodePopoverCompactHandoffSummary?.scrollWidth || 0,
+                                  topologyNodePopoverCompactHandoffSummaryTop:
+                                    topologyNodePopoverCompactHandoffSummaryRect?.top || 0,
+                                  topologyNodePopoverCompactHandoffSummaryBottom:
+                                    topologyNodePopoverCompactHandoffSummaryRect?.bottom || 0,
                                   topologyNodePopoverCompactBriefActionVisible:
                                     Boolean(topologyNodePopoverCompactBriefActionRect) &&
                                     topologyNodePopoverCompactBriefActionRect.width > 0 &&
