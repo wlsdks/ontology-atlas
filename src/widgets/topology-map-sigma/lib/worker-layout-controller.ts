@@ -27,6 +27,7 @@ export function createWorkerLayoutController(
     autoStart: boolean;
     initialAlpha: number;
     onFrameStats?: (stats: WorkerLayoutFrameStats) => void;
+    shouldSkipFrame?: () => boolean;
   },
 ): PhysicsController {
   let indexById = new Map<string, number>();
@@ -59,6 +60,11 @@ export function createWorkerLayoutController(
     }
     if (m.type === 'positions') {
       frameStats.received += 1;
+      if (options.shouldSkipFrame?.() === true) {
+        frameStats.skipped += 1;
+        publishFrameStats();
+        return;
+      }
       const { x, y } = m;
       let hasMeaningfulChange = false;
       graph.forEachNode((id, attrs) => {

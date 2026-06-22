@@ -173,6 +173,63 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   expect(consoleErrors, consoleErrors.join("\n")).toHaveLength(0);
 });
 
+test("Relief map project drag stays responsive for large connected clusters", async ({
+  page,
+}) => {
+  await page.goto("/en/topology/?mode=map");
+  await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
+    timeout: 20_000,
+  });
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute("data-skeleton-cards-ready", "true", {
+    timeout: 20_000,
+  });
+  await page.waitForTimeout(600);
+
+  const target = page.locator("[data-skeleton-card]", { hasText: "ontology-atlas" }).first();
+  await expect(target).toBeVisible();
+  const before = await rectOf(target);
+  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  await page.mouse.down();
+  await expect(layer).toHaveAttribute(
+    "data-drag-clamp-contract",
+    "large-cluster-root-card-priority",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-drag-clamp-scope",
+    "root-card-for-large-cluster",
+  );
+  await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+    "data-layout-worker-position-frame-skip-policy",
+    "skip-while-skeleton-card-drag-active",
+  );
+  await expect(layer).toHaveAttribute("data-active-drag-cluster-size", /^[1-9]\d+$/);
+  await page.mouse.move(
+    before.x + before.width / 2 + 250,
+    before.y + before.height / 2 - 130,
+    { steps: 12 },
+  );
+  await expect(layer).toHaveAttribute("data-dragging-active", "true");
+  const dragResponsivenessProof = await layer.evaluate((el) => ({
+    previewOffsetX: Number(el.getAttribute("data-drag-preview-offset-x") ?? "0"),
+    previewScope: el.getAttribute("data-drag-preview-scope") ?? "",
+  }));
+  expect(dragResponsivenessProof.previewScope).toBe(
+    "viewport-offset-for-large-cluster",
+  );
+  expect(dragResponsivenessProof.previewOffsetX).toBeGreaterThan(120);
+  const workerDragSkipProof = await page.getByTestId("sigma-topology-viewport").evaluate((el) => ({
+    skipped: Number(el.getAttribute("data-layout-worker-position-frame-skipped-count") ?? "0"),
+  }));
+  expect(workerDragSkipProof.skipped).toBeGreaterThan(0);
+  const after = await rectOf(target);
+  expect(
+    after.x - before.x,
+    "large project cluster should not be pinned by far subtree cards",
+  ).toBeGreaterThan(120);
+  await page.mouse.up();
+});
+
 test("Relief dogfood graph exposes scale and bounded visible-card rect reads", async ({
   page,
 }) => {

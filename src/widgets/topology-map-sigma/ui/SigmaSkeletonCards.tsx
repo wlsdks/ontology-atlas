@@ -314,6 +314,7 @@ const RELATION_LABEL_PHONE_BREAKPOINT_PX = 768;
 const RELATION_LABEL_PHONE_BOTTOM_RESERVE_PX = 112;
 const DRAG_SETTLE_FEEDBACK_MS = TOPOLOGY_DRAG_SETTLE_DURATION_MS;
 const DRAG_GROUP_RELEASE_FEEDBACK_MS = 760;
+const DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD = 12;
 const CONNECTOR_PORT_MIN_CLEARANCE_PX = 6;
 const CONNECTOR_PORT_TARGET_CLEARANCE_PX = EDGE_CLEARANCE_MASK_PX + 2;
 const DRAG_COLLISION_SETTLE_PASSES = 4;
@@ -2084,10 +2085,12 @@ function clampDraggedClusterDelta(
   dx: number,
   dy: number,
   cardElements: readonly HTMLElement[] | null = null,
+  rootSlug?: string,
 ): { dx: number; dy: number } {
   if (!container) return { dx, dy };
   const containerRect = container.getBoundingClientRect();
   const movingRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+  const rootRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
   const candidates = cardElements ?? container.querySelectorAll<HTMLElement>('[data-skeleton-card]');
   for (const el of candidates) {
     const slug = el.dataset.slug;
@@ -2103,17 +2106,31 @@ function clampDraggedClusterDelta(
     ) {
       continue;
     }
-    movingRects.push({
+    const relativeRect = {
       left: rect.left - containerRect.left,
       top: rect.top - containerRect.top,
       right: rect.right - containerRect.left,
       bottom: rect.bottom - containerRect.top,
-    });
+    };
+    movingRects.push(relativeRect);
+    if (rootSlug && slug === rootSlug) {
+      rootRects.push(relativeRect);
+    }
   }
   if (movingRects.length === 0) return { dx, dy };
   const fixedSurfaceRects = collectFixedSurfaceRects(containerRect);
+  const rootPriorityClamp =
+    group.size >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD && rootRects.length > 0;
+  const clampRects = rootPriorityClamp ? rootRects : movingRects;
+  container.dataset.dragClampScope = rootPriorityClamp
+    ? 'root-card-for-large-cluster'
+    : 'cluster-bounds';
+  container.dataset.dragClampClusterSize = String(group.size);
+  container.dataset.dragLargeClusterClampThreshold = String(
+    DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD,
+  );
 
-  const bounds = movingRects.reduce(
+  const bounds = clampRects.reduce(
     (acc, rect) => ({
       left: Math.min(acc.left, rect.left),
       top: Math.min(acc.top, rect.top),
@@ -2527,6 +2544,9 @@ export function SigmaSkeletonCards({
     lastX: number;
     lastY: number;
     travel: number;
+    viewportPreviewActive: boolean;
+    viewportPreviewDx: number;
+    viewportPreviewDy: number;
     dockDragSnapshots: Map<string, DockDragSnapshot>;
     cardElements: SkeletonCardElementIndex;
     movedGroup: Set<string>;
@@ -2688,6 +2708,10 @@ export function SigmaSkeletonCards({
     setActiveDragMotion(false);
     activeDragMotionRef.current = false;
     setActiveDragRootSlug("");
+    if (dragRef.current) {
+      dragRef.current.viewportPreviewDx = 0;
+      dragRef.current.viewportPreviewDy = 0;
+    }
     activeDockDragSnapshotsRef.current = new Map();
   }, []);
 
@@ -2701,6 +2725,10 @@ export function SigmaSkeletonCards({
     if (!linger) {
       setActiveDragCluster(null);
       setActiveDragRootSlug("");
+      if (dragRef.current) {
+        dragRef.current.viewportPreviewDx = 0;
+        dragRef.current.viewportPreviewDy = 0;
+      }
       activeDockDragSnapshotsRef.current = new Map();
       return;
     }
@@ -2708,6 +2736,10 @@ export function SigmaSkeletonCards({
       dragReleaseTimerRef.current = null;
       setActiveDragCluster(null);
       setActiveDragRootSlug("");
+      if (dragRef.current) {
+        dragRef.current.viewportPreviewDx = 0;
+        dragRef.current.viewportPreviewDy = 0;
+      }
       activeDockDragSnapshotsRef.current = new Map();
     }, DRAG_GROUP_RELEASE_FEEDBACK_MS);
   }, []);
@@ -3337,6 +3369,12 @@ export function SigmaSkeletonCards({
         activeDragCluster?.has(slug) ||
           (dockParent && activeDragCluster?.has(dockParent)),
       );
+    const dragPreviewOffsetFor = (slug: string, dockParent?: string | null) => {
+      const drag = dragRef.current;
+      if (!drag?.viewportPreviewActive) return { dx: 0, dy: 0 };
+      if (!isDragClusterCard(slug, dockParent)) return { dx: 0, dy: 0 };
+      return { dx: drag.viewportPreviewDx, dy: drag.viewportPreviewDy };
+    };
     const focusContextSilhouetteSuppressionActive =
       selectedFocusCenterActive &&
       selectedFocusCluster !== null &&
@@ -3553,17 +3591,18 @@ export function SigmaSkeletonCards({
               (dockParent && activeDragCluster?.has(dockParent)),
           );
         el.dataset.dockDragFollow = followsActiveDrag ? 'true' : 'false';
-        const x = followsActiveDrag && dockSnapshot
+        const previewOffset = dragPreviewOffsetFor(slug, dockParent);
+        const x = (followsActiveDrag && dockSnapshot
           ? dockSnapshot.childStartX + parentCenterX - dockSnapshot.parentStartX
           : side === 1
             ? p.right + dockGap + col * columnStep
-            : p.left - dockGap - col * columnStep;
-        const columnCenterY = followsActiveDrag && dockSnapshot
+            : p.left - dockGap - col * columnStep) + previewOffset.dx;
+        const columnCenterY = (followsActiveDrag && dockSnapshot
           ? dockSnapshot.childStartY + parentCenterY - dockSnapshot.parentStartY
           : Math.min(
               Math.max(parentCenterY, safeTop + halfColumn),
               safeBottom - halfColumn,
-            );
+            )) + previewOffset.dy;
         const y = followsActiveDrag
           ? columnCenterY
           : columnCenterY + (row - (rowsInCol - 1) / 2) * pitch;
@@ -3613,6 +3652,10 @@ export function SigmaSkeletonCards({
         delete el.dataset.dockFlipTransform;
         const attrs = graph.getNodeAttributes(slug);
         const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
+        el.dataset.layoutGraphX = String(attrs.x);
+        el.dataset.layoutGraphY = String(attrs.y);
+        el.dataset.layoutViewportX = String(vp.x);
+        el.dataset.layoutViewportY = String(vp.y);
         const anchorKey = el.dataset.anchor as SkeletonCardModel['anchor'];
         const safeAnchorKey = anchorKey && ANCHOR_TRANSLATE[anchorKey] ? anchorKey : 'center';
         const followsActiveGraphDrag = activeDragCluster?.has(slug) === true;
@@ -3669,6 +3712,18 @@ export function SigmaSkeletonCards({
                 fixedSurfaceRects,
               })
             : vp;
+        const previewOffset = dragPreviewOffsetFor(slug, dockParent);
+        if (previewOffset.dx !== 0 || previewOffset.dy !== 0) {
+          clamped.x += previewOffset.dx;
+          clamped.y += previewOffset.dy;
+          el.dataset.dragPreviewScope = 'viewport-offset-for-large-cluster';
+          el.dataset.dragPreviewOffsetX = String(previewOffset.dx);
+          el.dataset.dragPreviewOffsetY = String(previewOffset.dy);
+        } else {
+          delete el.dataset.dragPreviewScope;
+          delete el.dataset.dragPreviewOffsetX;
+          delete el.dataset.dragPreviewOffsetY;
+        }
         if (selectedFocusEgoBand && !selectedFocusViewportCenter) {
           clamped.y = Math.min(
             clamped.y,
@@ -6158,6 +6213,17 @@ export function SigmaSkeletonCards({
       data-drag-settled-cluster-size={dragSettledSlugs.size}
       data-drag-connector-feedback-contract="boxless-connectors-show-linked-motion"
       data-drag-collision-policy="release-settle"
+      data-drag-clamp-contract="large-cluster-root-card-priority"
+      data-drag-clamp-scope={
+        activeDragCluster
+          ? activeDragCluster.size >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD
+            ? 'root-card-for-large-cluster'
+            : 'cluster-bounds'
+          : 'idle'
+      }
+      data-drag-large-cluster-clamp-threshold={DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD}
+      data-drag-preview-contract="large-cluster-uses-viewport-offset-during-active-drag"
+      data-drag-preview-scope="idle"
       data-drag-frame-cache-contract="pointer-move-reuses-drag-indexes"
       data-drag-reposition-policy="raf-coalesced-pointer-move"
       data-drag-reposition-coalesced="false"
@@ -7349,6 +7415,10 @@ export function SigmaSkeletonCards({
                 lastX: event.clientX,
                 lastY: event.clientY,
                 travel: 0,
+                viewportPreviewActive:
+                  movingGroup.size >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD,
+                viewportPreviewDx: 0,
+                viewportPreviewDy: 0,
 	                dockDragSnapshots,
 	                cardElements,
 	                movedGroup: movingGroup,
@@ -7389,8 +7459,26 @@ export function SigmaSkeletonCards({
                 dx,
                 dy,
                 drag.cardElements.all,
+                drag.rootSlug,
               );
+              const container = containerRef.current;
+              if (container) {
+                container.dataset.dragLastPointerDeltaX = String(dx);
+                container.dataset.dragLastPointerDeltaY = String(dy);
+                container.dataset.dragLastAppliedDeltaX = String(delta.dx);
+                container.dataset.dragLastAppliedDeltaY = String(delta.dy);
+              }
               if (delta.dx === 0 && delta.dy === 0) return;
+              if (drag.viewportPreviewActive) {
+                drag.viewportPreviewDx += delta.dx;
+                drag.viewportPreviewDy += delta.dy;
+                if (container) {
+                  container.dataset.dragPreviewScope =
+                    'viewport-offset-for-large-cluster';
+                  container.dataset.dragPreviewOffsetX = String(drag.viewportPreviewDx);
+                  container.dataset.dragPreviewOffsetY = String(drag.viewportPreviewDy);
+                }
+              }
               const movedGroup = moveDraggedCluster(
                 graph,
                 drag.rootSlug,
@@ -7402,7 +7490,6 @@ export function SigmaSkeletonCards({
                 movingGroup,
               );
               drag.movedGroup = movedGroup;
-              const container = containerRef.current;
               if (repositionRafRef.current !== null) {
                 if (container) {
                   container.dataset.dragRepositionPolicy = 'raf-coalesced-pointer-move';

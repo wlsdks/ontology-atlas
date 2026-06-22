@@ -101,6 +101,36 @@ describe('WorkerLayoutController', () => {
     });
   });
 
+  it('skips worker position batches while the caller reports an active drag interaction', () => {
+    const g = makeGraph();
+    const updateSpy = vi.spyOn(g, 'updateEachNodeAttributes');
+    const onFrameStats = vi.fn();
+    const fake = new FakeWorker();
+    createWorkerLayoutController(g, fake as unknown as Worker, {
+      autoStart: true,
+      initialAlpha: 0.6,
+      onFrameStats,
+      shouldSkipFrame: () => true,
+    });
+    fake.emit({ type: 'ids', ids: ['a', 'b'] });
+
+    fake.emit({
+      type: 'positions',
+      x: Float32Array.from([100, 200]),
+      y: Float32Array.from([300, 400]),
+      active: true,
+    });
+
+    expect(updateSpy).not.toHaveBeenCalled();
+    expect(g.getNodeAttribute('a', 'x')).toBe(0);
+    expect(onFrameStats).toHaveBeenLastCalledWith({
+      applied: 0,
+      epsilon: 0.05,
+      received: 1,
+      skipped: 1,
+    });
+  });
+
   it('forwards pin/drag/release/reheat/tune as worker messages', () => {
     const fake = new FakeWorker();
     const c = createWorkerLayoutController(makeGraph(), fake as unknown as Worker, {

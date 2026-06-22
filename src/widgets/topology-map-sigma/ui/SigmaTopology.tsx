@@ -1619,10 +1619,18 @@ function SigmaTopologyImpl({
       physics = createWorkerLayoutController(graph, layoutWorker, {
         autoStart: autoStartPhysics,
         initialAlpha: autoStartPhysics ? 0.65 : 0.25,
+        shouldSkipFrame: () => {
+          const dragState = document
+            .querySelector<HTMLElement>('[data-testid="sigma-skeleton-cards"]')
+            ?.dataset.dragDynamicState;
+          return dragState === 'armed-cluster-follow' || dragState === 'active-cluster-follow';
+        },
         onFrameStats: (stats: WorkerLayoutFrameStats) => {
           const container = containerRef.current;
           if (!container) return;
           container.dataset.layoutWorkerFrameStatsContract = 'epsilon-skip-position-frames';
+          container.dataset.layoutWorkerPositionFrameSkipPolicy =
+            'skip-while-skeleton-card-drag-active';
           container.dataset.layoutWorkerPositionFrameReceivedCount = String(stats.received);
           container.dataset.layoutWorkerPositionFrameAppliedCount = String(stats.applied);
           container.dataset.layoutWorkerPositionFrameSkippedCount = String(stats.skipped);
@@ -2979,6 +2987,7 @@ function SigmaTopologyImpl({
         data-layout-worker-position-frame-applied-count="0"
         data-layout-worker-position-frame-skipped-count="0"
         data-layout-worker-position-frame-epsilon-px="0.05"
+        data-layout-worker-position-frame-skip-policy="skip-while-skeleton-card-drag-active"
         data-kind-legend-state={suppressKindLegend ? 'collapsed-support-chrome' : 'visible-support-chrome'}
         data-relation-legend-state={
           suppressRelationLegend

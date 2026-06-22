@@ -5338,6 +5338,143 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(graph.getNodeAttributes("capability:c1").y).toBeCloseTo(20);
   });
 
+  it("큰 project 드래그는 전체 subtree 경계 대신 root card 를 기준으로 clamp 해 포인터를 따라간다", () => {
+    const graph = makeGraph();
+    const cards = [
+      { id: "project:p", title: "Atlas", kind: "project" as const, tier: 0 as const },
+      ...Array.from({ length: 6 }, (_, index) => ({
+        id: `domain:d${index + 1}`,
+        title: `Domain ${index + 1}`,
+        kind: "domain" as const,
+        tier: 1 as const,
+      })),
+      ...Array.from({ length: 6 }, (_, index) => ({
+        id: `capability:c${index + 1}`,
+        title: `Capability ${index + 1}`,
+        kind: "capability" as const,
+        tier: 2 as const,
+      })),
+    ];
+    for (let index = 1; index <= 6; index += 1) {
+      const domainId = `domain:d${index}`;
+      const capabilityId = `capability:c${index}`;
+      if (!graph.hasNode(domainId)) {
+        graph.addNode(domainId, {
+          size: 5,
+          color: "#888",
+          borderColor: "#999",
+          outerBorderColor: "rgba(0,0,0,0)",
+          projectSlug: "",
+          categoryId: "",
+          isHub: false,
+          ownerKey: "unassigned",
+          x: index * 25,
+          y: index * 8,
+          label: `Domain ${index}`,
+        });
+      }
+      graph.addNode(capabilityId, {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: index === 6 ? 340 : index * 30,
+        y: index * 10,
+        label: `Capability ${index}`,
+      });
+      graph.addEdge("project:p", domainId, {
+        size: 1,
+        color: "#fff",
+        kind: "contains",
+        relationType: "contains",
+      });
+      graph.addEdge(domainId, capabilityId, {
+        size: 1,
+        color: "#fff",
+        kind: "contains",
+        relationType: "contains",
+      });
+    }
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (!slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 800,
+            bottom: 600,
+            width: 800,
+            height: 600,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        const attrs = graph.getNodeAttributes(slug);
+        const center = stubSigma.graphToViewport(attrs);
+        const width = slug === "capability:c6" ? 120 : 100;
+        const height = 40;
+        return {
+          left: center.x - width / 2,
+          top: center.y - height / 2,
+          right: center.x + width / 2,
+          bottom: center.y + height / 2,
+          width,
+          height,
+          x: center.x - width / 2,
+          y: center.y - height / 2,
+          toJSON: () => ({}),
+        };
+      });
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={cards}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+      const projectCard = screen.getByText("Atlas").closest("[data-skeleton-card]")!;
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+
+      fireEvent.pointerDown(projectCard, {
+        clientX: 100,
+        clientY: 50,
+        pointerId: 1,
+        button: 0,
+      });
+      expect(layer).toHaveAttribute(
+        "data-drag-clamp-scope",
+        "root-card-for-large-cluster",
+      );
+      expect(layer).toHaveAttribute("data-active-drag-cluster-size", "13");
+      fireEvent.pointerMove(projectCard, { clientX: 280, clientY: 50, pointerId: 1 });
+      fireEvent.pointerUp(projectCard, { clientX: 280, clientY: 50, pointerId: 1 });
+
+      expect(layer).toHaveAttribute(
+        "data-drag-clamp-contract",
+        "large-cluster-root-card-priority",
+      );
+      expect(layer).toHaveAttribute(
+        "data-drag-clamp-scope",
+        "root-card-for-large-cluster",
+      );
+      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(90);
+      expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(100);
+      expect(graph.getNodeAttributes("capability:c6").x).toBeCloseTo(430);
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("드래그 묶음은 고정 HUD 경계 앞에서 멈춰 패널 밑으로 들어가지 않는다", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {
