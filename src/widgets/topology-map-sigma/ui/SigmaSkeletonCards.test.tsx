@@ -1700,6 +1700,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const visibleBadge = labelHit?.querySelector("[data-relation-label-visible-badge]");
     const typeText = labelHit?.querySelector("[data-relation-label-type-text]");
     const svgLabel = container.querySelector('[data-connector-relation-label="true"]');
+    const svgLabelGroup = container.querySelector('[data-relation-label-group="true"]');
 
     expect(labelHit).toHaveAttribute("data-relation-label-count", "2");
     expect(labelHit).toHaveAttribute("data-relation-type-label", "contains ×2");
@@ -1711,6 +1712,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(typeText).toHaveTextContent("contains 2");
     expect(visibleBadge).toHaveTextContent("contains 2");
     expect(svgLabel).toHaveTextContent("contains 2");
+    expect(svgLabelGroup).toHaveAttribute(
+      "data-relation-label-interaction-owner",
+      "html-hit-target",
+    );
+    expect(svgLabelGroup).toHaveAttribute(
+      "data-relation-label-svg-a11y-contract",
+      "aria-hidden-visual-mirror",
+    );
+    expect(svgLabelGroup).not.toHaveAttribute("role", "button");
+    expect(svgLabelGroup).not.toHaveAttribute("tabindex", "0");
   });
 
   it("14-inch click focus geometry is retained without drawing a boundary box", () => {

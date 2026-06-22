@@ -6368,20 +6368,9 @@ export function SigmaSkeletonCards({
               data-relation-quality={label.relationQuality ?? 'supported'}
               data-relation-type={label.relationType}
               data-relation-type-label={visibleRelationLabel}
-              className="pointer-events-auto cursor-pointer"
-              role="button"
-              tabIndex={0}
-              aria-label={tEdgeTooltip('relationAriaLabel', { label: visibleRelationLabel })}
-              onClick={(event) => {
-                event.stopPropagation();
-                selectRelation(label);
-              }}
-              onKeyDown={(event) => {
-                if (event.key !== 'Enter' && event.key !== ' ') return;
-                event.preventDefault();
-                event.stopPropagation();
-                selectRelation(label);
-              }}
+              data-relation-label-interaction-owner="html-hit-target"
+              data-relation-label-svg-a11y-contract="aria-hidden-visual-mirror"
+              className="pointer-events-none"
             >
               <rect
                 data-relation-label-bg={`ego:${label.key}`}
