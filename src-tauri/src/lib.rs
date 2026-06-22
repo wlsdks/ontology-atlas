@@ -1834,6 +1834,11 @@ pub fn run() {
                               const topologySelectedRelationCopyActionRail = document.querySelector('[data-testid="sigma-selected-edge-copy-actions"]');
                               const topologySelectedRelationCopyActionRailRect =
                                 topologySelectedRelationCopyActionRail?.getBoundingClientRect();
+                              const topologySelectedRelationNextAction = document.querySelector('[data-testid="sigma-selected-edge-next-action"]');
+                              const topologySelectedRelationCommandCue =
+                                topologySelectedRelationNextAction?.querySelector('[data-command-cue-visible="true"]');
+                              const topologySelectedRelationCommandCueRect =
+                                topologySelectedRelationCommandCue?.getBoundingClientRect();
                               const topologySelectedRelationPrimaryCopyAction = document.querySelector('[data-relation-copy-priority="primary"]');
                               const topologySelectedRelationPrimaryCopyActionKind =
                                 topologySelectedRelationPrimaryCopyAction?.getAttribute("data-relation-copy-action") ||
@@ -4172,6 +4177,20 @@ pub fn run() {
                                     topologySelectedRelationMetricStripRect?.width || 0,
                                   topologySelectedRelationMetricStripHeight:
                                     topologySelectedRelationMetricStripRect?.height || 0,
+                                  topologySelectedRelationCommandCueContract:
+                                    topologySelectedRelationNextAction?.getAttribute("data-command-cue-contract") || "",
+                                  topologySelectedRelationCommandCueAction:
+                                    topologySelectedRelationNextAction?.getAttribute("data-command-cue-action") || "",
+                                  topologySelectedRelationCommandCueVisibleLabel:
+                                    topologySelectedRelationNextAction?.getAttribute("data-command-cue-visible-label") || "",
+                                  topologySelectedRelationCommandCueVisibleAction:
+                                    topologySelectedRelationNextAction?.getAttribute("data-command-cue-visible-action") || "",
+                                  topologySelectedRelationCommandCueVisibleText:
+                                    topologySelectedRelationCommandCue?.textContent?.trim() || "",
+                                  topologySelectedRelationCommandCueWidth:
+                                    topologySelectedRelationCommandCueRect?.width || 0,
+                                  topologySelectedRelationCommandCueHeight:
+                                    topologySelectedRelationCommandCueRect?.height || 0,
                                   topologySelectedRelationPrimaryCopyActionKind,
                                   topologySelectedRelationPrimaryCopyActionText:
                                     topologySelectedRelationPrimaryCopyAction?.textContent || "",

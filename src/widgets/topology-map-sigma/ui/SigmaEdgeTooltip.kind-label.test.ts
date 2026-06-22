@@ -784,6 +784,21 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-copy-action-min-width-token',
       '--topology-selected-relation-action-min-width',
     );
+    expect(nextAction).toHaveAttribute(
+      'data-command-cue-contract',
+      'visible-compact-primary-command-cue',
+    );
+    expect(nextAction).toHaveAttribute(
+      'data-command-cue-visible-label',
+      'Next step',
+    );
+    expect(nextAction).toHaveAttribute(
+      'data-command-cue-visible-action',
+      'Explain',
+    );
+    expect(
+      nextAction.querySelector('[data-command-cue-visible="true"]'),
+    ).toHaveTextContent('Next step');
     expect(copyActions).toHaveAttribute(
       'data-density-contract',
       'single-row-compact',

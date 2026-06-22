@@ -1834,6 +1834,27 @@ export function validateSelectedRelationCardDensityContract(markers, width) {
     return `WebView reported oversized Relief selected relation agent route rail (${agentRouteHeight || "missing"}px)`;
   }
 
+  if (
+    markers?.topologySelectedRelationCommandCueContract !==
+    "visible-compact-primary-command-cue"
+  ) {
+    return `WebView reported malformed Relief selected relation command cue contract (${markers?.topologySelectedRelationCommandCueContract || "missing"})`;
+  }
+  const commandCueText = String(
+    markers?.topologySelectedRelationCommandCueVisibleText || "",
+  ).trim();
+  if (!commandCueText || !/next step|다음 작업/i.test(commandCueText)) {
+    return `WebView reported malformed Relief selected relation command cue text (${commandCueText || "missing"})`;
+  }
+  const expectedCommandCueAction =
+    markers?.topologySelectedRelationPrimaryCopyActionKind || "";
+  if (
+    expectedCommandCueAction &&
+    markers?.topologySelectedRelationCommandCueAction !== expectedCommandCueAction
+  ) {
+    return `WebView reported mismatched Relief selected relation command cue action (${markers?.topologySelectedRelationCommandCueAction || "missing"})`;
+  }
+
   return null;
 }
 

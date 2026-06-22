@@ -739,13 +739,20 @@ export function SigmaSelectedEdgeCard({
         data-next-action-surface-token="--topology-selected-relation-next-action-surface"
         data-next-action-border-token="--topology-selected-relation-next-action-border"
         data-next-action-accent-text-token="--topology-selected-relation-accent-text"
+        data-command-cue-contract="visible-compact-primary-command-cue"
+        data-command-cue-action={primaryCopyAction}
+        data-command-cue-visible-label={t('primaryCopyBadge')}
+        data-command-cue-visible-action={primaryCopyActionVisibleLabel}
         className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-next-action-border)] bg-[color:var(--topology-selected-relation-next-action-surface)] p-1"
       >
-        <div className="sr-only">
-          <div className="min-w-0 truncate font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.12em] text-[color:var(--topology-selected-relation-accent-text)]">
+        <div
+          data-command-cue-visible="true"
+          className="mb-0.5 flex min-w-0 items-center justify-between gap-1.5"
+        >
+          <div className="min-w-0 truncate font-mono text-[7px] uppercase leading-3 tracking-normal text-[color:var(--topology-selected-relation-accent-text)]">
             {t('primaryCopyBadge')}
           </div>
-          <div className="shrink-0 font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+          <div className="shrink-0 truncate font-mono text-[7px] uppercase leading-3 tracking-normal text-[color:var(--color-text-quaternary)]">
             {primaryCopyActionVisibleLabel}
           </div>
         </div>

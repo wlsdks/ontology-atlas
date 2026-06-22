@@ -2397,6 +2397,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationRouteValueFontSizeTokenValue: "10px",
       topologySelectedRelationPayloadFontSizeTokenValue: "10px",
       topologySelectedRelationCardMotionSyncState: "settled-with-camera",
+      topologySelectedRelationCommandCueContract:
+        "visible-compact-primary-command-cue",
+      topologySelectedRelationCommandCueVisibleText: "Next step · Explain",
+      topologySelectedRelationCommandCueAction: "explain_relation",
       topologySelectedRelationProofBandWidth: 236,
       topologySelectedRelationProofBandHeight: 36,
       topologySelectedRelationContractTop: 188,
@@ -11348,6 +11352,11 @@ test("selected relation card density contract keeps the relation inspector compa
     topologySelectedRelationCopyActionRailHeight: 29,
     topologySelectedRelationCopyPayloadHeight: 42,
     topologySelectedRelationAgentRouteHeight: 29,
+    topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
+    topologySelectedRelationCommandCueContract:
+      "visible-compact-primary-command-cue",
+    topologySelectedRelationCommandCueVisibleText: "Next step · Explain",
+    topologySelectedRelationCommandCueAction: "explain_relation",
   };
 
   assert.equal(validateSelectedRelationCardDensityContract(baseMarkers, 1512), null);
@@ -11468,6 +11477,36 @@ test("selected relation card density contract keeps the relation inspector compa
       1512,
     ),
     /oversized Relief selected relation agent route rail/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCommandCueContract: "sr-only-command",
+      },
+      1512,
+    ),
+    /command cue contract/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCommandCueVisibleText: "",
+      },
+      1512,
+    ),
+    /command cue text/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCommandCueAction: "relation_check",
+      },
+      1512,
+    ),
+    /command cue action/,
   );
 });
 
