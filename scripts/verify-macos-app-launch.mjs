@@ -2100,6 +2100,21 @@ export function validateSelectedRelationContextSilhouetteMarkers(markers) {
   ) {
     return `WebView reported noisy Relief selected relation context (${hiddenCount} hidden / ${lowerPriorityVisibleDimmedCount} lower-priority visible / ${visibleOrientationAnchorCount} anchors)`;
   }
+  if (
+    markers?.topologySelectedRelationHiddenContextInteractionContract !==
+    "hidden-context-is-not-pointer-focus-or-a11y-target"
+  ) {
+    return `WebView reported malformed Relief selected relation hidden context interaction contract (${markers?.topologySelectedRelationHiddenContextInteractionContract || "missing"})`;
+  }
+  const hiddenContextInteractiveCount = Number(
+    markers?.topologySelectedRelationHiddenContextInteractiveCount || 0,
+  );
+  if (
+    !Number.isFinite(hiddenContextInteractiveCount) ||
+    hiddenContextInteractiveCount !== 0
+  ) {
+    return `WebView reported interactive hidden Relief selected relation context (${hiddenContextInteractiveCount || "missing"})`;
+  }
   return null;
 }
 

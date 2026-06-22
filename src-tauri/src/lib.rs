@@ -2459,6 +2459,30 @@ pub fn run() {
                                     !card.selectedRelationEndpoint &&
                                     card.tier <= 1
                                 ).length;
+                              const topologySelectedRelationHiddenContextCards = Array.from(
+                                document.querySelectorAll('[data-skeleton-card][data-dim-opacity-role="suppressed-selected-relation-context"]')
+                              ).map((card) => {
+                                const style = getComputedStyle(card);
+                                return {
+                                  contract:
+                                    card.getAttribute("data-selected-relation-hidden-interaction-contract") || "",
+                                  ariaHidden: card.getAttribute("aria-hidden") || "",
+                                  tabIndex: card.getAttribute("tabindex") || "",
+                                  pointerEvents: style.pointerEvents,
+                                  visibility: style.visibility
+                                };
+                              });
+                              const topologySelectedRelationHiddenContextInteractionContract =
+                                topologySelectedRelationHiddenContextCards[0]?.contract || "";
+                              const topologySelectedRelationHiddenContextInteractiveCount =
+                                topologySelectedRelationHiddenContextCards.filter(
+                                  (card) =>
+                                    card.contract !== "hidden-context-is-not-pointer-focus-or-a11y-target" ||
+                                    card.ariaHidden !== "true" ||
+                                    card.tabIndex !== "-1" ||
+                                    card.pointerEvents !== "none" ||
+                                    card.visibility !== "hidden"
+                                ).length;
                               const topologyRawCards = Array.from(document.querySelectorAll("[data-skeleton-card]"))
                                 .slice(0, 5)
                                 .map((card) => {
@@ -4325,6 +4349,8 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-selected-relation-context-silhouette-hidden-count") || "0"),
                                   topologySelectedRelationLowerPriorityVisibleDimmedCount,
                                   topologySelectedRelationVisibleOrientationAnchorCount,
+                                  topologySelectedRelationHiddenContextInteractionContract,
+                                  topologySelectedRelationHiddenContextInteractiveCount,
                                   topologySelectedRelationVerifyAttempted:
                                     topologySelectedRelationVerification?.attempted === true,
                                   topologySelectedRelationVerifyReason:

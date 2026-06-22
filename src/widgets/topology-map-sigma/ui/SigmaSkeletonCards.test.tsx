@@ -4314,8 +4314,18 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-dim-opacity-role",
           "suppressed-selected-relation-context",
         );
+        expect(lowerPriorityCard).toHaveAttribute(
+          "data-selected-relation-hidden-interaction-contract",
+          "hidden-context-is-not-pointer-focus-or-a11y-target",
+        );
+        expect(lowerPriorityCard).toHaveAttribute("aria-hidden", "true");
+        expect(lowerPriorityCard).toHaveAttribute("tabindex", "-1");
         expect(lowerPriorityCard).toHaveAttribute("data-surface-hidden", "true");
-        expect(lowerPriorityCard).toHaveStyle({ opacity: "0", pointerEvents: "none" });
+        expect(lowerPriorityCard).toHaveStyle({
+          opacity: "0",
+          pointerEvents: "none",
+          visibility: "hidden",
+        });
       });
     } finally {
       rectSpy.mockRestore();

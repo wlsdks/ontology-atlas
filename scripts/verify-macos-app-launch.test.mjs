@@ -1019,6 +1019,9 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologySelectedRelationContextSilhouetteHiddenCount: 8,
         topologySelectedRelationLowerPriorityVisibleDimmedCount: 0,
         topologySelectedRelationVisibleOrientationAnchorCount: 3,
+        topologySelectedRelationHiddenContextInteractionContract:
+          "hidden-context-is-not-pointer-focus-or-a11y-target",
+        topologySelectedRelationHiddenContextInteractiveCount: 0,
         topologyRelationLabelGeometryContract: "frame-positioned-hit-targets",
         topologyRelationLabelGeometrySource: "after-render-layout-pass",
         topologyRelationLabelGeometryExpectedCount: 1,
@@ -2462,6 +2465,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationContextSilhouetteHiddenCount: 10,
       topologySelectedRelationLowerPriorityVisibleDimmedCount: 0,
       topologySelectedRelationVisibleOrientationAnchorCount: 5,
+      topologySelectedRelationHiddenContextInteractionContract:
+        "hidden-context-is-not-pointer-focus-or-a11y-target",
+      topologySelectedRelationHiddenContextInteractiveCount: 0,
       topologyDragNodePopoverExpandClicked: true,
       topologyNodePopoverVisible: true,
       topologyNodePopoverSurfaceRole: "active-node-inspector",
@@ -2777,6 +2783,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationContextSilhouetteHiddenCount: 10,
       topologySelectedRelationLowerPriorityVisibleDimmedCount: 0,
       topologySelectedRelationVisibleOrientationAnchorCount: 5,
+      topologySelectedRelationHiddenContextInteractionContract:
+        "hidden-context-is-not-pointer-focus-or-a11y-target",
+      topologySelectedRelationHiddenContextInteractiveCount: 0,
       topologySelectedRelationAgentGateText: "Agent gate handoff ready",
       topologySelectedRelationAgentDecisionText:
         "Include this relation in agent handoff; it has typed evidence.",
@@ -11298,6 +11307,9 @@ test("selected relation context silhouette markers suppress lower-priority backg
     topologySelectedRelationContextSilhouetteHiddenCount: 6,
     topologySelectedRelationLowerPriorityVisibleDimmedCount: 0,
     topologySelectedRelationVisibleOrientationAnchorCount: 3,
+    topologySelectedRelationHiddenContextInteractionContract:
+      "hidden-context-is-not-pointer-focus-or-a11y-target",
+    topologySelectedRelationHiddenContextInteractiveCount: 0,
   };
 
   assert.equal(validateSelectedRelationContextSilhouetteMarkers(baseMarkers), null);
@@ -11321,6 +11333,21 @@ test("selected relation context silhouette markers suppress lower-priority backg
       topologySelectedRelationLowerPriorityVisibleDimmedCount: 2,
     }),
     /noisy Relief selected relation context/,
+  );
+  assert.match(
+    validateSelectedRelationContextSilhouetteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationHiddenContextInteractionContract:
+        "hidden-context-is-only-transparent",
+    }),
+    /hidden context interaction contract/,
+  );
+  assert.match(
+    validateSelectedRelationContextSilhouetteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationHiddenContextInteractiveCount: 1,
+    }),
+    /interactive hidden Relief selected relation context/,
   );
 });
 

@@ -1317,6 +1317,9 @@ function showSkeletonCard(
     delete el.dataset.surfaceHidden;
   }
   delete el.dataset.surfaceHiddenReason;
+  delete el.dataset.selectedRelationHiddenInteractionContract;
+  el.removeAttribute('aria-hidden');
+  el.removeAttribute('tabindex');
   if (stats) {
     setSkeletonStyleValue(el, 'opacity', opacity, stats);
     setSkeletonStyleValue(el, 'visibility', 'visible', stats);
@@ -1336,6 +1339,9 @@ function showSelectedRelationEndpointCard(
     delete el.dataset.surfaceHidden;
   }
   delete el.dataset.surfaceHiddenReason;
+  delete el.dataset.selectedRelationHiddenInteractionContract;
+  el.removeAttribute('aria-hidden');
+  el.removeAttribute('tabindex');
   if (
     el.style.getPropertyValue('opacity') !== '1' ||
     el.style.getPropertyPriority('opacity') !== 'important'
@@ -1386,6 +1392,8 @@ function hideSkeletonCard(el: HTMLElement, stats?: SkeletonDomWriteStats) {
     el.dataset.dimOpacityRole = 'hidden-fixed-surface-collision';
     el.dataset.dimOpacityToken = 'none';
   }
+  el.setAttribute('aria-hidden', 'true');
+  el.setAttribute('tabindex', '-1');
   if (stats) {
     setSkeletonStyleValue(el, 'opacity', '0', stats);
     setSkeletonStyleValue(el, 'visibility', 'hidden', stats);
@@ -3933,6 +3941,8 @@ export function SigmaSkeletonCards({
       ) {
         el.dataset.dimOpacityRole = 'suppressed-selected-relation-context';
         el.dataset.dimOpacityToken = 'none';
+        el.dataset.selectedRelationHiddenInteractionContract =
+          'hidden-context-is-not-pointer-focus-or-a11y-target';
         el.dataset.surfaceHiddenReason = 'selected-relation-context-suppression';
         hideSkeletonCard(el, domWriteStats);
         selectedRelationContextSilhouetteHiddenCount += 1;
