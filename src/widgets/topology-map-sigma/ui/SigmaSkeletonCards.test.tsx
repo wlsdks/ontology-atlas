@@ -3094,6 +3094,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "selected-relation-shows-count-and-evidence",
     );
     expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains ×1 · S2");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-hit-width-policy",
+      "preserve-hidden-badge-width",
+    );
+    expect(Number(labelHit?.getAttribute("data-relation-label-hit-width-px"))).toBeGreaterThan(0);
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-visible-badge-owner",
+      "selected-overlay",
+    );
+    expect(visibleBadge).toHaveClass("hidden");
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-selected-surface-token",
       "--topology-relation-label-selected-surface",

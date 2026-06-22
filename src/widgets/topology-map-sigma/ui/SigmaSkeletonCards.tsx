@@ -6173,6 +6173,10 @@ export function SigmaSkeletonCards({
                 ? 'button-keeps-click-handoff-overlay-owns-visible-badge'
                 : 'button-owns-click-and-visible-badge'
             }
+            data-relation-label-hit-width-policy={
+              selected ? 'preserve-hidden-badge-width' : undefined
+            }
+            data-relation-label-hit-width-px={selected ? visibleBadgeWidth : undefined}
             data-relation-label-token-contract="hit-target-and-visible-badge-share-relation-label-tokens"
             data-relation-label-pointer-contract="html-hit-target-click-selects-relation"
             data-relation-label-surface-token="--topology-relation-label-surface"
@@ -6210,6 +6214,7 @@ export function SigmaSkeletonCards({
                 : 'var(--topology-relation-label-text)',
               opacity: selected ? 1 : undefined,
               pointerEvents: activeDragCluster !== null ? 'none' : 'auto',
+              width: selected ? visibleBadgeWidth : undefined,
             }}
             onClick={(event) => {
               event.preventDefault();
@@ -6248,6 +6253,9 @@ export function SigmaSkeletonCards({
             <span
               aria-hidden="true"
               data-relation-label-visible-badge="true"
+              data-relation-label-visible-badge-owner={
+                selected ? 'selected-overlay' : 'label-button'
+              }
               data-relation-label-surface-token="--topology-relation-label-surface"
               data-relation-label-border-token="--topology-relation-label-border"
               data-relation-label-shadow-token="--topology-relation-label-shadow"
@@ -6275,7 +6283,11 @@ export function SigmaSkeletonCards({
               data-relation-direction-surface-token="--topology-relation-direction-surface"
               data-relation-direction-border-token="--topology-relation-direction-border"
               data-relation-direction-text-token="--topology-relation-direction-text"
-              className="inline-flex h-[var(--topology-relation-label-badge-height)] max-w-full items-center justify-center gap-1.5 overflow-hidden rounded-[var(--topology-relation-label-radius)] border px-[var(--topology-relation-label-padding-x)] shadow-[var(--topology-relation-label-shadow)]"
+              className={
+                selected
+                  ? 'hidden'
+                  : 'inline-flex h-[var(--topology-relation-label-badge-height)] max-w-full items-center justify-center gap-1.5 overflow-hidden rounded-[var(--topology-relation-label-radius)] border px-[var(--topology-relation-label-padding-x)] shadow-[var(--topology-relation-label-shadow)]'
+              }
               style={{
                 backgroundColor: selected
                   ? 'var(--topology-relation-label-selected-surface)'
