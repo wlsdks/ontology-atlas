@@ -5344,6 +5344,12 @@ export function SigmaSkeletonCards({
               setSkeletonStyleValue(overlay, 'width', labelButton.style.width, domWriteStats);
               setSkeletonStyleValue(overlay, 'height', labelButton.style.height, domWriteStats);
               overlay.dataset.relationLabelCompact = labelButton.dataset.relationLabelCompact;
+              overlay.dataset.relationLabelViewportClampContract =
+                labelButton.dataset.relationLabelViewportClampContract ?? '';
+              overlay.dataset.relationLabelViewportClampSide =
+                labelButton.dataset.relationLabelViewportClampSide ?? '';
+              overlay.dataset.relationLabelViewportInset =
+                labelButton.dataset.relationLabelViewportInset ?? '';
               overlay.style.setProperty('opacity', '1', 'important');
               overlay.style.visibility = 'visible';
             }

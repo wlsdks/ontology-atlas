@@ -3314,6 +3314,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "explain_relation",
     );
     expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-viewport-clamp-contract",
+      expect.stringMatching(/centered-within-viewport|compacted-to-viewport-edge/),
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-viewport-clamp-side",
+      expect.stringMatching(/left|right|none/),
+    );
+    expect(selectedOverlay).toHaveAttribute(
       "data-selected-relation-attention-contract",
       "selected-overlay-wins-over-dimmed-context",
     );
