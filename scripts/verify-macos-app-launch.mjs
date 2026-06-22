@@ -1831,6 +1831,9 @@ export function validateSelectedRelationEndpointRouteMarkers(markers) {
 }
 
 export function validateSelectedRelationEndpointVisibilityMarkers(markers) {
+  if (markers?.topologyCardsReady !== true) {
+    return "WebView Relief selected relation endpoint proof ran while the skeleton card layer was not ready";
+  }
   if (
     markers?.topologySelectedRelationEndpointVisibilityContract !==
     "selected-relation-keeps-source-target-readable"

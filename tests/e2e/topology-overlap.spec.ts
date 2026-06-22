@@ -3374,12 +3374,7 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
 
   const relationLabel = page.locator("[data-relation-label-button]").first();
   await expect(relationLabel).toHaveCount(1, { timeout: 20_000 });
-  await relationLabel.evaluate((element) => {
-    if (!(element instanceof HTMLElement)) {
-      throw new Error("relation label hit target should be an HTML button");
-    }
-    element.click();
-  });
+  await relationLabel.click();
 
   const selectedEdgeCard = page.getByTestId("sigma-selected-edge-card");
   await expect(selectedEdgeCard).toBeVisible();
@@ -3387,6 +3382,26 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
     "data-selected-relation-route",
     "source>target>type>action",
   );
+  const skeletonCards = page.getByTestId("sigma-skeleton-cards");
+  await expect(skeletonCards).toHaveAttribute("data-skeleton-cards-ready", "true", {
+    timeout: 20_000,
+  });
+  const skeletonLayerVisible = await skeletonCards.evaluate((layer) => {
+    const style = window.getComputedStyle(layer);
+    return {
+      opacity: Number(style.opacity || "1"),
+      display: style.display,
+      visibility: style.visibility,
+    };
+  });
+  expect(
+    skeletonLayerVisible,
+    "selected relation must keep the skeleton card layer visible, not just individual cards",
+  ).toMatchObject({
+    display: "block",
+    opacity: 1,
+    visibility: "visible",
+  });
   const source = await selectedEdgeCard.getAttribute("data-selected-relation-source");
   const target = await selectedEdgeCard.getAttribute("data-selected-relation-target");
   if (!source || !target) {

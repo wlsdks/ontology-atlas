@@ -889,6 +889,7 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     {
       href: "tauri://localhost/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
       markers: {
+        topologyCardsReady: true,
         topologyRelationLabelHandoffContract: "label-level-mcp-cli-fallback",
         topologySelectedRelationLabelHandoffState: "ready",
         topologySelectedRelationLabelHandoffGate: "handoff-ready",
@@ -8066,7 +8067,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationAgentDecisionTop: 183.22,
         topologySelectedRelationAgentDecisionWidth: 126.51,
         topologySelectedRelationAgentDecisionHeight: 35.28,
-        topologyCardsReady: false,
+        topologyCardsReady: true,
         topologyCardCount: 1,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
@@ -10503,6 +10504,7 @@ test("selected relation endpoint route markers prove visible source and target n
 
 test("selected relation endpoint visibility markers prove source and target cards stay readable", () => {
   const baseMarkers = {
+    topologyCardsReady: true,
     topologySelectedRelationCardSource: "domain:views",
     topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
     topologySelectedRelationEndpointVisibilityContract:
@@ -10527,6 +10529,13 @@ test("selected relation endpoint visibility markers prove source and target card
   };
 
   assert.equal(validateSelectedRelationEndpointVisibilityMarkers(baseMarkers), null);
+  assert.match(
+    validateSelectedRelationEndpointVisibilityMarkers({
+      ...baseMarkers,
+      topologyCardsReady: false,
+    }),
+    /skeleton card layer was not ready/,
+  );
   assert.match(
     validateSelectedRelationEndpointVisibilityMarkers({
       ...baseMarkers,

@@ -4767,21 +4767,30 @@ export function SigmaSkeletonCards({
     >();
     let connectorCardRectReadCount = 0;
     let connectorCardRectHitCount = 0;
+    const isFiniteConnectorRect = (rect: ConnectorRect) =>
+      Number.isFinite(rect.left) &&
+      Number.isFinite(rect.top) &&
+      Number.isFinite(rect.right) &&
+      Number.isFinite(rect.bottom);
     const connectorCardRect = (el: HTMLElement | null | undefined) => {
       if (!el) return null;
       const cached = connectorCardRectCache.get(el);
-      if (cached) {
+      if (cached && isFiniteConnectorRect(cached)) {
         connectorCardRectHitCount += 1;
         return cached;
       }
       const frameRect = cardPlacementFrameRectCache.get(el);
-      if (frameRect) {
+      if (frameRect && isFiniteConnectorRect(frameRect)) {
         connectorCardRectHitCount += 1;
         connectorCardRectCache.set(el, frameRect);
         return frameRect;
       }
       const visibleCached = visibleCardRectCache.get(el);
-      if (visibleCached?.visible && visibleCached.rect) {
+      if (
+        visibleCached?.visible &&
+        visibleCached.rect &&
+        isFiniteConnectorRect(visibleCached.rect)
+      ) {
         connectorCardRectHitCount += 1;
         connectorCardRectCache.set(el, visibleCached.rect);
         return visibleCached.rect;
@@ -5749,9 +5758,9 @@ export function SigmaSkeletonCards({
   useEffect(() => {
     const container = containerRef.current;
     if (!container || selectedRelationEdgeId === null) return;
-    container.dataset.skeletonCardsReady = 'false';
+    container.dataset.skeletonCardsReady = 'true';
     container.dataset.selectedBlockingSurfaceSettleContract =
-      'ready-after-selected-relation-surface-reposition';
+      'selected-relation-repositions-with-readable-card-layer';
     const frame = window.requestAnimationFrame(() => {
       for (const overlay of container.querySelectorAll<HTMLElement>(
         '[data-selected-relation-overlay][data-selected-relation-halo="true"]',
@@ -5785,9 +5794,9 @@ export function SigmaSkeletonCards({
     const container = containerRef.current;
     if (!container || selectedSlug === null || selectedRelationEdgeId !== null) return;
     if (!isSelectedNodePopoverMounted()) return;
-    container.dataset.skeletonCardsReady = 'false';
+    container.dataset.skeletonCardsReady = 'true';
     container.dataset.selectedBlockingSurfaceSettleContract =
-      'ready-after-selected-popover-surface-reposition';
+      'selected-popover-repositions-with-readable-card-layer';
     const frame = window.requestAnimationFrame(() => {
       container.dataset.selectedFocusSurfaceRepositionContract =
         'invalidate-fixed-surfaces-after-selected-popover-mount';
