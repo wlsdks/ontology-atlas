@@ -913,6 +913,7 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyAgentCurrentSurfaceRole: "active-relation-inspector",
         topologyAgentCurrentSurfaceRoute:
           "domain:ai-agent-partner>capability:agent-config-onboarding",
+        topologySelectedNodeId: "",
         topologySelectedRelationLabelHandoffState: "ready",
         topologySelectedRelationLabelHandoffGate: "handoff-ready",
         topologySelectedRelationLabelHandoffPrimaryAction: "explain_relation",
@@ -1043,6 +1044,18 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     { capturedAt: "2026-06-17T12:00:00.000Z" },
   );
 
+  assert.deepEqual(evidence.agentCurrentSurfaceProof, {
+    proof: "topology-agent-current-surface",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    attentionWinner: "active-relation-inspector",
+    currentSurface: "selected-relation",
+    currentSurfaceRole: "active-relation-inspector",
+    currentSurfaceRoute: "domain:ai-agent-partner>capability:agent-config-onboarding",
+    selectedNodeId: null,
+    rootSelectedNodeId: null,
+    agentNextAction: "read-selected-relation-surface-before-map-context",
+  });
   assert.deepEqual(evidence.relationLabelHandoffProof, {
     proof: "topology-relation-label-handoff",
     status: "proved",
@@ -1324,6 +1337,18 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
     { capturedAt: "2026-06-20T12:00:00.000Z" },
   );
 
+  assert.deepEqual(evidence.agentCurrentSurfaceProof, {
+    proof: "topology-agent-current-surface",
+    status: "proved",
+    route: "/en/topology/?p=domain%3Aviews&mode=focus",
+    attentionWinner: "focus-state",
+    currentSurface: "selected-node",
+    currentSurfaceRole: "active-node-inspector",
+    currentSurfaceRoute: "domain:views",
+    selectedNodeId: "domain:views",
+    rootSelectedNodeId: "domain:views",
+    agentNextAction: "read-selected-node-surface-before-map-context",
+  });
   assert.deepEqual(evidence.selectedFocusDimProof, {
     proof: "topology-selected-focus-dim-context",
     status: "proved",

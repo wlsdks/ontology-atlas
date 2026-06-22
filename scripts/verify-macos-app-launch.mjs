@@ -6880,6 +6880,11 @@ function markerNumber(markers, key) {
   return Number.isFinite(value) ? value : null;
 }
 
+function markerText(markers, key) {
+  const value = markers?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 const TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS = 3;
 
 function extractBackdropAlpha(background) {
@@ -6964,6 +6969,32 @@ export function buildWebviewEvidencePayload(
 ) {
   const markers = payload?.markers ?? {};
   const visualEvidenceReference = normalizeVisualEvidenceReference(visualEvidence, visualEvidencePath);
+  const currentSurface = markerText(markers, "topologyAgentCurrentSurface");
+  const currentSurfaceAttentionWinner =
+    markerText(markers, "topologyAttentionWinner") ??
+    markerText(markers, "topologyRootAttentionWinner");
+  const agentCurrentSurfaceProof = currentSurface
+    ? {
+      proof: "topology-agent-current-surface",
+      status:
+        currentSurfaceAttentionWinner && markerText(markers, "topologyAgentCurrentSurfaceRole")
+          ? "proved"
+          : "incomplete",
+      route: evidenceRoute(payload?.href),
+      attentionWinner: currentSurfaceAttentionWinner,
+      currentSurface,
+      currentSurfaceRole: markerText(markers, "topologyAgentCurrentSurfaceRole"),
+      currentSurfaceRoute: markerText(markers, "topologyAgentCurrentSurfaceRoute"),
+      selectedNodeId: markerText(markers, "topologySelectedNodeId"),
+      rootSelectedNodeId: markerText(markers, "topologyRootSelectedNodeId"),
+      agentNextAction:
+        currentSurface === "selected-relation"
+          ? "read-selected-relation-surface-before-map-context"
+          : currentSurface === "selected-node"
+            ? "read-selected-node-surface-before-map-context"
+            : "read-agent-current-surface-before-map-context",
+    }
+    : null;
   const composerBlockingProof = markers.topologyCreateNodeOpen === true
     ? {
       proof: "topology-add-concept-composer-blocking",
@@ -7606,6 +7637,7 @@ export function buildWebviewEvidencePayload(
   return {
     capturedAt,
     payload,
+    agentCurrentSurfaceProof,
     composerBlockingProof,
     relationLabelHandoffProof,
     relationEndpointVisibilityProof,
