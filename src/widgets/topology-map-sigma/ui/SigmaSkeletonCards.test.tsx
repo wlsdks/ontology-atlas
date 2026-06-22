@@ -3738,12 +3738,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         expect(layer).toHaveAttribute("data-dim-opacity-contract", "readable-context-geography");
         expect(layer).toHaveAttribute("data-dim-anchor-opacity", "0.26");
         expect(layer).toHaveAttribute("data-dim-chip-opacity", "0.08");
+        expect(layer).toHaveAttribute("data-dim-context-opacity", "0.08");
         expect(layer).toHaveAttribute(
           "data-dim-anchor-opacity-token",
           "--topology-map-dim-anchor-opacity",
         );
         expect(layer).toHaveAttribute(
           "data-dim-chip-opacity-token",
+          "--topology-map-dim-context-opacity",
+        );
+        expect(layer).toHaveAttribute(
+          "data-dim-context-opacity-token",
           "--topology-map-dim-context-opacity",
         );
         expect(projectCard).toHaveAttribute(

@@ -2674,6 +2674,14 @@ for (const viewport of VIEWPORTS) {
       "data-topology-selected-node-id",
       "domain:views",
     );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-dim-context-opacity",
+      "0.08",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-dim-context-opacity-token",
+      "--topology-map-dim-context-opacity",
+    );
     await expectCompactMeaningContract(page);
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
       "data-camera-motion-target-policy",

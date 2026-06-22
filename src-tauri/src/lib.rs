@@ -2692,6 +2692,8 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-dim-anchor-opacity") || "0"),
                                   topologyDimChipOpacity:
                                     Number(skeletonCardsLayer?.getAttribute("data-dim-chip-opacity") || "0"),
+                                  topologyDimContextOpacity:
+                                    Number(skeletonCardsLayer?.getAttribute("data-dim-context-opacity") || "0"),
                                   topologyDimAnchorVisibleCount:
                                     topologyDimAnchorCards.length,
                                   topologyDimChipVisibleCount:

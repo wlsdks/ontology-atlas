@@ -6008,8 +6008,10 @@ export function SigmaSkeletonCards({
       data-click-focus-relationship-context-source="none"
       data-dim-anchor-opacity={DIM_ANCHOR_OPACITY}
       data-dim-chip-opacity={DIM_CHIP_OPACITY}
+      data-dim-context-opacity={DIM_CHIP_OPACITY}
       data-dim-anchor-opacity-token={DIM_ANCHOR_OPACITY_TOKEN}
       data-dim-chip-opacity-token={DIM_CHIP_OPACITY_TOKEN}
+      data-dim-context-opacity-token={DIM_CHIP_OPACITY_TOKEN}
       data-dim-opacity-contract="readable-context-geography"
       data-overview-context-opacity-contract="core-full-support-quiet"
       data-overview-context-core-opacity={OVERVIEW_CONTEXT_OPACITY[1]}

@@ -7260,6 +7260,7 @@ export function buildWebviewEvidencePayload(
           markers.topologyDimOpacityContract === TOPOLOGY_DIM_OPACITY_CONTRACT &&
           markerNumber(markers, "topologyDimAnchorOpacity") >= TOPOLOGY_DIM_ANCHOR_MIN_OPACITY &&
           markerNumber(markers, "topologyDimChipOpacity") >= TOPOLOGY_DIM_CONTEXT_MIN_OPACITY &&
+          markerNumber(markers, "topologyDimContextOpacity") >= TOPOLOGY_DIM_CONTEXT_MIN_OPACITY &&
           (
             markerNumber(markers, "topologyDimAnchorVisibleCount") === 0 ||
             markerNumber(markers, "topologyDimAnchorMinOpacity") >= TOPOLOGY_DIM_ANCHOR_MIN_OPACITY
@@ -7331,6 +7332,7 @@ export function buildWebviewEvidencePayload(
           contract: markers.topologyDimOpacityContract ?? null,
           anchorOpacity: markerNumber(markers, "topologyDimAnchorOpacity"),
           contextOpacity: markerNumber(markers, "topologyDimChipOpacity"),
+          contextOpacityAlias: markerNumber(markers, "topologyDimContextOpacity"),
           anchorVisibleCount: markerNumber(markers, "topologyDimAnchorVisibleCount"),
           contextVisibleCount: markerNumber(markers, "topologyDimChipVisibleCount"),
           anchorMinOpacity: markerNumber(markers, "topologyDimAnchorMinOpacity"),
