@@ -5429,9 +5429,21 @@ export function SigmaSkeletonCards({
         container.dataset.visibleCardCount = String(reportedVisibleCardCount);
         container.dataset.visibilityCountSource = `${visibilityCountSource}-final-recount`;
       }
+      const pathCandidateEls = pathWorkflowActive
+        ? orderedEls.filter((el) => el.dataset.pathRole === 'candidate')
+        : [];
+      const pathCandidateVisibleCount = pathCandidateEls.reduce(
+        (count, el) => count + (isSkeletonCardVisibleFromFrameState(el) ? 1 : 0),
+        0,
+      );
+      container.dataset.pathCandidateCountContract = pathWorkflowActive
+        ? 'candidate-only'
+        : 'inactive';
+      container.dataset.pathCandidateTotalCount = String(pathCandidateEls.length);
+      container.dataset.pathCandidateVisibleCount = String(pathCandidateVisibleCount);
       const nextVisibilityStats = {
-        visible: reportedVisibleCardCount,
-        total: orderedEls.length,
+        visible: pathWorkflowActive ? pathCandidateVisibleCount : reportedVisibleCardCount,
+        total: pathWorkflowActive ? pathCandidateEls.length : orderedEls.length,
       };
       emitVisibilityStats(container, nextVisibilityStats, {
         debounceStable:

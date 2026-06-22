@@ -2521,6 +2521,33 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("Path visibility stats 는 이미 선택된 source 를 candidate coverage 에 포함하지 않는다", async () => {
+    const onVisibilityChange = vi.fn();
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+        onVisibilityChange={onVisibilityChange}
+        pathWorkflowActive
+        pathSelection={{ sourceSlug: "project:p", targetSlug: null }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onVisibilityChange).toHaveBeenCalled();
+    });
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    expect(layer).toHaveAttribute("data-path-candidate-count-contract", "candidate-only");
+    expect(layer).toHaveAttribute("data-path-candidate-total-count", "1");
+    expect(layer).toHaveAttribute("data-path-candidate-visible-count", "0");
+    expect(onVisibilityChange).toHaveBeenLastCalledWith({ visible: 0, total: 1 });
+  });
+
   it("overview 커넥터 클릭이 relation selection data 를 전달한다", () => {
     const onRelationSelect = vi.fn();
     const graph = makeGraph();
