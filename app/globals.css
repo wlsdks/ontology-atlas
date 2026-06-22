@@ -283,7 +283,7 @@
     --topology-panel-read-layer-z-index: 30;
     --topology-panel-primary-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
     --topology-panel-support-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
-    --topology-selected-relation-card-width: clamp(256px, 16vw, 276px);
+    --topology-selected-relation-card-width: clamp(256px, 17vw, 352px);
     --topology-selected-relation-card-max-height: min(336px, calc(100dvh - 7rem));
     --topology-selected-relation-card-inset: clamp(16px, 2vw, 32px);
     --topology-selected-relation-card-top: 104px;

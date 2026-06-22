@@ -10658,6 +10658,30 @@ test("selected relation card density contract keeps the relation inspector compa
 
   assert.equal(validateSelectedRelationCardDensityContract(baseMarkers, 1512), null);
   assert.equal(validateSelectedRelationCardDensityContract(baseMarkers, 1920), null);
+  assert.equal(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCardWidth: 352,
+      },
+      2560,
+    ),
+    null,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCardWidth: 352,
+      },
+      1512,
+    ),
+    /oversized compact Relief selected relation card/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(baseMarkers, 2560),
+    /cramped wide Relief selected relation card/,
+  );
   assert.match(
     validateSelectedRelationCardDensityContract(
       {

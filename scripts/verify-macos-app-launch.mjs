@@ -1705,8 +1705,13 @@ export function validateSelectedRelationCardDensityContract(markers, width) {
 
   const cardWidth = Number(markers?.topologySelectedRelationCardWidth || 0);
   const cardHeight = Number(markers?.topologySelectedRelationCardHeight || 0);
-  if (cardWidth > 288 || cardHeight > 336) {
+  const selectedRelationCardMaxWidth =
+    Number(width || 0) >= 2400 ? 384 : Number(width || 0) >= 1920 ? 360 : 288;
+  if (cardWidth > selectedRelationCardMaxWidth || cardHeight > 336) {
     return `WebView reported oversized compact Relief selected relation card (${cardWidth || "missing"}x${cardHeight || "missing"})`;
+  }
+  if (Number(width || 0) >= 2400 && cardWidth < 336) {
+    return `WebView reported cramped wide Relief selected relation card (${cardWidth || "missing"}px)`;
   }
 
   const proofBandHeight = Number(markers?.topologySelectedRelationProofBandHeight || 0);
