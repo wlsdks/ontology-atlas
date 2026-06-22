@@ -473,6 +473,14 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'source>target>type>action',
     );
     expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-fact-route',
+      'fact>evidence>gate>action',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-handoff-route-contract',
+      'selected-relation-card-carries-fact-route',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
       'data-selected-relation-primary-action',
       'explain_relation',
     );
