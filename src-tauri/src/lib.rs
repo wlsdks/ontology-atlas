@@ -1256,6 +1256,19 @@ pub fn run() {
                                       rect.height > 0
                                     );
                                   }).length;
+                              const topologyFocusRelationLabelHit =
+                                document.querySelector('button[data-relation-label-hit="true"]');
+                              const topologyFocusRelationLabelVisibleText =
+                                topologyFocusRelationLabelHit?.getAttribute("data-relation-label-visible-text") ||
+                                "";
+                              const topologyFocusRelationLabelTypeLabel =
+                                topologyFocusRelationLabelHit?.getAttribute("data-relation-type-label") ||
+                                "";
+                              const topologyFocusRelationLabelCount =
+                                Number(topologyFocusRelationLabelHit?.getAttribute("data-relation-label-count") || "0");
+                              const topologyFocusRelationLabelVisibleCountPolicy =
+                                topologyFocusRelationLabelHit?.getAttribute("data-relation-label-visible-count-policy") ||
+                                "";
                               const topologyFocusClusterTypedConnectorCount =
                                 topologyFocusClusterActive &&
                                 skeletonCardsLayer?.getAttribute("data-focus-relation-label-density-contract") === "click-focus-uses-ego-label-only"
@@ -2752,6 +2765,10 @@ pub fn run() {
                                   topologyFocusClusterRelationLabelCount,
                                   topologyFocusClusterConnectorMarkerCount,
                                   topologyFocusClusterRelationLabelMarkerCount,
+                                  topologyFocusRelationLabelVisibleText,
+                                  topologyFocusRelationLabelTypeLabel,
+                                  topologyFocusRelationLabelCount,
+                                  topologyFocusRelationLabelVisibleCountPolicy,
                                   topologyUiScale,
                                   topologyUiScaleWritePolicy:
                                     skeletonCardsLayer?.getAttribute("data-topology-ui-scale-write-policy") || "",

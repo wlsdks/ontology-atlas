@@ -2674,6 +2674,23 @@ for (const viewport of VIEWPORTS) {
       "data-topology-selected-node-id",
       "domain:views",
     );
+    const aggregateRelationLabel = page.locator(
+      'button[data-relation-label-hit="true"][data-relation-label-source="domain:views"]',
+    );
+    await expect(aggregateRelationLabel).toHaveCount(1);
+    await expect(aggregateRelationLabel).toHaveAttribute("data-relation-label-count", "6");
+    await expect(aggregateRelationLabel).toHaveAttribute(
+      "data-relation-type-label",
+      "contains ×6",
+    );
+    await expect(aggregateRelationLabel).toHaveAttribute(
+      "data-relation-label-visible-text",
+      "contains 6",
+    );
+    await expect(aggregateRelationLabel).toHaveAttribute(
+      "data-relation-label-visible-count-policy",
+      "relation-label-shows-count",
+    );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-dim-context-opacity",
       "0.08",

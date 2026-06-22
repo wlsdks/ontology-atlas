@@ -6363,7 +6363,7 @@ export function SigmaSkeletonCards({
           (selectedSlug === label.edgeSource || selectedSlug === label.edgeTarget);
         const relationLabelVisibleCountPolicy = selected
           ? 'selected-relation-shows-count-and-evidence'
-          : selectedCardOwnsRelationSummary
+          : selectedCardOwnsRelationSummary && label.count <= 1
             ? 'selected-card-summary-owns-count'
             : 'relation-label-shows-count';
         const visibleLabelText = selected

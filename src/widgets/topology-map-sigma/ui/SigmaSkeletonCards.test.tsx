@@ -1646,6 +1646,61 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("click focus relation hit label keeps aggregate counts visible when the selected card owns a summary", () => {
+    const graph = makeGraph();
+    const domainAttrs = graph.getNodeAttributes("domain:d1");
+    graph.addNode("domain:d2", {
+      ...domainAttrs,
+      x: 24,
+      y: 8,
+      label: "Docs",
+    });
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 2,
+    });
+    graph.addEdge("project:p", "domain:d2", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 2,
+    });
+
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          { id: "domain:d2", title: "Docs", kind: "domain", tier: 1 as const, count: 12 },
+        ]}
+        selectedSlug="project:p"
+      />,
+    );
+
+    const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+    const visibleBadge = labelHit?.querySelector("[data-relation-label-visible-badge]");
+    const typeText = labelHit?.querySelector("[data-relation-label-type-text]");
+    const svgLabel = container.querySelector('[data-connector-relation-label="true"]');
+
+    expect(labelHit).toHaveAttribute("data-relation-label-count", "2");
+    expect(labelHit).toHaveAttribute("data-relation-type-label", "contains ×2");
+    expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains 2");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-visible-count-policy",
+      "relation-label-shows-count",
+    );
+    expect(typeText).toHaveTextContent("contains 2");
+    expect(visibleBadge).toHaveTextContent("contains 2");
+    expect(svgLabel).toHaveTextContent("contains 2");
+  });
+
   it("14-inch click focus geometry is retained without drawing a boundary box", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {
