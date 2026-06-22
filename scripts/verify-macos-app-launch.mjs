@@ -7640,6 +7640,30 @@ export function buildWebviewEvidencePayload(
         agentNextAction: "read-relation-surfaces-after-residual-overlap-clear",
       }
       : null;
+  const zoomLensProof =
+    markers.topologyZoomLensContract ===
+    "zoom-in-uses-compact-lens-chips-for-noncritical-cards"
+      ? {
+        proof: "topology-zoom-lens-compact-cards",
+        status:
+          markerNumber(markers, "topologyZoomLensThresholdRatio") > 0 &&
+          markerNumber(markers, "topologyZoomLensCameraRatio") > 0 &&
+          (
+            markers.topologyZoomLensActive === false ||
+            markerNumber(markers, "topologyZoomLensActiveCardCount") >= 1
+          )
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        contract: markers.topologyZoomLensContract ?? null,
+        thresholdRatio: markerNumber(markers, "topologyZoomLensThresholdRatio"),
+        cameraRatio: markerNumber(markers, "topologyZoomLensCameraRatio"),
+        active: markers.topologyZoomLensActive === true,
+        eligibleCount: markerNumber(markers, "topologyZoomLensEligibleCount"),
+        activeCardCount: markerNumber(markers, "topologyZoomLensActiveCardCount"),
+        agentNextAction: "trust-compact-zoom-lens-before-reading-dense-map-cards",
+      }
+      : null;
   const nodePopoverCompactHandoffProof =
     markers.topologyNodePopoverVisible === true &&
     markers.topologyNodePopoverCollapsed === true &&
@@ -7997,6 +8021,7 @@ export function buildWebviewEvidencePayload(
     connectorLabelPassProof,
     visibleCardSelectedSurfaceRectProof,
     residualOverlapProof,
+    zoomLensProof,
     nodePopoverCompactHandoffProof,
     nodePopoverCompactVerificationProof,
     nodePopoverExpandedProof,

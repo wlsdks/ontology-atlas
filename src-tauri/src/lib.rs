@@ -4742,6 +4742,18 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-fixed-surface-overlap-count") || "0"),
                                   topologyResidualCardFixedSurfaceOverlapCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-card-fixed-surface-overlap-count") || "0"),
+                                  topologyZoomLensContract:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-contract") || "",
+                                  topologyZoomLensThresholdRatio:
+                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-threshold-ratio") || "0"),
+                                  topologyZoomLensCameraRatio:
+                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-camera-ratio") || "0"),
+                                  topologyZoomLensActive:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-active") === "true",
+                                  topologyZoomLensEligibleCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-eligible-count") || "0"),
+                                  topologyZoomLensActiveCardCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-active-card-count") || "0"),
                                   topologyFixedSurfaceLiveSuppressionReadPolicy:
                                     skeletonCardsLayer?.getAttribute("data-fixed-surface-live-suppression-read-policy") || "",
                                   topologyFixedSurfaceLiveSuppressionReadCount:

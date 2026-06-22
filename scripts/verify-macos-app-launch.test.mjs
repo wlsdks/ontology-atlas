@@ -1082,6 +1082,12 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyResidualVisibleCardOverlapCount: 0,
         topologyResidualFixedSurfaceOverlapCount: 0,
         topologyResidualCardFixedSurfaceOverlapCount: 0,
+        topologyZoomLensContract: "zoom-in-uses-compact-lens-chips-for-noncritical-cards",
+        topologyZoomLensThresholdRatio: 0.98,
+        topologyZoomLensCameraRatio: 0.74,
+        topologyZoomLensActive: true,
+        topologyZoomLensEligibleCount: 5,
+        topologyZoomLensActiveCardCount: 3,
         topologySupportRailOverlapReadPolicy: "reuse-visible-card-rect-cache",
         topologyFixedSurfaceLiveSuppressionReadPolicy:
           "reuse-card-placement-frame-rects-before-dom-read",
@@ -1274,6 +1280,18 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
       cardFixedSurfaceOverlapCount: 0,
     },
     agentNextAction: "read-relation-surfaces-after-residual-overlap-clear",
+  });
+  assert.deepEqual(evidence.zoomLensProof, {
+    proof: "topology-zoom-lens-compact-cards",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    contract: "zoom-in-uses-compact-lens-chips-for-noncritical-cards",
+    thresholdRatio: 0.98,
+    cameraRatio: 0.74,
+    active: true,
+    eligibleCount: 5,
+    activeCardCount: 3,
+    agentNextAction: "trust-compact-zoom-lens-before-reading-dense-map-cards",
   });
 });
 
