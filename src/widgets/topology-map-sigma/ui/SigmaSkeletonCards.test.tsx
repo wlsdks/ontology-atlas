@@ -3141,6 +3141,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "selected-card-direct-facts",
     );
     expect(labelHit).toHaveAttribute("data-selected-relation", "true");
+    expect(root).toHaveAttribute("data-topology-selected-relation-edge-id", edgeId);
     expect(labelHit).toHaveAttribute("data-relation-label-density", "focus-token");
     expect(labelHit).toHaveAttribute(
       "data-relation-label-handoff-contract",

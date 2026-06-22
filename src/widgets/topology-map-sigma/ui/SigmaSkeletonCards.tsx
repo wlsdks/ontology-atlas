@@ -2932,6 +2932,8 @@ export function SigmaSkeletonCards({
     const [source, target] = graph.extremities(selectedRelationEdgeId);
     return `${source}>${target}`;
   }, [graph, selectedRelationData, selectedRelationEdgeId]);
+  const selectedRelationSurfaceEdgeId =
+    selectedRelationEdgeId ?? selectedRelationData?.edgeId ?? undefined;
   const topologyAttentionWinner =
     selectedRelationSurfaceRoute !== null
       ? 'active-relation-inspector'
@@ -5959,6 +5961,7 @@ export function SigmaSkeletonCards({
       data-agent-current-surface-role={agentCurrentSurfaceRole}
       data-agent-current-surface-route={agentCurrentSurfaceRoute}
       data-topology-selected-node-id={selectedSlug ?? undefined}
+      data-topology-selected-relation-edge-id={selectedRelationSurfaceEdgeId}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
       data-drag-collision-policy="release-settle"
       data-drag-frame-cache-contract="pointer-move-reuses-drag-indexes"

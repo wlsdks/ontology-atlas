@@ -5787,6 +5787,10 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
   const selectedRelationLabelButton = page.locator(
     `[data-relation-label-button="${selectedBadgeId}"]`,
   );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-topology-selected-relation-edge-id",
+    /.+/,
+  );
   await expect(selectedRelationLabelButton).toHaveAttribute(
     "data-relation-label-hover-contract",
     "compact-edge-tooltip",
