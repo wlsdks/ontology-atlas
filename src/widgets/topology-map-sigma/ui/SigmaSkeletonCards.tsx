@@ -2907,7 +2907,7 @@ export function SigmaSkeletonCards({
       selectedLabel ??
       (selectedRelationData
         ? {
-            count: 1,
+            count: selectedRelationData.relationLabelCount ?? 1,
             edgeId: selectedRelationData.edgeId,
             edgeSource: selectedRelationData.source,
             edgeTarget: selectedRelationData.target,
@@ -3098,9 +3098,31 @@ export function SigmaSkeletonCards({
   const selectRelation = useCallback(
     (connector: RelationConnector) => {
       const data = relationSelectionData(graph, connector);
-      if (data) onRelationSelect?.(data);
+      if (data) {
+        const connectorWithCount = connector as RelationConnector & { count?: unknown };
+        const labelCount =
+          typeof connectorWithCount.count === 'number' ? connectorWithCount.count : 1;
+        const evidenceState = relationEvidenceState(connector);
+        const evidenceChipText = relationEvidenceChipText({
+          evidenceCount: connector.evidenceCount,
+          state: evidenceState,
+        });
+        onRelationSelect?.({
+          ...data,
+          relationLabelCount: labelCount,
+          relationLabelVisibleText: selectedRelationLabelVisibleText({
+            count: labelCount,
+            evidenceChipText,
+            label: formatRelationVisibleLabel(connector.relationType),
+          }),
+          relationLabelReadableText: `${formatRelationLabel(
+            connector.relationType,
+            labelCount,
+          )} · ${evidenceChipText}`,
+        });
+      }
     },
-    [graph, onRelationSelect],
+    [formatRelationLabel, formatRelationVisibleLabel, graph, onRelationSelect],
   );
   const hoverRelation = useCallback(
     (connector: RelationConnector, point: { x: number; y: number } | null) => {

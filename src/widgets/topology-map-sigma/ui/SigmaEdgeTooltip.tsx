@@ -23,6 +23,9 @@ export interface SigmaEdgeTooltipData {
   relationQuality?: SigmaEdgeAttrs['relationQuality'];
   evidenceCount?: number;
   authored?: boolean;
+  relationLabelCount?: number;
+  relationLabelVisibleText?: string;
+  relationLabelReadableText?: string;
   x: number;
   y: number;
 }
@@ -415,6 +418,12 @@ export function SigmaSelectedEdgeCard({
     uses: t('relationTypeUses'),
     belongsTo: t('relationTypeBelongsTo'),
   });
+  const selectedRelationLabelCount = data.relationLabelCount ?? 1;
+  const selectedRelationLabelVisibleText =
+    data.relationLabelVisibleText ??
+    `${visibleRelationTypeLabel} ×${selectedRelationLabelCount} · ${visibleEvidenceLabel}`;
+  const selectedRelationLabelReadableText =
+    data.relationLabelReadableText ?? selectedRelationLabelVisibleText;
   const primaryCopyPayloadSummary = t('copyPayloadSummary', {
     tool: 'query_ontology',
     action: primaryCopyActionLabel,
@@ -485,6 +494,10 @@ export function SigmaSelectedEdgeCard({
       data-selected-relation-source={data.source}
       data-selected-relation-target={data.target}
       data-selected-relation-type={relationType}
+      data-selected-relation-label-context-contract="selected-card-preserves-aggregate-label-context"
+      data-selected-relation-label-count={selectedRelationLabelCount}
+      data-selected-relation-label-visible-text={selectedRelationLabelVisibleText}
+      data-selected-relation-label-readable-text={selectedRelationLabelReadableText}
       data-surface-role="active-relation-inspector"
       data-card-density="compact"
       data-density-contract="mini-relation-inspector"

@@ -5476,6 +5476,32 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported mismatched Relief selected relation label/card evidence marker (${payload.markers.topologySelectedRelationLabelEvidenceState ?? "unknown label marker"} vs ${payload.markers.topologySelectedRelationCardEvidenceState ?? "unknown card marker"})`;
       }
+      if (
+        payload.markers.topologySelectedRelationCardLabelContextContract !==
+        "selected-card-preserves-aggregate-label-context"
+      ) {
+        return `WebView reported malformed Relief selected relation card label context contract (${payload.markers.topologySelectedRelationCardLabelContextContract || "missing"})`;
+      }
+      if (
+        Number(payload.markers.topologySelectedRelationCardLabelCount || 0) !==
+        Number(payload.markers.topologySelectedRelationLabelCount || 0)
+      ) {
+        return `WebView reported mismatched Relief selected relation card label count (${payload.markers.topologySelectedRelationCardLabelCount ?? "missing"} vs ${payload.markers.topologySelectedRelationLabelCount ?? "missing"})`;
+      }
+      if (
+        typeof payload.markers.topologySelectedRelationCardLabelVisibleText !== "string" ||
+        payload.markers.topologySelectedRelationCardLabelVisibleText.trim().length === 0 ||
+        payload.markers.topologySelectedRelationCardLabelVisibleText !==
+          payload.markers.topologyFocusRelationLabelVisibleText
+      ) {
+        return `WebView reported mismatched Relief selected relation card visible label text (${payload.markers.topologySelectedRelationCardLabelVisibleText || "missing"} vs ${payload.markers.topologyFocusRelationLabelVisibleText || "missing"})`;
+      }
+      if (
+        typeof payload.markers.topologySelectedRelationCardLabelReadableText !== "string" ||
+        !/×\d+ · /.test(payload.markers.topologySelectedRelationCardLabelReadableText)
+      ) {
+        return `WebView reported malformed Relief selected relation card readable label text (${payload.markers.topologySelectedRelationCardLabelReadableText || "missing"})`;
+      }
       const selectedRelationCardRect = {
         left: Number(payload.markers.topologySelectedRelationCardLeft || 0),
         top: Number(payload.markers.topologySelectedRelationCardTop || 0),
@@ -7202,6 +7228,11 @@ export function buildWebviewEvidencePayload(
           source: markers.topologySelectedRelationCardSource ?? null,
           target: markers.topologySelectedRelationCardTarget ?? null,
           type: markers.topologySelectedRelationCardType ?? null,
+          labelContextContract:
+            markers.topologySelectedRelationCardLabelContextContract ?? null,
+          labelCount: markerNumber(markers, "topologySelectedRelationCardLabelCount"),
+          labelVisibleText: markers.topologySelectedRelationCardLabelVisibleText ?? null,
+          labelReadableText: markers.topologySelectedRelationCardLabelReadableText ?? null,
         },
         root: {
           attentionWinner: markers.topologyRootAttentionWinner ?? null,

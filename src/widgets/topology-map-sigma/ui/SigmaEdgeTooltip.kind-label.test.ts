@@ -277,6 +277,9 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       relationQuality: 'strong',
       evidenceCount: 1,
       authored: false,
+      relationLabelCount: 6,
+      relationLabelVisibleText: 'contains ×6 · S1',
+      relationLabelReadableText: 'contains ×6 · S1',
       x: 0,
       y: 0,
     };
@@ -523,6 +526,22 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
       'data-selected-relation-type',
       'contains',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-label-context-contract',
+      'selected-card-preserves-aggregate-label-context',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-label-count',
+      '6',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-label-visible-text',
+      'contains ×6 · S1',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-label-readable-text',
+      'contains ×6 · S1',
     );
     expect(screen.getByTestId('sigma-selected-edge-fact-header')).toHaveAttribute(
       'data-header-contract',

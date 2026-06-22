@@ -1664,6 +1664,17 @@ pub fn run() {
                               const topologySelectedRelationCardTypeLabel =
                                 topologySelectedRelationCard?.getAttribute("data-relation-type-label") ||
                                 "";
+                              const topologySelectedRelationCardLabelContextContract =
+                                topologySelectedRelationCard?.getAttribute("data-selected-relation-label-context-contract") ||
+                                "";
+                              const topologySelectedRelationCardLabelCount =
+                                Number(topologySelectedRelationCard?.getAttribute("data-selected-relation-label-count") || "0");
+                              const topologySelectedRelationCardLabelVisibleText =
+                                topologySelectedRelationCard?.getAttribute("data-selected-relation-label-visible-text") ||
+                                "";
+                              const topologySelectedRelationCardLabelReadableText =
+                                topologySelectedRelationCard?.getAttribute("data-selected-relation-label-readable-text") ||
+                                "";
                               const topologySelectedRelationCardAgentGate =
                                 topologySelectedRelationCard?.getAttribute("data-agent-gate") ||
                                 "";
@@ -4082,6 +4093,10 @@ pub fn run() {
                                   topologySelectedRelationCardEvidenceState,
                                   topologySelectedRelationCardType,
                                   topologySelectedRelationCardTypeLabel,
+                                  topologySelectedRelationCardLabelContextContract,
+                                  topologySelectedRelationCardLabelCount,
+                                  topologySelectedRelationCardLabelVisibleText,
+                                  topologySelectedRelationCardLabelReadableText,
                                   topologySelectedRelationCardHandoffContract,
                                   topologySelectedRelationCardHandoffAliasContract,
                                   topologySelectedRelationCardRoute,

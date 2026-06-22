@@ -1956,6 +1956,22 @@ for (const viewport of VIEWPORTS) {
       "data-selected-relation-type",
       /contains|dependsOn|relates|describes|uses|belongsTo/,
     );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-selected-relation-label-context-contract",
+      "selected-card-preserves-aggregate-label-context",
+    );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-selected-relation-label-count",
+      /\d+/,
+    );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-selected-relation-label-visible-text",
+      /×\d+ · (S\d+|S9\+|A|R|출처|작성자|검토|authored|review)/,
+    );
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-selected-relation-label-readable-text",
+      /×\d+ · /,
+    );
     const agentDecision = page.getByTestId("sigma-selected-edge-agent-decision");
     await expect(agentDecision).toHaveAttribute(
       "data-agent-gate-kind",
