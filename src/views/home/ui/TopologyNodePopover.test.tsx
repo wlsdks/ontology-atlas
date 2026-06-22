@@ -2673,6 +2673,46 @@ describe("TopologyNodePopover", () => {
     );
   });
 
+  it("exposes a list-level relation handoff route for rendered and hidden facts", () => {
+    const manyConnections = Array.from({ length: 4 }, (_, index) => ({
+      id: `elements/runtime-${index}`,
+      title: `Runtime ${index}`,
+      kind: "element",
+      direction: "outgoing" as const,
+      relationType: "uses",
+      relationQuality: "strong" as const,
+      evidenceCount: 1,
+      authored: true,
+    }));
+
+    setup({
+      focus: focusModel({
+        usedByCount: 1,
+        dependsOnCount: 7,
+        connections: manyConnections,
+        hiddenConnectionCount: 4,
+      }),
+    });
+
+    const list = screen.getByTestId("topology-node-connection-list");
+    expect(list).toHaveAttribute(
+      "data-relation-list-handoff-contract",
+      "list-summary-routes-to-row-payload-or-full-detail",
+    );
+    expect(list).toHaveAttribute(
+      "data-relation-list-handoff-route",
+      "selected-node>relations>fact>evidence>gate>action>payload",
+    );
+    expect(list).toHaveAttribute("data-relation-list-handoff-tool", "query_ontology");
+    expect(list).toHaveAttribute("data-relation-list-visible-row-count", "2");
+    expect(list).toHaveAttribute("data-relation-list-hidden-remainder-count", "6");
+    expect(list).toHaveAttribute("data-relation-list-direct-fact-count", "8");
+    expect(list).toHaveAttribute(
+      "data-relation-list-handoff-summary",
+      "query_ontology · 2 rendered · 6 hidden · 8 direct facts",
+    );
+  });
+
   it("keeps the primary focus brief action visible in collapsed compact focus", () => {
     const copyBrief = vi.fn();
     setup({

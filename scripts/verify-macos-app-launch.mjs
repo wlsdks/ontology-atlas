@@ -3292,6 +3292,46 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView Relief selected node popover hidden relation remainder was ${payload.markers.topologyNodePopoverConnectionListHiddenCount ?? "missing"} for ${nodePopoverTotalRows} total relation(s)`;
       }
       if (
+        payload.markers.topologyNodePopoverConnectionListHandoffContract !==
+        "list-summary-routes-to-row-payload-or-full-detail"
+      ) {
+        return `WebView Relief selected node popover connection list handoff contract was ${payload.markers.topologyNodePopoverConnectionListHandoffContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverConnectionListHandoffRoute !==
+        "selected-node>relations>fact>evidence>gate>action>payload"
+      ) {
+        return `WebView Relief selected node popover connection list handoff route was ${payload.markers.topologyNodePopoverConnectionListHandoffRoute || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverConnectionListHandoffTool !== "query_ontology") {
+        return `WebView Relief selected node popover connection list handoff tool was ${payload.markers.topologyNodePopoverConnectionListHandoffTool || "missing"}`;
+      }
+      if (
+        Number(payload.markers.topologyNodePopoverConnectionListVisibleRowCount || 0) !==
+        nodePopoverRenderedRows
+      ) {
+        return `WebView Relief selected node popover connection list visible row count was ${payload.markers.topologyNodePopoverConnectionListVisibleRowCount ?? "missing"}`;
+      }
+      if (
+        Number(payload.markers.topologyNodePopoverConnectionListHiddenRemainderCount || 0) !==
+        nodePopoverHiddenRows
+      ) {
+        return `WebView Relief selected node popover connection list hidden remainder count was ${payload.markers.topologyNodePopoverConnectionListHiddenRemainderCount ?? "missing"}`;
+      }
+      if (
+        Number(payload.markers.topologyNodePopoverConnectionListDirectFactCount || 0) !==
+        nodePopoverTotalRows
+      ) {
+        return `WebView Relief selected node popover connection list direct fact count was ${payload.markers.topologyNodePopoverConnectionListDirectFactCount ?? "missing"}`;
+      }
+      if (
+        !String(
+          payload.markers.topologyNodePopoverConnectionListHandoffSummary || "",
+        ).includes("query_ontology")
+      ) {
+        return `WebView Relief selected node popover connection list handoff summary was ${payload.markers.topologyNodePopoverConnectionListHandoffSummary || "missing"}`;
+      }
+      if (
         payload.markers.topologyNodePopoverRelationRowDensityContract !==
         "agent-handoff-scan-row"
       ) {
@@ -7282,6 +7322,24 @@ export function buildWebviewEvidencePayload(
           rowHeight: markerNumber(markers, "topologyNodePopoverRelationRowHeight"),
           visibleHeight: markerNumber(markers, "topologyNodePopoverVisibleRelationRowHeight"),
           readableRowContract: markers.topologyNodePopoverConnectionListReadableRowContract ?? null,
+          listHandoffContract:
+            markers.topologyNodePopoverConnectionListHandoffContract ?? null,
+          listHandoffRoute: markers.topologyNodePopoverConnectionListHandoffRoute ?? null,
+          listHandoffTool: markers.topologyNodePopoverConnectionListHandoffTool ?? null,
+          listHandoffSummary:
+            markers.topologyNodePopoverConnectionListHandoffSummary ?? null,
+          visibleRowCount: markerNumber(
+            markers,
+            "topologyNodePopoverConnectionListVisibleRowCount",
+          ),
+          hiddenRemainderCount: markerNumber(
+            markers,
+            "topologyNodePopoverConnectionListHiddenRemainderCount",
+          ),
+          directFactCount: markerNumber(
+            markers,
+            "topologyNodePopoverConnectionListDirectFactCount",
+          ),
           evidence: markers.topologyNodePopoverRelationEvidenceState ?? null,
           gate: markers.topologyNodePopoverRelationAgentGateKind ?? null,
           primaryAction: markers.topologyNodePopoverRelationPrimaryCopyAction ?? null,

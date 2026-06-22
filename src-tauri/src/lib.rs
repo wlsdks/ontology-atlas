@@ -3646,6 +3646,20 @@ pub fn run() {
                                     Number(topologyNodePopoverConnectionList?.getAttribute("data-hidden-connection-count") || "0"),
                                   topologyNodePopoverConnectionListTotalCount:
                                     Number(topologyNodePopoverConnectionList?.getAttribute("data-total-connection-count") || "0"),
+                                  topologyNodePopoverConnectionListHandoffContract:
+                                    topologyNodePopoverConnectionList?.getAttribute("data-relation-list-handoff-contract") || "",
+                                  topologyNodePopoverConnectionListHandoffRoute:
+                                    topologyNodePopoverConnectionList?.getAttribute("data-relation-list-handoff-route") || "",
+                                  topologyNodePopoverConnectionListHandoffTool:
+                                    topologyNodePopoverConnectionList?.getAttribute("data-relation-list-handoff-tool") || "",
+                                  topologyNodePopoverConnectionListVisibleRowCount:
+                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-relation-list-visible-row-count") || "0"),
+                                  topologyNodePopoverConnectionListHiddenRemainderCount:
+                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-relation-list-hidden-remainder-count") || "0"),
+                                  topologyNodePopoverConnectionListDirectFactCount:
+                                    Number(topologyNodePopoverConnectionList?.getAttribute("data-relation-list-direct-fact-count") || "0"),
+                                  topologyNodePopoverConnectionListHandoffSummary:
+                                    topologyNodePopoverConnectionList?.getAttribute("data-relation-list-handoff-summary") || "",
                                   topologyNodePopoverFooterVisible:
                                     Boolean(topologyNodePopoverFooterRect) &&
                                     topologyNodePopoverFooterRect.width > 0 &&

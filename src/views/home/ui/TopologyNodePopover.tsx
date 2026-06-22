@@ -180,6 +180,15 @@ export function TopologyNodePopover({
       ? Math.max(0, visibleConnections.length - renderedConnections.length)
       : 0;
   const hiddenConnectionCount = focus.hiddenConnectionCount + renderHiddenCount;
+  const relationListHandoffTool = "query_ontology";
+  const relationListHandoffRoute =
+    "selected-node>relations>fact>evidence>gate>action>payload";
+  const relationListHandoffSummary = [
+    relationListHandoffTool,
+    `${renderedConnections.length} rendered`,
+    `${hiddenConnectionCount} hidden`,
+    `${total} direct facts`,
+  ].join(" · ");
   const fullDetailActionLabel =
     hiddenConnectionCount > 0
       ? `${labels.openFullDetail}, +${hiddenConnectionCount} ${labels.moreSuffix}`
@@ -1116,6 +1125,13 @@ export function TopologyNodePopover({
             data-rendered-connection-count={renderedConnections.length}
             data-hidden-connection-count={hiddenConnectionCount}
             data-total-connection-count={total}
+            data-relation-list-handoff-contract="list-summary-routes-to-row-payload-or-full-detail"
+            data-relation-list-handoff-route={relationListHandoffRoute}
+            data-relation-list-handoff-tool={relationListHandoffTool}
+            data-relation-list-visible-row-count={renderedConnections.length}
+            data-relation-list-hidden-remainder-count={hiddenConnectionCount}
+            data-relation-list-direct-fact-count={total}
+            data-relation-list-handoff-summary={relationListHandoffSummary}
             data-row-surface-contract="flat-divider-rail"
             data-relation-list-surface-token="--topology-node-popover-relation-list-surface"
             data-relation-list-border-token="--topology-node-popover-relation-list-border"

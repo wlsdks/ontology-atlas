@@ -2189,6 +2189,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverConnectionListRenderedCount: 2,
       topologyNodePopoverConnectionListHiddenCount: 78,
       topologyNodePopoverConnectionListTotalCount: 82,
+      topologyNodePopoverConnectionListHandoffContract:
+        "list-summary-routes-to-row-payload-or-full-detail",
+      topologyNodePopoverConnectionListHandoffRoute:
+        "selected-node>relations>fact>evidence>gate>action>payload",
+      topologyNodePopoverConnectionListHandoffTool: "query_ontology",
+      topologyNodePopoverConnectionListVisibleRowCount: 2,
+      topologyNodePopoverConnectionListHiddenRemainderCount: 78,
+      topologyNodePopoverConnectionListDirectFactCount: 82,
+      topologyNodePopoverConnectionListHandoffSummary:
+        "query_ontology · 2 rendered · 78 hidden · 82 direct facts",
       topologyNodePopoverFooterVisible: true,
       topologyNodePopoverFooterContract: "fixed-outside-scroll-region",
       topologyNodePopoverFooterPositionContract: "anchored-bottom-visible",
@@ -3434,6 +3444,24 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     /selected node popover hidden relation remainder/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverConnectionListHandoffContract: "",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node popover connection list handoff contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverConnectionListHandoffRoute: "selected-node>relations",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node popover connection list handoff route/,
   );
   assert.match(
     validateWebviewVerifyPayload({
