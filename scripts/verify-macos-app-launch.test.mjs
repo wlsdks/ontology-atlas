@@ -76,6 +76,26 @@ test("WebView verification env patch carries route, drag, composer, and requeste
   );
 });
 
+test("Tauri node popover verifier captures compact facts even when the inspector starts expanded", () => {
+  const tauriLib = fs.readFileSync("src-tauri/src/lib.rs", "utf8");
+
+  assert.equal(
+    tauriLib.includes('data-node-popover-toggle="collapse"'),
+    true,
+    "expanded node popover verifier needs the existing collapse control",
+  );
+  assert.equal(
+    tauriLib.includes("clicked-collapse-for-compact"),
+    true,
+    "verifier should collapse an already-expanded popover before taking compact facts snapshot",
+  );
+  assert.equal(
+    tauriLib.includes("result.compact?.factsVisible"),
+    true,
+    "verifier should only accept an expanded popover after compact facts were captured",
+  );
+});
+
 test("selected relation label agent gate text exposes MCP and CLI for handoff-ready facts", () => {
   assert.equal(expectedRelationLabelAgentGateText("handoff-ready"), "MCP/CLI");
   assert.equal(expectedRelationLabelAgentGateText("preflight-first"), "check");

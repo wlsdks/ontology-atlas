@@ -685,7 +685,14 @@ pub fn run() {
                                   const expandWhenReady = (attempt = 0) => {
                                     const popover = document.querySelector('[data-testid="topology-node-popover"]');
                                     const expand = document.querySelector('[data-node-popover-toggle="expand"]');
+                                    const collapse = document.querySelector('[data-node-popover-toggle="collapse"]');
                                     if (popover && popover.getAttribute("data-collapsed") !== "true") {
+                                      if (!result.compact?.factsVisible && collapse && typeof collapse.click === "function") {
+                                        collapse.click();
+                                        result.reason = "clicked-collapse-for-compact";
+                                        window.setTimeout(() => expandWhenReady(attempt + 1), 180);
+                                        return;
+                                      }
                                       result.reason = "done";
                                       result.expanded = true;
                                       return;
