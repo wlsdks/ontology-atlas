@@ -2074,6 +2074,10 @@ for (const viewport of VIEWPORTS) {
       "data-command-chrome-state",
       "collapsed-active-relation",
     );
+    await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+      "data-utility-lane-suppression-contract",
+      "selected-relation-inspector-owns-right-rail",
+    );
     await expect(page.getByTestId("topology-auto-arrange")).toHaveCount(0);
     await expect(page.getByTestId("topology-concept-search")).toHaveCount(0);
     await expect(page.getByTestId("topology-create-node-toggle")).toHaveCount(0);

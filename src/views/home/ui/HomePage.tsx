@@ -886,6 +886,11 @@ export function HomePage() {
   const topologyUtilityChromeCompact =
     topologyUtilityChromeState === "compact-focus" ||
     topologyUtilityChromeState === "selected-node-inspector";
+  const topologyUtilityLaneSuppressionContract = selectedRelationActive
+    ? "selected-relation-inspector-owns-right-rail"
+    : selectedNodeOwnsRightRail
+      ? "selected-node-inspector-owns-right-rail"
+      : undefined;
 
   const handleToggleSelectedInspectorSupportRail = useCallback(() => {
     if (!selectedSlug) return;
@@ -1554,9 +1559,7 @@ export function HomePage() {
                 topologyUtilityChromeCompact ? "--topology-utility-lane-compact-width" : undefined
               }
               data-utility-lane-suppression-contract={
-                selectedNodeOwnsRightRail
-                  ? "selected-node-inspector-owns-right-rail"
-                  : undefined
+                topologyUtilityLaneSuppressionContract
               }
               className="contents"
             >
