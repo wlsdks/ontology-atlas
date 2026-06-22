@@ -1173,6 +1173,7 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     budgetMs: 3,
     maxPassMs: 0.42,
     slowestPass: "card-placement",
+    agentNextAction: "read-relation-labels-after-connector-label-pass-budget",
   });
   assert.deepEqual(evidence.visibleCardSelectedSurfaceRectProof, {
     proof: "topology-visible-card-selected-surface-rect-policy",
@@ -1229,6 +1230,7 @@ test("WebView evidence flags slow connector label pass budget regressions", () =
     budgetMs: 3,
     maxPassMs: 3.2,
     slowestPass: "connector-label",
+    agentNextAction: "read-relation-labels-after-connector-label-pass-budget",
   });
 });
 

@@ -7251,6 +7251,7 @@ export function buildWebviewEvidencePayload(
         budgetMs: TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS,
         maxPassMs: markerNumber(markers, "topologyRepositionMaxPassConnectorLabelMs"),
         slowestPass: markers.topologyRepositionPassSlowest ?? null,
+        agentNextAction: "read-relation-labels-after-connector-label-pass-budget",
       }
       : null;
   const visibleCardSelectedSurfaceRectProof =
