@@ -2716,7 +2716,23 @@ describe("TopologyNodePopover", () => {
       "data-agent-handoff-selected-node",
       "capabilities/mcp-server",
     );
-    expect(handoffSummary).toHaveTextContent("MCP/CLI · 브리프");
+    expect(handoffSummary).toHaveAttribute(
+      "data-agent-handoff-visible-label",
+      "MCP/CLI",
+    );
+    expect(handoffSummary).toHaveTextContent("MCP/CLI");
+    expect(handoffSummary).not.toHaveTextContent("브리프");
+    expect(screen.getByTestId("topology-node-popover-compact-command-row")).not.toHaveTextContent(
+      "브리프브리프",
+    );
+    expect(screen.getByTestId("topology-node-popover-compact-command-row")).not.toHaveTextContent(
+      "MCP/CLI브리프",
+    );
+    expect(
+      screen
+        .getByTestId("topology-node-popover-compact-command-row")
+        .querySelector("[data-selected-node-handoff-action-separator]"),
+    ).toHaveAttribute("data-selected-node-handoff-action-separator", "route-to-primary-action");
     expect(action).toHaveAttribute("data-popover-action", "focus-brief");
     expect(action).toHaveAttribute("data-agent-handoff-action", "copy-focus-brief");
     expect(action).toHaveAttribute(

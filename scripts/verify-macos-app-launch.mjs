@@ -355,6 +355,9 @@ function validateTopologyNodePopoverTokenContract(markers) {
     ) {
       return `WebView Relief selected node popover compact handoff summary contract was ${markers.topologyNodePopoverCompactHandoffSummaryContract || "missing"}`;
     }
+    if (String(markers.topologyNodePopoverCompactHandoffSummaryVisibleLabel || "").trim() !== "MCP/CLI") {
+      return `WebView Relief selected node popover compact handoff visible label was ${markers.topologyNodePopoverCompactHandoffSummaryVisibleLabel || "missing"}`;
+    }
     const compactHandoffSummary = String(
       markers.topologyNodePopoverCompactHandoffSummaryText || "",
     ).trim();
@@ -7039,6 +7042,7 @@ export function buildWebviewEvidencePayload(
           ) &&
           markers.topologyNodePopoverCompactHandoffSummaryContract ===
             "visible-mcp-cli-focus-brief" &&
+          markers.topologyNodePopoverCompactHandoffSummaryVisibleLabel === "MCP/CLI" &&
           markers.topologyNodePopoverCompactHandoffSummaryText ===
             markers.topologyNodePopoverAgentHandoffVisibleSummary &&
           markerNumber(markers, "topologyNodePopoverAgentHandoffActionCount") >= 1 &&
@@ -7075,6 +7079,7 @@ export function buildWebviewEvidencePayload(
           compactSummary: {
             visible: markers.topologyNodePopoverCompactHandoffSummaryVisible ?? null,
             contract: markers.topologyNodePopoverCompactHandoffSummaryContract ?? null,
+            visibleLabel: markers.topologyNodePopoverCompactHandoffSummaryVisibleLabel ?? null,
             text: markers.topologyNodePopoverCompactHandoffSummaryText ?? null,
             selectedNode: markers.topologyNodePopoverCompactHandoffSummarySelectedNode ?? null,
             clientWidth: markerNumber(

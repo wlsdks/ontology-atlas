@@ -352,11 +352,13 @@ export function TopologyNodePopover({
   const selectedNodeHandoffVisibleSummary = primaryAction
     ? `MCP/CLI · ${compactNodePopoverActionLabel(primaryAction.kind, primaryAction.label)}`
     : "";
+  const selectedNodeHandoffVisibleLabel = primaryAction ? "MCP/CLI" : "";
   const selectedNodeHandoffSummaryAttributes = {
     "data-agent-handoff-summary-contract": primaryAction
       ? "visible-mcp-cli-focus-brief"
       : "detail-only",
     "data-agent-handoff-visible-summary": selectedNodeHandoffVisibleSummary,
+    "data-agent-handoff-visible-label": selectedNodeHandoffVisibleLabel,
     "data-agent-handoff-selected-node": focus.id,
   };
   const compactActionLabel = useCallback(
@@ -555,18 +557,15 @@ export function TopologyNodePopover({
               className="inline-flex min-w-0 max-w-[8.5rem] shrink items-center gap-1 overflow-hidden rounded-full border border-[color:var(--topology-node-popover-context-border)] bg-[color:var(--topology-node-popover-context-surface)] px-1.5 py-0.5 font-mono text-[length:var(--topology-node-popover-compact-fact-size)] text-[color:var(--topology-node-popover-context-text)] max-[760px]:hidden"
             >
               <span className="shrink-0 uppercase tracking-[0.08em]">MCP/CLI</span>
-              {" "}
-              <span
-                aria-hidden="true"
-                className="shrink-0 text-[color:var(--topology-node-popover-endpoint-separator)]"
-              >
-                ·
-              </span>
-              {" "}
-              <span className="min-w-0 truncate">
-                {compactNodePopoverActionLabel(primaryAction.kind, primaryAction.label)}
-              </span>
             </p>
+          ) : null}
+          {primaryAction ? (
+            <span
+              data-selected-node-handoff-action-separator="route-to-primary-action"
+              className="sr-only"
+            >
+              {" "}
+            </span>
           ) : null}
           <div
             data-testid="topology-node-popover-compact-actions"

@@ -2678,6 +2678,17 @@ for (const viewport of VIEWPORTS) {
       /MCP\/CLI · .+/,
     );
     await expect(compactHandoffSummary).toHaveAttribute(
+      "data-agent-handoff-visible-label",
+      "MCP/CLI",
+    );
+    await expect(compactHandoffSummary).toHaveText("MCP/CLI");
+    await expect(page.getByTestId("topology-node-popover-compact-command-row")).not.toContainText(
+      "브리프브리프",
+    );
+    await expect(page.getByTestId("topology-node-popover-compact-command-row")).not.toContainText(
+      "MCP/CLI브리프",
+    );
+    await expect(compactHandoffSummary).toHaveAttribute(
       "data-agent-handoff-selected-node",
       "domain:views",
     );

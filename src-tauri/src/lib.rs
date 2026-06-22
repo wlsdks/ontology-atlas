@@ -663,6 +663,9 @@ pub fn run() {
                                       actionsReadableFlow: actions?.getAttribute("data-compact-actions-readable-flow") || "",
                                       handoffSummaryVisible: visible(handoffSummary),
                                       handoffSummaryContract: handoffSummary?.getAttribute("data-agent-handoff-summary-contract") || "",
+                                      handoffSummaryVisibleLabel: handoffSummary?.getAttribute("data-agent-handoff-visible-label") ||
+                                        handoffSummary?.textContent ||
+                                        "",
                                       handoffSummaryText: handoffSummary?.getAttribute("data-agent-handoff-visible-summary") ||
                                         handoffSummary?.textContent ||
                                         "",
@@ -3647,6 +3650,10 @@ pub fn run() {
                                     topologyNodePopoverCompactHandoffSummary?.getAttribute("data-agent-handoff-summary-contract") || "",
                                   topologyNodePopoverCompactHandoffSummaryText:
                                     topologyNodePopoverCompactHandoffSummary?.getAttribute("data-agent-handoff-visible-summary") ||
+                                    topologyNodePopoverCompactHandoffSummary?.textContent ||
+                                    "",
+                                  topologyNodePopoverCompactHandoffSummaryVisibleLabel:
+                                    topologyNodePopoverCompactHandoffSummary?.getAttribute("data-agent-handoff-visible-label") ||
                                     topologyNodePopoverCompactHandoffSummary?.textContent ||
                                     "",
                                   topologyNodePopoverCompactHandoffSummarySelectedNode:

@@ -1199,6 +1199,7 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
         topologyNodePopoverCompactActionsTop: 206,
         topologyNodePopoverCompactHandoffSummaryVisible: true,
         topologyNodePopoverCompactHandoffSummaryContract: "visible-mcp-cli-focus-brief",
+        topologyNodePopoverCompactHandoffSummaryVisibleLabel: "MCP/CLI",
         topologyNodePopoverCompactHandoffSummaryText: "MCP/CLI · Brief",
         topologyNodePopoverCompactHandoffSummarySelectedNode: "domain:views",
         topologyNodePopoverCompactHandoffSummaryClientWidth: 98,
@@ -1293,6 +1294,7 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
       compactSummary: {
         visible: true,
         contract: "visible-mcp-cli-focus-brief",
+        visibleLabel: "MCP/CLI",
         text: "MCP/CLI · Brief",
         selectedNode: "domain:views",
         clientWidth: 98,
@@ -2523,6 +2525,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverCompactRelationFactsTop: 212,
       topologyNodePopoverCompactHandoffSummaryVisible: true,
       topologyNodePopoverCompactHandoffSummaryContract: "visible-mcp-cli-focus-brief",
+      topologyNodePopoverCompactHandoffSummaryVisibleLabel: "MCP/CLI",
       topologyNodePopoverCompactHandoffSummaryText: "MCP/CLI · Brief",
       topologyNodePopoverCompactHandoffSummarySelectedNode: "domain:views",
       topologyNodePopoverCompactHandoffSummaryClientWidth: 98,
