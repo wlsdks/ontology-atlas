@@ -1497,6 +1497,79 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
   });
 });
 
+test("WebView evidence summarizes node popover compact verification proof for agent handoff", () => {
+  const evidence = verifier.buildWebviewEvidencePayload(
+    {
+      href: "tauri://localhost/en/topology/?p=domain%3Aviews&mode=focus",
+      markers: {
+        topologyNodePopoverVerifyAttempted: true,
+        topologyNodePopoverVerifyReason: "done",
+        topologyNodePopoverVerifyExpanded: true,
+        topologyNodePopoverVerifyCompactFactsVisible: true,
+        topologyNodePopoverVerifyCompactFactsContract: "collapsed-dock-surfaces-typed-facts",
+        topologyNodePopoverVerifyCompactFactsReadableContract: "direct-typed-facts-not-scores",
+        topologyNodePopoverVerifyCompactFactsAccessibleName:
+          "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+        topologyNodePopoverVerifyCompactFactsNoScores:
+          "Typed ontology facts, not inferred similarity scores.",
+        topologyNodePopoverVerifyCompactFactsHandoffContract:
+          "compact-counts-route-to-relation-list-handoff",
+        topologyNodePopoverVerifyCompactFactsHandoffRoute:
+          "selected-node>relations>fact>evidence>gate>action>payload",
+        topologyNodePopoverVerifyCompactFactsHandoffTool: "query_ontology",
+        topologyNodePopoverVerifyCompactFactsHandoffSummary:
+          "query_ontology · 2 rendered · 10 hidden · 15 direct facts",
+        topologyNodePopoverVerifyCompactFactsHiddenRemainderCount: 10,
+        topologyNodePopoverVerifyCompactActionsVisible: true,
+        topologyNodePopoverVerifyCompactActionsContract:
+          "actions-share-command-row-with-facts",
+        topologyNodePopoverVerifyCompactActionsReadableFlow:
+          "selected-node-facts-to-agent-handoff",
+        topologyNodePopoverVerifyCompactBriefVisible: true,
+        topologyNodePopoverVerifyCompactBriefAction: "copy-focus-brief",
+        topologyNodePopoverVerifyCompactBriefReadableFlow:
+          "selected-node-facts-to-agent-brief",
+        topologyNodePopoverVerifyCompactBriefRailLabel: "Agent handoff",
+        topologyNodePopoverVerifyCompactBriefTitle: "Agent handoff: Copy focus brief",
+      },
+    },
+    { capturedAt: "2026-06-20T12:10:00.000Z" },
+  );
+
+  assert.deepEqual(evidence.nodePopoverCompactVerificationProof, {
+    proof: "topology-node-popover-compact-verification",
+    status: "proved",
+    route: "/en/topology/?p=domain%3Aviews&mode=focus",
+    attempted: true,
+    expanded: true,
+    reason: "done",
+    compactFacts: {
+      visible: true,
+      contract: "collapsed-dock-surfaces-typed-facts",
+      readableContract: "direct-typed-facts-not-scores",
+      accessibleName:
+        "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      noScores: "Typed ontology facts, not inferred similarity scores.",
+      handoffContract: "compact-counts-route-to-relation-list-handoff",
+      handoffRoute: "selected-node>relations>fact>evidence>gate>action>payload",
+      handoffTool: "query_ontology",
+      handoffSummary: "query_ontology · 2 rendered · 10 hidden · 15 direct facts",
+      hiddenRemainderCount: 10,
+    },
+    compactActions: {
+      visible: true,
+      contract: "actions-share-command-row-with-facts",
+      readableFlow: "selected-node-facts-to-agent-handoff",
+      briefVisible: true,
+      briefAction: "copy-focus-brief",
+      briefReadableFlow: "selected-node-facts-to-agent-brief",
+      briefRailLabel: "Agent handoff",
+      briefTitle: "Agent handoff: Copy focus brief",
+    },
+    agentNextAction: "read-compact-node-facts-before-expanded-popover-proof",
+  });
+});
+
 test("WebView evidence records unavailable visual evidence diagnostics for agent handoff", () => {
   const evidence = verifier.buildWebviewEvidencePayload(
     {

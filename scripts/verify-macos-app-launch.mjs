@@ -7505,6 +7505,87 @@ export function buildWebviewEvidencePayload(
         agentNextAction: "copy-selected-node-focus-brief-or-expand-detail",
       }
       : null;
+  const nodePopoverCompactVerificationProof =
+    markers.topologyNodePopoverVerifyAttempted === true
+      ? {
+        proof: "topology-node-popover-compact-verification",
+        status:
+          markers.topologyNodePopoverVerifyCompactFactsVisible === true &&
+          markers.topologyNodePopoverVerifyCompactFactsContract ===
+            "collapsed-dock-surfaces-typed-facts" &&
+          markers.topologyNodePopoverVerifyCompactFactsReadableContract ===
+            "direct-typed-facts-not-scores" &&
+          markers.topologyNodePopoverVerifyCompactFactsHandoffContract ===
+            "compact-counts-route-to-relation-list-handoff" &&
+          markers.topologyNodePopoverVerifyCompactFactsHandoffRoute ===
+            "selected-node>relations>fact>evidence>gate>action>payload" &&
+          markers.topologyNodePopoverVerifyCompactFactsHandoffTool === "query_ontology" &&
+          markerText(markers, "topologyNodePopoverVerifyCompactBriefAction") ===
+            "copy-focus-brief"
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        attempted: true,
+        expanded: markers.topologyNodePopoverVerifyExpanded === true,
+        reason: markerText(markers, "topologyNodePopoverVerifyReason"),
+        compactFacts: {
+          visible: markers.topologyNodePopoverVerifyCompactFactsVisible === true,
+          contract: markerText(markers, "topologyNodePopoverVerifyCompactFactsContract"),
+          readableContract: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsReadableContract",
+          ),
+          accessibleName: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsAccessibleName",
+          ),
+          noScores: markerText(markers, "topologyNodePopoverVerifyCompactFactsNoScores"),
+          handoffContract: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsHandoffContract",
+          ),
+          handoffRoute: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsHandoffRoute",
+          ),
+          handoffTool: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsHandoffTool",
+          ),
+          handoffSummary: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsHandoffSummary",
+          ),
+          hiddenRemainderCount: markerNumber(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsHiddenRemainderCount",
+          ),
+        },
+        compactActions: {
+          visible: markers.topologyNodePopoverVerifyCompactActionsVisible === true,
+          contract: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactActionsContract",
+          ),
+          readableFlow: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactActionsReadableFlow",
+          ),
+          briefVisible: markers.topologyNodePopoverVerifyCompactBriefVisible === true,
+          briefAction: markerText(markers, "topologyNodePopoverVerifyCompactBriefAction"),
+          briefReadableFlow: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactBriefReadableFlow",
+          ),
+          briefRailLabel: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactBriefRailLabel",
+          ),
+          briefTitle: markerText(markers, "topologyNodePopoverVerifyCompactBriefTitle"),
+        },
+        agentNextAction: "read-compact-node-facts-before-expanded-popover-proof",
+      }
+      : null;
   const nodePopoverExpandedProof =
     markers.topologyNodePopoverVisible === true &&
     markers.topologyNodePopoverCollapsed === false &&
@@ -7690,6 +7771,7 @@ export function buildWebviewEvidencePayload(
     visibleCardSelectedSurfaceRectProof,
     residualOverlapProof,
     nodePopoverCompactHandoffProof,
+    nodePopoverCompactVerificationProof,
     nodePopoverExpandedProof,
     selectedFocusDimProof,
   };
