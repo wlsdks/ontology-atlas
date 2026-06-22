@@ -188,6 +188,105 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   expect(consoleErrors, consoleErrors.join("\n")).toHaveLength(0);
 });
 
+test("Relief focus drag makes surrounding context visibly react", async ({ page }) => {
+  await page.goto("/en/topology/?p=domain%3Aviews&mode=focus");
+  const viewport = page.getByTestId("sigma-topology-viewport");
+  await expect(viewport).toBeVisible({ timeout: 20_000 });
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute("data-skeleton-cards-ready", "true", {
+    timeout: 20_000,
+  });
+  await page.waitForTimeout(600);
+
+  const target = page.locator("[data-skeleton-card]", { hasText: "Views" }).first();
+  await expect(target).toBeVisible();
+  const before = await rectOf(target);
+  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  await page.mouse.down();
+  await expect(layer).toHaveAttribute("data-drag-dynamic-state", "armed-cluster-follow");
+
+  const contextBefore = await page
+    .locator('[data-skeleton-card][data-dimmed="true"][data-drag-cluster="false"]')
+    .evaluateAll((els) =>
+      els
+        .filter((el) => {
+          const rect = el.getBoundingClientRect();
+          const style = window.getComputedStyle(el);
+          return (
+            rect.width > 0 &&
+            rect.height > 0 &&
+            style.visibility !== "hidden" &&
+            style.opacity !== "0"
+          );
+        })
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          return {
+            slug: el.getAttribute("data-slug") ?? "",
+            x: rect.x,
+            y: rect.y,
+          };
+        }),
+    );
+  expect(contextBefore.length).toBeGreaterThan(0);
+
+  await page.mouse.move(before.x + before.width / 2 + 160, before.y + before.height / 2 + 80, {
+    steps: 10,
+  });
+  await expect(layer).toHaveAttribute("data-dragging-active", "true");
+  await expect(layer).toHaveAttribute(
+    "data-drag-reactive-context-contract",
+    "active-drag-shows-worker-moving-surrounding-context",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-drag-reactive-context-policy",
+    "boost-dimmed-worker-response",
+  );
+
+  const reactiveProof = await layer.evaluate((el) => ({
+    opacity: el.getAttribute("data-drag-reactive-context-opacity") ?? "",
+    opacityToken: el.getAttribute("data-drag-reactive-context-opacity-token") ?? "",
+    visibleCount: Number(el.getAttribute("data-drag-reactive-context-visible-count") ?? "0"),
+  }));
+  expect(reactiveProof.opacity).toBe("0.42");
+  expect(reactiveProof.opacityToken).toBe("--topology-card-drag-reactive-context-opacity");
+  expect(reactiveProof.visibleCount).toBeGreaterThan(0);
+
+  const contextAfter = await page
+    .locator('[data-skeleton-card][data-drag-reactive-context="true"]')
+    .evaluateAll((els) =>
+      els.map((el) => {
+        const rect = el.getBoundingClientRect();
+        return {
+          opacity: window.getComputedStyle(el).opacity,
+          slug: el.getAttribute("data-slug") ?? "",
+          visibility: el.getAttribute("data-drag-reactive-context-visibility") ?? "",
+          x: rect.x,
+          y: rect.y,
+        };
+      }),
+    );
+  expect(contextAfter.length).toBeGreaterThan(0);
+  expect(contextAfter.some((entry) => entry.visibility === "boosted-visible")).toBe(true);
+  expect(contextAfter.some((entry) => Number(entry.opacity) >= 0.4)).toBe(true);
+  const movedContextCount = contextAfter.filter((afterEntry) => {
+    const beforeEntry = contextBefore.find((entry) => entry.slug === afterEntry.slug);
+    if (!beforeEntry) return false;
+    const dx = afterEntry.x - beforeEntry.x;
+    const dy = afterEntry.y - beforeEntry.y;
+    return Math.hypot(dx, dy) > 12;
+  }).length;
+  expect(movedContextCount).toBeGreaterThan(0);
+
+  const workerFrameProof = await viewport.evaluate((el) => ({
+    applied: Number(el.getAttribute("data-layout-worker-position-frame-applied-count") ?? "0"),
+    received: Number(el.getAttribute("data-layout-worker-position-frame-received-count") ?? "0"),
+  }));
+  expect(workerFrameProof.received).toBeGreaterThan(0);
+  expect(workerFrameProof.applied).toBeGreaterThan(0);
+  await page.mouse.up();
+});
+
 test("Relief map project drag stays responsive for large connected clusters", async ({
   page,
 }) => {

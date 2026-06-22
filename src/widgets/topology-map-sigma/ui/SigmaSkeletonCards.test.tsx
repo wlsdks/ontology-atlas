@@ -5085,8 +5085,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       categoryId: "",
       isHub: false,
       ownerKey: "unassigned",
-      x: -20,
-      y: -20,
+      x: 220,
+      y: 160,
       label: "Disconnected",
     });
     render(
@@ -5102,7 +5102,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
             tier: 1 as const,
           },
         ]}
-        selectedSlug={null}
+        selectedSlug="domain:d1"
         onSelect={vi.fn()}
       />,
     );
@@ -5136,6 +5136,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-drag-cluster",
       "false",
     );
+    expect(screen.getByText("Disconnected").closest("[data-skeleton-card]")).toHaveAttribute(
+      "data-drag-reactive-context",
+      "false",
+    );
     expect(document.querySelector("[data-drag-cluster-connector]")).toBeInTheDocument();
     const dragRelationLabel = document.querySelector("[data-drag-relation-label]");
     expect(dragRelationLabel).toBeInTheDocument();
@@ -5155,6 +5159,30 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer).toHaveAttribute("data-dragging-active", "true");
     expect(layer).toHaveAttribute("data-drag-dynamic-state", "active-cluster-follow");
     expect(card).toHaveAttribute("data-dragging-active", "true");
+    const reactiveContextCard = screen
+      .getByText("Disconnected")
+      .closest("[data-skeleton-card]")!;
+    expect(reactiveContextCard).toHaveAttribute("data-dimmed", "true");
+    expect(reactiveContextCard).toHaveAttribute("data-drag-reactive-context", "true");
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-context-role",
+      "surrounding-physics-response",
+    );
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-context-opacity-token",
+      "--topology-card-drag-reactive-context-opacity",
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-reactive-context-contract",
+      "active-drag-shows-worker-moving-surrounding-context",
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-reactive-context-policy",
+      "boost-dimmed-worker-response",
+    );
+    expect(Number(layer.getAttribute("data-drag-reactive-context-visible-count"))).toBeGreaterThan(
+      0,
+    );
     expect(layer).toHaveAttribute(
       "data-relation-label-drag-layout-policy",
       "drag-connector-labels-follow-cluster",
@@ -5192,8 +5220,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(20);
     expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
     expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(15);
-    expect(graph.getNodeAttributes("domain:d2").x).toBeCloseTo(-20);
-    expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
+    expect(graph.getNodeAttributes("domain:d2").x).toBeCloseTo(220);
+    expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(160);
     expect(card).toHaveAttribute("data-drag-cluster", "true");
     expect(layer).toHaveAttribute("data-dragging-active", "false");
     expect(layer).toHaveAttribute("data-drag-dynamic-state", "armed-cluster-follow");

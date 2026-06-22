@@ -933,6 +933,17 @@ pub fn run() {
                                             label.getAttribute("data-relation-label-visibility") === "visible-during-drag" &&
                                             label.getAttribute("opacity") === "1"
                                           );
+                                          result.dragReactiveContextContract =
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-context-contract") || "";
+                                          result.dragReactiveContextPolicy =
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-context-policy") || "";
+                                          result.dragReactiveContextOpacity =
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-context-opacity") || "";
+                                          result.dragReactiveContextOpacityToken =
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-context-opacity-token") || "";
+                                          result.dragReactiveContextVisibleCount = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-context-visible-count") || "0"
+                                          );
                                           result.clusterSize = Number(
                                             skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"
                                           );
@@ -4531,6 +4542,28 @@ pub fn run() {
                                     ),
                                   topologyDragRelationLabelVisibleDuringDrag:
                                     topologyDragVerification?.dragRelationLabelVisible === true,
+                                  topologyDragReactiveContextContract:
+                                    topologyDragVerification?.dragReactiveContextContract ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-context-contract") ||
+                                    "",
+                                  topologyDragReactiveContextPolicy:
+                                    topologyDragVerification?.dragReactiveContextPolicy ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-context-policy") ||
+                                    "",
+                                  topologyDragReactiveContextOpacity:
+                                    topologyDragVerification?.dragReactiveContextOpacity ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-context-opacity") ||
+                                    "",
+                                  topologyDragReactiveContextOpacityToken:
+                                    topologyDragVerification?.dragReactiveContextOpacityToken ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-context-opacity-token") ||
+                                    "",
+                                  topologyDragReactiveContextVisibleCount:
+                                    Number(
+                                      topologyDragVerification?.dragReactiveContextVisibleCount ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-context-visible-count") ||
+                                        "0"
+                                    ),
                                   topologyDragDynamicState:
                                     skeletonCardsLayer?.getAttribute("data-drag-dynamic-state") || "",
                                   topologyDragDynamicRoot:
@@ -4883,6 +4916,8 @@ mod tests {
         assert!(source.contains("topologyDragWorkerAppliedFrameChangeCount"));
         assert!(source.contains("topologyDragRelationLabelVisibilityContract"));
         assert!(source.contains("topologyDragRelationLabelVisibleDuringDrag"));
+        assert!(source.contains("topologyDragReactiveContextContract"));
+        assert!(source.contains("topologyDragReactiveContextVisibleCount"));
         assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
         assert!(source.contains("__ontologyAtlasTopologyFocusNoopVerify"));
         assert!(source.contains("ontology-atlas:verify-selected-focus-safe-fit"));

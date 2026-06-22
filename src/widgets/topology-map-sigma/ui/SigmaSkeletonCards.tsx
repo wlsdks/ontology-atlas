@@ -220,8 +220,11 @@ const TIER_SURFACE_ALPHA: Record<
  */
 const DIM_ANCHOR_OPACITY = '0.26';
 const DIM_CHIP_OPACITY = '0.08';
+const DRAG_REACTIVE_CONTEXT_OPACITY = '0.42';
 const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
 const DIM_CHIP_OPACITY_TOKEN = '--topology-map-dim-context-opacity';
+const DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN =
+  '--topology-card-drag-reactive-context-opacity';
 const OVERVIEW_CONTEXT_OPACITY: Record<SkeletonCardModel['tier'], string> = {
   0: '1',
   1: '1',
@@ -4071,9 +4074,11 @@ export function SigmaSkeletonCards({
     });
     let selectedRelationLowerPriorityVisibleDimmedCount = 0;
     let selectedRelationVisibleOrientationAnchorCount = 0;
+    let dragReactiveContextVisibleCount = 0;
     for (const el of orderedDimEls) {
       const slug = el.dataset.slug ?? '';
       const lockedForDrag = isDragClusterCard(slug, el.dataset.dockParent);
+      const dragReactiveContext = el.dataset.dragReactiveContext === 'true';
       const selectedRelationEndpoint = isSelectedRelationEndpointCard(el);
       let rect: { left: number; top: number; right: number; bottom: number } | null = null;
       let collides: boolean;
@@ -4130,20 +4135,33 @@ export function SigmaSkeletonCards({
       if (collides) {
         el.dataset.dimOpacityRole = 'hidden-fixed-surface-collision';
         el.dataset.dimOpacityToken = 'none';
+        delete el.dataset.dragReactiveContextVisibility;
         hideSkeletonCard(el, domWriteStats);
       } else {
         const dimOpacity =
-          el.dataset.tier === '0' || el.dataset.tier === '1'
+          dragReactiveContext
+            ? DRAG_REACTIVE_CONTEXT_OPACITY
+            : el.dataset.tier === '0' || el.dataset.tier === '1'
             ? DIM_ANCHOR_OPACITY
             : DIM_CHIP_OPACITY;
         el.dataset.dimOpacityRole =
-          el.dataset.tier === '0' || el.dataset.tier === '1'
+          dragReactiveContext
+            ? 'drag-reactive-context'
+            : el.dataset.tier === '0' || el.dataset.tier === '1'
             ? 'orientation-anchor'
             : 'context-silhouette';
         el.dataset.dimOpacityToken =
-          el.dataset.dimOpacityRole === 'orientation-anchor'
+          el.dataset.dimOpacityRole === 'drag-reactive-context'
+            ? DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN
+            : el.dataset.dimOpacityRole === 'orientation-anchor'
             ? DIM_ANCHOR_OPACITY_TOKEN
             : DIM_CHIP_OPACITY_TOKEN;
+        if (dragReactiveContext) {
+          dragReactiveContextVisibleCount += 1;
+          el.dataset.dragReactiveContextVisibility = 'boosted-visible';
+        } else {
+          delete el.dataset.dragReactiveContextVisibility;
+        }
         if (selectedRelationContextSilhouetteSuppressionActive) {
           if (el.dataset.dimOpacityRole === 'orientation-anchor') {
             selectedRelationVisibleOrientationAnchorCount += 1;
@@ -4171,6 +4189,13 @@ export function SigmaSkeletonCards({
     container.dataset.selectedRelationContextSilhouetteHiddenCount = String(
       selectedRelationContextSilhouetteHiddenCount,
     );
+    container.dataset.dragReactiveContextVisibleCount = String(
+      dragReactiveContextVisibleCount,
+    );
+    container.dataset.dragReactiveContextPolicy =
+      activeDragMotion && activeDragCluster !== null
+        ? 'boost-dimmed-worker-response'
+        : 'idle';
     container.dataset.selectedRelationLowerPriorityVisibleDimmedCount = String(
       selectedRelationLowerPriorityVisibleDimmedCount,
     );
@@ -5046,8 +5071,11 @@ export function SigmaSkeletonCards({
     container.dataset.totalCardCount = String(orderedEls.length);
     container.dataset.dimAnchorOpacity = DIM_ANCHOR_OPACITY;
     container.dataset.dimChipOpacity = DIM_CHIP_OPACITY;
+    container.dataset.dragReactiveContextOpacity = DRAG_REACTIVE_CONTEXT_OPACITY;
     container.dataset.dimAnchorOpacityToken = DIM_ANCHOR_OPACITY_TOKEN;
     container.dataset.dimChipOpacityToken = DIM_CHIP_OPACITY_TOKEN;
+    container.dataset.dragReactiveContextOpacityToken =
+      DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN;
     container.dataset.dimOpacityContract = 'readable-context-geography';
     container.dataset.overviewContextOpacityContract = 'core-full-support-quiet';
     container.dataset.overviewContextCoreOpacity = OVERVIEW_CONTEXT_OPACITY[1];
@@ -6384,6 +6412,11 @@ export function SigmaSkeletonCards({
       data-dim-anchor-opacity={DIM_ANCHOR_OPACITY}
       data-dim-chip-opacity={DIM_CHIP_OPACITY}
       data-dim-context-opacity={DIM_CHIP_OPACITY}
+      data-drag-reactive-context-contract="active-drag-shows-worker-moving-surrounding-context"
+      data-drag-reactive-context-opacity={DRAG_REACTIVE_CONTEXT_OPACITY}
+      data-drag-reactive-context-opacity-token={DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN}
+      data-drag-reactive-context-visible-count="0"
+      data-drag-reactive-context-policy="idle"
       data-dim-anchor-opacity-token={DIM_ANCHOR_OPACITY_TOKEN}
       data-dim-chip-opacity-token={DIM_CHIP_OPACITY_TOKEN}
       data-dim-context-opacity-token={DIM_CHIP_OPACITY_TOKEN}
@@ -7295,6 +7328,8 @@ export function SigmaSkeletonCards({
               ? 'movable'
               : 'dock-follower';
         const dragSettled = dragSettledSlugs.has(nodeId);
+        const dragReactiveContext =
+          activeDragMotion && activeDragCluster !== null && dimmed && !dragging;
         const pathEndpoint = pathRole === 'source' || pathRole === 'target';
         const kindDescription = describeKind?.(card.kind) ?? card.kind;
         const kindBadgeLabel =
@@ -7399,6 +7434,13 @@ export function SigmaSkeletonCards({
             data-drag-cluster-role={dragRole}
             data-dragging-active={dragging && activeDragMotion ? 'true' : 'false'}
             data-drag-pushed={dragSettled ? 'true' : 'false'}
+            data-drag-reactive-context={dragReactiveContext ? 'true' : 'false'}
+            data-drag-reactive-context-role={
+              dragReactiveContext ? 'surrounding-physics-response' : undefined
+            }
+            data-drag-reactive-context-opacity-token={
+              dragReactiveContext ? DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN : undefined
+            }
             data-card-selection-box-policy="boxless-border-state"
             data-drag-wash-token={
               dragging || dragSettled
@@ -7665,6 +7707,8 @@ export function SigmaSkeletonCards({
                   ? 9
                   : selected
                     ? 8
+                    : dragReactiveContext
+                      ? 1
                     : dimmed
                       ? 0
                       : TIER_Z_INDEX[card.tier],
@@ -7674,6 +7718,7 @@ export function SigmaSkeletonCards({
                 '--topology-card-padding-y': cardSpacing.paddingY,
                 '--topology-card-min-block-size': cardSpacing.minBlockSize,
                 '--topology-card-radius': cardSpacing.radius,
+                [DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN]: DRAG_REACTIVE_CONTEXT_OPACITY,
                 maxWidth:
                   selectedRelationSummaryOwnsMeta
                     ? `var(${SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN})`

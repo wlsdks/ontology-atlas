@@ -4691,6 +4691,24 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyDragRelationLabelVisibleDuringDrag !== true) {
         return "WebView Relief drag relation label was not visibly attached during drag";
       }
+      if (
+        payload.markers.topologyDragReactiveContextContract !==
+        "active-drag-shows-worker-moving-surrounding-context"
+      ) {
+        return `WebView Relief drag reactive context contract was ${payload.markers.topologyDragReactiveContextContract || "missing"}`;
+      }
+      if (payload.markers.topologyDragReactiveContextPolicy !== "boost-dimmed-worker-response") {
+        return `WebView Relief drag reactive context policy was ${payload.markers.topologyDragReactiveContextPolicy || "missing"}`;
+      }
+      if (payload.markers.topologyDragReactiveContextOpacityToken !== "--topology-card-drag-reactive-context-opacity") {
+        return `WebView Relief drag reactive context opacity token was ${payload.markers.topologyDragReactiveContextOpacityToken || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragReactiveContextOpacity || 0) >= 0.4)) {
+        return `WebView Relief drag reactive context opacity was ${payload.markers.topologyDragReactiveContextOpacity ?? "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragReactiveContextVisibleCount || 0) >= 1)) {
+        return `WebView Relief drag did not keep surrounding context visibly reactive (${payload.markers.topologyDragReactiveContextVisibleCount ?? "missing"} visible)`;
+      }
       if (payload.markers.topologyDragFrameCacheContract !== "pointer-move-reuses-drag-indexes") {
         return `WebView Relief drag frame cache contract was ${payload.markers.topologyDragFrameCacheContract || "missing"}`;
       }
