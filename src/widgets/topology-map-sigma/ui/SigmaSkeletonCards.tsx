@@ -1375,6 +1375,13 @@ function hideSkeletonCard(el: HTMLElement, stats?: SkeletonDomWriteStats) {
   if (el.dataset.surfaceHidden !== 'true') {
     el.dataset.surfaceHidden = 'true';
   }
+  if (
+    el.dataset.dimOpacityRole === 'orientation-anchor' ||
+    el.dataset.dimOpacityRole === 'context-silhouette'
+  ) {
+    el.dataset.dimOpacityRole = 'hidden-fixed-surface-collision';
+    el.dataset.dimOpacityToken = 'none';
+  }
   if (stats) {
     setSkeletonStyleValue(el, 'opacity', '0', stats);
     setSkeletonStyleValue(el, 'visibility', 'hidden', stats);
@@ -3885,6 +3892,8 @@ export function SigmaSkeletonCards({
         }
       }
       if (collides) {
+        el.dataset.dimOpacityRole = 'hidden-fixed-surface-collision';
+        el.dataset.dimOpacityToken = 'none';
         hideSkeletonCard(el, domWriteStats);
       } else {
         const dimOpacity =
@@ -3899,6 +3908,7 @@ export function SigmaSkeletonCards({
           el.dataset.dimOpacityRole === 'orientation-anchor'
             ? DIM_ANCHOR_OPACITY_TOKEN
             : DIM_CHIP_OPACITY_TOKEN;
+        delete el.dataset.surfaceHidden;
         setSkeletonStyleValue(el, 'opacity', lockedForDrag ? '1' : dimOpacity, domWriteStats);
         setSkeletonStyleValue(el, 'visibility', 'visible', domWriteStats);
         setSkeletonStyleValue(el, 'pointerEvents', lockedForDrag ? '' : 'none', domWriteStats);

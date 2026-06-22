@@ -1873,6 +1873,105 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     });
   });
 
+  it("fixed-surface hidden dim cards do not keep stale orientation-anchor markers", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const testId = this.dataset?.testid;
+        if (testId === "topology-analysis-panel") {
+          return {
+            left: 0,
+            top: 0,
+            right: 420,
+            bottom: 320,
+            width: 420,
+            height: 320,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        if (!this.dataset?.slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 1000,
+            bottom: 700,
+            width: 1000,
+            height: 700,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 120,
+          top: 120,
+          right: 240,
+          bottom: 164,
+          width: 120,
+          height: 44,
+          x: 120,
+          y: 120,
+          toJSON: () => ({}),
+        };
+      });
+
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
+
+    try {
+      const { rerender } = render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[...CARDS]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const projectCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
+
+      await waitFor(() => {
+        expect(projectCard).toBeInTheDocument();
+      });
+      projectCard?.setAttribute("data-dim-opacity-role", "orientation-anchor");
+      projectCard?.setAttribute(
+        "data-dim-opacity-token",
+        "--topology-map-dim-anchor-opacity",
+      );
+
+      rerender(
+        <>
+          <div data-testid="topology-analysis-panel" />
+          <SigmaSkeletonCards
+            sigma={stubSigma}
+            graph={graph}
+            cards={[...CARDS]}
+            selectedSlug="domain:d1"
+            onSelect={vi.fn()}
+          />
+        </>,
+      );
+
+      await waitFor(() => {
+        const currentProjectCard = screen
+          .getByText("Atlas")
+          .closest("[data-skeleton-card]");
+        expect({
+          hidden: currentProjectCard?.getAttribute("data-surface-hidden"),
+          role: currentProjectCard?.getAttribute("data-dim-opacity-role"),
+        }).not.toEqual({
+          hidden: "true",
+          role: "orientation-anchor",
+        });
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("선택 카드라도 fixed surface 와 겹치면 카드 대신 focus panel/popover 가 선택 맥락을 대표한다", async () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {
