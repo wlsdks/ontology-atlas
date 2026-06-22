@@ -1634,8 +1634,14 @@ pub fn run() {
                               const topologySelectedRelationCardHandoffContract =
                                 topologySelectedRelationCard?.getAttribute("data-agent-handoff-contract") ||
                                 "";
+                              const topologySelectedRelationCardHandoffAliasContract =
+                                topologySelectedRelationCard?.getAttribute("data-selected-relation-handoff-contract") ||
+                                "";
                               const topologySelectedRelationCardRoute =
                                 topologySelectedRelationCard?.getAttribute("data-selected-relation-route") ||
+                                "";
+                              const topologySelectedRelationCardEndpointRoute =
+                                topologySelectedRelationCard?.getAttribute("data-selected-relation-endpoint-route") ||
                                 "";
                               const topologySelectedRelationCardPrimaryAction =
                                 topologySelectedRelationCard?.getAttribute("data-selected-relation-primary-action") ||
@@ -3951,7 +3957,9 @@ pub fn run() {
                                   topologySelectedRelationCardType,
                                   topologySelectedRelationCardTypeLabel,
                                   topologySelectedRelationCardHandoffContract,
+                                  topologySelectedRelationCardHandoffAliasContract,
                                   topologySelectedRelationCardRoute,
+                                  topologySelectedRelationCardEndpointRoute,
                                   topologySelectedRelationCardPrimaryAction,
                                   topologySelectedRelationCardCliFallback,
                                   topologySelectedRelationCardSource,

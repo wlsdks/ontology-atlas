@@ -915,7 +915,11 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologySelectedRelationLabelTypeLabel: "포함 ×4",
         topologySelectedRelationCardHandoffContract:
           "selected-relation-card-carries-mcp-cli-fallback",
+        topologySelectedRelationCardHandoffAliasContract:
+          "selected-relation-card-carries-mcp-cli-fallback",
         topologySelectedRelationCardRoute: "source>target>type>action",
+        topologySelectedRelationCardEndpointRoute:
+          "domain:ai-agent-partner>capability:agent-config-onboarding",
         topologySelectedRelationCardPrimaryAction: "explain_relation",
         topologySelectedRelationCardCliFallback:
           "ontology-atlas explain 'domain:ai-agent-partner' 'capability:agent-config-onboarding' [vault] --type 'contains'",
@@ -1014,7 +1018,9 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     },
     card: {
       contract: "selected-relation-card-carries-mcp-cli-fallback",
+      handoffAliasContract: "selected-relation-card-carries-mcp-cli-fallback",
       route: "source>target>type>action",
+      endpointRoute: "domain:ai-agent-partner>capability:agent-config-onboarding",
       primaryAction: "explain_relation",
       cliFallback:
         "ontology-atlas explain 'domain:ai-agent-partner' 'capability:agent-config-onboarding' [vault] --type 'contains'",

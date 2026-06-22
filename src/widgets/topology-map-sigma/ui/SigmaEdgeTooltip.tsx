@@ -474,7 +474,9 @@ export function SigmaSelectedEdgeCard({
       data-agent-gate-kind={agentGateKind}
       data-agent-decision={agentDecisionText}
       data-agent-handoff-contract="selected-relation-card-carries-mcp-cli-fallback"
+      data-selected-relation-handoff-contract="selected-relation-card-carries-mcp-cli-fallback"
       data-selected-relation-route="source>target>type>action"
+      data-selected-relation-endpoint-route={`${data.source}>${data.target}`}
       data-selected-relation-fact-route="fact>evidence>gate>action"
       data-selected-relation-handoff-route-contract="selected-relation-card-carries-fact-route"
       data-selected-relation-primary-action={primaryCopyAction}

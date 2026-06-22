@@ -5472,8 +5472,20 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation card handoff contract (${payload.markers.topologySelectedRelationCardHandoffContract || "missing"})`;
       }
+      if (
+        payload.markers.topologySelectedRelationCardHandoffAliasContract !==
+        payload.markers.topologySelectedRelationCardHandoffContract
+      ) {
+        return `WebView reported mismatched Relief selected relation card handoff alias contract (${payload.markers.topologySelectedRelationCardHandoffAliasContract || "missing"} vs ${payload.markers.topologySelectedRelationCardHandoffContract || "missing"})`;
+      }
       if (payload.markers.topologySelectedRelationCardRoute !== "source>target>type>action") {
         return `WebView reported malformed Relief selected relation card route (${payload.markers.topologySelectedRelationCardRoute || "missing"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationCardEndpointRoute !==
+        `${payload.markers.topologySelectedRelationCardSource}>${payload.markers.topologySelectedRelationCardTarget}`
+      ) {
+        return `WebView reported malformed Relief selected relation card endpoint route (${payload.markers.topologySelectedRelationCardEndpointRoute || "missing"})`;
       }
       if (payload.markers.topologySelectedRelationCardPrimaryAction !== expectedPrimaryAction) {
         return `WebView reported mismatched Relief selected relation card primary action (${payload.markers.topologySelectedRelationCardPrimaryAction ?? "unknown marker"} vs ${expectedPrimaryAction})`;
@@ -6841,7 +6853,10 @@ export function buildWebviewEvidencePayload(
         },
         card: {
           contract: markers.topologySelectedRelationCardHandoffContract ?? null,
+          handoffAliasContract:
+            markers.topologySelectedRelationCardHandoffAliasContract ?? null,
           route: markers.topologySelectedRelationCardRoute ?? null,
+          endpointRoute: markers.topologySelectedRelationCardEndpointRoute ?? null,
           primaryAction: markers.topologySelectedRelationCardPrimaryAction ?? null,
           cliFallback: markers.topologySelectedRelationCardCliFallback ?? null,
           source: markers.topologySelectedRelationCardSource ?? null,

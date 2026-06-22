@@ -485,8 +485,16 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'selected-relation-card-carries-mcp-cli-fallback',
     );
     expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-handoff-contract',
+      'selected-relation-card-carries-mcp-cli-fallback',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
       'data-selected-relation-route',
       'source>target>type>action',
+    );
+    expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
+      'data-selected-relation-endpoint-route',
+      'domain:views>capability:topology-analysis-modes',
     );
     expect(screen.getByTestId('sigma-selected-edge-card')).toHaveAttribute(
       'data-selected-relation-fact-route',
