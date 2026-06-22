@@ -30,6 +30,7 @@ import {
   validateSelectedRelationCardAttentionLane,
   validateSelectedRelationCardDensityContract,
   validateSelectedRelationContextSilhouetteMarkers,
+  validateSelectedRelationIdentityMarkers,
   validateSelectedRelationEndpointVisibilityMarkers,
   validateSelectedRelationEndpointRouteMarkers,
   validateRelationLabelFrameGeometryMarkers,
@@ -10643,6 +10644,34 @@ test("selected relation endpoint route markers prove visible source and target n
       topologySelectedRelationEndpointRouteScrollWidth: 212,
     }),
     /overflowing Relief selected relation endpoint route/,
+  );
+});
+
+test("selected relation identity markers expose the root selected edge id", () => {
+  const baseMarkers = {
+    topologySelectedRelationVerifySelected: true,
+    topologyAgentCurrentSurface: "selected-relation",
+    topologyAgentCurrentSurfaceRoute: "domain:views>capability:topology-analysis-modes",
+    topologySelectedRelationEdgeId: "geid_138_17",
+    topologySelectedRelationLabelSource: "domain:views",
+    topologySelectedRelationLabelTarget: "capability:topology-analysis-modes",
+    topologySelectedRelationLabelRoute: "domain:views>capability:topology-analysis-modes",
+  };
+
+  assert.equal(validateSelectedRelationIdentityMarkers(baseMarkers), null);
+  assert.match(
+    validateSelectedRelationIdentityMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEdgeId: "",
+    }),
+    /selected relation edge id/,
+  );
+  assert.match(
+    validateSelectedRelationIdentityMarkers({
+      ...baseMarkers,
+      topologyAgentCurrentSurfaceRoute: "domain:wrong>capability:topology-analysis-modes",
+    }),
+    /selected relation route/,
   );
 });
 

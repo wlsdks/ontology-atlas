@@ -1900,6 +1900,46 @@ export function validateSelectedRelationEndpointRouteMarkers(markers) {
   return null;
 }
 
+export function validateSelectedRelationIdentityMarkers(markers) {
+  if (markers?.topologySelectedRelationVerifySelected !== true) {
+    return null;
+  }
+  if (
+    markers?.topologyAgentCurrentSurface &&
+    markers.topologyAgentCurrentSurface !== "selected-relation"
+  ) {
+    return `WebView reported selected relation while current surface was ${markers.topologyAgentCurrentSurface}`;
+  }
+  const edgeId =
+    typeof markers?.topologySelectedRelationEdgeId === "string"
+      ? markers.topologySelectedRelationEdgeId.trim()
+      : "";
+  if (!edgeId) {
+    return "WebView did not expose the Relief selected relation edge id";
+  }
+  const route =
+    typeof markers?.topologyAgentCurrentSurfaceRoute === "string"
+      ? markers.topologyAgentCurrentSurfaceRoute.trim()
+      : "";
+  const labelRoute =
+    typeof markers?.topologySelectedRelationLabelRoute === "string"
+      ? markers.topologySelectedRelationLabelRoute.trim()
+      : "";
+  const source =
+    typeof markers?.topologySelectedRelationLabelSource === "string"
+      ? markers.topologySelectedRelationLabelSource.trim()
+      : "";
+  const target =
+    typeof markers?.topologySelectedRelationLabelTarget === "string"
+      ? markers.topologySelectedRelationLabelTarget.trim()
+      : "";
+  const expectedRoute = source && target ? `${source}>${target}` : labelRoute;
+  if (route && expectedRoute && route !== expectedRoute) {
+    return `WebView reported mismatched Relief selected relation route (${route} vs ${expectedRoute})`;
+  }
+  return null;
+}
+
 export function validateSelectedRelationEndpointVisibilityMarkers(markers) {
   if (markers?.topologyCardsReady !== true) {
     return "WebView Relief selected relation endpoint proof ran while the skeleton card layer was not ready";
@@ -4582,6 +4622,10 @@ export function validateWebviewVerifyPayload(payload, {
         payload.markers,
       );
       if (relationLabelFrameGeometryError) return relationLabelFrameGeometryError;
+      const selectedRelationIdentityError = validateSelectedRelationIdentityMarkers(
+        payload.markers,
+      );
+      if (selectedRelationIdentityError) return selectedRelationIdentityError;
       if (
         typeof payload.markers.topologySelectedRelationLabelQuality !== "string" ||
         !/^(strong|supported|weak|review)$/.test(payload.markers.topologySelectedRelationLabelQuality)

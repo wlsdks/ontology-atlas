@@ -2572,6 +2572,8 @@ pub fn run() {
                                 skeletonCardsLayer?.getAttribute("data-agent-current-surface-route") || "";
                               const topologyRootSelectedNodeId =
                                 skeletonCardsLayer?.getAttribute("data-topology-selected-node-id") || "";
+                              const topologySelectedRelationEdgeId =
+                                skeletonCardsLayer?.getAttribute("data-topology-selected-relation-edge-id") || "";
                               return JSON.stringify({
                                 href: location.href,
                                 title: document.title,
@@ -2601,6 +2603,7 @@ pub fn run() {
                                   topologyAgentCurrentSurfaceRole,
                                   topologyAgentCurrentSurfaceRoute,
                                   topologyRootSelectedNodeId,
+                                  topologySelectedRelationEdgeId,
                                   topologySigmaViewportVisible: Boolean(
                                     sigmaViewportRect &&
                                     sigmaViewportStyle &&
