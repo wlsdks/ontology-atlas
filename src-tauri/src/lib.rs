@@ -3728,6 +3728,16 @@ pub fn run() {
                                     topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-contract") || "",
                                   topologyNodePopoverCompactRelationFactsReadableContract:
                                     topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-readable-contract") || "",
+                                  topologyNodePopoverCompactRelationFactsHandoffContract:
+                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-handoff-contract") || "",
+                                  topologyNodePopoverCompactRelationFactsHandoffRoute:
+                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-handoff-route") || "",
+                                  topologyNodePopoverCompactRelationFactsHandoffTool:
+                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-handoff-tool") || "",
+                                  topologyNodePopoverCompactRelationFactsHandoffSummary:
+                                    topologyNodePopoverCompactRelationFacts?.getAttribute("data-compact-relation-facts-handoff-summary") || "",
+                                  topologyNodePopoverCompactRelationFactsHiddenRemainderCount:
+                                    Number(topologyNodePopoverCompactRelationFacts?.getAttribute("data-relation-list-hidden-remainder-count") || "0"),
                                   topologyNodePopoverCompactRelationFactsNoScores:
                                     topologyNodePopoverCompactRelationFacts?.getAttribute("data-relation-lens-no-scores") || "",
                                   topologyNodePopoverCompactRelationFactsAccessibleName:

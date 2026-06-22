@@ -7286,6 +7286,18 @@ export function buildWebviewEvidencePayload(
               "topologyNodePopoverCompactHandoffSummaryScrollWidth",
             ),
           },
+          relationFacts: {
+            contract:
+              markers.topologyNodePopoverCompactRelationFactsHandoffContract ?? null,
+            route: markers.topologyNodePopoverCompactRelationFactsHandoffRoute ?? null,
+            tool: markers.topologyNodePopoverCompactRelationFactsHandoffTool ?? null,
+            summary:
+              markers.topologyNodePopoverCompactRelationFactsHandoffSummary ?? null,
+            hiddenRemainderCount: markerNumber(
+              markers,
+              "topologyNodePopoverCompactRelationFactsHiddenRemainderCount",
+            ),
+          },
         },
         agentNextAction: "copy-selected-node-focus-brief-or-expand-detail",
       }
@@ -7411,6 +7423,18 @@ export function buildWebviewEvidencePayload(
             markers.topologyNodePopoverCompactRelationFactsReadableContract ?? null,
           relationFactsAccessibleName:
             markers.topologyNodePopoverCompactRelationFactsAccessibleName ?? null,
+          relationFactsHandoff: {
+            contract:
+              markers.topologyNodePopoverCompactRelationFactsHandoffContract ?? null,
+            route: markers.topologyNodePopoverCompactRelationFactsHandoffRoute ?? null,
+            tool: markers.topologyNodePopoverCompactRelationFactsHandoffTool ?? null,
+            summary:
+              markers.topologyNodePopoverCompactRelationFactsHandoffSummary ?? null,
+            hiddenRemainderCount: markerNumber(
+              markers,
+              "topologyNodePopoverCompactRelationFactsHiddenRemainderCount",
+            ),
+          },
           briefActionReadableFlow:
             markers.topologyNodePopoverCompactBriefActionReadableFlow ?? null,
           factsAndActionsShareScanline:

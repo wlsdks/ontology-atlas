@@ -1315,8 +1315,25 @@ describe("TopologyNodePopover", () => {
       "data-compact-relation-facts-readable-contract",
       "direct-typed-facts-not-scores",
     );
+    expect(compactFacts).toHaveAttribute(
+      "data-compact-relation-facts-handoff-contract",
+      "compact-counts-route-to-relation-list-handoff",
+    );
+    expect(compactFacts).toHaveAttribute(
+      "data-compact-relation-facts-handoff-route",
+      "selected-node>relations>fact>evidence>gate>action>payload",
+    );
+    expect(compactFacts).toHaveAttribute(
+      "data-compact-relation-facts-handoff-tool",
+      "query_ontology",
+    );
     expect(compactFacts).toHaveAttribute("data-relation-fact-count", "3");
     expect(compactFacts).toHaveAttribute("data-relation-type-count", "2");
+    expect(compactFacts).toHaveAttribute("data-relation-list-hidden-remainder-count", "0");
+    expect(compactFacts).toHaveAttribute(
+      "data-compact-relation-facts-handoff-summary",
+      "query_ontology · 2 rendered · 0 hidden · 3 direct facts",
+    );
     expect(compactFacts).toHaveAttribute("data-relation-fact-label", "직접 의미 관계 3개");
     expect(compactFacts).toHaveAttribute("data-relation-type-label", "관계 유형 2종");
     expect(compactFacts).toHaveAttribute(

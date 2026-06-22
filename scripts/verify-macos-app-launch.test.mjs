@@ -1228,6 +1228,14 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
           "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
         topologyNodePopoverCompactRelationFactsTitle:
           "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+        topologyNodePopoverCompactRelationFactsHandoffContract:
+          "compact-counts-route-to-relation-list-handoff",
+        topologyNodePopoverCompactRelationFactsHandoffRoute:
+          "selected-node>relations>fact>evidence>gate>action>payload",
+        topologyNodePopoverCompactRelationFactsHandoffTool: "query_ontology",
+        topologyNodePopoverCompactRelationFactsHandoffSummary:
+          "query_ontology · 2 rendered · 0 hidden · 3 direct facts",
+        topologyNodePopoverCompactRelationFactsHiddenRemainderCount: 0,
         topologyNodePopoverCompactRelationFactsVisible: true,
         topologyNodePopoverCompactActionsVisible: true,
         topologyNodePopoverCompactRelationFactsTop: 212,
@@ -1282,6 +1290,13 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
       relationFactsReadableContract: "direct-typed-facts-not-scores",
       relationFactsAccessibleName:
         "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      relationFactsHandoff: {
+        contract: "compact-counts-route-to-relation-list-handoff",
+        route: "selected-node>relations>fact>evidence>gate>action>payload",
+        tool: "query_ontology",
+        summary: "query_ontology · 2 rendered · 0 hidden · 3 direct facts",
+        hiddenRemainderCount: 0,
+      },
       briefActionReadableFlow: "selected-node-facts-to-agent-brief",
       factsAndActionsShareScanline: true,
       relationshipContext: "durable",
@@ -1345,6 +1360,13 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
         selectedNode: "domain:views",
         clientWidth: 98,
         scrollWidth: 98,
+      },
+      relationFacts: {
+        contract: "compact-counts-route-to-relation-list-handoff",
+        route: "selected-node>relations>fact>evidence>gate>action>payload",
+        tool: "query_ontology",
+        summary: "query_ontology · 2 rendered · 0 hidden · 3 direct facts",
+        hiddenRemainderCount: 0,
       },
     },
     agentNextAction: "copy-selected-node-focus-brief-or-expand-detail",

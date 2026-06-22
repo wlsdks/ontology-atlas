@@ -532,8 +532,13 @@ export function TopologyNodePopover({
             data-testid="topology-node-popover-compact-relation-facts"
             data-compact-relation-facts-contract="collapsed-dock-surfaces-typed-facts"
             data-compact-relation-facts-readable-contract="direct-typed-facts-not-scores"
+            data-compact-relation-facts-handoff-contract="compact-counts-route-to-relation-list-handoff"
+            data-compact-relation-facts-handoff-route={relationListHandoffRoute}
+            data-compact-relation-facts-handoff-tool={relationListHandoffTool}
+            data-compact-relation-facts-handoff-summary={relationListHandoffSummary}
             data-relation-fact-count={total}
             data-relation-type-count={relationTypeCount}
+            data-relation-list-hidden-remainder-count={hiddenConnectionCount}
             data-relation-fact-label={relationFactLabel}
             data-relation-type-label={relationTypeLabel}
             data-relation-lens-no-scores={labels.relationLensNoScores}
