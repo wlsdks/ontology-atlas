@@ -416,6 +416,8 @@ export function TopologyNodePopover({
         data-attention-role="supporting-detail"
         data-focus-primary="linked-focus-cluster"
         data-hierarchy-contract="click-focus-detail-support"
+        data-relation-fact-count={total}
+        data-relation-type-count={relationTypeCount}
         data-collapsed="true"
         data-size-policy="context-chip"
         data-width-token="--topology-node-popover-fluid-width"
@@ -682,6 +684,8 @@ export function TopologyNodePopover({
       data-attention-role="supporting-detail"
       data-focus-primary="linked-focus-cluster"
       data-hierarchy-contract="click-focus-detail-support"
+      data-relation-fact-count={total}
+      data-relation-type-count={relationTypeCount}
       data-density="readable"
       data-size-policy="inspector-rail"
       data-width-token="--topology-node-popover-fluid-width"

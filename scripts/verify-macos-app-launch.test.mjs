@@ -1195,6 +1195,8 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
         topologySelectedNodePopoverVisible: true,
         topologySelectedNodeId: "domain:views",
         topologySelectedNodeTitle: "Views",
+        topologyNodePopoverRelationFactCount: "3",
+        topologyNodePopoverRelationTypeCount: "2",
         topologyNodePopoverCompactMeaningText: "A core hub — 10 places depend on it",
         topologyNodePopoverCompactMeaningContract: "plain-language-meaning-before-typed-facts",
         topologyNodePopoverCompactMeaningResponsiveContract: "visible-desktop-sr-only-compact",
@@ -1311,6 +1313,8 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
       id: "domain:views",
       title: "Views",
       compactMeaning: "A core hub — 10 places depend on it",
+      relationFactCount: 3,
+      relationTypeCount: 2,
     },
     root: {
       attentionWinner: "focus-state",

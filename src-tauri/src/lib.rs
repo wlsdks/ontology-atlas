@@ -1335,6 +1335,10 @@ pub fn run() {
                                 topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-action-count") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-action-count") ||
                                 "";
+                              const topologyNodePopoverRelationFactCount =
+                                topologySelectedNodePopover?.getAttribute("data-relation-fact-count") || "";
+                              const topologyNodePopoverRelationTypeCount =
+                                topologySelectedNodePopover?.getAttribute("data-relation-type-count") || "";
                               const topologyNodePopoverAgentHandoffRelationFactCount =
                                 topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-relation-fact-count") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-relation-fact-count") ||
@@ -3537,6 +3541,8 @@ pub fn run() {
                                   topologyNodePopoverAgentHandoffRoute,
                                   topologyNodePopoverAgentHandoffPrimaryAction,
                                   topologyNodePopoverAgentHandoffActionCount,
+                                  topologyNodePopoverRelationFactCount,
+                                  topologyNodePopoverRelationTypeCount,
                                   topologyNodePopoverAgentHandoffRelationFactCount,
                                   topologyNodePopoverAgentHandoffRelationTypeCount,
                                   topologyNodePopoverAgentHandoffSummaryContract,

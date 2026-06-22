@@ -434,6 +434,14 @@ describe("TopologyNodePopover", () => {
       "data-relation-lens-readable-contract",
       "human-first-direct-facts",
     );
+    expect(screen.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-relation-fact-count",
+      "3",
+    );
+    expect(screen.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-relation-type-count",
+      "2",
+    );
     expect(screen.getByTestId("topology-relation-lens")).toHaveAttribute(
       "data-relation-lens-gap-token",
       "--topology-node-popover-relation-lens-gap",
@@ -2227,6 +2235,14 @@ describe("TopologyNodePopover", () => {
     expect(lens).toHaveAttribute(
       "data-relation-lens-readable-contract",
       "human-first-direct-facts",
+    );
+    expect(screen.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-relation-fact-count",
+      "3",
+    );
+    expect(screen.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-relation-type-count",
+      "2",
     );
     expect(lens).toHaveAttribute("data-relation-fact-label", "직접 의미 관계 3개");
     expect(lens).toHaveAttribute("data-relation-type-label", "관계 유형 2종");

@@ -7160,6 +7160,8 @@ export function buildWebviewEvidencePayload(
             typeof markers.topologyNodePopoverCompactMeaningText === "string"
               ? markers.topologyNodePopoverCompactMeaningText.trim()
               : null,
+          relationFactCount: markerNumber(markers, "topologyNodePopoverRelationFactCount"),
+          relationTypeCount: markerNumber(markers, "topologyNodePopoverRelationTypeCount"),
         },
         root: {
           attentionWinner: markers.topologyRootAttentionWinner ?? null,

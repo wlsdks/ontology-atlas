@@ -2696,6 +2696,14 @@ for (const viewport of VIEWPORTS) {
       "selected-node>facts>actions",
     );
     await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-relation-fact-count",
+      /^\d+$/,
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+      "data-relation-type-count",
+      /^\d+$/,
+    );
+    await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
       "data-agent-handoff-primary-action",
       "focus-brief",
     );
