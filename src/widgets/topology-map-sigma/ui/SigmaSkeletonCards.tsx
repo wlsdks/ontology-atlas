@@ -6115,6 +6115,19 @@ export function SigmaSkeletonCards({
       data-topology-selected-node-id={selectedSlug ?? undefined}
       data-topology-selected-relation-edge-id={selectedRelationSurfaceEdgeId}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
+      data-drag-dynamic-motion-contract="cluster-follows-pointer-connectors-update"
+      data-drag-dynamic-state={
+        activeDragMotion
+          ? 'active-cluster-follow'
+          : activeDragCluster
+            ? 'armed-cluster-follow'
+            : dragSettledSlugs.size > 0
+              ? 'release-settled-cluster'
+              : 'idle'
+      }
+      data-drag-dynamic-root={activeDragRootSlug || undefined}
+      data-drag-settled-cluster-size={dragSettledSlugs.size}
+      data-drag-connector-feedback-contract="boxless-connectors-show-linked-motion"
       data-drag-collision-policy="release-settle"
       data-drag-frame-cache-contract="pointer-move-reuses-drag-indexes"
       data-drag-reposition-policy="raf-coalesced-pointer-move"

@@ -58,6 +58,18 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
     "raf-coalesced-pointer-move",
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-dynamic-motion-contract",
+    "cluster-follows-pointer-connectors-update",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-dynamic-state",
+    "armed-cluster-follow",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-connector-feedback-contract",
+    "boxless-connectors-show-linked-motion",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-visible-card-state-cache-contract",
     "rect-and-visibility-single-pass",
   );
@@ -92,6 +104,10 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-dragging-active",
     "true",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-dynamic-state",
+    "active-cluster-follow",
   );
   const dragFrameBudgetProof = await page.getByTestId("sigma-skeleton-cards").evaluate((el) => ({
     lastMs: Number(el.getAttribute("data-reposition-duration-last-ms") ?? "NaN"),
@@ -145,6 +161,10 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-drag-settle-overlap-read-policy",
     "reuse-visible-card-rect-cache",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-drag-dynamic-state",
+    /idle|release-settled-cluster/,
   );
   expect(consoleErrors, consoleErrors.join("\n")).toHaveLength(0);
 });

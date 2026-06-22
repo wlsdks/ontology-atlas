@@ -5111,6 +5111,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
     expect(layer).toHaveAttribute("data-dragging-active", "false");
     expect(layer).toHaveAttribute(
+      "data-drag-dynamic-motion-contract",
+      "cluster-follows-pointer-connectors-update",
+    );
+    expect(layer).toHaveAttribute("data-drag-dynamic-state", "armed-cluster-follow");
+    expect(layer).toHaveAttribute("data-drag-dynamic-root", "domain:d1");
+    expect(layer).toHaveAttribute(
+      "data-drag-connector-feedback-contract",
+      "boxless-connectors-show-linked-motion",
+    );
+    expect(layer).toHaveAttribute(
       "data-visible-card-state-read-policy",
       "frame-state-during-drag",
     );
@@ -5135,6 +5145,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     ).toBeInTheDocument();
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     expect(layer).toHaveAttribute("data-dragging-active", "true");
+    expect(layer).toHaveAttribute("data-drag-dynamic-state", "active-cluster-follow");
     expect(card).toHaveAttribute("data-dragging-active", "true");
     expect(layer).toHaveAttribute(
       "data-relation-label-drag-layout-policy",
@@ -5162,6 +5173,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
     expect(card).toHaveAttribute("data-drag-cluster", "true");
     expect(layer).toHaveAttribute("data-dragging-active", "false");
+    expect(layer).toHaveAttribute("data-drag-dynamic-state", "armed-cluster-follow");
     expect(layer).toHaveAttribute(
       "data-visible-card-state-read-policy",
       "frame-state-during-drag",

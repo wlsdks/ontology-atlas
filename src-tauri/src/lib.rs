@@ -4451,6 +4451,16 @@ pub fn run() {
                                   topologyDragClusterSize:
                                     Number(topologyDragVerification?.clusterSize || 0) ||
                                     Number(skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"),
+                                  topologyDragDynamicMotionContract:
+                                    skeletonCardsLayer?.getAttribute("data-drag-dynamic-motion-contract") || "",
+                                  topologyDragDynamicState:
+                                    skeletonCardsLayer?.getAttribute("data-drag-dynamic-state") || "",
+                                  topologyDragDynamicRoot:
+                                    skeletonCardsLayer?.getAttribute("data-drag-dynamic-root") || "",
+                                  topologyDragSettledClusterSize:
+                                    Number(skeletonCardsLayer?.getAttribute("data-drag-settled-cluster-size") || "0"),
+                                  topologyDragConnectorFeedbackContract:
+                                    skeletonCardsLayer?.getAttribute("data-drag-connector-feedback-contract") || "",
                                   topologyDragCollisionPolicy:
                                     skeletonCardsLayer?.getAttribute("data-drag-collision-policy") || "",
                                   topologyDragFrameCacheContract:
