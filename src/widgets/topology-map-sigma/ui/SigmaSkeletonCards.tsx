@@ -3203,36 +3203,39 @@ export function SigmaSkeletonCards({
       const slug = el.dataset.slug;
       if (slug) elBySlug.set(slug, el);
     }
-    const selectedRelationEndpointSlugs = new Set<string>();
+    const selectedRelationEndpointRoles = new Map<string, 'source' | 'target'>();
     if (selectedRelationEdgeId) {
       if (graph.hasEdge(selectedRelationEdgeId)) {
         const [source, target] = graph.extremities(selectedRelationEdgeId);
-        selectedRelationEndpointSlugs.add(source);
-        selectedRelationEndpointSlugs.add(target);
+        selectedRelationEndpointRoles.set(source, 'source');
+        selectedRelationEndpointRoles.set(target, 'target');
       } else if (selectedRelationData) {
-        selectedRelationEndpointSlugs.add(selectedRelationData.source);
-        selectedRelationEndpointSlugs.add(selectedRelationData.target);
+        selectedRelationEndpointRoles.set(selectedRelationData.source, 'source');
+        selectedRelationEndpointRoles.set(selectedRelationData.target, 'target');
       }
     }
     const isSelectedRelationEndpointCard = (el: HTMLElement) => {
       const slug = el.dataset.slug;
-      return Boolean(slug && selectedRelationEndpointSlugs.has(slug));
+      return Boolean(slug && selectedRelationEndpointRoles.has(slug));
     };
     container.dataset.selectedRelationEndpointVisibilityContract =
       'selected-relation-keeps-source-target-readable';
     container.dataset.selectedRelationEndpointCount = String(
-      selectedRelationEndpointSlugs.size,
+      selectedRelationEndpointRoles.size,
     );
     const cardPlacementCoreLoopStartedAt = measureRepositionNow();
     for (const el of orderedEls) {
       const slug = el.dataset.slug;
       if (!slug || !graph.hasNode(slug)) continue;
-      const selectedRelationEndpoint = selectedRelationEndpointSlugs.has(slug);
+      const selectedRelationEndpointRole = selectedRelationEndpointRoles.get(slug);
+      const selectedRelationEndpoint = selectedRelationEndpointRole !== undefined;
       delete el.dataset.surfaceHidden;
       if (selectedRelationEndpoint) {
         el.dataset.selectedRelationEndpoint = 'true';
+        el.dataset.selectedRelationEndpointRole = selectedRelationEndpointRole;
       } else {
         delete el.dataset.selectedRelationEndpoint;
+        delete el.dataset.selectedRelationEndpointRole;
       }
       delete el.dataset.selectedRelationEndpointSurfaceShift;
       el.style.visibility = 'visible';
@@ -6457,6 +6460,7 @@ export function SigmaSkeletonCards({
             data-relation-label-density="focus-token"
             data-relation-label-visual-owner="selected-relation-overlay"
             data-relation-label-hit-target-contract="button-keeps-click-handoff-overlay-owns-visible-badge"
+            data-selected-relation-attention-contract="selected-overlay-wins-over-dimmed-context"
             data-relation-label-selected-surface-token="--topology-relation-label-selected-surface"
             data-relation-label-selected-border-token="--topology-relation-label-selected-border"
             data-relation-label-selected-shadow-token="--topology-relation-label-selected-shadow"

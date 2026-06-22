@@ -3108,6 +3108,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-selected-relation-handoff-contract",
       "visible-overlay-carries-mcp-cli-fallback",
     );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-attention-contract",
+      "selected-overlay-wins-over-dimmed-context",
+    );
     expect(selectedOverlay).toHaveAttribute("data-selected-relation-label-handoff", "ready");
     expect(selectedOverlay).toHaveAttribute(
       "data-selected-relation-label-primary-action",
@@ -3815,7 +3819,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "1",
         );
         expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint", "true");
+        expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint-role", "source");
         expect(targetCard).toHaveAttribute("data-selected-relation-endpoint", "true");
+        expect(targetCard).toHaveAttribute("data-selected-relation-endpoint-role", "target");
         expect(sourceCard).not.toHaveAttribute("data-surface-hidden", "true");
         expect(targetCard).not.toHaveAttribute("data-surface-hidden", "true");
         expect(anchorCard).toHaveAttribute("data-dim-opacity-role", "orientation-anchor");
