@@ -3891,6 +3891,41 @@ export function validateWebviewVerifyPayload(payload, {
         return "WebView compact selected node relation facts accessible name did not include no-scores text";
       }
       if (
+        payload.markers.topologyNodePopoverVerifyCompactFactsHandoffContract !==
+        "compact-counts-route-to-relation-list-handoff"
+      ) {
+        return `WebView compact selected node relation facts handoff contract was ${payload.markers.topologyNodePopoverVerifyCompactFactsHandoffContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactFactsHandoffRoute !==
+        "selected-node>relations>fact>evidence>gate>action>payload"
+      ) {
+        return `WebView compact selected node relation facts handoff route was ${payload.markers.topologyNodePopoverVerifyCompactFactsHandoffRoute || "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactFactsHandoffTool !==
+        "query_ontology"
+      ) {
+        return `WebView compact selected node relation facts handoff tool was ${payload.markers.topologyNodePopoverVerifyCompactFactsHandoffTool || "missing"}`;
+      }
+      const compactVerifyHandoffSummary = String(
+        payload.markers.topologyNodePopoverVerifyCompactFactsHandoffSummary || "",
+      );
+      if (
+        !compactVerifyHandoffSummary.includes("query_ontology") ||
+        !compactVerifyHandoffSummary.includes("direct facts")
+      ) {
+        return `WebView compact selected node relation facts handoff summary was ${compactVerifyHandoffSummary || "missing"}`;
+      }
+      if (
+        !Number.isFinite(
+          Number(payload.markers.topologyNodePopoverVerifyCompactFactsHiddenRemainderCount),
+        ) ||
+        Number(payload.markers.topologyNodePopoverVerifyCompactFactsHiddenRemainderCount) < 0
+      ) {
+        return `WebView compact selected node relation facts hidden remainder count was ${payload.markers.topologyNodePopoverVerifyCompactFactsHiddenRemainderCount ?? "missing"}`;
+      }
+      if (
         payload.markers.topologyNodePopoverVerifyCompactActionsReadableFlow !==
         "selected-node-facts-to-agent-handoff"
       ) {

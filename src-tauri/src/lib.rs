@@ -658,6 +658,11 @@ pub fn run() {
                                       factsAccessibleName: facts?.getAttribute("aria-label") || "",
                                       factsTitle: facts?.getAttribute("title") || "",
                                       factsNoScores: facts?.getAttribute("data-relation-lens-no-scores") || "",
+                                      factsHandoffContract: facts?.getAttribute("data-compact-relation-facts-handoff-contract") || "",
+                                      factsHandoffRoute: facts?.getAttribute("data-compact-relation-facts-handoff-route") || "",
+                                      factsHandoffTool: facts?.getAttribute("data-compact-relation-facts-handoff-tool") || "",
+                                      factsHandoffSummary: facts?.getAttribute("data-compact-relation-facts-handoff-summary") || "",
+                                      factsHiddenRemainderCount: Number(facts?.getAttribute("data-relation-list-hidden-remainder-count") || "0"),
                                       actionsVisible: visible(actions),
                                       actionsContract: actions?.getAttribute("data-compact-actions-layout-contract") || "",
                                       actionsReadableFlow: actions?.getAttribute("data-compact-actions-readable-flow") || "",
@@ -4329,6 +4334,16 @@ pub fn run() {
                                     topologyNodePopoverVerification?.compact?.factsTitle || "",
                                   topologyNodePopoverVerifyCompactFactsNoScores:
                                     topologyNodePopoverVerification?.compact?.factsNoScores || "",
+                                  topologyNodePopoverVerifyCompactFactsHandoffContract:
+                                    topologyNodePopoverVerification?.compact?.factsHandoffContract || "",
+                                  topologyNodePopoverVerifyCompactFactsHandoffRoute:
+                                    topologyNodePopoverVerification?.compact?.factsHandoffRoute || "",
+                                  topologyNodePopoverVerifyCompactFactsHandoffTool:
+                                    topologyNodePopoverVerification?.compact?.factsHandoffTool || "",
+                                  topologyNodePopoverVerifyCompactFactsHandoffSummary:
+                                    topologyNodePopoverVerification?.compact?.factsHandoffSummary || "",
+                                  topologyNodePopoverVerifyCompactFactsHiddenRemainderCount:
+                                    topologyNodePopoverVerification?.compact?.factsHiddenRemainderCount || 0,
                                   topologyNodePopoverVerifyCompactActionsVisible:
                                     topologyNodePopoverVerification?.compact?.actionsVisible === true,
                                   topologyNodePopoverVerifyCompactActionsContract:

@@ -2773,6 +2773,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
       topologyNodePopoverVerifyCompactFactsNoScores:
         "Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverVerifyCompactFactsHandoffContract:
+        "compact-counts-route-to-relation-list-handoff",
+      topologyNodePopoverVerifyCompactFactsHandoffRoute:
+        "selected-node>relations>fact>evidence>gate>action>payload",
+      topologyNodePopoverVerifyCompactFactsHandoffTool: "query_ontology",
+      topologyNodePopoverVerifyCompactFactsHandoffSummary:
+        "query_ontology · 2 rendered · 10 hidden · 15 direct facts",
+      topologyNodePopoverVerifyCompactFactsHiddenRemainderCount: 10,
       topologyNodePopoverVerifyCompactActionsVisible: true,
       topologyNodePopoverVerifyCompactActionsContract: "actions-share-command-row-with-facts",
       topologyNodePopoverVerifyCompactActionsReadableFlow:
@@ -3455,6 +3463,25 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
     /selected node popover footer overflowed/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverVerifyCompactFactsHandoffContract: "",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyNodePopover: true },
+    ),
+    /compact selected node relation facts handoff contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverVerifyCompactFactsHandoffSummary:
+          "2 rendered · 10 hidden",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyNodePopover: true },
+    ),
+    /compact selected node relation facts handoff summary/,
   );
   assert.match(
     validateWebviewVerifyPayload(
