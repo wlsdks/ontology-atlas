@@ -601,6 +601,10 @@ export function TopologyNodePopover({
                 title={`${labels.actionRailTitle}: ${primaryAction.label}`}
                 data-testid="topology-node-popover-compact-brief-action"
                 data-popover-action={primaryAction.kind}
+                data-node-popover-action-kind={primaryAction.kind}
+                data-agent-handoff-primary-action={primaryAction.kind}
+                data-agent-handoff-route={`selected-node>facts>actions>${primaryAction.kind}`}
+                data-node-popover-handoff-route={`selected-node>facts>actions>${primaryAction.kind}`}
                 data-agent-handoff-action="copy-focus-brief"
                 data-agent-handoff-readable-flow="selected-node-facts-to-agent-brief"
                 data-agent-handoff-rail-label={labels.actionRailTitle}

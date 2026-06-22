@@ -2790,6 +2790,18 @@ for (const viewport of VIEWPORTS) {
       "copy-focus-brief",
     );
     await expect(page.getByTestId("topology-node-popover-compact-brief-action")).toHaveAttribute(
+      "data-node-popover-action-kind",
+      "focus-brief",
+    );
+    await expect(page.getByTestId("topology-node-popover-compact-brief-action")).toHaveAttribute(
+      "data-agent-handoff-primary-action",
+      "focus-brief",
+    );
+    await expect(page.getByTestId("topology-node-popover-compact-brief-action")).toHaveAttribute(
+      "data-agent-handoff-route",
+      "selected-node>facts>actions>focus-brief",
+    );
+    await expect(page.getByTestId("topology-node-popover-compact-brief-action")).toHaveAttribute(
       "data-agent-handoff-readable-flow",
       "selected-node-facts-to-agent-brief",
     );

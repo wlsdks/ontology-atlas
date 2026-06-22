@@ -1372,6 +1372,19 @@ pub fn run() {
                                 topologySelectedNodePopover?.getAttribute("data-node-popover-handoff-selected-node") ||
                                 topologySelectedNodePopover?.getAttribute("data-agent-handoff-selected-node") ||
                                 "";
+                              const topologyNodePopoverPrimaryActionButton =
+                                document.querySelector('[data-testid="topology-node-popover-compact-brief-action"]');
+                              const topologyNodePopoverPrimaryActionButtonKind =
+                                topologyNodePopoverPrimaryActionButton?.getAttribute("data-node-popover-action-kind") ||
+                                topologyNodePopoverPrimaryActionButton?.getAttribute("data-popover-action") ||
+                                "";
+                              const topologyNodePopoverPrimaryActionButtonRoute =
+                                topologyNodePopoverPrimaryActionButton?.getAttribute("data-node-popover-handoff-route") ||
+                                topologyNodePopoverPrimaryActionButton?.getAttribute("data-agent-handoff-route") ||
+                                "";
+                              const topologyNodePopoverPrimaryActionButtonFlow =
+                                topologyNodePopoverPrimaryActionButton?.getAttribute("data-agent-handoff-readable-flow") ||
+                                "";
                               const markerSummary = (element, attributeName) =>
                                 element?.getAttribute(attributeName) ||
                                 element?.getAttribute("aria-label") ||
@@ -3342,6 +3355,9 @@ pub fn run() {
                                   topologySelectedNodeTitle,
                                   topologySelectedNodeSource,
                                   topologySelectedNodeSummary,
+                                  topologyNodePopoverPrimaryActionButtonKind,
+                                  topologyNodePopoverPrimaryActionButtonRoute,
+                                  topologyNodePopoverPrimaryActionButtonFlow,
                                   topologyRelationQualityLensVisible: Boolean(topologyRelationQualityLens),
                                   topologyRelationQualityLensText,
                                   topologySelectedRelationQualityLensText,

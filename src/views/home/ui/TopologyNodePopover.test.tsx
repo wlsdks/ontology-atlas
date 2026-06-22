@@ -2780,6 +2780,16 @@ describe("TopologyNodePopover", () => {
         .querySelector("[data-selected-node-handoff-action-separator]"),
     ).toHaveAttribute("data-selected-node-handoff-action-separator", "route-to-primary-action");
     expect(action).toHaveAttribute("data-popover-action", "focus-brief");
+    expect(action).toHaveAttribute("data-node-popover-action-kind", "focus-brief");
+    expect(action).toHaveAttribute("data-agent-handoff-primary-action", "focus-brief");
+    expect(action).toHaveAttribute(
+      "data-agent-handoff-route",
+      "selected-node>facts>actions>focus-brief",
+    );
+    expect(action).toHaveAttribute(
+      "data-node-popover-handoff-route",
+      "selected-node>facts>actions>focus-brief",
+    );
     expect(action).toHaveAttribute("data-agent-handoff-action", "copy-focus-brief");
     expect(action).toHaveAttribute(
       "data-agent-handoff-readable-flow",
