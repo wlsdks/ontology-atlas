@@ -3838,7 +3838,13 @@ export function SigmaSkeletonCards({
         if (selectedRelationEndpoint) {
           showSelectedRelationEndpointCard(el, domWriteStats);
         } else {
-          showSkeletonCard(el, '1', domWriteStats);
+          const visibleOpacity =
+            !ego
+              ? OVERVIEW_CONTEXT_OPACITY[
+                  Number(el.dataset.tier ?? '3') as SkeletonCardModel['tier']
+                ] ?? OVERVIEW_CONTEXT_OPACITY[3]
+              : '1';
+          showSkeletonCard(el, visibleOpacity, domWriteStats);
         }
         overviewEls.push(el);
         egoRects.push(rect);
@@ -4224,6 +4230,10 @@ export function SigmaSkeletonCards({
           showSelectedRelationEndpointCard(el, domWriteStats);
         }
         if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+        const lockedForDrag = isDragClusterCard(
+          el.dataset.slug ?? '',
+          el.dataset.dockParent,
+        );
         const box = el.getBoundingClientRect();
         overviewPostDomainOverlapReadCount += 1;
         const rect = {
@@ -4232,6 +4242,11 @@ export function SigmaSkeletonCards({
           right: box.right - containerRect.left,
           bottom: box.bottom - containerRect.top,
         };
+        if (lockedForDrag) {
+          delete el.dataset.overviewPostDomainOverlapHidden;
+          accepted.push(rect);
+          continue;
+        }
         if (
           !selectedRelationEndpoint &&
           accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD))
