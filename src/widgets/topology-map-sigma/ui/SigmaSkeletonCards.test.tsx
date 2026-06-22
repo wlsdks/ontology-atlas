@@ -5460,6 +5460,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       fireEvent.pointerUp(projectCard, { clientX: 280, clientY: 50, pointerId: 1 });
 
       expect(layer).toHaveAttribute(
+        "data-drag-preview-scope",
+        "persisted-drop-viewport-offset",
+      );
+      expect(layer).toHaveAttribute("data-drag-preview-offset-x", "180");
+      expect(layer).toHaveAttribute("data-drag-viewport-offset-persisted-count", "13");
+      expect(layer).toHaveAttribute(
         "data-drag-clamp-contract",
         "large-cluster-root-card-priority",
       );

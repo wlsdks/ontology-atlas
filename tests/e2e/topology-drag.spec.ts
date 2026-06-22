@@ -228,6 +228,26 @@ test("Relief map project drag stays responsive for large connected clusters", as
     "large project cluster should not be pinned by far subtree cards",
   ).toBeGreaterThan(120);
   await page.mouse.up();
+  await page.waitForTimeout(120);
+  const releaseSettle = await rectOf(target);
+  expect(
+    Math.abs(releaseSettle.x - after.x),
+    "large project cluster should stay where it was dropped immediately after release",
+  ).toBeLessThan(32);
+  const releaseProof = await layer.evaluate((el) => ({
+    persistedCount: Number(
+      el.getAttribute("data-drag-viewport-offset-persisted-count") ?? "0",
+    ),
+    previewScope: el.getAttribute("data-drag-preview-scope") ?? "",
+  }));
+  expect(releaseProof.previewScope).toBe("persisted-drop-viewport-offset");
+  expect(releaseProof.persistedCount).toBeGreaterThan(0);
+  await page.waitForTimeout(850);
+  const finalDrop = await rectOf(target);
+  expect(
+    Math.abs(finalDrop.x - after.x),
+    "large project cluster should not snap back after drag feedback clears",
+  ).toBeLessThan(48);
 });
 
 test("Relief dogfood graph exposes scale and bounded visible-card rect reads", async ({

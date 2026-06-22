@@ -2553,6 +2553,7 @@ export function SigmaSkeletonCards({
     movableNodeIds: Set<string>;
     tierByNodeId: Map<string, SkeletonCardModel['tier']>;
   } | null>(null);
+  const dragViewportOffsetsRef = useRef(new Map<string, { dx: number; dy: number }>());
   const activeDockDragSnapshotsRef = useRef<Map<string, DockDragSnapshot>>(new Map());
   const suppressClickRef = useRef(false);
   const dragSettledTimerRef = useRef<number | null>(null);
@@ -2850,6 +2851,24 @@ export function SigmaSkeletonCards({
       if (moved) {
         suppressClickRef.current = true;
         activeDockDragSnapshotsRef.current = new Map(drag?.dockDragSnapshots ?? []);
+        if (drag.viewportPreviewActive) {
+          for (const slug of drag.movedGroup) {
+            const previous = dragViewportOffsetsRef.current.get(slug) ?? { dx: 0, dy: 0 };
+            dragViewportOffsetsRef.current.set(slug, {
+              dx: previous.dx + drag.viewportPreviewDx,
+              dy: previous.dy + drag.viewportPreviewDy,
+            });
+          }
+          const container = containerRef.current;
+          if (container) {
+            container.dataset.dragPreviewScope = 'persisted-drop-viewport-offset';
+            container.dataset.dragPreviewOffsetX = String(drag.viewportPreviewDx);
+            container.dataset.dragPreviewOffsetY = String(drag.viewportPreviewDy);
+            container.dataset.dragViewportOffsetPersistedCount = String(
+              dragViewportOffsetsRef.current.size,
+            );
+          }
+        }
         if (drag && sigma) {
           const pushedSlugs = pushCardsAwayFromDraggedCluster(
             containerRef.current,
@@ -2860,12 +2879,14 @@ export function SigmaSkeletonCards({
             drag.cardElements.all,
           );
           if (pushedSlugs.size > 0) {
-            repositionNowRef.current?.();
             markDragSettled(pushedSlugs);
           }
         }
       }
       dragRef.current = null;
+      if (moved) {
+        repositionNowRef.current?.();
+      }
       settleActiveDragCluster(moved);
     },
     [graph, markDragSettled, settleActiveDragCluster, sigma],
@@ -3370,11 +3391,26 @@ export function SigmaSkeletonCards({
           (dockParent && activeDragCluster?.has(dockParent)),
       );
     const dragPreviewOffsetFor = (slug: string, dockParent?: string | null) => {
+      const persisted =
+        dragViewportOffsetsRef.current.get(slug) ??
+        (dockParent ? dragViewportOffsetsRef.current.get(dockParent) : undefined);
       const drag = dragRef.current;
-      if (!drag?.viewportPreviewActive) return { dx: 0, dy: 0 };
-      if (!isDragClusterCard(slug, dockParent)) return { dx: 0, dy: 0 };
-      return { dx: drag.viewportPreviewDx, dy: drag.viewportPreviewDy };
+      const active =
+        drag?.viewportPreviewActive && isDragClusterCard(slug, dockParent)
+          ? { dx: drag.viewportPreviewDx, dy: drag.viewportPreviewDy }
+          : undefined;
+      const dx = (persisted?.dx ?? 0) + (active?.dx ?? 0);
+      const dy = (persisted?.dy ?? 0) + (active?.dy ?? 0);
+      const source = active
+        ? 'viewport-offset-for-large-cluster'
+        : persisted
+          ? 'persisted-drop-viewport-offset'
+          : 'none';
+      return { dx, dy, source };
     };
+    container.dataset.dragViewportOffsetPersistedCount = String(
+      dragViewportOffsetsRef.current.size,
+    );
     const focusContextSilhouetteSuppressionActive =
       selectedFocusCenterActive &&
       selectedFocusCluster !== null &&
@@ -3716,7 +3752,7 @@ export function SigmaSkeletonCards({
         if (previewOffset.dx !== 0 || previewOffset.dy !== 0) {
           clamped.x += previewOffset.dx;
           clamped.y += previewOffset.dy;
-          el.dataset.dragPreviewScope = 'viewport-offset-for-large-cluster';
+          el.dataset.dragPreviewScope = previewOffset.source;
           el.dataset.dragPreviewOffsetX = String(previewOffset.dx);
           el.dataset.dragPreviewOffsetY = String(previewOffset.dy);
         } else {
@@ -6223,7 +6259,12 @@ export function SigmaSkeletonCards({
       }
       data-drag-large-cluster-clamp-threshold={DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD}
       data-drag-preview-contract="large-cluster-uses-viewport-offset-during-active-drag"
-      data-drag-preview-scope="idle"
+      data-drag-preview-scope={
+        dragViewportOffsetsRef.current.size > 0
+          ? 'persisted-drop-viewport-offset'
+          : 'idle'
+      }
+      data-drag-viewport-offset-persisted-count={dragViewportOffsetsRef.current.size}
       data-drag-frame-cache-contract="pointer-move-reuses-drag-indexes"
       data-drag-reposition-policy="raf-coalesced-pointer-move"
       data-drag-reposition-coalesced="false"
