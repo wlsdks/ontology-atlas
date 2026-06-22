@@ -6973,6 +6973,8 @@ export function buildWebviewEvidencePayload(
   const currentSurfaceAttentionWinner =
     markerText(markers, "topologyAttentionWinner") ??
     markerText(markers, "topologyRootAttentionWinner");
+  const uiScale = markerNumber(markers, "topologyUiScale");
+  const uiScaleWritePolicy = markerText(markers, "topologyUiScaleWritePolicy");
   const agentCurrentSurfaceProof = currentSurface
     ? {
       proof: "topology-agent-current-surface",
@@ -6993,6 +6995,20 @@ export function buildWebviewEvidencePayload(
           : currentSurface === "selected-node"
             ? "read-selected-node-surface-before-map-context"
             : "read-agent-current-surface-before-map-context",
+    }
+    : null;
+  const agentUiScaleStabilityProof = uiScaleWritePolicy
+    ? {
+      proof: "topology-ui-scale-stability",
+      status:
+        uiScale !== null && uiScaleWritePolicy === "reuse-stable-scale"
+          ? "proved"
+          : "incomplete",
+      route: evidenceRoute(payload?.href),
+      uiScale,
+      writePolicy: uiScaleWritePolicy,
+      stableScaleReused: uiScaleWritePolicy === "reuse-stable-scale",
+      agentNextAction: "trust-stable-ui-scale-before-reading-surface-proof",
     }
     : null;
   const composerBlockingProof = markers.topologyCreateNodeOpen === true
@@ -7638,6 +7654,7 @@ export function buildWebviewEvidencePayload(
     capturedAt,
     payload,
     agentCurrentSurfaceProof,
+    agentUiScaleStabilityProof,
     composerBlockingProof,
     relationLabelHandoffProof,
     relationEndpointVisibilityProof,

@@ -1259,6 +1259,8 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
         topologyAgentCurrentSurface: "selected-node",
         topologyAgentCurrentSurfaceRole: "active-node-inspector",
         topologyAgentCurrentSurfaceRoute: "domain:views",
+        topologyUiScale: 1,
+        topologyUiScaleWritePolicy: "reuse-stable-scale",
         topologyRootSelectedNodeId: "domain:views",
         topologyNodePopoverVisible: true,
         topologyNodePopoverSurfaceRole: "active-node-inspector",
@@ -1348,6 +1350,15 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
     selectedNodeId: "domain:views",
     rootSelectedNodeId: "domain:views",
     agentNextAction: "read-selected-node-surface-before-map-context",
+  });
+  assert.deepEqual(evidence.agentUiScaleStabilityProof, {
+    proof: "topology-ui-scale-stability",
+    status: "proved",
+    route: "/en/topology/?p=domain%3Aviews&mode=focus",
+    uiScale: 1,
+    writePolicy: "reuse-stable-scale",
+    stableScaleReused: true,
+    agentNextAction: "trust-stable-ui-scale-before-reading-surface-proof",
   });
   assert.deepEqual(evidence.selectedFocusDimProof, {
     proof: "topology-selected-focus-dim-context",
