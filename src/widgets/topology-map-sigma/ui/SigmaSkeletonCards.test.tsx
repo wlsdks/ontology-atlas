@@ -2656,7 +2656,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-evidence-state", "needs-review");
     expect(labelHit).toHaveAttribute(
       "aria-label",
-      "contains relation · weak · needs review · check · relation check",
+      "contains relation · weak · needs review · preflight first · Check",
     );
     expect(labelHit).toHaveAttribute("data-agent-gate-kind", "preflight-first");
     expect(labelHit).toHaveAttribute("data-primary-copy-action", "relation_check");
@@ -2958,7 +2958,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-evidence-count", "3");
     expect(labelHit).toHaveAttribute(
       "aria-label",
-      "contains relation · strong · 3 sources · ready · explain relation",
+      "contains relation · strong · 3 source · MCP/CLI ready · Explain",
     );
     expect(labelHit).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(labelHit).toHaveAttribute("data-primary-copy-action", "explain_relation");
@@ -3045,7 +3045,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(selectedCard).toHaveAttribute(
       "aria-label",
-      "project · Atlas · 1 relation · 1 type · inspect",
+      "project · Atlas · 1 shown relation · 1 type · inspect",
     );
     expect(
       selectedCard?.querySelector("[data-selected-card-kind-title-separator]"),
@@ -3057,9 +3057,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "title-to-relation-summary",
     );
     expect(selectedCard?.textContent).toContain("project Atlas");
-    expect(selectedCard?.textContent).toContain("Atlas 1 relation");
+    expect(selectedCard?.textContent).toContain("Atlas 1 shown");
     expect(selectedCard?.textContent).not.toContain("projectAtlas");
-    expect(selectedCard?.textContent).not.toContain("Atlas1 relation");
+    expect(selectedCard?.textContent).not.toContain("Atlas1 shown");
     expect(selectedCard).toHaveStyle({
       "--topology-card-gap": "0.6em",
       "--topology-card-padding-x": "0.95em",
@@ -3199,7 +3199,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "metadata-only");
     expect(labelHit).toHaveAttribute(
       "aria-label",
-      "contains relation · strong · 2 sources · ready · explain relation",
+      "contains relation · strong · 2 source · MCP/CLI ready · Explain",
     );
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "explain_relation");
@@ -3385,7 +3385,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-fact-route-action", "relation_check");
     expect(labelHit).toHaveAttribute(
       "aria-label",
-      "contains relation · weak · needs review · check · relation check",
+      "contains relation · weak · needs review · preflight first · Check",
     );
     expect(gateChip).toHaveAttribute("data-route-chip-text", "check");
     expect(gateChip).toHaveAttribute(

@@ -571,10 +571,6 @@ function relationAgentGateTokenPrefix(gateKind: RelationAgentGateKind): string {
   return '--topology-relation-gate-review';
 }
 
-function relationCopyActionText(action: RelationCopyActionKind): string {
-  return action === 'explain_relation' ? 'explain relation' : 'relation check';
-}
-
 function relationLabelCliFallbackCommand({
   action,
   from,
@@ -631,21 +627,6 @@ function relationEvidenceChipText({
   }
   if (state === 'authored') return 'A';
   return 'R';
-}
-
-function relationEvidenceAriaText({
-  evidenceCount,
-  state,
-}: {
-  evidenceCount?: number;
-  state: RelationEvidenceState;
-}): string {
-  if (state === 'source-backed') {
-    const count = Math.max(1, evidenceCount ?? 1);
-    return `${count} source${count === 1 ? '' : 's'}`;
-  }
-  if (state === 'authored') return 'authored';
-  return 'needs review';
 }
 
 /** 커넥터 형상 — 수평 접선 cubic S-커브 (MindNode 가지 문법). */
@@ -2405,6 +2386,39 @@ export function SigmaSkeletonCards({
       action === 'explain_relation'
         ? tEdgeTooltip('actionExplainRelationVisible')
         : tEdgeTooltip('actionRelationCheckVisible'),
+    [tEdgeTooltip],
+  );
+  const relationQualityAriaText = useCallback(
+    (quality: NonNullable<SigmaEdgeAttrs['relationQuality']>) => {
+      if (quality === 'strong') return tEdgeTooltip('qualityStrong');
+      if (quality === 'weak') return tEdgeTooltip('qualityWeak');
+      if (quality === 'review') return tEdgeTooltip('qualityReview');
+      return tEdgeTooltip('qualitySupported');
+    },
+    [tEdgeTooltip],
+  );
+  const relationEvidenceAriaLabel = useCallback(
+    ({
+      evidenceCount,
+      state,
+    }: {
+      evidenceCount?: number;
+      state: RelationEvidenceState;
+    }) => {
+      if (state === 'source-backed') {
+        return tEdgeTooltip('evidenceCount', { count: Math.max(1, evidenceCount ?? 1) });
+      }
+      if (state === 'authored') return tEdgeTooltip('authoredEvidence');
+      return tEdgeTooltip('noEvidence');
+    },
+    [tEdgeTooltip],
+  );
+  const relationAgentGateAriaText = useCallback(
+    (gateKind: RelationAgentGateKind) => {
+      if (gateKind === 'handoff-ready') return tEdgeTooltip('agentGateHandoffReady');
+      if (gateKind === 'preflight-first') return tEdgeTooltip('agentGatePreflightFirst');
+      return tEdgeTooltip('agentGateReviewFirst');
+    },
     [tEdgeTooltip],
   );
   const formatRelationLabel = useCallback(
@@ -6072,10 +6086,6 @@ export function SigmaSkeletonCards({
           evidenceCount: label.evidenceCount,
           state: evidenceState,
         });
-        const evidenceText = relationEvidenceAriaText({
-          evidenceCount: label.evidenceCount,
-          state: evidenceState,
-        });
         const labelText = formatRelationLabel(label.relationType, label.count);
         const selectedCardOwnsRelationSummary =
           selectedSlug != null &&
@@ -6096,8 +6106,16 @@ export function SigmaSkeletonCards({
             : formatRelationVisibleLabel(label.relationType, label.count);
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
-        const agentGateText = relationAgentGateChipText(agentGateKind);
         const agentActionChipText = relationActionChipText(primaryCopyAction);
+        const relationAriaDetailText = [
+          relationQualityAriaText(quality),
+          relationEvidenceAriaLabel({
+            evidenceCount: label.evidenceCount,
+            state: evidenceState,
+          }),
+          relationAgentGateAriaText(agentGateKind),
+          agentActionChipText,
+        ].join(' · ');
         const agentGateRouteText = relationAgentGateRouteText(agentGateKind);
         const cliFallbackCommand = relationLabelCliFallbackCommand({
           action: primaryCopyAction,
@@ -6182,9 +6200,9 @@ export function SigmaSkeletonCards({
             data-relation-label-hover-contract="compact-edge-tooltip"
             data-visible-badge-width={visibleBadgeWidth}
             data-visible-badge-height={RELATION_BADGE_HEIGHT_PX}
-            aria-label={`${tEdgeTooltip('relationAriaLabel', { label: labelText })} · ${quality} · ${evidenceText}${
-              ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
-            }`}
+            aria-label={`${tEdgeTooltip('relationAriaLabel', {
+              label: labelText,
+            })} · ${relationAriaDetailText}`}
             className="pointer-events-auto absolute left-0 top-0 z-[4] inline-flex min-h-[var(--topology-relation-label-hit-min-height)] items-center justify-center overflow-visible whitespace-nowrap bg-transparent text-[length:var(--topology-relation-label-text-size)] font-medium leading-none tracking-normal transition-[opacity] duration-150 data-[drag-hit-disabled=true]:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-relation-label-focus-ring)] motion-reduce:transition-none"
             style={{
               color: selected
