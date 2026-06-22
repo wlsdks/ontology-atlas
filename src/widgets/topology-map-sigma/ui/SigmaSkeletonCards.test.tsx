@@ -1704,13 +1704,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     expect(labelHit).toHaveAttribute("data-relation-label-count", "2");
     expect(labelHit).toHaveAttribute("data-relation-type-label", "contains ×2");
-    expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains 2");
+    expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains ×2 · S2");
     expect(labelHit).toHaveAttribute(
       "data-relation-label-visible-count-policy",
       "relation-label-shows-count",
     );
-    expect(typeText).toHaveTextContent("contains 2");
-    expect(visibleBadge).toHaveTextContent("contains 2");
+    expect(typeText).toHaveTextContent("contains ×2 · S2");
+    expect(visibleBadge).toHaveTextContent("contains ×2 · S2");
     expect(svgLabel).toHaveTextContent("contains 2");
     expect(svgLabelGroup).toHaveAttribute(
       "data-relation-label-interaction-owner",
@@ -3485,7 +3485,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-fact-route-action", "explain_relation");
     expect(labelHit).toHaveAttribute(
       "data-relation-label-fact-segmentation",
-      "type-visible>metadata-hidden",
+      "type-count-evidence-visible>gate-hidden",
     );
     expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "metadata-only");
     expect(labelHit).toHaveAttribute(

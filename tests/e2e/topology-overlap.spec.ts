@@ -1550,7 +1550,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(relationButton).toHaveAttribute(
       "data-relation-label-fact-segmentation",
-      "type-visible>metadata-hidden",
+      "type-count-evidence-visible>gate-hidden",
     );
     await expect(relationButton).toHaveAttribute(
       "data-relation-label-agent-gate-visible",
@@ -1561,7 +1561,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(visibleRelationBadge).toHaveAttribute(
       "data-relation-label-fact-segmentation",
-      "type-visible>metadata-hidden",
+      "type-count-evidence-visible>gate-hidden",
     );
     await expect(visibleRelationBadge).toHaveAttribute(
       "data-relation-label-badge-height-token",
@@ -2701,7 +2701,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(aggregateRelationLabel).toHaveAttribute(
       "data-relation-label-visible-text",
-      "contains 6",
+      /contains ×6 · (S\d+|S9\+|A|R|source|authored|review)/,
     );
     await expect(aggregateRelationLabel).toHaveAttribute(
       "data-relation-label-visible-count-policy",

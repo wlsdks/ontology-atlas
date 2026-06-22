@@ -6508,9 +6508,21 @@ export function SigmaSkeletonCards({
         const selectedCardOwnsRelationSummary =
           selectedSlug != null &&
           (selectedSlug === label.edgeSource || selectedSlug === label.edgeTarget);
+        const compactRelationLabelViewport =
+          typeof window !== 'undefined' && window.innerWidth < 1024;
+        const phoneSelectedNodeRelationLabelSuppressed =
+          !selected &&
+          selectedRelationEdgeId === null &&
+          selectedCardOwnsRelationSummary &&
+          typeof window !== 'undefined' &&
+          window.innerWidth < 640;
+        if (phoneSelectedNodeRelationLabelSuppressed) {
+          return null;
+        }
         const relationLabelVisibleCountPolicy = selected
           ? 'selected-relation-shows-count-and-evidence'
-          : selectedCardOwnsRelationSummary && label.count <= 1
+          : selectedCardOwnsRelationSummary &&
+              (label.count <= 1 || compactRelationLabelViewport)
             ? 'selected-card-summary-owns-count'
             : 'relation-label-shows-count';
         const visibleLabelText = selected
@@ -6521,7 +6533,15 @@ export function SigmaSkeletonCards({
             })
           : relationLabelVisibleCountPolicy === 'selected-card-summary-owns-count'
             ? formatRelationVisibleLabel(label.relationType)
-            : formatRelationVisibleLabel(label.relationType, label.count);
+            : selectedRelationLabelVisibleText({
+                count: label.count,
+                evidenceChipText,
+                label: formatRelationVisibleLabel(label.relationType),
+              });
+        const relationLabelFactSegmentation =
+          relationLabelVisibleCountPolicy === 'selected-card-summary-owns-count'
+            ? 'type-visible>metadata-hidden'
+            : 'type-count-evidence-visible>gate-hidden';
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentActionChipText = relationActionChipText(primaryCopyAction);
@@ -6585,7 +6605,7 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-evidence={evidenceState}
             data-relation-fact-route-gate={agentGateKind}
             data-relation-fact-route-action={primaryCopyAction}
-            data-relation-label-fact-segmentation="type-visible>metadata-hidden"
+            data-relation-label-fact-segmentation={relationLabelFactSegmentation}
             data-relation-label-direction-contract="edge-source-to-target-metadata"
             data-relation-label-agent-gate-visible="metadata-only"
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
@@ -6704,7 +6724,7 @@ export function SigmaSkeletonCards({
               data-relation-label-selected-shadow-token={
                 selected ? '--topology-relation-label-selected-shadow' : undefined
               }
-              data-relation-label-fact-segmentation="type-visible>metadata-hidden"
+              data-relation-label-fact-segmentation={relationLabelFactSegmentation}
               data-relation-label-direction-contract="edge-source-to-target-metadata"
               data-relation-label-segment-gap-token="--topology-relation-label-segment-gap"
               data-relation-label-segment-divider-token="--topology-relation-label-border"
