@@ -188,7 +188,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer.style.getPropertyValue("--topology-card-max-width-capability")).toBe("360px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-element")).toBe("224px");
     expect(layer.style.getPropertyValue("--topology-card-selected-focus-max-width")).toBe("440px");
-    expect(layer.style.getPropertyValue("--topology-zoom-lens-card-max-width")).toBe("168px");
+    expect(layer.style.getPropertyValue("--topology-zoom-lens-card-max-width")).toBe("124px");
     expect(layer).toHaveAttribute(
       "data-zoom-lens-contract",
       "zoom-in-uses-compact-lens-chips-for-noncritical-cards",
@@ -521,6 +521,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(scanCard).toHaveAttribute("data-zoom-lens-active-card", "true");
     expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "compact-lens-chip");
+    expect(scanCard?.querySelector("[data-card-kind-badge]")).toHaveAttribute(
+      "data-zoom-lens-compact-hidden-contract",
+      "compact-lens-keeps-kind-as-dot-color",
+    );
+    expect(scanCard?.querySelector("[data-skeleton-card-count]")).toHaveAttribute(
+      "data-zoom-lens-compact-hidden-contract",
+      "compact-lens-removes-scale-count-from-map-mark",
+    );
   });
 
   it("capability 카드 폭은 별도 토큰으로 제목 lane 을 더 넓게 보존한다", () => {

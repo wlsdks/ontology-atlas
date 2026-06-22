@@ -7647,6 +7647,7 @@ export function buildWebviewEvidencePayload(
         proof: "topology-zoom-lens-compact-cards",
         status:
           markerNumber(markers, "topologyZoomLensThresholdRatio") > 0 &&
+          markerNumber(markers, "topologyZoomLensCardMaxWidthPx") > 0 &&
           markerNumber(markers, "topologyZoomLensCameraRatio") > 0 &&
           (
             markers.topologyZoomLensActive === false ||
@@ -7657,6 +7658,7 @@ export function buildWebviewEvidencePayload(
         route: evidenceRoute(payload?.href),
         contract: markers.topologyZoomLensContract ?? null,
         thresholdRatio: markerNumber(markers, "topologyZoomLensThresholdRatio"),
+        compactCardMaxWidthPx: markerNumber(markers, "topologyZoomLensCardMaxWidthPx"),
         cameraRatio: markerNumber(markers, "topologyZoomLensCameraRatio"),
         active: markers.topologyZoomLensActive === true,
         eligibleCount: markerNumber(markers, "topologyZoomLensEligibleCount"),

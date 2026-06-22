@@ -774,7 +774,9 @@ test("Relief zoom-in switches scan cards to compact lens chips", async ({ page }
     timeout: 6_000,
   });
   await expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", /[1-9]\d*/);
-  const compactCard = page.locator('[data-skeleton-card][data-zoom-lens-active-card="true"]').first();
+  const compactCard = page
+    .locator('[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"]')
+    .first();
   await expect(compactCard).toHaveAttribute(
     "data-zoom-lens-presentation",
     "compact-lens-chip",
@@ -783,7 +785,25 @@ test("Relief zoom-in switches scan cards to compact lens chips", async ({ page }
   expect(
     compactRect.width,
     "zoomed-in scan cards should become compact enough to stop covering relation structure",
-  ).toBeLessThanOrEqual(190);
+  ).toBeLessThanOrEqual(132);
+  await expect(compactCard.locator("[data-card-kind-badge]")).toHaveAttribute(
+    "data-zoom-lens-compact-hidden-contract",
+    "compact-lens-keeps-kind-as-dot-color",
+  );
+  await expect(compactCard.locator("[data-skeleton-card-count]")).toHaveAttribute(
+    "data-zoom-lens-compact-hidden-contract",
+    "compact-lens-removes-scale-count-from-map-mark",
+  );
+  const compactLaneDisplay = await compactCard.evaluate((card) => {
+    const kindBadge = card.querySelector("[data-card-kind-badge]");
+    const countChip = card.querySelector("[data-skeleton-card-count]");
+    return {
+      kind: kindBadge ? window.getComputedStyle(kindBadge).display : null,
+      count: countChip ? window.getComputedStyle(countChip).display : null,
+    };
+  });
+  expect(compactLaneDisplay.kind).toBe("none");
+  expect(compactLaneDisplay.count).toBe("none");
 });
 
 test("Relief Focus selected capability card keeps its title readable in the installed app WebView size", async ({

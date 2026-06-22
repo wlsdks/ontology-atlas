@@ -333,7 +333,7 @@ const FIXED_SURFACE_RECT_CACHE_MS = 180;
 const LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS = 160;
 const INITIAL_LOAD_REPOSITION_THROTTLE_MS = 640;
 const ZOOM_LENS_RATIO_THRESHOLD = 0.98;
-const ZOOM_LENS_CARD_MAX_WIDTH_PX = 168;
+const ZOOM_LENS_CARD_MAX_WIDTH_PX = 124;
 
 type RelationConnector = {
   from: string;
@@ -7844,7 +7844,7 @@ export function SigmaSkeletonCards({
                   : tintBorderHover,
               } as React.CSSProperties
             }
-            className={`pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-card-max-width)] data-[zoom-lens-active-card=true]:!gap-[0.38em] data-[zoom-lens-active-card=true]:!rounded-[0.46rem] data-[zoom-lens-active-card=true]:!px-[0.58em] data-[zoom-lens-active-card=true]:!py-[0.34em] data-[zoom-lens-active-card=true]:!text-[0.82em] data-[zoom-lens-active-card=true]:shadow-none hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
+            className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-card-max-width)] data-[zoom-lens-active-card=true]:!gap-[0.34em] data-[zoom-lens-active-card=true]:!rounded-[0.42rem] data-[zoom-lens-active-card=true]:!px-[0.48em] data-[zoom-lens-active-card=true]:!py-[0.30em] data-[zoom-lens-active-card=true]:!text-[0.78em] data-[zoom-lens-active-card=true]:shadow-none hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
               selected
                 ? 'shadow-none outline-none'
                 : ''
@@ -7906,13 +7906,15 @@ export function SigmaSkeletonCards({
               data-card-kind-badge
               data-card-kind={card.kind}
               data-card-kind-badge-contract="visible-ontology-kind-marker"
+              data-zoom-lens-compact-hidden="true"
+              data-zoom-lens-compact-hidden-contract="compact-lens-keeps-kind-as-dot-color"
               data-surface-token="--topology-card-kind-surface"
               data-border-token="--card-kind-border"
               data-accent-token="--card-kind-accent"
               aria-label={selectedRelationSummaryOwnsMeta ? undefined : kindDescription}
               aria-hidden={selectedRelationSummaryOwnsMeta ? 'true' : undefined}
               title={kindDescription}
-              className="relative inline-flex h-[1.42em] max-w-[5.8em] shrink-0 items-center justify-center truncate rounded-[0.38em] border border-[color:var(--card-kind-border)] bg-[color:var(--topology-card-kind-surface)] px-[0.36em] text-[0.62em] font-semibold leading-none text-[color:var(--card-kind-accent)]"
+              className="relative inline-flex h-[1.42em] max-w-[5.8em] shrink-0 items-center justify-center truncate rounded-[0.38em] border border-[color:var(--card-kind-border)] bg-[color:var(--topology-card-kind-surface)] px-[0.36em] text-[0.62em] font-semibold leading-none text-[color:var(--card-kind-accent)] group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden"
               style={{
                 '--card-kind-accent': fill,
                 '--card-kind-border': withAlpha(fill, 0.34),
@@ -7961,6 +7963,8 @@ export function SigmaSkeletonCards({
               <span
                 data-skeleton-card-count
                 data-count-chip-contract="tokenized-node-scale-signal"
+                data-zoom-lens-compact-hidden="true"
+                data-zoom-lens-compact-hidden-contract="compact-lens-removes-scale-count-from-map-mark"
                 data-surface-token="--topology-card-count-surface"
                 data-border-token="--topology-card-count-border"
                 data-text-token="--topology-card-count-text"
@@ -7972,7 +7976,7 @@ export function SigmaSkeletonCards({
                 className={
                   coreHierarchyCountHidden
                     ? 'sr-only'
-                    : 'relative ml-0.5 inline-flex h-[1.42em] min-w-[1.65em] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-card-count-border)] bg-[color:var(--topology-card-count-surface)] px-[0.42em] font-mono text-[0.68em] leading-none text-[color:var(--topology-card-count-text)]'
+                    : 'relative ml-0.5 inline-flex h-[1.42em] min-w-[1.65em] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-card-count-border)] bg-[color:var(--topology-card-count-surface)] px-[0.42em] font-mono text-[0.68em] leading-none text-[color:var(--topology-card-count-text)] group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden'
                 }
               >
                 {card.count}

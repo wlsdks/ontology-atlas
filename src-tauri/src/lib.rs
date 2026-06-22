@@ -4746,6 +4746,11 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-contract") || "",
                                   topologyZoomLensThresholdRatio:
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-threshold-ratio") || "0"),
+                                  topologyZoomLensCardMaxWidthPx:
+                                    Number.parseFloat(
+                                      getComputedStyle(skeletonCardsLayer)
+                                        .getPropertyValue("--topology-zoom-lens-card-max-width")
+                                    ) || 0,
                                   topologyZoomLensCameraRatio:
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-camera-ratio") || "0"),
                                   topologyZoomLensActive:
