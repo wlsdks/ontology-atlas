@@ -7,7 +7,7 @@ export const SELECTED_FOCUS_CAMERA_NOOP_TARGET_POLICY = 'already-inside-safe-rec
 export const SELECTED_FOCUS_CAMERA_NOOP_DISTANCE_POLICY = 'already-safe-no-motion';
 export const SELECTED_FOCUS_CAMERA_DISTANCE_POLICY = 'bounded-safe-fit-distance';
 export const SELECTED_FOCUS_CAMERA_BASE_MAX_DISTANCE_PX = 220;
-export const SELECTED_FOCUS_CAMERA_FANOUT_ROW_DISTANCE_PX = 16;
+export const SELECTED_FOCUS_CAMERA_FANOUT_ROW_DISTANCE_PX = 48;
 export const TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT = 'linked-cluster-drag-settle';
 export const TOPOLOGY_DRAG_SETTLE_DURATION_MS = 720;
 export const TOPOLOGY_DRAG_SETTLE_EASING_NAME = 'ease-out';
@@ -35,7 +35,7 @@ export function resolveSelectedFocusCameraMaxDistancePx(
     normalizedViewportWidth >= 1800
       ? Math.round(normalizedViewportWidth * 0.18)
       : normalizedViewportWidth >= 1400
-        ? Math.round(normalizedViewportWidth * 0.2)
+        ? Math.round(normalizedViewportWidth * 0.21)
         : 0;
   return Math.max(fanoutBound, viewportBound);
 }

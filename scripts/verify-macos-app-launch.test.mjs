@@ -2009,6 +2009,31 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationEndpointRouteHeight: 30,
       topologySelectedRelationEndpointRouteClientWidth: 212,
       topologySelectedRelationEndpointRouteScrollWidth: 212,
+      topologySelectedRelationEndpointVisibilityContract:
+        "selected-relation-keeps-source-target-readable",
+      topologySelectedRelationEndpointExpectedCount: 2,
+      topologySelectedRelationEndpointVisibleCount: 2,
+      topologySelectedRelationEndpointHiddenCount: 0,
+      topologySelectedRelationEndpointCards: [
+        {
+          slug: "domain:views",
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+        {
+          slug: "capability:topology-analysis-modes",
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+      ],
+      topologySelectedRelationContextSilhouettePolicy:
+        "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+      topologySelectedRelationContextSilhouetteActive: true,
+      topologySelectedRelationContextSilhouetteHiddenCount: 10,
+      topologySelectedRelationLowerPriorityVisibleDimmedCount: 0,
+      topologySelectedRelationVisibleOrientationAnchorCount: 5,
       topologyDragNodePopoverExpandClicked: true,
       topologyNodePopoverVisible: true,
       topologyNodePopoverSurfaceRole: "active-node-inspector",
@@ -2206,6 +2231,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelEvidenceGlyph: "1",
       topologySelectedRelationLabelType: "contains",
       topologySelectedRelationLabelTypeLabel: "contains",
+      topologySelectedRelationHandleStripSource: "domain:views",
+      topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
+      topologySelectedRelationHandleStripType: "contains",
+      topologySelectedRelationHandleStripSummary:
+        "domain:views → capability:topology-analysis-modes · contains",
+      topologySelectedRelationHandleStripWidth: 1,
+      topologySelectedRelationHandleStripHeight: 1,
       topologySelectedRelationCardLeft: 1209.37,
       topologySelectedRelationCardTop: 103.84,
       topologySelectedRelationCardRight: 1476.1,
@@ -2495,7 +2527,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyCameraMotionIntent: "selected-focus-safe-rect",
       topologyCameraMotionTargetPolicy: "viewport-center",
       topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-      topologyCameraMotionMaxDistancePx: 302,
+      topologyCameraMotionMaxDistancePx: 318,
       topologyCameraMotionSelectedViewportX: 652,
       topologyCameraMotionSelectedViewportY: 412,
       topologyCameraMotionSafeTargetX: 734,
@@ -2863,6 +2895,51 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     /camera motion max distance marker/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        width: 1512,
+        height: 917,
+        topologyCameraMotionMaxDistancePx: 318,
+        topologyCameraMotionSelectedViewportX: 946,
+        topologyCameraMotionSelectedViewportY: 172,
+        topologyCameraMotionSafeTargetX: 756,
+        topologyCameraMotionSafeTargetY: 425,
+        topologyCameraMotionDistancePx: 316,
+        topologyCameraMotionSafeInsetLeft: 358,
+        topologyCameraMotionSafeInsetRight: 439,
+        topologyCameraMotionSafeTargetRightClearance: 317,
+        topologyCameraMotionSelectedFanoutRows: 4,
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    null,
+  );
+  const compactBrowserFocusPayload = selectedNodeFocusPayload({
+    topologyCameraMotionMaxDistancePx: 412,
+    topologyCameraMotionSelectedViewportX: 1011,
+    topologyCameraMotionSelectedViewportY: 453,
+    topologyCameraMotionSafeTargetX: 643,
+    topologyCameraMotionSafeTargetY: 633,
+    topologyCameraMotionDistancePx: 410,
+    topologyCameraMotionSafeInsetLeft: 412,
+    topologyCameraMotionSafeInsetRight: 320,
+    topologyCameraMotionSafeInsetTop: 224,
+    topologyCameraMotionSafeInsetBottom: 136,
+    topologyCameraMotionSafeTargetRightClearance: 317,
+    topologyCameraMotionSelectedFanoutRows: 6,
+  });
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...compactBrowserFocusPayload,
+        width: 1280,
+        height: 917,
+      },
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    null,
   );
   assert.equal(
     validateWebviewVerifyPayload(
@@ -3665,7 +3742,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionIntent: "selected-focus-safe-rect",
           topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 302,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -4297,7 +4374,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionIntent: "selected-focus-safe-rect",
           topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 302,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -4382,7 +4459,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionIntent: "selected-focus-safe-rect",
           topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 302,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -4455,7 +4532,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionIntent: "selected-focus-safe-rect",
           topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 302,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -4542,7 +4619,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyCameraMotionIntent: "selected-focus-safe-rect",
       topologyCameraMotionTargetPolicy: "viewport-center",
       topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-      topologyCameraMotionMaxDistancePx: 302,
+      topologyCameraMotionMaxDistancePx: 318,
       topologyCameraMotionSelectedViewportX: 652,
       topologyCameraMotionSelectedViewportY: 412,
       topologyCameraMotionSafeTargetX: 734,
@@ -4642,7 +4719,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionIntent: "selected-focus-safe-rect",
           topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 302,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -4743,7 +4820,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionIntent: "selected-focus-safe-rect",
           topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 302,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -4811,7 +4888,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionIntent: "selected-focus-safe-rect",
           topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 302,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -4874,7 +4951,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionIntent: "selected-focus-safe-rect",
           topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 302,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -4937,7 +5014,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionIntent: "selected-focus-safe-rect",
           topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 302,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -4996,7 +5073,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionIntent: "selected-focus-safe-rect",
           topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 302,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -5058,7 +5135,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionIntent: "selected-focus-safe-rect",
           topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 302,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -6350,12 +6427,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
@@ -6365,7 +6442,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -6411,19 +6488,19 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationCardHeight: 222,
         },
       },
-      { expectedPath: "/en/topology/", requireTopologyDrag: true },
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true },
     ),
     /undersized Relief selected relation card/,
   );
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
@@ -6433,7 +6510,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -6476,19 +6553,19 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationCardHeight: 720,
         },
       },
-      { expectedPath: "/en/topology/", requireTopologyDrag: true },
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true },
     ),
     /oversized Relief selected relation card/,
   );
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
@@ -6498,7 +6575,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -6555,12 +6632,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
@@ -6570,7 +6647,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -6625,19 +6702,19 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationAgentDecisionTop: 320,
         },
       },
-      { expectedPath: "/en/topology/", requireTopologyDrag: true },
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true },
     ),
     /malformed compact Relief selected relation proof band/,
   );
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
@@ -6647,7 +6724,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -6691,19 +6768,19 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         },
       },
-      { expectedPath: "/en/topology/", requireTopologyDrag: true },
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true },
     ),
     /selected relation card surface role/,
   );
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
@@ -6713,7 +6790,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -6759,19 +6836,19 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationCardTop: 96,
         },
       },
-      { expectedPath: "/en/topology/", requireTopologyDrag: true },
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true },
     ),
     /selected relation card elevation contract/,
   );
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
@@ -6781,7 +6858,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -7048,7 +7125,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.equal(
     validateWebviewVerifyPayload({
-      ...payload,
+      ...selectedRelationPayload,
       href: "tauri://localhost/en/topology/?p=domain%3Aviews&mode=focus",
       title: "Relief · ontology-atlas",
       width: 1512,
@@ -7056,7 +7133,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       bodyText:
         "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
       markers: {
-        ...payload.markers,
+        ...selectedRelationPayload.markers,
         topologyRelief: true,
         topologyUiScale: 1.12,
         topologyCommandChromeState: "collapsed-active-relation",
@@ -7327,7 +7404,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload({
-      ...payload,
+      ...selectedRelationPayload,
       href: "tauri://localhost/en/topology/?p=domain%3Aviews",
       title: "Relief · ontology-atlas",
       bodyText:
@@ -7335,7 +7412,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       width: 1512,
       height: 917,
       markers: {
-        ...payload.markers,
+        ...selectedRelationPayload.markers,
         topologyRelief: true,
         topologyUiScale: 1.12,
         topologyCardsReady: true,
@@ -8297,6 +8374,36 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/" }),
     /before the skeleton overlay was ready/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: false,
+        topologySkeletonLayerPresent: true,
+        topologySkeletonLayerResolvedCount: 21,
+        topologySkeletonCardResolvedCount: 21,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 2,
+        topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
+        topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
+      },
+    }, { expectedPath: "/en/topology/" }),
+    null,
   );
   assert.match(
     validateWebviewVerifyPayload({

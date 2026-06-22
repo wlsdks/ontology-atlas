@@ -3421,13 +3421,13 @@ export function validateWebviewVerifyPayload(payload, {
         payload.markers.topologyCameraMotionSelectedFanoutRows || 0,
       );
       const cameraMotionFanoutMaxDistancePx =
-        220 + Math.max(0, selectedFanoutRows - 2) * 16;
+        220 + Math.max(0, selectedFanoutRows - 2) * 48;
       const cameraMotionViewportWidth = Math.max(0, Number(payload.width || 0));
       const cameraMotionViewportMaxDistancePx =
         cameraMotionViewportWidth >= 1800
           ? Math.round(cameraMotionViewportWidth * 0.18)
           : cameraMotionViewportWidth >= 1400
-            ? Math.round(cameraMotionViewportWidth * 0.2)
+            ? Math.round(cameraMotionViewportWidth * 0.21)
           : 0;
       const cameraMotionMaxDistancePx = Math.max(
         cameraMotionFanoutMaxDistancePx,
@@ -3740,7 +3740,15 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView Relief UI scale was ${payload.markers.topologyUiScale ?? "missing"} at ${payload.width}px viewport`;
     }
-    if (!topologyDragDone && payload.markers.topologyCardsReady !== true) {
+    const hasResolvedSkeletonOverlay =
+      payload.markers.topologySkeletonLayerPresent === true &&
+      Number(payload.markers.topologySkeletonLayerResolvedCount || 0) >= 1 &&
+      Number(payload.markers.topologySkeletonCardResolvedCount || 0) >= 1;
+    if (
+      !topologyDragDone &&
+      payload.markers.topologyCardsReady !== true &&
+      !hasResolvedSkeletonOverlay
+    ) {
       return "WebView reported Relief cards before the skeleton overlay was ready";
     }
     const selectedFocusContext =

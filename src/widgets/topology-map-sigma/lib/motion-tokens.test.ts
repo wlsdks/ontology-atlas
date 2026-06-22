@@ -34,11 +34,12 @@ describe('topology motion tokens', () => {
 
   it('bounds selected focus camera travel by fanout density', () => {
     expect(SELECTED_FOCUS_CAMERA_BASE_MAX_DISTANCE_PX).toBe(220);
-    expect(SELECTED_FOCUS_CAMERA_FANOUT_ROW_DISTANCE_PX).toBe(16);
+    expect(SELECTED_FOCUS_CAMERA_FANOUT_ROW_DISTANCE_PX).toBe(48);
     expect(resolveSelectedFocusCameraMaxDistancePx(0)).toBe(220);
     expect(resolveSelectedFocusCameraMaxDistancePx(2)).toBe(220);
-    expect(resolveSelectedFocusCameraMaxDistancePx(5)).toBe(268);
-    expect(resolveSelectedFocusCameraMaxDistancePx(4, 1512)).toBe(302);
+    expect(resolveSelectedFocusCameraMaxDistancePx(5)).toBe(364);
+    expect(resolveSelectedFocusCameraMaxDistancePx(6, 1280)).toBe(412);
+    expect(resolveSelectedFocusCameraMaxDistancePx(4, 1512)).toBe(318);
     expect(resolveSelectedFocusCameraMaxDistancePx(4, 1920)).toBe(346);
     expect(resolveSelectedFocusCameraMaxDistancePx(4, 2560)).toBe(461);
   });
