@@ -7215,6 +7215,7 @@ export function buildWebviewEvidencePayload(
         expected: markerNumber(markers, "topologyRelationLabelGeometryExpectedCount"),
         ready: markerNumber(markers, "topologyRelationLabelGeometryReadyCount"),
         pending: markerNumber(markers, "topologyRelationLabelGeometryPendingCount"),
+        agentNextAction: "trust-frame-positioned-relation-label-hit-targets",
       }
       : null;
   const connectorCacheProof =

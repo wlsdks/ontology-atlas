@@ -1148,6 +1148,7 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     expected: 1,
     ready: 1,
     pending: 0,
+    agentNextAction: "trust-frame-positioned-relation-label-hit-targets",
   });
   assert.deepEqual(evidence.connectorCacheProof, {
     proof: "topology-connector-cache-frame-fallback",
