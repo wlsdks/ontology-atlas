@@ -3392,6 +3392,10 @@ export function SigmaSkeletonCards({
         el.dataset.relationSource = selectedRelationEndpointSource ?? '';
         el.dataset.relationTarget = selectedRelationEndpointTarget ?? '';
         el.dataset.relationType = selectedRelationEndpointType ?? '';
+        el.dataset.relationRoute =
+          selectedRelationEndpointSource && selectedRelationEndpointTarget
+            ? `${selectedRelationEndpointSource}>${selectedRelationEndpointTarget}`
+            : '';
         el.dataset.selectedRelationHandoffContract =
           'endpoint-card-carries-selected-relation-action';
         el.dataset.selectedRelationPrimaryAction =
@@ -3400,6 +3404,10 @@ export function SigmaSkeletonCards({
           selectedRelationLabelHandoff?.cliFallbackCommand ?? '';
         el.dataset.selectedRelationFactRoute =
           selectedRelationLabelHandoff?.route ?? '';
+        el.dataset.relationMcpAction = selectedRelationLabelHandoff?.action ?? '';
+        el.dataset.relationCliFallback =
+          selectedRelationLabelHandoff?.cliFallbackCommand ?? '';
+        el.dataset.relationFactRoute = selectedRelationLabelHandoff?.route ?? '';
       } else {
         clearSelectedRelationEndpointCardStyle(el);
         delete el.dataset.selectedRelationEndpoint;
@@ -3410,10 +3418,14 @@ export function SigmaSkeletonCards({
         delete el.dataset.relationSource;
         delete el.dataset.relationTarget;
         delete el.dataset.relationType;
+        delete el.dataset.relationRoute;
         delete el.dataset.selectedRelationHandoffContract;
         delete el.dataset.selectedRelationPrimaryAction;
         delete el.dataset.selectedRelationCliFallback;
         delete el.dataset.selectedRelationFactRoute;
+        delete el.dataset.relationMcpAction;
+        delete el.dataset.relationCliFallback;
+        delete el.dataset.relationFactRoute;
       }
       delete el.dataset.selectedRelationEndpointSurfaceShift;
       el.style.visibility = 'visible';

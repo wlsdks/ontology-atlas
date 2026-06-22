@@ -4159,6 +4159,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-relation-endpoint-route",
           "project:p>domain:d1",
         );
+        expect(sourceCard).toHaveAttribute("data-relation-route", "project:p>domain:d1");
         expect(sourceCard).toHaveAttribute("data-relation-source", "project:p");
         expect(sourceCard).toHaveAttribute("data-relation-target", "domain:d1");
         expect(sourceCard).toHaveAttribute("data-relation-type", "contains");
@@ -4170,12 +4171,21 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-relation-primary-action",
           "explain_relation",
         );
+        expect(sourceCard).toHaveAttribute("data-relation-mcp-action", "explain_relation");
         expect(sourceCard).toHaveAttribute(
           "data-selected-relation-cli-fallback",
           "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
         );
         expect(sourceCard).toHaveAttribute(
+          "data-relation-cli-fallback",
+          "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+        );
+        expect(sourceCard).toHaveAttribute(
           "data-selected-relation-fact-route",
+          "fact>evidence>gate>action",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-relation-fact-route",
           "fact>evidence>gate>action",
         );
         expect(targetCard).toHaveAttribute("data-selected-relation-endpoint", "true");
@@ -4192,6 +4202,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-relation-endpoint-route",
           "project:p>domain:d1",
         );
+        expect(targetCard).toHaveAttribute("data-relation-route", "project:p>domain:d1");
         expect(targetCard).toHaveAttribute("data-relation-source", "project:p");
         expect(targetCard).toHaveAttribute("data-relation-target", "domain:d1");
         expect(targetCard).toHaveAttribute("data-relation-type", "contains");
@@ -4203,12 +4214,21 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-relation-primary-action",
           "explain_relation",
         );
+        expect(targetCard).toHaveAttribute("data-relation-mcp-action", "explain_relation");
         expect(targetCard).toHaveAttribute(
           "data-selected-relation-cli-fallback",
           "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
         );
         expect(targetCard).toHaveAttribute(
+          "data-relation-cli-fallback",
+          "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+        );
+        expect(targetCard).toHaveAttribute(
           "data-selected-relation-fact-route",
+          "fact>evidence>gate>action",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-relation-fact-route",
           "fact>evidence>gate>action",
         );
         expect(sourceCard).not.toHaveAttribute("data-surface-hidden", "true");
