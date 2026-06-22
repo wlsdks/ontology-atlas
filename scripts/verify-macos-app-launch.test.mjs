@@ -2122,6 +2122,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationHandleStripWidth: 1,
       topologySelectedRelationHandleStripHeight: 1,
       topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
+      topologySelectedRelationEndpointRouteWrapPolicy:
+        "wrap-allowed-no-horizontal-overflow",
+      topologySelectedRelationEndpointRouteLineBudget: "2",
       topologySelectedRelationEndpointRouteSourceName: "Views",
       topologySelectedRelationEndpointRouteTargetName: "Topology Analysis Modes",
       topologySelectedRelationEndpointRouteSourceHandle: "domain:views",
@@ -2433,6 +2436,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardSource: "domain:views",
       topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
       topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
+      topologySelectedRelationEndpointRouteWrapPolicy:
+        "wrap-allowed-no-horizontal-overflow",
+      topologySelectedRelationEndpointRouteLineBudget: "2",
       topologySelectedRelationEndpointRouteSourceName: "Views",
       topologySelectedRelationEndpointRouteTargetName: "Topology Analysis Modes",
       topologySelectedRelationEndpointRouteSourceHandle: "domain:views",
@@ -10790,6 +10796,9 @@ test("selected relation endpoint route markers prove visible source and target n
     topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
     topologySelectedRelationEndpointRouteSourceName: "Views",
     topologySelectedRelationEndpointRouteTargetName: "Topology Analysis Modes",
+    topologySelectedRelationEndpointRouteWrapPolicy:
+      "wrap-allowed-no-horizontal-overflow",
+    topologySelectedRelationEndpointRouteLineBudget: "2",
     topologySelectedRelationEndpointRouteSourceHandle: "domain:views",
     topologySelectedRelationEndpointRouteTargetHandle: "capability:topology-analysis-modes",
     topologySelectedRelationEndpointRouteHandleSummary:
@@ -10811,6 +10820,20 @@ test("selected relation endpoint route markers prove visible source and target n
       topologySelectedRelationEndpointRouteContract: "hidden-handles-only",
     }),
     /endpoint route contract/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteWrapPolicy: "truncate",
+    }),
+    /endpoint route wrap policy/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteLineBudget: "1",
+    }),
+    /endpoint route line budget/,
   );
   assert.match(
     validateSelectedRelationEndpointRouteMarkers({

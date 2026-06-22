@@ -1870,6 +1870,18 @@ export function validateSelectedRelationEndpointRouteMarkers(markers) {
   ) {
     return `WebView reported malformed Relief selected relation endpoint route contract (${markers?.topologySelectedRelationEndpointRouteContract || "missing"})`;
   }
+  if (
+    markers?.topologySelectedRelationEndpointRouteWrapPolicy !==
+    "wrap-allowed-no-horizontal-overflow"
+  ) {
+    return `WebView reported malformed Relief selected relation endpoint route wrap policy (${markers?.topologySelectedRelationEndpointRouteWrapPolicy || "missing"})`;
+  }
+  const routeLineBudget = Number(
+    markers?.topologySelectedRelationEndpointRouteLineBudget || 0,
+  );
+  if (!Number.isFinite(routeLineBudget) || routeLineBudget < 2) {
+    return `WebView reported malformed Relief selected relation endpoint route line budget (${markers?.topologySelectedRelationEndpointRouteLineBudget || "missing"})`;
+  }
   const sourceName =
     typeof markers?.topologySelectedRelationEndpointRouteSourceName === "string"
       ? markers.topologySelectedRelationEndpointRouteSourceName.trim()

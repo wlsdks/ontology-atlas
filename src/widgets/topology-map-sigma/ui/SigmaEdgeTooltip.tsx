@@ -558,6 +558,8 @@ export function SigmaSelectedEdgeCard({
           <div
             data-testid="sigma-selected-edge-endpoint-route"
             data-endpoint-route-contract="visible-source-target-names-wrap"
+            data-endpoint-route-wrap-policy="wrap-allowed-no-horizontal-overflow"
+            data-endpoint-route-line-budget="2"
             data-source-name={data.sourceName}
             data-target-name={data.targetName}
             data-source-handle={data.source}

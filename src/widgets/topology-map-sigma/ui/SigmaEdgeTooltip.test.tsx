@@ -43,6 +43,11 @@ describe("SigmaSelectedEdgeCard", () => {
       "visible-source-target-names-wrap",
     );
     expect(endpointRoute).toHaveAttribute(
+      "data-endpoint-route-wrap-policy",
+      "wrap-allowed-no-horizontal-overflow",
+    );
+    expect(endpointRoute).toHaveAttribute("data-endpoint-route-line-budget", "2");
+    expect(endpointRoute).toHaveAttribute(
       "data-source-name",
       "Views (Topology · Browse · Builder)",
     );

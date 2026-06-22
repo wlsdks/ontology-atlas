@@ -4255,6 +4255,10 @@ pub fn run() {
                                     topologySelectedRelationHandleStripRect?.height || 0,
                                   topologySelectedRelationEndpointRouteContract:
                                     topologySelectedRelationEndpointRoute?.getAttribute("data-endpoint-route-contract") || "",
+                                  topologySelectedRelationEndpointRouteWrapPolicy:
+                                    topologySelectedRelationEndpointRoute?.getAttribute("data-endpoint-route-wrap-policy") || "",
+                                  topologySelectedRelationEndpointRouteLineBudget:
+                                    topologySelectedRelationEndpointRoute?.getAttribute("data-endpoint-route-line-budget") || "",
                                   topologySelectedRelationEndpointRouteSourceName:
                                     topologySelectedRelationEndpointRoute?.getAttribute("data-source-name") || "",
                                   topologySelectedRelationEndpointRouteTargetName:
