@@ -2069,6 +2069,22 @@ export function validateSelectedRelationEndpointVisibilityMarkers(markers) {
   if (hiddenEndpoint) {
     return `WebView reported hidden Relief selected relation endpoint card (${hiddenEndpoint.slug || "unknown endpoint"})`;
   }
+  const sourceEndpoint = endpointCards.find((card) => card?.slug === source);
+  const targetEndpoint = endpointCards.find((card) => card?.slug === target);
+  if (
+    sourceEndpoint?.roleBadgeContract !== "visible-source-target-role-badge" ||
+    sourceEndpoint?.roleBadgeText !== "FROM" ||
+    sourceEndpoint?.roleBadgeVisible !== true
+  ) {
+    return `WebView reported malformed Relief selected relation source role badge (${sourceEndpoint?.roleBadgeText || "missing"})`;
+  }
+  if (
+    targetEndpoint?.roleBadgeContract !== "visible-source-target-role-badge" ||
+    targetEndpoint?.roleBadgeText !== "TO" ||
+    targetEndpoint?.roleBadgeVisible !== true
+  ) {
+    return `WebView reported malformed Relief selected relation target role badge (${targetEndpoint?.roleBadgeText || "missing"})`;
+  }
   return null;
 }
 

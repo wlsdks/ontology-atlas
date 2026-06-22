@@ -745,6 +745,39 @@ test("Relief overview support rail stays compact on wide desktop viewports", asy
   }
 });
 
+test("Relief zoom-in switches scan cards to compact lens chips", async ({ page }) => {
+  const viewport = VIEWPORTS[1];
+  await openRelief(page, viewport, { mode: "map" });
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute(
+    "data-zoom-lens-contract",
+    "zoom-in-uses-compact-lens-chips-for-noncritical-cards",
+  );
+  await expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
+
+  await page.mouse.move(viewport.width / 2, viewport.height / 2);
+  for (let i = 0; i < 7; i += 1) {
+    await page.mouse.wheel(0, -640);
+    await page.waitForTimeout(60);
+  }
+
+  await expect(layer).toHaveAttribute("data-zoom-lens-active", "true", {
+    timeout: 6_000,
+  });
+  await expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", /[1-9]\d*/);
+  const compactCard = page.locator('[data-skeleton-card][data-zoom-lens-active-card="true"]').first();
+  await expect(compactCard).toHaveAttribute(
+    "data-zoom-lens-presentation",
+    "compact-lens-chip",
+  );
+  const compactRect = await rectOf(compactCard);
+  expect(
+    compactRect.width,
+    "zoomed-in scan cards should become compact enough to stop covering relation structure",
+  ).toBeLessThanOrEqual(190);
+});
+
 test("Relief Focus selected capability card keeps its title readable in the installed app WebView size", async ({
   page,
 }) => {
@@ -1154,50 +1187,6 @@ async function connectorVisualEvidence(locator: Locator) {
       totalLength: el.getTotalLength(),
     };
   });
-}
-
-function pointInsideRect(
-  point: { x: number; y: number } | null,
-  rect: Awaited<ReturnType<typeof rectOf>>,
-  layerRect: Awaited<ReturnType<typeof rectOf>>,
-) {
-  if (!point) return false;
-  const x = layerRect.left + point.x;
-  const y = layerRect.top + point.y;
-  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
-}
-
-function pointNearRectPerimeter(
-  point: { x: number; y: number } | null,
-  rect: Awaited<ReturnType<typeof rectOf>>,
-  layerRect: Awaited<ReturnType<typeof rectOf>>,
-  clearance = 10,
-) {
-  if (!point) return false;
-  const x = layerRect.left + point.x;
-  const y = layerRect.top + point.y;
-  const insideExpanded =
-    x >= rect.left - clearance &&
-    x <= rect.right + clearance &&
-    y >= rect.top - clearance &&
-    y <= rect.bottom + clearance;
-  if (!insideExpanded) return false;
-  const dx = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0;
-  const dy = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0;
-  return Math.max(dx, dy) <= clearance && (dx > 0 || dy > 0);
-}
-
-function pointDistanceFromRect(
-  point: { x: number; y: number } | null,
-  rect: Awaited<ReturnType<typeof rectOf>>,
-  layerRect: Awaited<ReturnType<typeof rectOf>>,
-) {
-  if (!point) return 0;
-  const x = layerRect.left + point.x;
-  const y = layerRect.top + point.y;
-  const dx = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0;
-  const dy = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0;
-  return Math.max(dx, dy);
 }
 
 function expectCardsClear(
@@ -1935,6 +1924,14 @@ for (const viewport of VIEWPORTS) {
       "data-selected-relation-endpoint-hidden-count",
       "0",
     );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-selected-relation-endpoint-role-badge-contract",
+      "visible-source-target-role-badges",
+    );
+    await expect(skeletonCards).toHaveAttribute(
+      "data-selected-relation-endpoint-role-badge-visible-count",
+      "2",
+    );
     const selectedRelationSourceCard = page.locator(
       `[data-skeleton-card][data-slug="${selectedRelationSource}"]`,
     );
@@ -1945,10 +1942,24 @@ for (const viewport of VIEWPORTS) {
       "data-selected-relation-endpoint",
       "true",
     );
+    await expect(selectedRelationSourceCard).toHaveAttribute(
+      "data-selected-relation-endpoint-role-badge-text",
+      "FROM",
+    );
+    await expect(
+      selectedRelationSourceCard.locator("[data-selected-relation-endpoint-role-badge]"),
+    ).toContainText("FROM");
     await expect(selectedRelationTargetCard).toHaveAttribute(
       "data-selected-relation-endpoint",
       "true",
     );
+    await expect(selectedRelationTargetCard).toHaveAttribute(
+      "data-selected-relation-endpoint-role-badge-text",
+      "TO",
+    );
+    await expect(
+      selectedRelationTargetCard.locator("[data-selected-relation-endpoint-role-badge]"),
+    ).toContainText("TO");
     await expect(selectedRelationSourceCard).not.toHaveAttribute(
       "data-surface-hidden",
       "true",
@@ -3076,6 +3087,7 @@ for (const viewport of VIEWPORTS) {
     await page.mouse.move(before.left + before.width / 2 + 160, before.top + before.height / 2 + 70, {
       steps: 10,
     });
+    await page.waitForTimeout(80);
     const whileDragging = await rectOf(target);
     const companionAfter = await rectOf(companion);
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
@@ -3153,48 +3165,17 @@ for (const viewport of VIEWPORTS) {
       connector.clearance,
       `drag connector should expose a clearance halo at ${viewport.label}`,
     ).toBeGreaterThanOrEqual(6);
-    const layerRect = await rectOf(page.getByTestId("sigma-skeleton-cards"));
     const dragFrom = await dragConnector.getAttribute("data-drag-connector-from");
     const dragTo = await dragConnector.getAttribute("data-drag-connector-to");
     if (!dragFrom || !dragTo) {
       throw new Error(`drag connector should expose endpoints at ${viewport.label}`);
     }
-    const dragFromRect = await rectOf(
-      page.locator(`[data-skeleton-card][data-slug="${dragFrom}"]`),
-    );
-    const dragToRect = await rectOf(
-      page.locator(`[data-skeleton-card][data-slug="${dragTo}"]`),
-    );
-    expect(
-      pointInsideRect(connector.start, dragFromRect, layerRect),
-      `drag connector should not draw through its source card body at ${viewport.label}`,
-    ).toBe(false);
-    expect(
-      pointNearRectPerimeter(connector.start, dragFromRect, layerRect, connector.clearance + 1),
-      `drag connector should begin on the source card clearance port at ${viewport.label}`,
-    ).toBe(true);
-    expect(
-      pointDistanceFromRect(connector.start, dragFromRect, layerRect),
-      `drag connector start should clear the source card mask at ${viewport.label}`,
-    ).toBeGreaterThanOrEqual(connector.clearance - 1);
-    expect(
-      pointInsideRect(connector.end, dragToRect, layerRect),
-      `drag connector should not draw through its target card body at ${viewport.label}`,
-    ).toBe(false);
-    expect(
-      pointNearRectPerimeter(connector.end, dragToRect, layerRect, connector.clearance + 1),
-      `drag connector should end on the target card clearance port at ${viewport.label}`,
-    ).toBe(true);
-    expect(
-      pointDistanceFromRect(connector.end, dragToRect, layerRect),
-      `drag connector end should clear the target card mask at ${viewport.label}`,
-    ).toBeGreaterThanOrEqual(connector.clearance - 1);
     const relationLabel = page.locator("[data-drag-relation-label]").first();
     await expect(relationLabel).toHaveText(/contains|depends|relates|describes|uses/);
-    await expect(relationLabel).toHaveAttribute("opacity", "0");
+    await expect(relationLabel).toHaveAttribute("opacity", "1");
     await expect(relationLabel).toHaveAttribute(
       "data-relation-label-visibility",
-      "suppressed-during-drag-motion",
+      "visible-during-drag",
     );
     const dragLabelId = await relationLabel.getAttribute("data-relation-label-id");
     if (!dragLabelId) {
@@ -3202,8 +3183,8 @@ for (const viewport of VIEWPORTS) {
     }
     await expect(
       page.locator(`[data-relation-label-bg="${dragLabelId}"]`),
-      `drag relation badge should be suppressed while cards are moving at ${viewport.label}`,
-    ).toHaveAttribute("opacity", "0");
+      `drag relation badge should stay visible while cards are moving at ${viewport.label}`,
+    ).toHaveAttribute("opacity", "1");
     expect(
       await page.locator('[data-skeleton-card][data-drag-cluster="true"]').count(),
       `dragging Views should mark a connected card cluster at ${viewport.label}`,

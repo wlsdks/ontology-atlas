@@ -86,6 +86,7 @@ const ANCHOR_TRANSLATE: Record<NonNullable<SkeletonCardModel['anchor']>, string>
 interface SkeletonCardsCamera {
   graphToViewport(pos: { x: number; y: number }): { x: number; y: number };
   viewportToGraph(pos: { x: number; y: number }): { x: number; y: number };
+  getCamera?(): { getState(): { ratio?: number } };
   on(type: 'afterRender', handler: () => void): unknown;
   off(type: 'afterRender', handler: () => void): unknown;
 }
@@ -225,6 +226,10 @@ const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
 const DIM_CHIP_OPACITY_TOKEN = '--topology-map-dim-context-opacity';
 const DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN =
   '--topology-card-drag-reactive-context-opacity';
+const SELECTED_RELATION_ENDPOINT_ROLE_LABEL: Record<'source' | 'target', string> = {
+  source: 'FROM',
+  target: 'TO',
+};
 const OVERVIEW_CONTEXT_OPACITY: Record<SkeletonCardModel['tier'], string> = {
   0: '1',
   1: '1',
@@ -327,6 +332,8 @@ const DRAG_COLLISION_SETTLE_PASSES = 4;
 const FIXED_SURFACE_RECT_CACHE_MS = 180;
 const LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS = 160;
 const INITIAL_LOAD_REPOSITION_THROTTLE_MS = 640;
+const ZOOM_LENS_RATIO_THRESHOLD = 0.78;
+const ZOOM_LENS_CARD_MAX_WIDTH_PX = 168;
 
 type RelationConnector = {
   from: string;
@@ -375,6 +382,17 @@ function collectSkeletonCardElementIndex(
       ? Array.from(container.querySelectorAll<HTMLElement>('[data-skeleton-card]'))
       : [],
   };
+}
+
+function readSkeletonCameraRatio(sigma: SkeletonCardsCamera | null): number {
+  try {
+    const ratio = sigma?.getCamera?.().getState().ratio;
+    return typeof ratio === 'number' && Number.isFinite(ratio) && ratio > 0
+      ? ratio
+      : 1;
+  } catch {
+    return 1;
+  }
 }
 
 type FixedSurfaceRectCache = {
@@ -3265,6 +3283,17 @@ export function SigmaSkeletonCards({
     const scale = resolveTopologyUiScale(
       typeof window === 'undefined' ? 0 : window.innerWidth,
     );
+    const cameraRatio = readSkeletonCameraRatio(sigma);
+    const zoomLensActive = cameraRatio <= ZOOM_LENS_RATIO_THRESHOLD;
+    container.dataset.zoomLensContract =
+      'zoom-in-uses-compact-lens-chips-for-noncritical-cards';
+    container.dataset.zoomLensThresholdRatio = String(ZOOM_LENS_RATIO_THRESHOLD);
+    container.dataset.zoomLensCameraRatio = cameraRatio.toFixed(3);
+    container.dataset.zoomLensActive = zoomLensActive ? 'true' : 'false';
+    container.style.setProperty(
+      '--topology-zoom-lens-card-max-width',
+      `${ZOOM_LENS_CARD_MAX_WIDTH_PX}px`,
+    );
     if (lastAppliedTopologyUiScaleRef.current !== scale) {
       lastAppliedTopologyUiScaleRef.current = scale;
       container.dataset.topologyUiScale = String(scale);
@@ -3335,6 +3364,32 @@ export function SigmaSkeletonCards({
     let cardPlacementSizeReadCount = 0;
     let cardPlacementSizeCacheHitCount = 0;
     let cardPlacementSizeCacheMissCount = 0;
+    let zoomLensEligibleCount = 0;
+    let zoomLensActiveCardCount = 0;
+    for (const el of els) {
+      const zoomLensCritical =
+        el.dataset.selected === 'true' ||
+        el.dataset.pathRole === 'source' ||
+        el.dataset.pathRole === 'target' ||
+        el.dataset.healthRepairAuditTarget === 'true' ||
+        el.dataset.dragCluster === 'true' ||
+        el.dataset.dragPushed === 'true' ||
+        el.dataset.selectedRelationEndpoint === 'true';
+      const zoomLensEligible = el.dataset.zoomLensEligible === 'true' && !zoomLensCritical;
+      if (zoomLensEligible) zoomLensEligibleCount += 1;
+      if (zoomLensActive && zoomLensEligible) {
+        el.dataset.zoomLensActiveCard = 'true';
+        el.dataset.zoomLensPresentation = 'compact-lens-chip';
+        zoomLensActiveCardCount += 1;
+      } else {
+        el.dataset.zoomLensActiveCard = 'false';
+        el.dataset.zoomLensPresentation = zoomLensCritical
+          ? 'full-card-critical'
+          : 'full-card-default';
+      }
+    }
+    container.dataset.zoomLensEligibleCount = String(zoomLensEligibleCount);
+    container.dataset.zoomLensActiveCardCount = String(zoomLensActiveCardCount);
     const readCardPlacementParentRect = (el: HTMLElement) => {
       const cached = cardPlacementParentRectCache.get(el);
       if (cached) return cached;
@@ -3356,7 +3411,9 @@ export function SigmaSkeletonCards({
       return next;
     };
     const readCardPlacementSize = (el: HTMLElement, slug: string) => {
-      const key = `${el.dataset.cardLayoutSizeKey ?? ''}|scale:${scale}`;
+      const key = `${el.dataset.cardLayoutSizeKey ?? ''}|scale:${scale}|zoom-lens:${
+        el.dataset.zoomLensActiveCard ?? 'false'
+      }`;
       cardPlacementSizeCacheSeen.add(slug);
       const cached = cardPlacementSizeCache.get(slug);
       if (cached?.key === key) {
@@ -4637,6 +4694,16 @@ export function SigmaSkeletonCards({
       0,
     );
     const selectedRelationEndpointExpectedCount = selectedRelationEndpointRoles.size;
+    const selectedRelationEndpointRoleBadgeVisibleCount = orderedEls.reduce(
+      (count, el) =>
+        count +
+        (isSelectedRelationEndpointCard(el) &&
+        el.querySelector('[data-selected-relation-endpoint-role-badge]') !== null &&
+        isSkeletonCardVisibleFromFrameState(el)
+          ? 1
+          : 0),
+      0,
+    );
     const selectedRelationEndpointHiddenCount = Math.max(
       0,
       selectedRelationEndpointExpectedCount - selectedRelationEndpointVisibleCount,
@@ -4652,6 +4719,11 @@ export function SigmaSkeletonCards({
     );
     container.dataset.selectedRelationEndpointHiddenCount = String(
       selectedRelationEndpointHiddenCount,
+    );
+    container.dataset.selectedRelationEndpointRoleBadgeContract =
+      'visible-source-target-role-badges';
+    container.dataset.selectedRelationEndpointRoleBadgeVisibleCount = String(
+      selectedRelationEndpointRoleBadgeVisibleCount,
     );
     container.dataset.selectedRelationEndpointRoute =
       selectedRelationEndpointSource && selectedRelationEndpointTarget
@@ -7330,6 +7402,15 @@ export function SigmaSkeletonCards({
         const dragSettled = dragSettledSlugs.has(nodeId);
         const dragReactiveContext =
           activeDragMotion && activeDragCluster !== null && dimmed && !dragging;
+        const selectedRelationEndpointRole =
+          selectedRelationLabelHandoff?.source === nodeId
+            ? 'source'
+            : selectedRelationLabelHandoff?.target === nodeId
+              ? 'target'
+              : undefined;
+        const selectedRelationEndpointRoleLabel = selectedRelationEndpointRole
+          ? SELECTED_RELATION_ENDPOINT_ROLE_LABEL[selectedRelationEndpointRole]
+          : undefined;
         const pathEndpoint = pathRole === 'source' || pathRole === 'target';
         const kindDescription = describeKind?.(card.kind) ?? card.kind;
         const kindBadgeLabel =
@@ -7368,6 +7449,14 @@ export function SigmaSkeletonCards({
         const cardSpacing = selectedRelationSummaryOwnsMeta
           ? SELECTED_FOCUS_CARD_SPACING
           : TIER_CARD_SPACING[card.tier];
+        const zoomLensCriticalCard =
+          selected ||
+          pathEndpoint ||
+          healthRepairAuditTarget ||
+          dragging ||
+          dragSettled ||
+          selectedRelationEndpointRole !== undefined;
+        const zoomLensEligible = !zoomLensCriticalCard;
         return (
           <button
             key={card.id}
@@ -7383,6 +7472,12 @@ export function SigmaSkeletonCards({
             data-dock-index={card.dock?.index}
             data-dock-total={card.dock?.total}
             data-selected={selected ? 'true' : 'false'}
+            data-zoom-lens-eligible={zoomLensEligible ? 'true' : 'false'}
+            data-zoom-lens-card-contract={
+              zoomLensEligible
+                ? 'noncritical-card-can-collapse-on-camera-zoom-in'
+                : 'critical-card-stays-full-on-camera-zoom-in'
+            }
             data-path-workflow={pathWorkflowActive ? 'true' : 'false'}
             data-path-role={pathRole}
             data-path-role-contract={pathRoleContract}
@@ -7408,6 +7503,7 @@ export function SigmaSkeletonCards({
                 : '',
               pathRole,
               healthRepairAuditTarget ? healthRepairTarget?.kind ?? 'repair' : '',
+              selectedRelationEndpointRole ?? '',
             ].join('|')}
             data-path-attention-layer={
               pathWorkflowActive && pathRole !== 'none' ? 'focus-path-state' : undefined
@@ -7440,6 +7536,15 @@ export function SigmaSkeletonCards({
             }
             data-drag-reactive-context-opacity-token={
               dragReactiveContext ? DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN : undefined
+            }
+            data-selected-relation-endpoint-role-badge-visible={
+              selectedRelationEndpointRole ? 'true' : undefined
+            }
+            data-selected-relation-endpoint={
+              selectedRelationEndpointRole ? 'true' : undefined
+            }
+            data-selected-relation-endpoint-role-badge-text={
+              selectedRelationEndpointRoleLabel
             }
             data-card-selection-box-policy="boxless-border-state"
             data-drag-wash-token={
@@ -7739,7 +7844,7 @@ export function SigmaSkeletonCards({
                   : tintBorderHover,
               } as React.CSSProperties
             }
-            className={`pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
+            className={`pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-card-max-width)] data-[zoom-lens-active-card=true]:!gap-[0.38em] data-[zoom-lens-active-card=true]:!rounded-[0.46rem] data-[zoom-lens-active-card=true]:!px-[0.58em] data-[zoom-lens-active-card=true]:!py-[0.34em] data-[zoom-lens-active-card=true]:!text-[0.82em] data-[zoom-lens-active-card=true]:shadow-none hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
               selected
                 ? 'shadow-none outline-none'
                 : ''
@@ -7915,6 +8020,23 @@ export function SigmaSkeletonCards({
               >
                 {selectedRelationSummaryCompactText}
               </span>
+            ) : null}
+            {selectedRelationEndpointRole ? (
+              <>
+                <span className="sr-only"> </span>
+                <span
+                  data-selected-relation-endpoint-role-badge
+                  data-selected-relation-endpoint-role={selectedRelationEndpointRole}
+                  data-selected-relation-endpoint-role-badge-contract="visible-source-target-role-badge"
+                  data-selected-relation-endpoint-role-badge-text={
+                    selectedRelationEndpointRoleLabel
+                  }
+                  aria-label={`selected relation ${selectedRelationEndpointRole}`}
+                  className="relative ml-0.5 inline-flex h-[1.42em] shrink-0 items-center justify-center rounded-[0.32em] border border-[color:var(--topology-relation-label-selected-border)] bg-[color:var(--topology-relation-label-selected-surface)] px-[0.36em] font-mono text-[0.58em] font-semibold leading-none text-[color:var(--topology-relation-label-selected-text)]"
+                >
+                  {selectedRelationEndpointRoleLabel}
+                </span>
+              </>
             ) : null}
             {pathEndpoint ? (
               <span

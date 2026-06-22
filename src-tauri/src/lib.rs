@@ -1971,9 +1971,19 @@ pub fn run() {
                                 const rect = card.getBoundingClientRect();
                                 const opacity = Number(style.opacity || "1");
                                 const surfaceHidden = card.getAttribute("data-surface-hidden") || "";
+                                const roleBadge = card.querySelector("[data-selected-relation-endpoint-role-badge]");
                                 return {
                                   slug: card.getAttribute("data-slug") || "",
                                   role: card.getAttribute("data-selected-relation-endpoint-role") || "",
+                                  roleBadgeText:
+                                    roleBadge?.getAttribute("data-selected-relation-endpoint-role-badge-text") ||
+                                    roleBadge?.textContent ||
+                                    "",
+                                  roleBadgeContract:
+                                    roleBadge?.getAttribute("data-selected-relation-endpoint-role-badge-contract") || "",
+                                  roleBadgeVisible:
+                                    roleBadge !== null &&
+                                    roleBadge.textContent.trim().length > 0,
                                   surfaceHidden,
                                   display: style.display,
                                   visibility: style.visibility,

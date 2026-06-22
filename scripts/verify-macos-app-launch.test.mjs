@@ -1022,12 +1022,18 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologySelectedRelationEndpointCards: [
           {
             slug: "domain:ai-agent-partner",
+            roleBadgeText: "FROM",
+            roleBadgeContract: "visible-source-target-role-badge",
+            roleBadgeVisible: true,
             visible: true,
             surfaceHidden: "",
             shift: "safe-shift",
           },
           {
             slug: "capability:agent-config-onboarding",
+            roleBadgeText: "TO",
+            roleBadgeContract: "visible-source-target-role-badge",
+            roleBadgeVisible: true,
             visible: true,
             surfaceHidden: "",
             shift: "safe-shift",
@@ -2499,12 +2505,18 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationEndpointCards: [
         {
           slug: "domain:views",
+          roleBadgeText: "FROM",
+          roleBadgeContract: "visible-source-target-role-badge",
+          roleBadgeVisible: true,
           visible: true,
           surfaceHidden: "",
           shift: "safe-shift",
         },
         {
           slug: "capability:topology-analysis-modes",
+          roleBadgeText: "TO",
+          roleBadgeContract: "visible-source-target-role-badge",
+          roleBadgeVisible: true,
           visible: true,
           surfaceHidden: "",
           shift: "safe-shift",
@@ -2817,12 +2829,18 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationEndpointCards: [
         {
           slug: "domain:views",
+          roleBadgeText: "FROM",
+          roleBadgeContract: "visible-source-target-role-badge",
+          roleBadgeVisible: true,
           visible: true,
           surfaceHidden: "",
           shift: "safe-shift",
         },
         {
           slug: "capability:topology-analysis-modes",
+          roleBadgeText: "TO",
+          roleBadgeContract: "visible-source-target-role-badge",
+          roleBadgeVisible: true,
           visible: true,
           surfaceHidden: "",
           shift: "safe-shift",
@@ -11287,12 +11305,18 @@ test("selected relation endpoint visibility markers prove source and target card
     topologySelectedRelationEndpointCards: [
       {
         slug: "domain:views",
+        roleBadgeText: "FROM",
+        roleBadgeContract: "visible-source-target-role-badge",
+        roleBadgeVisible: true,
         visible: true,
         surfaceHidden: "",
         shift: "safe-shift",
       },
       {
         slug: "capability:topology-analysis-modes",
+        roleBadgeText: "TO",
+        roleBadgeContract: "visible-source-target-role-badge",
+        roleBadgeVisible: true,
         visible: true,
         surfaceHidden: "",
         shift: "safe-shift",

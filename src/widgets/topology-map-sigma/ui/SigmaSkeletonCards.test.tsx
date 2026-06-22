@@ -53,9 +53,19 @@ const stubSigma = {
     x: (x - 100) / 2,
     y: (y - 50) / 2,
   }),
+  getCamera: () => ({ getState: () => ({ ratio: 1 }) }),
   on: vi.fn(),
   off: vi.fn(),
 };
+
+function makeStubSigma(cameraRatio = 1): typeof stubSigma {
+  return {
+    ...stubSigma,
+    getCamera: () => ({ getState: () => ({ ratio: cameraRatio }) }),
+    on: vi.fn(),
+    off: vi.fn(),
+  };
+}
 
 const CARDS = [
   { id: "project:p", title: "Atlas", kind: "project", tier: 0 as const },
@@ -178,6 +188,19 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer.style.getPropertyValue("--topology-card-max-width-capability")).toBe("360px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-element")).toBe("224px");
     expect(layer.style.getPropertyValue("--topology-card-selected-focus-max-width")).toBe("440px");
+    expect(layer.style.getPropertyValue("--topology-zoom-lens-card-max-width")).toBe("168px");
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-contract",
+      "zoom-in-uses-compact-lens-chips-for-noncritical-cards",
+    );
+    expect(layer).toHaveAttribute("data-zoom-lens-threshold-ratio", "0.78");
+    expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "1.000");
+    expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
+    expect(domainCard).toHaveAttribute(
+      "data-zoom-lens-card-contract",
+      "noncritical-card-can-collapse-on-camera-zoom-in",
+    );
+    expect(domainCard).toHaveAttribute("data-zoom-lens-active-card", "false");
     expect(layer).toHaveAttribute(
       "data-overview-domain-separation-contract",
       "project-overview-domain-labels-do-not-overlap",
@@ -456,6 +479,48 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     } finally {
       rectSpy.mockRestore();
     }
+  });
+
+  it("줌 인 상태에서는 비핵심 카드를 compact lens chip 으로 낮춘다", () => {
+    render(
+      <SigmaSkeletonCards
+        sigma={makeStubSigma(0.42)}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        onSelect={vi.fn()}
+        describeKindBadge={(kind) =>
+          ({
+            project: "제품/시스템",
+            domain: "영역",
+            capability: "기능",
+            element: "구현 근거",
+            unknown: "미분류",
+          })[kind]
+        }
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const selectedCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
+    const scanCard = screen.getByText("Views").closest("[data-skeleton-card]");
+
+    expect(layer).toHaveAttribute("data-zoom-lens-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "0.420");
+    expect(layer).toHaveAttribute("data-zoom-lens-eligible-count", "1");
+    expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "1");
+    expect(selectedCard).toHaveAttribute(
+      "data-zoom-lens-card-contract",
+      "critical-card-stays-full-on-camera-zoom-in",
+    );
+    expect(selectedCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+    expect(selectedCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-critical");
+    expect(scanCard).toHaveAttribute(
+      "data-zoom-lens-card-contract",
+      "noncritical-card-can-collapse-on-camera-zoom-in",
+    );
+    expect(scanCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+    expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "compact-lens-chip");
   });
 
   it("capability 카드 폭은 별도 토큰으로 제목 lane 을 더 넓게 보존한다", () => {
@@ -4208,6 +4273,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "Atlas → Views",
         );
         expect(layer).toHaveAttribute(
+          "data-selected-relation-endpoint-role-badge-contract",
+          "visible-source-target-role-badges",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-endpoint-role-badge-visible-count",
+          "2",
+        );
+        expect(layer).toHaveAttribute(
           "data-selected-relation-context-silhouette-active",
           "true",
         );
@@ -4225,6 +4298,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         );
         expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint", "true");
         expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint-role", "source");
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-endpoint-role-badge-visible",
+          "true",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-endpoint-role-badge-text",
+          "FROM",
+        );
+        expect(
+          sourceCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveTextContent("FROM");
         expect(sourceCard).toHaveAttribute(
           "data-selected-relation-endpoint-role-contract",
           "card-carries-source-target-route",
@@ -4272,6 +4356,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         );
         expect(targetCard).toHaveAttribute("data-selected-relation-endpoint", "true");
         expect(targetCard).toHaveAttribute("data-selected-relation-endpoint-role", "target");
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-endpoint-role-badge-visible",
+          "true",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-endpoint-role-badge-text",
+          "TO",
+        );
+        expect(
+          targetCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveTextContent("TO");
         expect(targetCard).toHaveAttribute(
           "data-selected-relation-endpoint-role-contract",
           "card-carries-source-target-route",
