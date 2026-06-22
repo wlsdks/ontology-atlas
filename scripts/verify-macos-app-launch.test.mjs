@@ -1349,6 +1349,17 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
     currentSurfaceRoute: "domain:views",
     selectedNodeId: "domain:views",
     rootSelectedNodeId: "domain:views",
+    handoff: {
+      contract: "selected-node-actions-visible",
+      route: "selected-node>facts>actions",
+      primaryAction: "focus-brief",
+      summaryContract: "visible-mcp-cli-focus-brief",
+      visibleSummary: "MCP/CLI · Brief",
+      actionCount: 3,
+      relationFactCount: 3,
+      relationTypeCount: 2,
+      agentNextAction: "copy-selected-node-focus-brief-or-expand-detail",
+    },
     agentNextAction: "read-selected-node-surface-before-map-context",
   });
   assert.deepEqual(evidence.agentUiScaleStabilityProof, {

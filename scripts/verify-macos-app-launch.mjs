@@ -6973,6 +6973,30 @@ export function buildWebviewEvidencePayload(
   const currentSurfaceAttentionWinner =
     markerText(markers, "topologyAttentionWinner") ??
     markerText(markers, "topologyRootAttentionWinner");
+  const currentSurfaceHandoff =
+    currentSurface === "selected-node" &&
+    markerText(markers, "topologyNodePopoverAgentHandoffRoute")
+      ? {
+        contract: markerText(markers, "topologyNodePopoverAgentHandoffContract"),
+        route: markerText(markers, "topologyNodePopoverAgentHandoffRoute"),
+        primaryAction: markerText(markers, "topologyNodePopoverAgentHandoffPrimaryAction"),
+        summaryContract: markerText(
+          markers,
+          "topologyNodePopoverAgentHandoffSummaryContract",
+        ),
+        visibleSummary: markerText(markers, "topologyNodePopoverAgentHandoffVisibleSummary"),
+        actionCount: markerNumber(markers, "topologyNodePopoverAgentHandoffActionCount"),
+        relationFactCount: markerNumber(
+          markers,
+          "topologyNodePopoverAgentHandoffRelationFactCount",
+        ),
+        relationTypeCount: markerNumber(
+          markers,
+          "topologyNodePopoverAgentHandoffRelationTypeCount",
+        ),
+        agentNextAction: "copy-selected-node-focus-brief-or-expand-detail",
+      }
+      : null;
   const uiScale = markerNumber(markers, "topologyUiScale");
   const uiScaleWritePolicy = markerText(markers, "topologyUiScaleWritePolicy");
   const agentCurrentSurfaceProof = currentSurface
@@ -6989,6 +7013,7 @@ export function buildWebviewEvidencePayload(
       currentSurfaceRoute: markerText(markers, "topologyAgentCurrentSurfaceRoute"),
       selectedNodeId: markerText(markers, "topologySelectedNodeId"),
       rootSelectedNodeId: markerText(markers, "topologyRootSelectedNodeId"),
+      ...(currentSurfaceHandoff ? { handoff: currentSurfaceHandoff } : {}),
       agentNextAction:
         currentSurface === "selected-relation"
           ? "read-selected-relation-surface-before-map-context"
