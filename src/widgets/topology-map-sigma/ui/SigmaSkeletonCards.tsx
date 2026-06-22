@@ -3901,6 +3901,8 @@ export function SigmaSkeletonCards({
       const tierB = Number(b.dataset.tier ?? '3');
       return tierA - tierB;
     });
+    let selectedRelationLowerPriorityVisibleDimmedCount = 0;
+    let selectedRelationVisibleOrientationAnchorCount = 0;
     for (const el of orderedDimEls) {
       const slug = el.dataset.slug ?? '';
       const lockedForDrag = isDragClusterCard(slug, el.dataset.dockParent);
@@ -3972,6 +3974,13 @@ export function SigmaSkeletonCards({
           el.dataset.dimOpacityRole === 'orientation-anchor'
             ? DIM_ANCHOR_OPACITY_TOKEN
             : DIM_CHIP_OPACITY_TOKEN;
+        if (selectedRelationContextSilhouetteSuppressionActive) {
+          if (el.dataset.dimOpacityRole === 'orientation-anchor') {
+            selectedRelationVisibleOrientationAnchorCount += 1;
+          } else if (el.dataset.dimOpacityRole === 'context-silhouette') {
+            selectedRelationLowerPriorityVisibleDimmedCount += 1;
+          }
+        }
         delete el.dataset.surfaceHidden;
         delete el.dataset.surfaceHiddenReason;
         setSkeletonStyleValue(el, 'opacity', lockedForDrag ? '1' : dimOpacity, domWriteStats);
@@ -3991,6 +4000,12 @@ export function SigmaSkeletonCards({
     );
     container.dataset.selectedRelationContextSilhouetteHiddenCount = String(
       selectedRelationContextSilhouetteHiddenCount,
+    );
+    container.dataset.selectedRelationLowerPriorityVisibleDimmedCount = String(
+      selectedRelationLowerPriorityVisibleDimmedCount,
+    );
+    container.dataset.selectedRelationVisibleOrientationAnchorCount = String(
+      selectedRelationVisibleOrientationAnchorCount,
     );
     container.dataset.cardPlacementParentRectCacheContract =
       'frame-local-parent-card-rects';

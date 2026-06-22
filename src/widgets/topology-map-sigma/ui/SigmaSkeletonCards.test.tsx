@@ -4204,6 +4204,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-relation-context-silhouette-hidden-count",
           "1",
         );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-lower-priority-visible-dimmed-count",
+          "0",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-visible-orientation-anchor-count",
+          "1",
+        );
         expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint", "true");
         expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint-role", "source");
         expect(sourceCard).toHaveAttribute(
