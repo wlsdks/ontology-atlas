@@ -6759,6 +6759,7 @@ export function SigmaSkeletonCards({
             data-agent-gate-kind={agentGateKind}
             data-primary-copy-action={primaryCopyAction}
             data-cli-fallback-command={cliFallbackCommand}
+            data-relation-cli-fallback={cliFallbackCommand}
             data-relation-label-cli-fallback={cliFallbackCommand}
             data-relation-source={label.edgeSource}
             data-relation-target={label.edgeTarget}

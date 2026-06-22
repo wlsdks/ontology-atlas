@@ -3691,6 +3691,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-selected-relation-handoff-contract",
       "visible-overlay-carries-mcp-cli-fallback",
     );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
     expect(selectedPath).toHaveAttribute(
       "data-relation-stroke-token",
       "--topology-relation-stroke-selected",
