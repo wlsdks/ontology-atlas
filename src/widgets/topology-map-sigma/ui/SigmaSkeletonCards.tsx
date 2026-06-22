@@ -4837,14 +4837,18 @@ export function SigmaSkeletonCards({
       sourceEl: HTMLElement | null | undefined,
       targetEl: HTMLElement | null | undefined,
     ) => {
+      if (
+        !sourceEl ||
+        !targetEl ||
+        sourceEl.dataset.surfaceHidden === 'true' ||
+        targetEl.dataset.surfaceHidden === 'true'
+      ) {
+        setSkeletonPathData(path, '', domWriteStats);
+        return;
+      }
       const source = connectorCardRect(sourceEl);
       const target = connectorCardRect(targetEl);
-      if (
-        !source ||
-        !target ||
-        sourceEl?.dataset.surfaceHidden === 'true' ||
-        targetEl?.dataset.surfaceHidden === 'true'
-      ) {
+      if (!source || !target) {
         setSkeletonPathData(path, '', domWriteStats);
         return;
       }
@@ -4862,14 +4866,18 @@ export function SigmaSkeletonCards({
       sourceEl: HTMLElement | null | undefined,
       targetEl: HTMLElement | null | undefined,
     ) => {
+      if (
+        !sourceEl ||
+        !targetEl ||
+        sourceEl.dataset.surfaceHidden === 'true' ||
+        targetEl.dataset.surfaceHidden === 'true'
+      ) {
+        terminal.style.opacity = '0';
+        return;
+      }
       const source = connectorCardRect(sourceEl);
       const target = connectorCardRect(targetEl);
-      if (
-        !source ||
-        !target ||
-        sourceEl?.dataset.surfaceHidden === 'true' ||
-        targetEl?.dataset.surfaceHidden === 'true'
-      ) {
+      if (!source || !target) {
         terminal.style.opacity = '0';
         return;
       }

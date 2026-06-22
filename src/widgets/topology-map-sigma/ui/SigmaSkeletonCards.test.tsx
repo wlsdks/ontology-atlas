@@ -3998,6 +3998,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       };
     });
     graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
+    graph.addEdge("domain:d1", "capability:hidden-0", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+    });
     const rectSpy = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")
       .mockImplementation(function getMockRect(this: HTMLElement) {
@@ -4076,6 +4082,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         expect(
           Number(layer.getAttribute("data-visible-card-hidden-rect-skip-count")),
         ).toBeGreaterThan(0);
+        expect(layer).toHaveAttribute("data-connector-rect-cache-read-count", "0");
       });
     } finally {
       rectSpy.mockRestore();
@@ -4292,10 +4299,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       const foldedBadge = document.querySelector(
         '[data-relation-label-bg="ego:capability:c0→domain:d1"]',
       );
+      const layer = screen.getByTestId("sigma-skeleton-cards");
 
       expect(foldedConnector).toHaveAttribute("d", "");
       expect(foldedLabel).toHaveAttribute("opacity", "0");
       expect(foldedBadge).toHaveAttribute("opacity", "0");
+      expect(layer).toHaveAttribute("data-connector-rect-cache-read-count", "0");
     } finally {
       rectSpy.mockRestore();
     }
