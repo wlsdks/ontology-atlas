@@ -3329,6 +3329,12 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node root current surface route mismatched selected node (${payload.markers.topologyAgentCurrentSurfaceRoute || "missing"} vs ${payload.markers.topologySelectedNodeId || "missing"})`;
       }
+      if (
+        payload.markers.topologyRootSelectedNodeId &&
+        payload.markers.topologyRootSelectedNodeId !== payload.markers.topologySelectedNodeId
+      ) {
+        return `WebView Relief selected node root selected node id mismatched popover (${payload.markers.topologyRootSelectedNodeId || "missing"} vs ${payload.markers.topologySelectedNodeId || "missing"})`;
+      }
       if (payload.markers.topologyAnalysisPanelVisible === true) {
         return "WebView Relief selected node support rail was visible without the focus rail marker";
       }
@@ -7160,6 +7166,7 @@ export function buildWebviewEvidencePayload(
           currentSurface: markers.topologyAgentCurrentSurface ?? null,
           currentSurfaceRole: markers.topologyAgentCurrentSurfaceRole ?? null,
           currentSurfaceRoute: markers.topologyAgentCurrentSurfaceRoute ?? null,
+          selectedNodeId: markers.topologyRootSelectedNodeId ?? null,
         },
         handoff: {
           contract: markers.topologyNodePopoverAgentHandoffContract ?? null,

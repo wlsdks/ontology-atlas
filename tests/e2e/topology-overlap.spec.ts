@@ -2670,6 +2670,10 @@ for (const viewport of VIEWPORTS) {
       "data-agent-current-surface-route",
       "domain:views",
     );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-topology-selected-node-id",
+      "domain:views",
+    );
     await expectCompactMeaningContract(page);
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
       "data-camera-motion-target-policy",

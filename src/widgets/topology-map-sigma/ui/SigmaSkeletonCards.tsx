@@ -5958,6 +5958,7 @@ export function SigmaSkeletonCards({
       data-agent-current-surface={agentCurrentSurface}
       data-agent-current-surface-role={agentCurrentSurfaceRole}
       data-agent-current-surface-route={agentCurrentSurfaceRoute}
+      data-topology-selected-node-id={selectedSlug ?? undefined}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
       data-drag-collision-policy="release-settle"
       data-drag-frame-cache-contract="pointer-move-reuses-drag-indexes"

@@ -1188,6 +1188,7 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
         topologyAgentCurrentSurface: "selected-node",
         topologyAgentCurrentSurfaceRole: "active-node-inspector",
         topologyAgentCurrentSurfaceRoute: "domain:views",
+        topologyRootSelectedNodeId: "domain:views",
         topologyNodePopoverVisible: true,
         topologyNodePopoverSurfaceRole: "active-node-inspector",
         topologyNodePopoverCollapsed: true,
@@ -1316,6 +1317,7 @@ test("WebView evidence summarizes selected focus dim context proof for agent han
       currentSurface: "selected-node",
       currentSurfaceRole: "active-node-inspector",
       currentSurfaceRoute: "domain:views",
+      selectedNodeId: "domain:views",
     },
     handoff: {
       contract: "selected-node-actions-visible",

@@ -2540,6 +2540,8 @@ pub fn run() {
                                 skeletonCardsLayer?.getAttribute("data-agent-current-surface-role") || "";
                               const topologyAgentCurrentSurfaceRoute =
                                 skeletonCardsLayer?.getAttribute("data-agent-current-surface-route") || "";
+                              const topologyRootSelectedNodeId =
+                                skeletonCardsLayer?.getAttribute("data-topology-selected-node-id") || "";
                               return JSON.stringify({
                                 href: location.href,
                                 title: document.title,
@@ -2568,6 +2570,7 @@ pub fn run() {
                                   topologyAgentCurrentSurface,
                                   topologyAgentCurrentSurfaceRole,
                                   topologyAgentCurrentSurfaceRoute,
+                                  topologyRootSelectedNodeId,
                                   topologySigmaViewportVisible: Boolean(
                                     sigmaViewportRect &&
                                     sigmaViewportStyle &&

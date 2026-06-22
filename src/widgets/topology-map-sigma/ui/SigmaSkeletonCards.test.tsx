@@ -1947,6 +1947,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(layer).toHaveAttribute("data-agent-current-surface", "selected-node");
       expect(layer).toHaveAttribute("data-agent-current-surface-role", "active-node-inspector");
       expect(layer).toHaveAttribute("data-agent-current-surface-route", "project:p");
+      expect(layer).toHaveAttribute("data-topology-selected-node-id", "project:p");
       expect(layer).toHaveAttribute(
         "data-focus-cluster-size",
         "2",
