@@ -337,6 +337,39 @@ function validateTopologyNodePopoverTokenContract(markers) {
     ) {
       return "WebView Relief selected node popover compact relation facts title did not match accessible name";
     }
+    if (
+      markers.topologyNodePopoverCompactRelationFactsHandoffContract !==
+      "compact-counts-route-to-relation-list-handoff"
+    ) {
+      return `WebView Relief selected node popover compact relation facts handoff contract was ${markers.topologyNodePopoverCompactRelationFactsHandoffContract || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactRelationFactsHandoffRoute !==
+      "selected-node>relations>fact>evidence>gate>action>payload"
+    ) {
+      return `WebView Relief selected node popover compact relation facts handoff route was ${markers.topologyNodePopoverCompactRelationFactsHandoffRoute || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactRelationFactsHandoffTool !==
+      "query_ontology"
+    ) {
+      return `WebView Relief selected node popover compact relation facts handoff tool was ${markers.topologyNodePopoverCompactRelationFactsHandoffTool || "missing"}`;
+    }
+    const relationFactsHandoffSummary = String(
+      markers.topologyNodePopoverCompactRelationFactsHandoffSummary || "",
+    ).trim();
+    if (
+      !relationFactsHandoffSummary.includes("query_ontology") ||
+      !relationFactsHandoffSummary.includes("direct facts")
+    ) {
+      return `WebView Relief selected node popover compact relation facts handoff summary was ${relationFactsHandoffSummary || "missing"}`;
+    }
+    const hiddenRemainderCount = Number(
+      markers.topologyNodePopoverCompactRelationFactsHiddenRemainderCount,
+    );
+    if (!Number.isFinite(hiddenRemainderCount) || hiddenRemainderCount < 0) {
+      return `WebView Relief selected node popover compact relation facts hidden remainder count was ${markers.topologyNodePopoverCompactRelationFactsHiddenRemainderCount ?? "missing"}`;
+    }
     const factsTop = Number(markers.topologyNodePopoverCompactRelationFactsTop || 0);
     const actionsTop = Number(markers.topologyNodePopoverCompactActionsTop || 0);
     if (

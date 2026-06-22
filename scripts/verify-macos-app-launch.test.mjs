@@ -2617,6 +2617,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
       topologyNodePopoverCompactRelationFactsTitle:
         "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverCompactRelationFactsHandoffContract:
+        "compact-counts-route-to-relation-list-handoff",
+      topologyNodePopoverCompactRelationFactsHandoffRoute:
+        "selected-node>relations>fact>evidence>gate>action>payload",
+      topologyNodePopoverCompactRelationFactsHandoffTool: "query_ontology",
+      topologyNodePopoverCompactRelationFactsHandoffSummary:
+        "query_ontology · 2 rendered · 10 hidden · 15 direct facts",
+      topologyNodePopoverCompactRelationFactsHiddenRemainderCount: 10,
       topologyNodePopoverCompactRelationFactsTop: 212,
       topologyNodePopoverCompactHandoffSummaryVisible: true,
       topologyNodePopoverCompactHandoffSummaryContract: "visible-mcp-cli-focus-brief",
@@ -3151,6 +3159,52 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     ),
     null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverCompactRelationFactsHandoffContract: "missing-route",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /compact relation facts handoff contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverCompactRelationFactsHandoffRoute: "selected-node>facts",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /compact relation facts handoff route/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverCompactRelationFactsHandoffTool: "list_concepts",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /compact relation facts handoff tool/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverCompactRelationFactsHandoffSummary:
+          "2 rendered · 10 hidden",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /compact relation facts handoff summary/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverCompactRelationFactsHiddenRemainderCount: -1,
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /compact relation facts hidden remainder count/,
   );
   assert.match(
     validateWebviewVerifyPayload(
