@@ -1183,6 +1183,7 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     readPolicy: "frame-state-no-computed-style",
     selectedSurfaceRectPolicy: "live-rects-for-postprocess-overlap-safety",
     readCount: 10,
+    agentNextAction: "trust-selected-surface-rect-policy-before-reading-relation",
   });
   assert.deepEqual(evidence.residualOverlapProof, {
     proof: "topology-residual-overlap-clear",

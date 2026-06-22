@@ -7275,6 +7275,7 @@ export function buildWebviewEvidencePayload(
         selectedSurfaceRectPolicy:
           markers.topologyVisibleCardSelectedSurfaceRectPolicy ?? null,
         readCount: markerNumber(markers, "topologyVisibleCardRectReadCount"),
+        agentNextAction: "trust-selected-surface-rect-policy-before-reading-relation",
       }
       : null;
   const residualOverlapProof =
