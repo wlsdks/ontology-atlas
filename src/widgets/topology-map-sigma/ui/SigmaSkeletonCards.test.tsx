@@ -3832,6 +3832,22 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-relation-endpoint-route",
           "project:p>domain:d1",
         );
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-handoff-contract",
+          "endpoint-card-carries-selected-relation-action",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-primary-action",
+          "explain_relation",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-cli-fallback",
+          "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-fact-route",
+          "fact>evidence>gate>action",
+        );
         expect(targetCard).toHaveAttribute("data-selected-relation-endpoint", "true");
         expect(targetCard).toHaveAttribute("data-selected-relation-endpoint-role", "target");
         expect(targetCard).toHaveAttribute(
@@ -3845,6 +3861,22 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         expect(targetCard).toHaveAttribute(
           "data-selected-relation-endpoint-route",
           "project:p>domain:d1",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-handoff-contract",
+          "endpoint-card-carries-selected-relation-action",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-primary-action",
+          "explain_relation",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-cli-fallback",
+          "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-fact-route",
+          "fact>evidence>gate>action",
         );
         expect(sourceCard).not.toHaveAttribute("data-surface-hidden", "true");
         expect(targetCard).not.toHaveAttribute("data-surface-hidden", "true");

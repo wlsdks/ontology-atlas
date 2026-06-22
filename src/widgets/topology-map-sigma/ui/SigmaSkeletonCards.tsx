@@ -3249,12 +3249,24 @@ export function SigmaSkeletonCards({
           selectedRelationEndpointSource && selectedRelationEndpointTarget
             ? `${selectedRelationEndpointSource}>${selectedRelationEndpointTarget}`
             : '';
+        el.dataset.selectedRelationHandoffContract =
+          'endpoint-card-carries-selected-relation-action';
+        el.dataset.selectedRelationPrimaryAction =
+          selectedRelationLabelHandoff?.action ?? '';
+        el.dataset.selectedRelationCliFallback =
+          selectedRelationLabelHandoff?.cliFallbackCommand ?? '';
+        el.dataset.selectedRelationFactRoute =
+          selectedRelationLabelHandoff?.route ?? '';
       } else {
         delete el.dataset.selectedRelationEndpoint;
         delete el.dataset.selectedRelationEndpointRole;
         delete el.dataset.selectedRelationEndpointRoleContract;
         delete el.dataset.selectedRelationEndpointCounterpart;
         delete el.dataset.selectedRelationEndpointRoute;
+        delete el.dataset.selectedRelationHandoffContract;
+        delete el.dataset.selectedRelationPrimaryAction;
+        delete el.dataset.selectedRelationCliFallback;
+        delete el.dataset.selectedRelationFactRoute;
       }
       delete el.dataset.selectedRelationEndpointSurfaceShift;
       el.style.visibility = 'visible';
@@ -5232,6 +5244,9 @@ export function SigmaSkeletonCards({
     selectedFocusCluster,
     selectedRelationData,
     selectedRelationEdgeId,
+    selectedRelationLabelHandoff?.action,
+    selectedRelationLabelHandoff?.cliFallbackCommand,
+    selectedRelationLabelHandoff?.route,
     selectedSlug,
     emitVisibilityStats,
     getFixedSurfaceRects,
