@@ -551,6 +551,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-summary-map-label-fallback",
       "selected-card-keeps-action-when-map-labels-collapse",
     );
+    expect(summary).toHaveAttribute("data-relation-summary-primary-action", "explain_relation");
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(summary).toHaveAttribute("data-relation-summary-source", "project:p");
+    expect(summary).toHaveAttribute("data-relation-summary-target", "domain:d1");
+    expect(summary).toHaveAttribute("data-relation-summary-type", "contains");
     expect(summary).toHaveAttribute("data-relation-summary-visible-text", "1 shown");
     expect(summary).toHaveAttribute("aria-hidden", "true");
     expect(summary).not.toHaveAttribute("aria-label");

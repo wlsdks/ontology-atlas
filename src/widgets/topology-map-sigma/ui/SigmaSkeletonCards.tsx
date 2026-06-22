@@ -2981,11 +2981,24 @@ export function SigmaSkeletonCards({
 
   const selectedRelationSummary = useMemo(() => {
     if (!ego || egoRelationConnectors.length === 0) return null;
+    const primaryRelation = egoRelationConnectors[0];
+    const agentGateKind = relationAgentGateKind(primaryRelation);
+    const primaryAction = relationPrimaryCopyAction(agentGateKind);
     return {
+      cliFallbackCommand: relationLabelCliFallbackCommand({
+        action: primaryAction,
+        from: primaryRelation.edgeSource,
+        relationType: primaryRelation.relationType,
+        to: primaryRelation.edgeTarget,
+      }),
+      primaryAction,
       relationCount: egoRelationConnectors.length,
+      source: primaryRelation.edgeSource,
+      target: primaryRelation.edgeTarget,
       typeCount: new Set(
         egoRelationConnectors.map((connector) => connector.relationType),
       ).size,
+      type: primaryRelation.relationType,
     };
   }, [ego, egoRelationConnectors]);
 
@@ -7430,6 +7443,13 @@ export function SigmaSkeletonCards({
                 data-relation-summary-contract="selected-card-direct-facts"
                 data-relation-summary-visible-contract="primary-count-visible-action-accessible"
                 data-relation-summary-map-label-fallback="selected-card-keeps-action-when-map-labels-collapse"
+                data-relation-summary-primary-action={selectedRelationSummary.primaryAction}
+                data-relation-summary-cli-fallback={
+                  selectedRelationSummary.cliFallbackCommand
+                }
+                data-relation-summary-source={selectedRelationSummary.source}
+                data-relation-summary-target={selectedRelationSummary.target}
+                data-relation-summary-type={selectedRelationSummary.type}
                 data-relation-summary-readable-text={selectedRelationSummaryText ?? undefined}
                 data-relation-summary-visible-text={
                   selectedRelationSummaryCompactText ?? undefined
