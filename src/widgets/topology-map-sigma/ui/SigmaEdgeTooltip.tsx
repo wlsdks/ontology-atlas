@@ -517,12 +517,12 @@ export function SigmaSelectedEdgeCard({
       data-motion-contract={TOPOLOGY_RELATION_INSPECTOR_MOTION_CONTRACT}
       data-motion-duration-ms={TOPOLOGY_RELATION_INSPECTOR_DURATION_MS}
       data-motion-easing={TOPOLOGY_RELATION_INSPECTOR_EASING_NAME}
-      className={`pointer-events-auto absolute z-30 flex max-h-[var(--topology-selected-relation-card-max-height)] flex-col gap-1.5 overflow-x-hidden overflow-y-auto rounded-lg border border-[color:var(--topology-selected-relation-card-border)] bg-[color:var(--topology-selected-relation-card-surface)] p-2 text-[10px] text-[color:var(--color-text-primary)] shadow-[var(--topology-selected-relation-card-shadow)] motion-safe:animate-[topology-relation-inspector-enter_180ms_ease-out_1] motion-reduce:animate-none ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
+      className={`pointer-events-auto absolute z-30 flex max-h-[var(--topology-selected-relation-card-max-height)] flex-col gap-1 overflow-x-hidden overflow-y-auto rounded-lg border border-[color:var(--topology-selected-relation-card-border)] bg-[color:var(--topology-selected-relation-card-surface)] p-1.5 text-[10px] text-[color:var(--color-text-primary)] shadow-[var(--topology-selected-relation-card-shadow)] motion-safe:animate-[topology-relation-inspector-enter_180ms_ease-out_1] motion-reduce:animate-none ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
     >
       <div
         data-testid="sigma-selected-edge-fact-header"
         data-header-contract="selected-fact-first"
-        className="flex min-w-0 items-start gap-2 border-b border-[color:var(--topology-selected-relation-subtle-border)] pb-1.5"
+        className="flex min-w-0 items-start gap-2 border-b border-[color:var(--topology-selected-relation-subtle-border)] pb-1"
       >
         <div className="min-w-0 flex-1">
           <div className="font-mono text-[length:var(--topology-selected-relation-kicker-font-size)] uppercase tracking-[0.10em] text-[color:var(--topology-selected-relation-accent-text)]">
@@ -619,7 +619,7 @@ export function SigmaSelectedEdgeCard({
       <div
         data-testid="sigma-selected-edge-proof-band"
         data-proof-band-contract="parallel-compact-proof-and-agent-gate"
-        className="grid grid-cols-2 gap-1.5"
+        className="grid grid-cols-2 gap-1"
       >
         <div
           data-testid="sigma-selected-edge-contract"
@@ -627,7 +627,7 @@ export function SigmaSelectedEdgeCard({
           data-relation-contract-visible-text={semanticFactVisibleHint}
           data-relation-contract-full-text={relationContractFullText}
           data-relation-contract-copy-contract="visible-judgment-full-explanation-accessible"
-          className="min-w-0 rounded-lg border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-2.5 py-1.5"
+          className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-2 py-1"
         >
           <div className="font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {t('relationContractLabel')}
@@ -661,7 +661,7 @@ export function SigmaSelectedEdgeCard({
           data-agent-gate-text-token={`--topology-selected-relation-gate-${relationGateToken(
             agentGateKind,
           )}-text`}
-          className={`min-w-0 rounded-lg border px-2.5 py-1.5 ${relationAgentDecisionTone(
+          className={`min-w-0 rounded-md border px-2 py-1 ${relationAgentDecisionTone(
             agentGateKind,
           )}`}
         >
@@ -724,7 +724,7 @@ export function SigmaSelectedEdgeCard({
         data-testid="sigma-selected-edge-metric-strip"
         data-metric-strip-contract="visible-compact-relation-fact-rail"
         data-metric-strip-height-token="--topology-selected-relation-metric-strip-height"
-        className="grid min-h-6 min-w-0 grid-cols-4 gap-1 overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] p-1"
+        className="grid h-6 min-w-0 grid-cols-[repeat(4,minmax(0,1fr))] gap-1 overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-1 py-0.5"
       >
         <Metric label={t('relationLabel')} value={visibleRelationTypeLabel || relationLabel} compact />
         <Metric label={t('qualityLabel')} value={qualityLabel} compact />
@@ -739,9 +739,9 @@ export function SigmaSelectedEdgeCard({
         data-next-action-surface-token="--topology-selected-relation-next-action-surface"
         data-next-action-border-token="--topology-selected-relation-next-action-border"
         data-next-action-accent-text-token="--topology-selected-relation-accent-text"
-        className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-next-action-border)] bg-[color:var(--topology-selected-relation-next-action-surface)] p-1.5"
+        className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-next-action-border)] bg-[color:var(--topology-selected-relation-next-action-surface)] p-1"
       >
-        <div className="mb-1 flex min-w-0 items-center justify-between gap-2">
+        <div className="sr-only">
           <div className="min-w-0 truncate font-mono text-[length:var(--topology-selected-relation-route-label-font-size)] uppercase tracking-[0.12em] text-[color:var(--topology-selected-relation-accent-text)]">
             {t('primaryCopyBadge')}
           </div>
@@ -934,7 +934,7 @@ function Metric({
       <div
         className={
           compact
-            ? "truncate font-mono text-[7px] uppercase leading-2.5 tracking-normal text-[color:var(--color-text-quaternary)]"
+            ? "truncate font-mono text-[7px] uppercase leading-[8px] tracking-normal text-[color:var(--color-text-quaternary)]"
             : "font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
         }
       >
@@ -943,7 +943,7 @@ function Metric({
       <div
         className={
           compact
-            ? "truncate text-[10px] leading-3 text-[color:var(--color-text-primary)]"
+            ? "truncate text-[10px] leading-[10px] text-[color:var(--color-text-primary)]"
             : "mt-1 truncate text-[12px] text-[color:var(--color-text-primary)]"
         }
       >

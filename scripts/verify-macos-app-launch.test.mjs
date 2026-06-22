@@ -11423,7 +11423,7 @@ test("selected relation card density contract keeps the relation inspector compa
     validateSelectedRelationCardDensityContract(
       {
         ...baseMarkers,
-        topologySelectedRelationCardHeight: 360,
+        topologySelectedRelationCardHeight: 336,
       },
       1512,
     ),
