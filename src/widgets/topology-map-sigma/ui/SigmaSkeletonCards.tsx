@@ -3287,7 +3287,7 @@ export function SigmaSkeletonCards({
       !pathWorkflowActive &&
       !healthRepairTarget;
     const selectedRelationContextSilhouetteSuppressionActive =
-      selectedRelationEdgeId !== null &&
+      selectedRelationSurfaceRoute !== null &&
       activeDragCluster === null &&
       !pathWorkflowActive &&
       !healthRepairTarget;

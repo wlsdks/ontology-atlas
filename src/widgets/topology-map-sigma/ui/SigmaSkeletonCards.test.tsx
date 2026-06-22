@@ -3475,6 +3475,47 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(root).toHaveAttribute("data-selected-relation-label-evidence", "source-backed");
   });
 
+  it("selected relation card data alone activates context silhouette suppression", async () => {
+    const graph = makeGraph();
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        selectedRelationEdgeId={null}
+        selectedRelationData={{
+          edgeId: "fallback-relation-edge-id",
+          source: "project:p",
+          target: "domain:d1",
+          sourceName: "Atlas",
+          targetName: "Views",
+          kind: "contains",
+          relationType: "contains",
+          relationQuality: "strong",
+          evidenceCount: 1,
+          x: 0,
+          y: 0,
+        }}
+      />,
+    );
+
+    const root = screen.getByTestId("sigma-skeleton-cards");
+
+    await waitFor(() => {
+      expect(root).toHaveAttribute("data-agent-current-surface", "selected-relation");
+      expect(root).toHaveAttribute("data-agent-current-surface-route", "project:p>domain:d1");
+      expect(root).toHaveAttribute(
+        "data-selected-relation-context-silhouette-policy",
+        "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+      );
+      expect(root).toHaveAttribute(
+        "data-selected-relation-context-silhouette-active",
+        "true",
+      );
+    });
+  });
+
   it("selected relation data restores the map label when the edge id is stale", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {
