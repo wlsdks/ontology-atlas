@@ -193,7 +193,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-zoom-lens-contract",
       "zoom-in-uses-compact-lens-chips-for-noncritical-cards",
     );
-    expect(layer).toHaveAttribute("data-zoom-lens-threshold-ratio", "0.78");
+    expect(layer).toHaveAttribute("data-zoom-lens-threshold-ratio", "0.98");
     expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "1.000");
     expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
     expect(domainCard).toHaveAttribute(

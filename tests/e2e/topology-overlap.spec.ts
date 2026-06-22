@@ -748,6 +748,14 @@ test("Relief overview support rail stays compact on wide desktop viewports", asy
 test("Relief zoom-in switches scan cards to compact lens chips", async ({ page }) => {
   const viewport = VIEWPORTS[1];
   await openRelief(page, viewport, { mode: "map" });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.reload();
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-skeleton-cards-ready",
+    "true",
+    { timeout: 20_000 },
+  );
+  await page.waitForTimeout(1600);
 
   const layer = page.getByTestId("sigma-skeleton-cards");
   await expect(layer).toHaveAttribute(
