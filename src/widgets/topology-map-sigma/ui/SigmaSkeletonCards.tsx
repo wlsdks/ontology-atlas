@@ -5171,8 +5171,12 @@ export function SigmaSkeletonCards({
           selectedRelationOverlaysById.size,
       );
       container.dataset.relationLabelDragLayoutPolicy = dragOnlyRelationLabelLayout
-        ? 'drag-only-svg-labels'
+        ? 'drag-connector-only-labels-suppressed'
         : 'all-relation-labels';
+      container.dataset.relationLabelDragSuppressionPolicy =
+        dragOnlyRelationLabelLayout
+          ? 'suppress-floating-labels-during-node-drag'
+          : 'not-needed';
       let relationLabelFrameExpectedCount = 0;
       let relationLabelFrameReadyCount = 0;
       let focusRelationLabelExpectedCount = 0;
@@ -5189,6 +5193,16 @@ export function SigmaSkeletonCards({
         if (dragOnlyRelationLabelLayout && !dragRelationLabel) {
           label.setAttribute('opacity', '0');
           label.setAttribute('aria-hidden', 'true');
+          badge?.setAttribute('opacity', '0');
+          badge?.setAttribute('pointer-events', 'none');
+          const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
+          if (labelGroup) labelGroup.style.pointerEvents = 'none';
+          continue;
+        }
+        if (dragOnlyRelationLabelLayout && dragRelationLabel) {
+          label.setAttribute('opacity', '0');
+          label.setAttribute('aria-hidden', 'true');
+          label.dataset.relationLabelVisibility = 'suppressed-during-drag-motion';
           badge?.setAttribute('opacity', '0');
           badge?.setAttribute('pointer-events', 'none');
           const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
@@ -5466,7 +5480,7 @@ export function SigmaSkeletonCards({
       }
       container.dataset.relationLabelGeometryContract = 'frame-positioned-hit-targets';
       container.dataset.relationLabelGeometrySource = dragOnlyRelationLabelLayout
-        ? 'drag-only-label-layout-pass'
+        ? 'drag-connector-only-suppression-pass'
         : 'after-render-layout-pass';
       container.dataset.relationLabelGeometryExpectedCount = String(
         relationLabelFrameExpectedCount,

@@ -5137,23 +5137,35 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "false",
     );
     expect(document.querySelector("[data-drag-cluster-connector]")).toBeInTheDocument();
-    expect(document.querySelector("[data-drag-relation-label]")).toBeInTheDocument();
+    const dragRelationLabel = document.querySelector("[data-drag-relation-label]");
+    expect(dragRelationLabel).toBeInTheDocument();
+    expect(dragRelationLabel).toHaveAttribute("opacity", "0");
+    expect(dragRelationLabel).toHaveAttribute(
+      "data-relation-label-visibility",
+      "suppressed-during-drag-motion",
+    );
     expect(document.querySelector("[data-drag-cluster-title]")).not.toBeInTheDocument();
     expect(document.querySelector("[data-drag-cluster-count]")).not.toBeInTheDocument();
-    expect(
-      document.querySelector('[data-relation-label-bg="drag:domain:d1→project:p"]'),
-    ).toBeInTheDocument();
+    const dragRelationBadge = document.querySelector(
+      '[data-relation-label-bg="drag:domain:d1→project:p"]',
+    );
+    expect(dragRelationBadge).toBeInTheDocument();
+    expect(dragRelationBadge).toHaveAttribute("opacity", "0");
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     expect(layer).toHaveAttribute("data-dragging-active", "true");
     expect(layer).toHaveAttribute("data-drag-dynamic-state", "active-cluster-follow");
     expect(card).toHaveAttribute("data-dragging-active", "true");
     expect(layer).toHaveAttribute(
       "data-relation-label-drag-layout-policy",
-      "drag-only-svg-labels",
+      "drag-connector-only-labels-suppressed",
+    );
+    expect(layer).toHaveAttribute(
+      "data-relation-label-drag-suppression-policy",
+      "suppress-floating-labels-during-node-drag",
     );
     expect(layer).toHaveAttribute(
       "data-relation-label-geometry-source",
-      "drag-only-label-layout-pass",
+      "drag-connector-only-suppression-pass",
     );
     expect(layer).toHaveAttribute(
       "data-visible-card-state-read-policy",

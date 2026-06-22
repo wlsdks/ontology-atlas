@@ -137,8 +137,12 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   );
   expect(dragFrameBudgetProof.slowestPassMs).toBeGreaterThanOrEqual(0);
   expect(dragFrameBudgetProof.maxSlowestPassMs).toBeGreaterThanOrEqual(0);
-  expect(dragFrameBudgetProof.relationLabelDragLayoutPolicy).toBe("drag-only-svg-labels");
-  expect(dragFrameBudgetProof.relationLabelGeometrySource).toBe("drag-only-label-layout-pass");
+  expect(dragFrameBudgetProof.relationLabelDragLayoutPolicy).toBe(
+    "drag-connector-only-labels-suppressed",
+  );
+  expect(dragFrameBudgetProof.relationLabelGeometrySource).toBe(
+    "drag-connector-only-suppression-pass",
+  );
   const workerFrameProof = await page.getByTestId("sigma-topology-viewport").evaluate((el) => ({
     applied: Number(el.getAttribute("data-layout-worker-position-frame-applied-count") ?? "0"),
     contract: el.getAttribute("data-layout-worker-frame-stats-contract") ?? "",

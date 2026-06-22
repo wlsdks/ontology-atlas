@@ -1269,6 +1269,11 @@ for (const viewport of VIEWPORTS) {
     page,
   }) => {
     await openRelief(page, viewport, { settle: false });
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-visible-card-clipped-count",
+      "0",
+      { timeout: 4_000 },
+    );
 
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
     const legendRect = await kindLegendRectOrNull(page);
@@ -3186,14 +3191,19 @@ for (const viewport of VIEWPORTS) {
     ).toBeGreaterThanOrEqual(connector.clearance - 1);
     const relationLabel = page.locator("[data-drag-relation-label]").first();
     await expect(relationLabel).toHaveText(/contains|depends|relates|describes|uses/);
-    const labelBox = await relationLabel.boundingBox();
-    expect(labelBox?.width ?? 0, `drag relation label should render at ${viewport.label}`).toBeGreaterThan(8);
-    const dragBadge = page.locator("[data-relation-label-bg]").first();
-    const dragBadgeBox = await dragBadge.boundingBox();
-    expect(
-      dragBadgeBox?.width ?? 0,
-      `drag relation badge background should render at ${viewport.label}`,
-    ).toBeGreaterThan(labelBox?.width ?? 8);
+    await expect(relationLabel).toHaveAttribute("opacity", "0");
+    await expect(relationLabel).toHaveAttribute(
+      "data-relation-label-visibility",
+      "suppressed-during-drag-motion",
+    );
+    const dragLabelId = await relationLabel.getAttribute("data-relation-label-id");
+    if (!dragLabelId) {
+      throw new Error(`drag relation label should expose an id at ${viewport.label}`);
+    }
+    await expect(
+      page.locator(`[data-relation-label-bg="${dragLabelId}"]`),
+      `drag relation badge should be suppressed while cards are moving at ${viewport.label}`,
+    ).toHaveAttribute("opacity", "0");
     expect(
       await page.locator('[data-skeleton-card][data-drag-cluster="true"]').count(),
       `dragging Views should mark a connected card cluster at ${viewport.label}`,
