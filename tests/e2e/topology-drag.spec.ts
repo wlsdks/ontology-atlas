@@ -332,6 +332,23 @@ test("Relief map project drag stays responsive for large connected clusters", as
     { steps: 12 },
   );
   await expect(layer).toHaveAttribute("data-dragging-active", "true");
+  await expect(layer).toHaveAttribute(
+    "data-drag-active-overlap-policy",
+    "active-cluster-hides-lower-priority-overlaps",
+  );
+  await expect(layer).toHaveAttribute("data-visible-card-overlap-count", "0");
+  const activeOverlapProof = await layer.evaluate((el) => ({
+    hiddenCount: Number(el.getAttribute("data-drag-active-overlap-hidden-count") ?? "0"),
+    visibleOverlapCount: Number(el.getAttribute("data-visible-card-overlap-count") ?? "0"),
+  }));
+  expect(
+    activeOverlapProof.hiddenCount,
+    "large project drag should hide lower-priority overlaps while the pointer is still down",
+  ).toBeGreaterThan(0);
+  expect(
+    activeOverlapProof.visibleOverlapCount,
+    "large project drag should not leave cards visibly stacked during active movement",
+  ).toBe(0);
   const dragResponsivenessProof = await layer.evaluate((el) => ({
     previewOffsetX: Number(el.getAttribute("data-drag-preview-offset-x") ?? "0"),
     previewScope: el.getAttribute("data-drag-preview-scope") ?? "",
@@ -430,6 +447,9 @@ test("Relief dogfood graph exposes scale and bounded visible-card rect reads", a
       el.getAttribute("data-selected-dock-visibility-policy") ?? "",
     supportRailOverlapReadPolicy:
       el.getAttribute("data-support-rail-overlap-read-policy") ?? "",
+    activeOverlapHiddenCount: Number(
+      el.getAttribute("data-drag-active-overlap-hidden-count") ?? "0",
+    ),
     activeDragClusterSize: Number(el.getAttribute("data-active-drag-cluster-size") ?? "0"),
   }));
   expect(proof.modelCount, "dogfood focus route should expose a non-trivial card model").toBeGreaterThanOrEqual(20);
@@ -461,8 +481,11 @@ test("Relief dogfood graph exposes scale and bounded visible-card rect reads", a
     proof.connectorLabelPassMs,
     "connector label pass should stay below the 3ms regression threshold at 1920 focus",
   ).toBeLessThan(3);
-  expect(proof.visibleRectReads, "rect reads should be bounded by currently visible cards").toBeLessThanOrEqual(
-    proof.visibleCount,
+  expect(
+    proof.visibleRectReads,
+    "rect reads should be bounded by visible cards plus cards hidden by active drag overlap suppression",
+  ).toBeLessThanOrEqual(
+    proof.visibleCount + proof.activeOverlapHiddenCount,
   );
   expect(
     proof.visibleSelectedSurfaceRectPolicy,

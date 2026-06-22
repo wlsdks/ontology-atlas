@@ -4728,6 +4728,12 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-support-rail-overlap-read-policy") || "",
                                   topologySupportRailOverlapActive:
                                     skeletonCardsLayer?.getAttribute("data-support-rail-overlap-active") === "true",
+                                  topologyDragActiveOverlapPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-drag-active-overlap-policy") || "",
+                                  topologyDragActiveOverlapReadPolicy:
+                                    skeletonCardsLayer?.getAttribute("data-drag-active-overlap-read-policy") || "",
+                                  topologyDragActiveOverlapHiddenCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-drag-active-overlap-hidden-count") || "0"),
                                   topologySelectedBlockingSurfaceOverlapActive:
                                     skeletonCardsLayer?.getAttribute("data-selected-blocking-surface-overlap-active") === "true",
                                   topologyResidualOverlapClearContract:

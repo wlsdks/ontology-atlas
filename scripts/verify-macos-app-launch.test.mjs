@@ -1090,6 +1090,10 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyZoomLensEligibleCount: 5,
         topologyZoomLensActiveCardCount: 3,
         topologySupportRailOverlapReadPolicy: "reuse-visible-card-rect-cache",
+        topologyDragActiveOverlapPolicy:
+          "active-cluster-hides-lower-priority-overlaps",
+        topologyDragActiveOverlapReadPolicy: "reuse-visible-card-rect-cache",
+        topologyDragActiveOverlapHiddenCount: 0,
         topologyFixedSurfaceLiveSuppressionReadPolicy:
           "reuse-card-placement-frame-rects-before-dom-read",
         topologyFixedSurfaceLiveSuppressionReadCount: 0,
@@ -1267,6 +1271,9 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     fixedSurfaceOverlapCount: 0,
     cardFixedSurfaceOverlapCount: 0,
     supportRailOverlapReadPolicy: "reuse-visible-card-rect-cache",
+    dragActiveOverlapPolicy: "active-cluster-hides-lower-priority-overlaps",
+    dragActiveOverlapReadPolicy: "reuse-visible-card-rect-cache",
+    dragActiveOverlapHiddenCount: 0,
     fixedSurfaceLiveSuppressionReadPolicy:
       "reuse-card-placement-frame-rects-before-dom-read",
     fixedSurfaceLiveSuppressionReadCount: 0,

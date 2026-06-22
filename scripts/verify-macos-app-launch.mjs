@@ -7608,6 +7608,14 @@ export function buildWebviewEvidencePayload(
         ),
         supportRailOverlapReadPolicy:
           markers.topologySupportRailOverlapReadPolicy ?? null,
+        dragActiveOverlapPolicy:
+          markers.topologyDragActiveOverlapPolicy ?? null,
+        dragActiveOverlapReadPolicy:
+          markers.topologyDragActiveOverlapReadPolicy ?? null,
+        dragActiveOverlapHiddenCount: markerNumber(
+          markers,
+          "topologyDragActiveOverlapHiddenCount",
+        ),
         fixedSurfaceLiveSuppressionReadPolicy:
           markers.topologyFixedSurfaceLiveSuppressionReadPolicy ?? null,
         fixedSurfaceLiveSuppressionReadCount: markerNumber(

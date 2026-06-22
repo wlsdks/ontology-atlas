@@ -243,7 +243,7 @@ const ANALYSIS_PANEL_BLOCK_END_PAD = 8;
 const SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX = 1280;
 const OVERVIEW_COLLISION_PAD = 2;
 const OVERVIEW_DOMAIN_COLLISION_PAD = 10;
-const DRAG_SETTLE_OVERLAP_PAD = -2;
+const DRAG_OVERLAP_SUPPRESSION_PAD = OVERVIEW_COLLISION_PAD;
 const SAFE_VIEWPORT_MARGIN = 8;
 const SELECTED_FOCUS_DOCK_BOTTOM_INSET_PX = 180;
 const SELECTED_FOCUS_EGO_READING_BAND_Y_RATIO = 0.56;
@@ -1919,18 +1919,21 @@ function suppressLiveCardsOverlappingFixedSurfaces(
 function dragSettleCardPriority(el: HTMLElement): number {
   if (el.dataset.selected === 'true') return 0;
   if (el.dataset.pathRole === 'source' || el.dataset.pathRole === 'target') return 0;
+  if (el.dataset.dragClusterRole === 'root') return 0;
   if (!el.dataset.dockParent && el.dataset.dimmed !== 'true') return 1;
   if (el.dataset.dockParent && el.dataset.dimmed !== 'true') return 2;
   const tier = Number(el.dataset.tier ?? '3');
   return tier <= 1 ? 3 : 4;
 }
 
-function suppressSettlingDragCardOverlaps(
+function suppressDragCardOverlaps(
   orderedEls: readonly HTMLElement[],
   readCardRect: (el: HTMLElement) => {
     rect: { left: number; top: number; right: number; bottom: number } | null;
     visible: boolean;
   },
+  hiddenDatasetKey: 'dragActiveOverlapHidden' | 'dragSettleOverlapHidden',
+  onHidden?: (el: HTMLElement) => void,
 ): number {
   const visible = orderedEls
     .map((el) => {
@@ -1953,10 +1956,15 @@ function suppressSettlingDragCardOverlaps(
   const accepted: Array<{ left: number; top: number; right: number; bottom: number }> = [];
   let hidden = 0;
   for (const item of visible) {
-    delete item.el.dataset.dragSettleOverlapHidden;
-    if (accepted.some((rect) => rectsOverlap(item.rect, rect, DRAG_SETTLE_OVERLAP_PAD))) {
+    delete item.el.dataset[hiddenDatasetKey];
+    if (
+      accepted.some((rect) =>
+        rectsOverlap(item.rect, rect, DRAG_OVERLAP_SUPPRESSION_PAD),
+      )
+    ) {
       hideSkeletonCard(item.el);
-      item.el.dataset.dragSettleOverlapHidden = 'true';
+      item.el.dataset[hiddenDatasetKey] = 'true';
+      onHidden?.(item.el);
       hidden += 1;
       continue;
     }
@@ -4749,6 +4757,7 @@ export function SigmaSkeletonCards({
       orderedEls.every((el) => cachedVisibilityFrame.entries.has(el));
     let visibilityFrameCacheState = 'miss';
     let supportRailOverlapHiddenCount = 0;
+    let dragActiveOverlapHiddenCount = 0;
     let dragSettleOverlapHiddenCount = 0;
     let reportedVisibleCardCount = 0;
     let visibilityCountSource = 'single-pass';
@@ -4790,11 +4799,31 @@ export function SigmaSkeletonCards({
       supportRailOverlapHiddenCount,
     );
     if (visibilityFrameCacheState !== 'hit') {
+      dragActiveOverlapHiddenCount =
+        activeDragCluster !== null && activeDragMotion
+          ? suppressDragCardOverlaps(
+              orderedEls,
+              readVisibleCardRect,
+              'dragActiveOverlapHidden',
+              (el) => visibleCardRectCache.set(el, { rect: null, visible: false }),
+            )
+          : 0;
       dragSettleOverlapHiddenCount =
         activeDragCluster !== null && !activeDragMotion
-          ? suppressSettlingDragCardOverlaps(orderedEls, readVisibleCardRect)
+          ? suppressDragCardOverlaps(
+              orderedEls,
+              readVisibleCardRect,
+              'dragSettleOverlapHidden',
+              (el) => visibleCardRectCache.set(el, { rect: null, visible: false }),
+            )
           : 0;
     }
+    container.dataset.dragActiveOverlapPolicy =
+      'active-cluster-hides-lower-priority-overlaps';
+    container.dataset.dragActiveOverlapReadPolicy = 'reuse-visible-card-rect-cache';
+    container.dataset.dragActiveOverlapHiddenCount = String(
+      dragActiveOverlapHiddenCount,
+    );
     container.dataset.dragSettleOverlapPolicy =
       'released-cluster-hides-lower-priority-overlaps';
     container.dataset.dragSettleOverlapReadPolicy = 'reuse-visible-card-rect-cache';
