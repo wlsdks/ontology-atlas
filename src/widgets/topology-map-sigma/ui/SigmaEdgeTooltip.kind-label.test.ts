@@ -818,9 +818,22 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(explainCopy).toHaveAttribute('data-copy-full-label', 'Copy explanation');
     expect(explainCopy).toHaveTextContent('Explain');
     expect(explainCopy?.className).toContain('flex-[1_1_auto]');
-    expect(metricStrip).toHaveClass('sr-only');
+    expect(metricStrip).toHaveAttribute(
+      'data-metric-strip-contract',
+      'visible-compact-relation-fact-rail',
+    );
+    expect(metricStrip).toHaveAttribute(
+      'data-metric-strip-height-token',
+      '--topology-selected-relation-metric-strip-height',
+    );
+    expect(metricStrip).not.toHaveClass('sr-only');
+    expect(metricStrip).toHaveClass('grid');
     expect(metricStrip).toContainElement(
       screen.getByTestId('sigma-selected-edge-agent-gate'),
+    );
+    expect(screen.getByTestId('sigma-selected-edge-agent-gate')).toHaveAttribute(
+      'data-metric-compact',
+      'true',
     );
   });
 

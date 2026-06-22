@@ -5619,8 +5619,20 @@ export function validateWebviewVerifyPayload(payload, {
         ) {
           return `WebView reported malformed compact Relief selected relation proof band (${proofBandWidth}x${proofBandHeight}, contract=${contractRect.width}x${contractRect.height}, decision=${decisionRect.width}x${decisionRect.height})`;
         }
-        if (Number(payload.markers.topologySelectedRelationMetricStripHeight || 0) > 12) {
-          return `WebView reported visible duplicate Relief selected relation metric strip (${payload.markers.topologySelectedRelationMetricStripWidth ?? 0}x${payload.markers.topologySelectedRelationMetricStripHeight ?? 0})`;
+        if (
+          payload.markers.topologySelectedRelationMetricStripContract !==
+          "visible-compact-relation-fact-rail"
+        ) {
+          return `WebView reported malformed Relief selected relation metric strip contract (${payload.markers.topologySelectedRelationMetricStripContract || "missing"})`;
+        }
+        const metricStripWidth = Number(
+          payload.markers.topologySelectedRelationMetricStripWidth || 0,
+        );
+        const metricStripHeight = Number(
+          payload.markers.topologySelectedRelationMetricStripHeight || 0,
+        );
+        if (metricStripWidth < 220 || metricStripHeight < 20 || metricStripHeight > 34) {
+          return `WebView reported malformed compact Relief selected relation metric strip (${metricStripWidth || "missing"}x${metricStripHeight || "missing"})`;
         }
         if (Number(payload.markers.topologySelectedRelationHandleStripHeight || 0) > 12) {
           return `WebView reported visible duplicate Relief selected relation handle strip (${payload.markers.topologySelectedRelationHandleStripWidth ?? 0}x${payload.markers.topologySelectedRelationHandleStripHeight ?? 0})`;

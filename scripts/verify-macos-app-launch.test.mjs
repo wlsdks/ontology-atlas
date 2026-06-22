@@ -2405,8 +2405,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationAgentDecisionTop: 188,
       topologySelectedRelationAgentDecisionWidth: 116,
       topologySelectedRelationAgentDecisionHeight: 36,
-      topologySelectedRelationMetricStripWidth: 1,
-      topologySelectedRelationMetricStripHeight: 1,
+      topologySelectedRelationMetricStripContract:
+        "visible-compact-relation-fact-rail",
+      topologySelectedRelationMetricStripWidth: 236,
+      topologySelectedRelationMetricStripHeight: 24,
       topologySelectedRelationHandleStripSource: "domain:views",
       topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
       topologySelectedRelationHandleStripType: "contains",

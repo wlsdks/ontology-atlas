@@ -4164,6 +4164,10 @@ pub fn run() {
                                   topologySelectedRelationAgentRouteEvidenceState,
                                   topologySelectedRelationAgentRoutePrimaryAction,
                                   topologySelectedRelationCardElevationContract,
+                                  topologySelectedRelationMetricStripContract:
+                                    topologySelectedRelationMetricStrip?.getAttribute("data-metric-strip-contract") || "",
+                                  topologySelectedRelationMetricStripHeightToken:
+                                    topologySelectedRelationMetricStrip?.getAttribute("data-metric-strip-height-token") || "",
                                   topologySelectedRelationMetricStripWidth:
                                     topologySelectedRelationMetricStripRect?.width || 0,
                                   topologySelectedRelationMetricStripHeight:

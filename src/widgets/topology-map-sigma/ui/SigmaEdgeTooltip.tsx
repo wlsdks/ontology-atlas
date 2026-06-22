@@ -722,12 +722,14 @@ export function SigmaSelectedEdgeCard({
       </div>
       <div
         data-testid="sigma-selected-edge-metric-strip"
-        className="sr-only"
+        data-metric-strip-contract="visible-compact-relation-fact-rail"
+        data-metric-strip-height-token="--topology-selected-relation-metric-strip-height"
+        className="grid min-h-6 min-w-0 grid-cols-4 gap-1 overflow-hidden rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] p-1"
       >
-        <Metric label={t('relationLabel')} value={visibleRelationTypeLabel || relationLabel} />
-        <Metric label={t('qualityLabel')} value={qualityLabel} />
-        <Metric label={t('evidenceLabel')} value={evidenceLabel} />
-        <Metric label={t('agentGateLabel')} value={agentGateLabel} testId="sigma-selected-edge-agent-gate" />
+        <Metric label={t('relationLabel')} value={visibleRelationTypeLabel || relationLabel} compact />
+        <Metric label={t('qualityLabel')} value={qualityLabel} compact />
+        <Metric label={t('evidenceLabel')} value={evidenceLabel} compact />
+        <Metric label={t('agentGateLabel')} value={agentGateLabel} testId="sigma-selected-edge-agent-gate" compact />
       </div>
       <div
         data-testid="sigma-selected-edge-next-action"
@@ -907,17 +909,44 @@ function RouteStep({
   );
 }
 
-function Metric({ label, value, testId }: { label: string; value: string; testId?: string }) {
+function Metric({
+  compact = false,
+  label,
+  value,
+  testId,
+}: {
+  compact?: boolean;
+  label: string;
+  value: string;
+  testId?: string;
+}) {
   return (
     <div
       data-testid={testId}
+      data-metric-compact={compact ? 'true' : undefined}
       data-metric-value={value}
-      className="min-w-0 rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-2.5 py-2 min-[1500px]:px-2 min-[1500px]:py-1.5"
+      className={
+        compact
+          ? "min-w-0 overflow-hidden rounded-[5px] px-1 py-0.5"
+          : "min-w-0 rounded-md border border-[color:var(--topology-selected-relation-subtle-border)] bg-[color:var(--topology-selected-relation-subtle-surface)] px-2.5 py-2 min-[1500px]:px-2 min-[1500px]:py-1.5"
+      }
     >
-      <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <div
+        className={
+          compact
+            ? "truncate font-mono text-[7px] uppercase leading-2.5 tracking-normal text-[color:var(--color-text-quaternary)]"
+            : "font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+        }
+      >
         {label}
       </div>
-      <div className="mt-1 truncate text-[12px] text-[color:var(--color-text-primary)]">
+      <div
+        className={
+          compact
+            ? "truncate text-[10px] leading-3 text-[color:var(--color-text-primary)]"
+            : "mt-1 truncate text-[12px] text-[color:var(--color-text-primary)]"
+        }
+      >
         {value}
       </div>
     </div>
