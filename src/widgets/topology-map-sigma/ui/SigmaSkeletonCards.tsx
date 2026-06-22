@@ -1327,6 +1327,50 @@ function showSkeletonCard(
   if (el.style.pointerEvents !== '') el.style.pointerEvents = '';
 }
 
+function showSelectedRelationEndpointCard(
+  el: HTMLElement,
+  stats: SkeletonDomWriteStats,
+) {
+  if (el.dataset.surfaceHidden === 'true') {
+    delete el.dataset.surfaceHidden;
+  }
+  if (
+    el.style.getPropertyValue('opacity') !== '1' ||
+    el.style.getPropertyPriority('opacity') !== 'important'
+  ) {
+    el.style.setProperty('opacity', '1', 'important');
+    stats.applied += 1;
+  } else {
+    stats.skipped += 1;
+  }
+  if (el.style.transitionProperty !== 'border-color, box-shadow') {
+    el.style.transitionProperty = 'border-color, box-shadow';
+    stats.applied += 1;
+  } else {
+    stats.skipped += 1;
+  }
+  if (el.style.transitionDuration !== '0s') {
+    el.style.transitionDuration = '0s';
+    stats.applied += 1;
+  } else {
+    stats.skipped += 1;
+  }
+  setSkeletonStyleValue(el, 'visibility', 'visible', stats);
+  setSkeletonStyleValue(el, 'pointerEvents', '', stats);
+}
+
+function clearSelectedRelationEndpointCardStyle(el: HTMLElement) {
+  if (el.style.getPropertyPriority('opacity') === 'important') {
+    el.style.removeProperty('opacity');
+  }
+  if (el.style.transitionProperty === 'border-color, box-shadow') {
+    el.style.removeProperty('transition-property');
+  }
+  if (el.style.transitionDuration === '0s') {
+    el.style.removeProperty('transition-duration');
+  }
+}
+
 function hideSkeletonCard(el: HTMLElement, stats?: SkeletonDomWriteStats) {
   if (el.dataset.surfaceHidden !== 'true') {
     el.dataset.surfaceHidden = 'true';
@@ -3280,6 +3324,7 @@ export function SigmaSkeletonCards({
         el.dataset.selectedRelationFactRoute =
           selectedRelationLabelHandoff?.route ?? '';
       } else {
+        clearSelectedRelationEndpointCardStyle(el);
         delete el.dataset.selectedRelationEndpoint;
         delete el.dataset.selectedRelationEndpointRole;
         delete el.dataset.selectedRelationEndpointRoleContract;
@@ -3646,7 +3691,11 @@ export function SigmaSkeletonCards({
           hideSkeletonCard(el, domWriteStats);
           continue;
         }
-        showSkeletonCard(el, '1', domWriteStats);
+        if (selectedRelationEndpoint) {
+          showSelectedRelationEndpointCard(el, domWriteStats);
+        } else {
+          showSkeletonCard(el, '1', domWriteStats);
+        }
         overviewEls.push(el);
         egoRects.push(rect);
         acceptedSurfaceRects.push(rect);
@@ -3678,6 +3727,7 @@ export function SigmaSkeletonCards({
       });
       for (const el of ordered) {
         const selected = el.dataset.selected === 'true';
+        const selectedRelationEndpoint = isSelectedRelationEndpointCard(el);
         const rect = readCardPlacementFrameRect(el);
         const clipped =
           rect.left < 0 ||
@@ -3691,7 +3741,8 @@ export function SigmaSkeletonCards({
           el.dataset.slug ?? '',
           el.dataset.dockParent,
         );
-        const protectSelectedCard = selected && selectedRelationEdgeId === null;
+        const protectSelectedCard =
+          (selected && selectedRelationEdgeId === null) || selectedRelationEndpoint;
         if (
           !lockedForOverviewDrag &&
           (blockedByFixedSurface ||
@@ -3705,10 +3756,14 @@ export function SigmaSkeletonCards({
           el.style.pointerEvents = 'none';
           continue;
         }
-        el.style.visibility = 'visible';
-        el.style.opacity = OVERVIEW_CONTEXT_OPACITY[
-          Number(el.dataset.tier ?? '3') as SkeletonCardModel['tier']
-        ] ?? OVERVIEW_CONTEXT_OPACITY[3];
+        if (selectedRelationEndpoint) {
+          showSelectedRelationEndpointCard(el, domWriteStats);
+        } else {
+          el.style.visibility = 'visible';
+          el.style.opacity = OVERVIEW_CONTEXT_OPACITY[
+            Number(el.dataset.tier ?? '3') as SkeletonCardModel['tier']
+          ] ?? OVERVIEW_CONTEXT_OPACITY[3];
+        }
         accepted.push(rect);
       }
     }
@@ -3735,9 +3790,18 @@ export function SigmaSkeletonCards({
     for (const el of orderedDimEls) {
       const slug = el.dataset.slug ?? '';
       const lockedForDrag = isDragClusterCard(slug, el.dataset.dockParent);
+      const selectedRelationEndpoint = isSelectedRelationEndpointCard(el);
       let rect: { left: number; top: number; right: number; bottom: number } | null = null;
       let collides: boolean;
       const tier = Number(el.dataset.tier ?? '3');
+      if (selectedRelationEndpoint) {
+        rect = readCardPlacementFrameRect(el);
+        el.dataset.dimOpacityRole = 'selected-relation-endpoint';
+        el.dataset.dimOpacityToken = 'none';
+        showSelectedRelationEndpointCard(el, domWriteStats);
+        acceptedDimRects.push(rect);
+        continue;
+      }
       if (focusContextSilhouetteSuppressionActive && tier > 1 && !lockedForDrag) {
         el.dataset.dimOpacityRole = 'suppressed-focus-context';
         el.dataset.dimOpacityToken = 'none';
@@ -3988,6 +4052,10 @@ export function SigmaSkeletonCards({
         if (el.dataset.overviewPostDomainOverlapHidden !== undefined) {
           delete el.dataset.overviewPostDomainOverlapHidden;
         }
+        const selectedRelationEndpoint = isSelectedRelationEndpointCard(el);
+        if (selectedRelationEndpoint) {
+          showSelectedRelationEndpointCard(el, domWriteStats);
+        }
         if (!isSkeletonCardVisibleFromFrameState(el)) continue;
         const box = el.getBoundingClientRect();
         overviewPostDomainOverlapReadCount += 1;
@@ -3998,6 +4066,7 @@ export function SigmaSkeletonCards({
           bottom: box.bottom - containerRect.top,
         };
         if (
+          !selectedRelationEndpoint &&
           accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD))
         ) {
           setSkeletonStyleValue(el, 'opacity', '0', domWriteStats);
@@ -4214,6 +4283,15 @@ export function SigmaSkeletonCards({
         selectedFocusRailSurfaceMounted ||
         (selectedFocusCenterActive && selectedFocusCluster !== null)) &&
       activeDragCluster === null;
+    let selectedRelationEndpointFinalVisibleGuardCount = 0;
+    for (const el of orderedEls) {
+      if (!isSelectedRelationEndpointCard(el)) continue;
+      showSelectedRelationEndpointCard(el, domWriteStats);
+      selectedRelationEndpointFinalVisibleGuardCount += 1;
+    }
+    container.dataset.selectedRelationEndpointFinalVisibleGuardCount = String(
+      selectedRelationEndpointFinalVisibleGuardCount,
+    );
     const cachedVisibilityFrame = visibilityFrameSnapshotRef.current;
     const canReuseVisibilityFrame =
       activeDragCluster === null &&

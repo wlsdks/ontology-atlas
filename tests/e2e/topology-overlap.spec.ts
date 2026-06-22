@@ -3363,6 +3363,82 @@ test("Relief Path result keeps both endpoint cards visible in the installed app 
   await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
 });
 
+test("Relief selected relation keeps both endpoint cards visible in the installed app WebView size", async ({
+  page,
+}) => {
+  await openRelief(page, INSTALLED_APP_WEBVIEW, {
+    mode: "focus",
+    requireHud: false,
+    selectedSlug: "capability:agent-config-onboarding",
+  });
+
+  const relationLabel = page.locator("[data-relation-label-button]").first();
+  await expect(relationLabel).toHaveCount(1, { timeout: 20_000 });
+  await relationLabel.evaluate((element) => {
+    if (!(element instanceof HTMLElement)) {
+      throw new Error("relation label hit target should be an HTML button");
+    }
+    element.click();
+  });
+
+  const selectedEdgeCard = page.getByTestId("sigma-selected-edge-card");
+  await expect(selectedEdgeCard).toBeVisible();
+  await expect(selectedEdgeCard).toHaveAttribute(
+    "data-selected-relation-route",
+    "source>target>type>action",
+  );
+  const source = await selectedEdgeCard.getAttribute("data-selected-relation-source");
+  const target = await selectedEdgeCard.getAttribute("data-selected-relation-target");
+  if (!source || !target) {
+    throw new Error("selected relation should expose source and target slugs");
+  }
+
+  const endpointState = await page.locator("[data-skeleton-card]").evaluateAll(
+    (cards, endpointSlugs) =>
+      cards
+        .filter((card) => endpointSlugs.includes(card.getAttribute("data-slug") ?? ""))
+        .map((card) => {
+          const style = window.getComputedStyle(card);
+          const rect = card.getBoundingClientRect();
+          const opacity = Number(style.opacity || "1");
+          const surfaceHidden = card.getAttribute("data-surface-hidden") || "";
+          return {
+            slug: card.getAttribute("data-slug") || "",
+            endpoint: card.getAttribute("data-selected-relation-endpoint") || "",
+            endpointRole: card.getAttribute("data-selected-relation-endpoint-role") || "",
+            surfaceHidden,
+            opacity,
+            display: style.display,
+            visibility: style.visibility,
+            width: rect.width,
+            height: rect.height,
+            visible:
+              surfaceHidden !== "true" &&
+              style.display !== "none" &&
+              style.visibility !== "hidden" &&
+              Number.isFinite(opacity) &&
+              opacity > 0.01 &&
+              rect.width > 0 &&
+              rect.height > 0,
+          };
+        }),
+    [source, target],
+  );
+
+  expect(
+    endpointState,
+    "selected relation should expose exactly its source and target cards",
+  ).toHaveLength(2);
+  expect(
+    endpointState.map((card) => `${card.slug}:${card.endpoint}:${card.endpointRole}`).sort(),
+    "selected relation endpoint cards should carry source/target roles",
+  ).toEqual([`${source}:true:source`, `${target}:true:target`].sort());
+  expect(
+    endpointState.filter((card) => card.visible),
+    "installed-app WebView selected relation should keep both endpoint cards visibly readable",
+  ).toHaveLength(2);
+});
+
 test("Relief path result keeps phone viewport panel-owned", async ({ page }) => {
   const viewport = PHONE_VIEWPORT;
   await openRelief(page, viewport, {

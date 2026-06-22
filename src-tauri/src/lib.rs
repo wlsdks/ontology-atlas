@@ -1808,7 +1808,13 @@ pub fn run() {
                                 const surfaceHidden = card.getAttribute("data-surface-hidden") || "";
                                 return {
                                   slug: card.getAttribute("data-slug") || "",
+                                  role: card.getAttribute("data-selected-relation-endpoint-role") || "",
                                   surfaceHidden,
+                                  display: style.display,
+                                  visibility: style.visibility,
+                                  opacity,
+                                  inlineOpacity: card.style.opacity || "",
+                                  className: card.getAttribute("class") || "",
                                   shift: card.getAttribute("data-selected-relation-endpoint-surface-shift") || "",
                                   visible:
                                     surfaceHidden !== "true" &&
