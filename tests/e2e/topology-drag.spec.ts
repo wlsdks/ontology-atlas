@@ -270,7 +270,9 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
   expect(reactiveProof.visibleCount).toBeGreaterThan(0);
 
   const contextAfter = await page
-    .locator('[data-skeleton-card][data-drag-reactive-context="true"]')
+    .locator(
+      '[data-skeleton-card][data-drag-reactive-context="true"][data-drag-reactive-context-visible="true"]',
+    )
     .evaluateAll((els) =>
       els.map((el) => {
         const rect = el.getBoundingClientRect();
@@ -287,12 +289,25 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
       }),
     );
   expect(contextAfter.length).toBeGreaterThan(0);
+  expect(contextAfter).toHaveLength(reactiveProof.visibleCount);
   expect(contextAfter.some((entry) => entry.visibility === "boosted-visible")).toBe(true);
   expect(contextAfter.some((entry) => Number(entry.opacity) >= 0.4)).toBe(true);
   expect(contextAfter.some((entry) => entry.motion === "parallax-nudge")).toBe(true);
   expect(contextAfter.some((entry) => Math.hypot(entry.motionDx, entry.motionDy) > 0)).toBe(
     true,
   );
+  const hiddenContextAfter = await page
+    .locator(
+      '[data-skeleton-card][data-drag-reactive-context="true"][data-drag-reactive-context-visible="false"]',
+    )
+    .evaluateAll((els) =>
+      els.map((el) => ({
+        visibility: el.getAttribute("data-drag-reactive-context-visibility") ?? "",
+      })),
+    );
+  expect(
+    hiddenContextAfter.every((entry) => entry.visibility !== "boosted-visible"),
+  ).toBe(true);
   const movedContextCount = contextAfter.filter((afterEntry) => {
     const beforeEntry = contextBefore.find((entry) => entry.slug === afterEntry.slug);
     if (!beforeEntry) return false;

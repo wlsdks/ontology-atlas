@@ -4350,6 +4350,13 @@ export function SigmaSkeletonCards({
       const slug = el.dataset.slug ?? '';
       const lockedForDrag = isDragClusterCard(slug, el.dataset.dockParent);
       const dragReactiveContext = el.dataset.dragReactiveContext === 'true';
+      if (dragReactiveContext) {
+        el.dataset.dragReactiveContextVisible = 'false';
+        el.dataset.dragReactiveContextVisibility = 'pending-visibility-pass';
+      } else {
+        delete el.dataset.dragReactiveContextVisible;
+        delete el.dataset.dragReactiveContextVisibility;
+      }
       const selectedRelationEndpoint = isSelectedRelationEndpointCard(el);
       let rect: { left: number; top: number; right: number; bottom: number } | null = null;
       let collides: boolean;
@@ -4358,6 +4365,10 @@ export function SigmaSkeletonCards({
         rect = readCardPlacementFrameRect(el);
         el.dataset.dimOpacityRole = 'selected-relation-endpoint';
         el.dataset.dimOpacityToken = 'none';
+        if (dragReactiveContext) {
+          el.dataset.dragReactiveContextVisibility =
+            'selected-relation-endpoint-not-dim-context';
+        }
         showSelectedRelationEndpointCard(el, domWriteStats);
         acceptedDimRects.push(rect);
         continue;
@@ -4366,6 +4377,9 @@ export function SigmaSkeletonCards({
         el.dataset.dimOpacityRole = 'suppressed-focus-context';
         el.dataset.dimOpacityToken = 'none';
         el.dataset.surfaceHiddenReason = 'focus-context-suppression';
+        if (dragReactiveContext) {
+          el.dataset.dragReactiveContextVisibility = 'hidden-focus-context-suppression';
+        }
         hideSkeletonCard(el, domWriteStats);
         focusContextSilhouetteHiddenCount += 1;
         continue;
@@ -4380,6 +4394,10 @@ export function SigmaSkeletonCards({
         el.dataset.selectedRelationHiddenInteractionContract =
           'hidden-context-is-not-pointer-focus-or-a11y-target';
         el.dataset.surfaceHiddenReason = 'selected-relation-context-suppression';
+        if (dragReactiveContext) {
+          el.dataset.dragReactiveContextVisibility =
+            'hidden-selected-relation-context-suppression';
+        }
         hideSkeletonCard(el, domWriteStats);
         selectedRelationContextSilhouetteHiddenCount += 1;
         continue;
@@ -4406,7 +4424,11 @@ export function SigmaSkeletonCards({
       if (collides) {
         el.dataset.dimOpacityRole = 'hidden-fixed-surface-collision';
         el.dataset.dimOpacityToken = 'none';
-        delete el.dataset.dragReactiveContextVisibility;
+        if (dragReactiveContext) {
+          el.dataset.dragReactiveContextVisibility = 'hidden-fixed-surface-collision';
+        } else {
+          delete el.dataset.dragReactiveContextVisibility;
+        }
         hideSkeletonCard(el, domWriteStats);
       } else {
         const dimOpacity =
@@ -4429,6 +4451,7 @@ export function SigmaSkeletonCards({
             : DIM_CHIP_OPACITY_TOKEN;
         if (dragReactiveContext) {
           dragReactiveContextVisibleCount += 1;
+          el.dataset.dragReactiveContextVisible = 'true';
           el.dataset.dragReactiveContextVisibility = 'boosted-visible';
           if (el.dataset.dragReactiveMotion === 'parallax-nudge') {
             dragReactiveMotionVisibleCount += 1;
