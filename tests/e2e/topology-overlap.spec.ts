@@ -1463,6 +1463,33 @@ function expectCardsClear(
   legendRect: Rect | null,
   minimapRect?: Rect,
 ) {
+  const violations = cardClearViolationSummary(
+    cards,
+    viewport,
+    analysisRect,
+    legendRect,
+    minimapRect,
+  );
+  expect(
+    violations.hud,
+    `cards overlapping fixed HUD at ${viewport.label}`,
+  ).toEqual([]);
+  expect(
+    violations.viewport,
+    `cards outside viewport at ${viewport.label}`,
+  ).toEqual([]);
+  expect(violations.overlap, `cards overlapping each other at ${viewport.label}`).toEqual(
+    [],
+  );
+}
+
+function cardClearViolationSummary(
+  cards: Array<Rect & { text: string }>,
+  viewport: { label: string; width: number; height: number },
+  analysisRect: Rect | null,
+  legendRect: Rect | null,
+  minimapRect?: Rect,
+) {
   const hudViolations = cards.filter(
     (card) =>
       (analysisRect ? intersects(card, analysisRect, 8) : false) ||
@@ -1477,17 +1504,36 @@ function expectCardsClear(
       card.bottom > viewport.height,
   );
   const cardOverlapViolations = cardPairsThatIntersect(cards);
-  expect(
-    hudViolations.map((card) => card.text),
-    `cards overlapping fixed HUD at ${viewport.label}`,
-  ).toEqual([]);
-  expect(
-    viewportViolations.map((card) => card.text),
-    `cards outside viewport at ${viewport.label}`,
-  ).toEqual([]);
-  expect(cardOverlapViolations, `cards overlapping each other at ${viewport.label}`).toEqual(
-    [],
-  );
+  return {
+    hud: hudViolations.map((card) => card.text),
+    overlap: cardOverlapViolations,
+    viewport: viewportViolations.map((card) => card.text),
+  };
+}
+
+async function waitForCardsClear(
+  page: Page,
+  viewport: { label: string; width: number; height: number },
+  analysisRect: Rect | null,
+  legendRect: Rect | null,
+  minimapRect?: Rect,
+) {
+  await expect
+    .poll(
+      async () =>
+        cardClearViolationSummary(
+          await visibleCardRects(page),
+          viewport,
+          analysisRect,
+          legendRect,
+          minimapRect,
+        ),
+      {
+        message: `cards should settle clear before sampling at ${viewport.label}`,
+        timeout: 5_000,
+      },
+    )
+    .toEqual({ hud: [], overlap: [], viewport: [] });
 }
 
 for (const viewport of VIEWPORTS) {
@@ -1533,6 +1579,7 @@ for (const viewport of VIEWPORTS) {
 
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
     const legendRect = await kindLegendRectOrNull(page);
+    await waitForCardsClear(page, viewport, analysisRect, legendRect);
     for (let sample = 0; sample < 4; sample += 1) {
       expectCardsClear(
         await visibleCardRects(page),
@@ -1791,7 +1838,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(relationButton.locator("[data-relation-evidence-glyph]")).toHaveAttribute(
       "data-relation-evidence-chip-text",
-      /S\d+|S9\+|A|R/,
+      /\b(?:src|source|authored|needs review|review)\b/,
     );
     await expect(relationButton).toHaveAttribute(
       "data-agent-gate-kind",
@@ -2019,7 +2066,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(relationButton).toHaveAttribute(
       "data-relation-label-visible-text",
-      /×\d+ · (S\d+|S9\+|A|R)/,
+      /×\d+ · .*(src|source|authored|needs review|review)/,
     );
     const relationTypeTextFit = await relationTypeText.evaluate(
       (element) => element.scrollWidth <= element.clientWidth + 1,
@@ -2284,7 +2331,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
       "data-selected-relation-label-visible-text",
-      /×\d+ · (S\d+|S9\+|A|R|출처|작성자|검토|authored|review)/,
+      /×\d+ · .*(src|source|출처|작성자|검토|authored|needs review|review)/,
     );
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
       "data-selected-relation-label-readable-text",
@@ -3099,7 +3146,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(aggregateRelationLabel).toHaveAttribute(
       "data-relation-label-visible-text",
-      /contains ×6 · (S\d+|S9\+|A|R|source|authored|review)/,
+      /contains ×6 · .*(src|source|authored|needs review|review)/,
     );
     await expect(aggregateRelationLabel).toHaveAttribute(
       "data-relation-label-visible-count-policy",
@@ -3974,6 +4021,22 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
 
   const relationLabel = page.locator("[data-relation-label-button]").first();
   await expect(relationLabel).toHaveCount(1, { timeout: 20_000 });
+  const relationLabelVisibleText =
+    (await relationLabel.getAttribute("data-relation-label-visible-text")) ?? "";
+  const relationEvidenceText =
+    (await relationLabel.getAttribute("data-relation-evidence-chip-text")) ?? "";
+  expect(
+    relationLabelVisibleText,
+    "selected relation labels should expose readable evidence text, not internal shorthand",
+  ).toMatch(/\b(?:src|authored|needs review)\b/);
+  expect(
+    relationEvidenceText,
+    "relation evidence marker should match the user-facing compact evidence copy",
+  ).toMatch(/\b(?:src|authored|needs review)\b/);
+  expect(
+    relationLabelVisibleText,
+    "selected relation label should not leak S1/A/R internal evidence shorthand",
+  ).not.toMatch(/·\s*(?:S\d\+?|S9\+|A|R)$/);
   await relationLabel.click();
 
   const selectedEdgeCard = page.getByTestId("sigma-selected-edge-card");

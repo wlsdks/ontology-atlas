@@ -2163,13 +2163,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     expect(labelHit).toHaveAttribute("data-relation-label-count", "2");
     expect(labelHit).toHaveAttribute("data-relation-type-label", "contains ×2");
-    expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains ×2 · S2");
+    expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains ×2 · 2 src");
     expect(labelHit).toHaveAttribute(
       "data-relation-label-visible-count-policy",
       "relation-label-shows-count",
     );
-    expect(typeText).toHaveTextContent("contains ×2 · S2");
-    expect(visibleBadge).toHaveTextContent("contains ×2 · S2");
+    expect(typeText).toHaveTextContent("contains ×2 · 2 src");
+    expect(visibleBadge).toHaveTextContent("contains ×2 · 2 src");
     expect(svgLabel).toHaveTextContent("contains 2");
     expect(svgLabelGroup).toHaveAttribute(
       "data-relation-label-interaction-owner",
@@ -3589,7 +3589,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-border-token",
       "--topology-relation-evidence-chip-border",
     );
-    expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "R");
+    expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "needs review");
     expect(evidenceChip).toHaveTextContent("");
     expect(connectorPath).toHaveAttribute(
       "data-relation-stroke-token",
@@ -3656,7 +3656,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-text-token",
       "--topology-relation-evidence-chip-text",
     );
-    expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "S3");
+    expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "3 src");
     expect(evidenceChip).toHaveTextContent("");
     expect(evidenceChip).toHaveClass("sr-only");
     const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
@@ -3782,7 +3782,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-label-visible-count-policy",
       "selected-relation-shows-count-and-evidence",
     );
-    expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains ×1 · S2");
+    expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains ×1 · 2 src");
     expect(labelHit).toHaveAttribute(
       "data-relation-label-hit-width-policy",
       "preserve-hidden-badge-width",
@@ -3876,7 +3876,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-visible-text",
-      "contains ×1 · S2",
+      "contains ×1 · 2 src",
     );
     expect(selectedOverlay).toHaveAttribute(
       "data-relation-label-text-size-token",
@@ -3970,7 +3970,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(typeText).toHaveTextContent("contains");
     expect(typeText).toHaveTextContent("×1");
-    expect(typeText).toHaveTextContent("S2");
+    expect(typeText).toHaveTextContent("2 src");
     expect(typeText).toHaveClass("shrink-0");
     expect(typeText).toHaveAttribute("data-relation-label-segment", "type");
     expect(typeText).not.toHaveClass("border-r");
@@ -3978,7 +3978,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-label-type-text-contract",
       "typed-fact-label-stays-readable",
     );
-    expect(selectedOverlayTypeText).toHaveTextContent("contains ×1 · S2");
+    expect(selectedOverlayTypeText).toHaveTextContent("contains ×1 · 2 src");
     expect(selectedOverlayTypeText).toHaveClass("shrink-0");
     expect(selectedOverlayTypeText).toHaveAttribute("data-relation-label-segment", "type");
     expect(selectedOverlayTypeText).not.toHaveClass("border-r");

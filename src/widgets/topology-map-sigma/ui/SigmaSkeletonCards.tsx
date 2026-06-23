@@ -659,21 +659,6 @@ function relationEvidenceState({
   return 'needs-review';
 }
 
-function relationEvidenceChipText({
-  evidenceCount,
-  state,
-}: {
-  evidenceCount?: number;
-  state: RelationEvidenceState;
-}): string {
-  if (state === 'source-backed') {
-    const count = Math.max(1, evidenceCount ?? 1);
-    return `S${count > 9 ? '9+' : count}`;
-  }
-  if (state === 'authored') return 'A';
-  return 'R';
-}
-
 /** 커넥터 형상 — 수평 접선 cubic S-커브 (MindNode 가지 문법). */
 function connectorPath(
   sx: number,
@@ -2665,6 +2650,24 @@ export function SigmaSkeletonCards({
     },
     [tEdgeTooltip],
   );
+  const relationEvidenceVisibleText = useCallback(
+    ({
+      evidenceCount,
+      state,
+    }: {
+      evidenceCount?: number;
+      state: RelationEvidenceState;
+    }) => {
+      if (state === 'source-backed') {
+        return tEdgeTooltip('evidenceCountShort', {
+          count: Math.max(1, evidenceCount ?? 1),
+        });
+      }
+      if (state === 'authored') return tEdgeTooltip('authoredEvidence');
+      return tEdgeTooltip('noEvidence');
+    },
+    [tEdgeTooltip],
+  );
   const relationAgentGateAriaText = useCallback(
     (gateKind: RelationAgentGateKind) => {
       if (gateKind === 'handoff-ready') return tEdgeTooltip('agentGateHandoffReady');
@@ -3430,7 +3433,7 @@ export function SigmaSkeletonCards({
         const labelCount =
           typeof connectorWithCount.count === 'number' ? connectorWithCount.count : 1;
         const evidenceState = relationEvidenceState(connector);
-        const evidenceChipText = relationEvidenceChipText({
+        const evidenceChipText = relationEvidenceVisibleText({
           evidenceCount: connector.evidenceCount,
           state: evidenceState,
         });
@@ -3449,7 +3452,13 @@ export function SigmaSkeletonCards({
         });
       }
     },
-    [formatRelationLabel, formatRelationVisibleLabel, graph, onRelationSelect],
+    [
+      formatRelationLabel,
+      formatRelationVisibleLabel,
+      graph,
+      onRelationSelect,
+      relationEvidenceVisibleText,
+    ],
   );
   const hoverRelation = useCallback(
     (connector: RelationConnector, point: { x: number; y: number } | null) => {
@@ -7583,7 +7592,7 @@ export function SigmaSkeletonCards({
         const selected = isSelectedRelationSurface(label);
         const quality = label.relationQuality ?? 'supported';
         const evidenceState = relationEvidenceState(label);
-        const evidenceChipText = relationEvidenceChipText({
+        const evidenceChipText = relationEvidenceVisibleText({
           evidenceCount: label.evidenceCount,
           state: evidenceState,
         });
@@ -7924,7 +7933,7 @@ export function SigmaSkeletonCards({
         if (!selected) return null;
         const quality = label.relationQuality ?? 'supported';
         const evidenceState = relationEvidenceState(label);
-        const evidenceChipText = relationEvidenceChipText({
+        const evidenceChipText = relationEvidenceVisibleText({
           evidenceCount: label.evidenceCount,
           state: evidenceState,
         });
