@@ -3549,6 +3549,8 @@ export function SigmaSkeletonCards({
     container.dataset.zoomLensActive = zoomLensActive ? 'true' : 'false';
     container.dataset.zoomLensCardCompactionActive =
       zoomLensCardCompactionActive ? 'true' : 'false';
+    container.dataset.zoomLensEmptyViewportFallbackContract =
+      'camera-zoom-in-keeps-at-least-one-ontology-mark-visible';
     container.dataset.focusDetailLensContract =
       'selected-focus-uses-kind-pins-for-noncritical-ego-context';
     container.dataset.focusDetailLensActive = focusDetailLensActive ? 'true' : 'false';
@@ -5463,8 +5465,54 @@ export function SigmaSkeletonCards({
           }
         }
       }
+      if (restored === 0 && zoomLensCardCompactionActive) {
+        const compactFallback =
+          orderedEls.find(
+            (el) =>
+              el.dataset.zoomLensActiveCard === 'true' &&
+              el.dataset.tier === '2' &&
+              el.dataset.graphAnchorSurfaceBlocked !== 'true',
+          ) ??
+          orderedEls.find(
+            (el) =>
+              el.dataset.zoomLensActiveCard === 'true' &&
+              el.dataset.graphAnchorSurfaceBlocked !== 'true',
+          );
+        if (compactFallback) {
+          const size = ZOOM_LENS_PIN_SIZE_PX;
+          const centerX = containerRect.width / 2;
+          const centerY = containerRect.height / 2;
+          const fallbackRect = {
+            left: centerX - size / 2,
+            top: centerY - size / 2,
+            right: centerX + size / 2,
+            bottom: centerY + size / 2,
+          };
+          const shifted = clampRectToViewportAndFixedSurfaces({
+            rect: fallbackRect,
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            fixedSurfaceRects,
+          });
+          const nextX = centerX + shifted.dx;
+          const nextY = centerY + shifted.dy;
+          setSkeletonStyleValue(
+            compactFallback,
+            'transform',
+            `translate(-50%, -50%) translate3d(${nextX}px, ${nextY}px, 0)`,
+            domWriteStats,
+          );
+          compactFallback.dataset.zoomLensEmptyViewportFallback = 'viewport-landmark';
+          compactFallback.dataset.visibilityFallbackSurfaceRestore =
+            'zoom-lens-viewport-landmark';
+          showSkeletonCard(compactFallback, '1', domWriteStats);
+          restored = 1;
+        }
+      }
       container.dataset.visibilityFallback = 'true';
       container.dataset.visibilityFallbackCount = String(restored);
+      container.dataset.zoomLensEmptyViewportFallbackActive =
+        restored > 0 && zoomLensCardCompactionActive ? 'true' : 'false';
       if (restored > 0) {
         reportedVisibleCardCount = 0;
         relationLabelCardBlockers.length = 0;
@@ -5479,6 +5527,7 @@ export function SigmaSkeletonCards({
     } else {
       delete container.dataset.visibilityFallback;
       delete container.dataset.visibilityFallbackCount;
+      container.dataset.zoomLensEmptyViewportFallbackActive = 'false';
     }
     if (visibilityFrameCacheState !== 'hit' && readLayerSurfaceActive) {
       let readLayerClearedCount = 0;

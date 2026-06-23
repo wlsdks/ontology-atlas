@@ -803,8 +803,16 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   await expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
   await expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "camera-zoom-in");
   await expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", /[1-9]\d*/);
+  await expect(layer).toHaveAttribute(
+    "data-zoom-lens-empty-viewport-fallback-contract",
+    "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
+  );
+  await expect(layer).toHaveAttribute("data-zoom-lens-visible-active-card-count", /[1-9]\d*/);
+  await expect(layer).not.toHaveAttribute("data-visible-card-count", "0");
   const compactCard = page
-    .locator('[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"]')
+    .locator(
+      '[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"]:not([data-surface-hidden="true"])',
+    )
     .first();
   await expect(compactCard).toHaveAttribute(
     "data-zoom-lens-presentation",
