@@ -745,7 +745,7 @@ test("Relief overview support rail stays compact on wide desktop viewports", asy
   }
 });
 
-test("Relief zoom-in switches detail cards to kind pins", async ({ page }) => {
+test("Relief zoom-in switches noncritical context cards to kind pins", async ({ page }) => {
   const viewport = VIEWPORTS[1];
   await openRelief(page, viewport, { mode: "map" });
   await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -760,7 +760,7 @@ test("Relief zoom-in switches detail cards to kind pins", async ({ page }) => {
   const layer = page.getByTestId("sigma-skeleton-cards");
   await expect(layer).toHaveAttribute(
     "data-zoom-lens-contract",
-    "zoom-in-uses-kind-pins-for-noncritical-detail-cards",
+    "zoom-in-uses-kind-pins-for-noncritical-context-cards",
   );
   await expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
 
@@ -812,10 +812,14 @@ test("Relief zoom-in switches detail cards to kind pins", async ({ page }) => {
   expect(compactLaneDisplay.count).toBe("none");
   expect(compactLaneDisplay.titleWidth).toBeLessThanOrEqual(2);
 
-  const coreAnchor = page
-    .locator('[data-skeleton-card][data-tier="1"][data-zoom-lens-active-card="false"]')
+  const compactAnchor = page
+    .locator('[data-skeleton-card][data-tier="1"][data-zoom-lens-active-card="true"]')
     .first();
-  await expect(coreAnchor).toHaveAttribute("data-zoom-lens-presentation", "full-card-anchor");
+  await expect(compactAnchor).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+  await expect(compactAnchor).toHaveAttribute(
+    "data-zoom-lens-card-contract",
+    "noncritical-context-card-becomes-kind-pin-on-camera-zoom-in",
+  );
 });
 
 test("Relief focus card wheel zoom still switches surrounding detail cards to pins", async ({

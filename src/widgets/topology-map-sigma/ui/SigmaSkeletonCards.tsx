@@ -3349,7 +3349,7 @@ export function SigmaSkeletonCards({
     const cameraRatio = readSkeletonCameraRatio(sigma);
     const zoomLensActive = cameraRatio <= ZOOM_LENS_RATIO_THRESHOLD;
     container.dataset.zoomLensContract =
-      'zoom-in-uses-kind-pins-for-noncritical-detail-cards';
+      'zoom-in-uses-kind-pins-for-noncritical-context-cards';
     container.dataset.zoomLensThresholdRatio = String(ZOOM_LENS_RATIO_THRESHOLD);
     container.dataset.zoomLensCameraRatio = cameraRatio.toFixed(3);
     container.dataset.zoomLensActive = zoomLensActive ? 'true' : 'false';
@@ -3456,7 +3456,10 @@ export function SigmaSkeletonCards({
         el.dataset.zoomLensPresentation = zoomLensCritical
           ? 'full-card-critical'
           : el.dataset.zoomLensEligible === 'true'
-            ? 'full-card-detail'
+            ? el.dataset.zoomLensCardContract ===
+              'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
+              ? 'full-card-context'
+              : 'full-card-detail'
             : 'full-card-anchor';
       }
     }
@@ -7630,7 +7633,10 @@ export function SigmaSkeletonCards({
           dragging ||
           dragSettled ||
           selectedRelationEndpointRole !== undefined;
-        const zoomLensEligible = !zoomLensCriticalCard && card.tier >= 2;
+        const zoomLensContextAnchorCard = !zoomLensCriticalCard && card.tier >= 1;
+        const zoomLensFocusContextRootCard =
+          !zoomLensCriticalCard && selectedSlug !== null && card.tier === 0;
+        const zoomLensEligible = zoomLensContextAnchorCard || zoomLensFocusContextRootCard;
         return (
           <button
             key={card.id}
@@ -7649,7 +7655,9 @@ export function SigmaSkeletonCards({
             data-zoom-lens-eligible={zoomLensEligible ? 'true' : 'false'}
             data-zoom-lens-card-contract={
               zoomLensEligible
-                ? 'noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in'
+                ? card.tier >= 2
+                  ? 'noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in'
+                  : 'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
                 : zoomLensCriticalCard
                   ? 'critical-card-stays-full-on-camera-zoom-in'
                   : 'core-anchor-card-stays-readable-on-camera-zoom-in'
