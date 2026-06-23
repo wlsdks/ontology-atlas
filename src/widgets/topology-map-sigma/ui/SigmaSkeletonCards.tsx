@@ -8166,6 +8166,16 @@ export function SigmaSkeletonCards({
             : activeDragCluster?.has(nodeId)
               ? 'movable'
               : 'dock-follower';
+        const dragRelationLinkCount =
+          activeHullConnectors.length + activeDragTensionConnectors.length;
+        const dragInteractionSummary =
+          dragging && activeDragCluster
+            ? tEdgeTooltip('dragInteractionSummary', {
+                cards: activeDragCluster.size,
+                relations: dragRelationLinkCount,
+                title: card.title,
+              })
+            : undefined;
         const dragSettled = dragSettledSlugs.has(nodeId);
         const dragReactiveContext =
           activeDragMotion && activeDragCluster !== null && dimmed && !dragging;
@@ -8319,6 +8329,16 @@ export function SigmaSkeletonCards({
             }
             data-drag-cluster={dragging ? 'true' : 'false'}
             data-drag-cluster-role={dragRole}
+            data-drag-interaction-contract={
+              dragging ? 'card-announces-connected-ontology-drag' : undefined
+            }
+            data-drag-interaction-summary={dragInteractionSummary}
+            data-drag-interaction-cluster-size={
+              dragging && activeDragCluster ? activeDragCluster.size : undefined
+            }
+            data-drag-interaction-relation-link-count={
+              dragging ? dragRelationLinkCount : undefined
+            }
             data-dragging-active={dragging && activeDragMotion ? 'true' : 'false'}
             data-drag-pushed={dragSettled ? 'true' : 'false'}
             data-drag-reactive-context={dragReactiveContext ? 'true' : 'false'}
@@ -8690,6 +8710,15 @@ export function SigmaSkeletonCards({
                 : ''
             } ${TIER_CARD_CLASS[card.tier]}`}
           >
+            {dragInteractionSummary ? (
+              <span
+                data-drag-interaction-summary-text
+                data-drag-interaction-summary-contract="sr-only-card-state"
+                className="sr-only"
+              >
+                {dragInteractionSummary}
+              </span>
+            ) : null}
             {/* 틴트 레이어 — 불투명 panel 베이스 위에 kind wash. 반투명 bg
                 단독이면 카드 뒤 엣지가 비쳐 보인다. */}
             <span

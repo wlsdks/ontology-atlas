@@ -543,6 +543,7 @@
       "selectedCardRelationSummaryCompact": "{relations, plural, one {# shown} other {# shown}}",
       "selectedCardRelationSummaryAction": "{relations, plural, one {# shown relation} other {# shown relations}} · {types, plural, one {# type} other {# types}} · inspect",
       "selectedCardRelationSummaryCompactAction": "{relations, plural, one {# shown} other {# shown}}",
+      "dragInteractionSummary": "Dragging {title} with {cards, plural, one {# connected card} other {# connected cards}} and {relations, plural, one {# relation link} other {# relation links}}",
       "healthRepairAuditBadge": "repair",
       "copied": "Copied"
     }

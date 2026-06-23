@@ -85,6 +85,20 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
     "data-active-drag-cluster-size",
     /^[2-9]\d*$/,
   );
+  await expect(target).toHaveAttribute(
+    "data-drag-interaction-contract",
+    "card-announces-connected-ontology-drag",
+  );
+  await expect(target).toHaveAttribute("data-drag-cluster-role", "root");
+  await expect(target).toHaveAttribute("data-drag-interaction-cluster-size", /^[2-9]\d*$/);
+  await expect(target).toHaveAttribute("data-drag-interaction-relation-link-count", /\d+/);
+  await expect(target).toHaveAttribute(
+    "data-drag-interaction-summary",
+    /Dragging Views with \d+ connected cards? and \d+ relation links?/,
+  );
+  await expect(target.locator("[data-drag-interaction-summary-text]")).toHaveText(
+    /Dragging Views with \d+ connected cards? and \d+ relation links?/,
+  );
   const companionSlug = await page
     .locator('[data-skeleton-card][data-drag-cluster="true"]')
     .evaluateAll((els) => {
@@ -98,6 +112,14 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
     `[data-skeleton-card][data-slug="${companionSlug}"]`,
   );
   const companionBefore = await rectOf(companion);
+  await expect(companion).toHaveAttribute(
+    "data-drag-interaction-contract",
+    "card-announces-connected-ontology-drag",
+  );
+  await expect(companion).toHaveAttribute(
+    "data-drag-interaction-summary",
+    /Dragging .+ with \d+ connected cards? and \d+ relation links?/,
+  );
   await page.mouse.move(before.x + before.width / 2 + 140, before.y + before.height / 2 + 70, {
     steps: 8,
   });
