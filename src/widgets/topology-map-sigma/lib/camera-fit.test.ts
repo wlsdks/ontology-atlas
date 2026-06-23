@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
   clampSelectedFocusCameraSafeTarget,
+  isCameraMotionNearTarget,
   resolveSafeAreaCameraFit,
   resolveSelectedFocusCameraFit,
   resolveSelectedFocusCameraMotionProof,
@@ -269,5 +270,20 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
       distancePx: 150,
       targetInsideSafeRect: true,
     });
+  });
+
+  it('overview safe-fit 은 현재 카메라가 목표와 사실상 같으면 animation 을 생략할 수 있다', () => {
+    expect(
+      isCameraMotionNearTarget({
+        current: { x: 0.5004, y: 0.4989, ratio: 1.0007 },
+        target: { x: 0.5, y: 0.5, ratio: 1 },
+      }),
+    ).toBe(true);
+    expect(
+      isCameraMotionNearTarget({
+        current: { x: 0.5, y: 0.5, ratio: 1 },
+        target: { x: 0.58, y: 0.5, ratio: 1 },
+      }),
+    ).toBe(false);
   });
 });

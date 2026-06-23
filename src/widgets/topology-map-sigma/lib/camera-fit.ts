@@ -275,6 +275,23 @@ export function clampSelectedFocusCameraSafeTarget({
   };
 }
 
+export function isCameraMotionNearTarget({
+  current,
+  target,
+  positionTolerance = 0.002,
+  ratioTolerance = 0.002,
+}: {
+  current: { x: number; y: number; ratio: number };
+  target: { x: number; y: number; ratio: number };
+  positionTolerance?: number;
+  ratioTolerance?: number;
+}): boolean {
+  return (
+    Math.hypot(target.x - current.x, target.y - current.y) <= positionTolerance &&
+    Math.abs(target.ratio - current.ratio) <= ratioTolerance
+  );
+}
+
 export function resolveSelectedFocusCameraMotionProof({
   selectedViewport,
   safeTarget,

@@ -143,6 +143,7 @@ import { SigmaRelationLegend } from './SigmaRelationLegend';
 import { SigmaSkeletonCards, type SkeletonCardModel } from './SigmaSkeletonCards';
 import {
   clampSelectedFocusCameraSafeTarget,
+  isCameraMotionNearTarget,
   resolveSafeAreaCameraFit,
   resolveSelectedFocusCameraFit,
   resolveSelectedFocusCameraMotionProof,
@@ -783,12 +784,33 @@ function SigmaTopologyImpl({
     const va = renderer.viewportToFramedGraph({ x: width / 2, y: height / 2 });
     const vb = renderer.viewportToFramedGraph(fit.safeTarget);
     const k = state.ratio > 0 ? newRatio / state.ratio : 1;
+    const targetCamera = {
+      x: centerFramed.x + (va.x - vb.x) * k,
+      y: centerFramed.y + (va.y - vb.y) * k,
+      ratio: newRatio,
+    };
+    if (
+      isCameraMotionNearTarget({
+        current: { x: state.x ?? 0, y: state.y ?? 0, ratio: state.ratio },
+        target: targetCamera,
+      })
+    ) {
+      if (containerRef.current) {
+        containerRef.current.dataset.cameraMotionTrigger = 'skeleton-overview-already-safe';
+        containerRef.current.dataset.cameraMotionContract = TOPOLOGY_CAMERA_MOTION_CONTRACT;
+        containerRef.current.dataset.cameraMotionDurationMs = '0';
+        containerRef.current.dataset.cameraMotionEasing = TOPOLOGY_CAMERA_EASING_NAME;
+        containerRef.current.dataset.cameraMotionReduced = reduceMotionRef.current
+          ? 'true'
+          : 'false';
+        containerRef.current.dataset.cameraMotionState = 'already-safe';
+        containerRef.current.dataset.cameraMotionOverviewNoopPolicy =
+          'skip-near-current-camera-target';
+      }
+      return true;
+    }
     camera.animate(
-      {
-        x: centerFramed.x + (va.x - vb.x) * k,
-        y: centerFramed.y + (va.y - vb.y) * k,
-        ratio: newRatio,
-      },
+      targetCamera,
       cameraMotion(
         'skeleton-overview-safe-fit',
         SELECTED_FOCUS_CAMERA_DURATION_MS,
