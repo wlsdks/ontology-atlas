@@ -3572,6 +3572,14 @@ pub fn run() {
                                   topologyCreateNodeSubmitLabel:
                                     topologyCreateNodeSubmit?.textContent?.trim() || "",
                                   topologyMinimapVisible,
+                                  topologyMinimapState:
+                                    sigmaViewport?.getAttribute("data-minimap-state") || "",
+                                  topologyRelationLegendState:
+                                    sigmaViewport?.getAttribute("data-relation-legend-state") || "",
+                                  topologySupportChromeZoomLensActive:
+                                    sigmaViewport?.getAttribute("data-support-chrome-zoom-lens-active") === "true",
+                                  topologySupportChromeZoomLensThresholdRatio:
+                                    Number(sigmaViewport?.getAttribute("data-support-chrome-zoom-lens-threshold-ratio") || "0"),
                                   topologyMinimapWidth:
                                     topologyMinimapRect?.width || 0,
                                   topologyMinimapHeight:
@@ -5193,6 +5201,8 @@ mod tests {
         assert!(source.contains("topologyZoomVerifyReason"));
         assert!(source.contains("topologyZoomLensPresentationContract"));
         assert!(source.contains("topologyZoomLensPresentationSource"));
+        assert!(source.contains("topologySupportChromeZoomLensActive"));
+        assert!(source.contains("topologyMinimapState"));
         assert!(source.contains("topologyDragReactiveMotionContract"));
         assert!(source.contains("topologyDragReactiveMotionMaxObservedOffsetPx"));
         assert!(source.contains("topologyDragReactiveLinkedMotionVisibleCount"));

@@ -1031,6 +1031,14 @@ function SigmaTopologyImpl({
   const overviewEdgesReadyRef = useRef(false);
   const lastRelationVisibilityRef = useRef<TopologyRelationVisibilityStats | null>(null);
   const LOD_HIDE_RATIO = minimal ? 2.4 : 1.8;
+  const SUPPORT_CHROME_ZOOM_LENS_RATIO = 0.98;
+  const canCollapseSupportChromeForZoomLens =
+    !minimal &&
+    !pathWorkflowActive &&
+    !selectedSlug &&
+    !suppressMinimap &&
+    !suppressRelationLegend;
+  const [supportChromeZoomLensActive, setSupportChromeZoomLensActive] = useState(false);
   const [hoverLabel, setHoverLabel] = useState<SigmaNodeTooltipData | null>(null);
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<SigmaContextMenuData | null>(null);
@@ -1328,17 +1336,27 @@ function SigmaTopologyImpl({
   useEffect(() => {
     if (!sigmaInstance) return;
     const camera = sigmaInstance.getCamera();
-    cameraRatioRef.current = camera.getState().ratio;
+    const syncCameraRatio = () => {
+      const ratio = camera.getState().ratio;
+      cameraRatioRef.current = ratio;
+      setSupportChromeZoomLensActive((current) => {
+        const next =
+          canCollapseSupportChromeForZoomLens &&
+          ratio <= SUPPORT_CHROME_ZOOM_LENS_RATIO;
+        return current === next ? current : next;
+      });
+    };
+    syncCameraRatio();
     emitRelationVisibility();
     const handler = () => {
-      cameraRatioRef.current = camera.getState().ratio;
+      syncCameraRatio();
       emitRelationVisibility();
     };
     camera.on('updated', handler);
     return () => {
       camera.off('updated', handler);
     };
-  }, [emitRelationVisibility, sigmaInstance]);
+  }, [canCollapseSupportChromeForZoomLens, emitRelationVisibility, sigmaInstance]);
 
   // 좌표 보존(charter perf north-star) — graph rebuild 시 paint 전에 기존 노드를
   // 직전 build 좌표로 되돌려 전체 reflow 를 회피한다(새 노드만 settle 위치 유지).
@@ -2954,6 +2972,9 @@ function SigmaTopologyImpl({
   }, [activeCategory, hubsOnly, searchQuery, selectedSlug, depthLimit, graph, onVisibleCountChange]);
 
   const selectedFocusVignetteSuppressed = Boolean(selectedSlug);
+  const relationLegendSuppressed =
+    suppressRelationLegend || supportChromeZoomLensActive;
+  const minimapSuppressed = suppressMinimap || supportChromeZoomLensActive;
 
   return (
     <div className={`relative h-full w-full overflow-hidden ${className ?? ''}`}>
@@ -2995,12 +3016,29 @@ function SigmaTopologyImpl({
         data-layout-worker-position-frame-skip-policy="skip-while-skeleton-card-drag-active"
         data-kind-legend-state={suppressKindLegend ? 'collapsed-support-chrome' : 'visible-support-chrome'}
         data-relation-legend-state={
-          suppressRelationLegend
-            ? 'collapsed-selected-inspector-attention'
+          relationLegendSuppressed
+            ? supportChromeZoomLensActive
+              ? 'collapsed-zoom-lens-attention'
+              : 'collapsed-selected-inspector-attention'
             : 'visible-support-chrome'
         }
+        data-minimap-state={
+          minimapSuppressed
+            ? supportChromeZoomLensActive
+              ? 'collapsed-zoom-lens-attention'
+              : 'collapsed-active-surface-attention'
+            : 'visible-support-chrome'
+        }
+        data-support-chrome-zoom-lens-active={
+          supportChromeZoomLensActive ? 'true' : 'false'
+        }
+        data-support-chrome-zoom-lens-threshold-ratio={SUPPORT_CHROME_ZOOM_LENS_RATIO}
         data-selected-inspector-chrome-policy={
-          suppressRelationLegend ? 'selected-inspector-suppresses-map-utility-chrome' : undefined
+          relationLegendSuppressed
+            ? supportChromeZoomLensActive
+              ? 'zoom-lens-suppresses-map-utility-chrome'
+              : 'selected-inspector-suppresses-map-utility-chrome'
+            : undefined
         }
         data-health-repair-map-target-contract={
           healthRepairTarget ? 'analysis-panel-target-to-audit-overlay' : undefined
@@ -3570,7 +3608,7 @@ function SigmaTopologyImpl({
         </div>
       ) : null}
 
-      {!minimal && !overlays?.auditHighlight && skeletonCardsActive && !suppressRelationLegend ? (
+      {!minimal && !overlays?.auditHighlight && skeletonCardsActive && !relationLegendSuppressed ? (
         <SigmaRelationLegend
           labels={{
             title: t('relationLegendTitle'),
@@ -3586,7 +3624,7 @@ function SigmaTopologyImpl({
         />
       ) : null}
 
-      {!minimal && !suppressMinimap ? (
+      {!minimal && !minimapSuppressed ? (
         <SigmaMinimap sigma={sigmaInstance} graph={graph} />
       ) : null}
 

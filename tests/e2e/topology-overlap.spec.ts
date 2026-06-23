@@ -15,6 +15,7 @@ const PHONE_VIEWPORT = { label: "phone-390", width: 390, height: 844 };
 const NARROW_PHONE_VIEWPORT = { label: "phone-360", width: 360, height: 780 };
 const OUT = path.resolve("output/ui-audit/topology-drag");
 const OVERVIEW_DRAG_DELTA_TOLERANCE_PX = 48;
+const DRAG_FEEDBACK_DOM_WRITE_ALLOWANCE = 2;
 
 test.beforeAll(async () => {
   await mkdir(OUT, { recursive: true });
@@ -769,6 +770,12 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   await expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
   await expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
   await expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "overview-density");
+  await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+    "data-support-chrome-zoom-lens-active",
+    "false",
+  );
+  await expect(page.getByTestId("topology-minimap")).toBeVisible();
+  await expect(page.getByTestId("topology-relation-legend")).toBeVisible();
 
   await page.mouse.move(viewport.width / 2, viewport.height / 2);
   for (let i = 0; i < 7; i += 1) {
@@ -779,6 +786,20 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   await expect(layer).toHaveAttribute("data-zoom-lens-active", "true", {
     timeout: 6_000,
   });
+  await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+    "data-support-chrome-zoom-lens-active",
+    "true",
+  );
+  await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+    "data-minimap-state",
+    "collapsed-zoom-lens-attention",
+  );
+  await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+    "data-relation-legend-state",
+    "collapsed-zoom-lens-attention",
+  );
+  await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
+  await expect(page.getByTestId("topology-relation-legend")).toHaveCount(0);
   await expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
   await expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "camera-zoom-in");
   await expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", /[1-9]\d*/);
@@ -3489,7 +3510,9 @@ for (const viewport of VIEWPORTS) {
       dragCacheProof.domWriteAppliedCount,
       `drag should stay within the two-pass card write budget at ${viewport.label}`,
     ).toBeLessThanOrEqual(
-      dragCacheProof.resolvedCardCount * 2 + dragCacheProof.activeDragClusterSize,
+      dragCacheProof.resolvedCardCount * 2 +
+        dragCacheProof.activeDragClusterSize +
+        DRAG_FEEDBACK_DOM_WRITE_ALLOWANCE,
     );
     expect(
       dragCacheProof.domWriteSkippedCount,

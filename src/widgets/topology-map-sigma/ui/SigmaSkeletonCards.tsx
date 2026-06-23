@@ -1559,6 +1559,90 @@ function separatePathEndpointCards(
   onPlacedCardRectChange?.(best.el, best.moved);
 }
 
+function separateSelectedRelationEndpointCards(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }> = [],
+  onPlacedCardRectChange?: (el: HTMLElement, rect: ConnectorRect) => void,
+): number {
+  const source = orderedEls.find(
+    (el) =>
+      el.dataset.selectedRelationEndpointRole === 'source' &&
+      el.dataset.surfaceHidden !== 'true' &&
+      el.style.visibility !== 'hidden' &&
+      Number(el.style.opacity || '1') > 0.01,
+  );
+  const target = orderedEls.find(
+    (el) =>
+      el.dataset.selectedRelationEndpointRole === 'target' &&
+      el.dataset.surfaceHidden !== 'true' &&
+      el.style.visibility !== 'hidden' &&
+      Number(el.style.opacity || '1') > 0.01,
+  );
+  if (!source || !target) return 0;
+
+  const sourceBox = source.getBoundingClientRect();
+  const targetBox = target.getBoundingClientRect();
+  const sourceRect = {
+    left: sourceBox.left - containerRect.left,
+    top: sourceBox.top - containerRect.top,
+    right: sourceBox.right - containerRect.left,
+    bottom: sourceBox.bottom - containerRect.top,
+  };
+  const targetRect = {
+    left: targetBox.left - containerRect.left,
+    top: targetBox.top - containerRect.top,
+    right: targetBox.right - containerRect.left,
+    bottom: targetBox.bottom - containerRect.top,
+  };
+  if (!rectsOverlap(sourceRect, targetRect, -2)) {
+    delete source.dataset.selectedRelationEndpointPairSeparated;
+    delete target.dataset.selectedRelationEndpointPairSeparated;
+    return 0;
+  }
+
+  const gap = 12;
+  const candidates = [
+    {
+      el: target,
+      rect: targetRect,
+      dy: sourceRect.bottom + gap - targetRect.top,
+      marker: 'target-shifted',
+    },
+    {
+      el: source,
+      rect: sourceRect,
+      dy: targetRect.top - gap - sourceRect.bottom,
+      marker: 'source-shifted',
+    },
+  ]
+    .map((candidate) => {
+      const moved = {
+        left: candidate.rect.left,
+        top: candidate.rect.top + candidate.dy,
+        right: candidate.rect.right,
+        bottom: candidate.rect.bottom + candidate.dy,
+      };
+      return {
+        ...candidate,
+        moved,
+        inside:
+          moved.top >= SAFE_VIEWPORT_MARGIN &&
+          moved.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN,
+        clear: !fixedSurfaceRects.some((surface) => rectsOverlap(moved, surface)),
+      };
+    })
+    .filter((candidate) => candidate.dy !== 0 && candidate.inside && candidate.clear);
+  const best = candidates[0];
+  if (!best) return 0;
+
+  const nextTransform = `${best.el.style.transform} translate(0, ${best.dy}px)`;
+  best.el.style.transform = nextTransform;
+  best.el.dataset.selectedRelationEndpointPairSeparated = best.marker;
+  onPlacedCardRectChange?.(best.el, best.moved);
+  return 1;
+}
+
 function separateOverviewDomainCards(
   orderedEls: readonly HTMLElement[],
   containerRect: DOMRect,
@@ -5053,6 +5137,17 @@ export function SigmaSkeletonCards({
       showSelectedRelationEndpointCard(el, domWriteStats);
       selectedRelationEndpointFinalVisibleGuardCount += 1;
     }
+    const selectedRelationEndpointSeparatedCount =
+      selectedRelationEdgeId !== null
+        ? separateSelectedRelationEndpointCards(
+            orderedEls,
+            containerRect,
+            fixedSurfaceRects,
+            (el, rect) => {
+              cardPlacementFrameRectCache.set(el, rect);
+            },
+          )
+        : 0;
     const selectedRelationEndpointVisibleCount = orderedEls.reduce(
       (count, el) =>
         count +
@@ -5078,6 +5173,11 @@ export function SigmaSkeletonCards({
     );
     container.dataset.selectedRelationEndpointFinalVisibleGuardCount = String(
       selectedRelationEndpointFinalVisibleGuardCount,
+    );
+    container.dataset.selectedRelationEndpointSeparationContract =
+      'source-target-min-gap-after-final-visible-guard';
+    container.dataset.selectedRelationEndpointSeparatedCount = String(
+      selectedRelationEndpointSeparatedCount,
     );
     container.dataset.selectedRelationEndpointExpectedCount = String(
       selectedRelationEndpointExpectedCount,
@@ -8407,6 +8507,7 @@ export function SigmaSkeletonCards({
               setDragPhysicsSyncActive(physicsSynced);
               const container = containerRef.current;
               if (container) {
+                container.dataset.activeDragClusterSize = String(movingGroup.size);
                 container.dataset.dragPhysicsSyncActive = physicsSynced
                   ? 'true'
                   : 'false';
@@ -8475,6 +8576,9 @@ export function SigmaSkeletonCards({
                 movingGroup,
               );
               drag.movedGroup = movedGroup;
+              if (container) {
+                container.dataset.activeDragClusterSize = String(movedGroup.size);
+              }
               onDragClusterMove?.(
                 snapshotDraggedClusterPositions(graph, movedGroup),
               );
