@@ -7688,6 +7688,16 @@ export function buildWebviewEvidencePayload(
         focusDetail: {
           contract: markers.topologyFocusDetailLensContract ?? null,
           active: markers.topologyFocusDetailLensActive === true,
+          connectorExpression: {
+            contract:
+              markers.topologyFocusDetailConnectorExpressionContract ?? null,
+            active:
+              markers.topologyFocusDetailConnectorExpressionActive === true,
+            count: markerNumber(
+              markers,
+              "topologyFocusDetailConnectorExpressionCount",
+            ),
+          },
         },
         overviewDensity: {
           contract: markers.topologyOverviewDensityLensContract ?? null,

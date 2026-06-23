@@ -4775,6 +4775,12 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-focus-detail-lens-contract") || "",
                                   topologyFocusDetailLensActive:
                                     skeletonCardsLayer?.getAttribute("data-focus-detail-lens-active") === "true",
+                                  topologyFocusDetailConnectorExpressionContract:
+                                    skeletonCardsLayer?.getAttribute("data-focus-detail-connector-expression-contract") || "",
+                                  topologyFocusDetailConnectorExpressionActive:
+                                    skeletonCardsLayer?.getAttribute("data-focus-detail-connector-expression-active") === "true",
+                                  topologyFocusDetailConnectorExpressionCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-focus-detail-connector-expression-count") || "0"),
                                   topologyOverviewDensityLensContract:
                                     skeletonCardsLayer?.getAttribute("data-overview-density-lens-contract") || "",
                                   topologyOverviewDensityLensThresholdRatio:

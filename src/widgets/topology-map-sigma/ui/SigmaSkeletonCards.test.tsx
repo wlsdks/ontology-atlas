@@ -1467,11 +1467,33 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       .closest("[data-skeleton-card]");
 
     await waitFor(() => {
+      const backgroundConnectors = layer.querySelectorAll(
+        'path[data-focus-detail-connector-expression="background-thread"]',
+      );
       expect(layer).toHaveAttribute(
         "data-focus-detail-lens-contract",
         "selected-focus-uses-kind-pins-for-noncritical-ego-context",
       );
       expect(layer).toHaveAttribute("data-focus-detail-lens-active", "true");
+      expect(layer).toHaveAttribute(
+        "data-focus-detail-connector-expression-contract",
+        "focus-detail-lens-demotes-noncritical-connectors",
+      );
+      expect(layer).toHaveAttribute("data-focus-detail-connector-expression-active", "true");
+      expect(layer).toHaveAttribute("data-focus-detail-connector-expression-count", "1");
+      expect(backgroundConnectors).toHaveLength(1);
+      expect(backgroundConnectors[0]).toHaveAttribute(
+        "opacity",
+        "var(--topology-focus-detail-connector-opacity)",
+      );
+      expect(backgroundConnectors[0]).toHaveAttribute(
+        "stroke-width",
+        "var(--topology-focus-detail-connector-width)",
+      );
+      expect(backgroundConnectors[0]).toHaveAttribute(
+        "stroke-dasharray",
+        "var(--topology-focus-detail-connector-dasharray)",
+      );
       expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
       expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "2");
       expect(layer).toHaveAttribute("data-zoom-lens-visible-active-card-count", "1");

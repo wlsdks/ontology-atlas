@@ -212,6 +212,9 @@
     --topology-relation-stroke-weak-width: 1.12;
     --topology-relation-stroke-review: rgba(226, 105, 105, 0.54);
     --topology-relation-stroke-review-width: 1.16;
+    --topology-focus-detail-connector-opacity: 0.26;
+    --topology-focus-detail-connector-width: 0.76;
+    --topology-focus-detail-connector-dasharray: 2 8;
     --topology-relation-evidence-chip-surface: rgba(255, 255, 255, 0.055);
     --topology-relation-evidence-chip-border: rgba(255, 255, 255, 0.10);
     --topology-relation-evidence-chip-text: var(--color-text-secondary);
@@ -1088,6 +1091,9 @@
     --topology-relation-spine-halo-width: 5.6;
     --topology-relation-spine-terminal: rgba(77, 86, 200, 0.70);
     --topology-relation-spine-terminal-radius: 2.6;
+    --topology-focus-detail-connector-opacity: 0.22;
+    --topology-focus-detail-connector-width: 0.72;
+    --topology-focus-detail-connector-dasharray: 2 8;
     --topology-relation-evidence-chip-surface: rgba(15, 23, 42, 0.055);
     --topology-relation-evidence-chip-border: rgba(15, 23, 42, 0.12);
     --topology-relation-evidence-chip-text: var(--color-text-secondary);

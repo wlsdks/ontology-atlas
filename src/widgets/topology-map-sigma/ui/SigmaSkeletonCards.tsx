@@ -6598,6 +6598,17 @@ export function SigmaSkeletonCards({
   const activeDragUsesRootPreview =
     activeDragClusterPolicy === 'root-direct-neighbors-pin-free-context' ||
     (activeDragCluster?.size ?? 0) >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD;
+  const focusDetailConnectorExpressionActive =
+    selectedFocusCenterActive &&
+    selectedFocusCluster !== null &&
+    selectedRelationEdgeId === null &&
+    !pathWorkflowActive &&
+    !healthRepairTarget &&
+    activeDragCluster === null;
+  const focusDetailConnectorExpressionCount = focusDetailConnectorExpressionActive
+    ? egoRelationConnectors.filter((connector) => !isSelectedRelationSurface(connector))
+        .length
+    : 0;
 
   return (
     <div
@@ -6732,6 +6743,11 @@ export function SigmaSkeletonCards({
       data-focus-relation-label-source={
         selectedFocusCluster ? 'ego-relation-labels' : undefined
       }
+      data-focus-detail-connector-expression-contract="focus-detail-lens-demotes-noncritical-connectors"
+      data-focus-detail-connector-expression-active={
+        focusDetailConnectorExpressionActive ? 'true' : 'false'
+      }
+      data-focus-detail-connector-expression-count={focusDetailConnectorExpressionCount}
       data-selected-relation-label-handoff={
         selectedRelationLabelHandoff ? 'ready' : 'none'
       }
@@ -6871,6 +6887,8 @@ export function SigmaSkeletonCards({
         {egoRelationConnectors.map((connector) => {
           const selected = isSelectedRelationSurface(connector);
           const tone = relationConnectorTone(connector, selected);
+          const focusDetailConnectorExpression =
+            focusDetailConnectorExpressionActive && !selected;
           return (
             <g key={`ego:${connector.key}`}>
               <path
@@ -6911,6 +6929,24 @@ export function SigmaSkeletonCards({
                 data-relation-stroke-contract="quality-token"
                 data-relation-stroke-token={tone.strokeToken}
                 data-relation-stroke-width-token={tone.strokeWidthToken}
+                data-focus-detail-connector-expression={
+                  focusDetailConnectorExpression ? 'background-thread' : undefined
+                }
+                data-focus-detail-connector-opacity-token={
+                  focusDetailConnectorExpression
+                    ? '--topology-focus-detail-connector-opacity'
+                    : undefined
+                }
+                data-focus-detail-connector-stroke-width-token={
+                  focusDetailConnectorExpression
+                    ? '--topology-focus-detail-connector-width'
+                    : undefined
+                }
+                data-focus-detail-connector-dasharray-token={
+                  focusDetailConnectorExpression
+                    ? '--topology-focus-detail-connector-dasharray'
+                    : undefined
+                }
                 data-relation-stroke-evidence-boost={
                   (connector.evidenceCount ?? 0) > 0 || connector.authored === true
                     ? 'true'
@@ -6919,9 +6955,21 @@ export function SigmaSkeletonCards({
                 className="pointer-events-none topology-connector-path"
                 fill="none"
                 stroke={tone.stroke}
-                strokeDasharray={tone.dasharray}
-                strokeWidth={tone.strokeWidth}
-                opacity={tone.opacity}
+                strokeDasharray={
+                  focusDetailConnectorExpression
+                    ? 'var(--topology-focus-detail-connector-dasharray)'
+                    : tone.dasharray
+                }
+                strokeWidth={
+                  focusDetailConnectorExpression
+                    ? 'var(--topology-focus-detail-connector-width)'
+                    : tone.strokeWidth
+                }
+                opacity={
+                  focusDetailConnectorExpression
+                    ? 'var(--topology-focus-detail-connector-opacity)'
+                    : tone.opacity
+                }
               />
             </g>
           );

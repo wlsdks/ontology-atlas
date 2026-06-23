@@ -2972,6 +2972,26 @@ for (const viewport of VIEWPORTS) {
       "true",
     );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-focus-detail-connector-expression-contract",
+      "focus-detail-lens-demotes-noncritical-connectors",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-focus-detail-connector-expression-active",
+      "true",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-focus-detail-connector-expression-count",
+      /[1-9]\d*/,
+    );
+    const backgroundConnectors = page.locator(
+      'path[data-focus-detail-connector-expression="background-thread"]',
+    );
+    const backgroundConnectorCount = await backgroundConnectors.count();
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-focus-detail-connector-expression-count",
+      String(backgroundConnectorCount),
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-zoom-lens-active-card-count",
       /[1-9]\d*/,
     );
