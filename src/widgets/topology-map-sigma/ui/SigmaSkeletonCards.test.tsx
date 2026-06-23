@@ -1416,6 +1416,82 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("선택 focus detail lens 는 비핵심 ego companion 을 kind pin 으로 낮춘다", async () => {
+    const graph = makeGraph();
+    graph.addNode("capability:c1", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 16,
+      y: 8,
+      label: "Agent handoff",
+    });
+    graph.addEdge("domain:d1", "capability:c1", {
+      size: 1,
+      color: "rgba(139,151,255,0.28)",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+      authored: true,
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "capability:c1",
+            title: "Agent handoff",
+            kind: "capability",
+            tier: 2 as const,
+          },
+        ]}
+        selectedSlug="domain:d1"
+        selectedFocusCenterActive
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const selectedCard = screen.getByText("Views").closest("[data-skeleton-card]");
+    const companionCard = screen
+      .getByText("Agent handoff")
+      .closest("[data-skeleton-card]");
+
+    await waitFor(() => {
+      expect(layer).toHaveAttribute(
+        "data-focus-detail-lens-contract",
+        "selected-focus-uses-kind-pins-for-noncritical-ego-context",
+      );
+      expect(layer).toHaveAttribute("data-focus-detail-lens-active", "true");
+      expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
+      expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "2");
+      expect(selectedCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(selectedCard).toHaveAttribute(
+        "data-zoom-lens-presentation",
+        "full-card-critical",
+      );
+      expect(companionCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+      expect(companionCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+      expect(companionCard?.querySelector("[data-card-kind-badge]")).toHaveAttribute(
+        "data-zoom-lens-compact-hidden-contract",
+        "compact-lens-keeps-kind-as-dot-color",
+      );
+      expect(companionCard?.querySelector("[data-card-title]")).toHaveAttribute(
+        "data-full-title",
+        "Agent handoff",
+      );
+    });
+  });
+
   it("선택 ego 상세 companion 은 focus 전용 폭으로 근거 제목을 보존한다", async () => {
     const graph = makeGraph();
     graph.addNode("element:evidence", {

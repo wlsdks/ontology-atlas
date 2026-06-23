@@ -4767,6 +4767,10 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-eligible-count") || "0"),
                                   topologyZoomLensActiveCardCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-active-card-count") || "0"),
+                                  topologyFocusDetailLensContract:
+                                    skeletonCardsLayer?.getAttribute("data-focus-detail-lens-contract") || "",
+                                  topologyFocusDetailLensActive:
+                                    skeletonCardsLayer?.getAttribute("data-focus-detail-lens-active") === "true",
                                   topologyOverviewDensityLensContract:
                                     skeletonCardsLayer?.getAttribute("data-overview-density-lens-contract") || "",
                                   topologyOverviewDensityLensThresholdRatio:

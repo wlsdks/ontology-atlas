@@ -3352,6 +3352,12 @@ export function SigmaSkeletonCards({
     const zoomLensActive = cameraRatio <= ZOOM_LENS_RATIO_THRESHOLD;
     const zoomLensCardCompactionActive =
       zoomLensActive && !pathWorkflowActive && !healthRepairTarget;
+    const focusDetailLensActive =
+      selectedFocusCenterActive &&
+      selectedFocusCluster !== null &&
+      selectedRelationEdgeId === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
     const overviewDensityLensActive =
       cameraRatio >= OVERVIEW_DENSITY_LENS_RATIO_THRESHOLD &&
       containerRect.width >= OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX &&
@@ -3360,7 +3366,9 @@ export function SigmaSkeletonCards({
       !pathWorkflowActive &&
       !healthRepairTarget;
     const compactLensActive =
-      zoomLensCardCompactionActive || overviewDensityLensActive;
+      zoomLensCardCompactionActive ||
+      focusDetailLensActive ||
+      overviewDensityLensActive;
     container.dataset.zoomLensContract =
       'zoom-in-uses-kind-pins-for-noncritical-context-cards';
     container.dataset.zoomLensThresholdRatio = String(ZOOM_LENS_RATIO_THRESHOLD);
@@ -3368,6 +3376,9 @@ export function SigmaSkeletonCards({
     container.dataset.zoomLensActive = zoomLensActive ? 'true' : 'false';
     container.dataset.zoomLensCardCompactionActive =
       zoomLensCardCompactionActive ? 'true' : 'false';
+    container.dataset.focusDetailLensContract =
+      'selected-focus-uses-kind-pins-for-noncritical-ego-context';
+    container.dataset.focusDetailLensActive = focusDetailLensActive ? 'true' : 'false';
     container.dataset.overviewDensityLensContract =
       'zoom-out-overview-uses-kind-pins-for-noncritical-context-cards';
     container.dataset.overviewDensityLensThresholdRatio = String(

@@ -1089,6 +1089,9 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyZoomLensActive: true,
         topologyZoomLensEligibleCount: 5,
         topologyZoomLensActiveCardCount: 3,
+        topologyFocusDetailLensContract:
+          "selected-focus-uses-kind-pins-for-noncritical-ego-context",
+        topologyFocusDetailLensActive: true,
         topologyOverviewDensityLensContract:
           "zoom-out-overview-uses-kind-pins-for-noncritical-context-cards",
         topologyOverviewDensityLensThresholdRatio: 1.2,
@@ -1306,6 +1309,10 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     active: true,
     eligibleCount: 5,
     activeCardCount: 3,
+    focusDetail: {
+      contract: "selected-focus-uses-kind-pins-for-noncritical-ego-context",
+      active: true,
+    },
     overviewDensity: {
       contract: "zoom-out-overview-uses-kind-pins-for-noncritical-context-cards",
       thresholdRatio: 1.2,

@@ -2963,6 +2963,35 @@ for (const viewport of VIEWPORTS) {
       "data-topology-selected-node-id",
       "domain:views",
     );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-focus-detail-lens-contract",
+      "selected-focus-uses-kind-pins-for-noncritical-ego-context",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-focus-detail-lens-active",
+      "true",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-zoom-lens-active-card-count",
+      /[1-9]\d*/,
+    );
+    const focusDetailPins = page.locator(
+      '[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"]:not([data-surface-hidden="true"])',
+    );
+    const focusDetailPinCount = await focusDetailPins.count();
+    expect(
+      focusDetailPinCount,
+      `focus detail lens should lower noncritical feature companions into pins at ${viewport.label}`,
+    ).toBeGreaterThan(0);
+    const focusDetailPinRect = await rectOf(focusDetailPins.nth(0));
+    expect(
+      focusDetailPinRect.width,
+      `focus detail pin should not remain a long feature card at ${viewport.label}`,
+    ).toBeLessThanOrEqual(34);
+    expect(
+      focusDetailPinRect.height,
+      `focus detail pin should keep a compact stable hit target at ${viewport.label}`,
+    ).toBeLessThanOrEqual(34);
     const aggregateRelationLabel = page.locator(
       'button[data-relation-label-hit="true"][data-relation-label-source="domain:views"]',
     );
