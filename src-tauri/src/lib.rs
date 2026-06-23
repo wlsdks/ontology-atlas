@@ -3008,6 +3008,12 @@ pub fn run() {
                                     sigmaViewport?.getAttribute("data-skeleton-cards-active") === "true",
                                   topologySkeletonCardModelCount:
                                     Number(sigmaViewport?.getAttribute("data-skeleton-card-model-count") || "0"),
+                                  topologyCameraDepthContract:
+                                    sigmaViewport?.getAttribute("data-camera-depth-contract") || "",
+                                  topologyCameraMinRatio:
+                                    Number(sigmaViewport?.getAttribute("data-camera-min-ratio") || "0"),
+                                  topologyCameraMaxRatio:
+                                    Number(sigmaViewport?.getAttribute("data-camera-max-ratio") || "0"),
                                   topologyLayoutWorkerFrameStatsContract:
                                     sigmaViewport?.getAttribute("data-layout-worker-frame-stats-contract") || "",
                                   topologyLayoutWorkerPositionFrameReceivedCount:
@@ -5441,6 +5447,8 @@ mod tests {
         assert!(source.contains("topologyDragReactiveContextVisibleCount"));
         assert!(source.contains("__ontologyAtlasTopologyZoomVerify"));
         assert!(source.contains("topologyZoomVerifyReason"));
+        assert!(source.contains("topologyCameraDepthContract"));
+        assert!(source.contains("data-camera-depth-contract"));
         assert!(source.contains("topologyZoomLensPresentationContract"));
         assert!(source.contains("topologyZoomLensPresentationSource"));
         assert!(source.contains("topologyZoomLensViewportVisibleContract"));

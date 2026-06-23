@@ -26,6 +26,10 @@ const TOPOLOGY_DRAG_FOCUS_MAX_REASONABLE_DELTA_PX = 560;
 const TOPOLOGY_DIM_OPACITY_CONTRACT = "readable-context-geography";
 const TOPOLOGY_DIM_ANCHOR_MIN_OPACITY = 0.26;
 const TOPOLOGY_DIM_CONTEXT_MIN_OPACITY = 0.08;
+const VALID_ZOOM_LENS_PRESENTATION_SOURCES = new Set([
+  "camera-zoom-in",
+  "selected-relation-context",
+]);
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 const WEBVIEW_VERIFY_TIMEOUT_MS = 15000;
 const GRACEFUL_QUIT_COMMAND_TIMEOUT_MS = 1200;
@@ -1724,13 +1728,26 @@ export function validateTopologyZoomLensMarkers(markers) {
   if (!(Number(markers?.topologyZoomLensCameraRatio || 0) > 0)) {
     return `WebView Relief zoom lens camera ratio was ${markers?.topologyZoomLensCameraRatio ?? "missing"}`;
   }
+  if (
+    markers?.topologyCameraDepthContract !== undefined &&
+    markers.topologyCameraDepthContract !==
+      "wheel-zoom-clamps-before-map-loses-readable-structure"
+  ) {
+    return `WebView Relief camera depth contract was ${markers.topologyCameraDepthContract || "missing"}`;
+  }
+  if (
+    markers?.topologyCameraMinRatio !== undefined &&
+    Number(markers.topologyCameraMinRatio) < 0.4
+  ) {
+    return `WebView Relief camera min ratio was ${markers.topologyCameraMinRatio}`;
+  }
   if (markers?.topologyZoomLensActive !== true) {
     return "WebView Relief zoom lens did not become active after camera zoom-in";
   }
   if (markers?.topologyZoomLensPresentationActive !== true) {
     return "WebView Relief zoom lens did not report an active presentation after camera zoom-in";
   }
-  if (markers?.topologyZoomLensPresentationSource !== "camera-zoom-in") {
+  if (!VALID_ZOOM_LENS_PRESENTATION_SOURCES.has(markers?.topologyZoomLensPresentationSource)) {
     return `WebView Relief zoom lens presentation source was ${markers?.topologyZoomLensPresentationSource || "missing"}`;
   }
   if (markers?.topologyZoomLensCardCompactionActive !== true) {
@@ -7958,7 +7975,9 @@ export function buildWebviewEvidencePayload(
           markers.topologyZoomLensActive === true &&
           markers.topologyZoomLensCardCompactionActive === true &&
           markers.topologyZoomLensPresentationActive === true &&
-          markers.topologyZoomLensPresentationSource === "camera-zoom-in" &&
+          VALID_ZOOM_LENS_PRESENTATION_SOURCES.has(
+            markers.topologyZoomLensPresentationSource,
+          ) &&
           markerNumber(markers, "topologyZoomLensActiveCardCount") >= 1 &&
           markerNumber(markers, "topologyZoomLensVisibleActiveCardCount") >= 1
             ? "proved"
@@ -7966,6 +7985,12 @@ export function buildWebviewEvidencePayload(
         route: evidenceRoute(payload?.href),
         contract: markers.topologyZoomLensContract ?? null,
         presentationContract: markers.topologyZoomLensPresentationContract ?? null,
+        ...(markers.topologyCameraDepthContract !== undefined
+          ? {
+            cameraDepthContract: markers.topologyCameraDepthContract ?? null,
+            cameraMinRatio: markerNumber(markers, "topologyCameraMinRatio"),
+          }
+          : {}),
         thresholdRatio: markerNumber(markers, "topologyZoomLensThresholdRatio"),
         cardCompactionActive: markers.topologyZoomLensCardCompactionActive === true,
         presentationActive: markers.topologyZoomLensPresentationActive === true,

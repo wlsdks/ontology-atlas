@@ -792,6 +792,15 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
     "true",
   );
   await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+    "data-camera-depth-contract",
+    "wheel-zoom-clamps-before-map-loses-readable-structure",
+  );
+  await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+    "data-camera-min-ratio",
+    "0.42",
+  );
+  await expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "0.420");
+  await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
     "data-minimap-state",
     "collapsed-zoom-lens-attention",
   );
@@ -1042,7 +1051,14 @@ test("Relief focus card wheel zoom still switches surrounding detail cards to pi
     "data-card-wheel-zoom-contract",
     "skeleton-card-wheel-controls-sigma-camera",
   );
+  await expect(layer).toHaveAttribute(
+    "data-card-wheel-zoom-depth-contract",
+    "wheel-zoom-clamps-before-map-loses-readable-structure",
+  );
   await expect(layer).toHaveAttribute("data-card-wheel-zoom-source", "skeleton-card");
+  await expect(layer).toHaveAttribute("data-card-wheel-zoom-min-ratio", "0.42");
+  await expect(layer).toHaveAttribute("data-card-wheel-zoom-last-ratio", "0.420");
+  await expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "0.420");
   await expect(layer).toHaveAttribute("data-zoom-lens-active", "true", {
     timeout: 6_000,
   });

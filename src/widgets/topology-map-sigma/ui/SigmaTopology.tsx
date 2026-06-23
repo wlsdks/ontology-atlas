@@ -167,6 +167,8 @@ const AUDIT_PROMOTION_MIN_FAN_IN = 4;
 // 토스·애플 감성의 "빠르게 출발해서 부드럽게 안착" — 기존 cubicInOut 의
 // 양 끝 대칭 감 대신 arrival 쪽을 더 길게 풀어 준다.
 const ARRANGE_FEEDBACK_MS = 950;
+const TOPOLOGY_CAMERA_MIN_RATIO = 0.42;
+const TOPOLOGY_CAMERA_MAX_RATIO = 4;
 
 // vault / 빌드타임 dogfood 진실원에 ontology 노드가 0 인 경우 fallback —
 // referential stability 보장 (매 render 새 Map 생성 회피).
@@ -247,8 +249,8 @@ function createSigma(
     edgeLabelSize: 10,
     zIndex: true,
     allowInvalidContainer: true,
-    minCameraRatio: 0.08,
-    maxCameraRatio: 4,
+    minCameraRatio: TOPOLOGY_CAMERA_MIN_RATIO,
+    maxCameraRatio: TOPOLOGY_CAMERA_MAX_RATIO,
     // 줌 민감도 — sigma default 1.7 은 트랙패드 작은 입력에도 "확확
     // 빨려드는" 느낌. 1.5 로 낮춰 세밀한 제어 + 자연스러운 점프 균형.
     zoomingRatio: 1.5,
@@ -3033,6 +3035,9 @@ function SigmaTopologyImpl({
           supportChromeZoomLensActive ? 'true' : 'false'
         }
         data-support-chrome-zoom-lens-threshold-ratio={SUPPORT_CHROME_ZOOM_LENS_RATIO}
+        data-camera-depth-contract="wheel-zoom-clamps-before-map-loses-readable-structure"
+        data-camera-min-ratio={TOPOLOGY_CAMERA_MIN_RATIO}
+        data-camera-max-ratio={TOPOLOGY_CAMERA_MAX_RATIO}
         data-selected-inspector-chrome-policy={
           relationLegendSuppressed
             ? supportChromeZoomLensActive

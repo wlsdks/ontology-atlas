@@ -372,7 +372,7 @@ const OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX = 1800;
 const ZOOM_LENS_PIN_SIZE_PX = 28;
 const WHEEL_ZOOM_BASE_DELTA_PX = 560;
 const WHEEL_ZOOM_STEP_RATIO = 0.68;
-const WHEEL_ZOOM_MIN_RATIO = 0.05;
+const WHEEL_ZOOM_MIN_RATIO = 0.42;
 const WHEEL_ZOOM_MAX_RATIO = 4;
 
 type RelationConnector = {
@@ -6982,8 +6982,11 @@ export function SigmaSkeletonCards({
       if (container) {
         container.dataset.cardWheelZoomContract =
           'skeleton-card-wheel-controls-sigma-camera';
+        container.dataset.cardWheelZoomDepthContract =
+          'wheel-zoom-clamps-before-map-loses-readable-structure';
         container.dataset.cardWheelZoomSource = 'skeleton-card';
         container.dataset.cardWheelZoomLastRatio = nextRatio.toFixed(3);
+        container.dataset.cardWheelZoomMinRatio = String(WHEEL_ZOOM_MIN_RATIO);
       }
       scheduleReposition();
     },
@@ -7007,7 +7010,7 @@ export function SigmaSkeletonCards({
         typeof state.ratio === 'number' && Number.isFinite(state.ratio) && state.ratio > 0
           ? state.ratio
           : 1;
-      const targetRatio = Math.max(WHEEL_ZOOM_MIN_RATIO, Math.min(currentRatio, 0.08));
+      const targetRatio = Math.max(WHEEL_ZOOM_MIN_RATIO, Math.min(currentRatio, 0.74));
       camera.setState({
         ...state,
         ratio: targetRatio,
@@ -7017,8 +7020,11 @@ export function SigmaSkeletonCards({
       if (container) {
         container.dataset.cardWheelZoomContract =
           'skeleton-card-wheel-controls-sigma-camera';
+        container.dataset.cardWheelZoomDepthContract =
+          'wheel-zoom-clamps-before-map-loses-readable-structure';
         container.dataset.cardWheelZoomSource = 'desktop-verifier';
         container.dataset.cardWheelZoomLastRatio = targetRatio.toFixed(3);
+        container.dataset.cardWheelZoomMinRatio = String(WHEEL_ZOOM_MIN_RATIO);
         container.dataset.zoomLensVerifierRatio = targetRatio.toFixed(3);
       }
       verifierZoomRatioRef.current = targetRatio;
