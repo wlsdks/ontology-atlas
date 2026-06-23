@@ -676,8 +676,9 @@ export function HomePage() {
       width: 1000,
       height: 1000,
       // 와이드 뷰포트 — 정원은 autoRescale 후 좌우가 비고 세로 거리가 멀어
-      // 보인다. 타원으로 화면 비율에 맞춰 카드 간격을 죄인다.
-      aspectX: 1.45,
+      // 보인다. 넓은 캔버스를 지도 자체가 쓰도록 강한 가로 타원으로 고정
+      // 배치한다.
+      aspectX: 5,
     });
     const map = new Map<string, { x: number; y: number; size: number }>();
     const slugs = new Set<string>(reveal.visibleSlugs);

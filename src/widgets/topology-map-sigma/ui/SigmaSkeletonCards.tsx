@@ -9539,7 +9539,7 @@ export function SigmaSkeletonCards({
                 }
                 className={
                   coreHierarchyCountHidden
-                    ? 'sr-only'
+                    ? 'sr-only group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden'
                     : 'relative ml-0.5 inline-flex h-[1.42em] min-w-[1.65em] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-card-count-border)] bg-[color:var(--topology-card-count-surface)] px-[0.42em] font-mono text-[0.68em] leading-none text-[color:var(--topology-card-count-text)] group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden'
                 }
               >

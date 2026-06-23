@@ -37,20 +37,22 @@ describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
     expect(600 - insets.left - insets.right).toBeGreaterThan(0);
   });
 
-  it('지도 골격은 compact 좌측 HUD 폭만큼만 노드 배치 안전영역을 둔다', () => {
-    expect(resolveSkeletonSafeInsets(1280, false).left).toBeCloseTo(1280 * 0.46);
-    expect(resolveSkeletonSafeInsets(1512, false).left).toBeCloseTo(1512 * 0.46);
-    expect(resolveSkeletonSafeInsets(1920, false).left).toBeCloseTo(640 * 1.18);
-    expect(resolveSkeletonSafeInsets(2560, false).left).toBeCloseTo(640 * 1.32);
+  it('지도 골격은 좌측 분석 rail 만큼만 예약해 캔버스 대부분을 지도에 쓴다', () => {
+    expect(resolveSkeletonSafeInsets(1280, false).left).toBeCloseTo(280);
+    expect(resolveSkeletonSafeInsets(1512, false).left).toBeCloseTo(280 * 1.12);
+    expect(resolveSkeletonSafeInsets(1920, false).left).toBeCloseTo(280 * 1.18);
+    expect(resolveSkeletonSafeInsets(2560, false).left).toBeCloseTo(280 * 1.32);
+    const desktop = resolveSkeletonSafeInsets(1920, false);
+    expect(1920 - desktop.left - desktop.right).toBeGreaterThanOrEqual(1360);
   });
 
   it('선택 전 focus 안내 rail 은 overview HUD 보다 좁은 safe inset 을 쓴다', () => {
     expect(
       resolveSkeletonSafeInsets(1920, false, { compactFocusRail: true }).left,
-    ).toBeCloseTo(288 * 1.18);
+    ).toBeCloseTo(240 * 1.18);
     expect(
       resolveSkeletonSafeInsets(2560, false, { compactFocusRail: true }).left,
-    ).toBeCloseTo(288 * 1.32);
+    ).toBeCloseTo(240 * 1.32);
     expect(
       resolveSkeletonSafeInsets(1920, false, { compactFocusRail: true }).left,
     ).toBeLessThan(resolveSkeletonSafeInsets(1920, false).left);

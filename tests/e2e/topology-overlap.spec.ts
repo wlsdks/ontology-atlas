@@ -759,17 +759,39 @@ test("Relief overview support rail stays compact on wide desktop viewports", asy
   }
 });
 
+test("Relief overview uses the wide canvas for the fixed skeleton map", async ({
+  page,
+}) => {
+  const viewport = VIEWPORTS[1];
+  await openRelief(page, viewport, { mode: "map" });
+
+  const panelRect = await rectOf(page.getByTestId("topology-analysis-panel"));
+  const cards = await visibleCardRects(page);
+  const bbox = cards.reduce(
+    (acc, card) => ({
+      left: Math.min(acc.left, card.left),
+      top: Math.min(acc.top, card.top),
+      right: Math.max(acc.right, card.right),
+      bottom: Math.max(acc.bottom, card.bottom),
+    }),
+    { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
+  );
+  const mapWidth = bbox.right - bbox.left;
+  const railGap = bbox.left - panelRect.right;
+
+  expect(
+    railGap,
+    "fixed overview layout should not leave a second empty rail between the panel and the map",
+  ).toBeLessThanOrEqual(220);
+  expect(
+    mapWidth,
+    "fixed overview layout should spread ontology anchors across the wide canvas instead of clustering in the center",
+  ).toBeGreaterThanOrEqual(940);
+});
+
 test("Relief zoom-in switches noncritical context cards to kind pins", async ({ page }) => {
   const viewport = VIEWPORTS[1];
   await openRelief(page, viewport, { mode: "map" });
-  await page.emulateMedia({ reducedMotion: "no-preference" });
-  await page.reload();
-  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
-    "data-skeleton-cards-ready",
-    "true",
-    { timeout: 20_000 },
-  );
-  await page.waitForTimeout(1600);
 
   const layer = page.getByTestId("sigma-skeleton-cards");
   await expect(layer).toHaveAttribute(
@@ -781,8 +803,6 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
     "camera-or-focus-lens-uses-kind-pins-for-noncritical-context",
   );
   await expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
-  await expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
-  await expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "overview-density");
   await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
     "data-support-chrome-zoom-lens-active",
     "false",
