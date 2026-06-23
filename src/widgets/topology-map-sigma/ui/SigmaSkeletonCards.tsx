@@ -230,6 +230,7 @@ const DRAG_REACTIVE_MOTION_BASE_RATIO = 0.08;
 const DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX = 18;
 const DRAG_REACTIVE_MOTION_LINKED_RATIO = 0.12;
 const DRAG_REACTIVE_MOTION_MAX_OFFSET_PX = DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX;
+const DRAG_TENSION_CONNECTOR_MAX_COUNT = 8;
 const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
 const DIM_CHIP_OPACITY_TOKEN = '--topology-map-dim-context-opacity';
 const DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN =
@@ -3268,6 +3269,39 @@ export function SigmaSkeletonCards({
     return pairs;
   }, [activeHullCluster, graph]);
 
+  const activeDragTensionConnectors = useMemo(() => {
+    if (!activeHullCluster || activeHullCluster.size === 0) return [];
+    const visibleNodeIds = new Set<string>();
+    const tierByNodeId = new Map<string, SkeletonCardModel['tier']>();
+    for (const card of cards) {
+      const nodeId = resolveNodeId(card.id);
+      if (!nodeId) continue;
+      visibleNodeIds.add(nodeId);
+      tierByNodeId.set(nodeId, card.tier);
+    }
+
+    const pairs: RelationConnector[] = [];
+    const seen = new Set<string>();
+    for (const from of activeHullCluster) {
+      if (!graph.hasNode(from)) continue;
+      for (const to of graph.neighbors(from)) {
+        if (activeHullCluster.has(to) || !visibleNodeIds.has(to)) continue;
+        const key = [from, to].sort().join('→');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        pairs.push(relationConnector(graph, from, to));
+      }
+    }
+
+    return pairs
+      .sort((a, b) => {
+        const aTier = Math.min(tierByNodeId.get(a.from) ?? 3, tierByNodeId.get(a.to) ?? 3);
+        const bTier = Math.min(tierByNodeId.get(b.from) ?? 3, tierByNodeId.get(b.to) ?? 3);
+        return aTier - bTier || relationConnectorPaintRank(a) - relationConnectorPaintRank(b);
+      })
+      .slice(0, DRAG_TENSION_CONNECTOR_MAX_COUNT);
+  }, [activeHullCluster, cards, graph, resolveNodeId]);
+
   const overviewBackboneConnectors = useMemo(() => {
     const visibleNodeIds = new Set<string>();
     const tierByNodeId = new Map<string, SkeletonCardModel['tier']>();
@@ -5730,6 +5764,24 @@ export function SigmaSkeletonCards({
         const toEl = to ? elBySlug.get(to) : null;
         drawConnectorTerminal(terminal, fromEl, toEl);
       }
+      const dragTensionConnectorVisibleCount = Array.from(
+        svg.querySelectorAll<SVGPathElement>('[data-drag-tension-connector="true"]'),
+      ).filter((path) => path.dataset.connectorDrawable === 'true').length;
+      container.dataset.dragTensionConnectorContract =
+        'active-drag-draws-links-to-reactive-neighbors';
+      container.dataset.dragTensionConnectorPolicy =
+        activeDragCluster !== null
+          ? 'cluster-to-linked-context-only'
+          : 'idle';
+      container.dataset.dragTensionConnectorExpectedCount = String(
+        activeDragTensionConnectors.length,
+      );
+      container.dataset.dragTensionConnectorVisibleCount = String(
+        dragTensionConnectorVisibleCount,
+      );
+      container.dataset.dragTensionConnectorMaxCount = String(
+        DRAG_TENSION_CONNECTOR_MAX_COUNT,
+      );
       const dragOnlyRelationLabelLayout = activeDragCluster !== null;
       if (dragOnlyRelationLabelLayout) {
         for (const button of container.querySelectorAll<HTMLElement>(
@@ -6276,6 +6328,7 @@ export function SigmaSkeletonCards({
     ego,
     activeDragCluster,
     activeDragMotion,
+    activeDragTensionConnectors.length,
     cards,
     healthRepairTarget,
     manualFocusPlacement,
@@ -6939,6 +6992,15 @@ export function SigmaSkeletonCards({
       data-drag-reactive-motion-base-max-offset-px={DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX}
       data-drag-reactive-motion-linked-max-offset-px={DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX}
       data-drag-reactive-motion-max-offset-token={DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN}
+      data-drag-tension-connector-contract="active-drag-draws-links-to-reactive-neighbors"
+      data-drag-tension-connector-policy={
+        activeDragCluster !== null
+          ? 'cluster-to-linked-context-only'
+          : 'idle'
+      }
+      data-drag-tension-connector-expected-count={activeDragTensionConnectors.length}
+      data-drag-tension-connector-visible-count="0"
+      data-drag-tension-connector-max-count={DRAG_TENSION_CONNECTOR_MAX_COUNT}
       data-dim-anchor-opacity-token={DIM_ANCHOR_OPACITY_TOKEN}
       data-dim-chip-opacity-token={DIM_CHIP_OPACITY_TOKEN}
       data-dim-context-opacity-token={DIM_CHIP_OPACITY_TOKEN}
@@ -7305,6 +7367,29 @@ export function SigmaSkeletonCards({
                 </text>
               </>
             ) : null}
+          </g>
+        ))}
+        {activeDragTensionConnectors.map((connector) => (
+          <g key={`drag-tension:${connector.key}`}>
+            <path
+              data-drag-connector-from={connector.from}
+              data-drag-connector-to={connector.to}
+              data-drag-tension-connector="true"
+              data-drag-tension-expression="linked-context-tension"
+              data-relation-kind={connector.kind}
+              data-relation-quality={connector.relationQuality ?? 'supported'}
+              data-relation-type={connector.relationType}
+              data-drag-tension-connector-contract="active-drag-draws-links-to-reactive-neighbors"
+              data-drag-tension-connector-policy="cluster-to-linked-context-only"
+              data-drag-tension-stroke-token="--topology-card-border-selected-strong"
+              className="pointer-events-none topology-connector-path"
+              fill="none"
+              stroke="var(--topology-card-border-selected-strong)"
+              strokeDasharray="4 7"
+              strokeLinecap="round"
+              strokeWidth={activeDragMotion ? 1.45 : 1.05}
+              opacity={activeDragMotion ? 0.72 : 0.38}
+            />
           </g>
         ))}
       </svg>

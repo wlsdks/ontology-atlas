@@ -4750,6 +4750,21 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyDragReactiveLinkedMotionVisibleCount || 0) >= 1)) {
         return `WebView Relief drag did not move graph-linked surrounding context reactively (${payload.markers.topologyDragReactiveLinkedMotionVisibleCount ?? "missing"} moved)`;
       }
+      if (
+        payload.markers.topologyDragTensionConnectorContract !==
+        "active-drag-draws-links-to-reactive-neighbors"
+      ) {
+        return `WebView Relief drag tension connector contract was ${payload.markers.topologyDragTensionConnectorContract || "missing"}`;
+      }
+      if (payload.markers.topologyDragTensionConnectorPolicy !== "cluster-to-linked-context-only") {
+        return `WebView Relief drag tension connector policy was ${payload.markers.topologyDragTensionConnectorPolicy || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragTensionConnectorExpectedCount || 0) >= 1)) {
+        return `WebView Relief drag did not expose tension connectors to verify (${payload.markers.topologyDragTensionConnectorExpectedCount ?? "missing"} expected)`;
+      }
+      if (!(Number(payload.markers.topologyDragTensionConnectorVisibleCount || 0) >= 1)) {
+        return `WebView Relief drag did not draw graph-linked tension connectors (${payload.markers.topologyDragTensionConnectorVisibleCount ?? "missing"} visible)`;
+      }
       if (!(Number(payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx || 0) > 0)) {
         return `WebView Relief drag reactive motion offset was ${payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx ?? "missing"}`;
       }

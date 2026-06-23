@@ -968,6 +968,16 @@ pub fn run() {
                                           );
                                           result.dragReactiveMotionMaxOffsetToken =
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-offset-token") || "";
+                                          result.dragTensionConnectorContract =
+                                            skeletonCardsLayer?.getAttribute("data-drag-tension-connector-contract") || "";
+                                          result.dragTensionConnectorPolicy =
+                                            skeletonCardsLayer?.getAttribute("data-drag-tension-connector-policy") || "";
+                                          result.dragTensionConnectorExpectedCount = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-tension-connector-expected-count") || "0"
+                                          );
+                                          result.dragTensionConnectorVisibleCount = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-tension-connector-visible-count") || "0"
+                                          );
                                           result.clusterSize = Number(
                                             skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"
                                           );
@@ -4648,6 +4658,26 @@ pub fn run() {
                                     topologyDragVerification?.dragReactiveMotionMaxOffsetToken ||
                                     skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-offset-token") ||
                                     "",
+                                  topologyDragTensionConnectorContract:
+                                    topologyDragVerification?.dragTensionConnectorContract ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-tension-connector-contract") ||
+                                    "",
+                                  topologyDragTensionConnectorPolicy:
+                                    topologyDragVerification?.dragTensionConnectorPolicy ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-tension-connector-policy") ||
+                                    "",
+                                  topologyDragTensionConnectorExpectedCount:
+                                    Number(
+                                      topologyDragVerification?.dragTensionConnectorExpectedCount ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-tension-connector-expected-count") ||
+                                        "0"
+                                    ),
+                                  topologyDragTensionConnectorVisibleCount:
+                                    Number(
+                                      topologyDragVerification?.dragTensionConnectorVisibleCount ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-tension-connector-visible-count") ||
+                                        "0"
+                                    ),
                                   topologyDragDynamicState:
                                     skeletonCardsLayer?.getAttribute("data-drag-dynamic-state") || "",
                                   topologyDragDynamicRoot:
@@ -5061,6 +5091,8 @@ mod tests {
         assert!(source.contains("topologyDragReactiveMotionMaxObservedOffsetPx"));
         assert!(source.contains("topologyDragReactiveLinkedMotionVisibleCount"));
         assert!(source.contains("topologyDragReactiveMotionLinkedMaxOffsetPx"));
+        assert!(source.contains("topologyDragTensionConnectorContract"));
+        assert!(source.contains("topologyDragTensionConnectorVisibleCount"));
         assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
         assert!(source.contains("__ontologyAtlasTopologyFocusNoopVerify"));
         assert!(source.contains("ontology-atlas:verify-selected-focus-safe-fit"));

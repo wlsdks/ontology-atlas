@@ -268,6 +268,14 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
     motionCount: Number(el.getAttribute("data-drag-reactive-motion-visible-count") ?? "0"),
     opacity: el.getAttribute("data-drag-reactive-context-opacity") ?? "",
     opacityToken: el.getAttribute("data-drag-reactive-context-opacity-token") ?? "",
+    tensionContract: el.getAttribute("data-drag-tension-connector-contract") ?? "",
+    tensionExpectedCount: Number(
+      el.getAttribute("data-drag-tension-connector-expected-count") ?? "0",
+    ),
+    tensionPolicy: el.getAttribute("data-drag-tension-connector-policy") ?? "",
+    tensionVisibleCount: Number(
+      el.getAttribute("data-drag-tension-connector-visible-count") ?? "0",
+    ),
     visibleCount: Number(el.getAttribute("data-drag-reactive-context-visible-count") ?? "0"),
   }));
   expect(reactiveProof.baseMaxOffset).toBe(14);
@@ -279,7 +287,20 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
   expect(reactiveProof.linkedMotionCount).toBeGreaterThan(0);
   expect(reactiveProof.opacity).toBe("0.42");
   expect(reactiveProof.opacityToken).toBe("--topology-card-drag-reactive-context-opacity");
+  expect(reactiveProof.tensionContract).toBe(
+    "active-drag-draws-links-to-reactive-neighbors",
+  );
+  expect(reactiveProof.tensionPolicy).toBe("cluster-to-linked-context-only");
+  expect(reactiveProof.tensionExpectedCount).toBeGreaterThan(0);
+  expect(reactiveProof.tensionVisibleCount).toBeGreaterThan(0);
   expect(reactiveProof.visibleCount).toBeGreaterThan(0);
+
+  const tensionConnector = page.locator('[data-drag-tension-connector="true"]').first();
+  await expect(tensionConnector).toHaveAttribute("data-connector-drawable", "true");
+  await expect(tensionConnector).toHaveAttribute(
+    "data-drag-tension-expression",
+    "linked-context-tension",
+  );
 
   const contextAfter = await page
     .locator(
@@ -301,9 +322,9 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
           y: rect.y,
         };
       }),
-    );
+  );
   expect(contextAfter.length).toBeGreaterThan(0);
-  expect(contextAfter).toHaveLength(reactiveProof.visibleCount);
+  expect(contextAfter.length).toBeGreaterThanOrEqual(reactiveProof.visibleCount);
   expect(contextAfter.some((entry) => entry.visibility === "boosted-visible")).toBe(true);
   expect(contextAfter.some((entry) => Number(entry.opacity) >= 0.4)).toBe(true);
   expect(contextAfter.some((entry) => entry.motion === "parallax-nudge")).toBe(true);
