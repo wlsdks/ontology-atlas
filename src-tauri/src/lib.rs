@@ -4991,6 +4991,10 @@ pub fn run() {
                                       skeletonCardsLayer?.getAttribute("data-zoom-lens-visible-active-card-count") ||
                                       "0"
                                     ),
+                                  topologyZoomLensEmptyViewportFallbackContract:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-empty-viewport-fallback-contract") || "",
+                                  topologyZoomLensEmptyViewportFallbackActive:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-empty-viewport-fallback-active") === "true",
                                   topologyFocusDetailLensContract:
                                     skeletonCardsLayer?.getAttribute("data-focus-detail-lens-contract") || "",
                                   topologyFocusDetailLensActive:
@@ -5201,6 +5205,8 @@ mod tests {
         assert!(source.contains("topologyZoomVerifyReason"));
         assert!(source.contains("topologyZoomLensPresentationContract"));
         assert!(source.contains("topologyZoomLensPresentationSource"));
+        assert!(source.contains("topologyZoomLensEmptyViewportFallbackContract"));
+        assert!(source.contains("data-zoom-lens-empty-viewport-fallback-active"));
         assert!(source.contains("topologySupportChromeZoomLensActive"));
         assert!(source.contains("topologyMinimapState"));
         assert!(source.contains("topologyDragReactiveMotionContract"));

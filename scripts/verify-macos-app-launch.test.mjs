@@ -380,6 +380,9 @@ test("WebView verification requires Add Concept backdrop when the composer is op
           topologyZoomLensEligibleCount: 5,
           topologyZoomLensActiveCardCount: 3,
           topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensEmptyViewportFallbackContract:
+            "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
+          topologyZoomLensEmptyViewportFallbackActive: true,
           topologyRelationLabelBlockerContract: "reuse-visible-card-rects",
           topologyRelationLabelBlockerSource: "visibility-pass",
           topologyRelationLabelQueryContract: "indexed-once",
@@ -1122,6 +1125,9 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyZoomLensActiveCardCount: 3,
         topologyVisibleCardCount: 2,
         topologyZoomLensVisibleActiveCardCount: 2,
+        topologyZoomLensEmptyViewportFallbackContract:
+          "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
+        topologyZoomLensEmptyViewportFallbackActive: true,
         topologyFocusDetailLensContract:
           "selected-focus-uses-kind-pins-for-noncritical-ego-context",
         topologyFocusDetailLensActive: true,
@@ -1351,6 +1357,10 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     activeCardCount: 3,
     visibleCardCount: 2,
     visibleActiveCardCount: 2,
+    emptyViewportFallback: {
+      contract: "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
+      active: true,
+    },
     focusDetail: {
       contract: "selected-focus-uses-kind-pins-for-noncritical-ego-context",
       active: true,
@@ -2861,6 +2871,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyZoomLensEligibleCount: 5,
       topologyZoomLensActiveCardCount: 3,
       topologyZoomLensVisibleActiveCardCount: 2,
+      topologyZoomLensEmptyViewportFallbackContract:
+        "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
+      topologyZoomLensEmptyViewportFallbackActive: true,
       topologySelectedRelationVerifyAttempted: true,
       topologySelectedRelationVerifyReason: "already-selected",
       topologySelectedRelationVerifyClicked: true,

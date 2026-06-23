@@ -1745,6 +1745,13 @@ export function validateTopologyZoomLensMarkers(markers) {
   if (!(Number(markers?.topologyZoomLensVisibleActiveCardCount || 0) >= 1)) {
     return `WebView Relief zoom lens had no visible compact cards (${markers?.topologyZoomLensVisibleActiveCardCount ?? "missing"})`;
   }
+  if (
+    markers?.topologyZoomLensEmptyViewportFallbackContract !== undefined &&
+    markers?.topologyZoomLensEmptyViewportFallbackContract !==
+      "camera-zoom-in-keeps-at-least-one-ontology-mark-visible"
+  ) {
+    return `WebView Relief zoom lens empty viewport fallback contract was ${markers?.topologyZoomLensEmptyViewportFallbackContract || "missing"}`;
+  }
   return null;
 }
 
@@ -7794,6 +7801,12 @@ export function buildWebviewEvidencePayload(
           markers,
           "topologyZoomLensVisibleActiveCardCount",
         ),
+        emptyViewportFallback: {
+          contract:
+            markers.topologyZoomLensEmptyViewportFallbackContract ?? null,
+          active:
+            markers.topologyZoomLensEmptyViewportFallbackActive === true,
+        },
         focusDetail: {
           contract: markers.topologyFocusDetailLensContract ?? null,
           active: markers.topologyFocusDetailLensActive === true,
