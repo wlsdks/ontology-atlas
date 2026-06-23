@@ -1057,6 +1057,53 @@ test("Relief focus card wheel zoom still switches surrounding detail cards to pi
     expect(rect.width).toBeLessThanOrEqual(34);
     expect(rect.height).toBeLessThanOrEqual(34);
   }
+
+  const zoomedSelectedRect = await rectOf(selectedCard);
+  await page.mouse.move(
+    zoomedSelectedRect.left + zoomedSelectedRect.width / 2,
+    zoomedSelectedRect.top + zoomedSelectedRect.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    zoomedSelectedRect.left + zoomedSelectedRect.width / 2 - 120,
+    zoomedSelectedRect.top + zoomedSelectedRect.height / 2 + 70,
+    { steps: 8 },
+  );
+  await expect(layer).toHaveAttribute("data-dragging-active", "true");
+  await expect(layer).toHaveAttribute(
+    "data-drag-relation-label-compact-contract",
+    "zoomed-drag-compacts-repeated-relation-labels",
+  );
+  await expect(layer).toHaveAttribute("data-drag-relation-label-compact-count", /[1-9]\d*/);
+  const zoomedDragLabel = page.locator("[data-drag-relation-label]").first();
+  await expect(zoomedDragLabel).toHaveAttribute(
+    "data-drag-relation-label-presentation",
+    "compact-glyph",
+  );
+  await expect(zoomedDragLabel).toHaveAttribute("data-drag-relation-label-compact", "true");
+  await expect(zoomedDragLabel).toHaveAttribute("data-relation-label-readable-type", /.+/);
+  await expect(zoomedDragLabel).toHaveText(/^[A-Z가-힣]$/);
+  const zoomedDragLabelId = await zoomedDragLabel.getAttribute("data-relation-label-id");
+  if (!zoomedDragLabelId) {
+    throw new Error("zoomed drag relation label should expose an id");
+  }
+  const zoomedDragBadge = page.locator(`[data-relation-label-bg="${zoomedDragLabelId}"]`);
+  await expect(zoomedDragBadge).toHaveAttribute(
+    "data-drag-relation-label-presentation",
+    "compact-glyph",
+  );
+  const zoomedDragBadgeRect = await zoomedDragBadge.evaluate((badge) => {
+    const rect = badge.getBoundingClientRect();
+    return {
+      height: rect.height,
+      rx: badge.getAttribute("rx") || "",
+      width: rect.width,
+    };
+  });
+  expect(zoomedDragBadgeRect.width).toBeLessThanOrEqual(44);
+  expect(zoomedDragBadgeRect.height).toBeLessThanOrEqual(24);
+  expect(Number(zoomedDragBadgeRect.rx)).toBeGreaterThanOrEqual(8);
+  await page.mouse.up();
 });
 
 test("Relief Focus selected capability card keeps its title readable in the installed app WebView size", async ({

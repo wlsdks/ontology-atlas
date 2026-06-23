@@ -332,6 +332,8 @@ const RELATION_BADGE_HEIGHT_PX = 24;
 const RELATION_BADGE_MIN_WIDTH_PX = 72;
 const RELATION_BADGE_CHAR_WIDTH_PX = 5.8;
 const RELATION_BADGE_PAD_X_PX = 26;
+const DRAG_RELATION_BADGE_COMPACT_MIN_WIDTH_PX = 32;
+const DRAG_RELATION_BADGE_COMPACT_PAD_X_PX = 18;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
 const RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX = 18;
 const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 32;
@@ -873,6 +875,13 @@ function selectedRelationZoomLensLabelText({
 }): string {
   const glyph = label.trim().slice(0, 1).toUpperCase() || 'R';
   return count > 1 ? `${glyph}×${count}` : glyph;
+}
+
+function relationLabelCompactGlyph(relationType: string, labels?: RelationTypeLabels): string {
+  const label = labels
+    ? relationTypeDisplayLabel(relationType, labels)
+    : relationType;
+  return label.trim().slice(0, 1).toUpperCase() || 'R';
 }
 
 function isDockConnectorSuppressed(targetEl: HTMLElement | null | undefined): boolean {
@@ -6172,6 +6181,7 @@ export function SigmaSkeletonCards({
       let relationLabelFrameReadyCount = 0;
       let dragRelationLabelExpectedCount = 0;
       let dragRelationLabelVisibleCount = 0;
+      let dragRelationLabelCompactCount = 0;
       let focusRelationLabelExpectedCount = 0;
       let focusRelationLabelVisibleCount = 0;
       let focusEgoHandoffFallbackButton: HTMLElement | null = null;
@@ -6257,6 +6267,8 @@ export function SigmaSkeletonCards({
         }
         const isEgoBadge = label.dataset.connectorRelationLabel === 'true';
         const labelIndex = Number(label.dataset.relationLabelIndex ?? '0');
+        const compactDragRelationLabel =
+          activeDragRelationLabel && zoomLensCardCompactionActive;
         const x = isEgoBadge
           ? (fromRect.left + fromRect.right) / 2
           : (fromRect.left + fromRect.right + toRect.left + toRect.right) / 4;
@@ -6266,10 +6278,15 @@ export function SigmaSkeletonCards({
             8;
         const relationHitDisabled = activeDragCluster !== null;
         if (activeDragRelationLabel) dragRelationLabelExpectedCount += 1;
+        if (compactDragRelationLabel) dragRelationLabelCompactCount += 1;
         const badgeWidth = Math.max(
-            RELATION_BADGE_MIN_WIDTH_PX,
-            (label.textContent?.length ?? 0) * RELATION_BADGE_CHAR_WIDTH_PX +
-              RELATION_BADGE_PAD_X_PX +
+          compactDragRelationLabel
+            ? DRAG_RELATION_BADGE_COMPACT_MIN_WIDTH_PX
+            : RELATION_BADGE_MIN_WIDTH_PX,
+          (label.textContent?.length ?? 0) * RELATION_BADGE_CHAR_WIDTH_PX +
+            (compactDragRelationLabel
+              ? DRAG_RELATION_BADGE_COMPACT_PAD_X_PX
+              : RELATION_BADGE_PAD_X_PX) +
             (isEgoBadge
               ? RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
                 RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX
@@ -6374,6 +6391,18 @@ export function SigmaSkeletonCards({
           : activeDragRelationLabel
             ? 'visible-during-drag'
             : 'visible-clear';
+        label.dataset.dragRelationLabelPresentation = compactDragRelationLabel
+          ? 'compact-glyph'
+          : activeDragRelationLabel
+            ? 'full-type-label'
+            : 'not-drag';
+        label.dataset.dragRelationLabelCompact = compactDragRelationLabel
+          ? 'true'
+          : 'false';
+        label.dataset.dragRelationLabelCompactContract =
+          'zoomed-drag-keeps-type-fact-as-compact-glyph';
+        label.dataset.relationLabelReadableType =
+          label.dataset.relationType ?? label.textContent ?? '';
         const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
         if (labelGroup) {
           labelGroup.style.pointerEvents =
@@ -6384,6 +6413,10 @@ export function SigmaSkeletonCards({
           badge.setAttribute('y', String(placedY - RELATION_BADGE_HEIGHT_PX / 2));
           badge.setAttribute('width', String(badgeWidth));
           badge.setAttribute('height', String(RELATION_BADGE_HEIGHT_PX));
+          badge.setAttribute(
+            'rx',
+            compactDragRelationLabel ? String(RELATION_BADGE_HEIGHT_PX / 2) : '7',
+          );
           badge.setAttribute('opacity', svgLabelHidden ? '0' : '1');
           badge.setAttribute(
             'pointer-events',
@@ -6391,6 +6424,16 @@ export function SigmaSkeletonCards({
               ? 'none'
               : 'auto',
           );
+          badge.dataset.dragRelationLabelPresentation = compactDragRelationLabel
+            ? 'compact-glyph'
+            : activeDragRelationLabel
+              ? 'full-type-label'
+              : 'not-drag';
+          badge.dataset.dragRelationLabelCompact = compactDragRelationLabel
+            ? 'true'
+            : 'false';
+          badge.dataset.dragRelationLabelCompactContract =
+            'zoomed-drag-keeps-type-fact-as-compact-glyph';
         }
         if (activeDragRelationLabel) {
           if (!svgLabelHidden) dragRelationLabelVisibleCount += 1;
@@ -6608,6 +6651,11 @@ export function SigmaSkeletonCards({
       );
       container.dataset.dragRelationLabelVisibleCount = String(
         dragRelationLabelVisibleCount,
+      );
+      container.dataset.dragRelationLabelCompactContract =
+        'zoomed-drag-compacts-repeated-relation-labels';
+      container.dataset.dragRelationLabelCompactCount = String(
+        dragRelationLabelCompactCount,
       );
       container.dataset.focusClusterRelationLabelCount = String(
         focusRelationLabelVisibleCount,
@@ -7383,6 +7431,8 @@ export function SigmaSkeletonCards({
     renderCameraRatio <= ZOOM_LENS_RATIO_THRESHOLD &&
     !pathWorkflowActive &&
     !healthRepairTarget;
+  const renderDragRelationCompactActive =
+    renderZoomLensCardCompactionActive && activeHullMode === 'drag';
 
   return (
     <div
@@ -7829,8 +7879,15 @@ export function SigmaSkeletonCards({
             </g>
           );
         })}
-        {activeHullConnectors.map((connector) => (
-          <g key={`drag:${connector.key}`}>
+        {activeHullConnectors.map((connector) => {
+          const dragRelationVisibleText = renderDragRelationCompactActive
+            ? relationLabelCompactGlyph(connector.relationType, relationTypeLabels)
+            : formatRelationVisibleLabel(connector.relationType);
+          const dragRelationPresentation = renderDragRelationCompactActive
+            ? 'compact-glyph'
+            : 'full-type-label';
+          return (
+            <g key={`drag:${connector.key}`}>
             <path
               data-drag-connector-from={connector.from}
               data-drag-connector-to={connector.to}
@@ -7857,6 +7914,11 @@ export function SigmaSkeletonCards({
               <>
                 <rect
                   data-relation-label-bg={`drag:${connector.key}`}
+                  data-drag-relation-label-presentation={dragRelationPresentation}
+                  data-drag-relation-label-compact={
+                    renderDragRelationCompactActive ? 'true' : 'false'
+                  }
+                  data-drag-relation-label-compact-contract="zoomed-drag-keeps-type-fact-as-compact-glyph"
                   fill="var(--color-canvas)"
                   stroke="var(--topology-card-border-selected-strong)"
                   strokeWidth={0.7}
@@ -7874,9 +7936,13 @@ export function SigmaSkeletonCards({
                   data-relation-quality={connector.relationQuality ?? 'supported'}
                   data-relation-type={connector.relationType}
                   data-relation-type-label={formatRelationLabel(connector.relationType)}
-                  data-relation-label-visible-text={formatRelationVisibleLabel(
-                    connector.relationType,
-                  )}
+                  data-relation-label-visible-text={dragRelationVisibleText}
+                  data-drag-relation-label-presentation={dragRelationPresentation}
+                  data-drag-relation-label-compact={
+                    renderDragRelationCompactActive ? 'true' : 'false'
+                  }
+                  data-drag-relation-label-compact-contract="zoomed-drag-keeps-type-fact-as-compact-glyph"
+                  data-relation-label-readable-type={connector.relationType}
                   data-relation-label-svg-text-token="--topology-relation-label-svg-text"
                   data-relation-label-svg-text-size-token="--topology-relation-label-svg-text-size"
                   dominantBaseline="middle"
@@ -7884,12 +7950,13 @@ export function SigmaSkeletonCards({
                   fill="var(--topology-relation-label-svg-text)"
                   className="pointer-events-none select-none font-mono text-[length:var(--topology-relation-label-svg-text-size)] uppercase tracking-[0.08em]"
                 >
-                  {formatRelationVisibleLabel(connector.relationType)}
+                  {dragRelationVisibleText}
                 </text>
               </>
             ) : null}
           </g>
-        ))}
+          );
+        })}
         {activeDragTensionConnectors.map((connector) => (
           <g key={`drag-tension:${connector.key}`}>
             <path
