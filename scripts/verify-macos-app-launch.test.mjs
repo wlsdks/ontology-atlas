@@ -407,6 +407,11 @@ test("WebView verification requires Add Concept backdrop when the composer is op
           topologyZoomLensEligibleCount: 5,
           topologyZoomLensActiveCardCount: 3,
           topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensPinProximityContract:
+            "zoomed-context-pins-keep-critical-relation-proximity",
+          topologyZoomLensPinProximityActive: true,
+          topologyZoomLensProximityPinCount: 2,
+          topologyZoomLensPinProximityRingToken: "--topology-zoom-lens-pin-proximity-ring",
           topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
           topologyZoomLensPinGlyphVisibleCount: 2,
           topologyZoomLensViewportVisibleContract:
@@ -1161,6 +1166,11 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyZoomLensActiveCardCount: 3,
         topologyVisibleCardCount: 2,
         topologyZoomLensVisibleActiveCardCount: 2,
+        topologyZoomLensPinProximityContract:
+          "zoomed-context-pins-keep-critical-relation-proximity",
+        topologyZoomLensPinProximityActive: true,
+        topologyZoomLensProximityPinCount: 2,
+        topologyZoomLensPinProximityRingToken: "--topology-zoom-lens-pin-proximity-ring",
           topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
           topologyZoomLensPinGlyphVisibleCount: 2,
         topologyZoomLensViewportVisibleContract:
@@ -1405,6 +1415,12 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     pinGlyph: {
       contract: "compact-kind-pin-keeps-type-glyph-without-title-card",
       visibleCount: 2,
+    },
+    proximityPins: {
+      contract: "zoomed-context-pins-keep-critical-relation-proximity",
+      active: true,
+      count: 2,
+      ringToken: "--topology-zoom-lens-pin-proximity-ring",
     },
     viewportVisibleContract: "visible-lens-pins-match-frame-state",
     emptyViewportFallback: {

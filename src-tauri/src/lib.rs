@@ -1226,6 +1226,10 @@ pub fn run() {
                                     cameraRatio: 0,
                                     activeCardCount: 0,
                                     visibleActiveCardCount: 0,
+                                    proximityPinContract: "",
+                                    proximityPinActive: false,
+                                    proximityPinCount: 0,
+                                    proximityPinRingToken: "",
                                     pinGlyphContract: "",
                                     pinGlyphVisibleCount: 0
                                   };
@@ -1245,6 +1249,14 @@ pub fn run() {
                                       Number(layer?.getAttribute("data-zoom-lens-active-card-count") || "0");
                                     result.visibleActiveCardCount =
                                       Number(layer?.getAttribute("data-zoom-lens-visible-active-card-count") || "0");
+                                    result.proximityPinContract =
+                                      layer?.getAttribute("data-zoom-lens-pin-proximity-contract") || "";
+                                    result.proximityPinActive =
+                                      layer?.getAttribute("data-zoom-lens-pin-proximity-active") === "true";
+                                    result.proximityPinCount =
+                                      Number(layer?.getAttribute("data-zoom-lens-proximity-pin-count") || "0");
+                                    result.proximityPinRingToken =
+                                      layer?.getAttribute("data-zoom-lens-pin-proximity-ring-token") || "";
                                     const activePins = Array.from(
                                       document.querySelectorAll('[data-skeleton-card][data-zoom-lens-active-card="true"]')
                                     );
@@ -5160,6 +5172,21 @@ pub fn run() {
                                       skeletonCardsLayer?.getAttribute("data-zoom-lens-visible-active-card-count") ||
                                       "0"
                                     ),
+                                  topologyZoomLensPinProximityContract:
+                                    topologyZoomVerification?.proximityPinContract ||
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-proximity-contract") || "",
+                                  topologyZoomLensPinProximityActive:
+                                    topologyZoomVerification?.proximityPinActive === true ||
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-proximity-active") === "true",
+                                  topologyZoomLensProximityPinCount:
+                                    Number(
+                                      topologyZoomVerification?.proximityPinCount ||
+                                      skeletonCardsLayer?.getAttribute("data-zoom-lens-proximity-pin-count") ||
+                                      "0"
+                                    ),
+                                  topologyZoomLensPinProximityRingToken:
+                                    topologyZoomVerification?.proximityPinRingToken ||
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-proximity-ring-token") || "",
                                   topologyZoomLensPinGlyphContract:
                                     topologyZoomVerification?.pinGlyphContract || "",
                                   topologyZoomLensPinGlyphVisibleCount:

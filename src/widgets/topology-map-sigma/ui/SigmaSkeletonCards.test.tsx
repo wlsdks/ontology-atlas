@@ -496,6 +496,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
   it("줌 인 상태에서는 비핵심 상세 카드를 kind pin 으로 낮춘다", () => {
     const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+    });
     graph.addNode("capability:c1", {
       size: 5,
       color: "#888",
@@ -545,6 +552,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer).toHaveAttribute("data-zoom-lens-eligible-count", "2");
     expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "2");
     expect(layer).toHaveAttribute(
+      "data-zoom-lens-pin-proximity-contract",
+      "zoomed-context-pins-keep-critical-relation-proximity",
+    );
+    expect(layer).toHaveAttribute("data-zoom-lens-pin-proximity-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-proximity-pin-count", "1");
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-pin-proximity-ring-token",
+      "--topology-zoom-lens-pin-proximity-ring",
+    );
+    expect(layer).toHaveAttribute(
       "data-zoom-lens-viewport-visible-contract",
       "visible-lens-pins-match-frame-state",
     );
@@ -564,6 +581,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(anchorCard).toHaveAttribute("data-zoom-lens-active-card", "true");
     expect(anchorCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+    expect(anchorCard).toHaveAttribute("data-zoom-lens-pin-proximity", "critical-neighbor");
+    expect(anchorCard).toHaveAttribute(
+      "data-zoom-lens-pin-proximity-contract",
+      "compact-pin-keeps-critical-relation-proximity-ring",
+    );
+    expect(anchorCard).toHaveAttribute(
+      "data-zoom-lens-pin-proximity-ring-token",
+      "--topology-zoom-lens-pin-proximity-ring",
+    );
     expect(anchorCard).toHaveAttribute("data-zoom-lens-viewport-visible");
     expect(anchorCard).toHaveAttribute(
       "data-zoom-lens-viewport-visible-contract",

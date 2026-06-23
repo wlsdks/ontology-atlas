@@ -1746,6 +1746,32 @@ export function validateTopologyZoomLensMarkers(markers) {
     return `WebView Relief zoom lens had no visible compact cards (${markers?.topologyZoomLensVisibleActiveCardCount ?? "missing"})`;
   }
   if (
+    markers?.topologyZoomLensPinProximityContract !== undefined &&
+    markers?.topologyZoomLensPinProximityContract !==
+      "zoomed-context-pins-keep-critical-relation-proximity"
+  ) {
+    return `WebView Relief zoom lens proximity pin contract was ${markers?.topologyZoomLensPinProximityContract || "missing"}`;
+  }
+  if (
+    markers?.topologyZoomLensPinProximityActive !== undefined &&
+    markers?.topologyZoomLensPinProximityActive !== true
+  ) {
+    return "WebView Relief zoom lens did not mark critical-neighbor context pins";
+  }
+  if (
+    markers?.topologyZoomLensProximityPinCount !== undefined &&
+    !(Number(markers?.topologyZoomLensProximityPinCount || 0) >= 1)
+  ) {
+    return `WebView Relief zoom lens proximity pin count was ${markers?.topologyZoomLensProximityPinCount ?? "missing"}`;
+  }
+  if (
+    markers?.topologyZoomLensPinProximityRingToken !== undefined &&
+    markers?.topologyZoomLensPinProximityRingToken !==
+      "--topology-zoom-lens-pin-proximity-ring"
+  ) {
+    return `WebView Relief zoom lens proximity ring token was ${markers?.topologyZoomLensPinProximityRingToken || "missing"}`;
+  }
+  if (
     markers?.topologyZoomLensPinGlyphContract &&
     markers.topologyZoomLensPinGlyphContract !==
     "compact-kind-pin-keeps-type-glyph-without-title-card"
@@ -7947,6 +7973,12 @@ export function buildWebviewEvidencePayload(
             markers,
             "topologyZoomLensPinGlyphVisibleCount",
           ),
+        },
+        proximityPins: {
+          contract: markers.topologyZoomLensPinProximityContract ?? null,
+          active: markers.topologyZoomLensPinProximityActive === true,
+          count: markerNumber(markers, "topologyZoomLensProximityPinCount"),
+          ringToken: markers.topologyZoomLensPinProximityRingToken ?? null,
         },
         viewportVisibleContract:
           markers.topologyZoomLensViewportVisibleContract ?? null,

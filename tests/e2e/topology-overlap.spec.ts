@@ -810,6 +810,14 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   );
   await expect(layer).toHaveAttribute("data-zoom-lens-relation-chrome-active", "true");
   await expect(layer).toHaveAttribute(
+    "data-zoom-lens-pin-proximity-contract",
+    "zoomed-context-pins-keep-critical-relation-proximity",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-zoom-lens-pin-proximity-ring-token",
+    "--topology-zoom-lens-pin-proximity-ring",
+  );
+  await expect(layer).toHaveAttribute(
     "data-zoom-lens-empty-viewport-fallback-contract",
     "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
   );
@@ -1038,6 +1046,16 @@ test("Relief focus card wheel zoom still switches surrounding detail cards to pi
   await expect(layer).toHaveAttribute("data-zoom-lens-active", "true", {
     timeout: 6_000,
   });
+  await expect(layer).toHaveAttribute(
+    "data-zoom-lens-pin-proximity-contract",
+    "zoomed-context-pins-keep-critical-relation-proximity",
+  );
+  await expect(layer).toHaveAttribute("data-zoom-lens-pin-proximity-active", "true");
+  await expect(layer).toHaveAttribute("data-zoom-lens-proximity-pin-count", /[1-9]\d*/);
+  await expect(layer).toHaveAttribute(
+    "data-zoom-lens-pin-proximity-ring-token",
+    "--topology-zoom-lens-pin-proximity-ring",
+  );
 
   const compactCards = page.locator(
     '[data-skeleton-card][data-zoom-lens-active-card="true"]',
@@ -1056,6 +1074,17 @@ test("Relief focus card wheel zoom still switches surrounding detail cards to pi
   await expect(compactFocusReadableCards.first()).toHaveAttribute(
     "data-zoom-lens-presentation",
     "lens-pin",
+  );
+  const proximityPin = page
+    .locator('[data-skeleton-card][data-zoom-lens-pin-proximity-contract]')
+    .first();
+  await expect(proximityPin).toHaveAttribute(
+    "data-zoom-lens-pin-proximity-contract",
+    "compact-pin-keeps-critical-relation-proximity-ring",
+  );
+  await expect(proximityPin).toHaveAttribute(
+    "data-zoom-lens-pin-proximity-ring-token",
+    "--topology-zoom-lens-pin-proximity-ring",
   );
   const compactRects = await compactCards.evaluateAll((cards) =>
     cards.slice(0, 4).map((card) => {

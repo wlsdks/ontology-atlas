@@ -238,6 +238,10 @@ const DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN =
 const DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN = '--topology-card-border-selected';
 const DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN =
   '--topology-card-drag-reactive-motion-max-offset';
+const ZOOM_LENS_PIN_PROXIMITY_RING_TOKEN =
+  '--topology-zoom-lens-pin-proximity-ring';
+const ZOOM_LENS_PIN_PROXIMITY_GLOW_TOKEN =
+  '--topology-zoom-lens-pin-proximity-glow';
 const SELECTED_RELATION_ENDPOINT_ROLE_LABEL: Record<'source' | 'target', string> = {
   source: 'FROM',
   target: 'TO',
@@ -3610,6 +3614,14 @@ export function SigmaSkeletonCards({
       '--topology-zoom-lens-pin-size',
       `${ZOOM_LENS_PIN_SIZE_PX}px`,
     );
+    container.style.setProperty(
+      ZOOM_LENS_PIN_PROXIMITY_RING_TOKEN,
+      'rgba(129, 140, 248, 0.78)',
+    );
+    container.style.setProperty(
+      ZOOM_LENS_PIN_PROXIMITY_GLOW_TOKEN,
+      'rgba(129, 140, 248, 0.28)',
+    );
     if (lastAppliedTopologyUiScaleRef.current !== scale) {
       lastAppliedTopologyUiScaleRef.current = scale;
       container.dataset.topologyUiScale = String(scale);
@@ -3689,6 +3701,7 @@ export function SigmaSkeletonCards({
     let cardPlacementSizeCacheMissCount = 0;
     let zoomLensEligibleCount = 0;
     let zoomLensActiveCardCount = 0;
+    let zoomLensProximityPinCount = 0;
     let selectedRelationEndpointZoomLensCount = 0;
     let overviewDensityLensActiveCardCount = 0;
     for (const el of els) {
@@ -3736,9 +3749,21 @@ export function SigmaSkeletonCards({
           delete el.dataset.selectedRelationEndpointZoomLens;
         }
         zoomLensActiveCardCount += 1;
+        if (el.dataset.zoomLensPinProximity === 'critical-neighbor') {
+          el.dataset.zoomLensPinProximityContract =
+            'compact-pin-keeps-critical-relation-proximity-ring';
+          el.dataset.zoomLensPinProximityRingToken =
+            ZOOM_LENS_PIN_PROXIMITY_RING_TOKEN;
+          zoomLensProximityPinCount += 1;
+        } else {
+          delete el.dataset.zoomLensPinProximityContract;
+          delete el.dataset.zoomLensPinProximityRingToken;
+        }
         if (overviewDensityLensActive) overviewDensityLensActiveCardCount += 1;
       } else {
         el.dataset.zoomLensActiveCard = 'false';
+        delete el.dataset.zoomLensPinProximityContract;
+        delete el.dataset.zoomLensPinProximityRingToken;
         delete el.dataset.zoomLensFocusReadableCompaction;
         delete el.dataset.selectedRelationEndpointZoomLens;
         if (focusReadableContext) {
@@ -3756,6 +3781,13 @@ export function SigmaSkeletonCards({
     }
     container.dataset.zoomLensEligibleCount = String(zoomLensEligibleCount);
     container.dataset.zoomLensActiveCardCount = String(zoomLensActiveCardCount);
+    container.dataset.zoomLensPinProximityContract =
+      'zoomed-context-pins-keep-critical-relation-proximity';
+    container.dataset.zoomLensPinProximityActive =
+      zoomLensProximityPinCount > 0 ? 'true' : 'false';
+    container.dataset.zoomLensProximityPinCount = String(zoomLensProximityPinCount);
+    container.dataset.zoomLensPinProximityRingToken =
+      ZOOM_LENS_PIN_PROXIMITY_RING_TOKEN;
     container.dataset.selectedRelationEndpointZoomLensContract =
       'camera-zoom-in-keeps-endpoints-visible-as-role-marks';
     container.dataset.selectedRelationEndpointZoomLensActive =
@@ -8723,6 +8755,24 @@ export function SigmaSkeletonCards({
           zoomLensContextAnchorCard ||
           zoomLensFocusContextRootCard ||
           zoomLensSelectedRelationEndpointCard;
+        const zoomLensProximitySource =
+          zoomLensEligible && graph.hasNode(nodeId)
+            ? selectedSlug !== null &&
+              nodeId !== selectedSlug &&
+              graph.hasNode(selectedSlug) &&
+              (graph.hasEdge(selectedSlug, nodeId) ||
+                graph.hasEdge(nodeId, selectedSlug))
+                ? selectedSlug
+                : (cards.find(
+                    (candidate) =>
+                      candidate.tier === 0 &&
+                      candidate.id !== nodeId &&
+                      graph.hasNode(candidate.id) &&
+                      (graph.hasEdge(candidate.id, nodeId) ||
+                        graph.hasEdge(nodeId, candidate.id)),
+                  )?.id ?? null)
+            : null;
+        const zoomLensSelectedNeighborPin = zoomLensProximitySource !== null;
         return (
           <button
             key={card.id}
@@ -8739,6 +8789,12 @@ export function SigmaSkeletonCards({
             data-dock-total={card.dock?.total}
             data-selected={selected ? 'true' : 'false'}
             data-zoom-lens-eligible={zoomLensEligible ? 'true' : 'false'}
+            data-zoom-lens-pin-proximity={
+              zoomLensSelectedNeighborPin ? 'critical-neighbor' : undefined
+            }
+            data-zoom-lens-pin-proximity-source={
+              zoomLensProximitySource ?? undefined
+            }
             data-zoom-lens-card-contract={
               zoomLensSelectedRelationEndpointCard
                 ? 'selected-relation-endpoint-becomes-role-mark-on-camera-zoom-in'
@@ -9191,7 +9247,7 @@ export function SigmaSkeletonCards({
                   : undefined,
               } as React.CSSProperties
             }
-            className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[zoom-lens-active-card=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!justify-center data-[zoom-lens-active-card=true]:!gap-0 data-[zoom-lens-active-card=true]:!overflow-hidden data-[zoom-lens-active-card=true]:!rounded-full data-[zoom-lens-active-card=true]:!p-0 data-[zoom-lens-active-card=true]:shadow-none hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
+            className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[zoom-lens-active-card=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!justify-center data-[zoom-lens-active-card=true]:!gap-0 data-[zoom-lens-active-card=true]:!overflow-hidden data-[zoom-lens-active-card=true]:!rounded-full data-[zoom-lens-active-card=true]:!p-0 data-[zoom-lens-active-card=true]:shadow-none data-[zoom-lens-active-card=true]:data-[zoom-lens-pin-proximity=critical-neighbor]:!shadow-[0_0_0_2px_var(--topology-zoom-lens-pin-proximity-ring),0_0_18px_var(--topology-zoom-lens-pin-proximity-glow)] hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
               selected
                 ? 'shadow-none outline-none'
                 : ''
