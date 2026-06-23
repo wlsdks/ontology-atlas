@@ -1023,6 +1023,38 @@ test("Relief dense overview switches noncritical context cards to kind pins", as
   expect(fullCardOverlaps).toEqual([]);
 });
 
+test("Relief compact installed-app overview keeps the map scannable with kind pins", async ({
+  page,
+}) => {
+  await openRelief(page, INSTALLED_APP_COMPACT_WEBVIEW, { mode: "map" });
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute(
+    "data-overview-density-lens-contract",
+    "zoom-out-overview-uses-kind-pins-for-noncritical-context-cards",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-overview-density-lens-min-width",
+    "1180",
+  );
+  await expect(layer).toHaveAttribute("data-overview-density-lens-active", "true", {
+    timeout: 6_000,
+  });
+  await expect(layer).toHaveAttribute(
+    "data-zoom-lens-presentation-source",
+    "overview-density",
+  );
+
+  const activePins = page.locator(
+    '[data-skeleton-card][data-zoom-lens-active-card="true"][data-zoom-lens-presentation="lens-pin"]',
+  );
+  await expect(activePins.first()).toBeVisible();
+  await expect(layer).toHaveAttribute(
+    "data-overview-density-lens-active-card-count",
+    /[1-9]\d*/,
+  );
+});
+
 test("Relief focus card wheel zoom still switches surrounding detail cards to pins", async ({
   page,
 }) => {
