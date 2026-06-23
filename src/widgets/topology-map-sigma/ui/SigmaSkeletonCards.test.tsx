@@ -1787,7 +1787,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     });
   });
 
-  it("camera zoom-in 은 focus readable companion 도 kind pin 으로 낮춘다", async () => {
+  it("camera zoom-in 은 focus readable companion 을 고정 readable card 로 유지한다", async () => {
     const graph = makeGraph();
     graph.addNode("element:evidence", {
       size: 5,
@@ -1841,19 +1841,18 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-selected-focus-companion-readable-title",
         "true",
       );
-      expect(evidenceCard).toHaveAttribute("data-zoom-lens-active-card", "true");
-      expect(evidenceCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+      expect(evidenceCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(evidenceCard).toHaveAttribute(
+        "data-zoom-lens-presentation",
+        "full-card-critical",
+      );
       expect(evidenceCard).toHaveAttribute(
         "data-zoom-lens-card-contract",
-        "noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in",
+        "focus-readable-card-stays-full-on-camera-zoom-in",
       );
       expect(evidenceCard).toHaveAttribute(
         "data-zoom-lens-focus-readable-compaction",
-        "camera-zoom-in-kind-pin",
-      );
-      expect(evidenceCard?.querySelector("[data-zoom-lens-pin-glyph]")).toHaveAttribute(
-        "data-zoom-lens-pin-glyph-contract",
-        "compact-kind-pin-keeps-type-glyph-without-title-card",
+        "camera-zoom-in-fixed-readable-card",
       );
     });
   });

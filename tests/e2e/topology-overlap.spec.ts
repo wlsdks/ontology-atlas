@@ -1110,7 +1110,7 @@ test("Relief compact installed-app overview keeps the map scannable with kind pi
   );
 });
 
-test("Relief focus card wheel zoom still switches surrounding detail cards to pins", async ({
+test("Relief focus card wheel zoom keeps readable focus companions as full cards", async ({
   page,
 }) => {
   const viewport = VIEWPORTS[1];
@@ -1181,16 +1181,20 @@ test("Relief focus card wheel zoom still switches surrounding detail cards to pi
     Math.min(...dimmedPinOpacity),
     "zoom lens pins should stay visible as map marks instead of inheriting dim-card opacity",
   ).toBeGreaterThanOrEqual(0.42);
-  const compactFocusReadableCards = page.locator(
-    '[data-skeleton-card][data-zoom-lens-focus-readable-compaction="camera-zoom-in-kind-pin"]',
+  const fixedFocusReadableCards = page.locator(
+    '[data-skeleton-card][data-zoom-lens-focus-readable-compaction="camera-zoom-in-fixed-readable-card"]',
   );
-  await expect(compactFocusReadableCards.first()).toHaveAttribute(
+  await expect(fixedFocusReadableCards.first()).toHaveAttribute(
     "data-zoom-lens-active-card",
-    "true",
+    "false",
   );
-  await expect(compactFocusReadableCards.first()).toHaveAttribute(
+  await expect(fixedFocusReadableCards.first()).toHaveAttribute(
     "data-zoom-lens-presentation",
-    "lens-pin",
+    "full-card-critical",
+  );
+  await expect(fixedFocusReadableCards.first()).toHaveAttribute(
+    "data-zoom-lens-card-contract",
+    "focus-readable-card-stays-full-on-camera-zoom-in",
   );
   const proximityPin = page
     .locator('[data-skeleton-card][data-zoom-lens-pin-proximity-contract]')
@@ -1211,11 +1215,25 @@ test("Relief focus card wheel zoom still switches surrounding detail cards to pi
   );
   expect(
     compactRects.length,
-    "card-wheel zoom should leave surrounding focus detail as compact graph pins",
+    "card-wheel zoom should still compact distant noncritical cards as graph pins",
   ).toBeGreaterThan(0);
   for (const rect of compactRects) {
     expect(rect.width).toBeLessThanOrEqual(34);
     expect(rect.height).toBeLessThanOrEqual(34);
+  }
+  const fixedReadableRects = await fixedFocusReadableCards.evaluateAll((cards) =>
+    cards.slice(0, 2).map((card) => {
+      const rect = card.getBoundingClientRect();
+      return { height: rect.height, width: rect.width };
+    }),
+  );
+  expect(
+    fixedReadableRects.length,
+    "camera zoom should keep directly readable focus companion cards on the canvas",
+  ).toBeGreaterThan(0);
+  for (const rect of fixedReadableRects) {
+    expect(rect.width).toBeGreaterThan(120);
+    expect(rect.height).toBeGreaterThan(30);
   }
 
   const zoomedSelectedRect = await rectOf(selectedCard);
@@ -4353,14 +4371,6 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
     "installed-app WebView selected relation label should clear the inspector rail",
   ).toBeGreaterThanOrEqual(32);
   const selectedOverlay = page.locator("[data-selected-relation-overlay]").first();
-  await expect(selectedOverlay).toHaveAttribute(
-    "data-selected-relation-zoom-lens-label",
-    "compact-glyph",
-  );
-  await expect(selectedOverlay).toHaveAttribute(
-    "data-relation-label-visual-state",
-    /(?:geometry|zoom-lens)-compact-glyph/,
-  );
   const selectedOverlayState = await selectedOverlay.evaluate((overlay) => {
     const rect = overlay.getBoundingClientRect();
     const typeText = overlay.querySelector("[data-relation-label-type-text]");
@@ -4368,14 +4378,29 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
     return {
       glyphText: glyph?.textContent?.trim() || "",
       readableText: overlay.getAttribute("data-relation-label-readable-text") || "",
+      visualState: overlay.getAttribute("data-relation-label-visual-state") || "",
+      zoomLensLabel: overlay.getAttribute("data-selected-relation-zoom-lens-label") || "",
       typeClass: typeText instanceof HTMLElement ? typeText.className : "",
       width: rect.width,
     };
   });
-  expect(selectedOverlayState.glyphText).toMatch(/^[A-Z가-힣](?:×\d+)?$/);
+  expect(
+    ["compact-glyph", "full-label"],
+    "selected relation overlay may stay full when geometry clears the inspector rail",
+  ).toContain(selectedOverlayState.zoomLensLabel);
+  if (selectedOverlayState.zoomLensLabel === "compact-glyph") {
+    expect(selectedOverlayState.visualState).toMatch(/(?:geometry|zoom-lens)-compact-glyph/);
+    expect(selectedOverlayState.glyphText).toMatch(/^[A-Z가-힣](?:×\d+)?$/);
+    expect(selectedOverlayState.typeClass).toContain("sr-only");
+    expect(selectedOverlayState.width).toBeLessThanOrEqual(48);
+  } else {
+    expect(selectedOverlayState.visualState).toBe("full-selected-label");
+    expect(selectedOverlayState.typeClass).not.toContain("sr-only");
+    expect(selectedOverlayState.width).toBeLessThanOrEqual(
+      selectedRelationCardRect.left - selectedRelationLabelRect.left - 16,
+    );
+  }
   expect(selectedOverlayState.readableText).toContain("contains");
-  expect(selectedOverlayState.typeClass).toContain("sr-only");
-  expect(selectedOverlayState.width).toBeLessThanOrEqual(48);
   await expect(selectedEdgeCard).toHaveAttribute(
     "data-selected-relation-route",
     "source>target>type>action",

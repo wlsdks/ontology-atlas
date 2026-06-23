@@ -3740,7 +3740,7 @@ export function SigmaSkeletonCards({
       const focusReadableContext =
         el.dataset.selectedFocusCompanionReadableTitle === 'true' ||
         el.dataset.selectedFocusContextReadableTitle === 'true';
-      const compactFocusReadableOnCameraZoom =
+      const preserveFocusReadableOnCameraZoom =
         zoomLensCardCompactionActive && focusReadableContext;
       const compactSelectedRelationEndpointOnCameraZoom =
         zoomLensCardCompactionActive && el.dataset.selectedRelationEndpoint === 'true';
@@ -3756,13 +3756,12 @@ export function SigmaSkeletonCards({
         el.dataset.pathRole === 'source' ||
         el.dataset.pathRole === 'target' ||
         el.dataset.healthRepairAuditTarget === 'true' ||
-        (focusReadableContext && !compactFocusReadableOnCameraZoom) ||
+        focusReadableContext ||
         (el.dataset.selectedRelationEndpoint === 'true' &&
           !compactSelectedRelationEndpointOnCameraZoom);
       const zoomLensEligible =
         (el.dataset.zoomLensEligible === 'true' ||
           compactMapRootAnchorOnCameraZoom ||
-          compactFocusReadableOnCameraZoom ||
           compactSelectedRelationEndpointOnCameraZoom) &&
         !zoomLensCritical;
       if (zoomLensEligible) zoomLensEligibleCount += 1;
@@ -3778,12 +3777,7 @@ export function SigmaSkeletonCards({
               el.dataset.selectedFocusContextReadableTitle === 'true'
             ? 'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
             : 'noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in';
-        if (compactFocusReadableOnCameraZoom) {
-          el.dataset.zoomLensFocusReadableCompaction =
-            'camera-zoom-in-kind-pin';
-        } else {
-          delete el.dataset.zoomLensFocusReadableCompaction;
-        }
+        delete el.dataset.zoomLensFocusReadableCompaction;
         if (compactSelectedRelationEndpointOnCameraZoom) {
           el.dataset.selectedRelationEndpointZoomLens = 'role-mark';
           selectedRelationEndpointZoomLensCount += 1;
@@ -3806,10 +3800,17 @@ export function SigmaSkeletonCards({
         el.dataset.zoomLensActiveCard = 'false';
         delete el.dataset.zoomLensPinProximityContract;
         delete el.dataset.zoomLensPinProximityRingToken;
-        delete el.dataset.zoomLensFocusReadableCompaction;
+        if (preserveFocusReadableOnCameraZoom) {
+          el.dataset.zoomLensFocusReadableCompaction =
+            'camera-zoom-in-fixed-readable-card';
+        } else {
+          delete el.dataset.zoomLensFocusReadableCompaction;
+        }
         delete el.dataset.selectedRelationEndpointZoomLens;
         if (focusReadableContext) {
-          el.dataset.zoomLensCardContract = 'critical-card-stays-full-on-camera-zoom-in';
+          el.dataset.zoomLensCardContract = preserveFocusReadableOnCameraZoom
+            ? 'focus-readable-card-stays-full-on-camera-zoom-in'
+            : 'critical-card-stays-full-on-camera-zoom-in';
         }
         el.dataset.zoomLensPresentation = zoomLensCritical
           ? dragReadableRootCard
@@ -6011,6 +6012,23 @@ export function SigmaSkeletonCards({
       finalDragReactiveCounts.linked > 0 ? 'direct-neighbor-readable-follow' : 'idle';
     container.dataset.dragReactiveMotionMaxObservedOffsetPx =
       finalDragReactiveCounts.maxOffset.toFixed(2);
+    const finalSelectedRelationContextPinCount = orderedEls.reduce((count, el) => {
+      if (
+        el.dataset.dimOpacityRole !== 'orientation-anchor' ||
+        el.dataset.zoomLensActiveCard !== 'true' ||
+        el.dataset.zoomLensPresentation !== 'relation-context-pin' ||
+        !isSkeletonCardVisibleFromFrameState(el)
+      ) {
+        return count;
+      }
+      return count + 1;
+    }, 0);
+    container.dataset.selectedRelationContextPinCount = String(
+      finalSelectedRelationContextPinCount,
+    );
+    container.dataset.selectedRelationVisibleOrientationAnchorCount = String(
+      finalSelectedRelationContextPinCount,
+    );
     container.dataset.dragReactiveMotionMaxOffsetPx = String(
       DRAG_REACTIVE_MOTION_MAX_OFFSET_PX,
     );
