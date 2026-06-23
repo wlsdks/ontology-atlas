@@ -5531,8 +5531,9 @@ export function SigmaSkeletonCards({
       if (
         !sourceEl ||
         !targetEl ||
-        sourceEl.dataset.surfaceHidden === 'true' ||
-        targetEl.dataset.surfaceHidden === 'true'
+        (!dragConnector &&
+          (sourceEl.dataset.surfaceHidden === 'true' ||
+            targetEl.dataset.surfaceHidden === 'true'))
       ) {
         clearConnector();
         return;
@@ -5716,6 +5717,8 @@ export function SigmaSkeletonCards({
           ? (relationLabelButtonsById.get(relationLabelId) ?? null)
           : null;
         const selectedRelationLabel = labelButton?.dataset.selectedRelation === 'true';
+        const activeDragRelationLabel =
+          dragOnlyRelationLabelLayout && dragRelationLabel;
         if (
           focusEgoHandoffFallbackButton === null &&
           labelButton !== null &&
@@ -5731,13 +5734,17 @@ export function SigmaSkeletonCards({
         if (
           !fromRect ||
           !toRect ||
-          (!selectedRelationLabel &&
+          (!activeDragRelationLabel &&
+            !selectedRelationLabel &&
             (fromEl?.dataset.surfaceHidden === 'true' ||
               toEl?.dataset.surfaceHidden === 'true' ||
               (label.dataset.connectorRelationLabel === 'true' &&
                 isDockConnectorSuppressed(toEl))))
         ) {
           label.setAttribute('opacity', '0');
+          label.dataset.relationLabelVisibility = activeDragRelationLabel
+            ? 'drag-fact-hidden'
+            : 'suppressed-hidden-endpoint';
           badge?.setAttribute('opacity', '0');
           badge?.setAttribute('pointer-events', 'none');
           if (labelButton) {
@@ -5758,8 +5765,6 @@ export function SigmaSkeletonCards({
           : (fromRect.top + fromRect.bottom + toRect.top + toRect.bottom) / 4 -
             8;
         const relationHitDisabled = activeDragCluster !== null;
-        const activeDragRelationLabel =
-          dragOnlyRelationLabelLayout && dragRelationLabel;
         if (activeDragRelationLabel) dragRelationLabelExpectedCount += 1;
         const badgeWidth = Math.max(
             RELATION_BADGE_MIN_WIDTH_PX,
