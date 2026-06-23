@@ -4210,7 +4210,7 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
 test("Relief selected relation zoom-in turns non-selected endpoint cards into compact role marks", async ({
   page,
 }) => {
-  await openRelief(page, VIEWPORTS[1], {
+  await openRelief(page, INSTALLED_APP_WEBVIEW, {
     mode: "focus",
     requireHud: false,
     selectedSlug: "capability:agent-config-onboarding",
@@ -4260,6 +4260,10 @@ test("Relief selected relation zoom-in turns non-selected endpoint cards into co
     "data-selected-relation-endpoint-zoom-lens-count",
     /[1-2]/,
   );
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-endpoint-zoom-lens-viewport-contract",
+    "camera-zoom-in-keeps-role-marks-inside-viewport",
+  );
 
   const endpointState = await page.locator("[data-skeleton-card]").evaluateAll(
     (cards, endpointSlugs) =>
@@ -4272,6 +4276,13 @@ test("Relief selected relation zoom-in turns non-selected endpoint cards into co
             endpointRole: card.getAttribute("data-selected-relation-endpoint-role") || "",
             endpointZoom: card.getAttribute("data-selected-relation-endpoint-zoom-lens") || "",
             presentation: card.getAttribute("data-zoom-lens-presentation") || "",
+            viewportClamp:
+              card.getAttribute("data-selected-relation-endpoint-zoom-lens-viewport-clamp") ||
+              "",
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
             width: rect.width,
             height: rect.height,
           };
@@ -4286,9 +4297,18 @@ test("Relief selected relation zoom-in turns non-selected endpoint cards into co
   for (const endpoint of endpointState.filter((card) => card.endpointZoom === "role-mark")) {
     expect(endpoint.active).toBe("true");
     expect(endpoint.presentation).toBe("lens-pin");
+    expect(endpoint.viewportClamp).toBe("safe-viewport");
+    expect(endpoint.left).toBeGreaterThanOrEqual(8);
+    expect(endpoint.top).toBeGreaterThanOrEqual(8);
+    expect(endpoint.right).toBeLessThanOrEqual(INSTALLED_APP_WEBVIEW.width - 8);
+    expect(endpoint.bottom).toBeLessThanOrEqual(INSTALLED_APP_WEBVIEW.height - 8);
     expect(endpoint.width).toBeLessThanOrEqual(44);
     expect(endpoint.height).toBeLessThanOrEqual(44);
   }
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-endpoint-zoom-lens-viewport-visible-count",
+    String(endpointState.filter((card) => card.endpointZoom === "role-mark").length),
+  );
 });
 
 test("Relief path result keeps phone viewport panel-owned", async ({ page }) => {

@@ -4150,8 +4150,28 @@ export function SigmaSkeletonCards({
           ? columnCenterY
           : columnCenterY + (row - (rowsInCol - 1) / 2) * pitch;
         const dragReactiveMotionOffset = dragReactiveMotionOffsetFor(el, lockedForDrag);
-        const renderX = x + dragReactiveMotionOffset.dx;
-        const renderY = y + dragReactiveMotionOffset.dy;
+        let renderX = x + dragReactiveMotionOffset.dx;
+        let renderY = y + dragReactiveMotionOffset.dy;
+        const selectedRelationEndpointRoleMark =
+          el.dataset.selectedRelationEndpointZoomLens === 'role-mark';
+        if (selectedRelationEndpointRoleMark) {
+          const roleMarkClamp = clampVisibleAnchorCard({
+            x: renderX,
+            y: renderY,
+            width: cardWidth,
+            height: cardHeight,
+            anchor: side === 1 ? 'left' : 'right',
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            fixedSurfaceRects,
+          });
+          renderX = roleMarkClamp.x;
+          renderY = roleMarkClamp.y;
+          el.dataset.selectedRelationEndpointZoomLensViewportClamp =
+            'safe-viewport';
+        } else {
+          delete el.dataset.selectedRelationEndpointZoomLensViewportClamp;
+        }
         el.dataset.layoutY = String(renderY);
         if (followsActiveDrag && dockSnapshot) {
           el.dataset.dockParentDeltaY = String(parentCenterY - dockSnapshot.parentStartY);
@@ -4303,10 +4323,30 @@ export function SigmaSkeletonCards({
         } else {
           delete el.dataset.selectedFocusCenterYRatio;
         }
-        const anchor = ANCHOR_TRANSLATE[safeAnchorKey];
         const dragReactiveMotionOffset = dragReactiveMotionOffsetFor(el, lockedForDrag);
-        const renderX = clamped.x + dragReactiveMotionOffset.dx;
-        const renderY = clamped.y + dragReactiveMotionOffset.dy;
+        let renderX = clamped.x + dragReactiveMotionOffset.dx;
+        let renderY = clamped.y + dragReactiveMotionOffset.dy;
+        const selectedRelationEndpointRoleMark =
+          el.dataset.selectedRelationEndpointZoomLens === 'role-mark';
+        if (selectedRelationEndpointRoleMark) {
+          const roleMarkClamp = clampVisibleAnchorCard({
+            x: renderX,
+            y: renderY,
+            width: cardWidth,
+            height: cardHeight,
+            anchor: safeAnchorKey,
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            fixedSurfaceRects,
+          });
+          renderX = roleMarkClamp.x;
+          renderY = roleMarkClamp.y;
+          el.dataset.selectedRelationEndpointZoomLensViewportClamp =
+            'safe-viewport';
+        } else {
+          delete el.dataset.selectedRelationEndpointZoomLensViewportClamp;
+        }
+        const anchor = ANCHOR_TRANSLATE[safeAnchorKey];
         el.dataset.layoutY = String(renderY);
         setSkeletonStyleValue(
           el,
@@ -5210,6 +5250,21 @@ export function SigmaSkeletonCards({
           : 0),
       0,
     );
+    const selectedRelationEndpointZoomLensViewportVisibleCount = orderedEls.reduce(
+      (count, el) => {
+        if (el.dataset.selectedRelationEndpointZoomLens !== 'role-mark') return count;
+        if (!isSkeletonCardVisibleFromFrameState(el)) return count;
+        const rect = cardPlacementFrameRectCache.get(el);
+        if (!rect) return count;
+        const inside =
+          rect.left >= SAFE_VIEWPORT_MARGIN &&
+          rect.top >= SAFE_VIEWPORT_MARGIN &&
+          rect.right <= containerRect.width - SAFE_VIEWPORT_MARGIN &&
+          rect.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN;
+        return count + (inside ? 1 : 0);
+      },
+      0,
+    );
     const selectedRelationEndpointHiddenCount = Math.max(
       0,
       selectedRelationEndpointExpectedCount - selectedRelationEndpointVisibleCount,
@@ -5235,6 +5290,11 @@ export function SigmaSkeletonCards({
       'visible-source-target-role-badges';
     container.dataset.selectedRelationEndpointRoleBadgeVisibleCount = String(
       selectedRelationEndpointRoleBadgeVisibleCount,
+    );
+    container.dataset.selectedRelationEndpointZoomLensViewportContract =
+      'camera-zoom-in-keeps-role-marks-inside-viewport';
+    container.dataset.selectedRelationEndpointZoomLensViewportVisibleCount = String(
+      selectedRelationEndpointZoomLensViewportVisibleCount,
     );
     container.dataset.selectedRelationEndpointRoute =
       selectedRelationEndpointSource && selectedRelationEndpointTarget
