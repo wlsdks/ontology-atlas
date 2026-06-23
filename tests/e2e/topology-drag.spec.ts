@@ -756,9 +756,13 @@ test("Relief map project drag stays responsive for large connected clusters", as
       el.getAttribute("data-drag-viewport-offset-persisted-count") ?? "0",
     ),
     previewScope: el.getAttribute("data-drag-preview-scope") ?? "",
+    catchupContract: el.getAttribute("data-drag-release-graph-catchup-contract") ?? "",
   }));
-  expect(releaseProof.previewScope).toBe("persisted-drop-viewport-offset");
-  expect(releaseProof.persistedCount).toBeGreaterThan(0);
+  expect(releaseProof.previewScope).toBe("committed-graph-position");
+  expect(releaseProof.persistedCount).toBe(0);
+  expect(releaseProof.catchupContract).toBe(
+    "active-preview-commits-to-graph-before-clearing-offset",
+  );
   await page.waitForTimeout(850);
   const finalDrop = await rectOf(target);
   expect(

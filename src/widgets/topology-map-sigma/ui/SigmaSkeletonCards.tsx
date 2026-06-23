@@ -2791,6 +2791,8 @@ export function SigmaSkeletonCards({
     viewportPreviewActive: boolean;
     viewportPreviewDx: number;
     viewportPreviewDy: number;
+    rootStartViewportX: number;
+    rootStartViewportY: number;
     rootPriorityClamp: boolean;
     dockDragSnapshots: Map<string, DockDragSnapshot>;
     cardElements: SkeletonCardElementIndex;
@@ -3123,23 +3125,41 @@ export function SigmaSkeletonCards({
         suppressClickRef.current = true;
         activeDockDragSnapshotsRef.current = new Map(drag?.dockDragSnapshots ?? []);
         if (drag.viewportPreviewActive) {
-          for (const slug of drag.movedGroup) {
-            const previous = dragViewportOffsetsRef.current.get(slug) ?? { dx: 0, dy: 0 };
-            dragViewportOffsetsRef.current.set(slug, {
-              dx: previous.dx + drag.viewportPreviewDx,
-              dy: previous.dy + drag.viewportPreviewDy,
-            });
+          if (sigma && graph.hasNode(drag.rootSlug)) {
+            const attrs = graph.getNodeAttributes(drag.rootSlug);
+            const currentViewport = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
+            const missingDx =
+              drag.rootStartViewportX + drag.viewportPreviewDx - currentViewport.x;
+            const missingDy =
+              drag.rootStartViewportY + drag.viewportPreviewDy - currentViewport.y;
+            if (Math.abs(missingDx) > 0.5 || Math.abs(missingDy) > 0.5) {
+              drag.movedGroup = moveDraggedCluster(
+                graph,
+                drag.rootSlug,
+                missingDx,
+                missingDy,
+                sigma,
+                drag.movableNodeIds,
+                drag.tierByNodeId,
+                drag.movedGroup,
+              );
+            }
+            const container = containerRef.current;
+            if (container) {
+              container.dataset.dragReleaseGraphCatchupContract =
+                'active-preview-commits-to-graph-before-clearing-offset';
+              container.dataset.dragReleaseGraphCatchupDx = missingDx.toFixed(2);
+              container.dataset.dragReleaseGraphCatchupDy = missingDy.toFixed(2);
+            }
           }
-          const persistedOffsetCount = dragViewportOffsetsRef.current.size;
-          setDragViewportOffsetPersistedCount(persistedOffsetCount);
+          dragViewportOffsetsRef.current.clear();
+          setDragViewportOffsetPersistedCount(0);
           const container = containerRef.current;
           if (container) {
-            container.dataset.dragPreviewScope = 'persisted-drop-viewport-offset';
+            container.dataset.dragPreviewScope = 'committed-graph-position';
             container.dataset.dragPreviewOffsetX = String(drag.viewportPreviewDx);
             container.dataset.dragPreviewOffsetY = String(drag.viewportPreviewDy);
-            container.dataset.dragViewportOffsetPersistedCount = String(
-              persistedOffsetCount,
-            );
+            container.dataset.dragViewportOffsetPersistedCount = '0';
           }
         }
         if (drag && sigma) {
@@ -3962,10 +3982,24 @@ export function SigmaSkeletonCards({
         dragViewportOffsetsRef.current.get(slug) ??
         (dockParent ? dragViewportOffsetsRef.current.get(dockParent) : undefined);
       const drag = dragRef.current;
-      const active =
-        drag?.viewportPreviewActive && isDragClusterCard(slug, dockParent)
-          ? { dx: drag.viewportPreviewDx, dy: drag.viewportPreviewDy }
-          : undefined;
+      const active = (() => {
+        if (!drag?.viewportPreviewActive || !isDragClusterCard(slug, dockParent)) {
+          return undefined;
+        }
+        if (!sigma || !graph.hasNode(drag.rootSlug)) {
+          return { dx: drag.viewportPreviewDx, dy: drag.viewportPreviewDy };
+        }
+        const attrs = graph.getNodeAttributes(drag.rootSlug);
+        const currentViewport = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
+        return {
+          dx:
+            drag.viewportPreviewDx -
+            (currentViewport.x - drag.rootStartViewportX),
+          dy:
+            drag.viewportPreviewDy -
+            (currentViewport.y - drag.rootStartViewportY),
+        };
+      })();
       const dx = (persisted?.dx ?? 0) + (active?.dx ?? 0);
       const dy = (persisted?.dy ?? 0) + (active?.dy ?? 0);
       const source = active
@@ -7930,7 +7964,7 @@ export function SigmaSkeletonCards({
           : 'idle'
       }
       data-drag-large-cluster-clamp-threshold={DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD}
-      data-drag-preview-contract="large-cluster-uses-viewport-offset-during-active-drag"
+      data-drag-preview-contract="large-cluster-commits-graph-position-without-release-offset"
       data-drag-preview-scope={
         dragViewportOffsetPersistedCount > 0
           ? 'persisted-drop-viewport-offset'
@@ -9481,6 +9515,14 @@ export function SigmaSkeletonCards({
                   dragClusterPolicy === 'root-direct-neighbors-pin-free-context',
                 viewportPreviewDx: 0,
                 viewportPreviewDy: 0,
+                rootStartViewportX: sigma.graphToViewport({
+                  x: graph.getNodeAttributes(rootSlug).x,
+                  y: graph.getNodeAttributes(rootSlug).y,
+                }).x,
+                rootStartViewportY: sigma.graphToViewport({
+                  x: graph.getNodeAttributes(rootSlug).x,
+                  y: graph.getNodeAttributes(rootSlug).y,
+                }).y,
 	                dockDragSnapshots,
 	                cardElements,
 	                movedGroup: movingGroup,

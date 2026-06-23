@@ -6575,10 +6575,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       expect(layer).toHaveAttribute(
         "data-drag-preview-scope",
-        "persisted-drop-viewport-offset",
+        "committed-graph-position",
       );
       expect(layer).toHaveAttribute("data-drag-preview-offset-x", "180");
-      expect(layer).toHaveAttribute("data-drag-viewport-offset-persisted-count", "7");
+      expect(layer).toHaveAttribute("data-drag-viewport-offset-persisted-count", "0");
       expect(layer).toHaveAttribute(
         "data-drag-clamp-contract",
         "large-cluster-root-card-priority",
