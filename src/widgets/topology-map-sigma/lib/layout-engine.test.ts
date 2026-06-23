@@ -117,7 +117,7 @@ describe('layout-engine', () => {
     expect(engine.isActive()).toBe(true);
   });
 
-  it('keeps the last dragged group position when release arrives before the next tick', () => {
+  it('keeps the last dragged group position pinned after release', () => {
     const engine = createLayoutEngine();
     engine.init({
       nodes: [
@@ -139,11 +139,13 @@ describe('layout-engine', () => {
     ]);
     engine.releaseGroup(['a', 'b']);
 
+    expect(engine.isActive()).toBe(false);
+    for (let i = 0; i < 80; i++) engine.tickToArrays();
     const out = engine.tickToArrays();
-    expect(out.x[0]).toBeGreaterThan(90);
-    expect(out.y[0]).toBeGreaterThan(110);
-    expect(out.x[1]).toBeGreaterThan(140);
-    expect(out.y[1]).toBeGreaterThan(160);
+    expect(out.x[0]).toBeCloseTo(120, 3);
+    expect(out.y[0]).toBeCloseTo(140, 3);
+    expect(out.x[1]).toBeCloseTo(170, 3);
+    expect(out.y[1]).toBeCloseTo(190, 3);
   });
 
   it('wakes a settled simulation when a held node is released', () => {

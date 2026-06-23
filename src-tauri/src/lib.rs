@@ -940,6 +940,8 @@ pub fn run() {
                                           );
                                           result.dragPhysicsSyncContract =
                                             skeletonCardsLayer?.getAttribute("data-drag-physics-sync-contract") || "";
+                                          result.dragPhysicsReleasePolicy =
+                                            skeletonCardsLayer?.getAttribute("data-drag-physics-release-policy") || "";
                                           result.dragPhysicsSyncActiveDuring =
                                             skeletonCardsLayer?.getAttribute("data-drag-physics-sync-active") === "true";
                                           result.workerFrameSkipPolicy =
@@ -4812,6 +4814,10 @@ pub fn run() {
                                     topologyDragVerification?.dragPhysicsSyncContract ||
                                     skeletonCardsLayer?.getAttribute("data-drag-physics-sync-contract") ||
                                     "",
+                                  topologyDragPhysicsReleasePolicy:
+                                    topologyDragVerification?.dragPhysicsReleasePolicy ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-physics-release-policy") ||
+                                    "",
                                   topologyDragPhysicsSyncActiveDuring:
                                     topologyDragVerification?.dragPhysicsSyncActiveDuring === true,
                                   topologyDragWorkerAppliedFrameDelta:
@@ -5457,6 +5463,7 @@ mod tests {
         assert!(source.contains("data-drag-cluster-hull-dom-policy"));
         assert!(source.contains("dragHandleSlug"));
         assert!(source.contains("data-drag-physics-sync-contract"));
+        assert!(source.contains("data-drag-physics-release-policy"));
         assert!(source.contains("topologyDragPhysicsSyncActiveDuring"));
         assert!(source.contains("topologyDragWorkerAppliedFrameDelta"));
         assert!(source.contains("topologyDragWorkerAppliedFrameChangeCount"));

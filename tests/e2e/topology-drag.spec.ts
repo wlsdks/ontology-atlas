@@ -634,6 +634,10 @@ test("Relief map project drag stays responsive for large connected clusters", as
     "skeleton-card-drag-pins-worker-layout-group",
   );
   await expect(layer).toHaveAttribute(
+    "data-drag-physics-release-policy",
+    "commit-drop-position-no-force-release",
+  );
+  await expect(layer).toHaveAttribute(
     "data-drag-physics-sync-active",
     "true",
   );

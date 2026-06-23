@@ -2359,7 +2359,10 @@ export function validateWebviewVerifyPayload(payload, {
       ? payload.markers.topologySelectedNodeSummary.trim()
       : "";
   const focusSelectedNodeRoute =
-    Boolean(topologySelectedParam) && topologyAnalysisMode === "focus";
+    Boolean(topologySelectedParam) &&
+    (topologyAnalysisMode === "focus" ||
+      payload.markers.topologyRootSelectedNodeId === topologySelectedParam ||
+      payload.markers.topologyAgentCurrentSurfaceRoute === topologySelectedParam);
   const blockingComposerOpen = payload.markers.topologyCreateNodeOpen === true;
   const selectedRelationSource =
     typeof payload.markers.topologySelectedRelationHandleStripSource === "string"
@@ -4812,6 +4815,12 @@ export function validateWebviewVerifyPayload(payload, {
         "skeleton-card-drag-pins-worker-layout-group"
       ) {
         return `WebView Relief drag physics sync contract was ${payload.markers.topologyDragPhysicsSyncContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyDragPhysicsReleasePolicy !==
+        "commit-drop-position-no-force-release"
+      ) {
+        return `WebView Relief drag physics release policy was ${payload.markers.topologyDragPhysicsReleasePolicy || "missing"}`;
       }
       if (payload.markers.topologyDragPhysicsSyncActiveDuring !== true) {
         return "WebView Relief drag physics sync was not active during drag verification";

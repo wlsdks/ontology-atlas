@@ -7768,6 +7768,7 @@ export function SigmaSkeletonCards({
           ? 'skeleton-card-drag-pins-worker-layout-group'
           : 'skeleton-card-drag-worker-sync-unavailable'
       }
+      data-drag-physics-release-policy="commit-drop-position-no-force-release"
       data-drag-physics-sync-active={dragPhysicsSyncActive ? 'true' : 'false'}
       data-drag-dynamic-state={
         activeDragMotion

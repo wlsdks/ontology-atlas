@@ -6557,6 +6557,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-drag-physics-sync-contract",
         "skeleton-card-drag-pins-worker-layout-group",
       );
+      expect(layer).toHaveAttribute(
+        "data-drag-physics-release-policy",
+        "commit-drop-position-no-force-release",
+      );
       expect(layer).toHaveAttribute("data-drag-physics-sync-active", "true");
       expect(onDragClusterStart).toHaveBeenCalledOnce();
       expect(onDragClusterStart.mock.calls[0][0].size).toBe(7);

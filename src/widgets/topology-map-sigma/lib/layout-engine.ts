@@ -169,15 +169,16 @@ export function createLayoutEngine(): LayoutEngine {
     },
     releaseGroup(ids) {
       if (!sim) return;
-      let changed = false;
+      // Group drag is the Topology canvas interaction path. Releasing the mouse
+      // should commit the last arranged positions, not hand them back to force
+      // simulation and let the canvas drift into a new shape.
       for (const id of ids) {
         const n = byId.get(id);
         if (!n) continue;
-        n.fx = null;
-        n.fy = null;
-        changed = true;
+        n.fx = n.x ?? 0;
+        n.fy = n.y ?? 0;
       }
-      if (changed) sim.alpha(Math.max(sim.alpha(), RELEASE_WAKE_ALPHA));
+      sim.alpha(0).alphaTarget(0);
     },
     tune({ repel, linkDistance, collideMultiplier }) {
       if (!sim) return;
