@@ -5782,7 +5782,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(Number(layer.getAttribute("data-drag-reactive-motion-visible-count"))).toBeGreaterThan(
       0,
     );
-    expect(Number(layer.getAttribute("data-drag-reactive-motion-max-offset-px"))).toBe(14);
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-base-max-offset-px"))).toBe(14);
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-linked-max-offset-px"))).toBe(18);
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-max-offset-px"))).toBe(18);
     expect(Number(layer.getAttribute("data-drag-reactive-motion-max-observed-offset-px"))).toBeGreaterThan(
       0,
     );

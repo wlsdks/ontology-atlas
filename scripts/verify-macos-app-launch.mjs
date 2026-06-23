@@ -4747,10 +4747,24 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyDragReactiveMotionVisibleCount || 0) >= 1)) {
         return `WebView Relief drag did not move surrounding context reactively (${payload.markers.topologyDragReactiveMotionVisibleCount ?? "missing"} moved)`;
       }
+      if (!(Number(payload.markers.topologyDragReactiveLinkedMotionVisibleCount || 0) >= 1)) {
+        return `WebView Relief drag did not move graph-linked surrounding context reactively (${payload.markers.topologyDragReactiveLinkedMotionVisibleCount ?? "missing"} moved)`;
+      }
       if (!(Number(payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx || 0) > 0)) {
         return `WebView Relief drag reactive motion offset was ${payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx ?? "missing"}`;
       }
-      if (!(Number(payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx || 0) <= 14)) {
+      const dragReactiveMotionMaxOffsetPx = Number(
+        payload.markers.topologyDragReactiveMotionMaxOffsetPx || 0,
+      );
+      if (!(dragReactiveMotionMaxOffsetPx >= 1)) {
+        return `WebView Relief drag reactive motion max offset was ${payload.markers.topologyDragReactiveMotionMaxOffsetPx ?? "missing"}`;
+      }
+      if (
+        !(
+          Number(payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx || 0) <=
+          dragReactiveMotionMaxOffsetPx
+        )
+      ) {
         return `WebView Relief drag reactive motion exceeded bounded offset (${payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx})`;
       }
       if (payload.markers.topologyDragReactiveMotionMaxOffsetToken !== "--topology-card-drag-reactive-motion-max-offset") {

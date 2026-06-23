@@ -225,8 +225,11 @@ const TIER_SURFACE_ALPHA: Record<
 const DIM_ANCHOR_OPACITY = '0.26';
 const DIM_CHIP_OPACITY = '0.08';
 const DRAG_REACTIVE_CONTEXT_OPACITY = '0.42';
-const DRAG_REACTIVE_MOTION_MAX_OFFSET_PX = 14;
-const DRAG_REACTIVE_MOTION_RATIO = 0.08;
+const DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX = 14;
+const DRAG_REACTIVE_MOTION_BASE_RATIO = 0.08;
+const DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX = 18;
+const DRAG_REACTIVE_MOTION_LINKED_RATIO = 0.12;
+const DRAG_REACTIVE_MOTION_MAX_OFFSET_PX = DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX;
 const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
 const DIM_CHIP_OPACITY_TOKEN = '--topology-map-dim-context-opacity';
 const DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN =
@@ -1183,14 +1186,18 @@ function anchoredCardRect({
   };
 }
 
-function clampDragReactiveMotionVector(dx: number, dy: number): { dx: number; dy: number } {
+function clampDragReactiveMotionVector(
+  dx: number,
+  dy: number,
+  maxOffsetPx = DRAG_REACTIVE_MOTION_MAX_OFFSET_PX,
+): { dx: number; dy: number } {
   const safeDx = Number.isFinite(dx) ? dx : 0;
   const safeDy = Number.isFinite(dy) ? dy : 0;
   const magnitude = Math.hypot(safeDx, safeDy);
-  if (magnitude <= DRAG_REACTIVE_MOTION_MAX_OFFSET_PX || magnitude === 0) {
+  if (magnitude <= maxOffsetPx || magnitude === 0) {
     return { dx: safeDx, dy: safeDy };
   }
-  const scale = DRAG_REACTIVE_MOTION_MAX_OFFSET_PX / magnitude;
+  const scale = maxOffsetPx / magnitude;
   return { dx: safeDx * scale, dy: safeDy * scale };
 }
 
@@ -3699,22 +3706,47 @@ export function SigmaSkeletonCards({
         delete el.dataset.dragReactiveMotionDy;
         delete el.dataset.dragReactiveMotionMaxOffsetPx;
         delete el.dataset.dragReactiveMotionMaxOffsetToken;
+        delete el.dataset.dragReactiveMotionStrength;
+        delete el.dataset.dragReactiveMotionSource;
         return { dx: 0, dy: 0 };
       }
+      const slug = el.dataset.slug ?? '';
+      const dockParent = el.dataset.dockParent ?? '';
+      const linkedToMovingCluster =
+        (slug !== '' &&
+          graph.hasNode(slug) &&
+          Array.from(drag.movedGroup).some((member) => {
+            if (!graph.hasNode(member) || member === slug) return false;
+            return graph.hasEdge(member, slug) || graph.hasEdge(slug, member);
+          })) ||
+        (dockParent !== '' && drag.movedGroup.has(dockParent));
+      const motionRatio = linkedToMovingCluster
+        ? DRAG_REACTIVE_MOTION_LINKED_RATIO
+        : DRAG_REACTIVE_MOTION_BASE_RATIO;
+      const maxOffsetPx = linkedToMovingCluster
+        ? DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX
+        : DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX;
       const { dx, dy } = clampDragReactiveMotionVector(
-        drag.reactiveMotionDx * DRAG_REACTIVE_MOTION_RATIO,
-        drag.reactiveMotionDy * DRAG_REACTIVE_MOTION_RATIO,
+        drag.reactiveMotionDx * motionRatio,
+        drag.reactiveMotionDy * motionRatio,
+        maxOffsetPx,
       );
       if (dx === 0 && dy === 0) {
         return { dx: 0, dy: 0 };
       }
       el.dataset.dragReactiveMotion = 'parallax-nudge';
-      el.dataset.dragReactiveMotionRole = 'bounded-surrounding-context-motion';
+      el.dataset.dragReactiveMotionRole = linkedToMovingCluster
+        ? 'linked-context-follows-dragged-cluster'
+        : 'bounded-surrounding-context-motion';
+      el.dataset.dragReactiveMotionStrength = linkedToMovingCluster
+        ? 'linked-context'
+        : 'ambient-context';
+      el.dataset.dragReactiveMotionSource = linkedToMovingCluster
+        ? 'graph-neighbor-of-moving-cluster'
+        : 'ambient-dimmed-context';
       el.dataset.dragReactiveMotionDx = dx.toFixed(2);
       el.dataset.dragReactiveMotionDy = dy.toFixed(2);
-      el.dataset.dragReactiveMotionMaxOffsetPx = String(
-        DRAG_REACTIVE_MOTION_MAX_OFFSET_PX,
-      );
+      el.dataset.dragReactiveMotionMaxOffsetPx = String(maxOffsetPx);
       el.dataset.dragReactiveMotionMaxOffsetToken =
         DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN;
       return { dx, dy };
@@ -4367,6 +4399,7 @@ export function SigmaSkeletonCards({
     let selectedRelationVisibleOrientationAnchorCount = 0;
     let dragReactiveContextVisibleCount = 0;
     let dragReactiveMotionVisibleCount = 0;
+    let dragReactiveLinkedMotionVisibleCount = 0;
     let dragReactiveMotionMaxOffsetPx = 0;
     for (const el of orderedDimEls) {
       const slug = el.dataset.slug ?? '';
@@ -4477,6 +4510,9 @@ export function SigmaSkeletonCards({
           el.dataset.dragReactiveContextVisibility = 'boosted-visible';
           if (el.dataset.dragReactiveMotion === 'parallax-nudge') {
             dragReactiveMotionVisibleCount += 1;
+            if (el.dataset.dragReactiveMotionStrength === 'linked-context') {
+              dragReactiveLinkedMotionVisibleCount += 1;
+            }
             const dx = Number(el.dataset.dragReactiveMotionDx ?? '0');
             const dy = Number(el.dataset.dragReactiveMotionDy ?? '0');
             dragReactiveMotionMaxOffsetPx = Math.max(
@@ -4528,10 +4564,19 @@ export function SigmaSkeletonCards({
     container.dataset.dragReactiveMotionVisibleCount = String(
       dragReactiveMotionVisibleCount,
     );
+    container.dataset.dragReactiveLinkedMotionVisibleCount = String(
+      dragReactiveLinkedMotionVisibleCount,
+    );
     container.dataset.dragReactiveMotionMaxObservedOffsetPx =
       dragReactiveMotionMaxOffsetPx.toFixed(2);
     container.dataset.dragReactiveMotionMaxOffsetPx = String(
       DRAG_REACTIVE_MOTION_MAX_OFFSET_PX,
+    );
+    container.dataset.dragReactiveMotionBaseMaxOffsetPx = String(
+      DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX,
+    );
+    container.dataset.dragReactiveMotionLinkedMaxOffsetPx = String(
+      DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX,
     );
     container.dataset.dragReactiveMotionMaxOffsetToken =
       DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN;
@@ -6888,8 +6933,11 @@ export function SigmaSkeletonCards({
       data-drag-reactive-motion-contract="active-drag-gives-surrounding-context-bounded-parallax"
       data-drag-reactive-motion-policy="idle"
       data-drag-reactive-motion-visible-count="0"
+      data-drag-reactive-linked-motion-visible-count="0"
       data-drag-reactive-motion-max-observed-offset-px="0"
       data-drag-reactive-motion-max-offset-px={DRAG_REACTIVE_MOTION_MAX_OFFSET_PX}
+      data-drag-reactive-motion-base-max-offset-px={DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX}
+      data-drag-reactive-motion-linked-max-offset-px={DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX}
       data-drag-reactive-motion-max-offset-token={DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN}
       data-dim-anchor-opacity-token={DIM_ANCHOR_OPACITY_TOKEN}
       data-dim-chip-opacity-token={DIM_CHIP_OPACITY_TOKEN}

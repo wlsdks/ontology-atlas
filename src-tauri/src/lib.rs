@@ -951,11 +951,20 @@ pub fn run() {
                                           result.dragReactiveMotionVisibleCount = Number(
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-visible-count") || "0"
                                           );
+                                          result.dragReactiveLinkedMotionVisibleCount = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-linked-motion-visible-count") || "0"
+                                          );
                                           result.dragReactiveMotionMaxObservedOffsetPx = Number(
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-observed-offset-px") || "0"
                                           );
                                           result.dragReactiveMotionMaxOffsetPx = Number(
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-offset-px") || "0"
+                                          );
+                                          result.dragReactiveMotionBaseMaxOffsetPx = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-base-max-offset-px") || "0"
+                                          );
+                                          result.dragReactiveMotionLinkedMaxOffsetPx = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-linked-max-offset-px") || "0"
                                           );
                                           result.dragReactiveMotionMaxOffsetToken =
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-offset-token") || "";
@@ -4605,6 +4614,12 @@ pub fn run() {
                                         skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-visible-count") ||
                                         "0"
                                     ),
+                                  topologyDragReactiveLinkedMotionVisibleCount:
+                                    Number(
+                                      topologyDragVerification?.dragReactiveLinkedMotionVisibleCount ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-linked-motion-visible-count") ||
+                                        "0"
+                                    ),
                                   topologyDragReactiveMotionMaxObservedOffsetPx:
                                     Number(
                                       topologyDragVerification?.dragReactiveMotionMaxObservedOffsetPx ||
@@ -4615,6 +4630,18 @@ pub fn run() {
                                     Number(
                                       topologyDragVerification?.dragReactiveMotionMaxOffsetPx ||
                                         skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-offset-px") ||
+                                        "0"
+                                    ),
+                                  topologyDragReactiveMotionBaseMaxOffsetPx:
+                                    Number(
+                                      topologyDragVerification?.dragReactiveMotionBaseMaxOffsetPx ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-base-max-offset-px") ||
+                                        "0"
+                                    ),
+                                  topologyDragReactiveMotionLinkedMaxOffsetPx:
+                                    Number(
+                                      topologyDragVerification?.dragReactiveMotionLinkedMaxOffsetPx ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-linked-max-offset-px") ||
                                         "0"
                                     ),
                                   topologyDragReactiveMotionMaxOffsetToken:
@@ -5032,6 +5059,8 @@ mod tests {
         assert!(source.contains("topologyZoomLensPresentationSource"));
         assert!(source.contains("topologyDragReactiveMotionContract"));
         assert!(source.contains("topologyDragReactiveMotionMaxObservedOffsetPx"));
+        assert!(source.contains("topologyDragReactiveLinkedMotionVisibleCount"));
+        assert!(source.contains("topologyDragReactiveMotionLinkedMaxOffsetPx"));
         assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
         assert!(source.contains("__ontologyAtlasTopologyFocusNoopVerify"));
         assert!(source.contains("ontology-atlas:verify-selected-focus-safe-fit"));
