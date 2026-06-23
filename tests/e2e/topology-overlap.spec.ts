@@ -4133,6 +4133,90 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
   ).toHaveLength(2);
 });
 
+test("Relief selected relation zoom-in turns non-selected endpoint cards into compact role marks", async ({
+  page,
+}) => {
+  await openRelief(page, VIEWPORTS[1], {
+    mode: "focus",
+    requireHud: false,
+    selectedSlug: "capability:agent-config-onboarding",
+  });
+
+  const relationLabel = page.locator("[data-relation-label-button]").first();
+  await expect(relationLabel).toHaveCount(1, { timeout: 20_000 });
+  await relationLabel.click();
+
+  const selectedEdgeCard = page.getByTestId("sigma-selected-edge-card");
+  await expect(selectedEdgeCard).toBeVisible();
+  const source = await selectedEdgeCard.getAttribute("data-selected-relation-source");
+  const target = await selectedEdgeCard.getAttribute("data-selected-relation-target");
+  if (!source || !target) {
+    throw new Error("selected relation should expose source and target slugs");
+  }
+
+  const skeletonCards = page.getByTestId("sigma-skeleton-cards");
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-endpoint-expected-count",
+    "2",
+  );
+
+  const sourceCard = page.locator(`[data-skeleton-card][data-slug="${source}"]`);
+  const sourceRect = await rectOf(sourceCard);
+  await page.mouse.move(
+    sourceRect.left + sourceRect.width / 2,
+    sourceRect.top + sourceRect.height / 2,
+  );
+  for (let i = 0; i < 6; i += 1) {
+    await page.mouse.wheel(0, -620);
+    await page.waitForTimeout(70);
+  }
+
+  await expect(skeletonCards).toHaveAttribute("data-zoom-lens-active", "true", {
+    timeout: 6_000,
+  });
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-endpoint-zoom-lens-contract",
+    "camera-zoom-in-keeps-endpoints-visible-as-role-marks",
+  );
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-endpoint-zoom-lens-active",
+    "true",
+  );
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-endpoint-zoom-lens-count",
+    /[1-2]/,
+  );
+
+  const endpointState = await page.locator("[data-skeleton-card]").evaluateAll(
+    (cards, endpointSlugs) =>
+      cards
+        .filter((card) => endpointSlugs.includes(card.getAttribute("data-slug") ?? ""))
+        .map((card) => {
+          const rect = card.getBoundingClientRect();
+          return {
+            active: card.getAttribute("data-zoom-lens-active-card") || "",
+            endpointRole: card.getAttribute("data-selected-relation-endpoint-role") || "",
+            endpointZoom: card.getAttribute("data-selected-relation-endpoint-zoom-lens") || "",
+            presentation: card.getAttribute("data-zoom-lens-presentation") || "",
+            width: rect.width,
+            height: rect.height,
+          };
+        }),
+    [source, target],
+  );
+
+  expect(
+    endpointState.filter((card) => card.endpointZoom === "role-mark"),
+    "zoomed selected relation should reduce at least one non-selected endpoint into a role mark",
+  ).toHaveLength(Number(await skeletonCards.getAttribute("data-selected-relation-endpoint-zoom-lens-count")));
+  for (const endpoint of endpointState.filter((card) => card.endpointZoom === "role-mark")) {
+    expect(endpoint.active).toBe("true");
+    expect(endpoint.presentation).toBe("lens-pin");
+    expect(endpoint.width).toBeLessThanOrEqual(44);
+    expect(endpoint.height).toBeLessThanOrEqual(44);
+  }
+});
+
 test("Relief path result keeps phone viewport panel-owned", async ({ page }) => {
   const viewport = PHONE_VIEWPORT;
   await openRelief(page, viewport, {

@@ -3646,6 +3646,7 @@ export function SigmaSkeletonCards({
     let cardPlacementSizeCacheMissCount = 0;
     let zoomLensEligibleCount = 0;
     let zoomLensActiveCardCount = 0;
+    let selectedRelationEndpointZoomLensCount = 0;
     let overviewDensityLensActiveCardCount = 0;
     for (const el of els) {
       const focusReadableContext =
@@ -3653,24 +3654,30 @@ export function SigmaSkeletonCards({
         el.dataset.selectedFocusContextReadableTitle === 'true';
       const compactFocusReadableOnCameraZoom =
         zoomLensCardCompactionActive && focusReadableContext;
+      const compactSelectedRelationEndpointOnCameraZoom =
+        zoomLensCardCompactionActive && el.dataset.selectedRelationEndpoint === 'true';
       const zoomLensCritical =
         el.dataset.selected === 'true' ||
         el.dataset.pathRole === 'source' ||
         el.dataset.pathRole === 'target' ||
         el.dataset.healthRepairAuditTarget === 'true' ||
         (focusReadableContext && !compactFocusReadableOnCameraZoom) ||
-        el.dataset.selectedRelationEndpoint === 'true';
+        (el.dataset.selectedRelationEndpoint === 'true' &&
+          !compactSelectedRelationEndpointOnCameraZoom);
       const zoomLensEligible =
-        (el.dataset.zoomLensEligible === 'true' || compactFocusReadableOnCameraZoom) &&
+        (el.dataset.zoomLensEligible === 'true' ||
+          compactFocusReadableOnCameraZoom ||
+          compactSelectedRelationEndpointOnCameraZoom) &&
         !zoomLensCritical;
       if (zoomLensEligible) zoomLensEligibleCount += 1;
       if (compactLensActive && zoomLensEligible) {
         el.dataset.zoomLensActiveCard = 'true';
         el.dataset.zoomLensPresentation = 'lens-pin';
-        el.dataset.zoomLensCardContract =
-          el.dataset.zoomLensCardContract ===
-            'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in' ||
-          el.dataset.selectedFocusContextReadableTitle === 'true'
+        el.dataset.zoomLensCardContract = compactSelectedRelationEndpointOnCameraZoom
+          ? 'selected-relation-endpoint-becomes-role-mark-on-camera-zoom-in'
+          : el.dataset.zoomLensCardContract ===
+                'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in' ||
+              el.dataset.selectedFocusContextReadableTitle === 'true'
             ? 'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
             : 'noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in';
         if (compactFocusReadableOnCameraZoom) {
@@ -3679,11 +3686,18 @@ export function SigmaSkeletonCards({
         } else {
           delete el.dataset.zoomLensFocusReadableCompaction;
         }
+        if (compactSelectedRelationEndpointOnCameraZoom) {
+          el.dataset.selectedRelationEndpointZoomLens = 'role-mark';
+          selectedRelationEndpointZoomLensCount += 1;
+        } else {
+          delete el.dataset.selectedRelationEndpointZoomLens;
+        }
         zoomLensActiveCardCount += 1;
         if (overviewDensityLensActive) overviewDensityLensActiveCardCount += 1;
       } else {
         el.dataset.zoomLensActiveCard = 'false';
         delete el.dataset.zoomLensFocusReadableCompaction;
+        delete el.dataset.selectedRelationEndpointZoomLens;
         if (focusReadableContext) {
           el.dataset.zoomLensCardContract = 'critical-card-stays-full-on-camera-zoom-in';
         }
@@ -3699,6 +3713,13 @@ export function SigmaSkeletonCards({
     }
     container.dataset.zoomLensEligibleCount = String(zoomLensEligibleCount);
     container.dataset.zoomLensActiveCardCount = String(zoomLensActiveCardCount);
+    container.dataset.selectedRelationEndpointZoomLensContract =
+      'camera-zoom-in-keeps-endpoints-visible-as-role-marks';
+    container.dataset.selectedRelationEndpointZoomLensActive =
+      selectedRelationEndpointZoomLensCount > 0 ? 'true' : 'false';
+    container.dataset.selectedRelationEndpointZoomLensCount = String(
+      selectedRelationEndpointZoomLensCount,
+    );
     container.dataset.overviewDensityLensActiveCardCount = String(
       overviewDensityLensActiveCardCount,
     );
@@ -8248,12 +8269,16 @@ export function SigmaSkeletonCards({
           pathEndpoint ||
           healthRepairAuditTarget ||
           selectedFocusCompanion ||
-          selectedFocusContextDomain ||
-          selectedRelationEndpointRole !== undefined;
+          selectedFocusContextDomain;
         const zoomLensContextAnchorCard = !zoomLensCriticalCard && card.tier >= 1;
         const zoomLensFocusContextRootCard =
           !zoomLensCriticalCard && selectedSlug !== null && card.tier === 0;
-        const zoomLensEligible = zoomLensContextAnchorCard || zoomLensFocusContextRootCard;
+        const zoomLensSelectedRelationEndpointCard =
+          selectedRelationEndpointRole !== undefined;
+        const zoomLensEligible =
+          zoomLensContextAnchorCard ||
+          zoomLensFocusContextRootCard ||
+          zoomLensSelectedRelationEndpointCard;
         return (
           <button
             key={card.id}
@@ -8271,7 +8296,9 @@ export function SigmaSkeletonCards({
             data-selected={selected ? 'true' : 'false'}
             data-zoom-lens-eligible={zoomLensEligible ? 'true' : 'false'}
             data-zoom-lens-card-contract={
-              zoomLensEligible
+              zoomLensSelectedRelationEndpointCard
+                ? 'selected-relation-endpoint-becomes-role-mark-on-camera-zoom-in'
+                : zoomLensEligible
                 ? card.tier >= 2
                   ? 'noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in'
                   : 'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
