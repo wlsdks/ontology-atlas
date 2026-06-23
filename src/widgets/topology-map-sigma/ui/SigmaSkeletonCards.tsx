@@ -3469,8 +3469,6 @@ export function SigmaSkeletonCards({
         el.dataset.pathRole === 'source' ||
         el.dataset.pathRole === 'target' ||
         el.dataset.healthRepairAuditTarget === 'true' ||
-        el.dataset.dragCluster === 'true' ||
-        el.dataset.dragPushed === 'true' ||
         el.dataset.selectedRelationEndpoint === 'true';
       const zoomLensEligible = el.dataset.zoomLensEligible === 'true' && !zoomLensCritical;
       if (zoomLensEligible) zoomLensEligibleCount += 1;
@@ -4020,7 +4018,16 @@ export function SigmaSkeletonCards({
             }),
         );
       }
-      if (el.dataset.dimmed === 'true') {
+      const selectedRelationContextCandidate =
+        selectedRelationContextSilhouetteSuppressionActive &&
+        selectedRelationEndpointRoles.size > 0 &&
+        !selectedRelationEndpoint;
+      if (selectedRelationContextCandidate) {
+        el.dataset.selectedRelationContextCandidate = 'true';
+      } else {
+        delete el.dataset.selectedRelationContextCandidate;
+      }
+      if (el.dataset.dimmed === 'true' || selectedRelationContextCandidate) {
         dimEls.push(el);
       } else {
         let visibleRect = layoutVisibleRect ?? readCardPlacementFrameRect(el);
@@ -7661,8 +7668,6 @@ export function SigmaSkeletonCards({
           selected ||
           pathEndpoint ||
           healthRepairAuditTarget ||
-          dragging ||
-          dragSettled ||
           selectedRelationEndpointRole !== undefined;
         const zoomLensContextAnchorCard = !zoomLensCriticalCard && card.tier >= 1;
         const zoomLensFocusContextRootCard =

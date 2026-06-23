@@ -2190,6 +2190,41 @@ for (const viewport of VIEWPORTS) {
       "data-surface-hidden",
       "true",
     );
+    const nonEndpointFullCards = await page
+      .locator('[data-skeleton-card]:not([data-surface-hidden="true"])')
+      .evaluateAll((cards, endpoints) =>
+        cards
+          .map((card) => {
+            const style = window.getComputedStyle(card);
+            const rect = card.getBoundingClientRect();
+            return {
+              slug: card.getAttribute("data-slug") ?? "",
+              endpoint: card.getAttribute("data-selected-relation-endpoint") ?? "",
+              role: card.getAttribute("data-dim-opacity-role") ?? "",
+              opacity: Number(style.opacity || "1"),
+              visible:
+                style.display !== "none" &&
+                style.visibility !== "hidden" &&
+                Number(style.opacity || "1") > 0.05 &&
+                rect.width > 0 &&
+                rect.height > 0,
+            };
+          })
+          .filter(
+            (card) =>
+              card.visible &&
+              card.endpoint !== "true" &&
+              !endpoints.includes(card.slug) &&
+              card.role !== "orientation-anchor" &&
+              card.opacity > 0.8,
+          )
+          .map((card) => card.slug),
+        [selectedRelationSource, selectedRelationTarget],
+      );
+    expect(
+      nonEndpointFullCards,
+      `selected relation should not leave non-endpoint focus companions at full opacity at ${viewport.label}`,
+    ).toEqual([]);
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
       "data-selected-relation-type",
       /contains|dependsOn|relates|describes|uses|belongsTo/,

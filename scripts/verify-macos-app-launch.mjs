@@ -4135,13 +4135,23 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologyAnalysisPanelMode === "overview" &&
       Number(payload.width) >= 2400 &&
       Number(payload.markers.topologyUiScale || 0) >= 1.3;
+    const selectedRelationSilhouetteVisibleCount =
+      Number(payload.markers.topologySelectedRelationEndpointVisibleCount || 0) +
+      Number(payload.markers.topologySelectedRelationVisibleOrientationAnchorCount || 0);
+    const selectedRelationSilhouetteContext =
+      payload.markers.topologyAgentCurrentSurface === "selected-relation" &&
+      payload.markers.topologySelectedRelationContextSilhouetteActive === true &&
+      Number(payload.markers.topologySelectedRelationEndpointVisibleCount || 0) >= 2 &&
+      selectedRelationSilhouetteVisibleCount >= 2;
     const minimumTopologyCardCount = topologyDragDone
       ? 1
       : selectedFocusContext
         ? 2
-        : overviewCompactWideContext
-          ? 7
-          : 8;
+        : selectedRelationSilhouetteContext
+          ? selectedRelationSilhouetteVisibleCount
+          : overviewCompactWideContext
+            ? 7
+            : 8;
     if (
       !Number.isFinite(payload.markers.topologyCardCount) ||
       payload.markers.topologyCardCount < minimumTopologyCardCount

@@ -3414,6 +3414,25 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     }),
     null,
   );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...selectedRelationPayload,
+        markers: {
+          ...selectedRelationPayload.markers,
+          topologyCardCount: 7,
+          topologyCardRawCount: 23,
+          topologySelectedRelationEndpointVisibleCount: 2,
+          topologySelectedRelationVisibleOrientationAnchorCount: 5,
+        },
+      },
+      {
+        expectedPath: "/en/topology/?p=domain%3Aviews",
+        requireTopologySelectedRelation: true,
+      },
+    ),
+    null,
+  );
   assert.match(
     validateWebviewVerifyPayload(
       {

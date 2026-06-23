@@ -3976,6 +3976,91 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     });
   });
 
+  it("selected relation hides non-endpoint focus companions inside the current ego", async () => {
+    const graph = makeGraph();
+    graph.addNode("capability:c1", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: 26,
+      y: 12,
+      label: "Sync",
+    });
+    graph.addNode("capability:c2", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: 42,
+      y: 18,
+      label: "Mode Aware",
+    });
+    graph.addEdgeWithKey("edge-d1-c1", "domain:d1", "capability:c1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    graph.addEdgeWithKey("edge-d1-c2", "domain:d1", "capability:c2", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          { id: "capability:c1", title: "Sync", kind: "capability", tier: 2 as const },
+          {
+            id: "capability:c2",
+            title: "Mode Aware",
+            kind: "capability",
+            tier: 2 as const,
+          },
+        ]}
+        selectedSlug="domain:d1"
+        selectedRelationEdgeId="edge-d1-c2"
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const selectedSourceCard = screen.getByText("Views").closest("[data-skeleton-card]");
+    const selectedTargetCard = screen.getByText("Mode Aware").closest("[data-skeleton-card]");
+    const nonEndpointCompanion = screen.getByText("Sync").closest("[data-skeleton-card]");
+
+    await waitFor(() => {
+      expect(layer).toHaveAttribute("data-agent-current-surface", "selected-relation");
+      expect(layer).toHaveAttribute(
+        "data-selected-relation-context-silhouette-active",
+        "true",
+      );
+      expect(layer).toHaveAttribute(
+        "data-selected-relation-context-silhouette-hidden-count",
+        "1",
+      );
+      expect(selectedSourceCard).toHaveAttribute("data-selected-relation-endpoint", "true");
+      expect(selectedTargetCard).toHaveAttribute("data-selected-relation-endpoint", "true");
+      expect(nonEndpointCompanion).toHaveAttribute(
+        "data-dim-opacity-role",
+        "suppressed-selected-relation-context",
+      );
+      expect(nonEndpointCompanion).toHaveAttribute(
+        "data-selected-relation-hidden-interaction-contract",
+        "hidden-context-is-not-pointer-focus-or-a11y-target",
+      );
+      expect(nonEndpointCompanion).toHaveAttribute("data-surface-hidden", "true");
+      expect(nonEndpointCompanion).toHaveStyle({
+        opacity: "0",
+        pointerEvents: "none",
+        visibility: "hidden",
+      });
+    });
+  });
+
   it("selected relation data restores the map label when the edge id is stale", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {
