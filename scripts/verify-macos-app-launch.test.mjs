@@ -383,6 +383,11 @@ test("WebView verification requires Add Concept backdrop when the composer is op
           topologyZoomLensEmptyViewportFallbackContract:
             "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
           topologyZoomLensEmptyViewportFallbackActive: true,
+          topologyZoomLensRelationChromeContract:
+            "camera-zoom-in-demotes-nonselected-relation-chrome",
+          topologyZoomLensRelationChromeActive: true,
+          topologyZoomLensRelationThreadCount: 4,
+          topologyZoomLensRelationLabelSuppressedCount: 2,
           topologyRelationLabelBlockerContract: "reuse-visible-card-rects",
           topologyRelationLabelBlockerSource: "visibility-pass",
           topologyRelationLabelQueryContract: "indexed-once",
@@ -1128,6 +1133,11 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyZoomLensEmptyViewportFallbackContract:
           "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
         topologyZoomLensEmptyViewportFallbackActive: true,
+        topologyZoomLensRelationChromeContract:
+          "camera-zoom-in-demotes-nonselected-relation-chrome",
+        topologyZoomLensRelationChromeActive: true,
+        topologyZoomLensRelationThreadCount: 4,
+        topologyZoomLensRelationLabelSuppressedCount: 2,
         topologyFocusDetailLensContract:
           "selected-focus-uses-kind-pins-for-noncritical-ego-context",
         topologyFocusDetailLensActive: true,
@@ -1360,6 +1370,12 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     emptyViewportFallback: {
       contract: "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
       active: true,
+    },
+    relationChrome: {
+      contract: "camera-zoom-in-demotes-nonselected-relation-chrome",
+      active: true,
+      threadCount: 4,
+      labelSuppressedCount: 2,
     },
     focusDetail: {
       contract: "selected-focus-uses-kind-pins-for-noncritical-ego-context",
@@ -2874,6 +2890,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyZoomLensEmptyViewportFallbackContract:
         "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
       topologyZoomLensEmptyViewportFallbackActive: true,
+      topologyZoomLensRelationChromeContract:
+        "camera-zoom-in-demotes-nonselected-relation-chrome",
+      topologyZoomLensRelationChromeActive: true,
+      topologyZoomLensRelationThreadCount: 4,
+      topologyZoomLensRelationLabelSuppressedCount: 2,
       topologySelectedRelationVerifyAttempted: true,
       topologySelectedRelationVerifyReason: "already-selected",
       topologySelectedRelationVerifyClicked: true,

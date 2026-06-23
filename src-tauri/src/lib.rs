@@ -4995,6 +4995,14 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-empty-viewport-fallback-contract") || "",
                                   topologyZoomLensEmptyViewportFallbackActive:
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-empty-viewport-fallback-active") === "true",
+                                  topologyZoomLensRelationChromeContract:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-relation-chrome-contract") || "",
+                                  topologyZoomLensRelationChromeActive:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-relation-chrome-active") === "true",
+                                  topologyZoomLensRelationThreadCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-relation-thread-count") || "0"),
+                                  topologyZoomLensRelationLabelSuppressedCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-relation-label-suppressed-count") || "0"),
                                   topologyFocusDetailLensContract:
                                     skeletonCardsLayer?.getAttribute("data-focus-detail-lens-contract") || "",
                                   topologyFocusDetailLensActive:
@@ -5207,6 +5215,8 @@ mod tests {
         assert!(source.contains("topologyZoomLensPresentationSource"));
         assert!(source.contains("topologyZoomLensEmptyViewportFallbackContract"));
         assert!(source.contains("data-zoom-lens-empty-viewport-fallback-active"));
+        assert!(source.contains("topologyZoomLensRelationChromeContract"));
+        assert!(source.contains("data-zoom-lens-relation-thread-count"));
         assert!(source.contains("topologySupportChromeZoomLensActive"));
         assert!(source.contains("topologyMinimapState"));
         assert!(source.contains("topologyDragReactiveMotionContract"));

@@ -804,6 +804,11 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   await expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "camera-zoom-in");
   await expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", /[1-9]\d*/);
   await expect(layer).toHaveAttribute(
+    "data-zoom-lens-relation-chrome-contract",
+    "camera-zoom-in-demotes-nonselected-relation-chrome",
+  );
+  await expect(layer).toHaveAttribute("data-zoom-lens-relation-chrome-active", "true");
+  await expect(layer).toHaveAttribute(
     "data-zoom-lens-empty-viewport-fallback-contract",
     "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
   );
@@ -857,6 +862,52 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
     "data-zoom-lens-card-contract",
     "noncritical-context-card-becomes-kind-pin-on-camera-zoom-in",
   );
+});
+
+test("Relief focus zoom-in demotes nonselected relation chrome to background threads", async ({
+  page,
+}) => {
+  const viewport = VIEWPORTS[1];
+  await openRelief(page, viewport, {
+    mode: "focus",
+    requireHud: false,
+    selectedSlug: "domain:views",
+  });
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  const focusCard = page.locator('[data-skeleton-card][data-slug="domain:views"]');
+  const focusRect = await rectOf(focusCard);
+  await page.mouse.move(
+    focusRect.left + focusRect.width / 2,
+    focusRect.top + focusRect.height / 2,
+  );
+  for (let i = 0; i < 5; i += 1) {
+    await page.mouse.wheel(0, -620);
+    await page.waitForTimeout(70);
+  }
+
+  await expect(layer).toHaveAttribute("data-zoom-lens-active", "true", {
+    timeout: 6_000,
+  });
+  await expect(layer).toHaveAttribute(
+    "data-zoom-lens-relation-chrome-contract",
+    "camera-zoom-in-demotes-nonselected-relation-chrome",
+  );
+  await expect(layer).toHaveAttribute("data-zoom-lens-relation-chrome-active", "true");
+  await expect(layer).toHaveAttribute("data-zoom-lens-relation-thread-count", /[1-9]\d*/);
+  await expect(layer).toHaveAttribute(
+    "data-zoom-lens-relation-label-suppressed-count",
+    /[1-9]\d*/,
+  );
+  await expect(
+    page.locator('path[data-zoom-lens-relation-chrome="thread"]').first(),
+  ).toHaveAttribute(
+    "data-zoom-lens-relation-chrome-opacity-token",
+    "--topology-zoom-lens-relation-thread-opacity",
+  );
+  await expect(
+    page.locator('[data-relation-label-visibility="suppressed-zoom-lens-thread"]').first(),
+  ).toHaveAttribute("data-relation-label-visibility", "suppressed-zoom-lens-thread");
 });
 
 test("Relief dense overview switches noncritical context cards to kind pins", async ({

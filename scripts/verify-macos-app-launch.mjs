@@ -7807,6 +7807,18 @@ export function buildWebviewEvidencePayload(
           active:
             markers.topologyZoomLensEmptyViewportFallbackActive === true,
         },
+        relationChrome: {
+          contract: markers.topologyZoomLensRelationChromeContract ?? null,
+          active: markers.topologyZoomLensRelationChromeActive === true,
+          threadCount: markerNumber(
+            markers,
+            "topologyZoomLensRelationThreadCount",
+          ),
+          labelSuppressedCount: markerNumber(
+            markers,
+            "topologyZoomLensRelationLabelSuppressedCount",
+          ),
+        },
         focusDetail: {
           contract: markers.topologyFocusDetailLensContract ?? null,
           active: markers.topologyFocusDetailLensActive === true,

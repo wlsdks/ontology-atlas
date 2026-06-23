@@ -215,6 +215,9 @@
     --topology-focus-detail-connector-opacity: 0.26;
     --topology-focus-detail-connector-width: 0.76;
     --topology-focus-detail-connector-dasharray: 2 8;
+    --topology-zoom-lens-relation-thread-opacity: 0.16;
+    --topology-zoom-lens-relation-thread-width: 0.62;
+    --topology-zoom-lens-relation-thread-dasharray: 1 10;
     --topology-relation-evidence-chip-surface: rgba(255, 255, 255, 0.055);
     --topology-relation-evidence-chip-border: rgba(255, 255, 255, 0.10);
     --topology-relation-evidence-chip-text: var(--color-text-secondary);
@@ -942,6 +945,13 @@
     animation: topology-connector-flow 1.6s linear infinite;
   }
 
+  .topology-connector-path[data-zoom-lens-relation-chrome="thread"] {
+    opacity: var(--topology-zoom-lens-relation-thread-opacity);
+    stroke-width: var(--topology-zoom-lens-relation-thread-width);
+    stroke-dasharray: var(--topology-zoom-lens-relation-thread-dasharray);
+    animation: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .topology-connector-path {
       stroke-dasharray: none;
@@ -1094,6 +1104,9 @@
     --topology-focus-detail-connector-opacity: 0.22;
     --topology-focus-detail-connector-width: 0.72;
     --topology-focus-detail-connector-dasharray: 2 8;
+    --topology-zoom-lens-relation-thread-opacity: 0.14;
+    --topology-zoom-lens-relation-thread-width: 0.58;
+    --topology-zoom-lens-relation-thread-dasharray: 1 10;
     --topology-relation-evidence-chip-surface: rgba(15, 23, 42, 0.055);
     --topology-relation-evidence-chip-border: rgba(15, 23, 42, 0.12);
     --topology-relation-evidence-chip-text: var(--color-text-secondary);

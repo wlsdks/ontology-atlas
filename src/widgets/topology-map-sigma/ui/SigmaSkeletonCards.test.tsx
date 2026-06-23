@@ -572,6 +572,55 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
   });
 
+  it("줌 인하면 비선택 관계 chrome 을 배경 thread 로 낮춘다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={makeStubSigma(0.42)}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        onSelect={vi.fn()}
+        describeKindBadge={(kind) =>
+          ({
+            project: "제품/시스템",
+            domain: "영역",
+            capability: "기능",
+            element: "구현 근거",
+            unknown: "미분류",
+          })[kind]
+        }
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const connector = layer.querySelector('[data-zoom-lens-relation-chrome="thread"]');
+
+    expect(layer).toHaveAttribute("data-zoom-lens-active", "true");
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-relation-chrome-contract",
+      "camera-zoom-in-demotes-nonselected-relation-chrome",
+    );
+    expect(layer).toHaveAttribute("data-zoom-lens-relation-chrome-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-relation-thread-count", "1");
+    expect(connector).toHaveAttribute(
+      "data-zoom-lens-relation-chrome-opacity-token",
+      "--topology-zoom-lens-relation-thread-opacity",
+    );
+    expect(connector).toHaveAttribute(
+      "data-zoom-lens-relation-chrome-width-token",
+      "--topology-zoom-lens-relation-thread-width",
+    );
+  });
+
   it("줌 아웃 overview 에서는 비핵심 context 카드를 kind pin 으로 낮춘다", () => {
     const originalInnerWidth = window.innerWidth;
     Object.defineProperty(window, "innerWidth", {

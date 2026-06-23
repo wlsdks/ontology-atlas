@@ -5829,6 +5829,48 @@ export function SigmaSkeletonCards({
       connectorCardRectCache.set(el, next);
       return next;
     };
+    const zoomLensRelationChromeActive =
+      zoomLensCardCompactionActive && activeDragCluster === null;
+    let zoomLensRelationThreadCount = 0;
+    let zoomLensRelationLabelSuppressedCount = 0;
+    const clearZoomLensRelationChrome = (path: SVGPathElement) => {
+      delete path.dataset.zoomLensRelationChrome;
+      delete path.dataset.zoomLensRelationChromeOpacityToken;
+      delete path.dataset.zoomLensRelationChromeWidthToken;
+      delete path.dataset.zoomLensRelationChromeDasharrayToken;
+      if (path.dataset.relationHitPath === 'true') {
+        path.style.pointerEvents = '';
+      }
+    };
+    const updateZoomLensRelationChrome = (path: SVGPathElement) => {
+      const selectedRelationPath =
+        path.dataset.selectedRelation === 'true' ||
+        path.dataset.selectedRelationHalo === 'true';
+      const hitPath = path.dataset.relationHitPath === 'true';
+      const dragPath = path.dataset.dragConnectorFrom !== undefined;
+      const drawable = path.dataset.connectorDrawable === 'true';
+      const demote =
+        zoomLensRelationChromeActive &&
+        drawable &&
+        !selectedRelationPath &&
+        !dragPath;
+      if (!demote) {
+        clearZoomLensRelationChrome(path);
+        return;
+      }
+      path.dataset.zoomLensRelationChrome = hitPath ? 'hit-suppressed' : 'thread';
+      path.dataset.zoomLensRelationChromeOpacityToken =
+        '--topology-zoom-lens-relation-thread-opacity';
+      path.dataset.zoomLensRelationChromeWidthToken =
+        '--topology-zoom-lens-relation-thread-width';
+      path.dataset.zoomLensRelationChromeDasharrayToken =
+        '--topology-zoom-lens-relation-thread-dasharray';
+      if (hitPath) {
+        path.style.pointerEvents = 'none';
+      } else {
+        zoomLensRelationThreadCount += 1;
+      }
+    };
     const drawConnector = (
       path: SVGPathElement,
       sourceEl: HTMLElement | null | undefined,
@@ -5838,6 +5880,7 @@ export function SigmaSkeletonCards({
       const clearConnector = () => {
         setSkeletonPathData(path, '', domWriteStats);
         path.dataset.connectorDrawable = 'false';
+        clearZoomLensRelationChrome(path);
         if (dragConnector) {
           delete path.dataset.dragClusterConnector;
         }
@@ -5870,6 +5913,7 @@ export function SigmaSkeletonCards({
       }
       path.dataset.connectorAxis = ports.axis;
       path.dataset.connectorClearance = String(ports.clearance);
+      updateZoomLensRelationChrome(path);
     };
     const drawConnectorTerminal = (
       terminal: SVGCircleElement,
@@ -5923,6 +5967,8 @@ export function SigmaSkeletonCards({
           path.dataset.selectedRelationHalo === 'true';
         if (!selectedRelationPath && isDockConnectorSuppressed(childEl)) {
           setSkeletonPathData(path, '', domWriteStats);
+          path.dataset.connectorDrawable = 'false';
+          clearZoomLensRelationChrome(path);
           continue;
         }
         drawConnector(path, parentEl, childEl);
@@ -6051,6 +6097,27 @@ export function SigmaSkeletonCards({
         const selectedRelationLabel = labelButton?.dataset.selectedRelation === 'true';
         const activeDragRelationLabel =
           dragOnlyRelationLabelLayout && dragRelationLabel;
+        if (
+          zoomLensRelationChromeActive &&
+          !selectedRelationLabel &&
+          !activeDragRelationLabel
+        ) {
+          label.setAttribute('opacity', '0');
+          label.setAttribute('aria-hidden', 'true');
+          label.dataset.relationLabelVisibility = 'suppressed-zoom-lens-thread';
+          badge?.setAttribute('opacity', '0');
+          badge?.setAttribute('pointer-events', 'none');
+          const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
+          if (labelGroup) labelGroup.style.pointerEvents = 'none';
+          if (labelButton) {
+            setSkeletonStyleValue(labelButton, 'opacity', '0', domWriteStats);
+            setSkeletonStyleValue(labelButton, 'pointerEvents', 'none', domWriteStats);
+            setSkeletonStyleValue(labelButton, 'visibility', 'hidden', domWriteStats);
+            labelButton.dataset.relationLabelVisibility = 'suppressed-zoom-lens-thread';
+          }
+          zoomLensRelationLabelSuppressedCount += 1;
+          continue;
+        }
         if (
           focusEgoHandoffFallbackButton === null &&
           labelButton !== null &&
@@ -6352,6 +6419,16 @@ export function SigmaSkeletonCards({
       );
       container.dataset.relationLabelGeometryPendingCount = String(
         Math.max(0, relationLabelFrameExpectedCount - relationLabelFrameReadyCount),
+      );
+      container.dataset.zoomLensRelationChromeContract =
+        'camera-zoom-in-demotes-nonselected-relation-chrome';
+      container.dataset.zoomLensRelationChromeActive =
+        zoomLensRelationChromeActive ? 'true' : 'false';
+      container.dataset.zoomLensRelationThreadCount = String(
+        zoomLensRelationThreadCount,
+      );
+      container.dataset.zoomLensRelationLabelSuppressedCount = String(
+        zoomLensRelationLabelSuppressedCount,
       );
       container.dataset.dragRelationLabelVisibilityContract =
         dragOnlyRelationLabelLayout
@@ -7289,6 +7366,10 @@ export function SigmaSkeletonCards({
         focusDetailConnectorExpressionActive ? 'true' : 'false'
       }
       data-focus-detail-connector-expression-count={focusDetailConnectorExpressionCount}
+      data-zoom-lens-relation-chrome-contract="camera-zoom-in-demotes-nonselected-relation-chrome"
+      data-zoom-lens-relation-chrome-active="false"
+      data-zoom-lens-relation-thread-count="0"
+      data-zoom-lens-relation-label-suppressed-count="0"
       data-selected-relation-label-handoff={
         selectedRelationLabelHandoff ? 'ready' : 'none'
       }
