@@ -217,6 +217,22 @@ test("topology drag companion vector tolerance scales with wide WebView UI scale
   assert.equal(topologyDragCompanionVectorTolerance({ topologyUiScale: 4 }), 14);
 });
 
+test("topology drag verifier captures reactive motion before selecting a relation label", () => {
+  const source = fs.readFileSync(
+    path.resolve("src-tauri/src/lib.rs"),
+    "utf8",
+  );
+  const relationClickIndex = source.indexOf("result.relationLabelClicked = true");
+  const reactiveMotionIndex = source.indexOf("result.dragReactiveMotionLinkedPolicy");
+
+  assert.notEqual(relationClickIndex, -1);
+  assert.notEqual(reactiveMotionIndex, -1);
+  assert.ok(
+    reactiveMotionIndex < relationClickIndex,
+    "drag reactive proof must be captured before relation label click mutates the topology state",
+  );
+});
+
 test("WebView verification requires Add Concept backdrop when the composer is open", () => {
   const payload = {
     href: "tauri://localhost/ko/topology/",

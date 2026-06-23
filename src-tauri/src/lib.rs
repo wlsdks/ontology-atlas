@@ -1020,11 +1020,6 @@ pub fn run() {
                                           result.dragInteractionCueRelationLinkCount = Number(
                                             dragInteractionCue?.getAttribute("data-drag-interaction-relation-link-count") || "0"
                                           );
-                                          const relationLabel = document.querySelector('button[data-relation-label-hit="true"]');
-                                          if (relationLabel && typeof relationLabel.click === "function") {
-                                            relationLabel.click();
-                                            result.relationLabelClicked = true;
-                                          }
                                           result.dragReactiveContextContract =
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-context-contract") || "";
                                           result.dragReactiveContextPolicy =
@@ -1083,6 +1078,11 @@ pub fn run() {
                                             skeletonCardsLayer?.getAttribute("data-drag-tension-connector-active-opacity") || "";
                                           result.dragTensionConnectorActiveStrokeWidth =
                                             skeletonCardsLayer?.getAttribute("data-drag-tension-connector-active-stroke-width") || "";
+                                          const relationLabel = document.querySelector('button[data-relation-label-hit="true"]');
+                                          if (relationLabel && typeof relationLabel.click === "function") {
+                                            relationLabel.click();
+                                            result.relationLabelClicked = true;
+                                          }
                                           result.clusterSize = Number(
                                             skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"
                                           );

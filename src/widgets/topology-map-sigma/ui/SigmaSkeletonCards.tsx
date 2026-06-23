@@ -1487,6 +1487,11 @@ function hideSkeletonCard(el: HTMLElement, stats?: SkeletonDomWriteStats) {
     el.dataset.dimOpacityRole = 'hidden-fixed-surface-collision';
     el.dataset.dimOpacityToken = 'none';
   }
+  if (el.dataset.dragReactiveContext === 'true') {
+    el.dataset.dragReactiveContextVisible = 'false';
+    el.dataset.dragReactiveContextVisibility =
+      el.dataset.dragReactiveContextVisibility ?? 'hidden-layout-surface-collision';
+  }
   el.setAttribute('aria-hidden', 'true');
   el.setAttribute('tabindex', '-1');
   if (stats) {
@@ -4801,8 +4806,10 @@ export function SigmaSkeletonCards({
         el.dataset.dimOpacityRole = 'hidden-fixed-surface-collision';
         el.dataset.dimOpacityToken = 'none';
         if (dragReactiveContext) {
+          el.dataset.dragReactiveContextVisible = 'false';
           el.dataset.dragReactiveContextVisibility = 'hidden-fixed-surface-collision';
         } else {
+          delete el.dataset.dragReactiveContextVisible;
           delete el.dataset.dragReactiveContextVisibility;
         }
         hideSkeletonCard(el, domWriteStats);
@@ -5960,6 +5967,50 @@ export function SigmaSkeletonCards({
     container.dataset.dimAnchorOpacity = DIM_ANCHOR_OPACITY;
     container.dataset.dimChipOpacity = DIM_CHIP_OPACITY;
     container.dataset.dragReactiveContextOpacity = DRAG_REACTIVE_CONTEXT_OPACITY;
+    const finalDragReactiveCounts = orderedEls.reduce(
+      (acc, el) => {
+        if (
+          el.dataset.dragReactiveContext !== 'true' ||
+          el.dataset.dragReactiveContextVisible !== 'true' ||
+          !isSkeletonCardVisibleFromFrameState(el)
+        ) {
+          return acc;
+        }
+        acc.context += 1;
+        if (el.dataset.dragReactiveMotion === 'parallax-nudge') {
+          acc.motion += 1;
+          const dx = Number(el.dataset.dragReactiveMotionDx ?? '0');
+          const dy = Number(el.dataset.dragReactiveMotionDy ?? '0');
+          acc.maxOffset = Math.max(
+            acc.maxOffset,
+            Math.hypot(Number.isFinite(dx) ? dx : 0, Number.isFinite(dy) ? dy : 0),
+          );
+          if (el.dataset.dragReactiveMotionStrength === 'linked-context') {
+            acc.linked += 1;
+          } else if (el.dataset.dragReactiveMotionStrength === 'ambient-context') {
+            acc.ambient += 1;
+          }
+        }
+        return acc;
+      },
+      { ambient: 0, context: 0, linked: 0, maxOffset: 0, motion: 0 },
+    );
+    container.dataset.dragReactiveContextVisibleCount = String(
+      finalDragReactiveCounts.context,
+    );
+    container.dataset.dragReactiveMotionVisibleCount = String(
+      finalDragReactiveCounts.motion,
+    );
+    container.dataset.dragReactiveAmbientMotionVisibleCount = String(
+      finalDragReactiveCounts.ambient,
+    );
+    container.dataset.dragReactiveLinkedMotionVisibleCount = String(
+      finalDragReactiveCounts.linked,
+    );
+    container.dataset.dragReactiveMotionLinkedPolicy =
+      finalDragReactiveCounts.linked > 0 ? 'direct-neighbor-readable-follow' : 'idle';
+    container.dataset.dragReactiveMotionMaxObservedOffsetPx =
+      finalDragReactiveCounts.maxOffset.toFixed(2);
     container.dataset.dragReactiveMotionMaxOffsetPx = String(
       DRAG_REACTIVE_MOTION_MAX_OFFSET_PX,
     );
