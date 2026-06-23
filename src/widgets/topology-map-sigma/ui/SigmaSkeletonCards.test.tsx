@@ -4824,6 +4824,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-relation-visible-orientation-anchor-count",
           "1",
         );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-context-pin-contract",
+          "selected-relation-keeps-context-as-kind-pins",
+        );
+        expect(layer).toHaveAttribute("data-selected-relation-context-pin-count", "1");
         expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint", "true");
         expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint-role", "source");
         expect(sourceCard).toHaveAttribute(
@@ -4943,6 +4948,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         expect(sourceCard).not.toHaveAttribute("data-surface-hidden", "true");
         expect(targetCard).not.toHaveAttribute("data-surface-hidden", "true");
         expect(anchorCard).toHaveAttribute("data-dim-opacity-role", "orientation-anchor");
+        expect(anchorCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+        expect(anchorCard).toHaveAttribute(
+          "data-zoom-lens-presentation",
+          "relation-context-pin",
+        );
+        expect(anchorCard).toHaveAttribute(
+          "data-zoom-lens-card-contract",
+          "selected-relation-context-anchor-becomes-kind-pin",
+        );
         expect(anchorCard).toHaveStyle({ pointerEvents: "none" });
         expect(lowerPriorityCard).toHaveAttribute(
           "data-dim-opacity-role",

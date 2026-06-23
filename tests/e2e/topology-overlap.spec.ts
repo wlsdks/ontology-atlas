@@ -4115,6 +4115,30 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
     selectedRelationCardRect.left - selectedRelationLabelRect.right,
     "installed-app WebView selected relation label should clear the inspector rail",
   ).toBeGreaterThanOrEqual(32);
+  const selectedOverlay = page.locator("[data-selected-relation-overlay]").first();
+  await expect(selectedOverlay).toHaveAttribute(
+    "data-selected-relation-zoom-lens-label",
+    "compact-glyph",
+  );
+  await expect(selectedOverlay).toHaveAttribute(
+    "data-relation-label-visual-state",
+    /(?:geometry|zoom-lens)-compact-glyph/,
+  );
+  const selectedOverlayState = await selectedOverlay.evaluate((overlay) => {
+    const rect = overlay.getBoundingClientRect();
+    const typeText = overlay.querySelector("[data-relation-label-type-text]");
+    const glyph = overlay.querySelector("[data-selected-relation-zoom-lens-label-glyph]");
+    return {
+      glyphText: glyph?.textContent?.trim() || "",
+      readableText: overlay.getAttribute("data-relation-label-readable-text") || "",
+      typeClass: typeText instanceof HTMLElement ? typeText.className : "",
+      width: rect.width,
+    };
+  });
+  expect(selectedOverlayState.glyphText).toMatch(/^[A-Z가-힣](?:×\d+)?$/);
+  expect(selectedOverlayState.readableText).toContain("contains");
+  expect(selectedOverlayState.typeClass).toContain("sr-only");
+  expect(selectedOverlayState.width).toBeLessThanOrEqual(48);
   await expect(selectedEdgeCard).toHaveAttribute(
     "data-selected-relation-route",
     "source>target>type>action",
@@ -4160,6 +4184,48 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
     "data-selected-relation-endpoint-hidden-count",
     "0",
   );
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-context-pin-contract",
+    "selected-relation-keeps-context-as-kind-pins",
+  );
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-lower-priority-visible-dimmed-count",
+    "0",
+  );
+  const selectedRelationContextPins = await page.locator("[data-skeleton-card]").evaluateAll(
+    (cards, endpointSlugs) =>
+      cards
+        .filter((card) => !endpointSlugs.includes(card.getAttribute("data-slug") ?? ""))
+        .filter((card) => card.getAttribute("data-dim-opacity-role") === "orientation-anchor")
+        .map((card) => ({
+          active: card.getAttribute("data-zoom-lens-active-card") || "",
+          contract: card.getAttribute("data-zoom-lens-card-contract") || "",
+          height: card.getBoundingClientRect().height,
+          presentation: card.getAttribute("data-zoom-lens-presentation") || "",
+          role: card.getAttribute("data-dim-opacity-role") || "",
+          width: card.getBoundingClientRect().width,
+        })),
+    [source, target],
+  );
+  const expectedContextPinCount = Number(
+    (await skeletonCards.getAttribute("data-selected-relation-context-pin-count")) ?? "0",
+  );
+  expect(
+    selectedRelationContextPins,
+    "selected relation should keep only tiny orientation pins outside endpoints",
+  ).toHaveLength(expectedContextPinCount);
+  expect(expectedContextPinCount).toBeGreaterThan(0);
+  expect(
+    selectedRelationContextPins.every(
+      (card) =>
+        card.active === "true" &&
+        card.presentation === "relation-context-pin" &&
+        card.contract === "selected-relation-context-anchor-becomes-kind-pin" &&
+        card.width <= 32 &&
+        card.height <= 32,
+    ),
+    "selected relation context anchors should not remain full title cards",
+  ).toBe(true);
 
   const endpointState = await page.locator("[data-skeleton-card]").evaluateAll(
     (cards, endpointSlugs) =>

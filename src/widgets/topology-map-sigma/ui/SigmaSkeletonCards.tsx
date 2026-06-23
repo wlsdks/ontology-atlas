@@ -4616,6 +4616,7 @@ export function SigmaSkeletonCards({
     });
     let selectedRelationLowerPriorityVisibleDimmedCount = 0;
     let selectedRelationVisibleOrientationAnchorCount = 0;
+    let selectedRelationContextPinCount = 0;
     let dragReactiveContextVisibleCount = 0;
     let dragReactiveMotionVisibleCount = 0;
     let dragReactiveLinkedMotionVisibleCount = 0;
@@ -4745,6 +4746,11 @@ export function SigmaSkeletonCards({
         if (selectedRelationContextSilhouetteSuppressionActive) {
           if (el.dataset.dimOpacityRole === 'orientation-anchor') {
             selectedRelationVisibleOrientationAnchorCount += 1;
+            selectedRelationContextPinCount += 1;
+            el.dataset.zoomLensActiveCard = 'true';
+            el.dataset.zoomLensPresentation = 'relation-context-pin';
+            el.dataset.zoomLensCardContract =
+              'selected-relation-context-anchor-becomes-kind-pin';
           } else if (el.dataset.dimOpacityRole === 'context-silhouette') {
             selectedRelationLowerPriorityVisibleDimmedCount += 1;
           }
@@ -4809,6 +4815,15 @@ export function SigmaSkeletonCards({
     container.dataset.selectedRelationVisibleOrientationAnchorCount = String(
       selectedRelationVisibleOrientationAnchorCount,
     );
+    container.dataset.selectedRelationContextPinContract =
+      'selected-relation-keeps-context-as-kind-pins';
+    container.dataset.selectedRelationContextPinCount = String(
+      selectedRelationContextPinCount,
+    );
+    if (selectedRelationContextPinCount > 0) {
+      container.dataset.zoomLensPresentationActive = 'true';
+      container.dataset.zoomLensPresentationSource = 'selected-relation-context';
+    }
     container.dataset.cardPlacementParentRectCacheContract =
       'frame-local-parent-card-rects';
     container.dataset.cardPlacementParentRectCacheSize = String(
@@ -6462,7 +6477,9 @@ export function SigmaSkeletonCards({
               ? (selectedRelationOverlaysById.get(relationLabelId) ?? null)
               : null;
             if (overlay) {
-              const zoomLensSelectedRelationLabelActive = zoomLensCardCompactionActive;
+              const compactSelectedRelationLabelActive =
+                zoomLensCardCompactionActive ||
+                labelButton.dataset.relationLabelCompact === 'true';
               const typeText = overlay.querySelector<HTMLElement>(
                 '[data-relation-label-type-text]',
               );
@@ -6478,24 +6495,26 @@ export function SigmaSkeletonCards({
               setSkeletonStyleValue(
                 overlay,
                 'width',
-                zoomLensSelectedRelationLabelActive ? '2.5rem' : labelButton.style.width,
+                compactSelectedRelationLabelActive ? '2.5rem' : labelButton.style.width,
                 domWriteStats,
               );
               setSkeletonStyleValue(
                 overlay,
                 'height',
-                zoomLensSelectedRelationLabelActive ? '1.75rem' : labelButton.style.height,
+                compactSelectedRelationLabelActive ? '1.75rem' : labelButton.style.height,
                 domWriteStats,
               );
               overlay.dataset.selectedRelationZoomLensLabel =
-                zoomLensSelectedRelationLabelActive ? 'compact-glyph' : 'full-label';
-              overlay.dataset.relationLabelCompact = zoomLensSelectedRelationLabelActive
+                compactSelectedRelationLabelActive ? 'compact-glyph' : 'full-label';
+              overlay.dataset.relationLabelCompact = compactSelectedRelationLabelActive
                 ? 'true'
                 : labelButton.dataset.relationLabelCompact;
-              overlay.dataset.relationLabelVisualState = zoomLensSelectedRelationLabelActive
+              overlay.dataset.relationLabelVisualState = zoomLensCardCompactionActive
                 ? 'zoom-lens-compact-glyph'
+                : compactSelectedRelationLabelActive
+                  ? 'geometry-compact-glyph'
                 : 'full-selected-label';
-              if (zoomLensSelectedRelationLabelActive) {
+              if (compactSelectedRelationLabelActive) {
                 overlay.style.setProperty('min-height', '1.75rem', 'important');
                 overlay.style.setProperty('gap', '0', 'important');
                 overlay.style.setProperty('padding-left', '0', 'important');
