@@ -7689,14 +7689,18 @@ export function buildWebviewEvidencePayload(
           markerNumber(markers, "topologyZoomLensCameraRatio") > 0 &&
           (
             markers.topologyZoomLensActive === false ||
+            markers.topologyZoomLensPresentationActive === true ||
             markerNumber(markers, "topologyZoomLensActiveCardCount") >= 1
           )
             ? "proved"
             : "incomplete",
         route: evidenceRoute(payload?.href),
         contract: markers.topologyZoomLensContract ?? null,
+        presentationContract: markers.topologyZoomLensPresentationContract ?? null,
         thresholdRatio: markerNumber(markers, "topologyZoomLensThresholdRatio"),
         cardCompactionActive: markers.topologyZoomLensCardCompactionActive === true,
+        presentationActive: markers.topologyZoomLensPresentationActive === true,
+        presentationSource: markers.topologyZoomLensPresentationSource ?? null,
         cameraRatio: markerNumber(markers, "topologyZoomLensCameraRatio"),
         active: markers.topologyZoomLensActive === true,
         eligibleCount: markerNumber(markers, "topologyZoomLensEligibleCount"),

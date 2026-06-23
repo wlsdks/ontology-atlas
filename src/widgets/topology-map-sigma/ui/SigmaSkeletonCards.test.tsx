@@ -193,6 +193,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-zoom-lens-contract",
       "zoom-in-uses-kind-pins-for-noncritical-context-cards",
     );
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-presentation-contract",
+      "camera-or-focus-lens-uses-kind-pins-for-noncritical-context",
+    );
+    expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "false");
+    expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "idle");
     expect(layer).toHaveAttribute("data-zoom-lens-threshold-ratio", "0.98");
     expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "1.000");
     expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
@@ -532,6 +538,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const scanCard = screen.getByText("Sync").closest("[data-skeleton-card]");
 
     expect(layer).toHaveAttribute("data-zoom-lens-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "camera-zoom-in");
     expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "0.420");
     expect(layer).toHaveAttribute("data-zoom-lens-card-compaction-active", "true");
     expect(layer).toHaveAttribute("data-zoom-lens-eligible-count", "2");
@@ -615,6 +623,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
       expect(layer).toHaveAttribute("data-zoom-lens-card-compaction-active", "false");
       expect(layer).toHaveAttribute("data-overview-density-lens-active", "true");
+      expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
+      expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "overview-density");
       expect(layer).toHaveAttribute("data-overview-density-lens-active-card-count", "2");
       expect(rootCard).toHaveAttribute("data-zoom-lens-active-card", "false");
       expect(rootCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-anchor");
@@ -1495,6 +1505,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "var(--topology-focus-detail-connector-dasharray)",
       );
       expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
+      expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
+      expect(layer).toHaveAttribute(
+        "data-zoom-lens-presentation-source",
+        "selected-focus-detail",
+      );
       expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "2");
       expect(layer).toHaveAttribute("data-zoom-lens-visible-active-card-count", "1");
       expect(selectedCard).toHaveAttribute("data-zoom-lens-active-card", "false");

@@ -762,7 +762,13 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
     "data-zoom-lens-contract",
     "zoom-in-uses-kind-pins-for-noncritical-context-cards",
   );
+  await expect(layer).toHaveAttribute(
+    "data-zoom-lens-presentation-contract",
+    "camera-or-focus-lens-uses-kind-pins-for-noncritical-context",
+  );
   await expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
+  await expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
+  await expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "overview-density");
 
   await page.mouse.move(viewport.width / 2, viewport.height / 2);
   for (let i = 0; i < 7; i += 1) {
@@ -773,6 +779,8 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   await expect(layer).toHaveAttribute("data-zoom-lens-active", "true", {
     timeout: 6_000,
   });
+  await expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
+  await expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "camera-zoom-in");
   await expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", /[1-9]\d*/);
   const compactCard = page
     .locator('[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"]')
@@ -2994,6 +3002,14 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-zoom-lens-active-card-count",
       /[1-9]\d*/,
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-zoom-lens-presentation-active",
+      "true",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-zoom-lens-presentation-source",
+      "selected-focus-detail",
     );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-zoom-lens-visible-active-card-count",

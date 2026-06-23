@@ -4797,6 +4797,12 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-card-fixed-surface-overlap-count") || "0"),
                                   topologyZoomLensContract:
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-contract") || "",
+                                  topologyZoomLensPresentationContract:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-presentation-contract") || "",
+                                  topologyZoomLensPresentationActive:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-presentation-active") === "true",
+                                  topologyZoomLensPresentationSource:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-presentation-source") || "",
                                   topologyZoomLensThresholdRatio:
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-threshold-ratio") || "0"),
                                   topologyZoomLensCardMaxWidthPx:
@@ -5022,6 +5028,8 @@ mod tests {
         assert!(source.contains("topologyDragRelationLabelVisibleDuringDrag"));
         assert!(source.contains("topologyDragReactiveContextContract"));
         assert!(source.contains("topologyDragReactiveContextVisibleCount"));
+        assert!(source.contains("topologyZoomLensPresentationContract"));
+        assert!(source.contains("topologyZoomLensPresentationSource"));
         assert!(source.contains("topologyDragReactiveMotionContract"));
         assert!(source.contains("topologyDragReactiveMotionMaxObservedOffsetPx"));
         assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));

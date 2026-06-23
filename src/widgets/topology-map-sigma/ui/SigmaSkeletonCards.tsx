@@ -3386,8 +3386,19 @@ export function SigmaSkeletonCards({
       zoomLensCardCompactionActive ||
       focusDetailLensActive ||
       overviewDensityLensActive;
+    const zoomLensPresentationSource = zoomLensCardCompactionActive
+      ? 'camera-zoom-in'
+      : focusDetailLensActive
+        ? 'selected-focus-detail'
+        : overviewDensityLensActive
+          ? 'overview-density'
+          : 'idle';
     container.dataset.zoomLensContract =
       'zoom-in-uses-kind-pins-for-noncritical-context-cards';
+    container.dataset.zoomLensPresentationContract =
+      'camera-or-focus-lens-uses-kind-pins-for-noncritical-context';
+    container.dataset.zoomLensPresentationActive = compactLensActive ? 'true' : 'false';
+    container.dataset.zoomLensPresentationSource = zoomLensPresentationSource;
     container.dataset.zoomLensThresholdRatio = String(ZOOM_LENS_RATIO_THRESHOLD);
     container.dataset.zoomLensCameraRatio = cameraRatio.toFixed(3);
     container.dataset.zoomLensActive = zoomLensActive ? 'true' : 'false';
