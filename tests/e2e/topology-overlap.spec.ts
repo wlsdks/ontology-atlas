@@ -818,6 +818,62 @@ test("Relief zoom-in switches detail cards to kind pins", async ({ page }) => {
   await expect(coreAnchor).toHaveAttribute("data-zoom-lens-presentation", "full-card-anchor");
 });
 
+test("Relief focus card wheel zoom still switches surrounding detail cards to pins", async ({
+  page,
+}) => {
+  const viewport = VIEWPORTS[1];
+  await openRelief(page, viewport, {
+    mode: "focus",
+    selectedSlug: "domain:views",
+    requireHud: false,
+  });
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
+
+  const selectedCard = page.locator('[data-skeleton-card][data-slug="domain:views"]');
+  const selectedRect = await rectOf(selectedCard);
+  await page.mouse.move(
+    selectedRect.left + selectedRect.width / 2,
+    selectedRect.top + selectedRect.height / 2,
+  );
+  for (let i = 0; i < 5; i += 1) {
+    await page.mouse.wheel(0, -560);
+    await page.waitForTimeout(60);
+  }
+
+  await expect(layer).toHaveAttribute(
+    "data-card-wheel-zoom-contract",
+    "skeleton-card-wheel-controls-sigma-camera",
+  );
+  await expect(layer).toHaveAttribute("data-card-wheel-zoom-source", "skeleton-card");
+  await expect(layer).toHaveAttribute("data-zoom-lens-active", "true", {
+    timeout: 6_000,
+  });
+
+  const compactCards = page.locator(
+    '[data-skeleton-card][data-zoom-lens-active-card="true"]',
+  );
+  await expect(compactCards.first()).toHaveAttribute(
+    "data-zoom-lens-presentation",
+    "lens-pin",
+  );
+  const compactRects = await compactCards.evaluateAll((cards) =>
+    cards.slice(0, 4).map((card) => {
+      const rect = card.getBoundingClientRect();
+      return { height: rect.height, width: rect.width };
+    }),
+  );
+  expect(
+    compactRects.length,
+    "card-wheel zoom should leave surrounding focus detail as compact graph pins",
+  ).toBeGreaterThan(0);
+  for (const rect of compactRects) {
+    expect(rect.width).toBeLessThanOrEqual(34);
+    expect(rect.height).toBeLessThanOrEqual(34);
+  }
+});
+
 test("Relief Focus selected capability card keeps its title readable in the installed app WebView size", async ({
   page,
 }) => {

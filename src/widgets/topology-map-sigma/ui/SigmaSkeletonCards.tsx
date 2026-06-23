@@ -86,7 +86,10 @@ const ANCHOR_TRANSLATE: Record<NonNullable<SkeletonCardModel['anchor']>, string>
 interface SkeletonCardsCamera {
   graphToViewport(pos: { x: number; y: number }): { x: number; y: number };
   viewportToGraph(pos: { x: number; y: number }): { x: number; y: number };
-  getCamera?(): { getState(): { ratio?: number } };
+  getCamera?(): {
+    getState(): { angle?: number; ratio?: number; x?: number; y?: number };
+    setState?(state: { angle?: number; ratio?: number; x?: number; y?: number }): void;
+  };
   on(type: 'afterRender', handler: () => void): unknown;
   off(type: 'afterRender', handler: () => void): unknown;
 }
@@ -337,6 +340,10 @@ const LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS = 160;
 const INITIAL_LOAD_REPOSITION_THROTTLE_MS = 640;
 const ZOOM_LENS_RATIO_THRESHOLD = 0.98;
 const ZOOM_LENS_PIN_SIZE_PX = 28;
+const WHEEL_ZOOM_BASE_DELTA_PX = 560;
+const WHEEL_ZOOM_STEP_RATIO = 0.68;
+const WHEEL_ZOOM_MIN_RATIO = 0.05;
+const WHEEL_ZOOM_MAX_RATIO = 4;
 
 type RelationConnector = {
   from: string;
@@ -6036,6 +6043,50 @@ export function SigmaSkeletonCards({
     });
   }, [activeDragCluster, reposition, selectedRelationEdgeId]);
 
+  const handleCardWheel = useCallback(
+    (event: React.WheelEvent<HTMLElement>) => {
+      if (!sigma || event.currentTarget.dataset.surfaceHidden === 'true') return;
+      const camera = sigma.getCamera?.();
+      if (!camera?.setState) return;
+      const state = camera.getState();
+      const currentRatio =
+        typeof state.ratio === 'number' && Number.isFinite(state.ratio) && state.ratio > 0
+          ? state.ratio
+          : 1;
+      if (!Number.isFinite(event.deltaY) || event.deltaY === 0) return;
+
+      const direction = event.deltaY < 0 ? 1 : -1;
+      const deltaSteps = Math.max(0.25, Math.abs(event.deltaY) / WHEEL_ZOOM_BASE_DELTA_PX);
+      const zoomFactor =
+        direction > 0
+          ? Math.pow(WHEEL_ZOOM_STEP_RATIO, deltaSteps)
+          : Math.pow(1 / WHEEL_ZOOM_STEP_RATIO, deltaSteps);
+      const nextRatio = Math.min(
+        WHEEL_ZOOM_MAX_RATIO,
+        Math.max(WHEEL_ZOOM_MIN_RATIO, currentRatio * zoomFactor),
+      );
+      if (Math.abs(nextRatio - currentRatio) < 0.001) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      camera.setState({
+        ...state,
+        ratio: nextRatio,
+        angle: state.angle ?? 0,
+      });
+
+      const container = containerRef.current;
+      if (container) {
+        container.dataset.cardWheelZoomContract =
+          'skeleton-card-wheel-controls-sigma-camera';
+        container.dataset.cardWheelZoomSource = 'skeleton-card';
+        container.dataset.cardWheelZoomLastRatio = nextRatio.toFixed(3);
+      }
+      scheduleReposition();
+    },
+    [scheduleReposition, sigma],
+  );
+
   const layoutTransitionKey = useMemo(() => {
     const cardKey = cards
       .map((card) =>
@@ -7728,6 +7779,7 @@ export function SigmaSkeletonCards({
               setHovered({ card, nodeId });
             }}
             onMouseLeave={() => setHovered(null)}
+            onWheel={handleCardWheel}
             onPointerDown={(event) => {
               event.preventDefault();
               event.stopPropagation();
