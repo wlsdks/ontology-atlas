@@ -5758,12 +5758,23 @@ export function SigmaSkeletonCards({
       cardFixedSurfaceOverlapCount === 0
         ? 'true'
         : 'false';
-    const zoomLensVisibleActiveCardCount = orderedEls.reduce((count, el) => {
-      if (el.dataset.zoomLensActiveCard !== 'true') return count;
+    let zoomLensVisibleActiveCardCount = 0;
+    for (const el of orderedEls) {
+      if (el.dataset.zoomLensActiveCard !== 'true') {
+        delete el.dataset.zoomLensViewportVisible;
+        delete el.dataset.zoomLensViewportVisibleContract;
+        continue;
+      }
       const cached = readVisibleCardRect(el);
-      return count + (cached.visible && cached.rect !== null ? 1 : 0);
-    }, 0);
+      const viewportVisible = cached.visible && cached.rect !== null;
+      el.dataset.zoomLensViewportVisible = viewportVisible ? 'true' : 'false';
+      el.dataset.zoomLensViewportVisibleContract =
+        'visible-lens-pins-match-frame-state';
+      if (viewportVisible) zoomLensVisibleActiveCardCount += 1;
+    }
     container.dataset.visibleCardCount = String(reportedVisibleCardCount);
+    container.dataset.zoomLensViewportVisibleContract =
+      'visible-lens-pins-match-frame-state';
     container.dataset.zoomLensVisibleActiveCardCount = String(
       zoomLensVisibleActiveCardCount,
     );

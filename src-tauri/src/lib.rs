@@ -5102,6 +5102,8 @@ pub fn run() {
                                       skeletonCardsLayer?.getAttribute("data-zoom-lens-visible-active-card-count") ||
                                       "0"
                                     ),
+                                  topologyZoomLensViewportVisibleContract:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-viewport-visible-contract") || "",
                                   topologyZoomLensEmptyViewportFallbackContract:
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-empty-viewport-fallback-contract") || "",
                                   topologyZoomLensEmptyViewportFallbackActive:
@@ -5327,6 +5329,7 @@ mod tests {
         assert!(source.contains("topologyZoomVerifyReason"));
         assert!(source.contains("topologyZoomLensPresentationContract"));
         assert!(source.contains("topologyZoomLensPresentationSource"));
+        assert!(source.contains("topologyZoomLensViewportVisibleContract"));
         assert!(source.contains("topologyZoomLensEmptyViewportFallbackContract"));
         assert!(source.contains("data-zoom-lens-empty-viewport-fallback-active"));
         assert!(source.contains("topologyZoomLensRelationChromeContract"));

@@ -812,11 +812,15 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
     "data-zoom-lens-empty-viewport-fallback-contract",
     "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
   );
+  await expect(layer).toHaveAttribute(
+    "data-zoom-lens-viewport-visible-contract",
+    "visible-lens-pins-match-frame-state",
+  );
   await expect(layer).toHaveAttribute("data-zoom-lens-visible-active-card-count", /[1-9]\d*/);
   await expect(layer).not.toHaveAttribute("data-visible-card-count", "0");
   const compactCard = page
     .locator(
-      '[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"]:not([data-surface-hidden="true"])',
+      '[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"][data-zoom-lens-viewport-visible="true"]',
     )
     .first();
   await expect(compactCard).toHaveAttribute(
@@ -3210,8 +3214,12 @@ for (const viewport of VIEWPORTS) {
       "data-zoom-lens-visible-active-card-count",
       /[1-9]\d*/,
     );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-zoom-lens-viewport-visible-contract",
+      "visible-lens-pins-match-frame-state",
+    );
     const visibleActiveLensPins = page.locator(
-      '[data-skeleton-card][data-zoom-lens-active-card="true"]:not([data-surface-hidden="true"])',
+      '[data-skeleton-card][data-zoom-lens-active-card="true"][data-zoom-lens-viewport-visible="true"]',
     );
     const visibleActiveLensPinCount = await visibleActiveLensPins.evaluateAll((cards) =>
       cards.filter((card) => {
@@ -3230,7 +3238,7 @@ for (const viewport of VIEWPORTS) {
       String(visibleActiveLensPinCount),
     );
     const focusDetailPins = page.locator(
-      '[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"]:not([data-surface-hidden="true"])',
+      '[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"][data-zoom-lens-viewport-visible="true"]',
     );
     const focusDetailPinCount = await focusDetailPins.count();
     expect(

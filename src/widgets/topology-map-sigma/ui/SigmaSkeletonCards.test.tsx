@@ -544,6 +544,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer).toHaveAttribute("data-zoom-lens-card-compaction-active", "true");
     expect(layer).toHaveAttribute("data-zoom-lens-eligible-count", "2");
     expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "2");
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-viewport-visible-contract",
+      "visible-lens-pins-match-frame-state",
+    );
     expect(selectedCard).toHaveAttribute(
       "data-zoom-lens-card-contract",
       "critical-card-stays-full-on-camera-zoom-in",
@@ -560,8 +564,21 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(anchorCard).toHaveAttribute("data-zoom-lens-active-card", "true");
     expect(anchorCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+    expect(anchorCard).toHaveAttribute("data-zoom-lens-viewport-visible");
+    expect(anchorCard).toHaveAttribute(
+      "data-zoom-lens-viewport-visible-contract",
+      "visible-lens-pins-match-frame-state",
+    );
     expect(scanCard).toHaveAttribute("data-zoom-lens-active-card", "true");
     expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+    expect(scanCard).toHaveAttribute("data-zoom-lens-viewport-visible");
+    expect(scanCard).toHaveAttribute(
+      "data-zoom-lens-viewport-visible-contract",
+      "visible-lens-pins-match-frame-state",
+    );
+    expect(
+      layer.querySelectorAll('[data-zoom-lens-viewport-visible="true"]'),
+    ).toHaveLength(Number(layer.getAttribute("data-zoom-lens-visible-active-card-count")));
     expect(scanCard?.querySelector("[data-card-kind-badge]")).toHaveAttribute(
       "data-zoom-lens-compact-hidden-contract",
       "compact-lens-keeps-kind-as-dot-color",
@@ -1561,13 +1578,22 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       );
       expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "2");
       expect(layer).toHaveAttribute("data-zoom-lens-visible-active-card-count", "1");
+      expect(layer).toHaveAttribute(
+        "data-zoom-lens-viewport-visible-contract",
+        "visible-lens-pins-match-frame-state",
+      );
       expect(selectedCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(selectedCard).not.toHaveAttribute("data-zoom-lens-viewport-visible");
       expect(selectedCard).toHaveAttribute(
         "data-zoom-lens-presentation",
         "full-card-critical",
       );
       expect(companionCard).toHaveAttribute("data-zoom-lens-active-card", "true");
       expect(companionCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+      expect(companionCard).toHaveAttribute("data-zoom-lens-viewport-visible", "true");
+      expect(layer.querySelectorAll('[data-zoom-lens-viewport-visible="true"]')).toHaveLength(
+        1,
+      );
       expect(companionCard?.querySelector("[data-card-kind-badge]")).toHaveAttribute(
         "data-zoom-lens-compact-hidden-contract",
         "compact-lens-keeps-kind-as-dot-color",

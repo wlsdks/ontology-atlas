@@ -400,6 +400,8 @@ test("WebView verification requires Add Concept backdrop when the composer is op
           topologyZoomLensEligibleCount: 5,
           topologyZoomLensActiveCardCount: 3,
           topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensViewportVisibleContract:
+            "visible-lens-pins-match-frame-state",
           topologyZoomLensEmptyViewportFallbackContract:
             "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
           topologyZoomLensEmptyViewportFallbackActive: true,
@@ -1150,6 +1152,8 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyZoomLensActiveCardCount: 3,
         topologyVisibleCardCount: 2,
         topologyZoomLensVisibleActiveCardCount: 2,
+        topologyZoomLensViewportVisibleContract:
+          "visible-lens-pins-match-frame-state",
         topologyZoomLensEmptyViewportFallbackContract:
           "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
         topologyZoomLensEmptyViewportFallbackActive: true,
@@ -1387,6 +1391,7 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     activeCardCount: 3,
     visibleCardCount: 2,
     visibleActiveCardCount: 2,
+    viewportVisibleContract: "visible-lens-pins-match-frame-state",
     emptyViewportFallback: {
       contract: "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
       active: true,
