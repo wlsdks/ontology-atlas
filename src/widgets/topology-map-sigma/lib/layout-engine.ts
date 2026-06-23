@@ -119,6 +119,8 @@ export function createLayoutEngine(): LayoutEngine {
       if (!n || !sim) return;
       n.fx = x;
       n.fy = y;
+      n.x = x;
+      n.y = y;
       sim.alpha(Math.max(sim.alpha(), 0.35));
     },
     drag(id, x, y) {
@@ -126,6 +128,8 @@ export function createLayoutEngine(): LayoutEngine {
       if (!n || !sim) return;
       n.fx = x;
       n.fy = y;
+      n.x = x;
+      n.y = y;
       sim.alpha(Math.max(sim.alpha(), DRAG_WAKE_ALPHA));
     },
     release(id) {
@@ -143,6 +147,8 @@ export function createLayoutEngine(): LayoutEngine {
         if (!n) continue;
         n.fx = x;
         n.fy = y;
+        n.x = x;
+        n.y = y;
         changed = true;
       }
       if (changed) sim.alpha(Math.max(sim.alpha(), 0.35));
@@ -155,6 +161,8 @@ export function createLayoutEngine(): LayoutEngine {
         if (!n) continue;
         n.fx = x;
         n.fy = y;
+        n.x = x;
+        n.y = y;
         changed = true;
       }
       if (changed) sim.alpha(Math.max(sim.alpha(), DRAG_WAKE_ALPHA));

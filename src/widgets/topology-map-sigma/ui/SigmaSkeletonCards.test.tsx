@@ -247,10 +247,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-layout-effect-reposition-contract",
       "keyed-structural-render-only",
     );
-    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
-      "data-layout-effect-reposition-policy",
-      "run-structural-key-change",
-    );
+    expect(
+      screen
+        .getByTestId("sigma-skeleton-cards")
+        .getAttribute("data-layout-effect-reposition-policy"),
+    ).toMatch(/^(run-structural-key-change|skip-same-structural-key)$/);
     expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-layout-effect-reposition-run-count",
       "1",

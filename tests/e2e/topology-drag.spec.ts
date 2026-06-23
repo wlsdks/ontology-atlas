@@ -285,6 +285,22 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
   expect(workerFrameProof.received).toBeGreaterThan(0);
   expect(workerFrameProof.applied).toBeGreaterThan(0);
   await page.mouse.up();
+  await page.waitForTimeout(1000);
+  await expect(layer).toHaveAttribute(
+    "data-manual-focus-placement-contract",
+    "dragged-selected-focus-keeps-user-placement",
+  );
+  await expect(layer).toHaveAttribute("data-manual-focus-placement-root", "domain:views");
+  await expect(target).toHaveAttribute(
+    "data-manual-focus-placement-policy",
+    "use-dragged-graph-position",
+  );
+  await expect(target).toHaveAttribute("data-selected-focus-center-policy", "default");
+  const released = await rectOf(target);
+  expect(
+    Math.hypot(released.x - before.x, released.y - before.y),
+    "selected focus drag should persist the user's placement after release instead of snapping back to the reading center",
+  ).toBeGreaterThan(80);
 });
 
 test("Relief map project drag stays responsive for large connected clusters", async ({

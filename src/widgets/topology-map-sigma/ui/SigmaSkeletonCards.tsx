@@ -2593,6 +2593,10 @@ export function SigmaSkeletonCards({
   const [activeDragRootSlug, setActiveDragRootSlug] = useState("");
   const [dragPhysicsSyncActive, setDragPhysicsSyncActive] = useState(false);
   const [dragSettledSlugs, setDragSettledSlugs] = useState<Set<string>>(() => new Set());
+  const [manualFocusPlacement, setManualFocusPlacement] = useState<{
+    selectedSlug: string | null;
+    slugs: Set<string>;
+  }>(() => ({ selectedSlug: null, slugs: new Set() }));
   const [dragFrameMarkerSnapshot, setDragFrameMarkerSnapshot] = useState({
     domIndexSize: 0,
     lastDomIndexSize: 0,
@@ -2970,6 +2974,24 @@ export function SigmaSkeletonCards({
             markDragSettled(pushedSlugs);
           }
         }
+        if (
+          selectedFocusCenterActive &&
+          selectedRelationEdgeId === null &&
+          selectedSlug !== null &&
+          drag.movedGroup.has(selectedSlug)
+        ) {
+          setManualFocusPlacement({
+            selectedSlug,
+            slugs: new Set(drag.movedGroup),
+          });
+          const container = containerRef.current;
+          if (container) {
+            container.dataset.manualFocusPlacementContract =
+              'dragged-selected-focus-keeps-user-placement';
+            container.dataset.manualFocusPlacementRoot = selectedSlug;
+            container.dataset.manualFocusPlacementCount = String(drag.movedGroup.size);
+          }
+        }
       }
       dragRef.current = null;
       if (moved) {
@@ -2983,7 +3005,16 @@ export function SigmaSkeletonCards({
       setDragPhysicsSyncActive(false);
       settleActiveDragCluster(moved);
     },
-    [graph, markDragSettled, onDragClusterEnd, settleActiveDragCluster, sigma],
+    [
+      graph,
+      markDragSettled,
+      onDragClusterEnd,
+      selectedFocusCenterActive,
+      selectedRelationEdgeId,
+      selectedSlug,
+      settleActiveDragCluster,
+      sigma,
+    ],
   );
 
   useEffect(() => {
@@ -3855,6 +3886,13 @@ export function SigmaSkeletonCards({
         el.dataset.graphAnchorSurfaceBlocked = graphAnchorBlockedBySurface
           ? 'true'
           : 'false';
+        const manualFocusPlacementActive =
+          manualFocusPlacement.selectedSlug === selectedSlug &&
+          manualFocusPlacement.slugs.has(slug);
+        el.dataset.manualFocusPlacement = manualFocusPlacementActive ? 'true' : 'false';
+        el.dataset.manualFocusPlacementPolicy = manualFocusPlacementActive
+          ? 'use-dragged-graph-position'
+          : 'auto-focus-placement';
         const selectedFocusViewportCenter =
           selectedSlug === slug &&
           selectedFocusCenterActive &&
@@ -3862,6 +3900,7 @@ export function SigmaSkeletonCards({
           !pathWorkflowActive &&
           !healthRepairTarget &&
           !followsActiveGraphDrag &&
+          !manualFocusPlacementActive &&
           containerRect.width > SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX;
         const selectedFocusEgoBand =
           selectedFocusCenterActive &&
@@ -3869,6 +3908,7 @@ export function SigmaSkeletonCards({
           !pathWorkflowActive &&
           !healthRepairTarget &&
           !followsActiveGraphDrag &&
+          !manualFocusPlacementActive &&
           ego?.slugs.has(slug) === true;
         const clamped =
           selectedFocusViewportCenter
@@ -5974,6 +6014,7 @@ export function SigmaSkeletonCards({
     activeDragMotion,
     cards,
     healthRepairTarget,
+    manualFocusPlacement,
     pathWorkflowActive,
     resolveNodeId,
     selectedFocusCenterActive,
