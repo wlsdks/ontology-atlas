@@ -2653,6 +2653,11 @@ for (const viewport of VIEWPORTS) {
     };
     const currentLegendRect = await kindLegendRectOrNull(page);
     const selectedRelationCardRect = await rectOf(page.getByTestId("sigma-selected-edge-card"));
+    const selectedRelationLabelRect = await rectOf(relationButton);
+    expect(
+      selectedRelationCardRect.left - selectedRelationLabelRect.right,
+      `selected relation label should clear the inspector rail at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(32);
     const expectedMaxWidth = viewport.width >= 2400 ? 480 : viewport.width >= 1920 ? 360 : 330;
     const expectedMinWidth = viewport.width >= 2400 ? 336 : viewport.width >= 1920 ? 320 : 256;
     expect(
@@ -4100,6 +4105,16 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
 
   const selectedEdgeCard = page.getByTestId("sigma-selected-edge-card");
   await expect(selectedEdgeCard).toBeVisible();
+  await expect(relationLabel).toHaveAttribute(
+    "data-relation-label-inspector-boundary-policy",
+    "clamp-before-right-inspector-rail",
+  );
+  const selectedRelationCardRect = await rectOf(selectedEdgeCard);
+  const selectedRelationLabelRect = await rectOf(relationLabel);
+  expect(
+    selectedRelationCardRect.left - selectedRelationLabelRect.right,
+    "installed-app WebView selected relation label should clear the inspector rail",
+  ).toBeGreaterThanOrEqual(32);
   await expect(selectedEdgeCard).toHaveAttribute(
     "data-selected-relation-route",
     "source>target>type>action",

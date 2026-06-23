@@ -83,4 +83,22 @@ describe('resolveRelationLabelGeometry', () => {
     expect(geometry.viewportClampContract).toBe('compacted-to-viewport-edge');
     expect(geometry.viewportClampSide).toBe('right');
   });
+
+  it('clamps selected relation hit targets before a reserved right inspector lane', () => {
+    const geometry = resolveRelationLabelGeometry({
+      ...baseInput,
+      centerX: 1128,
+      rightBoundary: 1177,
+    });
+
+    expect(geometry.compact).toBe(true);
+    expect(geometry.right).toBeLessThanOrEqual(1177);
+    expect(geometry.right).toBe(1177);
+    expect(geometry.left).toBeGreaterThanOrEqual(16);
+    expect(geometry.centeredAvailableWidth).toBeGreaterThanOrEqual(
+      geometry.hitTargetWidth,
+    );
+    expect(geometry.viewportClampContract).toBe('compacted-to-viewport-edge');
+    expect(geometry.viewportClampSide).toBe('right');
+  });
 });

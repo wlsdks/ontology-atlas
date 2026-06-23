@@ -335,6 +335,7 @@ const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 6;
 const RELATION_LABEL_VIEWPORT_INSET_PX = 16;
 const RELATION_LABEL_MIN_COMPACT_WIDTH_PX = 96;
 const RELATION_LABEL_CARD_CLEARANCE_PX = 22;
+const SELECTED_RELATION_INSPECTOR_CLEARANCE_PX = 32;
 const RELATION_LABEL_PHONE_BREAKPOINT_PX = 768;
 const RELATION_LABEL_PHONE_BOTTOM_RESERVE_PX = 112;
 const DRAG_SETTLE_FEEDBACK_MS = TOPOLOGY_DRAG_SETTLE_DURATION_MS;
@@ -6185,12 +6186,19 @@ export function SigmaSkeletonCards({
               : 0),
         );
         const usesHtmlBadge = isEgoBadge && labelButton !== null;
+        const selectedRelationRightBoundary = selectedRelationLabel
+          ? relationLabelCardBlockers.reduce((limit, blocker) => {
+              if (blocker.left <= x) return limit;
+              return Math.min(limit, blocker.left - SELECTED_RELATION_INSPECTOR_CLEARANCE_PX);
+            }, containerRect.width - RELATION_LABEL_VIEWPORT_INSET_PX)
+          : undefined;
         const labelGeometry = resolveRelationLabelGeometry({
           badgeWidth,
           centerX: x,
           containerWidth: containerRect.width,
           hitTargetPadX: RELATION_LABEL_HIT_TARGET_PAD_X_PX,
           minCompactWidth: RELATION_LABEL_MIN_COMPACT_WIDTH_PX,
+          rightBoundary: selectedRelationRightBoundary,
           viewportInset: RELATION_LABEL_VIEWPORT_INSET_PX,
         });
         const labelPlacement = resolveRelationLabelVerticalPlacement({
@@ -6363,6 +6371,16 @@ export function SigmaSkeletonCards({
           labelButton.dataset.relationLabelViewportInset = String(
             labelGeometry.viewportInset,
           );
+          if (selectedRelationLabel) {
+            labelButton.dataset.relationLabelInspectorBoundaryPolicy =
+              'clamp-before-right-inspector-rail';
+            labelButton.dataset.relationLabelRightBoundary = String(
+              selectedRelationRightBoundary ?? '',
+            );
+          } else {
+            delete labelButton.dataset.relationLabelInspectorBoundaryPolicy;
+            delete labelButton.dataset.relationLabelRightBoundary;
+          }
           if (!labelHiddenByCards) relationLabelFrameReadyCount += 1;
           if (selectedRelationLabel) {
             const overlay = relationLabelId
@@ -6384,6 +6402,10 @@ export function SigmaSkeletonCards({
                 labelButton.dataset.relationLabelViewportClampSide ?? '';
               overlay.dataset.relationLabelViewportInset =
                 labelButton.dataset.relationLabelViewportInset ?? '';
+              overlay.dataset.relationLabelInspectorBoundaryPolicy =
+                labelButton.dataset.relationLabelInspectorBoundaryPolicy ?? '';
+              overlay.dataset.relationLabelRightBoundary =
+                labelButton.dataset.relationLabelRightBoundary ?? '';
               overlay.style.setProperty('opacity', '1', 'important');
               overlay.style.visibility = 'visible';
             }
