@@ -1177,6 +1177,25 @@ test("Relief compact installed-app overview keeps the map scannable with kind pi
   );
 });
 
+test("Relief installed-app overview hides overlapping full cards", async ({ page }) => {
+  await openRelief(page, INSTALLED_APP_WEBVIEW, { mode: "map" });
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute(
+    "data-residual-overlap-clear-contract",
+    "visibility-cache-proves-selected-surfaces-clear",
+  );
+  await expect(layer).toHaveAttribute("data-residual-overlap-clear", "true");
+  await expect(layer).toHaveAttribute("data-visible-card-overlap-count", "0");
+  await expect(
+    layer.locator('[data-skeleton-card][data-surface-hidden-reason="overview-collision"]').first(),
+  ).toHaveAttribute("data-surface-hidden", "true");
+  expect(
+    cardPairsThatIntersect(await visibleCardRects(page)),
+    "Installed-app overview should not expose overlapping full cards before zooming",
+  ).toEqual([]);
+});
+
 test("Relief focus card wheel zoom keeps readable focus companions as full cards", async ({
   page,
 }) => {

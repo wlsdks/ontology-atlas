@@ -264,6 +264,7 @@ const ANALYSIS_PANEL_TRAILING_PAD = 12;
 const ANALYSIS_PANEL_BLOCK_END_PAD = 8;
 const SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX = 1280;
 const OVERVIEW_COLLISION_PAD = 2;
+const OVERVIEW_MIN_VISIBLE_CARD_COUNT = 8;
 const OVERVIEW_DOMAIN_COLLISION_PAD = 10;
 const DRAG_OVERLAP_SUPPRESSION_PAD = OVERVIEW_COLLISION_PAD;
 const SAFE_VIEWPORT_MARGIN = 8;
@@ -4755,6 +4756,10 @@ export function SigmaSkeletonCards({
     // 부딪힐 수 있다. 상위 anchor(project/domain)를 우선 보존하고, 충돌하는
     // 하위 capability/element 칩은 숨겨 지형의 읽기 순서를 지킨다.
     if (!ego) {
+      const overviewDragInProgress =
+        activeDragCluster !== null || dragRef.current !== null || activeDragMotion;
+      const overviewSurfaceHidingActive =
+        !overviewDragInProgress && containerRect.width >= 1100;
       const accepted: Array<{ left: number; top: number; right: number; bottom: number }> =
         [];
       const overviewCollisionRank = (el: HTMLElement) => {
@@ -4771,6 +4776,7 @@ export function SigmaSkeletonCards({
         return Number(a.dataset.layoutY ?? 0) - Number(b.dataset.layoutY ?? 0);
       });
       for (const el of ordered) {
+        delete el.dataset.overviewCollisionPin;
         const selected = el.dataset.selected === 'true';
         const selectedRelationEndpoint = isSelectedRelationEndpointCard(el);
         const rect = readCardPlacementFrameRect(el);
@@ -4788,6 +4794,22 @@ export function SigmaSkeletonCards({
         );
         const protectSelectedCard =
           (selected && selectedRelationEdgeId === null) || selectedRelationEndpoint;
+        const pinSize = ZOOM_LENS_PIN_SIZE_PX;
+        const pinRect = {
+          left: rect.left + (rect.right - rect.left - pinSize) / 2,
+          top: rect.top + (rect.bottom - rect.top - pinSize) / 2,
+          right: rect.left + (rect.right - rect.left + pinSize) / 2,
+          bottom: rect.top + (rect.bottom - rect.top + pinSize) / 2,
+        };
+        const pinFits =
+          !selectedRelationEndpoint &&
+          !protectSelectedCard &&
+          !blockedByFixedSurface &&
+          pinRect.left >= 0 &&
+          pinRect.top >= 0 &&
+          pinRect.right <= containerRect.width &&
+          pinRect.bottom <= containerRect.height &&
+          !accepted.some((kept) => rectsOverlap(pinRect, kept, OVERVIEW_COLLISION_PAD));
         if (
           !lockedForOverviewDrag &&
           (blockedByFixedSurface ||
@@ -4797,17 +4819,38 @@ export function SigmaSkeletonCards({
                   rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD),
                 ))))
         ) {
-          el.style.opacity = '0';
-          el.style.pointerEvents = 'none';
+          if (
+            overviewSurfaceHidingActive &&
+            accepted.length < OVERVIEW_MIN_VISIBLE_CARD_COUNT &&
+            pinFits
+          ) {
+            el.dataset.overviewCollisionPin = 'true';
+            showSkeletonCard(el, ZOOM_LENS_PIN_MIN_OPACITY, domWriteStats);
+            cardPlacementFrameRectCache.set(el, pinRect);
+            accepted.push(pinRect);
+          } else if (overviewSurfaceHidingActive) {
+            el.dataset.surfaceHiddenReason = 'overview-collision';
+            hideSkeletonCard(el, domWriteStats);
+          } else {
+            el.style.opacity = '0';
+            el.style.pointerEvents = 'none';
+          }
           continue;
         }
         if (selectedRelationEndpoint) {
           showSelectedRelationEndpointCard(el, domWriteStats);
         } else {
-          el.style.visibility = 'visible';
-          el.style.opacity = OVERVIEW_CONTEXT_OPACITY[
-            Number(el.dataset.tier ?? '3') as SkeletonCardModel['tier']
-          ] ?? OVERVIEW_CONTEXT_OPACITY[3];
+          const overviewOpacity =
+            OVERVIEW_CONTEXT_OPACITY[
+              Number(el.dataset.tier ?? '3') as SkeletonCardModel['tier']
+            ] ?? OVERVIEW_CONTEXT_OPACITY[3];
+          if (overviewSurfaceHidingActive) {
+            delete el.dataset.overviewCollisionPin;
+            showSkeletonCard(el, overviewOpacity, domWriteStats);
+          } else {
+            el.style.visibility = 'visible';
+            el.style.opacity = overviewOpacity;
+          }
         }
         accepted.push(rect);
       }
@@ -9622,7 +9665,7 @@ export function SigmaSkeletonCards({
                   : undefined,
               } as React.CSSProperties
             }
-            className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[zoom-lens-active-card=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!justify-center data-[zoom-lens-active-card=true]:!gap-0 data-[zoom-lens-active-card=true]:!overflow-hidden data-[zoom-lens-active-card=true]:!rounded-full data-[zoom-lens-active-card=true]:!p-0 data-[zoom-lens-active-card=true]:shadow-none data-[zoom-lens-active-card=true]:data-[zoom-lens-pin-proximity=critical-neighbor]:!shadow-[0_0_0_2px_var(--topology-zoom-lens-pin-proximity-ring),0_0_18px_var(--topology-zoom-lens-pin-proximity-glow)] hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
+            className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[zoom-lens-active-card=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!justify-center data-[zoom-lens-active-card=true]:!gap-0 data-[zoom-lens-active-card=true]:!overflow-hidden data-[zoom-lens-active-card=true]:!rounded-full data-[zoom-lens-active-card=true]:!p-0 data-[zoom-lens-active-card=true]:shadow-none data-[overview-collision-pin=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!justify-center data-[overview-collision-pin=true]:!gap-0 data-[overview-collision-pin=true]:!overflow-hidden data-[overview-collision-pin=true]:!rounded-full data-[overview-collision-pin=true]:!p-0 data-[overview-collision-pin=true]:shadow-none data-[zoom-lens-active-card=true]:data-[zoom-lens-pin-proximity=critical-neighbor]:!shadow-[0_0_0_2px_var(--topology-zoom-lens-pin-proximity-ring),0_0_18px_var(--topology-zoom-lens-pin-proximity-glow)] hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
               selected
                 ? 'shadow-none outline-none'
                 : ''
@@ -9659,7 +9702,7 @@ export function SigmaSkeletonCards({
                 data-drag-interaction-relation-link-count={dragRelationLinkCount}
                 data-surface-token="--topology-card-drag-active-wash"
                 data-border-token="--topology-card-border-selected"
-                className="pointer-events-none absolute -top-7 left-1/2 inline-flex max-w-[8.5rem] -translate-x-1/2 items-center rounded-[0.375rem] border border-[color:var(--topology-card-border-selected)] bg-[color:var(--topology-card-drag-active-wash)] px-1.5 py-0.5 text-[0.64rem] font-medium leading-none text-[color:var(--color-text)] opacity-90 shadow-[0_8px_20px_rgba(0,0,0,0.22)] group-data-[zoom-lens-active-card=true]/skeleton-card:sr-only"
+                className="pointer-events-none absolute -top-7 left-1/2 inline-flex max-w-[8.5rem] -translate-x-1/2 items-center rounded-[0.375rem] border border-[color:var(--topology-card-border-selected)] bg-[color:var(--topology-card-drag-active-wash)] px-1.5 py-0.5 text-[0.64rem] font-medium leading-none text-[color:var(--color-text)] opacity-90 shadow-[0_8px_20px_rgba(0,0,0,0.22)] group-data-[zoom-lens-active-card=true]/skeleton-card:sr-only group-data-[overview-collision-pin=true]/skeleton-card:sr-only"
               >
                 {dragInteractionCue}
               </span>
@@ -9697,7 +9740,7 @@ export function SigmaSkeletonCards({
             />
             <span
               aria-hidden="true"
-              className="relative shrink-0 rounded-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!hidden group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden"
+              className="relative shrink-0 rounded-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!hidden group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden group-data-[overview-collision-pin=true]/skeleton-card:!hidden"
               style={{
                 width: TIER_DOT_EM[card.tier],
                 height: TIER_DOT_EM[card.tier],
@@ -9709,7 +9752,7 @@ export function SigmaSkeletonCards({
               data-zoom-lens-pin-glyph
               data-zoom-lens-pin-glyph-text={kindPinGlyph}
               data-zoom-lens-pin-glyph-contract="compact-kind-pin-keeps-type-glyph-without-title-card"
-              className="pointer-events-none absolute inset-0 hidden items-center justify-center font-mono text-[0.64rem] font-semibold leading-none text-[color:var(--card-kind-accent)] group-data-[zoom-lens-active-card=true]/skeleton-card:inline-flex group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!hidden"
+              className="pointer-events-none absolute inset-0 hidden items-center justify-center font-mono text-[0.64rem] font-semibold leading-none text-[color:var(--card-kind-accent)] group-data-[zoom-lens-active-card=true]/skeleton-card:inline-flex group-data-[overview-collision-pin=true]/skeleton-card:inline-flex group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!hidden"
               style={
                 {
                   '--card-kind-accent': fill,
@@ -9730,7 +9773,7 @@ export function SigmaSkeletonCards({
               aria-label={selectedRelationSummaryOwnsMeta ? undefined : kindDescription}
               aria-hidden={selectedRelationSummaryOwnsMeta ? 'true' : undefined}
               title={kindDescription}
-              className="relative inline-flex h-[1.42em] max-w-[5.8em] shrink-0 items-center justify-center truncate rounded-[0.38em] border border-[color:var(--card-kind-border)] bg-[color:var(--topology-card-kind-surface)] px-[0.36em] text-[0.62em] font-semibold leading-none text-[color:var(--card-kind-accent)] group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden"
+              className="relative inline-flex h-[1.42em] max-w-[5.8em] shrink-0 items-center justify-center truncate rounded-[0.38em] border border-[color:var(--card-kind-border)] bg-[color:var(--topology-card-kind-surface)] px-[0.36em] text-[0.62em] font-semibold leading-none text-[color:var(--card-kind-accent)] group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden group-data-[overview-collision-pin=true]/skeleton-card:!hidden"
               style={{
                 '--card-kind-accent': fill,
                 '--card-kind-border': withAlpha(fill, 0.34),
@@ -9765,7 +9808,7 @@ export function SigmaSkeletonCards({
               }
               data-full-title={card.title}
               aria-hidden={selectedRelationSummaryOwnsMeta ? 'true' : undefined}
-              className="relative min-w-0 truncate group-data-[zoom-lens-active-card=true]/skeleton-card:sr-only"
+              className="relative min-w-0 truncate group-data-[zoom-lens-active-card=true]/skeleton-card:sr-only group-data-[overview-collision-pin=true]/skeleton-card:sr-only"
             >
               {card.title}
             </span>
