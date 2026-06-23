@@ -1795,6 +1795,9 @@ export function validateTopologyZoomLensMarkers(markers) {
   ) {
     return `WebView Relief zoom lens pin glyph contract was ${markers?.topologyZoomLensPinGlyphContract || "missing"}`;
   }
+  if (markers?.topologyZoomLensActive === true && !(Number(markers?.topologyZoomLensPinMinOpacity) >= 0.42)) {
+    return `WebView Relief zoom lens pin min opacity was ${markers.topologyZoomLensPinMinOpacity || "missing"}`;
+  }
   if (
     markers?.topologyZoomLensViewportVisibleContract !== undefined &&
     markers?.topologyZoomLensViewportVisibleContract !== "" &&
@@ -8016,6 +8019,7 @@ export function buildWebviewEvidencePayload(
           markers,
           "topologyZoomLensVisibleActiveCardCount",
         ),
+        pinMinOpacity: markerNumber(markers, "topologyZoomLensPinMinOpacity"),
         pinGlyph: {
           contract: markers.topologyZoomLensPinGlyphContract ?? null,
           visibleCount: markerNumber(

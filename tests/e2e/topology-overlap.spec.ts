@@ -1112,6 +1112,20 @@ test("Relief focus card wheel zoom still switches surrounding detail cards to pi
     "data-zoom-lens-presentation",
     "lens-pin",
   );
+  await expect(layer).toHaveAttribute("data-zoom-lens-pin-min-opacity", "0.42");
+  const dimmedPinOpacity = await page
+    .locator(
+      '[data-skeleton-card][data-zoom-lens-active-card="true"][data-zoom-lens-presentation="lens-pin"][data-zoom-lens-viewport-visible="true"]',
+    )
+    .evaluateAll((cards) =>
+      cards
+        .map((card) => Number(window.getComputedStyle(card).opacity))
+        .filter((opacity) => Number.isFinite(opacity)),
+    );
+  expect(
+    Math.min(...dimmedPinOpacity),
+    "zoom lens pins should stay visible as map marks instead of inheriting dim-card opacity",
+  ).toBeGreaterThanOrEqual(0.42);
   const compactFocusReadableCards = page.locator(
     '[data-skeleton-card][data-zoom-lens-focus-readable-compaction="camera-zoom-in-kind-pin"]',
   );

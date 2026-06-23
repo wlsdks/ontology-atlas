@@ -5217,6 +5217,8 @@ pub fn run() {
                                       skeletonCardsLayer?.getAttribute("data-zoom-lens-active-card-count") ||
                                       "0"
                                     ),
+                                  topologyZoomLensPinMinOpacity:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-min-opacity") || "",
                                   topologyZoomLensVisibleActiveCardCount:
                                     Number(
                                       topologyZoomVerification?.visibleActiveCardCount ||
@@ -5477,6 +5479,7 @@ mod tests {
         assert!(source.contains("data-zoom-lens-empty-viewport-fallback-active"));
         assert!(source.contains("topologyZoomLensRelationChromeContract"));
         assert!(source.contains("data-zoom-lens-relation-thread-count"));
+        assert!(source.contains("topologyZoomLensPinMinOpacity"));
         assert!(source.contains("topologySupportChromeZoomLensActive"));
         assert!(source.contains("topologyMinimapState"));
         assert!(source.contains("topologyDragReactiveMotionContract"));

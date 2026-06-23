@@ -372,6 +372,7 @@ const ZOOM_LENS_RATIO_THRESHOLD = 0.98;
 const OVERVIEW_DENSITY_LENS_RATIO_THRESHOLD = 1.1;
 const OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX = 1180;
 const ZOOM_LENS_PIN_SIZE_PX = 28;
+const ZOOM_LENS_PIN_MIN_OPACITY = '0.42';
 const WHEEL_ZOOM_BASE_DELTA_PX = 560;
 const WHEEL_ZOOM_STEP_RATIO = 0.68;
 const WHEEL_ZOOM_MIN_RATIO = 0.42;
@@ -3598,6 +3599,7 @@ export function SigmaSkeletonCards({
     container.dataset.zoomLensThresholdRatio = String(ZOOM_LENS_RATIO_THRESHOLD);
     container.dataset.zoomLensCameraRatio = cameraRatio.toFixed(3);
     container.dataset.zoomLensActive = zoomLensActive ? 'true' : 'false';
+    container.dataset.zoomLensPinMinOpacity = ZOOM_LENS_PIN_MIN_OPACITY;
     container.dataset.zoomLensCardCompactionActive =
       zoomLensCardCompactionActive ? 'true' : 'false';
     container.dataset.zoomLensEmptyViewportFallbackContract =
@@ -4823,7 +4825,25 @@ export function SigmaSkeletonCards({
         }
         delete el.dataset.surfaceHidden;
         delete el.dataset.surfaceHiddenReason;
-        setSkeletonStyleValue(el, 'opacity', lockedForDrag ? '1' : dimOpacity, domWriteStats);
+        const zoomLensActivePin = el.dataset.zoomLensActiveCard === 'true';
+        const resolvedDimOpacity =
+          zoomLensActivePin && Number(dimOpacity) < Number(ZOOM_LENS_PIN_MIN_OPACITY)
+            ? ZOOM_LENS_PIN_MIN_OPACITY
+            : dimOpacity;
+        if (zoomLensActivePin) {
+          el.dataset.zoomLensPinOpacityContract =
+            'zoom-lens-pins-override-dim-opacity-floor';
+          el.dataset.zoomLensPinMinOpacity = ZOOM_LENS_PIN_MIN_OPACITY;
+        } else {
+          delete el.dataset.zoomLensPinOpacityContract;
+          delete el.dataset.zoomLensPinMinOpacity;
+        }
+        setSkeletonStyleValue(
+          el,
+          'opacity',
+          lockedForDrag ? '1' : resolvedDimOpacity,
+          domWriteStats,
+        );
         setSkeletonStyleValue(el, 'visibility', 'visible', domWriteStats);
         setSkeletonStyleValue(el, 'pointerEvents', lockedForDrag ? '' : 'none', domWriteStats);
         if (rect) acceptedDimRects.push(rect);
