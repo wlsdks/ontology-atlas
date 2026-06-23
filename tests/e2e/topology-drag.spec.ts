@@ -264,6 +264,112 @@ test("Relief overview drag keeps the grabbed node readable instead of collapsing
   await page.mouse.up();
 });
 
+test("Relief overview drag makes nearby context react instead of staying static", async ({
+  page,
+}) => {
+  await openTopology(page);
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  const target = page.locator("[data-skeleton-card]", { hasText: "Views" }).first();
+  await expect(target).toBeVisible();
+  const before = await rectOf(target);
+  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  await page.mouse.down();
+
+  const contextBefore = await page
+    .locator('[data-skeleton-card][data-drag-cluster="false"]')
+    .evaluateAll((els) =>
+      els
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          const style = window.getComputedStyle(el);
+          return {
+            slug: el.getAttribute("data-slug") ?? "",
+            visible:
+              style.display !== "none" &&
+              style.visibility !== "hidden" &&
+              rect.width > 0 &&
+              rect.height > 0,
+            x: rect.x,
+            y: rect.y,
+          };
+        })
+        .filter((entry) => entry.slug && entry.visible),
+    );
+  expect(contextBefore.length).toBeGreaterThan(0);
+
+  await page.mouse.move(before.x + before.width / 2 + 160, before.y + before.height / 2 + 90, {
+    steps: 10,
+  });
+  await expect(layer).toHaveAttribute("data-drag-dynamic-state", "active-cluster-follow");
+  await expect(layer).toHaveAttribute(
+    "data-drag-reactive-context-policy",
+    "boost-overview-neighbor-response",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-drag-reactive-motion-policy",
+    "bounded-parallax-nudge",
+  );
+
+  const reactiveProof = await layer.evaluate((el) => ({
+    linkedMotionCount: Number(
+      el.getAttribute("data-drag-reactive-linked-motion-visible-count") ?? "0",
+    ),
+    maxObservedOffset: Number(
+      el.getAttribute("data-drag-reactive-motion-max-observed-offset-px") ?? "0",
+    ),
+    motionCount: Number(el.getAttribute("data-drag-reactive-motion-visible-count") ?? "0"),
+    visibleCount: Number(el.getAttribute("data-drag-reactive-context-visible-count") ?? "0"),
+  }));
+  expect(reactiveProof.visibleCount).toBeGreaterThan(0);
+  expect(reactiveProof.motionCount).toBeGreaterThan(0);
+  expect(reactiveProof.linkedMotionCount).toBeGreaterThan(0);
+  expect(reactiveProof.maxObservedOffset).toBeGreaterThan(0);
+  expect(reactiveProof.maxObservedOffset).toBeLessThanOrEqual(36);
+
+  const reactiveContextAfter = await page
+    .locator(
+      '[data-skeleton-card][data-drag-reactive-context="true"][data-drag-reactive-context-visible="true"]',
+    )
+    .evaluateAll((els) =>
+      els.map((el) => {
+        const rect = el.getBoundingClientRect();
+        return {
+          motion: el.getAttribute("data-drag-reactive-motion") ?? "",
+          motionDx: Number(el.getAttribute("data-drag-reactive-motion-dx") ?? "0"),
+          motionDy: Number(el.getAttribute("data-drag-reactive-motion-dy") ?? "0"),
+          motionSource: el.getAttribute("data-drag-reactive-motion-source") ?? "",
+          motionStrength: el.getAttribute("data-drag-reactive-motion-strength") ?? "",
+          slug: el.getAttribute("data-slug") ?? "",
+          x: rect.x,
+          y: rect.y,
+        };
+      }),
+    );
+  expect(reactiveContextAfter.length).toBeGreaterThan(0);
+  expect(
+    reactiveContextAfter.some((entry) => entry.motion === "parallax-nudge"),
+  ).toBe(true);
+  expect(
+    reactiveContextAfter.some((entry) => entry.motionSource === "graph-neighbor-of-moving-cluster"),
+  ).toBe(true);
+  expect(
+    reactiveContextAfter.some((entry) => entry.motionStrength === "linked-context"),
+  ).toBe(true);
+  expect(
+    reactiveContextAfter.some((entry) => Math.hypot(entry.motionDx, entry.motionDy) > 0),
+  ).toBe(true);
+
+  const movedContextCount = reactiveContextAfter.filter((afterEntry) => {
+    const beforeEntry = contextBefore.find((entry) => entry.slug === afterEntry.slug);
+    if (!beforeEntry) return false;
+    return Math.hypot(afterEntry.x - beforeEntry.x, afterEntry.y - beforeEntry.y) > 8;
+  }).length;
+  expect(movedContextCount).toBeGreaterThan(0);
+
+  await page.mouse.up();
+});
+
 test("Relief focus drag makes surrounding context visibly react", async ({ page }) => {
   await page.goto("/en/topology/?p=domain%3Aviews&mode=focus");
   const viewport = page.getByTestId("sigma-topology-viewport");

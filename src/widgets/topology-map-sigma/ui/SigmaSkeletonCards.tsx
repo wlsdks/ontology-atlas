@@ -4478,7 +4478,11 @@ export function SigmaSkeletonCards({
       } else {
         delete el.dataset.selectedRelationContextCandidate;
       }
-      if (el.dataset.dimmed === 'true' || selectedRelationContextCandidate) {
+      if (
+        el.dataset.dimmed === 'true' ||
+        selectedRelationContextCandidate ||
+        el.dataset.dragReactiveContext === 'true'
+      ) {
         dimEls.push(el);
       } else {
         let visibleRect = layoutVisibleRect ?? readCardPlacementFrameRect(el);
@@ -4889,7 +4893,11 @@ export function SigmaSkeletonCards({
     );
     container.dataset.dragReactiveContextPolicy =
       activeDragMotion && activeDragCluster !== null
-        ? 'boost-dimmed-worker-response'
+        ? selectedSlug === null &&
+          activeDragFreeContextCount > 0 &&
+          dragReactiveLinkedMotionVisibleCount > 0
+          ? 'boost-overview-neighbor-response'
+          : 'boost-dimmed-worker-response'
         : 'idle';
     container.dataset.dragReactiveMotionPolicy =
       (activeDragMotion || activeDragMotionRef.current) && activeDragCluster !== null
@@ -8753,8 +8761,22 @@ export function SigmaSkeletonCards({
             : undefined;
         const dragReadableRootCard = dragging && dragRole === 'root';
         const dragSettled = dragSettledSlugs.has(nodeId);
+        const overviewDragLinkedContext =
+          activeDragMotion &&
+          activeDragCluster !== null &&
+          selectedSlug === null &&
+          activeDragFreeContextCount > 0 &&
+          !dragging &&
+          graph.hasNode(nodeId) &&
+          Array.from(activeDragCluster).some((member) => {
+            if (!graph.hasNode(member) || member === nodeId) return false;
+            return graph.hasEdge(member, nodeId) || graph.hasEdge(nodeId, member);
+          });
         const dragReactiveContext =
-          activeDragMotion && activeDragCluster !== null && dimmed && !dragging;
+          activeDragMotion &&
+          activeDragCluster !== null &&
+          !dragging &&
+          (dimmed || overviewDragLinkedContext);
         const selectedRelationEndpointRole =
           selectedRelationLabelHandoff?.source === nodeId
             ? 'source'
