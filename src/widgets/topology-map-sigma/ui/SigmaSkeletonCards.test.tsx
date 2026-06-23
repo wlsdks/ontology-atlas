@@ -5070,6 +5070,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         expect(
           sourceCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
         ).toHaveTextContent("FROM");
+        expect(sourceCard?.textContent).not.toContain("FROMS");
+        expect(
+          sourceCard?.querySelector(
+            "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",
+          ),
+        ).toHaveAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-text", "S");
+        expect(
+          sourceCard?.querySelector(
+            "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",
+          ),
+        ).toBeEmptyDOMElement();
         expect(sourceCard).toHaveAttribute(
           "data-selected-relation-endpoint-role-contract",
           "card-carries-source-target-route",
@@ -5128,6 +5139,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         expect(
           targetCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
         ).toHaveTextContent("TO");
+        expect(targetCard?.textContent).not.toContain("TOT");
+        expect(
+          targetCard?.querySelector(
+            "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",
+          ),
+        ).toHaveAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-text", "T");
+        expect(
+          targetCard?.querySelector(
+            "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",
+          ),
+        ).toBeEmptyDOMElement();
         expect(targetCard).toHaveAttribute(
           "data-selected-relation-endpoint-role-contract",
           "card-carries-source-target-route",

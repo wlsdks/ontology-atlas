@@ -9769,10 +9769,11 @@ export function SigmaSkeletonCards({
                     aria-hidden="true"
                     data-selected-relation-endpoint-zoom-lens-role-mark-glyph
                     data-selected-relation-endpoint-zoom-lens-role-mark-contract="compact-role-glyph-no-clipped-title"
-                    className="hidden group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:inline"
-                  >
-                    {selectedRelationEndpointRoleMarkLabel}
-                  </span>
+                    data-selected-relation-endpoint-zoom-lens-role-mark-text={
+                      selectedRelationEndpointRoleMarkLabel
+                    }
+                    className="hidden before:content-[attr(data-selected-relation-endpoint-zoom-lens-role-mark-text)] group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:inline"
+                  />
                 </span>
               </>
             ) : null}
