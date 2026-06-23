@@ -4803,6 +4803,12 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyDragReactiveMotionPolicy !== "bounded-parallax-nudge") {
         return `WebView Relief drag reactive motion policy was ${payload.markers.topologyDragReactiveMotionPolicy || "missing"}`;
       }
+      if (
+        payload.markers.topologyDragReactiveMotionLinkedPolicy !==
+        "direct-neighbor-readable-follow"
+      ) {
+        return `WebView Relief drag linked reactive motion policy was ${payload.markers.topologyDragReactiveMotionLinkedPolicy || "missing"}`;
+      }
       if (!(Number(payload.markers.topologyDragReactiveMotionVisibleCount || 0) >= 1)) {
         return `WebView Relief drag did not move surrounding context reactively (${payload.markers.topologyDragReactiveMotionVisibleCount ?? "missing"} moved)`;
       }
@@ -4832,6 +4838,9 @@ export function validateWebviewVerifyPayload(payload, {
       );
       if (!(dragReactiveMotionMaxOffsetPx >= 1)) {
         return `WebView Relief drag reactive motion max offset was ${payload.markers.topologyDragReactiveMotionMaxOffsetPx ?? "missing"}`;
+      }
+      if (dragReactiveMotionMaxOffsetPx < 36) {
+        return `WebView Relief drag reactive motion max offset did not expose readable linked follow (${payload.markers.topologyDragReactiveMotionMaxOffsetPx ?? "missing"})`;
       }
       if (
         !(

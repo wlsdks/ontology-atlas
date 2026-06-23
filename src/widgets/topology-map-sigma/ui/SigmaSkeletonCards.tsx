@@ -227,8 +227,8 @@ const DIM_CHIP_OPACITY = '0.08';
 const DRAG_REACTIVE_CONTEXT_OPACITY = '0.42';
 const DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX = 14;
 const DRAG_REACTIVE_MOTION_BASE_RATIO = 0.08;
-const DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX = 18;
-const DRAG_REACTIVE_MOTION_LINKED_RATIO = 0.12;
+const DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX = 36;
+const DRAG_REACTIVE_MOTION_LINKED_RATIO = 0.48;
 const DRAG_REACTIVE_MOTION_MAX_OFFSET_PX = DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX;
 const DRAG_TENSION_CONNECTOR_MAX_COUNT = 8;
 const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
@@ -3865,6 +3865,7 @@ export function SigmaSkeletonCards({
         delete el.dataset.dragReactiveMotionMaxOffsetToken;
         delete el.dataset.dragReactiveMotionStrength;
         delete el.dataset.dragReactiveMotionSource;
+        delete el.dataset.dragReactiveMotionLinkedPolicy;
         return { dx: 0, dy: 0 };
       }
       const slug = el.dataset.slug ?? '';
@@ -3901,6 +3902,11 @@ export function SigmaSkeletonCards({
       el.dataset.dragReactiveMotionSource = linkedToMovingCluster
         ? 'graph-neighbor-of-moving-cluster'
         : 'ambient-dimmed-context';
+      if (linkedToMovingCluster) {
+        el.dataset.dragReactiveMotionLinkedPolicy = 'direct-neighbor-readable-follow';
+      } else {
+        delete el.dataset.dragReactiveMotionLinkedPolicy;
+      }
       el.dataset.dragReactiveMotionDx = dx.toFixed(2);
       el.dataset.dragReactiveMotionDy = dy.toFixed(2);
       el.dataset.dragReactiveMotionMaxOffsetPx = String(maxOffsetPx);
@@ -4724,6 +4730,10 @@ export function SigmaSkeletonCards({
     container.dataset.dragReactiveLinkedMotionVisibleCount = String(
       dragReactiveLinkedMotionVisibleCount,
     );
+    container.dataset.dragReactiveMotionLinkedPolicy =
+      dragReactiveLinkedMotionVisibleCount > 0
+        ? 'direct-neighbor-readable-follow'
+        : 'idle';
     container.dataset.dragReactiveMotionMaxObservedOffsetPx =
       dragReactiveMotionMaxOffsetPx.toFixed(2);
     container.dataset.dragReactiveMotionMaxOffsetPx = String(
@@ -7327,6 +7337,7 @@ export function SigmaSkeletonCards({
       data-drag-reactive-context-policy="idle"
       data-drag-reactive-motion-contract="active-drag-gives-surrounding-context-bounded-parallax"
       data-drag-reactive-motion-policy="idle"
+      data-drag-reactive-motion-linked-policy="idle"
       data-drag-reactive-motion-visible-count="0"
       data-drag-reactive-linked-motion-visible-count="0"
       data-drag-reactive-motion-max-observed-offset-px="0"

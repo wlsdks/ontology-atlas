@@ -948,6 +948,8 @@ pub fn run() {
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-contract") || "";
                                           result.dragReactiveMotionPolicy =
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-policy") || "";
+                                          result.dragReactiveMotionLinkedPolicy =
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-linked-policy") || "";
                                           result.dragReactiveMotionVisibleCount = Number(
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-visible-count") || "0"
                                           );
@@ -4708,6 +4710,10 @@ pub fn run() {
                                     topologyDragVerification?.dragReactiveMotionPolicy ||
                                     skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-policy") ||
                                     "",
+                                  topologyDragReactiveMotionLinkedPolicy:
+                                    topologyDragVerification?.dragReactiveMotionLinkedPolicy ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-linked-policy") ||
+                                    "",
                                   topologyDragReactiveMotionVisibleCount:
                                     Number(
                                       topologyDragVerification?.dragReactiveMotionVisibleCount ||
@@ -5220,6 +5226,7 @@ mod tests {
         assert!(source.contains("topologySupportChromeZoomLensActive"));
         assert!(source.contains("topologyMinimapState"));
         assert!(source.contains("topologyDragReactiveMotionContract"));
+        assert!(source.contains("topologyDragReactiveMotionLinkedPolicy"));
         assert!(source.contains("topologyDragReactiveMotionMaxObservedOffsetPx"));
         assert!(source.contains("topologyDragReactiveLinkedMotionVisibleCount"));
         assert!(source.contains("topologyDragReactiveMotionLinkedMaxOffsetPx"));

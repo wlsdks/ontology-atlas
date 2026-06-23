@@ -286,6 +286,7 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
     linkedMotionCount: Number(
       el.getAttribute("data-drag-reactive-linked-motion-visible-count") ?? "0",
     ),
+    linkedPolicy: el.getAttribute("data-drag-reactive-motion-linked-policy") ?? "",
     maxOffset: Number(el.getAttribute("data-drag-reactive-motion-max-offset-px") ?? "0"),
     motionCount: Number(el.getAttribute("data-drag-reactive-motion-visible-count") ?? "0"),
     opacity: el.getAttribute("data-drag-reactive-context-opacity") ?? "",
@@ -301,10 +302,11 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
     visibleCount: Number(el.getAttribute("data-drag-reactive-context-visible-count") ?? "0"),
   }));
   expect(reactiveProof.baseMaxOffset).toBe(14);
-  expect(reactiveProof.linkedMaxOffset).toBe(18);
-  expect(reactiveProof.maxOffset).toBe(18);
-  expect(reactiveProof.maxObservedOffset).toBeGreaterThan(0);
-  expect(reactiveProof.maxObservedOffset).toBeLessThanOrEqual(18);
+  expect(reactiveProof.linkedMaxOffset).toBe(36);
+  expect(reactiveProof.maxOffset).toBe(36);
+  expect(reactiveProof.linkedPolicy).toBe("direct-neighbor-readable-follow");
+  expect(reactiveProof.maxObservedOffset).toBeGreaterThanOrEqual(30);
+  expect(reactiveProof.maxObservedOffset).toBeLessThanOrEqual(36);
   expect(reactiveProof.motionCount).toBeGreaterThan(0);
   expect(reactiveProof.linkedMotionCount).toBeGreaterThan(0);
   expect(reactiveProof.opacity).toBe("0.42");
@@ -338,6 +340,7 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
           motionDy: Number(el.getAttribute("data-drag-reactive-motion-dy") ?? "0"),
           motionSource: el.getAttribute("data-drag-reactive-motion-source") ?? "",
           motionStrength: el.getAttribute("data-drag-reactive-motion-strength") ?? "",
+          motionPolicy: el.getAttribute("data-drag-reactive-motion-linked-policy") ?? "",
           slug: el.getAttribute("data-slug") ?? "",
           visibility: el.getAttribute("data-drag-reactive-context-visibility") ?? "",
           x: rect.x,
@@ -354,6 +357,9 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
     true,
   );
   expect(contextAfter.some((entry) => entry.motionStrength === "linked-context")).toBe(true);
+  expect(
+    contextAfter.some((entry) => entry.motionPolicy === "direct-neighbor-readable-follow"),
+  ).toBe(true);
   expect(
     contextAfter.some((entry) => entry.motionSource === "graph-neighbor-of-moving-cluster"),
   ).toBe(true);
