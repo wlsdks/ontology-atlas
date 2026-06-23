@@ -2750,6 +2750,7 @@ export function SigmaSkeletonCards({
   const [activeDragRootSlug, setActiveDragRootSlug] = useState("");
   const [dragPhysicsSyncActive, setDragPhysicsSyncActive] = useState(false);
   const [dragSettledSlugs, setDragSettledSlugs] = useState<Set<string>>(() => new Set());
+  const [dragSettledRootSlug, setDragSettledRootSlug] = useState("");
   const [manualFocusPlacement, setManualFocusPlacement] = useState<{
     selectedSlug: string | null;
     slugs: Set<string>;
@@ -3083,14 +3084,16 @@ export function SigmaSkeletonCards({
     return tierByNodeId;
   }, [cards, resolveNodeId]);
 
-  const markDragSettled = useCallback((slugs: ReadonlySet<string>) => {
+  const markDragSettled = useCallback((slugs: ReadonlySet<string>, rootSlug = "") => {
     if (slugs.size === 0) return;
     if (dragSettledTimerRef.current !== null) {
       window.clearTimeout(dragSettledTimerRef.current);
     }
     setDragSettledSlugs(new Set(slugs));
+    setDragSettledRootSlug(rootSlug);
     dragSettledTimerRef.current = window.setTimeout(() => {
       setDragSettledSlugs(new Set());
+      setDragSettledRootSlug("");
       dragSettledTimerRef.current = null;
     }, DRAG_SETTLE_FEEDBACK_MS);
   }, []);
@@ -3134,9 +3137,10 @@ export function SigmaSkeletonCards({
             drag.movableNodeIds,
             drag.cardElements.all,
           );
-          if (pushedSlugs.size > 0) {
-            markDragSettled(pushedSlugs);
-          }
+          markDragSettled(
+            new Set([...drag.movedGroup, ...pushedSlugs]),
+            drag.rootSlug,
+          );
         }
         if (
           selectedFocusCenterActive &&
@@ -7537,6 +7541,8 @@ export function SigmaSkeletonCards({
       }
       data-drag-dynamic-root={activeDragRootSlug || undefined}
       data-drag-settled-cluster-size={dragSettledSlugs.size}
+      data-drag-settled-root={dragSettledRootSlug || undefined}
+      data-drag-settle-feedback-contract="released-dragged-cluster-keeps-settle-feedback"
       data-drag-connector-feedback-contract="boxless-connectors-show-linked-motion"
       data-drag-collision-policy="release-settle"
       data-drag-clamp-contract="large-cluster-root-card-priority"

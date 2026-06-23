@@ -430,6 +430,10 @@ test("WebView verification requires Add Concept backdrop when the composer is op
           topologyRelationLabelQueryIndexCount: 3,
           topologyVisibilityCountContract: "single-pass-unless-fallback",
           topologyVisibilityCountSource: "single-pass",
+          topologyDragSettleFeedbackContract:
+            "released-dragged-cluster-keeps-settle-feedback",
+          topologyDragSettledRoot: "domain:views",
+          topologyDragSettledClusterSize: 4,
           topologyDragSettleMotionContract: "linked-cluster-drag-settle",
           topologyDragSettleMotionDurationMs: 720,
           topologyDragSettleMotionEasing: "ease-out",
@@ -2462,6 +2466,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyRelationLabelGeometryPendingCount: 0,
       topologyVisibilityCountContract: "single-pass-unless-fallback",
       topologyVisibilityCountSource: "single-pass-final-recount",
+      topologyDragSettleFeedbackContract:
+        "released-dragged-cluster-keeps-settle-feedback",
+      topologyDragSettledRoot: "domain:views",
+      topologyDragSettledClusterSize: 4,
       topologyDragSettleMotionContract: "linked-cluster-drag-settle",
       topologyDragSettleMotionDurationMs: 720,
       topologyDragSettleMotionEasing: "ease-out",
@@ -8438,6 +8446,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyDockDragSnapshotContract: "single-pass-card-rect-read",
           topologyVisibilityCountContract: "single-pass-unless-fallback",
           topologyVisibilityCountSource: "single-pass",
+          topologyDragSettleFeedbackContract:
+            "released-dragged-cluster-keeps-settle-feedback",
+          topologyDragSettledRoot: "domain:views",
+          topologyDragSettledClusterSize: 4,
           topologyDragSettleMotionContract: "legacy-drag-animation",
         },
       },

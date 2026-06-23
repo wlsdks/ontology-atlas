@@ -5045,6 +5045,18 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyDragSettleMotionContract !== "linked-cluster-drag-settle") {
         return `WebView Relief drag settle motion contract was ${payload.markers.topologyDragSettleMotionContract || "missing"}`;
       }
+      if (
+        payload.markers.topologyDragSettleFeedbackContract !==
+        "released-dragged-cluster-keeps-settle-feedback"
+      ) {
+        return `WebView Relief drag settle feedback contract was ${payload.markers.topologyDragSettleFeedbackContract || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragSettledClusterSize || 0) >= 1)) {
+        return `WebView Relief drag settled cluster size was ${payload.markers.topologyDragSettledClusterSize ?? "missing"}`;
+      }
+      if (!payload.markers.topologyDragSettledRoot) {
+        return "WebView Relief drag settled root was missing";
+      }
       if (Number(payload.markers.topologyDragSettleMotionDurationMs || 0) !== 720) {
         return `WebView Relief drag settle motion duration was ${payload.markers.topologyDragSettleMotionDurationMs || "missing"}ms`;
       }

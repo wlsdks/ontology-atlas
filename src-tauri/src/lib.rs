@@ -889,9 +889,20 @@ pub fn run() {
                                         }));
                                       };
                                       const latestFocus = trackedFocus;
+                                      const captureSettledFeedback = () => {
+                                        const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
+                                        result.dragSettledRoot =
+                                          skeletonCardsLayer?.getAttribute("data-drag-settled-root") || "";
+                                        result.dragSettleFeedbackContract =
+                                          skeletonCardsLayer?.getAttribute("data-drag-settle-feedback-contract") || "";
+                                        result.dragSettledClusterSize = Number(
+                                          skeletonCardsLayer?.getAttribute("data-drag-settled-cluster-size") || "0"
+                                        );
+                                      };
                                       const finish = () => {
                                         try {
                                           workerAppliedFrameObserver?.disconnect();
+                                          captureSettledFeedback();
                                           const focusAfter = latestFocus();
                                           const focusDuring = rectOf(focusAfter);
                                           const focusDx = focusDuring.left - focusBefore.left;
@@ -1122,6 +1133,7 @@ pub fn run() {
                                               window.setTimeout(() => {
                                                 finish();
                                                 dispatchPointer(nextMoveTarget, "pointerup", startX + 128, startY + 58, 0);
+                                                window.setTimeout(captureSettledFeedback, 90);
                                               }, 140);
                                             } catch (error) {
                                               result.reason = `drag second move error: ${error?.message || String(error)}`;
@@ -4953,8 +4965,20 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-drag-dynamic-state") || "",
                                   topologyDragDynamicRoot:
                                     skeletonCardsLayer?.getAttribute("data-drag-dynamic-root") || "",
+                                  topologyDragSettledRoot:
+                                    topologyDragVerification?.dragSettledRoot ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-settled-root") ||
+                                    "",
+                                  topologyDragSettleFeedbackContract:
+                                    topologyDragVerification?.dragSettleFeedbackContract ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-settle-feedback-contract") ||
+                                    "",
                                   topologyDragSettledClusterSize:
-                                    Number(skeletonCardsLayer?.getAttribute("data-drag-settled-cluster-size") || "0"),
+                                    Number(
+                                      topologyDragVerification?.dragSettledClusterSize ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-settled-cluster-size") ||
+                                        "0"
+                                    ),
                                   topologyDragConnectorFeedbackContract:
                                     skeletonCardsLayer?.getAttribute("data-drag-connector-feedback-contract") || "",
                                   topologyDragCollisionPolicy:

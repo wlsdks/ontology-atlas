@@ -391,6 +391,13 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
   expect(workerFrameProof.received).toBeGreaterThan(0);
   expect(workerFrameProof.applied).toBeGreaterThan(0);
   await page.mouse.up();
+  await expect(layer).toHaveAttribute(
+    "data-drag-settle-feedback-contract",
+    "released-dragged-cluster-keeps-settle-feedback",
+  );
+  await expect(layer).toHaveAttribute("data-drag-settled-root", "domain:views");
+  await expect(layer).toHaveAttribute("data-drag-settled-cluster-size", /^[1-9]\d*$/);
+  await expect(target).toHaveAttribute("data-drag-pushed", "true");
   await page.waitForTimeout(1000);
   await expect(layer).toHaveAttribute(
     "data-manual-focus-placement-contract",
@@ -790,6 +797,12 @@ test("Relief 관계 라벨 클릭이 관계 선택 카드만 열고 노드 선�
     { steps: 8 },
   );
   await page.mouse.up();
+  await expect(layer).toHaveAttribute(
+    "data-drag-settle-feedback-contract",
+    "released-dragged-cluster-keeps-settle-feedback",
+  );
+  await expect(layer).toHaveAttribute("data-drag-settled-cluster-size", /^[1-9]\d*$/);
+  await expect(dragTarget).toHaveAttribute("data-drag-pushed", "true");
   await page.waitForTimeout(750);
 
   const dragReleaseProof = await layer.evaluate((el) => ({
