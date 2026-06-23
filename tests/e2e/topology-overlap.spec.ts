@@ -822,6 +822,88 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   );
 });
 
+test("Relief dense overview switches noncritical context cards to kind pins", async ({
+  page,
+}) => {
+  const viewport = VIEWPORTS[1];
+  await openRelief(page, viewport, { mode: "map" });
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute(
+    "data-overview-density-lens-contract",
+    "zoom-out-overview-uses-kind-pins-for-noncritical-context-cards",
+  );
+
+  await page.mouse.move(viewport.width / 2, viewport.height / 2);
+  for (let i = 0; i < 3; i += 1) {
+    await page.mouse.wheel(0, 480);
+    await page.waitForTimeout(80);
+  }
+
+  await expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
+  await expect(layer).toHaveAttribute("data-overview-density-lens-active", "true", {
+    timeout: 6_000,
+  });
+  await expect(layer).toHaveAttribute(
+    "data-overview-density-lens-active-card-count",
+    /[1-9]\d*/,
+  );
+
+  const compactAnchor = page
+    .locator('[data-skeleton-card][data-tier="1"][data-zoom-lens-active-card="true"]')
+    .first();
+  await expect(compactAnchor).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+
+  const fullCardOverlaps = await page
+    .locator('[data-skeleton-card]:not([data-surface-hidden="true"])')
+    .evaluateAll((cards) => {
+      const visible = cards
+        .map((card) => {
+          const rect = card.getBoundingClientRect();
+          const style = window.getComputedStyle(card);
+          return {
+            active: card.getAttribute("data-zoom-lens-active-card"),
+            text: card.textContent?.trim() ?? "",
+            display: style.display,
+            opacity: Number(style.opacity || "1"),
+            visibility: style.visibility,
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height,
+          };
+        })
+        .filter(
+          (card) =>
+            card.active !== "true" &&
+            card.display !== "none" &&
+            card.visibility !== "hidden" &&
+            card.opacity > 0.05 &&
+            card.width > 0 &&
+            card.height > 0,
+        );
+      const overlaps: string[] = [];
+      for (let i = 0; i < visible.length; i += 1) {
+        for (let j = i + 1; j < visible.length; j += 1) {
+          const a = visible[i];
+          const b = visible[j];
+          if (
+            a.left < b.right - 2 &&
+            a.right > b.left + 2 &&
+            a.top < b.bottom - 2 &&
+            a.bottom > b.top + 2
+          ) {
+            overlaps.push(`${a.text} / ${b.text}`);
+          }
+        }
+      }
+      return overlaps;
+    });
+  expect(fullCardOverlaps).toEqual([]);
+});
+
 test("Relief focus card wheel zoom still switches surrounding detail cards to pins", async ({
   page,
 }) => {

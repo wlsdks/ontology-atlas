@@ -7650,12 +7650,11 @@ export function buildWebviewEvidencePayload(
       : null;
   const zoomLensProof =
     markers.topologyZoomLensContract ===
-    "zoom-in-uses-compact-lens-chips-for-noncritical-cards"
+    "zoom-in-uses-kind-pins-for-noncritical-context-cards"
       ? {
-        proof: "topology-zoom-lens-compact-cards",
+        proof: "topology-zoom-lens-kind-pins",
         status:
           markerNumber(markers, "topologyZoomLensThresholdRatio") > 0 &&
-          markerNumber(markers, "topologyZoomLensCardMaxWidthPx") > 0 &&
           markerNumber(markers, "topologyZoomLensCameraRatio") > 0 &&
           (
             markers.topologyZoomLensActive === false ||
@@ -7666,12 +7665,25 @@ export function buildWebviewEvidencePayload(
         route: evidenceRoute(payload?.href),
         contract: markers.topologyZoomLensContract ?? null,
         thresholdRatio: markerNumber(markers, "topologyZoomLensThresholdRatio"),
-        compactCardMaxWidthPx: markerNumber(markers, "topologyZoomLensCardMaxWidthPx"),
+        cardCompactionActive: markers.topologyZoomLensCardCompactionActive === true,
         cameraRatio: markerNumber(markers, "topologyZoomLensCameraRatio"),
         active: markers.topologyZoomLensActive === true,
         eligibleCount: markerNumber(markers, "topologyZoomLensEligibleCount"),
         activeCardCount: markerNumber(markers, "topologyZoomLensActiveCardCount"),
-        agentNextAction: "trust-compact-zoom-lens-before-reading-dense-map-cards",
+        overviewDensity: {
+          contract: markers.topologyOverviewDensityLensContract ?? null,
+          thresholdRatio: markerNumber(
+            markers,
+            "topologyOverviewDensityLensThresholdRatio",
+          ),
+          minWidth: markerNumber(markers, "topologyOverviewDensityLensMinWidth"),
+          active: markers.topologyOverviewDensityLensActive === true,
+          activeCardCount: markerNumber(
+            markers,
+            "topologyOverviewDensityLensActiveCardCount",
+          ),
+        },
+        agentNextAction: "trust-kind-pin-lens-before-reading-dense-map-cards",
       }
       : null;
   const nodePopoverCompactHandoffProof =

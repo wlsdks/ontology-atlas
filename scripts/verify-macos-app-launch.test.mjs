@@ -1082,13 +1082,19 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyResidualVisibleCardOverlapCount: 0,
         topologyResidualFixedSurfaceOverlapCount: 0,
         topologyResidualCardFixedSurfaceOverlapCount: 0,
-        topologyZoomLensContract: "zoom-in-uses-compact-lens-chips-for-noncritical-cards",
+        topologyZoomLensContract: "zoom-in-uses-kind-pins-for-noncritical-context-cards",
         topologyZoomLensThresholdRatio: 0.98,
-        topologyZoomLensCardMaxWidthPx: 124,
+        topologyZoomLensCardCompactionActive: true,
         topologyZoomLensCameraRatio: 0.74,
         topologyZoomLensActive: true,
         topologyZoomLensEligibleCount: 5,
         topologyZoomLensActiveCardCount: 3,
+        topologyOverviewDensityLensContract:
+          "zoom-out-overview-uses-kind-pins-for-noncritical-context-cards",
+        topologyOverviewDensityLensThresholdRatio: 1.2,
+        topologyOverviewDensityLensMinWidth: 1800,
+        topologyOverviewDensityLensActive: false,
+        topologyOverviewDensityLensActiveCardCount: 0,
         topologySupportRailOverlapReadPolicy: "reuse-visible-card-rect-cache",
         topologyDragActiveOverlapPolicy:
           "active-cluster-hides-lower-priority-overlaps",
@@ -1290,17 +1296,24 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     agentNextAction: "read-relation-surfaces-after-residual-overlap-clear",
   });
   assert.deepEqual(evidence.zoomLensProof, {
-    proof: "topology-zoom-lens-compact-cards",
+    proof: "topology-zoom-lens-kind-pins",
     status: "proved",
     route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
-    contract: "zoom-in-uses-compact-lens-chips-for-noncritical-cards",
+    contract: "zoom-in-uses-kind-pins-for-noncritical-context-cards",
     thresholdRatio: 0.98,
-    compactCardMaxWidthPx: 124,
+    cardCompactionActive: true,
     cameraRatio: 0.74,
     active: true,
     eligibleCount: 5,
     activeCardCount: 3,
-    agentNextAction: "trust-compact-zoom-lens-before-reading-dense-map-cards",
+    overviewDensity: {
+      contract: "zoom-out-overview-uses-kind-pins-for-noncritical-context-cards",
+      thresholdRatio: 1.2,
+      minWidth: 1800,
+      active: false,
+      activeCardCount: 0,
+    },
+    agentNextAction: "trust-kind-pin-lens-before-reading-dense-map-cards",
   });
 });
 

@@ -339,6 +339,8 @@ const FIXED_SURFACE_RECT_CACHE_MS = 180;
 const LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS = 160;
 const INITIAL_LOAD_REPOSITION_THROTTLE_MS = 640;
 const ZOOM_LENS_RATIO_THRESHOLD = 0.98;
+const OVERVIEW_DENSITY_LENS_RATIO_THRESHOLD = 1.2;
+const OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX = 1800;
 const ZOOM_LENS_PIN_SIZE_PX = 28;
 const WHEEL_ZOOM_BASE_DELTA_PX = 560;
 const WHEEL_ZOOM_STEP_RATIO = 0.68;
@@ -3348,11 +3350,35 @@ export function SigmaSkeletonCards({
     );
     const cameraRatio = readSkeletonCameraRatio(sigma);
     const zoomLensActive = cameraRatio <= ZOOM_LENS_RATIO_THRESHOLD;
+    const zoomLensCardCompactionActive =
+      zoomLensActive && !pathWorkflowActive && !healthRepairTarget;
+    const overviewDensityLensActive =
+      cameraRatio >= OVERVIEW_DENSITY_LENS_RATIO_THRESHOLD &&
+      containerRect.width >= OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX &&
+      selectedSlug === null &&
+      selectedRelationEdgeId === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
+    const compactLensActive =
+      zoomLensCardCompactionActive || overviewDensityLensActive;
     container.dataset.zoomLensContract =
       'zoom-in-uses-kind-pins-for-noncritical-context-cards';
     container.dataset.zoomLensThresholdRatio = String(ZOOM_LENS_RATIO_THRESHOLD);
     container.dataset.zoomLensCameraRatio = cameraRatio.toFixed(3);
     container.dataset.zoomLensActive = zoomLensActive ? 'true' : 'false';
+    container.dataset.zoomLensCardCompactionActive =
+      zoomLensCardCompactionActive ? 'true' : 'false';
+    container.dataset.overviewDensityLensContract =
+      'zoom-out-overview-uses-kind-pins-for-noncritical-context-cards';
+    container.dataset.overviewDensityLensThresholdRatio = String(
+      OVERVIEW_DENSITY_LENS_RATIO_THRESHOLD,
+    );
+    container.dataset.overviewDensityLensMinWidth = String(
+      OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX,
+    );
+    container.dataset.overviewDensityLensActive = overviewDensityLensActive
+      ? 'true'
+      : 'false';
     container.style.setProperty(
       '--topology-zoom-lens-pin-size',
       `${ZOOM_LENS_PIN_SIZE_PX}px`,
@@ -3436,6 +3462,7 @@ export function SigmaSkeletonCards({
     let cardPlacementSizeCacheMissCount = 0;
     let zoomLensEligibleCount = 0;
     let zoomLensActiveCardCount = 0;
+    let overviewDensityLensActiveCardCount = 0;
     for (const el of els) {
       const zoomLensCritical =
         el.dataset.selected === 'true' ||
@@ -3447,10 +3474,11 @@ export function SigmaSkeletonCards({
         el.dataset.selectedRelationEndpoint === 'true';
       const zoomLensEligible = el.dataset.zoomLensEligible === 'true' && !zoomLensCritical;
       if (zoomLensEligible) zoomLensEligibleCount += 1;
-      if (zoomLensActive && zoomLensEligible) {
+      if (compactLensActive && zoomLensEligible) {
         el.dataset.zoomLensActiveCard = 'true';
         el.dataset.zoomLensPresentation = 'lens-pin';
         zoomLensActiveCardCount += 1;
+        if (overviewDensityLensActive) overviewDensityLensActiveCardCount += 1;
       } else {
         el.dataset.zoomLensActiveCard = 'false';
         el.dataset.zoomLensPresentation = zoomLensCritical
@@ -3465,6 +3493,9 @@ export function SigmaSkeletonCards({
     }
     container.dataset.zoomLensEligibleCount = String(zoomLensEligibleCount);
     container.dataset.zoomLensActiveCardCount = String(zoomLensActiveCardCount);
+    container.dataset.overviewDensityLensActiveCardCount = String(
+      overviewDensityLensActiveCardCount,
+    );
     const readCardPlacementParentRect = (el: HTMLElement) => {
       const cached = cardPlacementParentRectCache.get(el);
       if (cached) return cached;

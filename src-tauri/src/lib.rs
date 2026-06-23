@@ -4761,10 +4761,22 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-camera-ratio") || "0"),
                                   topologyZoomLensActive:
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-active") === "true",
+                                  topologyZoomLensCardCompactionActive:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-card-compaction-active") === "true",
                                   topologyZoomLensEligibleCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-eligible-count") || "0"),
                                   topologyZoomLensActiveCardCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-active-card-count") || "0"),
+                                  topologyOverviewDensityLensContract:
+                                    skeletonCardsLayer?.getAttribute("data-overview-density-lens-contract") || "",
+                                  topologyOverviewDensityLensThresholdRatio:
+                                    Number(skeletonCardsLayer?.getAttribute("data-overview-density-lens-threshold-ratio") || "0"),
+                                  topologyOverviewDensityLensMinWidth:
+                                    Number(skeletonCardsLayer?.getAttribute("data-overview-density-lens-min-width") || "0"),
+                                  topologyOverviewDensityLensActive:
+                                    skeletonCardsLayer?.getAttribute("data-overview-density-lens-active") === "true",
+                                  topologyOverviewDensityLensActiveCardCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-overview-density-lens-active-card-count") || "0"),
                                   topologyFixedSurfaceLiveSuppressionReadPolicy:
                                     skeletonCardsLayer?.getAttribute("data-fixed-surface-live-suppression-read-policy") || "",
                                   topologyFixedSurfaceLiveSuppressionReadCount:
