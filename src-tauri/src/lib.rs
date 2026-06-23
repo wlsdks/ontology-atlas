@@ -1111,6 +1111,87 @@ pub fn run() {
                             // synthetic drag even starts. Wait long enough for the
                             // drag finish timer to publish stable markers.
                             std::thread::sleep(Duration::from_millis(3800));
+                            let _ = verify_window.eval(
+                                r#"(() => {
+                                  const result = {
+                                    attempted: true,
+                                    reason: "scheduled",
+                                    active: false,
+                                    cardCompactionActive: false,
+                                    presentationActive: false,
+                                    presentationSource: "",
+                                    cameraRatio: 0,
+                                    activeCardCount: 0,
+                                    visibleActiveCardCount: 0
+                                  };
+                                  window.__ontologyAtlasTopologyZoomVerify = result;
+                                  const layer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
+                                  const captureResult = () => {
+                                    result.active = layer?.getAttribute("data-zoom-lens-active") === "true";
+                                    result.cardCompactionActive =
+                                      layer?.getAttribute("data-zoom-lens-card-compaction-active") === "true";
+                                    result.presentationActive =
+                                      layer?.getAttribute("data-zoom-lens-presentation-active") === "true";
+                                    result.presentationSource =
+                                      layer?.getAttribute("data-zoom-lens-presentation-source") || "";
+                                    result.cameraRatio =
+                                      Number(layer?.getAttribute("data-zoom-lens-camera-ratio") || "0");
+                                    result.activeCardCount =
+                                      Number(layer?.getAttribute("data-zoom-lens-active-card-count") || "0");
+                                    result.visibleActiveCardCount =
+                                      Number(layer?.getAttribute("data-zoom-lens-visible-active-card-count") || "0");
+                                    result.reason = result.active ? "done" : "zoom lens inactive";
+                                  };
+                                  if (typeof window.__ontologyAtlasTopologyVerifyZoom === "function") {
+                                    const hookResult = window.__ontologyAtlasTopologyVerifyZoom();
+                                    result.hookReason = hookResult?.reason || "";
+                                    result.hookTargetRatio = Number(hookResult?.targetRatio || 0);
+                                    window.setTimeout(captureResult, 1800);
+                                    return;
+                                  }
+                                  const visible = (el) => {
+                                    if (!el) return false;
+                                    const rect = el.getBoundingClientRect();
+                                    const style = window.getComputedStyle(el);
+                                    return (
+                                      el.getAttribute("data-surface-hidden") !== "true" &&
+                                      style.display !== "none" &&
+                                      style.visibility !== "hidden" &&
+                                      Number(style.opacity || "1") > 0.01 &&
+                                      rect.width > 0 &&
+                                      rect.height > 0
+                                    );
+                                  };
+                                  const cards = Array.from(document.querySelectorAll("[data-skeleton-card]"));
+                                  const target =
+                                    cards.find((card) => card.getAttribute("data-slug") === "domain:views" && visible(card)) ||
+                                    cards.find((card) => visible(card));
+                                  if (!layer || !target) {
+                                    result.reason = layer ? "missing visible zoom card" : "missing skeleton cards";
+                                    return;
+                                  }
+                                  const dispatchZoom = (step = 0) => {
+                                    const rect = target.getBoundingClientRect();
+                                    target.dispatchEvent(new WheelEvent("wheel", {
+                                      bubbles: true,
+                                      cancelable: true,
+                                      composed: true,
+                                      clientX: Math.round(rect.left + rect.width / 2),
+                                      clientY: Math.round(rect.top + rect.height / 2),
+                                      deltaMode: 0,
+                                      deltaX: 0,
+                                      deltaY: -640
+                                    }));
+                                    if (step < 7) {
+                                      window.setTimeout(() => dispatchZoom(step + 1), 60);
+                                      return;
+                                    }
+                                    window.setTimeout(captureResult, 1800);
+                                  };
+                                  dispatchZoom();
+                                })()"#,
+                            );
+                            std::thread::sleep(Duration::from_millis(2500));
                         }
                         if verify_topology_create_node {
                             let _ = verify_window.eval(
@@ -1281,6 +1362,7 @@ pub fn run() {
                                 document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
                               );
                               const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
+                              const topologyZoomVerification = window.__ontologyAtlasTopologyZoomVerify || null;
                               const topologySelectedRelationVerification =
                                 window.__ontologyAtlasTopologySelectedRelationVerify || null;
                               const topologyNodePopoverVerification =
@@ -4854,11 +4936,19 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-card-fixed-surface-overlap-count") || "0"),
                                   topologyZoomLensContract:
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-contract") || "",
+                                  topologyZoomVerifyAttempted:
+                                    topologyZoomVerification?.attempted === true,
+                                  topologyZoomVerifyReason:
+                                    topologyZoomVerification?.reason || "",
+                                  topologyZoomVerifyHookReason:
+                                    topologyZoomVerification?.hookReason || "",
                                   topologyZoomLensPresentationContract:
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-presentation-contract") || "",
                                   topologyZoomLensPresentationActive:
+                                    topologyZoomVerification?.presentationActive === true ||
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-presentation-active") === "true",
                                   topologyZoomLensPresentationSource:
+                                    topologyZoomVerification?.presentationSource ||
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-presentation-source") || "",
                                   topologyZoomLensThresholdRatio:
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-threshold-ratio") || "0"),
@@ -4868,17 +4958,31 @@ pub fn run() {
                                         .getPropertyValue("--topology-zoom-lens-card-max-width")
                                     ) || 0,
                                   topologyZoomLensCameraRatio:
-                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-camera-ratio") || "0"),
+                                    Number(
+                                      topologyZoomVerification?.cameraRatio ||
+                                      skeletonCardsLayer?.getAttribute("data-zoom-lens-camera-ratio") ||
+                                      "0"
+                                    ),
                                   topologyZoomLensActive:
+                                    topologyZoomVerification?.active === true ||
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-active") === "true",
                                   topologyZoomLensCardCompactionActive:
+                                    topologyZoomVerification?.cardCompactionActive === true ||
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-card-compaction-active") === "true",
                                   topologyZoomLensEligibleCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-eligible-count") || "0"),
                                   topologyZoomLensActiveCardCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-active-card-count") || "0"),
+                                    Number(
+                                      topologyZoomVerification?.activeCardCount ||
+                                      skeletonCardsLayer?.getAttribute("data-zoom-lens-active-card-count") ||
+                                      "0"
+                                    ),
                                   topologyZoomLensVisibleActiveCardCount:
-                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-visible-active-card-count") || "0"),
+                                    Number(
+                                      topologyZoomVerification?.visibleActiveCardCount ||
+                                      skeletonCardsLayer?.getAttribute("data-zoom-lens-visible-active-card-count") ||
+                                      "0"
+                                    ),
                                   topologyFocusDetailLensContract:
                                     skeletonCardsLayer?.getAttribute("data-focus-detail-lens-contract") || "",
                                   topologyFocusDetailLensActive:
@@ -5085,6 +5189,8 @@ mod tests {
         assert!(source.contains("topologyDragRelationLabelVisibleDuringDrag"));
         assert!(source.contains("topologyDragReactiveContextContract"));
         assert!(source.contains("topologyDragReactiveContextVisibleCount"));
+        assert!(source.contains("__ontologyAtlasTopologyZoomVerify"));
+        assert!(source.contains("topologyZoomVerifyReason"));
         assert!(source.contains("topologyZoomLensPresentationContract"));
         assert!(source.contains("topologyZoomLensPresentationSource"));
         assert!(source.contains("topologyDragReactiveMotionContract"));

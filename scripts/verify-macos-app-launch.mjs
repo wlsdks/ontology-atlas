@@ -1696,6 +1696,58 @@ export function validateTopologyConnectorCacheMarkers(markers) {
   return null;
 }
 
+export function validateTopologyZoomLensMarkers(markers) {
+  if (
+    markers?.topologyZoomVerifyAttempted !== true &&
+    !markers?.topologyZoomLensContract
+  ) {
+    return null;
+  }
+  if (
+    markers?.topologyZoomLensContract !==
+    "zoom-in-uses-kind-pins-for-noncritical-context-cards"
+  ) {
+    return `WebView Relief zoom lens contract was ${markers?.topologyZoomLensContract || "missing"}`;
+  }
+  if (
+    markers?.topologyZoomLensPresentationContract !==
+    "camera-or-focus-lens-uses-kind-pins-for-noncritical-context"
+  ) {
+    return `WebView Relief zoom lens presentation contract was ${markers?.topologyZoomLensPresentationContract || "missing"}`;
+  }
+  if (markers?.topologyZoomVerifyAttempted === true && markers?.topologyZoomVerifyReason !== "done") {
+    return `WebView Relief zoom probe did not activate the camera zoom lens (${markers?.topologyZoomVerifyReason || "missing reason"})`;
+  }
+  if (!(Number(markers?.topologyZoomLensThresholdRatio || 0) > 0)) {
+    return `WebView Relief zoom lens threshold ratio was ${markers?.topologyZoomLensThresholdRatio ?? "missing"}`;
+  }
+  if (!(Number(markers?.topologyZoomLensCameraRatio || 0) > 0)) {
+    return `WebView Relief zoom lens camera ratio was ${markers?.topologyZoomLensCameraRatio ?? "missing"}`;
+  }
+  if (markers?.topologyZoomLensActive !== true) {
+    return "WebView Relief zoom lens did not become active after camera zoom-in";
+  }
+  if (markers?.topologyZoomLensPresentationActive !== true) {
+    return "WebView Relief zoom lens did not report an active presentation after camera zoom-in";
+  }
+  if (markers?.topologyZoomLensPresentationSource !== "camera-zoom-in") {
+    return `WebView Relief zoom lens presentation source was ${markers?.topologyZoomLensPresentationSource || "missing"}`;
+  }
+  if (markers?.topologyZoomLensCardCompactionActive !== true) {
+    return "WebView Relief zoom lens did not compact text cards into kind pins";
+  }
+  if (!(Number(markers?.topologyZoomLensEligibleCount || 0) >= 1)) {
+    return `WebView Relief zoom lens had no eligible cards (${markers?.topologyZoomLensEligibleCount ?? "missing"})`;
+  }
+  if (!(Number(markers?.topologyZoomLensActiveCardCount || 0) >= 1)) {
+    return `WebView Relief zoom lens had no active compact cards (${markers?.topologyZoomLensActiveCardCount ?? "missing"})`;
+  }
+  if (!(Number(markers?.topologyZoomLensVisibleActiveCardCount || 0) >= 1)) {
+    return `WebView Relief zoom lens had no visible compact cards (${markers?.topologyZoomLensVisibleActiveCardCount ?? "missing"})`;
+  }
+  return null;
+}
+
 export function validateSelectedRelationCardAttentionLane(markers, width) {
   if (markers?.topologySelectedRelationCardDockContract !== "right-compact-relation-rail") {
     return `WebView Relief selected relation card dock contract was ${markers?.topologySelectedRelationCardDockContract || "missing"}`;
@@ -4883,6 +4935,8 @@ export function validateWebviewVerifyPayload(payload, {
       if (blockingComposerOpen) {
         return null;
       }
+      const zoomLensError = validateTopologyZoomLensMarkers(payload.markers);
+      if (zoomLensError) return zoomLensError;
       if (payload.markers.topologySelectedRelationHaloVisible !== true) {
         return `WebView Relief relation label selection did not reveal a selected relation halo (${payload.markers.topologySelectedRelationVisibleHaloCount ?? 0}/${payload.markers.topologySelectedRelationHaloCount ?? 0} visible)`;
       }
@@ -7716,11 +7770,12 @@ export function buildWebviewEvidencePayload(
         status:
           markerNumber(markers, "topologyZoomLensThresholdRatio") > 0 &&
           markerNumber(markers, "topologyZoomLensCameraRatio") > 0 &&
-          (
-            markers.topologyZoomLensActive === false ||
-            markers.topologyZoomLensPresentationActive === true ||
-            markerNumber(markers, "topologyZoomLensActiveCardCount") >= 1
-          )
+          markers.topologyZoomLensActive === true &&
+          markers.topologyZoomLensCardCompactionActive === true &&
+          markers.topologyZoomLensPresentationActive === true &&
+          markers.topologyZoomLensPresentationSource === "camera-zoom-in" &&
+          markerNumber(markers, "topologyZoomLensActiveCardCount") >= 1 &&
+          markerNumber(markers, "topologyZoomLensVisibleActiveCardCount") >= 1
             ? "proved"
             : "incomplete",
         route: evidenceRoute(payload?.href),

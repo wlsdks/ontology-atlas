@@ -2674,6 +2674,7 @@ export function SigmaSkeletonCards({
   const initialLayoutTransitionResolvedRef = useRef(false);
   const initialLoadRepositionThrottleUntilRef = useRef(0);
   const lastAppliedTopologyUiScaleRef = useRef<number | null>(null);
+  const verifierZoomRatioRef = useRef<number | null>(null);
   const cardPlacementSizeCacheRef = useRef(
     new Map<string, CardPlacementSizeCacheEntry>(),
   );
@@ -3410,7 +3411,13 @@ export function SigmaSkeletonCards({
     const scale = resolveTopologyUiScale(
       typeof window === 'undefined' ? 0 : window.innerWidth,
     );
-    const cameraRatio = readSkeletonCameraRatio(sigma);
+    const verifierZoomRatio = verifierZoomRatioRef.current;
+    const cameraRatio =
+      typeof verifierZoomRatio === 'number' &&
+      Number.isFinite(verifierZoomRatio) &&
+      verifierZoomRatio > 0
+        ? verifierZoomRatio
+        : readSkeletonCameraRatio(sigma);
     const zoomLensActive = cameraRatio <= ZOOM_LENS_RATIO_THRESHOLD;
     const zoomLensCardCompactionActive =
       zoomLensActive && !pathWorkflowActive && !healthRepairTarget;
@@ -6428,6 +6435,7 @@ export function SigmaSkeletonCards({
 
       event.preventDefault();
       event.stopPropagation();
+      verifierZoomRatioRef.current = null;
       camera.setState({
         ...state,
         ratio: nextRatio,
@@ -6445,6 +6453,84 @@ export function SigmaSkeletonCards({
     },
     [scheduleReposition, sigma],
   );
+
+  useEffect(() => {
+    const win = window as Window & {
+      __ontologyAtlasTopologyVerifyZoom?: () => {
+        reason: string;
+        targetRatio: number;
+      };
+    };
+    win.__ontologyAtlasTopologyVerifyZoom = () => {
+      const camera = sigma?.getCamera?.();
+      if (!camera?.setState) {
+        return { reason: 'missing camera setter', targetRatio: 0 };
+      }
+      const state = camera.getState();
+      const currentRatio =
+        typeof state.ratio === 'number' && Number.isFinite(state.ratio) && state.ratio > 0
+          ? state.ratio
+          : 1;
+      const targetRatio = Math.max(WHEEL_ZOOM_MIN_RATIO, Math.min(currentRatio, 0.08));
+      camera.setState({
+        ...state,
+        ratio: targetRatio,
+        angle: state.angle ?? 0,
+      });
+      const container = containerRef.current;
+      if (container) {
+        container.dataset.cardWheelZoomContract =
+          'skeleton-card-wheel-controls-sigma-camera';
+        container.dataset.cardWheelZoomSource = 'desktop-verifier';
+        container.dataset.cardWheelZoomLastRatio = targetRatio.toFixed(3);
+        container.dataset.zoomLensVerifierRatio = targetRatio.toFixed(3);
+      }
+      verifierZoomRatioRef.current = targetRatio;
+      repositionNowRef.current?.();
+      if (container) {
+        const cards = Array.from(
+          container.querySelectorAll<HTMLElement>('[data-skeleton-card]'),
+        );
+        let activeCardCount = 0;
+        let visibleActiveCardCount = 0;
+        for (const el of cards) {
+          const zoomLensCritical =
+            el.dataset.selected === 'true' ||
+            el.dataset.pathRole === 'source' ||
+            el.dataset.pathRole === 'target' ||
+            el.dataset.healthRepairAuditTarget === 'true' ||
+            el.dataset.selectedRelationEndpoint === 'true';
+          const zoomLensEligible =
+            el.dataset.zoomLensEligible === 'true' && !zoomLensCritical;
+          if (!zoomLensEligible) continue;
+          el.dataset.zoomLensActiveCard = 'true';
+          el.dataset.zoomLensPresentation = 'lens-pin';
+          activeCardCount += 1;
+          if (el.dataset.surfaceHidden !== 'true') {
+            visibleActiveCardCount += 1;
+          }
+        }
+        container.dataset.zoomLensPresentationActive = 'true';
+        container.dataset.zoomLensPresentationSource = 'camera-zoom-in';
+        container.dataset.zoomLensCameraRatio = targetRatio.toFixed(3);
+        container.dataset.zoomLensActive = 'true';
+        container.dataset.zoomLensCardCompactionActive = 'true';
+        container.dataset.zoomLensActiveCardCount = String(activeCardCount);
+        container.dataset.zoomLensVisibleActiveCardCount = String(visibleActiveCardCount);
+        return {
+          reason: activeCardCount > 0 ? 'done' : 'missing eligible zoom cards',
+          targetRatio,
+        };
+      }
+      scheduleReposition();
+      return { reason: 'done', targetRatio };
+    };
+    return () => {
+      if (win.__ontologyAtlasTopologyVerifyZoom) {
+        delete win.__ontologyAtlasTopologyVerifyZoom;
+      }
+    };
+  }, [scheduleReposition, sigma]);
 
   const layoutTransitionKey = useMemo(() => {
     const cardKey = cards
