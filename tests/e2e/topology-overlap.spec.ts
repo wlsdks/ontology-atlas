@@ -2975,6 +2975,29 @@ for (const viewport of VIEWPORTS) {
       "data-zoom-lens-active-card-count",
       /[1-9]\d*/,
     );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-zoom-lens-visible-active-card-count",
+      /[1-9]\d*/,
+    );
+    const visibleActiveLensPins = page.locator(
+      '[data-skeleton-card][data-zoom-lens-active-card="true"]:not([data-surface-hidden="true"])',
+    );
+    const visibleActiveLensPinCount = await visibleActiveLensPins.evaluateAll((cards) =>
+      cards.filter((card) => {
+        const rect = card.getBoundingClientRect();
+        const style = getComputedStyle(card);
+        return (
+          rect.width > 0 &&
+          rect.height > 0 &&
+          style.visibility !== "hidden" &&
+          Number(style.opacity || "1") > 0.01
+        );
+      }).length,
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-zoom-lens-visible-active-card-count",
+      String(visibleActiveLensPinCount),
+    );
     const focusDetailPins = page.locator(
       '[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"]:not([data-surface-hidden="true"])',
     );

@@ -7680,6 +7680,11 @@ export function buildWebviewEvidencePayload(
         active: markers.topologyZoomLensActive === true,
         eligibleCount: markerNumber(markers, "topologyZoomLensEligibleCount"),
         activeCardCount: markerNumber(markers, "topologyZoomLensActiveCardCount"),
+        visibleCardCount: markerNumber(markers, "topologyVisibleCardCount"),
+        visibleActiveCardCount: markerNumber(
+          markers,
+          "topologyZoomLensVisibleActiveCardCount",
+        ),
         focusDetail: {
           contract: markers.topologyFocusDetailLensContract ?? null,
           active: markers.topologyFocusDetailLensActive === true,

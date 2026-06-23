@@ -2942,6 +2942,8 @@ pub fn run() {
                                     document.querySelectorAll("[data-skeleton-card]").length,
                                   topologyCardRawSample: topologyRawCards,
                                   topologyCardCount: topologyCards.length,
+                                  topologyVisibleCardCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-visible-card-count") || "0"),
                                   topologyPathCandidateCardCount,
                                   topologyPathSourceCardCount,
                                   topologyPathTargetCardCount,
@@ -4767,6 +4769,8 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-eligible-count") || "0"),
                                   topologyZoomLensActiveCardCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-active-card-count") || "0"),
+                                  topologyZoomLensVisibleActiveCardCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-visible-active-card-count") || "0"),
                                   topologyFocusDetailLensContract:
                                     skeletonCardsLayer?.getAttribute("data-focus-detail-lens-contract") || "",
                                   topologyFocusDetailLensActive:

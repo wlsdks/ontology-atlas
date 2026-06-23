@@ -1474,6 +1474,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(layer).toHaveAttribute("data-focus-detail-lens-active", "true");
       expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
       expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "2");
+      expect(layer).toHaveAttribute("data-zoom-lens-visible-active-card-count", "1");
       expect(selectedCard).toHaveAttribute("data-zoom-lens-active-card", "false");
       expect(selectedCard).toHaveAttribute(
         "data-zoom-lens-presentation",

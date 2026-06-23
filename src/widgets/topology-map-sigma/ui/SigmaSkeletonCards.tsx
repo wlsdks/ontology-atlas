@@ -5234,7 +5234,15 @@ export function SigmaSkeletonCards({
       cardFixedSurfaceOverlapCount === 0
         ? 'true'
         : 'false';
+    const zoomLensVisibleActiveCardCount = orderedEls.reduce((count, el) => {
+      if (el.dataset.zoomLensActiveCard !== 'true') return count;
+      const cached = readVisibleCardRect(el);
+      return count + (cached.visible && cached.rect !== null ? 1 : 0);
+    }, 0);
     container.dataset.visibleCardCount = String(reportedVisibleCardCount);
+    container.dataset.zoomLensVisibleActiveCardCount = String(
+      zoomLensVisibleActiveCardCount,
+    );
     container.dataset.visibilityCountSource = visibilityCountSource;
     container.dataset.relationLabelBlockerSource =
       visibilityCountSource === 'fallback-recount'
