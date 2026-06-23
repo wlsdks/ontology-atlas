@@ -3739,7 +3739,9 @@ export function SigmaSkeletonCards({
         zoomLensCardCompactionActive && focusReadableContext;
       const compactSelectedRelationEndpointOnCameraZoom =
         zoomLensCardCompactionActive && el.dataset.selectedRelationEndpoint === 'true';
+      const dragReadableRootCard = el.dataset.dragClusterRole === 'root';
       const zoomLensCritical =
+        dragReadableRootCard ||
         (el.dataset.selected === 'true' && !compactSelectedRelationEndpointOnCameraZoom) ||
         el.dataset.pathRole === 'source' ||
         el.dataset.pathRole === 'target' ||
@@ -3797,7 +3799,9 @@ export function SigmaSkeletonCards({
           el.dataset.zoomLensCardContract = 'critical-card-stays-full-on-camera-zoom-in';
         }
         el.dataset.zoomLensPresentation = zoomLensCritical
-          ? 'full-card-critical'
+          ? dragReadableRootCard
+            ? 'full-card-drag-root'
+            : 'full-card-critical'
           : el.dataset.zoomLensEligible === 'true'
             ? el.dataset.zoomLensCardContract ===
               'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
@@ -8747,6 +8751,7 @@ export function SigmaSkeletonCards({
                 relations: dragRelationLinkCount,
               })
             : undefined;
+        const dragReadableRootCard = dragging && dragRole === 'root';
         const dragSettled = dragSettledSlugs.has(nodeId);
         const dragReactiveContext =
           activeDragMotion && activeDragCluster !== null && dimmed && !dragging;
@@ -8820,6 +8825,7 @@ export function SigmaSkeletonCards({
           : TIER_CARD_SPACING[card.tier];
         const zoomLensCriticalCard =
           selected ||
+          dragReadableRootCard ||
           pathEndpoint ||
           healthRepairAuditTarget ||
           selectedFocusCompanion ||
@@ -8874,7 +8880,9 @@ export function SigmaSkeletonCards({
               zoomLensProximitySource ?? undefined
             }
             data-zoom-lens-card-contract={
-              zoomLensSelectedRelationEndpointCard
+              dragReadableRootCard
+                ? 'drag-root-stays-readable-during-overview-density'
+                : zoomLensSelectedRelationEndpointCard
                 ? 'selected-relation-endpoint-becomes-role-mark-on-camera-zoom-in'
                 : zoomLensEligible
                 ? card.tier >= 2
@@ -8934,6 +8942,11 @@ export function SigmaSkeletonCards({
             }
             data-drag-cluster={dragging ? 'true' : 'false'}
             data-drag-cluster-role={dragRole}
+            data-drag-readable-root-contract={
+              dragReadableRootCard
+                ? 'grabbed-node-stays-readable-during-overview-density-drag'
+                : undefined
+            }
             data-drag-interaction-contract={
               dragging ? 'card-announces-connected-ontology-drag' : undefined
             }

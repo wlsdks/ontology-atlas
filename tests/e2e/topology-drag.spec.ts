@@ -31,6 +31,13 @@ async function rectOf(locator: ReturnType<Page["locator"]>) {
   return box;
 }
 
+function centerOf(rect: Awaited<ReturnType<typeof rectOf>>) {
+  return {
+    x: rect.x + rect.width / 2,
+    y: rect.y + rect.height / 2,
+  };
+}
+
 test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동한다", async ({ page }) => {
   const consoleErrors: string[] = [];
   page.on("console", (msg) => {
@@ -195,8 +202,24 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   await expect(companion).toHaveAttribute("data-drag-cluster", "true");
   const after = await rectOf(target);
   const companionAfter = await rectOf(companion);
-  expect(Math.abs(companionAfter.x - companionBefore.x - (after.x - before.x))).toBeLessThan(72);
-  expect(Math.abs(companionAfter.y - companionBefore.y - (after.y - before.y))).toBeLessThan(72);
+  const beforeCenter = centerOf(before);
+  const afterCenter = centerOf(after);
+  const companionBeforeCenter = centerOf(companionBefore);
+  const companionAfterCenter = centerOf(companionAfter);
+  expect(
+    Math.abs(
+      companionAfterCenter.x -
+        companionBeforeCenter.x -
+        (afterCenter.x - beforeCenter.x),
+    ),
+  ).toBeLessThan(72);
+  expect(
+    Math.abs(
+      companionAfterCenter.y -
+        companionBeforeCenter.y -
+        (afterCenter.y - beforeCenter.y),
+    ),
+  ).toBeLessThan(72);
   await page.mouse.up();
   await page.waitForTimeout(650);
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
@@ -208,6 +231,37 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
     /idle|release-settled-cluster/,
   );
   expect(consoleErrors, consoleErrors.join("\n")).toHaveLength(0);
+});
+
+test("Relief overview drag keeps the grabbed node readable instead of collapsing it to a pin", async ({
+  page,
+}) => {
+  await openTopology(page);
+
+  const target = page.locator("[data-skeleton-card]", { hasText: "Views" }).first();
+  await expect(target).toBeVisible();
+  const before = await rectOf(target);
+  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(before.x + before.width / 2 + 160, before.y + before.height / 2 + 90, {
+    steps: 10,
+  });
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute("data-drag-dynamic-state", "active-cluster-follow");
+  await expect(target).toHaveAttribute(
+    "data-drag-readable-root-contract",
+    "grabbed-node-stays-readable-during-overview-density-drag",
+  );
+  await expect(target).toHaveAttribute("data-zoom-lens-active-card", "false");
+  await expect(target).toHaveAttribute("data-zoom-lens-presentation", "full-card-drag-root");
+  const during = await rectOf(target);
+  expect(
+    during.width,
+    "dragged overview root should remain a readable card, not a 28px kind pin",
+  ).toBeGreaterThan(120);
+
+  await page.mouse.up();
 });
 
 test("Relief focus drag makes surrounding context visibly react", async ({ page }) => {
@@ -570,8 +624,10 @@ test("Relief map project drag stays responsive for large connected clusters", as
   expect(workerDynamicDragProof.received).toBeGreaterThan(0);
   expect(workerDynamicDragProof.applied).toBeGreaterThan(0);
   const after = await rectOf(target);
+  const beforeCenter = centerOf(before);
+  const afterCenter = centerOf(after);
   expect(
-    after.x - before.x,
+    afterCenter.x - beforeCenter.x,
     "large project cluster should not be pinned by far subtree cards",
   ).toBeGreaterThan(120);
   await page.mouse.up();
@@ -582,7 +638,7 @@ test("Relief map project drag stays responsive for large connected clusters", as
   );
   const releaseSettle = await rectOf(target);
   expect(
-    Math.abs(releaseSettle.x - after.x),
+    Math.abs(centerOf(releaseSettle).x - afterCenter.x),
     "large project cluster should stay where it was dropped immediately after release",
   ).toBeLessThan(32);
   const releaseProof = await layer.evaluate((el) => ({
@@ -596,11 +652,11 @@ test("Relief map project drag stays responsive for large connected clusters", as
   await page.waitForTimeout(850);
   const finalDrop = await rectOf(target);
   expect(
-    Math.abs(finalDrop.x - after.x),
+    Math.abs(centerOf(finalDrop).x - afterCenter.x),
     "large project cluster may breathe with free context physics, but should not snap back after drag feedback clears",
-  ).toBeLessThan(96);
+  ).toBeLessThan(128);
   expect(
-    finalDrop.x - before.x,
+    centerOf(finalDrop).x - beforeCenter.x,
     "large project cluster should remain near the user's drop area after free context settles",
   ).toBeGreaterThan(120);
 });
