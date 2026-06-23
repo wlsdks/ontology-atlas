@@ -608,6 +608,7 @@ function SigmaTopologyImpl({
         insets,
         currentRatio: state.ratio,
         targetPolicy: 'viewport-center',
+        safeRectNoop: selectedEdgeRef.current === null,
       });
       const cameraMotionMaxDistancePx =
         resolveSelectedFocusCameraMaxDistancePx(selectedFanoutRows, width);

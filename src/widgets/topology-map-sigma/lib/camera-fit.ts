@@ -72,6 +72,7 @@ export interface SelectedFocusCameraFitInput {
   comfortPadding?: number;
   readingRatio?: number;
   targetPolicy?: 'safe-center' | 'viewport-center';
+  safeRectNoop?: boolean;
 }
 
 export interface SelectedFocusCameraFit {
@@ -194,6 +195,7 @@ export function resolveSelectedFocusCameraFit({
   comfortPadding = DEFAULT_SELECTED_FOCUS_COMFORT_PADDING,
   readingRatio = DEFAULT_SELECTED_FOCUS_READING_RATIO,
   targetPolicy = DEFAULT_SELECTED_FOCUS_TARGET_POLICY,
+  safeRectNoop = false,
 }: SelectedFocusCameraFitInput): SelectedFocusCameraFit | null {
   const safeWidth = Math.max(1, viewport.width - insets.left - insets.right);
   const safeHeight = Math.max(1, viewport.height - insets.top - insets.bottom);
@@ -215,10 +217,25 @@ export function resolveSelectedFocusCameraFit({
           x: left + (right - left) / 2,
           y: top + (bottom - top) / 2,
         };
+  const targetDistance = Math.hypot(
+    safeTarget.x - selectedViewport.x,
+    safeTarget.y - selectedViewport.y,
+  );
+  const selectedInsideReadableSafeRect =
+    selectedViewport.x >= left &&
+    selectedViewport.x <= right &&
+    selectedViewport.y >= top &&
+    selectedViewport.y <= bottom;
+  if (
+    targetPolicy === 'viewport-center' &&
+    safeRectNoop &&
+    selectedInsideReadableSafeRect &&
+    targetDistance <= comfortPadding
+  ) {
+    return null;
+  }
   const centerTolerance = Math.max(1, comfortPadding / 2);
-  const alreadyCentered =
-    Math.hypot(safeTarget.x - selectedViewport.x, safeTarget.y - selectedViewport.y) <=
-    centerTolerance;
+  const alreadyCentered = targetDistance <= centerTolerance;
 
   if (alreadyCentered) return null;
 

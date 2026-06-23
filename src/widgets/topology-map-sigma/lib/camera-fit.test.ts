@@ -209,7 +209,7 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
 
   it('선택 클릭 전용 정책은 fixed chrome safe rect 가 아니라 viewport reading center 를 목표로 한다', () => {
     const fit = resolveSelectedFocusCameraFit({
-      selectedViewport: { x: insets.left + 40, y: insets.top + 120 },
+      selectedViewport: { x: insets.left - 40, y: insets.top + 120 },
       viewport,
       insets,
       currentRatio: 1.1,
@@ -221,6 +221,22 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
     expect(fit?.safeTarget.y).toBeCloseTo(
       viewport.height * SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
     );
+  });
+
+  it('선택 클릭 전용 정책도 선택 노드가 읽기 목표점 근처면 카메라를 움직이지 않는다', () => {
+    expect(
+      resolveSelectedFocusCameraFit({
+        selectedViewport: {
+          x: viewport.width / 2 - 16,
+          y: viewport.height * SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
+        },
+        viewport,
+        insets,
+        currentRatio: 1.1,
+        targetPolicy: 'viewport-center',
+        safeRectNoop: true,
+      }),
+    ).toBeNull();
   });
 
   it('선택 카메라 target 은 검증 한도를 넘지 않도록 실제 이동 거리를 clamp 한다', () => {
