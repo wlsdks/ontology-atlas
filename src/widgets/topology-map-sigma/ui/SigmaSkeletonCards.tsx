@@ -2644,6 +2644,8 @@ export function SigmaSkeletonCards({
     tierByNodeId: Map<string, SkeletonCardModel['tier']>;
   } | null>(null);
   const dragViewportOffsetsRef = useRef(new Map<string, { dx: number; dy: number }>());
+  const [dragViewportOffsetPersistedCount, setDragViewportOffsetPersistedCount] =
+    useState(0);
   const activeDockDragSnapshotsRef = useRef<Map<string, DockDragSnapshot>>(new Map());
   const suppressClickRef = useRef(false);
   const dragSettledTimerRef = useRef<number | null>(null);
@@ -2970,13 +2972,15 @@ export function SigmaSkeletonCards({
               dy: previous.dy + drag.viewportPreviewDy,
             });
           }
+          const persistedOffsetCount = dragViewportOffsetsRef.current.size;
+          setDragViewportOffsetPersistedCount(persistedOffsetCount);
           const container = containerRef.current;
           if (container) {
             container.dataset.dragPreviewScope = 'persisted-drop-viewport-offset';
             container.dataset.dragPreviewOffsetX = String(drag.viewportPreviewDx);
             container.dataset.dragPreviewOffsetY = String(drag.viewportPreviewDy);
             container.dataset.dragViewportOffsetPersistedCount = String(
-              dragViewportOffsetsRef.current.size,
+              persistedOffsetCount,
             );
           }
         }
@@ -6194,6 +6198,7 @@ export function SigmaSkeletonCards({
     selectedRelationLabelHandoff?.action,
     selectedRelationLabelHandoff?.cliFallbackCommand,
     selectedRelationLabelHandoff?.route,
+    selectedRelationSurfaceRoute,
     selectedSlug,
     emitVisibilityStats,
     getFixedSurfaceRects,
@@ -6777,11 +6782,11 @@ export function SigmaSkeletonCards({
       data-drag-large-cluster-clamp-threshold={DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD}
       data-drag-preview-contract="large-cluster-uses-viewport-offset-during-active-drag"
       data-drag-preview-scope={
-        dragViewportOffsetsRef.current.size > 0
+        dragViewportOffsetPersistedCount > 0
           ? 'persisted-drop-viewport-offset'
           : 'idle'
       }
-      data-drag-viewport-offset-persisted-count={dragViewportOffsetsRef.current.size}
+      data-drag-viewport-offset-persisted-count={dragViewportOffsetPersistedCount}
       data-drag-frame-cache-contract="pointer-move-reuses-drag-indexes"
       data-drag-reposition-policy="raf-coalesced-pointer-move"
       data-drag-reposition-coalesced="false"
