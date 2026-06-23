@@ -1310,6 +1310,75 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("선택 ego 상세 companion 은 focus 전용 폭으로 근거 제목을 보존한다", async () => {
+    const graph = makeGraph();
+    graph.addNode("element:evidence", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 14,
+      y: 7,
+      label: "Builder Command Strip",
+    });
+    graph.addEdge("domain:d1", "element:evidence", {
+      size: 1,
+      color: "rgba(139,151,255,0.28)",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+      authored: true,
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "element:evidence",
+            title: "Builder Command Strip",
+            kind: "element",
+            tier: 3 as const,
+            dock: { parentId: "domain:d1", index: 0, total: 1, side: "right" },
+          },
+        ]}
+        selectedSlug="domain:d1"
+        selectedFocusCenterActive
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const evidenceCard = screen
+      .getByText("Builder Command Strip")
+      .closest("[data-skeleton-card]");
+
+    await waitFor(() => {
+      expect(evidenceCard).toHaveAttribute(
+        "data-selected-focus-companion-readable-title",
+        "true",
+      );
+      expect(evidenceCard).toHaveAttribute(
+        "data-card-max-width-token",
+        "--topology-card-selected-focus-companion-max-width",
+      );
+      expect(evidenceCard?.querySelector("[data-card-title]")).toHaveAttribute(
+        "data-card-title-lane-contract",
+        "focus-companion-keeps-evidence-title-readable",
+      );
+      expect(layer.style.getPropertyValue(
+        "--topology-card-selected-focus-companion-max-width",
+      )).toBe("288px");
+    });
+  });
+
   it("선택된 카드는 다른 골격 카드보다 위에 뜨고 조용한 selected token 을 쓴다", () => {
     render(
       <SigmaSkeletonCards

@@ -261,9 +261,12 @@ const EDGE_CLEARANCE_MASK_PX = 10;
 const HOVER_POP_W = 272;
 const BASE_ANCHOR_CARD_MAX_WIDTH_PX = 280;
 const SELECTED_FOCUS_CARD_MAX_WIDTH_PX = 440;
+const SELECTED_FOCUS_COMPANION_CARD_MAX_WIDTH_PX = 288;
 const HEALTH_REPAIR_CARD_MAX_WIDTH_PX = 320;
 const ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX = 128;
 const SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN = '--topology-card-selected-focus-max-width';
+const SELECTED_FOCUS_COMPANION_CARD_MAX_WIDTH_TOKEN =
+  '--topology-card-selected-focus-companion-max-width';
 const SELECTED_FOCUS_QUIET_BORDER_TOKEN = '--topology-card-selected-quiet-border';
 const SELECTED_FOCUS_QUIET_WASH_TOKEN = '--topology-card-selected-quiet-wash';
 const HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN = '--topology-health-repair-card-max-width';
@@ -3341,6 +3344,13 @@ export function SigmaSkeletonCards({
         `${
           SELECTED_FOCUS_CARD_MAX_WIDTH_PX +
           (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
+        }px`,
+      );
+      container.style.setProperty(
+        SELECTED_FOCUS_COMPANION_CARD_MAX_WIDTH_TOKEN,
+        `${
+          SELECTED_FOCUS_COMPANION_CARD_MAX_WIDTH_PX +
+          (scale - 1) * TIER_CARD_MAX_WIDTH_SCALE_STEP_PX[3]
         }px`,
       );
       container.style.setProperty(
@@ -7475,6 +7485,15 @@ export function SigmaSkeletonCards({
           ? SELECTED_RELATION_ENDPOINT_ROLE_LABEL[selectedRelationEndpointRole]
           : undefined;
         const pathEndpoint = pathRole === 'source' || pathRole === 'target';
+        const selectedFocusCompanion =
+          selectedRelationEdgeId === null &&
+          selectedSlug !== null &&
+          selectedFocusCluster !== null &&
+          selectedFocusCluster.has(nodeId) &&
+          !selected &&
+          card.tier === 3 &&
+          !pathWorkflowActive &&
+          !healthRepairTarget;
         const kindDescription = describeKind?.(card.kind) ?? card.kind;
         const kindBadgeLabel =
           describeKindBadge?.(card.kind) ??
@@ -7628,6 +7647,9 @@ export function SigmaSkeletonCards({
                 ? 'selected-title-before-subtree-count'
                 : undefined
             }
+            data-selected-focus-companion-readable-title={
+              selectedFocusCompanion ? 'true' : undefined
+            }
             data-card-max-width-token={
               selectedRelationSummaryOwnsMeta
                 ? SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN
@@ -7635,6 +7657,8 @@ export function SigmaSkeletonCards({
                 ? '--topology-path-endpoint-card-max-width'
                 : healthRepairAuditTarget
                 ? HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN
+                : selectedFocusCompanion
+                ? SELECTED_FOCUS_COMPANION_CARD_MAX_WIDTH_TOKEN
                 : TIER_CARD_MAX_WIDTH_TOKEN[card.tier]
             }
             data-card-spacing-contract="css-tokenized-block-rhythm"
@@ -7910,6 +7934,8 @@ export function SigmaSkeletonCards({
                     ? 'var(--topology-path-endpoint-card-max-width)'
                     : healthRepairAuditTarget
                     ? `var(${HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN})`
+                    : selectedFocusCompanion
+                    ? `var(${SELECTED_FOCUS_COMPANION_CARD_MAX_WIDTH_TOKEN})`
                     : `var(${TIER_CARD_MAX_WIDTH_TOKEN[card.tier]})`,
                 '--card-border': selected
                   ? `var(${SELECTED_FOCUS_QUIET_BORDER_TOKEN})`
@@ -8020,6 +8046,8 @@ export function SigmaSkeletonCards({
                   ? 'selected-title-keeps-current-focus-readable'
                   : healthRepairAuditTarget
                     ? 'health-repair-target-keeps-project-title-readable'
+                  : selectedFocusCompanion
+                    ? 'focus-companion-keeps-evidence-title-readable'
                   : coreHierarchyCountHidden
                     ? 'core-title-keeps-map-readable'
                   : 'title-shrinks-before-meta-chips'

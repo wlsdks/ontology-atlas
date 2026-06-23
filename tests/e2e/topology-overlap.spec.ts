@@ -870,6 +870,46 @@ test("Relief Focus selected capability card keeps its title readable in the inst
   ).toBe(true);
 });
 
+test("Relief Focus selected domain keeps evidence companion titles readable", async ({
+  page,
+}) => {
+  await openRelief(page, INSTALLED_APP_WEBVIEW, {
+    mode: "focus",
+    requireHud: false,
+    selectedSlug: "domain:views",
+  });
+
+  const evidenceCompanion = page
+    .locator(
+      '[data-skeleton-card][data-slug="element:builder-command-strip"]:not([data-surface-hidden="true"])',
+    )
+    .first();
+  await expect(evidenceCompanion).toBeVisible();
+  await expect(evidenceCompanion).toHaveAttribute(
+    "data-selected-focus-companion-readable-title",
+    "true",
+  );
+  await expect(evidenceCompanion).toHaveAttribute(
+    "data-card-max-width-token",
+    "--topology-card-selected-focus-companion-max-width",
+  );
+  await expect(evidenceCompanion.locator("[data-card-title]")).toHaveAttribute(
+    "data-card-title-lane-contract",
+    "focus-companion-keeps-evidence-title-readable",
+  );
+  const evidenceTitleFits = await evidenceCompanion
+    .locator("[data-card-title]")
+    .evaluate((element) => element.scrollWidth <= element.clientWidth + 1);
+  expect(
+    evidenceTitleFits,
+    "Installed-app WebView Focus evidence companion title should not truncate on the map",
+  ).toBe(true);
+  expect(
+    cardPairsThatIntersect(await visibleCardRects(page)),
+    "Wider Focus evidence companion should not overlap other visible Relief cards",
+  ).toEqual([]);
+});
+
 test("Relief Health repair target keeps the project title readable in the installed app WebView size", async ({
   page,
 }) => {
