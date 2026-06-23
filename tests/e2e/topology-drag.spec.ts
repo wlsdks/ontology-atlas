@@ -283,6 +283,9 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
     linkedMaxOffset: Number(
       el.getAttribute("data-drag-reactive-motion-linked-max-offset-px") ?? "0",
     ),
+    ambientMotionCount: Number(
+      el.getAttribute("data-drag-reactive-ambient-motion-visible-count") ?? "0",
+    ),
     linkedMotionCount: Number(
       el.getAttribute("data-drag-reactive-linked-motion-visible-count") ?? "0",
     ),
@@ -301,13 +304,14 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
     ),
     visibleCount: Number(el.getAttribute("data-drag-reactive-context-visible-count") ?? "0"),
   }));
-  expect(reactiveProof.baseMaxOffset).toBe(14);
+  expect(reactiveProof.baseMaxOffset).toBe(24);
   expect(reactiveProof.linkedMaxOffset).toBe(36);
   expect(reactiveProof.maxOffset).toBe(36);
   expect(reactiveProof.linkedPolicy).toBe("direct-neighbor-readable-follow");
   expect(reactiveProof.maxObservedOffset).toBeGreaterThanOrEqual(30);
   expect(reactiveProof.maxObservedOffset).toBeLessThanOrEqual(36);
   expect(reactiveProof.motionCount).toBeGreaterThan(0);
+  expect(reactiveProof.ambientMotionCount).toBeGreaterThan(0);
   expect(reactiveProof.linkedMotionCount).toBeGreaterThan(0);
   expect(reactiveProof.opacity).toBe("0.42");
   expect(reactiveProof.opacityToken).toBe("--topology-card-drag-reactive-context-opacity");
@@ -357,6 +361,13 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
     true,
   );
   expect(contextAfter.some((entry) => entry.motionStrength === "linked-context")).toBe(true);
+  expect(
+    contextAfter.some(
+      (entry) =>
+        entry.motionStrength === "ambient-context" &&
+        Math.hypot(entry.motionDx, entry.motionDy) >= 16,
+    ),
+  ).toBe(true);
   expect(
     contextAfter.some((entry) => entry.motionPolicy === "direct-neighbor-readable-follow"),
   ).toBe(true);

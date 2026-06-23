@@ -4938,6 +4938,9 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyDragReactiveMotionVisibleCount || 0) >= 1)) {
         return `WebView Relief drag did not move surrounding context reactively (${payload.markers.topologyDragReactiveMotionVisibleCount ?? "missing"} moved)`;
       }
+      if (!(Number(payload.markers.topologyDragReactiveAmbientMotionVisibleCount || 0) >= 1)) {
+        return `WebView Relief drag did not move ambient surrounding context reactively (${payload.markers.topologyDragReactiveAmbientMotionVisibleCount ?? "missing"} moved)`;
+      }
       if (!(Number(payload.markers.topologyDragReactiveLinkedMotionVisibleCount || 0) >= 1)) {
         return `WebView Relief drag did not move graph-linked surrounding context reactively (${payload.markers.topologyDragReactiveLinkedMotionVisibleCount ?? "missing"} moved)`;
       }
@@ -4967,6 +4970,9 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (dragReactiveMotionMaxOffsetPx < 36) {
         return `WebView Relief drag reactive motion max offset did not expose readable linked follow (${payload.markers.topologyDragReactiveMotionMaxOffsetPx ?? "missing"})`;
+      }
+      if (!(Number(payload.markers.topologyDragReactiveMotionBaseMaxOffsetPx || 0) >= 24)) {
+        return `WebView Relief drag ambient reactive motion max offset was ${payload.markers.topologyDragReactiveMotionBaseMaxOffsetPx ?? "missing"}`;
       }
       if (
         !(

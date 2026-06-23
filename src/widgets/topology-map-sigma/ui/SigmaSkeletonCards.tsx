@@ -225,8 +225,8 @@ const TIER_SURFACE_ALPHA: Record<
 const DIM_ANCHOR_OPACITY = '0.26';
 const DIM_CHIP_OPACITY = '0.08';
 const DRAG_REACTIVE_CONTEXT_OPACITY = '0.42';
-const DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX = 14;
-const DRAG_REACTIVE_MOTION_BASE_RATIO = 0.08;
+const DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX = 24;
+const DRAG_REACTIVE_MOTION_BASE_RATIO = 0.12;
 const DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX = 36;
 const DRAG_REACTIVE_MOTION_LINKED_RATIO = 0.48;
 const DRAG_REACTIVE_MOTION_MAX_OFFSET_PX = DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX;
@@ -4680,6 +4680,7 @@ export function SigmaSkeletonCards({
     let selectedRelationContextPinCount = 0;
     let dragReactiveContextVisibleCount = 0;
     let dragReactiveMotionVisibleCount = 0;
+    let dragReactiveAmbientMotionVisibleCount = 0;
     let dragReactiveLinkedMotionVisibleCount = 0;
     let dragReactiveMotionMaxOffsetPx = 0;
     for (const el of orderedDimEls) {
@@ -4793,6 +4794,8 @@ export function SigmaSkeletonCards({
             dragReactiveMotionVisibleCount += 1;
             if (el.dataset.dragReactiveMotionStrength === 'linked-context') {
               dragReactiveLinkedMotionVisibleCount += 1;
+            } else if (el.dataset.dragReactiveMotionStrength === 'ambient-context') {
+              dragReactiveAmbientMotionVisibleCount += 1;
             }
             const dx = Number(el.dataset.dragReactiveMotionDx ?? '0');
             const dy = Number(el.dataset.dragReactiveMotionDy ?? '0');
@@ -4849,6 +4852,9 @@ export function SigmaSkeletonCards({
         : 'idle';
     container.dataset.dragReactiveMotionVisibleCount = String(
       dragReactiveMotionVisibleCount,
+    );
+    container.dataset.dragReactiveAmbientMotionVisibleCount = String(
+      dragReactiveAmbientMotionVisibleCount,
     );
     container.dataset.dragReactiveLinkedMotionVisibleCount = String(
       dragReactiveLinkedMotionVisibleCount,
@@ -7626,6 +7632,7 @@ export function SigmaSkeletonCards({
       data-drag-reactive-motion-policy="idle"
       data-drag-reactive-motion-linked-policy="idle"
       data-drag-reactive-motion-visible-count="0"
+      data-drag-reactive-ambient-motion-visible-count="0"
       data-drag-reactive-linked-motion-visible-count="0"
       data-drag-reactive-motion-max-observed-offset-px="0"
       data-drag-reactive-motion-max-offset-px={DRAG_REACTIVE_MOTION_MAX_OFFSET_PX}

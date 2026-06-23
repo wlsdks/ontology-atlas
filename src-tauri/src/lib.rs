@@ -1049,6 +1049,9 @@ pub fn run() {
                                           result.dragReactiveMotionVisibleCount = Number(
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-visible-count") || "0"
                                           );
+                                          result.dragReactiveAmbientMotionVisibleCount = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-ambient-motion-visible-count") || "0"
+                                          );
                                           result.dragReactiveLinkedMotionVisibleCount = Number(
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-linked-motion-visible-count") || "0"
                                           );
@@ -4913,6 +4916,12 @@ pub fn run() {
                                         skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-visible-count") ||
                                         "0"
                                     ),
+                                  topologyDragReactiveAmbientMotionVisibleCount:
+                                    Number(
+                                      topologyDragVerification?.dragReactiveAmbientMotionVisibleCount ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-ambient-motion-visible-count") ||
+                                        "0"
+                                    ),
                                   topologyDragReactiveLinkedMotionVisibleCount:
                                     Number(
                                       topologyDragVerification?.dragReactiveLinkedMotionVisibleCount ||
@@ -5461,6 +5470,7 @@ mod tests {
         assert!(source.contains("topologyDragReactiveMotionContract"));
         assert!(source.contains("topologyDragReactiveMotionLinkedPolicy"));
         assert!(source.contains("topologyDragReactiveMotionMaxObservedOffsetPx"));
+        assert!(source.contains("topologyDragReactiveAmbientMotionVisibleCount"));
         assert!(source.contains("topologyDragReactiveLinkedMotionVisibleCount"));
         assert!(source.contains("topologyDragReactiveMotionLinkedMaxOffsetPx"));
         assert!(source.contains("topologyDragTensionConnectorContract"));
