@@ -212,6 +212,7 @@ import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
+const TOPOLOGY_OVERVIEW_WIDE_CANVAS_ASPECT_X = 8;
 
 export function HomePage() {
   const t = useTranslations('topology');
@@ -676,9 +677,9 @@ export function HomePage() {
       width: 1000,
       height: 1000,
       // 와이드 뷰포트 — 정원은 autoRescale 후 좌우가 비고 세로 거리가 멀어
-      // 보인다. 넓은 캔버스를 지도 자체가 쓰도록 강한 가로 타원으로 고정
-      // 배치한다.
-      aspectX: 5,
+      // 보인다. 캔버스를 다시 움직이는 대신, 결정론적 overview projection 을
+      // 넓게 잡아 시작 지형 자체가 desktop canvas 를 쓰게 한다.
+      aspectX: TOPOLOGY_OVERVIEW_WIDE_CANVAS_ASPECT_X,
     });
     const map = new Map<string, { x: number; y: number; size: number }>();
     const slugs = new Set<string>(reveal.visibleSlugs);

@@ -762,31 +762,38 @@ test("Relief overview support rail stays compact on wide desktop viewports", asy
 test("Relief overview uses the wide canvas for the fixed skeleton map", async ({
   page,
 }) => {
-  const viewport = VIEWPORTS[1];
-  await openRelief(page, viewport, { mode: "map" });
+  for (const viewport of VIEWPORTS.filter(({ width }) => width >= 1920)) {
+    await openRelief(page, viewport, { mode: "map" });
 
-  const panelRect = await rectOf(page.getByTestId("topology-analysis-panel"));
-  const cards = await visibleCardRects(page);
-  const bbox = cards.reduce(
-    (acc, card) => ({
-      left: Math.min(acc.left, card.left),
-      top: Math.min(acc.top, card.top),
-      right: Math.max(acc.right, card.right),
-      bottom: Math.max(acc.bottom, card.bottom),
-    }),
-    { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
-  );
-  const mapWidth = bbox.right - bbox.left;
-  const railGap = bbox.left - panelRect.right;
+    const panelRect = await rectOf(page.getByTestId("topology-analysis-panel"));
+    const cards = await visibleCardRects(page);
+    const bbox = cards.reduce(
+      (acc, card) => ({
+        left: Math.min(acc.left, card.left),
+        top: Math.min(acc.top, card.top),
+        right: Math.max(acc.right, card.right),
+        bottom: Math.max(acc.bottom, card.bottom),
+      }),
+      { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
+    );
+    const mapWidth = bbox.right - bbox.left;
+    const railGap = bbox.left - panelRect.right;
+    const usableWidth = viewport.width - panelRect.right;
+    const canvasUse = mapWidth / usableWidth;
 
-  expect(
-    railGap,
-    "fixed overview layout should not leave a second empty rail between the panel and the map",
-  ).toBeLessThanOrEqual(220);
-  expect(
-    mapWidth,
-    "fixed overview layout should spread ontology anchors across the wide canvas instead of clustering in the center",
-  ).toBeGreaterThanOrEqual(940);
+    expect(
+      railGap,
+      `fixed overview layout should not leave a second empty rail between the panel and the map at ${viewport.label}`,
+    ).toBeLessThanOrEqual(viewport.width >= 2400 ? 360 : 220);
+    expect(
+      mapWidth,
+      `fixed overview layout should spread ontology anchors across the wide canvas instead of clustering in the center at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(viewport.width >= 2400 ? 1380 : 940);
+    expect(
+      canvasUse,
+      `fixed overview layout should use most of the canvas after the support panel at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(viewport.width >= 2400 ? 0.61 : 0.63);
+  }
 });
 
 test("Relief zoom-in switches noncritical context cards to kind pins", async ({ page }) => {

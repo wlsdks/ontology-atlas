@@ -4477,7 +4477,20 @@ export function SigmaSkeletonCards({
                 containerHeight: containerRect.height,
                 fixedSurfaceRects,
               })
-            : !followsActiveGraphDrag && ego?.slugs.has(slug)
+            : !followsActiveGraphDrag &&
+                ego?.slugs.has(slug) &&
+                !manualFocusPlacementActive
+            ? clampVisibleAnchorCard({
+                x: vp.x,
+                y: vp.y,
+                width: cardWidth,
+                height: cardHeight,
+                anchor: safeAnchorKey,
+                containerWidth: containerRect.width,
+                containerHeight: containerRect.height,
+                fixedSurfaceRects,
+              })
+            : !followsActiveGraphDrag && !ego
             ? clampVisibleAnchorCard({
                 x: vp.x,
                 y: vp.y,
