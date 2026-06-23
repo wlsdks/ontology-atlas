@@ -4264,6 +4264,43 @@ test("Relief selected relation zoom-in turns both endpoint cards into compact ro
     "data-selected-relation-endpoint-zoom-lens-viewport-contract",
     "camera-zoom-in-keeps-role-marks-inside-viewport",
   );
+  const selectedOverlay = page.locator("[data-selected-relation-overlay]").first();
+  await expect(selectedOverlay).toHaveAttribute(
+    "data-selected-relation-zoom-lens-label",
+    "compact-glyph",
+  );
+  await expect(selectedOverlay).toHaveAttribute(
+    "data-selected-relation-zoom-lens-label-contract",
+    "camera-zoom-in-uses-compact-relation-glyph",
+  );
+  const selectedOverlayState = await selectedOverlay.evaluate((overlay) => {
+    const glyph = overlay.querySelector("[data-selected-relation-zoom-lens-label-glyph]");
+    const typeText = overlay.querySelector("[data-relation-label-type-text]");
+    const glyphRect = glyph instanceof HTMLElement ? glyph.getBoundingClientRect() : null;
+    const glyphStyle = glyph instanceof HTMLElement ? window.getComputedStyle(glyph) : null;
+    const overlayRect = overlay.getBoundingClientRect();
+    return {
+      glyphText: glyph?.textContent?.trim() || "",
+      glyphVisible: Boolean(
+        glyphRect &&
+          glyphStyle &&
+          glyphStyle.display !== "none" &&
+          glyphStyle.visibility !== "hidden" &&
+          glyphRect.width > 0 &&
+          glyphRect.height > 0,
+      ),
+      fullTextClass: typeText instanceof HTMLElement ? typeText.className : "",
+      readableText: overlay.getAttribute("data-relation-label-readable-text") || "",
+      visibleText: overlay.getAttribute("data-relation-label-visible-text") || "",
+      width: overlayRect.width,
+    };
+  });
+  expect(selectedOverlayState.glyphText).toMatch(/^[A-Z](?:×\d+)?$/);
+  expect(selectedOverlayState.glyphVisible).toBe(true);
+  expect(selectedOverlayState.fullTextClass).toContain("sr-only");
+  expect(selectedOverlayState.readableText).toContain("contains");
+  expect(selectedOverlayState.visibleText).toContain("contains");
+  expect(selectedOverlayState.width).toBeLessThanOrEqual(48);
 
   const endpointState = await page.locator("[data-skeleton-card]").evaluateAll(
     (cards, endpointSlugs) =>

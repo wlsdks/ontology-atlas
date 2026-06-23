@@ -864,6 +864,17 @@ function selectedRelationLabelVisibleText({
   return `${label} ×${count} · ${evidenceChipText}`;
 }
 
+function selectedRelationZoomLensLabelText({
+  count,
+  label,
+}: {
+  count: number;
+  label: string;
+}): string {
+  const glyph = label.trim().slice(0, 1).toUpperCase() || 'R';
+  return count > 1 ? `${glyph}×${count}` : glyph;
+}
+
 function isDockConnectorSuppressed(targetEl: HTMLElement | null | undefined): boolean {
   return Boolean(targetEl?.dataset.dockCol && targetEl.dataset.dockCol !== '0');
 }
@@ -7305,6 +7316,11 @@ export function SigmaSkeletonCards({
     ? egoRelationConnectors.filter((connector) => !isSelectedRelationSurface(connector))
         .length
     : 0;
+  const renderCameraRatio = readSkeletonCameraRatio(sigma);
+  const renderZoomLensCardCompactionActive =
+    renderCameraRatio <= ZOOM_LENS_RATIO_THRESHOLD &&
+    !pathWorkflowActive &&
+    !healthRepairTarget;
 
   return (
     <div
@@ -8186,10 +8202,15 @@ export function SigmaSkeletonCards({
           state: evidenceState,
         });
         const labelText = formatRelationLabel(label.relationType, label.count);
+        const visibleRelationTypeLabel = formatRelationVisibleLabel(label.relationType);
         const visibleLabelText = selectedRelationLabelVisibleText({
           count: label.count,
           evidenceChipText,
-          label: formatRelationVisibleLabel(label.relationType),
+          label: visibleRelationTypeLabel,
+        });
+        const zoomLensLabelText = selectedRelationZoomLensLabelText({
+          count: label.count,
+          label: visibleRelationTypeLabel,
         });
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
@@ -8215,6 +8236,11 @@ export function SigmaSkeletonCards({
             data-relation-type={label.relationType}
             data-relation-type-label={labelText}
             data-relation-label-visible-text={visibleLabelText}
+            data-selected-relation-zoom-lens-label={
+              renderZoomLensCardCompactionActive ? 'compact-glyph' : 'full-label'
+            }
+            data-selected-relation-zoom-lens-label-contract="camera-zoom-in-uses-compact-relation-glyph"
+            data-selected-relation-zoom-lens-label-text={zoomLensLabelText}
             data-relation-label-visible-count-policy="selected-relation-shows-count-and-evidence"
             data-relation-label-readable-text={`${labelText} · ${evidenceChipText}`}
             data-agent-gate-kind={agentGateKind}
@@ -8270,7 +8296,11 @@ export function SigmaSkeletonCards({
             data-relation-direction-border-token="--topology-relation-direction-border"
             data-relation-direction-text-token="--topology-relation-direction-text"
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[var(--topology-relation-label-hit-min-height)] items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[var(--topology-relation-label-radius)] border px-[var(--topology-relation-label-padding-x)] text-[length:var(--topology-relation-label-text-size)] font-medium leading-none tracking-normal text-[color:var(--topology-relation-label-selected-text)]"
+            className={`pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[var(--topology-relation-label-hit-min-height)] items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[var(--topology-relation-label-radius)] border px-[var(--topology-relation-label-padding-x)] text-[length:var(--topology-relation-label-text-size)] font-medium leading-none tracking-normal text-[color:var(--topology-relation-label-selected-text)] ${
+              renderZoomLensCardCompactionActive
+                ? '!h-7 !min-h-7 !w-10 !gap-0 !rounded-full !px-0 !text-[0.66rem]'
+                : ''
+            }`}
             style={{
               backgroundColor: 'var(--topology-relation-label-selected-surface)',
               borderColor: 'var(--topology-relation-label-selected-border)',
@@ -8303,10 +8333,20 @@ export function SigmaSkeletonCards({
               data-relation-label-segment="type"
               data-segment-divider-token="--topology-relation-label-border"
               data-relation-label-type-text-contract="typed-fact-label-stays-readable"
-              className="shrink-0"
+              className={renderZoomLensCardCompactionActive ? 'sr-only' : 'shrink-0'}
             >
               {visibleLabelText}
             </span>
+            {renderZoomLensCardCompactionActive ? (
+              <span
+                aria-hidden="true"
+                data-selected-relation-zoom-lens-label-glyph
+                data-selected-relation-zoom-lens-label-glyph-contract="compact-map-label-inspector-keeps-full-fact"
+                className="font-mono font-semibold leading-none"
+              >
+                {zoomLensLabelText}
+              </span>
+            ) : null}
             <span
               aria-hidden="true"
               data-relation-evidence-glyph={evidenceState}
