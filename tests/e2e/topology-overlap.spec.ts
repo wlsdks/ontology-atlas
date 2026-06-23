@@ -952,6 +952,17 @@ test("Relief focus card wheel zoom still switches surrounding detail cards to pi
     "data-zoom-lens-presentation",
     "lens-pin",
   );
+  const compactFocusReadableCards = page.locator(
+    '[data-skeleton-card][data-zoom-lens-focus-readable-compaction="camera-zoom-in-kind-pin"]',
+  );
+  await expect(compactFocusReadableCards.first()).toHaveAttribute(
+    "data-zoom-lens-active-card",
+    "true",
+  );
+  await expect(compactFocusReadableCards.first()).toHaveAttribute(
+    "data-zoom-lens-presentation",
+    "lens-pin",
+  );
   const compactRects = await compactCards.evaluateAll((cards) =>
     cards.slice(0, 4).map((card) => {
       const rect = card.getBoundingClientRect();

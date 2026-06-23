@@ -1604,6 +1604,73 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     });
   });
 
+  it("camera zoom-in 은 focus readable companion 도 kind pin 으로 낮춘다", async () => {
+    const graph = makeGraph();
+    graph.addNode("element:evidence", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 14,
+      y: 7,
+      label: "Builder Command Strip",
+    });
+    graph.addEdge("domain:d1", "element:evidence", {
+      size: 1,
+      color: "rgba(139,151,255,0.28)",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+      authored: true,
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={makeStubSigma(0.42)}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "element:evidence",
+            title: "Builder Command Strip",
+            kind: "element",
+            tier: 3 as const,
+            dock: { parentId: "domain:d1", index: 0, total: 1, side: "right" },
+          },
+        ]}
+        selectedSlug="domain:d1"
+        selectedFocusCenterActive
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const evidenceCard = screen
+      .getByText("Builder Command Strip")
+      .closest("[data-skeleton-card]");
+
+    await waitFor(() => {
+      expect(evidenceCard).toHaveAttribute(
+        "data-selected-focus-companion-readable-title",
+        "true",
+      );
+      expect(evidenceCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+      expect(evidenceCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+      expect(evidenceCard).toHaveAttribute(
+        "data-zoom-lens-card-contract",
+        "noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in",
+      );
+      expect(evidenceCard).toHaveAttribute(
+        "data-zoom-lens-focus-readable-compaction",
+        "camera-zoom-in-kind-pin",
+      );
+    });
+  });
+
   it("선택된 카드는 다른 골격 카드보다 위에 뜨고 조용한 selected token 을 쓴다", () => {
     render(
       <SigmaSkeletonCards
