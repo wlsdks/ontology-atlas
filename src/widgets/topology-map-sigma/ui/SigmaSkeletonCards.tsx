@@ -269,6 +269,9 @@ const DRAG_OVERLAP_SUPPRESSION_PAD = OVERVIEW_COLLISION_PAD;
 const SAFE_VIEWPORT_MARGIN = 8;
 const SELECTED_FOCUS_DOCK_BOTTOM_INSET_PX = 180;
 const SELECTED_FOCUS_EGO_READING_BAND_Y_RATIO = 0.56;
+const SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MIN_PX = 280;
+const SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MAX_PX = 440;
+const SELECTED_FOCUS_CONTEXT_RAIL_Y_STEP_PX = 118;
 const FIXED_SURFACE_GAP = 8;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
@@ -4070,6 +4073,35 @@ export function SigmaSkeletonCards({
       const slug = el.dataset.slug;
       if (slug) elBySlug.set(slug, el);
     }
+    const selectedFocusContextRailActive =
+      selectedFocusCenterActive &&
+      selectedSlug !== null &&
+      selectedRelationEdgeId === null &&
+      activeDragCluster === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
+    const selectedFocusContextRailSlugs = selectedFocusContextRailActive
+      ? orderedEls
+          .map((el) => el.dataset.slug ?? '')
+          .filter(
+            (slug) =>
+              slug !== '' &&
+              slug !== selectedSlug &&
+              elBySlug.get(slug)?.dataset.tier === '1' &&
+              !elBySlug.get(slug)?.dataset.dockParent,
+          )
+          .sort()
+      : [];
+    const selectedFocusContextRailIndexBySlug = new Map(
+      selectedFocusContextRailSlugs.map((slug, index) => [slug, index]),
+    );
+    container.dataset.selectedFocusContextRailContract =
+      'focus-domain-context-uses-fixed-canvas-rails';
+    container.dataset.selectedFocusContextRailActive =
+      selectedFocusContextRailSlugs.length > 0 ? 'true' : 'false';
+    container.dataset.selectedFocusContextRailCount = String(
+      selectedFocusContextRailSlugs.length,
+    );
     const selectedRelationEndpointRoles = new Map<string, 'source' | 'target'>();
     let selectedRelationEndpointSource: string | null = null;
     let selectedRelationEndpointTarget: string | null = null;
@@ -4363,6 +4395,39 @@ export function SigmaSkeletonCards({
         const manualFocusPlacementActive =
           manualFocusPlacement.selectedSlug === selectedSlug &&
           manualFocusPlacement.slugs.has(slug);
+        const selectedFocusContextRailIndex =
+          !followsActiveGraphDrag && !manualFocusPlacementActive
+            ? selectedFocusContextRailIndexBySlug.get(slug)
+            : undefined;
+        const selectedFocusContextRailPlacement =
+          selectedFocusContextRailIndex !== undefined
+            ? (() => {
+                const railRows = Math.max(
+                  1,
+                  Math.ceil(selectedFocusContextRailSlugs.length / 2),
+                );
+                const railRow = Math.floor(selectedFocusContextRailIndex / 2);
+                const railSide = selectedFocusContextRailIndex % 2 === 0 ? -1 : 1;
+                const railGap =
+                  Math.min(
+                    SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MAX_PX,
+                    Math.max(
+                      SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MIN_PX,
+                      containerRect.width * 0.24,
+                    ),
+                  ) * scale;
+                const railStep = SELECTED_FOCUS_CONTEXT_RAIL_Y_STEP_PX * scale;
+                return {
+                  side: railSide === -1 ? 'left' : 'right',
+                  slot: selectedFocusContextRailIndex,
+                  x: containerRect.width / 2 + railSide * railGap,
+                  y:
+                    containerRect.height *
+                      SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO +
+                    (railRow - (railRows - 1) / 2) * railStep,
+                };
+              })()
+            : null;
         el.dataset.manualFocusPlacement = manualFocusPlacementActive ? 'true' : 'false';
         el.dataset.manualFocusPlacementPolicy = manualFocusPlacementActive
           ? 'use-dragged-graph-position'
@@ -4392,6 +4457,17 @@ export function SigmaSkeletonCards({
                   containerRect.height *
                   SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
               }
+            : selectedFocusContextRailPlacement
+            ? clampVisibleAnchorCard({
+                x: selectedFocusContextRailPlacement.x,
+                y: selectedFocusContextRailPlacement.y,
+                width: cardWidth,
+                height: cardHeight,
+                anchor: safeAnchorKey,
+                containerWidth: containerRect.width,
+                containerHeight: containerRect.height,
+                fixedSurfaceRects,
+              })
             : !followsActiveGraphDrag && ego?.slugs.has(slug)
             ? clampVisibleAnchorCard({
                 x: vp.x,
@@ -4424,7 +4500,21 @@ export function SigmaSkeletonCards({
         }
         el.dataset.selectedFocusCenterPolicy = selectedFocusViewportCenter
           ? 'viewport-center-anchor'
+          : selectedFocusContextRailPlacement
+            ? 'fixed-context-rail'
           : 'default';
+        if (selectedFocusContextRailPlacement) {
+          el.dataset.selectedFocusContextRail = 'true';
+          el.dataset.selectedFocusContextRailSlot = String(
+            selectedFocusContextRailPlacement.slot,
+          );
+          el.dataset.selectedFocusContextRailSide =
+            selectedFocusContextRailPlacement.side;
+        } else {
+          delete el.dataset.selectedFocusContextRail;
+          delete el.dataset.selectedFocusContextRailSlot;
+          delete el.dataset.selectedFocusContextRailSide;
+        }
         el.dataset.selectedFocusEgoReadingBand = selectedFocusEgoBand ? 'true' : 'false';
         if (selectedFocusEgoBand) {
           el.dataset.selectedFocusEgoReadingBandYRatio = String(
@@ -7012,6 +7102,7 @@ export function SigmaSkeletonCards({
     sigma,
     ego,
     activeDragCluster,
+    activeDragFreeContextCount,
     activeDragMotion,
     activeDragTensionConnectors.length,
     cards,

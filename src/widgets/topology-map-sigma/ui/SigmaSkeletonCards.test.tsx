@@ -628,6 +628,97 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
   });
 
+  it("선택 focus 에서는 주변 domain 맥락을 캔버스 고정 레일에 배치한다", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        const rects: Record<string, DOMRectInit> = {
+          "project:p": { x: 0, y: 0, width: 160, height: 44 },
+          "domain:d1": { x: 0, y: 0, width: 180, height: 44 },
+          "domain:d2": { x: 0, y: 0, width: 180, height: 44 },
+          "domain:d3": { x: 0, y: 0, width: 180, height: 44 },
+        };
+        const rect = slug ? rects[slug] : { x: 0, y: 0, width: 960, height: 540 };
+        return {
+          left: rect.x ?? 0,
+          top: rect.y ?? 0,
+          right: (rect.x ?? 0) + (rect.width ?? 0),
+          bottom: (rect.y ?? 0) + (rect.height ?? 0),
+          width: rect.width ?? 0,
+          height: rect.height ?? 0,
+          x: rect.x ?? 0,
+          y: rect.y ?? 0,
+          toJSON: () => ({}),
+        };
+      });
+
+    try {
+      const graph = makeGraph();
+      graph.addNode("domain:d2", {
+        ...graph.getNodeAttributes("domain:d1"),
+        x: 420,
+        y: -260,
+        label: "Agent Partner",
+      });
+      graph.addNode("domain:d3", {
+        ...graph.getNodeAttributes("domain:d1"),
+        x: -380,
+        y: 280,
+        label: "Vault",
+      });
+
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            { id: "domain:d2", title: "Agent Partner", kind: "domain", tier: 1 as const },
+            { id: "domain:d3", title: "Vault", kind: "domain", tier: 1 as const },
+          ]}
+          selectedSlug="domain:d1"
+          selectedFocusCenterActive
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const leftRailCard = screen
+        .getByText("Agent Partner")
+        .closest("[data-skeleton-card]");
+      const rightRailCard = screen.getByText("Vault").closest("[data-skeleton-card]");
+
+      await waitFor(() => {
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-contract",
+          "focus-domain-context-uses-fixed-canvas-rails",
+        );
+        expect(layer).toHaveAttribute("data-selected-focus-context-rail-active", "true");
+        expect(layer).toHaveAttribute("data-selected-focus-context-rail-count", "2");
+        expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail", "true");
+        expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail-side", "left");
+        expect(leftRailCard).toHaveAttribute(
+          "data-selected-focus-center-policy",
+          "fixed-context-rail",
+        );
+        expect(leftRailCard).toHaveStyle({
+          transform: "translate(-50%, -50%) translate3d(200px, 259.2px, 0)",
+        });
+        expect(rightRailCard).toHaveAttribute("data-selected-focus-context-rail", "true");
+        expect(rightRailCard).toHaveAttribute(
+          "data-selected-focus-context-rail-side",
+          "right",
+        );
+        expect(rightRailCard).toHaveStyle({
+          transform: "translate(-50%, -50%) translate3d(760px, 259.2px, 0)",
+        });
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("줌 인하면 비선택 관계 chrome 을 배경 thread 로 낮춘다", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {
