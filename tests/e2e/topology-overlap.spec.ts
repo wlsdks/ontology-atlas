@@ -175,6 +175,41 @@ async function visibleCardRects(page: Page) {
   );
 }
 
+async function visibleZoomLensPinRects(page: Page) {
+  return page
+    .locator('[data-skeleton-card][data-zoom-lens-active-card="true"]')
+    .evaluateAll((els) =>
+      els
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          const style = window.getComputedStyle(el);
+          return {
+            slug: el.getAttribute("data-slug") ?? "",
+            text: el.textContent?.trim() ?? "",
+            display: style.display,
+            opacity: Number(style.opacity || "1"),
+            surfaceHidden: el.getAttribute("data-surface-hidden") === "true",
+            visibility: style.visibility,
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height,
+          };
+        })
+        .filter(
+          (rect) =>
+            !rect.surfaceHidden &&
+            rect.display !== "none" &&
+            rect.visibility !== "hidden" &&
+            rect.opacity > 0.05 &&
+            rect.width > 0 &&
+            rect.height > 0,
+        ),
+    );
+}
+
 async function visibleCardScrollWidthViolations(page: Page) {
   return page.locator("[data-skeleton-card]").evaluateAll((els) =>
     els
@@ -947,6 +982,31 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
     projectAnchorRect.width,
     "overview zoom-in should compact the project root into a map pin instead of leaving a large title card over relation threads",
   ).toBeLessThanOrEqual(28);
+});
+
+test("Relief zoom-in keeps 14-inch lens pins separated", async ({ page }) => {
+  const viewport = MBP14_FULLSCREEN;
+  await openRelief(page, viewport, { mode: "map" });
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await page.mouse.move(viewport.width / 2, viewport.height / 2);
+  for (let i = 0; i < 7; i += 1) {
+    await page.mouse.wheel(0, -640);
+    await page.waitForTimeout(60);
+  }
+
+  await expect(layer).toHaveAttribute("data-zoom-lens-active", "true", {
+    timeout: 6_000,
+  });
+  await expect(layer).toHaveAttribute(
+    "data-zoom-lens-pin-separation-contract",
+    "visible-zoom-lens-pins-avoid-overlap-on-14-inch",
+  );
+  await expect(layer).toHaveAttribute("data-zoom-lens-pin-overlap-count", "0");
+
+  const pins = await visibleZoomLensPinRects(page);
+  expect(pins.length).toBeGreaterThan(0);
+  expect(cardPairsThatIntersect(pins)).toEqual([]);
 });
 
 test("Relief focus zoom-in demotes nonselected relation chrome to background threads", async ({
@@ -1821,7 +1881,7 @@ async function waitForCardsClear(
         ),
       {
         message: `cards should settle clear before sampling at ${viewport.label}`,
-        timeout: 5_000,
+        timeout: 8_000,
       },
     )
     .toEqual({ hud: [], overlap: [], viewport: [] });

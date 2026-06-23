@@ -5966,6 +5966,77 @@ export function SigmaSkeletonCards({
     container.dataset.relationLabelFixedSurfaceBlockerCount = String(
       relationLabelFixedSurfaceBlockerCount,
     );
+    let zoomLensPinSeparationHiddenCount = 0;
+    let zoomLensPinSeparationOverlapCount = 0;
+    if (zoomLensCardCompactionActive && activeDragCluster === null) {
+      const activePinRects = orderedEls
+        .filter(
+          (el) =>
+            el.dataset.zoomLensActiveCard === 'true' &&
+            isSkeletonCardVisibleFromFrameState(el),
+        )
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          return {
+            el,
+            rect: {
+              left: rect.left - containerRect.left,
+              top: rect.top - containerRect.top,
+              right: rect.right - containerRect.left,
+              bottom: rect.bottom - containerRect.top,
+            },
+            priority:
+              (el.dataset.zoomLensPinProximity === 'critical-neighbor' ? 0 : 10) +
+              (el.dataset.selectedRelationEndpoint === 'true' ? 0 : 3) +
+              Number(el.dataset.tier ?? '3'),
+          };
+        })
+        .sort(
+          (a, b) =>
+            a.priority - b.priority ||
+            Number(a.el.dataset.layoutY ?? '0') - Number(b.el.dataset.layoutY ?? '0') ||
+            (a.el.dataset.slug ?? '').localeCompare(b.el.dataset.slug ?? ''),
+        );
+      const acceptedPinRects: Array<{
+        left: number;
+        top: number;
+        right: number;
+        bottom: number;
+      }> = [];
+      for (const item of activePinRects) {
+        const overlaps = acceptedPinRects.some((rect) =>
+          rectsOverlap(item.rect, rect, -2),
+        );
+        if (overlaps) {
+          item.el.dataset.zoomLensPinSeparation = 'hidden-overlap';
+          item.el.dataset.surfaceHiddenReason = 'zoom-lens-pin-separation';
+          hideSkeletonCard(item.el, domWriteStats);
+          visibleCardRectCache.set(item.el, { rect: null, visible: false });
+          zoomLensPinSeparationHiddenCount += 1;
+          continue;
+        }
+        item.el.dataset.zoomLensPinSeparation = 'kept';
+        acceptedPinRects.push(item.rect);
+      }
+      zoomLensPinSeparationOverlapCount = countRectPairOverlaps(
+        acceptedPinRects,
+        -2,
+      );
+    } else {
+      for (const el of orderedEls) {
+        delete el.dataset.zoomLensPinSeparation;
+      }
+    }
+    container.dataset.zoomLensPinSeparationContract =
+      'visible-zoom-lens-pins-avoid-overlap-on-14-inch';
+    container.dataset.zoomLensPinSeparationReadPolicy =
+      'live-pin-rects-after-zoom-compaction';
+    container.dataset.zoomLensPinSeparationHiddenCount = String(
+      zoomLensPinSeparationHiddenCount,
+    );
+    container.dataset.zoomLensPinOverlapCount = String(
+      zoomLensPinSeparationOverlapCount,
+    );
     const residualOverlapRects = Array.from(visibleCardRectCache.values())
       .filter((entry): entry is { rect: DOMRect; visible: true } =>
         entry.visible && entry.rect !== null,
