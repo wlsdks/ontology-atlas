@@ -6462,15 +6462,58 @@ export function SigmaSkeletonCards({
               ? (selectedRelationOverlaysById.get(relationLabelId) ?? null)
               : null;
             if (overlay) {
+              const zoomLensSelectedRelationLabelActive = zoomLensCardCompactionActive;
+              const typeText = overlay.querySelector<HTMLElement>(
+                '[data-relation-label-type-text]',
+              );
+              const glyph = overlay.querySelector<HTMLElement>(
+                '[data-selected-relation-zoom-lens-label-glyph]',
+              );
               setSkeletonStyleValue(
                 overlay,
                 'transform',
                 labelButton.style.transform,
                 domWriteStats,
               );
-              setSkeletonStyleValue(overlay, 'width', labelButton.style.width, domWriteStats);
-              setSkeletonStyleValue(overlay, 'height', labelButton.style.height, domWriteStats);
-              overlay.dataset.relationLabelCompact = labelButton.dataset.relationLabelCompact;
+              setSkeletonStyleValue(
+                overlay,
+                'width',
+                zoomLensSelectedRelationLabelActive ? '2.5rem' : labelButton.style.width,
+                domWriteStats,
+              );
+              setSkeletonStyleValue(
+                overlay,
+                'height',
+                zoomLensSelectedRelationLabelActive ? '1.75rem' : labelButton.style.height,
+                domWriteStats,
+              );
+              overlay.dataset.selectedRelationZoomLensLabel =
+                zoomLensSelectedRelationLabelActive ? 'compact-glyph' : 'full-label';
+              overlay.dataset.relationLabelCompact = zoomLensSelectedRelationLabelActive
+                ? 'true'
+                : labelButton.dataset.relationLabelCompact;
+              overlay.dataset.relationLabelVisualState = zoomLensSelectedRelationLabelActive
+                ? 'zoom-lens-compact-glyph'
+                : 'full-selected-label';
+              if (zoomLensSelectedRelationLabelActive) {
+                overlay.style.setProperty('min-height', '1.75rem', 'important');
+                overlay.style.setProperty('gap', '0', 'important');
+                overlay.style.setProperty('padding-left', '0', 'important');
+                overlay.style.setProperty('padding-right', '0', 'important');
+                overlay.style.setProperty('border-radius', '9999px', 'important');
+                overlay.style.setProperty('font-size', '0.66rem', 'important');
+                typeText?.classList.add('sr-only');
+                glyph?.classList.remove('hidden');
+              } else {
+                overlay.style.removeProperty('min-height');
+                overlay.style.removeProperty('gap');
+                overlay.style.removeProperty('padding-left');
+                overlay.style.removeProperty('padding-right');
+                overlay.style.removeProperty('border-radius');
+                overlay.style.removeProperty('font-size');
+                typeText?.classList.remove('sr-only');
+                glyph?.classList.add('hidden');
+              }
               overlay.dataset.relationLabelViewportClampContract =
                 labelButton.dataset.relationLabelViewportClampContract ?? '';
               overlay.dataset.relationLabelViewportClampSide =
@@ -8278,6 +8321,11 @@ export function SigmaSkeletonCards({
             data-relation-label-direction-contract="edge-source-to-target-metadata"
             data-relation-label-compact="false"
             data-relation-label-density="focus-token"
+            data-relation-label-visual-state={
+              renderZoomLensCardCompactionActive
+                ? 'zoom-lens-compact-glyph'
+                : 'full-selected-label'
+            }
             data-relation-label-visual-owner="selected-relation-overlay"
             data-relation-label-hit-target-contract="button-keeps-click-handoff-overlay-owns-visible-badge"
             data-selected-relation-attention-contract="selected-overlay-wins-over-dimmed-context"
@@ -8337,16 +8385,16 @@ export function SigmaSkeletonCards({
             >
               {visibleLabelText}
             </span>
-            {renderZoomLensCardCompactionActive ? (
-              <span
-                aria-hidden="true"
-                data-selected-relation-zoom-lens-label-glyph
-                data-selected-relation-zoom-lens-label-glyph-contract="compact-map-label-inspector-keeps-full-fact"
-                className="font-mono font-semibold leading-none"
-              >
-                {zoomLensLabelText}
-              </span>
-            ) : null}
+            <span
+              aria-hidden="true"
+              data-selected-relation-zoom-lens-label-glyph
+              data-selected-relation-zoom-lens-label-glyph-contract="compact-map-label-inspector-keeps-full-fact"
+              className={`font-mono font-semibold leading-none ${
+                renderZoomLensCardCompactionActive ? '' : 'hidden'
+              }`}
+            >
+              {zoomLensLabelText}
+            </span>
             <span
               aria-hidden="true"
               data-relation-evidence-glyph={evidenceState}

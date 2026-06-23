@@ -4301,6 +4301,55 @@ test("Relief selected relation zoom-in turns both endpoint cards into compact ro
   expect(selectedOverlayState.readableText).toContain("contains");
   expect(selectedOverlayState.visibleText).toContain("contains");
   expect(selectedOverlayState.width).toBeLessThanOrEqual(48);
+  const selectedOverlayGeometry = await page.evaluate(
+    ({ sourceSlug, targetSlug }) => {
+      const overlay = document.querySelector("[data-selected-relation-overlay]");
+      const sourceCard = document.querySelector(
+        `[data-skeleton-card][data-slug="${sourceSlug}"]`,
+      );
+      const targetCard = document.querySelector(
+        `[data-skeleton-card][data-slug="${targetSlug}"]`,
+      );
+      const inspector = document.querySelector('[data-testid="sigma-selected-edge-card"]');
+      const rectOf = (element: Element | null) => {
+        if (!element) return null;
+        const rect = element.getBoundingClientRect();
+        return {
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+        };
+      };
+      const overlaps = (
+        a: ReturnType<typeof rectOf>,
+        b: ReturnType<typeof rectOf>,
+        pad = 0,
+      ) =>
+        Boolean(
+          a &&
+            b &&
+            a.left < b.right + pad &&
+            a.right > b.left - pad &&
+            a.top < b.bottom + pad &&
+            a.bottom > b.top - pad,
+        );
+      const overlayRect = rectOf(overlay);
+      const inspectorRect = rectOf(inspector);
+      return {
+        inspectorGap:
+          overlayRect && inspectorRect ? inspectorRect.left - overlayRect.right : null,
+        overlapsInspector: overlaps(overlayRect, inspectorRect, 24),
+        overlapsSource: overlaps(overlayRect, rectOf(sourceCard), 8),
+        overlapsTarget: overlaps(overlayRect, rectOf(targetCard), 8),
+      };
+    },
+    { sourceSlug: source, targetSlug: target },
+  );
+  expect(selectedOverlayGeometry.overlapsSource).toBe(false);
+  expect(selectedOverlayGeometry.overlapsTarget).toBe(false);
+  expect(selectedOverlayGeometry.overlapsInspector).toBe(false);
+  expect(selectedOverlayGeometry.inspectorGap ?? 24).toBeGreaterThanOrEqual(24);
 
   const endpointState = await page.locator("[data-skeleton-card]").evaluateAll(
     (cards, endpointSlugs) =>
