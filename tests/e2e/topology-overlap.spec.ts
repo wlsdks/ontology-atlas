@@ -850,7 +850,7 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   await expect(layer).not.toHaveAttribute("data-visible-card-count", "0");
   const compactCard = page
     .locator(
-      '[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"][data-zoom-lens-viewport-visible="true"]',
+      '[data-skeleton-card][data-zoom-lens-active-card="true"][data-zoom-lens-viewport-visible="true"]',
     )
     .first();
   await expect(compactCard).toHaveAttribute(
@@ -905,6 +905,21 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
     "data-zoom-lens-card-contract",
     "noncritical-context-card-becomes-kind-pin-on-camera-zoom-in",
   );
+
+  const projectAnchor = page.locator(
+    '[data-skeleton-card][data-slug="ontology-atlas"]',
+  );
+  await expect(projectAnchor).toHaveAttribute("data-zoom-lens-active-card", "true");
+  await expect(projectAnchor).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+  await expect(projectAnchor).toHaveAttribute(
+    "data-zoom-lens-card-contract",
+    "noncritical-context-card-becomes-kind-pin-on-camera-zoom-in",
+  );
+  const projectAnchorRect = await rectOf(projectAnchor);
+  expect(
+    projectAnchorRect.width,
+    "overview zoom-in should compact the project root into a map pin instead of leaving a large title card over relation threads",
+  ).toBeLessThanOrEqual(34);
 });
 
 test("Relief focus zoom-in demotes nonselected relation chrome to background threads", async ({

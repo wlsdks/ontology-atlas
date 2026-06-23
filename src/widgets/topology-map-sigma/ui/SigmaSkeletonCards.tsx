@@ -3739,6 +3739,11 @@ export function SigmaSkeletonCards({
         zoomLensCardCompactionActive && focusReadableContext;
       const compactSelectedRelationEndpointOnCameraZoom =
         zoomLensCardCompactionActive && el.dataset.selectedRelationEndpoint === 'true';
+      const compactMapRootAnchorOnCameraZoom =
+        zoomLensCardCompactionActive &&
+        selectedSlug === null &&
+        selectedRelationEdgeId === null &&
+        el.dataset.tier === '0';
       const dragReadableRootCard = el.dataset.dragClusterRole === 'root';
       const zoomLensCritical =
         dragReadableRootCard ||
@@ -3751,6 +3756,7 @@ export function SigmaSkeletonCards({
           !compactSelectedRelationEndpointOnCameraZoom);
       const zoomLensEligible =
         (el.dataset.zoomLensEligible === 'true' ||
+          compactMapRootAnchorOnCameraZoom ||
           compactFocusReadableOnCameraZoom ||
           compactSelectedRelationEndpointOnCameraZoom) &&
         !zoomLensCritical;
@@ -3760,6 +3766,8 @@ export function SigmaSkeletonCards({
         el.dataset.zoomLensPresentation = 'lens-pin';
         el.dataset.zoomLensCardContract = compactSelectedRelationEndpointOnCameraZoom
           ? 'selected-relation-endpoint-becomes-role-mark-on-camera-zoom-in'
+          : compactMapRootAnchorOnCameraZoom
+            ? 'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
           : el.dataset.zoomLensCardContract ===
                 'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in' ||
               el.dataset.selectedFocusContextReadableTitle === 'true'
