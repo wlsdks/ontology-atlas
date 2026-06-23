@@ -1079,6 +1079,10 @@ pub fn run() {
                                           result.dragTensionConnectorVisibleCount = Number(
                                             skeletonCardsLayer?.getAttribute("data-drag-tension-connector-visible-count") || "0"
                                           );
+                                          result.dragTensionConnectorActiveOpacity =
+                                            skeletonCardsLayer?.getAttribute("data-drag-tension-connector-active-opacity") || "";
+                                          result.dragTensionConnectorActiveStrokeWidth =
+                                            skeletonCardsLayer?.getAttribute("data-drag-tension-connector-active-stroke-width") || "";
                                           result.clusterSize = Number(
                                             skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"
                                           );
@@ -4976,6 +4980,14 @@ pub fn run() {
                                         skeletonCardsLayer?.getAttribute("data-drag-tension-connector-visible-count") ||
                                         "0"
                                     ),
+                                  topologyDragTensionConnectorActiveOpacity:
+                                    topologyDragVerification?.dragTensionConnectorActiveOpacity ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-tension-connector-active-opacity") ||
+                                    "",
+                                  topologyDragTensionConnectorActiveStrokeWidth:
+                                    topologyDragVerification?.dragTensionConnectorActiveStrokeWidth ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-tension-connector-active-stroke-width") ||
+                                    "",
                                   topologyDragDynamicState:
                                     skeletonCardsLayer?.getAttribute("data-drag-dynamic-state") || "",
                                   topologyDragDynamicRoot:
@@ -5475,6 +5487,7 @@ mod tests {
         assert!(source.contains("topologyDragReactiveMotionLinkedMaxOffsetPx"));
         assert!(source.contains("topologyDragTensionConnectorContract"));
         assert!(source.contains("topologyDragTensionConnectorVisibleCount"));
+        assert!(source.contains("topologyDragTensionConnectorActiveOpacity"));
         assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
         assert!(source.contains("__ontologyAtlasTopologyFocusNoopVerify"));
         assert!(source.contains("ontology-atlas:verify-selected-focus-safe-fit"));

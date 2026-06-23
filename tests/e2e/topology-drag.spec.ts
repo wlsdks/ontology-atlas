@@ -298,7 +298,9 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
     tensionExpectedCount: Number(
       el.getAttribute("data-drag-tension-connector-expected-count") ?? "0",
     ),
+    tensionOpacity: el.getAttribute("data-drag-tension-connector-active-opacity") ?? "",
     tensionPolicy: el.getAttribute("data-drag-tension-connector-policy") ?? "",
+    tensionStrokeWidth: el.getAttribute("data-drag-tension-connector-active-stroke-width") ?? "",
     tensionVisibleCount: Number(
       el.getAttribute("data-drag-tension-connector-visible-count") ?? "0",
     ),
@@ -319,6 +321,8 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
     "active-drag-draws-links-to-reactive-neighbors",
   );
   expect(reactiveProof.tensionPolicy).toBe("cluster-to-linked-context-only");
+  expect(reactiveProof.tensionOpacity).toBe("0.88");
+  expect(reactiveProof.tensionStrokeWidth).toBe("2.1");
   expect(reactiveProof.tensionExpectedCount).toBeGreaterThan(0);
   expect(reactiveProof.tensionVisibleCount).toBeGreaterThan(0);
   expect(reactiveProof.visibleCount).toBeGreaterThan(0);
@@ -328,6 +332,14 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
   await expect(tensionConnector).toHaveAttribute(
     "data-drag-tension-expression",
     "linked-context-tension",
+  );
+  await expect(tensionConnector).toHaveAttribute(
+    "data-drag-tension-active-opacity",
+    "0.88",
+  );
+  await expect(tensionConnector).toHaveAttribute(
+    "data-drag-tension-active-stroke-width",
+    "2.1",
   );
 
   const contextAfter = await page

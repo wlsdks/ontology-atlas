@@ -231,6 +231,8 @@ const DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX = 36;
 const DRAG_REACTIVE_MOTION_LINKED_RATIO = 0.48;
 const DRAG_REACTIVE_MOTION_MAX_OFFSET_PX = DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX;
 const DRAG_TENSION_CONNECTOR_MAX_COUNT = 8;
+const DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY = 0.88;
+const DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH = 2.1;
 const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
 const DIM_CHIP_OPACITY_TOKEN = '--topology-map-dim-context-opacity';
 const DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN =
@@ -6193,6 +6195,12 @@ export function SigmaSkeletonCards({
       container.dataset.dragTensionConnectorMaxCount = String(
         DRAG_TENSION_CONNECTOR_MAX_COUNT,
       );
+      container.dataset.dragTensionConnectorActiveOpacity = String(
+        DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY,
+      );
+      container.dataset.dragTensionConnectorActiveStrokeWidth = String(
+        DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH,
+      );
       const dragOnlyRelationLabelLayout = activeDragCluster !== null;
       if (dragOnlyRelationLabelLayout) {
         for (const button of container.querySelectorAll<HTMLElement>(
@@ -7648,6 +7656,10 @@ export function SigmaSkeletonCards({
       data-drag-tension-connector-expected-count={activeDragTensionConnectors.length}
       data-drag-tension-connector-visible-count="0"
       data-drag-tension-connector-max-count={DRAG_TENSION_CONNECTOR_MAX_COUNT}
+      data-drag-tension-connector-active-opacity={DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY}
+      data-drag-tension-connector-active-stroke-width={
+        DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH
+      }
       data-dim-anchor-opacity-token={DIM_ANCHOR_OPACITY_TOKEN}
       data-dim-chip-opacity-token={DIM_CHIP_OPACITY_TOKEN}
       data-dim-context-opacity-token={DIM_CHIP_OPACITY_TOKEN}
@@ -8050,13 +8062,21 @@ export function SigmaSkeletonCards({
               data-drag-tension-connector-contract="active-drag-draws-links-to-reactive-neighbors"
               data-drag-tension-connector-policy="cluster-to-linked-context-only"
               data-drag-tension-stroke-token="--topology-card-border-selected-strong"
+              data-drag-tension-active-opacity={DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY}
+              data-drag-tension-active-stroke-width={
+                DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH
+              }
               className="pointer-events-none topology-connector-path"
               fill="none"
               stroke="var(--topology-card-border-selected-strong)"
               strokeDasharray="4 7"
               strokeLinecap="round"
-              strokeWidth={activeDragMotion ? 1.45 : 1.05}
-              opacity={activeDragMotion ? 0.72 : 0.38}
+              strokeWidth={
+                activeDragMotion ? DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH : 1.05
+              }
+              opacity={
+                activeDragMotion ? DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY : 0.38
+              }
             />
           </g>
         ))}

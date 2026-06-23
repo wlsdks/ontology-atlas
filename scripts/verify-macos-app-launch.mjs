@@ -4959,6 +4959,12 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyDragTensionConnectorVisibleCount || 0) >= 1)) {
         return `WebView Relief drag did not draw graph-linked tension connectors (${payload.markers.topologyDragTensionConnectorVisibleCount ?? "missing"} visible)`;
       }
+      if (!(Number(payload.markers.topologyDragTensionConnectorActiveOpacity || 0) >= 0.85)) {
+        return `WebView Relief drag tension connector active opacity was ${payload.markers.topologyDragTensionConnectorActiveOpacity ?? "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragTensionConnectorActiveStrokeWidth || 0) >= 2)) {
+        return `WebView Relief drag tension connector active stroke width was ${payload.markers.topologyDragTensionConnectorActiveStrokeWidth ?? "missing"}`;
+      }
       if (!(Number(payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx || 0) > 0)) {
         return `WebView Relief drag reactive motion offset was ${payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx ?? "missing"}`;
       }
