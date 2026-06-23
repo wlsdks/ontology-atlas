@@ -4844,6 +4844,15 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyDragReactiveContextOpacityToken !== "--topology-card-drag-reactive-context-opacity") {
         return `WebView Relief drag reactive context opacity token was ${payload.markers.topologyDragReactiveContextOpacityToken || "missing"}`;
       }
+      if (
+        payload.markers.topologyDragReactiveContextVisualContract !==
+        "reactive-context-uses-border-ring"
+      ) {
+        return `WebView Relief drag reactive context visual contract was ${payload.markers.topologyDragReactiveContextVisualContract || "missing"}`;
+      }
+      if (payload.markers.topologyDragReactiveContextVisualToken !== "--topology-card-border-selected") {
+        return `WebView Relief drag reactive context visual token was ${payload.markers.topologyDragReactiveContextVisualToken || "missing"}`;
+      }
       if (!(Number(payload.markers.topologyDragReactiveContextOpacity || 0) >= 0.4)) {
         return `WebView Relief drag reactive context opacity was ${payload.markers.topologyDragReactiveContextOpacity ?? "missing"}`;
       }

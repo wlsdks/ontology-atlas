@@ -1004,6 +1004,10 @@ pub fn run() {
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-context-opacity") || "";
                                           result.dragReactiveContextOpacityToken =
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-context-opacity-token") || "";
+                                          result.dragReactiveContextVisualContract =
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-context-visual-contract") || "";
+                                          result.dragReactiveContextVisualToken =
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-context-visual-token") || "";
                                           result.dragReactiveContextVisibleCount = Number(
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-context-visible-count") || "0"
                                           );
@@ -4818,6 +4822,14 @@ pub fn run() {
                                   topologyDragReactiveContextOpacityToken:
                                     topologyDragVerification?.dragReactiveContextOpacityToken ||
                                     skeletonCardsLayer?.getAttribute("data-drag-reactive-context-opacity-token") ||
+                                    "",
+                                  topologyDragReactiveContextVisualContract:
+                                    topologyDragVerification?.dragReactiveContextVisualContract ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-context-visual-contract") ||
+                                    "",
+                                  topologyDragReactiveContextVisualToken:
+                                    topologyDragVerification?.dragReactiveContextVisualToken ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-context-visual-token") ||
                                     "",
                                   topologyDragReactiveContextVisibleCount:
                                     Number(

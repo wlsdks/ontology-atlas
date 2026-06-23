@@ -3662,6 +3662,14 @@ for (const viewport of VIEWPORTS) {
       "data-drag-hull-render-policy",
       "suppressed-boxless-connectors",
     );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-reactive-context-visual-contract",
+      "reactive-context-uses-border-ring",
+    );
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-reactive-context-visual-token",
+      "--topology-card-border-selected",
+    );
     const dragCacheProof = await page.getByTestId("sigma-skeleton-cards").evaluate((el) => ({
       domIndexSize: Number(el.getAttribute("data-drag-dom-index-size") ?? "0"),
       snapshotCount: Number(el.getAttribute("data-drag-frame-cache-snapshot-count") ?? "0"),

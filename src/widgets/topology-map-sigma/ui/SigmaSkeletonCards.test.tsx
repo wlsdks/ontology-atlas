@@ -5886,7 +5886,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(card).toHaveAttribute("data-dragging-active", "true");
     const reactiveContextCard = screen
       .getByText("Linked Context")
-      .closest("[data-skeleton-card]")!;
+      .closest("[data-skeleton-card]") as HTMLElement;
     expect(reactiveContextCard).toHaveAttribute("data-dimmed", "true");
     expect(reactiveContextCard).toHaveAttribute("data-drag-reactive-context", "true");
     expect(reactiveContextCard).toHaveAttribute(
@@ -5896,6 +5896,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(reactiveContextCard).toHaveAttribute(
       "data-drag-reactive-context-opacity-token",
       "--topology-card-drag-reactive-context-opacity",
+    );
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-context-visual-contract",
+      "reactive-context-uses-border-ring",
+    );
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-context-visual-token",
+      "--topology-card-border-selected",
+    );
+    expect(reactiveContextCard.style.getPropertyValue("--card-border")).toBe(
+      "var(--topology-card-border-selected)",
     );
     expect(reactiveContextCard).toHaveAttribute(
       "data-drag-reactive-motion",
@@ -5926,6 +5937,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer).toHaveAttribute(
       "data-drag-reactive-context-policy",
       "boost-dimmed-worker-response",
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-reactive-context-visual-contract",
+      "reactive-context-uses-border-ring",
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-reactive-context-visual-token",
+      "--topology-card-border-selected",
     );
     expect(Number(layer.getAttribute("data-drag-reactive-context-visible-count"))).toBeGreaterThan(
       0,

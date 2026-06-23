@@ -235,6 +235,7 @@ const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
 const DIM_CHIP_OPACITY_TOKEN = '--topology-map-dim-context-opacity';
 const DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN =
   '--topology-card-drag-reactive-context-opacity';
+const DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN = '--topology-card-border-selected';
 const DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN =
   '--topology-card-drag-reactive-motion-max-offset';
 const SELECTED_RELATION_ENDPOINT_ROLE_LABEL: Record<'source' | 'target', string> = {
@@ -7573,6 +7574,8 @@ export function SigmaSkeletonCards({
       data-drag-reactive-context-contract="active-drag-shows-worker-moving-surrounding-context"
       data-drag-reactive-context-opacity={DRAG_REACTIVE_CONTEXT_OPACITY}
       data-drag-reactive-context-opacity-token={DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN}
+      data-drag-reactive-context-visual-contract="reactive-context-uses-border-ring"
+      data-drag-reactive-context-visual-token={DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN}
       data-drag-reactive-context-visible-count="0"
       data-drag-reactive-context-policy="idle"
       data-drag-reactive-motion-contract="active-drag-gives-surrounding-context-bounded-parallax"
@@ -8806,6 +8809,12 @@ export function SigmaSkeletonCards({
             data-drag-reactive-context-opacity-token={
               dragReactiveContext ? DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN : undefined
             }
+            data-drag-reactive-context-visual-contract={
+              dragReactiveContext ? 'reactive-context-uses-border-ring' : undefined
+            }
+            data-drag-reactive-context-visual-token={
+              dragReactiveContext ? DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN : undefined
+            }
             data-drag-reactive-motion={dragReactiveContext ? 'armed' : 'false'}
             data-drag-reactive-motion-max-offset-token={
               dragReactiveContext ? DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN : undefined
@@ -9145,12 +9154,19 @@ export function SigmaSkeletonCards({
                   ? `var(${SELECTED_FOCUS_QUIET_BORDER_TOKEN})`
                   : healthRepairAuditTarget
                     ? 'var(--topology-health-repair-card-border)'
+                  : dragReactiveContext
+                    ? `var(${DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN})`
                   : tintBorder,
                 '--card-border-hover': selected
                   ? `var(${SELECTED_FOCUS_QUIET_BORDER_TOKEN})`
                   : healthRepairAuditTarget
                     ? 'var(--topology-health-repair-card-border-strong)'
+                  : dragReactiveContext
+                    ? `var(${DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN})`
                   : tintBorderHover,
+                boxShadow: dragReactiveContext
+                  ? `0 0 0 1px var(${DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN})`
+                  : undefined,
               } as React.CSSProperties
             }
             className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[zoom-lens-active-card=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!justify-center data-[zoom-lens-active-card=true]:!gap-0 data-[zoom-lens-active-card=true]:!overflow-hidden data-[zoom-lens-active-card=true]:!rounded-full data-[zoom-lens-active-card=true]:!p-0 data-[zoom-lens-active-card=true]:shadow-none hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
