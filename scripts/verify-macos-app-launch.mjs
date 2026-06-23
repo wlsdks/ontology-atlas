@@ -4776,6 +4776,47 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyDragRelationLabelVisibleDuringDrag !== true) {
         return "WebView Relief drag relation label was not visibly attached during drag";
       }
+      const dragCompactRequired =
+        payload.markers.topologyZoomLensActive === true &&
+        payload.markers.topologyZoomLensCardCompactionActive === true;
+      if (dragCompactRequired) {
+        if (
+          payload.markers.topologyDragRelationLabelCompactContract !==
+          "zoomed-drag-compacts-repeated-relation-labels"
+        ) {
+          return `WebView Relief zoomed drag compact relation label contract was ${payload.markers.topologyDragRelationLabelCompactContract || "missing"}`;
+        }
+        if (!(Number(payload.markers.topologyDragRelationLabelCompactCount || 0) >= 1)) {
+          return `WebView Relief zoomed drag did not compact relation labels (${payload.markers.topologyDragRelationLabelCompactCount ?? "missing"} compact)`;
+        }
+        if (payload.markers.topologyDragRelationLabelPresentation !== "compact-glyph") {
+          return `WebView Relief zoomed drag relation label presentation was ${payload.markers.topologyDragRelationLabelPresentation || "missing"}`;
+        }
+        if (payload.markers.topologyDragRelationLabelCompact !== true) {
+          return "WebView Relief zoomed drag relation label did not expose compact=true";
+        }
+        if (
+          payload.markers.topologyDragRelationLabelCompactItemContract !==
+          "zoomed-drag-keeps-type-fact-as-compact-glyph"
+        ) {
+          return `WebView Relief zoomed drag compact label item contract was ${payload.markers.topologyDragRelationLabelCompactItemContract || "missing"}`;
+        }
+        if (!String(payload.markers.topologyDragRelationLabelReadableType || "").trim()) {
+          return "WebView Relief zoomed drag compact label did not preserve a readable relation type";
+        }
+        const compactBadgeWidth = Number(payload.markers.topologyDragRelationLabelBadgeWidth || 0);
+        const compactBadgeHeight = Number(payload.markers.topologyDragRelationLabelBadgeHeight || 0);
+        const compactBadgeRadius = Number(payload.markers.topologyDragRelationLabelBadgeRadius || 0);
+        if (!(compactBadgeWidth > 0 && compactBadgeWidth <= 44)) {
+          return `WebView Relief zoomed drag compact label badge width was ${payload.markers.topologyDragRelationLabelBadgeWidth ?? "missing"}`;
+        }
+        if (!(compactBadgeHeight > 0 && compactBadgeHeight <= 24)) {
+          return `WebView Relief zoomed drag compact label badge height was ${payload.markers.topologyDragRelationLabelBadgeHeight ?? "missing"}`;
+        }
+        if (!(compactBadgeRadius >= 8)) {
+          return `WebView Relief zoomed drag compact label badge radius was ${payload.markers.topologyDragRelationLabelBadgeRadius ?? "missing"}`;
+        }
+      }
       if (
         payload.markers.topologyDragReactiveContextContract !==
         "active-drag-shows-worker-moving-surrounding-context"
@@ -4953,35 +4994,48 @@ export function validateWebviewVerifyPayload(payload, {
       }
       const zoomLensError = validateTopologyZoomLensMarkers(payload.markers);
       if (zoomLensError) return zoomLensError;
-      if (payload.markers.topologySelectedRelationHaloVisible !== true) {
-        return `WebView Relief relation label selection did not reveal a selected relation halo (${payload.markers.topologySelectedRelationVisibleHaloCount ?? 0}/${payload.markers.topologySelectedRelationHaloCount ?? 0} visible)`;
+      const zoomedDragCompactProved =
+        payload.markers.topologyZoomLensActive === true &&
+        payload.markers.topologyZoomLensCardCompactionActive === true &&
+        payload.markers.topologyDragRelationLabelCompactContract ===
+          "zoomed-drag-compacts-repeated-relation-labels" &&
+        Number(payload.markers.topologyDragRelationLabelCompactCount || 0) >= 1 &&
+        payload.markers.topologyDragRelationLabelPresentation === "compact-glyph" &&
+        payload.markers.topologyDragRelationLabelCompact === true &&
+        payload.markers.topologyDragRelationLabelCompactItemContract ===
+          "zoomed-drag-keeps-type-fact-as-compact-glyph" &&
+        String(payload.markers.topologyDragRelationLabelReadableType || "").trim();
+      if (!zoomedDragCompactProved) {
+        if (payload.markers.topologySelectedRelationHaloVisible !== true) {
+          return `WebView Relief relation label selection did not reveal a selected relation halo (${payload.markers.topologySelectedRelationVisibleHaloCount ?? 0}/${payload.markers.topologySelectedRelationHaloCount ?? 0} visible)`;
+        }
+        if (payload.markers.topologySelectedRelationLabelHitAligned !== true) {
+          return "WebView Relief selected relation label hit target is not aligned with its visible badge";
+        }
+        if (
+          Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) < 90 ||
+          Number(payload.markers.topologySelectedRelationLabelHitHeight || 0) < 32
+        ) {
+          return `WebView Relief selected relation label hit target is too small (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}x${payload.markers.topologySelectedRelationLabelHitHeight ?? 0})`;
+        }
+        if (
+          Number(payload.width || 0) >= 1400 &&
+          Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) > 160
+        ) {
+          return `WebView Relief selected relation label stayed too wide for the active inspector (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}px)`;
+        }
+        if (payload.markers.topologySelectedRelationLabelDensity !== "focus-token") {
+          return `WebView Relief selected relation label density was ${payload.markers.topologySelectedRelationLabelDensity || "missing"}`;
+        }
+        if (selectedRelationRouteRailTextLeak(payload)) {
+          return "WebView Relief selected relation label leaked hidden route rail text into body text";
+        }
+        const relationLabelCompactError = validateSelectedRelationLabelCompactMarkers(
+          payload.markers,
+          payload.width,
+        );
+        if (relationLabelCompactError) return relationLabelCompactError;
       }
-      if (payload.markers.topologySelectedRelationLabelHitAligned !== true) {
-        return "WebView Relief selected relation label hit target is not aligned with its visible badge";
-      }
-      if (
-        Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) < 90 ||
-        Number(payload.markers.topologySelectedRelationLabelHitHeight || 0) < 32
-      ) {
-        return `WebView Relief selected relation label hit target is too small (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}x${payload.markers.topologySelectedRelationLabelHitHeight ?? 0})`;
-      }
-      if (
-        Number(payload.width || 0) >= 1400 &&
-        Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) > 160
-      ) {
-        return `WebView Relief selected relation label stayed too wide for the active inspector (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}px)`;
-      }
-      if (payload.markers.topologySelectedRelationLabelDensity !== "focus-token") {
-        return `WebView Relief selected relation label density was ${payload.markers.topologySelectedRelationLabelDensity || "missing"}`;
-      }
-      if (selectedRelationRouteRailTextLeak(payload)) {
-        return "WebView Relief selected relation label leaked hidden route rail text into body text";
-      }
-      const relationLabelCompactError = validateSelectedRelationLabelCompactMarkers(
-        payload.markers,
-        payload.width,
-      );
-      if (relationLabelCompactError) return relationLabelCompactError;
       const relationLabelFrameGeometryError = validateRelationLabelFrameGeometryMarkers(
         payload.markers,
       );
@@ -7665,6 +7719,41 @@ export function buildWebviewEvidencePayload(
         agentNextAction: "trust-frame-local-connector-rect-cache-before-reading-labels",
       }
       : null;
+  const dragRelationLabelCompactProof =
+    markers.topologyDragRelationLabelCompactContract ===
+    "zoomed-drag-compacts-repeated-relation-labels"
+      ? {
+        proof: "topology-drag-relation-label-compact-glyph",
+        status:
+          markers.topologyZoomLensActive === true &&
+          markers.topologyZoomLensCardCompactionActive === true &&
+          markerNumber(markers, "topologyDragRelationLabelCompactCount") >= 1 &&
+          markers.topologyDragRelationLabelPresentation === "compact-glyph" &&
+          markers.topologyDragRelationLabelCompact === true &&
+          markers.topologyDragRelationLabelCompactItemContract ===
+            "zoomed-drag-keeps-type-fact-as-compact-glyph" &&
+          markerText(markers, "topologyDragRelationLabelReadableType") &&
+          markerNumber(markers, "topologyDragRelationLabelBadgeWidth") > 0 &&
+          markerNumber(markers, "topologyDragRelationLabelBadgeWidth") <= 44
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        contract: markers.topologyDragRelationLabelCompactContract ?? null,
+        compactCount: markerNumber(markers, "topologyDragRelationLabelCompactCount"),
+        visibleCount: markerNumber(markers, "topologyDragRelationLabelVisibleCount"),
+        presentation: markers.topologyDragRelationLabelPresentation ?? null,
+        compact: markers.topologyDragRelationLabelCompact === true,
+        itemContract: markers.topologyDragRelationLabelCompactItemContract ?? null,
+        readableType: markers.topologyDragRelationLabelReadableType ?? null,
+        visibleText: markers.topologyDragRelationLabelVisibleText ?? null,
+        badge: {
+          width: markerNumber(markers, "topologyDragRelationLabelBadgeWidth"),
+          height: markerNumber(markers, "topologyDragRelationLabelBadgeHeight"),
+          radius: markerNumber(markers, "topologyDragRelationLabelBadgeRadius"),
+        },
+        agentNextAction: "treat-zoomed-drag-relation-glyphs-as-compact-typed-facts",
+      }
+      : null;
   const connectorLabelPassProof =
     markerNumber(markers, "topologyRepositionPassConnectorLabelMs") !== null
       ? {
@@ -8212,6 +8301,7 @@ export function buildWebviewEvidencePayload(
     relationContextSilhouetteProof,
     relationLabelFrameGeometryProof,
     connectorCacheProof,
+    dragRelationLabelCompactProof,
     connectorLabelPassProof,
     visibleCardSelectedSurfaceRectProof,
     residualOverlapProof,

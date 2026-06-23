@@ -52,6 +52,24 @@ import {
   windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
 
+function compactZoomDragRelationLabelMarkers(overrides = {}) {
+  return {
+    topologyDragRelationLabelCompactContract:
+      "zoomed-drag-compacts-repeated-relation-labels",
+    topologyDragRelationLabelCompactCount: 2,
+    topologyDragRelationLabelPresentation: "compact-glyph",
+    topologyDragRelationLabelCompact: true,
+    topologyDragRelationLabelCompactItemContract:
+      "zoomed-drag-keeps-type-fact-as-compact-glyph",
+    topologyDragRelationLabelReadableType: "contains",
+    topologyDragRelationLabelVisibleText: "C",
+    topologyDragRelationLabelBadgeWidth: 32,
+    topologyDragRelationLabelBadgeHeight: 24,
+    topologyDragRelationLabelBadgeRadius: 12,
+    ...overrides,
+  };
+}
+
 test("WebView verification env patch carries route, drag, composer, and requested window size", () => {
   assert.deepEqual(
     webviewVerifyEnvPatch({
@@ -334,6 +352,7 @@ test("WebView verification requires Add Concept backdrop when the composer is op
           topologyDragRelationLabelExpectedCount: 2,
           topologyDragRelationLabelVisibleCount: 2,
           topologyDragRelationLabelVisibleDuringDrag: true,
+          ...compactZoomDragRelationLabelMarkers(),
           topologyDragReactiveContextContract: "active-drag-shows-worker-moving-surrounding-context",
           topologyDragReactiveContextPolicy: "boost-dimmed-worker-response",
           topologyDragReactiveContextOpacity: "0.42",
@@ -2355,6 +2374,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyDragRelationLabelExpectedCount: 2,
       topologyDragRelationLabelVisibleCount: 2,
       topologyDragRelationLabelVisibleDuringDrag: true,
+      ...compactZoomDragRelationLabelMarkers(),
       topologyDragReactiveContextContract: "active-drag-shows-worker-moving-surrounding-context",
       topologyDragReactiveContextPolicy: "boost-dimmed-worker-response",
       topologyDragReactiveContextOpacity: "0.42",
@@ -3884,6 +3904,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ...selectedRelationPayload,
       markers: {
         ...selectedRelationPayload.markers,
+        topologyZoomLensCardCompactionActive: false,
         topologyDragDomIndexSize: 0,
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
@@ -3894,6 +3915,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ...selectedRelationPayload,
       markers: {
         ...selectedRelationPayload.markers,
+        topologyZoomLensCardCompactionActive: false,
         topologyDragFrameCacheSnapshotCount: undefined,
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
@@ -3904,6 +3926,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ...selectedRelationPayload,
       markers: {
         ...selectedRelationPayload.markers,
+        topologyZoomLensCardCompactionActive: false,
         topologyConnectorRectCacheFrameFallbackContract: "",
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
@@ -3914,6 +3937,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ...selectedRelationPayload,
       markers: {
         ...selectedRelationPayload.markers,
+        topologyZoomLensCardCompactionActive: false,
         topologyConnectorRectCacheReadCount: 1,
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
@@ -8334,6 +8358,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyDragRelationLabelExpectedCount: 2,
           topologyDragRelationLabelVisibleCount: 2,
           topologyDragRelationLabelVisibleDuringDrag: true,
+          ...compactZoomDragRelationLabelMarkers(),
           topologyDragReactiveContextContract: "active-drag-shows-worker-moving-surrounding-context",
           topologyDragReactiveContextPolicy: "boost-dimmed-worker-response",
           topologyDragReactiveContextOpacity: "0.42",
@@ -9926,6 +9951,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyDragVisibleCompanionCount: 3,
         topologyDragAlignedCompanionCount: 1,
         topologyDragRelationLabelClicked: false,
+        topologyZoomLensCardCompactionActive: false,
         topologySelectedRelationHaloVisible: false,
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
@@ -9972,6 +9998,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyDragClusterSize: 6,
         topologyDragConnectorCount: 1,
         topologyDragConnectorClearance: 12,
+        topologyZoomLensCardCompactionActive: false,
         topologySelectedRelationHaloVisible: false,
         topologySelectedRelationHaloCount: 1,
         topologySelectedRelationVisibleHaloCount: 0,

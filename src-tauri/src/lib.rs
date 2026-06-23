@@ -805,6 +805,31 @@ pub fn run() {
                                     }));
                                     if (typeof focus.click === "function") focus.click();
                                   };
+                                  const zoomFocusCardForDrag = (focus, done, step = 0) => {
+                                    const layer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
+                                    result.dragZoomLensActive =
+                                      layer?.getAttribute("data-zoom-lens-active") === "true";
+                                    result.dragZoomLensCardCompactionActive =
+                                      layer?.getAttribute("data-zoom-lens-card-compaction-active") === "true";
+                                    result.dragZoomLensPresentationSource =
+                                      layer?.getAttribute("data-zoom-lens-presentation-source") || "";
+                                    if (result.dragZoomLensCardCompactionActive || step >= 7) {
+                                      window.setTimeout(done, 260);
+                                      return;
+                                    }
+                                    const rect = focus.getBoundingClientRect();
+                                    focus.dispatchEvent(new WheelEvent("wheel", {
+                                      bubbles: true,
+                                      cancelable: true,
+                                      composed: true,
+                                      clientX: Math.round(rect.left + rect.width / 2),
+                                      clientY: Math.round(rect.top + rect.height / 2),
+                                      deltaMode: 0,
+                                      deltaX: 0,
+                                      deltaY: -640
+                                    }));
+                                    window.setTimeout(() => zoomFocusCardForDrag(focus, done, step + 1), 70);
+                                  };
                                   const forceFocusRouteState = () => {
                                     const url = new URL(window.location.href);
                                     if (url.searchParams.get("p") === "domain:views") return;
@@ -889,11 +914,6 @@ pub fn run() {
                                           });
                                           const alignedCompanion = companionsDuring.find((candidate) => candidate.aligned);
                                           const visibleDuringCompanions = companionsDuring.filter((candidate) => candidate.visible);
-                                          const relationLabel = document.querySelector('button[data-relation-label-hit="true"]');
-                                          if (relationLabel && typeof relationLabel.click === "function") {
-                                            relationLabel.click();
-                                            result.relationLabelClicked = true;
-                                          }
                                           const nodePopoverExpand = document.querySelector('[data-node-popover-toggle="expand"]');
                                           if (nodePopoverExpand && typeof nodePopoverExpand.click === "function") {
                                             nodePopoverExpand.click();
@@ -927,12 +947,55 @@ pub fn run() {
                                           result.dragRelationLabelVisibleCount = Number(
                                             skeletonCardsLayer?.getAttribute("data-drag-relation-label-visible-count") || "0"
                                           );
-                                          result.dragRelationLabelVisible = Array.from(
+                                          const dragRelationLabels = Array.from(
                                             document.querySelectorAll("[data-drag-relation-label]")
-                                          ).some((label) =>
+                                          );
+                                          const visibleDragRelationLabels = dragRelationLabels.filter((label) =>
                                             label.getAttribute("data-relation-label-visibility") === "visible-during-drag" &&
                                             label.getAttribute("opacity") === "1"
                                           );
+                                          const compactDragRelationLabels = visibleDragRelationLabels.filter((label) =>
+                                            label.getAttribute("data-drag-relation-label-presentation") === "compact-glyph" &&
+                                            label.getAttribute("data-drag-relation-label-compact") === "true"
+                                          );
+                                          const firstDragRelationLabel =
+                                            visibleDragRelationLabels[0] || dragRelationLabels[0] || null;
+                                          const compactDragRelationBadge =
+                                            document.querySelector('[data-relation-label-bg][data-drag-relation-label-presentation="compact-glyph"]');
+                                          result.dragRelationLabelVisible = visibleDragRelationLabels.length > 0;
+                                          result.dragRelationLabelCompactContract =
+                                            skeletonCardsLayer?.getAttribute("data-drag-relation-label-compact-contract") || "";
+                                          result.dragRelationLabelCompactCount = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-relation-label-compact-count") || compactDragRelationLabels.length || "0"
+                                          );
+                                          result.dragRelationLabelPresentation =
+                                            firstDragRelationLabel?.getAttribute("data-drag-relation-label-presentation") || "";
+                                          result.dragRelationLabelCompact =
+                                            firstDragRelationLabel?.getAttribute("data-drag-relation-label-compact") === "true";
+                                          result.dragRelationLabelCompactItemContract =
+                                            firstDragRelationLabel?.getAttribute("data-drag-relation-label-compact-contract") || "";
+                                          result.dragRelationLabelReadableType =
+                                            firstDragRelationLabel?.getAttribute("data-relation-label-readable-type") ||
+                                            firstDragRelationLabel?.getAttribute("data-relation-type") ||
+                                            "";
+                                          result.dragRelationLabelVisibleText =
+                                            firstDragRelationLabel?.getAttribute("data-relation-label-visible-text") ||
+                                            firstDragRelationLabel?.textContent?.trim() ||
+                                            "";
+                                          result.dragRelationLabelBadgeWidth = Number(
+                                            compactDragRelationBadge?.getAttribute("width") || "0"
+                                          );
+                                          result.dragRelationLabelBadgeHeight = Number(
+                                            compactDragRelationBadge?.getAttribute("height") || "0"
+                                          );
+                                          result.dragRelationLabelBadgeRadius = Number(
+                                            compactDragRelationBadge?.getAttribute("rx") || "0"
+                                          );
+                                          const relationLabel = document.querySelector('button[data-relation-label-hit="true"]');
+                                          if (relationLabel && typeof relationLabel.click === "function") {
+                                            relationLabel.click();
+                                            result.relationLabelClicked = true;
+                                          }
                                           result.dragReactiveContextContract =
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-context-contract") || "";
                                           result.dragReactiveContextPolicy =
@@ -1053,6 +1116,23 @@ pub fn run() {
                                   };
                                   const runWhenRevealReady = (attempt = 0) => {
                                     const focus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
+                                    if (focus && focus.getAttribute("data-selected") !== "true" && attempt === 0) {
+                                      selectFocusCard(focus);
+                                      result.reason = "selecting focus before zoomed drag";
+                                      window.setTimeout(() => runWhenRevealReady(attempt + 1), 360);
+                                      return;
+                                    }
+                                    const layer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
+                                    if (
+                                      focus &&
+                                      focus.getAttribute("data-selected") === "true" &&
+                                      layer?.getAttribute("data-zoom-lens-card-compaction-active") !== "true" &&
+                                      attempt < 18
+                                    ) {
+                                      result.reason = "zooming focus card before drag";
+                                      zoomFocusCardForDrag(focus, () => runWhenRevealReady(attempt + 1));
+                                      return;
+                                    }
                                     const draggedFocus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
                                     const companionElements = Array.from(document.querySelectorAll('[data-skeleton-card][data-dock-parent="domain:views"]'));
                                     const companionsBefore = companionElements
@@ -1078,7 +1158,6 @@ pub fn run() {
                                         : "missing selected focus card";
                                       return;
                                     }
-                                    if (focus && attempt === 0) selectFocusCard(focus);
                                     if (attempt === 8) forceFocusRouteState();
                                     result.reason = focus
                                       ? "waiting for selected reveal companion"
@@ -4680,6 +4759,32 @@ pub fn run() {
                                     ),
                                   topologyDragRelationLabelVisibleDuringDrag:
                                     topologyDragVerification?.dragRelationLabelVisible === true,
+                                  topologyDragRelationLabelCompactContract:
+                                    topologyDragVerification?.dragRelationLabelCompactContract ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-relation-label-compact-contract") ||
+                                    "",
+                                  topologyDragRelationLabelCompactCount:
+                                    Number(
+                                      topologyDragVerification?.dragRelationLabelCompactCount ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-relation-label-compact-count") ||
+                                        "0"
+                                    ),
+                                  topologyDragRelationLabelPresentation:
+                                    topologyDragVerification?.dragRelationLabelPresentation || "",
+                                  topologyDragRelationLabelCompact:
+                                    topologyDragVerification?.dragRelationLabelCompact === true,
+                                  topologyDragRelationLabelCompactItemContract:
+                                    topologyDragVerification?.dragRelationLabelCompactItemContract || "",
+                                  topologyDragRelationLabelReadableType:
+                                    topologyDragVerification?.dragRelationLabelReadableType || "",
+                                  topologyDragRelationLabelVisibleText:
+                                    topologyDragVerification?.dragRelationLabelVisibleText || "",
+                                  topologyDragRelationLabelBadgeWidth:
+                                    Number(topologyDragVerification?.dragRelationLabelBadgeWidth || 0),
+                                  topologyDragRelationLabelBadgeHeight:
+                                    Number(topologyDragVerification?.dragRelationLabelBadgeHeight || 0),
+                                  topologyDragRelationLabelBadgeRadius:
+                                    Number(topologyDragVerification?.dragRelationLabelBadgeRadius || 0),
                                   topologyDragReactiveContextContract:
                                     topologyDragVerification?.dragReactiveContextContract ||
                                     skeletonCardsLayer?.getAttribute("data-drag-reactive-context-contract") ||
@@ -5213,6 +5318,9 @@ mod tests {
         assert!(source.contains("topologyDragWorkerAppliedFrameChangeCount"));
         assert!(source.contains("topologyDragRelationLabelVisibilityContract"));
         assert!(source.contains("topologyDragRelationLabelVisibleDuringDrag"));
+        assert!(source.contains("topologyDragRelationLabelCompactContract"));
+        assert!(source.contains("topologyDragRelationLabelPresentation"));
+        assert!(source.contains("topologyDragRelationLabelReadableType"));
         assert!(source.contains("topologyDragReactiveContextContract"));
         assert!(source.contains("topologyDragReactiveContextVisibleCount"));
         assert!(source.contains("__ontologyAtlasTopologyZoomVerify"));
