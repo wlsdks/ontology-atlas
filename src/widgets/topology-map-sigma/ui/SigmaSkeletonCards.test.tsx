@@ -5659,6 +5659,20 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-drag-reactive-context-opacity-token",
       "--topology-card-drag-reactive-context-opacity",
     );
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-motion",
+      "parallax-nudge",
+    );
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-motion-role",
+      "bounded-surrounding-context-motion",
+    );
+    expect(Number(reactiveContextCard.getAttribute("data-drag-reactive-motion-dx"))).toBeGreaterThan(
+      0,
+    );
+    expect(Number(reactiveContextCard.getAttribute("data-drag-reactive-motion-dy"))).toBeGreaterThan(
+      0,
+    );
     expect(layer).toHaveAttribute(
       "data-drag-reactive-context-contract",
       "active-drag-shows-worker-moving-surrounding-context",
@@ -5669,6 +5683,24 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(Number(layer.getAttribute("data-drag-reactive-context-visible-count"))).toBeGreaterThan(
       0,
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-reactive-motion-contract",
+      "active-drag-gives-surrounding-context-bounded-parallax",
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-reactive-motion-policy",
+      "bounded-parallax-nudge",
+    );
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-visible-count"))).toBeGreaterThan(
+      0,
+    );
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-max-offset-px"))).toBe(14);
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-max-observed-offset-px"))).toBeGreaterThan(
+      0,
+    );
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-max-observed-offset-px"))).toBeLessThanOrEqual(
+      14,
     );
     expect(layer).toHaveAttribute(
       "data-relation-label-drag-layout-policy",

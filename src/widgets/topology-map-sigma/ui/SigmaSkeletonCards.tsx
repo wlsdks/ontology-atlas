@@ -225,10 +225,14 @@ const TIER_SURFACE_ALPHA: Record<
 const DIM_ANCHOR_OPACITY = '0.26';
 const DIM_CHIP_OPACITY = '0.08';
 const DRAG_REACTIVE_CONTEXT_OPACITY = '0.42';
+const DRAG_REACTIVE_MOTION_MAX_OFFSET_PX = 14;
+const DRAG_REACTIVE_MOTION_RATIO = 0.08;
 const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
 const DIM_CHIP_OPACITY_TOKEN = '--topology-map-dim-context-opacity';
 const DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN =
   '--topology-card-drag-reactive-context-opacity';
+const DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN =
+  '--topology-card-drag-reactive-motion-max-offset';
 const SELECTED_RELATION_ENDPOINT_ROLE_LABEL: Record<'source' | 'target', string> = {
   source: 'FROM',
   target: 'TO',
@@ -1177,6 +1181,17 @@ function anchoredCardRect({
     right: left + width,
     bottom: top + height,
   };
+}
+
+function clampDragReactiveMotionVector(dx: number, dy: number): { dx: number; dy: number } {
+  const safeDx = Number.isFinite(dx) ? dx : 0;
+  const safeDy = Number.isFinite(dy) ? dy : 0;
+  const magnitude = Math.hypot(safeDx, safeDy);
+  if (magnitude <= DRAG_REACTIVE_MOTION_MAX_OFFSET_PX || magnitude === 0) {
+    return { dx: safeDx, dy: safeDy };
+  }
+  const scale = DRAG_REACTIVE_MOTION_MAX_OFFSET_PX / magnitude;
+  return { dx: safeDx * scale, dy: safeDy * scale };
 }
 
 function clampVisibleAnchorCard({
@@ -2616,6 +2631,8 @@ export function SigmaSkeletonCards({
     lastX: number;
     lastY: number;
     travel: number;
+    reactiveMotionDx: number;
+    reactiveMotionDy: number;
     viewportPreviewActive: boolean;
     viewportPreviewDx: number;
     viewportPreviewDy: number;
@@ -3624,6 +3641,45 @@ export function SigmaSkeletonCards({
           : 'none';
       return { dx, dy, source };
     };
+    const dragReactiveMotionOffsetFor = (
+      el: HTMLElement,
+      lockedForDrag: boolean,
+    ): { dx: number; dy: number } => {
+      const drag = dragRef.current;
+      const enabled =
+        (activeDragMotion || activeDragMotionRef.current) &&
+        activeDragCluster !== null &&
+        drag !== null &&
+        drag.travel > 4 &&
+        !lockedForDrag &&
+        el.dataset.dragReactiveContext === 'true';
+      if (!enabled) {
+        delete el.dataset.dragReactiveMotion;
+        delete el.dataset.dragReactiveMotionRole;
+        delete el.dataset.dragReactiveMotionDx;
+        delete el.dataset.dragReactiveMotionDy;
+        delete el.dataset.dragReactiveMotionMaxOffsetPx;
+        delete el.dataset.dragReactiveMotionMaxOffsetToken;
+        return { dx: 0, dy: 0 };
+      }
+      const { dx, dy } = clampDragReactiveMotionVector(
+        drag.reactiveMotionDx * DRAG_REACTIVE_MOTION_RATIO,
+        drag.reactiveMotionDy * DRAG_REACTIVE_MOTION_RATIO,
+      );
+      if (dx === 0 && dy === 0) {
+        return { dx: 0, dy: 0 };
+      }
+      el.dataset.dragReactiveMotion = 'parallax-nudge';
+      el.dataset.dragReactiveMotionRole = 'bounded-surrounding-context-motion';
+      el.dataset.dragReactiveMotionDx = dx.toFixed(2);
+      el.dataset.dragReactiveMotionDy = dy.toFixed(2);
+      el.dataset.dragReactiveMotionMaxOffsetPx = String(
+        DRAG_REACTIVE_MOTION_MAX_OFFSET_PX,
+      );
+      el.dataset.dragReactiveMotionMaxOffsetToken =
+        DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN;
+      return { dx, dy };
+    };
     container.dataset.dragViewportOffsetPersistedCount = String(
       dragViewportOffsetsRef.current.size,
     );
@@ -3858,7 +3914,10 @@ export function SigmaSkeletonCards({
         const y = followsActiveDrag
           ? columnCenterY
           : columnCenterY + (row - (rowsInCol - 1) / 2) * pitch;
-        el.dataset.layoutY = String(y);
+        const dragReactiveMotionOffset = dragReactiveMotionOffsetFor(el, lockedForDrag);
+        const renderX = x + dragReactiveMotionOffset.dx;
+        const renderY = y + dragReactiveMotionOffset.dy;
+        el.dataset.layoutY = String(renderY);
         if (followsActiveDrag && dockSnapshot) {
           el.dataset.dockParentDeltaY = String(parentCenterY - dockSnapshot.parentStartY);
         } else {
@@ -3873,19 +3932,19 @@ export function SigmaSkeletonCards({
             ? p.right + dockGap + col * columnStep
             : p.left - dockGap - col * columnStep;
         const flippedAnchor = ANCHOR_TRANSLATE[flippedAnchorKey];
-        el.dataset.dockFlipTransform = `${flippedAnchor} translate3d(${flippedX}px, ${y}px, 0)`;
+        el.dataset.dockFlipTransform = `${flippedAnchor} translate3d(${flippedX}px, ${renderY}px, 0)`;
         setSkeletonStyleValue(
           el,
           'transform',
-          `${anchor} translate3d(${x}px, ${y}px, 0)`,
+          `${anchor} translate3d(${renderX}px, ${renderY}px, 0)`,
           domWriteStats,
         );
         layoutVisibleRect = seedCardPlacementFrameRect(
           el,
           cardPlacementFallbackRect ??
             anchoredCardRect({
-              x,
-              y,
+              x: renderX,
+              y: renderY,
               width: cardWidth,
               height: cardHeight,
               anchor: dockAnchorKey,
@@ -3893,7 +3952,7 @@ export function SigmaSkeletonCards({
         );
         flippedLayoutVisibleRect = anchoredCardRect({
           x: flippedX,
-          y,
+          y: renderY,
           width: cardWidth,
           height: cardHeight,
           anchor: flippedAnchorKey,
@@ -4010,19 +4069,22 @@ export function SigmaSkeletonCards({
           delete el.dataset.selectedFocusCenterYRatio;
         }
         const anchor = ANCHOR_TRANSLATE[safeAnchorKey];
-        el.dataset.layoutY = String(clamped.y);
+        const dragReactiveMotionOffset = dragReactiveMotionOffsetFor(el, lockedForDrag);
+        const renderX = clamped.x + dragReactiveMotionOffset.dx;
+        const renderY = clamped.y + dragReactiveMotionOffset.dy;
+        el.dataset.layoutY = String(renderY);
         setSkeletonStyleValue(
           el,
           'transform',
-          `${anchor} translate3d(${clamped.x}px, ${clamped.y}px, 0)`,
+          `${anchor} translate3d(${renderX}px, ${renderY}px, 0)`,
           domWriteStats,
         );
         layoutVisibleRect = seedCardPlacementFrameRect(
           el,
           cardPlacementFallbackRect ??
             anchoredCardRect({
-              x: clamped.x,
-              y: clamped.y,
+              x: renderX,
+              y: renderY,
               width: cardWidth,
               height: cardHeight,
               anchor: safeAnchorKey,
@@ -4265,6 +4327,8 @@ export function SigmaSkeletonCards({
     let selectedRelationLowerPriorityVisibleDimmedCount = 0;
     let selectedRelationVisibleOrientationAnchorCount = 0;
     let dragReactiveContextVisibleCount = 0;
+    let dragReactiveMotionVisibleCount = 0;
+    let dragReactiveMotionMaxOffsetPx = 0;
     for (const el of orderedDimEls) {
       const slug = el.dataset.slug ?? '';
       const lockedForDrag = isDragClusterCard(slug, el.dataset.dockParent);
@@ -4349,6 +4413,15 @@ export function SigmaSkeletonCards({
         if (dragReactiveContext) {
           dragReactiveContextVisibleCount += 1;
           el.dataset.dragReactiveContextVisibility = 'boosted-visible';
+          if (el.dataset.dragReactiveMotion === 'parallax-nudge') {
+            dragReactiveMotionVisibleCount += 1;
+            const dx = Number(el.dataset.dragReactiveMotionDx ?? '0');
+            const dy = Number(el.dataset.dragReactiveMotionDy ?? '0');
+            dragReactiveMotionMaxOffsetPx = Math.max(
+              dragReactiveMotionMaxOffsetPx,
+              Math.hypot(Number.isFinite(dx) ? dx : 0, Number.isFinite(dy) ? dy : 0),
+            );
+          }
         } else {
           delete el.dataset.dragReactiveContextVisibility;
         }
@@ -4386,6 +4459,20 @@ export function SigmaSkeletonCards({
       activeDragMotion && activeDragCluster !== null
         ? 'boost-dimmed-worker-response'
         : 'idle';
+    container.dataset.dragReactiveMotionPolicy =
+      (activeDragMotion || activeDragMotionRef.current) && activeDragCluster !== null
+        ? 'bounded-parallax-nudge'
+        : 'idle';
+    container.dataset.dragReactiveMotionVisibleCount = String(
+      dragReactiveMotionVisibleCount,
+    );
+    container.dataset.dragReactiveMotionMaxObservedOffsetPx =
+      dragReactiveMotionMaxOffsetPx.toFixed(2);
+    container.dataset.dragReactiveMotionMaxOffsetPx = String(
+      DRAG_REACTIVE_MOTION_MAX_OFFSET_PX,
+    );
+    container.dataset.dragReactiveMotionMaxOffsetToken =
+      DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN;
     container.dataset.selectedRelationLowerPriorityVisibleDimmedCount = String(
       selectedRelationLowerPriorityVisibleDimmedCount,
     );
@@ -5306,10 +5393,15 @@ export function SigmaSkeletonCards({
     container.dataset.dimAnchorOpacity = DIM_ANCHOR_OPACITY;
     container.dataset.dimChipOpacity = DIM_CHIP_OPACITY;
     container.dataset.dragReactiveContextOpacity = DRAG_REACTIVE_CONTEXT_OPACITY;
+    container.dataset.dragReactiveMotionMaxOffsetPx = String(
+      DRAG_REACTIVE_MOTION_MAX_OFFSET_PX,
+    );
     container.dataset.dimAnchorOpacityToken = DIM_ANCHOR_OPACITY_TOKEN;
     container.dataset.dimChipOpacityToken = DIM_CHIP_OPACITY_TOKEN;
     container.dataset.dragReactiveContextOpacityToken =
       DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN;
+    container.dataset.dragReactiveMotionMaxOffsetToken =
+      DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN;
     container.dataset.dimOpacityContract = 'readable-context-geography';
     container.dataset.overviewContextOpacityContract = 'core-full-support-quiet';
     container.dataset.overviewContextCoreOpacity = OVERVIEW_CONTEXT_OPACITY[1];
@@ -6725,6 +6817,12 @@ export function SigmaSkeletonCards({
       data-drag-reactive-context-opacity-token={DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN}
       data-drag-reactive-context-visible-count="0"
       data-drag-reactive-context-policy="idle"
+      data-drag-reactive-motion-contract="active-drag-gives-surrounding-context-bounded-parallax"
+      data-drag-reactive-motion-policy="idle"
+      data-drag-reactive-motion-visible-count="0"
+      data-drag-reactive-motion-max-observed-offset-px="0"
+      data-drag-reactive-motion-max-offset-px={DRAG_REACTIVE_MOTION_MAX_OFFSET_PX}
+      data-drag-reactive-motion-max-offset-token={DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN}
       data-dim-anchor-opacity-token={DIM_ANCHOR_OPACITY_TOKEN}
       data-dim-chip-opacity-token={DIM_CHIP_OPACITY_TOKEN}
       data-dim-context-opacity-token={DIM_CHIP_OPACITY_TOKEN}
@@ -7824,6 +7922,10 @@ export function SigmaSkeletonCards({
             data-drag-reactive-context-opacity-token={
               dragReactiveContext ? DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN : undefined
             }
+            data-drag-reactive-motion={dragReactiveContext ? 'armed' : 'false'}
+            data-drag-reactive-motion-max-offset-token={
+              dragReactiveContext ? DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN : undefined
+            }
             data-selected-relation-endpoint-role-badge-visible={
               selectedRelationEndpointRole ? 'true' : undefined
             }
@@ -7975,6 +8077,8 @@ export function SigmaSkeletonCards({
                 lastX: event.clientX,
                 lastY: event.clientY,
                 travel: 0,
+                reactiveMotionDx: 0,
+                reactiveMotionDy: 0,
                 viewportPreviewActive:
                   movingGroup.size >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD ||
                   dragClusterPolicy === 'root-direct-neighbors-pin-free-context',
@@ -8048,6 +8152,8 @@ export function SigmaSkeletonCards({
                 container.dataset.dragLastAppliedDeltaY = String(delta.dy);
               }
               if (delta.dx === 0 && delta.dy === 0) return;
+              drag.reactiveMotionDx += delta.dx;
+              drag.reactiveMotionDy += delta.dy;
               if (drag.viewportPreviewActive) {
                 drag.viewportPreviewDx += delta.dx;
                 drag.viewportPreviewDy += delta.dy;

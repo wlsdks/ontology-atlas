@@ -944,6 +944,21 @@ pub fn run() {
                                           result.dragReactiveContextVisibleCount = Number(
                                             skeletonCardsLayer?.getAttribute("data-drag-reactive-context-visible-count") || "0"
                                           );
+                                          result.dragReactiveMotionContract =
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-contract") || "";
+                                          result.dragReactiveMotionPolicy =
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-policy") || "";
+                                          result.dragReactiveMotionVisibleCount = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-visible-count") || "0"
+                                          );
+                                          result.dragReactiveMotionMaxObservedOffsetPx = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-observed-offset-px") || "0"
+                                          );
+                                          result.dragReactiveMotionMaxOffsetPx = Number(
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-offset-px") || "0"
+                                          );
+                                          result.dragReactiveMotionMaxOffsetToken =
+                                            skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-offset-token") || "";
                                           result.clusterSize = Number(
                                             skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"
                                           );
@@ -4576,6 +4591,36 @@ pub fn run() {
                                         skeletonCardsLayer?.getAttribute("data-drag-reactive-context-visible-count") ||
                                         "0"
                                     ),
+                                  topologyDragReactiveMotionContract:
+                                    topologyDragVerification?.dragReactiveMotionContract ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-contract") ||
+                                    "",
+                                  topologyDragReactiveMotionPolicy:
+                                    topologyDragVerification?.dragReactiveMotionPolicy ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-policy") ||
+                                    "",
+                                  topologyDragReactiveMotionVisibleCount:
+                                    Number(
+                                      topologyDragVerification?.dragReactiveMotionVisibleCount ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-visible-count") ||
+                                        "0"
+                                    ),
+                                  topologyDragReactiveMotionMaxObservedOffsetPx:
+                                    Number(
+                                      topologyDragVerification?.dragReactiveMotionMaxObservedOffsetPx ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-observed-offset-px") ||
+                                        "0"
+                                    ),
+                                  topologyDragReactiveMotionMaxOffsetPx:
+                                    Number(
+                                      topologyDragVerification?.dragReactiveMotionMaxOffsetPx ||
+                                        skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-offset-px") ||
+                                        "0"
+                                    ),
+                                  topologyDragReactiveMotionMaxOffsetToken:
+                                    topologyDragVerification?.dragReactiveMotionMaxOffsetToken ||
+                                    skeletonCardsLayer?.getAttribute("data-drag-reactive-motion-max-offset-token") ||
+                                    "",
                                   topologyDragDynamicState:
                                     skeletonCardsLayer?.getAttribute("data-drag-dynamic-state") || "",
                                   topologyDragDynamicRoot:
@@ -4977,6 +5022,8 @@ mod tests {
         assert!(source.contains("topologyDragRelationLabelVisibleDuringDrag"));
         assert!(source.contains("topologyDragReactiveContextContract"));
         assert!(source.contains("topologyDragReactiveContextVisibleCount"));
+        assert!(source.contains("topologyDragReactiveMotionContract"));
+        assert!(source.contains("topologyDragReactiveMotionMaxObservedOffsetPx"));
         assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
         assert!(source.contains("__ontologyAtlasTopologyFocusNoopVerify"));
         assert!(source.contains("ontology-atlas:verify-selected-focus-safe-fit"));
