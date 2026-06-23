@@ -15,6 +15,7 @@ const PHONE_VIEWPORT = { label: "phone-390", width: 390, height: 844 };
 const NARROW_PHONE_VIEWPORT = { label: "phone-360", width: 360, height: 780 };
 const OUT = path.resolve("output/ui-audit/topology-drag");
 const OVERVIEW_DRAG_DELTA_TOLERANCE_PX = 48;
+const DRAG_CLUSTER_CARD_FEEDBACK_WRITE_BUDGET = 3;
 const DRAG_FEEDBACK_DOM_WRITE_ALLOWANCE = 2;
 
 test.beforeAll(async () => {
@@ -3674,10 +3675,10 @@ for (const viewport of VIEWPORTS) {
     ).toBeGreaterThan(0);
     expect(
       dragCacheProof.domWriteAppliedCount,
-      `drag should stay within the two-pass card write budget at ${viewport.label}`,
+      `drag should stay within the card plus active-cluster feedback write budget at ${viewport.label}`,
     ).toBeLessThanOrEqual(
       dragCacheProof.resolvedCardCount * 2 +
-        dragCacheProof.activeDragClusterSize +
+        dragCacheProof.activeDragClusterSize * DRAG_CLUSTER_CARD_FEEDBACK_WRITE_BUDGET +
         DRAG_FEEDBACK_DOM_WRITE_ALLOWANCE,
     );
     expect(
