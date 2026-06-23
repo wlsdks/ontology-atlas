@@ -376,7 +376,7 @@ const OVERVIEW_DENSITY_LENS_RATIO_THRESHOLD = 1.1;
 const OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX = 1180;
 const OVERVIEW_DENSITY_LENS_COMPACT_MAX_WIDTH_PX = 1280;
 const OVERVIEW_DENSITY_LENS_WIDE_MIN_WIDTH_PX = 1680;
-const ZOOM_LENS_PIN_SIZE_PX = 28;
+const ZOOM_LENS_PIN_SIZE_PX = 24;
 const ZOOM_LENS_PIN_MIN_OPACITY = '0.42';
 const WHEEL_ZOOM_BASE_DELTA_PX = 560;
 const WHEEL_ZOOM_STEP_RATIO = 0.68;
@@ -3825,6 +3825,15 @@ export function SigmaSkeletonCards({
               ? 'full-card-context'
               : 'full-card-detail'
             : 'full-card-anchor';
+      }
+      const roleMarkGlyph = el.querySelector<HTMLElement>(
+        '[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]',
+      );
+      if (roleMarkGlyph) {
+        roleMarkGlyph.textContent =
+          el.dataset.selectedRelationEndpointZoomLens === 'role-mark'
+            ? roleMarkGlyph.dataset.selectedRelationEndpointZoomLensRoleMarkText ?? ''
+            : '';
       }
     }
     container.dataset.zoomLensEligibleCount = String(zoomLensEligibleCount);
@@ -9773,7 +9782,7 @@ export function SigmaSkeletonCards({
                     data-selected-relation-endpoint-zoom-lens-role-mark-text={
                       selectedRelationEndpointRoleMarkLabel
                     }
-                    className="hidden before:content-[attr(data-selected-relation-endpoint-zoom-lens-role-mark-text)] group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:inline"
+                    className="hidden group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:inline"
                   />
                 </span>
               </>

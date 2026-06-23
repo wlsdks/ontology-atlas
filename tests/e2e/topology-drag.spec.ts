@@ -258,7 +258,7 @@ test("Relief overview drag keeps the grabbed node readable instead of collapsing
   const during = await rectOf(target);
   expect(
     during.width,
-    "dragged overview root should remain a readable card, not a 28px kind pin",
+    "dragged overview root should remain a readable card, not a compact kind pin",
   ).toBeGreaterThan(120);
 
   await page.mouse.up();

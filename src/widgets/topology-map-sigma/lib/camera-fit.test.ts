@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
+  clampSelectedFocusCameraSafeTarget,
   resolveSafeAreaCameraFit,
   resolveSelectedFocusCameraFit,
   resolveSelectedFocusCameraMotionProof,
@@ -220,6 +221,23 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
     expect(fit?.safeTarget.y).toBeCloseTo(
       viewport.height * SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
     );
+  });
+
+  it('선택 카메라 target 은 검증 한도를 넘지 않도록 실제 이동 거리를 clamp 한다', () => {
+    const selectedViewport = { x: 434, y: 420 };
+    const safeTarget = { x: 756, y: 440 };
+    const clamped = clampSelectedFocusCameraSafeTarget({
+      selectedViewport,
+      safeTarget,
+      maxDistancePx: 318,
+    });
+    const distance = Math.hypot(
+      clamped.x - selectedViewport.x,
+      clamped.y - selectedViewport.y,
+    );
+    expect(Math.round(distance)).toBeLessThanOrEqual(318);
+    expect(clamped.x).toBeLessThan(safeTarget.x);
+    expect(clamped.y).toBeCloseTo(439.75, 1);
   });
 
   it('선택 카메라 보정의 의도와 이동 거리를 검증 가능한 proof 로 남긴다', () => {

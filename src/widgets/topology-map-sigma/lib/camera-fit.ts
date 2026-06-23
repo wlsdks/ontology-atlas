@@ -229,6 +229,35 @@ export function resolveSelectedFocusCameraFit({
   };
 }
 
+export function clampSelectedFocusCameraSafeTarget({
+  selectedViewport,
+  safeTarget,
+  maxDistancePx,
+}: {
+  selectedViewport: { x: number; y: number };
+  safeTarget: { x: number; y: number };
+  maxDistancePx: number;
+}): { x: number; y: number } {
+  const distance = Math.hypot(
+    safeTarget.x - selectedViewport.x,
+    safeTarget.y - selectedViewport.y,
+  );
+  if (
+    !Number.isFinite(distance) ||
+    distance === 0 ||
+    !Number.isFinite(maxDistancePx) ||
+    maxDistancePx <= 0 ||
+    distance <= maxDistancePx
+  ) {
+    return safeTarget;
+  }
+  const scale = maxDistancePx / distance;
+  return {
+    x: selectedViewport.x + (safeTarget.x - selectedViewport.x) * scale,
+    y: selectedViewport.y + (safeTarget.y - selectedViewport.y) * scale,
+  };
+}
+
 export function resolveSelectedFocusCameraMotionProof({
   selectedViewport,
   safeTarget,

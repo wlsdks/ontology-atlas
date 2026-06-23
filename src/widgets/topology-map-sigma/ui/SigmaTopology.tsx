@@ -142,6 +142,7 @@ import { SigmaLegendRow } from './SigmaLegendRow';
 import { SigmaRelationLegend } from './SigmaRelationLegend';
 import { SigmaSkeletonCards, type SkeletonCardModel } from './SigmaSkeletonCards';
 import {
+  clampSelectedFocusCameraSafeTarget,
   resolveSafeAreaCameraFit,
   resolveSelectedFocusCameraFit,
   resolveSelectedFocusCameraMotionProof,
@@ -676,9 +677,14 @@ function SigmaTopologyImpl({
         }
         return true;
       }
-      const motionProof = resolveSelectedFocusCameraMotionProof({
+      const safeTarget = clampSelectedFocusCameraSafeTarget({
         selectedViewport,
         safeTarget: focusFit.safeTarget,
+        maxDistancePx: cameraMotionMaxDistancePx,
+      });
+      const motionProof = resolveSelectedFocusCameraMotionProof({
+        selectedViewport,
+        safeTarget,
         targetPolicy: 'viewport-center',
       });
       if (containerRef.current) {
@@ -728,7 +734,7 @@ function SigmaTopologyImpl({
         );
       }
       const va = renderer.viewportToFramedGraph({ x: width / 2, y: height / 2 });
-      const vb = renderer.viewportToFramedGraph(focusFit.safeTarget);
+      const vb = renderer.viewportToFramedGraph(safeTarget);
       // 클릭 = 중앙 + 약한 줌인(읽기 배율 0.8 고정 — 곱연산이면 클릭마다
       // 누적 줌인됨), 바깥 클릭 = 선택 해제 → overview fit 이 줌아웃.
       const k2 = state.ratio > 0 ? focusFit.targetRatio / state.ratio : 1;

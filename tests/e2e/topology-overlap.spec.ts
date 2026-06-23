@@ -881,11 +881,11 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   expect(
     compactRect.width,
     "zoomed-in detail cards should become pins instead of text boxes over relation structure",
-  ).toBeLessThanOrEqual(34);
+  ).toBeLessThanOrEqual(28);
   expect(
     compactRect.height,
     "zoomed-in detail pins should keep a stable compact hit target",
-  ).toBeLessThanOrEqual(34);
+  ).toBeLessThanOrEqual(28);
   await expect(compactCard.locator("[data-card-kind-badge]")).toHaveAttribute(
     "data-zoom-lens-compact-hidden-contract",
     "compact-lens-keeps-kind-as-dot-color",
@@ -939,7 +939,7 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   expect(
     projectAnchorRect.width,
     "overview zoom-in should compact the project root into a map pin instead of leaving a large title card over relation threads",
-  ).toBeLessThanOrEqual(34);
+  ).toBeLessThanOrEqual(28);
 });
 
 test("Relief focus zoom-in demotes nonselected relation chrome to background threads", async ({

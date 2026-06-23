@@ -188,7 +188,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer.style.getPropertyValue("--topology-card-max-width-capability")).toBe("360px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-element")).toBe("224px");
     expect(layer.style.getPropertyValue("--topology-card-selected-focus-max-width")).toBe("440px");
-    expect(layer.style.getPropertyValue("--topology-zoom-lens-pin-size")).toBe("28px");
+    expect(layer.style.getPropertyValue("--topology-zoom-lens-pin-size")).toBe("24px");
     expect(layer).toHaveAttribute(
       "data-zoom-lens-contract",
       "zoom-in-uses-kind-pins-for-noncritical-context-cards",
