@@ -4276,6 +4276,41 @@ test("Relief selected relation zoom-in turns both endpoint cards into compact ro
             endpointRole: card.getAttribute("data-selected-relation-endpoint-role") || "",
             endpointZoom: card.getAttribute("data-selected-relation-endpoint-zoom-lens") || "",
             presentation: card.getAttribute("data-zoom-lens-presentation") || "",
+            roleMarkText:
+              card.getAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-text") ||
+              "",
+            roleMarkGlyphText:
+              card
+                .querySelector("[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]")
+                ?.textContent?.trim() || "",
+            roleMarkGlyphVisible:
+              (() => {
+                const glyph = card.querySelector(
+                  "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",
+                );
+                if (!(glyph instanceof HTMLElement)) return false;
+                const glyphRect = glyph.getBoundingClientRect();
+                const style = window.getComputedStyle(glyph);
+                return (
+                  style.display !== "none" &&
+                  style.visibility !== "hidden" &&
+                  glyphRect.width > 0 &&
+                  glyphRect.height > 0
+                );
+              })(),
+            relationSummaryVisible:
+              (() => {
+                const summary = card.querySelector("[data-relation-summary-contract]");
+                if (!(summary instanceof HTMLElement)) return false;
+                const summaryRect = summary.getBoundingClientRect();
+                const style = window.getComputedStyle(summary);
+                return (
+                  style.display !== "none" &&
+                  style.visibility !== "hidden" &&
+                  summaryRect.width > 0 &&
+                  summaryRect.height > 0
+                );
+              })(),
             viewportClamp:
               card.getAttribute("data-selected-relation-endpoint-zoom-lens-viewport-clamp") ||
               "",
@@ -4297,6 +4332,10 @@ test("Relief selected relation zoom-in turns both endpoint cards into compact ro
   for (const endpoint of endpointState.filter((card) => card.endpointZoom === "role-mark")) {
     expect(endpoint.active).toBe("true");
     expect(endpoint.presentation).toBe("lens-pin");
+    expect(endpoint.roleMarkText).toMatch(/^[ST]$/);
+    expect(endpoint.roleMarkGlyphText).toBe(endpoint.roleMarkText);
+    expect(endpoint.roleMarkGlyphVisible).toBe(true);
+    expect(endpoint.relationSummaryVisible).toBe(false);
     expect(endpoint.viewportClamp).toBe("safe-viewport");
     expect(endpoint.left).toBeGreaterThanOrEqual(8);
     expect(endpoint.top).toBeGreaterThanOrEqual(8);

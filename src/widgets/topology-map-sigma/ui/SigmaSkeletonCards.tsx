@@ -241,6 +241,10 @@ const SELECTED_RELATION_ENDPOINT_ROLE_LABEL: Record<'source' | 'target', string>
   source: 'FROM',
   target: 'TO',
 };
+const SELECTED_RELATION_ENDPOINT_ROLE_MARK_LABEL: Record<'source' | 'target', string> = {
+  source: 'S',
+  target: 'T',
+};
 const OVERVIEW_CONTEXT_OPACITY: Record<SkeletonCardModel['tier'], string> = {
   0: '1',
   1: '1',
@@ -8432,6 +8436,9 @@ export function SigmaSkeletonCards({
         const selectedRelationEndpointRoleLabel = selectedRelationEndpointRole
           ? SELECTED_RELATION_ENDPOINT_ROLE_LABEL[selectedRelationEndpointRole]
           : undefined;
+        const selectedRelationEndpointRoleMarkLabel = selectedRelationEndpointRole
+          ? SELECTED_RELATION_ENDPOINT_ROLE_MARK_LABEL[selectedRelationEndpointRole]
+          : undefined;
         const pathEndpoint = pathRole === 'source' || pathRole === 'target';
         const selectedFocusCompanion =
           selectedRelationEdgeId === null &&
@@ -8610,6 +8617,9 @@ export function SigmaSkeletonCards({
             }
             data-selected-relation-endpoint-role-badge-text={
               selectedRelationEndpointRoleLabel
+            }
+            data-selected-relation-endpoint-zoom-lens-role-mark-text={
+              selectedRelationEndpointRoleMarkLabel
             }
             data-card-selection-box-policy="boxless-border-state"
             data-drag-wash-token={
@@ -9002,7 +9012,7 @@ export function SigmaSkeletonCards({
             />
             <span
               aria-hidden="true"
-              className="relative shrink-0 rounded-full"
+              className="relative shrink-0 rounded-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!hidden"
               style={{
                 width: TIER_DOT_EM[card.tier],
                 height: TIER_DOT_EM[card.tier],
@@ -9129,7 +9139,7 @@ export function SigmaSkeletonCards({
                 }
                 aria-hidden={selectedRelationSummaryOwnsMeta ? 'true' : undefined}
                 title={selectedRelationSummaryText ?? undefined}
-                className="relative ml-0.5 inline-flex h-[1.55em] shrink-0 items-center rounded-full border border-[color:var(--topology-relation-summary-border)] bg-[color:var(--topology-relation-summary-surface)] px-[0.52em] font-mono text-[0.72em] leading-none text-[color:var(--topology-relation-summary-text)]"
+                className="relative ml-0.5 inline-flex h-[1.55em] shrink-0 items-center rounded-full border border-[color:var(--topology-relation-summary-border)] bg-[color:var(--topology-relation-summary-surface)] px-[0.52em] font-mono text-[0.72em] leading-none text-[color:var(--topology-relation-summary-text)] group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!hidden"
               >
                 {selectedRelationSummaryCompactText}
               </span>
@@ -9145,9 +9155,19 @@ export function SigmaSkeletonCards({
                     selectedRelationEndpointRoleLabel
                   }
                   aria-label={`selected relation ${selectedRelationEndpointRole}`}
-                  className="relative ml-0.5 inline-flex h-[1.42em] shrink-0 items-center justify-center rounded-[0.32em] border border-[color:var(--topology-relation-label-selected-border)] bg-[color:var(--topology-relation-label-selected-surface)] px-[0.36em] font-mono text-[0.58em] font-semibold leading-none text-[color:var(--topology-relation-label-selected-text)]"
+                  className="relative ml-0.5 inline-flex h-[1.42em] shrink-0 items-center justify-center rounded-[0.32em] border border-[color:var(--topology-relation-label-selected-border)] bg-[color:var(--topology-relation-label-selected-surface)] px-[0.36em] font-mono text-[0.58em] font-semibold leading-none text-[color:var(--topology-relation-label-selected-text)] group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!absolute group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!inset-0 group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!ml-0 group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!h-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!w-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!rounded-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!border-0 group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!bg-transparent group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!p-0 group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!text-[0.64rem]"
                 >
-                  {selectedRelationEndpointRoleLabel}
+                  <span className="group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:hidden">
+                    {selectedRelationEndpointRoleLabel}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    data-selected-relation-endpoint-zoom-lens-role-mark-glyph
+                    data-selected-relation-endpoint-zoom-lens-role-mark-contract="compact-role-glyph-no-clipped-title"
+                    className="hidden group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:inline"
+                  >
+                    {selectedRelationEndpointRoleMarkLabel}
+                  </span>
                 </span>
               </>
             ) : null}
