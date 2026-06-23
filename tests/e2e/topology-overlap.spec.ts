@@ -1011,6 +1011,11 @@ test("Relief Focus selected capability card keeps its title readable in the inst
     "data-card-max-width-token",
     "--topology-card-max-width-domain",
   );
+  await expect(contextDomainCard).toHaveAttribute(
+    "data-selected-focus-context-readable-title",
+    "true",
+  );
+  await expect(contextDomainCard).toHaveAttribute("data-zoom-lens-active-card", "false");
   const contextDomainTitleFits = await contextDomainCard
     .locator("[data-card-title]")
     .evaluate((element) => element.scrollWidth <= element.clientWidth + 1);

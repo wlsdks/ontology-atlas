@@ -3508,6 +3508,8 @@ export function SigmaSkeletonCards({
         el.dataset.pathRole === 'source' ||
         el.dataset.pathRole === 'target' ||
         el.dataset.healthRepairAuditTarget === 'true' ||
+        el.dataset.selectedFocusCompanionReadableTitle === 'true' ||
+        el.dataset.selectedFocusContextReadableTitle === 'true' ||
         el.dataset.selectedRelationEndpoint === 'true';
       const zoomLensEligible = el.dataset.zoomLensEligible === 'true' && !zoomLensCritical;
       if (zoomLensEligible) zoomLensEligibleCount += 1;
@@ -7803,6 +7805,14 @@ export function SigmaSkeletonCards({
           card.tier === 3 &&
           !pathWorkflowActive &&
           !healthRepairTarget;
+        const selectedFocusContextDomain =
+          selectedRelationEdgeId === null &&
+          selectedSlug !== null &&
+          selectedFocusCenterActive &&
+          !selected &&
+          card.tier === 1 &&
+          !pathWorkflowActive &&
+          !healthRepairTarget;
         const kindDescription = describeKind?.(card.kind) ?? card.kind;
         const kindBadgeLabel =
           describeKindBadge?.(card.kind) ??
@@ -7844,6 +7854,8 @@ export function SigmaSkeletonCards({
           selected ||
           pathEndpoint ||
           healthRepairAuditTarget ||
+          selectedFocusCompanion ||
+          selectedFocusContextDomain ||
           selectedRelationEndpointRole !== undefined;
         const zoomLensContextAnchorCard = !zoomLensCriticalCard && card.tier >= 1;
         const zoomLensFocusContextRootCard =
@@ -7965,6 +7977,9 @@ export function SigmaSkeletonCards({
             }
             data-selected-focus-companion-readable-title={
               selectedFocusCompanion ? 'true' : undefined
+            }
+            data-selected-focus-context-readable-title={
+              selectedFocusContextDomain ? 'true' : undefined
             }
             data-card-max-width-token={
               selectedRelationSummaryOwnsMeta

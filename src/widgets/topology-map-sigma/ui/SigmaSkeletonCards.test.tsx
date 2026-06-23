@@ -1585,6 +1585,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-selected-focus-companion-readable-title",
         "true",
       );
+      expect(evidenceCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(evidenceCard).toHaveAttribute(
+        "data-zoom-lens-presentation",
+        "full-card-critical",
+      );
       expect(evidenceCard).toHaveAttribute(
         "data-card-max-width-token",
         "--topology-card-selected-focus-companion-max-width",
