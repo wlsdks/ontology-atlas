@@ -4838,6 +4838,24 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief drag reactive context contract was ${payload.markers.topologyDragReactiveContextContract || "missing"}`;
       }
+      if (
+        payload.markers.topologyDragInteractionCueContract !==
+        "root-card-shows-linked-count-during-drag"
+      ) {
+        return `WebView Relief drag interaction cue contract was ${payload.markers.topologyDragInteractionCueContract || "missing"}`;
+      }
+      if (payload.markers.topologyDragInteractionCueVisible !== true) {
+        return "WebView Relief drag interaction cue was not visible";
+      }
+      if (!(Number(payload.markers.topologyDragInteractionCueLinkedCardCount || 0) >= 1)) {
+        return `WebView Relief drag interaction cue linked card count was ${payload.markers.topologyDragInteractionCueLinkedCardCount ?? "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragInteractionCueRelationLinkCount || 0) >= 1)) {
+        return `WebView Relief drag interaction cue relation link count was ${payload.markers.topologyDragInteractionCueRelationLinkCount ?? "missing"}`;
+      }
+      if (!String(payload.markers.topologyDragInteractionCueText || "").trim()) {
+        return "WebView Relief drag interaction cue text was missing";
+      }
       if (payload.markers.topologyDragReactiveContextPolicy !== "boost-dimmed-worker-response") {
         return `WebView Relief drag reactive context policy was ${payload.markers.topologyDragReactiveContextPolicy || "missing"}`;
       }

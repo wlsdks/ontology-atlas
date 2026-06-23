@@ -8619,12 +8619,22 @@ export function SigmaSkeletonCards({
               : 'dock-follower';
         const dragRelationLinkCount =
           activeHullConnectors.length + activeDragTensionConnectors.length;
+        const dragLinkedCardCount = activeDragCluster
+          ? Math.max(0, activeDragCluster.size - 1)
+          : 0;
         const dragInteractionSummary =
           dragging && activeDragCluster
             ? tEdgeTooltip('dragInteractionSummary', {
                 cards: activeDragCluster.size,
                 relations: dragRelationLinkCount,
                 title: card.title,
+              })
+            : undefined;
+        const dragInteractionCue =
+          dragging && dragRole === 'root' && activeDragMotion && activeDragCluster
+            ? tEdgeTooltip('dragInteractionCue', {
+                cards: dragLinkedCardCount,
+                relations: dragRelationLinkCount,
               })
             : undefined;
         const dragSettled = dragSettledSlugs.has(nodeId);
@@ -8796,6 +8806,18 @@ export function SigmaSkeletonCards({
             data-drag-interaction-summary={dragInteractionSummary}
             data-drag-interaction-cluster-size={
               dragging && activeDragCluster ? activeDragCluster.size : undefined
+            }
+            data-drag-interaction-cue-contract={
+              dragInteractionCue
+                ? 'root-card-shows-linked-count-during-drag'
+                : undefined
+            }
+            data-drag-interaction-cue-visible={
+              dragInteractionCue ? 'true' : undefined
+            }
+            data-drag-interaction-cue-text={dragInteractionCue}
+            data-drag-interaction-linked-card-count={
+              dragInteractionCue ? dragLinkedCardCount : undefined
             }
             data-drag-interaction-relation-link-count={
               dragging ? dragRelationLinkCount : undefined
@@ -9194,6 +9216,21 @@ export function SigmaSkeletonCards({
                 className="sr-only"
               >
                 {dragInteractionSummary}
+              </span>
+            ) : null}
+            {dragInteractionCue ? (
+              <span
+                aria-hidden="true"
+                data-drag-interaction-cue
+                data-drag-interaction-cue-contract="root-card-shows-linked-count-during-drag"
+                data-drag-interaction-cue-text={dragInteractionCue}
+                data-drag-interaction-linked-card-count={dragLinkedCardCount}
+                data-drag-interaction-relation-link-count={dragRelationLinkCount}
+                data-surface-token="--topology-card-drag-active-wash"
+                data-border-token="--topology-card-border-selected"
+                className="pointer-events-none absolute -top-7 left-1/2 inline-flex max-w-[8.5rem] -translate-x-1/2 items-center rounded-[0.375rem] border border-[color:var(--topology-card-border-selected)] bg-[color:var(--topology-card-drag-active-wash)] px-1.5 py-0.5 text-[0.64rem] font-medium leading-none text-[color:var(--color-text)] opacity-90 shadow-[0_8px_20px_rgba(0,0,0,0.22)] group-data-[zoom-lens-active-card=true]/skeleton-card:sr-only"
+              >
+                {dragInteractionCue}
               </span>
             ) : null}
             {/* 틴트 레이어 — 불투명 panel 베이스 위에 kind wash. 반투명 bg

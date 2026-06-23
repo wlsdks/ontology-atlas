@@ -5884,6 +5884,27 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer).toHaveAttribute("data-dragging-active", "true");
     expect(layer).toHaveAttribute("data-drag-dynamic-state", "active-cluster-follow");
     expect(card).toHaveAttribute("data-dragging-active", "true");
+    expect(card).toHaveAttribute(
+      "data-drag-interaction-cue-contract",
+      "root-card-shows-linked-count-during-drag",
+    );
+    expect(card).toHaveAttribute("data-drag-interaction-cue-visible", "true");
+    expect(Number(card.getAttribute("data-drag-interaction-linked-card-count"))).toBeGreaterThan(
+      0,
+    );
+    expect(Number(card.getAttribute("data-drag-interaction-relation-link-count"))).toBeGreaterThan(
+      0,
+    );
+    const dragCue = card.querySelector("[data-drag-interaction-cue]");
+    expect(dragCue).toBeInTheDocument();
+    expect(dragCue).toHaveTextContent(/linked|relation/);
+    expect(dragCue).toHaveAttribute(
+      "data-drag-interaction-cue-contract",
+      "root-card-shows-linked-count-during-drag",
+    );
+    expect(screen.getByText("Atlas").closest("[data-skeleton-card]")).not.toHaveAttribute(
+      "data-drag-interaction-cue-contract",
+    );
     const reactiveContextCard = screen
       .getByText("Linked Context")
       .closest("[data-skeleton-card]") as HTMLElement;

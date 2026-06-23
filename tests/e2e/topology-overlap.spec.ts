@@ -3670,6 +3670,24 @@ for (const viewport of VIEWPORTS) {
       "data-drag-reactive-context-visual-token",
       "--topology-card-border-selected",
     );
+    const dragCue = target.locator("[data-drag-interaction-cue]");
+    await expect(target).toHaveAttribute(
+      "data-drag-interaction-cue-contract",
+      "root-card-shows-linked-count-during-drag",
+    );
+    await expect(dragCue).toBeVisible();
+    await expect(dragCue).toHaveAttribute(
+      "data-drag-interaction-cue-contract",
+      "root-card-shows-linked-count-during-drag",
+    );
+    expect(
+      Number(await dragCue.getAttribute("data-drag-interaction-linked-card-count")),
+      `drag root cue should expose linked card count at ${viewport.label}`,
+    ).toBeGreaterThan(0);
+    expect(
+      Number(await dragCue.getAttribute("data-drag-interaction-relation-link-count")),
+      `drag root cue should expose relation link count at ${viewport.label}`,
+    ).toBeGreaterThan(0);
     const dragCacheProof = await page.getByTestId("sigma-skeleton-cards").evaluate((el) => ({
       domIndexSize: Number(el.getAttribute("data-drag-dom-index-size") ?? "0"),
       snapshotCount: Number(el.getAttribute("data-drag-frame-cache-snapshot-count") ?? "0"),

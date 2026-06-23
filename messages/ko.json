@@ -544,6 +544,7 @@
       "selectedCardRelationSummaryAction": "표시 관계 {relations} · 유형 {types} · 확인",
       "selectedCardRelationSummaryCompactAction": "표시 {relations}",
       "dragInteractionSummary": "{title} 포함 연결 카드 {cards}개와 관계 링크 {relations}개를 이동 중",
+      "dragInteractionCue": "연결 {cards} · 관계 {relations}",
       "healthRepairAuditBadge": "수리 대상",
       "copied": "복사됨"
     }

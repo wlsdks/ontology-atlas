@@ -991,6 +991,24 @@ pub fn run() {
                                           result.dragRelationLabelBadgeRadius = Number(
                                             compactDragRelationBadge?.getAttribute("rx") || "0"
                                           );
+                                          const dragInteractionCue =
+                                            document.querySelector("[data-drag-interaction-cue]");
+                                          result.dragInteractionCueContract =
+                                            dragInteractionCue?.getAttribute("data-drag-interaction-cue-contract") ||
+                                            "";
+                                          result.dragInteractionCueVisible =
+                                            dragInteractionCue?.getAttribute("data-drag-interaction-cue-contract") ===
+                                            "root-card-shows-linked-count-during-drag";
+                                          result.dragInteractionCueText =
+                                            dragInteractionCue?.getAttribute("data-drag-interaction-cue-text") ||
+                                            dragInteractionCue?.textContent?.trim() ||
+                                            "";
+                                          result.dragInteractionCueLinkedCardCount = Number(
+                                            dragInteractionCue?.getAttribute("data-drag-interaction-linked-card-count") || "0"
+                                          );
+                                          result.dragInteractionCueRelationLinkCount = Number(
+                                            dragInteractionCue?.getAttribute("data-drag-interaction-relation-link-count") || "0"
+                                          );
                                           const relationLabel = document.querySelector('button[data-relation-label-hit="true"]');
                                           if (relationLabel && typeof relationLabel.click === "function") {
                                             relationLabel.click();
@@ -4807,6 +4825,16 @@ pub fn run() {
                                     Number(topologyDragVerification?.dragRelationLabelBadgeHeight || 0),
                                   topologyDragRelationLabelBadgeRadius:
                                     Number(topologyDragVerification?.dragRelationLabelBadgeRadius || 0),
+                                  topologyDragInteractionCueContract:
+                                    topologyDragVerification?.dragInteractionCueContract || "",
+                                  topologyDragInteractionCueVisible:
+                                    topologyDragVerification?.dragInteractionCueVisible === true,
+                                  topologyDragInteractionCueText:
+                                    topologyDragVerification?.dragInteractionCueText || "",
+                                  topologyDragInteractionCueLinkedCardCount:
+                                    Number(topologyDragVerification?.dragInteractionCueLinkedCardCount || 0),
+                                  topologyDragInteractionCueRelationLinkCount:
+                                    Number(topologyDragVerification?.dragInteractionCueRelationLinkCount || 0),
                                   topologyDragReactiveContextContract:
                                     topologyDragVerification?.dragReactiveContextContract ||
                                     skeletonCardsLayer?.getAttribute("data-drag-reactive-context-contract") ||
@@ -5358,6 +5386,7 @@ mod tests {
         assert!(source.contains("topologyDragRelationLabelPresentation"));
         assert!(source.contains("topologyDragRelationLabelReadableType"));
         assert!(source.contains("topologyDragReactiveContextContract"));
+        assert!(source.contains("topologyDragInteractionCueContract"));
         assert!(source.contains("topologyDragReactiveContextVisibleCount"));
         assert!(source.contains("__ontologyAtlasTopologyZoomVerify"));
         assert!(source.contains("topologyZoomVerifyReason"));
