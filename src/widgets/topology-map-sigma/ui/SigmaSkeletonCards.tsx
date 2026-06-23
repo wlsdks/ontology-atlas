@@ -321,6 +321,14 @@ const FALLBACK_KIND_BADGE_LABEL: Record<SkeletonCardModel['kind'], string> = {
   unknown: '?',
 };
 
+const FALLBACK_KIND_PIN_GLYPH: Record<SkeletonCardModel['kind'], string> = {
+  project: 'P',
+  domain: 'D',
+  capability: 'F',
+  element: 'E',
+  unknown: '?',
+};
+
 const TIER_Z_INDEX: Record<SkeletonCardModel['tier'], number> = {
   0: 4,
   1: 3,
@@ -420,6 +428,13 @@ function readSkeletonCameraRatio(sigma: SkeletonCardsCamera | null): number {
   } catch {
     return 1;
   }
+}
+
+function resolveKindPinGlyph(
+  kind: SkeletonCardModel['kind'],
+  kindBadgeLabel: string,
+): string {
+  return Array.from(kindBadgeLabel.trim())[0]?.toUpperCase() ?? FALLBACK_KIND_PIN_GLYPH[kind];
 }
 
 type FixedSurfaceRectCache = {
@@ -8647,6 +8662,7 @@ export function SigmaSkeletonCards({
           describeKindBadge?.(card.kind) ??
           kindDescription.split('·')[0]?.trim() ??
           FALLBACK_KIND_BADGE_LABEL[card.kind];
+        const kindPinGlyph = resolveKindPinGlyph(card.kind, kindBadgeLabel);
         // 카드 표면 = kind 틴트 × tier alpha 의 *정량 토큰*.
         // 상위 개념일수록 표면을 더 세게 주어 지도가 태그 더미가 아니라
         // project → domain → capability → element 위계로 먼저 읽히게 한다.
@@ -9197,13 +9213,27 @@ export function SigmaSkeletonCards({
             />
             <span
               aria-hidden="true"
-              className="relative shrink-0 rounded-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!hidden"
+              className="relative shrink-0 rounded-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!hidden group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden"
               style={{
                 width: TIER_DOT_EM[card.tier],
                 height: TIER_DOT_EM[card.tier],
                 backgroundColor: fill,
               }}
             />
+            <span
+              aria-hidden="true"
+              data-zoom-lens-pin-glyph
+              data-zoom-lens-pin-glyph-text={kindPinGlyph}
+              data-zoom-lens-pin-glyph-contract="compact-kind-pin-keeps-type-glyph-without-title-card"
+              className="pointer-events-none absolute inset-0 hidden items-center justify-center font-mono text-[0.64rem] font-semibold leading-none text-[color:var(--card-kind-accent)] group-data-[zoom-lens-active-card=true]/skeleton-card:inline-flex group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!hidden"
+              style={
+                {
+                  '--card-kind-accent': fill,
+                } as React.CSSProperties
+              }
+            >
+              {kindPinGlyph}
+            </span>
             <span
               data-card-kind-badge
               data-card-kind={card.kind}

@@ -1203,7 +1203,9 @@ pub fn run() {
                                     presentationSource: "",
                                     cameraRatio: 0,
                                     activeCardCount: 0,
-                                    visibleActiveCardCount: 0
+                                    visibleActiveCardCount: 0,
+                                    pinGlyphContract: "",
+                                    pinGlyphVisibleCount: 0
                                   };
                                   window.__ontologyAtlasTopologyZoomVerify = result;
                                   const layer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
@@ -1221,6 +1223,22 @@ pub fn run() {
                                       Number(layer?.getAttribute("data-zoom-lens-active-card-count") || "0");
                                     result.visibleActiveCardCount =
                                       Number(layer?.getAttribute("data-zoom-lens-visible-active-card-count") || "0");
+                                    const activePins = Array.from(
+                                      document.querySelectorAll('[data-skeleton-card][data-zoom-lens-active-card="true"]')
+                                    );
+                                    const pinGlyphs = activePins
+                                      .map((card) => card.querySelector("[data-zoom-lens-pin-glyph]"))
+                                      .filter(Boolean);
+                                    result.pinGlyphContract =
+                                      pinGlyphs[0]?.getAttribute("data-zoom-lens-pin-glyph-contract") || "";
+                                    result.pinGlyphVisibleCount = pinGlyphs.filter((glyph) => {
+                                      const style = window.getComputedStyle(glyph);
+                                      return (
+                                        style.display !== "none" &&
+                                        style.visibility !== "hidden" &&
+                                        Number(style.opacity || "1") > 0.01
+                                      );
+                                    }).length;
                                     result.reason = result.active ? "done" : "zoom lens inactive";
                                   };
                                   if (typeof window.__ontologyAtlasTopologyVerifyZoom === "function") {
@@ -5102,6 +5120,10 @@ pub fn run() {
                                       skeletonCardsLayer?.getAttribute("data-zoom-lens-visible-active-card-count") ||
                                       "0"
                                     ),
+                                  topologyZoomLensPinGlyphContract:
+                                    topologyZoomVerification?.pinGlyphContract || "",
+                                  topologyZoomLensPinGlyphVisibleCount:
+                                    Number(topologyZoomVerification?.pinGlyphVisibleCount || "0"),
                                   topologyZoomLensViewportVisibleContract:
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-viewport-visible-contract") || "",
                                   topologyZoomLensEmptyViewportFallbackContract:

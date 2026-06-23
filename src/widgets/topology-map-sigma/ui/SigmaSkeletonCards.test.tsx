@@ -583,6 +583,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-zoom-lens-compact-hidden-contract",
       "compact-lens-keeps-kind-as-dot-color",
     );
+    expect(scanCard?.querySelector("[data-zoom-lens-pin-glyph]")).toHaveAttribute(
+      "data-zoom-lens-pin-glyph-contract",
+      "compact-kind-pin-keeps-type-glyph-without-title-card",
+    );
+    expect(scanCard?.querySelector("[data-zoom-lens-pin-glyph]")).toHaveAttribute(
+      "data-zoom-lens-pin-glyph-text",
+      "기",
+    );
     expect(scanCard?.querySelector("[data-skeleton-card-count]")).toHaveAttribute(
       "data-zoom-lens-compact-hidden-contract",
       "compact-lens-removes-scale-count-from-map-mark",
@@ -1742,6 +1750,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(evidenceCard).toHaveAttribute(
         "data-zoom-lens-focus-readable-compaction",
         "camera-zoom-in-kind-pin",
+      );
+      expect(evidenceCard?.querySelector("[data-zoom-lens-pin-glyph]")).toHaveAttribute(
+        "data-zoom-lens-pin-glyph-contract",
+        "compact-kind-pin-keeps-type-glyph-without-title-card",
       );
     });
   });

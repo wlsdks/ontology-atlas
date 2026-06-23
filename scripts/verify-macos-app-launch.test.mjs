@@ -400,6 +400,8 @@ test("WebView verification requires Add Concept backdrop when the composer is op
           topologyZoomLensEligibleCount: 5,
           topologyZoomLensActiveCardCount: 3,
           topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+          topologyZoomLensPinGlyphVisibleCount: 2,
           topologyZoomLensViewportVisibleContract:
             "visible-lens-pins-match-frame-state",
           topologyZoomLensEmptyViewportFallbackContract:
@@ -1152,6 +1154,8 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyZoomLensActiveCardCount: 3,
         topologyVisibleCardCount: 2,
         topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+          topologyZoomLensPinGlyphVisibleCount: 2,
         topologyZoomLensViewportVisibleContract:
           "visible-lens-pins-match-frame-state",
         topologyZoomLensEmptyViewportFallbackContract:
@@ -1391,6 +1395,10 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     activeCardCount: 3,
     visibleCardCount: 2,
     visibleActiveCardCount: 2,
+    pinGlyph: {
+      contract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+      visibleCount: 2,
+    },
     viewportVisibleContract: "visible-lens-pins-match-frame-state",
     emptyViewportFallback: {
       contract: "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
@@ -2914,6 +2922,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyZoomLensEligibleCount: 5,
       topologyZoomLensActiveCardCount: 3,
       topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+          topologyZoomLensPinGlyphVisibleCount: 2,
       topologyZoomLensEmptyViewportFallbackContract:
         "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
       topologyZoomLensEmptyViewportFallbackActive: true,
@@ -8148,6 +8158,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyZoomLensEligibleCount: 5,
         topologyZoomLensActiveCardCount: 3,
         topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+          topologyZoomLensPinGlyphVisibleCount: 2,
         topologySelectedRelationHaloVisible: true,
         topologySelectedRelationHaloQuality: "supported",
         topologySelectedRelationHandleStripSource: "domain:views",
@@ -9082,6 +9094,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyZoomLensEligibleCount: 5,
         topologyZoomLensActiveCardCount: 3,
         topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+          topologyZoomLensPinGlyphVisibleCount: 2,
         topologySelectedRelationHaloVisible: true,
         topologySelectedRelationHaloCount: 1,
         topologySelectedRelationVisibleHaloCount: 1,
@@ -9220,6 +9234,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyZoomLensEligibleCount: 5,
         topologyZoomLensActiveCardCount: 3,
         topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+          topologyZoomLensPinGlyphVisibleCount: 2,
         topologySelectedRelationHaloVisible: true,
         topologySelectedRelationHaloQuality: "strong",
         topologySelectedRelationLabelHitAligned: true,

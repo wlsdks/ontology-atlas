@@ -848,15 +848,24 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   const compactLaneDisplay = await compactCard.evaluate((card) => {
     const kindBadge = card.querySelector("[data-card-kind-badge]");
     const countChip = card.querySelector("[data-skeleton-card-count]");
+    const pinGlyph = card.querySelector("[data-zoom-lens-pin-glyph]");
     const title = card.querySelector("[data-card-title]");
     return {
       kind: kindBadge ? window.getComputedStyle(kindBadge).display : null,
       count: countChip ? window.getComputedStyle(countChip).display : null,
+      pinGlyph: pinGlyph ? window.getComputedStyle(pinGlyph).display : null,
+      pinGlyphContract: pinGlyph?.getAttribute("data-zoom-lens-pin-glyph-contract") ?? null,
+      pinGlyphText: pinGlyph?.getAttribute("data-zoom-lens-pin-glyph-text") ?? null,
       titleWidth: title ? title.getBoundingClientRect().width : null,
     };
   });
   expect(compactLaneDisplay.kind).toBe("none");
   expect(compactLaneDisplay.count).toBe("none");
+  expect(compactLaneDisplay.pinGlyph).toBe("flex");
+  expect(compactLaneDisplay.pinGlyphContract).toBe(
+    "compact-kind-pin-keeps-type-glyph-without-title-card",
+  );
+  expect(compactLaneDisplay.pinGlyphText).toBeTruthy();
   expect(compactLaneDisplay.titleWidth).toBeLessThanOrEqual(2);
 
   const compactAnchor = page
