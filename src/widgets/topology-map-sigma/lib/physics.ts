@@ -45,7 +45,7 @@ export interface PhysicsController {
   pinGroup: (positions: ReadonlyMap<string, { x: number; y: number }>) => void;
   /** 드래그 중: 연결 그룹 전체 pin 위치 업데이트. */
   dragGroup: (positions: ReadonlyMap<string, { x: number; y: number }>) => void;
-  /** 드래그 종료: 연결 그룹 전체 pin 해제. */
+  /** 드래그 종료: 연결 그룹 전체를 놓은 위치에 commit. */
   releaseGroup: (nodeIds: Iterable<string>) => void;
   /** 사용자 Forces 패널에서 실시간 튜닝. 지정한 값만 반영, 나머지 유지. */
   tune: (opts: {
@@ -151,6 +151,13 @@ export function startPhysics(
     node.fy = null;
   };
 
+  const commitNode = (nodeId: string) => {
+    const node = simNodeById.get(nodeId);
+    if (!node) return;
+    node.fx = node.x ?? 0;
+    node.fy = node.y ?? 0;
+  };
+
   return {
     pin: (nodeId, x, y) => {
       pinNode(nodeId, x, y);
@@ -173,8 +180,8 @@ export function startPhysics(
       sim.alpha(Math.max(sim.alpha(), 0.18)).restart();
     },
     releaseGroup: (nodeIds) => {
-      for (const nodeId of nodeIds) releaseNode(nodeId);
-      sim.alpha(Math.max(sim.alpha(), 0.12)).alphaTarget(0).restart();
+      for (const nodeId of nodeIds) commitNode(nodeId);
+      sim.alpha(0).alphaTarget(0).stop();
     },
     tune: ({ repel, linkDistance, collideMultiplier }) => {
       let needsRestart = false;
