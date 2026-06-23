@@ -4207,7 +4207,7 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
   ).toHaveLength(2);
 });
 
-test("Relief selected relation zoom-in turns non-selected endpoint cards into compact role marks", async ({
+test("Relief selected relation zoom-in turns both endpoint cards into compact role marks", async ({
   page,
 }) => {
   await openRelief(page, INSTALLED_APP_WEBVIEW, {
@@ -4258,7 +4258,7 @@ test("Relief selected relation zoom-in turns non-selected endpoint cards into co
   );
   await expect(skeletonCards).toHaveAttribute(
     "data-selected-relation-endpoint-zoom-lens-count",
-    /[1-2]/,
+    "2",
   );
   await expect(skeletonCards).toHaveAttribute(
     "data-selected-relation-endpoint-zoom-lens-viewport-contract",
@@ -4292,8 +4292,8 @@ test("Relief selected relation zoom-in turns non-selected endpoint cards into co
 
   expect(
     endpointState.filter((card) => card.endpointZoom === "role-mark"),
-    "zoomed selected relation should reduce at least one non-selected endpoint into a role mark",
-  ).toHaveLength(Number(await skeletonCards.getAttribute("data-selected-relation-endpoint-zoom-lens-count")));
+    "zoomed selected relation should reduce both endpoints into role marks",
+  ).toHaveLength(2);
   for (const endpoint of endpointState.filter((card) => card.endpointZoom === "role-mark")) {
     expect(endpoint.active).toBe("true");
     expect(endpoint.presentation).toBe("lens-pin");

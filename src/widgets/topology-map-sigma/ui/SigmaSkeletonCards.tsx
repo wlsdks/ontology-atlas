@@ -3660,7 +3660,7 @@ export function SigmaSkeletonCards({
       const compactSelectedRelationEndpointOnCameraZoom =
         zoomLensCardCompactionActive && el.dataset.selectedRelationEndpoint === 'true';
       const zoomLensCritical =
-        el.dataset.selected === 'true' ||
+        (el.dataset.selected === 'true' && !compactSelectedRelationEndpointOnCameraZoom) ||
         el.dataset.pathRole === 'source' ||
         el.dataset.pathRole === 'target' ||
         el.dataset.healthRepairAuditTarget === 'true' ||
