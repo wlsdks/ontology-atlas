@@ -333,7 +333,7 @@ const FIXED_SURFACE_RECT_CACHE_MS = 180;
 const LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS = 160;
 const INITIAL_LOAD_REPOSITION_THROTTLE_MS = 640;
 const ZOOM_LENS_RATIO_THRESHOLD = 0.98;
-const ZOOM_LENS_CARD_MAX_WIDTH_PX = 124;
+const ZOOM_LENS_PIN_SIZE_PX = 28;
 
 type RelationConnector = {
   from: string;
@@ -3308,13 +3308,13 @@ export function SigmaSkeletonCards({
     const cameraRatio = readSkeletonCameraRatio(sigma);
     const zoomLensActive = cameraRatio <= ZOOM_LENS_RATIO_THRESHOLD;
     container.dataset.zoomLensContract =
-      'zoom-in-uses-compact-lens-chips-for-noncritical-cards';
+      'zoom-in-uses-kind-pins-for-noncritical-detail-cards';
     container.dataset.zoomLensThresholdRatio = String(ZOOM_LENS_RATIO_THRESHOLD);
     container.dataset.zoomLensCameraRatio = cameraRatio.toFixed(3);
     container.dataset.zoomLensActive = zoomLensActive ? 'true' : 'false';
     container.style.setProperty(
-      '--topology-zoom-lens-card-max-width',
-      `${ZOOM_LENS_CARD_MAX_WIDTH_PX}px`,
+      '--topology-zoom-lens-pin-size',
+      `${ZOOM_LENS_PIN_SIZE_PX}px`,
     );
     if (lastAppliedTopologyUiScaleRef.current !== scale) {
       lastAppliedTopologyUiScaleRef.current = scale;
@@ -3401,13 +3401,15 @@ export function SigmaSkeletonCards({
       if (zoomLensEligible) zoomLensEligibleCount += 1;
       if (zoomLensActive && zoomLensEligible) {
         el.dataset.zoomLensActiveCard = 'true';
-        el.dataset.zoomLensPresentation = 'compact-lens-chip';
+        el.dataset.zoomLensPresentation = 'lens-pin';
         zoomLensActiveCardCount += 1;
       } else {
         el.dataset.zoomLensActiveCard = 'false';
         el.dataset.zoomLensPresentation = zoomLensCritical
           ? 'full-card-critical'
-          : 'full-card-default';
+          : el.dataset.zoomLensEligible === 'true'
+            ? 'full-card-detail'
+            : 'full-card-anchor';
       }
     }
     container.dataset.zoomLensEligibleCount = String(zoomLensEligibleCount);
@@ -7517,7 +7519,7 @@ export function SigmaSkeletonCards({
           dragging ||
           dragSettled ||
           selectedRelationEndpointRole !== undefined;
-        const zoomLensEligible = !zoomLensCriticalCard;
+        const zoomLensEligible = !zoomLensCriticalCard && card.tier >= 2;
         return (
           <button
             key={card.id}
@@ -7536,8 +7538,10 @@ export function SigmaSkeletonCards({
             data-zoom-lens-eligible={zoomLensEligible ? 'true' : 'false'}
             data-zoom-lens-card-contract={
               zoomLensEligible
-                ? 'noncritical-card-can-collapse-on-camera-zoom-in'
-                : 'critical-card-stays-full-on-camera-zoom-in'
+                ? 'noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in'
+                : zoomLensCriticalCard
+                  ? 'critical-card-stays-full-on-camera-zoom-in'
+                  : 'core-anchor-card-stays-readable-on-camera-zoom-in'
             }
             data-path-workflow={pathWorkflowActive ? 'true' : 'false'}
             data-path-role={pathRole}
@@ -7919,7 +7923,7 @@ export function SigmaSkeletonCards({
                   : tintBorderHover,
               } as React.CSSProperties
             }
-            className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-card-max-width)] data-[zoom-lens-active-card=true]:!gap-[0.34em] data-[zoom-lens-active-card=true]:!rounded-[0.42rem] data-[zoom-lens-active-card=true]:!px-[0.48em] data-[zoom-lens-active-card=true]:!py-[0.30em] data-[zoom-lens-active-card=true]:!text-[0.78em] data-[zoom-lens-active-card=true]:shadow-none hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
+            className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[zoom-lens-active-card=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!justify-center data-[zoom-lens-active-card=true]:!gap-0 data-[zoom-lens-active-card=true]:!overflow-hidden data-[zoom-lens-active-card=true]:!rounded-full data-[zoom-lens-active-card=true]:!p-0 data-[zoom-lens-active-card=true]:shadow-none hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
               selected
                 ? 'shadow-none outline-none'
                 : ''
@@ -8022,7 +8026,7 @@ export function SigmaSkeletonCards({
               }
               data-full-title={card.title}
               aria-hidden={selectedRelationSummaryOwnsMeta ? 'true' : undefined}
-              className="relative min-w-0 truncate"
+              className="relative min-w-0 truncate group-data-[zoom-lens-active-card=true]/skeleton-card:sr-only"
             >
               {card.title}
             </span>

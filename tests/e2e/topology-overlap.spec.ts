@@ -745,7 +745,7 @@ test("Relief overview support rail stays compact on wide desktop viewports", asy
   }
 });
 
-test("Relief zoom-in switches scan cards to compact lens chips", async ({ page }) => {
+test("Relief zoom-in switches detail cards to kind pins", async ({ page }) => {
   const viewport = VIEWPORTS[1];
   await openRelief(page, viewport, { mode: "map" });
   await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -760,7 +760,7 @@ test("Relief zoom-in switches scan cards to compact lens chips", async ({ page }
   const layer = page.getByTestId("sigma-skeleton-cards");
   await expect(layer).toHaveAttribute(
     "data-zoom-lens-contract",
-    "zoom-in-uses-compact-lens-chips-for-noncritical-cards",
+    "zoom-in-uses-kind-pins-for-noncritical-detail-cards",
   );
   await expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
 
@@ -779,13 +779,17 @@ test("Relief zoom-in switches scan cards to compact lens chips", async ({ page }
     .first();
   await expect(compactCard).toHaveAttribute(
     "data-zoom-lens-presentation",
-    "compact-lens-chip",
+    "lens-pin",
   );
   const compactRect = await rectOf(compactCard);
   expect(
     compactRect.width,
-    "zoomed-in scan cards should become compact enough to stop covering relation structure",
-  ).toBeLessThanOrEqual(132);
+    "zoomed-in detail cards should become pins instead of text boxes over relation structure",
+  ).toBeLessThanOrEqual(34);
+  expect(
+    compactRect.height,
+    "zoomed-in detail pins should keep a stable compact hit target",
+  ).toBeLessThanOrEqual(34);
   await expect(compactCard.locator("[data-card-kind-badge]")).toHaveAttribute(
     "data-zoom-lens-compact-hidden-contract",
     "compact-lens-keeps-kind-as-dot-color",
@@ -797,13 +801,21 @@ test("Relief zoom-in switches scan cards to compact lens chips", async ({ page }
   const compactLaneDisplay = await compactCard.evaluate((card) => {
     const kindBadge = card.querySelector("[data-card-kind-badge]");
     const countChip = card.querySelector("[data-skeleton-card-count]");
+    const title = card.querySelector("[data-card-title]");
     return {
       kind: kindBadge ? window.getComputedStyle(kindBadge).display : null,
       count: countChip ? window.getComputedStyle(countChip).display : null,
+      titleWidth: title ? title.getBoundingClientRect().width : null,
     };
   });
   expect(compactLaneDisplay.kind).toBe("none");
   expect(compactLaneDisplay.count).toBe("none");
+  expect(compactLaneDisplay.titleWidth).toBeLessThanOrEqual(2);
+
+  const coreAnchor = page
+    .locator('[data-skeleton-card][data-tier="1"][data-zoom-lens-active-card="false"]')
+    .first();
+  await expect(coreAnchor).toHaveAttribute("data-zoom-lens-presentation", "full-card-anchor");
 });
 
 test("Relief Focus selected capability card keeps its title readable in the installed app WebView size", async ({

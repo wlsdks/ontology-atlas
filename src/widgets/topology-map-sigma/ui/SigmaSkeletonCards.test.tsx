@@ -188,17 +188,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer.style.getPropertyValue("--topology-card-max-width-capability")).toBe("360px");
     expect(layer.style.getPropertyValue("--topology-card-max-width-element")).toBe("224px");
     expect(layer.style.getPropertyValue("--topology-card-selected-focus-max-width")).toBe("440px");
-    expect(layer.style.getPropertyValue("--topology-zoom-lens-card-max-width")).toBe("124px");
+    expect(layer.style.getPropertyValue("--topology-zoom-lens-pin-size")).toBe("28px");
     expect(layer).toHaveAttribute(
       "data-zoom-lens-contract",
-      "zoom-in-uses-compact-lens-chips-for-noncritical-cards",
+      "zoom-in-uses-kind-pins-for-noncritical-detail-cards",
     );
     expect(layer).toHaveAttribute("data-zoom-lens-threshold-ratio", "0.98");
     expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "1.000");
     expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
     expect(domainCard).toHaveAttribute(
       "data-zoom-lens-card-contract",
-      "noncritical-card-can-collapse-on-camera-zoom-in",
+      "core-anchor-card-stays-readable-on-camera-zoom-in",
     );
     expect(domainCard).toHaveAttribute("data-zoom-lens-active-card", "false");
     expect(layer).toHaveAttribute(
@@ -481,12 +481,30 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("줌 인 상태에서는 비핵심 카드를 compact lens chip 으로 낮춘다", () => {
+  it("줌 인 상태에서는 비핵심 상세 카드를 kind pin 으로 낮춘다", () => {
+    const graph = makeGraph();
+    graph.addNode("capability:c1", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 35,
+      y: 20,
+      label: "Sync",
+    });
+
     render(
       <SigmaSkeletonCards
         sigma={makeStubSigma(0.42)}
-        graph={makeGraph()}
-        cards={[...CARDS]}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          { id: "capability:c1", title: "Sync", kind: "capability", tier: 2 as const, count: 3 },
+        ]}
         selectedSlug="project:p"
         onSelect={vi.fn()}
         describeKindBadge={(kind) =>
@@ -503,7 +521,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     const layer = screen.getByTestId("sigma-skeleton-cards");
     const selectedCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
-    const scanCard = screen.getByText("Views").closest("[data-skeleton-card]");
+    const anchorCard = screen.getByText("Views").closest("[data-skeleton-card]");
+    const scanCard = screen.getByText("Sync").closest("[data-skeleton-card]");
 
     expect(layer).toHaveAttribute("data-zoom-lens-active", "true");
     expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "0.420");
@@ -517,10 +536,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(selectedCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-critical");
     expect(scanCard).toHaveAttribute(
       "data-zoom-lens-card-contract",
-      "noncritical-card-can-collapse-on-camera-zoom-in",
+      "noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in",
     );
+    expect(anchorCard).toHaveAttribute(
+      "data-zoom-lens-card-contract",
+      "core-anchor-card-stays-readable-on-camera-zoom-in",
+    );
+    expect(anchorCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+    expect(anchorCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-anchor");
     expect(scanCard).toHaveAttribute("data-zoom-lens-active-card", "true");
-    expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "compact-lens-chip");
+    expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
     expect(scanCard?.querySelector("[data-card-kind-badge]")).toHaveAttribute(
       "data-zoom-lens-compact-hidden-contract",
       "compact-lens-keeps-kind-as-dot-color",
