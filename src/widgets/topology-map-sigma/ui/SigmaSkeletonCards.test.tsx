@@ -208,6 +208,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "zoom-out-overview-uses-kind-pins-for-noncritical-context-cards",
     );
     expect(layer).toHaveAttribute("data-overview-density-lens-active", "false");
+    expect(layer).toHaveAttribute(
+      "data-overview-density-lens-readable-band-contract",
+      "14-inch-overview-keeps-capability-title-cards",
+    );
     expect(domainCard).toHaveAttribute(
       "data-zoom-lens-card-contract",
       "noncritical-context-card-becomes-kind-pin-on-camera-zoom-in",
@@ -724,6 +728,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
       expect(layer).toHaveAttribute("data-zoom-lens-card-compaction-active", "false");
       expect(layer).toHaveAttribute("data-overview-density-lens-active", "true");
+      expect(layer).toHaveAttribute(
+        "data-overview-density-lens-width-band",
+        "wide-pin-band",
+      );
       expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
       expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "overview-density");
       expect(layer).toHaveAttribute("data-overview-density-lens-active-card-count", "2");
@@ -733,6 +741,71 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(anchorCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
       expect(scanCard).toHaveAttribute("data-zoom-lens-active-card", "true");
       expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: originalInnerWidth,
+      });
+    }
+  });
+
+  it("14인치 overview readable band 에서는 capability 제목 카드를 유지한다", () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 1512,
+    });
+    try {
+      const graph = makeGraph();
+      graph.addNode("capability:c1", {
+        ...graph.getNodeAttributes("domain:d1"),
+        x: 30,
+        y: 10,
+        label: "Readable Capability",
+      });
+
+      render(
+        <SigmaSkeletonCards
+          sigma={makeStubSigma(1.42)}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            {
+              id: "capability:c1",
+              title: "Readable Capability",
+              kind: "capability",
+              tier: 2 as const,
+              count: 3,
+            },
+          ]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+          describeKindBadge={(kind) =>
+            ({
+              project: "제품/시스템",
+              domain: "영역",
+              capability: "기능",
+              element: "구현 근거",
+              unknown: "미분류",
+            })[kind]
+          }
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const scanCard = screen.getByText("Readable Capability").closest("[data-skeleton-card]");
+
+      expect(layer).toHaveAttribute("data-overview-density-lens-active", "false");
+      expect(layer).toHaveAttribute(
+        "data-overview-density-lens-width-band",
+        "readable-title-band",
+      );
+      expect(layer).toHaveAttribute(
+        "data-overview-density-lens-readable-band-contract",
+        "14-inch-overview-keeps-capability-title-cards",
+      );
+      expect(scanCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-detail");
     } finally {
       Object.defineProperty(window, "innerWidth", {
         configurable: true,

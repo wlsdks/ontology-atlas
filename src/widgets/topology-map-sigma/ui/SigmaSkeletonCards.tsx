@@ -371,6 +371,8 @@ const INITIAL_LOAD_REPOSITION_THROTTLE_MS = 640;
 const ZOOM_LENS_RATIO_THRESHOLD = 0.98;
 const OVERVIEW_DENSITY_LENS_RATIO_THRESHOLD = 1.1;
 const OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX = 1180;
+const OVERVIEW_DENSITY_LENS_COMPACT_MAX_WIDTH_PX = 1280;
+const OVERVIEW_DENSITY_LENS_WIDE_MIN_WIDTH_PX = 1680;
 const ZOOM_LENS_PIN_SIZE_PX = 28;
 const ZOOM_LENS_PIN_MIN_OPACITY = '0.42';
 const WHEEL_ZOOM_BASE_DELTA_PX = 560;
@@ -3572,9 +3574,13 @@ export function SigmaSkeletonCards({
       selectedRelationEdgeId === null &&
       !pathWorkflowActive &&
       !healthRepairTarget;
+    const overviewDensityLensWidthActive =
+      containerRect.width >= OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX &&
+      (containerRect.width <= OVERVIEW_DENSITY_LENS_COMPACT_MAX_WIDTH_PX ||
+        containerRect.width >= OVERVIEW_DENSITY_LENS_WIDE_MIN_WIDTH_PX);
     const overviewDensityLensActive =
       cameraRatio >= OVERVIEW_DENSITY_LENS_RATIO_THRESHOLD &&
-      containerRect.width >= OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX &&
+      overviewDensityLensWidthActive &&
       selectedSlug === null &&
       selectedRelationEdgeId === null &&
       !pathWorkflowActive &&
@@ -3615,6 +3621,19 @@ export function SigmaSkeletonCards({
     container.dataset.overviewDensityLensMinWidth = String(
       OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX,
     );
+    container.dataset.overviewDensityLensCompactMaxWidth = String(
+      OVERVIEW_DENSITY_LENS_COMPACT_MAX_WIDTH_PX,
+    );
+    container.dataset.overviewDensityLensWideMinWidth = String(
+      OVERVIEW_DENSITY_LENS_WIDE_MIN_WIDTH_PX,
+    );
+    container.dataset.overviewDensityLensReadableBandContract =
+      '14-inch-overview-keeps-capability-title-cards';
+    container.dataset.overviewDensityLensWidthBand = overviewDensityLensWidthActive
+      ? containerRect.width <= OVERVIEW_DENSITY_LENS_COMPACT_MAX_WIDTH_PX
+        ? 'compact-pin-band'
+        : 'wide-pin-band'
+      : 'readable-title-band';
     container.dataset.overviewDensityLensActive = overviewDensityLensActive
       ? 'true'
       : 'false';

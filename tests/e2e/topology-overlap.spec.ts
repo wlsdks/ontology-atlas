@@ -685,6 +685,18 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-fixed-surface-restore-noop-policy",
     "preflight-frame-rects-before-restore-loop",
   );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-overview-density-lens-readable-band-contract",
+    "14-inch-overview-keeps-capability-title-cards",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-overview-density-lens-width-band",
+    "readable-title-band",
+  );
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-overview-density-lens-active",
+    "false",
+  );
   expectCardsClear(
     await visibleCardRects(page),
     MBP14_FULLSCREEN,
@@ -1036,6 +1048,14 @@ test("Relief compact installed-app overview keeps the map scannable with kind pi
   await expect(layer).toHaveAttribute(
     "data-overview-density-lens-min-width",
     "1180",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-overview-density-lens-compact-max-width",
+    "1280",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-overview-density-lens-width-band",
+    "compact-pin-band",
   );
   await expect(layer).toHaveAttribute("data-overview-density-lens-active", "true", {
     timeout: 6_000,
