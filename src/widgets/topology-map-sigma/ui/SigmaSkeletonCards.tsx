@@ -6089,7 +6089,8 @@ export function SigmaSkeletonCards({
           ? suppressVisibleCardOverlaps(
               orderedEls,
               readVisibleCardRect,
-              isSelectedRelationEndpointCard,
+              (el) =>
+                isSelectedRelationEndpointCard(el) || el.dataset.selected === 'true',
               {
                 containerRect,
                 fixedSurfaceRects: selectedFocusRailSurfaceMounted
@@ -6806,6 +6807,7 @@ export function SigmaSkeletonCards({
     >();
     let connectorCardRectReadCount = 0;
     let connectorCardRectHitCount = 0;
+    const connectorCardRectReadSlugs: string[] = [];
     const isFiniteConnectorRect = (rect: ConnectorRect) =>
       Number.isFinite(rect.left) &&
       Number.isFinite(rect.top) &&
@@ -6835,6 +6837,7 @@ export function SigmaSkeletonCards({
         return visibleCached.rect;
       }
       connectorCardRectReadCount += 1;
+      connectorCardRectReadSlugs.push(el.dataset.slug ?? '(unknown)');
       const rect = el.getBoundingClientRect();
       const next = {
         left: rect.left - containerRect.left,
@@ -7097,6 +7100,7 @@ export function SigmaSkeletonCards({
       let focusRelationLabelExpectedCount = 0;
       let focusRelationLabelVisibleCount = 0;
       let focusEgoHandoffFallbackButton: HTMLElement | null = null;
+      let focusEgoHandoffFallbackSvgLabel: SVGTextElement | null = null;
       for (const label of svg.querySelectorAll<SVGTextElement>('[data-relation-label-from]')) {
         const dragRelationLabel = label.dataset.dragRelationLabel === 'true';
         const from = label.dataset.relationLabelFrom;
@@ -7148,21 +7152,22 @@ export function SigmaSkeletonCards({
           Number(label.dataset.relationLabelIndex ?? '0') === 0
         ) {
           focusEgoHandoffFallbackButton = labelButton;
+          focusEgoHandoffFallbackSvgLabel = label;
         }
         const fromEl = from ? elBySlug.get(from) : null;
         const toEl = to ? elBySlug.get(to) : null;
-        const fromRect = connectorCardRect(fromEl);
-        const toRect = connectorCardRect(toEl);
-        if (
-          !fromRect ||
-          !toRect ||
+        const hiddenEndpoint =
+          !fromEl ||
+          !toEl ||
           (!activeDragRelationLabel &&
             !selectedRelationLabel &&
             (fromEl?.dataset.surfaceHidden === 'true' ||
               toEl?.dataset.surfaceHidden === 'true' ||
               (label.dataset.connectorRelationLabel === 'true' &&
-                isDockConnectorSuppressed(toEl))))
-        ) {
+                isDockConnectorSuppressed(toEl))));
+        const fromRect = hiddenEndpoint ? null : connectorCardRect(fromEl);
+        const toRect = hiddenEndpoint ? null : connectorCardRect(toEl);
+        if (hiddenEndpoint || !fromRect || !toRect) {
           label.setAttribute('opacity', '0');
           label.dataset.relationLabelVisibility = activeDragRelationLabel
             ? 'drag-fact-hidden'
@@ -7232,9 +7237,25 @@ export function SigmaSkeletonCards({
           Number.isFinite(labelGeometry.left) &&
           Number.isFinite(labelGeometry.hitTargetWidth) &&
           Number.isFinite(labelPlacement.top);
-        const labelLeft = labelGeometryFinite ? labelGeometry.left : 0;
+        const visibleHtmlBadgeWidth =
+          labelButton !== null
+            ? Number(labelButton.dataset.visibleBadgeWidth ?? '0')
+            : 0;
+        const labelWidth =
+          labelGeometryFinite && Number.isFinite(visibleHtmlBadgeWidth)
+            ? Math.max(labelGeometry.hitTargetWidth, visibleHtmlBadgeWidth + 2)
+            : 0;
+        const labelCenter = labelGeometry.left + labelGeometry.hitTargetWidth / 2;
+        const labelLeft = labelGeometryFinite
+          ? Math.min(
+              containerRect.width - RELATION_LABEL_VIEWPORT_INSET_PX - labelWidth,
+              Math.max(
+                RELATION_LABEL_VIEWPORT_INSET_PX,
+                labelCenter - labelWidth / 2,
+              ),
+            )
+          : 0;
         const labelTop = labelGeometryFinite ? labelPlacement.top : 0;
-        const labelWidth = labelGeometryFinite ? labelGeometry.hitTargetWidth : 0;
         const labelHitRect = {
           left: labelLeft,
           top: labelTop,
@@ -7515,6 +7536,17 @@ export function SigmaSkeletonCards({
         relationLabelFrameExpectedCount === 0 &&
         focusEgoHandoffFallbackButton !== null
       ) {
+        const fallbackBadgeWidth = Number(
+          focusEgoHandoffFallbackButton.dataset.visibleBadgeWidth ?? '0',
+        );
+        if (Number.isFinite(fallbackBadgeWidth) && fallbackBadgeWidth > 0) {
+          setSkeletonStyleValue(
+            focusEgoHandoffFallbackButton,
+            'width',
+            `${fallbackBadgeWidth + 2}px`,
+            domWriteStats,
+          );
+        }
         setSkeletonStyleValue(focusEgoHandoffFallbackButton, 'opacity', '1', domWriteStats);
         setSkeletonStyleValue(
           focusEgoHandoffFallbackButton,
@@ -7533,6 +7565,18 @@ export function SigmaSkeletonCards({
         focusEgoHandoffFallbackButton.dataset.relationLabelCardOverlapCount = '0';
         focusEgoHandoffFallbackButton.dataset.relationLabelFocusHandoffFallback =
           'preserved-first-ego-label';
+        if (focusEgoHandoffFallbackSvgLabel) {
+          focusEgoHandoffFallbackSvgLabel.setAttribute('opacity', '0');
+          focusEgoHandoffFallbackSvgLabel.setAttribute('visibility', 'hidden');
+          focusEgoHandoffFallbackSvgLabel.setAttribute('pointer-events', 'none');
+          focusEgoHandoffFallbackSvgLabel.setAttribute('aria-hidden', 'true');
+          focusEgoHandoffFallbackSvgLabel.dataset.relationLabelSvgVisibilityContract =
+            'html-hit-target-owns-visible-copy';
+          focusEgoHandoffFallbackSvgLabel.dataset.relationLabelVisibility =
+            'suppressed-card-overlap';
+          focusEgoHandoffFallbackSvgLabel.dataset.relationLabelFocusHandoffFallback =
+            'preserved-first-ego-label';
+        }
         relationLabelFrameExpectedCount = 1;
         relationLabelFrameReadyCount = 1;
         focusRelationLabelExpectedCount = Math.max(1, focusRelationLabelExpectedCount);
@@ -7593,6 +7637,8 @@ export function SigmaSkeletonCards({
         ).length,
       );
       container.dataset.connectorRectCacheReadCount = String(connectorCardRectReadCount);
+      container.dataset.connectorRectCacheReadSlugs =
+        connectorCardRectReadSlugs.join('|') || 'none';
       container.dataset.connectorRectCacheHitCount = String(connectorCardRectHitCount);
       container.dataset.connectorRectCacheAccounting = 'reads-plus-hits';
       container.dataset.domWriteDedupeContract = 'skip-unchanged-transform-and-path';

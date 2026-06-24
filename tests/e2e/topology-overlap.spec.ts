@@ -2390,18 +2390,6 @@ for (const viewport of VIEWPORTS) {
       "true",
       { timeout: 20_000 },
     );
-    await expect(page.locator("[data-connector-relation-label]").first()).toHaveText(
-      /contains|depends|relates|describes|uses/,
-      { timeout: 20_000 },
-    );
-    await expect(page.locator("[data-connector-relation-label]").first()).toHaveAttribute(
-      "data-relation-label-svg-visibility-contract",
-      "html-hit-target-owns-visible-copy",
-    );
-    await expect(page.locator("[data-connector-relation-label]").first()).toHaveAttribute(
-      "visibility",
-      "hidden",
-    );
     const relationButton = page
       .locator(
         '[data-relation-label-button][data-label-geometry-source="html-hit-target"][data-relation-label-visibility="visible-clear"]',
@@ -2449,6 +2437,19 @@ for (const viewport of VIEWPORTS) {
     await expect(relationButton).toHaveAttribute("data-label-geometry-source", "html-hit-target");
     await expect(relationButton).toHaveAttribute("data-relation-label-visibility", "visible-clear");
     await expect(relationButton).toHaveCSS("opacity", "1");
+    const relationLabelId = await relationButton.getAttribute("data-relation-label-button");
+    expect(relationLabelId, "visible relation button should identify its SVG mirror").toBeTruthy();
+    const svgMirror = page.locator(
+      `[data-connector-relation-label][data-relation-label-id="${relationLabelId}"]`,
+    );
+    await expect(svgMirror).toHaveText(/contains|depends|relates|describes|uses/, {
+      timeout: 20_000,
+    });
+    await expect(svgMirror).toHaveAttribute(
+      "data-relation-label-svg-visibility-contract",
+      "html-hit-target-owns-visible-copy",
+    );
+    await expect(svgMirror).toHaveAttribute("visibility", "hidden");
     await expect(relationButton).toHaveAttribute("data-relation-label-source", /.+/);
     await expect(relationButton).toHaveAttribute("data-relation-label-target", /.+/);
     await expect(relationButton).toHaveAttribute(
