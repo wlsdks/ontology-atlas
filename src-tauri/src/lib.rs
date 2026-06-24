@@ -5252,6 +5252,12 @@ pub fn run() {
                                     Number(topologyZoomVerification?.pinGlyphVisibleCount || "0"),
                                   topologyZoomLensViewportVisibleContract:
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-viewport-visible-contract") || "",
+                                  topologyZoomLensPinCanvasContract:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-canvas-contract") || "",
+                                  topologyZoomLensPinCanvasMarginPx:
+                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-canvas-margin-px") || "0"),
+                                  topologyZoomLensPinCanvasClampCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-canvas-clamp-count") || "0"),
                                   topologyZoomLensEmptyViewportFallbackContract:
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-empty-viewport-fallback-contract") || "",
                                   topologyZoomLensEmptyViewportFallbackActive:

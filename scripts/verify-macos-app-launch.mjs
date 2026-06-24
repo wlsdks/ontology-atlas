@@ -1807,6 +1807,20 @@ export function validateTopologyZoomLensMarkers(markers) {
     return `WebView Relief zoom lens viewport-visible contract was ${markers?.topologyZoomLensViewportVisibleContract}`;
   }
   if (
+    markers?.topologyZoomLensPinCanvasContract !== undefined &&
+    markers?.topologyZoomLensPinCanvasContract !== "" &&
+    markers?.topologyZoomLensPinCanvasContract !==
+      "zoom-lens-pins-stay-inside-readable-canvas-safe-band"
+  ) {
+    return `WebView Relief zoom lens pin canvas contract was ${markers?.topologyZoomLensPinCanvasContract}`;
+  }
+  if (
+    markers?.topologyZoomLensPinCanvasMarginPx !== undefined &&
+    Number(markers.topologyZoomLensPinCanvasMarginPx) < 32
+  ) {
+    return `WebView Relief zoom lens pin canvas margin was ${markers.topologyZoomLensPinCanvasMarginPx}`;
+  }
+  if (
     markers?.topologyZoomLensEmptyViewportFallbackContract !== undefined &&
     markers?.topologyZoomLensEmptyViewportFallbackContract !==
       "camera-zoom-in-keeps-at-least-one-ontology-mark-visible"
@@ -8044,6 +8058,11 @@ export function buildWebviewEvidencePayload(
         },
         viewportVisibleContract:
           markers.topologyZoomLensViewportVisibleContract ?? null,
+        pinCanvas: {
+          contract: markers.topologyZoomLensPinCanvasContract ?? null,
+          marginPx: markerNumber(markers, "topologyZoomLensPinCanvasMarginPx"),
+          clampCount: markerNumber(markers, "topologyZoomLensPinCanvasClampCount"),
+        },
         emptyViewportFallback: {
           contract:
             markers.topologyZoomLensEmptyViewportFallbackContract ?? null,

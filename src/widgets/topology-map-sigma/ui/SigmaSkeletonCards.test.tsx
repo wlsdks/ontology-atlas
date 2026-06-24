@@ -554,6 +554,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "0.420");
     expect(layer).toHaveAttribute("data-zoom-lens-card-compaction-active", "true");
     expect(layer).toHaveAttribute("data-zoom-lens-pin-min-opacity", "0.42");
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-pin-canvas-contract",
+      "zoom-lens-pins-stay-inside-readable-canvas-safe-band",
+    );
+    expect(layer).toHaveAttribute("data-zoom-lens-pin-canvas-margin-px", "32");
     expect(layer).toHaveAttribute("data-zoom-lens-eligible-count", "2");
     expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "2");
     expect(layer).toHaveAttribute(
@@ -602,6 +607,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(scanCard).toHaveAttribute("data-zoom-lens-active-card", "true");
     expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+    expect(scanCard).toHaveAttribute("data-zoom-lens-pin-canvas-margin-px", "32");
     expect(scanCard).toHaveAttribute("data-zoom-lens-viewport-visible");
     expect(scanCard).toHaveAttribute(
       "data-zoom-lens-viewport-visible-contract",

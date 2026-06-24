@@ -440,6 +440,10 @@ test("WebView verification requires Add Concept backdrop when the composer is op
           topologyZoomLensPinGlyphVisibleCount: 2,
           topologyZoomLensViewportVisibleContract:
             "visible-lens-pins-match-frame-state",
+          topologyZoomLensPinCanvasContract:
+            "zoom-lens-pins-stay-inside-readable-canvas-safe-band",
+          topologyZoomLensPinCanvasMarginPx: 32,
+          topologyZoomLensPinCanvasClampCount: 4,
           topologyZoomLensEmptyViewportFallbackContract:
             "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
           topologyZoomLensEmptyViewportFallbackActive: true,
@@ -1204,6 +1208,10 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
           topologyZoomLensPinGlyphVisibleCount: 2,
         topologyZoomLensViewportVisibleContract:
           "visible-lens-pins-match-frame-state",
+        topologyZoomLensPinCanvasContract:
+          "zoom-lens-pins-stay-inside-readable-canvas-safe-band",
+        topologyZoomLensPinCanvasMarginPx: 32,
+        topologyZoomLensPinCanvasClampCount: 4,
         topologyZoomLensEmptyViewportFallbackContract:
           "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
         topologyZoomLensEmptyViewportFallbackActive: true,
@@ -1453,6 +1461,11 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
       ringToken: "--topology-zoom-lens-pin-proximity-ring",
     },
     viewportVisibleContract: "visible-lens-pins-match-frame-state",
+    pinCanvas: {
+      contract: "zoom-lens-pins-stay-inside-readable-canvas-safe-band",
+      marginPx: 32,
+      clampCount: 4,
+    },
     emptyViewportFallback: {
       contract: "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
       active: true,

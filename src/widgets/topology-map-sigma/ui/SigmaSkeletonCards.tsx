@@ -268,6 +268,7 @@ const OVERVIEW_MIN_VISIBLE_CARD_COUNT = 8;
 const OVERVIEW_DOMAIN_COLLISION_PAD = 10;
 const DRAG_OVERLAP_SUPPRESSION_PAD = OVERVIEW_COLLISION_PAD;
 const SAFE_VIEWPORT_MARGIN = 8;
+const ZOOM_LENS_PIN_CANVAS_MARGIN_PX = 32;
 const SELECTED_FOCUS_DOCK_BOTTOM_INSET_PX = 180;
 const SELECTED_FOCUS_EGO_READING_BAND_Y_RATIO = 0.56;
 const SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MIN_PX = 280;
@@ -1250,6 +1251,7 @@ function clampVisibleAnchorCard({
   containerWidth,
   containerHeight,
   fixedSurfaceRects,
+  viewportMargin = SAFE_VIEWPORT_MARGIN,
 }: {
   x: number;
   y: number;
@@ -1259,6 +1261,7 @@ function clampVisibleAnchorCard({
   containerWidth: number;
   containerHeight: number;
   fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>;
+  viewportMargin?: number;
 }) {
   if (width <= 0 || height <= 0) return { x, y };
   let nextX = x;
@@ -1272,17 +1275,17 @@ function clampVisibleAnchorCard({
       height,
       anchor,
     });
-    if (rect.left < SAFE_VIEWPORT_MARGIN) {
-      nextX += SAFE_VIEWPORT_MARGIN - rect.left;
+    if (rect.left < viewportMargin) {
+      nextX += viewportMargin - rect.left;
     }
-    if (rect.right > containerWidth - SAFE_VIEWPORT_MARGIN) {
-      nextX -= rect.right - (containerWidth - SAFE_VIEWPORT_MARGIN);
+    if (rect.right > containerWidth - viewportMargin) {
+      nextX -= rect.right - (containerWidth - viewportMargin);
     }
-    if (rect.top < SAFE_VIEWPORT_MARGIN) {
-      nextY += SAFE_VIEWPORT_MARGIN - rect.top;
+    if (rect.top < viewportMargin) {
+      nextY += viewportMargin - rect.top;
     }
-    if (rect.bottom > containerHeight - SAFE_VIEWPORT_MARGIN) {
-      nextY -= rect.bottom - (containerHeight - SAFE_VIEWPORT_MARGIN);
+    if (rect.bottom > containerHeight - viewportMargin) {
+      nextY -= rect.bottom - (containerHeight - viewportMargin);
     }
   };
 
@@ -1313,10 +1316,10 @@ function clampVisibleAnchorCard({
           ...candidate,
           cost: Math.abs(candidate.dx) + Math.abs(candidate.dy),
           inside:
-            moved.left >= SAFE_VIEWPORT_MARGIN &&
-            moved.top >= SAFE_VIEWPORT_MARGIN &&
-            moved.right <= containerWidth - SAFE_VIEWPORT_MARGIN &&
-            moved.bottom <= containerHeight - SAFE_VIEWPORT_MARGIN,
+            moved.left >= viewportMargin &&
+            moved.top >= viewportMargin &&
+            moved.right <= containerWidth - viewportMargin &&
+            moved.bottom <= containerHeight - viewportMargin,
         };
       })
       .filter((candidate) => candidate.inside)
@@ -3760,6 +3763,7 @@ export function SigmaSkeletonCards({
     let zoomLensProximityPinCount = 0;
     let selectedRelationEndpointZoomLensCount = 0;
     let overviewDensityLensActiveCardCount = 0;
+    let zoomLensPinCanvasClampCount = 0;
     for (const el of els) {
       const focusReadableContext =
         el.dataset.selectedFocusCompanionReadableTitle === 'true' ||
@@ -3875,6 +3879,11 @@ export function SigmaSkeletonCards({
     );
     container.dataset.overviewDensityLensActiveCardCount = String(
       overviewDensityLensActiveCardCount,
+    );
+    container.dataset.zoomLensPinCanvasContract =
+      'zoom-lens-pins-stay-inside-readable-canvas-safe-band';
+    container.dataset.zoomLensPinCanvasMarginPx = String(
+      ZOOM_LENS_PIN_CANVAS_MARGIN_PX,
     );
     const readCardPlacementParentRect = (el: HTMLElement) => {
       const cached = cardPlacementParentRectCache.get(el);
@@ -4590,6 +4599,39 @@ export function SigmaSkeletonCards({
         const dragReactiveMotionOffset = dragReactiveMotionOffsetFor(el, lockedForDrag);
         let renderX = clamped.x + dragReactiveMotionOffset.dx;
         let renderY = clamped.y + dragReactiveMotionOffset.dy;
+        if (
+          el.dataset.zoomLensActiveCard === 'true' &&
+          !followsActiveGraphDrag &&
+          previewOffset.dx === 0 &&
+          previewOffset.dy === 0
+        ) {
+          const pinClamp = clampVisibleAnchorCard({
+            x: renderX,
+            y: renderY,
+            width: cardWidth,
+            height: cardHeight,
+            anchor: safeAnchorKey,
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            fixedSurfaceRects,
+            viewportMargin: ZOOM_LENS_PIN_CANVAS_MARGIN_PX,
+          });
+          const adjusted =
+            Math.abs(pinClamp.x - renderX) > 0.5 ||
+            Math.abs(pinClamp.y - renderY) > 0.5;
+          renderX = pinClamp.x;
+          renderY = pinClamp.y;
+          el.dataset.zoomLensPinCanvasClamp = adjusted
+            ? 'safe-band-shift'
+            : 'inside-safe-band';
+          el.dataset.zoomLensPinCanvasMarginPx = String(
+            ZOOM_LENS_PIN_CANVAS_MARGIN_PX,
+          );
+          if (adjusted) zoomLensPinCanvasClampCount += 1;
+        } else {
+          delete el.dataset.zoomLensPinCanvasClamp;
+          delete el.dataset.zoomLensPinCanvasMarginPx;
+        }
         const selectedRelationEndpointRoleMark =
           el.dataset.selectedRelationEndpointZoomLens === 'role-mark';
         if (selectedRelationEndpointRoleMark) {
@@ -6106,6 +6148,9 @@ export function SigmaSkeletonCards({
     }
     container.dataset.zoomLensPinSeparationContract =
       'visible-zoom-lens-pins-avoid-overlap-on-14-inch';
+    container.dataset.zoomLensPinCanvasClampCount = String(
+      zoomLensPinCanvasClampCount,
+    );
     container.dataset.zoomLensPinSeparationReadPolicy =
       'live-pin-rects-after-zoom-compaction';
     container.dataset.zoomLensPinSeparationHiddenCount = String(

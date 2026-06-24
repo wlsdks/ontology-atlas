@@ -1002,11 +1002,33 @@ test("Relief zoom-in keeps 14-inch lens pins separated", async ({ page }) => {
     "data-zoom-lens-pin-separation-contract",
     "visible-zoom-lens-pins-avoid-overlap-on-14-inch",
   );
+  await expect(layer).toHaveAttribute(
+    "data-zoom-lens-pin-canvas-contract",
+    "zoom-lens-pins-stay-inside-readable-canvas-safe-band",
+  );
   await expect(layer).toHaveAttribute("data-zoom-lens-pin-overlap-count", "0");
 
   const pins = await visibleZoomLensPinRects(page);
   expect(pins.length).toBeGreaterThan(0);
   expect(cardPairsThatIntersect(pins)).toEqual([]);
+  const canvasMargin = Number(await layer.getAttribute("data-zoom-lens-pin-canvas-margin-px"));
+  expect(canvasMargin).toBeGreaterThanOrEqual(32);
+  for (const pin of pins) {
+    expect(pin.left, `${pin.slug} should stay inside the left canvas band`).toBeGreaterThanOrEqual(
+      canvasMargin - 0.5,
+    );
+    expect(pin.top, `${pin.slug} should stay inside the top canvas band`).toBeGreaterThanOrEqual(
+      canvasMargin - 0.5,
+    );
+    expect(
+      pin.right,
+      `${pin.slug} should stay inside the right canvas band`,
+    ).toBeLessThanOrEqual(viewport.width - canvasMargin + 0.5);
+    expect(
+      pin.bottom,
+      `${pin.slug} should stay inside the bottom canvas band`,
+    ).toBeLessThanOrEqual(viewport.height - canvasMargin + 0.5);
+  }
 });
 
 test("Relief focus zoom-in demotes nonselected relation chrome to background threads", async ({
