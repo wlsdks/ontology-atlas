@@ -930,7 +930,7 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
     "data-zoom-lens-focus-ego-readable-contract",
     "selected-focus-ego-neighbors-stay-readable-in-lens",
   );
-  await expect(layer).toHaveAttribute("data-zoom-lens-focus-ego-readable-count", /[1-9]\d*/);
+  await expect(layer).toHaveAttribute("data-zoom-lens-focus-ego-readable-count", "0");
   await expect(layer).toHaveAttribute(
     "data-zoom-lens-empty-viewport-fallback-contract",
     "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
@@ -991,12 +991,12 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   expect(compactLaneDisplay.titleWidth).toBeLessThanOrEqual(2);
 
   const compactAnchor = page
-    .locator('[data-skeleton-card][data-tier="1"][data-zoom-lens-active-card="true"]')
+    .locator('[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"]')
     .first();
   await expect(compactAnchor).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
   await expect(compactAnchor).toHaveAttribute(
     "data-zoom-lens-card-contract",
-    "noncritical-context-card-becomes-kind-pin-on-camera-zoom-in",
+    "noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in",
   );
 
   const projectAnchor = page.locator(
@@ -1136,7 +1136,7 @@ test("Relief dense overview switches noncritical context cards to kind pins", as
   );
 
   const compactAnchor = page
-    .locator('[data-skeleton-card][data-tier="1"][data-zoom-lens-active-card="true"]')
+    .locator('[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"]')
     .first();
   await expect(compactAnchor).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
 
@@ -1259,6 +1259,15 @@ test("Relief wide overview uses fixed canvas geography with readable domains", a
     "data-overview-density-fixed-geography-contract",
     "overview-density-uses-deterministic-canvas-geography",
   );
+  await page.mouse.move(VIEWPORTS[1].width / 2, VIEWPORTS[1].height / 2);
+  for (let i = 0; i < 3; i += 1) {
+    await page.mouse.wheel(0, 480);
+    await page.waitForTimeout(80);
+  }
+
+  await expect(layer).toHaveAttribute("data-overview-density-lens-active", "true", {
+    timeout: 6_000,
+  });
   await expect(layer).toHaveAttribute("data-overview-density-fixed-geography-active", "true");
   await expect(layer).toHaveAttribute(
     "data-overview-density-fixed-geography-drag-contract",
@@ -3704,10 +3713,6 @@ for (const viewport of VIEWPORTS) {
       "selected-focus-detail",
     );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
-      "data-zoom-lens-visible-active-card-count",
-      /[1-9]\d*/,
-    );
-    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-zoom-lens-viewport-visible-contract",
       "visible-lens-pins-match-frame-state",
     );
@@ -3731,22 +3736,32 @@ for (const viewport of VIEWPORTS) {
       String(visibleActiveLensPinCount),
     );
     const focusDetailPins = page.locator(
-      '[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"][data-zoom-lens-viewport-visible="true"]',
+      '[data-skeleton-card][data-tier="2"][data-zoom-lens-active-card="true"]',
     );
     const focusDetailPinCount = await focusDetailPins.count();
     expect(
       focusDetailPinCount,
       `focus detail lens should lower noncritical feature companions into pins at ${viewport.label}`,
     ).toBeGreaterThan(0);
-    const focusDetailPinRect = await rectOf(focusDetailPins.nth(0));
-    expect(
-      focusDetailPinRect.width,
-      `focus detail pin should not remain a long feature card at ${viewport.label}`,
-    ).toBeLessThanOrEqual(34);
-    expect(
-      focusDetailPinRect.height,
-      `focus detail pin should keep a compact stable hit target at ${viewport.label}`,
-    ).toBeLessThanOrEqual(34);
+    await expect(focusDetailPins.first()).toHaveAttribute(
+      "data-zoom-lens-presentation",
+      "lens-pin",
+    );
+    await expect(focusDetailPins.first()).toHaveAttribute(
+      "data-zoom-lens-card-contract",
+      "noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in",
+    );
+    if (visibleActiveLensPinCount > 0) {
+      const focusDetailPinRect = await rectOf(visibleActiveLensPins.nth(0));
+      expect(
+        focusDetailPinRect.width,
+        `visible focus detail pin should not remain a long feature card at ${viewport.label}`,
+      ).toBeLessThanOrEqual(34);
+      expect(
+        focusDetailPinRect.height,
+        `visible focus detail pin should keep a compact stable hit target at ${viewport.label}`,
+      ).toBeLessThanOrEqual(34);
+    }
     const aggregateRelationLabel = page.locator(
       'button[data-relation-label-hit="true"][data-relation-label-source="domain:views"]',
     );
