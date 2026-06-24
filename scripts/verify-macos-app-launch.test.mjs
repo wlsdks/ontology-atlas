@@ -485,6 +485,38 @@ test("WebView verification requires Add Concept backdrop when the composer is op
     validateWebviewVerifyPayload(
       {
         ...payload,
+        href: "tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus",
+        markers: {
+          ...payload.markers,
+          topologyDragAttempted: true,
+          topologyDragReason: "done",
+          topologyDragFocusMoved: false,
+          topologyDragFocusDelta: { x: 0, y: 0 },
+          topologyDragCompanionVisible: true,
+          topologyDragCompanionAligned: true,
+          topologyDragCompanionDelta: { x: 0, y: 0 },
+          topologyDragCompanionSlug: "capability:agent-onboarding-brief",
+          topologyDragCompanionCount: 4,
+          topologyDragVisibleCompanionCount: 1,
+          topologyDragAlignedCompanionCount: 1,
+          topologyDragRelationLabelClicked: true,
+          topologyDragClusterSize: 7,
+          topologySelectedDockCompanionCount: 4,
+          topologySelectedDockVisibleCompanionCount: 1,
+          topologySelectedDockCompanionVisible: true,
+        },
+      },
+      {
+        expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus",
+        requireTopologyDrag: true,
+      },
+    ),
+    null,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
         markers: {
           ...payload.markers,
           topologyRelationQualityLensVisible: false,

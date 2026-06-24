@@ -790,7 +790,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
   });
 
-  it("줌 아웃 overview 에서는 비핵심 context 카드를 kind pin 으로 낮춘다", () => {
+  it("wide overview 기본 상태에서는 비핵심 context 카드를 kind pin 으로 낮춘다", () => {
     const originalInnerWidth = window.innerWidth;
     Object.defineProperty(window, "innerWidth", {
       configurable: true,
@@ -807,7 +807,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       render(
         <SigmaSkeletonCards
-          sigma={makeStubSigma(1.42)}
+          sigma={makeStubSigma(1)}
           graph={graph}
           cards={[
             ...CARDS,
@@ -840,6 +840,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
       expect(layer).toHaveAttribute("data-zoom-lens-card-compaction-active", "false");
+      expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "1.000");
       expect(layer).toHaveAttribute("data-overview-density-lens-active", "true");
       expect(layer).toHaveAttribute(
         "data-overview-density-lens-width-band",

@@ -826,6 +826,14 @@ test("Relief overview uses the wide canvas for the fixed skeleton map", async ({
   for (const viewport of VIEWPORTS.filter(({ width }) => width >= 1920)) {
     await openRelief(page, viewport, { mode: "map" });
 
+    const layer = page.getByTestId("sigma-skeleton-cards");
+    await expect(layer).toHaveAttribute("data-overview-density-lens-active", "true");
+    await expect(layer).toHaveAttribute("data-overview-density-fixed-geography-active", "true");
+    await expect(layer).toHaveAttribute(
+      "data-overview-density-fixed-geography-drag-locked",
+      "true",
+    );
+
     const panelRect = await rectOf(page.getByTestId("topology-analysis-panel"));
     const cards = await visibleCardRects(page);
     const bbox = cards.reduce(
@@ -1575,6 +1583,21 @@ test("Relief zoomed map drag compacts repeated relation labels", async ({ page }
     zoomedMapRect.top + zoomedMapRect.height / 2 + 70,
     { steps: 8 },
   );
+  if ((await layer.getAttribute("data-overview-density-fixed-geography-drag-attempt")) === "ignored") {
+    await expect(layer).toHaveAttribute("data-dragging-active", "false");
+    await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+    await expect(page.locator("[data-drag-relation-label]")).toHaveCount(0);
+    const afterIgnoredDragRect = await rectOf(mapCard);
+    expect(
+      Math.hypot(
+        afterIgnoredDragRect.left - zoomedMapRect.left,
+        afterIgnoredDragRect.top - zoomedMapRect.top,
+      ),
+      "zoomed fixed overview geography should not reshape the map while dragging",
+    ).toBeLessThanOrEqual(2);
+    await page.mouse.up();
+    return;
+  }
   await expect(layer).toHaveAttribute("data-dragging-active", "true");
   await expect(layer).toHaveAttribute(
     "data-drag-relation-label-compact-contract",

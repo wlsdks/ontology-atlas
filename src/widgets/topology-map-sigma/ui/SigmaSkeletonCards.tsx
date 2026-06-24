@@ -3672,7 +3672,6 @@ export function SigmaSkeletonCards({
       (containerRect.width <= OVERVIEW_DENSITY_LENS_COMPACT_MAX_WIDTH_PX ||
         containerRect.width >= OVERVIEW_DENSITY_LENS_WIDE_MIN_WIDTH_PX);
     const overviewDensityLensActive =
-      cameraRatio >= OVERVIEW_DENSITY_LENS_RATIO_THRESHOLD &&
       overviewDensityLensWidthActive &&
       selectedSlug === null &&
       selectedRelationEdgeId === null &&

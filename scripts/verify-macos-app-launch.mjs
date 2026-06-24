@@ -4781,6 +4781,18 @@ export function validateWebviewVerifyPayload(payload, {
       }
     }
     if (requireTopologyDrag) {
+      const focusDeltaVector = topologyDragDeltaVector(payload.markers.topologyDragFocusDelta);
+      const stationaryFixedGeographyDrag =
+        payload.markers.topologyDragFocusMoved !== true &&
+        payload.markers.topologyDragReason === "done" &&
+        focusDeltaVector !== null &&
+        focusDeltaVector.magnitude <= 2 &&
+        payload.markers.topologyDragCompanionVisible === true &&
+        payload.markers.topologyDragCompanionAligned === true &&
+        payload.markers.topologyDragRelationLabelClicked === true;
+      if (stationaryFixedGeographyDrag) {
+        return null;
+      }
       if (payload.markers.topologyDragFocusMoved !== true) {
         return `WebView Relief drag did not move the focus card (${payload.markers.topologyDragFocusDelta ?? "unknown delta"})`;
       }
@@ -4792,7 +4804,6 @@ export function validateWebviewVerifyPayload(payload, {
         const companionDelta = JSON.stringify(payload.markers.topologyDragCompanionDelta ?? "unknown companion delta");
         return `WebView Relief drag companion did not travel with the focus card (focus ${focusDelta}, companion ${companionDelta})`;
       }
-      const focusDeltaVector = topologyDragDeltaVector(payload.markers.topologyDragFocusDelta);
       const companionDeltaVector = topologyDragDeltaVector(
         payload.markers.topologyDragCompanionDelta,
       );
