@@ -712,6 +712,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-focus-context-rail-interaction-contract",
           "fixed-focus-domain-anchors-remain-clickable-waypoints",
         );
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-priority-contract",
+          "domain-waypoints-outrank-lower-priority-context",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-priority-rect-count",
+          "2",
+        );
         expect(layer).toHaveAttribute("data-selected-focus-context-rail-opacity", "1");
         expect(layer).toHaveAttribute(
           "data-selected-focus-context-rail-opacity-token",

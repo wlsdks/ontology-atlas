@@ -2173,6 +2173,7 @@ function suppressVisibleCardOverlaps(
       el: HTMLElement,
       rect: { left: number; top: number; right: number; bottom: number },
     ) => void;
+    priorityOverride?: (el: HTMLElement) => number | null;
   } = {},
 ): number {
   const visible = orderedEls
@@ -2181,7 +2182,7 @@ function suppressVisibleCardOverlaps(
       if (!cached.visible || !cached.rect) return null;
       return {
         el,
-        priority: dragSettleCardPriority(el),
+        priority: options.priorityOverride?.(el) ?? dragSettleCardPriority(el),
         rect: cached.rect,
       };
     })
@@ -5204,12 +5205,50 @@ export function SigmaSkeletonCards({
       container.dataset.layoutAnimate === 'true' &&
       activeDragCluster === null &&
       selectedRelationEdgeId === null;
-    const acceptedDimRects = [...egoRects];
     const orderedDimEls = dimEls.slice().sort((a, b) => {
       const tierA = Number(a.dataset.tier ?? '3');
       const tierB = Number(b.dataset.tier ?? '3');
       return tierA - tierB;
     });
+    const selectedFocusContextRailPriorityRects = selectedFocusContextRailActive
+      ? selectedFocusContextRailSlugs
+          .map((slug) => elBySlug.get(slug) ?? null)
+          .filter((el): el is HTMLElement => el !== null)
+          .map((el) => readCardPlacementFrameRect(el))
+      : [];
+    const selectedFocusContextRailSelectedRects =
+      selectedFocusContextRailActive && selectedSlug !== null
+        ? [elBySlug.get(selectedSlug) ?? null]
+            .filter((el): el is HTMLElement => el !== null)
+            .map((el) => readCardPlacementFrameRect(el))
+        : [];
+    let selectedFocusContextRailYieldedEgoRectCount = 0;
+    const acceptedDimRects =
+      selectedFocusContextRailPriorityRects.length > 0
+        ? egoRects.filter((rect) => {
+            const overlapsRail = selectedFocusContextRailPriorityRects.some((railRect) =>
+              rectsOverlap(rect, railRect, OVERVIEW_COLLISION_PAD),
+            );
+            if (!overlapsRail) return true;
+            const overlapsSelected = selectedFocusContextRailSelectedRects.some(
+              (selectedRect) =>
+                rectsOverlap(rect, selectedRect, OVERVIEW_COLLISION_PAD),
+            );
+            if (overlapsSelected) return true;
+            selectedFocusContextRailYieldedEgoRectCount += 1;
+            return false;
+          })
+        : [...egoRects];
+    container.dataset.selectedFocusContextRailPriorityContract =
+      selectedFocusContextRailPriorityRects.length > 0
+        ? 'domain-waypoints-outrank-lower-priority-context'
+        : 'inactive';
+    container.dataset.selectedFocusContextRailPriorityRectCount = String(
+      selectedFocusContextRailPriorityRects.length,
+    );
+    container.dataset.selectedFocusContextRailYieldedEgoRectCount = String(
+      selectedFocusContextRailYieldedEgoRectCount,
+    );
     let selectedRelationLowerPriorityVisibleDimmedCount = 0;
     let selectedRelationVisibleOrientationAnchorCount = 0;
     let selectedRelationContextPinCount = 0;
@@ -6060,6 +6099,18 @@ export function SigmaSkeletonCards({
                   visibleCardRectCache.set(el, { rect, visible: true });
                   cardPlacementFrameRectCache.set(el, rect);
                 },
+                priorityOverride: (el) =>
+                  selectedFocusContextRailActive &&
+                  selectedFocusContextRailSlugs.length >= 5
+                    ? el.dataset.selectedFocusContextRail === 'true'
+                      ? 2
+                      : el.dataset.selectedFocusCompanionReadableTitle === 'true' ||
+                        el.dataset.selectedFocusContextReadableTitle === 'true'
+                      ? 1
+                      : Number(el.dataset.tier ?? '3') > 1 && !el.dataset.dockParent
+                      ? 3
+                      : null
+                    : null,
               },
             )
           : 0;

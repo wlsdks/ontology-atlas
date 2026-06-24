@@ -1385,6 +1385,10 @@ test("Relief focus card wheel zoom keeps readable focus companions as full cards
     "data-selected-focus-context-rail-interaction-contract",
     "fixed-focus-domain-anchors-remain-clickable-waypoints",
   );
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-context-rail-priority-contract",
+    "domain-waypoints-outrank-lower-priority-context",
+  );
   await expect(layer).toHaveAttribute("data-selected-focus-context-rail-opacity", "1");
   const focusRailVisibility = await layer.evaluate((el) => ({
     total: Number(el.getAttribute("data-selected-focus-context-rail-count") || "0"),
@@ -1397,12 +1401,19 @@ test("Relief focus card wheel zoom keeps readable focus companions as full cards
     reason: el.getAttribute("data-selected-focus-context-rail-hidden-reason"),
   }));
   expect(focusRailVisibility.total).toBe(5);
-  expect(focusRailVisibility.visible).toBeGreaterThanOrEqual(4);
-  expect(focusRailVisibility.hidden).toBeLessThanOrEqual(1);
+  expect(focusRailVisibility.visible).toBe(5);
+  expect(focusRailVisibility.hidden).toBe(0);
   expect(focusRailVisibility.visible + focusRailVisibility.hidden).toBe(
     focusRailVisibility.total,
   );
-  expect(["none", "layout-surface-collision"]).toContain(focusRailVisibility.reason);
+  expect(focusRailVisibility.reason).toBe("none");
+
+  const onboardingRailDomain = page.locator(
+    '[data-skeleton-card][data-selected-focus-context-rail="true"][data-slug="domain:onboarding-ux"]',
+  );
+  await expect(onboardingRailDomain).toBeVisible();
+  await expect(onboardingRailDomain).toHaveCSS("opacity", "1");
+  await expect(onboardingRailDomain).toHaveCSS("pointer-events", "auto");
 
   const selectedCard = page.locator('[data-skeleton-card][data-slug="domain:views"]');
   const selectedRect = await rectOf(selectedCard);
