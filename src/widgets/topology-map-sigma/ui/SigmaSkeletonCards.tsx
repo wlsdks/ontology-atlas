@@ -278,6 +278,10 @@ const SELECTED_FOCUS_CONTEXT_RAIL_Y_MIN_RATIO = 0.28;
 const SELECTED_FOCUS_CONTEXT_RAIL_Y_MAX_RATIO = 0.72;
 const SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MIN_PX = 280;
 const SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MAX_PX = 440;
+const SELECTED_RELATION_ENDPOINT_SOURCE_X_RATIO = 0.43;
+const SELECTED_RELATION_ENDPOINT_SOURCE_Y_RATIO = 0.58;
+const SELECTED_RELATION_ENDPOINT_TARGET_X_RATIO = 0.66;
+const SELECTED_RELATION_ENDPOINT_TARGET_Y_RATIO = 0.38;
 const FIXED_SURFACE_GAP = 8;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
@@ -4434,6 +4438,9 @@ export function SigmaSkeletonCards({
     container.dataset.selectedRelationEndpointCount = String(
       selectedRelationEndpointRoles.size,
     );
+    container.dataset.selectedRelationEndpointRouteLaneContract =
+      'selected-relation-endpoints-use-deterministic-canvas-route-lanes';
+    let selectedRelationEndpointRouteLaneCount = 0;
     const cardPlacementCoreLoopStartedAt = measureRepositionNow();
     for (const el of orderedEls) {
       const slug = el.dataset.slug;
@@ -4496,6 +4503,9 @@ export function SigmaSkeletonCards({
         delete el.dataset.relationFactRoute;
       }
       delete el.dataset.selectedRelationEndpointSurfaceShift;
+      delete el.dataset.selectedRelationEndpointRouteLane;
+      delete el.dataset.selectedRelationEndpointRouteLaneRole;
+      delete el.dataset.selectedRelationEndpointRouteLaneName;
       el.style.visibility = 'visible';
       const dockParent = el.dataset.dockParent;
       const lockedForDrag = isDragClusterCard(slug, dockParent);
@@ -4514,9 +4524,18 @@ export function SigmaSkeletonCards({
         continue;
       }
       const parentEl = dockParent ? elBySlug.get(dockParent) : undefined;
+      const selectedRelationEndpointRouteLaneCandidate =
+        selectedRelationEndpoint &&
+        selectedRelationEndpointRole !== undefined &&
+        selectedRelationEndpointSource !== null &&
+        selectedRelationEndpointTarget !== null &&
+        selectedRelationEndpointRoles.size === 2 &&
+        el.dataset.selectedRelationEndpointZoomLens !== 'role-mark' &&
+        activeDragCluster === null &&
+        containerRect.width > SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX;
       let layoutVisibleRect: ConnectorRect | null = null;
       let flippedLayoutVisibleRect: ConnectorRect | null = null;
-      if (dockParent && parentEl) {
+      if (dockParent && parentEl && !selectedRelationEndpointRouteLaneCandidate) {
         // px 도킹 — 부모 카드 rect 기준 고정 밀도 (줌 배율 무관). 열 간격
         // 56px, 행 pitch = 카드 높이 + 10px. 열의 중심은 부모를 따르되,
         // 전체 열이 상/하단 chrome 밖으로 잘리면 safe band 안으로 이동한다.
@@ -4738,6 +4757,27 @@ export function SigmaSkeletonCards({
           !manualFocusPlacementActive &&
           containerRect.width > SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX;
         const previewOffset = dragPreviewOffsetFor(slug, dockParent);
+        const selectedRelationEndpointRouteLanePlacement =
+          selectedRelationEndpointRouteLaneCandidate &&
+          !followsActiveGraphDrag &&
+          !manualFocusPlacementActive &&
+          previewOffset.dx === 0 &&
+          previewOffset.dy === 0 &&
+          containerRect.width > SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX
+            ? {
+                x:
+                  containerRect.width *
+                  (selectedRelationEndpointRole === 'source'
+                    ? SELECTED_RELATION_ENDPOINT_SOURCE_X_RATIO
+                    : SELECTED_RELATION_ENDPOINT_TARGET_X_RATIO),
+                y:
+                  containerRect.height *
+                  (selectedRelationEndpointRole === 'source'
+                    ? SELECTED_RELATION_ENDPOINT_SOURCE_Y_RATIO
+                    : SELECTED_RELATION_ENDPOINT_TARGET_Y_RATIO),
+                lane: selectedRelationEndpointRole === 'source' ? 'source-lane' : 'target-lane',
+              }
+            : null;
         const overviewFixedGeometryPlacement =
           !followsActiveGraphDrag &&
           !manualFocusPlacementActive &&
@@ -4765,6 +4805,17 @@ export function SigmaSkeletonCards({
                 containerHeight: containerRect.height,
                 fixedSurfaceRects,
                 viewportMargin: ZOOM_LENS_PIN_CANVAS_MARGIN_PX,
+              })
+          : selectedRelationEndpointRouteLanePlacement
+            ? clampVisibleAnchorCard({
+                x: selectedRelationEndpointRouteLanePlacement.x,
+                y: selectedRelationEndpointRouteLanePlacement.y,
+                width: cardWidth,
+                height: cardHeight,
+                anchor: safeAnchorKey,
+                containerWidth: containerRect.width,
+                containerHeight: containerRect.height,
+                fixedSurfaceRects,
               })
           : selectedFocusViewportCenter
             ? {
@@ -4831,6 +4882,18 @@ export function SigmaSkeletonCards({
           : selectedFocusContextRailPlacement
             ? 'fixed-context-rail'
           : 'default';
+        if (selectedRelationEndpointRouteLanePlacement) {
+          el.dataset.selectedRelationEndpointRouteLane = 'true';
+          el.dataset.selectedRelationEndpointRouteLaneRole =
+            selectedRelationEndpointRole ?? '';
+          el.dataset.selectedRelationEndpointRouteLaneName =
+            selectedRelationEndpointRouteLanePlacement.lane;
+          selectedRelationEndpointRouteLaneCount += 1;
+        } else {
+          delete el.dataset.selectedRelationEndpointRouteLane;
+          delete el.dataset.selectedRelationEndpointRouteLaneRole;
+          delete el.dataset.selectedRelationEndpointRouteLaneName;
+        }
         if (overviewFixedGeometryPlacement) {
           el.dataset.overviewDensityFixedGeography = 'true';
           el.dataset.overviewDensityFixedGeographyRole =
@@ -6062,6 +6125,9 @@ export function SigmaSkeletonCards({
     );
     container.dataset.selectedRelationEndpointFinalVisibleGuardCount = String(
       selectedRelationEndpointFinalVisibleGuardCount,
+    );
+    container.dataset.selectedRelationEndpointRouteLaneCount = String(
+      selectedRelationEndpointRouteLaneCount,
     );
     container.dataset.selectedRelationEndpointSeparationContract =
       'source-target-min-gap-after-final-visible-guard';

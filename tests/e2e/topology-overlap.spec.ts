@@ -4947,6 +4947,14 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
     "2",
   );
   await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-endpoint-route-lane-contract",
+    "selected-relation-endpoints-use-deterministic-canvas-route-lanes",
+  );
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-endpoint-route-lane-count",
+    "2",
+  );
+  await expect(skeletonCards).toHaveAttribute(
     "data-selected-relation-endpoint-hidden-count",
     "0",
   );
@@ -5037,6 +5045,38 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
     endpointState.filter((card) => card.visible),
     "installed-app WebView selected relation should keep both endpoint cards visibly readable",
   ).toHaveLength(2);
+  const selectedRelationSourceCard = page.locator(
+    `[data-skeleton-card][data-slug="${source}"]`,
+  );
+  const selectedRelationTargetCard = page.locator(
+    `[data-skeleton-card][data-slug="${target}"]`,
+  );
+  await expect(selectedRelationSourceCard).toHaveAttribute(
+    "data-selected-relation-endpoint-route-lane",
+    "true",
+  );
+  await expect(selectedRelationSourceCard).toHaveAttribute(
+    "data-selected-relation-endpoint-route-lane-name",
+    "source-lane",
+  );
+  await expect(selectedRelationTargetCard).toHaveAttribute(
+    "data-selected-relation-endpoint-route-lane",
+    "true",
+  );
+  await expect(selectedRelationTargetCard).toHaveAttribute(
+    "data-selected-relation-endpoint-route-lane-name",
+    "target-lane",
+  );
+  const sourceRect = await rectOf(selectedRelationSourceCard);
+  const targetRect = await rectOf(selectedRelationTargetCard);
+  expect(
+    sourceRect.left,
+    "selected relation source should occupy the left route lane instead of clustering beside the inspector",
+  ).toBeLessThan(targetRect.left);
+  expect(
+    sourceRect.top,
+    "selected relation source should sit lower than the target to make route direction legible",
+  ).toBeGreaterThan(targetRect.top);
 });
 
 test("Relief selected relation zoom-in turns both endpoint cards into compact role marks", async ({
