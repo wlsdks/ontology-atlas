@@ -1607,9 +1607,53 @@ test("Relief focus context rail domains stay clickable fixed waypoints", async (
     "fixed-focus-domain-anchors-remain-clickable-waypoints",
   );
   await expect(layer).toHaveAttribute(
+    "data-selected-focus-context-rail-y-distribution-contract",
+    "multi-row-focus-domain-rail-uses-viewport-height-bands",
+  );
+  await expect(layer).toHaveAttribute(
     "data-selected-focus-fixed-geography-drag-locked",
     "true",
   );
+  await expect(layer).toHaveAttribute("data-selected-focus-context-rail-count", "5");
+
+  const railRects = await page
+    .locator('[data-skeleton-card][data-selected-focus-context-rail="true"]')
+    .evaluateAll((cards) =>
+      cards.map((card) => {
+        const rect = card.getBoundingClientRect();
+        return {
+          slug: card.getAttribute("data-slug") || "",
+          row: card.getAttribute("data-selected-focus-context-rail-row") || "",
+          rows: card.getAttribute("data-selected-focus-context-rail-rows") || "",
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+        };
+      }),
+    );
+  const railBounds = railRects.reduce(
+    (acc, card) => ({
+      left: Math.min(acc.left, card.left),
+      top: Math.min(acc.top, card.top),
+      right: Math.max(acc.right, card.right),
+      bottom: Math.max(acc.bottom, card.bottom),
+    }),
+    { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
+  );
+  const railHeightUse = (railBounds.bottom - railBounds.top) / viewport.height;
+  expect(
+    new Set(railRects.map((card) => card.row)),
+    "five focus rail domains should occupy top, center, and bottom canvas bands",
+  ).toEqual(new Set(["0", "1", "2"]));
+  expect(
+    railRects.every((card) => card.rows === "3"),
+    "focus rail cards should report the shared row count for agent handoff",
+  ).toBe(true);
+  expect(
+    railHeightUse,
+    "fixed focus domain rail should use the canvas height instead of compressing into a shallow center band",
+  ).toBeGreaterThanOrEqual(0.45);
 
   const railDomain = page.locator(
     '[data-skeleton-card][data-selected-focus-context-rail="true"][data-slug="domain:ontology-core"]',

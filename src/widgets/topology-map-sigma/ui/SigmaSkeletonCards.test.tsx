@@ -713,6 +713,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "fixed-focus-domain-anchors-remain-clickable-waypoints",
         );
         expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-y-distribution-contract",
+          "multi-row-focus-domain-rail-uses-viewport-height-bands",
+        );
+        expect(layer).toHaveAttribute(
           "data-selected-focus-context-rail-priority-contract",
           "domain-waypoints-outrank-lower-priority-context",
         );
@@ -733,6 +737,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         );
         expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail", "true");
         expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail-side", "left");
+        expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail-row", "0");
+        expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail-rows", "1");
         expect(leftRailCard).toHaveAttribute(
           "data-selected-focus-center-policy",
           "fixed-context-rail",
@@ -759,6 +765,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-focus-context-rail-side",
           "right",
         );
+        expect(rightRailCard).toHaveAttribute("data-selected-focus-context-rail-row", "0");
+        expect(rightRailCard).toHaveAttribute("data-selected-focus-context-rail-rows", "1");
         expect(rightRailCard?.style.transform).toContain(
           "translate(-50%, -50%) translate3d(760px, 259.2px, 0)",
         );

@@ -274,9 +274,10 @@ const SAFE_VIEWPORT_MARGIN = 8;
 const ZOOM_LENS_PIN_CANVAS_MARGIN_PX = 32;
 const SELECTED_FOCUS_DOCK_BOTTOM_INSET_PX = 180;
 const SELECTED_FOCUS_EGO_READING_BAND_Y_RATIO = 0.56;
+const SELECTED_FOCUS_CONTEXT_RAIL_Y_MIN_RATIO = 0.28;
+const SELECTED_FOCUS_CONTEXT_RAIL_Y_MAX_RATIO = 0.72;
 const SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MIN_PX = 280;
 const SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MAX_PX = 440;
-const SELECTED_FOCUS_CONTEXT_RAIL_Y_STEP_PX = 118;
 const FIXED_SURFACE_GAP = 8;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
@@ -4382,6 +4383,8 @@ export function SigmaSkeletonCards({
     );
     container.dataset.selectedFocusContextRailInteractionContract =
       'fixed-focus-domain-anchors-remain-clickable-waypoints';
+    container.dataset.selectedFocusContextRailYDistributionContract =
+      'multi-row-focus-domain-rail-uses-viewport-height-bands';
     container.dataset.selectedFocusContextRailOpacity =
       SELECTED_FOCUS_CONTEXT_RAIL_OPACITY;
     container.dataset.selectedFocusContextRailOpacityToken =
@@ -4700,15 +4703,24 @@ export function SigmaSkeletonCards({
                       containerRect.width * 0.24,
                     ),
                   ) * scale;
-                const railStep = SELECTED_FOCUS_CONTEXT_RAIL_Y_STEP_PX * scale;
+                const railCenterY =
+                  containerRect.height * SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO;
+                const railY =
+                  railRows <= 1
+                    ? railCenterY
+                    : containerRect.height *
+                      (SELECTED_FOCUS_CONTEXT_RAIL_Y_MIN_RATIO +
+                        ((SELECTED_FOCUS_CONTEXT_RAIL_Y_MAX_RATIO -
+                          SELECTED_FOCUS_CONTEXT_RAIL_Y_MIN_RATIO) *
+                          railRow) /
+                          (railRows - 1));
                 return {
                   side: railSide === -1 ? 'left' : 'right',
                   slot: selectedFocusContextRailIndex,
                   x: containerRect.width / 2 + railSide * railGap,
-                  y:
-                    containerRect.height *
-                      SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO +
-                    (railRow - (railRows - 1) / 2) * railStep,
+                  y: railY,
+                  row: railRow,
+                  rows: railRows,
                 };
               })()
             : null;
@@ -4845,10 +4857,18 @@ export function SigmaSkeletonCards({
           );
           el.dataset.selectedFocusContextRailSide =
             selectedFocusContextRailPlacement.side;
+          el.dataset.selectedFocusContextRailRow = String(
+            selectedFocusContextRailPlacement.row,
+          );
+          el.dataset.selectedFocusContextRailRows = String(
+            selectedFocusContextRailPlacement.rows,
+          );
         } else {
           delete el.dataset.selectedFocusContextRail;
           delete el.dataset.selectedFocusContextRailSlot;
           delete el.dataset.selectedFocusContextRailSide;
+          delete el.dataset.selectedFocusContextRailRow;
+          delete el.dataset.selectedFocusContextRailRows;
         }
         el.dataset.selectedFocusEgoReadingBand = selectedFocusEgoBand ? 'true' : 'false';
         if (selectedFocusEgoBand) {
