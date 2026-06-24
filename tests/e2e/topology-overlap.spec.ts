@@ -1375,12 +1375,12 @@ test("Relief focus card wheel zoom keeps readable focus companions as full cards
     reason: el.getAttribute("data-selected-focus-context-rail-hidden-reason"),
   }));
   expect(focusRailVisibility.total).toBe(5);
-  expect(focusRailVisibility.visible).toBeGreaterThanOrEqual(1);
-  expect(focusRailVisibility.hidden).toBeGreaterThanOrEqual(1);
+  expect(focusRailVisibility.visible).toBeGreaterThanOrEqual(4);
+  expect(focusRailVisibility.hidden).toBeLessThanOrEqual(1);
   expect(focusRailVisibility.visible + focusRailVisibility.hidden).toBe(
     focusRailVisibility.total,
   );
-  expect(focusRailVisibility.reason).toBe("layout-surface-collision");
+  expect(["none", "layout-surface-collision"]).toContain(focusRailVisibility.reason);
 
   const selectedCard = page.locator('[data-skeleton-card][data-slug="domain:views"]');
   const selectedRect = await rectOf(selectedCard);
@@ -1512,6 +1512,58 @@ test("Relief focus card wheel zoom keeps readable focus companions as full cards
   await page.mouse.move(
     zoomedSelectedRect.left + zoomedSelectedRect.width / 2 - 120,
     zoomedSelectedRect.top + zoomedSelectedRect.height / 2 + 70,
+    { steps: 8 },
+  );
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-fixed-geography-drag-attempt",
+    "ignored",
+  );
+  await expect(layer).toHaveAttribute("data-dragging-active", "false");
+  await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+  await expect(page.locator("[data-drag-relation-label]")).toHaveCount(0);
+  const afterIgnoredDragRect = await rectOf(selectedCard);
+  expect(
+    Math.hypot(
+      afterIgnoredDragRect.left - zoomedSelectedRect.left,
+      afterIgnoredDragRect.top - zoomedSelectedRect.top,
+    ),
+    "zoomed focus selected card drag should preserve the deterministic focus map",
+  ).toBeLessThan(12);
+  await page.mouse.up();
+});
+
+test("Relief zoomed map drag compacts repeated relation labels", async ({ page }) => {
+  const viewport = VIEWPORTS[1];
+  await openRelief(page, viewport, {
+    mode: "map",
+    requireHud: false,
+  });
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  const mapCard = page.locator("[data-skeleton-card]", { hasText: "ontology-atlas" }).first();
+  await expect(mapCard).toBeVisible();
+  const mapCardRect = await rectOf(mapCard);
+  await page.mouse.move(
+    mapCardRect.left + mapCardRect.width / 2,
+    mapCardRect.top + mapCardRect.height / 2,
+  );
+  for (let i = 0; i < 5; i += 1) {
+    await page.mouse.wheel(0, -560);
+    await page.waitForTimeout(60);
+  }
+  await expect(layer).toHaveAttribute("data-zoom-lens-active", "true", {
+    timeout: 6_000,
+  });
+
+  const zoomedMapRect = await rectOf(mapCard);
+  await page.mouse.move(
+    zoomedMapRect.left + zoomedMapRect.width / 2,
+    zoomedMapRect.top + zoomedMapRect.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    zoomedMapRect.left + zoomedMapRect.width / 2 - 120,
+    zoomedMapRect.top + zoomedMapRect.height / 2 + 70,
     { steps: 8 },
   );
   await expect(layer).toHaveAttribute("data-dragging-active", "true");

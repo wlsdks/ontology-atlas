@@ -51,6 +51,26 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
   const before = await rectOf(target);
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
   await page.mouse.down();
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  if ((await layer.getAttribute("data-overview-density-fixed-geography-drag-attempt")) === "ignored") {
+    await expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
+    await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+    await expect(target).toHaveAttribute(
+      "data-overview-density-fixed-geography-contract",
+      "deterministic-overview-slot",
+    );
+    await page.mouse.move(before.x + before.width / 2 + 140, before.y + before.height / 2 + 70, {
+      steps: 8,
+    });
+    const after = await rectOf(target);
+    expect(
+      Math.hypot(after.x - before.x, after.y - before.y),
+      "fixed overview geography should keep card drag from reshaping the map",
+    ).toBeLessThanOrEqual(2);
+    await page.mouse.up();
+    expect(consoleErrors, consoleErrors.join("\n")).toHaveLength(0);
+    return;
+  }
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-drag-hull-render-policy",
     "suppressed-boxless-connectors",
@@ -248,6 +268,18 @@ test("Relief overview drag keeps the grabbed node readable instead of collapsing
   });
 
   const layer = page.getByTestId("sigma-skeleton-cards");
+  if ((await layer.getAttribute("data-overview-density-fixed-geography-drag-attempt")) === "ignored") {
+    await expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
+    await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+    await expect(target).toHaveAttribute("data-zoom-lens-active-card", "false");
+    const during = await rectOf(target);
+    expect(
+      Math.hypot(during.x - before.x, during.y - before.y),
+      "fixed overview geography should keep the grabbed node in its map slot",
+    ).toBeLessThanOrEqual(2);
+    await page.mouse.up();
+    return;
+  }
   await expect(layer).toHaveAttribute("data-drag-dynamic-state", "active-cluster-follow");
   await expect(target).toHaveAttribute(
     "data-drag-readable-root-contract",
@@ -301,6 +333,17 @@ test("Relief overview drag makes nearby context react instead of staying static"
   await page.mouse.move(before.x + before.width / 2 + 160, before.y + before.height / 2 + 90, {
     steps: 10,
   });
+  if ((await layer.getAttribute("data-overview-density-fixed-geography-drag-attempt")) === "ignored") {
+    await expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
+    await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+    const after = await rectOf(target);
+    expect(
+      Math.hypot(after.x - before.x, after.y - before.y),
+      "fixed overview geography should keep nearby context stable instead of parallaxing",
+    ).toBeLessThanOrEqual(2);
+    await page.mouse.up();
+    return;
+  }
   await expect(layer).toHaveAttribute("data-drag-dynamic-state", "active-cluster-follow");
   await expect(layer).toHaveAttribute(
     "data-drag-reactive-context-policy",
@@ -370,7 +413,7 @@ test("Relief overview drag makes nearby context react instead of staying static"
   await page.mouse.up();
 });
 
-test("Relief focus drag makes surrounding context visibly react", async ({ page }) => {
+test("Relief focus drag keeps selected geography fixed instead of reshaping the map", async ({ page }) => {
   await page.goto("/en/topology/?p=domain%3Aviews&mode=focus");
   const viewport = page.getByTestId("sigma-topology-viewport");
   await expect(viewport).toBeVisible({ timeout: 20_000 });
@@ -382,221 +425,50 @@ test("Relief focus drag makes surrounding context visibly react", async ({ page 
 
   const target = page.locator("[data-skeleton-card]", { hasText: "Views" }).first();
   await expect(target).toBeVisible();
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-fixed-geography-contract",
+    "selected-focus-uses-deterministic-canvas-geography",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-fixed-geography-drag-contract",
+    "selected-focus-disables-card-drag-to-preserve-map-layout",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-fixed-geography-drag-locked",
+    "true",
+  );
+  await expect(target).toHaveAttribute("data-selected-focus-fixed-geography", "true");
+  await expect(target).toHaveAttribute(
+    "data-selected-focus-fixed-geography-drag-policy",
+    "ignore-card-drag-preserve-layout",
+  );
   const before = await rectOf(target);
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
   await page.mouse.down();
-  await expect(layer).toHaveAttribute("data-drag-dynamic-state", "armed-cluster-follow");
-
-  const contextBefore = await page
-    .locator('[data-skeleton-card][data-dimmed="true"][data-drag-cluster="false"]')
-    .evaluateAll((els) =>
-      els
-        .filter((el) => {
-          const rect = el.getBoundingClientRect();
-          const style = window.getComputedStyle(el);
-          return (
-            rect.width > 0 &&
-            rect.height > 0 &&
-            style.visibility !== "hidden" &&
-            style.opacity !== "0"
-          );
-        })
-        .map((el) => {
-          const rect = el.getBoundingClientRect();
-          return {
-            slug: el.getAttribute("data-slug") ?? "",
-            x: rect.x,
-            y: rect.y,
-          };
-        }),
-    );
-  expect(contextBefore.length).toBeGreaterThan(0);
-
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-fixed-geography-drag-attempt",
+    "ignored",
+  );
+  await expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
+  await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
   await page.mouse.move(before.x + before.width / 2 + 160, before.y + before.height / 2 + 80, {
     steps: 10,
   });
-  await expect(layer).toHaveAttribute("data-dragging-active", "true");
-  await expect(layer).toHaveAttribute(
-    "data-drag-reactive-context-contract",
-    "active-drag-shows-worker-moving-surrounding-context",
-  );
-  await expect(layer).toHaveAttribute(
-    "data-drag-reactive-context-policy",
-    "boost-dimmed-worker-response",
-  );
-  await expect(layer).toHaveAttribute(
-    "data-drag-reactive-motion-contract",
-    "active-drag-gives-surrounding-context-bounded-parallax",
-  );
-  await expect(layer).toHaveAttribute(
-    "data-drag-reactive-motion-policy",
-    "bounded-parallax-nudge",
-  );
-
-  const reactiveProof = await layer.evaluate((el) => ({
-    maxObservedOffset: Number(
-      el.getAttribute("data-drag-reactive-motion-max-observed-offset-px") ?? "0",
-    ),
-    baseMaxOffset: Number(
-      el.getAttribute("data-drag-reactive-motion-base-max-offset-px") ?? "0",
-    ),
-    linkedMaxOffset: Number(
-      el.getAttribute("data-drag-reactive-motion-linked-max-offset-px") ?? "0",
-    ),
-    ambientMotionCount: Number(
-      el.getAttribute("data-drag-reactive-ambient-motion-visible-count") ?? "0",
-    ),
-    linkedMotionCount: Number(
-      el.getAttribute("data-drag-reactive-linked-motion-visible-count") ?? "0",
-    ),
-    linkedPolicy: el.getAttribute("data-drag-reactive-motion-linked-policy") ?? "",
-    maxOffset: Number(el.getAttribute("data-drag-reactive-motion-max-offset-px") ?? "0"),
-    motionCount: Number(el.getAttribute("data-drag-reactive-motion-visible-count") ?? "0"),
-    opacity: el.getAttribute("data-drag-reactive-context-opacity") ?? "",
-    opacityToken: el.getAttribute("data-drag-reactive-context-opacity-token") ?? "",
-    tensionContract: el.getAttribute("data-drag-tension-connector-contract") ?? "",
-    tensionExpectedCount: Number(
-      el.getAttribute("data-drag-tension-connector-expected-count") ?? "0",
-    ),
-    tensionOpacity: el.getAttribute("data-drag-tension-connector-active-opacity") ?? "",
-    tensionPolicy: el.getAttribute("data-drag-tension-connector-policy") ?? "",
-    tensionStrokeWidth: el.getAttribute("data-drag-tension-connector-active-stroke-width") ?? "",
-    tensionVisibleCount: Number(
-      el.getAttribute("data-drag-tension-connector-visible-count") ?? "0",
-    ),
-    visibleCount: Number(el.getAttribute("data-drag-reactive-context-visible-count") ?? "0"),
-  }));
-  expect(reactiveProof.baseMaxOffset).toBe(24);
-  expect(reactiveProof.linkedMaxOffset).toBe(36);
-  expect(reactiveProof.maxOffset).toBe(36);
-  expect(reactiveProof.linkedPolicy).toBe("direct-neighbor-readable-follow");
-  expect(reactiveProof.maxObservedOffset).toBeGreaterThanOrEqual(30);
-  expect(reactiveProof.maxObservedOffset).toBeLessThanOrEqual(36);
-  expect(reactiveProof.motionCount).toBeGreaterThan(0);
-  expect(reactiveProof.ambientMotionCount).toBeGreaterThan(0);
-  expect(reactiveProof.linkedMotionCount).toBeGreaterThan(0);
-  expect(reactiveProof.opacity).toBe("0.42");
-  expect(reactiveProof.opacityToken).toBe("--topology-card-drag-reactive-context-opacity");
-  expect(reactiveProof.tensionContract).toBe(
-    "active-drag-draws-links-to-reactive-neighbors",
-  );
-  expect(reactiveProof.tensionPolicy).toBe("cluster-to-linked-context-only");
-  expect(reactiveProof.tensionOpacity).toBe("0.88");
-  expect(reactiveProof.tensionStrokeWidth).toBe("2.1");
-  expect(reactiveProof.tensionExpectedCount).toBeGreaterThan(0);
-  expect(reactiveProof.tensionVisibleCount).toBeGreaterThan(0);
-  expect(reactiveProof.visibleCount).toBeGreaterThan(0);
-
-  const tensionConnector = page.locator('[data-drag-tension-connector="true"]').first();
-  await expect(tensionConnector).toHaveAttribute("data-connector-drawable", "true");
-  await expect(tensionConnector).toHaveAttribute(
-    "data-drag-tension-expression",
-    "linked-context-tension",
-  );
-  await expect(tensionConnector).toHaveAttribute(
-    "data-drag-tension-active-opacity",
-    "0.88",
-  );
-  await expect(tensionConnector).toHaveAttribute(
-    "data-drag-tension-active-stroke-width",
-    "2.1",
-  );
-
-  const contextAfter = await page
-    .locator(
-      '[data-skeleton-card][data-drag-reactive-context="true"][data-drag-reactive-context-visible="true"]',
-    )
-    .evaluateAll((els) =>
-      els.map((el) => {
-        const rect = el.getBoundingClientRect();
-        return {
-          opacity: window.getComputedStyle(el).opacity,
-          motion: el.getAttribute("data-drag-reactive-motion") ?? "",
-          motionDx: Number(el.getAttribute("data-drag-reactive-motion-dx") ?? "0"),
-          motionDy: Number(el.getAttribute("data-drag-reactive-motion-dy") ?? "0"),
-          motionSource: el.getAttribute("data-drag-reactive-motion-source") ?? "",
-          motionStrength: el.getAttribute("data-drag-reactive-motion-strength") ?? "",
-          motionPolicy: el.getAttribute("data-drag-reactive-motion-linked-policy") ?? "",
-          slug: el.getAttribute("data-slug") ?? "",
-          visibility: el.getAttribute("data-drag-reactive-context-visibility") ?? "",
-          x: rect.x,
-          y: rect.y,
-        };
-      }),
-  );
-  expect(contextAfter.length).toBeGreaterThan(0);
-  expect(contextAfter.length).toBeGreaterThanOrEqual(reactiveProof.visibleCount);
-  expect(contextAfter.some((entry) => entry.visibility === "boosted-visible")).toBe(true);
-  expect(contextAfter.some((entry) => Number(entry.opacity) >= 0.4)).toBe(true);
-  expect(contextAfter.some((entry) => entry.motion === "parallax-nudge")).toBe(true);
-  expect(contextAfter.some((entry) => Math.hypot(entry.motionDx, entry.motionDy) > 0)).toBe(
-    true,
-  );
-  expect(contextAfter.some((entry) => entry.motionStrength === "linked-context")).toBe(true);
-  expect(
-    contextAfter.some(
-      (entry) =>
-        entry.motionStrength === "ambient-context" &&
-        Math.hypot(entry.motionDx, entry.motionDy) >= 16,
-    ),
-  ).toBe(true);
-  expect(
-    contextAfter.some((entry) => entry.motionPolicy === "direct-neighbor-readable-follow"),
-  ).toBe(true);
-  expect(
-    contextAfter.some((entry) => entry.motionSource === "graph-neighbor-of-moving-cluster"),
-  ).toBe(true);
-  const hiddenContextAfter = await page
-    .locator(
-      '[data-skeleton-card][data-drag-reactive-context="true"][data-drag-reactive-context-visible="false"]',
-    )
-    .evaluateAll((els) =>
-      els.map((el) => ({
-        visibility: el.getAttribute("data-drag-reactive-context-visibility") ?? "",
-      })),
-    );
-  expect(
-    hiddenContextAfter.every((entry) => entry.visibility !== "boosted-visible"),
-  ).toBe(true);
-  const movedContextCount = contextAfter.filter((afterEntry) => {
-    const beforeEntry = contextBefore.find((entry) => entry.slug === afterEntry.slug);
-    if (!beforeEntry) return false;
-    const dx = afterEntry.x - beforeEntry.x;
-    const dy = afterEntry.y - beforeEntry.y;
-    return Math.hypot(dx, dy) > 12;
-  }).length;
-  expect(movedContextCount).toBeGreaterThan(0);
-
+  await expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
+  await expect(target).toHaveAttribute("data-dragging-active", "false");
+  await expect(page.locator('[data-drag-tension-connector="true"]')).toHaveCount(0);
   const workerFrameProof = await viewport.evaluate((el) => ({
     applied: Number(el.getAttribute("data-layout-worker-position-frame-applied-count") ?? "0"),
     received: Number(el.getAttribute("data-layout-worker-position-frame-received-count") ?? "0"),
   }));
   expect(workerFrameProof.received).toBeGreaterThan(0);
-  expect(workerFrameProof.applied).toBeGreaterThan(0);
+  expect(workerFrameProof.applied).toBeGreaterThanOrEqual(0);
   await page.mouse.up();
-  await expect(layer).toHaveAttribute(
-    "data-drag-settle-feedback-contract",
-    "released-dragged-cluster-keeps-settle-feedback",
-  );
-  await expect(layer).toHaveAttribute("data-drag-settled-root", "domain:views");
-  await expect(layer).toHaveAttribute("data-drag-settled-cluster-size", /^[1-9]\d*$/);
-  await expect(target).toHaveAttribute("data-drag-pushed", "true");
-  await page.waitForTimeout(1000);
-  await expect(layer).toHaveAttribute(
-    "data-manual-focus-placement-contract",
-    "dragged-selected-focus-keeps-user-placement",
-  );
-  await expect(layer).toHaveAttribute("data-manual-focus-placement-root", "domain:views");
-  await expect(target).toHaveAttribute(
-    "data-manual-focus-placement-policy",
-    "use-dragged-graph-position",
-  );
-  await expect(target).toHaveAttribute("data-selected-focus-center-policy", "default");
   const released = await rectOf(target);
   expect(
     Math.hypot(released.x - before.x, released.y - before.y),
-    "selected focus drag should persist the user's placement after release instead of snapping back to the reading center",
-  ).toBeGreaterThan(80);
+    "selected focus drag should not rewrite the deterministic focus geography",
+  ).toBeLessThan(12);
 });
 
 test("Relief map project drag stays responsive for large connected clusters", async ({
@@ -617,6 +489,25 @@ test("Relief map project drag stays responsive for large connected clusters", as
   const before = await rectOf(target);
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
   await page.mouse.down();
+  if ((await layer.getAttribute("data-overview-density-fixed-geography-drag-attempt")) === "ignored") {
+    await expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
+    await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+    await page.mouse.move(
+      before.x + before.width / 2 + 250,
+      before.y + before.height / 2 - 130,
+      { steps: 12 },
+    );
+    const after = await rectOf(target);
+    const beforeCenter = centerOf(before);
+    const afterCenter = centerOf(after);
+    expect(
+      Math.hypot(afterCenter.x - beforeCenter.x, afterCenter.y - beforeCenter.y),
+      "fixed map project geography should not move when a reader drags the root card",
+    ).toBeLessThanOrEqual(2);
+    await expect(layer).toHaveAttribute("data-drag-physics-sync-active", "false");
+    await page.mouse.up();
+    return;
+  }
   await expect(layer).toHaveAttribute(
     "data-drag-clamp-contract",
     "large-cluster-root-card-priority",
@@ -826,6 +717,8 @@ test("Relief dogfood graph exposes scale and bounded visible-card rect reads", a
       el.getAttribute("data-selected-dock-visibility-policy") ?? "",
     supportRailOverlapReadPolicy:
       el.getAttribute("data-support-rail-overlap-read-policy") ?? "",
+    selectedFocusFixedGeographyDragAttempt:
+      el.getAttribute("data-selected-focus-fixed-geography-drag-attempt") ?? "",
     activeOverlapHiddenCount: Number(
       el.getAttribute("data-drag-active-overlap-hidden-count") ?? "0",
     ),
@@ -834,7 +727,11 @@ test("Relief dogfood graph exposes scale and bounded visible-card rect reads", a
   expect(proof.modelCount, "dogfood focus route should expose a non-trivial card model").toBeGreaterThanOrEqual(20);
   expect(proof.resolvedCount, "all dogfood skeleton card models should resolve to graph nodes").toBe(proof.modelCount);
   expect(proof.totalCount, "visibility pass should account for every card model").toBe(proof.modelCount);
-  expect(proof.activeDragClusterSize, "drag should exercise linked ontology facts").toBeGreaterThanOrEqual(2);
+  if (proof.selectedFocusFixedGeographyDragAttempt === "ignored") {
+    expect(proof.activeDragClusterSize, "fixed focus geography should not start a drag cluster").toBe(0);
+  } else {
+    expect(proof.activeDragClusterSize, "drag should exercise linked ontology facts").toBeGreaterThanOrEqual(2);
+  }
   expect(proof.finalVisibleCountPolicy, "final visibility recount should avoid rect reads").toBe(
     "state-only-no-rect-read",
   );

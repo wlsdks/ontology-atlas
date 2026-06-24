@@ -2158,6 +2158,13 @@ function suppressVisibleCardOverlaps(
     visible: boolean;
   },
   isProtectedCard: (el: HTMLElement) => boolean = () => false,
+  options: {
+    containerRect?: DOMRect;
+    onShift?: (
+      el: HTMLElement,
+      rect: { left: number; top: number; right: number; bottom: number },
+    ) => void;
+  } = {},
 ): number {
   const visible = orderedEls
     .map((el) => {
@@ -2186,6 +2193,48 @@ function suppressVisibleCardOverlaps(
         item.el.dataset.supportRailOverlapProtected = 'selected-relation-endpoint';
         accepted.push(item.rect);
         continue;
+      }
+      if (
+        item.el.dataset.selectedFocusContextRail === 'true' &&
+        options.containerRect
+      ) {
+        let dx = 0;
+        let dy = 0;
+        for (const blocker of accepted) {
+          const adjusted = {
+            left: item.rect.left + dx,
+            top: item.rect.top + dy,
+            right: item.rect.right + dx,
+            bottom: item.rect.bottom + dy,
+          };
+          if (!rectsOverlap(adjusted, blocker, OVERVIEW_COLLISION_PAD)) continue;
+          const escape = chooseCollisionEscapeDelta(adjusted, blocker);
+          dx += escape.dx;
+          dy += escape.dy;
+        }
+        const shifted = {
+          left: item.rect.left + dx,
+          top: item.rect.top + dy,
+          right: item.rect.right + dx,
+          bottom: item.rect.bottom + dy,
+        };
+        const inside =
+          shifted.left >= SAFE_VIEWPORT_MARGIN &&
+          shifted.top >= SAFE_VIEWPORT_MARGIN &&
+          shifted.right <= options.containerRect.width - SAFE_VIEWPORT_MARGIN &&
+          shifted.bottom <= options.containerRect.height - SAFE_VIEWPORT_MARGIN;
+        const clear = !accepted.some((rect) =>
+          rectsOverlap(shifted, rect, OVERVIEW_COLLISION_PAD),
+        );
+        if (inside && clear && (dx !== 0 || dy !== 0)) {
+          item.el.style.transform = `${item.el.style.transform} translate(${dx}px, ${dy}px)`;
+          item.el.dataset.supportRailOverlapProtected = 'focus-context-rail-safe-shift';
+          item.el.dataset.selectedFocusContextRailCollisionResolve =
+            'support-rail-safe-shift';
+          options.onShift?.(item.el, shifted);
+          accepted.push(shifted);
+          continue;
+        }
       }
       hideSkeletonCard(item.el);
       item.el.dataset.supportRailOverlapHidden = 'true';
@@ -4256,6 +4305,12 @@ export function SigmaSkeletonCards({
       'fixed-overview-geography-disables-card-drag';
     container.dataset.overviewDensityFixedGeographyDragLocked =
       overviewFixedGeometrySlots.size > 0 ? 'true' : 'false';
+    container.dataset.selectedFocusFixedGeographyContract =
+      'selected-focus-uses-deterministic-canvas-geography';
+    container.dataset.selectedFocusFixedGeographyDragContract =
+      'selected-focus-disables-card-drag-to-preserve-map-layout';
+    container.dataset.selectedFocusFixedGeographyDragLocked =
+      selectedFocusCenterActive && selectedRelationEdgeId === null ? 'true' : 'false';
     container.dataset.overviewDensityFixedGeographySlotCount = String(
       overviewFixedGeometrySlots.size,
     );
@@ -5223,6 +5278,43 @@ export function SigmaSkeletonCards({
         }
       }
       if (collides) {
+        const focusRailCard = el.dataset.selectedFocusContextRail === 'true';
+        if (focusRailCard && rect) {
+          const shifted = clampRectToViewportAndFixedSurfaces({
+            rect,
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            fixedSurfaceRects: [
+              ...fixedSurfaceRects,
+              ...acceptedSurfaceRects,
+              ...acceptedDimRects,
+            ],
+          });
+          const cleared =
+            !fixedSurfaceRects.some((surface) => rectsOverlap(shifted.rect, surface)) &&
+            !acceptedSurfaceRects.some((surface) =>
+              rectsOverlap(shifted.rect, surface),
+            ) &&
+            !acceptedDimRects.some((surface) => rectsOverlap(shifted.rect, surface));
+          if (cleared && (shifted.dx !== 0 || shifted.dy !== 0)) {
+            setSkeletonStyleValue(
+              el,
+              'transform',
+              `${el.style.transform} translate(${shifted.dx}px, ${shifted.dy}px)`,
+              domWriteStats,
+            );
+            el.dataset.selectedFocusContextRailCollisionResolve = 'safe-shift';
+            cardPlacementFrameRectCache.set(el, shifted.rect);
+            rect = shifted.rect;
+            collides = false;
+          } else {
+            el.dataset.selectedFocusContextRailCollisionResolve = 'hidden';
+          }
+        } else {
+          delete el.dataset.selectedFocusContextRailCollisionResolve;
+        }
+      }
+      if (collides) {
         el.dataset.dimOpacityRole = 'hidden-fixed-surface-collision';
         el.dataset.dimOpacityToken = 'none';
         if (dragReactiveContext) {
@@ -5931,6 +6023,13 @@ export function SigmaSkeletonCards({
               orderedEls,
               readVisibleCardRect,
               isSelectedRelationEndpointCard,
+              {
+                containerRect,
+                onShift: (el, rect) => {
+                  visibleCardRectCache.set(el, { rect, visible: true });
+                  cardPlacementFrameRectCache.set(el, rect);
+                },
+              },
             )
           : 0;
       if (supportRailOverlapHiddenCount > 0) {
@@ -9446,6 +9545,12 @@ export function SigmaSkeletonCards({
           selectedRelationSummaryOwnsMeta && selectedRelationSummaryText
             ? `${kindDescription} · ${card.title} · ${selectedRelationSummaryText}`
             : undefined;
+        const selectedFocusFixedGeography =
+          selected &&
+          selectedFocusCenterActive &&
+          selectedRelationEdgeId === null &&
+          !pathWorkflowActive &&
+          !healthRepairTarget;
         const coreHierarchyCountHidden = card.tier <= 1;
         const cardSpacing = selectedRelationSummaryOwnsMeta
           ? SELECTED_FOCUS_CARD_SPACING
@@ -9499,6 +9604,19 @@ export function SigmaSkeletonCards({
             data-dock-index={card.dock?.index}
             data-dock-total={card.dock?.total}
             data-selected={selected ? 'true' : 'false'}
+            data-selected-focus-fixed-geography={
+              selectedFocusFixedGeography ? 'true' : undefined
+            }
+            data-selected-focus-fixed-geography-contract={
+              selectedFocusFixedGeography
+                ? 'selected-focus-card-stays-on-deterministic-map-slot'
+                : undefined
+            }
+            data-selected-focus-fixed-geography-drag-policy={
+              selectedFocusFixedGeography
+                ? 'ignore-card-drag-preserve-layout'
+                : undefined
+            }
             data-zoom-lens-eligible={zoomLensEligible ? 'true' : 'false'}
             data-zoom-lens-pin-proximity={
               zoomLensSelectedNeighborPin ? 'critical-neighbor' : undefined
@@ -9738,6 +9856,13 @@ export function SigmaSkeletonCards({
               if (event.currentTarget.dataset.overviewDensityFixedGeography === 'true') {
                 containerRef.current?.setAttribute(
                   'data-overview-density-fixed-geography-drag-attempt',
+                  'ignored',
+                );
+                return;
+              }
+              if (event.currentTarget.dataset.selectedFocusFixedGeography === 'true') {
+                containerRef.current?.setAttribute(
+                  'data-selected-focus-fixed-geography-drag-attempt',
                   'ignored',
                 );
                 return;

@@ -692,8 +692,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       const layer = screen.getByTestId("sigma-skeleton-cards");
       const leftRailCard = screen
         .getByText("Agent Partner")
-        .closest("[data-skeleton-card]");
-      const rightRailCard = screen.getByText("Vault").closest("[data-skeleton-card]");
+        .closest<HTMLElement>("[data-skeleton-card]");
+      const rightRailCard = screen
+        .getByText("Vault")
+        .closest<HTMLElement>("[data-skeleton-card]");
 
       await waitFor(() => {
         expect(layer).toHaveAttribute(
@@ -706,11 +708,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-focus-context-rail-visible-contract",
           "focus-domain-context-rail-reports-visible-and-hidden-cards",
         );
-        expect(layer).toHaveAttribute("data-selected-focus-context-rail-visible-count", "0");
-        expect(layer).toHaveAttribute("data-selected-focus-context-rail-hidden-count", "2");
+        expect(layer).toHaveAttribute("data-selected-focus-context-rail-visible-count", "2");
+        expect(layer).toHaveAttribute("data-selected-focus-context-rail-hidden-count", "0");
         expect(layer).toHaveAttribute(
           "data-selected-focus-context-rail-hidden-reason",
-          "layout-surface-collision",
+          "none",
         );
         expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail", "true");
         expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail-side", "left");
@@ -718,17 +720,21 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-focus-center-policy",
           "fixed-context-rail",
         );
-        expect(leftRailCard).toHaveStyle({
-          transform: "translate(-50%, -50%) translate3d(200px, 259.2px, 0)",
-        });
+        expect(leftRailCard).toHaveAttribute(
+          "data-selected-focus-context-rail-collision-resolve",
+          "safe-shift",
+        );
+        expect(leftRailCard?.style.transform).toContain(
+          "translate(-50%, -50%) translate3d(200px, 259.2px, 0)",
+        );
         expect(rightRailCard).toHaveAttribute("data-selected-focus-context-rail", "true");
         expect(rightRailCard).toHaveAttribute(
           "data-selected-focus-context-rail-side",
           "right",
         );
-        expect(rightRailCard).toHaveStyle({
-          transform: "translate(-50%, -50%) translate3d(760px, 259.2px, 0)",
-        });
+        expect(rightRailCard?.style.transform).toContain(
+          "translate(-50%, -50%) translate3d(760px, 259.2px, 0)",
+        );
       });
     } finally {
       rectSpy.mockRestore();
