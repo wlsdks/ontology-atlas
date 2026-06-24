@@ -7691,7 +7691,10 @@ export function SigmaSkeletonCards({
                 overlay.style.setProperty('border-radius', '9999px', 'important');
                 overlay.style.setProperty('font-size', '0.66rem', 'important');
                 typeText?.classList.add('sr-only');
-                glyph?.classList.remove('hidden');
+                if (glyph) {
+                  glyph.textContent = overlay.dataset.selectedRelationZoomLensLabelText ?? '';
+                  glyph.classList.remove('hidden');
+                }
               } else {
                 overlay.style.removeProperty('min-height');
                 overlay.style.removeProperty('gap');
@@ -7700,7 +7703,10 @@ export function SigmaSkeletonCards({
                 overlay.style.removeProperty('border-radius');
                 overlay.style.removeProperty('font-size');
                 typeText?.classList.remove('sr-only');
-                glyph?.classList.add('hidden');
+                if (glyph) {
+                  glyph.textContent = '';
+                  glyph.classList.add('hidden');
+                }
               }
               overlay.dataset.relationLabelViewportClampContract =
                 labelButton.dataset.relationLabelViewportClampContract ?? '';

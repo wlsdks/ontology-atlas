@@ -4874,8 +4874,10 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
     const rect = overlay.getBoundingClientRect();
     const typeText = overlay.querySelector("[data-relation-label-type-text]");
     const glyph = overlay.querySelector("[data-selected-relation-zoom-lens-label-glyph]");
+    const overlayText = overlay.textContent?.replace(/\s+/g, " ").trim() || "";
     return {
       glyphText: glyph?.textContent?.trim() || "",
+      overlayText,
       readableText: overlay.getAttribute("data-relation-label-readable-text") || "",
       visualState: overlay.getAttribute("data-relation-label-visual-state") || "",
       zoomLensLabel: overlay.getAttribute("data-selected-relation-zoom-lens-label") || "",
@@ -4895,6 +4897,11 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
   } else {
     expect(selectedOverlayState.visualState).toBe("full-selected-label");
     expect(selectedOverlayState.typeClass).not.toContain("sr-only");
+    expect(selectedOverlayState.glyphText).toBe("");
+    expect(
+      selectedOverlayState.overlayText,
+      "full selected relation label should not concatenate the compact glyph",
+    ).toBe(relationLabelVisibleText);
     expect(selectedOverlayState.width).toBeLessThanOrEqual(
       selectedRelationCardRect.left - selectedRelationLabelRect.left - 16,
     );
