@@ -732,6 +732,7 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-overview-density-lens-active",
     "false",
   );
+  await waitForCardsClear(page, MBP14_FULLSCREEN, panelRect, legendRect, minimapRect);
   expectCardsClear(
     await visibleCardRects(page),
     MBP14_FULLSCREEN,
