@@ -5891,6 +5891,10 @@ export function SigmaSkeletonCards({
     >();
     let visibleCardRectReadCount = 0;
     let visibleCardHiddenRectSkipCount = 0;
+    const reuseFrameRectForFixedFocusRail =
+      selectedFocusContextRailActive && selectedRelationEdgeId === null;
+    const seedConnectorRectFromVisibleCache =
+      activeDragCluster === null && selectedRelationEdgeId === null;
     const visibleCardStateReadPolicy =
       activeDragCluster !== null
         ? 'frame-state-during-drag'
@@ -5930,9 +5934,10 @@ export function SigmaSkeletonCards({
         visibleCardRectCache.set(el, next);
         return next;
       }
-      const seededRect = selectedBlockingSurfaceActive
-        ? undefined
-        : cardPlacementFrameRectCache.get(el);
+      const seededRect =
+        selectedBlockingSurfaceActive && !reuseFrameRectForFixedFocusRail
+          ? undefined
+          : cardPlacementFrameRectCache.get(el);
       if (seededRect) {
         cardPlacementFrameRectCacheHitCount += 1;
         const next = {
@@ -6835,6 +6840,19 @@ export function SigmaSkeletonCards({
         connectorCardRectHitCount += 1;
         connectorCardRectCache.set(el, visibleCached.rect);
         return visibleCached.rect;
+      }
+      if (seedConnectorRectFromVisibleCache) {
+        const seededVisibleRect = readVisibleCardRect(el);
+        if (
+          seededVisibleRect.visible &&
+          seededVisibleRect.rect &&
+          isFiniteConnectorRect(seededVisibleRect.rect)
+        ) {
+          connectorCardRectHitCount += 1;
+          connectorCardRectCache.set(el, seededVisibleRect.rect);
+          return seededVisibleRect.rect;
+        }
+        return null;
       }
       connectorCardRectReadCount += 1;
       connectorCardRectReadSlugs.push(el.dataset.slug ?? '(unknown)');
