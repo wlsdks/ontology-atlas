@@ -296,6 +296,85 @@ test("Relief overview drag keeps the grabbed node readable instead of collapsing
   await page.mouse.up();
 });
 
+test("Relief selected map drag keeps reactive context visible as compact pins", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1512, height: 917 });
+  await page.goto("/en/topology/?mode=map&p=domain%3Aviews");
+  await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
+    timeout: 20_000,
+  });
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute("data-skeleton-cards-ready", "true", {
+    timeout: 20_000,
+  });
+  await page.waitForTimeout(900);
+
+  const target = page.locator('[data-skeleton-card][data-slug="domain:views"]').first();
+  await expect(target).toBeVisible();
+  const before = await rectOf(target);
+  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(before.x + before.width / 2 - 120, before.y + before.height / 2 + 54, {
+    steps: 10,
+  });
+
+  await expect(layer).toHaveAttribute("data-dragging-active", "true");
+  await expect(layer).toHaveAttribute(
+    "data-drag-reactive-context-pin-contract",
+    "colliding-reactive-context-collapses-to-kind-pins",
+  );
+  const proof = await layer.evaluate((el) => {
+    const reactiveCards = Array.from(
+      el.querySelectorAll<HTMLElement>('[data-drag-reactive-context="true"]'),
+    ).map((card) => {
+      const rect = card.getBoundingClientRect();
+      const style = window.getComputedStyle(card);
+      return {
+        opacity: Number(style.opacity),
+        pinGlyph:
+          card.querySelector("[data-zoom-lens-pin-glyph]")?.textContent?.trim() ?? "",
+        presentation: card.dataset.zoomLensPresentation ?? "",
+        visible: card.dataset.dragReactiveContextVisible === "true",
+        visibility: style.visibility,
+        visibilityState: card.dataset.dragReactiveContextVisibility ?? "",
+        width: rect.width,
+      };
+    });
+    return {
+      hiddenCollisionCount: reactiveCards.filter(
+        (card) => card.visibilityState === "hidden-fixed-surface-collision",
+      ).length,
+      pinCount: Number(el.getAttribute("data-drag-reactive-context-pin-count") ?? "0"),
+      visibleCount: Number(el.getAttribute("data-drag-reactive-context-visible-count") ?? "0"),
+      visibleMotionCount: Number(
+        el.getAttribute("data-drag-reactive-motion-visible-count") ?? "0",
+      ),
+      visibleReactiveCards: reactiveCards.filter((card) => card.visible),
+    };
+  });
+  expect(
+    proof.pinCount,
+    "colliding drag-reactive context should stay visible as compact pins",
+  ).toBeGreaterThan(0);
+  expect(proof.pinCount).toBeLessThanOrEqual(8);
+  expect(proof.visibleCount).toBeGreaterThanOrEqual(5);
+  expect(proof.visibleMotionCount).toBeGreaterThanOrEqual(proof.pinCount);
+  expect(proof.hiddenCollisionCount).toBeGreaterThan(0);
+  expect(
+    proof.visibleReactiveCards.some(
+      (card) =>
+        card.presentation === "drag-reactive-context-pin" &&
+        card.visibility === "visible" &&
+        card.opacity > 0.1 &&
+        card.width <= 28 &&
+        card.pinGlyph.length > 0,
+    ),
+  ).toBe(true);
+
+  await page.mouse.up();
+});
+
 test("Relief overview drag keeps nearby context fixed on the canvas", async ({
   page,
 }) => {

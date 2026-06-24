@@ -233,6 +233,7 @@ const DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX = 36;
 const DRAG_REACTIVE_MOTION_LINKED_RATIO = 0.48;
 const DRAG_REACTIVE_MOTION_MAX_OFFSET_PX = DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX;
 const DRAG_TENSION_CONNECTOR_MAX_COUNT = 8;
+const DRAG_REACTIVE_CONTEXT_PIN_MAX_COUNT = 8;
 const DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY = 0.88;
 const DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH = 2.1;
 const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
@@ -5385,11 +5386,26 @@ export function SigmaSkeletonCards({
     let dragReactiveMotionVisibleCount = 0;
     let dragReactiveAmbientMotionVisibleCount = 0;
     let dragReactiveLinkedMotionVisibleCount = 0;
+    let dragReactiveContextPinCount = 0;
     let dragReactiveMotionMaxOffsetPx = 0;
     for (const el of orderedDimEls) {
       const slug = el.dataset.slug ?? '';
       const lockedForDrag = isDragClusterCard(slug, el.dataset.dockParent);
       const dragReactiveContext = el.dataset.dragReactiveContext === 'true';
+      if (el.dataset.zoomLensPresentation === 'drag-reactive-context-pin') {
+        delete el.dataset.zoomLensActiveCard;
+        delete el.dataset.zoomLensPresentation;
+        delete el.dataset.zoomLensCardContract;
+        delete el.dataset.zoomLensPinOpacityContract;
+        delete el.dataset.zoomLensPinMinOpacity;
+      } else if (
+        el.dataset.zoomLensCardContract ===
+        'drag-reactive-context-collisions-collapse-to-kind-pin'
+      ) {
+        delete el.dataset.zoomLensCardContract;
+        delete el.dataset.zoomLensPinOpacityContract;
+        delete el.dataset.zoomLensPinMinOpacity;
+      }
       if (dragReactiveContext) {
         el.dataset.dragReactiveContextVisible = 'false';
         el.dataset.dragReactiveContextVisibility = 'pending-visibility-pass';
@@ -5502,8 +5518,70 @@ export function SigmaSkeletonCards({
         el.dataset.dimOpacityRole = 'hidden-fixed-surface-collision';
         el.dataset.dimOpacityToken = 'none';
         if (dragReactiveContext) {
+          const pinSize = ZOOM_LENS_PIN_SIZE_PX;
+          const pinRect =
+            rect && dragReactiveContextPinCount < DRAG_REACTIVE_CONTEXT_PIN_MAX_COUNT
+              ? {
+                  left: rect.left + (rect.right - rect.left - pinSize) / 2,
+                  top: rect.top + (rect.bottom - rect.top - pinSize) / 2,
+                  right: rect.left + (rect.right - rect.left + pinSize) / 2,
+                  bottom: rect.top + (rect.bottom - rect.top + pinSize) / 2,
+                }
+              : null;
+          const pinFits =
+            pinRect !== null &&
+            pinRect.left >= SAFE_VIEWPORT_MARGIN &&
+            pinRect.top >= SAFE_VIEWPORT_MARGIN &&
+            pinRect.right <= containerRect.width - SAFE_VIEWPORT_MARGIN &&
+            pinRect.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN &&
+            !acceptedDimRects.some((accepted) =>
+              rectsOverlap(pinRect, accepted, OVERVIEW_COLLISION_PAD),
+            ) &&
+            !acceptedSurfaceRects.some((accepted) =>
+              rectsOverlap(pinRect, accepted, OVERVIEW_COLLISION_PAD),
+            ) &&
+            !fixedSurfaceRects.some((surface) => rectsOverlap(pinRect, surface));
+          if (pinFits) {
+            dragReactiveContextPinCount += 1;
+            dragReactiveContextVisibleCount += 1;
+            el.dataset.dragReactiveContextVisible = 'true';
+            el.dataset.dragReactiveContextVisibility = 'pin-visible-collision-fallback';
+            el.dataset.dimOpacityRole = 'drag-reactive-context-pin';
+            el.dataset.dimOpacityToken = DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN;
+            el.dataset.zoomLensActiveCard = 'true';
+            el.dataset.zoomLensPresentation = 'drag-reactive-context-pin';
+            el.dataset.zoomLensCardContract =
+              'drag-reactive-context-collisions-collapse-to-kind-pin';
+            el.dataset.zoomLensPinOpacityContract =
+              'drag-reactive-context-pins-preserve-motion-without-text-collision';
+            el.dataset.zoomLensPinMinOpacity = DRAG_REACTIVE_CONTEXT_OPACITY;
+            delete el.dataset.surfaceHidden;
+            delete el.dataset.surfaceHiddenReason;
+            showSkeletonCard(el, DRAG_REACTIVE_CONTEXT_OPACITY, domWriteStats);
+            setSkeletonStyleValue(el, 'pointerEvents', 'none', domWriteStats);
+            cardPlacementFrameRectCache.set(el, pinRect);
+            acceptedDimRects.push(pinRect);
+            if (el.dataset.dragReactiveMotion === 'parallax-nudge') {
+              dragReactiveMotionVisibleCount += 1;
+              if (el.dataset.dragReactiveMotionStrength === 'linked-context') {
+                dragReactiveLinkedMotionVisibleCount += 1;
+              } else if (el.dataset.dragReactiveMotionStrength === 'ambient-context') {
+                dragReactiveAmbientMotionVisibleCount += 1;
+              }
+              const dx = Number(el.dataset.dragReactiveMotionDx ?? '0');
+              const dy = Number(el.dataset.dragReactiveMotionDy ?? '0');
+              dragReactiveMotionMaxOffsetPx = Math.max(
+                dragReactiveMotionMaxOffsetPx,
+                Math.hypot(Number.isFinite(dx) ? dx : 0, Number.isFinite(dy) ? dy : 0),
+              );
+            }
+            continue;
+          }
           el.dataset.dragReactiveContextVisible = 'false';
-          el.dataset.dragReactiveContextVisibility = 'hidden-fixed-surface-collision';
+          el.dataset.dragReactiveContextVisibility =
+            dragReactiveContextPinCount >= DRAG_REACTIVE_CONTEXT_PIN_MAX_COUNT
+              ? 'hidden-drag-reactive-pin-budget'
+              : 'hidden-fixed-surface-collision';
         } else {
           delete el.dataset.dragReactiveContextVisible;
           delete el.dataset.dragReactiveContextVisibility;
@@ -5659,6 +5737,16 @@ export function SigmaSkeletonCards({
       dragReactiveLinkedMotionVisibleCount > 0
         ? 'direct-neighbor-readable-follow'
         : 'idle';
+    container.dataset.dragReactiveContextPinContract =
+      activeDragMotion && activeDragCluster !== null
+        ? 'colliding-reactive-context-collapses-to-kind-pins'
+        : 'idle';
+    container.dataset.dragReactiveContextPinCount = String(
+      dragReactiveContextPinCount,
+    );
+    container.dataset.dragReactiveContextPinMaxCount = String(
+      DRAG_REACTIVE_CONTEXT_PIN_MAX_COUNT,
+    );
     container.dataset.dragReactiveMotionMaxObservedOffsetPx =
       dragReactiveMotionMaxOffsetPx.toFixed(2);
     container.dataset.dragReactiveMotionMaxOffsetPx = String(
@@ -6884,6 +6972,17 @@ export function SigmaSkeletonCards({
     );
     container.dataset.dragReactiveLinkedMotionVisibleCount = String(
       finalDragReactiveCounts.linked,
+    );
+    container.dataset.dragReactiveContextPinCount = String(
+      orderedEls.reduce(
+        (count, el) =>
+          count +
+          (el.dataset.zoomLensPresentation === 'drag-reactive-context-pin' &&
+          isSkeletonCardVisibleFromFrameState(el)
+            ? 1
+            : 0),
+        0,
+      ),
     );
     container.dataset.dragReactiveMotionLinkedPolicy =
       finalDragReactiveCounts.linked > 0 ? 'direct-neighbor-readable-follow' : 'idle';
