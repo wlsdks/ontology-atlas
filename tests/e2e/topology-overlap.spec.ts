@@ -5263,10 +5263,21 @@ test("Relief selected relation zoom-in turns both endpoint cards into compact ro
             roleMarkText:
               card.getAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-text") ||
               "",
+            roleMarkLabel:
+              card.getAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-label") ||
+              "",
             roleMarkGlyphText:
               card
                 .querySelector("[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]")
                 ?.textContent?.trim() || "",
+            roleBadgeAria:
+              card
+                .querySelector("[data-selected-relation-endpoint-role-badge]")
+                ?.getAttribute("aria-label") || "",
+            roleBadgeTitle:
+              card
+                .querySelector("[data-selected-relation-endpoint-role-badge]")
+                ?.getAttribute("title") || "",
             roleMarkGlyphVisible:
               (() => {
                 const glyph = card.querySelector(
@@ -5317,7 +5328,12 @@ test("Relief selected relation zoom-in turns both endpoint cards into compact ro
     expect(endpoint.active).toBe("true");
     expect(endpoint.presentation).toBe("lens-pin");
     expect(endpoint.roleMarkText).toMatch(/^[ST]$/);
+    expect(endpoint.roleMarkLabel).toBe(endpoint.endpointRole === "source" ? "FROM" : "TO");
     expect(endpoint.roleMarkGlyphText).toBe(endpoint.roleMarkText);
+    expect(endpoint.roleBadgeAria).toBe(
+      `selected relation ${endpoint.roleMarkLabel.toLowerCase()} endpoint`,
+    );
+    expect(endpoint.roleBadgeTitle).toBe(endpoint.roleMarkLabel);
     expect(endpoint.roleMarkGlyphVisible).toBe(true);
     expect(endpoint.relationSummaryVisible).toBe(false);
     expect(endpoint.viewportClamp).toBe("safe-viewport");

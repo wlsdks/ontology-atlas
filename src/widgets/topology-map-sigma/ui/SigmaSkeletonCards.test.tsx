@@ -5190,6 +5190,19 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
             "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",
           ),
         ).toHaveAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-text", "S");
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-endpoint-zoom-lens-role-mark-label",
+          "FROM",
+        );
+        expect(
+          sourceCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-label", "FROM");
+        expect(
+          sourceCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveAttribute("aria-label", "selected relation from endpoint");
+        expect(
+          sourceCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveAttribute("title", "FROM");
         expect(
           sourceCard?.querySelector(
             "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",
@@ -5259,6 +5272,19 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
             "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",
           ),
         ).toHaveAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-text", "T");
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-endpoint-zoom-lens-role-mark-label",
+          "TO",
+        );
+        expect(
+          targetCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-label", "TO");
+        expect(
+          targetCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveAttribute("aria-label", "selected relation to endpoint");
+        expect(
+          targetCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveAttribute("title", "TO");
         expect(
           targetCard?.querySelector(
             "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",

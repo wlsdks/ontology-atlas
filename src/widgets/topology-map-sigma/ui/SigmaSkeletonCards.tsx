@@ -10095,6 +10095,9 @@ export function SigmaSkeletonCards({
             data-selected-relation-endpoint-zoom-lens-role-mark-text={
               selectedRelationEndpointRoleMarkLabel
             }
+            data-selected-relation-endpoint-zoom-lens-role-mark-label={
+              selectedRelationEndpointRoleLabel
+            }
             data-card-selection-box-policy="boxless-border-state"
             data-drag-wash-token={
               dragging || dragSettled
@@ -10696,7 +10699,11 @@ export function SigmaSkeletonCards({
                   data-selected-relation-endpoint-role-badge-text={
                     selectedRelationEndpointRoleLabel
                   }
-                  aria-label={`selected relation ${selectedRelationEndpointRole}`}
+                  data-selected-relation-endpoint-zoom-lens-role-mark-label={
+                    selectedRelationEndpointRoleLabel
+                  }
+                  aria-label={`selected relation ${selectedRelationEndpointRoleLabel?.toLowerCase()} endpoint`}
+                  title={selectedRelationEndpointRoleLabel}
                   className="relative ml-0.5 inline-flex h-[1.42em] shrink-0 items-center justify-center rounded-[0.32em] border border-[color:var(--topology-relation-label-selected-border)] bg-[color:var(--topology-relation-label-selected-surface)] px-[0.36em] font-mono text-[0.58em] font-semibold leading-none text-[color:var(--topology-relation-label-selected-text)] group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!absolute group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!inset-0 group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!ml-0 group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!h-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!w-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!rounded-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!border-0 group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!bg-transparent group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!p-0 group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!text-[0.64rem]"
                 >
                   <span className="group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:hidden">
