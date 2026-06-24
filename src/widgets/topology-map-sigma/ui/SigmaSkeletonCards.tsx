@@ -7244,7 +7244,13 @@ export function SigmaSkeletonCards({
         label.setAttribute('x', String(Number.isFinite(x) ? x : 0));
         label.setAttribute('y', String(placedY));
         label.setAttribute('opacity', svgLabelHidden ? '0' : '1');
+        label.setAttribute('visibility', svgLabelHidden ? 'hidden' : 'visible');
+        label.setAttribute('pointer-events', 'none');
         label.setAttribute('aria-hidden', svgLabelHidden ? 'true' : 'false');
+        label.dataset.relationLabelSvgVisibilityContract =
+          usesHtmlBadge
+            ? 'html-hit-target-owns-visible-copy'
+            : 'svg-text-owns-visible-copy';
         label.dataset.relationLabelVisibility = svgLabelHidden
           ? activeDragRelationLabel
             ? 'drag-fact-hidden'
@@ -7279,6 +7285,7 @@ export function SigmaSkeletonCards({
             compactDragRelationLabel ? String(RELATION_BADGE_HEIGHT_PX / 2) : '7',
           );
           badge.setAttribute('opacity', svgLabelHidden ? '0' : '1');
+          badge.setAttribute('visibility', svgLabelHidden ? 'hidden' : 'visible');
           badge.setAttribute(
             'pointer-events',
             activeDragRelationLabel || usesHtmlBadge || relationHitDisabled || labelHiddenByCards

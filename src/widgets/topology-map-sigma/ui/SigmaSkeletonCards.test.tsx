@@ -2529,6 +2529,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(typeText).toHaveTextContent("contains ×2 · 2 src");
     expect(visibleBadge).toHaveTextContent("contains ×2 · 2 src");
     expect(svgLabel).toHaveTextContent("contains 2");
+    expect(svgLabel).toHaveAttribute("visibility", "hidden");
+    expect(svgLabel).toHaveAttribute("aria-hidden", "true");
+    expect(svgLabel).toHaveAttribute(
+      "data-relation-label-svg-visibility-contract",
+      "html-hit-target-owns-visible-copy",
+    );
     expect(svgLabelGroup).toHaveAttribute(
       "data-relation-label-interaction-owner",
       "html-hit-target",
@@ -3794,6 +3800,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveStyle({ pointerEvents: "auto" });
     expect(labelHit).toHaveStyle({ visibility: "visible" });
     expect(labelHit).toHaveStyle({ color: "var(--topology-relation-label-text)" });
+    expect(svgLabel).toHaveAttribute("visibility", "hidden");
+    expect(svgLabel).toHaveAttribute(
+      "data-relation-label-svg-visibility-contract",
+      "html-hit-target-owns-visible-copy",
+    );
+    expect(svgBadge).toHaveAttribute("visibility", "hidden");
     expect(labelHit?.className).toContain("inline-flex");
     expect(visibleBadge).toHaveAttribute(
       "data-relation-label-surface-token",

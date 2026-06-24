@@ -2383,6 +2383,14 @@ for (const viewport of VIEWPORTS) {
       /contains|depends|relates|describes|uses/,
       { timeout: 20_000 },
     );
+    await expect(page.locator("[data-connector-relation-label]").first()).toHaveAttribute(
+      "data-relation-label-svg-visibility-contract",
+      "html-hit-target-owns-visible-copy",
+    );
+    await expect(page.locator("[data-connector-relation-label]").first()).toHaveAttribute(
+      "visibility",
+      "hidden",
+    );
     const relationButton = page
       .locator(
         '[data-relation-label-button][data-label-geometry-source="html-hit-target"][data-relation-label-visibility="visible-clear"]',
