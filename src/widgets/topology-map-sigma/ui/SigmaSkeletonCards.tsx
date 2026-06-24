@@ -371,6 +371,8 @@ const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 32;
 const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 6;
 const RELATION_LABEL_VIEWPORT_INSET_PX = 16;
 const RELATION_LABEL_MIN_COMPACT_WIDTH_PX = 96;
+const SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX = 40;
+const SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_HEIGHT_PX = 28;
 const RELATION_LABEL_CARD_CLEARANCE_PX = 22;
 const SELECTED_RELATION_INSPECTOR_CLEARANCE_PX = 32;
 const RELATION_LABEL_PHONE_BREAKPOINT_PX = 768;
@@ -7655,22 +7657,96 @@ export function SigmaSkeletonCards({
               const glyph = overlay.querySelector<HTMLElement>(
                 '[data-selected-relation-zoom-lens-label-glyph]',
               );
+              const compactSelectedRelationLabelCenterX =
+                (fromRect.left + fromRect.right + toRect.left + toRect.right) / 4;
+              const compactSelectedRelationLabelCenterY =
+                (fromRect.top + fromRect.bottom + toRect.top + toRect.bottom) / 4;
+              const compactRouteEndpointDeltaX = Math.abs(
+                (fromRect.left + fromRect.right) / 2 - (toRect.left + toRect.right) / 2,
+              );
+              let compactRouteUsesPerpendicularLane =
+                compactRouteEndpointDeltaX <
+                SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX;
+              let compactSelectedRelationRouteLane = compactRouteUsesPerpendicularLane
+                ? 'perpendicular-left'
+                : 'centerline';
+              const compactSelectedRelationLaneCenterX = compactRouteUsesPerpendicularLane
+                ? compactSelectedRelationLabelCenterX -
+                  SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX -
+                  RELATION_LABEL_VIEWPORT_INSET_PX
+                : compactSelectedRelationLabelCenterX;
+              let compactSelectedRelationLabelLeft = Math.min(
+                Math.max(
+                  RELATION_LABEL_VIEWPORT_INSET_PX,
+                  compactSelectedRelationLaneCenterX -
+                    SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX / 2,
+                ),
+                Math.max(
+                  RELATION_LABEL_VIEWPORT_INSET_PX,
+                  containerRect.width -
+                    RELATION_LABEL_VIEWPORT_INSET_PX -
+                    SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX,
+                ),
+              );
+              const compactSelectedRelationLabelTop = Math.min(
+                Math.max(
+                  RELATION_LABEL_VIEWPORT_INSET_PX,
+                  compactSelectedRelationLabelCenterY -
+                    SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_HEIGHT_PX / 2,
+                ),
+                Math.max(
+                  RELATION_LABEL_VIEWPORT_INSET_PX,
+                  containerRect.height -
+                    RELATION_LABEL_VIEWPORT_INSET_PX -
+                    SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_HEIGHT_PX,
+                ),
+              );
+              const compactSelectedRelationRect = {
+                left: compactSelectedRelationLabelLeft,
+                top: compactSelectedRelationLabelTop,
+                right:
+                  compactSelectedRelationLabelLeft +
+                  SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX,
+                bottom:
+                  compactSelectedRelationLabelTop +
+                  SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_HEIGHT_PX,
+              };
+              for (const blocker of relationLabelCardBlockers) {
+                if (!rectsOverlap(compactSelectedRelationRect, blocker, 24)) continue;
+                compactSelectedRelationLabelLeft = Math.max(
+                  RELATION_LABEL_VIEWPORT_INSET_PX,
+                  Math.min(
+                    compactSelectedRelationLabelLeft,
+                    blocker.left -
+                      SELECTED_RELATION_INSPECTOR_CLEARANCE_PX -
+                      SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX,
+                  ),
+                );
+                compactSelectedRelationRouteLane = 'inspector-left';
+                break;
+              }
               setSkeletonStyleValue(
                 overlay,
                 'transform',
-                labelButton.style.transform,
+                compactSelectedRelationLabelActive
+                  ? `translate3d(${compactSelectedRelationLabelLeft}px, ${compactSelectedRelationLabelTop}px, 0)`
+                  : labelButton.style.transform,
                 domWriteStats,
               );
               setSkeletonStyleValue(
                 overlay,
                 'width',
-                compactSelectedRelationLabelActive ? '2.5rem' : labelButton.style.width,
+                compactSelectedRelationLabelActive
+                  ? `${SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX}px`
+                  : labelButton.style.width,
                 domWriteStats,
               );
               setSkeletonStyleValue(
                 overlay,
                 'height',
-                compactSelectedRelationLabelActive ? '1.75rem' : labelButton.style.height,
+                compactSelectedRelationLabelActive
+                  ? `${SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_HEIGHT_PX}px`
+                  : labelButton.style.height,
                 domWriteStats,
               );
               overlay.dataset.selectedRelationZoomLensLabel =
@@ -7684,18 +7760,46 @@ export function SigmaSkeletonCards({
                   ? 'geometry-compact-glyph'
                 : 'full-selected-label';
               if (compactSelectedRelationLabelActive) {
-                overlay.style.setProperty('min-height', '1.75rem', 'important');
+                overlay.dataset.selectedRelationZoomLensRouteCorridor =
+                  compactSelectedRelationRouteLane === 'perpendicular-left'
+                    ? 'endpoint-midpoint-perpendicular-compact-glyph'
+                    : 'endpoint-midpoint-compact-glyph';
+                overlay.dataset.selectedRelationZoomLensRouteCorridorContract =
+                  compactSelectedRelationRouteLane === 'perpendicular-left'
+                    ? 'vertical-route-keeps-compact-glyph-clear-beside-endpoint-axis'
+                    : compactSelectedRelationRouteLane === 'inspector-left'
+                      ? 'compact-glyph-keeps-route-midpoint-clear-of-inspector'
+                    : 'compact-glyph-centers-between-endpoint-role-marks';
+                overlay.dataset.selectedRelationZoomLensRouteCorridorCenterX = String(
+                  compactSelectedRelationLabelCenterX,
+                );
+                overlay.dataset.selectedRelationZoomLensRouteCorridorCenterY = String(
+                  compactSelectedRelationLabelCenterY,
+                );
+                overlay.dataset.selectedRelationZoomLensRouteCorridorLane =
+                  compactSelectedRelationRouteLane;
+                overlay.style.setProperty(
+                  'min-height',
+                  `${SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_HEIGHT_PX}px`,
+                  'important',
+                );
                 overlay.style.setProperty('gap', '0', 'important');
                 overlay.style.setProperty('padding-left', '0', 'important');
                 overlay.style.setProperty('padding-right', '0', 'important');
                 overlay.style.setProperty('border-radius', '9999px', 'important');
                 overlay.style.setProperty('font-size', '0.66rem', 'important');
                 typeText?.classList.add('sr-only');
+                if (typeText) typeText.textContent = '';
                 if (glyph) {
                   glyph.textContent = overlay.dataset.selectedRelationZoomLensLabelText ?? '';
                   glyph.classList.remove('hidden');
                 }
               } else {
+                delete overlay.dataset.selectedRelationZoomLensRouteCorridor;
+                delete overlay.dataset.selectedRelationZoomLensRouteCorridorContract;
+                delete overlay.dataset.selectedRelationZoomLensRouteCorridorCenterX;
+                delete overlay.dataset.selectedRelationZoomLensRouteCorridorCenterY;
+                delete overlay.dataset.selectedRelationZoomLensRouteCorridorLane;
                 overlay.style.removeProperty('min-height');
                 overlay.style.removeProperty('gap');
                 overlay.style.removeProperty('padding-left');
@@ -7703,6 +7807,9 @@ export function SigmaSkeletonCards({
                 overlay.style.removeProperty('border-radius');
                 overlay.style.removeProperty('font-size');
                 typeText?.classList.remove('sr-only');
+                if (typeText) {
+                  typeText.textContent = overlay.dataset.relationLabelVisibleText ?? '';
+                }
                 if (glyph) {
                   glyph.textContent = '';
                   glyph.classList.add('hidden');

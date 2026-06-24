@@ -5178,6 +5178,7 @@ test("Relief selected relation zoom-in turns both endpoint cards into compact ro
     const glyphStyle = glyph instanceof HTMLElement ? window.getComputedStyle(glyph) : null;
     const overlayRect = overlay.getBoundingClientRect();
     return {
+      overlayText: overlay.textContent?.replace(/\s+/g, " ").trim() || "",
       glyphText: glyph?.textContent?.trim() || "",
       glyphVisible: Boolean(
         glyphRect &&
@@ -5194,6 +5195,7 @@ test("Relief selected relation zoom-in turns both endpoint cards into compact ro
     };
   });
   expect(selectedOverlayState.glyphText).toMatch(/^[A-Z](?:×\d+)?$/);
+  expect(selectedOverlayState.overlayText).toBe(selectedOverlayState.glyphText);
   expect(selectedOverlayState.glyphVisible).toBe(true);
   expect(selectedOverlayState.fullTextClass).toContain("sr-only");
   expect(selectedOverlayState.readableText).toContain("contains");
@@ -5214,9 +5216,13 @@ test("Relief selected relation zoom-in turns both endpoint cards into compact ro
         const rect = element.getBoundingClientRect();
         return {
           bottom: rect.bottom,
+          centerX: rect.left + rect.width / 2,
+          centerY: rect.top + rect.height / 2,
+          height: rect.height,
           left: rect.left,
           right: rect.right,
           top: rect.top,
+          width: rect.width,
         };
       };
       const overlaps = (
@@ -5233,17 +5239,74 @@ test("Relief selected relation zoom-in turns both endpoint cards into compact ro
             a.bottom > b.top - pad,
         );
       const overlayRect = rectOf(overlay);
+      const sourceRect = rectOf(sourceCard);
+      const targetRect = rectOf(targetCard);
       const inspectorRect = rectOf(inspector);
+      const endpointMinX =
+        sourceRect && targetRect ? Math.min(sourceRect.centerX, targetRect.centerX) : null;
+      const endpointMaxX =
+        sourceRect && targetRect ? Math.max(sourceRect.centerX, targetRect.centerX) : null;
+      const endpointMinY =
+        sourceRect && targetRect ? Math.min(sourceRect.centerY, targetRect.centerY) : null;
+      const endpointMaxY =
+        sourceRect && targetRect ? Math.max(sourceRect.centerY, targetRect.centerY) : null;
       return {
+        corridor: overlay?.getAttribute("data-selected-relation-zoom-lens-route-corridor") || "",
+        corridorContract:
+          overlay?.getAttribute(
+            "data-selected-relation-zoom-lens-route-corridor-contract",
+          ) || "",
+        corridorLane:
+          overlay?.getAttribute("data-selected-relation-zoom-lens-route-corridor-lane") ||
+          "",
+        overlayCenterX: overlayRect?.centerX ?? null,
+        overlayCenterY: overlayRect?.centerY ?? null,
+        sourceCenterX: sourceRect?.centerX ?? null,
+        sourceCenterY: sourceRect?.centerY ?? null,
+        targetCenterX: targetRect?.centerX ?? null,
+        targetCenterY: targetRect?.centerY ?? null,
+        overlayBetweenEndpointX:
+          overlayRect && endpointMinX !== null && endpointMaxX !== null
+            ? overlayRect.centerX >= endpointMinX && overlayRect.centerX <= endpointMaxX
+            : false,
+        overlayLeftOfEndpointAxis:
+          overlayRect && endpointMinX !== null ? overlayRect.right <= endpointMinX - 8 : false,
+        overlayBetweenEndpointY:
+          overlayRect && endpointMinY !== null && endpointMaxY !== null
+            ? overlayRect.centerY >= endpointMinY && overlayRect.centerY <= endpointMaxY
+            : false,
         inspectorGap:
           overlayRect && inspectorRect ? inspectorRect.left - overlayRect.right : null,
         overlapsInspector: overlaps(overlayRect, inspectorRect, 24),
-        overlapsSource: overlaps(overlayRect, rectOf(sourceCard), 8),
-        overlapsTarget: overlaps(overlayRect, rectOf(targetCard), 8),
+        overlapsSource: overlaps(overlayRect, sourceRect, 8),
+        overlapsTarget: overlaps(overlayRect, targetRect, 8),
       };
     },
     { sourceSlug: source, targetSlug: target },
   );
+  expect([
+    "endpoint-midpoint-compact-glyph",
+    "endpoint-midpoint-perpendicular-compact-glyph",
+  ]).toContain(selectedOverlayGeometry.corridor);
+  if (selectedOverlayGeometry.corridor === "endpoint-midpoint-perpendicular-compact-glyph") {
+    expect(selectedOverlayGeometry.corridorContract).toBe(
+      "vertical-route-keeps-compact-glyph-clear-beside-endpoint-axis",
+    );
+    expect(selectedOverlayGeometry.corridorLane).toBe("perpendicular-left");
+    expect(selectedOverlayGeometry.overlayLeftOfEndpointAxis).toBe(true);
+  } else {
+    expect([
+      "compact-glyph-centers-between-endpoint-role-marks",
+      "compact-glyph-keeps-route-midpoint-clear-of-inspector",
+    ]).toContain(selectedOverlayGeometry.corridorContract);
+    expect(["centerline", "inspector-left"]).toContain(
+      selectedOverlayGeometry.corridorLane,
+    );
+    if (selectedOverlayGeometry.corridorLane === "centerline") {
+      expect(selectedOverlayGeometry.overlayBetweenEndpointX).toBe(true);
+    }
+  }
+  expect(selectedOverlayGeometry.overlayBetweenEndpointY).toBe(true);
   expect(selectedOverlayGeometry.overlapsSource).toBe(false);
   expect(selectedOverlayGeometry.overlapsTarget).toBe(false);
   expect(selectedOverlayGeometry.overlapsInspector).toBe(false);
