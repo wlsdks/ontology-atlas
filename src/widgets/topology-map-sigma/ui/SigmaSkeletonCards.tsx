@@ -3848,13 +3848,22 @@ export function SigmaSkeletonCards({
     let overviewDensityLensActiveCardCount = 0;
     let zoomLensPinCanvasClampCount = 0;
     for (const el of els) {
+      const selectedFocusEgoCapabilityPin =
+        selectedFocusCenterActive &&
+        selectedRelationEdgeId === null &&
+        !pathWorkflowActive &&
+        !healthRepairTarget &&
+        ego?.slugs.has(el.dataset.slug ?? '') === true &&
+        el.dataset.selected !== 'true' &&
+        el.dataset.tier === '2';
       const selectedFocusEgoReadableContext =
         selectedFocusCenterActive &&
         selectedRelationEdgeId === null &&
         !pathWorkflowActive &&
         !healthRepairTarget &&
         ego?.slugs.has(el.dataset.slug ?? '') === true &&
-        el.dataset.selected !== 'true';
+        el.dataset.selected !== 'true' &&
+        !selectedFocusEgoCapabilityPin;
       const selectedFocusCompanionReadableTitle =
         el.dataset.selectedFocusCompanionReadableTitle === 'true';
       const selectedFocusContextReadableTitle =
@@ -3966,6 +3975,14 @@ export function SigmaSkeletonCards({
               ? 'full-card-context'
               : 'full-card-detail'
             : 'full-card-anchor';
+      }
+      if (selectedFocusEgoCapabilityPin) {
+        el.dataset.selectedFocusEgoCapabilityPin = 'true';
+        el.dataset.selectedFocusEgoCapabilityPinContract =
+          'focus-detail-demotes-capability-neighbors-to-kind-pins';
+      } else {
+        delete el.dataset.selectedFocusEgoCapabilityPin;
+        delete el.dataset.selectedFocusEgoCapabilityPinContract;
       }
       const roleMarkGlyph = el.querySelector<HTMLElement>(
         '[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]',

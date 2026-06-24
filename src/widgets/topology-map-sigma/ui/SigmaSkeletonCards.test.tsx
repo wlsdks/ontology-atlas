@@ -1770,7 +1770,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("선택 focus detail lens 는 직접 ego companion 을 readable card 로 유지한다", async () => {
+  it("선택 focus detail lens 는 capability ego companion 을 kind pin 으로 낮춘다", async () => {
     const graph = makeGraph();
     graph.addNode("capability:c1", {
       size: 5,
@@ -1854,13 +1854,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-zoom-lens-presentation-source",
         "selected-focus-detail",
       );
-      expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "1");
-      expect(layer).toHaveAttribute("data-zoom-lens-focus-ego-readable-count", "1");
+      expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "2");
+      expect(layer).toHaveAttribute("data-zoom-lens-focus-ego-readable-count", "0");
       expect(layer).toHaveAttribute(
         "data-zoom-lens-focus-ego-readable-contract",
         "selected-focus-ego-neighbors-stay-readable-in-lens",
       );
-      expect(layer).toHaveAttribute("data-zoom-lens-visible-active-card-count", "0");
+      expect(layer).toHaveAttribute("data-zoom-lens-visible-active-card-count", "1");
       expect(layer).toHaveAttribute(
         "data-zoom-lens-viewport-visible-contract",
         "visible-lens-pins-match-frame-state",
@@ -1871,23 +1871,24 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-zoom-lens-presentation",
         "full-card-critical",
       );
-      expect(companionCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(companionCard).toHaveAttribute("data-zoom-lens-active-card", "true");
       expect(companionCard).toHaveAttribute(
         "data-zoom-lens-presentation",
-        "full-card-critical",
+        "lens-pin",
       );
       expect(companionCard).toHaveAttribute(
         "data-zoom-lens-card-contract",
-        "selected-focus-ego-neighbor-stays-readable-in-lens",
+        "noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in",
       );
-      expect(companionCard).toHaveAttribute("data-zoom-lens-focus-ego-readable", "true");
+      expect(companionCard).toHaveAttribute("data-selected-focus-ego-capability-pin", "true");
       expect(companionCard).toHaveAttribute(
-        "data-zoom-lens-focus-ego-readable-contract",
-        "selected-focus-ego-neighbor-stays-readable-in-lens",
+        "data-selected-focus-ego-capability-pin-contract",
+        "focus-detail-demotes-capability-neighbors-to-kind-pins",
       );
-      expect(companionCard).not.toHaveAttribute("data-zoom-lens-viewport-visible");
+      expect(companionCard).not.toHaveAttribute("data-zoom-lens-focus-ego-readable");
+      expect(companionCard).toHaveAttribute("data-zoom-lens-viewport-visible", "true");
       expect(layer.querySelectorAll('[data-zoom-lens-viewport-visible="true"]')).toHaveLength(
-        0,
+        1,
       );
       expect(companionCard?.querySelector("[data-card-title]")).toHaveAttribute(
         "data-full-title",
