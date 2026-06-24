@@ -8112,6 +8112,12 @@ export function buildWebviewEvidencePayload(
               markers.topologyOverviewDensityFixedGeographyContract ?? null,
             active:
               markers.topologyOverviewDensityFixedGeographyActive === true,
+            dragContract:
+              markers.topologyOverviewDensityFixedGeographyDragContract ?? null,
+            dragLocked:
+              markers.topologyOverviewDensityFixedGeographyDragLocked === true,
+            dragAttempt:
+              markers.topologyOverviewDensityFixedGeographyDragAttempt ?? null,
             slotCount: markerNumber(
               markers,
               "topologyOverviewDensityFixedGeographySlotCount",

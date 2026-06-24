@@ -837,6 +837,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "overview-density-uses-deterministic-canvas-geography",
       );
       expect(layer).toHaveAttribute("data-overview-density-fixed-geography-active", "true");
+      expect(layer).toHaveAttribute(
+        "data-overview-density-fixed-geography-drag-contract",
+        "fixed-overview-geography-disables-card-drag",
+      );
+      expect(layer).toHaveAttribute("data-overview-density-fixed-geography-drag-locked", "true");
       expect(layer).toHaveAttribute("data-overview-density-fixed-geography-slot-count", "3");
       expect(layer).toHaveAttribute("data-overview-density-fixed-geography-domain-count", "1");
       expect(layer).toHaveAttribute("data-overview-density-fixed-geography-pin-count", "1");

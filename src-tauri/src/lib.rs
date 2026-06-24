@@ -5294,6 +5294,12 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-contract") || "",
                                   topologyOverviewDensityFixedGeographyActive:
                                     skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-active") === "true",
+                                  topologyOverviewDensityFixedGeographyDragContract:
+                                    skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-drag-contract") || "",
+                                  topologyOverviewDensityFixedGeographyDragLocked:
+                                    skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-drag-locked") === "true",
+                                  topologyOverviewDensityFixedGeographyDragAttempt:
+                                    skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-drag-attempt") || "",
                                   topologyOverviewDensityFixedGeographySlotCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-slot-count") || "0"),
                                   topologyOverviewDensityFixedGeographyDomainCount:
@@ -5504,6 +5510,7 @@ mod tests {
         assert!(source.contains("data-zoom-lens-relation-thread-count"));
         assert!(source.contains("topologyZoomLensPinMinOpacity"));
         assert!(source.contains("topologyOverviewDensityFixedGeographyContract"));
+        assert!(source.contains("topologyOverviewDensityFixedGeographyDragContract"));
         assert!(source.contains("topologySupportChromeZoomLensActive"));
         assert!(source.contains("topologyMinimapState"));
         assert!(source.contains("topologyDragReactiveMotionContract"));

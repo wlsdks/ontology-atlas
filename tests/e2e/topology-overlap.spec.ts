@@ -1229,6 +1229,14 @@ test("Relief wide overview uses fixed canvas geography with readable domains", a
     "overview-density-uses-deterministic-canvas-geography",
   );
   await expect(layer).toHaveAttribute("data-overview-density-fixed-geography-active", "true");
+  await expect(layer).toHaveAttribute(
+    "data-overview-density-fixed-geography-drag-contract",
+    "fixed-overview-geography-disables-card-drag",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-overview-density-fixed-geography-drag-locked",
+    "true",
+  );
   await expect(layer).toHaveAttribute("data-overview-density-fixed-geography-domain-count", "6");
   await expect(layer).toHaveAttribute("data-overview-density-fixed-geography-pin-count", "15");
   await expect(layer).toHaveAttribute("data-overview-density-lens-active-card-count", "15");
@@ -1282,6 +1290,31 @@ test("Relief wide overview uses fixed canvas geography with readable domains", a
     fixedRects.width / VIEWPORTS[1].width,
     "fixed overview geography should use the canvas instead of a narrow center cluster",
   ).toBeGreaterThanOrEqual(0.7);
+
+  const draggableDomain = page
+    .locator('[data-skeleton-card][data-overview-density-fixed-geography-role="domain"]')
+    .first();
+  const beforeDragRect = await rectOf(draggableDomain);
+  await page.mouse.move(
+    beforeDragRect.left + beforeDragRect.width / 2,
+    beforeDragRect.top + beforeDragRect.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    beforeDragRect.left + beforeDragRect.width / 2 + 180,
+    beforeDragRect.top + beforeDragRect.height / 2 + 120,
+  );
+  await page.mouse.up();
+  await expect(layer).toHaveAttribute(
+    "data-overview-density-fixed-geography-drag-attempt",
+    "ignored",
+  );
+  await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+  const afterDragRect = await rectOf(draggableDomain);
+  expect(
+    Math.hypot(afterDragRect.left - beforeDragRect.left, afterDragRect.top - beforeDragRect.top),
+    "fixed overview geography should not move when a reader drags a domain card",
+  ).toBeLessThanOrEqual(2);
 });
 
 test("Relief focus card wheel zoom keeps readable focus companions as full cards", async ({

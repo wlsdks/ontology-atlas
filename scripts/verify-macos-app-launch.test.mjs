@@ -1236,6 +1236,10 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyOverviewDensityFixedGeographyContract:
           "overview-density-uses-deterministic-canvas-geography",
         topologyOverviewDensityFixedGeographyActive: true,
+        topologyOverviewDensityFixedGeographyDragContract:
+          "fixed-overview-geography-disables-card-drag",
+        topologyOverviewDensityFixedGeographyDragLocked: true,
+        topologyOverviewDensityFixedGeographyDragAttempt: "ignored",
         topologyOverviewDensityFixedGeographySlotCount: 22,
         topologyOverviewDensityFixedGeographyDomainCount: 6,
         topologyOverviewDensityFixedGeographyPinCount: 15,
@@ -1500,6 +1504,9 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
       fixedGeography: {
         contract: "overview-density-uses-deterministic-canvas-geography",
         active: true,
+        dragContract: "fixed-overview-geography-disables-card-drag",
+        dragLocked: true,
+        dragAttempt: "ignored",
         slotCount: 22,
         domainCount: 6,
         pinCount: 15,
