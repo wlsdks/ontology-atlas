@@ -296,7 +296,7 @@ test("Relief overview drag keeps the grabbed node readable instead of collapsing
   await page.mouse.up();
 });
 
-test("Relief selected map drag keeps reactive context visible as compact pins", async ({
+test("Relief selected map keeps deterministic geography instead of dragging cards", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1512, height: 917 });
@@ -312,67 +312,44 @@ test("Relief selected map drag keeps reactive context visible as compact pins", 
 
   const target = page.locator('[data-skeleton-card][data-slug="domain:views"]').first();
   await expect(target).toBeVisible();
+  await expect(layer).toHaveAttribute(
+    "data-selected-map-fixed-geography-contract",
+    "selected-map-uses-deterministic-canvas-geography",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-selected-map-fixed-geography-drag-contract",
+    "selected-map-disables-card-drag-to-preserve-map-layout",
+  );
+  await expect(layer).toHaveAttribute("data-selected-map-fixed-geography-drag-locked", "true");
+  await expect(target).toHaveAttribute("data-selected-map-fixed-geography", "true");
+  await expect(target).toHaveAttribute(
+    "data-selected-map-fixed-geography-drag-policy",
+    "ignore-card-drag-preserve-layout",
+  );
+  await expect(target).toHaveAttribute("data-drag-hit-disabled", "true");
+  await expect(target).toHaveAttribute(
+    "data-drag-hit-disabled-contract",
+    "fixed-canvas-geography-removes-card-drag-affordance",
+  );
+  await expect(target).toHaveCSS("cursor", "default");
   const before = await rectOf(target);
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
   await page.mouse.down();
+  await expect(layer).toHaveAttribute("data-selected-map-fixed-geography-drag-attempt", "ignored");
   await page.mouse.move(before.x + before.width / 2 - 120, before.y + before.height / 2 + 54, {
     steps: 10,
   });
 
-  await expect(layer).toHaveAttribute("data-dragging-active", "true");
-  await expect(layer).toHaveAttribute(
-    "data-drag-reactive-context-pin-contract",
-    "colliding-reactive-context-collapses-to-kind-pins",
-  );
-  const proof = await layer.evaluate((el) => {
-    const reactiveCards = Array.from(
-      el.querySelectorAll<HTMLElement>('[data-drag-reactive-context="true"]'),
-    ).map((card) => {
-      const rect = card.getBoundingClientRect();
-      const style = window.getComputedStyle(card);
-      return {
-        opacity: Number(style.opacity),
-        pinGlyph:
-          card.querySelector("[data-zoom-lens-pin-glyph]")?.textContent?.trim() ?? "",
-        presentation: card.dataset.zoomLensPresentation ?? "",
-        visible: card.dataset.dragReactiveContextVisible === "true",
-        visibility: style.visibility,
-        visibilityState: card.dataset.dragReactiveContextVisibility ?? "",
-        width: rect.width,
-      };
-    });
-    return {
-      hiddenCollisionCount: reactiveCards.filter(
-        (card) => card.visibilityState === "hidden-fixed-surface-collision",
-      ).length,
-      pinCount: Number(el.getAttribute("data-drag-reactive-context-pin-count") ?? "0"),
-      visibleCount: Number(el.getAttribute("data-drag-reactive-context-visible-count") ?? "0"),
-      visibleMotionCount: Number(
-        el.getAttribute("data-drag-reactive-motion-visible-count") ?? "0",
-      ),
-      visibleReactiveCards: reactiveCards.filter((card) => card.visible),
-    };
-  });
-  expect(
-    proof.pinCount,
-    "colliding drag-reactive context should stay visible as compact pins",
-  ).toBeGreaterThan(0);
-  expect(proof.pinCount).toBeLessThanOrEqual(8);
-  expect(proof.visibleCount).toBeGreaterThanOrEqual(5);
-  expect(proof.visibleMotionCount).toBeGreaterThanOrEqual(proof.pinCount);
-  expect(proof.hiddenCollisionCount).toBeGreaterThan(0);
-  expect(
-    proof.visibleReactiveCards.some(
-      (card) =>
-        card.presentation === "drag-reactive-context-pin" &&
-        card.visibility === "visible" &&
-        card.opacity > 0.1 &&
-        card.width <= 28 &&
-        card.pinGlyph.length > 0,
-    ),
-  ).toBe(true);
-
+  await expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
+  await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+  await expect(layer).toHaveAttribute("data-dragging-active", "false");
+  await expect(page.locator('[data-drag-tension-connector="true"]')).toHaveCount(0);
   await page.mouse.up();
+  const after = await rectOf(target);
+  expect(
+    Math.hypot(after.x - before.x, after.y - before.y),
+    "selected map drag should not rewrite deterministic canvas geography",
+  ).toBeLessThan(12);
 });
 
 test("Relief overview drag keeps nearby context fixed on the canvas", async ({

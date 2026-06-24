@@ -5320,6 +5320,14 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-domain-count") || "0"),
                                   topologyOverviewDensityFixedGeographyPinCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-pin-count") || "0"),
+                                  topologySelectedMapFixedGeographyContract:
+                                    skeletonCardsLayer?.getAttribute("data-selected-map-fixed-geography-contract") || "",
+                                  topologySelectedMapFixedGeographyDragContract:
+                                    skeletonCardsLayer?.getAttribute("data-selected-map-fixed-geography-drag-contract") || "",
+                                  topologySelectedMapFixedGeographyDragLocked:
+                                    skeletonCardsLayer?.getAttribute("data-selected-map-fixed-geography-drag-locked") === "true",
+                                  topologySelectedMapFixedGeographyDragAttempt:
+                                    skeletonCardsLayer?.getAttribute("data-selected-map-fixed-geography-drag-attempt") || "",
                                   topologyFixedSurfaceLiveSuppressionReadPolicy:
                                     skeletonCardsLayer?.getAttribute("data-fixed-surface-live-suppression-read-policy") || "",
                                   topologyFixedSurfaceLiveSuppressionReadCount:
@@ -5527,6 +5535,8 @@ mod tests {
         assert!(source.contains("topologyZoomLensPinMinOpacity"));
         assert!(source.contains("topologyOverviewDensityFixedGeographyContract"));
         assert!(source.contains("topologyOverviewDensityFixedGeographyDragContract"));
+        assert!(source.contains("topologySelectedMapFixedGeographyContract"));
+        assert!(source.contains("topologySelectedMapFixedGeographyDragContract"));
         assert!(source.contains("topologySupportChromeZoomLensActive"));
         assert!(source.contains("topologyMinimapState"));
         assert!(source.contains("topologyDragReactiveMotionContract"));

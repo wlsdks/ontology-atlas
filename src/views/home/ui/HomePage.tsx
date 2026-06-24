@@ -2319,6 +2319,9 @@ export function HomePage() {
                     skeletonSlugs={topologySkeleton?.slugs ?? null}
                     skeletonCards={topologySkeleton?.cards ?? null}
                     pathWorkflowActive={analysisMode === "path"}
+                    selectedMapFixedGeographyActive={
+                      analysisMode === "overview" && canvasSelectedSlug !== null
+                    }
                     selectedFocusCenterActive={analysisMode === "focus"}
                     suppressKindLegend={
                       createNodeOpen ||

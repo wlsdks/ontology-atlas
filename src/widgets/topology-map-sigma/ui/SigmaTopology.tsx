@@ -387,6 +387,8 @@ interface SigmaTopologyProps {
   showOntologyNodes?: boolean;
   /** true면 Path analysis mode용 primer를 그래프 위에 표시한다. */
   pathWorkflowActive?: boolean;
+  /** Overview mode에서 선택된 map 지형을 읽기 전용 fixed geography로 유지한다. */
+  selectedMapFixedGeographyActive?: boolean;
   /** Focus analysis mode에서는 선택 DOM 카드가 주의 중심이므로 viewport center anchor를 사용한다. */
   selectedFocusCenterActive?: boolean;
   pathSelection?: {
@@ -462,6 +464,7 @@ function SigmaTopologyImpl({
   changedSlugs,
   showOntologyNodes = false,
   pathWorkflowActive = false,
+  selectedMapFixedGeographyActive = false,
   selectedFocusCenterActive = false,
   pathSelection = null,
   healthRepairTarget = null,
@@ -3172,6 +3175,7 @@ function SigmaTopologyImpl({
           healthRepairTarget={healthRepairTarget}
           onSelect={(slug) => onSelectProjectRef.current?.(slug)}
           pathWorkflowActive={pathWorkflowActive}
+          selectedMapFixedGeographyActive={selectedMapFixedGeographyActive}
           selectedFocusCenterActive={selectedFocusCenterActive}
           pathSelection={pathSelection}
           onPathSelectionChange={(selection) => onPathSelectionChangeRef.current?.(selection)}
