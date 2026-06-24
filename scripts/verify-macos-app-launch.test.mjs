@@ -1233,6 +1233,12 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         topologyOverviewDensityLensMinWidth: 1800,
         topologyOverviewDensityLensActive: false,
         topologyOverviewDensityLensActiveCardCount: 0,
+        topologyOverviewDensityFixedGeographyContract:
+          "overview-density-uses-deterministic-canvas-geography",
+        topologyOverviewDensityFixedGeographyActive: true,
+        topologyOverviewDensityFixedGeographySlotCount: 22,
+        topologyOverviewDensityFixedGeographyDomainCount: 6,
+        topologyOverviewDensityFixedGeographyPinCount: 15,
         topologySupportRailOverlapReadPolicy: "reuse-visible-card-rect-cache",
         topologyDragActiveOverlapPolicy:
           "active-cluster-hides-lower-priority-overlaps",
@@ -1491,6 +1497,13 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
       minWidth: 1800,
       active: false,
       activeCardCount: 0,
+      fixedGeography: {
+        contract: "overview-density-uses-deterministic-canvas-geography",
+        active: true,
+        slotCount: 22,
+        domainCount: 6,
+        pinCount: 15,
+      },
     },
     agentNextAction: "trust-kind-pin-lens-before-reading-dense-map-cards",
   });

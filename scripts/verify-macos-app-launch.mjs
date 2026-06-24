@@ -8107,6 +8107,24 @@ export function buildWebviewEvidencePayload(
             markers,
             "topologyOverviewDensityLensActiveCardCount",
           ),
+          fixedGeography: {
+            contract:
+              markers.topologyOverviewDensityFixedGeographyContract ?? null,
+            active:
+              markers.topologyOverviewDensityFixedGeographyActive === true,
+            slotCount: markerNumber(
+              markers,
+              "topologyOverviewDensityFixedGeographySlotCount",
+            ),
+            domainCount: markerNumber(
+              markers,
+              "topologyOverviewDensityFixedGeographyDomainCount",
+            ),
+            pinCount: markerNumber(
+              markers,
+              "topologyOverviewDensityFixedGeographyPinCount",
+            ),
+          },
         },
         agentNextAction: "trust-kind-pin-lens-before-reading-dense-map-cards",
       }

@@ -5290,6 +5290,16 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-overview-density-lens-active") === "true",
                                   topologyOverviewDensityLensActiveCardCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-overview-density-lens-active-card-count") || "0"),
+                                  topologyOverviewDensityFixedGeographyContract:
+                                    skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-contract") || "",
+                                  topologyOverviewDensityFixedGeographyActive:
+                                    skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-active") === "true",
+                                  topologyOverviewDensityFixedGeographySlotCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-slot-count") || "0"),
+                                  topologyOverviewDensityFixedGeographyDomainCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-domain-count") || "0"),
+                                  topologyOverviewDensityFixedGeographyPinCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-pin-count") || "0"),
                                   topologyFixedSurfaceLiveSuppressionReadPolicy:
                                     skeletonCardsLayer?.getAttribute("data-fixed-surface-live-suppression-read-policy") || "",
                                   topologyFixedSurfaceLiveSuppressionReadCount:
@@ -5493,6 +5503,7 @@ mod tests {
         assert!(source.contains("topologyZoomLensRelationChromeContract"));
         assert!(source.contains("data-zoom-lens-relation-thread-count"));
         assert!(source.contains("topologyZoomLensPinMinOpacity"));
+        assert!(source.contains("topologyOverviewDensityFixedGeographyContract"));
         assert!(source.contains("topologySupportChromeZoomLensActive"));
         assert!(source.contains("topologyMinimapState"));
         assert!(source.contains("topologyDragReactiveMotionContract"));

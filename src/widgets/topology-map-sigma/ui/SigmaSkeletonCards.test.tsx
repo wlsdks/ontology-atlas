@@ -831,13 +831,24 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       );
       expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
       expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "overview-density");
-      expect(layer).toHaveAttribute("data-overview-density-lens-active-card-count", "2");
+      expect(layer).toHaveAttribute("data-overview-density-lens-active-card-count", "1");
+      expect(layer).toHaveAttribute(
+        "data-overview-density-fixed-geography-contract",
+        "overview-density-uses-deterministic-canvas-geography",
+      );
+      expect(layer).toHaveAttribute("data-overview-density-fixed-geography-active", "true");
+      expect(layer).toHaveAttribute("data-overview-density-fixed-geography-slot-count", "3");
+      expect(layer).toHaveAttribute("data-overview-density-fixed-geography-domain-count", "1");
+      expect(layer).toHaveAttribute("data-overview-density-fixed-geography-pin-count", "1");
       expect(rootCard).toHaveAttribute("data-zoom-lens-active-card", "false");
       expect(rootCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-anchor");
-      expect(anchorCard).toHaveAttribute("data-zoom-lens-active-card", "true");
-      expect(anchorCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+      expect(rootCard).toHaveAttribute("data-overview-density-fixed-geography-role", "root");
+      expect(anchorCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(anchorCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-context");
+      expect(anchorCard).toHaveAttribute("data-overview-density-fixed-geography-role", "domain");
       expect(scanCard).toHaveAttribute("data-zoom-lens-active-card", "true");
       expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+      expect(scanCard).toHaveAttribute("data-overview-density-fixed-geography-role", "pin");
     } finally {
       Object.defineProperty(window, "innerWidth", {
         configurable: true,

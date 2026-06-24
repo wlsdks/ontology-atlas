@@ -1218,6 +1218,72 @@ test("Relief installed-app overview hides overlapping full cards", async ({ page
   ).toEqual([]);
 });
 
+test("Relief wide overview uses fixed canvas geography with readable domains", async ({
+  page,
+}) => {
+  await openRelief(page, VIEWPORTS[1], { mode: "map" });
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute(
+    "data-overview-density-fixed-geography-contract",
+    "overview-density-uses-deterministic-canvas-geography",
+  );
+  await expect(layer).toHaveAttribute("data-overview-density-fixed-geography-active", "true");
+  await expect(layer).toHaveAttribute("data-overview-density-fixed-geography-domain-count", "6");
+  await expect(layer).toHaveAttribute("data-overview-density-fixed-geography-pin-count", "15");
+  await expect(layer).toHaveAttribute("data-overview-density-lens-active-card-count", "15");
+  await expect(layer).toHaveAttribute("data-visible-card-overlap-count", "0");
+
+  const domainCards = page.locator(
+    '[data-skeleton-card][data-overview-density-fixed-geography-role="domain"]',
+  );
+  await expect(domainCards).toHaveCount(6);
+  await expect(
+    page.locator(
+      '[data-skeleton-card][data-overview-density-fixed-geography-role="domain"][data-surface-hidden="true"]',
+    ),
+  ).toHaveCount(0);
+
+  const domainRects = await domainCards.evaluateAll((cards) =>
+    cards.map((card) => {
+      const rect = card.getBoundingClientRect();
+      return {
+        active: card.getAttribute("data-zoom-lens-active-card"),
+        height: rect.height,
+        presentation: card.getAttribute("data-zoom-lens-presentation"),
+        width: rect.width,
+      };
+    }),
+  );
+  expect(
+    domainRects.every(
+      (rect) =>
+        rect.active === "false" &&
+        rect.presentation === "full-card-context" &&
+        rect.width >= 140 &&
+        rect.height >= 36,
+    ),
+    "overview domains should stay readable title cards instead of collapsing to pins",
+  ).toBe(true);
+
+  const fixedRects = await page
+    .locator('[data-skeleton-card][data-overview-density-fixed-geography="true"]')
+    .evaluateAll((cards) => {
+      const rects = cards.map((card) => card.getBoundingClientRect());
+      const left = Math.min(...rects.map((rect) => rect.left));
+      const right = Math.max(...rects.map((rect) => rect.right));
+      return {
+        left,
+        right,
+        width: right - left,
+      };
+    });
+  expect(
+    fixedRects.width / VIEWPORTS[1].width,
+    "fixed overview geography should use the canvas instead of a narrow center cluster",
+  ).toBeGreaterThanOrEqual(0.7);
+});
+
 test("Relief focus card wheel zoom keeps readable focus companions as full cards", async ({
   page,
 }) => {

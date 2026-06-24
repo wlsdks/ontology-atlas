@@ -378,6 +378,12 @@ const OVERVIEW_DENSITY_LENS_RATIO_THRESHOLD = 1.1;
 const OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX = 1180;
 const OVERVIEW_DENSITY_LENS_COMPACT_MAX_WIDTH_PX = 1280;
 const OVERVIEW_DENSITY_LENS_WIDE_MIN_WIDTH_PX = 1680;
+const OVERVIEW_DENSITY_FIXED_GEOGRAPHY_MARGIN_PX = 96;
+const OVERVIEW_DENSITY_FIXED_GEOGRAPHY_CENTER_X_RATIO = 0.58;
+const OVERVIEW_DENSITY_FIXED_DOMAIN_RADIUS_X_RATIO = 0.3;
+const OVERVIEW_DENSITY_FIXED_DOMAIN_RADIUS_Y_RATIO = 0.28;
+const OVERVIEW_DENSITY_FIXED_PIN_RADIUS_X_RATIO = 0.38;
+const OVERVIEW_DENSITY_FIXED_PIN_RADIUS_Y_RATIO = 0.34;
 const ZOOM_LENS_PIN_SIZE_PX = 24;
 const ZOOM_LENS_PIN_MIN_OPACITY = '0.42';
 const WHEEL_ZOOM_BASE_DELTA_PX = 560;
@@ -3791,7 +3797,8 @@ export function SigmaSkeletonCards({
         (el.dataset.zoomLensEligible === 'true' ||
           compactMapRootAnchorOnCameraZoom ||
           compactSelectedRelationEndpointOnCameraZoom) &&
-        !zoomLensCritical;
+        !zoomLensCritical &&
+        !(overviewDensityLensActive && el.dataset.tier === '1');
       if (zoomLensEligible) zoomLensEligibleCount += 1;
       if (compactLensActive && zoomLensEligible) {
         el.dataset.zoomLensActiveCard = 'true';
@@ -4122,6 +4129,110 @@ export function SigmaSkeletonCards({
       const bDocked = b.dataset.dockParent ? 1 : 0;
       return aDocked - bDocked;
     });
+    const overviewFixedGeometrySlots = new Map<
+      string,
+      { x: number; y: number; role: 'root' | 'domain' | 'pin'; index: number; total: number }
+    >();
+    if (overviewDensityLensActive) {
+      const overviewLandmarks = orderedEls
+        .filter((el) => {
+          const slug = el.dataset.slug;
+          return Boolean(slug && !el.dataset.dockParent && graph.hasNode(slug));
+        })
+        .sort((a, b) => {
+          const tierA = Number(a.dataset.tier ?? '4');
+          const tierB = Number(b.dataset.tier ?? '4');
+          if (tierA !== tierB) return tierA - tierB;
+          return (a.dataset.slug ?? '').localeCompare(b.dataset.slug ?? '');
+        });
+      const rootSlugs = overviewLandmarks
+        .filter((el) => el.dataset.tier === '0')
+        .map((el) => el.dataset.slug ?? '')
+        .filter(Boolean);
+      const domainSlugs = overviewLandmarks
+        .filter((el) => el.dataset.tier === '1')
+        .map((el) => el.dataset.slug ?? '')
+        .filter(Boolean);
+      const pinSlugs = overviewLandmarks
+        .filter((el) => Number(el.dataset.tier ?? '4') >= 2)
+        .map((el) => el.dataset.slug ?? '')
+        .filter(Boolean);
+      const centerX =
+        containerRect.width * OVERVIEW_DENSITY_FIXED_GEOGRAPHY_CENTER_X_RATIO;
+      const centerY = containerRect.height * 0.52;
+      const safeWidth = Math.max(
+        1,
+        containerRect.width - OVERVIEW_DENSITY_FIXED_GEOGRAPHY_MARGIN_PX * 2,
+      );
+      const safeHeight = Math.max(
+        1,
+        containerRect.height - OVERVIEW_DENSITY_FIXED_GEOGRAPHY_MARGIN_PX * 2,
+      );
+      const domainRadiusX = Math.min(
+        safeWidth * 0.42,
+        Math.max(260 * scale, containerRect.width * OVERVIEW_DENSITY_FIXED_DOMAIN_RADIUS_X_RATIO),
+      );
+      const domainRadiusY = Math.min(
+        safeHeight * 0.38,
+        Math.max(180 * scale, containerRect.height * OVERVIEW_DENSITY_FIXED_DOMAIN_RADIUS_Y_RATIO),
+      );
+      const pinRadiusX = Math.min(
+        safeWidth * 0.48,
+        Math.max(domainRadiusX + 96 * scale, containerRect.width * OVERVIEW_DENSITY_FIXED_PIN_RADIUS_X_RATIO),
+      );
+      const pinRadiusY = Math.min(
+        safeHeight * 0.46,
+        Math.max(domainRadiusY + 72 * scale, containerRect.height * OVERVIEW_DENSITY_FIXED_PIN_RADIUS_Y_RATIO),
+      );
+      rootSlugs.forEach((slug, index) => {
+        overviewFixedGeometrySlots.set(slug, {
+          x: centerX,
+          y: centerY,
+          role: 'root',
+          index,
+          total: rootSlugs.length,
+        });
+      });
+      domainSlugs.forEach((slug, index) => {
+        const angle = -Math.PI / 2 + (Math.PI * 2 * index) / Math.max(1, domainSlugs.length);
+        overviewFixedGeometrySlots.set(slug, {
+          x: centerX + Math.cos(angle) * domainRadiusX,
+          y: centerY + Math.sin(angle) * domainRadiusY,
+          role: 'domain',
+          index,
+          total: domainSlugs.length,
+        });
+      });
+      pinSlugs.forEach((slug, index) => {
+        const angle =
+          -Math.PI / 2 +
+          (Math.PI * 2 * index) / Math.max(1, pinSlugs.length) +
+          Math.PI / Math.max(8, pinSlugs.length);
+        overviewFixedGeometrySlots.set(slug, {
+          x: centerX + Math.cos(angle) * pinRadiusX,
+          y: centerY + Math.sin(angle) * pinRadiusY,
+          role: 'pin',
+          index,
+          total: pinSlugs.length,
+        });
+      });
+    }
+    container.dataset.overviewDensityFixedGeographyContract =
+      'overview-density-uses-deterministic-canvas-geography';
+    container.dataset.overviewDensityFixedGeographyActive =
+      overviewFixedGeometrySlots.size > 0 ? 'true' : 'false';
+    container.dataset.overviewDensityFixedGeographySlotCount = String(
+      overviewFixedGeometrySlots.size,
+    );
+    container.dataset.overviewDensityFixedGeographyDomainCount = String(
+      Array.from(overviewFixedGeometrySlots.values()).filter(
+        (slot) => slot.role === 'domain',
+      ).length,
+    );
+    container.dataset.overviewDensityFixedGeographyPinCount = String(
+      Array.from(overviewFixedGeometrySlots.values()).filter((slot) => slot.role === 'pin')
+        .length,
+    );
     for (const el of orderedEls) {
       const slug = el.dataset.slug;
       if (slug) elBySlug.set(slug, el);
@@ -4494,6 +4605,14 @@ export function SigmaSkeletonCards({
           !followsActiveGraphDrag &&
           !manualFocusPlacementActive &&
           containerRect.width > SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX;
+        const previewOffset = dragPreviewOffsetFor(slug, dockParent);
+        const overviewFixedGeometryPlacement =
+          !followsActiveGraphDrag &&
+          !manualFocusPlacementActive &&
+          previewOffset.dx === 0 &&
+          previewOffset.dy === 0
+            ? overviewFixedGeometrySlots.get(slug) ?? null
+            : null;
         const selectedFocusEgoBand =
           selectedFocusCenterActive &&
           selectedRelationEdgeId === null &&
@@ -4503,7 +4622,19 @@ export function SigmaSkeletonCards({
           !manualFocusPlacementActive &&
           ego?.slugs.has(slug) === true;
         const clamped =
-          selectedFocusViewportCenter
+          overviewFixedGeometryPlacement
+            ? clampVisibleAnchorCard({
+                x: overviewFixedGeometryPlacement.x,
+                y: overviewFixedGeometryPlacement.y,
+                width: cardWidth,
+                height: cardHeight,
+                anchor: safeAnchorKey,
+                containerWidth: containerRect.width,
+                containerHeight: containerRect.height,
+                fixedSurfaceRects,
+                viewportMargin: ZOOM_LENS_PIN_CANVAS_MARGIN_PX,
+              })
+          : selectedFocusViewportCenter
             ? {
                 x: containerRect.width / 2,
                 y:
@@ -4546,7 +4677,6 @@ export function SigmaSkeletonCards({
                 fixedSurfaceRects,
               })
             : vp;
-        const previewOffset = dragPreviewOffsetFor(slug, dockParent);
         if (previewOffset.dx !== 0 || previewOffset.dy !== 0) {
           clamped.x += previewOffset.dx;
           clamped.y += previewOffset.dy;
@@ -4569,6 +4699,25 @@ export function SigmaSkeletonCards({
           : selectedFocusContextRailPlacement
             ? 'fixed-context-rail'
           : 'default';
+        if (overviewFixedGeometryPlacement) {
+          el.dataset.overviewDensityFixedGeography = 'true';
+          el.dataset.overviewDensityFixedGeographyRole =
+            overviewFixedGeometryPlacement.role;
+          el.dataset.overviewDensityFixedGeographyIndex = String(
+            overviewFixedGeometryPlacement.index,
+          );
+          el.dataset.overviewDensityFixedGeographyTotal = String(
+            overviewFixedGeometryPlacement.total,
+          );
+          el.dataset.overviewDensityFixedGeographyContract =
+            'deterministic-overview-slot';
+        } else {
+          delete el.dataset.overviewDensityFixedGeography;
+          delete el.dataset.overviewDensityFixedGeographyRole;
+          delete el.dataset.overviewDensityFixedGeographyIndex;
+          delete el.dataset.overviewDensityFixedGeographyTotal;
+          delete el.dataset.overviewDensityFixedGeographyContract;
+        }
         if (selectedFocusContextRailPlacement) {
           el.dataset.selectedFocusContextRail = 'true';
           el.dataset.selectedFocusContextRailSlot = String(
