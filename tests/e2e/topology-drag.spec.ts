@@ -413,6 +413,12 @@ test("Relief focus drag keeps selected geography fixed instead of reshaping the 
     "data-selected-focus-fixed-geography-drag-policy",
     "ignore-card-drag-preserve-layout",
   );
+  await expect(target).toHaveAttribute("data-drag-hit-disabled", "true");
+  await expect(target).toHaveAttribute(
+    "data-drag-hit-disabled-contract",
+    "fixed-canvas-geography-removes-card-drag-affordance",
+  );
+  await expect(target).toHaveCSS("cursor", "default");
   const before = await rectOf(target);
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
   await page.mouse.down();
