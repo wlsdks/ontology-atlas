@@ -1024,6 +1024,66 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
   ).toBeLessThanOrEqual(28);
 });
 
+test("Relief focus zoom-in demotes domain rail to waypoint pins", async ({ page }) => {
+  const viewport = VIEWPORTS[1];
+  await openRelief(page, viewport, {
+    mode: "focus",
+    requireHud: false,
+    selectedSlug: "domain:views",
+  });
+
+  await page.evaluate(() => {
+    const verifyZoom = (
+      window as Window & {
+        __ontologyAtlasTopologyVerifyZoom?: () => { reason: string; targetRatio: number };
+      }
+    ).__ontologyAtlasTopologyVerifyZoom;
+    if (!verifyZoom) throw new Error("missing topology zoom verifier");
+    const result = verifyZoom();
+    if (result.reason !== "done") {
+      throw new Error(`zoom verifier failed: ${result.reason}`);
+    }
+  });
+  await page.waitForTimeout(400);
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute("data-zoom-lens-active", "true");
+  await expect(layer).toHaveAttribute("data-focus-detail-lens-active", "true");
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-context-rail-zoom-contract",
+    "camera-zoom-in-demotes-domain-rail-to-waypoint-pins",
+  );
+  await expect(layer).toHaveAttribute("data-selected-focus-context-rail-zoom-active", "true");
+
+  const railProof = await page.evaluate(() =>
+    Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '[data-skeleton-card][data-selected-focus-context-rail="true"]',
+      ),
+    ).map((card) => ({
+      active: card.getAttribute("data-zoom-lens-active-card"),
+      contract: card.getAttribute("data-zoom-lens-card-contract"),
+      presentation: card.getAttribute("data-zoom-lens-presentation"),
+      slug: card.getAttribute("data-slug"),
+      visible: card.getAttribute("data-surface-hidden") !== "true",
+    })),
+  );
+  expect(railProof.length, "dogfood focus route should expose domain rail waypoints").toBeGreaterThan(0);
+  expect(
+    railProof.every(
+      (card) =>
+        card.active === "true" &&
+        card.presentation === "lens-pin" &&
+        card.contract === "focus-context-domain-becomes-waypoint-pin-on-camera-zoom-in",
+    ),
+    JSON.stringify(railProof, null, 2),
+  ).toBe(true);
+  expect(
+    railProof.filter((card) => card.visible).length,
+    "zoomed focus should keep at least one rail waypoint visible",
+  ).toBeGreaterThan(0);
+});
+
 test("Relief zoom-in keeps 14-inch lens pins separated", async ({ page }) => {
   const viewport = MBP14_FULLSCREEN;
   await openRelief(page, viewport, { mode: "map" });

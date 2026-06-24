@@ -18,6 +18,7 @@ const WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV: &str =
     "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_NODE_POPOVER";
 const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
 const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP";
+const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_ZOOM";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
@@ -541,6 +542,8 @@ pub fn run() {
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV).is_some();
                     let verify_topology_focus_noop =
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV).is_some();
+                    let verify_topology_focus_zoom =
+                        std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV).is_some();
                     tauri::async_runtime::spawn(async move {
                         if let Some(route) = verify_route {
                             let reset_script = build_webview_verify_route_reset_script(&route);
@@ -1235,6 +1238,8 @@ pub fn run() {
                             // synthetic drag even starts. Wait long enough for the
                             // drag finish timer to publish stable markers.
                             std::thread::sleep(Duration::from_millis(3800));
+                        }
+                        if verify_topology_drag || verify_topology_focus_zoom {
                             let _ = verify_window.eval(
                                 r#"(() => {
                                   const result = {
@@ -5328,6 +5333,10 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-selected-focus-fixed-geography-drag-locked") === "true",
                                   topologySelectedFocusFixedGeographyDragAttempt:
                                     skeletonCardsLayer?.getAttribute("data-selected-focus-fixed-geography-drag-attempt") || "",
+                                  topologySelectedFocusContextRailZoomContract:
+                                    skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-zoom-contract") || "",
+                                  topologySelectedFocusContextRailZoomActive:
+                                    skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-zoom-active") === "true",
                                   topologySelectedMapFixedGeographyContract:
                                     skeletonCardsLayer?.getAttribute("data-selected-map-fixed-geography-contract") || "",
                                   topologySelectedMapFixedGeographyDragContract:
@@ -5545,6 +5554,7 @@ mod tests {
         assert!(source.contains("topologyOverviewDensityFixedGeographyDragContract"));
         assert!(source.contains("topologySelectedFocusFixedGeographyContract"));
         assert!(source.contains("topologySelectedFocusFixedGeographyDragContract"));
+        assert!(source.contains("topologySelectedFocusContextRailZoomContract"));
         assert!(source.contains("topologySelectedMapFixedGeographyContract"));
         assert!(source.contains("topologySelectedMapFixedGeographyDragContract"));
         assert!(source.contains("topologySupportChromeZoomLensActive"));

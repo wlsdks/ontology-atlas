@@ -19,6 +19,7 @@ const WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV =
   "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_NODE_POPOVER";
 const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
 const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP";
+const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_ZOOM";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX = 2.5;
 const TOPOLOGY_DRAG_FOCUS_MIN_DELTA_PX = 20;
@@ -29,6 +30,7 @@ const TOPOLOGY_DIM_CONTEXT_MIN_OPACITY = 0.08;
 const VALID_ZOOM_LENS_PRESENTATION_SOURCES = new Set([
   "camera-zoom-in",
   "selected-relation-context",
+  "selected-focus-detail",
 ]);
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 const WEBVIEW_VERIFY_TIMEOUT_MS = 15000;
@@ -851,6 +853,7 @@ export function parseVerifyAppLaunchArgs(argv, {
     verifyTopologyNodePopover: argv.includes("--verify-topology-node-popover"),
     verifyTopologyCreateNode: argv.includes("--verify-topology-create-node"),
     verifyTopologyFocusNoop: argv.includes("--verify-topology-focus-noop"),
+    verifyTopologyFocusZoom: argv.includes("--verify-topology-focus-zoom"),
     requireOwnerName: ownerNameArg
       ? ownerNameArg.slice("--require-owner-name=".length)
       : null,
@@ -899,6 +902,8 @@ Options:
   --verify-topology-focus-noop
                     On a selected /topology route, re-run the selected-focus camera fit after initial
                     settle and require an already-safe no-op motion proof.
+  --verify-topology-focus-zoom
+                    On a selected /topology route, trigger zoom-in and require focus rail compaction proof.
   --require-window  Require an on-screen macOS window owned by the launched app process.
   --require-capturable-window
                     Require at least one matching CoreGraphics window to produce a local screenshot
@@ -1014,6 +1019,7 @@ export function webviewVerifyEnvPatch({
   verifyTopologyNodePopover = false,
   verifyTopologyCreateNode = false,
   verifyTopologyFocusNoop = false,
+  verifyTopologyFocusZoom = false,
   webviewWindowSize = null,
 } = {}) {
   return {
@@ -1028,6 +1034,7 @@ export function webviewVerifyEnvPatch({
       : {}),
     ...(verifyTopologyCreateNode ? { [WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV]: "1" } : {}),
     ...(verifyTopologyFocusNoop ? { [WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV]: "1" } : {}),
+    ...(verifyTopologyFocusZoom ? { [WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV]: "1" } : {}),
     ...(webviewWindowSize
       ? {
           [WEBVIEW_VERIFY_WINDOW_SIZE_ENV]: `${webviewWindowSize.width}x${webviewWindowSize.height}`,
@@ -2277,6 +2284,7 @@ export function validateWebviewVerifyPayload(payload, {
   requireTopologyNodePopover = false,
   requireTopologyCreateNode = false,
   requireTopologyFocusNoop = false,
+  requireTopologyFocusZoom = false,
 } = {}) {
   if (!payload || typeof payload !== "object") {
     return "missing WebView verification payload";
@@ -3258,10 +3266,14 @@ export function validateWebviewVerifyPayload(payload, {
       requireTopologyFocusNoop &&
       payload.markers.topologyCameraMotionTrigger === "selected-focus-already-safe" &&
       payload.markers.topologyCameraMotionState === "already-safe";
+    const selectedFocusZoomContextVisible =
+      requireTopologyFocusZoom &&
+      payload.markers.topologySelectedFocusContextRailZoomActive === true;
     if (
       payload.markers.topologySelectedNodePopoverVisible !== true &&
       !selectedRelationContextVisible &&
       !selectedFocusNoopContextVisible &&
+      !selectedFocusZoomContextVisible &&
       !blockingComposerOpen
     ) {
       return `WebView did not report a visible Relief selected node context for ${topologySelectedParam}`;
@@ -3269,6 +3281,19 @@ export function validateWebviewVerifyPayload(payload, {
     if (requireTopologyFocusNoop) {
       const focusNoopError = validateTopologyFocusNoopMarkers(payload);
       if (focusNoopError) return focusNoopError;
+    }
+    if (requireTopologyFocusZoom) {
+      const zoomError = validateTopologyZoomLensMarkers(payload.markers);
+      if (zoomError) return zoomError;
+      if (
+        payload.markers.topologySelectedFocusContextRailZoomContract !==
+        "camera-zoom-in-demotes-domain-rail-to-waypoint-pins"
+      ) {
+        return `WebView Relief focus rail zoom contract was ${payload.markers.topologySelectedFocusContextRailZoomContract || "missing"}`;
+      }
+      if (payload.markers.topologySelectedFocusContextRailZoomActive !== true) {
+        return "WebView Relief focus rail zoom waypoint compaction was not active";
+      }
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
@@ -8690,6 +8715,7 @@ async function verifyExecutableLaunch({
   verifyTopologyNodePopover,
   verifyTopologyCreateNode,
   verifyTopologyFocusNoop,
+  verifyTopologyFocusZoom,
   requireAccessibilityText,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
@@ -8713,6 +8739,7 @@ async function verifyExecutableLaunch({
             verifyTopologyNodePopover,
             verifyTopologyCreateNode,
             verifyTopologyFocusNoop,
+            verifyTopologyFocusZoom,
             webviewWindowSize,
           }),
         }
@@ -8771,6 +8798,7 @@ async function verifyExecutableLaunch({
       requireTopologyNodePopover: verifyTopologyNodePopover,
       requireTopologyCreateNode: verifyTopologyCreateNode,
       requireTopologyFocusNoop: verifyTopologyFocusNoop,
+      requireTopologyFocusZoom: verifyTopologyFocusZoom,
     };
     const { payload, validationError: webviewError } = await waitForWebviewVerifyPayload(
       () => stdout,
@@ -8884,6 +8912,7 @@ async function main() {
     verifyTopologyNodePopover,
     verifyTopologyCreateNode,
     verifyTopologyFocusNoop,
+    verifyTopologyFocusZoom,
     requireAccessibilityText,
     printWindowDiagnostics,
     requireOwnerName,
@@ -8962,6 +8991,9 @@ async function main() {
   if (verifyTopologyFocusNoop && openApp) {
     fail("--verify-topology-focus-noop is only supported for direct executable launch; omit --open-app.");
   }
+  if (verifyTopologyFocusZoom && openApp) {
+    fail("--verify-topology-focus-zoom is only supported for direct executable launch; omit --open-app.");
+  }
   if (webviewWindowSize && openApp) {
     fail("--webview-window-size is only supported for direct executable launch; omit --open-app.");
   }
@@ -8985,6 +9017,9 @@ async function main() {
   }
   if (verifyTopologyFocusNoop && !normalizedWebviewRoute?.includes("/topology")) {
     fail("--verify-topology-focus-noop requires --require-webview-route pointing at a /topology route.");
+  }
+  if (verifyTopologyFocusZoom && !normalizedWebviewRoute?.includes("/topology")) {
+    fail("--verify-topology-focus-zoom requires --require-webview-route pointing at a /topology route.");
   }
   if (!fs.existsSync(resolvedAppPath)) {
     fail(`missing app bundle at ${resolvedAppPath}; run pnpm desktop:build:app first.`);
@@ -9061,6 +9096,7 @@ async function main() {
         verifyTopologyNodePopover,
         verifyTopologyCreateNode,
         verifyTopologyFocusNoop,
+        verifyTopologyFocusZoom,
         requireAccessibilityText,
         printWindowDiagnostics,
         requireOwnerName,

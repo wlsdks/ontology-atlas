@@ -776,6 +776,93 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("선택 focus 를 줌 인하면 주변 domain 레일을 waypoint pin 으로 낮춘다", async () => {
+    const graph = makeGraph();
+    graph.addNode("domain:d2", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: 420,
+      y: -260,
+      label: "Agent Partner",
+    });
+    graph.addNode("domain:d3", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: -380,
+      y: 280,
+      label: "Vault",
+    });
+    graph.addNode("element:e1", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: 150,
+      y: -120,
+      label: "Builder Command Strip",
+    });
+    graph.addEdge("domain:d1", "domain:d2", {
+      size: 1,
+      color: "#fff",
+      kind: "depends-on",
+      relationType: "depends-on",
+      relationQuality: "supported",
+    });
+    graph.addEdge("domain:d1", "domain:d3", {
+      size: 1,
+      color: "#fff",
+      kind: "depends-on",
+      relationType: "depends-on",
+      relationQuality: "supported",
+    });
+    graph.addEdge("domain:d1", "element:e1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={makeStubSigma(0.42)}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          { id: "domain:d2", title: "Agent Partner", kind: "domain", tier: 1 as const },
+          { id: "domain:d3", title: "Vault", kind: "domain", tier: 1 as const },
+          { id: "element:e1", title: "Builder Command Strip", kind: "element", tier: 3 as const },
+        ]}
+        selectedSlug="domain:d1"
+        selectedFocusCenterActive
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const selectedCard = screen.getByText("Views").closest("[data-skeleton-card]");
+    const leftRailCard = screen
+      .getByText("Agent Partner")
+      .closest<HTMLElement>("[data-skeleton-card]");
+    const rightRailCard = screen
+      .getByText("Vault")
+      .closest<HTMLElement>("[data-skeleton-card]");
+
+    expect(layer).toHaveAttribute("data-zoom-lens-active", "true");
+    expect(layer).toHaveAttribute("data-focus-detail-lens-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "camera-zoom-in");
+    expect(layer).toHaveAttribute(
+      "data-selected-focus-context-rail-zoom-contract",
+      "camera-zoom-in-demotes-domain-rail-to-waypoint-pins",
+    );
+    expect(selectedCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-critical");
+    expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail", "true");
+    expect(leftRailCard).toHaveAttribute(
+      "data-zoom-lens-card-contract",
+      "focus-context-domain-becomes-waypoint-pin-on-camera-zoom-in",
+    );
+    expect(leftRailCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+    expect(leftRailCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+    expect(rightRailCard).toHaveAttribute("data-selected-focus-context-rail", "true");
+    expect(rightRailCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+    expect(rightRailCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+  });
+
   it("줌 인하면 비선택 관계 chrome 을 배경 thread 로 낮춘다", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {

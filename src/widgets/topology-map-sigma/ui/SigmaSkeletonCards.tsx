@@ -3735,6 +3735,18 @@ export function SigmaSkeletonCards({
     container.dataset.focusDetailLensContract =
       'selected-focus-uses-kind-pins-for-noncritical-ego-context';
     container.dataset.focusDetailLensActive = focusDetailLensActive ? 'true' : 'false';
+    const selectedFocusContextRailZoomWaypointActive =
+      selectedFocusCenterActive &&
+      selectedRelationEdgeId === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget &&
+      zoomLensCardCompactionActive;
+    container.dataset.selectedFocusContextRailZoomContract =
+      selectedFocusContextRailZoomWaypointActive
+        ? 'camera-zoom-in-demotes-domain-rail-to-waypoint-pins'
+        : 'idle';
+    container.dataset.selectedFocusContextRailZoomActive =
+      selectedFocusContextRailZoomWaypointActive ? 'true' : 'false';
     container.dataset.overviewDensityLensContract =
       'zoom-out-overview-uses-kind-pins-for-noncritical-context-cards';
     container.dataset.overviewDensityLensThresholdRatio = String(
@@ -3876,12 +3888,15 @@ export function SigmaSkeletonCards({
         el.dataset.selectedFocusCompanionReadableTitle === 'true';
       const selectedFocusContextReadableTitle =
         el.dataset.selectedFocusContextReadableTitle === 'true';
+      const selectedFocusContextRailCard =
+        el.dataset.selectedFocusContextRail === 'true';
       const focusReadableTitleContext =
         selectedFocusCompanionReadableTitle || selectedFocusContextReadableTitle;
       const focusReadableContext =
         focusReadableTitleContext || selectedFocusEgoReadableContext;
-      const preserveFocusReadableOnCameraZoom =
-        zoomLensCardCompactionActive && selectedFocusContextReadableTitle;
+      const compactFocusContextRailOnCameraZoom =
+        zoomLensCardCompactionActive &&
+        (selectedFocusContextRailCard || selectedFocusContextReadableTitle);
       const compactSelectedRelationEndpointOnCameraZoom =
         zoomLensCardCompactionActive && el.dataset.selectedRelationEndpoint === 'true';
       const compactFocusCompanionOnCameraZoom =
@@ -3898,9 +3913,7 @@ export function SigmaSkeletonCards({
         el.dataset.pathRole === 'source' ||
         el.dataset.pathRole === 'target' ||
         el.dataset.healthRepairAuditTarget === 'true' ||
-        (zoomLensCardCompactionActive
-          ? preserveFocusReadableOnCameraZoom
-          : focusReadableContext) ||
+        (!zoomLensCardCompactionActive && focusReadableContext) ||
         (el.dataset.selectedRelationEndpoint === 'true' &&
           !compactSelectedRelationEndpointOnCameraZoom);
       if (
@@ -3920,6 +3933,7 @@ export function SigmaSkeletonCards({
         (el.dataset.zoomLensEligible === 'true' ||
           compactMapRootAnchorOnCameraZoom ||
           compactFocusCompanionOnCameraZoom ||
+          compactFocusContextRailOnCameraZoom ||
           compactSelectedRelationEndpointOnCameraZoom) &&
         !zoomLensCritical &&
         !(overviewDensityLensActive && el.dataset.tier === '1');
@@ -3931,11 +3945,13 @@ export function SigmaSkeletonCards({
           ? 'selected-relation-endpoint-becomes-role-mark-on-camera-zoom-in'
           : compactMapRootAnchorOnCameraZoom
             ? 'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
-          : el.dataset.zoomLensCardContract ===
-                'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in' ||
-              el.dataset.selectedFocusContextReadableTitle === 'true'
-            ? 'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
-            : 'noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in';
+            : compactFocusContextRailOnCameraZoom
+              ? 'focus-context-domain-becomes-waypoint-pin-on-camera-zoom-in'
+              : el.dataset.zoomLensCardContract ===
+                    'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in' ||
+                  el.dataset.selectedFocusContextReadableTitle === 'true'
+                ? 'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
+                : 'noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in';
         delete el.dataset.zoomLensFocusReadableCompaction;
         if (compactSelectedRelationEndpointOnCameraZoom) {
           el.dataset.selectedRelationEndpointZoomLens = 'role-mark';
@@ -3959,19 +3975,12 @@ export function SigmaSkeletonCards({
         el.dataset.zoomLensActiveCard = 'false';
         delete el.dataset.zoomLensPinProximityContract;
         delete el.dataset.zoomLensPinProximityRingToken;
-        if (preserveFocusReadableOnCameraZoom) {
-          el.dataset.zoomLensFocusReadableCompaction =
-            'camera-zoom-in-fixed-readable-card';
-        } else {
-          delete el.dataset.zoomLensFocusReadableCompaction;
-        }
+        delete el.dataset.zoomLensFocusReadableCompaction;
         delete el.dataset.selectedRelationEndpointZoomLens;
         if (focusReadableContext) {
           el.dataset.zoomLensCardContract = selectedFocusEgoReadableContext
             ? 'selected-focus-ego-neighbor-stays-readable-in-lens'
-            : preserveFocusReadableOnCameraZoom
-              ? 'focus-readable-card-stays-full-on-camera-zoom-in'
-              : 'critical-card-stays-full-on-camera-zoom-in';
+            : 'critical-card-stays-full-on-camera-zoom-in';
         }
         el.dataset.zoomLensPresentation = zoomLensCritical
           ? dragReadableRootCard
@@ -7776,7 +7785,7 @@ export function SigmaSkeletonCards({
               const compactRouteEndpointDeltaX = Math.abs(
                 (fromRect.left + fromRect.right) / 2 - (toRect.left + toRect.right) / 2,
               );
-              let compactRouteUsesPerpendicularLane =
+              const compactRouteUsesPerpendicularLane =
                 compactRouteEndpointDeltaX <
                 SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX;
               let compactSelectedRelationRouteLane = compactRouteUsesPerpendicularLane
@@ -8819,6 +8828,12 @@ export function SigmaSkeletonCards({
     !healthRepairTarget;
   const renderDragRelationCompactActive =
     renderZoomLensCardCompactionActive && activeHullMode === 'drag';
+  const selectedFocusContextRailZoomWaypointActive =
+    selectedFocusCenterActive &&
+    selectedRelationEdgeId === null &&
+    !pathWorkflowActive &&
+    !healthRepairTarget &&
+    renderZoomLensCardCompactionActive;
 
   return (
     <div
@@ -8987,6 +9002,14 @@ export function SigmaSkeletonCards({
         focusDetailConnectorExpressionActive ? 'true' : 'false'
       }
       data-focus-detail-connector-expression-count={focusDetailConnectorExpressionCount}
+      data-selected-focus-context-rail-zoom-contract={
+        selectedFocusContextRailZoomWaypointActive
+          ? 'camera-zoom-in-demotes-domain-rail-to-waypoint-pins'
+          : undefined
+      }
+      data-selected-focus-context-rail-zoom-active={
+        selectedFocusContextRailZoomWaypointActive ? 'true' : undefined
+      }
       data-zoom-lens-relation-chrome-contract="camera-zoom-in-demotes-nonselected-relation-chrome"
       data-zoom-lens-relation-chrome-active="false"
       data-zoom-lens-relation-thread-count="0"
@@ -10124,7 +10147,7 @@ export function SigmaSkeletonCards({
           pathEndpoint ||
           healthRepairAuditTarget ||
           selectedFocusCompanion ||
-          selectedFocusContextDomain;
+          (selectedFocusContextDomain && !renderZoomLensCardCompactionActive);
         const zoomLensContextAnchorCard = !zoomLensCriticalCard && card.tier >= 1;
         const zoomLensFocusContextRootCard =
           !zoomLensCriticalCard && selectedSlug !== null && card.tier === 0;
@@ -10221,6 +10244,8 @@ export function SigmaSkeletonCards({
             data-zoom-lens-card-contract={
               dragReadableRootCard
                 ? 'drag-root-stays-readable-during-overview-density'
+                : selectedFocusContextDomain && renderZoomLensCardCompactionActive
+                  ? 'focus-context-domain-becomes-waypoint-pin-on-camera-zoom-in'
                 : zoomLensSelectedRelationEndpointCard
                 ? 'selected-relation-endpoint-becomes-role-mark-on-camera-zoom-in'
                 : zoomLensEligible
