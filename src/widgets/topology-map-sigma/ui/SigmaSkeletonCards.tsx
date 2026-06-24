@@ -10095,7 +10095,6 @@ export function SigmaSkeletonCards({
             ? `${kindDescription} · ${card.title} · ${selectedRelationSummaryText}`
             : undefined;
         const selectedFocusFixedGeography =
-          selected &&
           selectedFocusCenterActive &&
           selectedRelationEdgeId === null &&
           !pathWorkflowActive &&
@@ -10461,6 +10460,13 @@ export function SigmaSkeletonCards({
                 );
                 return;
               }
+              if (event.currentTarget.dataset.selectedFocusContextRail === 'true') {
+                containerRef.current?.setAttribute(
+                  'data-selected-focus-context-rail-drag-attempt',
+                  'ignored',
+                );
+                return;
+              }
               if (event.currentTarget.dataset.selectedFocusFixedGeography === 'true') {
                 containerRef.current?.setAttribute(
                   'data-selected-focus-fixed-geography-drag-attempt',
@@ -10471,13 +10477,6 @@ export function SigmaSkeletonCards({
               if (event.currentTarget.dataset.selectedMapFixedGeography === 'true') {
                 containerRef.current?.setAttribute(
                   'data-selected-map-fixed-geography-drag-attempt',
-                  'ignored',
-                );
-                return;
-              }
-              if (event.currentTarget.dataset.selectedFocusContextRail === 'true') {
-                containerRef.current?.setAttribute(
-                  'data-selected-focus-context-rail-drag-attempt',
                   'ignored',
                 );
                 return;

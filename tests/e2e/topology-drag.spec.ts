@@ -502,6 +502,39 @@ test("Relief focus drag keeps selected geography fixed instead of reshaping the 
     Math.hypot(released.x - before.x, released.y - before.y),
     "selected focus drag should not rewrite the deterministic focus geography",
   ).toBeLessThan(12);
+
+  const focusPin = page.locator(
+    '[data-skeleton-card][data-zoom-lens-presentation="lens-pin"]:not([data-surface-hidden="true"])',
+  ).first();
+  await expect(focusPin).toBeVisible();
+  await expect(focusPin).toHaveAttribute("data-selected-focus-fixed-geography", "true");
+  await expect(focusPin).toHaveAttribute("data-drag-hit-disabled", "true");
+  await expect(focusPin).toHaveCSS("cursor", "default");
+  const pinBefore = await rectOf(focusPin);
+  await page.mouse.move(
+    pinBefore.x + pinBefore.width / 2,
+    pinBefore.y + pinBefore.height / 2,
+  );
+  await page.mouse.down();
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-fixed-geography-drag-attempt",
+    "ignored",
+  );
+  await page.mouse.move(
+    pinBefore.x + pinBefore.width / 2 + 160,
+    pinBefore.y + pinBefore.height / 2 + 96,
+    { steps: 10 },
+  );
+  await expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
+  await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+  await expect(focusPin).toHaveAttribute("data-dragging-active", "false");
+  await expect(page.locator('[data-drag-tension-connector="true"]')).toHaveCount(0);
+  await page.mouse.up();
+  const pinAfter = await rectOf(focusPin);
+  expect(
+    Math.hypot(pinAfter.x - pinBefore.x, pinAfter.y - pinBefore.y),
+    "selected focus lens pins should not become drag handles",
+  ).toBeLessThan(12);
 });
 
 test("Relief map project drag stays responsive for large connected clusters", async ({

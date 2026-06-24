@@ -5320,6 +5320,14 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-domain-count") || "0"),
                                   topologyOverviewDensityFixedGeographyPinCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-overview-density-fixed-geography-pin-count") || "0"),
+                                  topologySelectedFocusFixedGeographyContract:
+                                    skeletonCardsLayer?.getAttribute("data-selected-focus-fixed-geography-contract") || "",
+                                  topologySelectedFocusFixedGeographyDragContract:
+                                    skeletonCardsLayer?.getAttribute("data-selected-focus-fixed-geography-drag-contract") || "",
+                                  topologySelectedFocusFixedGeographyDragLocked:
+                                    skeletonCardsLayer?.getAttribute("data-selected-focus-fixed-geography-drag-locked") === "true",
+                                  topologySelectedFocusFixedGeographyDragAttempt:
+                                    skeletonCardsLayer?.getAttribute("data-selected-focus-fixed-geography-drag-attempt") || "",
                                   topologySelectedMapFixedGeographyContract:
                                     skeletonCardsLayer?.getAttribute("data-selected-map-fixed-geography-contract") || "",
                                   topologySelectedMapFixedGeographyDragContract:
@@ -5535,6 +5543,8 @@ mod tests {
         assert!(source.contains("topologyZoomLensPinMinOpacity"));
         assert!(source.contains("topologyOverviewDensityFixedGeographyContract"));
         assert!(source.contains("topologyOverviewDensityFixedGeographyDragContract"));
+        assert!(source.contains("topologySelectedFocusFixedGeographyContract"));
+        assert!(source.contains("topologySelectedFocusFixedGeographyDragContract"));
         assert!(source.contains("topologySelectedMapFixedGeographyContract"));
         assert!(source.contains("topologySelectedMapFixedGeographyDragContract"));
         assert!(source.contains("topologySupportChromeZoomLensActive"));
