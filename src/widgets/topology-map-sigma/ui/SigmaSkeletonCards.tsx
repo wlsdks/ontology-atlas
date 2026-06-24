@@ -6352,6 +6352,36 @@ export function SigmaSkeletonCards({
       residualOverlapRects,
       fixedSurfaceRects,
     );
+    const selectedFocusContextRailEls = selectedFocusContextRailSlugs
+      .map((slug) => elBySlug.get(slug) ?? null)
+      .filter((el): el is HTMLElement => el !== null);
+    const selectedFocusContextRailVisibleCount = selectedFocusContextRailEls.filter(
+      (el) => visibleCardRectCache.get(el)?.visible === true,
+    ).length;
+    const selectedFocusContextRailHiddenCount =
+      selectedFocusContextRailEls.length - selectedFocusContextRailVisibleCount;
+    const selectedFocusContextRailHiddenReasons = Array.from(
+      new Set(
+        selectedFocusContextRailEls
+          .filter((el) => visibleCardRectCache.get(el)?.visible !== true)
+          .map(
+            (el) =>
+              el.dataset.surfaceHiddenReason ||
+              el.dataset.dragReactiveContextVisibility ||
+              'hidden',
+          ),
+      ),
+    );
+    container.dataset.selectedFocusContextRailVisibleContract =
+      'focus-domain-context-rail-reports-visible-and-hidden-cards';
+    container.dataset.selectedFocusContextRailVisibleCount = String(
+      selectedFocusContextRailVisibleCount,
+    );
+    container.dataset.selectedFocusContextRailHiddenCount = String(
+      selectedFocusContextRailHiddenCount,
+    );
+    container.dataset.selectedFocusContextRailHiddenReason =
+      selectedFocusContextRailHiddenReasons.join('|') || 'none';
     container.dataset.residualOverlapClearContract =
       'visibility-cache-proves-selected-surfaces-clear';
     container.dataset.residualOverlapReadPolicy = 'reuse-visible-card-rect-cache';

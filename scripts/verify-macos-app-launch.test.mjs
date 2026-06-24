@@ -1230,6 +1230,12 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
           "focus-detail-lens-demotes-noncritical-connectors",
         topologyFocusDetailConnectorExpressionActive: true,
         topologyFocusDetailConnectorExpressionCount: 3,
+        topologySelectedFocusContextRailVisibleContract:
+          "focus-domain-context-rail-reports-visible-and-hidden-cards",
+        topologySelectedFocusContextRailCount: 5,
+        topologySelectedFocusContextRailVisibleCount: 1,
+        topologySelectedFocusContextRailHiddenCount: 4,
+        topologySelectedFocusContextRailHiddenReason: "layout-surface-collision",
         topologyOverviewDensityLensContract:
           "zoom-out-overview-uses-kind-pins-for-noncritical-context-cards",
         topologyOverviewDensityLensThresholdRatio: 1.2,
@@ -1500,6 +1506,13 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
         contract: "focus-detail-lens-demotes-noncritical-connectors",
         active: true,
         count: 3,
+      },
+      contextRail: {
+        contract: "focus-domain-context-rail-reports-visible-and-hidden-cards",
+        totalCount: 5,
+        visibleCount: 1,
+        hiddenCount: 4,
+        hiddenReason: "layout-surface-collision",
       },
     },
     overviewDensity: {

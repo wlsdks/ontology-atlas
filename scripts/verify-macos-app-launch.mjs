@@ -8107,6 +8107,24 @@ export function buildWebviewEvidencePayload(
               "topologyFocusDetailConnectorExpressionCount",
             ),
           },
+          contextRail: {
+            contract:
+              markers.topologySelectedFocusContextRailVisibleContract ?? null,
+            totalCount: markerNumber(
+              markers,
+              "topologySelectedFocusContextRailCount",
+            ),
+            visibleCount: markerNumber(
+              markers,
+              "topologySelectedFocusContextRailVisibleCount",
+            ),
+            hiddenCount: markerNumber(
+              markers,
+              "topologySelectedFocusContextRailHiddenCount",
+            ),
+            hiddenReason:
+              markers.topologySelectedFocusContextRailHiddenReason ?? null,
+          },
         },
         overviewDensity: {
           contract: markers.topologyOverviewDensityLensContract ?? null,

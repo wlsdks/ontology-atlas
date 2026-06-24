@@ -1334,6 +1334,27 @@ test("Relief focus card wheel zoom keeps readable focus companions as full cards
 
   const layer = page.getByTestId("sigma-skeleton-cards");
   await expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-context-rail-visible-contract",
+    "focus-domain-context-rail-reports-visible-and-hidden-cards",
+  );
+  const focusRailVisibility = await layer.evaluate((el) => ({
+    total: Number(el.getAttribute("data-selected-focus-context-rail-count") || "0"),
+    visible: Number(
+      el.getAttribute("data-selected-focus-context-rail-visible-count") || "0",
+    ),
+    hidden: Number(
+      el.getAttribute("data-selected-focus-context-rail-hidden-count") || "0",
+    ),
+    reason: el.getAttribute("data-selected-focus-context-rail-hidden-reason"),
+  }));
+  expect(focusRailVisibility.total).toBe(5);
+  expect(focusRailVisibility.visible).toBeGreaterThanOrEqual(1);
+  expect(focusRailVisibility.hidden).toBeGreaterThanOrEqual(1);
+  expect(focusRailVisibility.visible + focusRailVisibility.hidden).toBe(
+    focusRailVisibility.total,
+  );
+  expect(focusRailVisibility.reason).toBe("layout-surface-collision");
 
   const selectedCard = page.locator('[data-skeleton-card][data-slug="domain:views"]');
   const selectedRect = await rectOf(selectedCard);

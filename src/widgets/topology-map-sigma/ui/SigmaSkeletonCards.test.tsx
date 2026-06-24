@@ -702,6 +702,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         );
         expect(layer).toHaveAttribute("data-selected-focus-context-rail-active", "true");
         expect(layer).toHaveAttribute("data-selected-focus-context-rail-count", "2");
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-visible-contract",
+          "focus-domain-context-rail-reports-visible-and-hidden-cards",
+        );
+        expect(layer).toHaveAttribute("data-selected-focus-context-rail-visible-count", "0");
+        expect(layer).toHaveAttribute("data-selected-focus-context-rail-hidden-count", "2");
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-hidden-reason",
+          "layout-surface-collision",
+        );
         expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail", "true");
         expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail-side", "left");
         expect(leftRailCard).toHaveAttribute(

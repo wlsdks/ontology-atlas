@@ -5284,6 +5284,16 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-focus-detail-connector-expression-active") === "true",
                                   topologyFocusDetailConnectorExpressionCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-focus-detail-connector-expression-count") || "0"),
+                                  topologySelectedFocusContextRailVisibleContract:
+                                    skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-visible-contract") || "",
+                                  topologySelectedFocusContextRailCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-count") || "0"),
+                                  topologySelectedFocusContextRailVisibleCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-visible-count") || "0"),
+                                  topologySelectedFocusContextRailHiddenCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-hidden-count") || "0"),
+                                  topologySelectedFocusContextRailHiddenReason:
+                                    skeletonCardsLayer?.getAttribute("data-selected-focus-context-rail-hidden-reason") || "",
                                   topologyOverviewDensityLensContract:
                                     skeletonCardsLayer?.getAttribute("data-overview-density-lens-contract") || "",
                                   topologyOverviewDensityLensThresholdRatio:
@@ -5509,6 +5519,7 @@ mod tests {
         assert!(source.contains("topologyZoomLensPresentationSource"));
         assert!(source.contains("topologyZoomLensViewportVisibleContract"));
         assert!(source.contains("topologyZoomLensFocusEgoReadableContract"));
+        assert!(source.contains("topologySelectedFocusContextRailVisibleContract"));
         assert!(source.contains("topologyZoomLensEmptyViewportFallbackContract"));
         assert!(source.contains("data-zoom-lens-empty-viewport-fallback-active"));
         assert!(source.contains("topologyZoomLensRelationChromeContract"));
