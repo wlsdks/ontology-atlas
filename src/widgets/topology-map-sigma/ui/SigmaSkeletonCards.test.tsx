@@ -5162,6 +5162,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "selected-relation-keeps-context-as-kind-pins",
         );
         expect(layer).toHaveAttribute("data-selected-relation-context-pin-count", "1");
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-context-pin-attention-contract",
+          "selected-relation-context-pins-stay-visible-but-quieter-than-endpoints",
+        );
+        expect(layer).toHaveAttribute("data-selected-relation-context-pin-opacity", "0.42");
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-context-pin-opacity-token",
+          "--topology-selected-relation-context-pin-opacity",
+        );
         expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint", "true");
         expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint-role", "source");
         expect(sourceCard).toHaveAttribute(
@@ -5312,6 +5321,24 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-zoom-lens-card-contract",
           "selected-relation-context-anchor-becomes-kind-pin",
         );
+        expect(anchorCard).toHaveAttribute(
+          "data-zoom-lens-pin-opacity-contract",
+          "selected-relation-context-pins-use-quiet-orientation-opacity",
+        );
+        expect(anchorCard).toHaveAttribute("data-zoom-lens-pin-min-opacity", "0.42");
+        expect(anchorCard).toHaveAttribute(
+          "data-selected-relation-context-pin-opacity",
+          "0.42",
+        );
+        expect(anchorCard).toHaveAttribute(
+          "data-selected-relation-context-pin-opacity-token",
+          "--topology-selected-relation-context-pin-opacity",
+        );
+        expect(anchorCard).toHaveAttribute(
+          "data-selected-relation-context-pin-attention",
+          "quiet-orientation-anchor",
+        );
+        expect(anchorCard).toHaveStyle({ opacity: "0.42" });
         expect(anchorCard).toHaveStyle({ pointerEvents: "none" });
         expect(lowerPriorityCard).toHaveAttribute(
           "data-dim-opacity-role",

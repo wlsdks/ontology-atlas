@@ -4958,6 +4958,18 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
     "selected-relation-keeps-context-as-kind-pins",
   );
   await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-context-pin-attention-contract",
+    "selected-relation-context-pins-stay-visible-but-quieter-than-endpoints",
+  );
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-context-pin-opacity",
+    "0.42",
+  );
+  await expect(skeletonCards).toHaveAttribute(
+    "data-selected-relation-context-pin-opacity-token",
+    "--topology-selected-relation-context-pin-opacity",
+  );
+  await expect(skeletonCards).toHaveAttribute(
     "data-selected-relation-lower-priority-visible-dimmed-count",
     "0",
   );
@@ -4968,8 +4980,14 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
         .filter((card) => card.getAttribute("data-dim-opacity-role") === "orientation-anchor")
         .map((card) => ({
           active: card.getAttribute("data-zoom-lens-active-card") || "",
+          attention: card.getAttribute("data-selected-relation-context-pin-attention") || "",
           contract: card.getAttribute("data-zoom-lens-card-contract") || "",
           height: card.getBoundingClientRect().height,
+          opacity: window.getComputedStyle(card).opacity,
+          opacityContract: card.getAttribute("data-zoom-lens-pin-opacity-contract") || "",
+          opacityStyle: (card as HTMLElement).style.opacity,
+          opacityToken:
+            card.getAttribute("data-selected-relation-context-pin-opacity-token") || "",
           presentation: card.getAttribute("data-zoom-lens-presentation") || "",
           role: card.getAttribute("data-dim-opacity-role") || "",
           width: card.getBoundingClientRect().width,
@@ -4988,8 +5006,14 @@ test("Relief selected relation keeps both endpoint cards visible in the installe
     selectedRelationContextPins.every(
       (card) =>
         card.active === "true" &&
+        card.attention === "quiet-orientation-anchor" &&
         card.presentation === "relation-context-pin" &&
         card.contract === "selected-relation-context-anchor-becomes-kind-pin" &&
+        (card.opacity === "0.42" || card.opacity === "1") &&
+        card.opacityStyle === "0.42" &&
+        card.opacityContract ===
+          "selected-relation-context-pins-use-quiet-orientation-opacity" &&
+        card.opacityToken === "--topology-selected-relation-context-pin-opacity" &&
         card.width <= 32 &&
         card.height <= 32,
     ),

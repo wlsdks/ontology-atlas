@@ -224,6 +224,7 @@ const TIER_SURFACE_ALPHA: Record<
  */
 const DIM_ANCHOR_OPACITY = '0.26';
 const DIM_CHIP_OPACITY = '0.08';
+const SELECTED_RELATION_CONTEXT_PIN_OPACITY = '0.42';
 const SELECTED_FOCUS_CONTEXT_RAIL_OPACITY = '1';
 const DRAG_REACTIVE_CONTEXT_OPACITY = '0.42';
 const DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX = 24;
@@ -236,6 +237,8 @@ const DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY = 0.88;
 const DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH = 2.1;
 const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
 const DIM_CHIP_OPACITY_TOKEN = '--topology-map-dim-context-opacity';
+const SELECTED_RELATION_CONTEXT_PIN_OPACITY_TOKEN =
+  '--topology-selected-relation-context-pin-opacity';
 const SELECTED_FOCUS_CONTEXT_RAIL_OPACITY_TOKEN =
   '--topology-selected-focus-context-rail-opacity';
 const DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN =
@@ -5559,6 +5562,12 @@ export function SigmaSkeletonCards({
             el.dataset.zoomLensPresentation = 'relation-context-pin';
             el.dataset.zoomLensCardContract =
               'selected-relation-context-anchor-becomes-kind-pin';
+            el.dataset.selectedRelationContextPinOpacity =
+              SELECTED_RELATION_CONTEXT_PIN_OPACITY;
+            el.dataset.selectedRelationContextPinOpacityToken =
+              SELECTED_RELATION_CONTEXT_PIN_OPACITY_TOKEN;
+            el.dataset.selectedRelationContextPinAttention =
+              'quiet-orientation-anchor';
           } else if (el.dataset.dimOpacityRole === 'context-silhouette') {
             selectedRelationLowerPriorityVisibleDimmedCount += 1;
           }
@@ -5566,17 +5575,31 @@ export function SigmaSkeletonCards({
         delete el.dataset.surfaceHidden;
         delete el.dataset.surfaceHiddenReason;
         const zoomLensActivePin = el.dataset.zoomLensActiveCard === 'true';
+        const selectedRelationContextPin =
+          el.dataset.zoomLensPresentation === 'relation-context-pin';
         const resolvedDimOpacity =
-          zoomLensActivePin && Number(dimOpacity) < Number(ZOOM_LENS_PIN_MIN_OPACITY)
+          selectedRelationContextPin
+            ? SELECTED_RELATION_CONTEXT_PIN_OPACITY
+            : zoomLensActivePin && Number(dimOpacity) < Number(ZOOM_LENS_PIN_MIN_OPACITY)
             ? ZOOM_LENS_PIN_MIN_OPACITY
             : dimOpacity;
-        if (zoomLensActivePin) {
+        if (selectedRelationContextPin) {
+          el.dataset.zoomLensPinOpacityContract =
+            'selected-relation-context-pins-use-quiet-orientation-opacity';
+          el.dataset.zoomLensPinMinOpacity = SELECTED_RELATION_CONTEXT_PIN_OPACITY;
+        } else if (zoomLensActivePin) {
           el.dataset.zoomLensPinOpacityContract =
             'zoom-lens-pins-override-dim-opacity-floor';
           el.dataset.zoomLensPinMinOpacity = ZOOM_LENS_PIN_MIN_OPACITY;
+          delete el.dataset.selectedRelationContextPinOpacity;
+          delete el.dataset.selectedRelationContextPinOpacityToken;
+          delete el.dataset.selectedRelationContextPinAttention;
         } else {
           delete el.dataset.zoomLensPinOpacityContract;
           delete el.dataset.zoomLensPinMinOpacity;
+          delete el.dataset.selectedRelationContextPinOpacity;
+          delete el.dataset.selectedRelationContextPinOpacityToken;
+          delete el.dataset.selectedRelationContextPinAttention;
         }
         setSkeletonStyleValue(
           el,
@@ -5658,6 +5681,12 @@ export function SigmaSkeletonCards({
     container.dataset.selectedRelationContextPinCount = String(
       selectedRelationContextPinCount,
     );
+    container.dataset.selectedRelationContextPinAttentionContract =
+      'selected-relation-context-pins-stay-visible-but-quieter-than-endpoints';
+    container.dataset.selectedRelationContextPinOpacity =
+      SELECTED_RELATION_CONTEXT_PIN_OPACITY;
+    container.dataset.selectedRelationContextPinOpacityToken =
+      SELECTED_RELATION_CONTEXT_PIN_OPACITY_TOKEN;
     if (selectedRelationContextPinCount > 0) {
       container.dataset.zoomLensPresentationActive = 'true';
       container.dataset.zoomLensPresentationSource = 'selected-relation-context';
@@ -6875,6 +6904,12 @@ export function SigmaSkeletonCards({
     container.dataset.selectedRelationVisibleOrientationAnchorCount = String(
       finalSelectedRelationContextPinCount,
     );
+    container.dataset.selectedRelationContextPinAttentionContract =
+      'selected-relation-context-pins-stay-visible-but-quieter-than-endpoints';
+    container.dataset.selectedRelationContextPinOpacity =
+      SELECTED_RELATION_CONTEXT_PIN_OPACITY;
+    container.dataset.selectedRelationContextPinOpacityToken =
+      SELECTED_RELATION_CONTEXT_PIN_OPACITY_TOKEN;
     container.dataset.dragReactiveMotionMaxOffsetPx = String(
       DRAG_REACTIVE_MOTION_MAX_OFFSET_PX,
     );
