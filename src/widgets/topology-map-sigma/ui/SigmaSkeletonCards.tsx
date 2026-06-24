@@ -224,6 +224,7 @@ const TIER_SURFACE_ALPHA: Record<
  */
 const DIM_ANCHOR_OPACITY = '0.26';
 const DIM_CHIP_OPACITY = '0.08';
+const SELECTED_FOCUS_CONTEXT_RAIL_OPACITY = '1';
 const DRAG_REACTIVE_CONTEXT_OPACITY = '0.42';
 const DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX = 24;
 const DRAG_REACTIVE_MOTION_BASE_RATIO = 0.12;
@@ -235,6 +236,8 @@ const DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY = 0.88;
 const DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH = 2.1;
 const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
 const DIM_CHIP_OPACITY_TOKEN = '--topology-map-dim-context-opacity';
+const SELECTED_FOCUS_CONTEXT_RAIL_OPACITY_TOKEN =
+  '--topology-selected-focus-context-rail-opacity';
 const DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN =
   '--topology-card-drag-reactive-context-opacity';
 const DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN = '--topology-card-border-selected';
@@ -2160,6 +2163,12 @@ function suppressVisibleCardOverlaps(
   isProtectedCard: (el: HTMLElement) => boolean = () => false,
   options: {
     containerRect?: DOMRect;
+    fixedSurfaceRects?: Array<{
+      left: number;
+      top: number;
+      right: number;
+      bottom: number;
+    }>;
     onShift?: (
       el: HTMLElement,
       rect: { left: number; top: number; right: number; bottom: number },
@@ -2184,7 +2193,9 @@ function suppressVisibleCardOverlaps(
       if (tierA !== tierB) return tierA - tierB;
       return Number(a.el.dataset.layoutY ?? '0') - Number(b.el.dataset.layoutY ?? '0');
     });
-  const accepted: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+  const accepted: Array<{ left: number; top: number; right: number; bottom: number }> = [
+    ...(options.fixedSurfaceRects ?? []),
+  ];
   let hidden = 0;
   for (const item of visible) {
     delete item.el.dataset.supportRailOverlapHidden;
@@ -4355,6 +4366,12 @@ export function SigmaSkeletonCards({
     container.dataset.selectedFocusContextRailCount = String(
       selectedFocusContextRailSlugs.length,
     );
+    container.dataset.selectedFocusContextRailInteractionContract =
+      'fixed-focus-domain-anchors-remain-clickable-waypoints';
+    container.dataset.selectedFocusContextRailOpacity =
+      SELECTED_FOCUS_CONTEXT_RAIL_OPACITY;
+    container.dataset.selectedFocusContextRailOpacityToken =
+      SELECTED_FOCUS_CONTEXT_RAIL_OPACITY_TOKEN;
     const selectedRelationEndpointRoles = new Map<string, 'source' | 'target'>();
     let selectedRelationEndpointSource: string | null = null;
     let selectedRelationEndpointTarget: string | null = null;
@@ -5325,21 +5342,28 @@ export function SigmaSkeletonCards({
         }
         hideSkeletonCard(el, domWriteStats);
       } else {
+        const focusRailCard = el.dataset.selectedFocusContextRail === 'true';
         const dimOpacity =
           dragReactiveContext
             ? DRAG_REACTIVE_CONTEXT_OPACITY
+            : focusRailCard
+            ? SELECTED_FOCUS_CONTEXT_RAIL_OPACITY
             : el.dataset.tier === '0' || el.dataset.tier === '1'
             ? DIM_ANCHOR_OPACITY
             : DIM_CHIP_OPACITY;
         el.dataset.dimOpacityRole =
           dragReactiveContext
             ? 'drag-reactive-context'
+            : focusRailCard
+            ? 'selected-focus-context-rail'
             : el.dataset.tier === '0' || el.dataset.tier === '1'
             ? 'orientation-anchor'
             : 'context-silhouette';
         el.dataset.dimOpacityToken =
           el.dataset.dimOpacityRole === 'drag-reactive-context'
             ? DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN
+            : el.dataset.dimOpacityRole === 'selected-focus-context-rail'
+            ? SELECTED_FOCUS_CONTEXT_RAIL_OPACITY_TOKEN
             : el.dataset.dimOpacityRole === 'orientation-anchor'
             ? DIM_ANCHOR_OPACITY_TOKEN
             : DIM_CHIP_OPACITY_TOKEN;
@@ -5398,7 +5422,12 @@ export function SigmaSkeletonCards({
           domWriteStats,
         );
         setSkeletonStyleValue(el, 'visibility', 'visible', domWriteStats);
-        setSkeletonStyleValue(el, 'pointerEvents', lockedForDrag ? '' : 'none', domWriteStats);
+        setSkeletonStyleValue(
+          el,
+          'pointerEvents',
+          lockedForDrag || focusRailCard ? '' : 'none',
+          domWriteStats,
+        );
         if (rect) acceptedDimRects.push(rect);
       }
     }
@@ -6024,6 +6053,9 @@ export function SigmaSkeletonCards({
               isSelectedRelationEndpointCard,
               {
                 containerRect,
+                fixedSurfaceRects: selectedFocusRailSurfaceMounted
+                  ? fixedSurfaceRects
+                  : [],
                 onShift: (el, rect) => {
                   visibleCardRectCache.set(el, { rect, visible: true });
                   cardPlacementFrameRectCache.set(el, rect);
@@ -9866,6 +9898,13 @@ export function SigmaSkeletonCards({
                 );
                 return;
               }
+              if (event.currentTarget.dataset.selectedFocusContextRail === 'true') {
+                containerRef.current?.setAttribute(
+                  'data-selected-focus-context-rail-drag-attempt',
+                  'ignored',
+                );
+                return;
+              }
               clearActiveDragCluster();
               const rootSlug = dockParentNodeId ?? nodeId;
               if (!graph.hasNode(rootSlug)) return;
@@ -10104,7 +10143,7 @@ export function SigmaSkeletonCards({
                   : undefined,
               } as React.CSSProperties
             }
-            className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[overview-density-fixed-geography=true]:!cursor-default data-[zoom-lens-active-card=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!justify-center data-[zoom-lens-active-card=true]:!gap-0 data-[zoom-lens-active-card=true]:!overflow-hidden data-[zoom-lens-active-card=true]:!rounded-full data-[zoom-lens-active-card=true]:!p-0 data-[zoom-lens-active-card=true]:shadow-none data-[overview-collision-pin=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!justify-center data-[overview-collision-pin=true]:!gap-0 data-[overview-collision-pin=true]:!overflow-hidden data-[overview-collision-pin=true]:!rounded-full data-[overview-collision-pin=true]:!p-0 data-[overview-collision-pin=true]:shadow-none data-[zoom-lens-active-card=true]:data-[zoom-lens-pin-proximity=critical-neighbor]:!shadow-[0_0_0_2px_var(--topology-zoom-lens-pin-proximity-ring),0_0_18px_var(--topology-zoom-lens-pin-proximity-glow)] hover:border-[color:var(--card-border-hover)] active:cursor-grabbing data-[overview-density-fixed-geography=true]:active:!cursor-default motion-reduce:transition-none ${
+            className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[overview-density-fixed-geography=true]:!cursor-default data-[selected-focus-context-rail=true]:!cursor-pointer data-[zoom-lens-active-card=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!justify-center data-[zoom-lens-active-card=true]:!gap-0 data-[zoom-lens-active-card=true]:!overflow-hidden data-[zoom-lens-active-card=true]:!rounded-full data-[zoom-lens-active-card=true]:!p-0 data-[zoom-lens-active-card=true]:shadow-none data-[overview-collision-pin=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!justify-center data-[overview-collision-pin=true]:!gap-0 data-[overview-collision-pin=true]:!overflow-hidden data-[overview-collision-pin=true]:!rounded-full data-[overview-collision-pin=true]:!p-0 data-[overview-collision-pin=true]:shadow-none data-[zoom-lens-active-card=true]:data-[zoom-lens-pin-proximity=critical-neighbor]:!shadow-[0_0_0_2px_var(--topology-zoom-lens-pin-proximity-ring),0_0_18px_var(--topology-zoom-lens-pin-proximity-glow)] hover:border-[color:var(--card-border-hover)] active:cursor-grabbing data-[overview-density-fixed-geography=true]:active:!cursor-default data-[selected-focus-context-rail=true]:active:!cursor-pointer motion-reduce:transition-none ${
               selected
                 ? 'shadow-none outline-none'
                 : ''

@@ -708,6 +708,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-focus-context-rail-visible-contract",
           "focus-domain-context-rail-reports-visible-and-hidden-cards",
         );
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-interaction-contract",
+          "fixed-focus-domain-anchors-remain-clickable-waypoints",
+        );
+        expect(layer).toHaveAttribute("data-selected-focus-context-rail-opacity", "1");
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-opacity-token",
+          "--topology-selected-focus-context-rail-opacity",
+        );
         expect(layer).toHaveAttribute("data-selected-focus-context-rail-visible-count", "2");
         expect(layer).toHaveAttribute("data-selected-focus-context-rail-hidden-count", "0");
         expect(layer).toHaveAttribute(
@@ -724,6 +733,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-selected-focus-context-rail-collision-resolve",
           "safe-shift",
         );
+        expect(leftRailCard).toHaveAttribute(
+          "data-dim-opacity-role",
+          "selected-focus-context-rail",
+        );
+        expect(leftRailCard).toHaveAttribute(
+          "data-dim-opacity-token",
+          "--topology-selected-focus-context-rail-opacity",
+        );
+        expect(leftRailCard).toHaveStyle({ opacity: "1" });
+        expect(leftRailCard?.style.pointerEvents).toBe("");
         expect(leftRailCard?.style.transform).toContain(
           "translate(-50%, -50%) translate3d(200px, 259.2px, 0)",
         );

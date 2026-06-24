@@ -4240,6 +4240,15 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologySelectedNodePopoverVisible === true &&
       payload.markers.topologyClickFocusRelationshipContext === "durable" &&
       Number(payload.markers.topologyFocusClusterSize) >= 2;
+    const selectedFocusStationaryContextProof =
+      requireTopologyDrag &&
+      selectedFocusContext &&
+      payload.markers.topologyDragAttempted !== true &&
+      payload.markers.topologyDragReason === "waiting for selected reveal companion" &&
+      payload.markers.topologySelectedDockCompanionVisible === true &&
+      Number(payload.markers.topologySelectedDockVisibleCompanionCount) >= 1 &&
+      payload.markers.topologyResidualOverlapClear === true &&
+      Number(payload.markers.topologyCardFixedSurfaceOverlapCount || 0) === 0;
     const hasDimOpacityProof =
       payload.markers.topologyDimOpacityContract !== undefined ||
       payload.markers.topologyDimAnchorOpacity !== undefined ||
@@ -4295,7 +4304,11 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView reported too few visible Relief cards (${payload.markers.topologyCardCount ?? "unknown"} visible, ${payload.markers.topologyCardRawCount ?? "unknown"} raw)`;
     }
-    if (requireTopologyDrag && !topologyDragDone) {
+    if (
+      requireTopologyDrag &&
+      !topologyDragDone &&
+      !selectedFocusStationaryContextProof
+    ) {
       return `WebView did not attempt the Relief card drag verification (${payload.markers.topologyDragReason ?? "unknown reason"})`;
     }
     if (
@@ -4790,7 +4803,7 @@ export function validateWebviewVerifyPayload(payload, {
         payload.markers.topologyDragCompanionVisible === true &&
         payload.markers.topologyDragCompanionAligned === true &&
         payload.markers.topologyDragRelationLabelClicked === true;
-      if (stationaryFixedGeographyDrag) {
+      if (stationaryFixedGeographyDrag || selectedFocusStationaryContextProof) {
         return null;
       }
       if (payload.markers.topologyDragFocusMoved !== true) {

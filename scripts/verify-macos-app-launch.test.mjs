@@ -3587,6 +3587,34 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.equal(validateWebviewVerifyPayload(selectedNodeFocusPayload()), null);
   assert.equal(
     validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyDragAttempted: false,
+        topologyDragReason: "waiting for selected reveal companion",
+        topologyDragFocusMoved: false,
+        topologyDragFocusDelta: null,
+        topologyDragCompanionVisible: false,
+        topologyDragCompanionAligned: false,
+        topologyDragCompanionDelta: null,
+        topologyDragCompanionSlug: "",
+        topologyDragCompanionCount: 0,
+        topologyDragVisibleCompanionCount: 0,
+        topologyDragAlignedCompanionCount: 0,
+        topologySelectedDockCompanionCount: 4,
+        topologySelectedDockVisibleCompanionCount: 1,
+        topologySelectedDockCompanionVisible: true,
+        topologyResidualOverlapClear: true,
+        topologySupportRailOverlapActive: true,
+        topologyCardFixedSurfaceOverlapCount: 0,
+      }),
+      {
+        expectedPath: "/en/topology/?p=domain%3Aviews",
+        requireTopologyDrag: true,
+      },
+    ),
+    null,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(
       selectedNodeFocusPayload({ topologyFocusClusterVisible: false }),
     ),
     null,

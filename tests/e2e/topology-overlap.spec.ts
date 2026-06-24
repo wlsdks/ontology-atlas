@@ -1381,6 +1381,11 @@ test("Relief focus card wheel zoom keeps readable focus companions as full cards
     "data-selected-focus-context-rail-visible-contract",
     "focus-domain-context-rail-reports-visible-and-hidden-cards",
   );
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-context-rail-interaction-contract",
+    "fixed-focus-domain-anchors-remain-clickable-waypoints",
+  );
+  await expect(layer).toHaveAttribute("data-selected-focus-context-rail-opacity", "1");
   const focusRailVisibility = await layer.evaluate((el) => ({
     total: Number(el.getAttribute("data-selected-focus-context-rail-count") || "0"),
     visible: Number(
@@ -1547,6 +1552,57 @@ test("Relief focus card wheel zoom keeps readable focus companions as full cards
     "zoomed focus selected card drag should preserve the deterministic focus map",
   ).toBeLessThan(12);
   await page.mouse.up();
+});
+
+test("Relief focus context rail domains stay clickable fixed waypoints", async ({
+  page,
+}) => {
+  const viewport = VIEWPORTS[1];
+  await openRelief(page, viewport, {
+    mode: "focus",
+    selectedSlug: "domain:views",
+    requireHud: false,
+  });
+
+  const layer = page.getByTestId("sigma-skeleton-cards");
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-context-rail-interaction-contract",
+    "fixed-focus-domain-anchors-remain-clickable-waypoints",
+  );
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-fixed-geography-drag-locked",
+    "true",
+  );
+
+  const railDomain = page.locator(
+    '[data-skeleton-card][data-selected-focus-context-rail="true"][data-slug="domain:ontology-core"]',
+  );
+  await expect(railDomain).toHaveCount(1);
+  await expect(railDomain).toHaveCSS("opacity", "1");
+  await expect(railDomain).toHaveCSS("pointer-events", "auto");
+
+  const before = await rectOf(railDomain);
+  await page.mouse.move(before.left + before.width / 2, before.top + before.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(before.left + before.width / 2 + 140, before.top + before.height / 2, {
+    steps: 6,
+  });
+  await page.mouse.up();
+  await expect(layer).toHaveAttribute(
+    "data-selected-focus-context-rail-drag-attempt",
+    "ignored",
+  );
+  const afterDrag = await rectOf(railDomain);
+  expect(
+    Math.hypot(afterDrag.left - before.left, afterDrag.top - before.top),
+    "fixed focus context rail should not drift when dragged",
+  ).toBeLessThanOrEqual(2);
+
+  await railDomain.click();
+  await expect(page).toHaveURL(/p=domain%3Aontology-core/);
+  await expect(page.getByTestId("topology-node-popover-title")).toContainText(
+    "Ontology Core",
+  );
 });
 
 test("Relief zoomed map drag compacts repeated relation labels", async ({ page }) => {
