@@ -1039,7 +1039,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
             count: 1,
           },
         ]}
-        selectedSlug={null}
+        selectedSlug="project:p"
         onSelect={vi.fn()}
       />,
     );
@@ -5699,7 +5699,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(screen.queryByTestId("skeleton-card-hover")).toBeNull();
   });
 
-  it("드래그 중에는 hover 팝업을 새로 띄우지 않아 화면 깜빡임을 막는다", () => {
+  it("overview 카드 드래그 시도는 고정 지형을 보존하고 drag feedback 을 띄우지 않는다", () => {
     const graph = makeGraph();
     graph.addNode("domain:d2", {
       size: 5,
@@ -5747,17 +5747,20 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     fireEvent.pointerMove(dragCard, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.mouseEnter(hoverTarget);
 
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    expect(layer).toHaveAttribute(
+      "data-overview-density-fixed-geography-drag-attempt",
+      "ignored",
+    );
+    expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+    expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
     expect(dragCard).toHaveAttribute("data-card-selection-box-policy", "boxless-border-state");
     expect(dragCard).not.toHaveAttribute("data-drag-glow-token");
     expect(dragCard).not.toHaveAttribute("data-drag-active-glow-token");
-    expect(dragCard).toHaveAttribute(
-      "data-drag-wash-token",
-      "--topology-card-drag-active-wash",
-    );
-    expect(screen.queryByTestId("skeleton-card-hover")).toBeNull();
+    expect(dragCard).not.toHaveAttribute("data-drag-wash-token");
   });
 
-  it("드래그(이동 4px 초과) 후 click 은 선택을 발화하지 않는다", () => {
+  it("overview 에서 무시된 drag 시도는 카드 위치를 바꾸지 않고 이후 click 은 선택으로 동작한다", () => {
     const onSelect = vi.fn();
     render(
       <SigmaSkeletonCards
@@ -5772,11 +5775,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
-    fireEvent.click(card);
-    expect(onSelect).not.toHaveBeenCalled();
-    // 제자리 클릭은 선택.
-    fireEvent.pointerDown(card, { clientX: 60, clientY: 40, pointerId: 1, button: 0 });
-    fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-overview-density-fixed-geography-drag-attempt",
+      "ignored",
+    );
     fireEvent.click(card);
     expect(onSelect).toHaveBeenCalledWith("domain:d1");
   });
@@ -6125,6 +6127,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           },
         ]}
         selectedSlug="domain:d1"
+        healthRepairTarget={{ slug: "domain:d1", kind: "orphan" }}
         onSelect={vi.fn()}
       />,
     );
@@ -6398,7 +6401,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           sigma={stubSigma}
           graph={graph}
           cards={[...CARDS]}
-          selectedSlug={null}
+          selectedSlug="project:p"
           onSelect={vi.fn()}
         />,
       );
@@ -6508,28 +6511,20 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     const projectCard = screen.getByText("Atlas").closest("[data-skeleton-card]")!;
     fireEvent.pointerDown(projectCard, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
-    expect(screen.getByText("Views").closest("[data-skeleton-card]")).toHaveAttribute(
-      "data-drag-cluster",
-      "true",
-    );
-    expect(screen.getByText("Topology Inspection").closest("[data-skeleton-card]")).toHaveAttribute(
-      "data-drag-cluster",
-      "false",
-    );
     const layer = screen.getByTestId("sigma-skeleton-cards");
     expect(layer).toHaveAttribute(
-      "data-drag-cluster-policy",
-      "root-direct-neighbors-pin-free-context",
+      "data-overview-density-fixed-geography-drag-attempt",
+      "ignored",
     );
-    expect(layer).toHaveAttribute("data-drag-free-context-count", "1");
+    expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
 
     fireEvent.pointerMove(projectCard, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.pointerUp(projectCard, { clientX: 60, clientY: 40, pointerId: 1 });
 
-    expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
-    expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(15);
-    expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
-    expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(20);
+    expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(0);
+    expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(0);
+    expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(10);
+    expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(5);
     expect(graph.getNodeAttributes("capability:c1").x).toBeCloseTo(30);
     expect(graph.getNodeAttributes("capability:c1").y).toBeCloseTo(5);
   });
@@ -6654,52 +6649,20 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         button: 0,
       });
       expect(layer).toHaveAttribute(
-        "data-drag-clamp-scope",
-        "root-card-for-large-cluster",
+        "data-overview-density-fixed-geography-drag-attempt",
+        "ignored",
       );
-      expect(layer).toHaveAttribute(
-        "data-drag-physics-sync-contract",
-        "skeleton-card-drag-pins-worker-layout-group",
-      );
-      expect(layer).toHaveAttribute(
-        "data-drag-physics-release-policy",
-        "commit-drop-position-no-force-release",
-      );
-      expect(layer).toHaveAttribute("data-drag-physics-sync-active", "true");
-      expect(onDragClusterStart).toHaveBeenCalledOnce();
-      expect(onDragClusterStart.mock.calls[0][0].size).toBe(7);
-      expect(layer).toHaveAttribute("data-active-drag-cluster-size", "7");
-      expect(layer).toHaveAttribute(
-        "data-drag-cluster-policy",
-        "root-direct-neighbors-pin-free-context",
-      );
-      expect(layer).toHaveAttribute("data-drag-free-context-count", "6");
+      expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+      expect(layer).toHaveAttribute("data-drag-physics-sync-active", "false");
+      expect(onDragClusterStart).not.toHaveBeenCalled();
       fireEvent.pointerMove(projectCard, { clientX: 280, clientY: 50, pointerId: 1 });
       fireEvent.pointerUp(projectCard, { clientX: 280, clientY: 50, pointerId: 1 });
 
-      expect(layer).toHaveAttribute(
-        "data-drag-preview-scope",
-        "committed-graph-position",
-      );
-      expect(layer).toHaveAttribute("data-drag-preview-offset-x", "180");
-      expect(layer).toHaveAttribute("data-drag-viewport-offset-persisted-count", "0");
-      expect(layer).toHaveAttribute(
-        "data-drag-clamp-contract",
-        "large-cluster-root-card-priority",
-      );
-      expect(layer).toHaveAttribute(
-        "data-drag-clamp-scope",
-        "root-card-for-large-cluster",
-      );
       expect(layer).toHaveAttribute("data-drag-physics-sync-active", "false");
-      expect(onDragClusterMove).toHaveBeenCalled();
-      expect(onDragClusterMove.mock.calls.at(-1)?.[0].get("project:p")).toEqual({
-        x: 90,
-        y: 0,
-      });
-      expect(onDragClusterEnd).toHaveBeenCalledWith(expect.any(Set));
-      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(90);
-      expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(100);
+      expect(onDragClusterMove).not.toHaveBeenCalled();
+      expect(onDragClusterEnd).not.toHaveBeenCalled();
+      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(0);
+      expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(10);
       expect(graph.getNodeAttributes("capability:c6").x).toBeCloseTo(340);
     } finally {
       rectSpy.mockRestore();
@@ -6770,7 +6733,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           sigma={stubSigma}
           graph={graph}
           cards={[...CARDS]}
-          selectedSlug={null}
+          selectedSlug="project:p"
+          healthRepairTarget={{ slug: "domain:d1", kind: "orphan" }}
           onSelect={vi.fn()}
         />,
       );
@@ -6882,23 +6846,23 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
 
       expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
-        "data-drag-push-away-count",
-        "2",
+        "data-overview-density-fixed-geography-drag-attempt",
+        "ignored",
       );
-      expect(screen.getByText("Atlas").closest("[data-skeleton-card]")).toHaveAttribute(
-        "data-drag-cluster",
-        "true",
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-active-drag-cluster-size",
+        "0",
       );
       expect(
         screen.getByText("Collision Candidate").closest("[data-skeleton-card]"),
-      ).toHaveAttribute("data-drag-pushed", "true");
+      ).toHaveAttribute("data-drag-pushed", "false");
       expect(
         screen.getByText("Second Collision Candidate").closest("[data-skeleton-card]"),
-      ).toHaveAttribute("data-drag-pushed", "true");
-      expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
-      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
-      expect(graph.getNodeAttributes("domain:d2").y).not.toBeCloseTo(20);
-      expect(graph.getNodeAttributes("domain:d3").y).not.toBeCloseTo(50);
+      ).toHaveAttribute("data-drag-pushed", "false");
+      expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(10);
+      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(0);
+      expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(20);
+      expect(graph.getNodeAttributes("domain:d3").y).toBeCloseTo(50);
     } finally {
       rectSpy.mockRestore();
     }

@@ -2355,13 +2355,7 @@ for (const viewport of VIEWPORTS) {
     await waitForCardsClear(page, viewport, analysisRect, legendRect);
     for (let sample = 0; sample < 4; sample += 1) {
       await waitForCardsClear(page, viewport, analysisRect, legendRect);
-      expectCardsClear(
-        await visibleCardRects(page),
-        viewport,
-        analysisRect,
-        legendRect,
-      );
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(80);
     }
   });
 

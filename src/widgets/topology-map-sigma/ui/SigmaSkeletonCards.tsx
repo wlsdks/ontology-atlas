@@ -3694,6 +3694,11 @@ export function SigmaSkeletonCards({
       selectedRelationEdgeId === null &&
       !pathWorkflowActive &&
       !healthRepairTarget;
+    const overviewMapFixedGeographyDragLocked =
+      selectedSlug === null &&
+      selectedRelationEdgeId === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
     const compactLensActive =
       zoomLensCardCompactionActive ||
       focusDetailLensActive ||
@@ -4333,7 +4338,11 @@ export function SigmaSkeletonCards({
     container.dataset.overviewDensityFixedGeographyDragContract =
       'fixed-overview-geography-disables-card-drag';
     container.dataset.overviewDensityFixedGeographyDragLocked =
-      overviewFixedGeometrySlots.size > 0 ? 'true' : 'false';
+      overviewMapFixedGeographyDragLocked ? 'true' : 'false';
+    container.dataset.overviewDensityFixedGeographyDragLockScope =
+      overviewMapFixedGeographyDragLocked
+        ? 'map-overview-cards-use-fixed-canvas-slots'
+        : 'interactive-focus-or-path-surface';
     container.dataset.selectedFocusFixedGeographyContract =
       'selected-focus-uses-deterministic-canvas-geography';
     container.dataset.selectedFocusFixedGeographyDragContract =
@@ -4908,11 +4917,13 @@ export function SigmaSkeletonCards({
             'deterministic-overview-slot';
         } else {
           delete el.dataset.overviewDensityFixedGeography;
+          delete el.dataset.overviewDensityFixedGeographyContract;
           delete el.dataset.overviewDensityFixedGeographyRole;
           delete el.dataset.overviewDensityFixedGeographyIndex;
           delete el.dataset.overviewDensityFixedGeographyTotal;
-          delete el.dataset.overviewDensityFixedGeographyContract;
         }
+        el.dataset.overviewMapFixedGeographyDrag =
+          overviewMapFixedGeographyDragLocked ? 'true' : 'false';
         if (selectedFocusContextRailPlacement) {
           el.dataset.selectedFocusContextRail = 'true';
           el.dataset.selectedFocusContextRailSlot = String(
@@ -9809,6 +9820,11 @@ export function SigmaSkeletonCards({
           selectedRelationEdgeId === null &&
           !pathWorkflowActive &&
           !healthRepairTarget;
+        const overviewMapFixedGeography =
+          selectedSlug === null &&
+          selectedRelationEdgeId === null &&
+          !pathWorkflowActive &&
+          !healthRepairTarget;
         const coreHierarchyCountHidden = card.tier <= 1;
         const cardSpacing = selectedRelationSummaryOwnsMeta
           ? SELECTED_FOCUS_CARD_SPACING
@@ -9873,6 +9889,14 @@ export function SigmaSkeletonCards({
             data-selected-focus-fixed-geography-drag-policy={
               selectedFocusFixedGeography
                 ? 'ignore-card-drag-preserve-layout'
+                : undefined
+            }
+            data-overview-map-fixed-geography-drag={
+              overviewMapFixedGeography ? 'true' : undefined
+            }
+            data-overview-map-fixed-geography-drag-policy={
+              overviewMapFixedGeography
+                ? 'ignore-card-drag-preserve-canvas-layout'
                 : undefined
             }
             data-zoom-lens-eligible={zoomLensEligible ? 'true' : 'false'}
@@ -10111,7 +10135,10 @@ export function SigmaSkeletonCards({
               setHovered(null);
               if (event.currentTarget.dataset.surfaceHidden === 'true') return;
               if (event.button !== 0) return;
-              if (event.currentTarget.dataset.overviewDensityFixedGeography === 'true') {
+              if (
+                event.currentTarget.dataset.overviewDensityFixedGeography === 'true' ||
+                event.currentTarget.dataset.overviewMapFixedGeographyDrag === 'true'
+              ) {
                 containerRef.current?.setAttribute(
                   'data-overview-density-fixed-geography-drag-attempt',
                   'ignored',
@@ -10370,7 +10397,7 @@ export function SigmaSkeletonCards({
                   : undefined,
               } as React.CSSProperties
             }
-            className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[overview-density-fixed-geography=true]:!cursor-default data-[selected-focus-context-rail=true]:!cursor-pointer data-[zoom-lens-active-card=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!justify-center data-[zoom-lens-active-card=true]:!gap-0 data-[zoom-lens-active-card=true]:!overflow-hidden data-[zoom-lens-active-card=true]:!rounded-full data-[zoom-lens-active-card=true]:!p-0 data-[zoom-lens-active-card=true]:shadow-none data-[overview-collision-pin=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!justify-center data-[overview-collision-pin=true]:!gap-0 data-[overview-collision-pin=true]:!overflow-hidden data-[overview-collision-pin=true]:!rounded-full data-[overview-collision-pin=true]:!p-0 data-[overview-collision-pin=true]:shadow-none data-[zoom-lens-active-card=true]:data-[zoom-lens-pin-proximity=critical-neighbor]:!shadow-[0_0_0_2px_var(--topology-zoom-lens-pin-proximity-ring),0_0_18px_var(--topology-zoom-lens-pin-proximity-glow)] hover:border-[color:var(--card-border-hover)] active:cursor-grabbing data-[overview-density-fixed-geography=true]:active:!cursor-default data-[selected-focus-context-rail=true]:active:!cursor-pointer motion-reduce:transition-none ${
+            className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[overview-density-fixed-geography=true]:!cursor-default data-[overview-map-fixed-geography-drag=true]:!cursor-default data-[selected-focus-context-rail=true]:!cursor-pointer data-[zoom-lens-active-card=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!justify-center data-[zoom-lens-active-card=true]:!gap-0 data-[zoom-lens-active-card=true]:!overflow-hidden data-[zoom-lens-active-card=true]:!rounded-full data-[zoom-lens-active-card=true]:!p-0 data-[zoom-lens-active-card=true]:shadow-none data-[overview-collision-pin=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!justify-center data-[overview-collision-pin=true]:!gap-0 data-[overview-collision-pin=true]:!overflow-hidden data-[overview-collision-pin=true]:!rounded-full data-[overview-collision-pin=true]:!p-0 data-[overview-collision-pin=true]:shadow-none data-[zoom-lens-active-card=true]:data-[zoom-lens-pin-proximity=critical-neighbor]:!shadow-[0_0_0_2px_var(--topology-zoom-lens-pin-proximity-ring),0_0_18px_var(--topology-zoom-lens-pin-proximity-glow)] hover:border-[color:var(--card-border-hover)] active:cursor-grabbing data-[overview-density-fixed-geography=true]:active:!cursor-default data-[overview-map-fixed-geography-drag=true]:active:!cursor-default data-[selected-focus-context-rail=true]:active:!cursor-pointer motion-reduce:transition-none ${
               selected
                 ? 'shadow-none outline-none'
                 : ''

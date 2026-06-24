@@ -56,8 +56,8 @@ test("Relief 지형도에서 드래그가 연결 카드 그룹을 함께 이동�
     await expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
     await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
     await expect(target).toHaveAttribute(
-      "data-overview-density-fixed-geography-contract",
-      "deterministic-overview-slot",
+      "data-overview-map-fixed-geography-drag-policy",
+      "ignore-card-drag-preserve-canvas-layout",
     );
     await page.mouse.move(before.x + before.width / 2 + 140, before.y + before.height / 2 + 70, {
       steps: 8,
@@ -296,7 +296,7 @@ test("Relief overview drag keeps the grabbed node readable instead of collapsing
   await page.mouse.up();
 });
 
-test("Relief overview drag makes nearby context react instead of staying static", async ({
+test("Relief overview drag keeps nearby context fixed on the canvas", async ({
   page,
 }) => {
   await openTopology(page);
@@ -333,82 +333,53 @@ test("Relief overview drag makes nearby context react instead of staying static"
   await page.mouse.move(before.x + before.width / 2 + 160, before.y + before.height / 2 + 90, {
     steps: 10,
   });
-  if ((await layer.getAttribute("data-overview-density-fixed-geography-drag-attempt")) === "ignored") {
-    await expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
-    await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
-    const after = await rectOf(target);
-    expect(
-      Math.hypot(after.x - before.x, after.y - before.y),
-      "fixed overview geography should keep nearby context stable instead of parallaxing",
-    ).toBeLessThanOrEqual(2);
-    await page.mouse.up();
-    return;
-  }
-  await expect(layer).toHaveAttribute("data-drag-dynamic-state", "active-cluster-follow");
   await expect(layer).toHaveAttribute(
-    "data-drag-reactive-context-policy",
-    "boost-overview-neighbor-response",
+    "data-overview-density-fixed-geography-drag-attempt",
+    "ignored",
   );
   await expect(layer).toHaveAttribute(
-    "data-drag-reactive-motion-policy",
-    "bounded-parallax-nudge",
+    "data-overview-density-fixed-geography-drag-lock-scope",
+    "map-overview-cards-use-fixed-canvas-slots",
+  );
+  await expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
+  await expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+  await expect(layer).toHaveAttribute(
+    "data-overview-density-fixed-geography-drag-locked",
+    "true",
   );
 
-  const reactiveProof = await layer.evaluate((el) => ({
-    linkedMotionCount: Number(
-      el.getAttribute("data-drag-reactive-linked-motion-visible-count") ?? "0",
-    ),
-    maxObservedOffset: Number(
-      el.getAttribute("data-drag-reactive-motion-max-observed-offset-px") ?? "0",
-    ),
-    motionCount: Number(el.getAttribute("data-drag-reactive-motion-visible-count") ?? "0"),
-    visibleCount: Number(el.getAttribute("data-drag-reactive-context-visible-count") ?? "0"),
-  }));
-  expect(reactiveProof.visibleCount).toBeGreaterThan(0);
-  expect(reactiveProof.motionCount).toBeGreaterThan(0);
-  expect(reactiveProof.linkedMotionCount).toBeGreaterThan(0);
-  expect(reactiveProof.maxObservedOffset).toBeGreaterThan(0);
-  expect(reactiveProof.maxObservedOffset).toBeLessThanOrEqual(36);
-
-  const reactiveContextAfter = await page
-    .locator(
-      '[data-skeleton-card][data-drag-reactive-context="true"][data-drag-reactive-context-visible="true"]',
-    )
+  const contextAfter = await page
+    .locator('[data-skeleton-card][data-drag-cluster="false"]')
     .evaluateAll((els) =>
-      els.map((el) => {
-        const rect = el.getBoundingClientRect();
-        return {
-          motion: el.getAttribute("data-drag-reactive-motion") ?? "",
-          motionDx: Number(el.getAttribute("data-drag-reactive-motion-dx") ?? "0"),
-          motionDy: Number(el.getAttribute("data-drag-reactive-motion-dy") ?? "0"),
-          motionSource: el.getAttribute("data-drag-reactive-motion-source") ?? "",
-          motionStrength: el.getAttribute("data-drag-reactive-motion-strength") ?? "",
-          slug: el.getAttribute("data-slug") ?? "",
-          x: rect.x,
-          y: rect.y,
-        };
-      }),
+      els
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          const style = window.getComputedStyle(el);
+          return {
+            dragReactiveMotion: el.getAttribute("data-drag-reactive-motion") ?? "",
+            slug: el.getAttribute("data-slug") ?? "",
+            visible:
+              style.display !== "none" &&
+              style.visibility !== "hidden" &&
+              rect.width > 0 &&
+              rect.height > 0,
+            x: rect.x,
+            y: rect.y,
+          };
+        })
+        .filter((entry) => entry.slug && entry.visible),
     );
-  expect(reactiveContextAfter.length).toBeGreaterThan(0);
-  expect(
-    reactiveContextAfter.some((entry) => entry.motion === "parallax-nudge"),
-  ).toBe(true);
-  expect(
-    reactiveContextAfter.some((entry) => entry.motionSource === "graph-neighbor-of-moving-cluster"),
-  ).toBe(true);
-  expect(
-    reactiveContextAfter.some((entry) => entry.motionStrength === "linked-context"),
-  ).toBe(true);
-  expect(
-    reactiveContextAfter.some((entry) => Math.hypot(entry.motionDx, entry.motionDy) > 0),
-  ).toBe(true);
+  expect(contextAfter.length).toBeGreaterThan(0);
+  expect(contextAfter.some((entry) => entry.dragReactiveMotion === "parallax-nudge")).toBe(
+    false,
+  );
 
-  const movedContextCount = reactiveContextAfter.filter((afterEntry) => {
+  const movedContextCount = contextAfter.filter((afterEntry) => {
     const beforeEntry = contextBefore.find((entry) => entry.slug === afterEntry.slug);
     if (!beforeEntry) return false;
-    return Math.hypot(afterEntry.x - beforeEntry.x, afterEntry.y - beforeEntry.y) > 8;
+    return Math.hypot(afterEntry.x - beforeEntry.x, afterEntry.y - beforeEntry.y) > 2;
   }).length;
-  expect(movedContextCount).toBeGreaterThan(0);
+  expect(movedContextCount).toBe(0);
 
   await page.mouse.up();
 });
