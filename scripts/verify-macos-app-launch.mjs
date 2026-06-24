@@ -8005,9 +8005,8 @@ export function buildWebviewEvidencePayload(
   const zoomLensProof =
     markers.topologyZoomLensContract ===
     "zoom-in-uses-kind-pins-for-noncritical-context-cards"
-      ? {
-        proof: "topology-zoom-lens-kind-pins",
-        status:
+      ? (() => {
+        const cameraZoomProved =
           markerNumber(markers, "topologyZoomLensThresholdRatio") > 0 &&
           markerNumber(markers, "topologyZoomLensCameraRatio") > 0 &&
           markers.topologyZoomLensActive === true &&
@@ -8017,9 +8016,15 @@ export function buildWebviewEvidencePayload(
             markers.topologyZoomLensPresentationSource,
           ) &&
           markerNumber(markers, "topologyZoomLensActiveCardCount") >= 1 &&
-          markerNumber(markers, "topologyZoomLensVisibleActiveCardCount") >= 1
-            ? "proved"
-            : "incomplete",
+          markerNumber(markers, "topologyZoomLensVisibleActiveCardCount") >= 1;
+        const selectedFocusDetailProved =
+          markers.topologyZoomLensPresentationSource === "selected-focus-detail" &&
+          markers.topologyZoomLensPresentationActive === true &&
+          markers.topologyFocusDetailLensActive === true &&
+          markerNumber(markers, "topologyZoomLensFocusEgoReadableCount") >= 1;
+        return {
+        proof: "topology-zoom-lens-kind-pins",
+        status: cameraZoomProved || selectedFocusDetailProved ? "proved" : "incomplete",
         route: evidenceRoute(payload?.href),
         contract: markers.topologyZoomLensContract ?? null,
         presentationContract: markers.topologyZoomLensPresentationContract ?? null,
@@ -8043,6 +8048,14 @@ export function buildWebviewEvidencePayload(
           "topologyZoomLensVisibleActiveCardCount",
         ),
         pinMinOpacity: markerNumber(markers, "topologyZoomLensPinMinOpacity"),
+        focusEgoReadable: {
+          contract:
+            markers.topologyZoomLensFocusEgoReadableContract ?? null,
+          count: markerNumber(
+            markers,
+            "topologyZoomLensFocusEgoReadableCount",
+          ),
+        },
         pinGlyph: {
           contract: markers.topologyZoomLensPinGlyphContract ?? null,
           visibleCount: markerNumber(
@@ -8133,7 +8146,8 @@ export function buildWebviewEvidencePayload(
           },
         },
         agentNextAction: "trust-kind-pin-lens-before-reading-dense-map-cards",
-      }
+      };
+      })()
       : null;
   const nodePopoverCompactHandoffProof =
     markers.topologyNodePopoverVisible === true &&

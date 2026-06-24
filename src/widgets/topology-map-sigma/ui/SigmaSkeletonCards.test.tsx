@@ -1713,7 +1713,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("선택 focus detail lens 는 비핵심 ego companion 을 kind pin 으로 낮춘다", async () => {
+  it("선택 focus detail lens 는 직접 ego companion 을 readable card 로 유지한다", async () => {
     const graph = makeGraph();
     graph.addNode("capability:c1", {
       size: 5,
@@ -1797,8 +1797,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-zoom-lens-presentation-source",
         "selected-focus-detail",
       );
-      expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "2");
-      expect(layer).toHaveAttribute("data-zoom-lens-visible-active-card-count", "1");
+      expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "1");
+      expect(layer).toHaveAttribute("data-zoom-lens-focus-ego-readable-count", "1");
+      expect(layer).toHaveAttribute(
+        "data-zoom-lens-focus-ego-readable-contract",
+        "selected-focus-ego-neighbors-stay-readable-in-lens",
+      );
+      expect(layer).toHaveAttribute("data-zoom-lens-visible-active-card-count", "0");
       expect(layer).toHaveAttribute(
         "data-zoom-lens-viewport-visible-contract",
         "visible-lens-pins-match-frame-state",
@@ -1809,15 +1814,23 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-zoom-lens-presentation",
         "full-card-critical",
       );
-      expect(companionCard).toHaveAttribute("data-zoom-lens-active-card", "true");
-      expect(companionCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
-      expect(companionCard).toHaveAttribute("data-zoom-lens-viewport-visible", "true");
-      expect(layer.querySelectorAll('[data-zoom-lens-viewport-visible="true"]')).toHaveLength(
-        1,
+      expect(companionCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(companionCard).toHaveAttribute(
+        "data-zoom-lens-presentation",
+        "full-card-critical",
       );
-      expect(companionCard?.querySelector("[data-card-kind-badge]")).toHaveAttribute(
-        "data-zoom-lens-compact-hidden-contract",
-        "compact-lens-keeps-kind-as-dot-color",
+      expect(companionCard).toHaveAttribute(
+        "data-zoom-lens-card-contract",
+        "selected-focus-ego-neighbor-stays-readable-in-lens",
+      );
+      expect(companionCard).toHaveAttribute("data-zoom-lens-focus-ego-readable", "true");
+      expect(companionCard).toHaveAttribute(
+        "data-zoom-lens-focus-ego-readable-contract",
+        "selected-focus-ego-neighbor-stays-readable-in-lens",
+      );
+      expect(companionCard).not.toHaveAttribute("data-zoom-lens-viewport-visible");
+      expect(layer.querySelectorAll('[data-zoom-lens-viewport-visible="true"]')).toHaveLength(
+        0,
       );
       expect(companionCard?.querySelector("[data-card-title]")).toHaveAttribute(
         "data-full-title",
@@ -1961,11 +1974,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       );
       expect(evidenceCard).toHaveAttribute(
         "data-zoom-lens-card-contract",
-        "focus-readable-card-stays-full-on-camera-zoom-in",
+        "selected-focus-ego-neighbor-stays-readable-in-lens",
       );
       expect(evidenceCard).toHaveAttribute(
         "data-zoom-lens-focus-readable-compaction",
         "camera-zoom-in-fixed-readable-card",
+      );
+      expect(evidenceCard).toHaveAttribute("data-zoom-lens-focus-ego-readable", "true");
+      expect(evidenceCard).toHaveAttribute(
+        "data-zoom-lens-focus-ego-readable-contract",
+        "selected-focus-ego-neighbor-stays-readable-in-lens",
       );
     });
   });

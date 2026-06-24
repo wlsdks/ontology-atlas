@@ -1199,6 +1199,9 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
           topologyZoomLensPinMinOpacity: 0.42,
         topologyVisibleCardCount: 2,
         topologyZoomLensVisibleActiveCardCount: 2,
+        topologyZoomLensFocusEgoReadableContract:
+          "selected-focus-ego-neighbors-stay-readable-in-lens",
+        topologyZoomLensFocusEgoReadableCount: 6,
         topologyZoomLensPinProximityContract:
           "zoomed-context-pins-keep-critical-relation-proximity",
         topologyZoomLensPinProximityActive: true,
@@ -1460,6 +1463,10 @@ test("WebView evidence summarizes selected relation label handoff proof for agen
     visibleCardCount: 2,
     visibleActiveCardCount: 2,
     pinMinOpacity: 0.42,
+    focusEgoReadable: {
+      contract: "selected-focus-ego-neighbors-stay-readable-in-lens",
+      count: 6,
+    },
     pinGlyph: {
       contract: "compact-kind-pin-keeps-type-glyph-without-title-card",
       visibleCount: 2,

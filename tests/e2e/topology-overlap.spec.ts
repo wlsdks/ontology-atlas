@@ -901,6 +901,11 @@ test("Relief zoom-in switches noncritical context cards to kind pins", async ({ 
     "--topology-zoom-lens-pin-proximity-ring",
   );
   await expect(layer).toHaveAttribute(
+    "data-zoom-lens-focus-ego-readable-contract",
+    "selected-focus-ego-neighbors-stay-readable-in-lens",
+  );
+  await expect(layer).toHaveAttribute("data-zoom-lens-focus-ego-readable-count", /[1-9]\d*/);
+  await expect(layer).toHaveAttribute(
     "data-zoom-lens-empty-viewport-fallback-contract",
     "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
   );
@@ -1401,7 +1406,15 @@ test("Relief focus card wheel zoom keeps readable focus companions as full cards
   );
   await expect(fixedFocusReadableCards.first()).toHaveAttribute(
     "data-zoom-lens-card-contract",
-    "focus-readable-card-stays-full-on-camera-zoom-in",
+    "selected-focus-ego-neighbor-stays-readable-in-lens",
+  );
+  await expect(fixedFocusReadableCards.first()).toHaveAttribute(
+    "data-zoom-lens-focus-ego-readable",
+    "true",
+  );
+  await expect(fixedFocusReadableCards.first()).toHaveAttribute(
+    "data-zoom-lens-focus-ego-readable-contract",
+    "selected-focus-ego-neighbor-stays-readable-in-lens",
   );
   const proximityPin = page
     .locator('[data-skeleton-card][data-zoom-lens-pin-proximity-contract]')

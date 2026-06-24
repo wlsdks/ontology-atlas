@@ -5231,6 +5231,10 @@ pub fn run() {
                                       skeletonCardsLayer?.getAttribute("data-zoom-lens-visible-active-card-count") ||
                                       "0"
                                     ),
+                                  topologyZoomLensFocusEgoReadableContract:
+                                    skeletonCardsLayer?.getAttribute("data-zoom-lens-focus-ego-readable-contract") || "",
+                                  topologyZoomLensFocusEgoReadableCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-focus-ego-readable-count") || "0"),
                                   topologyZoomLensPinProximityContract:
                                     topologyZoomVerification?.proximityPinContract ||
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-pin-proximity-contract") || "",
@@ -5504,6 +5508,7 @@ mod tests {
         assert!(source.contains("topologyZoomLensPresentationContract"));
         assert!(source.contains("topologyZoomLensPresentationSource"));
         assert!(source.contains("topologyZoomLensViewportVisibleContract"));
+        assert!(source.contains("topologyZoomLensFocusEgoReadableContract"));
         assert!(source.contains("topologyZoomLensEmptyViewportFallbackContract"));
         assert!(source.contains("data-zoom-lens-empty-viewport-fallback-active"));
         assert!(source.contains("topologyZoomLensRelationChromeContract"));
