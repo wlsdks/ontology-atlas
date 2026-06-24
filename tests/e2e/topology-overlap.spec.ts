@@ -722,7 +722,7 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-overview-density-lens-readable-band-contract",
-    "14-inch-overview-keeps-capability-title-cards",
+    "14-inch-overview-keeps-domain-and-capability-title-cards",
   );
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-overview-density-lens-width-band",
@@ -753,6 +753,32 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     "data-card-readable-width-contract",
     "tier-token-preserves-title-lane",
   );
+  const readableDomainCards = page.locator(
+    [
+      '[data-skeleton-card][data-tier="1"]',
+      '[data-zoom-lens-presentation="full-card-context"]',
+      ':not([data-surface-hidden="true"])',
+    ].join(""),
+  );
+  await expect(readableDomainCards).toHaveCount(6);
+  await expect(
+    page.locator(
+      '[data-skeleton-card][data-tier="1"][data-overview-collision-pin="true"]',
+    ),
+  ).toHaveCount(0);
+  const domainRects = await readableDomainCards.evaluateAll((cards) =>
+    cards.map((card) => {
+      const rect = card.getBoundingClientRect();
+      return {
+        height: rect.height,
+        width: rect.width,
+      };
+    }),
+  );
+  expect(
+    domainRects.every((rect) => rect.width >= 120 && rect.height >= 34),
+    "1512px readable overview should keep domain landmarks as readable title cards",
+  ).toBe(true);
   const capabilityTitle = capabilityCard.locator("[data-card-title]");
   await expect(capabilityTitle).toHaveAttribute(
     "data-card-title-lane-contract",

@@ -1704,20 +1704,26 @@ function separateOverviewDomainCards(
   onPlacedCardRectChange?: (el: HTMLElement, rect: ConnectorRect) => void,
 ): number {
   const records: Array<{ el: HTMLElement; rect: ConnectorRect }> = [];
+  const accepted: Array<{ left: number; top: number; right: number; bottom: number }> =
+    [];
   for (const el of orderedEls) {
-    if (el.dataset.tier !== '1' || el.dataset.dockParent) continue;
+    if (el.dataset.dockParent) continue;
     if (el.dataset.surfaceHidden === 'true') continue;
     if (el.style.visibility === 'hidden' || Number(el.style.opacity || '1') <= 0.01) {
       continue;
     }
+    const tier = Number(el.dataset.tier ?? '3');
+    if (tier !== 0 && tier !== 1) continue;
     const rect = readCardPlacementFrameRect(el);
     if (rect.right <= rect.left || rect.bottom <= rect.top) continue;
+    if (tier === 0) {
+      accepted.push(rect);
+      continue;
+    }
     records.push({ el, rect });
   }
   records.sort((a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left);
 
-  const accepted: Array<{ left: number; top: number; right: number; bottom: number }> =
-    [];
   let separated = 0;
   for (const record of records) {
     if (record.el.dataset.overviewDomainSeparated !== undefined) {
@@ -3666,7 +3672,7 @@ export function SigmaSkeletonCards({
       OVERVIEW_DENSITY_LENS_WIDE_MIN_WIDTH_PX,
     );
     container.dataset.overviewDensityLensReadableBandContract =
-      '14-inch-overview-keeps-capability-title-cards';
+      '14-inch-overview-keeps-domain-and-capability-title-cards';
     container.dataset.overviewDensityLensWidthBand = overviewDensityLensWidthActive
       ? containerRect.width <= OVERVIEW_DENSITY_LENS_COMPACT_MAX_WIDTH_PX
         ? 'compact-pin-band'
@@ -5031,6 +5037,8 @@ export function SigmaSkeletonCards({
       });
       for (const el of ordered) {
         delete el.dataset.overviewCollisionPin;
+        const tier = Number(el.dataset.tier ?? '3');
+        const readableBandLandmark = !pathWorkflowActive && !overviewDensityLensActive && tier <= 1;
         const selected = el.dataset.selected === 'true';
         const selectedRelationEndpoint = isSelectedRelationEndpointCard(el);
         const rect = readCardPlacementFrameRect(el);
@@ -5056,6 +5064,7 @@ export function SigmaSkeletonCards({
           bottom: rect.top + (rect.bottom - rect.top + pinSize) / 2,
         };
         const pinFits =
+          !readableBandLandmark &&
           !selectedRelationEndpoint &&
           !protectSelectedCard &&
           !blockedByFixedSurface &&
@@ -5066,6 +5075,7 @@ export function SigmaSkeletonCards({
           !accepted.some((kept) => rectsOverlap(pinRect, kept, OVERVIEW_COLLISION_PAD));
         if (
           !lockedForOverviewDrag &&
+          !readableBandLandmark &&
           (blockedByFixedSurface ||
             (!protectSelectedCard &&
               (clipped ||
@@ -5549,6 +5559,8 @@ export function SigmaSkeletonCards({
         if (el.dataset.overviewPostDomainOverlapHidden !== undefined) {
           delete el.dataset.overviewPostDomainOverlapHidden;
         }
+        const tier = Number(el.dataset.tier ?? '3');
+        const readableBandLandmark = !pathWorkflowActive && !overviewDensityLensActive && tier <= 1;
         const selectedRelationEndpoint = isSelectedRelationEndpointCard(el);
         if (selectedRelationEndpoint) {
           showSelectedRelationEndpointCard(el, domWriteStats);
@@ -5572,6 +5584,7 @@ export function SigmaSkeletonCards({
           continue;
         }
         if (
+          !readableBandLandmark &&
           !selectedRelationEndpoint &&
           accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD))
         ) {

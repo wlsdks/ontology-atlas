@@ -210,7 +210,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer).toHaveAttribute("data-overview-density-lens-active", "false");
     expect(layer).toHaveAttribute(
       "data-overview-density-lens-readable-band-contract",
-      "14-inch-overview-keeps-capability-title-cards",
+      "14-inch-overview-keeps-domain-and-capability-title-cards",
     );
     expect(domainCard).toHaveAttribute(
       "data-zoom-lens-card-contract",
@@ -872,7 +872,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("14인치 overview readable band 에서는 capability 제목 카드를 유지한다", () => {
+  it("14인치 overview readable band 에서는 domain/capability 제목 카드를 유지한다", () => {
     const originalInnerWidth = window.innerWidth;
     Object.defineProperty(window, "innerWidth", {
       configurable: true,
@@ -916,6 +916,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       );
 
       const layer = screen.getByTestId("sigma-skeleton-cards");
+      const domainCard = screen.getByText("Views").closest("[data-skeleton-card]");
       const scanCard = screen.getByText("Readable Capability").closest("[data-skeleton-card]");
 
       expect(layer).toHaveAttribute("data-overview-density-lens-active", "false");
@@ -925,10 +926,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       );
       expect(layer).toHaveAttribute(
         "data-overview-density-lens-readable-band-contract",
-        "14-inch-overview-keeps-capability-title-cards",
+        "14-inch-overview-keeps-domain-and-capability-title-cards",
       );
+      expect(domainCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(domainCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-context");
+      expect(domainCard).not.toHaveAttribute("data-overview-collision-pin", "true");
       expect(scanCard).toHaveAttribute("data-zoom-lens-active-card", "false");
       expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-detail");
+      expect(scanCard).not.toHaveAttribute("data-overview-collision-pin", "true");
     } finally {
       Object.defineProperty(window, "innerWidth", {
         configurable: true,
