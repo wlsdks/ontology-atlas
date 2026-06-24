@@ -3845,14 +3845,20 @@ export function SigmaSkeletonCards({
         !healthRepairTarget &&
         ego?.slugs.has(el.dataset.slug ?? '') === true &&
         el.dataset.selected !== 'true';
+      const selectedFocusCompanionReadableTitle =
+        el.dataset.selectedFocusCompanionReadableTitle === 'true';
+      const selectedFocusContextReadableTitle =
+        el.dataset.selectedFocusContextReadableTitle === 'true';
+      const focusReadableTitleContext =
+        selectedFocusCompanionReadableTitle || selectedFocusContextReadableTitle;
       const focusReadableContext =
-        el.dataset.selectedFocusCompanionReadableTitle === 'true' ||
-        el.dataset.selectedFocusContextReadableTitle === 'true' ||
-        selectedFocusEgoReadableContext;
+        focusReadableTitleContext || selectedFocusEgoReadableContext;
       const preserveFocusReadableOnCameraZoom =
-        zoomLensCardCompactionActive && focusReadableContext;
+        zoomLensCardCompactionActive && selectedFocusContextReadableTitle;
       const compactSelectedRelationEndpointOnCameraZoom =
         zoomLensCardCompactionActive && el.dataset.selectedRelationEndpoint === 'true';
+      const compactFocusCompanionOnCameraZoom =
+        zoomLensCardCompactionActive && selectedFocusCompanionReadableTitle;
       const compactMapRootAnchorOnCameraZoom =
         zoomLensCardCompactionActive &&
         selectedSlug === null &&
@@ -3865,10 +3871,16 @@ export function SigmaSkeletonCards({
         el.dataset.pathRole === 'source' ||
         el.dataset.pathRole === 'target' ||
         el.dataset.healthRepairAuditTarget === 'true' ||
-        focusReadableContext ||
+        (zoomLensCardCompactionActive
+          ? preserveFocusReadableOnCameraZoom
+          : focusReadableContext) ||
         (el.dataset.selectedRelationEndpoint === 'true' &&
           !compactSelectedRelationEndpointOnCameraZoom);
-      if (selectedFocusEgoReadableContext) {
+      if (
+        selectedFocusContextReadableTitle ||
+        (!zoomLensCardCompactionActive &&
+          (selectedFocusCompanionReadableTitle || selectedFocusEgoReadableContext))
+      ) {
         el.dataset.zoomLensFocusEgoReadable = 'true';
         el.dataset.zoomLensFocusEgoReadableContract =
           'selected-focus-ego-neighbor-stays-readable-in-lens';
@@ -3880,6 +3892,7 @@ export function SigmaSkeletonCards({
       const zoomLensEligible =
         (el.dataset.zoomLensEligible === 'true' ||
           compactMapRootAnchorOnCameraZoom ||
+          compactFocusCompanionOnCameraZoom ||
           compactSelectedRelationEndpointOnCameraZoom) &&
         !zoomLensCritical &&
         !(overviewDensityLensActive && el.dataset.tier === '1');
@@ -5891,8 +5904,14 @@ export function SigmaSkeletonCards({
     >();
     let visibleCardRectReadCount = 0;
     let visibleCardHiddenRectSkipCount = 0;
+    const reducedMotionActive =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const reuseFrameRectForFixedFocusRail =
-      selectedFocusContextRailActive && selectedRelationEdgeId === null;
+      selectedFocusContextRailActive &&
+      selectedRelationEdgeId === null &&
+      !reducedMotionActive;
     const seedConnectorRectFromVisibleCache =
       activeDragCluster === null && selectedRelationEdgeId === null;
     const visibleCardStateReadPolicy =

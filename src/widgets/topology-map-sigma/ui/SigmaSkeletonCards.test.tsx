@@ -1962,7 +1962,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     });
   });
 
-  it("camera zoom-in 은 focus readable companion 을 고정 readable card 로 유지한다", async () => {
+  it("camera zoom-in 은 focus evidence companion 을 kind pin 으로 축약한다", async () => {
     const graph = makeGraph();
     graph.addNode("element:evidence", {
       size: 5,
@@ -2016,24 +2016,19 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-selected-focus-companion-readable-title",
         "true",
       );
-      expect(evidenceCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(evidenceCard).toHaveAttribute("data-zoom-lens-active-card", "true");
       expect(evidenceCard).toHaveAttribute(
         "data-zoom-lens-presentation",
-        "full-card-critical",
+        "lens-pin",
       );
       expect(evidenceCard).toHaveAttribute(
         "data-zoom-lens-card-contract",
-        "selected-focus-ego-neighbor-stays-readable-in-lens",
+        "noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in",
       );
-      expect(evidenceCard).toHaveAttribute(
+      expect(evidenceCard).not.toHaveAttribute(
         "data-zoom-lens-focus-readable-compaction",
-        "camera-zoom-in-fixed-readable-card",
       );
-      expect(evidenceCard).toHaveAttribute("data-zoom-lens-focus-ego-readable", "true");
-      expect(evidenceCard).toHaveAttribute(
-        "data-zoom-lens-focus-ego-readable-contract",
-        "selected-focus-ego-neighbor-stays-readable-in-lens",
-      );
+      expect(evidenceCard).not.toHaveAttribute("data-zoom-lens-focus-ego-readable");
     });
   });
 

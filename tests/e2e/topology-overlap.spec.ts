@@ -1114,6 +1114,25 @@ test("Relief focus zoom-in demotes nonselected relation chrome to background thr
   await expect(
     page.locator('[data-relation-label-visibility="suppressed-zoom-lens-thread"]').first(),
   ).toHaveAttribute("data-relation-label-visibility", "suppressed-zoom-lens-thread");
+  const topEdgeFullCards = await page
+    .locator(
+      '[data-skeleton-card]:not([data-surface-hidden="true"]):not([data-selected-focus-context-rail="true"])[data-zoom-lens-presentation^="full-card"]',
+    )
+    .evaluateAll((cards) =>
+      cards
+        .map((card) => {
+          const rect = card.getBoundingClientRect();
+          return {
+            slug: card.getAttribute("data-slug") || "",
+            top: Math.round(rect.top),
+          };
+        })
+        .filter((card) => card.top < 32),
+    );
+  expect(
+    topEdgeFullCards,
+    "zoomed focus should turn non-rail detail context into pins instead of keeping clipped full cards at the canvas edge",
+  ).toEqual([]);
 });
 
 test("Relief dense overview switches noncritical context cards to kind pins", async ({
@@ -1365,7 +1384,7 @@ test("Relief wide overview uses fixed canvas geography with readable domains", a
   ).toBeLessThanOrEqual(2);
 });
 
-test("Relief focus card wheel zoom keeps readable focus companions as full cards", async ({
+test("Relief focus card wheel zoom keeps rail domains readable and compacts detail companions", async ({
   page,
 }) => {
   const viewport = VIEWPORTS[1];
@@ -1486,7 +1505,7 @@ test("Relief focus card wheel zoom keeps readable focus companions as full cards
   );
   await expect(fixedFocusReadableCards.first()).toHaveAttribute(
     "data-zoom-lens-card-contract",
-    "selected-focus-ego-neighbor-stays-readable-in-lens",
+    "focus-readable-card-stays-full-on-camera-zoom-in",
   );
   await expect(fixedFocusReadableCards.first()).toHaveAttribute(
     "data-zoom-lens-focus-ego-readable",
@@ -1495,6 +1514,13 @@ test("Relief focus card wheel zoom keeps readable focus companions as full cards
   await expect(fixedFocusReadableCards.first()).toHaveAttribute(
     "data-zoom-lens-focus-ego-readable-contract",
     "selected-focus-ego-neighbor-stays-readable-in-lens",
+  );
+  const compactEvidenceCompanion = page.locator(
+    '[data-skeleton-card][data-selected-focus-companion-readable-title="true"][data-zoom-lens-active-card="true"]',
+  );
+  await expect(compactEvidenceCompanion.first()).toHaveAttribute(
+    "data-zoom-lens-presentation",
+    "lens-pin",
   );
   const proximityPin = page
     .locator('[data-skeleton-card][data-zoom-lens-pin-proximity-contract]')
@@ -2283,6 +2309,7 @@ for (const viewport of VIEWPORTS) {
     const legendRect = await kindLegendRectOrNull(page);
     await waitForCardsClear(page, viewport, analysisRect, legendRect);
     for (let sample = 0; sample < 4; sample += 1) {
+      await waitForCardsClear(page, viewport, analysisRect, legendRect);
       expectCardsClear(
         await visibleCardRects(page),
         viewport,
