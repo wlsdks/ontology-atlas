@@ -35,6 +35,7 @@ describe('drag-cluster', () => {
     graph.addNode('domain:views', node('Views', 10, 20, 'domain'));
     graph.addNode('capability:map', node('Map', 24, 28, 'capability'));
     graph.addNode('capability:drawer', node('Drawer', 28, 40, 'capability'));
+    graph.addNode('element:map-card', node('Map Card', 36, 46, 'element'));
     graph.addNode('element:small', node('Small', 120, 80, 'element'));
     graph.addNode('domain:vault', node('Vault', -40, 8, 'domain'));
     graph.addEdgeWithKey('views-map', 'domain:views', 'capability:map', {
@@ -44,6 +45,12 @@ describe('drag-cluster', () => {
       relationType: 'contains',
     });
     graph.addEdgeWithKey('views-drawer', 'domain:views', 'capability:drawer', {
+      size: 1,
+      color: 'rgba(255,255,255,0.2)',
+      kind: 'contains',
+      relationType: 'contains',
+    });
+    graph.addEdgeWithKey('map-card', 'capability:map', 'element:map-card', {
       size: 1,
       color: 'rgba(255,255,255,0.2)',
       kind: 'contains',
@@ -66,6 +73,13 @@ describe('drag-cluster', () => {
       'domain:views',
       'capability:drawer',
       'capability:map',
+    ]);
+
+    expect([...collectSigmaDragCluster(graph, 'domain:views', 4)]).toEqual([
+      'domain:views',
+      'capability:drawer',
+      'capability:map',
+      'element:map-card',
     ]);
 
     expect(

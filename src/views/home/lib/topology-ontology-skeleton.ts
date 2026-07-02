@@ -8,9 +8,10 @@ import type {
  * Where a node sits in the structural-skeleton entry view:
  * - `anchor`: every project + every domain — the coordinate system the audience
  *   reads (business spine). Never thresholded.
- * - `landmark`: the per-domain capabilities that govern the largest subtree.
- * - `hidden`: elements, non-landmark capabilities, documents — present in the
- *   graph but not part of the entry skeleton (revealed on demand).
+ * - `landmark`: the per-domain capabilities that govern the largest subtree,
+ *   plus a tiny evidence landmark so the entry map shows implementation proof.
+ * - `hidden`: non-landmark capabilities, most elements, documents — present in
+ *   the graph but not part of the entry skeleton (revealed on demand).
  */
 export type SkeletonLevel = "anchor" | "landmark" | "hidden";
 
@@ -26,6 +27,8 @@ export interface OntologySkeleton {
   subtreeWeightBySlug: Map<string, number>;
   /** Domain slug → ordered landmark capability slugs chosen for it. */
   landmarksByDomain: Map<string, string[]>;
+  /** Domain slug → at most one element shown as overview evidence. */
+  evidenceLandmarksByDomain: Map<string, string[]>;
   /** Domain slug → capabilities hidden beyond the cap (for an aggregate "+N"). */
   overflowByDomain: Map<string, number>;
 }
@@ -106,6 +109,22 @@ function countIncomingOfType(
   return count;
 }
 
+function collectElementDescendants(
+  slug: string,
+  index: ContainmentIndex,
+  kindBySlug: ReadonlyMap<string, string>,
+  seen: Set<string>,
+): string[] {
+  const elements: string[] = [];
+  for (const child of index.childrenByParent.get(slug) ?? []) {
+    if (seen.has(child)) continue;
+    seen.add(child);
+    if (kindBySlug.get(child) === "element") elements.push(child);
+    elements.push(...collectElementDescendants(child, index, kindBySlug, seen));
+  }
+  return elements;
+}
+
 /**
  * Compute the structural skeleton: anchors (project/domain) + per-domain landmark
  * capabilities by governed subtree weight, deterministically.
@@ -127,6 +146,7 @@ export function buildOntologySkeleton(
   const levelBySlug = new Map<string, SkeletonLevel>();
   const skeletonSlugs = new Set<string>();
   const landmarksByDomain = new Map<string, string[]>();
+  const evidenceLandmarksByDomain = new Map<string, string[]>();
   const overflowByDomain = new Map<string, number>();
 
   // every node starts hidden; anchors/landmarks are promoted below.
@@ -170,11 +190,73 @@ export function buildOntologySkeleton(
     for (const slug of landmarks) promote(slug, "landmark");
   }
 
+  // One global evidence landmark — the overview should prove that the ontology
+  // reaches implementation evidence without flooding the entry map with leaves.
+  const rankEvidence = (candidates: string[]) =>
+    candidates.sort((a, b) => {
+      const da = countIncomingOfType(a, "describes", edges);
+      const db = countIncomingOfType(b, "describes", edges);
+      if (da !== db) return db - da;
+      const pa = countIncomingOfType(a, "depends_on", edges);
+      const pb = countIncomingOfType(b, "depends_on", edges);
+      if (pa !== pb) return pb - pa;
+      return a.localeCompare(b);
+    });
+
+  const evidenceForDomain = (domainSlug: string): string | null => {
+    const candidateCapabilities = landmarksByDomain.get(domainSlug) ?? [];
+    const candidates = candidateCapabilities
+      .flatMap((capability) =>
+        collectElementDescendants(
+          capability,
+          index,
+          kindBySlug,
+          new Set([capability]),
+        ),
+      )
+      .filter((slug, index, list) => list.indexOf(slug) === index);
+    return rankEvidence(candidates)[0] ?? null;
+  };
+
+  const maxDomainWeight = Math.max(
+    0,
+    ...domains.map((domain) => subtreeWeightBySlug.get(domain.id) ?? 0),
+  );
+  const sortedDomains = domains.slice().sort((a, b) => a.id.localeCompare(b.id));
+  const leftHalfDomains = sortedDomains.slice(Math.ceil(sortedDomains.length / 2));
+  const rankDomains = (items: readonly KnowledgeGraphNode[]) =>
+    items.slice().sort((a, b) => {
+      const wa = subtreeWeightBySlug.get(a.id) ?? 0;
+      const wb = subtreeWeightBySlug.get(b.id) ?? 0;
+      if (wa !== wb) return wb - wa;
+      return a.id.localeCompare(b.id);
+    });
+  const preferredDomains = [
+    ...rankDomains(
+      leftHalfDomains.filter(
+        (domain) => (subtreeWeightBySlug.get(domain.id) ?? 0) >= maxDomainWeight * 0.5,
+      ),
+    ),
+    ...rankDomains(domains),
+  ].filter(
+    (domain, index, list) => list.findIndex((item) => item.id === domain.id) === index,
+  );
+
+  for (const domain of preferredDomains) {
+    const evidenceLandmark = evidenceForDomain(domain.id);
+    if (evidenceLandmark) {
+      evidenceLandmarksByDomain.set(domain.id, [evidenceLandmark]);
+      promote(evidenceLandmark, "landmark");
+      break;
+    }
+  }
+
   return {
     skeletonSlugs,
     levelBySlug,
     subtreeWeightBySlug,
     landmarksByDomain,
+    evidenceLandmarksByDomain,
     overflowByDomain,
   };
 }

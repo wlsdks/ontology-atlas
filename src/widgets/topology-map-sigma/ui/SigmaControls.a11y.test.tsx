@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render as rtlRender, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import koMessages from '../../../../messages/ko.json';
@@ -77,8 +77,65 @@ describe('SigmaControls — 키보드 focus 가시성 (a11y, WCAG 2.4.7)', () =>
     const controlsButton = screen.getByRole('button', { name: '지도 조절 열기' });
     const mobileRail = controlsButton.parentElement;
 
-    expect(mobileRail?.className).toContain('bottom-[7rem]');
-    expect(mobileRail?.className).toContain('md:top-[140px]');
+    expect(mobileRail?.className).toContain(
+      'bottom-[var(--topology-floating-control-phone-bottom)]',
+    );
+    expect(mobileRail?.className).toContain(
+      'md:top-[var(--topology-floating-control-desktop-top)]',
+    );
+    expect(mobileRail).toHaveAttribute(
+      'data-control-phone-bottom-token',
+      '--topology-floating-control-phone-bottom',
+    );
+    expect(mobileRail).toHaveAttribute(
+      'data-control-desktop-top-token',
+      '--topology-floating-control-desktop-top',
+    );
+  });
+
+  it('단축키 리스너를 컨트롤 값 변경마다 재등록하지 않고 최신 값을 사용한다', () => {
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
+    const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+    const firstOnChange = vi.fn();
+    const secondOnChange = vi.fn();
+    const latestValue = {
+      ...DEFAULT_SIGMA_CONTROLS,
+      query: 'domain',
+      depthLimit: 4,
+    };
+
+    const { rerender, unmount } = render(
+      <SigmaControls value={DEFAULT_SIGMA_CONTROLS} onChange={firstOnChange} onFitView={() => {}} />,
+    );
+    const addedKeydownCount = () =>
+      addEventListenerSpy.mock.calls.filter(([type]) => type === 'keydown').length;
+    const removedKeydownCount = () =>
+      removeEventListenerSpy.mock.calls.filter(([type]) => type === 'keydown').length;
+
+    expect(addedKeydownCount()).toBe(1);
+
+    rerender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <TooltipProvider>
+          <SigmaControls value={latestValue} onChange={secondOnChange} onFitView={() => {}} />
+        </TooltipProvider>
+      </NextIntlClientProvider>,
+    );
+
+    expect(addedKeydownCount()).toBe(1);
+    expect(removedKeydownCount()).toBe(0);
+
+    fireEvent.keyDown(window, { key: '2' });
+
+    expect(firstOnChange).not.toHaveBeenCalled();
+    expect(secondOnChange).toHaveBeenCalledWith({
+      ...latestValue,
+      depthLimit: 2,
+    });
+
+    unmount();
+
+    expect(removedKeydownCount()).toBe(1);
   });
 
   it('펼침 + 고급 설정 + 단축키 도움말 단계의 모든 버튼이 focus 링을 가진다', () => {

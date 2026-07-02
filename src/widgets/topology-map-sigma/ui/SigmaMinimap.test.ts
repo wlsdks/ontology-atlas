@@ -1,5 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import { MIN_READABLE_VIEWPORT_W, resolveMinimapViewportFrame } from './SigmaMinimap';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  createMinimapCameraFrameScheduler,
+  MIN_READABLE_VIEWPORT_W,
+  resolveMinimapViewportFrame,
+} from './SigmaMinimap';
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('resolveMinimapViewportFrame', () => {
   it('uses a visual floor wide enough to read as a viewport, not a hairline', () => {
@@ -63,5 +71,27 @@ describe('resolveMinimapViewportFrame', () => {
       visible: false,
       state: 'hidden',
     });
+  });
+
+  it('coalesces repeated camera updates into one minimap render frame', () => {
+    vi.useFakeTimers();
+    const onFrame = vi.fn();
+    const scheduler = createMinimapCameraFrameScheduler(onFrame);
+
+    scheduler.trigger();
+    scheduler.trigger();
+    scheduler.trigger();
+
+    expect(onFrame).toHaveBeenCalledTimes(0);
+
+    vi.advanceTimersByTime(16);
+
+    expect(onFrame).toHaveBeenCalledTimes(1);
+
+    scheduler.trigger();
+    scheduler.cancel();
+    vi.advanceTimersByTime(16);
+
+    expect(onFrame).toHaveBeenCalledTimes(1);
   });
 });

@@ -35,6 +35,42 @@ scope 유지(시야 붕괴 없음) / 배경 클릭 → overview 복귀. Shneider
 `--topology-panel-selected-rail-width` 토큰을 타서, URL 복원과 클릭 선택이 서로
 다른 크기의 좌측 패널을 만들지 않는다.
 
+Overview skeleton cards now use a stronger kind wash and border tint while
+relation strokes use slightly higher quality-token contrast. The map should read
+as an ontology structure first — project, domain, capability, and typed relation
+shape — instead of a dark tag cloud with faint lines. This deliberately improves
+expression through existing tokens rather than adding more labels to every card.
+
+The card surface also separates kind hue from tier strength: project, domain,
+capability, and element cards keep the same visual vocabulary but use tiered
+surface alpha so the overview reads as ontology hierarchy before it reads as a
+flat set of labels. The design guardrail is that hierarchy is expressed through
+tokenized surface weight, not through decorative badges or extra prose on every
+card.
+
+Overview containment connectors render a quiet tokenized spine underneath the
+quality stroke. This makes `contains` edges read as the ontology backbone while
+keeping relation quality, evidence, and selection on the foreground stroke. The
+spine is intentionally limited to overview containment links so loose or
+review-needed relations do not gain false structural authority.
+
+Those overview containment links also place a small tokenized terminal at the
+child-card landing point. This gives non-developer readers a direction cue for
+parent → child containment without adding arrowheads, extra labels, or another
+legend row.
+
+The overview reader lens now includes a compact map-layer legend that consumes
+the same `ONTOLOGY_KIND_TONE` project/domain/capability/element colors as the
+graph cards. This keeps non-developer readers from treating color as decoration:
+the left panel explains the ontology layer, while the map stays quiet enough to
+scan.
+
+The same reader lens also explains relation-line marks without adding labels on
+top of the map: the containment backbone uses the overview spine/terminal tokens,
+and quality-check relations use the strong-to-weak relation stroke tokens. This
+lets non-developer readers distinguish hierarchy from review paths before they
+switch into focus or path mode.
+
 선택된 relation label 은 36px hit target 안에 더 작은 visual badge 를 두어 클릭은
 쉽고 지도 표식은 작게 유지한다. selected relation inspector 는
 `--topology-selected-relation-card-*` 토큰으로 우측 compact rail 에 고정해 중앙

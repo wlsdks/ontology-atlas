@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
+  clampSelectedFocusCameraSafeTarget,
+  isCameraMotionNearTarget,
   resolveSafeAreaCameraFit,
   resolveSelectedFocusCameraFit,
   resolveSelectedFocusCameraMotionProof,
@@ -36,11 +39,25 @@ describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
     expect(600 - insets.left - insets.right).toBeGreaterThan(0);
   });
 
-  it('지도 골격은 compact 좌측 HUD 폭만큼만 노드 배치 안전영역을 둔다', () => {
-    expect(resolveSkeletonSafeInsets(1280, false).left).toBeCloseTo(1280 * 0.46);
-    expect(resolveSkeletonSafeInsets(1512, false).left).toBeCloseTo(1512 * 0.46);
-    expect(resolveSkeletonSafeInsets(1920, false).left).toBeCloseTo(640 * 1.18);
-    expect(resolveSkeletonSafeInsets(2560, false).left).toBeCloseTo(640 * 1.32);
+  it('지도 골격은 좌측 분석 rail 만큼만 예약해 캔버스 대부분을 지도에 쓴다', () => {
+    expect(resolveSkeletonSafeInsets(1280, false).left).toBeCloseTo(280);
+    expect(resolveSkeletonSafeInsets(1512, false).left).toBeCloseTo(280 * 1.12);
+    expect(resolveSkeletonSafeInsets(1920, false).left).toBeCloseTo(280 * 1.18);
+    expect(resolveSkeletonSafeInsets(2560, false).left).toBeCloseTo(280 * 1.32);
+    const desktop = resolveSkeletonSafeInsets(1920, false);
+    expect(1920 - desktop.left - desktop.right).toBeGreaterThanOrEqual(1360);
+  });
+
+  it('선택 전 focus 안내 rail 은 overview HUD 보다 좁은 safe inset 을 쓴다', () => {
+    expect(
+      resolveSkeletonSafeInsets(1920, false, { compactFocusRail: true }).left,
+    ).toBeCloseTo(240 * 1.18);
+    expect(
+      resolveSkeletonSafeInsets(2560, false, { compactFocusRail: true }).left,
+    ).toBeCloseTo(240 * 1.32);
+    expect(
+      resolveSkeletonSafeInsets(1920, false, { compactFocusRail: true }).left,
+    ).toBeLessThan(resolveSkeletonSafeInsets(1920, false).left);
   });
 
   it('선택 focus rail 이 활성일 때는 좌측 overview HUD 대신 compact rail 폭만 예약한다', () => {
@@ -129,7 +146,7 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
     selectedFanoutRows: 2,
   });
 
-  it('선택 노드가 이미 safe rect 안에 있으면 카메라를 움직이지 않는다', () => {
+  it('선택 노드가 이미 readable safe center 에 있으면 카메라를 움직이지 않는다', () => {
     const safeTarget = {
       x: insets.left + (viewport.width - insets.left - insets.right) / 2,
       y: insets.top + (viewport.height - insets.top - insets.bottom) / 2,
@@ -144,7 +161,28 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
     ).toBeNull();
   });
 
-  it('선택 노드가 support panel 밑이면 가장 가까운 safe edge 까지만 보정한다', () => {
+  it('선택 노드가 safe rect 안쪽 가장자리에 있으면 readable safe center 로 보정한다', () => {
+    const expectedSafeCenter = {
+      x: insets.left + (viewport.width - insets.left - insets.right) / 2,
+      y: insets.top + (viewport.height - insets.top - insets.bottom) / 2,
+    };
+    const fit = resolveSelectedFocusCameraFit({
+      selectedViewport: { x: insets.left + 40, y: insets.top + 120 },
+      viewport,
+      insets,
+      currentRatio: 1.1,
+    });
+    expect(fit).not.toBeNull();
+    expect(fit?.targetRatio).toBe(0.8);
+    expect(fit?.safeTarget.x).toBeCloseTo(expectedSafeCenter.x);
+    expect(fit?.safeTarget.y).toBeCloseTo(expectedSafeCenter.y);
+  });
+
+  it('선택 노드가 support panel 밑이면 readable safe center 로 보정한다', () => {
+    const expectedSafeCenter = {
+      x: insets.left + (viewport.width - insets.left - insets.right) / 2,
+      y: insets.top + (viewport.height - insets.top - insets.bottom) / 2,
+    };
     const fit = resolveSelectedFocusCameraFit({
       selectedViewport: { x: insets.left - 40, y: insets.top + 120 },
       viewport,
@@ -153,8 +191,8 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
     });
     expect(fit).not.toBeNull();
     expect(fit?.targetRatio).toBe(0.8);
-    expect(fit?.safeTarget.x).toBeCloseTo(insets.left + 24);
-    expect(fit?.safeTarget.y).toBe(insets.top + 120);
+    expect(fit?.safeTarget.x).toBeCloseTo(expectedSafeCenter.x);
+    expect(fit?.safeTarget.y).toBeCloseTo(expectedSafeCenter.y);
   });
 
   it('이미 읽기 배율보다 줌인된 상태에서는 추가 줌아웃 없이 팬만 계산한다', () => {
@@ -165,7 +203,58 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
       currentRatio: 0.62,
     });
     expect(fit?.targetRatio).toBe(0.62);
-    expect(fit?.safeTarget.x).toBeCloseTo(viewport.width - insets.right - 24);
+    expect(fit?.safeTarget.x).toBeCloseTo(
+      insets.left + (viewport.width - insets.left - insets.right) / 2,
+    );
+  });
+
+  it('선택 클릭 전용 정책은 fixed chrome safe rect 가 아니라 viewport reading center 를 목표로 한다', () => {
+    const fit = resolveSelectedFocusCameraFit({
+      selectedViewport: { x: insets.left - 40, y: insets.top + 120 },
+      viewport,
+      insets,
+      currentRatio: 1.1,
+      targetPolicy: 'viewport-center',
+    });
+    expect(fit).not.toBeNull();
+    expect(fit?.targetRatio).toBe(1.1);
+    expect(fit?.safeTarget.x).toBeCloseTo(viewport.width / 2);
+    expect(fit?.safeTarget.y).toBeCloseTo(
+      viewport.height * SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
+    );
+  });
+
+  it('선택 클릭 전용 정책도 선택 노드가 읽기 목표점 근처면 카메라를 움직이지 않는다', () => {
+    expect(
+      resolveSelectedFocusCameraFit({
+        selectedViewport: {
+          x: viewport.width / 2 - 16,
+          y: viewport.height * SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
+        },
+        viewport,
+        insets,
+        currentRatio: 1.1,
+        targetPolicy: 'viewport-center',
+        safeRectNoop: true,
+      }),
+    ).toBeNull();
+  });
+
+  it('선택 카메라 target 은 검증 한도를 넘지 않도록 실제 이동 거리를 clamp 한다', () => {
+    const selectedViewport = { x: 434, y: 420 };
+    const safeTarget = { x: 756, y: 440 };
+    const clamped = clampSelectedFocusCameraSafeTarget({
+      selectedViewport,
+      safeTarget,
+      maxDistancePx: 318,
+    });
+    const distance = Math.hypot(
+      clamped.x - selectedViewport.x,
+      clamped.y - selectedViewport.y,
+    );
+    expect(Math.round(distance)).toBeLessThanOrEqual(318);
+    expect(clamped.x).toBeLessThan(safeTarget.x);
+    expect(clamped.y).toBeCloseTo(439.75, 1);
   });
 
   it('선택 카메라 보정의 의도와 이동 거리를 검증 가능한 proof 로 남긴다', () => {
@@ -175,11 +264,26 @@ describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () 
     });
     expect(proof).toEqual({
       intent: 'selected-focus-safe-rect',
-      targetPolicy: 'nearest-safe-target',
+      targetPolicy: 'readable-safe-center',
       selectedViewport: { x: 100, y: 200 },
       safeTarget: { x: 220, y: 290 },
       distancePx: 150,
       targetInsideSafeRect: true,
     });
+  });
+
+  it('overview safe-fit 은 현재 카메라가 목표와 사실상 같으면 animation 을 생략할 수 있다', () => {
+    expect(
+      isCameraMotionNearTarget({
+        current: { x: 0.5004, y: 0.4989, ratio: 1.0007 },
+        target: { x: 0.5, y: 0.5, ratio: 1 },
+      }),
+    ).toBe(true);
+    expect(
+      isCameraMotionNearTarget({
+        current: { x: 0.5, y: 0.5, ratio: 1 },
+        target: { x: 0.58, y: 0.5, ratio: 1 },
+      }),
+    ).toBe(false);
   });
 });

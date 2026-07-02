@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BookOpen, Plus } from "lucide-react";
+import { BookOpen, Plus, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
@@ -37,24 +37,54 @@ import { useTaxonomy } from "@/features/taxonomy";
 // 끌고 와 chunk 가 큼. 첫 진입 / 캐시 비었을 때 chunk 다운로드 동안 빈
 // 화면이 그대로 보여 "멈춤" 느낌이라, 데이터 구독 skeleton 과 동일 톤
 // fallback 을 모듈 로드 단계에도 표시.
-function TopologyLoadingFallback() {
+function TopologyLoadingFallback({
+  concepts = 0,
+  mode = "overview",
+  relations = 0,
+}: {
+  concepts?: number;
+  mode?: TopologyAnalysisMode;
+  relations?: number;
+}) {
   const t = useTranslations('topology');
   return (
     <div
-      className="absolute inset-0 z-10 flex items-center justify-center"
+      className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-6"
       data-testid="topology-engine-loading"
+      data-loading-contract="product-hierarchy-before-engine"
+      data-loading-flow="product-system>domain>capability>evidence>agent-handoff"
+      data-loading-motion-policy="quiet-no-pulse"
+      data-loading-mode={mode}
+      data-concept-count={concepts}
+      data-relation-count={relations}
       role="status"
       aria-live="polite"
     >
-      <div className="flex items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:var(--color-panel)] px-4 py-2 shadow-[0_12px_28px_rgba(0,0,0,0.45)]">
-        <span className="flex gap-1">
-          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--color-indigo-accent)] [animation-delay:0ms]" />
-          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--color-indigo-accent)] [animation-delay:150ms]" />
-          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--color-indigo-accent)] [animation-delay:300ms]" />
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-tertiary)]">
+      <div className="flex w-[min(520px,calc(100vw-48px))] flex-col gap-3 rounded-lg border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(13,15,21,0.92)] px-4 py-3 shadow-[0_16px_36px_rgba(0,0,0,0.34)]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)]">
           {t('loadingEngine')}
-        </span>
+          </span>
+          <span className="rounded-md border border-[color:rgba(139,151,255,0.22)] px-2 py-1 font-mono text-[10px] uppercase tracking-normal text-[color:rgba(199,205,255,0.92)]">
+            {mode}
+          </span>
+        </div>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[12px] font-medium text-[color:var(--color-text-primary)]">
+          <span>{t('loadingFlowProductSystem')}</span>
+          <span className="text-[color:var(--color-text-tertiary)]">-&gt;</span>
+          <span>{t('loadingFlowDomains')}</span>
+          <span className="text-[color:var(--color-text-tertiary)]">-&gt;</span>
+          <span>{t('loadingFlowCapabilities')}</span>
+          <span className="text-[color:var(--color-text-tertiary)]">-&gt;</span>
+          <span>{t('loadingFlowEvidence')}</span>
+          <span className="text-[color:var(--color-text-tertiary)]">-&gt;</span>
+          <span>{t('loadingFlowAgentHandoff')}</span>
+        </div>
+        <div className="flex items-center gap-2 font-mono text-[11px] text-[color:var(--color-text-secondary)]">
+          <span>{t('loadingConceptCount', { count: concepts })}</span>
+          <span className="text-[color:var(--color-text-tertiary)]">·</span>
+          <span>{t('loadingRelationCount', { count: relations })}</span>
+        </div>
       </div>
     </div>
   );
@@ -62,11 +92,19 @@ function TopologyLoadingFallback() {
 
 const SigmaTopology = dynamic(
   () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaTopology),
-  { ssr: false, loading: () => <TopologyLoadingFallback /> },
+  { ssr: false, loading: () => null },
 );
 /** 안정 참조 빈 set — 영향 보기 비활성 시 매 render 새 Set 생성 회피. */
 const EMPTY_IMPACT_SET: ReadonlySet<string> = new Set();
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
+
+function buildFocusInspectUrl(currentUrl: string, slug: string): string {
+  const url = new URL(currentUrl);
+  url.searchParams.set("mode", "focus");
+  url.searchParams.set("p", slug);
+  return url.toString();
+}
+
 const SigmaControls = dynamic(
   () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaControls),
   { ssr: false },
@@ -110,19 +148,33 @@ import {
 import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
 import {
   buildOntologyHealthSignals,
+  buildOntologyNodeHref,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { buildOntologyReachability, IMPACT_EXCLUDED_RELATION_TYPES, computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
+import { copyText } from "@/shared/lib/copy-text";
+import {
+  buildOntologyReachability,
+  computeOntologyChangeset,
+  formatAgentPostChangeSyncPacket,
+  IMPACT_EXCLUDED_RELATION_TYPES,
+  useChangeBaseline,
+} from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
 import {
   selectTopologyNodeRouteState,
+  selectTopologyPathRouteState,
   type TopologyAnalysisMode,
 } from "../model/url-state";
 import {
   buildTopologyAnalysisSummary,
+  buildTopologyHealthRepairHref,
   buildTopologyHealthActionTarget,
   classifyTopologyRelationQuality,
+  formatTopologyFocusBrief,
+  formatTopologyHealthImpactMcpCheck,
+  formatTopologyHealthMcpCheck,
 } from "../lib/topology-analysis";
+import { filterOntologyConnectedOrphans } from "../lib/topology-health";
 import {
   countProjectRelationsWithinGraph,
   resolveTopologyOverlayState,
@@ -161,6 +213,7 @@ import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
+const TOPOLOGY_OVERVIEW_WIDE_CANVAS_ASPECT_X = 8;
 
 export function HomePage() {
   const t = useTranslations('topology');
@@ -360,10 +413,14 @@ export function HomePage() {
   const createNodePanelRef = useRef<HTMLDivElement | null>(null);
   const closeCreateNode = useCallback(() => {
     setCreateNodeOpen(false);
+    setRouteState((current) => ({
+      ...current,
+      createNodeIntent: false,
+    }));
     window.requestAnimationFrame(() => {
       createNodeToggleRef.current?.focus();
     });
-  }, []);
+  }, [setRouteState]);
   const canCreateNode = vault.manifest !== null;
   const createNode = useCallback(
     async (input: { title: string; kind: CreateNodeKind; domain?: string }) => {
@@ -596,7 +653,12 @@ export function HomePage() {
   const topologyRevealFocusSlug =
     analysisMode === "path"
       ? (pathSourceSlug ?? selectedOntologyNode?.id ?? null)
-      : (selectedOntologyNode?.id ?? null);
+      : analysisMode === "overview"
+        ? // 클릭 = 선택만 — overview 지형은 불변. 확장(전개)은 배지/더블클릭
+          // 으로 초점 모드에 명시적으로 진입했을 때만 (소유자 피드백:
+          // "클릭하면 바로 확장돼서 헷갈린다").
+          null
+        : (selectedOntologyNode?.id ?? null);
 
   // 구조 골격 진입 — root /topology 에서만(local-graph ego 제외). ontology 노드를
   // 결정론적 radial 골격으로 배치할 precomputed 좌표(slug→{x,y,size}) + 진입에
@@ -606,6 +668,13 @@ export function HomePage() {
   // FSD: widget 은 view 를 import 못 하므로 view(HomePage)가 계산해 props 로 전달.
   const topologySkeleton = useMemo(() => {
     if (localGraphRoot !== null || !ontologyInsight || ontologyInsight.nodes.length === 0) {
+      return null;
+    }
+    // Graph 모드(옵시디언식 살아있는 그래프)는 골격 카드 안무 없이 전체
+    // ontology 노드를 라이브 물리로 그린다 — skeleton 을 끄면 SigmaTopology
+    // 의 기존 free-graph 경로(드래그 pin/release, hover ego, 좌표 persist)가
+    // 그대로 살아난다.
+    if (analysisMode === "graph") {
       return null;
     }
     const skel = buildOntologySkeleton(ontologyInsight.nodes, ontologyInsight.edges);
@@ -621,8 +690,9 @@ export function HomePage() {
       width: 1000,
       height: 1000,
       // 와이드 뷰포트 — 정원은 autoRescale 후 좌우가 비고 세로 거리가 멀어
-      // 보인다. 타원으로 화면 비율에 맞춰 카드 간격을 죄인다.
-      aspectX: 1.45,
+      // 보인다. 캔버스를 다시 움직이는 대신, 결정론적 overview projection 을
+      // 넓게 잡아 시작 지형 자체가 desktop canvas 를 쓰게 한다.
+      aspectX: TOPOLOGY_OVERVIEW_WIDE_CANVAS_ASPECT_X,
     });
     const map = new Map<string, { x: number; y: number; size: number }>();
     const slugs = new Set<string>(reveal.visibleSlugs);
@@ -709,9 +779,30 @@ export function HomePage() {
   // 때만 드로어 — 다른 노드를 고르면 자동으로 팝오버부터(effect 불필요).
   const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
   const [nodePopoverCollapsed, setNodePopoverCollapsed] = useState(false);
+  const [
+    selectedInspectorSupportRailSlug,
+    setSelectedInspectorSupportRailSlug,
+  ] = useState<string | null>(null);
+  const interactionSelectedSlugRef = useRef<string | null>(null);
   const [selectedRelationActive, setSelectedRelationActive] = useState(false);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
+  const topologyShortcutHelpPhoneVisible =
+    analysisMode !== "path" && analysisMode !== "health";
+  const createNodePending = createNodeIntent && !canCreateNode;
+  const topologyCreateNodeBlockingActive = createNodeOpen || createNodePending;
+  const topologyBlockingOverlayState = createNodeOpen
+    ? "create-node"
+    : createNodePending
+      ? "create-node-pending-vault"
+    : searchOpen
+      ? "project-search"
+      : ontologySearchOpen
+        ? "global-search"
+        : shortcutsOpen
+          ? "shortcuts"
+          : "none";
+  const topologyBlockingOverlayActive = topologyBlockingOverlayState !== "none";
   const openCreateNode = useCallback(() => {
     setSearchOpen(false);
     setOntologySearchOpen(false);
@@ -720,7 +811,11 @@ export function HomePage() {
     setFullDetailSlug(null);
     setNodePopoverCollapsed(false);
     setCreateNodeOpen(true);
-  }, []);
+    setRouteState((current) => ({
+      ...current,
+      createNodeIntent: true,
+    }));
+  }, [setRouteState]);
   useEffect(() => {
     if (!createNodeIntent) return;
     let cancelled = false;
@@ -729,10 +824,6 @@ export function HomePage() {
       if (canCreateNode && !createNodeOpen) {
         openCreateNode();
       }
-      setRouteState((current) => ({
-        ...current,
-        createNodeIntent: false,
-      }));
     });
     return () => {
       cancelled = true;
@@ -797,6 +888,31 @@ export function HomePage() {
         !fullDetailOpen &&
         analysisMode !== "path",
     );
+  const selectedInspectorSupportRailVisible =
+    selectedNodeFocusActive && selectedInspectorSupportRailSlug === selectedSlug;
+  const selectedNodeOwnsRightRail = selectedNodeFocusActive;
+  const topologyUtilityChromeState = selectedRelationActive
+    ? "collapsed-active-relation"
+    : selectedNodeOwnsRightRail
+      ? "selected-node-inspector"
+      : selectedSlug
+        ? "compact-focus"
+        : "visible";
+  const topologyUtilityChromeCompact =
+    topologyUtilityChromeState === "compact-focus" ||
+    topologyUtilityChromeState === "selected-node-inspector";
+  const topologyUtilityLaneSuppressionContract = selectedRelationActive
+    ? "selected-relation-inspector-owns-right-rail"
+    : selectedNodeOwnsRightRail
+      ? "selected-node-inspector-owns-right-rail"
+      : undefined;
+
+  const handleToggleSelectedInspectorSupportRail = useCallback(() => {
+    if (!selectedSlug) return;
+    setSelectedInspectorSupportRailSlug((current) =>
+      current === selectedSlug ? null : selectedSlug,
+    );
+  }, [selectedSlug]);
 
   const handleSelect = useCallback(
     (
@@ -811,6 +927,7 @@ export function HomePage() {
       // renderProjects.find 로 O(N) 스캔.
       // 새 노드 선택(연결 클릭 포함) = 관계 row 가 보이는 inspector 부터.
       // 사용자가 지도만 크게 보고 싶을 때 "지도 보기"로 명시적으로 접는다.
+      interactionSelectedSlugRef.current = slug;
       setFullDetailSlug(null);
       setNodePopoverCollapsed(false);
       setSelectedRelationActive(false);
@@ -827,6 +944,7 @@ export function HomePage() {
   );
 
   const handleClose = useCallback(() => {
+    interactionSelectedSlugRef.current = null;
     setFullDetailSlug(null);
     setNodePopoverCollapsed(false);
     setSelectedRelationActive(false);
@@ -835,8 +953,20 @@ export function HomePage() {
       selectedSlug: null,
       focusedHubSlug: null,
       impactMode: "none",
+      // 펼침(초점)의 닫기 = 지도 복귀. 배경 클릭/Esc/팝오버 X 가 전개를
+      // 접는다 — 클릭=선택, 배지=펼치기, 닫기=접기의 대칭 완성.
+      analysisMode:
+        current.analysisMode === "focus" ? "overview" : current.analysisMode,
     }));
   }, [setRouteState]);
+
+  useEffect(() => {
+    if (!selectedOntologyNode || analysisMode !== "focus") return;
+    if (interactionSelectedSlugRef.current === selectedOntologyNode.id) return;
+    // Deep-linked Focus routes should open with the map as the attention winner.
+    // Direct node clicks still expand the inspector because the user asked for detail.
+    setNodePopoverCollapsed(true);
+  }, [analysisMode, selectedOntologyNode]);
 
 
   const handleSelectImpactMode = useCallback(
@@ -906,8 +1036,12 @@ export function HomePage() {
   ]);
 
   const drawerOpen = drawerProject !== null || selectedOntologyNode !== null;
-  const analysisSelectedTitle = compactTopologyPanelTitle(
-    selectedProject?.name ?? selectedOntologyNode?.title ?? null,
+  const analysisSelectedTitle = useMemo(
+    () =>
+      compactTopologyPanelTitle(
+        selectedProject?.name ?? selectedOntologyNode?.title ?? null,
+      ),
+    [selectedOntologyNode?.title, selectedProject?.name],
   );
   const pathSourceTitle = useMemo(
     () =>
@@ -933,7 +1067,12 @@ export function HomePage() {
       now,
       daysThreshold: 30,
     });
-    const orphan = detectOrphanProjects(renderProjects);
+    // ontology containment 에 참여하는 프로젝트(루트 등)는 소속 미정 오탐에서
+    // 제외 — project-deps 렌즈만으로는 contains 그래프가 안 보인다 (감사 ⑦-a).
+    const orphan = filterOntologyConnectedOrphans(
+      detectOrphanProjects(renderProjects),
+      ontologyInsight?.edges ?? [],
+    );
     const promotion = detectPromotionCandidates(renderProjects, {
       minFanIn: 4,
     });
@@ -1001,9 +1140,22 @@ export function HomePage() {
     analysisMode === "overview" && !topologyFiltersActive && localGraphRoot === null
       ? currentSigmaRelationVisibility
         ? currentSigmaRelationVisibility.mode === "skeleton"
-          ? currentSigmaRelationVisibility
+          ? {
+              ...currentSigmaRelationVisibility,
+              visible: topologyCardVisibility?.visible ?? currentSigmaRelationVisibility.visible,
+              total: topologyCardVisibility?.total ?? currentSigmaRelationVisibility.total,
+            }
           : { ...currentSigmaRelationVisibility, total: topologyTotalRelations }
         : null
+      : null;
+  const pathCandidateVisibility =
+    analysisMode === "path"
+      ? topologyCardVisibility && topologyCardVisibility.total > 0
+        ? topologyCardVisibility
+        : {
+            visible: sigmaVisibleCount ?? topologyTotalNodes,
+            total: sigmaVisibleCount ?? topologyTotalNodes,
+          }
       : null;
   const topologyOverlayState = resolveTopologyOverlayState({
     dataReady: projectsQuery.loaded,
@@ -1068,6 +1220,87 @@ export function HomePage() {
     relationQuality: topologyRelationQuality,
     ...topologyHealthSummary,
   });
+  const postChangeSyncPacket = useMemo(() => formatAgentPostChangeSyncPacket(), []);
+
+  const copyCompactFocusBrief = useCallback(async () => {
+    if (!selectedSlug || !analysisSelectedTitle) return;
+    const currentUrl =
+      typeof window === "undefined" ? null : window.location.href;
+    const focusUrl =
+      typeof window === "undefined"
+        ? null
+        : buildFocusInspectUrl(window.location.href, selectedSlug);
+    const ok = await copyText(
+      formatTopologyFocusBrief({
+        slug: selectedSlug,
+        title: analysisSelectedTitle,
+        labels: {
+          title: t("analysis.focusBriefTitle"),
+          node: t("analysis.focusBriefNode"),
+          url: t("analysis.focusBriefUrl"),
+          ontologyUrl: t("analysis.focusBriefOntologyUrl"),
+          builderUrl: t("analysis.focusBriefBuilderUrl"),
+          reviewFocus: t("analysis.focusBriefReviewFocus"),
+          agentCheck: t("analysis.focusBriefAgentCheck"),
+          mcpCheck: t("analysis.focusBriefMcpCheck"),
+          impactCheck: t("analysis.focusBriefImpactCheck"),
+          mcpImpactCheck: t("analysis.focusBriefMcpImpactCheck"),
+          syncGate: t("analysis.focusBriefSyncGate"),
+        },
+        url: currentUrl,
+        focusUrl,
+        ontologyUrl: buildOntologyNodeHref(selectedSlug),
+        builderUrl: buildTopologyHealthRepairHref(selectedSlug),
+        syncGatePacket: postChangeSyncPacket,
+      }),
+    );
+    if (ok) toast.show(t("analysis.focusBriefCopied"), "success");
+  }, [analysisSelectedTitle, postChangeSyncPacket, selectedSlug, t, toast]);
+
+  const copyCompactFocusMcpProfile = useCallback(async () => {
+    if (!selectedSlug) return;
+    const ok = await copyText(formatTopologyHealthMcpCheck(selectedSlug));
+    if (ok) toast.show(t("analysis.focusMcpCopied"), "success");
+  }, [selectedSlug, t, toast]);
+
+  const copyCompactFocusMcpImpact = useCallback(async () => {
+    if (!selectedSlug) return;
+    const ok = await copyText(formatTopologyHealthImpactMcpCheck(selectedSlug));
+    if (ok) toast.show(t("analysis.focusMcpImpactCopied"), "success");
+  }, [selectedSlug, t, toast]);
+
+  const nodePopoverActions = useMemo(
+    () =>
+      selectedSlug
+        ? [
+            {
+              kind: "focus-brief" as const,
+              label: t("analysis.focusBriefCopy"),
+              ariaLabel: t("analysis.focusBriefCopyAriaLabel"),
+              onClick: copyCompactFocusBrief,
+            },
+            {
+              kind: "mcp-profile" as const,
+              label: t("analysis.focusMcpCopy"),
+              ariaLabel: t("analysis.focusMcpCopyAriaLabel"),
+              onClick: copyCompactFocusMcpProfile,
+            },
+            {
+              kind: "mcp-impact" as const,
+              label: t("analysis.focusMcpImpactCopy"),
+              ariaLabel: t("analysis.focusMcpImpactCopyAriaLabel"),
+              onClick: copyCompactFocusMcpImpact,
+            },
+          ]
+        : [],
+    [
+      copyCompactFocusBrief,
+      copyCompactFocusMcpImpact,
+      copyCompactFocusMcpProfile,
+      selectedSlug,
+      t,
+    ],
+  );
 
   useEffect(() => {
     if (analysisModeRef.current === analysisMode) return;
@@ -1120,6 +1353,23 @@ export function HomePage() {
     });
   }, [analysisMode]);
 
+  // 카드 배지/더블클릭의 명시적 "펼치기" — 선택과 초점 진입을 한 번에.
+  const handleExpandRequest = useCallback(
+    (slug: string) => {
+      interactionSelectedSlugRef.current = slug;
+      setFullDetailSlug(null);
+      setNodePopoverCollapsed(false);
+      setSelectedRelationActive(false);
+      setRouteState((current) => ({
+        ...selectTopologyNodeRouteState(current, slug, {
+          isHub: Boolean(projectBySlug.get(slug)?.isHub),
+        }),
+        analysisMode: "focus",
+      }));
+    },
+    [projectBySlug, setRouteState],
+  );
+
   const handleSelectAnalysisMode = useCallback(
     (mode: TopologyAnalysisMode) => {
       setRouteState((current) => ({
@@ -1134,13 +1384,7 @@ export function HomePage() {
 
   const handlePathSelectionChange = useCallback(
     (selection: { sourceSlug: string | null; targetSlug: string | null }) => {
-      setRouteState((current) => ({
-        ...current,
-        analysisMode: "path",
-        selectedSlug: selection.sourceSlug ?? current.selectedSlug,
-        pathSourceSlug: selection.sourceSlug,
-        pathTargetSlug: selection.targetSlug,
-      }));
+      setRouteState((current) => selectTopologyPathRouteState(current, selection));
     },
     [setRouteState],
   );
@@ -1268,14 +1512,38 @@ export function HomePage() {
                   className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8"
                   data-testid="topology-top-left-chrome-group"
                   data-workspace-context-state={
-                    selectedRelationActive ? "compact-active-relation" : "default"
+                    selectedRelationActive
+                      ? "compact-active-relation"
+                      : selectedNodeFocusActive
+                        ? selectedInspectorSupportRailVisible
+                          ? "selected-inspector-support-open"
+                          : "selected-inspector-support-closed"
+                        : "default"
+                  }
+                  data-selected-inspector-support-rail={
+                    selectedNodeFocusActive
+                      ? selectedInspectorSupportRailVisible
+                        ? "open"
+                        : "closed"
+                      : undefined
+                  }
+                  data-selected-inspector-support-contract={
+                    selectedNodeFocusActive
+                      ? "left-panel-collapsed-until-user-expands"
+                      : undefined
                   }
                 >
                   <HeroCollapsed
                     // 확장 hero 가 사라진 surface — 토글은 의미가 없고
                     // 분석 패널만 아래로 점프시켰다(사용자 보고). 드로어가
                     // 열려 있을 때만 "닫기" 동작으로.
-                    onExpand={drawerOpen ? handleClose : undefined}
+                    onExpand={
+                      selectedNodeFocusActive
+                        ? handleToggleSelectedInspectorSupportRail
+                        : drawerOpen
+                          ? handleClose
+                          : undefined
+                    }
                     title={selectedProject?.name ?? t('workspace.fallbackTitle')}
                     subtitle={
                       selectedProject
@@ -1286,14 +1554,22 @@ export function HomePage() {
                     }
                     icon={selectedProject?.icon ?? null}
                     ariaLabel={
-                      drawerOpen
-                        ? t('hero.closeSelected')
-                        : t('hero.expandLeftPanel')
+                      selectedNodeFocusActive
+                        ? selectedInspectorSupportRailVisible
+                          ? t('hero.collapseLeftPanel')
+                          : t('hero.expandLeftPanel')
+                        : drawerOpen
+                          ? t('hero.closeSelected')
+                          : t('hero.expandLeftPanel')
                     }
                     titleText={
-                      drawerOpen
-                        ? t('hero.closeSelected')
-                        : t('hero.expandLeftPanel')
+                      selectedNodeFocusActive
+                        ? selectedInspectorSupportRailVisible
+                          ? t('hero.collapseLeftPanel')
+                          : t('hero.expandLeftPanel')
+                        : drawerOpen
+                          ? t('hero.closeSelected')
+                          : t('hero.expandLeftPanel')
                     }
                     docsVaultHref={selectedRelationActive ? undefined : "/docs/"}
                     ontologyHref={selectedRelationActive ? undefined : "/ontology/"}
@@ -1307,15 +1583,41 @@ export function HomePage() {
             })()}
             <div
               data-testid="topology-command-chrome"
-              data-command-chrome-state={
-                selectedRelationActive ? "collapsed-active-relation" : "visible"
+              data-command-chrome-state={topologyUtilityChromeState}
+              data-blocking-overlay-state={topologyBlockingOverlayState}
+              data-create-node-intent-state={
+                createNodeOpen
+                  ? "active-blocking-composer"
+                  : createNodePending
+                    ? "pending-writable-vault"
+                    : "idle"
               }
-              data-attention-role={selectedRelationActive ? "demoted-utility" : "utility-chrome"}
+              data-attention-role={
+                selectedRelationActive
+                  ? "demoted-utility"
+                  : topologyBlockingOverlayActive
+                    ? "demoted-under-blocking-overlay"
+                    : "utility-chrome"
+              }
+              data-utility-lane-height-token={
+                topologyUtilityChromeCompact ? "--topology-utility-lane-height" : undefined
+              }
+              data-utility-lane-gap-token={
+                topologyUtilityChromeCompact ? "--topology-utility-lane-gap" : undefined
+              }
+              data-utility-lane-compact-width-token={
+                topologyUtilityChromeCompact ? "--topology-utility-lane-compact-width" : undefined
+              }
+              data-utility-lane-suppression-contract={
+                topologyUtilityLaneSuppressionContract
+              }
               className="contents"
             >
               {!selectedRelationActive ? (
                 <>
                   <SearchHint
+                    density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
+                    phoneFocusSuppressed={selectedNodeFocusActive}
                     onOpenSearch={() => {
                       setSearchOpen(true);
                     }}
@@ -1324,7 +1626,22 @@ export function HomePage() {
                       toast.show(t('controls.relayoutToast'), "info");
                     }}
                   />
-                  <div className="topology-ui-scale absolute right-4 top-4 z-20 flex items-center gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8">
+                  {selectedNodeOwnsRightRail ? null : (
+                    <div
+                      className="topology-ui-scale absolute right-4 top-4 z-20 flex items-center gap-[var(--topology-utility-lane-gap)] md:right-6 md:top-6 xl:right-8 xl:top-8"
+                      data-testid="topology-utility-action-lane"
+                      data-utility-lane-density={
+                        topologyUtilityChromeCompact ? "compact-focus" : "default"
+                      }
+                      data-utility-lane-contract={
+                        topologyUtilityChromeCompact
+                          ? "icon-first-focus-utility"
+                          : "labeled-map-utility"
+                      }
+                      data-utility-lane-surface-token="--topology-utility-lane-surface"
+                      data-utility-lane-border-token="--topology-utility-lane-border"
+                      data-utility-lane-shadow-token="--topology-utility-lane-shadow"
+                    >
                     <TopologyReviewLink
                       changeset={ontologyChangeset}
                       label={(count) => t('controls.reviewLabel', { count })}
@@ -1336,13 +1653,27 @@ export function HomePage() {
                       onClick={() => setDocsDrawerOpen((v) => !v)}
                       aria-expanded={docsDrawerOpen}
                       aria-label={t('controls.docsAriaLabel')}
-                      className="inline-flex h-11 items-center gap-2 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[0_10px_26px_rgba(0,0,0,0.14)] transition-[background-color,border-color,box-shadow,transform] duration-180 ease-out hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:var(--color-panel)] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none motion-reduce:transform-none"
+                      data-utility-action-token-contract="support-surface-family"
+                      data-utility-action-surface-token="--topology-utility-lane-surface"
+                      data-utility-action-border-token="--topology-utility-lane-border"
+                      data-utility-action-shadow-token="--topology-utility-lane-shadow"
+                      data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
+                      className={`inline-flex h-[var(--topology-utility-lane-height)] items-center justify-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-border)] bg-[color:var(--topology-utility-lane-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color,box-shadow,transform] duration-180 ease-out hover:border-[color:var(--topology-utility-lane-accent-border)] hover:bg-[color:var(--topology-utility-lane-hover-surface)] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none motion-reduce:transform-none ${
+                        topologyUtilityChromeCompact
+                          ? "w-[var(--topology-utility-lane-compact-width)] px-0"
+                          : "px-3.5"
+                      }`}
                     >
                       <BookOpen size={15} className="text-[color:var(--color-indigo-accent)]" />
-                      <span>{t('controls.docsLabel')}</span>
+                      <span className={topologyUtilityChromeCompact ? "sr-only" : undefined}>
+                        {t('controls.docsLabel')}
+                      </span>
                       {docsPinnedCount > 0 ? (
                         <span
-                          className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:rgba(94,106,210,0.28)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--color-indigo-accent)]"
+                          data-utility-count-badge="pinned-docs"
+                          data-surface-token="--topology-utility-lane-count-surface"
+                          data-text-token="--topology-utility-lane-count-text"
+                          className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--topology-utility-lane-count-surface)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--topology-utility-lane-count-text)]"
                           aria-label={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
                           title={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
                         >
@@ -1351,7 +1682,9 @@ export function HomePage() {
                       ) : null}
                       <kbd
                         aria-hidden="true"
-                        className="hidden rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)] sm:inline"
+                        className={`hidden rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)] ${
+                          topologyUtilityChromeCompact ? "" : "sm:inline"
+                        }`}
                       >
                         D
                       </kbd>
@@ -1372,14 +1705,26 @@ export function HomePage() {
                           aria-expanded={createNodeOpen}
                           aria-label={t('createNode.toggleAria')}
                           data-testid="topology-create-node-toggle"
-                          className="inline-flex h-11 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[0_10px_26px_rgba(0,0,0,0.14)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:rgba(94,106,210,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none"
+                          data-utility-action-token-contract="accent-surface-family"
+                          data-utility-action-surface-token="--topology-utility-lane-accent-surface"
+                          data-utility-action-border-token="--topology-utility-lane-accent-border"
+                          data-utility-action-shadow-token="--topology-utility-lane-shadow"
+                          data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
+                          className={`inline-flex h-[var(--topology-utility-lane-height)] items-center justify-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none ${
+                            topologyUtilityChromeCompact
+                              ? "w-[var(--topology-utility-lane-compact-width)] px-0"
+                              : "px-3.5"
+                          }`}
                         >
                           <Plus size={15} aria-hidden />
-                          <span>{t('createNode.toggleLabel')}</span>
+                          <span className={topologyUtilityChromeCompact ? "sr-only" : undefined}>
+                            {t('createNode.toggleLabel')}
+                          </span>
                         </button>
                       </Tooltip>
                     ) : null}
-                  </div>
+                    </div>
+                  )}
                 </>
               ) : null}
             </div>
@@ -1388,9 +1733,11 @@ export function HomePage() {
                 <button
                   type="button"
                   aria-label={t('createNode.cancel')}
-                  className="absolute inset-0 z-[25] cursor-default bg-black/72 transition-opacity duration-180 ease-out motion-reduce:transition-none"
+                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-180 ease-out motion-reduce:transition-none"
                   data-interactive-overlay="true"
                   data-testid="topology-create-node-backdrop"
+                  data-backdrop-contract="blocks-map-and-closes-composer"
+                  data-backdrop-surface-token="--topology-blocking-backdrop-surface"
                   onClick={closeCreateNode}
                 />
                 <div
@@ -1400,13 +1747,16 @@ export function HomePage() {
                   aria-labelledby={CREATE_NODE_DIALOG_TITLE_ID}
                   tabIndex={-1}
                   onKeyDown={handleCreateNodePanelKeyDown}
-                  className="absolute left-1/2 top-[8.75rem] z-30 max-h-[calc(100dvh-11rem)] w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto md:top-[9rem] xl:top-[9.5rem]"
+                  className="absolute left-1/2 top-[var(--topology-blocking-composer-top)] z-30 max-h-[var(--topology-blocking-composer-max-height)] w-[var(--topology-blocking-composer-width)] -translate-x-1/2 overflow-y-auto"
                   data-testid="topology-create-node-panel"
                   data-attention-role="blocking-composer"
                   data-placement-contract="centered-blocking-edit"
                   data-surface-role="blocking-edit-surface"
                   data-elevation-contract="solid-panel-over-dimmed-map"
                   data-size-contract="bounded-centered-composer"
+                  data-top-token="--topology-blocking-composer-top"
+                  data-width-token="--topology-blocking-composer-width"
+                  data-max-height-token="--topology-blocking-composer-max-height"
                 >
                   <CreateNodeForm
                     onCreate={createNode}
@@ -1430,7 +1780,73 @@ export function HomePage() {
                 </div>
               </>
             ) : null}
-            {!selectedRelationActive && !createNodeOpen ? (
+            {createNodePending ? (
+              <>
+                <button
+                  type="button"
+                  aria-label={t('createNode.cancel')}
+                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-180 ease-out motion-reduce:transition-none"
+                  data-interactive-overlay="true"
+                  data-testid="topology-create-node-pending-backdrop"
+                  data-backdrop-contract="blocks-map-and-clears-create-intent"
+                  data-backdrop-surface-token="--topology-blocking-backdrop-surface"
+                  onClick={closeCreateNode}
+                />
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="topology-create-node-unavailable-title"
+                  className="absolute left-1/2 top-[var(--topology-blocking-composer-top)] z-30 w-[var(--topology-blocking-composer-width)] -translate-x-1/2"
+                  data-testid="topology-create-node-unavailable-panel"
+                  data-attention-role="blocking-composer"
+                  data-create-intent-state="pending-writable-vault"
+                  data-placement-contract="centered-blocking-edit"
+                  data-surface-role="blocking-edit-surface"
+                  data-elevation-contract="solid-panel-over-dimmed-map"
+                  data-size-contract="bounded-centered-composer"
+                  data-top-token="--topology-blocking-composer-top"
+                  data-width-token="--topology-blocking-composer-width"
+                >
+                  <section className="rounded-lg border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-4 py-3 shadow-[var(--topology-blocking-composer-shadow)]">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p
+                          id="topology-create-node-unavailable-title"
+                          className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+                        >
+                          {t('createNode.unavailableHeading')}
+                        </p>
+                        <p className="mt-2 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+                          {t('createNode.unavailableBody')}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={closeCreateNode}
+                        aria-label={t('createNode.cancel')}
+                        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+                      >
+                        <X size={12} aria-hidden />
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeCreateNode();
+                        setDocsDrawerOpen(true);
+                      }}
+                      data-testid="topology-create-node-open-workspace"
+                      className="mt-3 inline-flex h-8 items-center justify-center rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.16)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:rgba(94,106,210,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+                    >
+                      {t('createNode.unavailableAction')}
+                    </button>
+                  </section>
+                </div>
+              </>
+            ) : null}
+            {!selectedRelationActive &&
+            !topologyCreateNodeBlockingActive &&
+            (!selectedNodeFocusActive || selectedInspectorSupportRailVisible) ? (
               <TopologyAnalysisBar
                 mode={analysisMode}
                 summary={analysisSummary}
@@ -1442,9 +1858,7 @@ export function HomePage() {
                 pathSourceTitle={pathSourceTitle}
                 pathTargetTitle={pathTargetTitle}
                 overviewRelationVisibility={overviewRelationVisibility}
-                pathCandidateVisibility={
-                  analysisMode === "path" ? topologyCardVisibility : null
-                }
+                pathCandidateVisibility={pathCandidateVisibility}
                 rightPanelReserved={drawerOpen}
                 leftPanelExpanded={false}
                 createPanelReserved={createNodeOpen}
@@ -1454,6 +1868,8 @@ export function HomePage() {
                 labels={{
                 title: t("analysis.title"),
                 overview: t("analysis.overview"),
+                graph: t("analysis.graph"),
+                graphPrompt: t("analysis.graphPrompt"),
                 focus: t("analysis.focus"),
                 path: t("analysis.path"),
                 health: t("analysis.health"),
@@ -1485,11 +1901,36 @@ export function HomePage() {
                 overviewBriefCopy: t("analysis.overviewBriefCopy"),
                 overviewBriefCopied: t("analysis.overviewBriefCopied"),
                 overviewHandoffSummary: t("analysis.overviewHandoffSummary"),
+                overviewCopyTools: t("analysis.overviewCopyTools"),
                 overviewWorkOrderTitle: t("analysis.overviewWorkOrderTitle"),
                 overviewWorkOrderRead: t("analysis.overviewWorkOrderRead"),
                 overviewWorkOrderFocus: t("analysis.overviewWorkOrderFocus"),
                 overviewWorkOrderPath: t("analysis.overviewWorkOrderPath"),
                 overviewWorkOrderHealth: t("analysis.overviewWorkOrderHealth"),
+                overviewReaderLensTitle: t("analysis.overviewReaderLensTitle"),
+                overviewReaderLensDomains: t("analysis.overviewReaderLensDomains"),
+                overviewReaderLensCapabilities: t(
+                  "analysis.overviewReaderLensCapabilities",
+                ),
+                overviewReaderLensChangePaths: t(
+                  "analysis.overviewReaderLensChangePaths",
+                ),
+                overviewTierLegendTitle: t("analysis.overviewTierLegendTitle"),
+                overviewTierLegendProject: t("analysis.overviewTierLegendProject"),
+                overviewTierLegendDomain: t("analysis.overviewTierLegendDomain"),
+                overviewTierLegendCapability: t(
+                  "analysis.overviewTierLegendCapability",
+                ),
+                overviewTierLegendElement: t("analysis.overviewTierLegendElement"),
+                overviewRelationLegendTitle: t(
+                  "analysis.overviewRelationLegendTitle",
+                ),
+                overviewRelationLegendSpine: t(
+                  "analysis.overviewRelationLegendSpine",
+                ),
+                overviewRelationLegendQuality: t(
+                  "analysis.overviewRelationLegendQuality",
+                ),
                 overviewBriefCopyAriaLabel: t(
                   "analysis.overviewBriefCopyAriaLabel",
                 ),
@@ -1563,6 +2004,9 @@ export function HomePage() {
                 overviewSkeletonCardCountSuffix: t(
                   "analysis.overviewSkeletonCardCountSuffix",
                 ),
+                overviewSkeletonCardHiddenSuffix: t(
+                  "analysis.overviewSkeletonCardHiddenSuffix",
+                ),
                 overviewRelationLodNotice: t("analysis.overviewRelationLodNotice"),
                 overviewRelationPreparingNotice: t(
                   "analysis.overviewRelationPreparingNotice",
@@ -1583,6 +2027,7 @@ export function HomePage() {
                   "analysis.overviewSyncCopiedAriaLabel",
                 ),
                 focusBriefCopy: t("analysis.focusBriefCopy"),
+                focusBriefCopySummary: t("analysis.focusBriefCopySummary"),
                 focusBriefCopied: t("analysis.focusBriefCopied"),
                 focusMcpCopy: t("analysis.focusMcpCopy"),
                 focusMcpCopied: t("analysis.focusMcpCopied"),
@@ -1828,16 +2273,25 @@ export function HomePage() {
           </>
         <div
           data-testid="topology-map-surface"
-          data-blocking-edit={createNodeOpen ? "true" : "false"}
-          data-map-demoted={createNodeOpen ? "true" : "false"}
-          data-map-dim-opacity={createNodeOpen ? "0.24" : "1"}
-          aria-hidden={createNodeOpen ? "true" : undefined}
+          data-blocking-edit={topologyCreateNodeBlockingActive ? "true" : "false"}
+          data-map-demoted={topologyCreateNodeBlockingActive ? "true" : "false"}
+          data-map-dim-opacity={topologyCreateNodeBlockingActive ? "0.24" : "1"}
+          data-map-dim-opacity-token={
+            topologyCreateNodeBlockingActive ? "--topology-blocking-map-opacity" : undefined
+          }
+          data-map-filter-token={
+            topologyCreateNodeBlockingActive ? "--topology-blocking-map-filter" : undefined
+          }
+          data-map-interaction-contract={
+            topologyCreateNodeBlockingActive ? "suppressed-while-blocking-composer" : "interactive"
+          }
+          aria-hidden={topologyCreateNodeBlockingActive ? "true" : undefined}
           style={{
-            opacity: createNodeOpen ? 0.24 : 1,
-            filter: createNodeOpen ? "saturate(0.58)" : undefined,
+            opacity: topologyCreateNodeBlockingActive ? "var(--topology-blocking-map-opacity)" : 1,
+            filter: topologyCreateNodeBlockingActive ? "var(--topology-blocking-map-filter)" : undefined,
           }}
           className={`absolute inset-0 transition-[opacity,filter] duration-180 ease-out motion-reduce:transition-none ${
-            createNodeOpen
+            topologyCreateNodeBlockingActive
               ? "pointer-events-none"
               : ""
           }`}
@@ -1864,6 +2318,13 @@ export function HomePage() {
                     variant="sparse"
                   />
                 ) : null}
+                {topologyRenderState.renderCanvas && !currentSigmaGraphStats ? (
+                  <TopologyLoadingFallback
+                    concepts={visibleTopologyNodeCount}
+                    relations={visibleTopologyRelationCount}
+                    mode={analysisMode}
+                  />
+                ) : null}
                 {topologyRenderState.renderCanvas ? (
                   <SigmaTopology
                     key={localGraphRoot ?? "__root__"}
@@ -1871,9 +2332,11 @@ export function HomePage() {
                     categories={taxonomyCategories}
                     selectedSlug={canvasSelectedSlug}
                     onSelectProject={(slug) => handleSelect(slug)}
+                    onExpandRequest={handleExpandRequest}
                     onProjectOpen={(slug) => setLocalGraphStack((stack) => [...stack, slug])}
                     fitViewToken={combinedFitToken}
                     relayoutToken={topologyRelayoutToken}
+                    livePhysics={analysisMode === "graph"}
                     onVisibleCountChange={setSigmaVisibleCount}
                     onSkeletonCardVisibilityChange={setTopologyCardVisibility}
                     onGraphStatsChange={handleSigmaGraphStatsChange}
@@ -1899,6 +2362,10 @@ export function HomePage() {
                     skeletonSlugs={topologySkeleton?.slugs ?? null}
                     skeletonCards={topologySkeleton?.cards ?? null}
                     pathWorkflowActive={analysisMode === "path"}
+                    selectedMapFixedGeographyActive={
+                      analysisMode === "overview" && canvasSelectedSlug !== null
+                    }
+                    selectedFocusCenterActive={analysisMode === "focus"}
                     suppressKindLegend={
                       createNodeOpen ||
                       selectedRelationActive ||
@@ -1908,17 +2375,23 @@ export function HomePage() {
                         localGraphRoot === null &&
                         !canvasSelectedSlug)
                     }
+                    suppressRelationLegend={selectedNodeFocusActive}
                     suppressMinimap={
                       createNodeOpen ||
                       selectedRelationActive ||
                       selectedNodeFocusActive ||
                       analysisMode === "path"
                     }
-                    blockingSurfaceActive={createNodeOpen}
+                    blockingSurfaceActive={topologyBlockingOverlayActive}
                     pathSelection={{
                       sourceSlug: pathSourceSlug,
                       targetSlug: pathTargetSlug,
                     }}
+                    healthRepairTarget={
+                      analysisMode === "health"
+                        ? topologyHealthSummary.actionTarget
+                        : null
+                    }
                     onPathSelectionChange={handlePathSelectionChange}
                     impactNodes={impactHighlightSet}
                   />
@@ -1930,10 +2403,14 @@ export function HomePage() {
                   to { opacity: 1; transform: scale(1); }
                 }
               `}</style>
-              {createNodeOpen || selectedRelationActive ? null : (
+              {createNodeOpen ||
+              selectedRelationActive ||
+              topologyBlockingOverlayActive ||
+              selectedNodeFocusActive ? null : (
                 <SigmaControls
                   value={sigmaControls}
                   onChange={setSigmaControls}
+                  density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
                   onFitView={() => setFitViewToken((t) => t + 1)}
                   visibleCount={sigmaVisibleCount}
                   totalCount={
@@ -1943,17 +2420,50 @@ export function HomePage() {
                   }
                 />
               )}
-              {/* 단축키 도움말 진입점 — 우상단 SigmaControls 아래 36×36 아이콘.
-                  ? 키 단축키도 같은 sheet 를 열지만 시각적 affordance 가 없으면
-                  발견성 낮음. 모바일은 키보드가 없어 의미 0 → 데스크톱(md+)
-                  에서만 노출. */}
-              {createNodeOpen || selectedRelationActive ? null : (
+              {/* 단축키/제스처 도움말 진입점 — 우상단 SigmaControls 아래 36×36 아이콘.
+                  phone 은 primary read rail(path/health) 과 충돌하지 않는 overview/focus 에서만 노출한다. */}
+              {createNodeOpen ||
+              selectedRelationActive ||
+              topologyBlockingOverlayActive ||
+              selectedNodeFocusActive ? null : (
                 <Tooltip content={t('controls.shortcutsTooltip')} side="left" withProvider={false}>
                 <button
                   type="button"
                   onClick={() => setShortcutsOpen(true)}
                   aria-label={t('controls.shortcutsAriaLabel')}
-                  className="topology-ui-scale pointer-events-auto absolute right-4 top-[228px] z-20 hidden h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] font-mono text-[14px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:right-6 md:flex xl:right-8"
+                  data-testid="topology-shortcuts-help-button"
+                  data-controls-density={
+                    topologyUtilityChromeCompact ? "compact-focus" : "default"
+                  }
+                  data-controls-contract={
+                    topologyUtilityChromeCompact
+                      ? "focus-support-help-entry"
+                      : "map-help-entry"
+                  }
+                  data-phone-help-entry-contract={
+                    topologyShortcutHelpPhoneVisible
+                      ? "visible-outside-path-panel"
+                      : analysisMode === "health"
+                        ? "hidden-during-health-panel"
+                        : "hidden-during-path-panel"
+                  }
+                  data-phone-help-position-contract={
+                    topologyShortcutHelpPhoneVisible ? "map-card-clearance" : undefined
+                  }
+                  data-phone-help-top-token={
+                    topologyShortcutHelpPhoneVisible
+                      ? selectedNodeFocusActive
+                        ? "--topology-shortcuts-help-focus-phone-top"
+                        : "--topology-shortcuts-help-phone-top"
+                      : undefined
+                  }
+                  className={`topology-ui-scale pointer-events-auto absolute right-4 ${
+                    selectedNodeFocusActive
+                      ? "top-[var(--topology-shortcuts-help-focus-phone-top)]"
+                      : "top-[var(--topology-shortcuts-help-phone-top)]"
+                  } z-20 h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] font-mono text-[14px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:right-6 md:top-[var(--topology-shortcuts-help-desktop-top)] md:flex xl:right-8 ${
+                    topologyShortcutHelpPhoneVisible ? "flex" : "hidden"
+                  }`}
                 >
                   ?
                 </button>
@@ -2065,7 +2575,17 @@ export function HomePage() {
         !fullDetailOpen &&
         !selectedRelationActive &&
         !createNodeOpen ? (
-          <div className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[5.5rem] lg:top-[5.5rem] lg:block 2xl:right-24 2xl:top-[5.5rem]">
+          <div
+            data-testid="topology-node-popover-positioner"
+            data-position-contract="selected-inspector-aligns-to-right-inset"
+            data-fixed-surface-role="selected-node-inspector"
+            data-fixed-surface-measure-target="topology-node-popover"
+            data-selected-inspector-overlap-contract="fixed-surface-hides-overlapping-map-cards"
+            data-selected-inspector-gutter-contract="no-phantom-utility-rail"
+            data-position-top-token="--topology-node-popover-top"
+            data-position-right-inset-token="--topology-node-popover-right-inset"
+            className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
+          >
             <TopologyNodePopover
               focus={nodeFocus}
               significance={nodeSignificancePresentation}
@@ -2080,6 +2600,8 @@ export function HomePage() {
                 expand: t("nodePopover.expand"),
                 close: t("controls.close"),
                 moreSuffix: t("nodePopover.moreSuffix"),
+                actionRailTitle: t("nodePopover.actionRailTitle"),
+                actionRailHint: t("nodePopover.actionRailHint"),
                 // 컴포넌트가 {count} 를 치환 — raw 템플릿 그대로 전달.
                 expandedNote: t.raw("nodePopover.expandedNote") as string,
                 relationLensTitle: t("nodePopover.relationLensTitle"),
@@ -2091,6 +2613,8 @@ export function HomePage() {
                 ) as string,
                 relationLensTypeOne: t.raw("nodePopover.relationLensTypeOne") as string,
                 relationLensTypeOther: t.raw("nodePopover.relationLensTypeOther") as string,
+                relationLensCompactFacts: t("nodePopover.relationLensCompactFacts"),
+                relationLensCompactTypes: t("nodePopover.relationLensCompactTypes"),
                 relationLensNoScores: t("nodePopover.relationLensNoScores"),
                 relationQualityTitle: t("analysis.overviewBriefRelationQuality"),
                 relationQualityLabels: {
@@ -2110,6 +2634,12 @@ export function HomePage() {
                   "preflight-first": t("nodePopover.agentGatePreflightFirstShort"),
                   "review-first": t("nodePopover.agentGateReviewFirstShort"),
                 },
+                relationCopyActionChipLabels: {
+                  explain_relation: t("nodePopover.relationCopyExplainShort"),
+                  relation_check: t("nodePopover.relationCopyCheckShort"),
+                },
+                relationPayloadChipLabel: t("nodePopover.relationPayloadCopyShort"),
+                relationEvidenceChipLabel: t("nodePopover.relationEvidenceShort"),
                 kindLabels: {
                   project: tKinds(normalizeKindLabelKey("project")),
                   domain: tKinds(normalizeKindLabelKey("domain")),
@@ -2132,12 +2662,18 @@ export function HomePage() {
               onSelectConnection={(id) => handleSelect(id)}
               onOpenFullDetail={() => setFullDetailSlug(selectedOntologyNode.id)}
               onClose={handleClose}
+              actions={nodePopoverActions}
               collapsed={nodePopoverCollapsed}
-              onToggleCollapsed={() => setNodePopoverCollapsed((current) => !current)}
+              onToggleCollapsed={() => {
+                if (nodePopoverCollapsed) {
+                  setSelectedInspectorSupportRailSlug(null);
+                }
+                setNodePopoverCollapsed((current) => !current);
+              }}
               className={
                 nodePopoverCollapsed
                   ? "max-lg:w-[min(560px,calc(100vw-1.5rem))]"
-                  : "max-lg:max-h-[320px] max-lg:w-[min(520px,calc(100vw-1.5rem))]"
+                  : "max-lg:max-h-[var(--topology-node-popover-mobile-expanded-max-height)] max-lg:w-[min(520px,calc(100vw-1.5rem))]"
               }
             />
           </div>

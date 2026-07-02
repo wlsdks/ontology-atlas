@@ -1,5 +1,9 @@
 import { defineConfig } from '@playwright/test';
 
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3100';
+const webServerOrigin = new URL(baseURL).origin;
+const webServerPort = new URL(baseURL).port || '3100';
+
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 60_000,
@@ -11,7 +15,7 @@ export default defineConfig({
   reporter: [['list']],
   outputDir: 'output/playwright/test-results',
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3100',
+    baseURL,
     headless: true,
     trace: 'off',
     video: 'off',
@@ -21,9 +25,9 @@ export default defineConfig({
   // 띄운 dev (3100) 재사용. webServer 가 없으면 CI 가 baseURL 에 연결 못 함.
   webServer: {
     // R11 #24 — predev hook (docs-vault build) 까지 같이 도는 pnpm 진입점.
-    // CI 에서 cold-start 부터 검증, 로컬에선 이미 띄운 dev (3100) 재사용.
-    command: 'pnpm dev -p 3100',
-    url: 'http://127.0.0.1:3100',
+    // CI 에서 cold-start 부터 검증, 로컬에선 이미 띄운 dev 서버 재사용.
+    command: `pnpm dev -p ${webServerPort}`,
+    url: webServerOrigin,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

@@ -2454,6 +2454,7 @@ name = "ontology-atlas"
 version = "0.1.0"
 dependencies = [
  "notify-debouncer-full",
+ "objc2",
  "rfd",
  "serde",
  "tauri",

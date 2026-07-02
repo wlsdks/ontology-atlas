@@ -89,7 +89,8 @@ cat <<EOF
 [ontology vault @ ${VAULT}]
 $SUMMARY
 
-Token budget: prefer CodeGraph and focused MCP reads; avoid broad
+Token budget: prefer focused ontology reads and the narrowest available source
+tool (built-in search, grep, language server, Serena, CodeGraph); avoid broad
 list_concepts/list files unless needed. Sync ontology only for semantic
 codebase changes; skip typo/style/test-fixture-only edits.
 EOF

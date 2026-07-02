@@ -13,12 +13,29 @@ const { appBundleName } = names;
 const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
+const WEBVIEW_VERIFY_TOPOLOGY_SELECTED_RELATION_ENV =
+  "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_SELECTED_RELATION";
+const WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV =
+  "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_NODE_POPOVER";
 const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
 const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP";
+const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_ZOOM";
+const WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV =
+  "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FRAME_PROFILE";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX = 2.5;
+const TOPOLOGY_DRAG_FOCUS_MIN_DELTA_PX = 20;
+const TOPOLOGY_DRAG_FOCUS_MAX_REASONABLE_DELTA_PX = 560;
+const TOPOLOGY_DIM_OPACITY_CONTRACT = "readable-context-geography";
+const TOPOLOGY_DIM_ANCHOR_MIN_OPACITY = 0.26;
+const TOPOLOGY_DIM_CONTEXT_MIN_OPACITY = 0.08;
+const VALID_ZOOM_LENS_PRESENTATION_SOURCES = new Set([
+  "camera-zoom-in",
+  "selected-relation-context",
+  "selected-focus-detail",
+]);
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
-const WEBVIEW_VERIFY_TIMEOUT_MS = 7000;
+const WEBVIEW_VERIFY_TIMEOUT_MS = 15000;
 const GRACEFUL_QUIT_COMMAND_TIMEOUT_MS = 1200;
 const STALE_PROCESS_EXIT_TIMEOUT_MS = 6000;
 const STALE_PROCESS_POLL_MS = 200;
@@ -46,12 +63,21 @@ function topologyDragDeltaVector(delta) {
   return { x, y, magnitude: Math.hypot(x, y) };
 }
 
+export function topologyDragCompanionVectorTolerance(markers = {}) {
+  const uiScale = Number(markers.topologyUiScale);
+  if (!Number.isFinite(uiScale) || uiScale <= 1) return 8;
+  return Math.min(14, Math.max(8, uiScale * 8));
+}
+
 function validateTopologyNodePopoverScrollFooterContract(markers) {
   if (markers.topologyNodePopoverFooterVisible !== true) {
     return "WebView Relief selected node popover footer was not measurable";
   }
   if (markers.topologyNodePopoverFooterContract !== "fixed-outside-scroll-region") {
     return `WebView Relief selected node popover footer contract was ${markers.topologyNodePopoverFooterContract || "missing"}`;
+  }
+  if (markers.topologyNodePopoverFooterPositionContract !== "anchored-bottom-visible") {
+    return `WebView Relief selected node popover footer position contract was ${markers.topologyNodePopoverFooterPositionContract || "missing"}`;
   }
   if (markers.topologyNodePopoverFooterOverflowContract !== "no-horizontal-scroll") {
     return `WebView Relief selected node popover footer overflow contract was ${markers.topologyNodePopoverFooterOverflowContract || "missing"}`;
@@ -61,6 +87,8 @@ function validateTopologyNodePopoverScrollFooterContract(markers) {
   const footerTop = Number(markers.topologyNodePopoverFooterTop || 0);
   const footerBottom = Number(markers.topologyNodePopoverFooterBottom || 0);
   const popoverBottom = Number(markers.topologyNodePopoverBottom || 0);
+  const rowHeight = Number(markers.topologyNodePopoverRelationRowHeight || 0);
+  const visibleRowHeight = Number(markers.topologyNodePopoverVisibleRelationRowHeight || 0);
   if (
     !Number.isFinite(connectionListBottom) ||
     !Number.isFinite(footerTop) ||
@@ -71,13 +99,24 @@ function validateTopologyNodePopoverScrollFooterContract(markers) {
     return `WebView Relief selected node popover footer overlapped the connection list (${footerTop || "missing"} top / ${connectionListBottom || "missing"} list bottom)`;
   }
   const connectionListHeight = connectionListBottom - connectionListTop;
+  const minReadableConnectionListHeight =
+    Number.isFinite(rowHeight) && rowHeight > 0 ? rowHeight * 2 : 160;
   if (
     !Number.isFinite(connectionListHeight) ||
     connectionListTop <= 0 ||
     connectionListBottom <= 0 ||
-    connectionListHeight < 210
+    connectionListHeight < minReadableConnectionListHeight
   ) {
-    return `WebView Relief selected node popover connection list was too short (${Number.isFinite(connectionListHeight) ? connectionListHeight : "missing"}px)`;
+    return `WebView Relief selected node popover connection list was too short (${Number.isFinite(connectionListHeight) ? connectionListHeight : "missing"}px / ${Number.isFinite(minReadableConnectionListHeight) ? minReadableConnectionListHeight : "missing"}px minimum)`;
+  }
+  if (
+    !Number.isFinite(rowHeight) ||
+    !Number.isFinite(visibleRowHeight) ||
+    rowHeight <= 0 ||
+    visibleRowHeight < rowHeight - 1 ||
+    markers.topologyNodePopoverRelationRowFullyVisible !== true
+  ) {
+    return `WebView Relief selected node popover first relation row was not fully visible (${visibleRowHeight || "missing"}px visible / ${rowHeight || "missing"}px row)`;
   }
   if (
     !Number.isFinite(footerBottom) ||
@@ -97,6 +136,616 @@ function validateTopologyNodePopoverScrollFooterContract(markers) {
     footerScrollWidth - footerClientWidth > 2
   ) {
     return `WebView Relief selected node popover footer overflowed (${footerClientWidth} client / ${footerScrollWidth} scroll)`;
+  }
+  return null;
+}
+
+function validateTopologyFocusCommandSpineContract(markers) {
+  if (markers.topologyVerifierTokenContractVersion !== "command-spine-v1") {
+    return null;
+  }
+  if (markers.topologyFocusCommandSpineVisible !== true) {
+    return "WebView Relief selected focus command spine was not visible";
+  }
+  if (
+    markers.topologyFocusCommandSpineHierarchy !==
+    "brief-primary-review-agent-proof"
+  ) {
+    return `WebView Relief selected focus command hierarchy was ${markers.topologyFocusCommandSpineHierarchy || "missing"}`;
+  }
+  if (markers.topologyFocusCommandSpineAttentionLayer !== "support-command-spine") {
+    return `WebView Relief selected focus command attention layer was ${markers.topologyFocusCommandSpineAttentionLayer || "missing"}`;
+  }
+  if (markers.topologyFocusCommandSpineTokenizedSurface !== "topology-command-spine") {
+    return `WebView Relief selected focus command surface token was ${markers.topologyFocusCommandSpineTokenizedSurface || "missing"}`;
+  }
+  if (markers.topologyAnalysisPanelSurfaceToken !== "--topology-panel-support-surface") {
+    return `WebView Relief selected focus panel surface token was ${markers.topologyAnalysisPanelSurfaceToken || "missing"}`;
+  }
+  if (markers.topologyAnalysisPanelCommandSpinePaddingToken !== "--topology-command-spine-padding") {
+    return `WebView Relief selected focus panel command padding token was ${markers.topologyAnalysisPanelCommandSpinePaddingToken || "missing"}`;
+  }
+  if (markers.topologyAnalysisPanelCommandSpineGapToken !== "--topology-command-spine-gap") {
+    return `WebView Relief selected focus panel command gap token was ${markers.topologyAnalysisPanelCommandSpineGapToken || "missing"}`;
+  }
+  if (
+    markers.topologyAnalysisPanelCommandPrimaryHeightToken !==
+    "--topology-command-primary-min-height"
+  ) {
+    return `WebView Relief selected focus primary action height token was ${markers.topologyAnalysisPanelCommandPrimaryHeightToken || "missing"}`;
+  }
+  if (
+    markers.topologyAnalysisPanelCommandSpineSurfaceToken !==
+      "--topology-command-spine-surface" ||
+    markers.topologyFocusCommandSpineSurfaceToken !==
+      "--topology-command-spine-surface"
+  ) {
+    return `WebView Relief selected focus command spine surface token was ${markers.topologyFocusCommandSpineSurfaceToken || markers.topologyAnalysisPanelCommandSpineSurfaceToken || "missing"}`;
+  }
+  if (
+    markers.topologyAnalysisPanelCommandSpineBorderToken !==
+      "--topology-command-spine-border" ||
+    markers.topologyFocusCommandSpineBorderToken !==
+      "--topology-command-spine-border"
+  ) {
+    return `WebView Relief selected focus command spine border token was ${markers.topologyFocusCommandSpineBorderToken || markers.topologyAnalysisPanelCommandSpineBorderToken || "missing"}`;
+  }
+  if (
+    markers.topologyFocusCommandPrimaryActionSurfaceToken !==
+      "--topology-command-primary-surface" ||
+    markers.topologyFocusCommandPrimaryActionBorderToken !==
+      "--topology-command-primary-border"
+  ) {
+    return `WebView Relief selected focus primary command token was ${markers.topologyFocusCommandPrimaryActionSurfaceToken || markers.topologyFocusCommandPrimaryActionBorderToken || "missing"}`;
+  }
+  const commandSpineWidth = Number(markers.topologyFocusCommandSpineWidth || 0);
+  const commandSpineHeight = Number(markers.topologyFocusCommandSpineHeight || 0);
+  const primaryActionWidth = Number(markers.topologyFocusCommandPrimaryActionWidth || 0);
+  const primaryActionHeight = Number(markers.topologyFocusCommandPrimaryActionHeight || 0);
+  if (
+    !Number.isFinite(commandSpineWidth) ||
+    !Number.isFinite(commandSpineHeight) ||
+    commandSpineWidth < 200 ||
+    commandSpineHeight < 180
+  ) {
+    return `WebView Relief selected focus command spine was undersized (${commandSpineWidth}x${commandSpineHeight})`;
+  }
+  if (
+    markers.topologyFocusCommandPrimaryActionVisible !== true ||
+    !/(Copy focus brief|브리프 복사)/i.test(
+      String(markers.topologyFocusCommandPrimaryActionText || ""),
+    ) ||
+    primaryActionWidth < 180 ||
+    primaryActionHeight < 40
+  ) {
+    return `WebView Relief selected focus primary command was malformed (${markers.topologyFocusCommandPrimaryActionText || "missing"} · ${primaryActionWidth}x${primaryActionHeight})`;
+  }
+  if (markers.topologyFocusReviewOrderVisible !== true) {
+    return "WebView Relief selected focus review order was not visible";
+  }
+  if (markers.topologyFocusSecondaryActionsVisible !== true) {
+    return "WebView Relief selected focus secondary actions were not visible";
+  }
+  if (
+    markers.topologyFocusAgentHandoffVisible !== true ||
+    markers.topologyFocusAgentHandoffContract !== "mcp-cli-proof-disclosed"
+  ) {
+    return `WebView Relief selected focus agent handoff contract was ${markers.topologyFocusAgentHandoffContract || "missing"}`;
+  }
+  return null;
+}
+
+function validateTopologyNodePopoverTokenContract(markers) {
+  if (markers.topologyVerifierTokenContractVersion !== "command-spine-v1") {
+    return null;
+  }
+  if (markers.topologyNodePopoverVisible !== true) return null;
+  const collapsed = markers.topologyNodePopoverCollapsed === true;
+  const expectedWidthToken = "--topology-node-popover-fluid-width";
+  const expectedRailToken = "--topology-node-popover-rail-width";
+  const expectedWidthContract = collapsed
+    ? "fluid-chip-to-rail"
+    : "fluid-inspector-to-rail";
+  if (markers.topologyNodePopoverWidthToken !== expectedWidthToken) {
+    return `WebView Relief selected node popover width token was ${markers.topologyNodePopoverWidthToken || "missing"}`;
+  }
+  if (markers.topologyNodePopoverRailWidthToken !== expectedRailToken) {
+    return `WebView Relief selected node popover rail token was ${markers.topologyNodePopoverRailWidthToken || "missing"}`;
+  }
+  if (markers.topologyNodePopoverResponsiveWidthContract !== expectedWidthContract) {
+    return `WebView Relief selected node popover responsive width contract was ${markers.topologyNodePopoverResponsiveWidthContract || "missing"}`;
+  }
+  if (markers.topologyNodePopoverCompactHandoffContract !== "selected-node-actions-visible") {
+    return `WebView Relief selected node popover compact handoff contract was ${markers.topologyNodePopoverCompactHandoffContract || "missing"}`;
+  }
+  if (markers.topologyNodePopoverAgentHandoffContract !== "selected-node-actions-visible") {
+    return `WebView Relief selected node popover root handoff contract was ${markers.topologyNodePopoverAgentHandoffContract || "missing"}`;
+  }
+  if (markers.topologyNodePopoverAgentHandoffRoute !== "selected-node>facts>actions") {
+    return `WebView Relief selected node popover root handoff route was ${markers.topologyNodePopoverAgentHandoffRoute || "missing"}`;
+  }
+  if (markers.topologyNodePopoverAgentHandoffPrimaryAction !== "focus-brief") {
+    return `WebView Relief selected node popover root handoff primary action was ${markers.topologyNodePopoverAgentHandoffPrimaryAction || "missing"}`;
+  }
+  if (Number(markers.topologyNodePopoverAgentHandoffActionCount || 0) < 1) {
+    return `WebView Relief selected node popover root handoff action count was ${markers.topologyNodePopoverAgentHandoffActionCount || "missing"}`;
+  }
+  if (Number(markers.topologyNodePopoverAgentHandoffRelationFactCount || 0) < 1) {
+    return `WebView Relief selected node popover root handoff relation fact count was ${markers.topologyNodePopoverAgentHandoffRelationFactCount || "missing"}`;
+  }
+  if (Number(markers.topologyNodePopoverAgentHandoffRelationTypeCount || 0) < 1) {
+    return `WebView Relief selected node popover root handoff relation type count was ${markers.topologyNodePopoverAgentHandoffRelationTypeCount || "missing"}`;
+  }
+  if (markers.topologyNodePopoverAgentHandoffSummaryContract !== "visible-mcp-cli-focus-brief") {
+    return `WebView Relief selected node popover root handoff summary contract was ${markers.topologyNodePopoverAgentHandoffSummaryContract || "missing"}`;
+  }
+  const rootHandoffSummary = String(
+    markers.topologyNodePopoverAgentHandoffVisibleSummary || "",
+  ).trim();
+  if (!rootHandoffSummary.includes("MCP/CLI") || !rootHandoffSummary.length) {
+    return `WebView Relief selected node popover root handoff summary was ${rootHandoffSummary || "missing"}`;
+  }
+  if (
+    markers.topologyNodePopoverAgentHandoffSelectedNode !== markers.topologySelectedNodeId
+  ) {
+    return `WebView Relief selected node popover root handoff selected node was ${markers.topologyNodePopoverAgentHandoffSelectedNode || "missing"}`;
+  }
+  if (collapsed) {
+    if (markers.topologyNodePopoverCompactCommandRowVisible !== true) {
+      return "WebView Relief selected node popover compact command row was not visible";
+    }
+    if (
+      markers.topologyNodePopoverCompactCommandRowContract !==
+      "facts-and-actions-share-final-scanline"
+    ) {
+      return `WebView Relief selected node popover compact command row contract was ${markers.topologyNodePopoverCompactCommandRowContract || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactCommandRowGapToken !==
+      "--topology-node-popover-compact-command-row-gap"
+    ) {
+      return `WebView Relief selected node popover compact command row gap token was ${markers.topologyNodePopoverCompactCommandRowGapToken || "missing"}`;
+    }
+    if (markers.topologyNodePopoverCompactActionsContract !== "actions-share-command-row-with-facts") {
+      return `WebView Relief selected node popover compact actions contract was ${markers.topologyNodePopoverCompactActionsContract || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactActionsReadableFlow !==
+      "selected-node-facts-to-agent-handoff"
+    ) {
+      return `WebView Relief selected node popover compact actions readable flow was ${markers.topologyNodePopoverCompactActionsReadableFlow || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactRelationFactsContract !==
+      "collapsed-dock-surfaces-typed-facts"
+    ) {
+      return `WebView Relief selected node popover compact relation facts contract was ${markers.topologyNodePopoverCompactRelationFactsContract || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactRelationFactsReadableContract !==
+      "direct-typed-facts-not-scores"
+    ) {
+      return `WebView Relief selected node popover compact relation facts readable contract was ${markers.topologyNodePopoverCompactRelationFactsReadableContract || "missing"}`;
+    }
+    const relationFactsNoScores = String(
+      markers.topologyNodePopoverCompactRelationFactsNoScores || "",
+    ).trim();
+    if (!relationFactsNoScores) {
+      return "WebView Relief selected node popover compact relation facts no-scores text was missing";
+    }
+    const relationFactsAccessibleName = String(
+      markers.topologyNodePopoverCompactRelationFactsAccessibleName || "",
+    ).trim();
+    if (!relationFactsAccessibleName.includes(relationFactsNoScores)) {
+      return `WebView Relief selected node popover compact relation facts accessible name did not include no-scores text (${relationFactsAccessibleName || "missing"})`;
+    }
+    if (
+      String(markers.topologyNodePopoverCompactRelationFactsTitle || "").trim() !==
+      relationFactsAccessibleName
+    ) {
+      return "WebView Relief selected node popover compact relation facts title did not match accessible name";
+    }
+    if (
+      markers.topologyNodePopoverCompactRelationFactsHandoffContract !==
+      "compact-counts-route-to-relation-list-handoff"
+    ) {
+      return `WebView Relief selected node popover compact relation facts handoff contract was ${markers.topologyNodePopoverCompactRelationFactsHandoffContract || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactRelationFactsHandoffRoute !==
+      "selected-node>relations>fact>evidence>gate>action>payload"
+    ) {
+      return `WebView Relief selected node popover compact relation facts handoff route was ${markers.topologyNodePopoverCompactRelationFactsHandoffRoute || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactRelationFactsHandoffTool !==
+      "query_ontology"
+    ) {
+      return `WebView Relief selected node popover compact relation facts handoff tool was ${markers.topologyNodePopoverCompactRelationFactsHandoffTool || "missing"}`;
+    }
+    const relationFactsHandoffSummary = String(
+      markers.topologyNodePopoverCompactRelationFactsHandoffSummary || "",
+    ).trim();
+    if (
+      !relationFactsHandoffSummary.includes("query_ontology") ||
+      !relationFactsHandoffSummary.includes("direct facts")
+    ) {
+      return `WebView Relief selected node popover compact relation facts handoff summary was ${relationFactsHandoffSummary || "missing"}`;
+    }
+    const hiddenRemainderCount = Number(
+      markers.topologyNodePopoverCompactRelationFactsHiddenRemainderCount,
+    );
+    if (!Number.isFinite(hiddenRemainderCount) || hiddenRemainderCount < 0) {
+      return `WebView Relief selected node popover compact relation facts hidden remainder count was ${markers.topologyNodePopoverCompactRelationFactsHiddenRemainderCount ?? "missing"}`;
+    }
+    const factsTop = Number(markers.topologyNodePopoverCompactRelationFactsTop || 0);
+    const actionsTop = Number(markers.topologyNodePopoverCompactActionsTop || 0);
+    if (
+      markers.topologyNodePopoverCompactRelationFactsVisible === true &&
+      markers.topologyNodePopoverCompactActionsVisible === true &&
+      Math.abs(factsTop - actionsTop) > 8
+    ) {
+      return `WebView Relief selected node popover compact facts/actions were not on one scanline (${factsTop} vs ${actionsTop})`;
+    }
+    if (markers.topologyNodePopoverCompactHandoffSummaryVisible !== true) {
+      return "WebView Relief selected node popover compact handoff summary was not visible";
+    }
+    if (
+      markers.topologyNodePopoverCompactHandoffSummaryContract !==
+      "visible-mcp-cli-focus-brief"
+    ) {
+      return `WebView Relief selected node popover compact handoff summary contract was ${markers.topologyNodePopoverCompactHandoffSummaryContract || "missing"}`;
+    }
+    if (String(markers.topologyNodePopoverCompactHandoffSummaryVisibleLabel || "").trim() !== "MCP/CLI") {
+      return `WebView Relief selected node popover compact handoff visible label was ${markers.topologyNodePopoverCompactHandoffSummaryVisibleLabel || "missing"}`;
+    }
+    const compactHandoffSummary = String(
+      markers.topologyNodePopoverCompactHandoffSummaryText || "",
+    ).trim();
+    if (compactHandoffSummary !== rootHandoffSummary) {
+      return `WebView Relief selected node popover compact handoff summary was ${compactHandoffSummary || "missing"} vs ${rootHandoffSummary}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactHandoffSummarySelectedNode !==
+      markers.topologySelectedNodeId
+    ) {
+      return `WebView Relief selected node popover compact handoff selected node was ${markers.topologyNodePopoverCompactHandoffSummarySelectedNode || "missing"}`;
+    }
+    const handoffSummaryClientWidth = Number(
+      markers.topologyNodePopoverCompactHandoffSummaryClientWidth || 0,
+    );
+    const handoffSummaryScrollWidth = Number(
+      markers.topologyNodePopoverCompactHandoffSummaryScrollWidth || 0,
+    );
+    if (
+      !Number.isFinite(handoffSummaryClientWidth) ||
+      !Number.isFinite(handoffSummaryScrollWidth) ||
+      handoffSummaryClientWidth < 72 ||
+      handoffSummaryScrollWidth - handoffSummaryClientWidth > 2
+    ) {
+      return `WebView Relief selected node popover compact handoff summary overflowed (${handoffSummaryClientWidth} client / ${handoffSummaryScrollWidth} scroll)`;
+    }
+    const handoffSummaryTop = Number(markers.topologyNodePopoverCompactHandoffSummaryTop || 0);
+    if (
+      markers.topologyNodePopoverCompactRelationFactsVisible === true &&
+      Math.abs(factsTop - handoffSummaryTop) > 8
+    ) {
+      return `WebView Relief selected node popover compact facts/handoff summary were not on one scanline (${factsTop} vs ${handoffSummaryTop})`;
+    }
+    if (markers.topologyNodePopoverCompactMeaningContract !== "plain-language-meaning-before-typed-facts") {
+      return `WebView Relief selected node popover compact meaning contract was ${markers.topologyNodePopoverCompactMeaningContract || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactMeaningResponsiveContract !==
+      "visible-desktop-sr-only-compact"
+    ) {
+      return `WebView Relief selected node popover compact meaning responsive contract was ${markers.topologyNodePopoverCompactMeaningResponsiveContract || "missing"}`;
+    }
+    if (!String(markers.topologyNodePopoverCompactMeaningText || "").trim()) {
+      return "WebView Relief selected node popover compact meaning text was missing";
+    }
+    if (!/^(core|support|leaf)$/.test(String(markers.topologyNodePopoverCompactMeaningLevel || ""))) {
+      return `WebView Relief selected node popover compact meaning level was ${markers.topologyNodePopoverCompactMeaningLevel || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactMeaningTextToken !==
+      "--topology-node-popover-compact-meaning-text"
+    ) {
+      return `WebView Relief selected node popover compact meaning text token was ${markers.topologyNodePopoverCompactMeaningTextToken || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactMeaningSizeToken !==
+      "--topology-node-popover-compact-meaning-size"
+    ) {
+      return `WebView Relief selected node popover compact meaning size token was ${markers.topologyNodePopoverCompactMeaningSizeToken || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactMeaningLeadingToken !==
+      "--topology-node-popover-compact-meaning-leading"
+    ) {
+      return `WebView Relief selected node popover compact meaning leading token was ${markers.topologyNodePopoverCompactMeaningLeadingToken || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactMeaningGapToken !==
+      "--topology-node-popover-compact-meaning-gap"
+    ) {
+      return `WebView Relief selected node popover compact meaning gap token was ${markers.topologyNodePopoverCompactMeaningGapToken || "missing"}`;
+    }
+  }
+  if (
+    markers.topologyNodePopoverScrollContract !==
+    (collapsed ? "collapsed-chip-no-scroll" : "expanded-internal-scroll")
+  ) {
+    return `WebView Relief selected node popover scroll contract was ${markers.topologyNodePopoverScrollContract || "missing"}`;
+  }
+  if (collapsed && markers.topologyNodePopoverOverflowY !== "hidden") {
+    return `WebView Relief selected node popover collapsed overflow-y was ${markers.topologyNodePopoverOverflowY || "missing"}`;
+  }
+  if (!collapsed && markers.topologyNodePopoverOverflowY !== "hidden") {
+    return `WebView Relief selected node popover expanded root overflow-y was ${markers.topologyNodePopoverOverflowY || "missing"}`;
+  }
+  if (!collapsed && markers.topologyNodePopoverBodyScrollContract !== "content-scrolls-above-fixed-footer") {
+    return `WebView Relief selected node popover body scroll contract was ${markers.topologyNodePopoverBodyScrollContract || "missing"}`;
+  }
+  if (!collapsed && markers.topologyNodePopoverBodyOverflowY !== "auto") {
+    return `WebView Relief selected node popover body overflow-y was ${markers.topologyNodePopoverBodyOverflowY || "missing"}`;
+  }
+  if (!collapsed && markers.topologyNodePopoverBodyOverflowX !== "hidden") {
+    return `WebView Relief selected node popover body overflow-x was ${markers.topologyNodePopoverBodyOverflowX || "missing"}`;
+  }
+  if (!collapsed && markers.topologyNodePopoverOverflowX !== "hidden") {
+    return `WebView Relief selected node popover expanded overflow-x was ${markers.topologyNodePopoverOverflowX || "missing"}`;
+  }
+  if (markers.topologyNodePopoverSurfaceToken !== "--topology-node-popover-surface") {
+    return `WebView Relief selected node popover surface token was ${markers.topologyNodePopoverSurfaceToken || "missing"}`;
+  }
+  if (markers.topologyNodePopoverBorderToken !== "--topology-node-popover-border") {
+    return `WebView Relief selected node popover border token was ${markers.topologyNodePopoverBorderToken || "missing"}`;
+  }
+  if (collapsed) {
+    if (markers.topologyNodePopoverCompactBriefActionVisible !== true) {
+      return "WebView Relief selected node popover compact brief action was not visible";
+    }
+    if (markers.topologyNodePopoverCompactBriefActionKind !== "focus-brief") {
+      return `WebView Relief selected node popover compact brief action was ${markers.topologyNodePopoverCompactBriefActionKind || "missing"}`;
+    }
+    if (markers.topologyNodePopoverCompactBriefActionContract !== "copy-focus-brief") {
+      return `WebView Relief selected node popover compact brief action contract was ${markers.topologyNodePopoverCompactBriefActionContract || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactBriefActionReadableFlow !==
+      "selected-node-facts-to-agent-brief"
+    ) {
+      return `WebView Relief selected node popover compact brief action readable flow was ${markers.topologyNodePopoverCompactBriefActionReadableFlow || "missing"}`;
+    }
+    if (!String(markers.topologyNodePopoverCompactBriefActionRailLabel || "").trim()) {
+      return "WebView Relief selected node popover compact brief action rail label was missing";
+    }
+    if (
+      !String(markers.topologyNodePopoverCompactBriefActionTitle || "").includes(
+        String(markers.topologyNodePopoverCompactBriefActionRailLabel || ""),
+      )
+    ) {
+      return `WebView Relief selected node popover compact brief action title did not include rail label (${markers.topologyNodePopoverCompactBriefActionTitle || "missing"})`;
+    }
+    if (
+      markers.topologyNodePopoverCompactBriefActionSurfaceToken !==
+      "--topology-node-popover-action-icon-surface"
+    ) {
+      return `WebView Relief selected node popover compact brief action surface token was ${markers.topologyNodePopoverCompactBriefActionSurfaceToken || "missing"}`;
+    }
+    if (
+      markers.topologyNodePopoverCompactBriefActionBorderToken !==
+      "--topology-node-popover-action-icon-border"
+    ) {
+      return `WebView Relief selected node popover compact brief action border token was ${markers.topologyNodePopoverCompactBriefActionBorderToken || "missing"}`;
+    }
+    const actionWidth = Number(markers.topologyNodePopoverCompactBriefActionWidth || 0);
+    const actionHeight = Number(markers.topologyNodePopoverCompactBriefActionHeight || 0);
+    if (
+      !Number.isFinite(actionWidth) ||
+      !Number.isFinite(actionHeight) ||
+      actionWidth < 56 ||
+      actionWidth > 88 ||
+      actionHeight < 28 ||
+      actionHeight > 44
+    ) {
+      return `WebView Relief selected node popover compact brief action was malformed (${actionWidth}x${actionHeight})`;
+    }
+  }
+  if (!collapsed) {
+    if (markers.topologyNodePopoverActionRailVisible !== true) {
+      return "WebView Relief selected node popover action rail was not visible";
+    }
+    if (markers.topologyNodePopoverActionRailContract !== "compact-mcp-cli-handoff") {
+      return `WebView Relief selected node popover action rail contract was ${markers.topologyNodePopoverActionRailContract || "missing"}`;
+    }
+    if (Number(markers.topologyNodePopoverActionRailCount || 0) < 3) {
+      return `WebView Relief selected node popover action rail count was ${markers.topologyNodePopoverActionRailCount || "missing"}`;
+    }
+  }
+  if (!collapsed && markers.topologyNodePopoverMaxHeightToken !== "--topology-node-popover-max-height") {
+    return `WebView Relief selected node popover max-height token was ${markers.topologyNodePopoverMaxHeightToken || "missing"}`;
+  }
+  if (!collapsed) {
+    const popoverClientWidth = Number(markers.topologyNodePopoverClientWidth || 0);
+    const popoverScrollWidth = Number(markers.topologyNodePopoverScrollWidth || 0);
+    if (
+      !Number.isFinite(popoverClientWidth) ||
+      !Number.isFinite(popoverScrollWidth) ||
+      popoverClientWidth < 180 ||
+      popoverScrollWidth - popoverClientWidth > 2
+    ) {
+      return `WebView Relief selected node popover horizontally overflowed (${popoverClientWidth} client / ${popoverScrollWidth} scroll)`;
+    }
+  }
+  return null;
+}
+
+function validateTopologySelectedCardRelationSummaryContract(markers) {
+  if (markers.topologyVerifierTokenContractVersion !== "command-spine-v1") {
+    return null;
+  }
+  if (markers.topologySelectedNodePopoverVisible !== true) return null;
+  if (markers.topologySelectedSkeletonCardRelationSummaryVisible !== true) {
+    return "WebView Relief selected skeleton card relation summary was not visible";
+  }
+  if (
+    markers.topologySelectedSkeletonCardRelationSummaryContract !==
+    "selected-card-direct-facts"
+  ) {
+    return `WebView Relief selected skeleton card relation summary contract was ${markers.topologySelectedSkeletonCardRelationSummaryContract || "missing"}`;
+  }
+  if (
+    markers.topologySelectedSkeletonCardRelationSummarySurfaceToken !==
+    "--topology-relation-summary-surface"
+  ) {
+    return `WebView Relief selected skeleton card relation summary surface token was ${markers.topologySelectedSkeletonCardRelationSummarySurfaceToken || "missing"}`;
+  }
+  if (
+    markers.topologySelectedSkeletonCardRelationSummaryBorderToken !==
+    "--topology-relation-summary-border"
+  ) {
+    return `WebView Relief selected skeleton card relation summary border token was ${markers.topologySelectedSkeletonCardRelationSummaryBorderToken || "missing"}`;
+  }
+  if (
+    markers.topologySelectedSkeletonCardRelationSummaryTextToken !==
+    "--topology-relation-summary-text"
+  ) {
+    return `WebView Relief selected skeleton card relation summary text token was ${markers.topologySelectedSkeletonCardRelationSummaryTextToken || "missing"}`;
+  }
+  if (Number(markers.topologySelectedSkeletonCardRelationSummaryCount || 0) < 1) {
+    return `WebView Relief selected skeleton card relation summary count was ${markers.topologySelectedSkeletonCardRelationSummaryCount || "missing"}`;
+  }
+  if (Number(markers.topologySelectedSkeletonCardRelationSummaryTypeCount || 0) < 1) {
+    return `WebView Relief selected skeleton card relation summary type count was ${markers.topologySelectedSkeletonCardRelationSummaryTypeCount || "missing"}`;
+  }
+  return null;
+}
+
+function validateTopologyFocusUtilityLaneContract(markers) {
+  if (markers.topologyVerifierTokenContractVersion !== "command-spine-v1") {
+    return null;
+  }
+  if (
+    markers.topologyCommandChromeState !== "compact-focus" &&
+    markers.topologyCommandChromeState !== "selected-node-inspector"
+  ) {
+    return `WebView Relief selected focus command chrome state was ${markers.topologyCommandChromeState || "missing"}`;
+  }
+  if (markers.topologyUtilityLaneHeightToken !== "--topology-utility-lane-height") {
+    return `WebView Relief selected focus utility lane height token was ${markers.topologyUtilityLaneHeightToken || "missing"}`;
+  }
+  if (markers.topologyUtilityLaneGapToken !== "--topology-utility-lane-gap") {
+    return `WebView Relief selected focus utility lane gap token was ${markers.topologyUtilityLaneGapToken || "missing"}`;
+  }
+  if (
+    markers.topologyUtilityLaneCompactWidthToken !==
+    "--topology-utility-lane-compact-width"
+  ) {
+    return `WebView Relief selected focus utility lane compact width token was ${markers.topologyUtilityLaneCompactWidthToken || "missing"}`;
+  }
+  if (markers.topologyCommandChromeState === "selected-node-inspector") {
+    if (markers.topologyUtilityActionLaneVisible !== false) {
+      return "WebView Relief selected node inspector utility action lane was not suppressed";
+    }
+    return null;
+  }
+  if (markers.topologyUtilityActionLaneVisible !== true) {
+    return "WebView Relief selected focus utility action lane was not visible";
+  }
+  if (markers.topologyUtilityActionLaneDensity !== "compact-focus") {
+    return `WebView Relief selected focus utility lane density was ${markers.topologyUtilityActionLaneDensity || "missing"}`;
+  }
+  if (markers.topologyUtilityActionLaneContract !== "icon-first-focus-utility") {
+    return `WebView Relief selected focus utility lane contract was ${markers.topologyUtilityActionLaneContract || "missing"}`;
+  }
+  const width = Number(markers.topologyUtilityActionLaneWidth || 0);
+  const height = Number(markers.topologyUtilityActionLaneHeight || 0);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width < 80 || height < 36) {
+    return `WebView Relief selected focus utility lane was undersized (${width}x${height})`;
+  }
+  return null;
+}
+
+function validateTopologyFocusSearchLaneContract(markers) {
+  if (markers.topologyVerifierTokenContractVersion !== "command-spine-v1") {
+    return null;
+  }
+  if (markers.topologySearchActionLaneVisible !== true) {
+    return "WebView Relief selected focus search action lane was not visible";
+  }
+  if (markers.topologySearchActionLaneDensity !== "compact-focus") {
+    return `WebView Relief selected focus search lane density was ${markers.topologySearchActionLaneDensity || "missing"}`;
+  }
+  if (markers.topologySearchActionLaneContract !== "icon-first-focus-search") {
+    return `WebView Relief selected focus search lane contract was ${markers.topologySearchActionLaneContract || "missing"}`;
+  }
+  if (markers.topologySearchLaneCompactWidthToken !== "--topology-search-lane-compact-width") {
+    return `WebView Relief selected focus search compact width token was ${markers.topologySearchLaneCompactWidthToken || "missing"}`;
+  }
+  const width = Number(markers.topologySearchActionLaneWidth || 0);
+  const height = Number(markers.topologySearchActionLaneHeight || 0);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width < 80 || height < 36) {
+    return `WebView Relief selected focus search lane was undersized (${width}x${height})`;
+  }
+  if (width > 150) {
+    return `WebView Relief selected focus search lane stayed too wide (${width}px)`;
+  }
+  return null;
+}
+
+function validateTopologyFocusRightControlsContract(markers) {
+  if (markers.topologyVerifierTokenContractVersion !== "command-spine-v1") {
+    return null;
+  }
+  if (markers.topologySigmaControlsStackVisible !== true) {
+    return "WebView Relief selected focus right controls stack was not visible";
+  }
+  if (markers.topologySigmaControlsStackDensity !== "compact-focus") {
+    return `WebView Relief selected focus right controls stack density was ${markers.topologySigmaControlsStackDensity || "missing"}`;
+  }
+  if (markers.topologySigmaControlsStackContract !== "focus-support-utility-stack") {
+    return `WebView Relief selected focus right controls stack contract was ${markers.topologySigmaControlsStackContract || "missing"}`;
+  }
+  if (markers.topologySigmaControlsStackSurfaceToken !== "--topology-floating-control-surface") {
+    return `WebView Relief selected focus right controls stack surface token was ${markers.topologySigmaControlsStackSurfaceToken || "missing"}`;
+  }
+  if (markers.topologySigmaControlsStackBorderToken !== "--topology-floating-control-border") {
+    return `WebView Relief selected focus right controls stack border token was ${markers.topologySigmaControlsStackBorderToken || "missing"}`;
+  }
+  const stackWidth = Number(markers.topologySigmaControlsStackWidth || 0);
+  const stackHeight = Number(markers.topologySigmaControlsStackHeight || 0);
+  if (
+    !Number.isFinite(stackWidth) ||
+    !Number.isFinite(stackHeight) ||
+    stackWidth < 32 ||
+    stackWidth > 60 ||
+    stackHeight < 32 ||
+    stackHeight > 104
+  ) {
+    return `WebView Relief selected focus right controls stack was malformed (${stackWidth}x${stackHeight})`;
+  }
+  if (markers.topologyShortcutsHelpButtonVisible !== true) {
+    return "WebView Relief selected focus shortcuts help button was not visible";
+  }
+  if (markers.topologyShortcutsHelpButtonDensity !== "compact-focus") {
+    return `WebView Relief selected focus shortcuts help density was ${markers.topologyShortcutsHelpButtonDensity || "missing"}`;
+  }
+  if (markers.topologyShortcutsHelpButtonContract !== "focus-support-help-entry") {
+    return `WebView Relief selected focus shortcuts help contract was ${markers.topologyShortcutsHelpButtonContract || "missing"}`;
+  }
+  const helpWidth = Number(markers.topologyShortcutsHelpButtonWidth || 0);
+  const helpHeight = Number(markers.topologyShortcutsHelpButtonHeight || 0);
+  if (
+    !Number.isFinite(helpWidth) ||
+    !Number.isFinite(helpHeight) ||
+    helpWidth < 32 ||
+    helpWidth > 60 ||
+    helpHeight < 32 ||
+    helpHeight > 60
+  ) {
+    return `WebView Relief selected focus shortcuts help button was malformed (${helpWidth}x${helpHeight})`;
   }
   return null;
 }
@@ -202,8 +851,12 @@ export function parseVerifyAppLaunchArgs(argv, {
       : null,
     printWindowDiagnostics: argv.includes("--print-window-diagnostics"),
     verifyTopologyDrag: argv.includes("--verify-topology-drag"),
+    verifyTopologySelectedRelation: argv.includes("--verify-topology-selected-relation"),
+    verifyTopologyNodePopover: argv.includes("--verify-topology-node-popover"),
     verifyTopologyCreateNode: argv.includes("--verify-topology-create-node"),
     verifyTopologyFocusNoop: argv.includes("--verify-topology-focus-noop"),
+    verifyTopologyFocusZoom: argv.includes("--verify-topology-focus-zoom"),
+    verifyTopologyFrameProfile: argv.includes("--verify-topology-frame-profile"),
     requireOwnerName: ownerNameArg
       ? ownerNameArg.slice("--require-owner-name=".length)
       : null,
@@ -233,7 +886,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--verify-topology-create-node] [--verify-topology-focus-noop] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--verify-topology-selected-relation] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--verify-topology-frame-profile] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -252,6 +905,10 @@ Options:
   --verify-topology-focus-noop
                     On a selected /topology route, re-run the selected-focus camera fit after initial
                     settle and require an already-safe no-op motion proof.
+  --verify-topology-focus-zoom
+                    On a selected /topology route, trigger zoom-in and require focus rail compaction proof.
+  --verify-topology-frame-profile
+                    On a /topology route, run a synthetic zoom/pan/hover/card-drag pass and capture rAF frame timings into the WebView evidence markers.
   --require-window  Require an on-screen macOS window owned by the launched app process.
   --require-capturable-window
                     Require at least one matching CoreGraphics window to produce a local screenshot
@@ -363,16 +1020,30 @@ function readBundleIdentifier(appPath) {
 export function webviewVerifyEnvPatch({
   requireWebviewRoute = null,
   verifyTopologyDrag = false,
+  verifyTopologySelectedRelation = false,
+  verifyTopologyNodePopover = false,
   verifyTopologyCreateNode = false,
   verifyTopologyFocusNoop = false,
+  verifyTopologyFocusZoom = false,
+  verifyTopologyFrameProfile = false,
   webviewWindowSize = null,
 } = {}) {
   return {
     [WEBVIEW_VERIFY_ENV]: "1",
     ...(requireWebviewRoute ? { [WEBVIEW_VERIFY_ROUTE_ENV]: requireWebviewRoute } : {}),
     ...(verifyTopologyDrag ? { [WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV]: "1" } : {}),
+    ...(verifyTopologySelectedRelation
+      ? { [WEBVIEW_VERIFY_TOPOLOGY_SELECTED_RELATION_ENV]: "1" }
+      : {}),
+    ...(verifyTopologyNodePopover
+      ? { [WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV]: "1" }
+      : {}),
     ...(verifyTopologyCreateNode ? { [WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV]: "1" } : {}),
     ...(verifyTopologyFocusNoop ? { [WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV]: "1" } : {}),
+    ...(verifyTopologyFocusZoom ? { [WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV]: "1" } : {}),
+    ...(verifyTopologyFrameProfile
+      ? { [WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV]: "1" }
+      : {}),
     ...(webviewWindowSize
       ? {
           [WEBVIEW_VERIFY_WINDOW_SIZE_ENV]: `${webviewWindowSize.width}x${webviewWindowSize.height}`,
@@ -385,6 +1056,12 @@ function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
+function compactOntologyHandle(value) {
+  const text = String(value || "");
+  const separatorIndex = text.indexOf(":");
+  return separatorIndex >= 0 ? text.slice(separatorIndex + 1) : text;
+}
+
 export function gracefulQuitCommandOptions() {
   return { stdio: "ignore", timeout: GRACEFUL_QUIT_COMMAND_TIMEOUT_MS };
 }
@@ -393,6 +1070,32 @@ export function expectedRelationLabelAgentGateText(gateKind) {
   if (gateKind === "handoff-ready") return "MCP/CLI";
   if (gateKind === "preflight-first") return "check";
   return "review";
+}
+
+export function isSelectedRelationAgentGateText(value) {
+  const text = String(value ?? "").trim();
+  return /^(MCP\/CLI ready|handoff ready|Agent gate handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|설명 가능|preflight 먼저|사전 점검 먼저|검토 먼저)$/i.test(
+    text,
+  );
+}
+
+export function isSelectedRelationPrimaryCopyActionText({
+  text,
+  action,
+  locale,
+}) {
+  const label = String(text ?? "").trim();
+  if (action === "explain_relation") {
+    return locale === "ko"
+      ? /^(설명(?:\s*복사)?|관계\s*설명(?:\s*복사)?)$/.test(label)
+      : label.toLowerCase().includes("explain");
+  }
+  if (action === "relation_check") {
+    return locale === "ko"
+      ? /^(점검(?:\s*복사)?|관계\s*(점검|사전\s*점검)(?:\s*복사)?)$/.test(label)
+      : label.toLowerCase().includes("relation");
+  }
+  return false;
 }
 
 function installedAppBundleCandidates(appBundleName) {
@@ -925,6 +1628,221 @@ export function validateSelectedRelationLabelCompactMarkers(markers, width) {
   if (relationLabelRequiresCompact !== relationLabelCompact) {
     return `WebView Relief selected relation label compact marker was inconsistent with its available width (${relationLabelCompactBasis} of ${relationLabelDesiredWidth})`;
   }
+  const relationLabelClampContract = String(
+    markers?.topologySelectedRelationLabelViewportClampContract || "",
+  );
+  const relationLabelClampSide = String(
+    markers?.topologySelectedRelationLabelViewportClampSide || "",
+  );
+  if (
+    !/^(centered-within-viewport|compacted-to-viewport-edge)$/.test(
+      relationLabelClampContract,
+    )
+  ) {
+    return `WebView Relief selected relation label viewport clamp contract was ${relationLabelClampContract || "missing"}`;
+  }
+  if (!/^(left|right|none)$/.test(relationLabelClampSide)) {
+    return `WebView Relief selected relation label viewport clamp side was ${relationLabelClampSide || "missing"}`;
+  }
+  if (relationLabelClampContract === "centered-within-viewport" && relationLabelClampSide !== "none") {
+    return `WebView Relief selected relation label clamp side ${relationLabelClampSide} contradicted centered geometry`;
+  }
+  if (
+    relationLabelClampContract === "compacted-to-viewport-edge" &&
+    relationLabelClampSide === "none"
+  ) {
+    return "WebView Relief selected relation label reported edge compaction without a clamp side";
+  }
+  return null;
+}
+
+export function validateRelationLabelFrameGeometryMarkers(markers) {
+  const contract = String(markers?.topologyRelationLabelGeometryContract || "");
+  if (contract !== "frame-positioned-hit-targets") {
+    return `WebView Relief relation label frame geometry contract was ${contract || "missing"}`;
+  }
+  const source = String(markers?.topologyRelationLabelGeometrySource || "");
+  if (source !== "after-render-layout-pass") {
+    return `WebView Relief relation label frame geometry source was ${source || "missing"}`;
+  }
+  const expected = Number(markers?.topologyRelationLabelGeometryExpectedCount || 0);
+  const ready = Number(markers?.topologyRelationLabelGeometryReadyCount || 0);
+  const pending = Number(markers?.topologyRelationLabelGeometryPendingCount || 0);
+  if (!Number.isFinite(expected) || expected < 1) {
+    return `WebView Relief relation label frame geometry expected count was ${markers?.topologyRelationLabelGeometryExpectedCount ?? "missing"}`;
+  }
+  if (!Number.isFinite(ready) || ready < expected) {
+    return `WebView Relief relation label frame geometry ready count (${ready || "missing"}) was below expected (${expected || "missing"})`;
+  }
+  if (!Number.isFinite(pending) || pending !== 0) {
+    return `WebView Relief relation label frame geometry still had ${Number.isFinite(pending) ? pending : "missing"} pending labels`;
+  }
+  return null;
+}
+
+export function validateTopologyConnectorCacheMarkers(markers) {
+  if (markers?.topologyConnectorDomIndexContract !== "reuse-card-index") {
+    return `WebView Relief connector DOM index contract was ${markers?.topologyConnectorDomIndexContract || "missing"}`;
+  }
+  if (markers?.topologyConnectorRectCacheContract !== "frame-local-card-rect-cache") {
+    return `WebView Relief connector rect cache contract was ${markers?.topologyConnectorRectCacheContract || "missing"}`;
+  }
+  if (
+    markers?.topologyConnectorRectCacheFrameFallbackContract !==
+    "reuse-card-placement-frame-rects-before-dom-read"
+  ) {
+    return `WebView Relief connector rect cache frame fallback contract was ${markers?.topologyConnectorRectCacheFrameFallbackContract || "missing"}`;
+  }
+  if (markers?.topologyConnectorRectCacheAccounting !== "reads-plus-hits") {
+    return `WebView Relief connector rect cache accounting was ${markers?.topologyConnectorRectCacheAccounting || "missing"}`;
+  }
+  const connectorRectCacheSize = Number(markers?.topologyConnectorRectCacheSize || 0);
+  const connectorRectCacheReadCount = Number(
+    markers?.topologyConnectorRectCacheReadCount || 0,
+  );
+  const connectorRectCacheHitCount = Number(
+    markers?.topologyConnectorRectCacheHitCount || 0,
+  );
+  if (
+    !Number.isFinite(connectorRectCacheSize) ||
+    !Number.isFinite(connectorRectCacheReadCount) ||
+    !Number.isFinite(connectorRectCacheHitCount) ||
+    connectorRectCacheSize < 2 ||
+    connectorRectCacheReadCount !== 0 ||
+    connectorRectCacheHitCount < 1
+  ) {
+    return `WebView Relief connector rect cache proof was incomplete (${connectorRectCacheSize} size / ${connectorRectCacheReadCount} reads / ${connectorRectCacheHitCount} hits)`;
+  }
+  return null;
+}
+
+export function validateTopologyZoomLensMarkers(markers) {
+  if (
+    markers?.topologyZoomVerifyAttempted !== true &&
+    !markers?.topologyZoomLensContract
+  ) {
+    return null;
+  }
+  if (
+    markers?.topologyZoomLensContract !==
+    "zoom-in-uses-kind-pins-for-noncritical-context-cards"
+  ) {
+    return `WebView Relief zoom lens contract was ${markers?.topologyZoomLensContract || "missing"}`;
+  }
+  if (
+    markers?.topologyZoomLensPresentationContract !==
+    "camera-or-focus-lens-uses-kind-pins-for-noncritical-context"
+  ) {
+    return `WebView Relief zoom lens presentation contract was ${markers?.topologyZoomLensPresentationContract || "missing"}`;
+  }
+  if (markers?.topologyZoomVerifyAttempted === true && markers?.topologyZoomVerifyReason !== "done") {
+    return `WebView Relief zoom probe did not activate the camera zoom lens (${markers?.topologyZoomVerifyReason || "missing reason"})`;
+  }
+  if (!(Number(markers?.topologyZoomLensThresholdRatio || 0) > 0)) {
+    return `WebView Relief zoom lens threshold ratio was ${markers?.topologyZoomLensThresholdRatio ?? "missing"}`;
+  }
+  if (!(Number(markers?.topologyZoomLensCameraRatio || 0) > 0)) {
+    return `WebView Relief zoom lens camera ratio was ${markers?.topologyZoomLensCameraRatio ?? "missing"}`;
+  }
+  if (
+    markers?.topologyCameraDepthContract !== undefined &&
+    markers.topologyCameraDepthContract !==
+      "wheel-zoom-clamps-before-map-loses-readable-structure"
+  ) {
+    return `WebView Relief camera depth contract was ${markers.topologyCameraDepthContract || "missing"}`;
+  }
+  if (
+    markers?.topologyCameraMinRatio !== undefined &&
+    Number(markers.topologyCameraMinRatio) < 0.4
+  ) {
+    return `WebView Relief camera min ratio was ${markers.topologyCameraMinRatio}`;
+  }
+  if (markers?.topologyZoomLensActive !== true) {
+    return "WebView Relief zoom lens did not become active after camera zoom-in";
+  }
+  if (markers?.topologyZoomLensPresentationActive !== true) {
+    return "WebView Relief zoom lens did not report an active presentation after camera zoom-in";
+  }
+  if (!VALID_ZOOM_LENS_PRESENTATION_SOURCES.has(markers?.topologyZoomLensPresentationSource)) {
+    return `WebView Relief zoom lens presentation source was ${markers?.topologyZoomLensPresentationSource || "missing"}`;
+  }
+  if (markers?.topologyZoomLensCardCompactionActive !== true) {
+    return "WebView Relief zoom lens did not compact text cards into kind pins";
+  }
+  if (!(Number(markers?.topologyZoomLensEligibleCount || 0) >= 1)) {
+    return `WebView Relief zoom lens had no eligible cards (${markers?.topologyZoomLensEligibleCount ?? "missing"})`;
+  }
+  if (!(Number(markers?.topologyZoomLensActiveCardCount || 0) >= 1)) {
+    return `WebView Relief zoom lens had no active compact cards (${markers?.topologyZoomLensActiveCardCount ?? "missing"})`;
+  }
+  if (!(Number(markers?.topologyZoomLensVisibleActiveCardCount || 0) >= 1)) {
+    return `WebView Relief zoom lens had no visible compact cards (${markers?.topologyZoomLensVisibleActiveCardCount ?? "missing"})`;
+  }
+  if (
+    markers?.topologyZoomLensPinProximityContract !== undefined &&
+    markers?.topologyZoomLensPinProximityContract !==
+      "zoomed-context-pins-keep-critical-relation-proximity"
+  ) {
+    return `WebView Relief zoom lens proximity pin contract was ${markers?.topologyZoomLensPinProximityContract || "missing"}`;
+  }
+  if (
+    markers?.topologyZoomLensPinProximityActive !== undefined &&
+    markers?.topologyZoomLensPinProximityActive !== true
+  ) {
+    return "WebView Relief zoom lens did not mark critical-neighbor context pins";
+  }
+  if (
+    markers?.topologyZoomLensProximityPinCount !== undefined &&
+    !(Number(markers?.topologyZoomLensProximityPinCount || 0) >= 1)
+  ) {
+    return `WebView Relief zoom lens proximity pin count was ${markers?.topologyZoomLensProximityPinCount ?? "missing"}`;
+  }
+  if (
+    markers?.topologyZoomLensPinProximityRingToken !== undefined &&
+    markers?.topologyZoomLensPinProximityRingToken !==
+      "--topology-zoom-lens-pin-proximity-ring"
+  ) {
+    return `WebView Relief zoom lens proximity ring token was ${markers?.topologyZoomLensPinProximityRingToken || "missing"}`;
+  }
+  if (
+    markers?.topologyZoomLensPinGlyphContract &&
+    markers.topologyZoomLensPinGlyphContract !==
+    "compact-kind-pin-keeps-type-glyph-without-title-card"
+  ) {
+    return `WebView Relief zoom lens pin glyph contract was ${markers?.topologyZoomLensPinGlyphContract || "missing"}`;
+  }
+  if (markers?.topologyZoomLensActive === true && !(Number(markers?.topologyZoomLensPinMinOpacity) >= 0.42)) {
+    return `WebView Relief zoom lens pin min opacity was ${markers.topologyZoomLensPinMinOpacity || "missing"}`;
+  }
+  if (
+    markers?.topologyZoomLensViewportVisibleContract !== undefined &&
+    markers?.topologyZoomLensViewportVisibleContract !== "" &&
+    markers?.topologyZoomLensViewportVisibleContract !==
+      "visible-lens-pins-match-frame-state"
+  ) {
+    return `WebView Relief zoom lens viewport-visible contract was ${markers?.topologyZoomLensViewportVisibleContract}`;
+  }
+  if (
+    markers?.topologyZoomLensPinCanvasContract !== undefined &&
+    markers?.topologyZoomLensPinCanvasContract !== "" &&
+    markers?.topologyZoomLensPinCanvasContract !==
+      "zoom-lens-pins-stay-inside-readable-canvas-safe-band"
+  ) {
+    return `WebView Relief zoom lens pin canvas contract was ${markers?.topologyZoomLensPinCanvasContract}`;
+  }
+  if (
+    markers?.topologyZoomLensPinCanvasMarginPx !== undefined &&
+    Number(markers.topologyZoomLensPinCanvasMarginPx) < 32
+  ) {
+    return `WebView Relief zoom lens pin canvas margin was ${markers.topologyZoomLensPinCanvasMarginPx}`;
+  }
+  if (
+    markers?.topologyZoomLensEmptyViewportFallbackContract !== undefined &&
+    markers?.topologyZoomLensEmptyViewportFallbackContract !==
+      "camera-zoom-in-keeps-at-least-one-ontology-mark-visible"
+  ) {
+    return `WebView Relief zoom lens empty viewport fallback contract was ${markers?.topologyZoomLensEmptyViewportFallbackContract || "missing"}`;
+  }
   return null;
 }
 
@@ -989,11 +1907,59 @@ export function validateSelectedRelationCardDensityContract(markers, width) {
   ) {
     return `WebView reported malformed Relief selected relation card scale contract (${markers?.topologySelectedRelationCardScaleContract || "missing"})`;
   }
+  if (
+    markers?.topologySelectedRelationCardTypographyContract !==
+    "legible-compact-relation-inspector"
+  ) {
+    return `WebView reported malformed Relief selected relation typography contract (${markers?.topologySelectedRelationCardTypographyContract || "missing"})`;
+  }
+  if (
+    markers?.topologySelectedRelationCardMaxHeightToken !==
+    "--topology-selected-relation-card-max-height"
+  ) {
+    return `WebView reported malformed Relief selected relation card max-height token (${markers?.topologySelectedRelationCardMaxHeightToken || "missing"})`;
+  }
+  const expectedTypographyTokens = {
+    topologySelectedRelationCardKickerFontSizeToken:
+      "--topology-selected-relation-kicker-font-size",
+    topologySelectedRelationCardChipFontSizeToken:
+      "--topology-selected-relation-chip-font-size",
+    topologySelectedRelationCardRouteLabelFontSizeToken:
+      "--topology-selected-relation-route-label-font-size",
+    topologySelectedRelationCardRouteValueFontSizeToken:
+      "--topology-selected-relation-route-value-font-size",
+    topologySelectedRelationCardPayloadFontSizeToken:
+      "--topology-selected-relation-payload-font-size",
+  };
+  for (const [marker, token] of Object.entries(expectedTypographyTokens)) {
+    if (markers?.[marker] !== token) {
+      return `WebView reported malformed Relief selected relation typography token ${marker} (${markers?.[marker] || "missing"})`;
+    }
+  }
+  const routeSteps = Array.isArray(markers?.topologySelectedRelationAgentRouteSteps)
+    ? markers.topologySelectedRelationAgentRouteSteps
+    : [];
+  const routeFontTooSmall = routeSteps.find((step) => {
+    if (step?.visibility === "metadata-only" || step?.kind === "action") {
+      return false;
+    }
+    const labelSize = Number.parseFloat(String(step?.labelFontSize || "0"));
+    const valueSize = Number.parseFloat(String(step?.valueFontSize || "0"));
+    return labelSize < 8 || valueSize < 10;
+  });
+  if (routeFontTooSmall) {
+    return `WebView reported too-small Relief selected relation route typography (${routeFontTooSmall.labelFontSize || "missing"}/${routeFontTooSmall.valueFontSize || "missing"})`;
+  }
 
   const cardWidth = Number(markers?.topologySelectedRelationCardWidth || 0);
   const cardHeight = Number(markers?.topologySelectedRelationCardHeight || 0);
-  if (cardWidth > 288 || cardHeight > 248) {
+  const selectedRelationCardMaxWidth =
+    Number(width || 0) >= 2400 ? 384 : Number(width || 0) >= 1920 ? 360 : 288;
+  if (cardWidth > selectedRelationCardMaxWidth || cardHeight > 328) {
     return `WebView reported oversized compact Relief selected relation card (${cardWidth || "missing"}x${cardHeight || "missing"})`;
+  }
+  if (Number(width || 0) >= 2400 && cardWidth < 336) {
+    return `WebView reported cramped wide Relief selected relation card (${cardWidth || "missing"}px)`;
   }
 
   const proofBandHeight = Number(markers?.topologySelectedRelationProofBandHeight || 0);
@@ -1009,13 +1975,34 @@ export function validateSelectedRelationCardDensityContract(markers, width) {
   }
 
   const copyPayloadHeight = Number(markers?.topologySelectedRelationCopyPayloadHeight || 0);
-  if (copyPayloadHeight > 38) {
+  if (copyPayloadHeight > 48) {
     return `WebView reported oversized Relief selected relation copy payload strip (${copyPayloadHeight || "missing"}px)`;
   }
 
   const agentRouteHeight = Number(markers?.topologySelectedRelationAgentRouteHeight || 0);
   if (agentRouteHeight > 38) {
     return `WebView reported oversized Relief selected relation agent route rail (${agentRouteHeight || "missing"}px)`;
+  }
+
+  if (
+    markers?.topologySelectedRelationCommandCueContract !==
+    "visible-compact-primary-command-cue"
+  ) {
+    return `WebView reported malformed Relief selected relation command cue contract (${markers?.topologySelectedRelationCommandCueContract || "missing"})`;
+  }
+  const commandCueText = String(
+    markers?.topologySelectedRelationCommandCueVisibleText || "",
+  ).trim();
+  if (!commandCueText || !/next step|다음 작업/i.test(commandCueText)) {
+    return `WebView reported malformed Relief selected relation command cue text (${commandCueText || "missing"})`;
+  }
+  const expectedCommandCueAction =
+    markers?.topologySelectedRelationPrimaryCopyActionKind || "";
+  if (
+    expectedCommandCueAction &&
+    markers?.topologySelectedRelationCommandCueAction !== expectedCommandCueAction
+  ) {
+    return `WebView reported mismatched Relief selected relation command cue action (${markers?.topologySelectedRelationCommandCueAction || "missing"})`;
   }
 
   return null;
@@ -1025,7 +2012,7 @@ export function selectedRelationRouteRailTextLeak(payload) {
   const compactBodyText = String(payload?.bodyText || "").replace(/\s+/g, "");
   return /(?:STRONG|SUPPORTED|WEAK|REVIEW)FACT(?:SRC|AUTH|REVIEW)(?:MCP\/CLI|CHECK|REVIEW)(?:EXPLAIN|CHECK)/i.test(
     compactBodyText,
-  );
+  ) || /S\d+(?:MCP\/CLI|CHECK|REVIEW)/i.test(compactBodyText);
 }
 
 function validateTopologyFocusNoopMarkers(payload) {
@@ -1047,13 +2034,267 @@ function validateTopologyFocusNoopMarkers(payload) {
   return null;
 }
 
+export function validateSelectedRelationEndpointRouteMarkers(markers) {
+  if (
+    markers?.topologySelectedRelationEndpointRouteContract !==
+    "visible-source-target-names-wrap"
+  ) {
+    return `WebView reported malformed Relief selected relation endpoint route contract (${markers?.topologySelectedRelationEndpointRouteContract || "missing"})`;
+  }
+  if (
+    markers?.topologySelectedRelationEndpointRouteWrapPolicy !==
+    "wrap-allowed-no-horizontal-overflow"
+  ) {
+    return `WebView reported malformed Relief selected relation endpoint route wrap policy (${markers?.topologySelectedRelationEndpointRouteWrapPolicy || "missing"})`;
+  }
+  const routeLineBudget = Number(
+    markers?.topologySelectedRelationEndpointRouteLineBudget || 0,
+  );
+  if (!Number.isFinite(routeLineBudget) || routeLineBudget < 2) {
+    return `WebView reported malformed Relief selected relation endpoint route line budget (${markers?.topologySelectedRelationEndpointRouteLineBudget || "missing"})`;
+  }
+  const sourceName =
+    typeof markers?.topologySelectedRelationEndpointRouteSourceName === "string"
+      ? markers.topologySelectedRelationEndpointRouteSourceName.trim()
+      : "";
+  const targetName =
+    typeof markers?.topologySelectedRelationEndpointRouteTargetName === "string"
+      ? markers.topologySelectedRelationEndpointRouteTargetName.trim()
+      : "";
+  const sourceHandle =
+    typeof markers?.topologySelectedRelationEndpointRouteSourceHandle === "string"
+      ? markers.topologySelectedRelationEndpointRouteSourceHandle.trim()
+      : "";
+  const targetHandle =
+    typeof markers?.topologySelectedRelationEndpointRouteTargetHandle === "string"
+      ? markers.topologySelectedRelationEndpointRouteTargetHandle.trim()
+      : "";
+  if (!sourceName || !targetName) {
+    return `WebView reported empty Relief selected relation endpoint names (${sourceName || "missing"} -> ${targetName || "missing"})`;
+  }
+  if (
+    sourceHandle !== markers?.topologySelectedRelationCopyPayloadFrom ||
+    targetHandle !== markers?.topologySelectedRelationCopyPayloadTo ||
+    sourceHandle !== markers?.topologySelectedRelationHandleStripSource ||
+    targetHandle !== markers?.topologySelectedRelationHandleStripTarget
+  ) {
+    return `WebView reported mismatched Relief selected relation visible endpoint handles (${sourceHandle || "missing source"} -> ${targetHandle || "missing target"})`;
+  }
+  const handleSummary =
+    typeof markers?.topologySelectedRelationEndpointRouteHandleSummary === "string"
+      ? markers.topologySelectedRelationEndpointRouteHandleSummary.trim()
+      : "";
+  if (handleSummary !== `${sourceHandle} → ${targetHandle}`) {
+    return `WebView reported malformed Relief selected relation visible endpoint handle summary (${handleSummary || "empty"})`;
+  }
+  const routeText =
+    typeof markers?.topologySelectedRelationEndpointRouteText === "string"
+      ? markers.topologySelectedRelationEndpointRouteText.trim()
+      : "";
+  if (!routeText.includes(sourceName) || !routeText.includes(targetName)) {
+    return `WebView reported Relief selected relation endpoint names not visible in route (${routeText || "empty"})`;
+  }
+  const readableRouteText =
+    typeof markers?.topologySelectedRelationEndpointRouteReadableText === "string"
+      ? markers.topologySelectedRelationEndpointRouteReadableText.trim()
+      : "";
+  if (readableRouteText !== `${sourceName} → ${targetName}`) {
+    return `WebView reported malformed Relief selected relation endpoint readable route (${readableRouteText || "empty"})`;
+  }
+  const layerReadableRoute =
+    typeof markers?.topologySelectedRelationEndpointReadableRoute === "string"
+      ? markers.topologySelectedRelationEndpointReadableRoute.trim()
+      : "";
+  if (layerReadableRoute !== `${sourceName} → ${targetName}`) {
+    return `WebView reported malformed Relief selected relation endpoint layer readable route (${layerReadableRoute || "empty"})`;
+  }
+  const routeWidth = Number(markers?.topologySelectedRelationEndpointRouteWidth || 0);
+  const routeHeight = Number(markers?.topologySelectedRelationEndpointRouteHeight || 0);
+  const routeClientWidth = Number(
+    markers?.topologySelectedRelationEndpointRouteClientWidth || 0,
+  );
+  const routeScrollWidth = Number(
+    markers?.topologySelectedRelationEndpointRouteScrollWidth || 0,
+  );
+  if (
+    !Number.isFinite(routeWidth) ||
+    !Number.isFinite(routeHeight) ||
+    !Number.isFinite(routeClientWidth) ||
+    !Number.isFinite(routeScrollWidth) ||
+    routeWidth < 120 ||
+    routeHeight < 12 ||
+    routeScrollWidth - routeClientWidth > 2
+  ) {
+    return `WebView reported overflowing Relief selected relation endpoint route (${routeClientWidth} client / ${routeScrollWidth} scroll, ${routeWidth}x${routeHeight})`;
+  }
+  return null;
+}
+
+export function validateSelectedRelationIdentityMarkers(markers) {
+  if (markers?.topologySelectedRelationVerifySelected !== true) {
+    return null;
+  }
+  if (
+    markers?.topologyAgentCurrentSurface &&
+    markers.topologyAgentCurrentSurface !== "selected-relation"
+  ) {
+    return `WebView reported selected relation while current surface was ${markers.topologyAgentCurrentSurface}`;
+  }
+  const edgeId =
+    typeof markers?.topologySelectedRelationEdgeId === "string"
+      ? markers.topologySelectedRelationEdgeId.trim()
+      : "";
+  if (!edgeId) {
+    return "WebView did not expose the Relief selected relation edge id";
+  }
+  const route =
+    typeof markers?.topologyAgentCurrentSurfaceRoute === "string"
+      ? markers.topologyAgentCurrentSurfaceRoute.trim()
+      : "";
+  const labelRoute =
+    typeof markers?.topologySelectedRelationLabelRoute === "string"
+      ? markers.topologySelectedRelationLabelRoute.trim()
+      : "";
+  const source =
+    typeof markers?.topologySelectedRelationLabelSource === "string"
+      ? markers.topologySelectedRelationLabelSource.trim()
+      : "";
+  const target =
+    typeof markers?.topologySelectedRelationLabelTarget === "string"
+      ? markers.topologySelectedRelationLabelTarget.trim()
+      : "";
+  const expectedRoute = source && target ? `${source}>${target}` : labelRoute;
+  if (route && expectedRoute && route !== expectedRoute) {
+    return `WebView reported mismatched Relief selected relation route (${route} vs ${expectedRoute})`;
+  }
+  return null;
+}
+
+export function validateSelectedRelationEndpointVisibilityMarkers(markers) {
+  if (markers?.topologyCardsReady !== true) {
+    return "WebView Relief selected relation endpoint proof ran while the skeleton card layer was not ready";
+  }
+  if (
+    markers?.topologySelectedRelationEndpointVisibilityContract !==
+    "selected-relation-keeps-source-target-readable"
+  ) {
+    return `WebView reported malformed Relief selected relation endpoint visibility contract (${markers?.topologySelectedRelationEndpointVisibilityContract || "missing"})`;
+  }
+  const expectedCount = Number(
+    markers?.topologySelectedRelationEndpointExpectedCount || 0,
+  );
+  const visibleCount = Number(markers?.topologySelectedRelationEndpointVisibleCount || 0);
+  const hiddenCount = Number(markers?.topologySelectedRelationEndpointHiddenCount || 0);
+  const endpointCards = Array.isArray(markers?.topologySelectedRelationEndpointCards)
+    ? markers.topologySelectedRelationEndpointCards
+    : [];
+  const source =
+    typeof markers?.topologySelectedRelationCardSource === "string"
+      ? markers.topologySelectedRelationCardSource.trim()
+      : "";
+  const target =
+    typeof markers?.topologySelectedRelationCardTarget === "string"
+      ? markers.topologySelectedRelationCardTarget.trim()
+      : "";
+  const endpointSlugs = new Set(
+    endpointCards.map((card) => card?.slug).filter((slug) => typeof slug === "string"),
+  );
+  if (
+    !Number.isFinite(expectedCount) ||
+    !Number.isFinite(visibleCount) ||
+    !Number.isFinite(hiddenCount) ||
+    expectedCount < 2 ||
+    visibleCount < 2 ||
+    hiddenCount !== 0 ||
+    endpointCards.length < 2
+  ) {
+    return `WebView reported incomplete Relief selected relation endpoint visibility proof (${visibleCount}/${expectedCount} visible, ${hiddenCount} hidden)`;
+  }
+  if (!source || !target || !endpointSlugs.has(source) || !endpointSlugs.has(target)) {
+    return `WebView reported Relief selected relation endpoint cards without source and target (${source || "missing source"} -> ${target || "missing target"})`;
+  }
+  const hiddenEndpoint = endpointCards.find(
+    (card) => card?.surfaceHidden === "true" || card?.visible === false,
+  );
+  if (hiddenEndpoint) {
+    return `WebView reported hidden Relief selected relation endpoint card (${hiddenEndpoint.slug || "unknown endpoint"})`;
+  }
+  const sourceEndpoint = endpointCards.find((card) => card?.slug === source);
+  const targetEndpoint = endpointCards.find((card) => card?.slug === target);
+  if (
+    sourceEndpoint?.roleBadgeContract !== "visible-source-target-role-badge" ||
+    sourceEndpoint?.roleBadgeText !== "FROM" ||
+    sourceEndpoint?.roleBadgeVisible !== true
+  ) {
+    return `WebView reported malformed Relief selected relation source role badge (${sourceEndpoint?.roleBadgeText || "missing"})`;
+  }
+  if (
+    targetEndpoint?.roleBadgeContract !== "visible-source-target-role-badge" ||
+    targetEndpoint?.roleBadgeText !== "TO" ||
+    targetEndpoint?.roleBadgeVisible !== true
+  ) {
+    return `WebView reported malformed Relief selected relation target role badge (${targetEndpoint?.roleBadgeText || "missing"})`;
+  }
+  return null;
+}
+
+export function validateSelectedRelationContextSilhouetteMarkers(markers) {
+  if (
+    markers?.topologySelectedRelationContextSilhouettePolicy !==
+    "selected-relation-keeps-endpoints-and-orientation-anchors-only"
+  ) {
+    return `WebView reported malformed Relief selected relation context silhouette policy (${markers?.topologySelectedRelationContextSilhouettePolicy || "missing"})`;
+  }
+  if (markers?.topologySelectedRelationContextSilhouetteActive !== true) {
+    return "WebView did not activate Relief selected relation context silhouette suppression";
+  }
+  const hiddenCount = Number(
+    markers?.topologySelectedRelationContextSilhouetteHiddenCount || 0,
+  );
+  const lowerPriorityVisibleDimmedCount = Number(
+    markers?.topologySelectedRelationLowerPriorityVisibleDimmedCount || 0,
+  );
+  const visibleOrientationAnchorCount = Number(
+    markers?.topologySelectedRelationVisibleOrientationAnchorCount || 0,
+  );
+  if (
+    !Number.isFinite(hiddenCount) ||
+    !Number.isFinite(lowerPriorityVisibleDimmedCount) ||
+    !Number.isFinite(visibleOrientationAnchorCount) ||
+    hiddenCount < 1 ||
+    lowerPriorityVisibleDimmedCount !== 0
+  ) {
+    return `WebView reported noisy Relief selected relation context (${hiddenCount} hidden / ${lowerPriorityVisibleDimmedCount} lower-priority visible / ${visibleOrientationAnchorCount} anchors)`;
+  }
+  if (
+    markers?.topologySelectedRelationHiddenContextInteractionContract !==
+    "hidden-context-is-not-pointer-focus-or-a11y-target"
+  ) {
+    return `WebView reported malformed Relief selected relation hidden context interaction contract (${markers?.topologySelectedRelationHiddenContextInteractionContract || "missing"})`;
+  }
+  const hiddenContextInteractiveCount = Number(
+    markers?.topologySelectedRelationHiddenContextInteractiveCount || 0,
+  );
+  if (
+    !Number.isFinite(hiddenContextInteractiveCount) ||
+    hiddenContextInteractiveCount !== 0
+  ) {
+    return `WebView reported interactive hidden Relief selected relation context (${hiddenContextInteractiveCount || "missing"})`;
+  }
+  return null;
+}
+
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
   minWebviewSize = null,
   maxWebviewSize = null,
   requireTopologyDrag = false,
+  requireTopologySelectedRelation = false,
+  requireTopologyNodePopover = false,
   requireTopologyCreateNode = false,
   requireTopologyFocusNoop = false,
+  requireTopologyFocusZoom = false,
+  requireTopologyFrameProfile = false,
 } = {}) {
   if (!payload || typeof payload !== "object") {
     return "missing WebView verification payload";
@@ -1066,6 +2307,15 @@ export function validateWebviewVerifyPayload(payload, {
   }
   if (typeof payload.bodyText !== "string" || payload.bodyText.trim().length === 0) {
     return "WebView body text was empty";
+  }
+  if (requireTopologyFrameProfile) {
+    const frameProfile = payload.markers?.topologyFrameProfile;
+    if (!frameProfile || frameProfile.done !== true) {
+      return "WebView topology frame profile has not completed";
+    }
+    if (frameProfile.reason !== "done") {
+      return `WebView topology frame profile failed: ${frameProfile.reason}`;
+    }
   }
   if (
     payload.title !== "Ontology Atlas" &&
@@ -1150,7 +2400,10 @@ export function validateWebviewVerifyPayload(payload, {
       ? payload.markers.topologySelectedNodeSummary.trim()
       : "";
   const focusSelectedNodeRoute =
-    Boolean(topologySelectedParam) && topologyAnalysisMode === "focus";
+    Boolean(topologySelectedParam) &&
+    (topologyAnalysisMode === "focus" ||
+      payload.markers.topologyRootSelectedNodeId === topologySelectedParam ||
+      payload.markers.topologyAgentCurrentSurfaceRoute === topologySelectedParam);
   const blockingComposerOpen = payload.markers.topologyCreateNodeOpen === true;
   const selectedRelationSource =
     typeof payload.markers.topologySelectedRelationHandleStripSource === "string"
@@ -1165,6 +2418,23 @@ export function validateWebviewVerifyPayload(payload, {
     Boolean(topologySelectedParam) &&
     (selectedRelationSource === topologySelectedParam ||
       selectedRelationTarget === topologySelectedParam);
+  if (requireTopologySelectedRelation) {
+    if (payload.markers.topologySelectedRelationVerifyAttempted !== true) {
+      return `WebView did not attempt the Relief selected relation verification (${payload.markers.topologySelectedRelationVerifyReason || "missing reason"})`;
+    }
+    if (payload.markers.topologySelectedRelationVerifyClicked !== true) {
+      return `WebView did not click a Relief relation label during selected relation verification (${payload.markers.topologySelectedRelationVerifyReason || "missing reason"})`;
+    }
+    if (!selectedRelationContextVisible) {
+      return "WebView did not expose the Relief selected relation inspector during selected relation verification";
+    }
+    if (
+      payload.markers.topologyUtilityLaneSuppressionContract !==
+      "selected-relation-inspector-owns-right-rail"
+    ) {
+      return `WebView Relief selected relation utility suppression contract was ${payload.markers.topologyUtilityLaneSuppressionContract || "missing"}`;
+    }
+  }
   const koreanTopologyRoute = webviewPath.startsWith("/ko/topology");
   const rawRelationTypePattern =
     /^(contains|depends_on|depends-on|depends|relates|relates_to|related_to|describes|uses|belongs_to|belongs-to)$/i;
@@ -1182,6 +2452,17 @@ export function validateWebviewVerifyPayload(payload, {
   }
   if (webviewPath.includes("/topology") && payload.markers.topologyRelief !== true) {
     return "WebView did not report the Relief topology marker";
+  }
+  const connectorLabelPassMs = markerNumber(
+    payload.markers,
+    "topologyRepositionPassConnectorLabelMs",
+  );
+  if (
+    webviewPath.includes("/topology") &&
+    connectorLabelPassMs !== null &&
+    connectorLabelPassMs >= TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS
+  ) {
+    return `WebView Relief connector-label pass took ${connectorLabelPassMs}ms, expected < ${TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS}ms`;
   }
   if (
     webviewPath.includes("/topology") &&
@@ -1252,8 +2533,12 @@ export function validateWebviewVerifyPayload(payload, {
     if (
       payload.markers.topologyAnalysisPanelWidthBand !== "header-aligned" ||
       payload.markers.topologyAnalysisPanelWidthTarget !== "path-14-inch-rail" ||
-      payload.markers.topologyAnalysisPanelWidthContract !== "path-support-rail-max-360" ||
-      payload.markers.topologyAnalysisPanelWidthToken !== "--topology-panel-path-rail-width" ||
+      payload.markers.topologyAnalysisPanelWidthContract !==
+        "path-support-rail-max-360-phone-utility-reserve" ||
+      payload.markers.topologyAnalysisPanelWidthToken !==
+        "--topology-panel-path-responsive-width" ||
+      payload.markers.topologyAnalysisPanelPhoneUtilityReserveToken !==
+        "--topology-panel-phone-utility-rail-reserve" ||
       Number(payload.markers.topologyAnalysisPanelWidth || 0) < 320 ||
       Number(payload.markers.topologyAnalysisPanelWidth || 0) > 360 ||
       payload.markers.topologyAnalysisPanelAttentionRole !== "support"
@@ -1269,15 +2554,62 @@ export function validateWebviewVerifyPayload(payload, {
     const visibilityText = String(
       payload.markers.topologyPathCandidateVisibilityText || "",
     ).trim();
+    const visibilityTextReportsCoverage =
+      new RegExp(`${visibleCandidates}\\s*/\\s*${totalCandidates}`).test(
+        visibilityText,
+      ) ||
+      (visibilityText.includes(String(visibleCandidates)) &&
+        visibilityText.includes(String(totalCandidates)));
     if (
       !(visibleCandidates >= 1) ||
       !(totalCandidates >= visibleCandidates) ||
-      !new RegExp(`${visibleCandidates}\\s*/\\s*${totalCandidates}`).test(visibilityText)
+      !visibilityTextReportsCoverage
     ) {
       return "WebView Path mode did not report visible candidate coverage";
     }
     if (payload.markers.topologyPathAgentHandoffVisible !== true) {
       return "WebView Path mode did not expose the agent handoff marker";
+    }
+    const pathResultHasBothEndpoints =
+      Number(payload.markers.topologyPathSourceCardCount || 0) >= 1 &&
+      Number(payload.markers.topologyPathTargetCardCount || 0) >= 1;
+    if (pathResultHasBothEndpoints) {
+      if (payload.markers.topologyPathVisibleRouteVisible !== true) {
+        return "WebView Path mode did not expose the visible source-target route rail";
+      }
+      if (
+        payload.markers.topologyPathVisibleRouteContract !==
+        "source-target-visible-before-proof-disclosure"
+      ) {
+        return `WebView Path mode visible route contract was ${payload.markers.topologyPathVisibleRouteContract || "missing"}`;
+      }
+      if (payload.markers.topologyPathVisibleRouteAttentionLayer !== "focus-path-state") {
+        return `WebView Path mode visible route layer was ${payload.markers.topologyPathVisibleRouteAttentionLayer || "missing"}`;
+      }
+      if (payload.markers.topologyPathVisibleRouteGuidanceOwner !== "analysis-rail") {
+        return `WebView Path mode visible route owner was ${payload.markers.topologyPathVisibleRouteGuidanceOwner || "missing"}`;
+      }
+      if (payload.markers.topologyPathVisibleRouteOverflowContract !== "no-horizontal-scroll") {
+        return `WebView Path mode visible route overflow contract was ${payload.markers.topologyPathVisibleRouteOverflowContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyPathVisibleRouteSurfaceToken !== "--topology-path-route-surface" ||
+        payload.markers.topologyPathVisibleRouteBorderToken !== "--topology-path-route-border" ||
+        payload.markers.topologyPathVisibleRouteChipSurfaceToken !==
+          "--topology-path-route-chip-surface" ||
+        payload.markers.topologyPathVisibleRouteChipBorderToken !==
+          "--topology-path-route-chip-border"
+      ) {
+        return "WebView Path mode visible route token contract was not active";
+      }
+      if (
+        Number(payload.markers.topologyPathVisibleRouteClientWidth || 0) < 180 ||
+        Number(payload.markers.topologyPathVisibleRouteScrollWidth || 0) -
+          Number(payload.markers.topologyPathVisibleRouteClientWidth || 0) >
+          2
+      ) {
+        return `WebView Path mode visible route overflowed (${payload.markers.topologyPathVisibleRouteClientWidth || 0} client / ${payload.markers.topologyPathVisibleRouteScrollWidth || 0} scroll)`;
+      }
     }
     if (payload.markers.topologyPathAgentHandoffLayer !== "focus-path-state") {
       return `WebView Path mode handoff layer was ${payload.markers.topologyPathAgentHandoffLayer || "missing"}`;
@@ -1288,8 +2620,38 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyPathPromptPolicy !== "panel-owned-when-card-mode") {
       return `WebView Path mode prompt policy was ${payload.markers.topologyPathPromptPolicy || "missing"}`;
     }
-    if (payload.markers.topologyPathHandoffContract !== "agent-next-action-visible") {
+    if (
+      !["agent-next-action-visible", "route-proof-action-visible"].includes(
+        payload.markers.topologyPathHandoffContract,
+      )
+    ) {
       return `WebView Path mode handoff contract was ${payload.markers.topologyPathHandoffContract || "missing"}`;
+    }
+    if (
+      ![
+        "compact-proof-strip",
+        "evidence-first-agent-handoff-compact",
+      ].includes(payload.markers.topologyPathHandoffLayoutContract)
+    ) {
+      return `WebView Path mode handoff layout contract was ${payload.markers.topologyPathHandoffLayoutContract || "missing"}`;
+    }
+    if (
+      payload.markers.topologyPathHandoffLayoutContract ===
+        "evidence-first-agent-handoff-compact" &&
+      payload.markers.topologyPathHandoffHierarchy !==
+        "primary-evidence-secondary-agent-checks"
+    ) {
+      return `WebView Path mode handoff hierarchy was ${payload.markers.topologyPathHandoffHierarchy || "missing"}`;
+    }
+    if (
+      payload.markers.topologyPathHandoffSurfaceToken !== "--topology-path-handoff-surface" ||
+      payload.markers.topologyPathHandoffBorderToken !== "--topology-path-handoff-border" ||
+      payload.markers.topologyPathHandoffActionMinHeightToken !==
+        "--topology-path-handoff-action-min-height" ||
+      payload.markers.topologyPathHandoffActionRadiusToken !==
+        "--topology-path-handoff-action-radius"
+    ) {
+      return "WebView Path mode handoff token contract was not active";
     }
     if (
       Object.prototype.hasOwnProperty.call(
@@ -1516,6 +2878,18 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyPathResultBannerHandoffContract !== "agent-next-action-visible") {
       return `WebView Path result banner handoff contract was ${payload.markers.topologyPathResultBannerHandoffContract || "missing"}`;
     }
+    if (
+      payload.markers.topologyPathResultCandidateSuppressionPolicy !==
+      "source-target-result-hides-candidate-affordance"
+    ) {
+      return `WebView Path result candidate suppression policy was ${payload.markers.topologyPathResultCandidateSuppressionPolicy || "missing"}`;
+    }
+    if (payload.markers.topologyPathResultCandidateSuppressionActive !== "true") {
+      return `WebView Path result candidate suppression was ${payload.markers.topologyPathResultCandidateSuppressionActive || "missing"}`;
+    }
+    if (Number(payload.markers.topologyPathCandidateCardCount || 0) !== 0) {
+      return `WebView Path result left ${Number(payload.markers.topologyPathCandidateCardCount || 0)} candidate cards active`;
+    }
     if (payload.markers.topologyPathResultBannerOverflowContract !== "no-horizontal-scroll") {
       return `WebView Path result banner overflow contract was ${payload.markers.topologyPathResultBannerOverflowContract || "missing"}`;
     }
@@ -1591,7 +2965,7 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       payload.markers.topologyPathResultRouteChainCompactContract !==
-      "endpoint-badges-visible-relation-chips-truncated"
+      "endpoint-badges-visible-relation-chips-readable"
     ) {
       return `WebView Path result route chain compact contract was ${payload.markers.topologyPathResultRouteChainCompactContract || "missing"}`;
     }
@@ -1723,7 +3097,12 @@ export function validateWebviewVerifyPayload(payload, {
     if (!String(payload.markers.topologyTopSearchLabel || "").trim().includes("검색")) {
       return `WebView Korean Relief top search label was ${payload.markers.topologyTopSearchLabel || "missing"}`;
     }
-    if (!String(payload.markers.topologyTopWorkspaceLabel || "").trim().includes("작업공간")) {
+    const workspaceLabel = String(payload.markers.topologyTopWorkspaceLabel || "").trim();
+    if (
+      workspaceLabel &&
+      !workspaceLabel.includes("작업공간") &&
+      payload.markers.topologyCommandChromeState !== "selected-node-inspector"
+    ) {
       return `WebView Korean Relief top workspace label was ${payload.markers.topologyTopWorkspaceLabel || "missing"}`;
     }
     const createLabel = String(payload.markers.topologyTopCreateLabel || "").trim();
@@ -1756,6 +3135,24 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyCreateNodeSizeContract !== "bounded-centered-composer") {
       return `WebView Add Concept size contract was ${payload.markers.topologyCreateNodeSizeContract || "missing"}`;
     }
+    if (payload.markers.topologyCreateNodePanelTopToken !== "--topology-blocking-composer-top") {
+      return `WebView Add Concept composer top token was ${payload.markers.topologyCreateNodePanelTopToken || "missing"}`;
+    }
+    if (payload.markers.topologyCreateNodePanelWidthToken !== "--topology-blocking-composer-width") {
+      return `WebView Add Concept composer width token was ${payload.markers.topologyCreateNodePanelWidthToken || "missing"}`;
+    }
+    if (payload.markers.topologyCreateNodePanelMaxHeightToken !== "--topology-blocking-composer-max-height") {
+      return `WebView Add Concept composer max-height token was ${payload.markers.topologyCreateNodePanelMaxHeightToken || "missing"}`;
+    }
+    if (payload.markers.topologyCreateNodeFormSurfaceToken !== "--topology-blocking-composer-surface") {
+      return `WebView Add Concept composer surface token was ${payload.markers.topologyCreateNodeFormSurfaceToken || "missing"}`;
+    }
+    if (payload.markers.topologyCreateNodeFormBorderToken !== "--topology-blocking-composer-border") {
+      return `WebView Add Concept composer border token was ${payload.markers.topologyCreateNodeFormBorderToken || "missing"}`;
+    }
+    if (payload.markers.topologyCreateNodeFormShadowToken !== "--topology-blocking-composer-shadow") {
+      return `WebView Add Concept composer shadow token was ${payload.markers.topologyCreateNodeFormShadowToken || "missing"}`;
+    }
     if (payload.markers.topologyCreateNodePanelRole !== "dialog") {
       return `WebView Add Concept composer role was ${payload.markers.topologyCreateNodePanelRole || "missing"}`;
     }
@@ -1779,6 +3176,12 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (payload.markers.topologyCreateNodeBackdropPointerEvents !== "auto") {
       return `WebView Add Concept backdrop did not intercept map interaction (${payload.markers.topologyCreateNodeBackdropPointerEvents || "missing"})`;
+    }
+    if (payload.markers.topologyCreateNodeBackdropContract !== "blocks-map-and-closes-composer") {
+      return `WebView Add Concept backdrop contract was ${payload.markers.topologyCreateNodeBackdropContract || "missing"}`;
+    }
+    if (payload.markers.topologyCreateNodeBackdropSurfaceToken !== "--topology-blocking-backdrop-surface") {
+      return `WebView Add Concept backdrop surface token was ${payload.markers.topologyCreateNodeBackdropSurfaceToken || "missing"}`;
     }
     if (payload.markers.topologyBlockingComposerOverlayContract !== "exclusive-blocking-composer") {
       return `WebView Add Concept composer did not own the only interactive overlay (${payload.markers.topologyBlockingComposerOverlayContract || "missing"} · ${JSON.stringify(payload.markers.topologyInteractiveOverlayNames ?? [])})`;
@@ -1804,6 +3207,15 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (Number(payload.markers.topologyMapSurfaceDimOpacity || 1) > 0.35) {
       return `WebView Add Concept topology map surface dim was too weak (${payload.markers.topologyMapSurfaceDimOpacity ?? "missing"})`;
+    }
+    if (payload.markers.topologyMapSurfaceDimOpacityToken !== "--topology-blocking-map-opacity") {
+      return `WebView Add Concept topology map opacity token was ${payload.markers.topologyMapSurfaceDimOpacityToken || "missing"}`;
+    }
+    if (payload.markers.topologyMapSurfaceFilterToken !== "--topology-blocking-map-filter") {
+      return `WebView Add Concept topology map filter token was ${payload.markers.topologyMapSurfaceFilterToken || "missing"}`;
+    }
+    if (payload.markers.topologyMapSurfaceInteractionContract !== "suppressed-while-blocking-composer") {
+      return `WebView Add Concept topology map interaction contract was ${payload.markers.topologyMapSurfaceInteractionContract || "missing"}`;
     }
     if (payload.markers.topologyMapSurfacePointerEvents !== "none") {
       return `WebView Add Concept topology map surface still accepted interaction (${payload.markers.topologyMapSurfacePointerEvents || "missing"})`;
@@ -1873,10 +3285,14 @@ export function validateWebviewVerifyPayload(payload, {
       requireTopologyFocusNoop &&
       payload.markers.topologyCameraMotionTrigger === "selected-focus-already-safe" &&
       payload.markers.topologyCameraMotionState === "already-safe";
+    const selectedFocusZoomContextVisible =
+      requireTopologyFocusZoom &&
+      payload.markers.topologySelectedFocusContextRailZoomActive === true;
     if (
       payload.markers.topologySelectedNodePopoverVisible !== true &&
       !selectedRelationContextVisible &&
       !selectedFocusNoopContextVisible &&
+      !selectedFocusZoomContextVisible &&
       !blockingComposerOpen
     ) {
       return `WebView did not report a visible Relief selected node context for ${topologySelectedParam}`;
@@ -1884,6 +3300,19 @@ export function validateWebviewVerifyPayload(payload, {
     if (requireTopologyFocusNoop) {
       const focusNoopError = validateTopologyFocusNoopMarkers(payload);
       if (focusNoopError) return focusNoopError;
+    }
+    if (requireTopologyFocusZoom) {
+      const zoomError = validateTopologyZoomLensMarkers(payload.markers);
+      if (zoomError) return zoomError;
+      if (
+        payload.markers.topologySelectedFocusContextRailZoomContract !==
+        "camera-zoom-in-demotes-domain-rail-to-waypoint-pins"
+      ) {
+        return `WebView Relief focus rail zoom contract was ${payload.markers.topologySelectedFocusContextRailZoomContract || "missing"}`;
+      }
+      if (payload.markers.topologySelectedFocusContextRailZoomActive !== true) {
+        return "WebView Relief focus rail zoom waypoint compaction was not active";
+      }
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
@@ -2035,21 +3464,31 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologySelectedNodePopoverVisible === true &&
       payload.markers.topologyNodePopoverCollapsed === true
     ) {
-      return "WebView Relief selected node popover stayed collapsed during selected-node focus";
+      if (payload.markers.topologyNodePopoverSizePolicy !== "context-chip") {
+        return `WebView Relief selected node popover used ${payload.markers.topologyNodePopoverSizePolicy || "no"} collapsed size policy during selected-node focus`;
+      }
+      if (payload.markers.topologyNodePopoverRelationRowVisible === true) {
+        return "WebView Relief selected node popover exposed relation rows while collapsed";
+      }
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyNodePopoverCollapsed !== true &&
       payload.markers.topologyNodePopoverSizePolicy !== "inspector-rail"
     ) {
       return `WebView Relief selected node popover used ${payload.markers.topologyNodePopoverSizePolicy || "no"} size policy during selected-node focus`;
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyNodePopoverCollapsed !== true &&
       payload.markers.topologyNodePopoverRelationRowVisible !== true
     ) {
       return "WebView Relief selected node popover did not expose a relation row during selected-node focus";
     }
-    if (payload.markers.topologySelectedNodePopoverVisible === true) {
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyNodePopoverCollapsed !== true
+    ) {
       if (
         payload.markers.topologyNodePopoverConnectionsOverflowContract !==
         "single-vertical-scroll-region"
@@ -2095,9 +3534,94 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView Relief selected node popover connection list row density contract was ${payload.markers.topologyNodePopoverConnectionListRowDensityContract || "missing"}`;
       }
       if (
+        payload.markers.topologyNodePopoverConnectionListReadableRowContract !==
+        "at-least-one-full-relation-row"
+      ) {
+        return `WebView Relief selected node popover readable row contract was ${payload.markers.topologyNodePopoverConnectionListReadableRowContract || "missing"}`;
+      }
+      if (
         Number(payload.markers.topologyNodePopoverConnectionListRowMinHitHeight || 0) < 72
       ) {
         return `WebView Relief selected node popover connection list row hit height token was ${payload.markers.topologyNodePopoverConnectionListRowMinHitHeight ?? "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverConnectionListRowRenderContract !==
+        "capped-preview-plus-remainder"
+      ) {
+        return `WebView Relief selected node popover connection list row render contract was ${payload.markers.topologyNodePopoverConnectionListRowRenderContract || "missing"}`;
+      }
+      const nodePopoverRowRenderBudget = Number(
+        payload.markers.topologyNodePopoverConnectionListRowRenderBudget || 0,
+      );
+      const nodePopoverRenderedRows = Number(
+        payload.markers.topologyNodePopoverConnectionListRenderedCount || 0,
+      );
+      const nodePopoverHiddenRows = Number(
+        payload.markers.topologyNodePopoverConnectionListHiddenCount || 0,
+      );
+      const nodePopoverTotalRows = Number(
+        payload.markers.topologyNodePopoverConnectionListTotalCount || 0,
+      );
+      if (
+        !Number.isFinite(nodePopoverRowRenderBudget) ||
+        nodePopoverRowRenderBudget < 1 ||
+        nodePopoverRowRenderBudget > 2
+      ) {
+        return `WebView Relief selected node popover connection list row render budget was ${payload.markers.topologyNodePopoverConnectionListRowRenderBudget ?? "missing"}`;
+      }
+      if (
+        !Number.isFinite(nodePopoverRenderedRows) ||
+        nodePopoverRenderedRows < 1 ||
+        nodePopoverRenderedRows > nodePopoverRowRenderBudget
+      ) {
+        return `WebView Relief selected node popover rendered too many relation rows (${payload.markers.topologyNodePopoverConnectionListRenderedCount ?? "missing"} rendered / ${payload.markers.topologyNodePopoverConnectionListRowRenderBudget ?? "missing"} budget)`;
+      }
+      if (
+        Number.isFinite(nodePopoverTotalRows) &&
+        nodePopoverTotalRows > nodePopoverRenderedRows &&
+        !(Number.isFinite(nodePopoverHiddenRows) && nodePopoverHiddenRows > 0)
+      ) {
+        return `WebView Relief selected node popover hidden relation remainder was ${payload.markers.topologyNodePopoverConnectionListHiddenCount ?? "missing"} for ${nodePopoverTotalRows} total relation(s)`;
+      }
+      if (
+        payload.markers.topologyNodePopoverConnectionListHandoffContract !==
+        "list-summary-routes-to-row-payload-or-full-detail"
+      ) {
+        return `WebView Relief selected node popover connection list handoff contract was ${payload.markers.topologyNodePopoverConnectionListHandoffContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverConnectionListHandoffRoute !==
+        "selected-node>relations>fact>evidence>gate>action>payload"
+      ) {
+        return `WebView Relief selected node popover connection list handoff route was ${payload.markers.topologyNodePopoverConnectionListHandoffRoute || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverConnectionListHandoffTool !== "query_ontology") {
+        return `WebView Relief selected node popover connection list handoff tool was ${payload.markers.topologyNodePopoverConnectionListHandoffTool || "missing"}`;
+      }
+      if (
+        Number(payload.markers.topologyNodePopoverConnectionListVisibleRowCount || 0) !==
+        nodePopoverRenderedRows
+      ) {
+        return `WebView Relief selected node popover connection list visible row count was ${payload.markers.topologyNodePopoverConnectionListVisibleRowCount ?? "missing"}`;
+      }
+      if (
+        Number(payload.markers.topologyNodePopoverConnectionListHiddenRemainderCount || 0) !==
+        nodePopoverHiddenRows
+      ) {
+        return `WebView Relief selected node popover connection list hidden remainder count was ${payload.markers.topologyNodePopoverConnectionListHiddenRemainderCount ?? "missing"}`;
+      }
+      if (
+        Number(payload.markers.topologyNodePopoverConnectionListDirectFactCount || 0) !==
+        nodePopoverTotalRows
+      ) {
+        return `WebView Relief selected node popover connection list direct fact count was ${payload.markers.topologyNodePopoverConnectionListDirectFactCount ?? "missing"}`;
+      }
+      if (
+        !String(
+          payload.markers.topologyNodePopoverConnectionListHandoffSummary || "",
+        ).includes("query_ontology")
+      ) {
+        return `WebView Relief selected node popover connection list handoff summary was ${payload.markers.topologyNodePopoverConnectionListHandoffSummary || "missing"}`;
       }
       if (
         payload.markers.topologyNodePopoverRelationRowDensityContract !==
@@ -2110,7 +3634,7 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node popover relation row hit height token was ${payload.markers.topologyNodePopoverRelationRowMinHitHeight ?? "missing"}`;
       }
-      if (payload.markers.topologyNodePopoverRelationRowScanOrder !== "relation>title>direction>endpoint>handoff") {
+      if (payload.markers.topologyNodePopoverRelationRowScanOrder !== "title>relation>kind") {
         return `WebView Relief selected node popover relation row scan order was ${payload.markers.topologyNodePopoverRelationRowScanOrder || "missing"}`;
       }
       if (payload.markers.topologyNodePopoverRelationTitlePrimaryScanTarget !== "true") {
@@ -2139,12 +3663,6 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
-      payload.markers.topologyAnalysisPanelMode !== "focus"
-    ) {
-      return `WebView Relief selected node panel stayed in ${payload.markers.topologyAnalysisPanelMode || "unknown"} mode instead of focus support`;
-    }
-    if (
-      payload.markers.topologySelectedNodePopoverVisible === true &&
       (payload.markers.topologyAnalysisPanelSelectedContext === true ||
         payload.markers.topologyAnalysisPanelSelectedFocusRail === true)
     ) {
@@ -2160,6 +3678,49 @@ export function validateWebviewVerifyPayload(payload, {
       const selectedFocusRailMaxWidth = Number(payload.width || 0) <= 1600 ? 322 : 380;
       if (Number(payload.markers.topologyAnalysisPanelWidth || 0) > selectedFocusRailMaxWidth) {
         return `WebView Relief selected node panel was wider than the focus rail contract (${payload.markers.topologyAnalysisPanelWidth}px)`;
+      }
+    } else if (payload.markers.topologySelectedNodePopoverVisible === true) {
+      if (payload.markers.topologyAttentionWinner !== "focus-state") {
+        return `WebView Relief selected node attention winner was ${payload.markers.topologyAttentionWinner || "missing"}`;
+      }
+      if (
+        payload.markers.topologyAgentCurrentSurface &&
+        payload.markers.topologyAgentCurrentSurface !== "selected-node"
+      ) {
+        return `WebView Relief selected node root current surface was ${payload.markers.topologyAgentCurrentSurface || "missing"}`;
+      }
+      if (
+        payload.markers.topologyAgentCurrentSurfaceRole &&
+        payload.markers.topologyAgentCurrentSurfaceRole !== payload.markers.topologyNodePopoverSurfaceRole
+      ) {
+        return `WebView Relief selected node root current surface role mismatched popover (${payload.markers.topologyAgentCurrentSurfaceRole || "missing"} vs ${payload.markers.topologyNodePopoverSurfaceRole || "missing"})`;
+      }
+      if (
+        payload.markers.topologyAgentCurrentSurfaceRoute &&
+        payload.markers.topologyAgentCurrentSurfaceRoute !== payload.markers.topologySelectedNodeId
+      ) {
+        return `WebView Relief selected node root current surface route mismatched selected node (${payload.markers.topologyAgentCurrentSurfaceRoute || "missing"} vs ${payload.markers.topologySelectedNodeId || "missing"})`;
+      }
+      if (
+        payload.markers.topologyRootSelectedNodeId &&
+        payload.markers.topologyRootSelectedNodeId !== payload.markers.topologySelectedNodeId
+      ) {
+        return `WebView Relief selected node root selected node id mismatched popover (${payload.markers.topologyRootSelectedNodeId || "missing"} vs ${payload.markers.topologySelectedNodeId || "missing"})`;
+      }
+      if (payload.markers.topologyAnalysisPanelVisible === true) {
+        return "WebView Relief selected node support rail was visible without the focus rail marker";
+      }
+      if (payload.markers.topologyCommandChromeState !== "selected-node-inspector") {
+        return `WebView Relief selected node command chrome state was ${payload.markers.topologyCommandChromeState || "missing"}`;
+      }
+      if (payload.markers.topologyUtilityActionLaneVisible === true) {
+        return "WebView Relief selected node utility action lane was visible while inspector owns focus";
+      }
+      if (payload.markers.topologySigmaControlsStackVisible === true) {
+        return "WebView Relief selected node controls stack was visible while inspector owns focus";
+      }
+      if (payload.markers.topologyShortcutsHelpButtonVisible === true) {
+        return "WebView Relief selected node shortcuts help was visible while inspector owns focus";
       }
     }
     if (payload.markers.topologySelectedNodePopoverVisible === true) {
@@ -2203,6 +3764,9 @@ export function validateWebviewVerifyPayload(payload, {
       const viewportHeight = Number(payload.height || 0);
       const focusClusterSize = Number(payload.markers.topologyFocusClusterSize || 0);
       const bodyText = String(payload.bodyText || "");
+      const durableClickFocus =
+        focusClusterSize >= 2 &&
+        payload.markers.topologyClickFocusRelationshipContext === "durable";
       const bodyFocusClusterVisible =
         focusClusterSize >= 2 && /linked\s+focus/i.test(bodyText);
       const bodyFocusRelationVisible =
@@ -2211,27 +3775,19 @@ export function validateWebviewVerifyPayload(payload, {
           bodyText,
         );
       if (
-        payload.markers.topologyFocusClusterMode !== "focus" &&
+        !durableClickFocus &&
         !bodyFocusClusterVisible
       ) {
-        return `WebView Relief selected node focus cluster mode was ${payload.markers.topologyFocusClusterMode || "missing"}`;
+        return `WebView Relief selected node click-focus context was ${payload.markers.topologyClickFocusRelationshipContext || "missing"}`;
       }
-      if (
-        payload.markers.topologyFocusClusterVisible !== true &&
-        !bodyFocusClusterVisible
-      ) {
-        return "WebView Relief selected node focus cluster was not visible";
-      }
+      const focusClusterStage = String(
+        payload.markers.topologyFocusClusterStage || "",
+      );
       if (
         payload.markers.topologyFocusClusterMode === "focus" &&
-        payload.markers.topologyFocusClusterStage !== "click-focus"
+        !/^(click-focus|click-focus-boxless)$/.test(focusClusterStage)
       ) {
         return `WebView Relief selected node focus cluster stage was ${payload.markers.topologyFocusClusterStage || "missing"}`;
-      }
-      if (
-        payload.markers.topologyFocusClusterAttentionLabel !== "linked-focus"
-      ) {
-        return `WebView Relief selected node focus cluster attention label was ${payload.markers.topologyFocusClusterAttentionLabel || "missing"}`;
       }
       if (payload.markers.topologyClickFocusRelationshipContext !== "durable") {
         return `WebView Relief selected node click focus relationship context was ${payload.markers.topologyClickFocusRelationshipContext || "missing"}`;
@@ -2301,7 +3857,7 @@ export function validateWebviewVerifyPayload(payload, {
       }
       const expectedCameraMotionTargetPolicy = cameraMotionNoop
         ? "already-inside-safe-rect"
-        : "nearest-safe-target";
+        : "viewport-center";
       if (payload.markers.topologyCameraMotionTargetPolicy !== expectedCameraMotionTargetPolicy) {
         return `WebView Relief selected node camera motion target policy was ${payload.markers.topologyCameraMotionTargetPolicy || "missing"}`;
       }
@@ -2342,7 +3898,7 @@ export function validateWebviewVerifyPayload(payload, {
       if (
         cameraMotionNoop
           ? cameraMotionDistancePx !== 0
-          : !Number.isFinite(cameraMotionDistancePx) || cameraMotionDistancePx < 16
+          : !Number.isFinite(cameraMotionDistancePx) || cameraMotionDistancePx < 1
       ) {
         return `WebView Relief selected node camera motion distance was ${payload.markers.topologyCameraMotionDistancePx || "missing"}px`;
       }
@@ -2358,8 +3914,19 @@ export function validateWebviewVerifyPayload(payload, {
       const selectedFanoutRows = Number(
         payload.markers.topologyCameraMotionSelectedFanoutRows || 0,
       );
-      const cameraMotionMaxDistancePx =
-        220 + Math.max(0, selectedFanoutRows - 2) * 16;
+      const cameraMotionFanoutMaxDistancePx =
+        220 + Math.max(0, selectedFanoutRows - 2) * 48;
+      const cameraMotionViewportWidth = Math.max(0, Number(payload.width || 0));
+      const cameraMotionViewportMaxDistancePx =
+        cameraMotionViewportWidth >= 1800
+          ? Math.round(cameraMotionViewportWidth * 0.18)
+          : cameraMotionViewportWidth >= 1400
+            ? Math.round(cameraMotionViewportWidth * 0.21)
+          : 0;
+      const cameraMotionMaxDistancePx = Math.max(
+        cameraMotionFanoutMaxDistancePx,
+        cameraMotionViewportMaxDistancePx,
+      );
       if (
         Number(payload.markers.topologyCameraMotionMaxDistancePx || 0) !==
         cameraMotionMaxDistancePx
@@ -2395,6 +3962,34 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node camera motion target was outside the computed safe rect (${cameraMotionSafeTargetX}, ${cameraMotionSafeTargetY} vs left ${safeInsetLeft}, top ${safeInsetTop}, right ${safeRight}, bottom ${safeBottom})`;
       }
+      const shouldValidateRightReserve =
+        requireTopologyNodePopover ||
+        String(payload.markers.topologyCameraMotionRightReserveContract || "")
+          .length > 0 ||
+        payload.markers.topologyCameraMotionSafeTargetRightClearance !== undefined;
+      if (shouldValidateRightReserve) {
+        if (
+          payload.markers.topologyCameraMotionRightReserveContract !==
+          "selected-inspector-safe-reserve"
+        ) {
+          return `WebView Relief selected node camera right reserve contract was ${payload.markers.topologyCameraMotionRightReserveContract || "missing"}`;
+        }
+        const reportedSafeTargetRightClearance = Number(
+          payload.markers.topologyCameraMotionSafeTargetRightClearance ?? 0,
+        );
+        const measuredSafeTargetRightClearance = Math.round(
+          safeRight - cameraMotionSafeTargetX,
+        );
+        if (
+          !Number.isFinite(reportedSafeTargetRightClearance) ||
+          reportedSafeTargetRightClearance < 0 ||
+          Math.abs(
+            reportedSafeTargetRightClearance - measuredSafeTargetRightClearance,
+          ) > 2
+        ) {
+          return `WebView Relief selected node camera safe target right clearance mismatched (${reportedSafeTargetRightClearance || "missing"}px marker vs ${measuredSafeTargetRightClearance}px measured)`;
+        }
+      }
       if (requireTopologyFocusNoop) {
         const focusNoopError = validateTopologyFocusNoopMarkers(payload);
         if (focusNoopError) return focusNoopError;
@@ -2402,15 +3997,20 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(focusClusterSize >= 2)) {
         return `WebView Relief selected node focus cluster was too small (${payload.markers.topologyFocusClusterSize ?? "missing"})`;
       }
+      const hasSelectedDockCompanion =
+        Number(payload.markers.topologySelectedDockCompanionCount) >= 1 ||
+        Number(payload.markers.topologySelectedDockVisibleCompanionCount) >= 1;
       if (
         !(Number(payload.markers.topologyFocusClusterConnectorCount) >= 1) &&
-        !bodyFocusRelationVisible
+        !bodyFocusRelationVisible &&
+        !hasSelectedDockCompanion
       ) {
         return "WebView Relief selected node focus cluster did not expose linked relation connectors";
       }
       if (
         !(Number(payload.markers.topologyFocusClusterRelationLabelCount) >= 1) &&
-        !bodyFocusRelationVisible
+        !bodyFocusRelationVisible &&
+        !hasSelectedDockCompanion
       ) {
         return "WebView Relief selected node focus cluster did not expose linked relation labels";
       }
@@ -2420,7 +4020,11 @@ export function validateWebviewVerifyPayload(payload, {
       const focusClusterTop = Number(payload.markers.topologyFocusClusterTop || 0);
       const focusClusterRight = Number(payload.markers.topologyFocusClusterRight || 0);
       const focusClusterBottom = Number(payload.markers.topologyFocusClusterBottom || 0);
+      const focusHullRendered =
+        payload.markers.topologyFocusClusterMode === "focus" &&
+        payload.markers.topologyFocusClusterVisible === true;
       const canMeasureFocusGeometry =
+        focusHullRendered &&
         viewportWidth >= 1400 &&
         viewportHeight >= 800 &&
         [focusClusterWidth, focusClusterHeight, focusClusterLeft, focusClusterTop, focusClusterRight, focusClusterBottom].every(Number.isFinite);
@@ -2462,6 +4066,155 @@ export function validateWebviewVerifyPayload(payload, {
       if (canMeasurePanelCollision && overlapsPanel) {
         return `WebView Relief selected node focus cluster overlapped the analysis panel (${focusClusterLeft}, ${focusClusterTop}, ${focusClusterRight}, ${focusClusterBottom} vs ${panelLeft}, ${panelTop}, ${panelRight}, ${panelBottom})`;
       }
+      if (
+        focusHullRendered &&
+        payload.markers.topologyFocusClusterBreathingRoomContract !==
+        "viewport-edge-clearance"
+      ) {
+        return `WebView Relief selected node focus cluster breathing-room contract was ${payload.markers.topologyFocusClusterBreathingRoomContract || "missing"}`;
+      }
+      const focusClusterBreathingRoom = Number(
+        payload.markers.topologyFocusClusterBreathingRoomPx || 0,
+      );
+      const focusClusterRightClearance = Number(
+        payload.markers.topologyFocusClusterRightClearance || 0,
+      );
+      const focusClusterBottomClearance = Number(
+        payload.markers.topologyFocusClusterBottomClearance || 0,
+      );
+      if (
+        focusHullRendered &&
+        (focusClusterBreathingRoom < 12 ||
+          focusClusterRightClearance < focusClusterBreathingRoom ||
+          focusClusterBottomClearance < focusClusterBreathingRoom)
+      ) {
+        return `WebView Relief selected node focus cluster hugged the viewport edge (${focusClusterRightClearance || "missing"}px right / ${focusClusterBottomClearance || "missing"}px bottom / ${focusClusterBreathingRoom || "missing"}px required)`;
+      }
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyAnalysisPanelSelectedFocusRail === true
+    ) {
+      const nodePopoverTokenError =
+        validateTopologyNodePopoverTokenContract(payload.markers);
+      if (nodePopoverTokenError) return nodePopoverTokenError;
+      const selectedCardRelationSummaryError =
+        validateTopologySelectedCardRelationSummaryContract(payload.markers);
+      if (selectedCardRelationSummaryError) return selectedCardRelationSummaryError;
+      const commandSpineError =
+        validateTopologyFocusCommandSpineContract(payload.markers);
+      if (commandSpineError) return commandSpineError;
+      const utilityLaneError =
+        validateTopologyFocusUtilityLaneContract(payload.markers);
+      if (utilityLaneError) return utilityLaneError;
+      const searchLaneError =
+        validateTopologyFocusSearchLaneContract(payload.markers);
+      if (searchLaneError) return searchLaneError;
+      const rightControlsError =
+        validateTopologyFocusRightControlsContract(payload.markers);
+      if (rightControlsError) return rightControlsError;
+    }
+    if (requireTopologyNodePopover) {
+      if (payload.markers.topologyNodePopoverVerifyAttempted !== true) {
+        return "WebView did not attempt selected node popover verification";
+      }
+      if (payload.markers.topologyNodePopoverVerifyExpanded !== true) {
+        return `WebView did not finish selected node popover expansion (${payload.markers.topologyNodePopoverVerifyReason || "unknown reason"})`;
+      }
+      if (payload.markers.topologyNodePopoverVerifyCompactFactsVisible !== true) {
+        return "WebView did not capture compact selected node relation facts before expansion";
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactFactsContract !==
+        "collapsed-dock-surfaces-typed-facts"
+      ) {
+        return `WebView compact selected node relation facts contract was ${payload.markers.topologyNodePopoverVerifyCompactFactsContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactFactsReadableContract !==
+        "direct-typed-facts-not-scores"
+      ) {
+        return `WebView compact selected node relation facts readable contract was ${payload.markers.topologyNodePopoverVerifyCompactFactsReadableContract || "missing"}`;
+      }
+      const compactVerifyNoScores = String(
+        payload.markers.topologyNodePopoverVerifyCompactFactsNoScores || "",
+      ).trim();
+      if (!compactVerifyNoScores) {
+        return "WebView compact selected node relation facts no-scores text was missing";
+      }
+      if (
+        !String(payload.markers.topologyNodePopoverVerifyCompactFactsAccessibleName || "").includes(
+          compactVerifyNoScores,
+        )
+      ) {
+        return "WebView compact selected node relation facts accessible name did not include no-scores text";
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactFactsHandoffContract !==
+        "compact-counts-route-to-relation-list-handoff"
+      ) {
+        return `WebView compact selected node relation facts handoff contract was ${payload.markers.topologyNodePopoverVerifyCompactFactsHandoffContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactFactsHandoffRoute !==
+        "selected-node>relations>fact>evidence>gate>action>payload"
+      ) {
+        return `WebView compact selected node relation facts handoff route was ${payload.markers.topologyNodePopoverVerifyCompactFactsHandoffRoute || "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactFactsHandoffTool !==
+        "query_ontology"
+      ) {
+        return `WebView compact selected node relation facts handoff tool was ${payload.markers.topologyNodePopoverVerifyCompactFactsHandoffTool || "missing"}`;
+      }
+      const compactVerifyHandoffSummary = String(
+        payload.markers.topologyNodePopoverVerifyCompactFactsHandoffSummary || "",
+      );
+      if (
+        !compactVerifyHandoffSummary.includes("query_ontology") ||
+        !compactVerifyHandoffSummary.includes("direct facts")
+      ) {
+        return `WebView compact selected node relation facts handoff summary was ${compactVerifyHandoffSummary || "missing"}`;
+      }
+      if (
+        !Number.isFinite(
+          Number(payload.markers.topologyNodePopoverVerifyCompactFactsHiddenRemainderCount),
+        ) ||
+        Number(payload.markers.topologyNodePopoverVerifyCompactFactsHiddenRemainderCount) < 0
+      ) {
+        return `WebView compact selected node relation facts hidden remainder count was ${payload.markers.topologyNodePopoverVerifyCompactFactsHiddenRemainderCount ?? "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactActionsReadableFlow !==
+        "selected-node-facts-to-agent-handoff"
+      ) {
+        return `WebView compact selected node actions readable flow was ${payload.markers.topologyNodePopoverVerifyCompactActionsReadableFlow || "missing"}`;
+      }
+      if (
+        payload.markers.topologyNodePopoverVerifyCompactBriefReadableFlow !==
+        "selected-node-facts-to-agent-brief"
+      ) {
+        return `WebView compact selected node brief readable flow was ${payload.markers.topologyNodePopoverVerifyCompactBriefReadableFlow || "missing"}`;
+      }
+      if (payload.markers.topologySelectedNodePopoverVisible !== true) {
+        return "WebView did not expose the selected node popover during node popover verification";
+      }
+      if (payload.markers.topologyNodePopoverVisible !== true) {
+        return "WebView did not measure the selected node popover during node popover verification";
+      }
+      if (payload.markers.topologyNodePopoverCollapsed === true) {
+        return "WebView did not expand the selected node popover during node popover verification";
+      }
+      if (payload.markers.topologyNodePopoverRelationRowVisible !== true) {
+        return "WebView selected node popover did not expose a relation row during node popover verification";
+      }
+      const nodePopoverTokenError =
+        validateTopologyNodePopoverTokenContract(payload.markers);
+      if (nodePopoverTokenError) return nodePopoverTokenError;
+      const nodePopoverFooterError = validateTopologyNodePopoverScrollFooterContract(
+        payload.markers,
+      );
+      if (nodePopoverFooterError) return nodePopoverFooterError;
     }
   }
   if (webviewPath.includes("/topology")) {
@@ -2493,13 +4246,17 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView reported no Sigma canvas (${payload.markers.topologySigmaCanvasCount ?? "unknown"} canvas element(s))`;
     }
-    if (payload.markers.topologySkeletonMode === false) {
+    // mode=graph (옵시디언식 살아있는 그래프) 는 skeleton 없이 그리는 것이
+    // 계약 — 골격 카드 검사를 건너뛴다. Sigma 캔버스/뷰포트 검사는 그대로.
+    const topologyGraphModeActive =
+      webviewUrl.searchParams.get("mode") === "graph";
+    if (!topologyGraphModeActive && payload.markers.topologySkeletonMode === false) {
       return "WebView reported Relief without topology skeleton mode";
     }
-    if (payload.markers.topologySkeletonCardsActive === false) {
+    if (!topologyGraphModeActive && payload.markers.topologySkeletonCardsActive === false) {
       return `WebView reported Relief without active skeleton cards (${payload.markers.topologySkeletonCardModelCount ?? "unknown"} card model(s))`;
     }
-    if (payload.markers.topologySkeletonLayerPresent === false) {
+    if (!topologyGraphModeActive && payload.markers.topologySkeletonLayerPresent === false) {
       return `WebView reported active skeleton cards but no skeleton layer (${payload.markers.topologySkeletonCardModelCount ?? "unknown"} card model(s))`;
     }
     if (
@@ -2511,18 +4268,37 @@ export function validateWebviewVerifyPayload(payload, {
       return `WebView reported no resolvable Relief cards (${payload.markers.topologySkeletonLayerResolvedCount}/${payload.markers.topologySkeletonLayerModelCount})`;
     }
     if (
+      !topologyGraphModeActive &&
       Number(payload.width) >= 1400 &&
       !(Number(payload.markers.topologyUiScale) >= 1.12)
     ) {
       return `WebView Relief UI scale was ${payload.markers.topologyUiScale ?? "missing"} at ${payload.width}px viewport`;
     }
-    if (!topologyDragDone && payload.markers.topologyCardsReady !== true) {
+    const hasResolvedSkeletonOverlay =
+      payload.markers.topologySkeletonLayerPresent === true &&
+      Number(payload.markers.topologySkeletonLayerResolvedCount || 0) >= 1 &&
+      Number(payload.markers.topologySkeletonCardResolvedCount || 0) >= 1;
+    if (
+      !topologyGraphModeActive &&
+      !topologyDragDone &&
+      payload.markers.topologyCardsReady !== true &&
+      !hasResolvedSkeletonOverlay
+    ) {
       return "WebView reported Relief cards before the skeleton overlay was ready";
     }
     const selectedFocusContext =
       payload.markers.topologySelectedNodePopoverVisible === true &&
-      payload.markers.topologyFocusClusterVisible === true &&
+      payload.markers.topologyClickFocusRelationshipContext === "durable" &&
       Number(payload.markers.topologyFocusClusterSize) >= 2;
+    const selectedFocusStationaryContextProof =
+      requireTopologyDrag &&
+      selectedFocusContext &&
+      payload.markers.topologyDragAttempted !== true &&
+      payload.markers.topologyDragReason === "waiting for selected reveal companion" &&
+      payload.markers.topologySelectedDockCompanionVisible === true &&
+      Number(payload.markers.topologySelectedDockVisibleCompanionCount) >= 1 &&
+      payload.markers.topologyResidualOverlapClear === true &&
+      Number(payload.markers.topologyCardFixedSurfaceOverlapCount || 0) === 0;
     const hasDimOpacityProof =
       payload.markers.topologyDimOpacityContract !== undefined ||
       payload.markers.topologyDimAnchorOpacity !== undefined ||
@@ -2535,30 +4311,56 @@ export function validateWebviewVerifyPayload(payload, {
       const dimChipVisibleCount = Number(payload.markers.topologyDimChipVisibleCount || 0);
       const dimAnchorMinOpacity = Number(payload.markers.topologyDimAnchorMinOpacity || 0);
       const dimChipMinOpacity = Number(payload.markers.topologyDimChipMinOpacity || 0);
-      if (payload.markers.topologyDimOpacityContract !== "readable-context-geography") {
+      if (payload.markers.topologyDimOpacityContract !== TOPOLOGY_DIM_OPACITY_CONTRACT) {
         return `WebView dimmed Relief context opacity contract was ${payload.markers.topologyDimOpacityContract || "missing"}`;
       }
-      if (!(dimAnchorOpacity >= 0.34)) {
+      if (!(dimAnchorOpacity >= TOPOLOGY_DIM_ANCHOR_MIN_OPACITY)) {
         return `WebView dimmed Relief anchor opacity token was ${payload.markers.topologyDimAnchorOpacity ?? "missing"}`;
       }
-      if (!(dimChipOpacity >= 0.18)) {
+      if (!(dimChipOpacity >= TOPOLOGY_DIM_CONTEXT_MIN_OPACITY)) {
         return `WebView dimmed Relief chip opacity token was ${payload.markers.topologyDimChipOpacity ?? "missing"}`;
       }
-      if (dimAnchorVisibleCount > 0 && !(dimAnchorMinOpacity >= 0.34)) {
+      if (dimAnchorVisibleCount > 0 && !(dimAnchorMinOpacity >= TOPOLOGY_DIM_ANCHOR_MIN_OPACITY)) {
         return `WebView dimmed Relief anchor opacity was ${payload.markers.topologyDimAnchorMinOpacity ?? "missing"}`;
       }
-      if (dimChipVisibleCount > 0 && !(dimChipMinOpacity >= 0.18)) {
+      if (dimChipVisibleCount > 0 && !(dimChipMinOpacity >= TOPOLOGY_DIM_CONTEXT_MIN_OPACITY)) {
         return `WebView dimmed Relief chip opacity was ${payload.markers.topologyDimChipMinOpacity ?? "missing"}`;
       }
     }
-    const minimumTopologyCardCount = topologyDragDone ? 1 : selectedFocusContext ? 2 : 8;
+    const overviewCompactWideContext =
+      payload.markers.topologyAnalysisPanelMode === "overview" &&
+      Number(payload.width) >= 2400 &&
+      Number(payload.markers.topologyUiScale || 0) >= 1.3;
+    const selectedRelationSilhouetteVisibleCount =
+      Number(payload.markers.topologySelectedRelationEndpointVisibleCount || 0) +
+      Number(payload.markers.topologySelectedRelationVisibleOrientationAnchorCount || 0);
+    const selectedRelationSilhouetteContext =
+      payload.markers.topologyAgentCurrentSurface === "selected-relation" &&
+      payload.markers.topologySelectedRelationContextSilhouetteActive === true &&
+      Number(payload.markers.topologySelectedRelationEndpointVisibleCount || 0) >= 2 &&
+      selectedRelationSilhouetteVisibleCount >= 2;
+    const minimumTopologyCardCount = topologyDragDone
+      ? 1
+      : selectedFocusContext
+        ? 2
+        : selectedRelationSilhouetteContext
+          ? selectedRelationSilhouetteVisibleCount
+          : overviewCompactWideContext
+            ? 7
+            : 8;
     if (
-      !Number.isFinite(payload.markers.topologyCardCount) ||
-      payload.markers.topologyCardCount < minimumTopologyCardCount
+      !requireTopologyFrameProfile &&
+      !topologyGraphModeActive &&
+      (!Number.isFinite(payload.markers.topologyCardCount) ||
+        payload.markers.topologyCardCount < minimumTopologyCardCount)
     ) {
       return `WebView reported too few visible Relief cards (${payload.markers.topologyCardCount ?? "unknown"} visible, ${payload.markers.topologyCardRawCount ?? "unknown"} raw)`;
     }
-    if (requireTopologyDrag && !topologyDragDone) {
+    if (
+      requireTopologyDrag &&
+      !topologyDragDone &&
+      !selectedFocusStationaryContextProof
+    ) {
       return `WebView did not attempt the Relief card drag verification (${payload.markers.topologyDragReason ?? "unknown reason"})`;
     }
     if (
@@ -2583,13 +4385,21 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return "WebView reported selected Relief fan-out companions as hidden";
     }
-    if (payload.markers.topologyCardOverlapCount !== 0) {
+    if (!requireTopologyFrameProfile && !topologyGraphModeActive && payload.markers.topologyCardOverlapCount !== 0) {
       return `WebView reported overlapping Relief cards (${payload.markers.topologyCardOverlapCount ?? "unknown"} overlap pair(s))`;
     }
-    if (payload.markers.topologyCardClippedCount !== 0) {
+    if (!requireTopologyFrameProfile && !topologyGraphModeActive && payload.markers.topologyCardClippedCount !== 0) {
       return `WebView reported clipped Relief cards (${payload.markers.topologyCardClippedCount ?? "unknown"} clipped card(s))`;
     }
-    if (payload.markers.topologyCardFixedSurfaceOverlapCount !== 0) {
+    const residualOverlapProvesClear =
+      payload.markers.topologyResidualOverlapClear === true &&
+      Number(payload.markers.topologyResidualVisibleCardOverlapCount) === 0 &&
+      Number(payload.markers.topologyResidualFixedSurfaceOverlapCount) === 0 &&
+      Number(payload.markers.topologyResidualCardFixedSurfaceOverlapCount) === 0;
+    if (
+      payload.markers.topologyCardFixedSurfaceOverlapCount !== 0 &&
+      !residualOverlapProvesClear
+    ) {
       return `WebView reported Relief cards overlapping fixed topology surfaces (${payload.markers.topologyCardFixedSurfaceOverlapCount ?? "unknown"} overlap(s))`;
     }
     if (payload.markers.topologyFixedSurfaceOverlapCount !== 0) {
@@ -2676,10 +4486,10 @@ export function validateWebviewVerifyPayload(payload, {
     const relationQualityText =
       overviewRelationQualityText || selectedRelationQualityText || legacyRelationQualityText;
     const isReadableRelationQualityText = (text) =>
-      /(strong|강한)[^\d]+\d+/i.test(text) &&
+      /(strong|clear|강한|분명함)[^\d]+\d+/i.test(text) &&
       /(supported|근거)[^\d]+\d+/i.test(text) &&
-      /(weak|약한)[^\d]+\d+/i.test(text) &&
-      /(review|검토)[^\d]+\d+/i.test(text) &&
+      /(weak|thin|약한|얇은)[^\d]+\d+/i.test(text) &&
+      /(review|check|검토|확인)[^\d]+\d+/i.test(text) &&
       /[·,:]/.test(text);
     const relationQualityTextReadable = isReadableRelationQualityText(relationQualityText);
     const hasOverviewRelationQuality =
@@ -2689,6 +4499,9 @@ export function validateWebviewVerifyPayload(payload, {
         /(strong|supported|weak|review|강함|지원|약함|검토)/i.test(payload.bodyText));
     if (
       topologyAnalysisMode !== "path" &&
+      topologyAnalysisMode !== "health" &&
+      topologyAnalysisMode !== "focus" &&
+      !topologyGraphModeActive &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen &&
       payload.markers.topologyRelationQualityLensVisible !== true &&
@@ -2704,6 +4517,9 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       topologyAnalysisMode !== "path" &&
+      topologyAnalysisMode !== "health" &&
+      topologyAnalysisMode !== "focus" &&
+      !topologyGraphModeActive &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen &&
       Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
@@ -2713,6 +4529,8 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       topologyAnalysisMode !== "path" &&
+      topologyAnalysisMode !== "health" &&
+      topologyAnalysisMode !== "focus" &&
       Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
       overviewRelationQualityText.length > 0 &&
       !isReadableRelationQualityText(overviewRelationQualityText)
@@ -2737,12 +4555,19 @@ export function validateWebviewVerifyPayload(payload, {
         ? payload.markers.topologyOverviewAgentReadinessText.trim()
         : "";
     const overviewAgentReadinessReadable =
-      /(handoff-ready|handoff 가능|전달 가능)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
-      /(preflight|사전 점검)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
-      /(review|검토)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
+      /(handoff-ready|ready|handoff 가능|전달 가능|인계 가능)[^\d]+\d+/i.test(
+        overviewAgentReadinessText,
+      ) &&
+      /(preflight|check first|check|사전 점검)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
+      /(needs review|review|검토)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
       /[·,:]/.test(overviewAgentReadinessText);
     const requireOverviewAgentReadiness =
-      topologyAnalysisMode !== "path" && !focusSelectedNodeRoute && !blockingComposerOpen;
+      topologyAnalysisMode !== "path" &&
+      topologyAnalysisMode !== "health" &&
+      topologyAnalysisMode !== "focus" &&
+      !topologyGraphModeActive &&
+      !focusSelectedNodeRoute &&
+      !blockingComposerOpen;
     if (
       requireOverviewAgentReadiness &&
       (typeof payload.markers.topologyOverviewAgentReadinessText !== "string" ||
@@ -2769,10 +4594,17 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView did not report the Relief overview agent readiness meter marker (${JSON.stringify(payload.markers.topologyOverviewAgentReadinessMeterSegments ?? null)})`;
     }
+    const selectedNodeInspectorWithoutSupport =
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyAnalysisPanelVisible !== true &&
+      payload.markers.topologyCommandChromeState === "selected-node-inspector" &&
+      payload.markers.topologyAnalysisPanelSelectedContext !== true &&
+      payload.markers.topologyAnalysisPanelSelectedFocusRail !== true;
     if (
       Object.hasOwn(payload.markers, "topologyAnalysisPanelVisible") &&
       !selectedRelationContextVisible &&
-      payload.markers.topologyCreateNodeOpen !== true
+      payload.markers.topologyCreateNodeOpen !== true &&
+      !selectedNodeInspectorWithoutSupport
     ) {
       if (payload.markers.topologyAnalysisPanelVisible !== true) {
         return "WebView did not report a visible Relief analysis panel";
@@ -2785,10 +4617,16 @@ export function validateWebviewVerifyPayload(payload, {
       const usesPathRailWidth =
         topologyAnalysisMode === "path" ||
         payload.markers.topologyAnalysisPanelWidthContract ===
-          "path-support-rail-max-360";
+          "path-support-rail-max-360-phone-utility-reserve";
+      const usesFocusSupportRail =
+        topologyAnalysisMode === "focus" &&
+        payload.markers.topologyAnalysisPanelWidthContract ===
+          "focus-support-rail-max-300-map-centered";
       const analysisPanelMinWidth = usesPathRailWidth
         ? 320
-        : focusSelectedNodeRoute
+        : topologyGraphModeActive
+          ? 260
+        : usesFocusSupportRail || focusSelectedNodeRoute
           ? 240
           : 360;
       if (
@@ -2798,9 +4636,125 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView reported a cramped Relief analysis panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
       }
       const analysisPanelMinHeight =
-        topologyAnalysisMode === "path" ? 120 : focusSelectedNodeRoute ? 260 : 320;
+        topologyAnalysisMode === "path"
+          ? 120
+          : topologyGraphModeActive
+            ? 100
+          : usesFocusSupportRail
+            ? 220
+          : focusSelectedNodeRoute
+            ? 260
+            : 320;
       if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= analysisPanelMinHeight)) {
         return `WebView reported a cramped Relief analysis panel height (${payload.markers.topologyAnalysisPanelHeight ?? "unknown"})`;
+      }
+      if (topologyAnalysisMode === "health") {
+        if (
+          payload.markers.topologyHealthRepairLaneContract !==
+          "target-to-builder-to-sync"
+        ) {
+          return `WebView Relief health repair lane contract was ${payload.markers.topologyHealthRepairLaneContract || "missing"}`;
+        }
+        if (
+          payload.markers.topologyHealthRepairOrderContract !== "inspect-repair-sync"
+        ) {
+          return `WebView Relief health repair order contract was ${payload.markers.topologyHealthRepairOrderContract || "missing"}`;
+        }
+        if (
+          !String(payload.markers.topologyHealthRepairTargetSlug || "").trim() ||
+          !/^(stale|orphan|promotion)$/.test(
+            String(payload.markers.topologyHealthRepairTargetKind || ""),
+          )
+        ) {
+          return `WebView Relief health repair target was incomplete (${payload.markers.topologyHealthRepairTargetKind || "missing"} ${payload.markers.topologyHealthRepairTargetSlug || "missing"})`;
+        }
+        if (
+          payload.markers.topologyHealthRepairMapTargetContract !==
+          "analysis-panel-target-to-audit-overlay"
+        ) {
+          return `WebView Relief health map target contract was ${payload.markers.topologyHealthRepairMapTargetContract || "missing"}`;
+        }
+        if (
+          payload.markers.topologyHealthRepairMapTargetSlug !==
+            payload.markers.topologyHealthRepairTargetSlug ||
+          payload.markers.topologyHealthRepairMapTargetKind !==
+            payload.markers.topologyHealthRepairTargetKind
+        ) {
+          return `WebView Relief health map target did not match the panel target (${payload.markers.topologyHealthRepairMapTargetKind || "missing"} ${payload.markers.topologyHealthRepairMapTargetSlug || "missing"})`;
+        }
+        if (
+          payload.markers.topologyHealthRepairAuditTargetContract !==
+          "panel-target-card-highlight"
+        ) {
+          return `WebView Relief health audit target card contract was ${payload.markers.topologyHealthRepairAuditTargetContract || "missing"}`;
+        }
+        if (
+          payload.markers.topologyHealthRepairAuditTargetSlug !==
+            payload.markers.topologyHealthRepairTargetSlug ||
+          payload.markers.topologyHealthRepairAuditTargetKind !==
+            payload.markers.topologyHealthRepairTargetKind
+        ) {
+          return `WebView Relief health audit card did not match the panel target (${payload.markers.topologyHealthRepairAuditTargetKind || "missing"} ${payload.markers.topologyHealthRepairAuditTargetSlug || "missing"})`;
+        }
+        if (
+          payload.markers.topologyHealthRepairAuditTargetBadgeContract !==
+          "inline-card-state-label"
+        ) {
+          return `WebView Relief health audit target badge contract was ${payload.markers.topologyHealthRepairAuditTargetBadgeContract || "missing"}`;
+        }
+        if (
+          !String(payload.markers.topologyHealthRepairAuditTargetBadge || "").trim()
+        ) {
+          return "WebView Relief health audit target badge text was missing";
+        }
+        if (payload.markers.topologyHealthRepairPrimaryAction !== "builder") {
+          return `WebView Relief health repair primary action was ${payload.markers.topologyHealthRepairPrimaryAction || "missing"}`;
+        }
+        if (
+          payload.markers.topologyHealthRepairActionOrder !==
+          "builder-mcp-ontology"
+        ) {
+          return `WebView Relief health repair action order was ${payload.markers.topologyHealthRepairActionOrder || "missing"}`;
+        }
+        if (
+          payload.markers.topologyHealthRepairVisualContract !==
+          "builder-primary-secondary-compact"
+        ) {
+          return `WebView Relief health repair visual contract was ${payload.markers.topologyHealthRepairVisualContract || "missing"}`;
+        }
+        if (payload.markers.topologyHealthRepairFirstActionPrimary !== "builder") {
+          return `WebView Relief health repair first action was ${payload.markers.topologyHealthRepairFirstActionPrimary || "missing"}`;
+        }
+        if (payload.markers.topologyHealthRepairFirstActionTier !== "primary") {
+          return `WebView Relief health repair first action tier was ${payload.markers.topologyHealthRepairFirstActionTier || "missing"}`;
+        }
+        if (!(Number(payload.markers.topologyHealthRepairFirstActionWidth) >= 96)) {
+          return `WebView Relief health repair first action was too narrow (${payload.markers.topologyHealthRepairFirstActionWidth || "missing"})`;
+        }
+        if (payload.markers.topologyHealthRepairSyncGate !== "post-change") {
+          return `WebView Relief health repair sync gate was ${payload.markers.topologyHealthRepairSyncGate || "missing"}`;
+        }
+        if (payload.markers.topologyAuditLegendVisible !== true) {
+          return "WebView Relief health audit legend was not visible as support chrome";
+        }
+        if (
+          payload.markers.topologyAuditLegendContract !==
+          "health-support-bottom-left-clear-of-minimap"
+        ) {
+          return `WebView Relief health audit legend contract was ${payload.markers.topologyAuditLegendContract || "missing"}`;
+        }
+        if (payload.markers.topologyAuditLegendAttentionRole !== "support") {
+          return `WebView Relief health audit legend attention role was ${payload.markers.topologyAuditLegendAttentionRole || "missing"}`;
+        }
+        if (payload.markers.topologyAuditLegendDensity !== "compact") {
+          return `WebView Relief health audit legend density was ${payload.markers.topologyAuditLegendDensity || "missing"}`;
+        }
+        if (
+          payload.markers.topologyAuditLegendOverlapsAnalysisPanel === true ||
+          payload.markers.topologyAuditLegendOverlapsMinimap === true
+        ) {
+          return "WebView Relief health audit legend overlapped the analysis panel or minimap";
+        }
       }
       if (payload.markers.topologyCreateNodeOpen !== true && usesOverviewWidth) {
         if (payload.markers.topologyAnalysisPanelWidthPolicy !== "overview-support") {
@@ -2813,21 +4767,35 @@ export function validateWebviewVerifyPayload(payload, {
           if (payload.markers.topologyAnalysisPanelAttentionRole !== "support") {
             return `WebView reported malformed Relief overview panel attention role (${payload.markers.topologyAnalysisPanelAttentionRole ?? "unknown"})`;
           }
-          if (payload.markers.topologyAnalysisPanelWidthContract !== "overview-support-max-360") {
+          if (payload.markers.topologyAnalysisPanelWidthContract !== "overview-support-max-360-phone-utility-reserve") {
             return `WebView reported malformed Relief overview panel width contract (${payload.markers.topologyAnalysisPanelWidthContract ?? "unknown"})`;
           }
           if (payload.markers.topologyAnalysisPanelWidthTarget !== "overview-14-inch-compact") {
             return `WebView reported malformed Relief overview panel width target (${payload.markers.topologyAnalysisPanelWidthTarget ?? "unknown"})`;
           }
-          if (payload.markers.topologyAnalysisPanelWidthToken !== "--topology-panel-overview-rail-width") {
+          if (payload.markers.topologyAnalysisPanelWidthToken !== "--topology-panel-overview-responsive-width") {
             return `WebView reported malformed Relief overview panel width token (${payload.markers.topologyAnalysisPanelWidthToken ?? "unknown"})`;
           }
-          const overviewPanelMinWidth = Number(payload.width) < 1600 ? 320 : 460;
+          if (
+            payload.markers.topologyAnalysisPanelPhoneUtilityReserveToken !==
+            "--topology-panel-phone-utility-rail-reserve"
+          ) {
+            return `WebView reported malformed Relief overview panel phone utility reserve token (${payload.markers.topologyAnalysisPanelPhoneUtilityReserveToken ?? "unknown"})`;
+          }
+          if (
+            payload.markers.topologyAnalysisPanelLayerContract !==
+              "read-surface-above-map-cards" ||
+            payload.markers.topologyAnalysisPanelZIndexToken !==
+              "--topology-panel-read-layer-z-index" ||
+            Number(payload.markers.topologyAnalysisPanelZIndexComputed || 0) < 30
+          ) {
+            return `WebView reported malformed Relief overview panel layer contract (${payload.markers.topologyAnalysisPanelLayerContract || "missing"} · ${payload.markers.topologyAnalysisPanelZIndexToken || "missing"} · ${payload.markers.topologyAnalysisPanelZIndexComputed || "missing"})`;
+          }
+          const overviewPanelMinWidth = 320;
           if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= overviewPanelMinWidth)) {
             return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
           }
-          const overviewPanelMaxWidth =
-            Number(payload.width) >= 1400 && Number(payload.width) <= 1600 ? 360 : 560;
+          const overviewPanelMaxWidth = Number(payload.width) >= 1400 ? 370 : 560;
           if (!(Number(payload.markers.topologyAnalysisPanelWidth) <= overviewPanelMaxWidth)) {
             return `WebView reported an oversized Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
           }
@@ -2855,7 +4823,11 @@ export function validateWebviewVerifyPayload(payload, {
         }
       }
       if (payload.markers.topologyCreateNodeOpen !== true && isOverviewAnalysis) {
-        if (payload.markers.topologyOverviewRelationQualityDensity !== "scan-facts") {
+        if (
+          !["scan-facts", "summary-first"].includes(
+            payload.markers.topologyOverviewRelationQualityDensity,
+          )
+        ) {
           return `WebView reported malformed Relief overview relation quality density (${payload.markers.topologyOverviewRelationQualityDensity ?? "unknown"})`;
         }
         if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= 455)) {
@@ -2870,7 +4842,8 @@ export function validateWebviewVerifyPayload(payload, {
         if (Number.isFinite(overflowDelta) && overflowDelta > 2) {
           return `WebView reported clipped Relief overview panel content (${overflowDelta}px overflow)`;
         }
-        const overviewCopyMinWidth = Number(payload.width) < 1600 ? 280 : 410;
+        const overviewCopyMinWidth =
+          Number(payload.width) >= 2400 ? 312 : Number(payload.width) < 1600 ? 280 : 320;
         if (!(Number(payload.markers.topologyOverviewPrimaryCopyWidth) >= overviewCopyMinWidth)) {
           return `WebView reported a cramped Relief overview copy action (${payload.markers.topologyOverviewPrimaryCopyWidth ?? "unknown"}px)`;
         }
@@ -2880,6 +4853,18 @@ export function validateWebviewVerifyPayload(payload, {
       }
     }
     if (requireTopologyDrag) {
+      const focusDeltaVector = topologyDragDeltaVector(payload.markers.topologyDragFocusDelta);
+      const stationaryFixedGeographyDrag =
+        payload.markers.topologyDragFocusMoved !== true &&
+        payload.markers.topologyDragReason === "done" &&
+        focusDeltaVector !== null &&
+        focusDeltaVector.magnitude <= 2 &&
+        payload.markers.topologyDragCompanionVisible === true &&
+        payload.markers.topologyDragCompanionAligned === true &&
+        payload.markers.topologyDragRelationLabelClicked === true;
+      if (stationaryFixedGeographyDrag || selectedFocusStationaryContextProof) {
+        return null;
+      }
       if (payload.markers.topologyDragFocusMoved !== true) {
         return `WebView Relief drag did not move the focus card (${payload.markers.topologyDragFocusDelta ?? "unknown delta"})`;
       }
@@ -2891,19 +4876,22 @@ export function validateWebviewVerifyPayload(payload, {
         const companionDelta = JSON.stringify(payload.markers.topologyDragCompanionDelta ?? "unknown companion delta");
         return `WebView Relief drag companion did not travel with the focus card (focus ${focusDelta}, companion ${companionDelta})`;
       }
-      const focusDeltaVector = topologyDragDeltaVector(payload.markers.topologyDragFocusDelta);
       const companionDeltaVector = topologyDragDeltaVector(
         payload.markers.topologyDragCompanionDelta,
       );
       if (focusDeltaVector && companionDeltaVector) {
-        if (focusDeltaVector.magnitude < 24 || focusDeltaVector.magnitude > 360) {
+        if (
+          focusDeltaVector.magnitude < TOPOLOGY_DRAG_FOCUS_MIN_DELTA_PX ||
+          focusDeltaVector.magnitude > TOPOLOGY_DRAG_FOCUS_MAX_REASONABLE_DELTA_PX
+        ) {
           return `WebView Relief drag moved the focus card by an implausible distance (${Math.round(focusDeltaVector.magnitude)}px)`;
         }
         const dragVectorDelta = Math.hypot(
           focusDeltaVector.x - companionDeltaVector.x,
           focusDeltaVector.y - companionDeltaVector.y,
         );
-        if (dragVectorDelta > 8) {
+        const dragVectorTolerance = topologyDragCompanionVectorTolerance(payload.markers);
+        if (dragVectorDelta > dragVectorTolerance) {
           return `WebView Relief drag companion vector drifted from the focus card (${Math.round(dragVectorDelta)}px)`;
         }
       }
@@ -2916,8 +4904,296 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyDragClusterSize) >= 2)) {
         return `WebView Relief drag did not keep a linked card cluster (${payload.markers.topologyDragClusterSize ?? "missing"} active members)`;
       }
+      if (payload.markers.topologyDragCollisionPolicy !== "release-settle") {
+        return `WebView Relief drag collision policy was ${payload.markers.topologyDragCollisionPolicy || "missing"}`;
+      }
+      if (
+        payload.markers.topologyDragPhysicsSyncContract !==
+        "skeleton-card-drag-pins-worker-layout-group"
+      ) {
+        return `WebView Relief drag physics sync contract was ${payload.markers.topologyDragPhysicsSyncContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyDragPhysicsReleasePolicy !==
+        "commit-drop-position-no-force-release"
+      ) {
+        return `WebView Relief drag physics release policy was ${payload.markers.topologyDragPhysicsReleasePolicy || "missing"}`;
+      }
+      if (payload.markers.topologyDragPhysicsSyncActiveDuring !== true) {
+        return "WebView Relief drag physics sync was not active during drag verification";
+      }
+      if (payload.markers.topologyLayoutWorkerPositionFrameSkipPolicy !== "skip-only-unsynced-skeleton-card-drag") {
+        return `WebView Relief worker frame skip policy was ${payload.markers.topologyLayoutWorkerPositionFrameSkipPolicy || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragWorkerAppliedFrameChangeCount || 0) >= 1)) {
+        return `WebView Relief drag did not update worker layout frames during drag (${payload.markers.topologyDragWorkerAppliedFrameChangeCount ?? "missing"}, delta ${payload.markers.topologyDragWorkerAppliedFrameDelta ?? "missing"})`;
+      }
+      if (
+        payload.markers.topologyDragRelationLabelVisibilityContract !==
+        "active-drag-connector-labels-remain-readable"
+      ) {
+        return `WebView Relief drag relation label visibility contract was ${payload.markers.topologyDragRelationLabelVisibilityContract || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragRelationLabelExpectedCount || 0) >= 1)) {
+        return `WebView Relief drag did not expose relation labels to verify (${payload.markers.topologyDragRelationLabelExpectedCount ?? "missing"} expected)`;
+      }
+      if (!(Number(payload.markers.topologyDragRelationLabelVisibleCount || 0) >= 1)) {
+        return `WebView Relief drag did not keep relation labels visible (${payload.markers.topologyDragRelationLabelVisibleCount ?? "missing"} visible)`;
+      }
+      if (payload.markers.topologyDragRelationLabelVisibleDuringDrag !== true) {
+        return "WebView Relief drag relation label was not visibly attached during drag";
+      }
+      const dragCompactRequired =
+        payload.markers.topologyZoomLensActive === true &&
+        payload.markers.topologyZoomLensCardCompactionActive === true;
+      if (dragCompactRequired) {
+        if (
+          payload.markers.topologyDragRelationLabelCompactContract !==
+          "zoomed-drag-compacts-repeated-relation-labels"
+        ) {
+          return `WebView Relief zoomed drag compact relation label contract was ${payload.markers.topologyDragRelationLabelCompactContract || "missing"}`;
+        }
+        if (!(Number(payload.markers.topologyDragRelationLabelCompactCount || 0) >= 1)) {
+          return `WebView Relief zoomed drag did not compact relation labels (${payload.markers.topologyDragRelationLabelCompactCount ?? "missing"} compact)`;
+        }
+        if (payload.markers.topologyDragRelationLabelPresentation !== "compact-glyph") {
+          return `WebView Relief zoomed drag relation label presentation was ${payload.markers.topologyDragRelationLabelPresentation || "missing"}`;
+        }
+        if (payload.markers.topologyDragRelationLabelCompact !== true) {
+          return "WebView Relief zoomed drag relation label did not expose compact=true";
+        }
+        if (
+          payload.markers.topologyDragRelationLabelCompactItemContract !==
+          "zoomed-drag-keeps-type-fact-as-compact-glyph"
+        ) {
+          return `WebView Relief zoomed drag compact label item contract was ${payload.markers.topologyDragRelationLabelCompactItemContract || "missing"}`;
+        }
+        if (!String(payload.markers.topologyDragRelationLabelReadableType || "").trim()) {
+          return "WebView Relief zoomed drag compact label did not preserve a readable relation type";
+        }
+        const compactBadgeWidth = Number(payload.markers.topologyDragRelationLabelBadgeWidth || 0);
+        const compactBadgeHeight = Number(payload.markers.topologyDragRelationLabelBadgeHeight || 0);
+        const compactBadgeRadius = Number(payload.markers.topologyDragRelationLabelBadgeRadius || 0);
+        if (!(compactBadgeWidth > 0 && compactBadgeWidth <= 44)) {
+          return `WebView Relief zoomed drag compact label badge width was ${payload.markers.topologyDragRelationLabelBadgeWidth ?? "missing"}`;
+        }
+        if (!(compactBadgeHeight > 0 && compactBadgeHeight <= 24)) {
+          return `WebView Relief zoomed drag compact label badge height was ${payload.markers.topologyDragRelationLabelBadgeHeight ?? "missing"}`;
+        }
+        if (!(compactBadgeRadius >= 8)) {
+          return `WebView Relief zoomed drag compact label badge radius was ${payload.markers.topologyDragRelationLabelBadgeRadius ?? "missing"}`;
+        }
+      }
+      if (
+        payload.markers.topologyDragReactiveContextContract !==
+        "active-drag-shows-worker-moving-surrounding-context"
+      ) {
+        return `WebView Relief drag reactive context contract was ${payload.markers.topologyDragReactiveContextContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyDragInteractionCueContract !==
+        "root-card-shows-linked-count-during-drag"
+      ) {
+        return `WebView Relief drag interaction cue contract was ${payload.markers.topologyDragInteractionCueContract || "missing"}`;
+      }
+      if (payload.markers.topologyDragInteractionCueVisible !== true) {
+        return "WebView Relief drag interaction cue was not visible";
+      }
+      if (!(Number(payload.markers.topologyDragInteractionCueLinkedCardCount || 0) >= 1)) {
+        return `WebView Relief drag interaction cue linked card count was ${payload.markers.topologyDragInteractionCueLinkedCardCount ?? "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragInteractionCueRelationLinkCount || 0) >= 1)) {
+        return `WebView Relief drag interaction cue relation link count was ${payload.markers.topologyDragInteractionCueRelationLinkCount ?? "missing"}`;
+      }
+      if (!String(payload.markers.topologyDragInteractionCueText || "").trim()) {
+        return "WebView Relief drag interaction cue text was missing";
+      }
+      if (payload.markers.topologyDragReactiveContextPolicy !== "boost-dimmed-worker-response") {
+        return `WebView Relief drag reactive context policy was ${payload.markers.topologyDragReactiveContextPolicy || "missing"}`;
+      }
+      if (payload.markers.topologyDragReactiveContextOpacityToken !== "--topology-card-drag-reactive-context-opacity") {
+        return `WebView Relief drag reactive context opacity token was ${payload.markers.topologyDragReactiveContextOpacityToken || "missing"}`;
+      }
+      if (
+        payload.markers.topologyDragReactiveContextVisualContract !==
+        "reactive-context-uses-border-ring"
+      ) {
+        return `WebView Relief drag reactive context visual contract was ${payload.markers.topologyDragReactiveContextVisualContract || "missing"}`;
+      }
+      if (payload.markers.topologyDragReactiveContextVisualToken !== "--topology-card-border-selected") {
+        return `WebView Relief drag reactive context visual token was ${payload.markers.topologyDragReactiveContextVisualToken || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragReactiveContextOpacity || 0) >= 0.4)) {
+        return `WebView Relief drag reactive context opacity was ${payload.markers.topologyDragReactiveContextOpacity ?? "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragReactiveContextVisibleCount || 0) >= 1)) {
+        return `WebView Relief drag did not keep surrounding context visibly reactive (${payload.markers.topologyDragReactiveContextVisibleCount ?? "missing"} visible)`;
+      }
+      if (
+        payload.markers.topologyDragReactiveMotionContract !==
+        "active-drag-gives-surrounding-context-bounded-parallax"
+      ) {
+        return `WebView Relief drag reactive motion contract was ${payload.markers.topologyDragReactiveMotionContract || "missing"}`;
+      }
+      if (payload.markers.topologyDragReactiveMotionPolicy !== "bounded-parallax-nudge") {
+        return `WebView Relief drag reactive motion policy was ${payload.markers.topologyDragReactiveMotionPolicy || "missing"}`;
+      }
+      if (
+        payload.markers.topologyDragReactiveMotionLinkedPolicy !==
+        "direct-neighbor-readable-follow"
+      ) {
+        return `WebView Relief drag linked reactive motion policy was ${payload.markers.topologyDragReactiveMotionLinkedPolicy || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragReactiveMotionVisibleCount || 0) >= 1)) {
+        return `WebView Relief drag did not move surrounding context reactively (${payload.markers.topologyDragReactiveMotionVisibleCount ?? "missing"} moved)`;
+      }
+      if (!(Number(payload.markers.topologyDragReactiveAmbientMotionVisibleCount || 0) >= 1)) {
+        return `WebView Relief drag did not move ambient surrounding context reactively (${payload.markers.topologyDragReactiveAmbientMotionVisibleCount ?? "missing"} moved)`;
+      }
+      if (!(Number(payload.markers.topologyDragReactiveLinkedMotionVisibleCount || 0) >= 1)) {
+        return `WebView Relief drag did not move graph-linked surrounding context reactively (${payload.markers.topologyDragReactiveLinkedMotionVisibleCount ?? "missing"} moved)`;
+      }
+      if (
+        payload.markers.topologyDragTensionConnectorContract !==
+        "active-drag-draws-links-to-reactive-neighbors"
+      ) {
+        return `WebView Relief drag tension connector contract was ${payload.markers.topologyDragTensionConnectorContract || "missing"}`;
+      }
+      if (payload.markers.topologyDragTensionConnectorPolicy !== "cluster-to-linked-context-only") {
+        return `WebView Relief drag tension connector policy was ${payload.markers.topologyDragTensionConnectorPolicy || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragTensionConnectorExpectedCount || 0) >= 1)) {
+        return `WebView Relief drag did not expose tension connectors to verify (${payload.markers.topologyDragTensionConnectorExpectedCount ?? "missing"} expected)`;
+      }
+      if (!(Number(payload.markers.topologyDragTensionConnectorVisibleCount || 0) >= 1)) {
+        return `WebView Relief drag did not draw graph-linked tension connectors (${payload.markers.topologyDragTensionConnectorVisibleCount ?? "missing"} visible)`;
+      }
+      if (!(Number(payload.markers.topologyDragTensionConnectorActiveOpacity || 0) >= 0.85)) {
+        return `WebView Relief drag tension connector active opacity was ${payload.markers.topologyDragTensionConnectorActiveOpacity ?? "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragTensionConnectorActiveStrokeWidth || 0) >= 2)) {
+        return `WebView Relief drag tension connector active stroke width was ${payload.markers.topologyDragTensionConnectorActiveStrokeWidth ?? "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx || 0) > 0)) {
+        return `WebView Relief drag reactive motion offset was ${payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx ?? "missing"}`;
+      }
+      const dragReactiveMotionMaxOffsetPx = Number(
+        payload.markers.topologyDragReactiveMotionMaxOffsetPx || 0,
+      );
+      if (!(dragReactiveMotionMaxOffsetPx >= 1)) {
+        return `WebView Relief drag reactive motion max offset was ${payload.markers.topologyDragReactiveMotionMaxOffsetPx ?? "missing"}`;
+      }
+      if (dragReactiveMotionMaxOffsetPx < 36) {
+        return `WebView Relief drag reactive motion max offset did not expose readable linked follow (${payload.markers.topologyDragReactiveMotionMaxOffsetPx ?? "missing"})`;
+      }
+      if (!(Number(payload.markers.topologyDragReactiveMotionBaseMaxOffsetPx || 0) >= 24)) {
+        return `WebView Relief drag ambient reactive motion max offset was ${payload.markers.topologyDragReactiveMotionBaseMaxOffsetPx ?? "missing"}`;
+      }
+      if (
+        !(
+          Number(payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx || 0) <=
+          dragReactiveMotionMaxOffsetPx
+        )
+      ) {
+        return `WebView Relief drag reactive motion exceeded bounded offset (${payload.markers.topologyDragReactiveMotionMaxObservedOffsetPx})`;
+      }
+      if (payload.markers.topologyDragReactiveMotionMaxOffsetToken !== "--topology-card-drag-reactive-motion-max-offset") {
+        return `WebView Relief drag reactive motion max offset token was ${payload.markers.topologyDragReactiveMotionMaxOffsetToken || "missing"}`;
+      }
+      if (payload.markers.topologyDragFrameCacheContract !== "pointer-move-reuses-drag-indexes") {
+        return `WebView Relief drag frame cache contract was ${payload.markers.topologyDragFrameCacheContract || "missing"}`;
+      }
+      if (payload.markers.topologyDragDomIndexContract !== "drag-release-reuses-card-elements") {
+        return `WebView Relief drag DOM index contract was ${payload.markers.topologyDragDomIndexContract || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragDomIndexSize || 0) >= 2)) {
+        return `WebView Relief drag DOM index size was ${payload.markers.topologyDragDomIndexSize ?? "missing"}`;
+      }
+      if (
+        payload.markers.topologyDragFrameCacheSnapshotCount === undefined ||
+        !(Number(payload.markers.topologyDragFrameCacheSnapshotCount) >= 0)
+      ) {
+        return `WebView Relief drag frame cache snapshot count was ${payload.markers.topologyDragFrameCacheSnapshotCount ?? "missing"}`;
+      }
+      if (payload.markers.topologyDockDragSnapshotContract !== "single-pass-card-rect-read") {
+        return `WebView Relief dock drag snapshot contract was ${payload.markers.topologyDockDragSnapshotContract || "missing"}`;
+      }
+      const connectorCacheError = validateTopologyConnectorCacheMarkers(payload.markers);
+      if (connectorCacheError) return connectorCacheError;
+      if (payload.markers.topologyRelationLabelBlockerContract !== "reuse-visible-card-rects") {
+        return `WebView Relief relation label blocker contract was ${payload.markers.topologyRelationLabelBlockerContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologySelectedBlockingSurfaceOverlapActive === true &&
+        payload.markers.topologyVisibleCardSelectedSurfaceRectPolicy !==
+          "live-rects-for-postprocess-overlap-safety"
+      ) {
+        return `WebView Relief selected-surface visible-card rect policy was ${payload.markers.topologyVisibleCardSelectedSurfaceRectPolicy || "missing"}`;
+      }
+      if (
+        payload.markers.topologyRelationLabelBlockerSource &&
+        !["visibility-pass", "fallback-visibility-pass"].includes(
+          payload.markers.topologyRelationLabelBlockerSource,
+        )
+      ) {
+        return `WebView Relief relation label blocker source was ${payload.markers.topologyRelationLabelBlockerSource}`;
+      }
+      if (payload.markers.topologyRelationLabelPhoneBottomReserveContract) {
+        if (
+          payload.markers.topologyRelationLabelPhoneBottomReserveContract !==
+          "avoid-floating-controls"
+        ) {
+          return `WebView Relief relation label phone bottom reserve contract was ${payload.markers.topologyRelationLabelPhoneBottomReserveContract}`;
+        }
+        if (
+          Number(payload.markers.topologyRelationLabelPhoneBottomReservePx || 0) < 96
+        ) {
+          return `WebView Relief relation label phone bottom reserve was too small (${payload.markers.topologyRelationLabelPhoneBottomReservePx || "missing"}px)`;
+        }
+        if (
+          payload.markers.topologyRelationLabelPhoneBottomReserveToken !==
+          "--topology-floating-control-phone-bottom"
+        ) {
+          return `WebView Relief relation label phone bottom reserve token was ${payload.markers.topologyRelationLabelPhoneBottomReserveToken || "missing"}`;
+        }
+      }
+      if (payload.markers.topologyRelationLabelQueryContract !== "indexed-once") {
+        return `WebView Relief relation label query contract was ${payload.markers.topologyRelationLabelQueryContract || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyRelationLabelQueryIndexCount || 0) >= 1)) {
+        return `WebView Relief relation label query index count was ${payload.markers.topologyRelationLabelQueryIndexCount ?? "missing"}`;
+      }
+      if (payload.markers.topologyVisibilityCountContract !== "single-pass-unless-fallback") {
+        return `WebView Relief visibility count contract was ${payload.markers.topologyVisibilityCountContract || "missing"}`;
+      }
+      if (payload.markers.topologyFixedSurfaceMeasureContract !== "single-pass-rect-read") {
+        return `WebView Relief fixed surface measurement contract was ${payload.markers.topologyFixedSurfaceMeasureContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyVisibilityCountSource &&
+        ![
+          "single-pass",
+          "single-pass-final-recount",
+          "fallback-recount",
+          "fallback-recount-final-recount",
+        ].includes(payload.markers.topologyVisibilityCountSource)
+      ) {
+        return `WebView Relief visibility count source was ${payload.markers.topologyVisibilityCountSource}`;
+      }
       if (payload.markers.topologyDragSettleMotionContract !== "linked-cluster-drag-settle") {
         return `WebView Relief drag settle motion contract was ${payload.markers.topologyDragSettleMotionContract || "missing"}`;
+      }
+      if (
+        payload.markers.topologyDragSettleFeedbackContract !==
+        "released-dragged-cluster-keeps-settle-feedback"
+      ) {
+        return `WebView Relief drag settle feedback contract was ${payload.markers.topologyDragSettleFeedbackContract || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologyDragSettledClusterSize || 0) >= 1)) {
+        return `WebView Relief drag settled cluster size was ${payload.markers.topologyDragSettledClusterSize ?? "missing"}`;
+      }
+      if (!payload.markers.topologyDragSettledRoot) {
+        return "WebView Relief drag settled root was missing";
       }
       if (Number(payload.markers.topologyDragSettleMotionDurationMs || 0) !== 720) {
         return `WebView Relief drag settle motion duration was ${payload.markers.topologyDragSettleMotionDurationMs || "missing"}ms`;
@@ -2934,35 +5210,58 @@ export function validateWebviewVerifyPayload(payload, {
       if (blockingComposerOpen) {
         return null;
       }
-      if (payload.markers.topologySelectedRelationHaloVisible !== true) {
-        return `WebView Relief relation label selection did not reveal a selected relation halo (${payload.markers.topologySelectedRelationVisibleHaloCount ?? 0}/${payload.markers.topologySelectedRelationHaloCount ?? 0} visible)`;
+      const zoomLensError = validateTopologyZoomLensMarkers(payload.markers);
+      if (zoomLensError) return zoomLensError;
+      const zoomedDragCompactProved =
+        payload.markers.topologyZoomLensActive === true &&
+        payload.markers.topologyZoomLensCardCompactionActive === true &&
+        payload.markers.topologyDragRelationLabelCompactContract ===
+          "zoomed-drag-compacts-repeated-relation-labels" &&
+        Number(payload.markers.topologyDragRelationLabelCompactCount || 0) >= 1 &&
+        payload.markers.topologyDragRelationLabelPresentation === "compact-glyph" &&
+        payload.markers.topologyDragRelationLabelCompact === true &&
+        payload.markers.topologyDragRelationLabelCompactItemContract ===
+          "zoomed-drag-keeps-type-fact-as-compact-glyph" &&
+        String(payload.markers.topologyDragRelationLabelReadableType || "").trim();
+      if (!zoomedDragCompactProved) {
+        if (payload.markers.topologySelectedRelationHaloVisible !== true) {
+          return `WebView Relief relation label selection did not reveal a selected relation halo (${payload.markers.topologySelectedRelationVisibleHaloCount ?? 0}/${payload.markers.topologySelectedRelationHaloCount ?? 0} visible)`;
+        }
+        if (payload.markers.topologySelectedRelationLabelHitAligned !== true) {
+          return "WebView Relief selected relation label hit target is not aligned with its visible badge";
+        }
+        if (
+          Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) < 90 ||
+          Number(payload.markers.topologySelectedRelationLabelHitHeight || 0) < 32
+        ) {
+          return `WebView Relief selected relation label hit target is too small (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}x${payload.markers.topologySelectedRelationLabelHitHeight ?? 0})`;
+        }
+        if (
+          Number(payload.width || 0) >= 1400 &&
+          Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) > 160
+        ) {
+          return `WebView Relief selected relation label stayed too wide for the active inspector (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}px)`;
+        }
+        if (payload.markers.topologySelectedRelationLabelDensity !== "focus-token") {
+          return `WebView Relief selected relation label density was ${payload.markers.topologySelectedRelationLabelDensity || "missing"}`;
+        }
+        if (selectedRelationRouteRailTextLeak(payload)) {
+          return "WebView Relief selected relation label leaked hidden route rail text into body text";
+        }
+        const relationLabelCompactError = validateSelectedRelationLabelCompactMarkers(
+          payload.markers,
+          payload.width,
+        );
+        if (relationLabelCompactError) return relationLabelCompactError;
       }
-      if (payload.markers.topologySelectedRelationLabelHitAligned !== true) {
-        return "WebView Relief selected relation label hit target is not aligned with its visible badge";
-      }
-      if (
-        Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) < 90 ||
-        Number(payload.markers.topologySelectedRelationLabelHitHeight || 0) < 32
-      ) {
-        return `WebView Relief selected relation label hit target is too small (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}x${payload.markers.topologySelectedRelationLabelHitHeight ?? 0})`;
-      }
-      if (
-        Number(payload.width || 0) >= 1400 &&
-        Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) > 160
-      ) {
-        return `WebView Relief selected relation label stayed too wide for the active inspector (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}px)`;
-      }
-      if (payload.markers.topologySelectedRelationLabelDensity !== "focus-token") {
-        return `WebView Relief selected relation label density was ${payload.markers.topologySelectedRelationLabelDensity || "missing"}`;
-      }
-      if (selectedRelationRouteRailTextLeak(payload)) {
-        return "WebView Relief selected relation label leaked hidden route rail text into body text";
-      }
-      const relationLabelCompactError = validateSelectedRelationLabelCompactMarkers(
+      const relationLabelFrameGeometryError = validateRelationLabelFrameGeometryMarkers(
         payload.markers,
-        payload.width,
       );
-      if (relationLabelCompactError) return relationLabelCompactError;
+      if (relationLabelFrameGeometryError) return relationLabelFrameGeometryError;
+      const selectedRelationIdentityError = validateSelectedRelationIdentityMarkers(
+        payload.markers,
+      );
+      if (selectedRelationIdentityError) return selectedRelationIdentityError;
       if (
         typeof payload.markers.topologySelectedRelationLabelQuality !== "string" ||
         !/^(strong|supported|weak|review)$/.test(payload.markers.topologySelectedRelationLabelQuality)
@@ -3008,6 +5307,25 @@ export function validateWebviewVerifyPayload(payload, {
           : "";
       if (relationLabelCliFallbackCommand !== expectedRelationLabelCliFallbackCommand) {
         return `WebView Relief selected relation label CLI fallback was ${relationLabelCliFallbackCommand || "missing"}, expected ${expectedRelationLabelCliFallbackCommand}`;
+      }
+      if (
+        payload.markers.topologySelectedRelationLabelSource !==
+          payload.markers.topologySelectedRelationCopyPayloadFrom ||
+        payload.markers.topologySelectedRelationLabelTarget !==
+          payload.markers.topologySelectedRelationCopyPayloadTo ||
+        payload.markers.topologySelectedRelationLabelType !==
+          payload.markers.topologySelectedRelationCopyPayloadType
+      ) {
+        return `WebView Relief selected relation label direct route markers mismatched the copy payload (${payload.markers.topologySelectedRelationLabelSource || "missing"} -> ${payload.markers.topologySelectedRelationLabelTarget || "missing"} / ${payload.markers.topologySelectedRelationLabelType || "missing"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationLabelRoute !==
+        `${payload.markers.topologySelectedRelationCopyPayloadFrom}>${payload.markers.topologySelectedRelationCopyPayloadTo}`
+      ) {
+        return `WebView Relief selected relation label route marker was ${payload.markers.topologySelectedRelationLabelRoute || "missing"}`;
+      }
+      if (!(Number(payload.markers.topologySelectedRelationLabelCount || 0) >= 1)) {
+        return `WebView Relief selected relation label count marker was ${payload.markers.topologySelectedRelationLabelCount ?? "missing"}`;
       }
       if (
         typeof payload.markers.topologySelectedRelationLabelAgentGateText !== "string" ||
@@ -3070,7 +5388,56 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return "WebView Relief selected relation label fact route did not expose the agent gate chip";
       }
-      if (payload.markers.topologyNodePopoverVisible === true) {
+      if (
+        payload.markers.topologyRelationLabelHandoffContract ||
+        payload.markers.topologySelectedRelationLabelHandoffState
+      ) {
+        if (
+          payload.markers.topologyRelationLabelHandoffContract !==
+          "label-level-mcp-cli-fallback"
+        ) {
+          return `WebView Relief selected relation label handoff contract was ${payload.markers.topologyRelationLabelHandoffContract || "missing"}`;
+        }
+        if (payload.markers.topologySelectedRelationLabelHandoffState !== "ready") {
+          return `WebView Relief selected relation label handoff state was ${payload.markers.topologySelectedRelationLabelHandoffState || "missing"}`;
+        }
+        if (
+          payload.markers.topologySelectedRelationLabelHandoffGate !==
+          payload.markers.topologySelectedRelationLabelAgentGateKind
+        ) {
+          return `WebView Relief selected relation label handoff gate mismatched the badge (${payload.markers.topologySelectedRelationLabelHandoffGate || "missing"} vs ${payload.markers.topologySelectedRelationLabelAgentGateKind || "missing"})`;
+        }
+        if (
+          payload.markers.topologySelectedRelationLabelHandoffPrimaryAction !==
+          expectedRelationLabelAction
+        ) {
+          return `WebView Relief selected relation label handoff action mismatched the badge (${payload.markers.topologySelectedRelationLabelHandoffPrimaryAction || "missing"} vs ${expectedRelationLabelAction})`;
+        }
+        if (
+          String(payload.markers.topologySelectedRelationLabelHandoffCliFallbackCommand || "").trim() !==
+          relationLabelCliFallbackCommand
+        ) {
+          return `WebView Relief selected relation label handoff CLI fallback mismatched the badge (${payload.markers.topologySelectedRelationLabelHandoffCliFallbackCommand || "missing"} vs ${relationLabelCliFallbackCommand || "missing"})`;
+        }
+        if (
+          payload.markers.topologySelectedRelationLabelHandoffFactRoute !==
+          payload.markers.topologySelectedRelationLabelFactRoute
+        ) {
+          return `WebView Relief selected relation label handoff fact route mismatched the badge (${payload.markers.topologySelectedRelationLabelHandoffFactRoute || "missing"} vs ${payload.markers.topologySelectedRelationLabelFactRoute || "missing"})`;
+        }
+        if (
+          payload.markers.topologySelectedRelationLabelHandoffQuality !==
+          payload.markers.topologySelectedRelationLabelQuality ||
+          payload.markers.topologySelectedRelationLabelHandoffEvidence !==
+            payload.markers.topologySelectedRelationLabelEvidenceState
+        ) {
+          return `WebView Relief selected relation label handoff fact markers mismatched the badge (${payload.markers.topologySelectedRelationLabelHandoffQuality || "missing"}/${payload.markers.topologySelectedRelationLabelHandoffEvidence || "missing"})`;
+        }
+      }
+      if (
+        payload.markers.topologyNodePopoverVisible === true &&
+        payload.markers.topologyCommandChromeState !== "collapsed-active-relation"
+      ) {
       if (payload.markers.topologyNodePopoverCollapsed === true) {
         return "WebView Relief selected node popover stayed collapsed after expand verification";
       }
@@ -3085,6 +5452,21 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (payload.markers.topologyNodePopoverHierarchyContract !== "click-focus-detail-support") {
         return `WebView Relief selected node popover hierarchy contract was ${payload.markers.topologyNodePopoverHierarchyContract || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverPositionContract !== "selected-inspector-aligns-to-right-inset") {
+        return `WebView Relief selected node popover position contract was ${payload.markers.topologyNodePopoverPositionContract || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverGutterContract !== "no-phantom-utility-rail") {
+        return `WebView Relief selected node popover gutter contract was ${payload.markers.topologyNodePopoverGutterContract || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverRightInsetToken !== "--topology-node-popover-right-inset") {
+        return `WebView Relief selected node popover right inset token was ${payload.markers.topologyNodePopoverRightInsetToken || "missing"}`;
+      }
+      if (
+        payload.markers.topologyTopLeftChromeGroupSupportContract !==
+        "left-panel-collapsed-until-user-expands"
+      ) {
+        return `WebView Relief selected node support contract was ${payload.markers.topologyTopLeftChromeGroupSupportContract || "missing"}`;
       }
       if (payload.markers.topologyNodePopoverSizePolicy !== "inspector-rail") {
         return `WebView Relief selected node popover used ${payload.markers.topologyNodePopoverSizePolicy || "no"} size policy`;
@@ -3101,10 +5483,6 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (Number(payload.markers.topologyNodePopoverLeft) < 8) {
         return `WebView Relief selected node popover overflowed the viewport left (${payload.markers.topologyNodePopoverLeft ?? "missing"}px)`;
-      }
-      const popoverRightInset = viewportWidth - Number(payload.markers.topologyNodePopoverRight);
-      if (popoverRightInset < (viewportWidth >= 1400 ? 72 : 8)) {
-        return `WebView Relief selected node popover overflowed the right control rail (right inset ${Number.isFinite(popoverRightInset) ? popoverRightInset : "missing"}px)`;
       }
       if (!(Number(payload.markers.topologyNodePopoverTop) <= 130)) {
         return `WebView Relief selected node popover was placed too low (${payload.markers.topologyNodePopoverTop ?? "missing"}px)`;
@@ -3193,6 +5571,12 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node popover relation row route action reported ${payload.markers.topologyNodePopoverRelationFactRouteAction || "missing"} for ${payload.markers.topologyNodePopoverRelationAgentGateKind}`;
       }
+      if (
+        payload.markers.topologyNodePopoverRelationHandoffGrammarContract !==
+        "fact-evidence-gate-action-payload"
+      ) {
+        return `WebView Relief selected node popover relation row handoff grammar contract was ${payload.markers.topologyNodePopoverRelationHandoffGrammarContract || "missing"}`;
+      }
       const nodePopoverRelationFactRouteChips = Array.isArray(
         payload.markers.topologyNodePopoverRelationFactRouteChips,
       )
@@ -3201,8 +5585,28 @@ export function validateWebviewVerifyPayload(payload, {
       const nodePopoverRelationFactRouteKinds = nodePopoverRelationFactRouteChips
         .map((chip) => chip?.kind)
         .join(">");
-      if (nodePopoverRelationFactRouteKinds !== "fact>evidence>action>payload") {
+      if (nodePopoverRelationFactRouteKinds !== "fact>evidence>gate>action>payload") {
         return `WebView Relief selected node popover relation row fact route chips were malformed (${nodePopoverRelationFactRouteKinds || "missing"})`;
+      }
+      const nodePopoverRelationGateChip = nodePopoverRelationFactRouteChips.find(
+        (chip) => chip?.kind === "gate",
+      );
+      if (
+        !nodePopoverRelationGateChip ||
+        String(nodePopoverRelationGateChip.text || "").trim().length === 0
+      ) {
+        return "WebView Relief selected node popover relation row did not expose a visible gate chip";
+      }
+      const nodePopoverRelationActionChip = nodePopoverRelationFactRouteChips.find(
+        (chip) => chip?.kind === "action",
+      );
+      const expectedNodePopoverActionChipText =
+        expectedNodePopoverRelationAction === "explain_relation" ? "explain" : "check";
+      if (
+        String(nodePopoverRelationActionChip?.text || "").trim() !==
+        expectedNodePopoverActionChipText
+      ) {
+        return `WebView Relief selected node popover relation row visible action chip was ${nodePopoverRelationActionChip?.text || "missing"} for ${expectedNodePopoverRelationAction}`;
       }
       const nodePopoverRelationPayloadChip = nodePopoverRelationFactRouteChips.find(
         (chip) => chip?.kind === "payload",
@@ -3384,7 +5788,9 @@ export function validateWebviewVerifyPayload(payload, {
           ? payload.markers.topologyNodePopoverAgentReadinessText.trim()
           : "";
       const nodeAgentReadinessReadable =
-        /(handoff-ready|handoff 가능|전달 가능)[^\d]+\d+/i.test(nodeAgentReadinessText) &&
+        /(handoff-ready|handoff 가능|전달 가능|인계 가능)[^\d]+\d+/i.test(
+          nodeAgentReadinessText,
+        ) &&
         /(preflight|사전 점검)[^\d]+\d+/i.test(nodeAgentReadinessText) &&
         /(review|검토)[^\d]+\d+/i.test(nodeAgentReadinessText) &&
         /[·,:]/.test(nodeAgentReadinessText);
@@ -3418,6 +5824,34 @@ export function validateWebviewVerifyPayload(payload, {
         }
         if (!(Number(payload.markers.topologyNodePopoverMapContextCount) >= 1)) {
           return `WebView reported an empty selected node map context note (${payload.markers.topologyNodePopoverMapContextCount ?? "missing"} connection(s))`;
+        }
+        if (
+          payload.markers.topologyNodePopoverMapContextContract !==
+          "expanded-relations-stay-on-map"
+        ) {
+          return `WebView reported malformed selected node map context contract (${payload.markers.topologyNodePopoverMapContextContract || "missing"})`;
+        }
+        if (
+          payload.markers.topologyNodePopoverMapContextHandoffContract !==
+          "map-visible-relations-summarized"
+        ) {
+          return `WebView reported malformed selected node map context handoff contract (${payload.markers.topologyNodePopoverMapContextHandoffContract || "missing"})`;
+        }
+        if (!(Number(payload.markers.topologyNodePopoverMapContextRelationTypeCount) >= 1)) {
+          return `WebView reported empty selected node map context relation type count (${payload.markers.topologyNodePopoverMapContextRelationTypeCount ?? "missing"})`;
+        }
+        if (
+          typeof payload.markers.topologyNodePopoverMapContextAgentReadinessSummary !==
+            "string" ||
+          payload.markers.topologyNodePopoverMapContextAgentReadinessSummary.trim().length === 0
+        ) {
+          return "WebView reported empty selected node map context agent readiness summary";
+        }
+        if (
+          typeof payload.markers.topologyNodePopoverMapContextQualitySummary !== "string" ||
+          payload.markers.topologyNodePopoverMapContextQualitySummary.trim().length === 0
+        ) {
+          return "WebView reported empty selected node map context quality summary";
         }
         if (!/(map|지도).*(inspect|확인|보기|겹침|overlap)/i.test(mapContextText)) {
           return `WebView reported an unclear selected node map context note (${mapContextText || "empty"})`;
@@ -3474,9 +5908,7 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (
         typeof payload.markers.topologySelectedRelationAgentGateText !== "string" ||
-        !/(handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저)/i.test(
-          payload.markers.topologySelectedRelationAgentGateText,
-        )
+        !isSelectedRelationAgentGateText(payload.markers.topologySelectedRelationAgentGateText)
       ) {
         return `WebView reported malformed Relief selected relation agent gate copy (${payload.markers.topologySelectedRelationAgentGateText ?? "unknown text"})`;
       }
@@ -3509,6 +5941,32 @@ export function validateWebviewVerifyPayload(payload, {
           payload.markers.topologySelectedRelationCardEvidenceState
       ) {
         return `WebView reported mismatched Relief selected relation label/card evidence marker (${payload.markers.topologySelectedRelationLabelEvidenceState ?? "unknown label marker"} vs ${payload.markers.topologySelectedRelationCardEvidenceState ?? "unknown card marker"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationCardLabelContextContract !==
+        "selected-card-preserves-aggregate-label-context"
+      ) {
+        return `WebView reported malformed Relief selected relation card label context contract (${payload.markers.topologySelectedRelationCardLabelContextContract || "missing"})`;
+      }
+      if (
+        Number(payload.markers.topologySelectedRelationCardLabelCount || 0) !==
+        Number(payload.markers.topologySelectedRelationLabelCount || 0)
+      ) {
+        return `WebView reported mismatched Relief selected relation card label count (${payload.markers.topologySelectedRelationCardLabelCount ?? "missing"} vs ${payload.markers.topologySelectedRelationLabelCount ?? "missing"})`;
+      }
+      if (
+        typeof payload.markers.topologySelectedRelationCardLabelVisibleText !== "string" ||
+        payload.markers.topologySelectedRelationCardLabelVisibleText.trim().length === 0 ||
+        payload.markers.topologySelectedRelationCardLabelVisibleText !==
+          payload.markers.topologyFocusRelationLabelVisibleText
+      ) {
+        return `WebView reported mismatched Relief selected relation card visible label text (${payload.markers.topologySelectedRelationCardLabelVisibleText || "missing"} vs ${payload.markers.topologyFocusRelationLabelVisibleText || "missing"})`;
+      }
+      if (
+        typeof payload.markers.topologySelectedRelationCardLabelReadableText !== "string" ||
+        !/×\d+ · /.test(payload.markers.topologySelectedRelationCardLabelReadableText)
+      ) {
+        return `WebView reported malformed Relief selected relation card readable label text (${payload.markers.topologySelectedRelationCardLabelReadableText || "missing"})`;
       }
       const selectedRelationCardRect = {
         left: Number(payload.markers.topologySelectedRelationCardLeft || 0),
@@ -3549,6 +6007,24 @@ export function validateWebviewVerifyPayload(payload, {
         if (payload.markers.topologySelectedRelationCardDensity !== "compact") {
           return `WebView reported malformed Relief selected relation card density (${payload.markers.topologySelectedRelationCardDensity || "missing"})`;
         }
+        if (
+          payload.markers.topologySelectedRelationCardSurfaceToken !==
+          "--topology-selected-relation-card-surface"
+        ) {
+          return `WebView reported malformed Relief selected relation card surface token (${payload.markers.topologySelectedRelationCardSurfaceToken || "missing"})`;
+        }
+        if (
+          payload.markers.topologySelectedRelationCardBorderToken !==
+          "--topology-selected-relation-card-border"
+        ) {
+          return `WebView reported malformed Relief selected relation card border token (${payload.markers.topologySelectedRelationCardBorderToken || "missing"})`;
+        }
+        if (
+          payload.markers.topologySelectedRelationCardShadowToken !==
+          "--topology-selected-relation-card-shadow"
+        ) {
+          return `WebView reported malformed Relief selected relation card shadow token (${payload.markers.topologySelectedRelationCardShadowToken || "missing"})`;
+        }
         const selectedRelationCardDensityError =
           validateSelectedRelationCardDensityContract(payload.markers, viewportWidth);
         if (selectedRelationCardDensityError) {
@@ -3573,6 +6049,21 @@ export function validateWebviewVerifyPayload(payload, {
           selectedRelationCardScrollWidth - selectedRelationCardClientWidth > 2
         ) {
           return `WebView reported overflowing Relief selected relation card (${selectedRelationCardClientWidth} client / ${selectedRelationCardScrollWidth} scroll)`;
+        }
+        const selectedRelationEndpointRouteError =
+          validateSelectedRelationEndpointRouteMarkers(payload.markers);
+        if (selectedRelationEndpointRouteError) {
+          return selectedRelationEndpointRouteError;
+        }
+        const selectedRelationEndpointVisibilityError =
+          validateSelectedRelationEndpointVisibilityMarkers(payload.markers);
+        if (selectedRelationEndpointVisibilityError) {
+          return selectedRelationEndpointVisibilityError;
+        }
+        const selectedRelationContextSilhouetteError =
+          validateSelectedRelationContextSilhouetteMarkers(payload.markers);
+        if (selectedRelationContextSilhouetteError) {
+          return selectedRelationContextSilhouetteError;
         }
         if (
           payload.markers.topologySelectedRelationCardElevationContract !==
@@ -3618,7 +6109,7 @@ export function validateWebviewVerifyPayload(payload, {
         }
         if (
           payload.markers.topologySelectedRelationActionMinWidthTokenValue !== "86px" ||
-          payload.markers.topologySelectedRelationCopyPayloadMinHeightTokenValue !== "30px" ||
+          payload.markers.topologySelectedRelationCopyPayloadMinHeightTokenValue !== "42px" ||
           payload.markers.topologySelectedRelationRouteStepMinWidthTokenValue !== "48px"
         ) {
           return `WebView reported malformed Relief selected relation density token values (${payload.markers.topologySelectedRelationActionMinWidthTokenValue || "missing"} / ${payload.markers.topologySelectedRelationCopyPayloadMinHeightTokenValue || "missing"} / ${payload.markers.topologySelectedRelationRouteStepMinWidthTokenValue || "missing"})`;
@@ -3656,8 +6147,20 @@ export function validateWebviewVerifyPayload(payload, {
         ) {
           return `WebView reported malformed compact Relief selected relation proof band (${proofBandWidth}x${proofBandHeight}, contract=${contractRect.width}x${contractRect.height}, decision=${decisionRect.width}x${decisionRect.height})`;
         }
-        if (Number(payload.markers.topologySelectedRelationMetricStripHeight || 0) > 12) {
-          return `WebView reported visible duplicate Relief selected relation metric strip (${payload.markers.topologySelectedRelationMetricStripWidth ?? 0}x${payload.markers.topologySelectedRelationMetricStripHeight ?? 0})`;
+        if (
+          payload.markers.topologySelectedRelationMetricStripContract !==
+          "visible-compact-relation-fact-rail"
+        ) {
+          return `WebView reported malformed Relief selected relation metric strip contract (${payload.markers.topologySelectedRelationMetricStripContract || "missing"})`;
+        }
+        const metricStripWidth = Number(
+          payload.markers.topologySelectedRelationMetricStripWidth || 0,
+        );
+        const metricStripHeight = Number(
+          payload.markers.topologySelectedRelationMetricStripHeight || 0,
+        );
+        if (metricStripWidth < 220 || metricStripHeight < 20 || metricStripHeight > 34) {
+          return `WebView reported malformed compact Relief selected relation metric strip (${metricStripWidth || "missing"}x${metricStripHeight || "missing"})`;
         }
         if (Number(payload.markers.topologySelectedRelationHandleStripHeight || 0) > 12) {
           return `WebView reported visible duplicate Relief selected relation handle strip (${payload.markers.topologySelectedRelationHandleStripWidth ?? 0}x${payload.markers.topologySelectedRelationHandleStripHeight ?? 0})`;
@@ -3706,6 +6209,48 @@ export function validateWebviewVerifyPayload(payload, {
           ? "explain_relation"
           : "relation_check";
       if (
+        payload.markers.topologySelectedRelationCardHandoffContract !==
+        "selected-relation-card-carries-mcp-cli-fallback"
+      ) {
+        return `WebView reported malformed Relief selected relation card handoff contract (${payload.markers.topologySelectedRelationCardHandoffContract || "missing"})`;
+      }
+      if (payload.markers.topologyRootAttentionWinner !== "active-relation-inspector") {
+        return `WebView reported malformed Relief root attention winner (${payload.markers.topologyRootAttentionWinner || "missing"})`;
+      }
+      if (payload.markers.topologyAgentCurrentSurface !== "selected-relation") {
+        return `WebView reported malformed Relief root current surface (${payload.markers.topologyAgentCurrentSurface || "missing"})`;
+      }
+      if (
+        payload.markers.topologyAgentCurrentSurfaceRole !==
+        payload.markers.topologySelectedRelationCardSurfaceRole
+      ) {
+        return `WebView reported mismatched Relief root current surface role (${payload.markers.topologyAgentCurrentSurfaceRole || "missing"} vs ${payload.markers.topologySelectedRelationCardSurfaceRole || "missing"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationCardHandoffAliasContract !==
+        payload.markers.topologySelectedRelationCardHandoffContract
+      ) {
+        return `WebView reported mismatched Relief selected relation card handoff alias contract (${payload.markers.topologySelectedRelationCardHandoffAliasContract || "missing"} vs ${payload.markers.topologySelectedRelationCardHandoffContract || "missing"})`;
+      }
+      if (payload.markers.topologySelectedRelationCardRoute !== "source>target>type>action") {
+        return `WebView reported malformed Relief selected relation card route (${payload.markers.topologySelectedRelationCardRoute || "missing"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationCardEndpointRoute !==
+        `${payload.markers.topologySelectedRelationCardSource}>${payload.markers.topologySelectedRelationCardTarget}`
+      ) {
+        return `WebView reported malformed Relief selected relation card endpoint route (${payload.markers.topologySelectedRelationCardEndpointRoute || "missing"})`;
+      }
+      if (
+        payload.markers.topologyAgentCurrentSurfaceRoute !==
+        payload.markers.topologySelectedRelationCardEndpointRoute
+      ) {
+        return `WebView reported mismatched Relief root current surface route (${payload.markers.topologyAgentCurrentSurfaceRoute || "missing"} vs ${payload.markers.topologySelectedRelationCardEndpointRoute || "missing"})`;
+      }
+      if (payload.markers.topologySelectedRelationCardPrimaryAction !== expectedPrimaryAction) {
+        return `WebView reported mismatched Relief selected relation card primary action (${payload.markers.topologySelectedRelationCardPrimaryAction ?? "unknown marker"} vs ${expectedPrimaryAction})`;
+      }
+      if (
         payload.markers.topologySelectedRelationPrimaryCopyActionKind !==
         expectedPrimaryAction
       ) {
@@ -3719,14 +6264,11 @@ export function validateWebviewVerifyPayload(payload, {
           ? payload.markers.topologySelectedRelationPrimaryCopyActionText.trim()
           : "";
       const hrefLocale = payload.href.includes("/ko/") ? "ko" : "en";
-      const primaryCopyTextMatches =
-        expectedPrimaryAction === "explain_relation"
-          ? hrefLocale === "ko"
-            ? /관계\s*설명/.test(primaryCopyText)
-            : primaryCopyText.toLowerCase().includes("explain")
-          : hrefLocale === "ko"
-            ? /관계\s*(점검|사전\s*점검)/.test(primaryCopyText)
-            : primaryCopyText.toLowerCase().includes("relation");
+      const primaryCopyTextMatches = isSelectedRelationPrimaryCopyActionText({
+        text: primaryCopyText,
+        action: expectedPrimaryAction,
+        locale: hrefLocale,
+      });
       if (!primaryCopyTextMatches) {
         return `WebView reported malformed Relief selected relation primary copy action text (${primaryCopyText || "empty"} vs ${expectedPrimaryAction})`;
       }
@@ -3734,7 +6276,7 @@ export function validateWebviewVerifyPayload(payload, {
         typeof payload.markers.topologySelectedRelationPrimaryCopyBadgeText === "string"
           ? payload.markers.topologySelectedRelationPrimaryCopyBadgeText.trim()
           : "";
-      if (!/^(best next|다음 액션|권장 다음 작업)$/i.test(primaryCopyBadgeText)) {
+      if (!/^(best next|next step|다음 액션|다음 작업|권장 다음 작업)$/i.test(primaryCopyBadgeText)) {
         return `WebView reported malformed Relief selected relation primary copy badge (${primaryCopyBadgeText || "empty"})`;
       }
       if (
@@ -3776,6 +6318,16 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView reported malformed Relief selected relation copy payload endpoints (${payload.markers.topologySelectedRelationCopyPayloadFrom ?? "unknown from"} -> ${payload.markers.topologySelectedRelationCopyPayloadTo ?? "unknown to"})`;
       }
       if (
+        payload.markers.topologySelectedRelationCardSource !==
+          payload.markers.topologySelectedRelationCopyPayloadFrom ||
+        payload.markers.topologySelectedRelationCardTarget !==
+          payload.markers.topologySelectedRelationCopyPayloadTo ||
+        payload.markers.topologySelectedRelationCardType !==
+          payload.markers.topologySelectedRelationCopyPayloadType
+      ) {
+        return `WebView reported mismatched Relief selected relation card route handles (${payload.markers.topologySelectedRelationCardSource ?? "unknown source"} -> ${payload.markers.topologySelectedRelationCardTarget ?? "unknown target"} · ${payload.markers.topologySelectedRelationCardType ?? "unknown type"})`;
+      }
+      if (
         payload.markers.topologySelectedRelationHandleStripSource !==
           payload.markers.topologySelectedRelationCopyPayloadFrom ||
         payload.markers.topologySelectedRelationHandleStripTarget !==
@@ -3811,17 +6363,48 @@ export function validateWebviewVerifyPayload(payload, {
         typeof payload.markers.topologySelectedRelationCopyPayloadVisibleSummary === "string"
           ? payload.markers.topologySelectedRelationCopyPayloadVisibleSummary.trim()
           : "";
-      if (copyPayloadVisibleSummary !== `query_ontology · ${expectedPrimaryAction}`) {
+      const expectedVisibleCopyPayloadSummary =
+        expectedPrimaryAction === "relation_check" ? "Check first" : "Ready to explain";
+      const koreanVisibleCopyPayloadSummary =
+        expectedPrimaryAction === "relation_check" ? "점검 먼저" : "설명 준비";
+      if (
+        copyPayloadVisibleSummary !== expectedVisibleCopyPayloadSummary &&
+        copyPayloadVisibleSummary !== koreanVisibleCopyPayloadSummary
+      ) {
         return `WebView reported malformed Relief selected relation visible copy payload summary (${copyPayloadVisibleSummary || "empty"})`;
       }
       if (
-        copyPayloadVisibleSummary.includes(payload.markers.topologySelectedRelationCopyPayloadFrom) ||
-        copyPayloadVisibleSummary.includes(payload.markers.topologySelectedRelationCopyPayloadTo) ||
         copyPayloadVisibleSummary.includes(payload.markers.topologySelectedRelationCopyPayloadType) ||
         copyPayloadVisibleSummary.includes(payload.markers.topologySelectedRelationCardEvidenceState) ||
         copyPayloadVisibleSummary.includes(payload.markers.topologySelectedRelationCardAgentGateKind)
       ) {
         return `WebView reported cramped Relief selected relation visible copy payload summary (${copyPayloadVisibleSummary})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationCopyPayloadLayoutContract !==
+        "visible-summary-and-handle-readable"
+      ) {
+        return `WebView reported malformed Relief selected relation copy payload layout contract (${payload.markers.topologySelectedRelationCopyPayloadLayoutContract || "missing"})`;
+      }
+      const copyPayloadVisibleHandleSummary =
+        typeof payload.markers.topologySelectedRelationCopyPayloadVisibleHandleSummary === "string"
+          ? payload.markers.topologySelectedRelationCopyPayloadVisibleHandleSummary.trim()
+          : "";
+      const expectedVisibleCopyPayloadHandleSummary = `${compactOntologyHandle(
+        payload.markers.topologySelectedRelationCopyPayloadFrom,
+      )} → ${compactOntologyHandle(payload.markers.topologySelectedRelationCopyPayloadTo)}`;
+      if (copyPayloadVisibleHandleSummary !== expectedVisibleCopyPayloadHandleSummary) {
+        return `WebView reported malformed Relief selected relation visible copy payload handle (${copyPayloadVisibleHandleSummary || "empty"} vs ${expectedVisibleCopyPayloadHandleSummary})`;
+      }
+      if (
+        copyPayloadVisibleHandleSummary.includes(
+          payload.markers.topologySelectedRelationCopyPayloadFrom,
+        ) ||
+        copyPayloadVisibleHandleSummary.includes(
+          payload.markers.topologySelectedRelationCopyPayloadTo,
+        )
+      ) {
+        return `WebView reported cramped Relief selected relation visible copy payload handle (${copyPayloadVisibleHandleSummary})`;
       }
       const copyPayloadCall =
         typeof payload.markers.topologySelectedRelationCopyPayloadCall === "string"
@@ -3851,6 +6434,13 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (cliFallbackSummary !== expectedCliFallbackCommand) {
         return `WebView reported malformed Relief selected relation CLI fallback summary (${cliFallbackSummary || "empty"})`;
+      }
+      const cardCliFallback =
+        typeof payload.markers.topologySelectedRelationCardCliFallback === "string"
+          ? payload.markers.topologySelectedRelationCardCliFallback.trim()
+          : "";
+      if (cardCliFallback !== expectedCliFallbackCommand) {
+        return `WebView reported malformed Relief selected relation card CLI fallback (${cardCliFallback || "empty"})`;
       }
       const primaryCopyActionCall =
         typeof payload.markers.topologySelectedRelationPrimaryCopyActionCall === "string"
@@ -4006,7 +6596,12 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation agent route evidence step (${agentRouteEvidenceStep?.value ?? "missing"})`;
       }
-      const narrowRouteStep = agentRouteSteps.find((step) => Number(step?.width || 0) < 48);
+      const narrowRouteStep = agentRouteSteps.find((step) => {
+        if (step?.visibility === "metadata-only" || step?.kind === "action") {
+          return false;
+        }
+        return Number(step?.width || 0) < 48;
+      });
       if (narrowRouteStep) {
         return `WebView reported cramped Relief selected relation agent route step (${narrowRouteStep.kind || "unknown"} ${narrowRouteStep.width ?? 0}x${narrowRouteStep.height ?? 0})`;
       }
@@ -4825,6 +7420,13 @@ function markerNumber(markers, key) {
   return Number.isFinite(value) ? value : null;
 }
 
+function markerText(markers, key) {
+  const value = markers?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+const TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS = 3;
+
 function extractBackdropAlpha(background) {
   const value = String(background || "");
   const alpha = Number(
@@ -4907,6 +7509,73 @@ export function buildWebviewEvidencePayload(
 ) {
   const markers = payload?.markers ?? {};
   const visualEvidenceReference = normalizeVisualEvidenceReference(visualEvidence, visualEvidencePath);
+  const currentSurface = markerText(markers, "topologyAgentCurrentSurface");
+  const currentSurfaceAttentionWinner =
+    markerText(markers, "topologyAttentionWinner") ??
+    markerText(markers, "topologyRootAttentionWinner");
+  const currentSurfaceHandoff =
+    currentSurface === "selected-node" &&
+    markerText(markers, "topologyNodePopoverAgentHandoffRoute")
+      ? {
+        contract: markerText(markers, "topologyNodePopoverAgentHandoffContract"),
+        route: markerText(markers, "topologyNodePopoverAgentHandoffRoute"),
+        primaryAction: markerText(markers, "topologyNodePopoverAgentHandoffPrimaryAction"),
+        summaryContract: markerText(
+          markers,
+          "topologyNodePopoverAgentHandoffSummaryContract",
+        ),
+        visibleSummary: markerText(markers, "topologyNodePopoverAgentHandoffVisibleSummary"),
+        actionCount: markerNumber(markers, "topologyNodePopoverAgentHandoffActionCount"),
+        relationFactCount: markerNumber(
+          markers,
+          "topologyNodePopoverAgentHandoffRelationFactCount",
+        ),
+        relationTypeCount: markerNumber(
+          markers,
+          "topologyNodePopoverAgentHandoffRelationTypeCount",
+        ),
+        agentNextAction: "copy-selected-node-focus-brief-or-expand-detail",
+      }
+      : null;
+  const uiScale = markerNumber(markers, "topologyUiScale");
+  const uiScaleWritePolicy = markerText(markers, "topologyUiScaleWritePolicy");
+  const agentCurrentSurfaceProof = currentSurface
+    ? {
+      proof: "topology-agent-current-surface",
+      status:
+        currentSurfaceAttentionWinner && markerText(markers, "topologyAgentCurrentSurfaceRole")
+          ? "proved"
+          : "incomplete",
+      route: evidenceRoute(payload?.href),
+      attentionWinner: currentSurfaceAttentionWinner,
+      currentSurface,
+      currentSurfaceRole: markerText(markers, "topologyAgentCurrentSurfaceRole"),
+      currentSurfaceRoute: markerText(markers, "topologyAgentCurrentSurfaceRoute"),
+      selectedNodeId: markerText(markers, "topologySelectedNodeId"),
+      rootSelectedNodeId: markerText(markers, "topologyRootSelectedNodeId"),
+      ...(currentSurfaceHandoff ? { handoff: currentSurfaceHandoff } : {}),
+      agentNextAction:
+        currentSurface === "selected-relation"
+          ? "read-selected-relation-surface-before-map-context"
+          : currentSurface === "selected-node"
+            ? "read-selected-node-surface-before-map-context"
+            : "read-agent-current-surface-before-map-context",
+    }
+    : null;
+  const agentUiScaleStabilityProof = uiScaleWritePolicy
+    ? {
+      proof: "topology-ui-scale-stability",
+      status:
+        uiScale !== null && uiScaleWritePolicy === "reuse-stable-scale"
+          ? "proved"
+          : "incomplete",
+      route: evidenceRoute(payload?.href),
+      uiScale,
+      writePolicy: uiScaleWritePolicy,
+      stableScaleReused: uiScaleWritePolicy === "reuse-stable-scale",
+      agentNextAction: "trust-stable-ui-scale-before-reading-surface-proof",
+    }
+    : null;
   const composerBlockingProof = markers.topologyCreateNodeOpen === true
     ? {
       proof: "topology-add-concept-composer-blocking",
@@ -4919,6 +7588,12 @@ export function buildWebviewEvidencePayload(
         surfaceRole: markers.topologyCreateNodeSurfaceRole ?? null,
         elevationContract: markers.topologyCreateNodeElevationContract ?? null,
         sizeContract: markers.topologyCreateNodeSizeContract ?? null,
+        topToken: markers.topologyCreateNodePanelTopToken ?? null,
+        widthToken: markers.topologyCreateNodePanelWidthToken ?? null,
+        maxHeightToken: markers.topologyCreateNodePanelMaxHeightToken ?? null,
+        surfaceToken: markers.topologyCreateNodeFormSurfaceToken ?? null,
+        borderToken: markers.topologyCreateNodeFormBorderToken ?? null,
+        shadowToken: markers.topologyCreateNodeFormShadowToken ?? null,
         role: markers.topologyCreateNodePanelRole ?? null,
         ariaModal: markers.topologyCreateNodePanelAriaModal ?? null,
         focusInside: markers.topologyCreateNodeFocusInside === true,
@@ -4928,6 +7603,8 @@ export function buildWebviewEvidencePayload(
         visible: markers.topologyCreateNodeBackdropVisible === true,
         coversViewport: markers.topologyCreateNodeBackdropCoversViewport === true,
         pointerEvents: markers.topologyCreateNodeBackdropPointerEvents ?? null,
+        contract: markers.topologyCreateNodeBackdropContract ?? null,
+        surfaceToken: markers.topologyCreateNodeBackdropSurfaceToken ?? null,
         background: markers.topologyCreateNodeBackdropBackground ?? null,
         dimAlpha: extractBackdropAlpha(markers.topologyCreateNodeBackdropBackground),
         filter: markers.topologyCreateNodeBackdropFilter ?? null,
@@ -4936,6 +7613,9 @@ export function buildWebviewEvidencePayload(
         blockingEdit: markers.topologyMapSurfaceBlockingEdit === true,
         demoted: markers.topologyMapSurfaceDemoted === true,
         dimOpacity: markerNumber(markers, "topologyMapSurfaceDimOpacity"),
+        dimOpacityToken: markers.topologyMapSurfaceDimOpacityToken ?? null,
+        filterToken: markers.topologyMapSurfaceFilterToken ?? null,
+        interactionContract: markers.topologyMapSurfaceInteractionContract ?? null,
         pointerEvents: markers.topologyMapSurfacePointerEvents ?? null,
       },
       overlays: {
@@ -4982,11 +7662,957 @@ export function buildWebviewEvidencePayload(
       },
     }
     : null;
+  const relationLabelHandoffProof =
+    markers.topologySelectedRelationLabelHandoffState === "ready"
+      ? {
+        proof: "topology-relation-label-handoff",
+        status: "proved",
+        route: evidenceRoute(payload?.href),
+        contract: markers.topologyRelationLabelHandoffContract ?? null,
+        label: {
+          gate: markers.topologySelectedRelationLabelAgentGateKind ?? null,
+          primaryAction: markers.topologySelectedRelationLabelPrimaryCopyAction ?? null,
+          cliFallback: markers.topologySelectedRelationLabelCliFallbackCommand ?? null,
+          factRoute: markers.topologySelectedRelationLabelFactRoute ?? null,
+          quality: markers.topologySelectedRelationLabelQuality ?? null,
+          evidence: markers.topologySelectedRelationLabelEvidenceState ?? null,
+          source: markers.topologySelectedRelationLabelSource ?? null,
+          target: markers.topologySelectedRelationLabelTarget ?? null,
+          type: markers.topologySelectedRelationLabelType ?? null,
+          count: markerNumber(markers, "topologySelectedRelationLabelCount"),
+          route: markers.topologySelectedRelationLabelRoute ?? null,
+          typeLabel: markers.topologySelectedRelationLabelTypeLabel ?? null,
+        },
+        card: {
+          contract: markers.topologySelectedRelationCardHandoffContract ?? null,
+          handoffAliasContract:
+            markers.topologySelectedRelationCardHandoffAliasContract ?? null,
+          route: markers.topologySelectedRelationCardRoute ?? null,
+          endpointRoute: markers.topologySelectedRelationCardEndpointRoute ?? null,
+          primaryAction: markers.topologySelectedRelationCardPrimaryAction ?? null,
+          cliFallback: markers.topologySelectedRelationCardCliFallback ?? null,
+          source: markers.topologySelectedRelationCardSource ?? null,
+          target: markers.topologySelectedRelationCardTarget ?? null,
+          type: markers.topologySelectedRelationCardType ?? null,
+          labelContextContract:
+            markers.topologySelectedRelationCardLabelContextContract ?? null,
+          labelCount: markerNumber(markers, "topologySelectedRelationCardLabelCount"),
+          labelVisibleText: markers.topologySelectedRelationCardLabelVisibleText ?? null,
+          labelReadableText: markers.topologySelectedRelationCardLabelReadableText ?? null,
+        },
+        root: {
+          attentionWinner: markers.topologyRootAttentionWinner ?? null,
+          currentSurface: markers.topologyAgentCurrentSurface ?? null,
+          currentSurfaceRole: markers.topologyAgentCurrentSurfaceRole ?? null,
+          currentSurfaceRoute: markers.topologyAgentCurrentSurfaceRoute ?? null,
+        },
+        aggregate: {
+          gate: markers.topologySelectedRelationLabelHandoffGate ?? null,
+          primaryAction: markers.topologySelectedRelationLabelHandoffPrimaryAction ?? null,
+          cliFallback: markers.topologySelectedRelationLabelHandoffCliFallbackCommand ?? null,
+          factRoute: markers.topologySelectedRelationLabelHandoffFactRoute ?? null,
+          quality: markers.topologySelectedRelationLabelHandoffQuality ?? null,
+          evidence: markers.topologySelectedRelationLabelHandoffEvidence ?? null,
+        },
+        agentNextAction:
+          markers.topologySelectedRelationLabelHandoffPrimaryAction === "relation_check"
+            ? "run-relation-check-before-handoff"
+            : "run-explain-relation-for-handoff",
+      }
+      : null;
+  const selectedRelationVisibleFactRouteProof =
+    markers.topologyAgentCurrentSurface === "selected-relation" &&
+    markers.topologySelectedRelationCardHandoffContract ===
+      "selected-relation-card-carries-mcp-cli-fallback"
+      ? {
+        proof: "topology-selected-relation-visible-fact-route",
+        status:
+          markers.topologySelectedRelationCardRoute === "source>target>type>action" &&
+          markers.topologySelectedRelationClaimLensVisible === true &&
+          markers.topologySelectedRelationContractKind === "typed-fact-not-similarity" &&
+          markerNumber(markers, "topologySelectedRelationProofBandWidth") > 0 &&
+          markerNumber(markers, "topologySelectedRelationProofBandHeight") > 0 &&
+          markers.topologySelectedRelationEndpointRouteContract ===
+            "visible-source-target-names-wrap" &&
+          markers.topologySelectedRelationCopyPayloadTool === "query_ontology" &&
+          markers.topologySelectedRelationCopyPayloadLayoutContract ===
+            "visible-summary-and-handle-readable"
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        root: {
+          attentionWinner: markers.topologyRootAttentionWinner ?? null,
+          currentSurface: markers.topologyAgentCurrentSurface ?? null,
+          currentSurfaceRole: markers.topologyAgentCurrentSurfaceRole ?? null,
+          currentSurfaceRoute: markers.topologyAgentCurrentSurfaceRoute ?? null,
+        },
+        card: {
+          contract: markers.topologySelectedRelationCardHandoffContract ?? null,
+          route: markers.topologySelectedRelationCardRoute ?? null,
+          endpointRoute: markers.topologySelectedRelationCardEndpointRoute ?? null,
+          primaryAction: markers.topologySelectedRelationCardPrimaryAction ?? null,
+          cliFallback: markers.topologySelectedRelationCardCliFallback ?? null,
+          source: markers.topologySelectedRelationCardSource ?? null,
+          target: markers.topologySelectedRelationCardTarget ?? null,
+          type: markers.topologySelectedRelationCardType ?? null,
+        },
+        visibleFactRoute: {
+          claimLensVisible: markers.topologySelectedRelationClaimLensVisible === true,
+          claimLensText: markerText(markers, "topologySelectedRelationClaimLensText"),
+          claimLensQuality: markerText(markers, "topologySelectedRelationClaimLensQuality"),
+          contractKind: markerText(markers, "topologySelectedRelationContractKind"),
+          contractText: markerText(markers, "topologySelectedRelationContractText"),
+          proofBandWidth: markerNumber(markers, "topologySelectedRelationProofBandWidth"),
+          proofBandHeight: markerNumber(markers, "topologySelectedRelationProofBandHeight"),
+          agentDecisionText: markerText(markers, "topologySelectedRelationAgentDecisionText"),
+          agentGateKind:
+            markerText(markers, "topologySelectedRelationAgentGateKind") ??
+            markerText(markers, "topologySelectedRelationCopyPayloadGate"),
+          endpointRouteContract: markerText(
+            markers,
+            "topologySelectedRelationEndpointRouteContract",
+          ),
+          readableRoute: markerText(
+            markers,
+            "topologySelectedRelationEndpointRouteReadableText",
+          ),
+        },
+        copyPayload: {
+          tool: markerText(markers, "topologySelectedRelationCopyPayloadTool"),
+          action: markerText(markers, "topologySelectedRelationCopyPayloadAction"),
+          from: markerText(markers, "topologySelectedRelationCopyPayloadFrom"),
+          to: markerText(markers, "topologySelectedRelationCopyPayloadTo"),
+          type: markerText(markers, "topologySelectedRelationCopyPayloadType"),
+          evidence: markerText(markers, "topologySelectedRelationCopyPayloadEvidence"),
+          gate: markerText(markers, "topologySelectedRelationCopyPayloadGate"),
+          call: markerText(markers, "topologySelectedRelationCopyPayloadCall"),
+          summary: markerText(markers, "topologySelectedRelationCopyPayloadSummary"),
+          visibleSummary: markerText(
+            markers,
+            "topologySelectedRelationCopyPayloadVisibleSummary",
+          ),
+          visibleHandleSummary: markerText(
+            markers,
+            "topologySelectedRelationCopyPayloadVisibleHandleSummary",
+          ),
+          layoutContract: markerText(
+            markers,
+            "topologySelectedRelationCopyPayloadLayoutContract",
+          ),
+        },
+        agentNextAction: "run-selected-relation-copy-payload",
+      }
+      : null;
+  const relationEndpointVisibilityProof =
+    markers.topologySelectedRelationEndpointVisibilityContract ===
+    "selected-relation-keeps-source-target-readable"
+      ? {
+        proof: "topology-selected-relation-endpoint-visibility",
+        status:
+          validateSelectedRelationEndpointVisibilityMarkers(markers) === null &&
+          validateSelectedRelationEndpointRouteMarkers(markers) === null
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        contract: markers.topologySelectedRelationEndpointVisibilityContract ?? null,
+        expectedCount: markerNumber(
+          markers,
+          "topologySelectedRelationEndpointExpectedCount",
+        ),
+        visibleCount: markerNumber(
+          markers,
+          "topologySelectedRelationEndpointVisibleCount",
+        ),
+        hiddenCount: markerNumber(
+          markers,
+          "topologySelectedRelationEndpointHiddenCount",
+        ),
+        source: markers.topologySelectedRelationCardSource ?? null,
+        target: markers.topologySelectedRelationCardTarget ?? null,
+        readableRoute:
+          markers.topologySelectedRelationEndpointRouteReadableText ?? null,
+        layerReadableRoute:
+          markers.topologySelectedRelationEndpointReadableRoute ?? null,
+        routeProof: {
+          contract:
+            markers.topologySelectedRelationEndpointRouteContract ?? null,
+          wrapPolicy:
+            markers.topologySelectedRelationEndpointRouteWrapPolicy ?? null,
+          lineBudget: markerNumber(
+            markers,
+            "topologySelectedRelationEndpointRouteLineBudget",
+          ),
+          clientWidth: markerNumber(
+            markers,
+            "topologySelectedRelationEndpointRouteClientWidth",
+          ),
+          scrollWidth: markerNumber(
+            markers,
+            "topologySelectedRelationEndpointRouteScrollWidth",
+          ),
+          horizontalOverflow:
+            markerNumber(
+              markers,
+              "topologySelectedRelationEndpointRouteScrollWidth",
+            ) -
+            markerNumber(
+              markers,
+              "topologySelectedRelationEndpointRouteClientWidth",
+            ),
+        },
+        cards: Array.isArray(markers.topologySelectedRelationEndpointCards)
+          ? markers.topologySelectedRelationEndpointCards.map((card) => ({
+            slug: card?.slug ?? null,
+            visible: card?.visible === true,
+            surfaceHidden: card?.surfaceHidden ?? null,
+            shift: card?.shift ?? null,
+          }))
+          : [],
+        agentNextAction: "read-selected-relation-with-source-and-target-cards",
+      }
+      : null;
+  const relationContextSilhouetteProof =
+    markers.topologySelectedRelationContextSilhouettePolicy ===
+    "selected-relation-keeps-endpoints-and-orientation-anchors-only"
+      ? {
+        proof: "topology-selected-relation-context-silhouette",
+        status:
+          validateSelectedRelationContextSilhouetteMarkers(markers) === null
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        policy: markers.topologySelectedRelationContextSilhouettePolicy ?? null,
+        active: markers.topologySelectedRelationContextSilhouetteActive === true,
+        hiddenCount: markerNumber(
+          markers,
+          "topologySelectedRelationContextSilhouetteHiddenCount",
+        ),
+        lowerPriorityVisibleDimmedCount: markerNumber(
+          markers,
+          "topologySelectedRelationLowerPriorityVisibleDimmedCount",
+        ),
+        visibleOrientationAnchorCount: markerNumber(
+          markers,
+          "topologySelectedRelationVisibleOrientationAnchorCount",
+        ),
+        agentNextAction: "read-selected-relation-before-background-context",
+      }
+      : null;
+  const relationLabelFrameGeometryProof =
+    markers.topologyRelationLabelGeometryContract === "frame-positioned-hit-targets"
+      ? {
+        proof: "topology-relation-label-frame-geometry",
+        status:
+          markerNumber(markers, "topologyRelationLabelGeometryExpectedCount") >= 1 &&
+          markerNumber(markers, "topologyRelationLabelGeometryReadyCount") >=
+            markerNumber(markers, "topologyRelationLabelGeometryExpectedCount") &&
+          markerNumber(markers, "topologyRelationLabelGeometryPendingCount") === 0
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        contract: markers.topologyRelationLabelGeometryContract ?? null,
+        source: markers.topologyRelationLabelGeometrySource ?? null,
+        expected: markerNumber(markers, "topologyRelationLabelGeometryExpectedCount"),
+        ready: markerNumber(markers, "topologyRelationLabelGeometryReadyCount"),
+        pending: markerNumber(markers, "topologyRelationLabelGeometryPendingCount"),
+        agentNextAction: "trust-frame-positioned-relation-label-hit-targets",
+      }
+      : null;
+  const connectorCacheProof =
+    markers.topologyConnectorRectCacheContract === "frame-local-card-rect-cache"
+      ? {
+        proof: "topology-connector-cache-frame-fallback",
+        status: validateTopologyConnectorCacheMarkers(markers) === null ? "proved" : "incomplete",
+        route: evidenceRoute(payload?.href),
+        domIndexContract: markers.topologyConnectorDomIndexContract ?? null,
+        cacheContract: markers.topologyConnectorRectCacheContract ?? null,
+        frameFallbackContract:
+          markers.topologyConnectorRectCacheFrameFallbackContract ?? null,
+        accounting: markers.topologyConnectorRectCacheAccounting ?? null,
+        size: markerNumber(markers, "topologyConnectorRectCacheSize"),
+        seedCount: markerNumber(markers, "topologyConnectorRectCacheSeedCount"),
+        readCount: markerNumber(markers, "topologyConnectorRectCacheReadCount"),
+        hitCount: markerNumber(markers, "topologyConnectorRectCacheHitCount"),
+        visibleCardClippedCount: markerNumber(markers, "topologyCardClippedCount"),
+        agentNextAction: "trust-frame-local-connector-rect-cache-before-reading-labels",
+      }
+      : null;
+  const dragRelationLabelCompactProof =
+    markers.topologyDragRelationLabelCompactContract ===
+    "zoomed-drag-compacts-repeated-relation-labels"
+      ? {
+        proof: "topology-drag-relation-label-compact-glyph",
+        status:
+          markers.topologyZoomLensActive === true &&
+          markers.topologyZoomLensCardCompactionActive === true &&
+          markerNumber(markers, "topologyDragRelationLabelCompactCount") >= 1 &&
+          markers.topologyDragRelationLabelPresentation === "compact-glyph" &&
+          markers.topologyDragRelationLabelCompact === true &&
+          markers.topologyDragRelationLabelCompactItemContract ===
+            "zoomed-drag-keeps-type-fact-as-compact-glyph" &&
+          markerText(markers, "topologyDragRelationLabelReadableType") &&
+          markerNumber(markers, "topologyDragRelationLabelBadgeWidth") > 0 &&
+          markerNumber(markers, "topologyDragRelationLabelBadgeWidth") <= 44
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        contract: markers.topologyDragRelationLabelCompactContract ?? null,
+        compactCount: markerNumber(markers, "topologyDragRelationLabelCompactCount"),
+        visibleCount: markerNumber(markers, "topologyDragRelationLabelVisibleCount"),
+        presentation: markers.topologyDragRelationLabelPresentation ?? null,
+        compact: markers.topologyDragRelationLabelCompact === true,
+        itemContract: markers.topologyDragRelationLabelCompactItemContract ?? null,
+        readableType: markers.topologyDragRelationLabelReadableType ?? null,
+        visibleText: markers.topologyDragRelationLabelVisibleText ?? null,
+        badge: {
+          width: markerNumber(markers, "topologyDragRelationLabelBadgeWidth"),
+          height: markerNumber(markers, "topologyDragRelationLabelBadgeHeight"),
+          radius: markerNumber(markers, "topologyDragRelationLabelBadgeRadius"),
+        },
+        agentNextAction: "treat-zoomed-drag-relation-glyphs-as-compact-typed-facts",
+      }
+      : null;
+  const connectorLabelPassProof =
+    markerNumber(markers, "topologyRepositionPassConnectorLabelMs") !== null
+      ? {
+        proof: "topology-connector-label-pass-budget",
+        status:
+          markerNumber(markers, "topologyRepositionPassConnectorLabelMs") <
+          TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        passMs: markerNumber(markers, "topologyRepositionPassConnectorLabelMs"),
+        budgetMs: TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS,
+        maxPassMs: markerNumber(markers, "topologyRepositionMaxPassConnectorLabelMs"),
+        slowestPass: markers.topologyRepositionPassSlowest ?? null,
+        agentNextAction: "read-relation-labels-after-connector-label-pass-budget",
+      }
+      : null;
+  const visibleCardSelectedSurfaceRectProof =
+    markers.topologyVisibleCardSelectedSurfaceRectPolicy
+      ? {
+        proof: "topology-visible-card-selected-surface-rect-policy",
+        status:
+          markers.topologySelectedBlockingSurfaceOverlapActive === true
+            ? markers.topologyVisibleCardSelectedSurfaceRectPolicy ===
+              "live-rects-for-postprocess-overlap-safety"
+              ? "proved"
+              : "incomplete"
+            : markers.topologyVisibleCardSelectedSurfaceRectPolicy ===
+                "reuse-card-placement-frame-rects-before-dom-read"
+              ? "proved"
+              : "incomplete",
+        route: evidenceRoute(payload?.href),
+        selectedBlockingSurfaceOverlapActive:
+          markers.topologySelectedBlockingSurfaceOverlapActive ?? null,
+        readPolicy: markers.topologyVisibleCardRectReadPolicy ?? null,
+        selectedSurfaceRectPolicy:
+          markers.topologyVisibleCardSelectedSurfaceRectPolicy ?? null,
+        readCount: markerNumber(markers, "topologyVisibleCardRectReadCount"),
+        agentNextAction: "trust-selected-surface-rect-policy-before-reading-relation",
+      }
+      : null;
+  const residualOverlapProof =
+    markers.topologyRelief === true || markers.topologySkeletonCardsActive === true
+      ? {
+        proof: "topology-residual-overlap-clear",
+        status:
+          markerNumber(markers, "topologyCardOverlapCount") === 0 &&
+          markerNumber(markers, "topologyCardClippedCount") === 0 &&
+          markerNumber(markers, "topologyFixedSurfaceOverlapCount") === 0 &&
+          (
+            markerNumber(markers, "topologyCardFixedSurfaceOverlapCount") === 0 ||
+            (
+              markers.topologyResidualOverlapClear === true &&
+              markerNumber(markers, "topologyResidualVisibleCardOverlapCount") === 0 &&
+              markerNumber(markers, "topologyResidualFixedSurfaceOverlapCount") === 0 &&
+              markerNumber(markers, "topologyResidualCardFixedSurfaceOverlapCount") === 0
+            )
+          ) &&
+          markers.topologyFixedSurfaceLiveSuppressionReadPolicy ===
+            "reuse-card-placement-frame-rects-before-dom-read" &&
+          markerNumber(markers, "topologyFixedSurfaceLiveSuppressionReadCount") === 0
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        visibleCardOverlapCount: markerNumber(markers, "topologyCardOverlapCount"),
+        visibleCardClippedCount: markerNumber(markers, "topologyCardClippedCount"),
+        fixedSurfaceOverlapCount: markerNumber(markers, "topologyFixedSurfaceOverlapCount"),
+        cardFixedSurfaceOverlapCount: markerNumber(
+          markers,
+          "topologyCardFixedSurfaceOverlapCount",
+        ),
+        supportRailOverlapReadPolicy:
+          markers.topologySupportRailOverlapReadPolicy ?? null,
+        dragActiveOverlapPolicy:
+          markers.topologyDragActiveOverlapPolicy ?? null,
+        dragActiveOverlapReadPolicy:
+          markers.topologyDragActiveOverlapReadPolicy ?? null,
+        dragActiveOverlapHiddenCount: markerNumber(
+          markers,
+          "topologyDragActiveOverlapHiddenCount",
+        ),
+        fixedSurfaceLiveSuppressionReadPolicy:
+          markers.topologyFixedSurfaceLiveSuppressionReadPolicy ?? null,
+        fixedSurfaceLiveSuppressionReadCount: markerNumber(
+          markers,
+          "topologyFixedSurfaceLiveSuppressionReadCount",
+        ),
+        fixedSurfaceLiveSuppressedCount: markerNumber(
+          markers,
+          "topologyFixedSurfaceLiveSuppressedCount",
+        ),
+        dragSettleOverlapReadPolicy:
+          markers.topologyDragSettleOverlapReadPolicy ?? null,
+        domMarker: {
+          clearContract: markers.topologyResidualOverlapClearContract ?? null,
+          readPolicy: markers.topologyResidualOverlapReadPolicy ?? null,
+          clear: markers.topologyResidualOverlapClear ?? null,
+          visibleCardOverlapCount: markerNumber(
+            markers,
+            "topologyResidualVisibleCardOverlapCount",
+          ),
+          fixedSurfaceOverlapCount: markerNumber(
+            markers,
+            "topologyResidualFixedSurfaceOverlapCount",
+          ),
+          cardFixedSurfaceOverlapCount: markerNumber(
+            markers,
+            "topologyResidualCardFixedSurfaceOverlapCount",
+          ),
+        },
+        agentNextAction: "read-relation-surfaces-after-residual-overlap-clear",
+      }
+      : null;
+  const zoomLensProof =
+    markers.topologyZoomLensContract ===
+    "zoom-in-uses-kind-pins-for-noncritical-context-cards"
+      ? (() => {
+        const cameraZoomProved =
+          markerNumber(markers, "topologyZoomLensThresholdRatio") > 0 &&
+          markerNumber(markers, "topologyZoomLensCameraRatio") > 0 &&
+          markers.topologyZoomLensActive === true &&
+          markers.topologyZoomLensCardCompactionActive === true &&
+          markers.topologyZoomLensPresentationActive === true &&
+          VALID_ZOOM_LENS_PRESENTATION_SOURCES.has(
+            markers.topologyZoomLensPresentationSource,
+          ) &&
+          markerNumber(markers, "topologyZoomLensActiveCardCount") >= 1 &&
+          markerNumber(markers, "topologyZoomLensVisibleActiveCardCount") >= 1;
+        const selectedFocusDetailProved =
+          markers.topologyZoomLensPresentationSource === "selected-focus-detail" &&
+          markers.topologyZoomLensPresentationActive === true &&
+          markers.topologyFocusDetailLensActive === true &&
+          markerNumber(markers, "topologyZoomLensFocusEgoReadableCount") >= 1;
+        return {
+        proof: "topology-zoom-lens-kind-pins",
+        status: cameraZoomProved || selectedFocusDetailProved ? "proved" : "incomplete",
+        route: evidenceRoute(payload?.href),
+        contract: markers.topologyZoomLensContract ?? null,
+        presentationContract: markers.topologyZoomLensPresentationContract ?? null,
+        ...(markers.topologyCameraDepthContract !== undefined
+          ? {
+            cameraDepthContract: markers.topologyCameraDepthContract ?? null,
+            cameraMinRatio: markerNumber(markers, "topologyCameraMinRatio"),
+          }
+          : {}),
+        thresholdRatio: markerNumber(markers, "topologyZoomLensThresholdRatio"),
+        cardCompactionActive: markers.topologyZoomLensCardCompactionActive === true,
+        presentationActive: markers.topologyZoomLensPresentationActive === true,
+        presentationSource: markers.topologyZoomLensPresentationSource ?? null,
+        cameraRatio: markerNumber(markers, "topologyZoomLensCameraRatio"),
+        active: markers.topologyZoomLensActive === true,
+        eligibleCount: markerNumber(markers, "topologyZoomLensEligibleCount"),
+        activeCardCount: markerNumber(markers, "topologyZoomLensActiveCardCount"),
+        visibleCardCount: markerNumber(markers, "topologyVisibleCardCount"),
+        visibleActiveCardCount: markerNumber(
+          markers,
+          "topologyZoomLensVisibleActiveCardCount",
+        ),
+        pinMinOpacity: markerNumber(markers, "topologyZoomLensPinMinOpacity"),
+        focusEgoReadable: {
+          contract:
+            markers.topologyZoomLensFocusEgoReadableContract ?? null,
+          count: markerNumber(
+            markers,
+            "topologyZoomLensFocusEgoReadableCount",
+          ),
+        },
+        pinGlyph: {
+          contract: markers.topologyZoomLensPinGlyphContract ?? null,
+          visibleCount: markerNumber(
+            markers,
+            "topologyZoomLensPinGlyphVisibleCount",
+          ),
+        },
+        proximityPins: {
+          contract: markers.topologyZoomLensPinProximityContract ?? null,
+          active: markers.topologyZoomLensPinProximityActive === true,
+          count: markerNumber(markers, "topologyZoomLensProximityPinCount"),
+          ringToken: markers.topologyZoomLensPinProximityRingToken ?? null,
+        },
+        viewportVisibleContract:
+          markers.topologyZoomLensViewportVisibleContract ?? null,
+        pinCanvas: {
+          contract: markers.topologyZoomLensPinCanvasContract ?? null,
+          marginPx: markerNumber(markers, "topologyZoomLensPinCanvasMarginPx"),
+          clampCount: markerNumber(markers, "topologyZoomLensPinCanvasClampCount"),
+        },
+        emptyViewportFallback: {
+          contract:
+            markers.topologyZoomLensEmptyViewportFallbackContract ?? null,
+          active:
+            markers.topologyZoomLensEmptyViewportFallbackActive === true,
+        },
+        relationChrome: {
+          contract: markers.topologyZoomLensRelationChromeContract ?? null,
+          active: markers.topologyZoomLensRelationChromeActive === true,
+          threadCount: markerNumber(
+            markers,
+            "topologyZoomLensRelationThreadCount",
+          ),
+          labelSuppressedCount: markerNumber(
+            markers,
+            "topologyZoomLensRelationLabelSuppressedCount",
+          ),
+        },
+        focusDetail: {
+          contract: markers.topologyFocusDetailLensContract ?? null,
+          active: markers.topologyFocusDetailLensActive === true,
+          connectorExpression: {
+            contract:
+              markers.topologyFocusDetailConnectorExpressionContract ?? null,
+            active:
+              markers.topologyFocusDetailConnectorExpressionActive === true,
+            count: markerNumber(
+              markers,
+              "topologyFocusDetailConnectorExpressionCount",
+            ),
+          },
+          contextRail: {
+            contract:
+              markers.topologySelectedFocusContextRailVisibleContract ?? null,
+            totalCount: markerNumber(
+              markers,
+              "topologySelectedFocusContextRailCount",
+            ),
+            visibleCount: markerNumber(
+              markers,
+              "topologySelectedFocusContextRailVisibleCount",
+            ),
+            hiddenCount: markerNumber(
+              markers,
+              "topologySelectedFocusContextRailHiddenCount",
+            ),
+            hiddenReason:
+              markers.topologySelectedFocusContextRailHiddenReason ?? null,
+          },
+        },
+        overviewDensity: {
+          contract: markers.topologyOverviewDensityLensContract ?? null,
+          thresholdRatio: markerNumber(
+            markers,
+            "topologyOverviewDensityLensThresholdRatio",
+          ),
+          minWidth: markerNumber(markers, "topologyOverviewDensityLensMinWidth"),
+          active: markers.topologyOverviewDensityLensActive === true,
+          activeCardCount: markerNumber(
+            markers,
+            "topologyOverviewDensityLensActiveCardCount",
+          ),
+          fixedGeography: {
+            contract:
+              markers.topologyOverviewDensityFixedGeographyContract ?? null,
+            active:
+              markers.topologyOverviewDensityFixedGeographyActive === true,
+            dragContract:
+              markers.topologyOverviewDensityFixedGeographyDragContract ?? null,
+            dragLocked:
+              markers.topologyOverviewDensityFixedGeographyDragLocked === true,
+            dragAttempt:
+              markers.topologyOverviewDensityFixedGeographyDragAttempt ?? null,
+            slotCount: markerNumber(
+              markers,
+              "topologyOverviewDensityFixedGeographySlotCount",
+            ),
+            domainCount: markerNumber(
+              markers,
+              "topologyOverviewDensityFixedGeographyDomainCount",
+            ),
+            pinCount: markerNumber(
+              markers,
+              "topologyOverviewDensityFixedGeographyPinCount",
+            ),
+          },
+        },
+        agentNextAction: "trust-kind-pin-lens-before-reading-dense-map-cards",
+      };
+      })()
+      : null;
+  const nodePopoverCompactHandoffProof =
+    markers.topologyNodePopoverVisible === true &&
+    markers.topologyNodePopoverCollapsed === true &&
+    markers.topologyNodePopoverAgentHandoffRoute === "selected-node>facts>actions"
+      ? {
+        proof: "topology-node-popover-compact-handoff-root",
+        status:
+          markers.topologyNodePopoverAgentHandoffContract ===
+            "selected-node-actions-visible" &&
+          markers.topologyNodePopoverAgentHandoffPrimaryAction === "focus-brief" &&
+          markers.topologyNodePopoverAgentHandoffSummaryContract ===
+            "visible-mcp-cli-focus-brief" &&
+          String(markers.topologyNodePopoverAgentHandoffVisibleSummary || "").includes(
+            "MCP/CLI",
+          ) &&
+          markers.topologyNodePopoverCompactHandoffSummaryContract ===
+            "visible-mcp-cli-focus-brief" &&
+          markers.topologyNodePopoverCompactHandoffSummaryVisibleLabel === "MCP/CLI" &&
+          markers.topologyNodePopoverCompactHandoffSummaryText ===
+            markers.topologyNodePopoverAgentHandoffVisibleSummary &&
+          markerNumber(markers, "topologyNodePopoverAgentHandoffActionCount") >= 1 &&
+          markerNumber(markers, "topologyNodePopoverAgentHandoffRelationFactCount") >= 1 &&
+          markerNumber(markers, "topologyNodePopoverAgentHandoffRelationTypeCount") >= 1
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        selectedNode: {
+          id: markers.topologySelectedNodeId ?? null,
+          title: markers.topologySelectedNodeTitle ?? null,
+          compactMeaning:
+            typeof markers.topologyNodePopoverCompactMeaningText === "string"
+              ? markers.topologyNodePopoverCompactMeaningText.trim()
+              : null,
+          relationFactCount: markerNumber(markers, "topologyNodePopoverRelationFactCount"),
+          relationTypeCount: markerNumber(markers, "topologyNodePopoverRelationTypeCount"),
+        },
+        root: {
+          attentionWinner: markers.topologyRootAttentionWinner ?? null,
+          currentSurface: markers.topologyAgentCurrentSurface ?? null,
+          currentSurfaceRole: markers.topologyAgentCurrentSurfaceRole ?? null,
+          currentSurfaceRoute: markers.topologyAgentCurrentSurfaceRoute ?? null,
+          selectedNodeId: markers.topologyRootSelectedNodeId ?? null,
+        },
+        handoff: {
+          contract: markers.topologyNodePopoverAgentHandoffContract ?? null,
+          route: markers.topologyNodePopoverAgentHandoffRoute ?? null,
+          primaryAction: markers.topologyNodePopoverAgentHandoffPrimaryAction ?? null,
+          summaryContract: markers.topologyNodePopoverAgentHandoffSummaryContract ?? null,
+          visibleSummary: markers.topologyNodePopoverAgentHandoffVisibleSummary ?? null,
+          actionCount: markerNumber(markers, "topologyNodePopoverAgentHandoffActionCount"),
+          relationFactCount: markerNumber(
+            markers,
+            "topologyNodePopoverAgentHandoffRelationFactCount",
+          ),
+          relationTypeCount: markerNumber(
+            markers,
+            "topologyNodePopoverAgentHandoffRelationTypeCount",
+          ),
+          readableFlow: markers.topologyNodePopoverCompactActionsReadableFlow ?? null,
+          briefActionFlow: markers.topologyNodePopoverCompactBriefActionReadableFlow ?? null,
+          compactSummary: {
+            visible: markers.topologyNodePopoverCompactHandoffSummaryVisible ?? null,
+            contract: markers.topologyNodePopoverCompactHandoffSummaryContract ?? null,
+            visibleLabel: markers.topologyNodePopoverCompactHandoffSummaryVisibleLabel ?? null,
+            text: markers.topologyNodePopoverCompactHandoffSummaryText ?? null,
+            selectedNode: markers.topologyNodePopoverCompactHandoffSummarySelectedNode ?? null,
+            clientWidth: markerNumber(
+              markers,
+              "topologyNodePopoverCompactHandoffSummaryClientWidth",
+            ),
+            scrollWidth: markerNumber(
+              markers,
+              "topologyNodePopoverCompactHandoffSummaryScrollWidth",
+            ),
+          },
+          relationFacts: {
+            contract:
+              markers.topologyNodePopoverCompactRelationFactsHandoffContract ?? null,
+            route: markers.topologyNodePopoverCompactRelationFactsHandoffRoute ?? null,
+            tool: markers.topologyNodePopoverCompactRelationFactsHandoffTool ?? null,
+            summary:
+              markers.topologyNodePopoverCompactRelationFactsHandoffSummary ?? null,
+            hiddenRemainderCount: markerNumber(
+              markers,
+              "topologyNodePopoverCompactRelationFactsHiddenRemainderCount",
+            ),
+          },
+        },
+        agentNextAction: "copy-selected-node-focus-brief-or-expand-detail",
+      }
+      : null;
+  const nodePopoverCompactVerificationProof =
+    markers.topologyNodePopoverVerifyAttempted === true
+      ? {
+        proof: "topology-node-popover-compact-verification",
+        status:
+          markers.topologyNodePopoverVerifyCompactFactsVisible === true &&
+          markers.topologyNodePopoverVerifyCompactFactsContract ===
+            "collapsed-dock-surfaces-typed-facts" &&
+          markers.topologyNodePopoverVerifyCompactFactsReadableContract ===
+            "direct-typed-facts-not-scores" &&
+          markers.topologyNodePopoverVerifyCompactFactsHandoffContract ===
+            "compact-counts-route-to-relation-list-handoff" &&
+          markers.topologyNodePopoverVerifyCompactFactsHandoffRoute ===
+            "selected-node>relations>fact>evidence>gate>action>payload" &&
+          markers.topologyNodePopoverVerifyCompactFactsHandoffTool === "query_ontology" &&
+          markerText(markers, "topologyNodePopoverVerifyCompactBriefAction") ===
+            "copy-focus-brief"
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        attempted: true,
+        expanded: markers.topologyNodePopoverVerifyExpanded === true,
+        reason: markerText(markers, "topologyNodePopoverVerifyReason"),
+        compactFacts: {
+          visible: markers.topologyNodePopoverVerifyCompactFactsVisible === true,
+          contract: markerText(markers, "topologyNodePopoverVerifyCompactFactsContract"),
+          readableContract: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsReadableContract",
+          ),
+          accessibleName: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsAccessibleName",
+          ),
+          noScores: markerText(markers, "topologyNodePopoverVerifyCompactFactsNoScores"),
+          handoffContract: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsHandoffContract",
+          ),
+          handoffRoute: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsHandoffRoute",
+          ),
+          handoffTool: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsHandoffTool",
+          ),
+          handoffSummary: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsHandoffSummary",
+          ),
+          hiddenRemainderCount: markerNumber(
+            markers,
+            "topologyNodePopoverVerifyCompactFactsHiddenRemainderCount",
+          ),
+        },
+        compactActions: {
+          visible: markers.topologyNodePopoverVerifyCompactActionsVisible === true,
+          contract: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactActionsContract",
+          ),
+          readableFlow: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactActionsReadableFlow",
+          ),
+          briefVisible: markers.topologyNodePopoverVerifyCompactBriefVisible === true,
+          briefAction: markerText(markers, "topologyNodePopoverVerifyCompactBriefAction"),
+          briefReadableFlow: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactBriefReadableFlow",
+          ),
+          briefRailLabel: markerText(
+            markers,
+            "topologyNodePopoverVerifyCompactBriefRailLabel",
+          ),
+          briefTitle: markerText(markers, "topologyNodePopoverVerifyCompactBriefTitle"),
+        },
+        agentNextAction: "read-compact-node-facts-before-expanded-popover-proof",
+      }
+      : null;
+  const nodePopoverExpandedProof =
+    markers.topologyNodePopoverVisible === true &&
+    markers.topologyNodePopoverCollapsed === false &&
+    markers.topologyNodePopoverFooterPositionContract === "anchored-bottom-visible"
+      ? {
+        proof: "topology-node-popover-expanded-readability",
+        status:
+          markers.topologyNodePopoverRelationRowFullyVisible === true &&
+          markers.topologyNodePopoverActionRailVisible === true
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        scroll: {
+          popover: markers.topologyNodePopoverScrollContract ?? null,
+          rootOverflowY: markers.topologyNodePopoverOverflowY ?? null,
+          bodyContract: markers.topologyNodePopoverBodyScrollContract ?? null,
+          bodyOverflowY: markers.topologyNodePopoverBodyOverflowY ?? null,
+          bodyOverflowX: markers.topologyNodePopoverBodyOverflowX ?? null,
+        },
+        footer: {
+          contract: markers.topologyNodePopoverFooterContract ?? null,
+          position: markers.topologyNodePopoverFooterPositionContract ?? null,
+          overflow: markers.topologyNodePopoverFooterOverflowContract ?? null,
+          top: markerNumber(markers, "topologyNodePopoverFooterTop"),
+          bottom: markerNumber(markers, "topologyNodePopoverFooterBottom"),
+        },
+        relationRow: {
+          visible: markers.topologyNodePopoverRelationRowVisible === true,
+          fullRowVisible: markers.topologyNodePopoverRelationRowFullyVisible === true,
+          rowHeight: markerNumber(markers, "topologyNodePopoverRelationRowHeight"),
+          visibleHeight: markerNumber(markers, "topologyNodePopoverVisibleRelationRowHeight"),
+          readableRowContract: markers.topologyNodePopoverConnectionListReadableRowContract ?? null,
+          listHandoffContract:
+            markers.topologyNodePopoverConnectionListHandoffContract ?? null,
+          listHandoffRoute: markers.topologyNodePopoverConnectionListHandoffRoute ?? null,
+          listHandoffTool: markers.topologyNodePopoverConnectionListHandoffTool ?? null,
+          listHandoffSummary:
+            markers.topologyNodePopoverConnectionListHandoffSummary ?? null,
+          visibleRowCount: markerNumber(
+            markers,
+            "topologyNodePopoverConnectionListVisibleRowCount",
+          ),
+          hiddenRemainderCount: markerNumber(
+            markers,
+            "topologyNodePopoverConnectionListHiddenRemainderCount",
+          ),
+          directFactCount: markerNumber(
+            markers,
+            "topologyNodePopoverConnectionListDirectFactCount",
+          ),
+          evidence: markers.topologyNodePopoverRelationEvidenceState ?? null,
+          gate: markers.topologyNodePopoverRelationAgentGateKind ?? null,
+          primaryAction: markers.topologyNodePopoverRelationPrimaryCopyAction ?? null,
+        },
+        actionRail: {
+          visible: markers.topologyNodePopoverActionRailVisible === true,
+          contract: markers.topologyNodePopoverActionRailContract ?? null,
+          count: markerNumber(markers, "topologyNodePopoverActionRailCount"),
+        },
+        agentNextAction: "use-selected-node-expanded-popover-handoff",
+      }
+      : null;
+  const selectedFocusDimProof =
+    markers.topologySelectedNodePopoverVisible === true &&
+    markers.topologyClickFocusRelationshipContext === "durable" &&
+    markerNumber(markers, "topologyFocusClusterSize") >= 2
+      ? {
+        proof: "topology-selected-focus-dim-context",
+        status:
+          markers.topologyDimOpacityContract === TOPOLOGY_DIM_OPACITY_CONTRACT &&
+          markerNumber(markers, "topologyDimAnchorOpacity") >= TOPOLOGY_DIM_ANCHOR_MIN_OPACITY &&
+          markerNumber(markers, "topologyDimChipOpacity") >= TOPOLOGY_DIM_CONTEXT_MIN_OPACITY &&
+          markerNumber(markers, "topologyDimContextOpacity") >= TOPOLOGY_DIM_CONTEXT_MIN_OPACITY &&
+          (
+            markerNumber(markers, "topologyDimAnchorVisibleCount") === 0 ||
+            markerNumber(markers, "topologyDimAnchorMinOpacity") >= TOPOLOGY_DIM_ANCHOR_MIN_OPACITY
+          ) &&
+          (
+            markerNumber(markers, "topologyDimChipVisibleCount") === 0 ||
+            markerNumber(markers, "topologyDimChipMinOpacity") >= TOPOLOGY_DIM_CONTEXT_MIN_OPACITY
+          )
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        attention: {
+          winner: markers.topologyAttentionWinner ?? null,
+          selectedNodeId: markers.topologySelectedNodeId ?? null,
+          selectedNodeTitle: markers.topologySelectedNodeTitle ?? null,
+          compactMeaning:
+            typeof markers.topologyNodePopoverCompactMeaningText === "string"
+              ? markers.topologyNodePopoverCompactMeaningText.trim()
+              : null,
+          compactMeaningContract:
+            markers.topologyNodePopoverCompactMeaningContract ?? null,
+          compactMeaningResponsiveContract:
+            markers.topologyNodePopoverCompactMeaningResponsiveContract ?? null,
+          positionContract:
+            markers.topologyNodePopoverPositionContract ?? null,
+          gutterContract:
+            markers.topologyNodePopoverGutterContract ?? null,
+          rightInsetToken:
+            markers.topologyNodePopoverRightInsetToken ?? null,
+          rightInset:
+            markerNumber(markers, "topologyNodePopoverRight") > 0
+              ? Number(payload?.width || 0) -
+                markerNumber(markers, "topologyNodePopoverRight")
+              : null,
+          supportContract:
+            markers.topologyTopLeftChromeGroupSupportContract ?? null,
+          commandRowContract:
+            markers.topologyNodePopoverCompactCommandRowContract ?? null,
+          commandRowGapToken:
+            markers.topologyNodePopoverCompactCommandRowGapToken ?? null,
+          actionsContract:
+            markers.topologyNodePopoverCompactActionsContract ?? null,
+          actionsReadableFlow:
+            markers.topologyNodePopoverCompactActionsReadableFlow ?? null,
+          relationFactsReadableContract:
+            markers.topologyNodePopoverCompactRelationFactsReadableContract ?? null,
+          relationFactsAccessibleName:
+            markers.topologyNodePopoverCompactRelationFactsAccessibleName ?? null,
+          relationFactsHandoff: {
+            contract:
+              markers.topologyNodePopoverCompactRelationFactsHandoffContract ?? null,
+            route: markers.topologyNodePopoverCompactRelationFactsHandoffRoute ?? null,
+            tool: markers.topologyNodePopoverCompactRelationFactsHandoffTool ?? null,
+            summary:
+              markers.topologyNodePopoverCompactRelationFactsHandoffSummary ?? null,
+            hiddenRemainderCount: markerNumber(
+              markers,
+              "topologyNodePopoverCompactRelationFactsHiddenRemainderCount",
+            ),
+          },
+          briefActionReadableFlow:
+            markers.topologyNodePopoverCompactBriefActionReadableFlow ?? null,
+          factsAndActionsShareScanline:
+            markers.topologyNodePopoverCompactRelationFactsVisible === true &&
+            markers.topologyNodePopoverCompactActionsVisible === true
+              ? Math.abs(
+                markerNumber(markers, "topologyNodePopoverCompactRelationFactsTop") -
+                  markerNumber(markers, "topologyNodePopoverCompactActionsTop"),
+              ) <= 8
+              : null,
+          relationshipContext: markers.topologyClickFocusRelationshipContext ?? null,
+          relationshipContextSource:
+            markers.topologyClickFocusRelationshipContextSource ?? null,
+          focusClusterMode: markers.topologyFocusClusterMode ?? null,
+          focusClusterStage: markers.topologyFocusClusterStage ?? null,
+          focusClusterSize: markerNumber(markers, "topologyFocusClusterSize"),
+          focusClusterVisible: markers.topologyFocusClusterVisible === true,
+          hull: markers.topologyFocusClusterVisible === true ? "rendered" : "not-rendered",
+        },
+        dim: {
+          contract: markers.topologyDimOpacityContract ?? null,
+          anchorOpacity: markerNumber(markers, "topologyDimAnchorOpacity"),
+          contextOpacity: markerNumber(markers, "topologyDimChipOpacity"),
+          contextOpacityAlias: markerNumber(markers, "topologyDimContextOpacity"),
+          anchorVisibleCount: markerNumber(markers, "topologyDimAnchorVisibleCount"),
+          contextVisibleCount: markerNumber(markers, "topologyDimChipVisibleCount"),
+          anchorMinOpacity: markerNumber(markers, "topologyDimAnchorMinOpacity"),
+          contextMinOpacity: markerNumber(markers, "topologyDimChipMinOpacity"),
+          anchorMinContract: TOPOLOGY_DIM_ANCHOR_MIN_OPACITY,
+          contextMinContract: TOPOLOGY_DIM_CONTEXT_MIN_OPACITY,
+          anchorToken: "--topology-map-dim-anchor-opacity",
+          contextToken: "--topology-map-dim-context-opacity",
+        },
+        agentNextAction: "read-selected-node-popover-before-background-map-context",
+      }
+      : null;
 
   return {
     capturedAt,
     payload,
+    agentCurrentSurfaceProof,
+    agentUiScaleStabilityProof,
     composerBlockingProof,
+    relationLabelHandoffProof,
+    selectedRelationVisibleFactRouteProof,
+    relationEndpointVisibilityProof,
+    relationContextSilhouetteProof,
+    relationLabelFrameGeometryProof,
+    connectorCacheProof,
+    dragRelationLabelCompactProof,
+    connectorLabelPassProof,
+    visibleCardSelectedSurfaceRectProof,
+    residualOverlapProof,
+    zoomLensProof,
+    nodePopoverCompactHandoffProof,
+    nodePopoverCompactVerificationProof,
+    nodePopoverExpandedProof,
+    selectedFocusDimProof,
   };
 }
 
@@ -5119,8 +8745,12 @@ async function verifyExecutableLaunch({
   requireWebviewContent,
   requireWebviewRoute,
   verifyTopologyDrag,
+  verifyTopologySelectedRelation,
+  verifyTopologyNodePopover,
   verifyTopologyCreateNode,
   verifyTopologyFocusNoop,
+  verifyTopologyFocusZoom,
+  verifyTopologyFrameProfile,
   requireAccessibilityText,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
@@ -5140,8 +8770,12 @@ async function verifyExecutableLaunch({
           ...webviewVerifyEnvPatch({
             requireWebviewRoute,
             verifyTopologyDrag,
+            verifyTopologySelectedRelation,
+            verifyTopologyNodePopover,
             verifyTopologyCreateNode,
             verifyTopologyFocusNoop,
+            verifyTopologyFocusZoom,
+            verifyTopologyFrameProfile,
             webviewWindowSize,
           }),
         }
@@ -5196,8 +8830,12 @@ async function verifyExecutableLaunch({
       minWebviewSize,
       maxWebviewSize,
       requireTopologyDrag: verifyTopologyDrag,
+      requireTopologySelectedRelation: verifyTopologySelectedRelation,
+      requireTopologyNodePopover: verifyTopologyNodePopover,
       requireTopologyCreateNode: verifyTopologyCreateNode,
       requireTopologyFocusNoop: verifyTopologyFocusNoop,
+      requireTopologyFocusZoom: verifyTopologyFocusZoom,
+      requireTopologyFrameProfile: verifyTopologyFrameProfile,
     };
     const { payload, validationError: webviewError } = await waitForWebviewVerifyPayload(
       () => stdout,
@@ -5307,8 +8945,12 @@ async function main() {
     requireWebviewContent,
     requireWebviewRoute,
     verifyTopologyDrag,
+    verifyTopologySelectedRelation,
+    verifyTopologyNodePopover,
     verifyTopologyCreateNode,
     verifyTopologyFocusNoop,
+    verifyTopologyFocusZoom,
+    verifyTopologyFrameProfile,
     requireAccessibilityText,
     printWindowDiagnostics,
     requireOwnerName,
@@ -5375,11 +9017,23 @@ async function main() {
   if (verifyTopologyDrag && openApp) {
     fail("--verify-topology-drag is only supported for direct executable launch; omit --open-app.");
   }
+  if (verifyTopologySelectedRelation && openApp) {
+    fail("--verify-topology-selected-relation is only supported for direct executable launch; omit --open-app.");
+  }
+  if (verifyTopologyNodePopover && openApp) {
+    fail("--verify-topology-node-popover is only supported for direct executable launch; omit --open-app.");
+  }
   if (verifyTopologyCreateNode && openApp) {
     fail("--verify-topology-create-node is only supported for direct executable launch; omit --open-app.");
   }
   if (verifyTopologyFocusNoop && openApp) {
     fail("--verify-topology-focus-noop is only supported for direct executable launch; omit --open-app.");
+  }
+  if (verifyTopologyFrameProfile && openApp) {
+    fail("--verify-topology-frame-profile is only supported for direct executable launch; omit --open-app.");
+  }
+  if (verifyTopologyFocusZoom && openApp) {
+    fail("--verify-topology-focus-zoom is only supported for direct executable launch; omit --open-app.");
   }
   if (webviewWindowSize && openApp) {
     fail("--webview-window-size is only supported for direct executable launch; omit --open-app.");
@@ -5393,11 +9047,23 @@ async function main() {
   if (verifyTopologyDrag && !normalizedWebviewRoute?.includes("/topology")) {
     fail("--verify-topology-drag requires --require-webview-route pointing at a /topology route.");
   }
+  if (verifyTopologySelectedRelation && !normalizedWebviewRoute?.includes("/topology")) {
+    fail("--verify-topology-selected-relation requires --require-webview-route pointing at a /topology route.");
+  }
+  if (verifyTopologyNodePopover && !normalizedWebviewRoute?.includes("/topology")) {
+    fail("--verify-topology-node-popover requires --require-webview-route pointing at a /topology route.");
+  }
   if (verifyTopologyCreateNode && !normalizedWebviewRoute?.includes("/topology")) {
     fail("--verify-topology-create-node requires --require-webview-route pointing at a /topology route.");
   }
   if (verifyTopologyFocusNoop && !normalizedWebviewRoute?.includes("/topology")) {
     fail("--verify-topology-focus-noop requires --require-webview-route pointing at a /topology route.");
+  }
+  if (verifyTopologyFocusZoom && !normalizedWebviewRoute?.includes("/topology")) {
+    fail("--verify-topology-focus-zoom requires --require-webview-route pointing at a /topology route.");
+  }
+  if (verifyTopologyFrameProfile && !normalizedWebviewRoute?.includes("/topology")) {
+    fail("--verify-topology-frame-profile requires --require-webview-route pointing at a /topology route.");
   }
   if (!fs.existsSync(resolvedAppPath)) {
     fail(`missing app bundle at ${resolvedAppPath}; run pnpm desktop:build:app first.`);
@@ -5470,8 +9136,12 @@ async function main() {
         requireWebviewContent,
         requireWebviewRoute: normalizedWebviewRoute,
         verifyTopologyDrag,
+        verifyTopologySelectedRelation,
+        verifyTopologyNodePopover,
         verifyTopologyCreateNode,
         verifyTopologyFocusNoop,
+        verifyTopologyFocusZoom,
+        verifyTopologyFrameProfile,
         requireAccessibilityText,
         printWindowDiagnostics,
         requireOwnerName,

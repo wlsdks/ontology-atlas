@@ -112,14 +112,17 @@ describe("buildOntologySkeleton", () => {
     expect(s.levelBySlug.get("c5")).toBe("landmark");
   });
 
-  it("hides non-landmark capabilities, elements, and documents", () => {
+  it("surfaces one evidence element landmark and hides the rest", () => {
     const { nodes, edges } = fixture();
     const s = buildOntologySkeleton(nodes, edges, { perDomainCap: 3 });
     expect(s.levelBySlug.get("c3")).toBe("hidden");
-    expect(s.levelBySlug.get("e1")).toBe("hidden");
+    expect(s.levelBySlug.get("e1")).toBe("landmark");
+    expect(s.levelBySlug.get("e2")).toBe("hidden");
     expect(s.levelBySlug.get("doc")).toBe("hidden");
     expect(s.skeletonSlugs.has("c3")).toBe(false);
     expect(s.skeletonSlugs.has("c1")).toBe(true);
+    expect(s.skeletonSlugs.has("e1")).toBe(true);
+    expect(s.evidenceLandmarksByDomain.get("d1")).toEqual(["e1"]);
   });
 
   it("reports per-domain overflow (capabilities hidden beyond the cap)", () => {
@@ -145,6 +148,7 @@ describe("buildOntologySkeleton", () => {
       levels: [...s.levelBySlug.entries()].sort(),
       weights: [...s.subtreeWeightBySlug.entries()].sort(),
       landmarks: [...s.landmarksByDomain.entries()].sort(),
+      evidence: [...s.evidenceLandmarksByDomain.entries()].sort(),
     });
     expect(norm(a)).toEqual(norm(b));
   });

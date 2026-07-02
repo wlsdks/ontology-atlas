@@ -53,9 +53,19 @@ const stubSigma = {
     x: (x - 100) / 2,
     y: (y - 50) / 2,
   }),
+  getCamera: () => ({ getState: () => ({ ratio: 1 }) }),
   on: vi.fn(),
   off: vi.fn(),
 };
+
+function makeStubSigma(cameraRatio = 1): typeof stubSigma {
+  return {
+    ...stubSigma,
+    getCamera: () => ({ getState: () => ({ ratio: cameraRatio }) }),
+    on: vi.fn(),
+    off: vi.fn(),
+  };
+}
 
 const CARDS = [
   { id: "project:p", title: "Atlas", kind: "project", tier: 0 as const },
@@ -71,15 +81,1220 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         cards={[...CARDS]}
         selectedSlug={null}
         onSelect={vi.fn()}
+        describeKindBadge={(kind) =>
+          ({
+            project: "제품/시스템",
+            domain: "영역",
+            capability: "기능",
+            element: "구현 근거",
+            unknown: "미분류",
+          })[kind]
+        }
       />,
     );
     expect(screen.getByText("Atlas")).toBeInTheDocument();
     expect(screen.getByText("Views")).toBeInTheDocument();
-    expect(screen.getByText("59")).toBeInTheDocument();
+    const countChip = screen.getByText("59");
+    expect(countChip).toBeInTheDocument();
+    expect(countChip).toHaveAttribute(
+      "data-count-chip-contract",
+      "tokenized-node-scale-signal",
+    );
+    expect(countChip).toHaveAttribute(
+      "data-count-chip-visibility",
+      "sr-only-core-hierarchy-title",
+    );
+    expect(countChip).toHaveClass("sr-only");
+    expect(countChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-card-count-surface",
+    );
+    expect(countChip).toHaveAttribute(
+      "data-border-token",
+      "--topology-card-count-border",
+    );
     const domainCard = screen.getByText("Views").closest("[data-skeleton-card]");
+    expect(domainCard).toHaveAttribute(
+      "data-card-readable-width-contract",
+      "tier-token-preserves-title-lane",
+    );
+    expect(domainCard).toHaveAttribute(
+      "data-card-desktop-title-contract",
+      "core-ontology-label-readable-at-16x9",
+    );
+    expect(domainCard).toHaveAttribute(
+      "data-card-max-width-token",
+      "--topology-card-max-width-domain",
+    );
+    expect(domainCard).toHaveAttribute(
+      "data-card-spacing-contract",
+      "css-tokenized-block-rhythm",
+    );
+    expect(domainCard).toHaveAttribute("data-card-gap-token", "--topology-card-gap");
+    expect(domainCard).toHaveAttribute(
+      "data-card-padding-x-token",
+      "--topology-card-padding-x",
+    );
+    expect(domainCard).toHaveAttribute(
+      "data-card-padding-y-token",
+      "--topology-card-padding-y",
+    );
+    expect(domainCard).toHaveAttribute(
+      "data-card-min-block-size-token",
+      "--topology-card-min-block-size",
+    );
+    expect(domainCard).toHaveAttribute(
+      "data-card-radius-token",
+      "--topology-card-radius",
+    );
+    expect(screen.getByText("Views")).toHaveAttribute(
+      "data-card-title-lane-contract",
+      "core-title-keeps-map-readable",
+    );
+    expect(screen.getByText("Views")).toHaveAttribute("data-full-title", "Views");
+    const kindBadges = domainCard?.querySelectorAll("[data-card-kind-badge]");
+    expect(kindBadges).toHaveLength(1);
+    const domainKindBadge = kindBadges?.[0];
+    expect(domainKindBadge).toHaveTextContent("영역");
+    expect(domainKindBadge).toHaveAttribute("data-card-kind", "domain");
+    expect(domainKindBadge).toHaveAttribute(
+      "data-card-kind-badge-contract",
+      "visible-ontology-kind-marker",
+    );
+    expect(domainKindBadge).toHaveAttribute(
+      "data-surface-token",
+      "--topology-card-kind-surface",
+    );
+    expect(domainKindBadge).toHaveAttribute(
+      "data-border-token",
+      "--card-kind-border",
+    );
+    expect(domainKindBadge).toHaveAttribute(
+      "data-accent-token",
+      "--card-kind-accent",
+    );
     expect(domainCard).toHaveStyle({
       transform: "translate(-50%, -50%) translate3d(120px, 60px, 0)",
+      maxWidth: "var(--topology-card-max-width-domain)",
+      "--topology-card-gap": "0.55em",
+      "--topology-card-padding-x": "0.9em",
+      "--topology-card-padding-y": "0.55em",
+      "--topology-card-min-block-size": "2.58em",
+      "--topology-card-radius": "0.5rem",
     });
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    expect(layer.style.getPropertyValue("--topology-card-max-width-project")).toBe("280px");
+    expect(layer.style.getPropertyValue("--topology-card-max-width-domain")).toBe("272px");
+    expect(layer.style.getPropertyValue("--topology-card-max-width-capability")).toBe("360px");
+    expect(layer.style.getPropertyValue("--topology-card-max-width-element")).toBe("224px");
+    expect(layer.style.getPropertyValue("--topology-card-selected-focus-max-width")).toBe("440px");
+    expect(layer.style.getPropertyValue("--topology-zoom-lens-pin-size")).toBe("24px");
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-contract",
+      "zoom-in-uses-kind-pins-for-noncritical-context-cards",
+    );
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-presentation-contract",
+      "camera-or-focus-lens-uses-kind-pins-for-noncritical-context",
+    );
+    expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "false");
+    expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "idle");
+    expect(layer).toHaveAttribute("data-zoom-lens-threshold-ratio", "0.98");
+    expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "1.000");
+    expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
+    expect(layer).toHaveAttribute("data-zoom-lens-card-compaction-active", "false");
+    expect(layer).toHaveAttribute(
+      "data-overview-density-lens-contract",
+      "zoom-out-overview-uses-kind-pins-for-noncritical-context-cards",
+    );
+    expect(layer).toHaveAttribute("data-overview-density-lens-active", "false");
+    expect(layer).toHaveAttribute(
+      "data-overview-density-lens-readable-band-contract",
+      "14-inch-overview-keeps-domain-and-capability-title-cards",
+    );
+    expect(domainCard).toHaveAttribute(
+      "data-zoom-lens-card-contract",
+      "noncritical-context-card-becomes-kind-pin-on-camera-zoom-in",
+    );
+    expect(domainCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+    expect(layer).toHaveAttribute(
+      "data-overview-domain-separation-contract",
+      "project-overview-domain-labels-do-not-overlap",
+    );
+    expect(layer).toHaveAttribute(
+      "data-overview-domain-rect-read-policy",
+      "reuse-pass1-card-placement-frame-rects",
+    );
+    expect(layer).toHaveAttribute(
+      "data-overview-domain-attribute-write-policy",
+      "dedupe-separated-marker",
+    );
+    expect(layer).toHaveAttribute("data-overview-domain-separation-active", "true");
+    expect(layer).toHaveAttribute("data-overview-domain-separated-count", "0");
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-drag-dom-index-contract",
+      "drag-release-reuses-card-elements",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-dom-index-contract",
+      "reuse-card-index",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-contract",
+      "frame-local-card-rect-cache",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-accounting",
+      "reads-plus-hits",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-seed-contract",
+      "visible-card-rects-seed-connector-cache",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-frame-fallback-contract",
+      "reuse-card-placement-frame-rects-before-dom-read",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-layout-transition-contract",
+      "stable-card-state-key",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-layout-effect-reposition-contract",
+      "keyed-structural-render-only",
+    );
+    expect(
+      screen
+        .getByTestId("sigma-skeleton-cards")
+        .getAttribute("data-layout-effect-reposition-policy"),
+    ).toMatch(/^(run-structural-key-change|skip-same-structural-key)$/);
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-layout-effect-reposition-run-count",
+      "1",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-path-endpoint-postprocess-contract",
+      "skip-unless-source-or-target-visible",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-path-endpoint-postprocess-policy",
+      "skip-no-path-endpoints",
+    );
+    const connectorReadCount = Number(
+      screen
+        .getByTestId("sigma-skeleton-cards")
+        .getAttribute("data-connector-rect-cache-read-count") ?? "0",
+    );
+    const connectorSeedCount = Number(
+      screen
+        .getByTestId("sigma-skeleton-cards")
+        .getAttribute("data-connector-rect-cache-seed-count") ?? "0",
+    );
+    expect(connectorSeedCount).toBeGreaterThan(0);
+    expect(connectorReadCount).toBe(0);
+    expect(layer).toHaveAttribute(
+      "data-fixed-surface-live-suppression-read-policy",
+      expect.stringMatching(
+        /^(reuse-card-placement-frame-rects-before-dom-read|skipped-after-fixed-restore-noop-preflight)$/,
+      ),
+    );
+    expect(layer).toHaveAttribute(
+      "data-fixed-surface-live-suppression-read-count",
+      "0",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-read-count",
+      expect.stringMatching(/^\d+$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-connector-rect-cache-hit-count",
+      expect.stringMatching(/^\d+$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-visible-card-clipped-count-source",
+      "frame-state-cache-no-dom-read",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-visible-card-clipped-count",
+      "0",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-dock-drag-snapshot-contract",
+      "single-pass-card-rect-read",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-visibility-count-contract",
+      "single-pass-unless-fallback",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-visibility-stats-report-contract",
+      "dedupe-and-debounce-stable-counts",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-dom-write-dedupe-contract",
+      "skip-unchanged-transform-and-path",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-measure-contract",
+      "single-pass-rect-read",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-restore-contract",
+      "visible-cards-shift-or-hide-after-drag-release",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-restore-read-policy",
+      "reuse-card-placement-frame-rects",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-restore-noop-policy",
+      "preflight-frame-rects-before-restore-loop",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-restore-noop-skipped",
+      expect.stringMatching(/^(true|false)$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-restore-noop-checked-count",
+      expect.stringMatching(/^\d+$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-card-placement-subphase-contract",
+      "phase-breakdown",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-card-placement-slowest-subphase",
+      expect.stringMatching(
+        /^(setup|core-loop|overview-collision|dim-pass|read-layer|path-endpoint|overview-domain|overview-post-domain|fixed-restore)$/,
+      ),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-card-placement-subphase-core-loop-ms",
+      expect.stringMatching(/^\d+(\.\d+)?$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-card-placement-subphase-overview-post-domain-ms",
+      expect.stringMatching(/^\d+(\.\d+)?$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-fixed-surface-restored-count",
+      expect.stringMatching(/^\d+$/),
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-relation-label-blocker-contract",
+      "reuse-visible-card-rects",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-relation-label-blocker-source",
+      "visibility-pass",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-relation-label-handoff-contract",
+      "label-level-mcp-cli-fallback",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-selected-relation-label-handoff",
+      "none",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-relation-label-query-contract",
+      "indexed-once",
+    );
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-path-endpoint-separation-contract",
+      "source-target-min-gap",
+    );
+  });
+
+  it("overview 에서는 핵심 계층은 풀 잉크로 두고 기능/근거 카드는 조용한 맥락 잉크로 낮춘다", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        const rects: Record<string, DOMRectInit> = {
+          "project:p": { x: 400, y: 250, width: 140, height: 44 },
+          "domain:d1": { x: 580, y: 220, width: 130, height: 40 },
+          "capability:c1": { x: 740, y: 300, width: 168, height: 38 },
+          "element:e1": { x: 320, y: 390, width: 120, height: 34 },
+        };
+        const rect = slug ? rects[slug] : { x: 0, y: 0, width: 1200, height: 720 };
+        return {
+          left: rect.x ?? 0,
+          top: rect.y ?? 0,
+          right: (rect.x ?? 0) + (rect.width ?? 0),
+          bottom: (rect.y ?? 0) + (rect.height ?? 0),
+          width: rect.width ?? 0,
+          height: rect.height ?? 0,
+          x: rect.x ?? 0,
+          y: rect.y ?? 0,
+          toJSON: () => ({}),
+        };
+      });
+    const graph = makeGraph();
+
+    try {
+      graph.addNode("capability:c1", {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: 120,
+        y: 125,
+        label: "Sync",
+      });
+      graph.addNode("element:e1", {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: 130,
+        y: 180,
+        label: "File evidence",
+      });
+
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            { id: "capability:c1", title: "Sync", kind: "capability", tier: 2 as const },
+            { id: "element:e1", title: "File evidence", kind: "element", tier: 3 as const },
+          ]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const projectCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
+      const domainCard = screen.getByText("Views").closest("[data-skeleton-card]");
+      const capabilityCard = screen.getByText("Sync").closest("[data-skeleton-card]");
+      const elementCard = screen.getByText("File evidence").closest("[data-skeleton-card]");
+
+      await waitFor(() => {
+        expect(layer).toHaveAttribute(
+          "data-overview-context-opacity-contract",
+          "core-full-support-quiet",
+        );
+        expect(layer).toHaveAttribute("data-overview-context-core-opacity", "1");
+        expect(layer).toHaveAttribute("data-overview-context-capability-opacity", "0.54");
+        expect(layer).toHaveAttribute("data-overview-context-evidence-opacity", "0.32");
+        expect(projectCard).toHaveStyle({ opacity: "1" });
+        expect(domainCard).toHaveStyle({ opacity: "1" });
+        expect(capabilityCard).toHaveStyle({ opacity: "0.54" });
+        expect(elementCard).toHaveStyle({ opacity: "0.32" });
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
+  it("줌 인 상태에서는 비핵심 상세 카드를 kind pin 으로 낮춘다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+    });
+    graph.addNode("capability:c1", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 35,
+      y: 20,
+      label: "Sync",
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={makeStubSigma(0.42)}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          { id: "capability:c1", title: "Sync", kind: "capability", tier: 2 as const, count: 3 },
+        ]}
+        selectedSlug="project:p"
+        onSelect={vi.fn()}
+        describeKindBadge={(kind) =>
+          ({
+            project: "제품/시스템",
+            domain: "영역",
+            capability: "기능",
+            element: "구현 근거",
+            unknown: "미분류",
+          })[kind]
+        }
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const selectedCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
+    const anchorCard = screen.getByText("Views").closest("[data-skeleton-card]");
+    const scanCard = screen.getByText("Sync").closest("[data-skeleton-card]");
+
+    expect(layer).toHaveAttribute("data-zoom-lens-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "camera-zoom-in");
+    expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "0.420");
+    expect(layer).toHaveAttribute("data-zoom-lens-card-compaction-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-pin-min-opacity", "0.42");
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-pin-canvas-contract",
+      "zoom-lens-pins-stay-inside-readable-canvas-safe-band",
+    );
+    expect(layer).toHaveAttribute("data-zoom-lens-pin-canvas-margin-px", "32");
+    expect(layer).toHaveAttribute("data-zoom-lens-eligible-count", "2");
+    expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "2");
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-pin-proximity-contract",
+      "zoomed-context-pins-keep-critical-relation-proximity",
+    );
+    expect(layer).toHaveAttribute("data-zoom-lens-pin-proximity-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-proximity-pin-count", "1");
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-pin-proximity-ring-token",
+      "--topology-zoom-lens-pin-proximity-ring",
+    );
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-viewport-visible-contract",
+      "visible-lens-pins-match-frame-state",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-zoom-lens-card-contract",
+      "critical-card-stays-full-on-camera-zoom-in",
+    );
+    expect(selectedCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+    expect(selectedCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-critical");
+    expect(scanCard).toHaveAttribute(
+      "data-zoom-lens-card-contract",
+      "noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in",
+    );
+    expect(anchorCard).toHaveAttribute(
+      "data-zoom-lens-card-contract",
+      "noncritical-context-card-becomes-kind-pin-on-camera-zoom-in",
+    );
+    expect(anchorCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+    expect(anchorCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+    expect(anchorCard).toHaveAttribute("data-zoom-lens-pin-proximity", "critical-neighbor");
+    expect(anchorCard).toHaveAttribute(
+      "data-zoom-lens-pin-proximity-contract",
+      "compact-pin-keeps-critical-relation-proximity-ring",
+    );
+    expect(anchorCard).toHaveAttribute(
+      "data-zoom-lens-pin-proximity-ring-token",
+      "--topology-zoom-lens-pin-proximity-ring",
+    );
+    expect(anchorCard).toHaveAttribute("data-zoom-lens-viewport-visible");
+    expect(anchorCard).toHaveAttribute(
+      "data-zoom-lens-viewport-visible-contract",
+      "visible-lens-pins-match-frame-state",
+    );
+    expect(scanCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+    expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+    expect(scanCard).toHaveAttribute("data-zoom-lens-pin-canvas-margin-px", "32");
+    expect(scanCard).toHaveAttribute("data-zoom-lens-viewport-visible");
+    expect(scanCard).toHaveAttribute(
+      "data-zoom-lens-viewport-visible-contract",
+      "visible-lens-pins-match-frame-state",
+    );
+    expect(
+      layer.querySelectorAll('[data-zoom-lens-viewport-visible="true"]'),
+    ).toHaveLength(Number(layer.getAttribute("data-zoom-lens-visible-active-card-count")));
+    expect(scanCard?.querySelector("[data-card-kind-badge]")).toHaveAttribute(
+      "data-zoom-lens-compact-hidden-contract",
+      "compact-lens-keeps-kind-as-dot-color",
+    );
+    expect(scanCard?.querySelector("[data-zoom-lens-pin-glyph]")).toHaveAttribute(
+      "data-zoom-lens-pin-glyph-contract",
+      "compact-kind-pin-keeps-type-glyph-without-title-card",
+    );
+    expect(scanCard?.querySelector("[data-zoom-lens-pin-glyph]")).toHaveAttribute(
+      "data-zoom-lens-pin-glyph-text",
+      "기",
+    );
+    expect(scanCard?.querySelector("[data-skeleton-card-count]")).toHaveAttribute(
+      "data-zoom-lens-compact-hidden-contract",
+      "compact-lens-removes-scale-count-from-map-mark",
+    );
+  });
+
+  it("선택 focus 에서는 주변 domain 맥락을 캔버스 고정 레일에 배치한다", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        const rects: Record<string, DOMRectInit> = {
+          "project:p": { x: 0, y: 0, width: 160, height: 44 },
+          "domain:d1": { x: 0, y: 0, width: 180, height: 44 },
+          "domain:d2": { x: 0, y: 0, width: 180, height: 44 },
+          "domain:d3": { x: 0, y: 0, width: 180, height: 44 },
+        };
+        const rect = slug ? rects[slug] : { x: 0, y: 0, width: 960, height: 540 };
+        return {
+          left: rect.x ?? 0,
+          top: rect.y ?? 0,
+          right: (rect.x ?? 0) + (rect.width ?? 0),
+          bottom: (rect.y ?? 0) + (rect.height ?? 0),
+          width: rect.width ?? 0,
+          height: rect.height ?? 0,
+          x: rect.x ?? 0,
+          y: rect.y ?? 0,
+          toJSON: () => ({}),
+        };
+      });
+
+    try {
+      const graph = makeGraph();
+      graph.addNode("domain:d2", {
+        ...graph.getNodeAttributes("domain:d1"),
+        x: 420,
+        y: -260,
+        label: "Agent Partner",
+      });
+      graph.addNode("domain:d3", {
+        ...graph.getNodeAttributes("domain:d1"),
+        x: -380,
+        y: 280,
+        label: "Vault",
+      });
+
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            { id: "domain:d2", title: "Agent Partner", kind: "domain", tier: 1 as const },
+            { id: "domain:d3", title: "Vault", kind: "domain", tier: 1 as const },
+          ]}
+          selectedSlug="domain:d1"
+          selectedFocusCenterActive
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const leftRailCard = screen
+        .getByText("Agent Partner")
+        .closest<HTMLElement>("[data-skeleton-card]");
+      const rightRailCard = screen
+        .getByText("Vault")
+        .closest<HTMLElement>("[data-skeleton-card]");
+
+      await waitFor(() => {
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-contract",
+          "focus-domain-context-uses-fixed-canvas-rails",
+        );
+        expect(layer).toHaveAttribute("data-selected-focus-context-rail-active", "true");
+        expect(layer).toHaveAttribute("data-selected-focus-context-rail-count", "2");
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-visible-contract",
+          "focus-domain-context-rail-reports-visible-and-hidden-cards",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-interaction-contract",
+          "fixed-focus-domain-anchors-remain-clickable-waypoints",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-y-distribution-contract",
+          "multi-row-focus-domain-rail-uses-viewport-height-bands",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-priority-contract",
+          "domain-waypoints-outrank-lower-priority-context",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-priority-rect-count",
+          "2",
+        );
+        expect(layer).toHaveAttribute("data-selected-focus-context-rail-opacity", "1");
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-opacity-token",
+          "--topology-selected-focus-context-rail-opacity",
+        );
+        expect(layer).toHaveAttribute("data-selected-focus-context-rail-visible-count", "2");
+        expect(layer).toHaveAttribute("data-selected-focus-context-rail-hidden-count", "0");
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-context-rail-hidden-reason",
+          "none",
+        );
+        expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail", "true");
+        expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail-side", "left");
+        expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail-row", "0");
+        expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail-rows", "1");
+        expect(leftRailCard).toHaveAttribute(
+          "data-selected-focus-center-policy",
+          "fixed-context-rail",
+        );
+        expect(leftRailCard).toHaveAttribute(
+          "data-selected-focus-context-rail-collision-resolve",
+          "safe-shift",
+        );
+        expect(leftRailCard).toHaveAttribute(
+          "data-dim-opacity-role",
+          "selected-focus-context-rail",
+        );
+        expect(leftRailCard).toHaveAttribute(
+          "data-dim-opacity-token",
+          "--topology-selected-focus-context-rail-opacity",
+        );
+        expect(leftRailCard).toHaveStyle({ opacity: "1" });
+        expect(leftRailCard?.style.pointerEvents).toBe("");
+        expect(leftRailCard?.style.transform).toContain(
+          "translate(-50%, -50%) translate3d(200px, 259.2px, 0)",
+        );
+        expect(rightRailCard).toHaveAttribute("data-selected-focus-context-rail", "true");
+        expect(rightRailCard).toHaveAttribute(
+          "data-selected-focus-context-rail-side",
+          "right",
+        );
+        expect(rightRailCard).toHaveAttribute("data-selected-focus-context-rail-row", "0");
+        expect(rightRailCard).toHaveAttribute("data-selected-focus-context-rail-rows", "1");
+        expect(rightRailCard?.style.transform).toContain(
+          "translate(-50%, -50%) translate3d(760px, 259.2px, 0)",
+        );
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
+  it("선택 focus 를 줌 인하면 주변 domain 레일을 waypoint pin 으로 낮춘다", async () => {
+    const graph = makeGraph();
+    graph.addNode("domain:d2", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: 420,
+      y: -260,
+      label: "Agent Partner",
+    });
+    graph.addNode("domain:d3", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: -380,
+      y: 280,
+      label: "Vault",
+    });
+    graph.addNode("element:e1", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: 150,
+      y: -120,
+      label: "Builder Command Strip",
+    });
+    graph.addEdge("domain:d1", "domain:d2", {
+      size: 1,
+      color: "#fff",
+      kind: "depends-on",
+      relationType: "depends-on",
+      relationQuality: "supported",
+    });
+    graph.addEdge("domain:d1", "domain:d3", {
+      size: 1,
+      color: "#fff",
+      kind: "depends-on",
+      relationType: "depends-on",
+      relationQuality: "supported",
+    });
+    graph.addEdge("domain:d1", "element:e1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={makeStubSigma(0.42)}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          { id: "domain:d2", title: "Agent Partner", kind: "domain", tier: 1 as const },
+          { id: "domain:d3", title: "Vault", kind: "domain", tier: 1 as const },
+          { id: "element:e1", title: "Builder Command Strip", kind: "element", tier: 3 as const },
+        ]}
+        selectedSlug="domain:d1"
+        selectedFocusCenterActive
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const selectedCard = screen.getByText("Views").closest("[data-skeleton-card]");
+    const leftRailCard = screen
+      .getByText("Agent Partner")
+      .closest<HTMLElement>("[data-skeleton-card]");
+    const rightRailCard = screen
+      .getByText("Vault")
+      .closest<HTMLElement>("[data-skeleton-card]");
+
+    expect(layer).toHaveAttribute("data-zoom-lens-active", "true");
+    expect(layer).toHaveAttribute("data-focus-detail-lens-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "camera-zoom-in");
+    expect(layer).toHaveAttribute(
+      "data-selected-focus-context-rail-zoom-contract",
+      "camera-zoom-in-demotes-domain-rail-to-waypoint-pins",
+    );
+    expect(selectedCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-critical");
+    expect(leftRailCard).toHaveAttribute("data-selected-focus-context-rail", "true");
+    expect(leftRailCard).toHaveAttribute(
+      "data-zoom-lens-card-contract",
+      "focus-context-domain-becomes-waypoint-pin-on-camera-zoom-in",
+    );
+    expect(leftRailCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+    expect(leftRailCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+    expect(rightRailCard).toHaveAttribute("data-selected-focus-context-rail", "true");
+    expect(rightRailCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+    expect(rightRailCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+  });
+
+  it("줌 인하면 비선택 관계 chrome 을 배경 thread 로 낮춘다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={makeStubSigma(0.42)}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        onSelect={vi.fn()}
+        describeKindBadge={(kind) =>
+          ({
+            project: "제품/시스템",
+            domain: "영역",
+            capability: "기능",
+            element: "구현 근거",
+            unknown: "미분류",
+          })[kind]
+        }
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const connector = layer.querySelector('[data-zoom-lens-relation-chrome="thread"]');
+
+    expect(layer).toHaveAttribute("data-zoom-lens-active", "true");
+    expect(layer).toHaveAttribute(
+      "data-zoom-lens-relation-chrome-contract",
+      "camera-zoom-in-demotes-nonselected-relation-chrome",
+    );
+    expect(layer).toHaveAttribute("data-zoom-lens-relation-chrome-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-relation-thread-count", "1");
+    expect(connector).toHaveAttribute(
+      "data-zoom-lens-relation-chrome-opacity-token",
+      "--topology-zoom-lens-relation-thread-opacity",
+    );
+    expect(connector).toHaveAttribute(
+      "data-zoom-lens-relation-chrome-width-token",
+      "--topology-zoom-lens-relation-thread-width",
+    );
+  });
+
+  it("wide overview 기본 상태에서는 비핵심 context 카드를 kind pin 으로 낮춘다", () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 1920,
+    });
+    try {
+      const graph = makeGraph();
+      graph.addNode("capability:c1", {
+        ...graph.getNodeAttributes("domain:d1"),
+        x: 30,
+        y: 10,
+        label: "Sync",
+      });
+
+      render(
+        <SigmaSkeletonCards
+          sigma={makeStubSigma(1)}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            {
+              id: "capability:c1",
+              title: "Sync",
+              kind: "capability",
+              tier: 2 as const,
+              count: 3,
+            },
+          ]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+          describeKindBadge={(kind) =>
+            ({
+              project: "제품/시스템",
+              domain: "영역",
+              capability: "기능",
+              element: "구현 근거",
+              unknown: "미분류",
+            })[kind]
+          }
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const rootCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
+      const anchorCard = screen.getByText("Views").closest("[data-skeleton-card]");
+      const scanCard = screen.getByText("Sync").closest("[data-skeleton-card]");
+
+      expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
+      expect(layer).toHaveAttribute("data-zoom-lens-card-compaction-active", "false");
+      expect(layer).toHaveAttribute("data-zoom-lens-camera-ratio", "1.000");
+      expect(layer).toHaveAttribute("data-overview-density-lens-active", "true");
+      expect(layer).toHaveAttribute(
+        "data-overview-density-lens-width-band",
+        "wide-pin-band",
+      );
+      expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
+      expect(layer).toHaveAttribute("data-zoom-lens-presentation-source", "overview-density");
+      expect(layer).toHaveAttribute("data-overview-density-lens-active-card-count", "1");
+      expect(layer).toHaveAttribute(
+        "data-overview-density-fixed-geography-contract",
+        "overview-density-uses-deterministic-canvas-geography",
+      );
+      expect(layer).toHaveAttribute("data-overview-density-fixed-geography-active", "true");
+      expect(layer).toHaveAttribute(
+        "data-overview-density-fixed-geography-drag-contract",
+        "fixed-overview-geography-disables-card-drag",
+      );
+      expect(layer).toHaveAttribute("data-overview-density-fixed-geography-drag-locked", "true");
+      expect(layer).toHaveAttribute("data-overview-density-fixed-geography-slot-count", "3");
+      expect(layer).toHaveAttribute("data-overview-density-fixed-geography-domain-count", "1");
+      expect(layer).toHaveAttribute("data-overview-density-fixed-geography-pin-count", "1");
+      expect(rootCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(rootCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-anchor");
+      expect(rootCard).toHaveAttribute("data-overview-density-fixed-geography-role", "root");
+      expect(anchorCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(anchorCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-context");
+      expect(anchorCard).toHaveAttribute("data-overview-density-fixed-geography-role", "domain");
+      expect(scanCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+      expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "lens-pin");
+      expect(scanCard).toHaveAttribute("data-overview-density-fixed-geography-role", "pin");
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: originalInnerWidth,
+      });
+    }
+  });
+
+  it("14인치 overview readable band 에서는 domain/capability 제목 카드를 유지한다", () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 1512,
+    });
+    try {
+      const graph = makeGraph();
+      graph.addNode("capability:c1", {
+        ...graph.getNodeAttributes("domain:d1"),
+        x: 30,
+        y: 10,
+        label: "Readable Capability",
+      });
+
+      render(
+        <SigmaSkeletonCards
+          sigma={makeStubSigma(1.42)}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            {
+              id: "capability:c1",
+              title: "Readable Capability",
+              kind: "capability",
+              tier: 2 as const,
+              count: 3,
+            },
+          ]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+          describeKindBadge={(kind) =>
+            ({
+              project: "제품/시스템",
+              domain: "영역",
+              capability: "기능",
+              element: "구현 근거",
+              unknown: "미분류",
+            })[kind]
+          }
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const domainCard = screen.getByText("Views").closest("[data-skeleton-card]");
+      const scanCard = screen.getByText("Readable Capability").closest("[data-skeleton-card]");
+
+      expect(layer).toHaveAttribute("data-overview-density-lens-active", "false");
+      expect(layer).toHaveAttribute(
+        "data-overview-density-lens-width-band",
+        "readable-title-band",
+      );
+      expect(layer).toHaveAttribute(
+        "data-overview-density-lens-readable-band-contract",
+        "14-inch-overview-keeps-domain-and-capability-title-cards",
+      );
+      expect(domainCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(domainCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-context");
+      expect(domainCard).not.toHaveAttribute("data-overview-collision-pin", "true");
+      expect(scanCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(scanCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-detail");
+      expect(scanCard).not.toHaveAttribute("data-overview-collision-pin", "true");
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: originalInnerWidth,
+      });
+    }
+  });
+
+  it("path workflow 에서는 stale zoom camera 가 context card 를 pin 으로 낮추지 않는다", () => {
+    render(
+      <SigmaSkeletonCards
+        sigma={makeStubSigma(0.42)}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+        pathWorkflowActive
+        pathSelection={{ sourceSlug: "project:p", targetSlug: "domain:d1" }}
+        describeKindBadge={(kind) =>
+          ({
+            project: "제품/시스템",
+            domain: "영역",
+            capability: "기능",
+            element: "구현 근거",
+            unknown: "미분류",
+          })[kind]
+        }
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const domainCard = screen.getByText("Views").closest("[data-skeleton-card]");
+
+    expect(layer).toHaveAttribute("data-zoom-lens-active", "true");
+    expect(layer).toHaveAttribute("data-zoom-lens-card-compaction-active", "false");
+    expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "0");
+    expect(domainCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+    expect(domainCard).toHaveAttribute("data-zoom-lens-presentation", "full-card-critical");
+  });
+
+  it("capability 카드 폭은 별도 토큰으로 제목 lane 을 더 넓게 보존한다", () => {
+    const graph = makeGraph();
+    graph.addNode("capability:c1", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: 30,
+      y: 10,
+      label: "Product Owner Operating System",
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "capability:c1",
+            title: "Product Owner Operating System",
+            kind: "capability",
+            tier: 2 as const,
+            count: 1,
+          },
+        ]}
+        selectedSlug="project:p"
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const card = screen
+      .getByText("Product Owner Operating System")
+      .closest("[data-skeleton-card]");
+    expect(card).toHaveAttribute(
+      "data-card-max-width-token",
+      "--topology-card-max-width-capability",
+    );
+    expect(card).toHaveStyle({
+      maxWidth: "var(--topology-card-max-width-capability)",
+    });
+  });
+
+  it("선택 카드에 직접 관계 요약 chip 을 붙여 edge label 을 읽기 전 맥락을 준다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "rgba(139,151,255,0.28)",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+      authored: true,
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const summary = screen.getByTestId("sigma-selected-card-relation-summary");
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-contract",
+      "selected-card-direct-facts",
+    );
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-surface-token",
+      "--topology-relation-summary-surface",
+    );
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-border-token",
+      "--topology-relation-summary-border",
+    );
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-text-token",
+      "--topology-relation-summary-text",
+    );
+    expect(summary).toHaveAttribute("data-relation-count", "1");
+    expect(summary).toHaveAttribute("data-relation-type-count", "1");
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-readable-text",
+      "1 shown relation · 1 type · inspect",
+    );
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-visible-contract",
+      "primary-count-visible-action-accessible",
+    );
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-map-label-fallback",
+      "selected-card-keeps-action-when-map-labels-collapse",
+    );
+    expect(summary).toHaveAttribute("data-relation-summary-primary-action", "explain_relation");
+    expect(summary).toHaveAttribute(
+      "data-relation-summary-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(summary).toHaveAttribute("data-relation-summary-source", "project:p");
+    expect(summary).toHaveAttribute("data-relation-summary-target", "domain:d1");
+    expect(summary).toHaveAttribute("data-relation-summary-type", "contains");
+    expect(summary).toHaveAttribute("data-relation-summary-visible-text", "1 shown");
+    expect(summary).toHaveAttribute("aria-hidden", "true");
+    expect(summary).not.toHaveAttribute("aria-label");
+    expect(summary).toHaveAttribute("title", "1 shown relation · 1 type · inspect");
+    expect(summary).toHaveTextContent("1 shown");
+    const selectedCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
+    expect(selectedCard).toHaveAttribute(
+      "data-card-accessible-label-contract",
+      "selected-card-kind-title-relation-summary",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-accessible-child-policy",
+      "single-button-label-owns-visible-fragments",
+    );
+    expect(
+      selectedCard?.querySelector("[data-selected-card-kind-title-separator]"),
+    ).toHaveAttribute("data-selected-card-kind-title-separator", "kind-to-title");
+    expect(
+      selectedCard?.querySelector("[data-selected-card-title-summary-separator]"),
+    ).toHaveAttribute(
+      "data-selected-card-title-summary-separator",
+      "title-to-relation-summary",
+    );
+    expect(selectedCard?.textContent).toContain("project Atlas");
+    expect(selectedCard?.textContent).toContain("Atlas 1 shown");
+    expect(selectedCard?.textContent).not.toContain("projectAtlas");
+    expect(selectedCard?.textContent).not.toContain("Atlas1 shown");
+    expect(selectedCard).toHaveAttribute(
+      "aria-label",
+      "project · Atlas · 1 shown relation · 1 type · inspect",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "title",
+      "project · Atlas · 1 shown relation · 1 type · inspect",
+    );
+    expect(selectedCard?.querySelector("[data-card-kind-badge]")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+    expect(selectedCard?.querySelector("[data-card-title]")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+  });
+
+  it("health repair target 을 카드 표면의 audit target 으로 표시한다", () => {
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        healthRepairTarget={{ slug: "project:p", kind: "orphan" }}
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    expect(layer).toHaveAttribute(
+      "data-health-repair-audit-target-contract",
+      "panel-target-card-highlight",
+    );
+    expect(layer).toHaveAttribute(
+      "data-health-repair-audit-target-slug",
+      "project:p",
+    );
+    expect(layer).toHaveAttribute("data-health-repair-audit-target-kind", "orphan");
+
+    const auditTarget = screen.getByText("Atlas").closest("[data-skeleton-card]");
+    expect(auditTarget).toHaveAttribute("data-health-repair-audit-target", "true");
+    expect(auditTarget).toHaveAttribute(
+      "data-card-max-width-token",
+      "--topology-health-repair-card-max-width",
+    );
+    expect(auditTarget?.querySelector("[data-card-title]")).toHaveAttribute(
+      "data-card-title-lane-contract",
+      "health-repair-target-keeps-project-title-readable",
+    );
+    expect(auditTarget).toHaveAttribute(
+      "data-health-repair-audit-contract",
+      "panel-target-card-highlight",
+    );
+    expect(auditTarget).toHaveAttribute("data-health-repair-audit-kind", "orphan");
+    expect(auditTarget).toHaveAttribute("data-health-repair-audit-badge", "repair");
+    expect(auditTarget).toHaveAttribute(
+      "data-health-repair-audit-badge-contract",
+      "inline-card-state-label",
+    );
+    expect(screen.getByTestId("sigma-health-repair-audit-badge")).toHaveTextContent(
+      "repair",
+    );
   });
 
   it("초기 배치 직후 overlay 를 ready 로 표시해 첫 화면 blank 를 막는다", () => {
@@ -96,6 +1311,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     expect(layer).toHaveAttribute("data-skeleton-cards-ready", "true");
     expect(layer.className).toContain("data-[skeleton-cards-ready=false]:opacity-0");
+    expect(layer).toHaveAttribute("data-initial-load-reposition-throttle-ms", "640");
   });
 
   it("afterRender 배치 작업을 같은 frame 안에서 한 번으로 합친다", () => {
@@ -144,6 +1360,266 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("layout transition 중 afterRender full 배치를 throttle 해 초기 로딩 reflow 를 줄인다", () => {
+    vi.useFakeTimers();
+    const handlers = new Set<() => void>();
+    const graphToViewport = vi.fn(stubSigma.graphToViewport);
+    const sigma = {
+      ...stubSigma,
+      graphToViewport,
+      on: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.add(handler);
+      }),
+      off: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.delete(handler);
+      }),
+    };
+    try {
+      const { rerender } = render(
+        <SigmaSkeletonCards
+          sigma={sigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      expect(layer).toHaveAttribute(
+        "data-layout-transition-reposition-policy",
+        "skip-initial-transition",
+      );
+      const initialCallsBeforeWarmup = graphToViewport.mock.calls.length;
+      const handler = [...handlers][0];
+      expect(handler).toBeDefined();
+
+      act(() => {
+        handler?.();
+        handler?.();
+      });
+
+      expect(layer).toHaveAttribute(
+        "data-layout-transition-reposition-policy",
+        "throttle-after-render-during-initial-load",
+      );
+      expect(layer).toHaveAttribute("data-initial-load-reposition-throttle-ms", "640");
+      expect(graphToViewport).toHaveBeenCalledTimes(initialCallsBeforeWarmup);
+
+      rerender(
+        <SigmaSkeletonCards
+          sigma={sigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug="project:p"
+          selectedFocusCenterActive
+          onSelect={vi.fn()}
+        />,
+      );
+      const initialCalls = graphToViewport.mock.calls.length;
+
+      act(() => {
+        handler?.();
+        handler?.();
+        handler?.();
+      });
+
+      expect(layer).toHaveAttribute(
+        "data-layout-transition-reposition-policy",
+        "throttle-after-render-during-transition",
+      );
+      expect(layer).toHaveAttribute(
+        "data-layout-transition-reposition-throttle-ms",
+        "160",
+      );
+      expect(graphToViewport).toHaveBeenCalledTimes(initialCalls);
+
+      act(() => {
+        vi.advanceTimersByTime(160);
+        vi.advanceTimersByTime(16);
+      });
+
+      expect(graphToViewport.mock.calls.length).toBeLessThanOrEqual(
+        initialCalls + CARDS.length,
+      );
+      expect(layer).toHaveAttribute(
+        "data-layout-transition-reposition-deferred",
+        "false",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("afterRender stable visibility stats 는 부모 갱신을 반복하지 않는다", () => {
+    vi.useFakeTimers();
+    const handlers = new Set<() => void>();
+    const onVisibilityChange = vi.fn();
+    const sigma = {
+      ...stubSigma,
+      on: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.add(handler);
+      }),
+      off: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.delete(handler);
+      }),
+    };
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={sigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+          onVisibilityChange={onVisibilityChange}
+        />,
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-visibility-stats-report-contract",
+        "dedupe-and-debounce-stable-counts",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-visibility-style-write-contract",
+        "dedupe-show-hide-state",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-visible-card-state-cache-contract",
+        "rect-and-visibility-single-pass",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-visibility-frame-cache-contract",
+        "reuse-stable-no-dom-write-frame",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-drag-reposition-policy",
+        "raf-coalesced-pointer-move",
+      );
+      const initialCalls = onVisibilityChange.mock.calls.length;
+      const initialReportCount = screen
+        .getByTestId("sigma-skeleton-cards")
+        .getAttribute("data-visibility-stats-report-count");
+      const handler = [...handlers][0];
+      expect(handler).toBeDefined();
+
+      act(() => {
+        handler?.();
+        vi.advanceTimersByTime(16);
+        handler?.();
+        vi.advanceTimersByTime(16);
+        handler?.();
+        vi.advanceTimersByTime(16);
+      });
+
+      expect(onVisibilityChange).toHaveBeenCalledTimes(initialCalls);
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-visibility-stats-report-count",
+        initialReportCount,
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-visibility-frame-cache-state",
+        "hit",
+      );
+      expect(
+        Number(
+          screen
+            .getByTestId("sigma-skeleton-cards")
+            .getAttribute("data-dom-write-skipped-count") ?? "0",
+        ),
+      ).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("afterRender hot path 에서 fixed surface rect 를 짧은 캐시 창 동안 재사용한다", () => {
+    vi.useFakeTimers();
+    const handlers = new Set<() => void>();
+    const sigma = {
+      ...stubSigma,
+      on: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.add(handler);
+      }),
+      off: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.delete(handler);
+      }),
+    };
+    const fixedPanel = document.createElement("aside");
+    fixedPanel.dataset.testid = "topology-analysis-panel";
+    fixedPanel.style.opacity = "1";
+    document.body.appendChild(fixedPanel);
+    let fixedPanelRectReads = 0;
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.dataset.testid === "topology-analysis-panel") {
+          fixedPanelRectReads += 1;
+          return {
+            bottom: 420,
+            height: 260,
+            left: 16,
+            right: 336,
+            top: 160,
+            width: 320,
+            x: 16,
+            y: 160,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        if (this.dataset.testid === "sigma-skeleton-cards") {
+          return {
+            bottom: 768,
+            height: 768,
+            left: 0,
+            right: 1024,
+            top: 0,
+            width: 1024,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        return {
+          bottom: 0,
+          height: 0,
+          left: 0,
+          right: 0,
+          top: 0,
+          width: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        } as DOMRect;
+      });
+
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={sigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+      const initialFixedPanelRectReads = fixedPanelRectReads;
+      const handler = [...handlers][0];
+      expect(handler).toBeDefined();
+
+      act(() => {
+        handler?.();
+        vi.advanceTimersByTime(16);
+        handler?.();
+        vi.advanceTimersByTime(16);
+      });
+
+      expect(fixedPanelRectReads - initialFixedPanelRectReads).toBeLessThanOrEqual(2);
+    } finally {
+      rectSpy.mockRestore();
+      fixedPanel.remove();
+      vi.useRealTimers();
+    }
+  });
+
   it("14-inch급 viewport 에서 적용된 Relief UI scale 을 DOM marker 로 노출한다", () => {
     const originalInnerWidth = window.innerWidth;
     Object.defineProperty(window, "innerWidth", {
@@ -172,7 +1648,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("카드 표면이 kind 틴트 정량 토큰 (bg 8% · border 18% — 패널 평준화)", () => {
+  it("카드 표면이 kind × tier 정량 토큰으로 온톨로지 계층을 더 선명하게 표시한다", () => {
     render(
       <SigmaSkeletonCards
         sigma={stubSigma}
@@ -182,18 +1658,29 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         onSelect={vi.fn()}
       />,
     );
+    const projectCard = screen
+      .getByText("Atlas")
+      .closest("[data-skeleton-card]") as HTMLElement;
     const domainCard = screen
       .getByText("Views")
       .closest("[data-skeleton-card]") as HTMLElement;
-    const expectAlpha = (alpha: string) =>
-      ONTOLOGY_KIND_TONE.domain.fill.replace(/,\s*[\d.]+\)$/, `, ${alpha})`);
+
+    const expectAlpha = (kind: "project" | "domain", alpha: string) =>
+      ONTOLOGY_KIND_TONE[kind].fill.replace(/,\s*[\d.]+\)$/, `, ${alpha})`);
+    expect(projectCard.style.getPropertyValue("--card-border")).toBe(
+      expectAlpha("project", "0.34"),
+    );
     expect(domainCard.style.getPropertyValue("--card-border")).toBe(
-      expectAlpha("0.18"),
+      expectAlpha("domain", "0.28"),
     );
     // 틴트는 불투명 panel 베이스 위 레이어 — 반투명 bg 단독이면 뒤 엣지가 비친다.
-    const tint = domainCard.querySelector("[data-kind-tint]");
-    expect(tint).toHaveStyle({
-      backgroundColor: expectAlpha("0.08"),
+    const projectTint = projectCard.querySelector("[data-kind-tint]");
+    const domainTint = domainCard.querySelector("[data-kind-tint]");
+    expect(projectTint).toHaveStyle({
+      backgroundColor: expectAlpha("project", "0.16"),
+    });
+    expect(domainTint).toHaveStyle({
+      backgroundColor: expectAlpha("domain", "0.13"),
     });
   });
 
@@ -213,7 +1700,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const mask = domainCard.querySelector("[data-edge-mask]");
     expect(mask).toBeInTheDocument();
     expect(mask).toHaveClass("bg-[color:var(--color-canvas)]");
-    expect(mask).toHaveStyle({ inset: "-10px" });
+    expect(mask).toHaveAttribute(
+      "data-edge-mask-contract",
+      "paint-only-does-not-expand-card-scroll-width",
+    );
+    expect(mask).toHaveClass("inset-0");
+    expect(mask).toHaveStyle({
+      boxShadow: "0 0 0 10px var(--color-canvas)",
+    });
   });
 
   it("선택된 카드는 data-selected — 인디고 ring 채널", () => {
@@ -304,12 +1798,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
             },
           ]}
           selectedSlug="domain:d1"
+          selectedFocusCenterActive
           onSelect={vi.fn()}
         />,
       );
       const layer = screen.getByTestId("sigma-skeleton-cards");
+      const dockedCard = screen
+        .getByText("Agent handoff")
+        .closest("[data-skeleton-card]");
 
       await waitFor(() => {
+        expect(layer).toHaveAttribute("data-selected-focus-dock-bottom-inset-px", "180");
         expect(layer).toHaveAttribute("data-selected-dock-companion-count", "1");
         expect(layer).toHaveAttribute(
           "data-selected-dock-visible-companion-count",
@@ -324,13 +1823,312 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "data-click-focus-relationship-context-source",
           "selected-dock-companions",
         );
+        expect(layer).toHaveAttribute(
+          "data-support-rail-overlap-policy",
+          "selected-inspector-or-focus-cluster-hides-overlapping-map-cards",
+        );
+        expect(layer).toHaveAttribute("data-support-rail-overlap-active", "false");
+        expect(layer).toHaveAttribute(
+          "data-card-placement-parent-rect-cache-contract",
+          "frame-local-parent-card-rects",
+        );
+        expect(layer).toHaveAttribute("data-card-placement-parent-rect-cache-size", "1");
+        expect(layer).toHaveAttribute("data-card-placement-parent-rect-read-count", "0");
+        expect(layer).toHaveAttribute(
+          "data-card-placement-layout-rect-contract",
+          "computed-from-transform-and-size",
+        );
+        expect(layer).toHaveAttribute(
+          "data-card-placement-dim-rect-read-policy",
+          "reuse-pass1-card-placement-frame-rects",
+        );
+        expect(layer).toHaveAttribute(
+          "data-card-placement-size-cache-contract",
+          "stable-card-size-key-reuses-offset-dimensions",
+        );
+        expect(Number(layer.dataset.cardPlacementSizeCacheSize ?? "0")).toBeGreaterThan(0);
+        expect(Number(layer.dataset.cardPlacementSizeCacheMissCount ?? "0")).toBeGreaterThan(0);
+        expect(Number(layer.dataset.cardPlacementSizeReadCount ?? "0")).toBeGreaterThan(0);
+        expect(dockedCard).toHaveAttribute("data-selected-focus-dock-band", "true");
+        expect(dockedCard).toHaveAttribute("data-dock-bottom-inset-px", "180");
       });
     } finally {
       rectSpy.mockRestore();
     }
   });
 
-  it("선택된 카드는 다른 골격 카드보다 위에 뜨고 selected wash 를 쓴다", () => {
+  it("선택 focus detail lens 는 capability ego companion 을 kind pin 으로 낮춘다", async () => {
+    const graph = makeGraph();
+    graph.addNode("capability:c1", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 16,
+      y: 8,
+      label: "Agent handoff",
+    });
+    graph.addEdge("domain:d1", "capability:c1", {
+      size: 1,
+      color: "rgba(139,151,255,0.28)",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+      authored: true,
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "capability:c1",
+            title: "Agent handoff",
+            kind: "capability",
+            tier: 2 as const,
+          },
+        ]}
+        selectedSlug="domain:d1"
+        selectedFocusCenterActive
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const selectedCard = screen.getByText("Views").closest("[data-skeleton-card]");
+    const companionCard = screen
+      .getByText("Agent handoff")
+      .closest("[data-skeleton-card]");
+
+    await waitFor(() => {
+      const backgroundConnectors = layer.querySelectorAll(
+        'path[data-focus-detail-connector-expression="background-thread"]',
+      );
+      expect(layer).toHaveAttribute(
+        "data-focus-detail-lens-contract",
+        "selected-focus-uses-kind-pins-for-noncritical-ego-context",
+      );
+      expect(layer).toHaveAttribute("data-focus-detail-lens-active", "true");
+      expect(layer).toHaveAttribute(
+        "data-focus-detail-connector-expression-contract",
+        "focus-detail-lens-demotes-noncritical-connectors",
+      );
+      expect(layer).toHaveAttribute("data-focus-detail-connector-expression-active", "true");
+      expect(layer).toHaveAttribute("data-focus-detail-connector-expression-count", "1");
+      expect(backgroundConnectors).toHaveLength(1);
+      expect(backgroundConnectors[0]).toHaveAttribute(
+        "opacity",
+        "var(--topology-focus-detail-connector-opacity)",
+      );
+      expect(backgroundConnectors[0]).toHaveAttribute(
+        "stroke-width",
+        "var(--topology-focus-detail-connector-width)",
+      );
+      expect(backgroundConnectors[0]).toHaveAttribute(
+        "stroke-dasharray",
+        "var(--topology-focus-detail-connector-dasharray)",
+      );
+      expect(layer).toHaveAttribute("data-zoom-lens-active", "false");
+      expect(layer).toHaveAttribute("data-zoom-lens-presentation-active", "true");
+      expect(layer).toHaveAttribute(
+        "data-zoom-lens-presentation-source",
+        "selected-focus-detail",
+      );
+      expect(layer).toHaveAttribute("data-zoom-lens-active-card-count", "2");
+      expect(layer).toHaveAttribute("data-zoom-lens-focus-ego-readable-count", "0");
+      expect(layer).toHaveAttribute(
+        "data-zoom-lens-focus-ego-readable-contract",
+        "selected-focus-ego-neighbors-stay-readable-in-lens",
+      );
+      expect(layer).toHaveAttribute("data-zoom-lens-visible-active-card-count", "1");
+      expect(layer).toHaveAttribute(
+        "data-zoom-lens-viewport-visible-contract",
+        "visible-lens-pins-match-frame-state",
+      );
+      expect(selectedCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(selectedCard).not.toHaveAttribute("data-zoom-lens-viewport-visible");
+      expect(selectedCard).toHaveAttribute(
+        "data-zoom-lens-presentation",
+        "full-card-critical",
+      );
+      expect(companionCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+      expect(companionCard).toHaveAttribute(
+        "data-zoom-lens-presentation",
+        "lens-pin",
+      );
+      expect(companionCard).toHaveAttribute(
+        "data-zoom-lens-card-contract",
+        "noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in",
+      );
+      expect(companionCard).toHaveAttribute("data-selected-focus-ego-capability-pin", "true");
+      expect(companionCard).toHaveAttribute(
+        "data-selected-focus-ego-capability-pin-contract",
+        "focus-detail-demotes-capability-neighbors-to-kind-pins",
+      );
+      expect(companionCard).not.toHaveAttribute("data-zoom-lens-focus-ego-readable");
+      expect(companionCard).toHaveAttribute("data-zoom-lens-viewport-visible", "true");
+      expect(layer.querySelectorAll('[data-zoom-lens-viewport-visible="true"]')).toHaveLength(
+        1,
+      );
+      expect(companionCard?.querySelector("[data-card-title]")).toHaveAttribute(
+        "data-full-title",
+        "Agent handoff",
+      );
+    });
+  });
+
+  it("선택 ego 상세 companion 은 focus 전용 폭으로 근거 제목을 보존한다", async () => {
+    const graph = makeGraph();
+    graph.addNode("element:evidence", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 14,
+      y: 7,
+      label: "Builder Command Strip",
+    });
+    graph.addEdge("domain:d1", "element:evidence", {
+      size: 1,
+      color: "rgba(139,151,255,0.28)",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+      authored: true,
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "element:evidence",
+            title: "Builder Command Strip",
+            kind: "element",
+            tier: 3 as const,
+            dock: { parentId: "domain:d1", index: 0, total: 1, side: "right" },
+          },
+        ]}
+        selectedSlug="domain:d1"
+        selectedFocusCenterActive
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const evidenceCard = screen
+      .getByText("Builder Command Strip")
+      .closest("[data-skeleton-card]");
+
+    await waitFor(() => {
+      expect(evidenceCard).toHaveAttribute(
+        "data-selected-focus-companion-readable-title",
+        "true",
+      );
+      expect(evidenceCard).toHaveAttribute("data-zoom-lens-active-card", "false");
+      expect(evidenceCard).toHaveAttribute(
+        "data-zoom-lens-presentation",
+        "full-card-critical",
+      );
+      expect(evidenceCard).toHaveAttribute(
+        "data-card-max-width-token",
+        "--topology-card-selected-focus-companion-max-width",
+      );
+      expect(evidenceCard?.querySelector("[data-card-title]")).toHaveAttribute(
+        "data-card-title-lane-contract",
+        "focus-companion-keeps-evidence-title-readable",
+      );
+      expect(layer.style.getPropertyValue(
+        "--topology-card-selected-focus-companion-max-width",
+      )).toBe("288px");
+    });
+  });
+
+  it("camera zoom-in 은 focus evidence companion 을 kind pin 으로 축약한다", async () => {
+    const graph = makeGraph();
+    graph.addNode("element:evidence", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 14,
+      y: 7,
+      label: "Builder Command Strip",
+    });
+    graph.addEdge("domain:d1", "element:evidence", {
+      size: 1,
+      color: "rgba(139,151,255,0.28)",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+      authored: true,
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={makeStubSigma(0.42)}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "element:evidence",
+            title: "Builder Command Strip",
+            kind: "element",
+            tier: 3 as const,
+            dock: { parentId: "domain:d1", index: 0, total: 1, side: "right" },
+          },
+        ]}
+        selectedSlug="domain:d1"
+        selectedFocusCenterActive
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const evidenceCard = screen
+      .getByText("Builder Command Strip")
+      .closest("[data-skeleton-card]");
+
+    await waitFor(() => {
+      expect(evidenceCard).toHaveAttribute(
+        "data-selected-focus-companion-readable-title",
+        "true",
+      );
+      expect(evidenceCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+      expect(evidenceCard).toHaveAttribute(
+        "data-zoom-lens-presentation",
+        "lens-pin",
+      );
+      expect(evidenceCard).toHaveAttribute(
+        "data-zoom-lens-card-contract",
+        "noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in",
+      );
+      expect(evidenceCard).not.toHaveAttribute(
+        "data-zoom-lens-focus-readable-compaction",
+      );
+      expect(evidenceCard).not.toHaveAttribute("data-zoom-lens-focus-ego-readable");
+    });
+  });
+
+  it("선택된 카드는 다른 골격 카드보다 위에 뜨고 조용한 selected token 을 쓴다", () => {
     render(
       <SigmaSkeletonCards
         sigma={stubSigma}
@@ -346,11 +2144,28 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const projectCard = screen
       .getByText("Atlas")
       .closest("[data-skeleton-card]") as HTMLElement;
+    const layer = screen.getByTestId("sigma-skeleton-cards");
     const tint = selectedCard.querySelector("[data-kind-tint]") as HTMLElement;
     expect(selectedCard).toHaveStyle({ zIndex: "8" });
     expect(projectCard).toHaveStyle({ zIndex: "0" });
+    expect(layer).toHaveAttribute(
+      "data-visible-card-state-read-policy",
+      "frame-state-after-placement",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-selected-quiet-state",
+      "relation-first-borderless-focus",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-selected-quiet-border-token",
+      "--topology-card-selected-quiet-border",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-selected-quiet-wash-token",
+      "--topology-card-selected-quiet-wash",
+    );
     expect(tint.style.background).toContain(
-      "var(--topology-card-selected-wash)",
+      "var(--topology-card-selected-quiet-wash)",
     );
   });
 
@@ -420,7 +2235,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("충돌 회피가 모든 카드를 숨기면 핵심 tier 카드를 실제 visible 상태로 복구한다", () => {
+  it("충돌 회피가 모든 카드를 숨기면 fixed surface 밖으로 핵심 tier 카드 하나를 복구한다", () => {
     const rectSpy = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")
       .mockImplementation(function getMockRect(this: HTMLElement) {
@@ -488,12 +2303,20 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         .closest("[data-skeleton-card]") as HTMLElement;
 
       expect(layer).toHaveAttribute("data-visibility-fallback", "true");
-      expect(layer).toHaveAttribute("data-visibility-fallback-count", "2");
+      expect(layer).toHaveAttribute(
+        "data-visibility-fallback-surface-contract",
+        "restore-clear-or-shifted-landmark",
+      );
+      expect(layer).toHaveAttribute("data-visibility-fallback-count", "1");
       expect(projectCard).not.toHaveAttribute("data-surface-hidden", "true");
-      expect(domainCard).not.toHaveAttribute("data-surface-hidden", "true");
+      expect(domainCard).toHaveAttribute("data-surface-hidden", "true");
+      expect(domainCard).toHaveAttribute(
+        "data-surface-hidden-reason",
+        "layout-surface-collision",
+      );
       expect(projectCard.style.visibility).toBe("visible");
-      expect(domainCard.style.visibility).toBe("visible");
-      expect(container.querySelectorAll('[data-skeleton-card][style*="opacity: 1"]')).toHaveLength(2);
+      expect(domainCard.style.visibility).toBe("hidden");
+      expect(container.querySelectorAll('[data-skeleton-card][style*="opacity: 1"]')).toHaveLength(1);
     } finally {
       rectSpy.mockRestore();
     }
@@ -596,8 +2419,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "Very Long Capability Name That Should Not Push The Card Wider",
     );
     expect(title).toHaveClass("min-w-0", "truncate");
-    expect(title.closest("[data-skeleton-card]")).toHaveStyle({
-      maxWidth: "var(--topology-anchor-card-max-width, 14rem)",
+    const card = title.closest("[data-skeleton-card]");
+    expect(card).toHaveAttribute(
+      "data-card-max-width-token",
+      "--topology-card-max-width-domain",
+    );
+    expect(card).toHaveStyle({
+      maxWidth: "var(--topology-card-max-width-domain)",
     });
   });
 
@@ -632,7 +2460,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(onSelect).toHaveBeenCalledWith("domain:d1");
   });
 
-  it("선택된 카드의 직접 연결 묶음을 클릭 focus hull 로 유지한다", () => {
+  it("선택된 카드의 직접 연결 묶음을 박스 없이 ego connector 로 유지한다", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {
       size: 1,
@@ -708,27 +2536,117 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         />,
       );
 
-      const hull = container.querySelector("[data-drag-cluster-hull]");
+      const layer = screen.getByTestId("sigma-skeleton-cards");
 
-      expect(hull).toHaveAttribute("data-visible", "true");
-      expect(hull).toHaveAttribute("data-cluster-mode", "focus");
-      expect(hull).toHaveAttribute("data-focus-cluster-density", "quiet-outline");
-      expect(hull).toHaveAttribute("data-focus-stage", "click-focus");
-      expect(hull).toHaveAttribute("data-focus-attention-label", "linked-focus");
-      expect(hull).toHaveAttribute("data-drag-cluster-size", "2");
-      expect(hull).toHaveAttribute("data-focus-cluster-size", "2");
-      expect(hull).toBeEmptyDOMElement();
+      expect(container.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
+      expect(layer).toHaveAttribute("data-drag-hull-render-policy", "suppressed-boxless-connectors");
+      expect(layer).toHaveAttribute("data-drag-cluster-hull-dom-policy", "not-rendered");
       expect(document.querySelector("[data-drag-cluster-title]")).not.toBeInTheDocument();
       expect(document.querySelector("[data-drag-cluster-count]")).not.toBeInTheDocument();
-      expect(hull).toHaveStyle({ opacity: "0.8" });
-      expect(document.querySelector("[data-focus-cluster-connector]")).toBeInTheDocument();
-      expect(document.querySelector("[data-focus-relation-label]")).toBeInTheDocument();
+      expect(document.querySelector("[data-relation-hit-path]")).toBeInTheDocument();
+      expect(document.querySelector("[data-focus-relation-label]")).not.toBeInTheDocument();
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-focus-relation-label-density-contract",
+        "click-focus-uses-ego-label-only",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-focus-cluster-size",
+        "2",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-focus-relation-label-source",
+        "ego-relation-labels",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-focus-cluster-relation-label-count",
+        "1",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-focus-cluster-relation-label-expected-count",
+        "1",
+      );
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-focus-cluster-relation-label-source",
+        "ego-relation-label-layout-pass",
+      );
     } finally {
       rectSpy.mockRestore();
     }
   });
 
-  it("14-inch click focus hull 은 왼쪽 분석 패널과 겹치지 않게 밀려난다", () => {
+  it("click focus relation hit label keeps aggregate counts visible when the selected card owns a summary", () => {
+    const graph = makeGraph();
+    const domainAttrs = graph.getNodeAttributes("domain:d1");
+    graph.addNode("domain:d2", {
+      ...domainAttrs,
+      x: 24,
+      y: 8,
+      label: "Docs",
+    });
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 2,
+    });
+    graph.addEdge("project:p", "domain:d2", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 2,
+    });
+
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          { id: "domain:d2", title: "Docs", kind: "domain", tier: 1 as const, count: 12 },
+        ]}
+        selectedSlug="project:p"
+      />,
+    );
+
+    const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+    const visibleBadge = labelHit?.querySelector("[data-relation-label-visible-badge]");
+    const typeText = labelHit?.querySelector("[data-relation-label-type-text]");
+    const svgLabel = container.querySelector('[data-connector-relation-label="true"]');
+    const svgLabelGroup = container.querySelector('[data-relation-label-group="true"]');
+
+    expect(labelHit).toHaveAttribute("data-relation-label-count", "2");
+    expect(labelHit).toHaveAttribute("data-relation-type-label", "contains ×2");
+    expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains ×2 · 2 src");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-visible-count-policy",
+      "relation-label-shows-count",
+    );
+    expect(typeText).toHaveTextContent("contains ×2 · 2 src");
+    expect(visibleBadge).toHaveTextContent("contains ×2 · 2 src");
+    expect(svgLabel).toHaveTextContent("contains 2");
+    expect(svgLabel).toHaveAttribute("visibility", "hidden");
+    expect(svgLabel).toHaveAttribute("aria-hidden", "true");
+    expect(svgLabel).toHaveAttribute(
+      "data-relation-label-svg-visibility-contract",
+      "html-hit-target-owns-visible-copy",
+    );
+    expect(svgLabelGroup).toHaveAttribute(
+      "data-relation-label-interaction-owner",
+      "html-hit-target",
+    );
+    expect(svgLabelGroup).toHaveAttribute(
+      "data-relation-label-svg-a11y-contract",
+      "aria-hidden-visual-mirror",
+    );
+    expect(svgLabelGroup).not.toHaveAttribute("role", "button");
+    expect(svgLabelGroup).not.toHaveAttribute("tabindex", "0");
+  });
+
+  it("14-inch click focus geometry is retained without drawing a boundary box", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {
       size: 1,
@@ -760,9 +2678,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
             left: 0,
             top: 100,
             right: 300,
-            bottom: 380,
+            bottom: 690,
             width: 300,
-            height: 280,
+            height: 590,
             x: 0,
             y: 100,
             toJSON: () => ({}),
@@ -820,13 +2738,186 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         </>,
       );
 
-      const hull = container.querySelector("[data-drag-cluster-hull]") as HTMLElement;
-      const transform = hull.style.transform;
-      const match = /translate3d\(([-\d.]+)px, ([-\d.]+)px, 0\)/.exec(transform);
+      const layer = screen.getByTestId("sigma-skeleton-cards");
 
-      expect(hull).toHaveAttribute("data-visible", "true");
-      expect(match).not.toBeNull();
-      expect(Number(match?.[2])).toBeGreaterThan(388);
+      expect(container.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
+      expect(layer).toHaveAttribute("data-drag-hull-render-policy", "suppressed-boxless-connectors");
+      expect(layer).toHaveAttribute("data-drag-cluster-hull-dom-policy", "not-rendered");
+      expect(layer).toHaveAttribute("data-focus-cluster-size", "2");
+      expect(layer).toHaveAttribute(
+        "data-focus-relation-label-source",
+        "ego-relation-labels",
+      );
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
+  it("click focus suppresses lower-tier background silhouettes instead of drawing a focus box", async () => {
+    const graph = makeGraph();
+    graph.addNode("capability:c1", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 120,
+      y: 80,
+      label: "Background Capability",
+    });
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 0,
+      authored: false,
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "capability:c1",
+            title: "Background Capability",
+            kind: "capability",
+            tier: 2 as const,
+          },
+        ]}
+        selectedSlug="project:p"
+        selectedFocusCenterActive
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const backgroundCard = screen
+      .getByText("Background Capability")
+      .closest("[data-skeleton-card]");
+
+    await waitFor(() => {
+      expect(layer).toHaveAttribute(
+        "data-focus-context-silhouette-policy",
+        "click-focus-keeps-orientation-anchors-only",
+      );
+      expect(layer).toHaveAttribute("data-focus-context-silhouette-active", "true");
+      expect(layer).toHaveAttribute("data-focus-context-silhouette-hidden-count", "1");
+      expect(backgroundCard).toHaveAttribute(
+        "data-dim-opacity-role",
+        "suppressed-focus-context",
+      );
+      expect(backgroundCard).toHaveAttribute("data-surface-hidden", "true");
+      expect(backgroundCard).toHaveAttribute(
+        "data-surface-hidden-reason",
+        "focus-context-suppression",
+      );
+      expect(document.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
+    });
+  });
+
+  it("fixed-surface hidden dim cards do not keep stale orientation-anchor markers", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const testId = this.dataset?.testid;
+        if (testId === "topology-analysis-panel") {
+          return {
+            left: 0,
+            top: 0,
+            right: 420,
+            bottom: 320,
+            width: 420,
+            height: 320,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        if (!this.dataset?.slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 1000,
+            bottom: 700,
+            width: 1000,
+            height: 700,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 120,
+          top: 120,
+          right: 240,
+          bottom: 164,
+          width: 120,
+          height: 44,
+          x: 120,
+          y: 120,
+          toJSON: () => ({}),
+        };
+      });
+
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
+
+    try {
+      const { rerender } = render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[...CARDS]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const projectCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
+
+      await waitFor(() => {
+        expect(projectCard).toBeInTheDocument();
+      });
+      projectCard?.setAttribute("data-dim-opacity-role", "orientation-anchor");
+      projectCard?.setAttribute(
+        "data-dim-opacity-token",
+        "--topology-map-dim-anchor-opacity",
+      );
+      projectCard?.setAttribute("data-surface-hidden-reason", "layout-surface-collision");
+
+      rerender(
+        <>
+          <div data-testid="topology-analysis-panel" />
+          <SigmaSkeletonCards
+            sigma={stubSigma}
+            graph={graph}
+            cards={[...CARDS]}
+            selectedSlug="domain:d1"
+            onSelect={vi.fn()}
+          />
+        </>,
+      );
+
+      await waitFor(() => {
+        const currentProjectCard = screen
+          .getByText("Atlas")
+          .closest("[data-skeleton-card]");
+        expect({
+          hidden: currentProjectCard?.getAttribute("data-surface-hidden"),
+          role: currentProjectCard?.getAttribute("data-dim-opacity-role"),
+        }).not.toEqual({
+          hidden: "true",
+          role: "orientation-anchor",
+        });
+        expect(currentProjectCard).not.toHaveAttribute("data-surface-hidden-reason");
+      });
     } finally {
       rectSpy.mockRestore();
     }
@@ -953,14 +3044,154 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       await waitFor(() => {
         expect(selectedCard).toHaveAttribute("data-surface-hidden", "true");
       });
-      const hull = document.querySelector("[data-drag-cluster-hull]");
-      expect(hull).toHaveAttribute("data-visible", "true");
-      expect(hull).toHaveAttribute("data-cluster-mode", "focus");
-      expect(hull).toHaveAttribute("data-focus-cluster-size", "2");
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      expect(document.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
+      expect(layer).toHaveAttribute("data-drag-hull-render-policy", "suppressed-boxless-connectors");
+      expect(layer).toHaveAttribute("data-drag-cluster-hull-dom-policy", "not-rendered");
+      expect(layer).toHaveAttribute("data-topology-attention-winner", "focus-state");
+      expect(layer).toHaveAttribute("data-agent-current-surface", "selected-node");
+      expect(layer).toHaveAttribute("data-agent-current-surface-role", "active-node-inspector");
+      expect(layer).toHaveAttribute("data-agent-current-surface-route", "project:p");
+      expect(layer).toHaveAttribute("data-topology-selected-node-id", "project:p");
+      expect(layer).toHaveAttribute(
+        "data-focus-cluster-size",
+        "2",
+      );
       expect(selectedCard).toHaveStyle({ visibility: "hidden" });
       expect(screen.getByText("Selected context")).toBeVisible();
     } finally {
       fixedSurface.remove();
+      rectSpy.mockRestore();
+      offsetWidthSpy.mockRestore();
+      offsetHeightSpy.mockRestore();
+    }
+  });
+
+  it("1280 compact focus rail 에서는 selected map anchor 를 숨기고 넓은 화면에서는 유지한다", async () => {
+    const graph = makeGraph();
+    const fixedPanel = document.createElement("aside");
+    fixedPanel.dataset.testid = "topology-analysis-panel";
+    fixedPanel.dataset.analysisMode = "focus";
+    fixedPanel.dataset.selectedFocusRail = "true";
+    fixedPanel.style.display = "block";
+    fixedPanel.style.opacity = "1";
+    fixedPanel.style.visibility = "visible";
+    document.body.append(fixedPanel);
+
+    let containerWidth = 1280;
+    const focusSigma = {
+      ...stubSigma,
+      graphToViewport: ({ x, y }: { x: number; y: number }) => ({
+        x: x === 10 ? 580 : 760,
+        y: y === 5 ? 240 : 100,
+      }),
+    };
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        if (this.dataset?.testid === "topology-analysis-panel") {
+          return {
+            bottom: 720,
+            height: 624,
+            left: 16,
+            right: 336,
+            top: 96,
+            width: 320,
+            x: 16,
+            y: 96,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        if (this.dataset?.testid === "sigma-skeleton-cards") {
+          return {
+            bottom: 800,
+            height: 800,
+            left: 0,
+            right: containerWidth,
+            top: 0,
+            width: containerWidth,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        if (this.dataset?.slug === "domain:d1") {
+          return {
+            bottom: 260,
+            height: 40,
+            left: 520,
+            right: 640,
+            top: 220,
+            width: 120,
+            x: 520,
+            y: 220,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        return {
+          bottom: 120,
+          height: 40,
+          left: 700,
+          right: 820,
+          top: 80,
+          width: 120,
+          x: 700,
+          y: 80,
+          toJSON: () => ({}),
+        } as DOMRect;
+      });
+    const offsetWidthSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetWidth", "get")
+      .mockReturnValue(120);
+    const offsetHeightSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetHeight", "get")
+      .mockReturnValue(40);
+
+    try {
+      const { rerender } = render(
+        <SigmaSkeletonCards
+          sigma={focusSigma}
+          graph={graph}
+          cards={[...CARDS]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const selectedCard = screen.getByText("Views").closest("[data-skeleton-card]");
+      await waitFor(() => {
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-card-visibility-policy",
+          "hide-selected-card",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-card-hide-max-width-px",
+          "1280",
+        );
+        expect(selectedCard).toHaveAttribute("data-surface-hidden", "true");
+      });
+
+      containerWidth = 1920;
+      rerender(
+        <SigmaSkeletonCards
+          sigma={focusSigma}
+          graph={graph}
+          cards={[...CARDS]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(layer).toHaveAttribute(
+          "data-selected-focus-card-visibility-policy",
+          "show-selected-card",
+        );
+        expect(selectedCard).not.toHaveAttribute("data-surface-hidden", "true");
+      });
+    } finally {
+      fixedPanel.remove();
       rectSpy.mockRestore();
       offsetWidthSpy.mockRestore();
       offsetHeightSpy.mockRestore();
@@ -1203,6 +3434,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       await waitFor(() => {
         expect(targetDomainCard).not.toHaveAttribute("data-surface-hidden", "true");
       });
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-path-endpoint-postprocess-policy",
+        "run-path-endpoints",
+      );
       expect(targetDomainCard).toHaveAttribute("data-path-role", "target");
       expect(targetDomainCard).toHaveAttribute(
         "data-path-role-contract",
@@ -1217,6 +3452,33 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       offsetWidthSpy.mockRestore();
       offsetHeightSpy.mockRestore();
     }
+  });
+
+  it("Path visibility stats 는 이미 선택된 source 를 candidate coverage 에 포함하지 않는다", async () => {
+    const onVisibilityChange = vi.fn();
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+        onVisibilityChange={onVisibilityChange}
+        pathWorkflowActive
+        pathSelection={{ sourceSlug: "project:p", targetSlug: null }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onVisibilityChange).toHaveBeenCalled();
+    });
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    expect(layer).toHaveAttribute("data-path-candidate-count-contract", "candidate-only");
+    expect(layer).toHaveAttribute("data-path-candidate-total-count", "1");
+    expect(layer).toHaveAttribute("data-path-candidate-visible-count", "0");
+    expect(onVisibilityChange).toHaveBeenLastCalledWith({ visible: 0, total: 1 });
   });
 
   it("overview 커넥터 클릭이 relation selection data 를 전달한다", () => {
@@ -1242,15 +3504,56 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const hitPath = container.querySelector(
       '[data-relation-hit-path="true"][data-overview-connector-from="project:p"]',
     );
+    const hierarchySpine = container.querySelector(
+      '[data-overview-hierarchy-spine="contains"][data-overview-connector-from="project:p"]',
+    );
+    const hierarchyTerminal = container.querySelector(
+      '[data-overview-hierarchy-terminal="child"][data-overview-connector-from="project:p"]',
+    );
     const visiblePath = container.querySelector(
-      '[data-overview-connector-from="project:p"]:not([data-relation-hit-path])',
+      '[data-overview-connector-from="project:p"]:not([data-relation-hit-path]):not([data-overview-hierarchy-spine]):not([data-overview-hierarchy-terminal])',
     );
 
     expect(hitPath).toBeInTheDocument();
     expect(hitPath).toHaveAttribute("data-relation-quality", "strong");
+    expect(hierarchySpine).toHaveAttribute(
+      "data-overview-hierarchy-spine-contract",
+      "contains-relation-reads-as-ontology-backbone",
+    );
+    expect(hierarchySpine).toHaveAttribute(
+      "data-relation-spine-halo-token",
+      "--topology-relation-spine-halo",
+    );
+    expect(hierarchySpine).toHaveAttribute(
+      "stroke-width",
+      "var(--topology-relation-spine-halo-width)",
+    );
+    expect(hierarchyTerminal).toHaveAttribute(
+      "data-overview-hierarchy-terminal-contract",
+      "contains-edge-lands-on-child-card",
+    );
+    expect(hierarchyTerminal).toHaveAttribute(
+      "data-relation-spine-terminal-token",
+      "--topology-relation-spine-terminal",
+    );
+    expect(hierarchyTerminal).toHaveAttribute(
+      "r",
+      "var(--topology-relation-spine-terminal-radius)",
+    );
     expect(visiblePath).toHaveAttribute("data-relation-quality", "strong");
-    expect(visiblePath).toHaveAttribute("stroke", "rgba(139,151,255,0.50)");
-    expect(visiblePath).toHaveAttribute("stroke-width", "1.34");
+    expect(visiblePath).toHaveAttribute(
+      "data-relation-stroke-token",
+      "--topology-relation-stroke-strong",
+    );
+    expect(visiblePath).toHaveAttribute(
+      "data-relation-stroke-width-token",
+      "--topology-relation-stroke-strong-width",
+    );
+    expect(visiblePath).toHaveAttribute("stroke", "var(--topology-relation-stroke-strong)");
+    expect(visiblePath).toHaveAttribute(
+      "stroke-width",
+      "var(--topology-relation-stroke-strong-width)",
+    );
     fireEvent.click(hitPath!);
     expect(onRelationSelect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1302,14 +3605,25 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     const visiblePaths = Array.from(
       container.querySelectorAll(
-        "[data-overview-connector-from]:not([data-relation-hit-path]):not([data-selected-relation-halo])",
+        "[data-overview-connector-from]:not([data-relation-hit-path]):not([data-selected-relation-halo]):not([data-overview-hierarchy-spine]):not([data-overview-hierarchy-terminal])",
       ),
     );
+    const hierarchySpines = container.querySelectorAll("[data-overview-hierarchy-spine]");
+    const hierarchyTerminals = container.querySelectorAll("[data-overview-hierarchy-terminal]");
 
     expect(visiblePaths).toHaveLength(2);
+    expect(hierarchySpines).toHaveLength(2);
+    expect(hierarchyTerminals).toHaveLength(2);
     expect(visiblePaths[0]).toHaveAttribute("data-relation-quality", "weak");
     expect(visiblePaths[1]).toHaveAttribute("data-relation-quality", "strong");
-    expect(visiblePaths[1]).toHaveAttribute("stroke-width", "1.34");
+    expect(visiblePaths[1]).toHaveAttribute(
+      "data-relation-stroke-width-token",
+      "--topology-relation-stroke-strong-width",
+    );
+    expect(visiblePaths[1]).toHaveAttribute(
+      "stroke-width",
+      "var(--topology-relation-stroke-strong-width)",
+    );
   });
 
   it("선택된 relation edge 는 visible connector 를 인디고로 강조한다", () => {
@@ -1339,11 +3653,36 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
 
     expect(selectedPath).toBeInTheDocument();
-    expect(selectedPath).toHaveAttribute("stroke", "rgba(139,151,255,0.92)");
-    expect(selectedPath).toHaveAttribute("stroke-width", "2.2");
+    expect(selectedPath).toHaveAttribute(
+      "data-relation-stroke-token",
+      "--topology-relation-stroke-selected",
+    );
+    expect(selectedPath).toHaveAttribute(
+      "data-relation-stroke-width-token",
+      "--topology-relation-stroke-selected-width",
+    );
+    expect(selectedPath).toHaveAttribute("stroke", "var(--topology-relation-stroke-selected)");
+    expect(selectedPath).toHaveAttribute(
+      "stroke-width",
+      "var(--topology-relation-stroke-selected-width)",
+    );
     expect(selectedHalo).toBeInTheDocument();
-    expect(selectedHalo).toHaveAttribute("stroke", "rgba(139,151,255,0.18)");
-    expect(selectedHalo).toHaveAttribute("stroke-width", "7.2");
+    expect(selectedHalo).toHaveAttribute(
+      "data-selected-relation-halo-token",
+      "--topology-relation-label-selected-surface",
+    );
+    expect(selectedHalo).toHaveAttribute(
+      "data-relation-stroke-halo-width-token",
+      "--topology-relation-stroke-selected-halo-width",
+    );
+    expect(selectedHalo).toHaveAttribute(
+      "stroke",
+      "var(--topology-relation-label-selected-surface)",
+    );
+    expect(selectedHalo).toHaveAttribute(
+      "stroke-width",
+      "var(--topology-relation-stroke-selected-halo-width)",
+    );
   });
 
   it("ego relation label badge 클릭도 relation selection data 를 전달한다", () => {
@@ -1379,6 +3718,48 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
   });
 
+  it("ego relation label hover 도 compact edge tooltip data 를 전달한다", () => {
+    const onRelationHover = vi.fn();
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        onRelationHover={onRelationHover}
+      />,
+    );
+    const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+
+    expect(labelHit).toBeInTheDocument();
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-hover-contract",
+      "compact-edge-tooltip",
+    );
+    fireEvent.mouseEnter(labelHit!);
+    expect(onRelationHover).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "project:p",
+        target: "domain:d1",
+        relationType: "contains",
+        evidenceCount: 1,
+        x: expect.any(Number),
+        y: expect.any(Number),
+      }),
+    );
+    fireEvent.mouseLeave(labelHit!);
+    expect(onRelationHover).toHaveBeenLastCalledWith(null);
+  });
+
   it("ego relation label badge 에 relation quality dot 을 함께 표시한다", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {
@@ -1399,18 +3780,299 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
     const qualityDot = labelHit?.querySelector("[data-relation-quality-dot]");
-    const evidenceGlyph = labelHit?.querySelector("[data-relation-evidence-glyph]");
+    const evidenceChip = labelHit?.querySelector("[data-relation-evidence-glyph]");
+    const visibleBadge = labelHit?.querySelector("[data-relation-label-visible-badge]");
     const svgLabel = container.querySelector('[data-connector-relation-label="true"]');
     const svgBadge = container.querySelector('[data-relation-label-bg^="ego:"]');
+    const connectorPath = container.querySelector(
+      'path[data-connector][data-relation-quality="weak"][data-relation-stroke-contract="quality-token"]',
+    );
+    const skeletonLayer = container.querySelector('[data-testid="sigma-skeleton-cards"]');
 
     expect(labelHit).toHaveAttribute("data-relation-quality", "weak");
     expect(labelHit).toHaveAttribute("data-relation-evidence-state", "needs-review");
-    expect(labelHit).toHaveAttribute("aria-label", "contains relation · weak · needs review");
+    expect(labelHit).toHaveAttribute(
+      "aria-label",
+      "contains relation · weak · needs review · preflight first · Check",
+    );
+    expect(labelHit).toHaveAttribute("data-agent-gate-kind", "preflight-first");
+    expect(labelHit).toHaveAttribute("data-primary-copy-action", "relation_check");
+    expect(labelHit).toHaveAttribute(
+      "data-cli-fallback-command",
+      "ontology-atlas relation-check 'project:p' 'domain:d1' 'contains' [vault]",
+    );
+    expect(labelHit).toHaveAttribute("data-relation-fact-route", "fact>evidence>gate>action");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-quality", "weak");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-evidence", "needs-review");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-gate", "preflight-first");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-action", "relation_check");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-fact-segmentation",
+      "type-visible>metadata-hidden",
+    );
+    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "metadata-only");
     expect(labelHit).toHaveAttribute("data-label-geometry-source", "html-hit-target");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-viewport-clamp-contract",
+      expect.stringMatching(/centered-within-viewport|compacted-to-viewport-edge/),
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-viewport-clamp-side",
+      expect.stringMatching(/left|right|none/),
+    );
+    expect(skeletonLayer).toHaveAttribute(
+      "data-relation-label-geometry-contract",
+      "frame-positioned-hit-targets",
+    );
+    expect(skeletonLayer).toHaveAttribute(
+      "data-relation-label-geometry-source",
+      "after-render-layout-pass",
+    );
+    expect(skeletonLayer).toHaveAttribute("data-relation-label-geometry-expected-count", "1");
+    expect(skeletonLayer).toHaveAttribute("data-relation-label-geometry-ready-count", "1");
+    expect(skeletonLayer).toHaveAttribute("data-relation-label-geometry-pending-count", "0");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-card-clearance-token",
+      "--topology-relation-label-card-clearance",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-token-contract",
+      "hit-target-and-visible-badge-share-relation-label-tokens",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-pointer-contract",
+      "html-hit-target-click-selects-relation",
+    );
+    expect(labelHit).toHaveAttribute("data-relation-label-visibility", "visible-clear");
+    expect(labelHit).toHaveStyle({ opacity: "1" });
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-surface-token",
+      "--topology-relation-label-surface",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-border-token",
+      "--topology-relation-label-border",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-shadow-token",
+      "--topology-relation-label-shadow",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-text-token",
+      "--topology-relation-label-text",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-text-size-token",
+      "--topology-relation-label-text-size",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-hit-min-height-token",
+      "--topology-relation-label-hit-min-height",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-badge-height-token",
+      "--topology-relation-label-badge-height",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-padding-x-token",
+      "--topology-relation-label-padding-x",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-radius-token",
+      "--topology-relation-label-radius",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-focus-ring-token",
+      "--topology-relation-label-focus-ring",
+    );
+    expect(labelHit?.className).toContain("pointer-events-auto");
+    expect(labelHit?.className).toContain(
+      "min-h-[var(--topology-relation-label-hit-min-height)]",
+    );
+    expect(labelHit?.className).toContain(
+      "text-[length:var(--topology-relation-label-text-size)]",
+    );
+    expect(labelHit?.className).toContain("data-[drag-hit-disabled=true]:pointer-events-none");
+    expect(labelHit?.className).toContain("font-medium");
+    expect(labelHit?.className).not.toContain("font-mono");
+    expect(labelHit?.className).not.toContain("uppercase");
+    expect(labelHit).toHaveStyle({ pointerEvents: "auto" });
+    expect(labelHit).toHaveStyle({ visibility: "visible" });
+    expect(labelHit).toHaveStyle({ color: "var(--topology-relation-label-text)" });
+    expect(svgLabel).toHaveAttribute("visibility", "hidden");
+    expect(svgLabel).toHaveAttribute(
+      "data-relation-label-svg-visibility-contract",
+      "html-hit-target-owns-visible-copy",
+    );
+    expect(svgBadge).toHaveAttribute("visibility", "hidden");
     expect(labelHit?.className).toContain("inline-flex");
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-surface-token",
+      "--topology-relation-label-surface",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-border-token",
+      "--topology-relation-label-border",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-shadow-token",
+      "--topology-relation-label-shadow",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-text-token",
+      "--topology-relation-label-text",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-text-size-token",
+      "--topology-relation-label-text-size",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-badge-height-token",
+      "--topology-relation-label-badge-height",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-padding-x-token",
+      "--topology-relation-label-padding-x",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-radius-token",
+      "--topology-relation-label-radius",
+    );
+    expect(visibleBadge?.className).toContain(
+      "h-[var(--topology-relation-label-badge-height)]",
+    );
+    expect(visibleBadge?.className).toContain(
+      "rounded-[var(--topology-relation-label-radius)]",
+    );
+    expect(visibleBadge?.className).toContain(
+      "px-[var(--topology-relation-label-padding-x)]",
+    );
+    expect(visibleBadge?.className).toContain(
+      "shadow-[var(--topology-relation-label-shadow)]",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-fact-segmentation",
+      "type-visible>metadata-hidden",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-segment-gap-token",
+      "--topology-relation-label-segment-gap",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-segment-divider-token",
+      "--topology-relation-label-border",
+    );
     expect(qualityDot).toBeInTheDocument();
-    expect(qualityDot?.className).toContain("bg-amber-300");
-    expect(evidenceGlyph).toHaveTextContent("!");
+    expect(qualityDot).toHaveAttribute("data-relation-label-segment", "quality");
+    expect(qualityDot).toHaveAttribute(
+      "data-dot-token",
+      "--topology-relation-quality-weak-dot",
+    );
+    expect(qualityDot).toHaveAttribute(
+      "data-glow-token",
+      "--topology-relation-quality-weak-glow",
+    );
+    expect(qualityDot).toHaveClass("sr-only");
+    const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
+    const directionGlyph = labelHit?.querySelector("[data-relation-direction-glyph]");
+    const typeText = labelHit?.querySelector("[data-relation-label-type-text]");
+    expect(typeText).toHaveAttribute("data-relation-label-segment", "type");
+    expect(typeText).not.toHaveClass("border-r");
+    expect(typeText).toHaveTextContent("contains");
+    expect(labelHit).toHaveAttribute("data-relation-label-source", "project:p");
+    expect(labelHit).toHaveAttribute("data-relation-label-target", "domain:d1");
+    expect(labelHit).toHaveAttribute("data-relation-label-type", "contains");
+    expect(labelHit).toHaveAttribute("data-relation-label-count", "1");
+    expect(labelHit).toHaveAttribute("data-relation-label-route", "project:p>domain:d1");
+    expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-visible-count-policy",
+      "selected-card-summary-owns-count",
+    );
+    expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "preflight-first");
+    expect(gateChip).toHaveAttribute("data-relation-label-segment", "gate");
+    expect(gateChip).toHaveAttribute("data-primary-copy-action", "relation_check");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "check");
+    expect(gateChip).toHaveClass("sr-only");
+    expect(gateChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-relation-gate-preflight-surface",
+    );
+    expect(gateChip).toHaveAttribute(
+      "data-border-token",
+      "--topology-relation-gate-preflight-border",
+    );
+    expect(gateChip).toHaveAttribute(
+      "data-text-token",
+      "--topology-relation-gate-preflight-text",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-direction-contract",
+      "edge-source-to-target-metadata",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-direction-contract",
+      "edge-source-to-target-metadata",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-direction-surface-token",
+      "--topology-relation-direction-surface",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-direction-border-token",
+      "--topology-relation-direction-border",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-direction-text-token",
+      "--topology-relation-direction-text",
+    );
+    expect(directionGlyph).toHaveAttribute("data-relation-direction-glyph", "source-to-target");
+    expect(directionGlyph).toHaveAttribute("data-relation-label-segment", "direction");
+    expect(directionGlyph).toHaveClass("sr-only");
+    expect(directionGlyph).toHaveAttribute(
+      "data-surface-token",
+      "--topology-relation-direction-surface",
+    );
+    expect(directionGlyph).toHaveAttribute(
+      "data-border-token",
+      "--topology-relation-direction-border",
+    );
+    expect(directionGlyph).toHaveAttribute(
+      "data-text-token",
+      "--topology-relation-direction-text",
+    );
+    expect(directionGlyph).toHaveTextContent("");
+    expect(qualityDot?.className).toContain(
+      "bg-[color:var(--topology-relation-quality-weak-dot)]",
+    );
+    expect(evidenceChip).toHaveAttribute(
+      "data-relation-evidence-chip-contract",
+      "proof-state-token",
+    );
+    expect(evidenceChip).toHaveAttribute("data-relation-label-segment", "evidence");
+    expect(evidenceChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-relation-evidence-chip-surface",
+    );
+    expect(evidenceChip).toHaveAttribute(
+      "data-border-token",
+      "--topology-relation-evidence-chip-border",
+    );
+    expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "needs review");
+    expect(evidenceChip).toHaveTextContent("");
+    expect(connectorPath).toHaveAttribute(
+      "data-relation-stroke-token",
+      "--topology-relation-stroke-weak",
+    );
+    expect(connectorPath).toHaveAttribute(
+      "data-relation-stroke-width-token",
+      "--topology-relation-stroke-weak-width",
+    );
+    expect(connectorPath).toHaveAttribute("stroke", "var(--topology-relation-stroke-weak)");
+    expect(connectorPath).toHaveAttribute(
+      "stroke-width",
+      "var(--topology-relation-stroke-weak-width)",
+    );
     expect(svgLabel).toHaveAttribute("opacity", "0");
     expect(svgLabel).toHaveAttribute("aria-hidden", "true");
     expect(svgBadge).toHaveAttribute("opacity", "0");
@@ -1438,12 +4100,38 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
 
     const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
-    const evidenceGlyph = labelHit?.querySelector("[data-relation-evidence-glyph]");
+    const evidenceChip = labelHit?.querySelector("[data-relation-evidence-glyph]");
 
     expect(labelHit).toHaveAttribute("data-relation-evidence-state", "source-backed");
     expect(labelHit).toHaveAttribute("data-relation-evidence-count", "3");
-    expect(labelHit).toHaveAttribute("aria-label", "contains relation · strong · 3 sources");
-    expect(evidenceGlyph).toHaveTextContent("3");
+    expect(labelHit).toHaveAttribute(
+      "aria-label",
+      "contains relation · strong · 3 source · MCP/CLI ready · Explain",
+    );
+    expect(labelHit).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
+    expect(labelHit).toHaveAttribute("data-primary-copy-action", "explain_relation");
+    expect(labelHit).toHaveAttribute(
+      "data-cli-fallback-command",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(labelHit).toHaveAttribute("data-relation-source", "project:p");
+    expect(labelHit).toHaveAttribute("data-relation-target", "domain:d1");
+    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "metadata-only");
+    expect(evidenceChip).toHaveAttribute(
+      "data-relation-evidence-chip-contract",
+      "proof-state-token",
+    );
+    expect(evidenceChip).toHaveAttribute(
+      "data-text-token",
+      "--topology-relation-evidence-chip-text",
+    );
+    expect(evidenceChip).toHaveAttribute("data-relation-evidence-chip-text", "3 src");
+    expect(evidenceChip).toHaveTextContent("");
+    expect(evidenceChip).toHaveClass("sr-only");
+    const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
+    expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "MCP/CLI");
+    expect(gateChip).toHaveClass("sr-only");
   });
 
   it("선택된 source-backed relation label 은 agent handoff gate 를 지도 위에 표시한다", () => {
@@ -1467,35 +4155,638 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
 
     const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+    const visibleBadge = labelHit?.querySelector("[data-relation-label-visible-badge]");
+    const selectedOverlay = container.querySelector("[data-selected-relation-overlay]");
+    const selectedOverlayEvidenceChip = selectedOverlay?.querySelector(
+      "[data-relation-evidence-chip-contract]",
+    );
     const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
+    const root = screen.getByTestId("sigma-skeleton-cards");
+    const selectedCard = container.querySelector('[data-skeleton-card][data-selected="true"]');
+    const selectedCardTitle = selectedCard?.querySelector("[data-card-title]");
+    const selectedCountChip = selectedCard?.querySelector("[data-skeleton-card-count]");
+    const selectedRelationSummary = selectedCard?.querySelector(
+      "[data-relation-summary-contract]",
+    );
 
+    expect(selectedCard).toHaveAttribute(
+      "data-card-selected-title-priority",
+      "selected-title-before-subtree-count",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-max-width-token",
+      "--topology-card-selected-focus-max-width",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-spacing-contract",
+      "css-tokenized-block-rhythm",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-block-padding-contract",
+      "selected-card-balanced-y-padding",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-hidden-count-policy",
+      "direct-relation-summary-replaces-subtree-count",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "data-card-accessible-label-contract",
+      "selected-card-kind-title-relation-summary",
+    );
+    expect(selectedCard).toHaveAttribute(
+      "aria-label",
+      "project · Atlas · 1 shown relation · 1 type · inspect",
+    );
+    expect(
+      selectedCard?.querySelector("[data-selected-card-kind-title-separator]"),
+    ).toHaveAttribute("data-selected-card-kind-title-separator", "kind-to-title");
+    expect(
+      selectedCard?.querySelector("[data-selected-card-title-summary-separator]"),
+    ).toHaveAttribute(
+      "data-selected-card-title-summary-separator",
+      "title-to-relation-summary",
+    );
+    expect(selectedCard?.textContent).toContain("project Atlas");
+    expect(selectedCard?.textContent).toContain("Atlas 1 shown");
+    expect(selectedCard?.textContent).not.toContain("projectAtlas");
+    expect(selectedCard?.textContent).not.toContain("Atlas1 shown");
+    expect(selectedCard).toHaveStyle({
+      "--topology-card-gap": "0.6em",
+      "--topology-card-padding-x": "0.95em",
+      "--topology-card-padding-y": "0.58em",
+      "--topology-card-min-block-size": "2.7em",
+    });
+    expect(selectedCardTitle).toHaveAttribute(
+      "data-card-title-lane-contract",
+      "selected-title-keeps-current-focus-readable",
+    );
+    expect(selectedCountChip).not.toBeInTheDocument();
+    expect(selectedRelationSummary).toHaveAttribute(
+      "data-relation-summary-contract",
+      "selected-card-direct-facts",
+    );
     expect(labelHit).toHaveAttribute("data-selected-relation", "true");
+    expect(root).toHaveAttribute("data-topology-selected-relation-edge-id", edgeId);
     expect(labelHit).toHaveAttribute("data-relation-label-density", "focus-token");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-handoff-contract",
+      "label-button-carries-mcp-cli-fallback",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-primary-action",
+      "explain_relation",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(labelHit).toHaveAttribute("data-relation-label-source", "project:p");
+    expect(labelHit).toHaveAttribute("data-relation-label-target", "domain:d1");
+    expect(labelHit).toHaveAttribute("data-relation-label-type", "contains");
+    expect(labelHit).toHaveAttribute("data-relation-label-count", "1");
+    expect(labelHit).toHaveAttribute("data-relation-label-route", "project:p>domain:d1");
+    expect(labelHit).toHaveAttribute("data-relation-route", "project:p>domain:d1");
+    expect(labelHit).toHaveAttribute("data-relation-mcp-action", "explain_relation");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-visible-count-policy",
+      "selected-relation-shows-count-and-evidence",
+    );
+    expect(labelHit).toHaveAttribute("data-relation-label-visible-text", "contains ×1 · 2 src");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-hit-width-policy",
+      "preserve-hidden-badge-width",
+    );
+    expect(Number(labelHit?.getAttribute("data-relation-label-hit-width-px"))).toBeGreaterThan(0);
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-visible-badge-owner",
+      "selected-overlay",
+    );
+    expect(visibleBadge).toHaveClass("hidden");
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-handoff-contract",
+      "visible-overlay-carries-mcp-cli-fallback",
+    );
+    expect(selectedOverlay).toHaveAttribute("data-relation-label-source", "project:p");
+    expect(selectedOverlay).toHaveAttribute("data-relation-label-target", "domain:d1");
+    expect(selectedOverlay).toHaveAttribute("data-relation-label-type", "contains");
+    expect(selectedOverlay).toHaveAttribute("data-relation-label-count", "1");
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-route",
+      "project:p>domain:d1",
+    );
+    expect(selectedOverlay).toHaveAttribute("data-relation-route", "project:p>domain:d1");
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-mcp-action",
+      "explain_relation",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-viewport-clamp-contract",
+      expect.stringMatching(/centered-within-viewport|compacted-to-viewport-edge/),
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-viewport-clamp-side",
+      expect.stringMatching(/left|right|none/),
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-attention-contract",
+      "selected-overlay-wins-over-dimmed-context",
+    );
+    expect(selectedOverlay).toHaveAttribute("data-selected-relation-label-handoff", "ready");
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-label-primary-action",
+      "explain_relation",
+    );
+    expect(selectedOverlay).toHaveAttribute("data-selected-relation-mcp-action", "explain_relation");
+    expect(selectedOverlay).toHaveAttribute(
+      "data-cli-fallback-command",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-label-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(selectedOverlay).toHaveAttribute("data-selected-relation-endpoint-source", "project:p");
+    expect(selectedOverlay).toHaveAttribute("data-selected-relation-endpoint-target", "domain:d1");
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-endpoint-route",
+      "project:p>domain:d1",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-selected-surface-token",
+      "--topology-relation-label-selected-surface",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-selected-border-token",
+      "--topology-relation-label-selected-border",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-selected-shadow-token",
+      "--topology-relation-label-selected-shadow",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-selected-text-token",
+      "--topology-relation-label-selected-text",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-selected-surface-token",
+      "--topology-relation-label-selected-surface",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-halo-token",
+      "--topology-relation-label-selected-surface",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-selected-text-token",
+      "--topology-relation-label-selected-text",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-visible-count-policy",
+      "selected-relation-shows-count-and-evidence",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-visible-text",
+      "contains ×1 · 2 src",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-text-size-token",
+      "--topology-relation-label-text-size",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-hit-min-height-token",
+      "--topology-relation-label-hit-min-height",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-padding-x-token",
+      "--topology-relation-label-padding-x",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-radius-token",
+      "--topology-relation-label-radius",
+    );
+    expect(selectedOverlay?.className).toContain(
+      "min-h-[var(--topology-relation-label-hit-min-height)]",
+    );
+    expect(selectedOverlay?.className).toContain(
+      "text-[length:var(--topology-relation-label-text-size)]",
+    );
+    expect(selectedOverlay?.className).toContain(
+      "rounded-[var(--topology-relation-label-radius)]",
+    );
+    expect(selectedOverlay?.className).toContain(
+      "px-[var(--topology-relation-label-padding-x)]",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-fact-segmentation",
+      "type-visible>metadata-hidden",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-segment-gap-token",
+      "--topology-relation-label-segment-gap",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-segment-divider-token",
+      "--topology-relation-label-border",
+    );
+    expect(selectedOverlay?.className).toContain("font-medium");
+    expect(selectedOverlay?.className).not.toContain("font-mono");
+    expect(selectedOverlay?.className).not.toContain("uppercase");
+    expect(selectedOverlayEvidenceChip).toHaveAttribute(
+      "data-relation-evidence-glyph",
+      "source-backed",
+    );
+    expect(selectedOverlayEvidenceChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-relation-evidence-chip-surface",
+    );
     expect(labelHit).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(labelHit).toHaveAttribute("data-primary-copy-action", "explain_relation");
     expect(labelHit).toHaveAttribute(
       "data-cli-fallback-command",
       "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
     );
+    expect(labelHit).toHaveAttribute("data-relation-source", "project:p");
+    expect(labelHit).toHaveAttribute("data-relation-target", "domain:d1");
     expect(labelHit).toHaveAttribute("data-relation-fact-route", "fact>evidence>gate>action");
     expect(labelHit).toHaveAttribute("data-relation-fact-route-quality", "strong");
     expect(labelHit).toHaveAttribute("data-relation-fact-route-evidence", "source-backed");
     expect(labelHit).toHaveAttribute("data-relation-fact-route-gate", "handoff-ready");
     expect(labelHit).toHaveAttribute("data-relation-fact-route-action", "explain_relation");
-    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "false");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-fact-segmentation",
+      "type-count-evidence-visible>gate-hidden",
+    );
+    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "metadata-only");
     expect(labelHit).toHaveAttribute(
       "aria-label",
-      "contains relation · strong · 2 sources · MCP/CLI · explain relation",
+      "contains relation · strong · 2 source · MCP/CLI ready · Explain",
     );
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "explain_relation");
     expect(gateChip).toHaveAttribute("data-route-chip-text", "MCP/CLI");
-    expect(gateChip).toHaveTextContent("");
+    expect(gateChip).toHaveAttribute("data-relation-label-segment", "gate");
+    expect(gateChip).toHaveClass("sr-only");
+    const typeText = labelHit?.querySelector("[data-relation-label-type-text]");
+    const directionGlyph = labelHit?.querySelector("[data-relation-direction-glyph]");
+    const selectedOverlayTypeText = selectedOverlay?.querySelector(
+      "[data-relation-label-type-text]",
+    );
+    const selectedOverlayDirectionGlyph = selectedOverlay?.querySelector(
+      "[data-relation-direction-glyph]",
+    );
+    expect(typeText).toHaveAttribute(
+      "data-relation-label-type-text-contract",
+      "typed-fact-label-stays-readable",
+    );
+    expect(typeText).toHaveTextContent("contains");
+    expect(typeText).toHaveTextContent("×1");
+    expect(typeText).toHaveTextContent("2 src");
+    expect(typeText).toHaveClass("shrink-0");
+    expect(typeText).toHaveAttribute("data-relation-label-segment", "type");
+    expect(typeText).not.toHaveClass("border-r");
+    expect(selectedOverlayTypeText).toHaveAttribute(
+      "data-relation-label-type-text-contract",
+      "typed-fact-label-stays-readable",
+    );
+    expect(selectedOverlayTypeText).toHaveTextContent("contains ×1 · 2 src");
+    expect(selectedOverlayTypeText).toHaveClass("shrink-0");
+    expect(selectedOverlayTypeText).toHaveAttribute("data-relation-label-segment", "type");
+    expect(selectedOverlayTypeText).not.toHaveClass("border-r");
+    expect(selectedOverlayEvidenceChip).toHaveAttribute(
+      "data-relation-label-segment",
+      "evidence",
+    );
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-direction-contract",
+      "edge-source-to-target-metadata",
+    );
+    expect(visibleBadge).toHaveAttribute(
+      "data-relation-label-direction-contract",
+      "edge-source-to-target-metadata",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-label-direction-contract",
+      "edge-source-to-target-metadata",
+    );
+    expect(directionGlyph).toHaveAttribute("data-relation-direction-glyph", "source-to-target");
+    expect(directionGlyph).toHaveAttribute("data-relation-label-segment", "direction");
+    expect(directionGlyph).toHaveClass("sr-only");
+    expect(directionGlyph).toHaveTextContent("");
+    expect(selectedOverlayDirectionGlyph).toHaveAttribute(
+      "data-relation-direction-glyph",
+      "source-to-target",
+    );
+    expect(selectedOverlayDirectionGlyph).toHaveAttribute(
+      "data-relation-label-segment",
+      "direction",
+    );
+    expect(selectedOverlayDirectionGlyph).toHaveClass("sr-only");
+    expect(selectedOverlayDirectionGlyph).toHaveAttribute(
+      "data-surface-token",
+      "--topology-relation-direction-surface",
+    );
+    expect(selectedOverlayDirectionGlyph).toHaveAttribute(
+      "data-border-token",
+      "--topology-relation-direction-border",
+    );
+    expect(selectedOverlayDirectionGlyph).toHaveAttribute(
+      "data-text-token",
+      "--topology-relation-direction-text",
+    );
+    expect(selectedOverlayDirectionGlyph).toHaveTextContent("");
+    expect(gateChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-relation-gate-ready-surface",
+    );
+    expect(gateChip).toHaveAttribute(
+      "data-border-token",
+      "--topology-relation-gate-ready-border",
+    );
+    expect(gateChip).toHaveAttribute(
+      "data-text-token",
+      "--topology-relation-gate-ready-text",
+    );
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "MCP/CLI");
     expect(labelHit?.querySelector("[data-relation-fact-route-rail]")).toHaveClass("sr-only");
     expect(labelHit?.querySelector('[data-route-chip="fact"]')).toHaveAttribute("data-route-chip-text", "fact");
     expect(labelHit?.querySelector('[data-route-chip="evidence"]')).toHaveAttribute("data-route-chip-text", "src");
     expect(labelHit?.querySelector('[data-route-chip="gate"]')).toHaveAttribute("data-route-chip-text", "MCP/CLI");
-    expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveAttribute("data-route-chip-text", "explain");
+    expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveAttribute("data-route-chip-text", "Explain");
+    expect(root).toHaveAttribute(
+      "data-relation-label-handoff-contract",
+      "label-level-mcp-cli-fallback",
+    );
+    expect(root).toHaveAttribute("data-topology-attention-winner", "active-relation-inspector");
+    expect(root).toHaveAttribute("data-agent-current-surface", "selected-relation");
+    expect(root).toHaveAttribute("data-agent-current-surface-role", "active-relation-inspector");
+    expect(root).toHaveAttribute("data-agent-current-surface-route", "project:p>domain:d1");
+    expect(root).toHaveAttribute("data-relation-source", "project:p");
+    expect(root).toHaveAttribute("data-relation-target", "domain:d1");
+    expect(root).toHaveAttribute("data-relation-type", "contains");
+    expect(root).toHaveAttribute("data-relation-route", "project:p>domain:d1");
+    expect(root).toHaveAttribute("data-relation-mcp-action", "explain_relation");
+    expect(root).toHaveAttribute(
+      "data-relation-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(root).toHaveAttribute("data-relation-fact-route", "fact>evidence>gate>action");
+    expect(root).toHaveAttribute("data-relation-quality", "strong");
+    expect(root).toHaveAttribute("data-relation-evidence-state", "source-backed");
+    expect(root).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
+    expect(root).toHaveAttribute("data-selected-relation-label-handoff", "ready");
+    expect(root).toHaveAttribute("data-selected-relation-label-gate", "handoff-ready");
+    expect(root).toHaveAttribute(
+      "data-selected-relation-label-primary-action",
+      "explain_relation",
+    );
+    expect(root).toHaveAttribute(
+      "data-selected-relation-label-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(root).toHaveAttribute(
+      "data-selected-relation-label-fact-route",
+      "fact>evidence>gate>action",
+    );
+    expect(root).toHaveAttribute("data-selected-relation-label-quality", "strong");
+    expect(root).toHaveAttribute("data-selected-relation-label-evidence", "source-backed");
+  });
+
+  it("selected relation card data keeps root handoff ready when ego label is hidden", () => {
+    const graph = makeGraph();
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        selectedRelationEdgeId="stale-visible-edge-id"
+        selectedRelationData={{
+          edgeId: "stale-visible-edge-id",
+          source: "project:p",
+          target: "domain:d1",
+          sourceName: "Atlas",
+          targetName: "Views",
+          kind: "contains",
+          relationType: "contains",
+          relationQuality: "strong",
+          evidenceCount: 1,
+          x: 0,
+          y: 0,
+        }}
+      />,
+    );
+
+    const root = container.querySelector("[data-testid='sigma-skeleton-cards']");
+    expect(root).toHaveAttribute("data-topology-attention-winner", "active-relation-inspector");
+    expect(root).toHaveAttribute("data-agent-current-surface", "selected-relation");
+    expect(root).toHaveAttribute("data-agent-current-surface-role", "active-relation-inspector");
+    expect(root).toHaveAttribute("data-agent-current-surface-route", "project:p>domain:d1");
+    expect(root).toHaveAttribute("data-selected-relation-label-handoff", "ready");
+    expect(root).toHaveAttribute("data-selected-relation-label-gate", "handoff-ready");
+    expect(root).toHaveAttribute(
+      "data-selected-relation-label-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(root).toHaveAttribute("data-selected-relation-label-quality", "strong");
+    expect(root).toHaveAttribute("data-selected-relation-label-evidence", "source-backed");
+  });
+
+  it("selected relation card data alone activates context silhouette suppression", async () => {
+    const graph = makeGraph();
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        selectedRelationEdgeId={null}
+        selectedRelationData={{
+          edgeId: "fallback-relation-edge-id",
+          source: "project:p",
+          target: "domain:d1",
+          sourceName: "Atlas",
+          targetName: "Views",
+          kind: "contains",
+          relationType: "contains",
+          relationQuality: "strong",
+          evidenceCount: 1,
+          x: 0,
+          y: 0,
+        }}
+      />,
+    );
+
+    const root = screen.getByTestId("sigma-skeleton-cards");
+
+    await waitFor(() => {
+      expect(root).toHaveAttribute("data-agent-current-surface", "selected-relation");
+      expect(root).toHaveAttribute("data-agent-current-surface-route", "project:p>domain:d1");
+      expect(root).toHaveAttribute(
+        "data-selected-relation-context-silhouette-policy",
+        "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+      );
+      expect(root).toHaveAttribute(
+        "data-selected-relation-context-silhouette-active",
+        "true",
+      );
+    });
+  });
+
+  it("selected relation hides non-endpoint focus companions inside the current ego", async () => {
+    const graph = makeGraph();
+    graph.addNode("capability:c1", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: 26,
+      y: 12,
+      label: "Sync",
+    });
+    graph.addNode("capability:c2", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: 42,
+      y: 18,
+      label: "Mode Aware",
+    });
+    graph.addEdgeWithKey("edge-d1-c1", "domain:d1", "capability:c1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    graph.addEdgeWithKey("edge-d1-c2", "domain:d1", "capability:c2", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          { id: "capability:c1", title: "Sync", kind: "capability", tier: 2 as const },
+          {
+            id: "capability:c2",
+            title: "Mode Aware",
+            kind: "capability",
+            tier: 2 as const,
+          },
+        ]}
+        selectedSlug="domain:d1"
+        selectedRelationEdgeId="edge-d1-c2"
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    const selectedSourceCard = screen.getByText("Views").closest("[data-skeleton-card]");
+    const selectedTargetCard = screen.getByText("Mode Aware").closest("[data-skeleton-card]");
+    const nonEndpointCompanion = screen.getByText("Sync").closest("[data-skeleton-card]");
+
+    await waitFor(() => {
+      expect(layer).toHaveAttribute("data-agent-current-surface", "selected-relation");
+      expect(layer).toHaveAttribute(
+        "data-selected-relation-context-silhouette-active",
+        "true",
+      );
+      expect(layer).toHaveAttribute(
+        "data-selected-relation-context-silhouette-hidden-count",
+        "1",
+      );
+      expect(selectedSourceCard).toHaveAttribute("data-selected-relation-endpoint", "true");
+      expect(selectedTargetCard).toHaveAttribute("data-selected-relation-endpoint", "true");
+      expect(nonEndpointCompanion).toHaveAttribute(
+        "data-dim-opacity-role",
+        "suppressed-selected-relation-context",
+      );
+      expect(nonEndpointCompanion).toHaveAttribute(
+        "data-selected-relation-hidden-interaction-contract",
+        "hidden-context-is-not-pointer-focus-or-a11y-target",
+      );
+      expect(nonEndpointCompanion).toHaveAttribute("data-surface-hidden", "true");
+      expect(nonEndpointCompanion).toHaveStyle({
+        opacity: "0",
+        pointerEvents: "none",
+        visibility: "hidden",
+      });
+    });
+  });
+
+  it("selected relation data restores the map label when the edge id is stale", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        selectedRelationEdgeId="stale-visible-edge-id"
+        selectedRelationData={{
+          edgeId: "stale-visible-edge-id",
+          source: "project:p",
+          target: "domain:d1",
+          sourceName: "Atlas",
+          targetName: "Views",
+          kind: "contains",
+          relationType: "contains",
+          relationQuality: "strong",
+          evidenceCount: 1,
+          x: 0,
+          y: 0,
+        }}
+      />,
+    );
+
+    const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+    const selectedOverlay = container.querySelector("[data-selected-relation-overlay]");
+    const selectedPath = container.querySelector(
+      'path[data-selected-relation="true"]:not([data-relation-hit-path])',
+    );
+    const root = screen.getByTestId("sigma-skeleton-cards");
+
+    expect(labelHit).toHaveAttribute("data-selected-relation", "true");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(labelHit).toHaveAttribute("data-relation-label-density", "focus-token");
+    expect(labelHit).toHaveAttribute(
+      "data-relation-label-visual-owner",
+      "selected-relation-overlay",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-selected-relation-handoff-contract",
+      "visible-overlay-carries-mcp-cli-fallback",
+    );
+    expect(selectedOverlay).toHaveAttribute(
+      "data-relation-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(selectedPath).toHaveAttribute(
+      "data-relation-stroke-token",
+      "--topology-relation-stroke-selected",
+    );
+    expect(root).toHaveAttribute("data-selected-relation-label-handoff", "ready");
+    expect(root).toHaveAttribute(
+      "data-selected-relation-label-cli-fallback",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
+    expect(root).toHaveAttribute(
+      "data-topology-selected-relation-label-cli-fallback-command",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
   });
 
   it("선택된 weak relation label 은 먼저 relation_check 를 안내한다", () => {
@@ -1533,15 +4824,27 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-fact-route-action", "relation_check");
     expect(labelHit).toHaveAttribute(
       "aria-label",
-      "contains relation · weak · needs review · check · relation check",
+      "contains relation · weak · needs review · preflight first · Check",
     );
     expect(gateChip).toHaveAttribute("data-route-chip-text", "check");
-    expect(gateChip).toHaveTextContent("");
+    expect(gateChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-relation-gate-preflight-surface",
+    );
+    expect(gateChip).toHaveAttribute(
+      "data-border-token",
+      "--topology-relation-gate-preflight-border",
+    );
+    expect(gateChip).toHaveAttribute(
+      "data-text-token",
+      "--topology-relation-gate-preflight-text",
+    );
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "check");
     expect(labelHit?.querySelector("[data-relation-fact-route-rail]")).toHaveClass("sr-only");
     expect(labelHit?.querySelector('[data-route-chip="fact"]')).toHaveAttribute("data-route-chip-text", "fact");
     expect(labelHit?.querySelector('[data-route-chip="evidence"]')).toHaveAttribute("data-route-chip-text", "review");
     expect(labelHit?.querySelector('[data-route-chip="gate"]')).toHaveAttribute("data-route-chip-text", "check");
-    expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveAttribute("data-route-chip-text", "check");
+    expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveAttribute("data-route-chip-text", "Check");
   });
 
   it("드래그 중에는 relation label hit target 을 꺼서 카드 이동과 관계 선택이 충돌하지 않는다", async () => {
@@ -1623,7 +4926,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     ).toHaveAttribute("data-dimmed", "true");
   });
 
-  it("선택 focus 의 dimmed context 카드는 지형 맥락을 읽을 수 있는 최소 opacity 를 유지한다", async () => {
+  it("선택 focus 의 dimmed context 카드는 조용한 지형 실루엣으로 남고 상호작용을 받지 않는다", async () => {
     const rectSpy = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")
       .mockImplementation(function getMockRect(this: HTMLElement) {
@@ -1742,11 +5045,546 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       await waitFor(() => {
         expect(layer).toHaveAttribute("data-dim-opacity-contract", "readable-context-geography");
-        expect(layer).toHaveAttribute("data-dim-anchor-opacity", "0.34");
-        expect(layer).toHaveAttribute("data-dim-chip-opacity", "0.18");
-        expect(projectCard).toHaveStyle({ opacity: "0.34" });
-        expect(domainCard).toHaveStyle({ opacity: "0.34" });
-        expect(capabilityCard).toHaveStyle({ opacity: "0.18" });
+        expect(layer).toHaveAttribute("data-dim-anchor-opacity", "0.26");
+        expect(layer).toHaveAttribute("data-dim-chip-opacity", "0.08");
+        expect(layer).toHaveAttribute("data-dim-context-opacity", "0.08");
+        expect(layer).toHaveAttribute(
+          "data-dim-anchor-opacity-token",
+          "--topology-map-dim-anchor-opacity",
+        );
+        expect(layer).toHaveAttribute(
+          "data-dim-chip-opacity-token",
+          "--topology-map-dim-context-opacity",
+        );
+        expect(layer).toHaveAttribute(
+          "data-dim-context-opacity-token",
+          "--topology-map-dim-context-opacity",
+        );
+        expect(projectCard).toHaveAttribute(
+          "data-dim-opacity-role",
+          "orientation-anchor",
+        );
+        expect(projectCard).toHaveAttribute(
+          "data-dim-opacity-token",
+          "--topology-map-dim-anchor-opacity",
+        );
+        expect(capabilityCard).toHaveAttribute(
+          "data-dim-opacity-role",
+          "context-silhouette",
+        );
+        expect(capabilityCard).toHaveAttribute(
+          "data-dim-opacity-token",
+          "--topology-map-dim-context-opacity",
+        );
+        expect(projectCard).toHaveStyle({ opacity: "0.26", pointerEvents: "none" });
+        expect(domainCard).toHaveStyle({ opacity: "0.26", pointerEvents: "none" });
+        expect(capabilityCard).toHaveStyle({ opacity: "0.08", pointerEvents: "none" });
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
+  it("선택 relation 의 lower-priority dimmed context 는 endpoint 읽기를 방해하지 않도록 숨긴다", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (slug === "project:p") {
+          return {
+            left: 100,
+            top: 120,
+            right: 220,
+            bottom: 164,
+            width: 120,
+            height: 44,
+            x: 100,
+            y: 120,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "domain:d1") {
+          return {
+            left: 360,
+            top: 220,
+            right: 500,
+            bottom: 268,
+            width: 140,
+            height: 48,
+            x: 360,
+            y: 220,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "domain:d2") {
+          return {
+            left: 100,
+            top: 340,
+            right: 220,
+            bottom: 384,
+            width: 120,
+            height: 44,
+            x: 100,
+            y: 340,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "capability:c1") {
+          return {
+            left: 560,
+            top: 420,
+            right: 700,
+            bottom: 460,
+            width: 140,
+            height: 40,
+            x: 560,
+            y: 420,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 0,
+          top: 0,
+          right: 1000,
+          bottom: 700,
+          width: 1000,
+          height: 700,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      });
+    const graph = makeGraph();
+    try {
+      graph.addNode("domain:d2", {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: -10,
+        y: -5,
+        label: "Agent",
+      });
+      graph.addNode("capability:c1", {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: 140,
+        y: 160,
+        label: "Sync",
+      });
+      const edgeId = graph.addEdge("project:p", "domain:d1", {
+        size: 1,
+        color: "#aaa",
+        kind: "contains",
+        relationType: "contains",
+        relationQuality: "strong",
+        evidenceCount: 1,
+      });
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            { id: "domain:d2", title: "Agent", kind: "domain", tier: 1 as const },
+            { id: "capability:c1", title: "Sync", kind: "capability", tier: 2 as const },
+          ]}
+          selectedSlug="project:p"
+          selectedRelationEdgeId={edgeId}
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const sourceCard = screen.getByText("Atlas").closest("[data-skeleton-card]");
+      const targetCard = screen.getByText("Views").closest("[data-skeleton-card]");
+      const anchorCard = screen.getByText("Agent").closest("[data-skeleton-card]");
+      const lowerPriorityCard = screen.getByText("Sync").closest("[data-skeleton-card]");
+
+      await waitFor(() => {
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-context-silhouette-policy",
+          "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-endpoint-readable-route",
+          "Atlas → Views",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-endpoint-role-badge-contract",
+          "visible-source-target-role-badges",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-endpoint-role-badge-visible-count",
+          "2",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-context-silhouette-active",
+          "true",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-context-silhouette-hidden-count",
+          "1",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-lower-priority-visible-dimmed-count",
+          "0",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-visible-orientation-anchor-count",
+          "1",
+        );
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-context-pin-contract",
+          "selected-relation-keeps-context-as-kind-pins",
+        );
+        expect(layer).toHaveAttribute("data-selected-relation-context-pin-count", "1");
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-context-pin-attention-contract",
+          "selected-relation-context-pins-stay-visible-but-quieter-than-endpoints",
+        );
+        expect(layer).toHaveAttribute("data-selected-relation-context-pin-opacity", "0.42");
+        expect(layer).toHaveAttribute(
+          "data-selected-relation-context-pin-opacity-token",
+          "--topology-selected-relation-context-pin-opacity",
+        );
+        expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint", "true");
+        expect(sourceCard).toHaveAttribute("data-selected-relation-endpoint-role", "source");
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-endpoint-role-badge-visible",
+          "true",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-endpoint-role-badge-text",
+          "FROM",
+        );
+        expect(
+          sourceCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveTextContent("FROM");
+        expect(sourceCard?.textContent).not.toContain("FROMS");
+        expect(
+          sourceCard?.querySelector(
+            "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",
+          ),
+        ).toHaveAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-text", "S");
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-endpoint-zoom-lens-role-mark-label",
+          "FROM",
+        );
+        expect(
+          sourceCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-label", "FROM");
+        expect(
+          sourceCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveAttribute("aria-label", "selected relation from endpoint");
+        expect(
+          sourceCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveAttribute("title", "FROM");
+        expect(
+          sourceCard?.querySelector(
+            "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",
+          ),
+        ).toBeEmptyDOMElement();
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-endpoint-role-contract",
+          "card-carries-source-target-route",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-endpoint-counterpart",
+          "domain:d1",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-endpoint-route",
+          "project:p>domain:d1",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-endpoint-readable-route",
+          "Atlas → Views",
+        );
+        expect(sourceCard).toHaveAttribute("data-relation-route", "project:p>domain:d1");
+        expect(sourceCard).toHaveAttribute("data-relation-source", "project:p");
+        expect(sourceCard).toHaveAttribute("data-relation-target", "domain:d1");
+        expect(sourceCard).toHaveAttribute("data-relation-type", "contains");
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-handoff-contract",
+          "endpoint-card-carries-selected-relation-action",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-primary-action",
+          "explain_relation",
+        );
+        expect(sourceCard).toHaveAttribute("data-relation-mcp-action", "explain_relation");
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-cli-fallback",
+          "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-relation-cli-fallback",
+          "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-selected-relation-fact-route",
+          "fact>evidence>gate>action",
+        );
+        expect(sourceCard).toHaveAttribute(
+          "data-relation-fact-route",
+          "fact>evidence>gate>action",
+        );
+        expect(targetCard).toHaveAttribute("data-selected-relation-endpoint", "true");
+        expect(targetCard).toHaveAttribute("data-selected-relation-endpoint-role", "target");
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-endpoint-role-badge-visible",
+          "true",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-endpoint-role-badge-text",
+          "TO",
+        );
+        expect(
+          targetCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveTextContent("TO");
+        expect(targetCard?.textContent).not.toContain("TOT");
+        expect(
+          targetCard?.querySelector(
+            "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",
+          ),
+        ).toHaveAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-text", "T");
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-endpoint-zoom-lens-role-mark-label",
+          "TO",
+        );
+        expect(
+          targetCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveAttribute("data-selected-relation-endpoint-zoom-lens-role-mark-label", "TO");
+        expect(
+          targetCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveAttribute("aria-label", "selected relation to endpoint");
+        expect(
+          targetCard?.querySelector("[data-selected-relation-endpoint-role-badge]"),
+        ).toHaveAttribute("title", "TO");
+        expect(
+          targetCard?.querySelector(
+            "[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]",
+          ),
+        ).toBeEmptyDOMElement();
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-endpoint-role-contract",
+          "card-carries-source-target-route",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-endpoint-counterpart",
+          "project:p",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-endpoint-route",
+          "project:p>domain:d1",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-endpoint-readable-route",
+          "Atlas → Views",
+        );
+        expect(targetCard).toHaveAttribute("data-relation-route", "project:p>domain:d1");
+        expect(targetCard).toHaveAttribute("data-relation-source", "project:p");
+        expect(targetCard).toHaveAttribute("data-relation-target", "domain:d1");
+        expect(targetCard).toHaveAttribute("data-relation-type", "contains");
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-handoff-contract",
+          "endpoint-card-carries-selected-relation-action",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-primary-action",
+          "explain_relation",
+        );
+        expect(targetCard).toHaveAttribute("data-relation-mcp-action", "explain_relation");
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-cli-fallback",
+          "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-relation-cli-fallback",
+          "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-selected-relation-fact-route",
+          "fact>evidence>gate>action",
+        );
+        expect(targetCard).toHaveAttribute(
+          "data-relation-fact-route",
+          "fact>evidence>gate>action",
+        );
+        expect(sourceCard).not.toHaveAttribute("data-surface-hidden", "true");
+        expect(targetCard).not.toHaveAttribute("data-surface-hidden", "true");
+        expect(anchorCard).toHaveAttribute("data-dim-opacity-role", "orientation-anchor");
+        expect(anchorCard).toHaveAttribute("data-zoom-lens-active-card", "true");
+        expect(anchorCard).toHaveAttribute(
+          "data-zoom-lens-presentation",
+          "relation-context-pin",
+        );
+        expect(anchorCard).toHaveAttribute(
+          "data-zoom-lens-card-contract",
+          "selected-relation-context-anchor-becomes-kind-pin",
+        );
+        expect(anchorCard).toHaveAttribute(
+          "data-zoom-lens-pin-opacity-contract",
+          "selected-relation-context-pins-use-quiet-orientation-opacity",
+        );
+        expect(anchorCard).toHaveAttribute("data-zoom-lens-pin-min-opacity", "0.42");
+        expect(anchorCard).toHaveAttribute(
+          "data-selected-relation-context-pin-opacity",
+          "0.42",
+        );
+        expect(anchorCard).toHaveAttribute(
+          "data-selected-relation-context-pin-opacity-token",
+          "--topology-selected-relation-context-pin-opacity",
+        );
+        expect(anchorCard).toHaveAttribute(
+          "data-selected-relation-context-pin-attention",
+          "quiet-orientation-anchor",
+        );
+        expect(anchorCard).toHaveStyle({ opacity: "0.42" });
+        expect(anchorCard).toHaveStyle({ pointerEvents: "none" });
+        expect(lowerPriorityCard).toHaveAttribute(
+          "data-dim-opacity-role",
+          "suppressed-selected-relation-context",
+        );
+        expect(lowerPriorityCard).toHaveAttribute(
+          "data-selected-relation-hidden-interaction-contract",
+          "hidden-context-is-not-pointer-focus-or-a11y-target",
+        );
+        expect(lowerPriorityCard).toHaveAttribute("aria-hidden", "true");
+        expect(lowerPriorityCard).toHaveAttribute("tabindex", "-1");
+        expect(lowerPriorityCard).toHaveAttribute("data-surface-hidden", "true");
+        expect(lowerPriorityCard).toHaveStyle({
+          opacity: "0",
+          pointerEvents: "none",
+          visibility: "hidden",
+        });
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
+  it("숨겨진 context 카드가 많은 focus 에서 visibility pass 는 rect 측정을 건너뛴다", async () => {
+    const graph = makeGraph();
+    const hiddenContextCards = Array.from({ length: 18 }, (_, index) => {
+      const id = `capability:hidden-${index}`;
+      graph.addNode(id, {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: 520 + index * 8,
+        y: 420 + index * 6,
+        label: `Hidden Context ${index}`,
+      });
+      return {
+        id,
+        title: `Hidden Context ${index}`,
+        kind: "capability" as const,
+        tier: 2 as const,
+      };
+    });
+    graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
+    graph.addEdge("domain:d1", "capability:hidden-0", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+    });
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (!slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 800,
+            bottom: 600,
+            width: 800,
+            height: 600,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        const attrs = graph.getNodeAttributes(slug);
+        const center = stubSigma.graphToViewport(attrs);
+        const width = 120;
+        const height = 40;
+        return {
+          left: center.x - width / 2,
+          top: center.y - height / 2,
+          right: center.x + width / 2,
+          bottom: center.y + height / 2,
+          width,
+          height,
+          x: center.x - width / 2,
+          y: center.y - height / 2,
+          toJSON: () => ({}),
+        };
+      });
+
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[...CARDS, ...hiddenContextCards]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      await waitFor(() => {
+        expect(layer).toHaveAttribute(
+          "data-visible-card-rect-read-policy",
+          "frame-state-no-computed-style",
+        );
+        expect(layer).toHaveAttribute(
+          "data-visible-card-selected-surface-rect-policy",
+          "reuse-card-placement-frame-rects-before-dom-read",
+        );
+        expect(layer).toHaveAttribute(
+          "data-residual-overlap-clear-contract",
+          "visibility-cache-proves-selected-surfaces-clear",
+        );
+        expect(layer).toHaveAttribute(
+          "data-residual-overlap-read-policy",
+          "reuse-visible-card-rect-cache",
+        );
+        expect(layer).toHaveAttribute(
+          "data-fixed-surface-overlap-policy",
+          "ignore-contained-structural-surfaces",
+        );
+        expect(layer).toHaveAttribute("data-residual-overlap-clear", "true");
+        expect(layer).toHaveAttribute(
+          "data-card-placement-frame-rect-cache-contract",
+          "reuse-pass1-card-rects-for-visibility",
+        );
+        expect(
+          Number(layer.getAttribute("data-card-placement-frame-rect-cache-hit-count")),
+        ).toBeGreaterThan(0);
+        expect(
+          Number(layer.getAttribute("data-visible-card-hidden-rect-skip-count")),
+        ).toBeGreaterThan(0);
+        expect(layer).toHaveAttribute("data-connector-rect-cache-read-count", "0");
       });
     } finally {
       rectSpy.mockRestore();
@@ -1835,7 +5673,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(connector).toBeInTheDocument();
       expect(connector).toHaveAttribute("data-relation-type", "contains");
       expect(connector).toHaveAttribute("data-relation-quality", "strong");
-      expect(connector).toHaveAttribute("stroke", "rgba(139,151,255,0.50)");
+      expect(connector).toHaveAttribute(
+        "data-relation-stroke-token",
+        "--topology-relation-stroke-strong",
+      );
+      expect(connector).toHaveAttribute("stroke", "var(--topology-relation-stroke-strong)");
       expect(connector).toHaveAttribute("data-connector-axis", "horizontal");
       expect(connector).toHaveAttribute("data-connector-clearance", "8");
       expect(connector?.getAttribute("d")).toContain("M 188 60");
@@ -1846,6 +5688,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(document.querySelector("[data-connector-relation-label]")).toHaveAttribute(
         "data-relation-label-to",
         "capability:c1",
+      );
+      expect(document.querySelector("[data-connector-relation-label]")).toHaveAttribute(
+        "data-relation-label-svg-text-token",
+        "--topology-relation-label-svg-text",
+      );
+      expect(document.querySelector("[data-connector-relation-label]")).toHaveAttribute(
+        "data-relation-label-svg-text-size-token",
+        "--topology-relation-label-svg-text-size",
+      );
+      expect(document.querySelector("[data-connector-relation-label]")?.getAttribute("class")).toContain(
+        "text-[length:var(--topology-relation-label-svg-text-size)]",
       );
       expect(document.querySelector("[data-relation-label-bg]")).toHaveAttribute(
         "data-relation-label-bg",
@@ -1948,10 +5801,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       const foldedBadge = document.querySelector(
         '[data-relation-label-bg="ego:capability:c0→domain:d1"]',
       );
+      const layer = screen.getByTestId("sigma-skeleton-cards");
 
       expect(foldedConnector).toHaveAttribute("d", "");
       expect(foldedLabel).toHaveAttribute("opacity", "0");
       expect(foldedBadge).toHaveAttribute("opacity", "0");
+      expect(layer).toHaveAttribute("data-connector-rect-cache-read-count", "0");
     } finally {
       rectSpy.mockRestore();
     }
@@ -1985,7 +5840,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(screen.queryByTestId("skeleton-card-hover")).toBeNull();
   });
 
-  it("드래그 중에는 hover 팝업을 새로 띄우지 않아 화면 깜빡임을 막는다", () => {
+  it("overview 카드 드래그 시도는 고정 지형을 보존하고 drag feedback 을 띄우지 않는다", () => {
     const graph = makeGraph();
     graph.addNode("domain:d2", {
       size: 5,
@@ -2033,10 +5888,20 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     fireEvent.pointerMove(dragCard, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.mouseEnter(hoverTarget);
 
-    expect(screen.queryByTestId("skeleton-card-hover")).toBeNull();
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    expect(layer).toHaveAttribute(
+      "data-overview-density-fixed-geography-drag-attempt",
+      "ignored",
+    );
+    expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+    expect(layer).toHaveAttribute("data-drag-dynamic-state", "idle");
+    expect(dragCard).toHaveAttribute("data-card-selection-box-policy", "boxless-border-state");
+    expect(dragCard).not.toHaveAttribute("data-drag-glow-token");
+    expect(dragCard).not.toHaveAttribute("data-drag-active-glow-token");
+    expect(dragCard).not.toHaveAttribute("data-drag-wash-token");
   });
 
-  it("드래그(이동 4px 초과) 후 click 은 선택을 발화하지 않는다", () => {
+  it("overview 에서 무시된 drag 시도는 카드 위치를 바꾸지 않고 이후 click 은 선택으로 동작한다", () => {
     const onSelect = vi.fn();
     render(
       <SigmaSkeletonCards
@@ -2051,11 +5916,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
-    fireEvent.click(card);
-    expect(onSelect).not.toHaveBeenCalled();
-    // 제자리 클릭은 선택.
-    fireEvent.pointerDown(card, { clientX: 60, clientY: 40, pointerId: 1, button: 0 });
-    fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-overview-density-fixed-geography-drag-attempt",
+      "ignored",
+    );
     fireEvent.click(card);
     expect(onSelect).toHaveBeenCalledWith("domain:d1");
   });
@@ -2151,11 +6015,30 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-path-attention-layer",
         "focus-path-state",
       );
+      expect(rerenderedSourceCard).toHaveAttribute(
+        "data-path-endpoint-max-width-token",
+        "--topology-path-endpoint-card-max-width",
+      );
+      expect(rerenderedSourceCard).toHaveStyle({
+        maxWidth: "var(--topology-path-endpoint-card-max-width)",
+      });
       const sourceBadge = screen.getByText("A");
       expect(sourceBadge).toHaveAttribute("data-path-card-badge", "source");
       expect(sourceBadge).toHaveAttribute(
         "data-path-card-badge-contract",
         "endpoint-role-token",
+      );
+      expect(sourceBadge).toHaveAttribute(
+        "data-surface-token",
+        "--topology-path-endpoint-surface",
+      );
+      expect(sourceBadge).toHaveAttribute(
+        "data-border-token",
+        "--topology-path-endpoint-border",
+      );
+      expect(sourceBadge).toHaveAttribute(
+        "data-text-token",
+        "--topology-path-endpoint-text",
       );
 
       fireEvent.click(targetCard);
@@ -2163,9 +6046,96 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         sourceSlug: "project:p",
         targetSlug: "domain:d1",
       });
+
+      rerender(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug="project:p"
+          onSelect={onSelect}
+          pathWorkflowActive
+          pathSelection={{ sourceSlug: "project:p", targetSlug: "domain:d1" }}
+          onPathSelectionChange={onPathSelectionChange}
+        />,
+      );
+      const selectedTargetCard = screen.getByText("Views").closest("[data-skeleton-card]")!;
+      expect(selectedTargetCard).toHaveAttribute("data-path-role", "target");
+      expect(selectedTargetCard).toHaveAttribute(
+        "data-path-endpoint-max-width-token",
+        "--topology-path-endpoint-card-max-width",
+      );
+      expect(selectedTargetCard).toHaveStyle({
+        maxWidth: "var(--topology-path-endpoint-card-max-width)",
+      });
+      expect(selectedTargetCard.querySelector("[data-card-title]")).toHaveAttribute(
+        "data-path-endpoint-title-contract",
+        "endpoint-title-gets-readable-width",
+      );
     } finally {
       rectSpy.mockRestore();
     }
+  });
+
+  it("Path result 에서는 비엔드포인트 카드의 candidate affordance 를 숨긴다", () => {
+    const graph = makeGraph();
+    const base = {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+    };
+    graph.addNode("capability:c1", {
+      ...base,
+      x: 20,
+      y: 10,
+      label: "Graph Readiness",
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "capability:c1",
+            title: "Graph Readiness",
+            kind: "capability",
+            tier: 2 as const,
+          },
+        ]}
+        selectedSlug="project:p"
+        onSelect={vi.fn()}
+        pathWorkflowActive
+        pathSelection={{ sourceSlug: "project:p", targetSlug: "domain:d1" }}
+        onPathSelectionChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-path-result-candidate-suppression-active",
+      "true",
+    );
+    expect(screen.getByText("Atlas").closest("[data-skeleton-card]")).toHaveAttribute(
+      "data-path-role",
+      "source",
+    );
+    expect(screen.getByText("Views").closest("[data-skeleton-card]")).toHaveAttribute(
+      "data-path-role",
+      "target",
+    );
+    const backgroundCard = screen
+      .getByText("Graph Readiness")
+      .closest("[data-skeleton-card]");
+    expect(backgroundCard).toHaveAttribute("data-path-role", "none");
+    expect(backgroundCard).toHaveAttribute("data-path-role-contract", "none");
+    expect(backgroundCard).toHaveAttribute("data-path-next-action", "none");
+    expect(backgroundCard).not.toHaveAttribute("data-path-attention-layer");
   });
 
   it("Path mode 에서도 카드 드래그 후 click 은 경로 선택을 발화하지 않는다", () => {
@@ -2240,6 +6210,25 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       kind: "contains",
       relationType: "contains",
     });
+    graph.addNode("capability:c1", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 80,
+      y: 62,
+      label: "Map Controls",
+    });
+    graph.addEdge("domain:d1", "capability:c1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+    });
     graph.addNode("domain:d2", {
       size: 5,
       color: "#888",
@@ -2249,9 +6238,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       categoryId: "",
       isHub: false,
       ownerKey: "unassigned",
-      x: -20,
-      y: -20,
-      label: "Disconnected",
+      x: 220,
+      y: 160,
+      label: "Linked Context",
+    });
+    graph.addEdge("capability:c1", "domain:d2", {
+      size: 1,
+      color: "#fff",
+      kind: "depends-on",
+      relationType: "depends-on",
     });
     render(
       <SigmaSkeletonCards
@@ -2260,13 +6255,20 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         cards={[
           ...CARDS,
           {
+            id: "capability:c1",
+            title: "Map Controls",
+            kind: "capability",
+            tier: 2 as const,
+          },
+          {
             id: "domain:d2",
-            title: "Disconnected",
+            title: "Linked Context",
             kind: "domain",
             tier: 1 as const,
           },
         ]}
-        selectedSlug={null}
+        selectedSlug="domain:d1"
+        healthRepairTarget={{ slug: "domain:d1", kind: "orphan" }}
         onSelect={vi.fn()}
       />,
     );
@@ -2274,6 +6276,20 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const layer = screen.getByTestId("sigma-skeleton-cards");
     fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
     expect(layer).toHaveAttribute("data-dragging-active", "false");
+    expect(layer).toHaveAttribute(
+      "data-drag-dynamic-motion-contract",
+      "cluster-follows-pointer-connectors-update",
+    );
+    expect(layer).toHaveAttribute("data-drag-dynamic-state", "armed-cluster-follow");
+    expect(layer).toHaveAttribute("data-drag-dynamic-root", "domain:d1");
+    expect(layer).toHaveAttribute(
+      "data-drag-connector-feedback-contract",
+      "boxless-connectors-show-linked-motion",
+    );
+    expect(layer).toHaveAttribute(
+      "data-visible-card-state-read-policy",
+      "frame-state-during-drag",
+    );
     expect(card).toHaveAttribute("data-drag-cluster", "true");
     expect(card).toHaveAttribute("data-dragging-active", "false");
     expect(card).toHaveStyle({ zIndex: "9" });
@@ -2281,40 +6297,233 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-drag-cluster",
       "true",
     );
-    expect(screen.getByText("linked cards move together")).toBeInTheDocument();
-    expect(screen.getByText("Disconnected").closest("[data-skeleton-card]")).toHaveAttribute(
+    expect(screen.getByText("Map Controls").closest("[data-skeleton-card]")).toHaveAttribute(
+      "data-drag-cluster",
+      "true",
+    );
+    expect(document.querySelector("[data-drag-cluster-state-label]")).not.toBeInTheDocument();
+    expect(screen.getByText("Linked Context").closest("[data-skeleton-card]")).toHaveAttribute(
       "data-drag-cluster",
       "false",
     );
+    expect(screen.getByText("Linked Context").closest("[data-skeleton-card]")).toHaveAttribute(
+      "data-drag-reactive-context",
+      "false",
+    );
     expect(document.querySelector("[data-drag-cluster-connector]")).toBeInTheDocument();
-    expect(document.querySelector("[data-drag-relation-label]")).toBeInTheDocument();
-    expect(document.querySelector("[data-drag-cluster-title]")).toHaveTextContent(
-      "Views",
+    const dragRelationLabel = document.querySelector("[data-drag-relation-label]");
+    expect(dragRelationLabel).toBeInTheDocument();
+    expect(dragRelationLabel).toHaveAttribute("opacity", "1");
+    expect(dragRelationLabel).toHaveAttribute(
+      "data-relation-label-visibility",
+      "visible-during-drag",
     );
-    expect(document.querySelector("[data-drag-cluster-count]")).toHaveTextContent(
-      "2 linked",
+    expect(dragRelationLabel).toHaveAttribute(
+      "data-drag-relation-label-compact-contract",
+      "zoomed-drag-keeps-type-fact-as-compact-glyph",
     );
-    expect(
-      document.querySelector('[data-relation-label-bg="drag:domain:d1→project:p"]'),
-    ).toBeInTheDocument();
+    expect(dragRelationLabel).toHaveAttribute(
+      "data-drag-relation-label-presentation",
+      "full-type-label",
+    );
+    expect(dragRelationLabel).toHaveAttribute("data-drag-relation-label-compact", "false");
+    expect(dragRelationLabel).toHaveAttribute("data-relation-label-readable-type", "contains");
+    expect(document.querySelector("[data-drag-cluster-title]")).not.toBeInTheDocument();
+    expect(document.querySelector("[data-drag-cluster-count]")).not.toBeInTheDocument();
+    const dragRelationBadge = document.querySelector(
+      '[data-relation-label-bg="drag:domain:d1→project:p"]',
+    );
+    expect(dragRelationBadge).toBeInTheDocument();
+    expect(dragRelationBadge).toHaveAttribute("opacity", "1");
+    expect(dragRelationBadge).toHaveAttribute(
+      "data-drag-relation-label-presentation",
+      "full-type-label",
+    );
+    expect(dragRelationBadge).toHaveAttribute("data-drag-relation-label-compact", "false");
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     expect(layer).toHaveAttribute("data-dragging-active", "true");
+    expect(layer).toHaveAttribute("data-drag-dynamic-state", "active-cluster-follow");
     expect(card).toHaveAttribute("data-dragging-active", "true");
-    expect(document.querySelector("[data-drag-cluster-hull]")).toHaveAttribute(
-      "data-drag-active",
-      "true",
+    expect(card).toHaveAttribute(
+      "data-drag-interaction-cue-contract",
+      "root-card-shows-linked-count-during-drag",
     );
-    expect(screen.getByText("moving linked cards")).toBeInTheDocument();
+    expect(card).toHaveAttribute("data-drag-interaction-cue-visible", "true");
+    expect(Number(card.getAttribute("data-drag-interaction-linked-card-count"))).toBeGreaterThan(
+      0,
+    );
+    expect(Number(card.getAttribute("data-drag-interaction-relation-link-count"))).toBeGreaterThan(
+      0,
+    );
+    const dragCue = card.querySelector("[data-drag-interaction-cue]");
+    expect(dragCue).toBeInTheDocument();
+    expect(dragCue).toHaveTextContent(/linked|relation/);
+    expect(dragCue).toHaveAttribute(
+      "data-drag-interaction-cue-contract",
+      "root-card-shows-linked-count-during-drag",
+    );
+    expect(screen.getByText("Atlas").closest("[data-skeleton-card]")).not.toHaveAttribute(
+      "data-drag-interaction-cue-contract",
+    );
+    const reactiveContextCard = screen
+      .getByText("Linked Context")
+      .closest("[data-skeleton-card]") as HTMLElement;
+    expect(reactiveContextCard).toHaveAttribute("data-dimmed", "true");
+    expect(reactiveContextCard).toHaveAttribute("data-drag-reactive-context", "true");
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-context-role",
+      "surrounding-physics-response",
+    );
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-context-opacity-token",
+      "--topology-card-drag-reactive-context-opacity",
+    );
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-context-visual-contract",
+      "reactive-context-uses-border-ring",
+    );
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-context-visual-token",
+      "--topology-card-border-selected",
+    );
+    expect(reactiveContextCard.style.getPropertyValue("--card-border")).toBe(
+      "var(--topology-card-border-selected)",
+    );
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-motion",
+      "parallax-nudge",
+    );
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-motion-role",
+      "linked-context-follows-dragged-cluster",
+    );
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-motion-strength",
+      "linked-context",
+    );
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-motion-source",
+      "graph-neighbor-of-moving-cluster",
+    );
+    expect(Number(reactiveContextCard.getAttribute("data-drag-reactive-motion-dx"))).toBeGreaterThan(
+      0,
+    );
+    expect(Number(reactiveContextCard.getAttribute("data-drag-reactive-motion-dy"))).toBeGreaterThan(
+      0,
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-reactive-context-contract",
+      "active-drag-shows-worker-moving-surrounding-context",
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-reactive-context-policy",
+      "boost-dimmed-worker-response",
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-reactive-context-visual-contract",
+      "reactive-context-uses-border-ring",
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-reactive-context-visual-token",
+      "--topology-card-border-selected",
+    );
+    expect(Number(layer.getAttribute("data-drag-reactive-context-visible-count"))).toBeGreaterThan(
+      0,
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-reactive-motion-contract",
+      "active-drag-gives-surrounding-context-bounded-parallax",
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-reactive-motion-policy",
+      "bounded-parallax-nudge",
+    );
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-visible-count"))).toBeGreaterThan(
+      0,
+    );
+    expect(Number(layer.getAttribute("data-drag-reactive-linked-motion-visible-count"))).toBeGreaterThan(
+      0,
+    );
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-base-max-offset-px"))).toBe(24);
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-linked-max-offset-px"))).toBe(36);
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-max-offset-px"))).toBe(36);
+    expect(reactiveContextCard).toHaveAttribute(
+      "data-drag-reactive-motion-linked-policy",
+      "direct-neighbor-readable-follow",
+    );
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-max-observed-offset-px"))).toBeGreaterThan(
+      24,
+    );
+    expect(Number(layer.getAttribute("data-drag-reactive-motion-max-observed-offset-px"))).toBeLessThanOrEqual(
+      36,
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-tension-connector-contract",
+      "active-drag-draws-links-to-reactive-neighbors",
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-tension-connector-policy",
+      "cluster-to-linked-context-only",
+    );
+    expect(Number(layer.getAttribute("data-drag-tension-connector-expected-count"))).toBeGreaterThan(
+      0,
+    );
+    expect(Number(layer.getAttribute("data-drag-tension-connector-visible-count"))).toBeGreaterThan(
+      0,
+    );
+    const tensionConnector = document.querySelector("[data-drag-tension-connector]");
+    expect(tensionConnector).toBeInTheDocument();
+    expect(tensionConnector).toHaveAttribute("data-connector-drawable", "true");
+    expect(tensionConnector).toHaveAttribute(
+      "data-drag-tension-expression",
+      "linked-context-tension",
+    );
+    expect(layer).toHaveAttribute(
+      "data-relation-label-drag-layout-policy",
+      "drag-connector-labels-follow-cluster",
+    );
+    expect(layer).toHaveAttribute(
+      "data-relation-label-drag-suppression-policy",
+      "suppress-html-labels-keep-drag-svg-facts",
+    );
+    expect(layer).toHaveAttribute(
+      "data-relation-label-geometry-source",
+      "drag-connector-label-follow-pass",
+    );
+    expect(layer).toHaveAttribute(
+      "data-drag-relation-label-visibility-contract",
+      "active-drag-connector-labels-remain-readable",
+    );
+    expect(Number(layer.getAttribute("data-drag-relation-label-expected-count"))).toBeGreaterThan(0);
+    expect(Number(layer.getAttribute("data-drag-relation-label-visible-count"))).toBeGreaterThan(0);
+    expect(dragRelationLabel).toHaveAttribute("opacity", "1");
+    expect(dragRelationLabel).toHaveAttribute(
+      "data-relation-label-visibility",
+      "visible-during-drag",
+    );
+    expect(layer).toHaveAttribute(
+      "data-visible-card-state-read-policy",
+      "frame-state-during-drag",
+    );
+    expect(document.querySelector("[data-drag-cluster-hull]")).not.toBeInTheDocument();
+    expect(layer).toHaveAttribute("data-drag-hull-render-policy", "suppressed-boxless-connectors");
+    expect(layer).toHaveAttribute("data-drag-cluster-hull-dom-policy", "not-rendered");
+    expect(screen.queryByText("moving linked cards")).not.toBeInTheDocument();
     fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
 
     expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
     expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(20);
     expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
     expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(15);
-    expect(graph.getNodeAttributes("domain:d2").x).toBeCloseTo(-20);
-    expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
+    expect(graph.getNodeAttributes("domain:d2").x).toBeCloseTo(220);
+    expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(160);
     expect(card).toHaveAttribute("data-drag-cluster", "true");
     expect(layer).toHaveAttribute("data-dragging-active", "false");
+    expect(layer).toHaveAttribute("data-drag-dynamic-state", "armed-cluster-follow");
+    expect(layer).toHaveAttribute(
+      "data-visible-card-state-read-policy",
+      "frame-state-during-drag",
+    );
     expect(document.querySelector("[data-drag-cluster-connector]")).toBeInTheDocument();
   });
 
@@ -2333,7 +6542,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           sigma={stubSigma}
           graph={graph}
           cards={[...CARDS]}
-          selectedSlug={null}
+          selectedSlug="project:p"
           onSelect={vi.fn()}
         />,
       );
@@ -2345,7 +6554,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       expect(card).toHaveAttribute("data-drag-cluster", "true");
       expect(layer).toHaveAttribute("data-dragging-active", "false");
-      expect(screen.getByText("linked cards move together")).toBeInTheDocument();
+      expect(screen.queryByText("linked cards move together")).not.toBeInTheDocument();
+      expect(document.querySelector("[data-drag-cluster-state-label]")).not.toBeInTheDocument();
 
       act(() => {
         vi.advanceTimersByTime(520);
@@ -2394,7 +6604,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(document.querySelector("[data-drag-relation-label]")).toBeNull();
   });
 
-  it("project 드래그는 보이는 landmark 자식까지 함께 옮겨 branch 간 겹침을 막는다", () => {
+  it("project 드래그는 직접 domain ring 만 붙잡고 capability context 는 물리 반응 여지로 남긴다", () => {
     const graph = makeGraph();
     graph.addNode("capability:c1", {
       size: 5,
@@ -2442,24 +6652,162 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     const projectCard = screen.getByText("Atlas").closest("[data-skeleton-card]")!;
     fireEvent.pointerDown(projectCard, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
-    expect(screen.getByText("Views").closest("[data-skeleton-card]")).toHaveAttribute(
-      "data-drag-cluster",
-      "true",
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    expect(layer).toHaveAttribute(
+      "data-overview-density-fixed-geography-drag-attempt",
+      "ignored",
     );
-    expect(screen.getByText("Topology Inspection").closest("[data-skeleton-card]")).toHaveAttribute(
-      "data-drag-cluster",
-      "true",
-    );
+    expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
 
     fireEvent.pointerMove(projectCard, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.pointerUp(projectCard, { clientX: 60, clientY: 40, pointerId: 1 });
 
-    expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
-    expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(15);
-    expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
-    expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(20);
-    expect(graph.getNodeAttributes("capability:c1").x).toBeCloseTo(55);
-    expect(graph.getNodeAttributes("capability:c1").y).toBeCloseTo(20);
+    expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(0);
+    expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(0);
+    expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(10);
+    expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(5);
+    expect(graph.getNodeAttributes("capability:c1").x).toBeCloseTo(30);
+    expect(graph.getNodeAttributes("capability:c1").y).toBeCloseTo(5);
+  });
+
+  it("큰 project 드래그는 전체 subtree 경계 대신 root card 를 기준으로 clamp 해 포인터를 따라간다", () => {
+    const graph = makeGraph();
+    const cards = [
+      { id: "project:p", title: "Atlas", kind: "project" as const, tier: 0 as const },
+      ...Array.from({ length: 6 }, (_, index) => ({
+        id: `domain:d${index + 1}`,
+        title: `Domain ${index + 1}`,
+        kind: "domain" as const,
+        tier: 1 as const,
+      })),
+      ...Array.from({ length: 6 }, (_, index) => ({
+        id: `capability:c${index + 1}`,
+        title: `Capability ${index + 1}`,
+        kind: "capability" as const,
+        tier: 2 as const,
+      })),
+    ];
+    for (let index = 1; index <= 6; index += 1) {
+      const domainId = `domain:d${index}`;
+      const capabilityId = `capability:c${index}`;
+      if (!graph.hasNode(domainId)) {
+        graph.addNode(domainId, {
+          size: 5,
+          color: "#888",
+          borderColor: "#999",
+          outerBorderColor: "rgba(0,0,0,0)",
+          projectSlug: "",
+          categoryId: "",
+          isHub: false,
+          ownerKey: "unassigned",
+          x: index * 25,
+          y: index * 8,
+          label: `Domain ${index}`,
+        });
+      }
+      graph.addNode(capabilityId, {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: index === 6 ? 340 : index * 30,
+        y: index * 10,
+        label: `Capability ${index}`,
+      });
+      graph.addEdge("project:p", domainId, {
+        size: 1,
+        color: "#fff",
+        kind: "contains",
+        relationType: "contains",
+      });
+      graph.addEdge(domainId, capabilityId, {
+        size: 1,
+        color: "#fff",
+        kind: "contains",
+        relationType: "contains",
+      });
+    }
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (!slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 800,
+            bottom: 600,
+            width: 800,
+            height: 600,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        const attrs = graph.getNodeAttributes(slug);
+        const center = stubSigma.graphToViewport(attrs);
+        const width = slug === "capability:c6" ? 120 : 100;
+        const height = 40;
+        return {
+          left: center.x - width / 2,
+          top: center.y - height / 2,
+          right: center.x + width / 2,
+          bottom: center.y + height / 2,
+          width,
+          height,
+          x: center.x - width / 2,
+          y: center.y - height / 2,
+          toJSON: () => ({}),
+        };
+    });
+    try {
+      const onDragClusterStart = vi.fn();
+      const onDragClusterMove = vi.fn();
+      const onDragClusterEnd = vi.fn();
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={cards}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+          onDragClusterStart={onDragClusterStart}
+          onDragClusterMove={onDragClusterMove}
+          onDragClusterEnd={onDragClusterEnd}
+        />,
+      );
+      const projectCard = screen.getByText("Atlas").closest("[data-skeleton-card]")!;
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+
+      fireEvent.pointerDown(projectCard, {
+        clientX: 100,
+        clientY: 50,
+        pointerId: 1,
+        button: 0,
+      });
+      expect(layer).toHaveAttribute(
+        "data-overview-density-fixed-geography-drag-attempt",
+        "ignored",
+      );
+      expect(layer).toHaveAttribute("data-active-drag-cluster-size", "0");
+      expect(layer).toHaveAttribute("data-drag-physics-sync-active", "false");
+      expect(onDragClusterStart).not.toHaveBeenCalled();
+      fireEvent.pointerMove(projectCard, { clientX: 280, clientY: 50, pointerId: 1 });
+      fireEvent.pointerUp(projectCard, { clientX: 280, clientY: 50, pointerId: 1 });
+
+      expect(layer).toHaveAttribute("data-drag-physics-sync-active", "false");
+      expect(onDragClusterMove).not.toHaveBeenCalled();
+      expect(onDragClusterEnd).not.toHaveBeenCalled();
+      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(0);
+      expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(10);
+      expect(graph.getNodeAttributes("capability:c6").x).toBeCloseTo(340);
+    } finally {
+      rectSpy.mockRestore();
+    }
   });
 
   it("드래그 묶음은 고정 HUD 경계 앞에서 멈춰 패널 밑으로 들어가지 않는다", () => {
@@ -2526,7 +6874,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           sigma={stubSigma}
           graph={graph}
           cards={[...CARDS]}
-          selectedSlug={null}
+          selectedSlug="project:p"
+          healthRepairTarget={{ slug: "domain:d1", kind: "orphan" }}
           onSelect={vi.fn()}
         />,
       );
@@ -2537,7 +6886,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       expect(graph.getNodeAttributes("domain:d1").x).toBeLessThan(110);
       expect(graph.getNodeAttributes("domain:d1").x).toBeGreaterThan(80);
-      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(84);
+      expect(graph.getNodeAttributes("project:p").x).toBeLessThan(110);
+      expect(graph.getNodeAttributes("project:p").x).toBeGreaterThan(80);
     } finally {
       rectSpy.mockRestore();
       panel.remove();
@@ -2637,23 +6987,23 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
 
       expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
-        "data-drag-push-away-count",
-        "2",
+        "data-overview-density-fixed-geography-drag-attempt",
+        "ignored",
       );
-      expect(screen.getByText("Atlas").closest("[data-skeleton-card]")).toHaveAttribute(
-        "data-drag-cluster",
-        "true",
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-active-drag-cluster-size",
+        "0",
       );
       expect(
         screen.getByText("Collision Candidate").closest("[data-skeleton-card]"),
-      ).toHaveAttribute("data-drag-pushed", "true");
+      ).toHaveAttribute("data-drag-pushed", "false");
       expect(
         screen.getByText("Second Collision Candidate").closest("[data-skeleton-card]"),
-      ).toHaveAttribute("data-drag-pushed", "true");
-      expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
-      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
-      expect(graph.getNodeAttributes("domain:d2").y).not.toBeCloseTo(20);
-      expect(graph.getNodeAttributes("domain:d3").y).not.toBeCloseTo(50);
+      ).toHaveAttribute("data-drag-pushed", "false");
+      expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(10);
+      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(0);
+      expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(20);
+      expect(graph.getNodeAttributes("domain:d3").y).toBeCloseTo(50);
     } finally {
       rectSpy.mockRestore();
     }

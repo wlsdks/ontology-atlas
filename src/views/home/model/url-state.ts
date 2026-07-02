@@ -2,7 +2,12 @@ import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
 
 export type HomePulseMode = "all" | "7d" | "30d";
-export type TopologyAnalysisMode = "overview" | "focus" | "path" | "health";
+export type TopologyAnalysisMode =
+  | "overview"
+  | "graph"
+  | "focus"
+  | "path"
+  | "health";
 
 export interface HomeRouteState {
   selectedSlug: string | null;
@@ -25,6 +30,8 @@ const HOME_QUERY_KEYS = {
   mode: "mode",
   pathSource: "pathFrom",
   pathTarget: "pathTo",
+  pathSourceAlias: "from",
+  pathTargetAlias: "to",
   create: "create",
 } as const;
 
@@ -37,6 +44,7 @@ const VALID_IMPACT: ProjectImpactMode[] = [
 const VALID_PULSE: HomePulseMode[] = ["all", "7d", "30d"];
 const VALID_ANALYSIS_MODE: TopologyAnalysisMode[] = [
   "overview",
+  "graph",
   "focus",
   "path",
   "health",
@@ -60,7 +68,7 @@ export function parseHomeRouteState(
   const impactParam = searchParams.get(HOME_QUERY_KEYS.impact);
   const pulseParam = searchParams.get(HOME_QUERY_KEYS.pulse);
   const modeParam = searchParams.get(HOME_QUERY_KEYS.mode);
-  const selectedSlug = searchParams.get(HOME_QUERY_KEYS.project);
+  const rawSelectedSlug = searchParams.get(HOME_QUERY_KEYS.project);
   // 딥링크는 명시된 mode 를 존중한다. selectedSlug 만으로 parse 단계에서
   // focus 로 승격하지 않는다. click selection 의 승격은 아래
   // selectTopologyNodeRouteState 에서만 수행해 load 와 interaction 을 분리한다.
@@ -69,21 +77,37 @@ export function parseHomeRouteState(
     : DEFAULT_HOME_ROUTE_STATE.analysisMode;
   const pathSourceSlug =
     searchParams.get(HOME_QUERY_KEYS.pathSource) ??
-    (analysisMode === "path" ? selectedSlug : null);
+    searchParams.get(HOME_QUERY_KEYS.pathSourceAlias) ??
+    (analysisMode === "path" ? rawSelectedSlug : null);
+  const pathTargetSlug =
+    searchParams.get(HOME_QUERY_KEYS.pathTarget) ??
+    searchParams.get(HOME_QUERY_KEYS.pathTargetAlias);
+  const selectedSlug =
+    analysisMode === "path" && pathSourceSlug && pathTargetSlug
+      ? null
+      : rawSelectedSlug;
+  const pathResultComplete = Boolean(
+    analysisMode === "path" && pathSourceSlug && pathTargetSlug,
+  );
+  const impactMode = pathResultComplete
+    ? DEFAULT_HOME_ROUTE_STATE.impactMode
+    : VALID_IMPACT.includes(impactParam as ProjectImpactMode)
+      ? (impactParam as ProjectImpactMode)
+      : DEFAULT_HOME_ROUTE_STATE.impactMode;
 
   return {
     selectedSlug,
     activeCategory: searchParams.get(HOME_QUERY_KEYS.category),
-    focusedHubSlug: searchParams.get(HOME_QUERY_KEYS.hub),
-    impactMode: VALID_IMPACT.includes(impactParam as ProjectImpactMode)
-      ? (impactParam as ProjectImpactMode)
-      : DEFAULT_HOME_ROUTE_STATE.impactMode,
+    focusedHubSlug: pathResultComplete
+      ? null
+      : searchParams.get(HOME_QUERY_KEYS.hub),
+    impactMode,
     pulseMode: VALID_PULSE.includes(pulseParam as HomePulseMode)
       ? (pulseParam as HomePulseMode)
       : DEFAULT_HOME_ROUTE_STATE.pulseMode,
     analysisMode,
     pathSourceSlug,
-    pathTargetSlug: searchParams.get(HOME_QUERY_KEYS.pathTarget),
+    pathTargetSlug,
     createNodeIntent: searchParams.get(HOME_QUERY_KEYS.create) === "concept",
   };
 }
@@ -98,11 +122,29 @@ export function selectTopologyNodeRouteState(
     selectedSlug: slug,
     focusedHubSlug: options?.isHub ? slug : null,
     impactMode: options?.preserveImpact ? current.impactMode : "none",
-    // Drag 는 editing, click 은 discovery. overview 에서 노드를 클릭하면
-    // overview metric panel 을 접고 Focus handoff panel 로 승격한다. Path/Health 는
-    // 사용자가 시작한 워크플로라 선택만 갱신하고 mode 는 보존한다.
-    analysisMode:
-      current.analysisMode === "overview" ? "focus" : current.analysisMode,
+    // 클릭 = 선택(안전한 탐색)만 — 어떤 모드에서도 mode 를 바꾸지 않는다.
+    // 이전의 overview→focus 자동 승격은 [선택+확장+재배치+카메라핏]을 한
+    // 클릭에 겹쳐 인과를 지웠다 (R+ 소유자 피드백 "클릭하면 그냥 바뀌어서
+    // 헷갈린다"). 확장(초점)은 카드 배지/더블클릭/딥링크의 명시적 의도로만.
+    analysisMode: current.analysisMode,
+  };
+}
+
+export function selectTopologyPathRouteState(
+  current: HomeRouteState,
+  selection: { sourceSlug: string | null; targetSlug: string | null },
+): HomeRouteState {
+  const hasCompletePath = Boolean(selection.sourceSlug && selection.targetSlug);
+  return {
+    ...current,
+    analysisMode: "path",
+    selectedSlug: hasCompletePath
+      ? null
+      : selection.sourceSlug ?? current.selectedSlug,
+    focusedHubSlug: hasCompletePath ? null : current.focusedHubSlug,
+    impactMode: hasCompletePath ? "none" : current.impactMode,
+    pathSourceSlug: selection.sourceSlug,
+    pathTargetSlug: selection.targetSlug,
   };
 }
 
@@ -140,6 +182,8 @@ export function applyHomeRouteState(
     HOME_QUERY_KEYS.pathTarget,
     state.analysisMode === "path" ? state.pathTargetSlug : null,
   );
+  next.delete(HOME_QUERY_KEYS.pathSourceAlias);
+  next.delete(HOME_QUERY_KEYS.pathTargetAlias);
   setOrDelete(
     next,
     HOME_QUERY_KEYS.create,

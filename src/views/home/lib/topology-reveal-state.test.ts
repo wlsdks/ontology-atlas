@@ -105,8 +105,9 @@ describe("computeRevealState — 클릭-레벨 확장(점진 드릴다운)", () 
     // 다른 도메인 골격은 그대로 보인다.
     expect(state.visibleSlugs.has("domain:d2")).toBe(true);
     expect(state.visibleSlugs.has("capability:c3")).toBe(true);
-    // 요소는 아직 안 보인다.
-    expect(state.visibleSlugs.has("element:e1")).toBe(false);
+    // overview evidence landmark 는 골격 일부라 유지된다. 추가 요소는 아직 안 보인다.
+    expect(state.visibleSlugs.has("element:e1")).toBe(true);
+    expect(state.visibleSlugs.has("element:e2")).toBe(false);
     // 역량 순서: subtree weight desc → slug asc (결정론).
     expect(state.domainCapabilitySlugs).toEqual([
       "capability:c1",
@@ -176,8 +177,9 @@ describe("computeRevealState — 클릭-레벨 확장(점진 드릴다운)", () 
     expect(state.visibleSlugs.has("capability:c1")).toBe(true);
     expect(state.visibleSlugs.has("capability:c2")).toBe(true);
     expect(state.visibleSlugs.has("element:e3")).toBe(true);
-    // 다른 역량의 요소는 안 보인다.
-    expect(state.visibleSlugs.has("element:e1")).toBe(false);
+    // overview evidence landmark 는 유지되지만 다른 요소는 새로 펼치지 않는다.
+    expect(state.visibleSlugs.has("element:e1")).toBe(true);
+    expect(state.visibleSlugs.has("element:e2")).toBe(false);
     expect(state.capabilityElementSlugs).toEqual(["element:e3"]);
     expect(state.crumbSlugs).toEqual([
       "project:p",

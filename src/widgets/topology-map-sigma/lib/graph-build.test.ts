@@ -447,7 +447,7 @@ describe("buildGraph — dense ontology edge legibility", () => {
     );
   });
 
-  it("ontology extension edges stay thin enough to remain background evidence", () => {
+  it("ontology extension edges stay thin while remaining readable topology context", () => {
     const graph = buildGraph([project({ slug: "p", isHub: false })], [], {
       ontologyExtension: {
         nodes: [
@@ -510,7 +510,7 @@ describe("buildGraph — dense ontology edge legibility", () => {
     expect(graph.getEdgeAttribute(containsEdge, "size")).toBeLessThanOrEqual(0.42);
     expect(graph.getEdgeAttribute(dependsEdge, "size")).toBeLessThanOrEqual(0.62);
     expect(graph.getEdgeAttribute(containsEdge, "color")).toBe(
-      "rgba(130, 150, 195, 0.025)",
+      "rgba(130, 150, 195, 0.038)",
     );
   });
 });

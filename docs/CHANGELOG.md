@@ -6,7 +6,106 @@
 
 ---
 
-## 2026-06-10 — 토폴로지 클릭-레벨 확장 + 골격 spine·범례 계층·패널 축소
+## 2026-07-03 — 지도 인터랙션 계약: 클릭=선택 · 배지=펼치기 · 닫기=접기
+
+소유자 피드백: "클릭하면 그냥 바뀌고 헷갈린다 — 바로 확장돼서 그런가?" —
+정확한 진단이었다. 클릭 한 번에 [선택+focus 승격+지형 재배치+카메라 핏]이
+겹쳐 인과가 사라졌다. 탐색(안전)과 확장(의도)을 분리한다:
+
+- **클릭 = 선택만** — 지형 불변, 팝오버·커넥터 강조만. overview→focus
+  자동 승격 제거 (`selectTopologyNodeRouteState`), overview 에서 선택은
+  reveal 전개를 유발하지 않음.
+- **펼치기 = 명시적** — 카드의 하위 개수 배지가 펼치기 버튼이 됨
+  (`하위 N개 펼치기` 툴팁 — 기획자 감사 ⑧-c 무설명 배지 문제 겸용 해결,
+  core 계층 카드에서도 복권) + 카드 더블클릭. 둘 다 focus 모드 진입 —
+  기존 `p=…&mode=focus` 딥링크와 동일한 URL 계약.
+- **닫기 = 접기** — 배경 클릭/팝오버 X 가 focus 를 overview 로 복귀
+  (펼침의 대칭). path/health 워크플로 모드는 선택만 해제.
+- 데스크톱 verify 의 카드 클릭 시나리오도 명시적 배지 클릭 경로로 갱신 —
+  설치 앱 드래그 계약 검증이 새 인터랙션 문법을 그대로 탄다.
+
+## 2026-07-03 — 기획자 감사 Top 3: 지도 잉크·그래프 ego dim·정리 칩 신호
+
+온톨로지 제품 기획자 렌즈의 감사(경쟁: Obsidian graph / Foundry ontology)로
+토폴로지 표면을 점검하고 최고 가치 3건을 즉시 수리:
+
+- **지도 관계 잉크 1단계 상향** — 1.1~1.6px × 실효알파 ~0.25 는 다크
+  캔버스에서 비가시라 카드가 "허공에 뜬 라벨"로 읽혔다 (소유자 불만).
+  강함/근거/약함/검토 스트로크와 containment 스파인 halo 를 3:1 대비로 —
+  범례가 약속한 4종이 실제 화면에서 식별된다.
+- **그래프 뷰 ego dim (불투명)** — design.md 의 ego 계약(포커스+이웃만
+  살리고 나머지 dim)을 알파 없이 구현: 비-ego 노드를 캔버스 프리블렌드
+  불투명 dim 디스크(`--topology-graph-node-dim`)로 강등 + 라벨 제거,
+  ego 이웃은 40개까지 라벨 즉시 표시 ("34번 호버" 제거).
+- **정리 칩 신호 품질** — (a) ontology containment 에 참여하는 프로젝트
+  루트를 "소속 미정" 오탐에서 제외 (`filterOntologyConnectedOrphans`,
+  단위 테스트 4건), (b) 허브 승격 *제안*은 칩 카운트에서 제외 — 칩 숫자 =
+  진짜 결함만, 결함 0 이면 칩 숨김 (alert fatigue 방지).
+
+잔여 백로그(기획자 감사): 줌인 시 카드→글리프 강등 역전, fit-to-bounds
+미포함 카드, 그래프 뷰 경로 오버레이, 포커스 이웃 리스트 확장, 경로 이유
+한글화 — `docs/CHANGELOG.md` 이 항목 참조.
+
+## 2026-07-03 — 토폴로지 모드 레일 5탭 → 2뷰 통합
+
+소유자 피드백: "그래프 빼고는 다 이상한데.. 애초에 5개나 필요한 거임?" —
+지도/초점/경로/상태 4개 모드가 같은 골격 화면에 패널만 갈아끼우는 구조라
+"누를 때마다 정체불명으로 바뀌는 5형제"로 읽혔다. 진짜 *뷰*는 2개뿐이고
+나머지는 뷰 위의 상태/액션/큐라는 진단으로 정리:
+
+- **뷰 레일 = [지도 | 그래프] 2탭** — 지도 탭은 Relief 계열
+  (overview/focus/path/health) 전체를 대표. 어느 상태에서든 지도 탭이 활성.
+- **초점 탭 삭제** — 노드 클릭이 곧 초점 (원래 동작). **경로 탭 삭제** —
+  shift-클릭 2노드 / URL 딥링크로 진입. **상태 탭 삭제 → 정리 큐 칩** —
+  레일 우측에 `♡ N` 카운트 칩 (0건이면 숨김), 클릭 시 수리 워크플로.
+- `mode=focus/path/health` URL·agent handoff·verify 계약은 전부 보존 —
+  진입점만 재배치.
+- **그래프 뷰 전용 패널 폭** (`--topology-panel-graph-width`, 280~336px) —
+  프롬프트 1줄짜리 레일이 overview 폭(560px)을 물려받아 "가로가 너무 긴 빈
+  상자"가 되던 것 (소유자 피드백) 을 캔버스-주인공 폭으로.
+
+## 2026-07-02 — 토폴로지 "그래프" 모드 (옵시디언식 살아있는 그래프)
+
+소유자 피드백: "드래그도 안 되고 클릭하면 상세로 빨려 들어간다 — 원래는
+옵시디언 같은 그래프를 그리던 건데." Relief 골격이 읽기-우선 결정 표면으로
+진화하며 촉각적 탐색 경로가 사라진 것이 결핍. 라이브 물리·드래그 pin/release·
+좌표 persist 는 코드에 이미 있었고 골격 모드가 가리고 있었다 — 재활성화가 답.
+
+- **`mode=graph`** — 분석 바에 "그래프" 탭 신설 (지도 다음). 골격 카드 안무
+  없이 전체 ontology 노드(294+)를 상시 가동 d3-force(Web Worker)로 그린다.
+  노드 드래그 = 자유 배치(+localStorage persist), 호버 = ego 하이라이트,
+  클릭 = 선택만 (focus 모드 하이재킹 없음 — `url-state` 가 graph 모드 보존).
+- **`livePhysics` prop** — 기존 `autoStartPhysics` 의 120-노드 컷을 graph
+  모드에서 해제해 로드 직후부터 시뮬레이션이 살아있게.
+- **탄성 드래그** — graph 모드는 잡은 노드 하나만 pin (클러스터 강체 X),
+  release 시 물리로 반환 (Relief 의 commit+freeze 계약과 분리) — "드래그 후
+  전체 정지" 증상 해소. 실측: release 후 스프링 정착 19.6px, 이웃 탄성 46.6px.
+- **불투명 graph 잉크 토큰** (`--topology-graph-edge-*`) — WebGL edge 합성이
+  저알파를 불투명으로 그리는 결함(Design Guardian blocker) 회피. hover ego 는
+  인디고 + 비-ego hidden, idle 은 contains 백본 hairline 상시.
+- 분석 바 모드 레일 5탭 grid 정합(`grid-cols-5`), graph 전용 프롬프트,
+  미니맵 "카드→노드" 어휘 정정. `--verify-topology-frame-profile` 로 설치 앱
+  프레임 실측 (전 인터랙션 120fps).
+- Relief(지도)·초점·경로·상태 모드와 agent handoff 계약은 변경 없음.
+
+## 2026-07-02 — macOS 앱 120Hz 해제 (WKWebView 60fps 캡 제거) + 프레임 프로파일 프로브
+
+"앱 전체가 버벅인다"는 체감의 근본 원인을 실측으로 잡았다: WKWebView 가
+ProMotion(120Hz) 디스플레이에서도 requestAnimationFrame 을 60fps 로 캡해
+시스템(커서·다른 앱)은 120Hz 인데 토폴로지 캔버스만 격프레임으로 갱신 —
+전 인터랙션이 "반박자 끊기는" 판정.
+
+- **120Hz 해제** — WebKit 내부 feature `PreferPageRenderingUpdatesNear60FPSEnabled`
+  를 private `_features` API 로 끔 (Safari 가 내부에서 쓰는 것과 같은 메커니즘,
+  `src-tauri/src/lib.rs`). selector 존재 확인 후에만 호출 — API 가 사라지면 조용히
+  60fps 유지. 실측: 팬/호버/카드드래그 16.7ms → **8.3ms (120fps)**, 줌 16.5 → 11.6ms.
+- **프레임 프로파일 프로브** — `pnpm desktop:verify-topology-frame-profile:ko`.
+  설치된 앱의 WKWebView 안에서 합성 줌/팬/호버/카드드래그를 돌리고 phase 별
+  rAF 프레임 분포(avg/p50/p95/worst/>33ms)를 webview evidence marker
+  (`topologyFrameProfile`)로 남긴다 — 성능 회귀를 설치 앱 기준으로 가드.
+- **카메라 핸들러 스로틀** — 카메라 `updated` 마다 돌던 전체 엣지 가시성 스윕을
+  120ms trailing throttle 로 (`trailing-throttle.ts`, 단위 테스트 5건). 120Hz 에선
+  핸들러가 2배 자주 발화하므로 그래프가 커질수록 중요한 스케일 가드.
 
 `/topology` 구조 골격 진입(6/9)의 후속 — 골격이 *읽히고*, 클릭으로 *펼쳐지게* 했다.
 

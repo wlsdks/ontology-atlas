@@ -76,8 +76,12 @@ describe("buildSkeletonCardModels — DOM 카드 오버레이 모델", () => {
       kind: "capability",
       tier: 2,
     });
-    // 비가시 노드는 카드 없음.
-    expect(byId.has("element:e1")).toBe(false);
+    // overview도 구현 근거를 증명하는 element landmark 하나를 노출.
+    expect(byId.get("element:e1")).toMatchObject({
+      kind: "element",
+      tier: 3,
+      title: "HomePage.tsx",
+    });
   });
 
   it("count = governed subtree weight (요소 수) — 0 이면 undefined", () => {

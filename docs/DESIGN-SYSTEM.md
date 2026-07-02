@@ -39,7 +39,7 @@ Full grounding + verified links in [`FOUNDATIONS.md` §4](./FOUNDATIONS.md#4-des
 | Invisible-detail polish (hover/focus/transition feel) without flashy patterns | **Rauno Freiberg**, "Craft" |
 | Motion: `transition-colors`/opacity, sub-200ms, minimal transform, `prefers-reduced-motion`; state-conveying not decorative | **Emil Kowalski**, "Great animations" |
 | Native-feeling motion that explains status, feedback, and continuity without overwhelming the task | **Apple Human Interface Guidelines**, Motion |
-| Design-system quality as a shared language for designers, developers, and product work; interaction detail as part of product finish | **Toss Design System** public docs and Toss design-system article |
+| Design-system quality as a shared language for designers, developers, and product work; interaction detail as part of product finish | **Toss Tech** design-system writing and public Toss docs as principle sources only; do not copy Apps-in-Toss TDS/Figma UI Kit assets, components, styles, logos, or restricted UI patterns |
 | Unstyled accessible primitives + our own theming; mono for code/diagrams | **Radix Primitives**, **Vercel Geist** |
 | Topology: overview first, ego-focus + details-on-demand popover (never fullscreen on click); start focused as the graph scales | **Ben Shneiderman**, *The Eyes Have It* (1996) — "overview first, zoom and filter, details-on-demand"; **Cambridge Intelligence / yFiles** large-graph guidance |
 
@@ -78,8 +78,10 @@ This bar changes how we judge UI work:
 Reference anchors for this bar:
 
 - Apple HIG Motion: https://developer.apple.com/design/human-interface-guidelines/motion
-- Toss Design System overview: https://developers-apps-in-toss.toss.im/design/components.html
+- Toss Design System overview: https://developers-apps-in-toss.toss.im/design/components.html (principle reference only; not a license to copy TDS assets or components)
 - Toss design-system article: https://toss.tech/article/toss-design-system
+- Toss / Apps-in-Toss Figma UI Kit license: https://developers-apps-in-toss.toss.im/design/prepare/figma-ui-license.html
+- Toss Slash MIT repo: https://github.com/toss/slash
 
 ## Design tokens
 
@@ -124,6 +126,12 @@ they are runtime workbench contracts, not Tailwind-only decoration. Use token
 names in component data markers and tests whenever a surface depends on
 14-inch fullscreen geometry.
 
+- `--topology-graph-edge-hairline` / `--topology-graph-edge-spoke`: Graph 모드
+  (살아있는 그래프) 전용 엣지 잉크. Sigma 의 WebGL edge 합성이 저알파 색을
+  사실상 불투명으로 그리는 결함(Design Guardian blocker, 2026-07) 때문에
+  알파 토큰(`--topology-edge-*`) 대신 캔버스 색에 미리 블렌드한 **불투명**
+  값을 쓴다. 시각 무게는 알파 토큰과 동일하게 유지 — 다크 `#191a1b`/`#343536`,
+  라이트 `#dcdfe4`/`#cacdd4`.
 - `--topology-panel-selected-rail-width`: selected node support rail.
 - `--topology-panel-overview-rail-width`: overview left support rail.
 - `--topology-panel-overview-reserved-width`: overview rail when a right-side
@@ -135,11 +143,26 @@ names in component data markers and tests whenever a surface depends on
   right-side inspector space.
 - `--topology-panel-compact-width`: compact fallback when header alignment is
   unavailable.
+- `--topology-panel-graph-width`: Graph 모드(살아있는 그래프) 레일 —
+  프롬프트 1줄 + 카운트만 담는 최소 폭. 캔버스가 주인공인 뷰라 overview 계열
+  폭을 물려받지 않는다.
 - `--topology-panel-compact-reserved-width`: compact fallback with reserved
   right-side inspector space.
-- `--topology-selected-relation-card-width`: compact selected relation
-  inspector width; keeps MCP/CLI handoff visible without turning the card into
-  a central map panel.
+- `--topology-card-selected-focus-max-width`: selected focus map card width;
+  keeps the current node title readable before secondary subtree count metadata
+  while the direct relation facts chip stays visible.
+- `--topology-card-selected-quiet-border` /
+  `--topology-card-selected-quiet-wash`: selected focus map card treatment.
+  Click focus should read as the current ontology fact, not as another panel or
+  hull box; drag and selected relation states keep their stronger tokens.
+- `--topology-map-dim-anchor-opacity` /
+  `--topology-map-dim-context-opacity`: selected focus background map opacity;
+  keeps product/domain landmarks as quiet orientation anchors while unrelated
+  capability/evidence cards become non-interactive context silhouettes.
+- `--topology-selected-relation-card-width` /
+  `--topology-selected-relation-card-max-height`: compact selected relation
+  inspector geometry; keeps MCP/CLI handoff visible without turning the card
+  into a central map panel or a tall relation drawer.
 - `--topology-selected-relation-card-inset`: selected relation right-rail inset
   that keeps the inspector out of the central relation path.
 - `--topology-selected-relation-card-top`: selected relation top offset that
@@ -150,9 +173,448 @@ names in component data markers and tests whenever a surface depends on
 - `--topology-selected-relation-copy-payload-min-height`: selected relation
   payload strip minimum height; keeps the handoff command visible as one
   compact proof row.
+- `--topology-selected-relation-next-action-surface` /
+  `--topology-selected-relation-next-action-border`: selected relation
+  next-action rail. The primary MCP action must read first, with payload and
+  CLI fallback evidence inside the same rail instead of floating as separate
+  proof fragments.
+- `--topology-selected-relation-accent-text` /
+  `--topology-selected-relation-accent-muted` /
+  `--topology-selected-relation-focus-ring` /
+  `--topology-selected-relation-copy-primary-shadow`: selected relation
+  inspector action accent system. The title, relation direction, recommended
+  action label, payload label, focus rings, and primary copy elevation must use
+  one token-backed accent language instead of scattered RGBA values.
+- `--topology-selected-relation-claim-*` /
+  `--topology-selected-relation-quality-*` /
+  `--topology-selected-relation-gate-*` /
+  `--topology-selected-relation-copy-*`: selected relation fact tones for
+  quality, evidence readiness, agent gate, and copy priority. Relation color may
+  communicate ontology quality, but the decisions must stay token-backed so
+  graph fact semantics can be tuned without editing component classes.
 - `--topology-selected-relation-route-step-min-width`: selected relation
   fact/evidence/gate/action step minimum width; prevents cramped ontology
   proof cells inside the compact inspector.
+- `--topology-relation-label-card-clearance`: minimum distance between
+  scan-level relation labels and visible map cards; keeps the label readable as
+  a topology annotation instead of a clipped card badge.
+- `--topology-relation-label-surface` / `--topology-relation-label-border` /
+  `--topology-relation-label-shadow` /
+  `--topology-relation-label-focus-ring` /
+  `--topology-relation-label-hit-min-height` /
+  `--topology-relation-label-badge-height` /
+  `--topology-relation-label-padding-x` /
+  `--topology-relation-label-radius` /
+  `--topology-relation-label-text-size` /
+  `--topology-relation-label-svg-text-size` /
+  `--topology-relation-label-text` /
+  `--topology-relation-label-svg-text`: scan-level relation label treatment
+  that separates typed relation facts from selected-card surfaces. The label
+  should read as a quiet map annotation, not a floating panel. The HTML hit
+  target, visible badge, and SVG fallback text expose the same token contract so
+  screen proof can verify the clickable graph mark, not only its inner badge.
+- `--topology-relation-label-selected-surface` /
+  `--topology-relation-label-selected-border` /
+  `--topology-relation-label-selected-shadow` /
+  `--topology-relation-label-selected-text`: focus-level selected relation
+  label treatment. A selected relation is the active ontology fact on the map,
+  so its halo must be token-backed instead of embedded RGBA in the renderer.
+- `--topology-relation-stroke-*`: SVG relation line ink and width for selected,
+  strong, supported, weak, and review relations. Relation strokes are topology
+  facts, not ambient decoration; tune their contrast with tokens so the map can
+  become more legible without touching renderer logic.
+- `--topology-focus-hull-*`: drag cluster hull treatment plus click-focus
+  measurement markers. Click focus must not render a box or dashed panel; it
+  keeps the DOM hull only for clearance/overlap proof while dimmed context,
+  ego connectors, and relation labels carry the visible relationship meaning.
+  Active drag may render the token-backed hull because it is a movement state.
+  The selected focus camera and selected DOM anchor share the same desktop
+  reading center, slightly above mathematical center, so the whole ego cluster
+  stays in the first scan band while the right inspector is open.
+  Selected focus dock companions use a stricter bottom inset than drag docking
+  so the focus cluster stays in the first reading band on 14-inch and 16:9
+  desktop viewports.
+  At the 1280px compact-focus rail, the selected map anchor is hidden by an
+  explicit visibility contract so the support rail owns the selected fact.
+- `--topology-card-drag-*`: drag, active drag, and settle feedback for map
+  cards. Drag motion is an interaction state in the topology grammar, so the
+  wash/glow tokens must stay separate from generic selected-card elevation.
+- `--topology-relation-quality-*-dot` /
+  `--topology-relation-quality-*-glow`: relation quality dots inside map labels.
+  Strong, supported, weak, and review states may be visible as semantic graph
+  marks on map relation labels, but selected-node list rows keep that state in
+  aria/data attributes so the row reads as title + typed relation, not a status
+  chip strip.
+- `--topology-relation-gate-*-surface` /
+  `--topology-relation-gate-*-border` /
+  `--topology-relation-gate-*-text`: relation label gate chips for MCP/CLI,
+  preflight, and review flows. Gate color is agent handoff state, not
+  decorative status color. The gate chip is visible on scan-level and selected
+  map relation labels so a user can see the handoff action before opening the
+  relation inspector; selected labels keep the same chip in the active fact
+  route.
+- `--topology-path-endpoint-surface` /
+  `--topology-path-endpoint-border` /
+  `--topology-path-endpoint-text`: Path mode A/B endpoint badges on map cards.
+  They mark source and target anchors for path verification, so they must stay
+  token-backed on both desktop and compact WebView layouts.
+- `--topology-relation-evidence-chip-surface` /
+  `--topology-relation-evidence-chip-border` /
+  `--topology-relation-evidence-chip-text`: compact evidence glyph inside a
+  map relation label (`S#`, `A`, `R`). It must read as a proof-state chip, not
+  loose helper text, so source-backed/authored/review status remains visible
+  while scanning relations.
+- `--topology-edge-tooltip-surface` / `--topology-edge-tooltip-border` /
+  `--topology-edge-tooltip-shadow`: hover relation tooltip treatment. It must
+  stay a compact relation fact with `source -> target`, relation type, and
+  evidence state; longer MCP/CLI handoff grammar belongs in the selected
+  relation inspector.
+- `--topology-node-popover-relation-list-min-height`: selected node inspector
+  relation-list reading budget. On phone expanded detail it must show at least
+  one complete relation row before scrolling, so a user can read the first
+  fact/evidence/gate/action handoff without hunting inside the scroll region.
+- `--topology-node-popover-relation-section-min-height`: selected node
+  inspector section budget that keeps the relation lenses, the first full row,
+  and the fixed footer from competing for the same vertical layer.
+- `--topology-node-popover-relation-list-surface` /
+  `--topology-node-popover-relation-list-border` /
+  `--topology-node-popover-relation-row-divider` /
+  `--topology-node-popover-relation-row-hover-surface` /
+  `--topology-node-popover-relation-row-focus-surface` /
+  `--topology-node-popover-relation-row-focus-border` /
+  `--topology-node-popover-relation-row-focus-ring` /
+  `--topology-node-popover-relation-row-title-text` /
+  `--topology-node-popover-relation-row-meta-text`: selected node
+  inspector relation list chrome. These keep row separators and hover feedback
+  in the same token family as the fixed footer, while focus tokens make keyboard
+  selection visible without adding a competing panel. The row title marks the
+  clicked ontology target and the row meta text keeps direction and kind as
+  secondary reading context. `--topology-node-popover-row-chip-height` /
+  `--topology-node-popover-row-chip-padding-x` /
+  `--topology-node-popover-row-chip-text-size` define the only visible row
+  microchips: one proof chip and one agent-action chip. Relation rows should
+  remain a readable handoff list instead of ad hoc translucent bands, proof
+  glows, large badges, or generic page/helper text.
+- `--topology-node-popover-action-*` /
+  `--topology-node-popover-context-surface` /
+  `--topology-node-popover-context-border` /
+  `--topology-node-popover-count-text` /
+  `--topology-node-popover-summary-text` /
+  `--topology-node-popover-significance-context-text` /
+  `--topology-node-popover-significance-detail-text` /
+  `--topology-node-popover-context-text` /
+  `--topology-node-popover-empty-text`: selected node inspector support
+  rail accents. Compact MCP/CLI actions, footer actions, and map-visible
+  relation summaries must use node-popover tokens so the support rail stays
+  visually related to the active focus state without becoming another primary
+  relation inspector. Count, summary, significance helper, context note, and
+  empty-state copy must also stay token-backed so the selected-node reading
+  layer can be tuned independently from generic page helper text. Action text
+  and hover text must stay token-backed so the footer's next actions do not
+  drift into generic button chrome.
+- `--topology-node-popover-footer-action-*` /
+  `--topology-node-popover-footer-count-*`: selected node inspector fixed
+  footer navigation tokens. Use these for `Map view`, `Full detail`, and hidden
+  relation count pills so the bottom edge remains a stable state-transition
+  rail, not generic page chrome.
+- `--topology-node-popover-footer-border`: selected node inspector fixed
+  handoff rail boundary token. Use it for the footer divider; the `Agent
+  Handoff` label is preserved as screen-reader context so the visible rail can
+  stay focused on executable MCP/CLI actions.
+- `--topology-node-popover-chrome-action-*`: selected node inspector utility
+  chrome tokens. Use these for close and compact expand controls so utility
+  actions stay subdued inside the node inspector layer and do not borrow generic
+  page-button color while relation facts, evidence, and handoff actions remain
+  the primary scan targets.
+- `--topology-node-popover-compact-*`: collapsed selected-node popover sizing
+  and typography tokens. Use these for compact kind label, title
+  size/leading, count text, relation fact pill text, action gap, action size,
+  primary handoff action width/label size, and quiet chrome label size. The
+  collapsed state must read as one compact support rail: ontology title first,
+  typed facts second, executable `Brief` action third, with expand/close
+  treated as quiet utility chrome. Do not reintroduce raw `text-[Npx]`,
+  `leading-N`, or ad hoc `gap-*` values in this layer.
+- `--topology-node-popover-metric-*`: selected node inspector metric cards for
+  `Used by` and `Depends on`. Use these for the first read of ontology
+  directionality above the relation list; the cards should read as quiet
+  node-context facts, not generic overlay panels.
+- `--topology-node-popover-kind-text`: selected node inspector kind eyebrow
+  above the title. Use this for the first ontology hierarchy cue (`Project`,
+  `Domain`, `Capability`, `Element`) so the selected node header stays in the
+  topology inspector token family instead of borrowing generic muted text.
+- `--topology-node-popover-title-text`: selected node inspector title text.
+  Use this for the active ontology object name so the primary header remains
+  token-backed across collapsed and expanded focus states instead of borrowing
+  generic page heading text.
+- `--topology-node-popover-significance-core-text` /
+  `--topology-node-popover-significance-support-text`: selected node
+  inspector plain-language importance line. Use these for the visible "so
+  what" sentence below the title so core hubs stay prominent while supporting
+  nodes remain secondary, without borrowing generic page text colors.
+- `--topology-node-popover-relation-section-*`: selected node inspector
+  relation-section boundary and heading tokens. Use these for the divider,
+  `Connections` title, and typed-fact summary lens so the transition from node
+  metrics to relation rows remains part of the inspector grammar, not a generic
+  panel divider.
+- `--topology-node-popover-remainder-text`: selected node inspector hidden
+  relation remainder text (`+N more`) below the capped preview list. Use this
+  for inline relation overflow facts so folded relation count remains tied to
+  the relation list, separate from the footer's drill-down count pill.
+- `--topology-node-popover-route-*`: compact relation-row handoff route rail
+  inside the selected node inspector. Use these for fact/evidence/gate/action
+  chips and their text so row-level MCP/CLI payloads scan as structured proof,
+  not loose monospace helper text.
+- `--topology-node-popover-direction-*`: selected node inspector relation-row
+  direction marker. It encodes incoming/outgoing orientation before the typed
+  fact chip, so it must expose `data-direction-*-token` markers and stay tied
+  to the row hover state instead of generic icon chrome.
+- `--topology-node-popover-fact-type-*`: selected node inspector relation type
+  chip, the first scan target in a relation row. It must stay token-backed and
+  expose `data-fact-type-*-token` markers so the typed fact reads as the start
+  of the handoff grammar before quality, evidence, gate, and payload.
+- `--topology-node-popover-endpoint-*`: selected node inspector endpoint route
+  (`source > target`) text. This is the visible from/to proof for MCP/CLI
+  payloads, so it must expose `data-endpoint-*-token` markers and remain tied
+  to the relation row instead of generic helper text.
+- `--topology-node-popover-evidence-*`: selected node inspector relation
+  evidence states (`source`, `authored`, `review`). Use these for the visible
+  row proof microchip and its data markers; the long evidence route and machine
+  payload still stay in the hidden handoff rail.
+- `--topology-selected-relation-quality-*` and
+  `--topology-relation-quality-*-dot` / `*-glow`: selected relation labels and
+  map labels reuse the same semantic quality token family. Selected-node list
+  rows preserve quality as aria/data state rather than a visible dot/glow. Do
+  not reintroduce raw Tailwind hue classes for strong/supported/weak/review
+  states; tests should assert the token names through `data-relation-quality-*`
+  markers.
+- `--topology-node-popover-agent-*` /
+  `--topology-node-popover-gate-*`: selected node inspector agent readiness
+  and row gate chips. These encode MCP/CLI handoff readiness, preflight-first,
+  and review-first states as ontology workflow facts, not decorative status
+  colors. New readiness or gate treatments must expose `data-agent-*-token`
+  markers so phone WebView checks can prove the token contract.
+- `--topology-bottom-tab-surface` / `--topology-bottom-tab-border`: mobile
+  topology navigation surface. It must be opaque enough that map cards and
+  relation labels cannot bleed through tab icons or labels.
+- `--topology-analysis-panel-compact-scroll-end-reserve`: compact analysis
+  panel end padding. It keeps overview/focus/path proof content scrollable
+  above the fixed mobile bottom tab instead of letting support evidence hide
+  under primary navigation.
+- `--topology-analysis-mode-rail-surface` /
+  `--topology-analysis-mode-active-surface` /
+  `--topology-analysis-mode-active-border` /
+  `--topology-analysis-mode-active-text` /
+  `--topology-analysis-mode-idle-text` /
+  `--topology-analysis-mode-hover-surface` /
+  `--topology-analysis-mode-focus-ring`: Relief analysis mode rail. The
+  Overview/Focus/Path/Health tabs stay icon-only and tooltip-labeled, while
+  active, idle, hover, and keyboard focus states remain token-backed so mode
+  switching reads consistently across compact and desktop support panels.
+- `--topology-analysis-panel-prompt-text` /
+  `--topology-analysis-panel-metric-label-text` /
+  `--topology-analysis-panel-metric-value-text` /
+  `--topology-analysis-panel-notice-text`: Relief analysis panel support copy.
+  Prompt copy, compact metrics, and path visibility notices must stay visually
+  below the map/focus layer while remaining readable in the macOS WebView and
+  phone sheet; do not reuse generic `--color-text-*` tokens directly in this
+  support rail.
+- `--topology-utility-lane-surface` / `--topology-utility-lane-border` /
+  `--topology-utility-lane-shadow`: top utility chrome for search, auto
+  arrange, docs, create, and review actions. These controls are support layer,
+  so they use a quieter shared surface than selected-node or relation proof
+  inspectors. Individual utility actions must expose the same surface, border,
+  hover, active, shadow, and focus-ring token contract so top chrome reads as
+  one workbench control family.
+- `--topology-utility-lane-accent-surface` /
+  `--topology-utility-lane-accent-border`: utility-lane accent actions such as
+  create or review. They may signal actionability but must stay in the same
+  compact lane geometry as non-primary utility controls.
+- `--topology-utility-lane-focus-ring` /
+  `--topology-utility-lane-count-surface` /
+  `--topology-utility-lane-count-text`: support-action keyboard focus and
+  compact count badge accents. Utility chrome is not the primary graph fact, but
+  it must remain keyboard-readable and token-backed in compact WebView layouts.
+- `--topology-blocking-backdrop-surface` /
+  `--topology-blocking-map-opacity` / `--topology-blocking-map-filter`: blocking
+  edit layer contract. When Add Concept or another graph mutation composer is
+  open, the map remains visible as context but becomes visibly demoted and
+  pointer-suppressed instead of reading as an active graph surface.
+- `--topology-blocking-composer-top` /
+  `--topology-blocking-composer-width` /
+  `--topology-blocking-composer-max-height`: blocking composer geometry. The
+  composer owns attention at 14-inch fullscreen and compact WebView sizes
+  without drifting into the top utility lane or mobile bottom reserve.
+- `--topology-blocking-composer-surface` /
+  `--topology-blocking-composer-border` /
+  `--topology-blocking-composer-shadow`: blocking composer visual contract. The
+  form must read as the sole active write surface over the dimmed topology map,
+  using token-backed elevation rather than ad hoc glow or hard-coded colors.
+- `--topology-path-route-surface` / `--topology-path-route-border` /
+  `--topology-path-route-chip-surface` /
+  `--topology-path-route-chip-border` /
+  `--topology-path-route-chip-text` /
+  `--topology-path-route-arrow-text` /
+  `--topology-path-route-source-*` /
+  `--topology-path-route-target-*` /
+  `--topology-path-route-endpoint-marker-*`: path result route rail. When both
+  source and target endpoints are selected, the analysis rail must expose the
+  current source-to-target route before the proof disclosure so users and agents
+  can read the active graph question without opening secondary evidence.
+  Source/target tones and A/B endpoint markers make direction visible in the
+  14-inch rail and compact phone panel without adding a second path surface. The
+  same base route tokens also govern the proof disclosure route recap and
+  source/target ontology or Builder exits, so route evidence stays visually tied
+  to the selected path instead of generic panel chrome.
+- `--topology-path-proof-step-surface` /
+  `--topology-path-proof-step-border` /
+  `--topology-path-proof-kicker-text` /
+  `--topology-path-proof-desc-text` /
+  `--topology-path-proof-action-text` /
+  `--topology-path-proof-action-hover-text` /
+  `--topology-path-proof-summary-surface` /
+  `--topology-path-proof-summary-border` /
+  `--topology-path-proof-summary-text` /
+  `--topology-path-proof-summary-hover-surface` /
+  `--topology-path-proof-summary-hover-border` /
+  `--topology-path-proof-summary-hover-text` /
+  `--topology-path-check-summary-text` /
+  `--topology-path-check-summary-hover-text` /
+  `--topology-path-proof-ready-surface` /
+  `--topology-path-proof-ready-border` /
+  `--topology-path-proof-ready-text` /
+  `--topology-path-proof-required-surface` /
+  `--topology-path-proof-required-border` /
+  `--topology-path-proof-required-text` /
+  `--topology-path-proof-after-write-surface` /
+  `--topology-path-proof-after-write-border` /
+  `--topology-path-proof-after-write-text`: path proof disclosure, checklist
+  rows, and status chips. The collapsed disclosure must read as an available
+  proof control, not empty panel text, while ready / required / after-write
+  evidence stays in the same route-sharing language as the primary path action.
+- `--topology-path-candidate-visibility-surface` /
+  `--topology-path-candidate-visibility-border`: path candidate coverage strip.
+  It explains how many map cards remain visible after panel-clearance hiding,
+  so the user can trust whether the current source/target selection is being
+  made from the full visible candidate set or a collision-managed subset.
+- `--topology-path-primary-evidence-surface` /
+  `--topology-path-primary-evidence-border` /
+  `--topology-path-primary-evidence-text` /
+  `--topology-path-primary-evidence-hover-surface` /
+  `--topology-path-primary-evidence-hover-border` /
+  `--topology-path-primary-evidence-hover-text`: path result primary route-share
+  action. When a source and target are selected, `Copy path evidence` must read
+  as the first actionable proof step inside the route-sharing rail, before MCP
+  and CLI fallback chips and before the secondary proof disclosure.
+- `--topology-path-handoff-text` /
+  `--topology-path-handoff-label-text`: path route-share rail copy. The rail label
+  and ambient text are support copy for the selected path, so they stay quieter
+  than selected endpoint cards while still framing the copyable proof action.
+- `--topology-path-handoff-mcp-surface` /
+  `--topology-path-handoff-mcp-border` /
+  `--topology-path-handoff-mcp-text` /
+  `--topology-path-handoff-cli-surface` /
+  `--topology-path-handoff-cli-border` /
+  `--topology-path-handoff-cli-text`: path handoff fallback chips. The MCP chip
+  remains the stronger command target, while the CLI fallback stays visible but
+  quieter in the same compact rail. The same family covers the disclosed path
+  checks rail (`path`, `relation_check`, `explain_relation`, `all_paths` plan,
+  and `all_paths` run) so graph-evidence copy tools read as one sequence rather
+  than unrelated compact buttons.
+- `--topology-overview-signal-grid-surface` /
+  `--topology-overview-signal-grid-border` /
+  `--topology-overview-notice-surface` /
+  `--topology-overview-notice-border`: overview first-read signal stack. These
+  tokens keep relation progress, provenance, readiness, and the level-of-detail
+  notice in one compact reading surface without hard-coded theme exceptions.
+- `--topology-overview-signal-neutral-surface` /
+  `--topology-overview-signal-neutral-border` /
+  `--topology-overview-signal-indigo-surface` /
+  `--topology-overview-signal-indigo-border` /
+  `--topology-overview-signal-cyan-surface` /
+  `--topology-overview-signal-cyan-border`: overview metric/provenance signal
+  card tones. Neutral is for quantitative progress, indigo for ontology/agent
+  command context, and cyan for supportive semantic facts.
+- `--topology-overview-handoff-divider` /
+  `--topology-overview-handoff-primary-surface` /
+  `--topology-overview-handoff-primary-border` /
+  `--topology-overview-handoff-secondary-surface` /
+  `--topology-overview-handoff-secondary-border`: overview share rail.
+  The map brief remains the primary action; reanalysis and sync checks stay
+  quieter inside the disclosure while sharing the same responsive token
+  contract.
+- `--topology-overview-quality-surface` /
+  `--topology-overview-quality-border` /
+  `--topology-overview-readiness-surface` /
+  `--topology-overview-readiness-border`: overview proof cards for relation
+  quality and share readiness. They are scan facts, not nested cards, and must
+  keep the first-read stack visually flat.
+- `--topology-overview-proof-cell-divider` /
+  `--topology-overview-proof-strong-text` /
+  `--topology-overview-proof-supported-text` /
+  `--topology-overview-proof-warning-text` /
+  `--topology-overview-proof-review-text`: shared proof-cell divider and
+  semantic text tones used by relation quality and readiness chips.
+- `--topology-health-repair-primary-surface` /
+  `--topology-health-repair-primary-border` /
+  `--topology-health-repair-primary-hover-surface` /
+  `--topology-health-repair-secondary-surface` /
+  `--topology-health-repair-secondary-border` /
+  `--topology-health-repair-secondary-hover-surface`: health repair action
+  hierarchy. Builder repair is the primary action; MCP and ontology handoff
+  remain compact secondary actions without inventing one-off button colors.
+- `--topology-overview-readiness-meter-surface` /
+  `--topology-overview-readiness-meter-border` /
+  `--topology-overview-readiness-ready-meter` /
+  `--topology-overview-readiness-preflight-meter` /
+  `--topology-overview-readiness-review-meter`: readiness meter track and
+  segment fills. These tokens keep the handoff-ready/preflight/review balance
+  mode-aware without hard-coded gradient exceptions in the component.
+- `--topology-minimap-surface` / `--topology-minimap-border` /
+  `--topology-minimap-shadow`: right-side minimap support chrome. It is a
+  navigation aid, not a selected fact surface, so it stays quieter than node
+  inspectors and exposes
+  `data-minimap-camera-sync-contract="raf-coalesced-camera-updates"` to prove
+  high-frequency camera events are folded into frame-bounded renders.
+  Drag/click navigation must also expose
+  `data-minimap-pan-search-contract="precomputed-navigation-targets"` so pointer
+  interaction reads a stable target array instead of re-entering the graph
+  structure on every move.
+- `--topology-floating-panel-surface` / `--topology-floating-panel-border` /
+  `--topology-floating-panel-shadow`: expanded map-control sheet. It must read
+  as one support surface with internal divider rows, not a stack of separate
+  cards competing with the analysis panel or selected-node inspector.
+- `--topology-command-step-surface` / `--topology-command-step-border`:
+  selected-focus review order rail. Use one flat numbered rail with divider
+  rows, not separate nested cards, so the support panel stays visually lighter
+  than the map and selected-node inspector.
+- `--topology-command-secondary-surface` /
+  `--topology-command-secondary-border` /
+  `--topology-command-secondary-hover-border`: selected-focus secondary exits
+  and proof-copy actions. Ontology, Builder, MCP, impact, sync-gate, and
+  strengthen-command handoffs must stay secondary to the focus brief primary
+  action while remaining visible on compact widths.
+
+Selected node expanded detail uses
+`data-body-scroll-contract="content-scrolls-above-fixed-footer"` and
+`data-footer-position-contract="anchored-bottom-visible"` on phone-sized
+surfaces. The body may scroll, but the MCP/CLI action rail must remain inside
+the visible popover frame while the relation list still exposes one complete
+fact/evidence/gate/action row. Phone density markers may hide explanatory copy
+before the first row, but must not hide the relation quality/readiness chips or
+row-level handoff facts.
+
+Selected node relation rows use
+`data-row-surface-contract="flat-divider-rail"` on the list,
+`data-row-surface-contract="flat-divider-row"` on each clickable relation, and
+`data-relation-payload-layout="flat-inline-payload-rail"` on the payload route.
+This keeps relation facts machine-readable and tappable without repeating
+card-like surfaces inside the inspector.
+
+On phone-width selected node detail, explanatory copy before the relation list
+must yield to the first readable relation row. Keep the primary meaning line,
+but hide technical summary/explainer/map-context copy with phone density
+markers such as `data-phone-density-contract="hide-summary-before-readable-row"`
+and `data-phone-density-contract="hide-explainer-before-readable-row"`.
 
 Do not introduce a new panel width by writing a one-off `clamp(...)` in JSX.
 First name the product reason, add or reuse a `--topology-*` token, and update
@@ -192,6 +654,19 @@ Use named `--topology-*` tokens or add a documented token before changing:
   easing;
 - MCP/CLI handoff markers that prove the selected fact, evidence, quality, and
   next action stay visible.
+
+Relation-label handoff state is aggregated on the skeleton-cards root with
+`data-relation-label-handoff-contract="label-level-mcp-cli-fallback"`. Every map
+label hit target must expose its gate, primary MCP action, CLI fallback command,
+fact route, quality, and evidence; when a map label is selected, the root also
+mirrors the selected label's handoff state so installed-app WebView evidence can
+prove the label is an actionable ontology fact, not just a decorative badge.
+
+Relation-label geometry is also a frame-level contract. The skeleton-cards root
+must expose `data-relation-label-geometry-contract="frame-positioned-hit-targets"`
+with after-render expected/ready/pending counts, so a visible scan label is
+proved to have real viewport-clamped hit-target geometry before the user opens a
+relation card.
 
 Each new topology token needs:
 
@@ -356,6 +831,11 @@ details-on-demand* — not the inverse (everything-at-once + fullscreen-on-click
   anchors near the node and lists the connected nodes (each a click target for
   an incremental ego walk). The large `NodeDetailPanel` becomes an opt-in
   `전체 상세 →` drill, not the click default.
+- **Card count chips are topology marks.** `--topology-card-count-surface` /
+  `--topology-card-count-border` / `--topology-card-count-text` make each
+  visible skeleton card's count read as node scale, not incidental metadata.
+  Keep the chip compact and token-backed so card width remains stable while
+  important anchors expose why they matter on the map.
 - **Default view is an overview, not the full graph.** Show `project` + `domain`
   + hub nodes at level 0; reveal a domain's members on demand (semantic zoom).
   Never drop the full 2–3k-node hairball on the user uninvited.
@@ -366,6 +846,12 @@ details-on-demand* — not the inverse (everything-at-once + fullscreen-on-click
   ForceAtlas2 layout, level-of-detail labels (`hideLabelsOnMove` /
   `hideEdgesOnMove`), keep representative-edge culling, then domain clustering
   above ~5k.
+- **WebGL palette tokens.** Sigma graph marks do not consume CSS custom
+  properties directly; `src/widgets/topology-map-sigma/lib/topology-palette.ts`
+  is the map-layer token source. Dark overview edges must stay quiet enough for
+  dense vaults, but still visible as topology context before focus/path
+  reducers promote selected relations. Treat base / containment / dependency /
+  dim edges as semantic layers, not incidental RGBA literals.
 
 This serves the new "topology" row in the cited-lineage table above.
 

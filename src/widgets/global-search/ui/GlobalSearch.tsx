@@ -5,7 +5,7 @@ import { Command } from "cmdk";
 import * as Dialog from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
@@ -166,7 +166,11 @@ export function GlobalSearch({
         <Dialog.Overlay className="fixed inset-0 z-50 bg-[color:rgba(8,9,12,0.66)]" />
         <Dialog.Content
           aria-label={t('dialogAriaLabel')}
-          className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh]"
+          data-global-search-responsive-contract="mobile-sheet-md-floating"
+          data-global-search-floating-width-token="--topology-search-sheet-floating-width"
+          data-global-search-radius-token="--topology-search-sheet-radius"
+          data-global-search-mobile-bottom-reserve-token="--topology-mobile-bottom-tab-reserve"
+          className="fixed inset-0 z-50 flex items-stretch justify-center md:items-start md:px-4 md:pt-[12vh]"
         >
           <VisuallyHidden>
             <Dialog.Title>{t('dialogTitle')}</Dialog.Title>
@@ -177,7 +181,7 @@ export function GlobalSearch({
           <Command
             label={t('commandLabel')}
             shouldFilter={false}
-            className="w-full max-w-xl overflow-hidden rounded-2xl border border-[color:var(--color-overlay-3)] bg-[color:var(--color-panel)] shadow-[0_20px_56px_rgba(0,0,0,0.50)]"
+            className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-hidden border border-[color:var(--color-overlay-3)] bg-[color:var(--color-panel)] shadow-[0_20px_56px_rgba(0,0,0,0.50)] md:h-auto md:max-w-[var(--topology-search-sheet-floating-width)] md:rounded-[var(--topology-search-sheet-radius)]"
             onClick={(event) => event.stopPropagation()}
           >
         <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-4 py-3">
@@ -195,6 +199,17 @@ export function GlobalSearch({
           <kbd className="hidden shrink-0 rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline-block">
             ESC
           </kbd>
+          <button
+            type="button"
+            onClick={closeAndClear}
+            aria-label={t('closeAriaLabel')}
+            data-testid="global-search-close"
+            data-global-search-close-contract="touch-visible"
+            data-global-search-close-size-token="--topology-search-sheet-close-size"
+            className="flex h-[var(--topology-search-sheet-close-size)] w-[var(--topology-search-sheet-close-size)] shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+          >
+            <X size={15} aria-hidden />
+          </button>
         </div>
 
         {/* kind / project chip filter row — ontology 결과 좁히기 전용
@@ -301,7 +316,7 @@ export function GlobalSearch({
           ) : null}
         </div>
 
-        <Command.List className="max-h-[52vh] overflow-y-auto px-2 py-2">
+        <Command.List className="flex-1 overflow-y-auto overscroll-y-contain px-2 py-2 md:max-h-[52vh] md:flex-none">
           <Command.Empty className="px-3 py-6 text-center text-sm text-[color:var(--color-text-tertiary)]">
             {isEmptyQuery
               ? totalCorpus === 0
@@ -402,6 +417,13 @@ export function GlobalSearch({
           </span>
         </div>
           </Command>
+          <div
+            aria-hidden="true"
+            data-testid="global-search-bottom-reserve-scrim"
+            data-bottom-reserve-scrim-contract="opaque-sheet-continuation"
+            data-bottom-reserve-token="--topology-mobile-bottom-tab-reserve"
+            className="fixed inset-x-0 bottom-0 h-[var(--topology-mobile-bottom-tab-reserve)] border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] md:hidden"
+          />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

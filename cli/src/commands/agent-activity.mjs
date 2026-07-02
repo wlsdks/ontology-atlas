@@ -29,6 +29,7 @@ const ALLOWED_FLAGS = [
   '--file',
   '--plan',
   '--mcp',
+  '--source',
   '--codegraph',
   '--verify',
   '--updated-at',
@@ -87,6 +88,7 @@ function buildHeartbeat(parsed) {
     plan: parsed.plan,
     evidence: {
       mcp: parsed.mcp,
+      source: [...parsed.source, ...parsed.codegraph],
       codegraph: parsed.codegraph,
       verification: parsed.verification,
     },
@@ -224,6 +226,10 @@ function normalizeHeartbeat(value) {
     plan: normalizedStringArray(heartbeat.plan),
     evidence: {
       mcp: normalizedStringArray(evidence.mcp),
+      source: [
+        ...normalizedStringArray(evidence.source),
+        ...normalizedStringArray(evidence.codegraph),
+      ],
       codegraph: normalizedStringArray(evidence.codegraph),
       verification: normalizedStringArray(evidence.verification),
     },
@@ -314,16 +320,16 @@ function deriveProofSummary(heartbeat) {
       : {};
   const sources = {
     mcp: normalizedStringArray(evidence.mcp).length,
-    codegraph: normalizedStringArray(evidence.codegraph).length,
+    source: normalizedStringArray(evidence.source).length,
     verification: normalizedStringArray(evidence.verification).length,
   };
   const labelParts = [
     ['MCP', sources.mcp],
-    ['CodeGraph', sources.codegraph],
+    ['Source', sources.source],
     ['Verify', sources.verification],
   ].filter(([, count]) => count > 0);
   return {
-    count: sources.mcp + sources.codegraph + sources.verification,
+    count: sources.mcp + sources.source + sources.verification,
     sources,
     label: labelParts.map(([label, count]) => `${label} · ${count}`).join(', '),
   };
@@ -413,9 +419,10 @@ function deriveRefreshRequest({ heartbeat, freshness, reviewTarget, proof, valid
 }
 
 function formatRefreshCommand({ agent, focusSummary, ontologySlug, files, evidence }) {
+  const sourceEvidence = normalizedStringArray(evidence.source);
   const evidenceArgs = [
     firstArrayValue(evidence.mcp) ? ['--mcp', firstArrayValue(evidence.mcp)] : null,
-    firstArrayValue(evidence.codegraph) ? ['--codegraph', firstArrayValue(evidence.codegraph)] : null,
+    firstArrayValue(sourceEvidence) ? ['--source', firstArrayValue(sourceEvidence)] : null,
     firstArrayValue(evidence.verification) ? ['--verify', firstArrayValue(evidence.verification)] : null,
   ].filter(Boolean).flatMap(([flag, value]) => [flag, shellArg(value)]);
   return [
@@ -467,6 +474,7 @@ function parseArgs(args) {
     files: [],
     plan: [],
     mcp: [],
+    source: [],
     codegraph: [],
     verification: [],
   };
@@ -493,6 +501,8 @@ function parseArgs(args) {
     else if (a.startsWith('--plan=')) flags.plan.push(parseCleanFlag('--plan', a.slice('--plan='.length)));
     else if (a === '--mcp') flags.mcp.push(parseCleanFlag('--mcp', args[++i]));
     else if (a.startsWith('--mcp=')) flags.mcp.push(parseCleanFlag('--mcp', a.slice('--mcp='.length)));
+    else if (a === '--source') flags.source.push(parseCleanFlag('--source', args[++i]));
+    else if (a.startsWith('--source=')) flags.source.push(parseCleanFlag('--source', a.slice('--source='.length)));
     else if (a === '--codegraph') flags.codegraph.push(parseCleanFlag('--codegraph', args[++i]));
     else if (a.startsWith('--codegraph=')) flags.codegraph.push(parseCleanFlag('--codegraph', a.slice('--codegraph='.length)));
     else if (a === '--verify') flags.verification.push(parseCleanFlag('--verify', args[++i]));
@@ -514,6 +524,7 @@ function parseArgs(args) {
     ...flags.files,
     ...flags.plan,
     ...flags.mcp,
+    ...flags.source,
     ...flags.codegraph,
     ...flags.verification,
   ]) {
@@ -539,6 +550,7 @@ function parseArgs(args) {
     files: flags.files,
     plan: flags.plan,
     mcp: flags.mcp,
+    source: flags.source,
     codegraph: flags.codegraph,
     verification: flags.verification,
     updatedAt: flags.updatedAt,
@@ -569,12 +581,12 @@ function printUsage(stream = process.stderr) {
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas agent-activity [vault] --agent codex --state editing --focus "..." [--json]\n` +
       `       [--ontology-slug slug] [--file path] [--plan step]\n` +
-      `       [--mcp call] [--codegraph call] [--verify command] [--updated-at ISO]\n` +
+      `       [--mcp call] [--source lookup] [--verify command] [--updated-at ISO]\n` +
       `  ontology-atlas agent-activity [vault] --show [--json]\n` +
       `  ontology-atlas agent-activity [vault] --clear [--json]\n\n` +
       `Writes ${ACTIVITY_RELATIVE_PATH}, the explicit live activity heartbeat Atlas reads from the opened vault.\n` +
       `State must be one of: ${VALID_STATES.join(' / ')}.\n` +
-      `Repeat --file, --plan, --mcp, --codegraph, and --verify to add multiple entries.\n` +
+      `Repeat --file, --plan, --mcp, --source, and --verify to add multiple entries. --codegraph remains a legacy alias for source lookup evidence.\n` +
       `JSON output includes reviewMode: ontology-focus with --ontology-slug, business-extraction with source files only, or none.\n`,
   );
 }

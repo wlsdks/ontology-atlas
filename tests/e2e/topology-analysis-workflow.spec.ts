@@ -1,4 +1,28 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+async function rectOf(locator: Locator) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error("missing bounding box");
+  return {
+    left: box.x,
+    top: box.y,
+    right: box.x + box.width,
+    bottom: box.y + box.height,
+  };
+}
+
+function intersects(
+  a: Awaited<ReturnType<typeof rectOf>>,
+  b: Awaited<ReturnType<typeof rectOf>>,
+  pad = 0,
+) {
+  return (
+    a.left < b.right + pad &&
+    a.right > b.left - pad &&
+    a.top < b.bottom + pad &&
+    a.bottom > b.top - pad
+  );
+}
 
 test.describe("topology analysis workflow", () => {
   test("copies overview brief as a first-contact graph handoff", async ({
@@ -39,7 +63,6 @@ test.describe("topology analysis workflow", () => {
     ).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Project search" })).toHaveCount(0);
     await expect(page.getByText(/\d+ PROJECTS/)).toHaveCount(0);
-    await page.getByText("Actions", { exact: true }).click();
     await page
       .getByRole("button", { name: "Copy topology overview brief" })
       .click();
@@ -118,6 +141,123 @@ test.describe("topology analysis workflow", () => {
     await expect(
       page.getByRole("button", { name: "Copy topology health evidence" }),
     ).toBeVisible();
+    const healthPanel = page.getByTestId("topology-analysis-panel");
+    await expect(healthPanel).toHaveAttribute(
+      "data-health-repair-lane-contract",
+      "target-to-builder-to-sync",
+    );
+    await expect(healthPanel).toHaveAttribute(
+      "data-health-repair-order-contract",
+      "inspect-repair-sync",
+    );
+    await expect(healthPanel).toHaveAttribute(
+      "data-health-repair-target-slug",
+      /.+/,
+    );
+    await expect(healthPanel).toHaveAttribute(
+      "data-health-repair-target-kind",
+      /stale|orphan|promotion/,
+    );
+    const sigmaViewport = page.getByTestId("sigma-topology-viewport");
+    await expect(sigmaViewport).toHaveAttribute(
+      "data-health-repair-map-target-contract",
+      "analysis-panel-target-to-audit-overlay",
+    );
+    await expect(sigmaViewport).toHaveAttribute(
+      "data-health-repair-map-target-slug",
+      await healthPanel.getAttribute("data-health-repair-target-slug") ?? "",
+    );
+    await expect(sigmaViewport).toHaveAttribute(
+      "data-health-repair-map-target-kind",
+      await healthPanel.getAttribute("data-health-repair-target-kind") ?? "",
+    );
+    const auditTargetCard = page.locator(
+      '[data-skeleton-card][data-health-repair-audit-target="true"]',
+    );
+    await expect(auditTargetCard).toHaveAttribute(
+      "data-health-repair-audit-contract",
+      "panel-target-card-highlight",
+    );
+    await expect(auditTargetCard).toHaveAttribute(
+      "data-slug",
+      await healthPanel.getAttribute("data-health-repair-target-slug") ?? "",
+    );
+    await expect(auditTargetCard).toHaveAttribute(
+      "data-health-repair-audit-kind",
+      await healthPanel.getAttribute("data-health-repair-target-kind") ?? "",
+    );
+    await expect(auditTargetCard).toHaveAttribute(
+      "data-health-repair-audit-badge-contract",
+      "inline-card-state-label",
+    );
+    await expect(auditTargetCard).toHaveAttribute(
+      "data-health-repair-audit-badge",
+      "repair",
+    );
+    const auditLegend = page.getByTestId("topology-audit-legend");
+    await expect(auditLegend).toBeVisible();
+    await expect(auditLegend).toHaveAttribute(
+      "data-audit-legend-contract",
+      "health-support-bottom-left-clear-of-minimap",
+    );
+    await expect(auditLegend).toHaveAttribute(
+      "data-audit-legend-attention-role",
+      "support",
+    );
+    await expect(auditLegend).toHaveAttribute("data-audit-legend-density", "compact");
+    const minimap = page.getByTestId("topology-minimap");
+    await expect(minimap).toBeVisible();
+    expect(intersects(await rectOf(auditLegend), await rectOf(healthPanel), 12)).toBe(
+      false,
+    );
+    expect(intersects(await rectOf(auditLegend), await rectOf(minimap), 12)).toBe(
+      false,
+    );
+    const healthRepairOrder = page.getByTestId("topology-health-repair-order");
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-health-repair-primary-action",
+      "builder",
+    );
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-health-repair-action-order",
+      "builder-mcp-ontology",
+    );
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-health-repair-visual-contract",
+      "builder-primary-secondary-compact",
+    );
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-health-repair-sync-gate",
+      "post-change",
+    );
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-primary-surface-token",
+      "--topology-health-repair-primary-surface",
+    );
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-secondary-border-token",
+      "--topology-health-repair-secondary-border",
+    );
+    const firstRepairAction = healthRepairOrder.locator("a,button").first();
+    await expect(firstRepairAction).toHaveText(/Edit relations/);
+    await expect(firstRepairAction).toHaveAttribute(
+      "data-health-repair-primary-action",
+      "builder",
+    );
+    await expect(firstRepairAction).toHaveAttribute(
+      "data-health-repair-action-tier",
+      "primary",
+    );
+    await expect(firstRepairAction).toHaveAttribute(
+      "data-surface-token",
+      "--topology-health-repair-primary-surface",
+    );
+    await expect(firstRepairAction).toHaveAttribute(
+      "data-border-token",
+      "--topology-health-repair-primary-border",
+    );
+    const firstRepairActionBox = await firstRepairAction.boundingBox();
+    expect(firstRepairActionBox?.width ?? 0).toBeGreaterThanOrEqual(96);
     await page.getByRole("button", { name: "Copy topology health evidence" }).click();
     const copiedHealthEvidence = await page.evaluate(
       () =>
@@ -135,7 +275,7 @@ test.describe("topology analysis workflow", () => {
     expect(copiedHealthEvidence).toContain("  # Post-change ontology sync gate");
     expect(copiedHealthEvidence).toContain('"operation": "maintenance_plan"');
     expect(copiedHealthEvidence).toContain("ontology-atlas validate [vault]");
-    await page.getByText("Actions", { exact: true }).click();
+    await page.getByTestId("topology-health-repair-proof-summary").click();
     await expect(
       page.getByRole("button", { name: "Copy topology health impact MCP check" }),
     ).toBeVisible();
@@ -172,6 +312,72 @@ test.describe("topology analysis workflow", () => {
     await expect(
       page.getByRole("link", { name: "Edit relations" }),
     ).toBeVisible();
+  });
+
+  test("keeps health repair primary action visible on mobile", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/topology/?mode=health");
+
+    await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
+      timeout: 20_000,
+    });
+    const healthPanel = page.getByTestId("topology-analysis-panel");
+    await expect(healthPanel).toBeVisible();
+    await expect(healthPanel).toHaveAttribute(
+      "data-health-repair-lane-contract",
+      "target-to-builder-to-sync",
+    );
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-health-repair-map-target-contract",
+      "analysis-panel-target-to-audit-overlay",
+    );
+    await expect(
+      page.locator('[data-skeleton-card][data-health-repair-audit-target="true"]'),
+    ).toHaveAttribute(
+      "data-health-repair-audit-contract",
+      "panel-target-card-highlight",
+    );
+    await expect(
+      page.locator('[data-skeleton-card][data-health-repair-audit-target="true"]'),
+    ).toHaveAttribute(
+      "data-health-repair-audit-badge-contract",
+      "inline-card-state-label",
+    );
+    await expect(page.getByTestId("topology-audit-legend")).toBeHidden();
+
+    const healthRepairOrder = page.getByTestId("topology-health-repair-order");
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-health-repair-action-order",
+      "builder-mcp-ontology",
+    );
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-health-repair-visual-contract",
+      "builder-primary-secondary-compact",
+    );
+    await expect(healthRepairOrder).toHaveAttribute(
+      "data-secondary-border-token",
+      "--topology-health-repair-secondary-border",
+    );
+    const primaryRepair = healthRepairOrder
+      .locator('a[data-health-repair-primary-action="builder"]')
+      .first();
+    await expect(primaryRepair).toBeVisible();
+    await expect(primaryRepair).toBeInViewport();
+    await expect(primaryRepair).toHaveAttribute(
+      "data-border-token",
+      "--topology-health-repair-primary-border",
+    );
+    const primaryRepairBox = await primaryRepair.boundingBox();
+    expect(primaryRepairBox?.width ?? 0).toBeGreaterThanOrEqual(96);
+
+    const overflow = await page.evaluate(() => ({
+      x: document.documentElement.scrollWidth - window.innerWidth,
+      y: document.documentElement.scrollHeight - window.innerHeight,
+    }));
+    expect(overflow.x).toBe(0);
+    expect(overflow.y).toBeLessThanOrEqual(160);
   });
 
   test("restores ontology drawer handoff links from selected-node URL state", async ({
@@ -316,10 +522,29 @@ test.describe("topology analysis workflow", () => {
       "href",
       /\/en\/ontology\/edit\/\?node=capabilities%2Ftopology-analysis-modes/,
     );
+    const focusSecondaryActions = page.getByTestId("topology-focus-secondary-actions");
+    await expect(focusSecondaryActions).toHaveAttribute(
+      "data-focus-secondary-action-contract",
+      "ontology-builder-exits",
+    );
+    await expect(focusSecondaryActions).toHaveAttribute(
+      "data-command-secondary-surface-token",
+      "--topology-command-secondary-surface",
+    );
+    await expect(
+      focusSecondaryActions.locator('a[data-focus-secondary-action="ontology"]'),
+    ).toHaveAttribute(
+      "data-command-secondary-border-token",
+      "--topology-command-secondary-border",
+    );
+    await expect(
+      focusSecondaryActions.locator('a[data-focus-secondary-action="builder"]'),
+    ).toHaveAttribute(
+      "data-command-secondary-border-token",
+      "--topology-command-secondary-border",
+    );
 
-    await page
-      .getByRole("button", { name: "Copy topology focus review brief" })
-      .click();
+    await page.getByTestId("topology-focus-primary-action").click();
     const copiedFocusBrief = await page.evaluate(
       () =>
         (
@@ -349,8 +574,19 @@ test.describe("topology analysis workflow", () => {
     expect(copiedFocusBrief).toContain('"operation": "health"');
     expect(copiedFocusBrief).toContain("ontology-atlas validate [vault]");
 
-    await page.getByText("Copy tools", { exact: true }).click();
-    await page.getByRole("button", { name: "Copy topology focus MCP profile" }).click();
+    await page.getByTestId("topology-focus-proof-summary").click();
+    const focusMcpProfile = page.getByRole("button", {
+      name: "Copy topology focus MCP profile",
+    });
+    await expect(focusMcpProfile).toHaveAttribute(
+      "data-focus-proof-action",
+      "mcp-profile",
+    );
+    await expect(focusMcpProfile).toHaveAttribute(
+      "data-command-secondary-surface-token",
+      "--topology-command-secondary-surface",
+    );
+    await focusMcpProfile.click();
     const copiedProfile = await page.evaluate(
       () =>
         (
@@ -459,9 +695,80 @@ test.describe("topology analysis workflow", () => {
     await expect(
       page.getByRole("button", { name: "Path", pressed: true }),
     ).toBeVisible();
+    const modeRail = page.getByTestId("topology-analysis-mode-rail");
+    await expect(modeRail).toHaveAttribute(
+      "data-surface-token",
+      "--topology-analysis-mode-rail-surface",
+    );
+    await expect(modeRail).toHaveAttribute(
+      "data-active-surface-token",
+      "--topology-analysis-mode-active-surface",
+    );
+    await expect(modeRail).toHaveAttribute(
+      "data-active-border-token",
+      "--topology-analysis-mode-active-border",
+    );
+    await expect(modeRail).toHaveAttribute(
+      "data-active-text-token",
+      "--topology-analysis-mode-active-text",
+    );
+    await expect(modeRail).toHaveAttribute(
+      "data-idle-text-token",
+      "--topology-analysis-mode-idle-text",
+    );
+    await expect(modeRail).toHaveAttribute(
+      "data-focus-ring-token",
+      "--topology-analysis-mode-focus-ring",
+    );
+    await expect(page.locator('button[data-analysis-mode-tab="path"]')).toHaveAttribute(
+      "data-mode-tab-state",
+      "active",
+    );
+    await expect(page.locator('button[data-analysis-mode-tab="path"]')).toHaveAttribute(
+      "data-active-border-token",
+      "--topology-analysis-mode-active-border",
+    );
+    await expect(page.locator('button[data-analysis-mode-tab="path"]')).toHaveAttribute(
+      "data-text-token",
+      "--topology-analysis-mode-active-text",
+    );
+    await expect(page.locator('button[data-analysis-mode-tab="overview"]')).toHaveAttribute(
+      "data-text-token",
+      "--topology-analysis-mode-idle-text",
+    );
     await expect(page.getByText(/^Showing the link from/)).toBeVisible();
-    await page.getByText("Actions", { exact: true }).click();
+    const pathProofSummary = page.getByTestId("topology-path-proof-summary");
+    await expect(pathProofSummary).toHaveAttribute(
+      "data-summary-contract",
+      "full-width-proof-disclosure",
+    );
+    await expect(pathProofSummary).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-proof-summary-surface",
+    );
+    await page.getByTestId("topology-path-proof-summary").click();
     await expect(page.getByText("Shows the visible link between two nodes.")).toBeVisible();
+    const pathProofRoute = page.getByTestId("topology-path-proof-route");
+    await expect(pathProofRoute).toHaveAttribute(
+      "data-route-contract",
+      "proof-disclosure-source-target",
+    );
+    await expect(pathProofRoute).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-route-surface",
+    );
+    await expect(pathProofRoute).toHaveAttribute(
+      "data-chip-border-token",
+      "--topology-path-route-chip-border",
+    );
+    await expect(page.locator('a[data-path-proof-action="source-ontology"]')).toHaveAttribute(
+      "data-path-proof-action",
+      "source-ontology",
+    );
+    await expect(page.locator('a[data-path-proof-action="target-builder"]')).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-route-chip-surface",
+    );
     await expect(
       page.getByRole("button", { name: "Copy topology path evidence" }),
     ).toBeVisible();
@@ -522,10 +829,29 @@ test.describe("topology analysis workflow", () => {
     expect(copiedEvidence).toContain('"operation": "maintenance_plan"');
     expect(copiedEvidence).toContain("ontology-atlas validate [vault]");
 
-    await page.getByText("Copy tools", { exact: true }).click();
+    await page.getByTestId("topology-path-checks-summary").click();
+    const pathCheckActions = page.getByTestId("topology-path-check-actions");
+    await expect(pathCheckActions).toHaveAttribute(
+      "data-path-check-action-contract",
+      "mcp-sequence-proof-actions",
+    );
+    await expect(pathCheckActions).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-surface",
+    );
     await expect(
       page.getByRole("button", { name: "Copy topology path MCP check" }),
     ).toBeVisible();
+    await expect(page.locator('button[data-path-check-action="path-mcp"]')).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-mcp-surface",
+    );
+    await expect(
+      page.locator('button[data-path-check-action="relation-preflight"]'),
+    ).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-cli-surface",
+    );
     await page.getByRole("button", { name: "Copy topology path MCP check" }).click();
     const copiedMcpCheck = await page.evaluate(
       () =>
@@ -639,7 +965,7 @@ test.describe("topology analysis workflow", () => {
     ).toBeVisible();
   });
 
-  test("keeps the mobile path primer below the analysis bar", async ({ page }) => {
+  test("keeps the mobile path primer owned by the analysis bar", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/topology/?mode=path");
 
@@ -649,8 +975,12 @@ test.describe("topology analysis workflow", () => {
     const analysisBar = page.getByRole("region", {
       name: "Topology analysis mode",
     });
-    const primerBody = page.getByText(
-      "Click a source node, then click a target to highlight the shortest visible route. Shift+click also works outside Path mode.",
+    await expect(analysisBar).toHaveAttribute(
+      "data-path-guidance-owner",
+      "analysis-rail",
+    );
+    const primerBody = analysisBar.getByText(
+      "Choose a start node, then a target node.",
     );
 
     await expect(analysisBar).toBeVisible();
@@ -663,6 +993,9 @@ test.describe("topology analysis workflow", () => {
 
     expect(barBox, "analysis bar should have a layout box").not.toBeNull();
     expect(primerBox, "path primer should have a layout box").not.toBeNull();
-    expect(primerBox!.y).toBeGreaterThanOrEqual(barBox!.y + barBox!.height - 1);
+    expect(primerBox!.y).toBeGreaterThanOrEqual(barBox!.y);
+    expect(primerBox!.y + primerBox!.height).toBeLessThanOrEqual(
+      barBox!.y + barBox!.height + 1,
+    );
   });
 });

@@ -32,7 +32,7 @@ const pkg = JSON.parse(readText("package.json"));
 const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
 const rootLayout = readText("app/layout.tsx");
-const webManifest = readText("app/manifest.ts");
+const webManifest = JSON.parse(readText("public/manifest.webmanifest"));
 const cargoToml = readText("src-tauri/Cargo.toml");
 const desktopDoc = readText("docs/DESKTOP-MACOS.md");
 const agentsDoc = readText("AGENTS.md");
@@ -1314,7 +1314,7 @@ if (
   localizedTopologySelectedRelationScript.includes("--min-webview-size=1400x860") &&
   localizedTopologySelectedRelationScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
   localizedTopologySelectedRelationScript.includes("--webview-evidence=.tmp/ontology-atlas-selected-relation-density-ko.webview.json") &&
-  localizedTopologySelectedRelationScript.includes("--verify-topology-drag")
+  localizedTopologySelectedRelationScript.includes("--verify-topology-selected-relation")
 ) {
   pass("desktop localized topology selected relation proof script checks compact relation density");
 } else {
@@ -1367,13 +1367,13 @@ if (
   localizedTopologyWideScript.includes("--require-window") &&
   localizedTopologyWideScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
   localizedTopologyWideScript.includes("--webview-window-size=1920x1080") &&
-  localizedTopologyWideScript.includes("--min-webview-size=1920x1000") &&
+  localizedTopologyWideScript.includes("--min-webview-size=1920x900") &&
   localizedTopologyWideScript.includes("--webview-evidence=.tmp/ontology-atlas-design-wide-1920.webview.json") &&
   localizedTopologyWideScript.includes("--webview-window-size=2560x1440") &&
-  localizedTopologyWideScript.includes("--min-webview-size=2400x1000") &&
+  localizedTopologyWideScript.includes("--min-webview-size=2400x900") &&
   localizedTopologyWideScript.includes("--webview-evidence=.tmp/ontology-atlas-design-wide-2560.webview.json") &&
   localizedTopologyWideScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
-  localizedTopologyWideScript.includes("--verify-topology-drag")
+  localizedTopologyWideScript.includes("--verify-topology-selected-relation")
 ) {
   pass("desktop localized topology wide proof script checks 1920 and 2560 selected relation density");
 } else {
@@ -1446,6 +1446,17 @@ const agentDesignGateChecks = [
       /Source -> Atlas rule -> verifier/.test(productDesignDoc),
   ],
   [
+    "graph engine fit gate",
+    /Relief\/Topology Graph Engine Fit Gate/.test(productDesignDoc) &&
+      /Sigma\.js/.test(productDesignDoc) &&
+      /Graphology/.test(productDesignDoc) &&
+      /nodeReducer/.test(productDesignDoc) &&
+      /edgeReducer/.test(productDesignDoc) &&
+      /Force Graph-style products/.test(productDesignDoc) &&
+      /Cytoscape\.js/.test(productDesignDoc) &&
+      /Reject renderer shopping/.test(productDesignDoc),
+  ],
+  [
     "installed app proof",
     /installed macOS app proof/i.test(productDesignDoc) &&
       /WebView marker/.test(productDesignDoc) &&
@@ -1463,7 +1474,7 @@ const missingAgentDesignGate = agentDesignGateChecks
   .map(([label]) => label);
 
 if (missingAgentDesignGate.length === 0) {
-  pass("agent guide requires the Product Design gate, design council, allowed reference policy, and installed-app proof for Relief work");
+  pass("agent guide requires the Product Design gate, design council, graph engine fit gate, allowed reference policy, and installed-app proof for Relief work");
 } else {
   fail(
     `AGENTS.md and docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md must keep the Relief design gate enforceable: missing ${missingAgentDesignGate.join(", ")}`,
@@ -1580,8 +1591,10 @@ if (missingBundleIcons.length === 0) {
 
 if (
   rootLayout.includes("title: 'Ontology Atlas'") &&
+  rootLayout.includes("manifest: '/manifest.webmanifest'") &&
   rootLayout.includes("alternateName: 'ontology-atlas'") &&
-  webManifest.includes("name: 'Ontology Atlas'") &&
+  webManifest.name === "Ontology Atlas" &&
+  webManifest.short_name === "Ontology Atlas" &&
   enMessages.metadata.siteName === "Ontology Atlas" &&
   koMessages.metadata.siteName === "Ontology Atlas" &&
   landingPage.includes("Ontology Atlas")

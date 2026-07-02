@@ -499,6 +499,15 @@ palette, marketing composition, animation signature, or brand skin.
 Reference checks were refreshed on 2026-06-15. Treat the links below as
 principle sources, not as visual targets.
 
+Toss-specific boundary, refreshed on 2026-06-19: Toss Tech product-design
+writing and the public `toss/slash` MIT-licensed repo may inform principles
+such as patterning repeated cases, long-text handling, accessibility, and
+engineering craft. Apps-in-Toss TDS and Figma UI Kit materials are not
+general-use Atlas sources: their license and guide restrict use to Apps-in-Toss
+contexts, and their assets, components, styles, logos, visual details, and UI
+Kit files must not be copied, modified, repurposed, or redistributed in
+Ontology Atlas.
+
 ### Live Reference Review Loop
 
 When the user asks to bring in a designer, review modern references, or raise
@@ -710,6 +719,7 @@ Use this matrix when "look at modern references" is part of the request.
 | Carbon | direct labels, concise legends, visualization anatomy | IBM chart styling or palette | relation labels should sit near the relation they explain; legends are backup, not the main reading path |
 | Linear public writing | reduced visual noise, alignment, hierarchy, dense product-work surfaces | Linear's exact sidebar, issue UI, colors, icons, or animations | make Atlas calmer and more scannable while preserving ontology-specific facts |
 | Rauno/public craft writing | fine interaction detail, immediate feedback, implementation craft close to the final medium | signature motion or personal portfolio styling | selection/focus/drag states should feel deliberate and verified in the installed app |
+| Toss public design-system writing / `toss/slash` MIT repo | pattern repeated cases, support long text, protect accessibility, keep makers focused on product work, and borrow MIT-licensed implementation ideas when useful | Apps-in-Toss TDS/Figma UI Kit assets, component styling, logos, brand visuals, exact UI patterns, or any use outside the license scope | Atlas may translate Toss's product-finish principles into token-backed width, text, interaction, and accessibility rules, then verify them in web and installed macOS app |
 | yFiles/Cambridge Intelligence | graph question framing, filtering, clustering, accessible graph interaction | SDK demo visuals or vendor styling | Relief must answer "what is this fact and what can I do next?", not merely render a graph |
 | Tufte/Rams | truthful density, less decoration, understandable and unobtrusive design | book/page aesthetics as a theme | remove non-informative chrome before adding new UI |
 
@@ -766,6 +776,100 @@ Verdicts:
   screen state.
 - `Build and verify`: the slice has a clear hierarchy, graph meaning, agent
   value, and installed-app proof.
+
+### Relief/Topology Graph Engine Fit Gate
+
+Relief is not allowed to switch graph libraries because another demo looks
+smoother, and it is not allowed to defend the current stack by inertia. Graph
+engine choice is a design decision because it changes what a non-developer can
+read and what an AI agent can act on.
+
+Current Atlas contract:
+
+- **Sigma.js** owns WebGL rendering, camera, pan/zoom, reducers, canvas event
+  handling, and large-graph frame budget.
+- **Graphology** owns graph data shape, node/edge attributes, typed relation
+  traversal, metrics, and layout inputs.
+- **ForceAtlas2 / d3-force** own layout and live drag physics; they are not the
+  product surface by themselves.
+- **Atlas DOM overlays** own readable ontology cards, relation evidence,
+  selected-node inspector, and MCP/CLI handoff. Overlay geometry is therefore a
+  first-class graph-design problem, not a CSS afterthought.
+
+Before changing graph libraries, adding a second renderer, or replacing a
+Sigma/Graphology mechanism, fill this fit pass:
+
+```md
+Graph engine fit pass
+- User moment: [overview scan / click focus / relation inspect / path build / drag arrange / agent handoff]
+- Current stack: [Sigma / Graphology / ForceAtlas2 / d3-force / DOM overlay]
+- Observed failure: [runtime or screenshot evidence, not taste]
+- Missing capability: [renderer, layout, interaction, collision, label, camera, accessibility, or handoff]
+- Can current stack solve it? [setting / reducer / layout / worker / overlay constraint / verifier]
+- Candidate alternative: [force-graph / Cytoscape.js / d3 / yFiles/Ogma commercial reference / other]
+- Tradeoff: [performance, custom labels, typed facts, overlay integration, Graphology reuse, bundle, tests]
+- Decision: [keep current stack / spike alternative / replace a subsystem / do not change]
+- Proof: [1920 and 2560 screenshots, WebView markers, installed-app evidence when UI changes]
+```
+
+Default decision rules:
+
+- **Keep Sigma/Graphology** when the problem is attention hierarchy,
+  relation-card density, camera framing, selected-state dimming, label
+  disclosure, overlay collision, or agent handoff visibility. These are Atlas
+  product-design problems; replacing the renderer will not solve them.
+- **Treat selected focus as a reducer/camera problem first**. The default
+  selected-node pattern is: center the selected node in the available map
+  viewport, brighten the selected node, direct neighbors, and visible relation
+  path, then dim unrelated nodes/edges. Do not add a large focus hull, extra
+  floating legend, or second support panel unless a verifier proves it helps a
+  user read the ontology fact faster.
+- **Tune the current stack first** when official Sigma/Graphology capabilities
+  apply: `nodeReducer`, `edgeReducer`, camera state, `graphToViewport`,
+  `viewportToGraph`, ForceAtlas2 settings, worker physics, label density, edge
+  level-of-detail, or `autoRescale` / size-reference settings.
+- **Use Force Graph-style products as interaction references, not replacements
+  by default**. Force-directed demos are useful for drag, fit, node/link focus,
+  and 2D/3D exploration patterns, but Atlas still needs typed ontology facts,
+  stable DOM handoff controls, locale text, and deterministic WebView markers.
+  A spike must prove those contracts, not just smoother particles.
+- **Use Cytoscape.js as the analysis/gesture comparator** when the missing
+  need is graph-theory interaction, selection semantics, box gestures, or
+  headless analysis. Do not switch to it to solve spacing, hierarchy, or
+  "AI-looking" card treatment.
+- **Spike an alternative only** when the current stack cannot prove a needed
+  capability after one narrow experiment. Good spike questions are concrete:
+  "Can force-graph keep selected neighbors collision-free while preserving
+  readable labels at 1920?", not "Is force-graph prettier?"
+- **Reject renderer shopping** when the visible issue is a full-height colored
+  rail, popup soup, oversized pills, tokenless spacing, or too much information
+  in one panel. Those are design-system failures.
+
+Use these public sources as principle references only. This engine packet was
+refreshed on 2026-06-20 against the public project documentation and
+repositories; re-check it before a renderer migration or major graph
+interaction spike:
+
+- Sigma.js: https://www.sigmajs.org/ — WebGL renderer built on Graphology, reducers for dynamic
+  node/edge appearance, camera and interaction primitives.
+- Sigma.js lifecycle/customization: https://www.sigmajs.org/docs/advanced/lifecycle/ and
+  https://www.sigmajs.org/docs/advanced/customization/ — `nodeReducer`,
+  `edgeReducer`, scheduled refresh, and camera state are first-class tuning
+  mechanisms before changing renderers.
+- Graphology: https://graphology.github.io/ — graph model and standard-library algorithms, including
+  ForceAtlas2 and metrics.
+- react-force-graph / force-graph: https://github.com/vasturiano/react-force-graph — useful comparison for force-directed 2D/3D
+  interaction, node/link focus, drag, fit, and collision examples.
+- Cytoscape.js: https://js.cytoscape.org/ — useful comparison for graph theory analysis, gestures,
+  selection, and rich interactive network apps.
+- Gephi Lite: useful comparison for network-exploration product lessons, but
+  also a warning that a graph tool can become chaotic when design hierarchy and
+  user moments are not explicit.
+
+Do not copy demo styling, palettes, particle effects, 3D spectacle, or vendor
+component shape. Translate a source into an Atlas verifier: typed ontology
+fact, visible relation, readable label, smooth camera, collision-free overlay,
+or MCP/CLI handoff action.
 
 ### Relief/Topology Token And Anti-Pattern Gate
 

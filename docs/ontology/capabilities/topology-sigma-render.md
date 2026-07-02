@@ -78,7 +78,10 @@ ForceAtlas2 좌표가 안정되기 전의 bright hairball 을 화면에 노출�
 선택 / hover 라벨은 `SigmaFocusLabel` DOM overlay 로 그리되, 노드가 화면
 오른쪽이나 아래쪽 가장자리에 가까우면 라벨을 viewport 안쪽으로 clamp 하고 반대편에
 붙인다. 라벨 capsule 은 불투명 배경과 제한 폭 / truncation 을 가져, relation line
-위에 떠 있어도 텍스트가 선에 파묻히지 않는다.
+위에 떠 있어도 텍스트가 선에 파묻히지 않는다. 이 overlay 는 Sigma
+`afterRender` 이벤트를 직접 React render 로 연결하지 않고 requestAnimationFrame 으로
+같은 frame 안의 위치 갱신을 합쳐, camera / drag / physics tick 중 focus 라벨이
+프레임당 한 번만 state 를 갱신한다.
 
 `/topology`의 첫 viewport도 이제 Sigma graph가 실제로 그리는 ontology node /
 edge 수를 concept / relation metric으로 말한다. 왼쪽 collapsed hero, 분석 바,

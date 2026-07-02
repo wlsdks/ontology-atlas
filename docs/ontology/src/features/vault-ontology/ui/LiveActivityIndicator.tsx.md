@@ -7,13 +7,13 @@ domain: views
 
 `src/features/vault-ontology/ui/LiveActivityIndicator.tsx` renders the operations-nav Live badge that explains changed ontology nodes and the current AI-agent heartbeat.
 
-Dogfood evidence, 2026-06-06: Codex used CodeGraph to locate `LiveActivityBadge`, Atlas MCP to inspect `capabilities/agent-live-activity-contract`, and macOS Accessibility `AXPress` plus Computer Use observation to prove the installed `/Applications/Ontology Atlas.app` opens the Live popover. The popover now exposes a real button contract (`aria-expanded` / `aria-controls`), a dialog body, and a dedicated close button; jsdom tests also cover Escape and outside-pointer dismissal.
+Dogfood evidence, 2026-06-06: Codex used source lookup to locate `LiveActivityBadge`, Atlas MCP to inspect `capabilities/agent-live-activity-contract`, and macOS Accessibility `AXPress` plus Computer Use observation to prove the installed `/Applications/Ontology Atlas.app` opens the Live popover. The popover now exposes a real button contract (`aria-expanded` / `aria-controls`), a dialog body, and a dedicated close button; jsdom tests also cover Escape and outside-pointer dismissal.
 
 Follow-up evidence, 2026-06-06: the trigger no longer renders a stale heartbeat as `CODEX · verifying` or another current work state. It renders the agent plus the stale label in the closed pill, while the popover keeps the old state and age for inspection.
 
 The popover now shows a proof trail below the evidence counts. Instead of only
-showing `MCP · N`, `CodeGraph · N`, and `Verify · N`, it also prints the first
-reported MCP call, CodeGraph lookup, and verification command with a `+N`
+showing `MCP · N`, `Source · N`, and `Verify · N`, it also prints the first
+reported MCP call, source lookup, and verification command with a `+N`
 overflow marker. That lets a human reviewer see whether the connected agent used
 the shared ontology tools and local verification before trusting the heartbeat.
 
@@ -35,7 +35,7 @@ The closed Live pill now treats review mode, review target, focus summary, and
 proof counts as detail-only. The trigger's accessible name says whether the
 agent heartbeat is current, stale, invalid, or missing, while the popover keeps
 the parsed review mode (`ontology-focus` or `business-extraction`), target, MCP /
-CodeGraph / verification evidence, and copyable handoff packets. That makes
+source / verification evidence, and copyable handoff packets. That makes
 agent collaboration visible without forcing every user to parse Codex state,
 source paths, and proof counts before choosing a concept.
 

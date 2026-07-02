@@ -39,21 +39,20 @@ export interface SafeAreaCameraFit {
 const DEFAULT_MIN_ZOOM_IN_SCALE = 0.55;
 const DEFAULT_SELECTED_FOCUS_COMFORT_PADDING = 24;
 const DEFAULT_SELECTED_FOCUS_READING_RATIO = 0.8;
+const DEFAULT_SELECTED_FOCUS_TARGET_POLICY = 'safe-center';
+export const SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO = 0.48;
 const DEFAULT_SELECTED_FOCUS_TOP_INSET = 420;
 const SELECTED_FOCUS_PANEL_CLEAR_TOP_INSET = 224;
 const SELECTED_FANOUT_ROW_TOP_INSET = 32;
 const BASE_TOP_INSET = 176;
 const BASE_BOTTOM_INSET = 136;
-const BASE_LEFT_HUD_INSET = 640;
+const BASE_LEFT_HUD_INSET = 280;
+const FOCUS_SUPPORT_RAIL_LEFT_INSET = 240;
 const MAX_LEFT_HUD_VIEWPORT_RATIO = 0.46;
 const SELECTED_FOCUS_LEFT_RAIL_INSET = 320;
 const COMPACT_SELECTED_FOCUS_LEFT_RAIL_INSET = 420;
 const MAX_SELECTED_LEFT_RAIL_VIEWPORT_RATIO = 0.32;
 const COMPACT_SELECTED_RIGHT_INSET = 320;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
 
 export interface SkeletonSafeInsetOptions {
   /**
@@ -61,6 +60,8 @@ export interface SkeletonSafeInsetOptions {
    * fan-out 안전값을 사용해 호출부 마이그레이션 중에도 잘림을 피한다.
    */
   selectedFanoutRows?: number;
+  /** Focus mode before selection uses a compact guidance rail, not the overview HUD. */
+  compactFocusRail?: boolean;
 }
 
 export interface SelectedFocusCameraFitInput {
@@ -70,17 +71,19 @@ export interface SelectedFocusCameraFitInput {
   currentRatio: number;
   comfortPadding?: number;
   readingRatio?: number;
+  targetPolicy?: 'safe-center' | 'viewport-center';
+  safeRectNoop?: boolean;
 }
 
 export interface SelectedFocusCameraFit {
   targetRatio: number;
-  /** 선택 노드가 이동 후 놓일 viewport px. safe rect 안의 가장 가까운 읽기 지점이다. */
+  /** 선택 노드가 이동 후 놓일 viewport px. fixed chrome 을 뺀 safe rect 의 읽기 중심이다. */
   safeTarget: { x: number; y: number };
 }
 
 export interface SelectedFocusCameraMotionProof {
   intent: 'selected-focus-safe-rect';
-  targetPolicy: 'nearest-safe-target';
+  targetPolicy: 'readable-safe-center' | 'viewport-center';
   selectedViewport: { x: number; y: number };
   safeTarget: { x: number; y: number };
   distancePx: number;
@@ -140,6 +143,11 @@ export function resolveSkeletonSafeInsets(
           : SELECTED_FOCUS_LEFT_RAIL_INSET * scale,
         Math.max(48 * scale, viewportWidth * MAX_SELECTED_LEFT_RAIL_VIEWPORT_RATIO),
       )
+    : options.compactFocusRail
+      ? Math.min(
+          FOCUS_SUPPORT_RAIL_LEFT_INSET * scale,
+          Math.max(48 * scale, viewportWidth * MAX_LEFT_HUD_VIEWPORT_RATIO),
+        )
     : Math.min(
         BASE_LEFT_HUD_INSET * scale,
         Math.max(48 * scale, viewportWidth * MAX_LEFT_HUD_VIEWPORT_RATIO),
@@ -186,6 +194,8 @@ export function resolveSelectedFocusCameraFit({
   currentRatio,
   comfortPadding = DEFAULT_SELECTED_FOCUS_COMFORT_PADDING,
   readingRatio = DEFAULT_SELECTED_FOCUS_READING_RATIO,
+  targetPolicy = DEFAULT_SELECTED_FOCUS_TARGET_POLICY,
+  safeRectNoop = false,
 }: SelectedFocusCameraFitInput): SelectedFocusCameraFit | null {
   const safeWidth = Math.max(1, viewport.width - insets.left - insets.right);
   const safeHeight = Math.max(1, viewport.height - insets.top - insets.bottom);
@@ -197,33 +207,103 @@ export function resolveSelectedFocusCameraFit({
   const right = viewport.width - insets.right - padX;
   const top = insets.top + padY;
   const bottom = viewport.height - insets.bottom - padY;
-  const insideComfortRect =
+  const safeTarget =
+    targetPolicy === 'viewport-center'
+      ? {
+          x: viewport.width / 2,
+          y: viewport.height * SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
+        }
+      : {
+          x: left + (right - left) / 2,
+          y: top + (bottom - top) / 2,
+        };
+  const targetDistance = Math.hypot(
+    safeTarget.x - selectedViewport.x,
+    safeTarget.y - selectedViewport.y,
+  );
+  const selectedInsideReadableSafeRect =
     selectedViewport.x >= left &&
     selectedViewport.x <= right &&
     selectedViewport.y >= top &&
     selectedViewport.y <= bottom;
+  if (
+    targetPolicy === 'viewport-center' &&
+    safeRectNoop &&
+    selectedInsideReadableSafeRect &&
+    targetDistance <= comfortPadding
+  ) {
+    return null;
+  }
+  const centerTolerance = Math.max(1, comfortPadding / 2);
+  const alreadyCentered = targetDistance <= centerTolerance;
 
-  if (insideComfortRect) return null;
+  if (alreadyCentered) return null;
 
   return {
-    targetRatio: Math.min(currentRatio, readingRatio),
-    safeTarget: {
-      x: clamp(selectedViewport.x, left, right),
-      y: clamp(selectedViewport.y, top, bottom),
-    },
+    targetRatio:
+      targetPolicy === 'viewport-center' ? currentRatio : Math.min(currentRatio, readingRatio),
+    safeTarget,
   };
+}
+
+export function clampSelectedFocusCameraSafeTarget({
+  selectedViewport,
+  safeTarget,
+  maxDistancePx,
+}: {
+  selectedViewport: { x: number; y: number };
+  safeTarget: { x: number; y: number };
+  maxDistancePx: number;
+}): { x: number; y: number } {
+  const distance = Math.hypot(
+    safeTarget.x - selectedViewport.x,
+    safeTarget.y - selectedViewport.y,
+  );
+  if (
+    !Number.isFinite(distance) ||
+    distance === 0 ||
+    !Number.isFinite(maxDistancePx) ||
+    maxDistancePx <= 0 ||
+    distance <= maxDistancePx
+  ) {
+    return safeTarget;
+  }
+  const scale = maxDistancePx / distance;
+  return {
+    x: selectedViewport.x + (safeTarget.x - selectedViewport.x) * scale,
+    y: selectedViewport.y + (safeTarget.y - selectedViewport.y) * scale,
+  };
+}
+
+export function isCameraMotionNearTarget({
+  current,
+  target,
+  positionTolerance = 0.002,
+  ratioTolerance = 0.002,
+}: {
+  current: { x: number; y: number; ratio: number };
+  target: { x: number; y: number; ratio: number };
+  positionTolerance?: number;
+  ratioTolerance?: number;
+}): boolean {
+  return (
+    Math.hypot(target.x - current.x, target.y - current.y) <= positionTolerance &&
+    Math.abs(target.ratio - current.ratio) <= ratioTolerance
+  );
 }
 
 export function resolveSelectedFocusCameraMotionProof({
   selectedViewport,
   safeTarget,
+  targetPolicy = 'readable-safe-center',
 }: {
   selectedViewport: { x: number; y: number };
   safeTarget: { x: number; y: number };
+  targetPolicy?: SelectedFocusCameraMotionProof['targetPolicy'];
 }): SelectedFocusCameraMotionProof {
   return {
     intent: 'selected-focus-safe-rect',
-    targetPolicy: 'nearest-safe-target',
+    targetPolicy,
     selectedViewport: {
       x: Math.round(selectedViewport.x),
       y: Math.round(selectedViewport.y),

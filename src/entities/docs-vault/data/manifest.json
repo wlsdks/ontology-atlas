@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-16T13:13:01.305Z",
+  "generatedAt": "2026-07-02T23:02:24.881Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -118,9 +118,9 @@
           "slug": "positioning-guardrail"
         }
       ],
-      "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-06-05. A repo-native memory layer for Claude Code, Cursor, and Codex. ontology-atlas keeps a local, git-backed mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, ",
-      "wordCount": 1077,
-      "updatedAt": "2026-06-05T17:11:07.668Z",
+      "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-06-21. A repo-native memory layer for Claude Code, Cursor, and Codex. ontology-atlas keeps a local, git-backed mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, ",
+      "wordCount": 1293,
+      "updatedAt": "2026-06-21T12:29:58.889Z",
       "linksOut": []
     },
     {
@@ -2576,8 +2576,23 @@
         },
         {
           "depth": 2,
-          "text": "2026-06-10 — 토폴로지 클릭-레벨 확장 + 골격 spine·범례 계층·패널 축소",
-          "slug": "2026-06-10-토폴로지-클릭-레벨-확장-골격-spine범례-계층패널-축소"
+          "text": "2026-07-03 — 기획자 감사 Top 3: 지도 잉크·그래프 ego dim·정리 칩 신호",
+          "slug": "2026-07-03-기획자-감사-top-3-지도-잉크그래프-ego-dim정리-칩-신호"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-03 — 토폴로지 모드 레일 5탭 → 2뷰 통합",
+          "slug": "2026-07-03-토폴로지-모드-레일-5탭-2뷰-통합"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-02 — 토폴로지 \"그래프\" 모드 (옵시디언식 살아있는 그래프)",
+          "slug": "2026-07-02-토폴로지-그래프-모드-옵시디언식-살아있는-그래프"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-02 — macOS 앱 120Hz 해제 (WKWebView 60fps 캡 제거) + 프레임 프로파일 프로브",
+          "slug": "2026-07-02-macos-앱-120hz-해제-wkwebview-60fps-캡-제거-프레임-프로파일-프로브"
         },
         {
           "depth": 2,
@@ -3655,9 +3670,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. /topology 구조 골격 진입(6/9)의 후속 — 골격이 읽히고, 클릭으로 펼쳐지게 했다. 중앙 spine 연결 — project↔domain cont",
-      "wordCount": 18523,
-      "updatedAt": "2026-06-10T10:39:12.834Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 온톨로지 제품 기획자 렌즈의 감사(경쟁: Obsidian graph / Foundry ontology)로 토폴로지 표면을 점검하고 최고 가치 3건을 즉시 ",
+      "wordCount": 19197,
+      "updatedAt": "2026-07-02T15:48:26.877Z",
       "linksOut": [
         "slug"
       ]
@@ -4087,8 +4102,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. ontology-atlas should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 4016,
-      "updatedAt": "2026-06-16T03:32:41.382Z",
+      "wordCount": 7400,
+      "updatedAt": "2026-07-02T15:04:34.442Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "FOUNDATIONS",
@@ -4242,6 +4257,11 @@
           "depth": 3,
           "text": "`/` and `/topology` — Sigma WebGL hub",
           "slug": "and-topology-sigma-webgl-hub"
+        },
+        {
+          "depth": 4,
+          "text": "Views (2-view rail) + workflow entry points",
+          "slug": "views-2-view-rail-workflow-entry-points"
         },
         {
           "depth": 4,
@@ -4585,8 +4605,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-05-31 (real-time adaptive vault polling, /docs editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, findevidence relevance ranking, validatevault vault→code pathDrift, inferimports edge reconciliation). Earlier ",
-      "wordCount": 8901,
-      "updatedAt": "2026-06-12T03:46:49.708Z",
+      "wordCount": 9021,
+      "updatedAt": "2026-07-02T15:08:20.179Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4998,8 +5018,8 @@
       },
       "headings": [],
       "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
-      "wordCount": 1125,
-      "updatedAt": "2026-06-11T15:33:17.276Z",
+      "wordCount": 1158,
+      "updatedAt": "2026-06-21T12:03:29.872Z",
       "linksOut": []
     },
     {
@@ -5343,8 +5363,8 @@
         }
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
-      "wordCount": 10467,
-      "updatedAt": "2026-06-14T07:43:31.855Z",
+      "wordCount": 10485,
+      "updatedAt": "2026-06-21T12:03:29.876Z",
       "linksOut": []
     },
     {
@@ -5862,9 +5882,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "/topology exposes explicit Map / Focus / Path / Health modes so the Sigma graph reads as an analysis workspace instead of a decorative map. The mode switcher remains reachable on mobile, so small-screen topology is not reduced back to a passive map. Path prompts and results are offset below the mobile mode switcher so ",
-      "wordCount": 1269,
-      "updatedAt": "2026-06-05T15:21:29.852Z",
+      "excerpt": "/topology exposes a two-view rail — Map (Relief) and Graph — instead of five peer mode tabs (2026-07 owner feedback: the four Relief-family modes looked like the same sparse card screen with different panels, so mode proliferation read as \"five confusing siblings\"). The mode switcher remains reachable on mobile, so sma",
+      "wordCount": 229,
+      "updatedAt": "2026-07-02T15:12:48.699Z",
       "linksOut": []
     },
     {
@@ -6054,8 +6074,8 @@
         }
       ],
       "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1-hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · 짧은 description 을 띄운다. ontology 노드는 kind(capability / domain / el",
-      "wordCount": 691,
-      "updatedAt": "2026-06-05T16:28:57.420Z",
+      "wordCount": 726,
+      "updatedAt": "2026-06-17T05:55:17.012Z",
       "linksOut": []
     },
     {
@@ -6078,8 +6098,8 @@
         }
       ],
       "excerpt": "/topology 진입을 ForceAtlas2 scatter 대신 결정론적 중앙-방사형 구조 골격으로 렌더한다. project 정중앙(tier 0) → 도메인 ring(tier 1, 12시 기준 slug 순) → 도메인별 대표 역량(tier 2, governed subtree weight 상위 N) + contains spine 엣지. 좌표는 순수 함수가 precompute 해 replay-identical — 물리/난수 0, 진입 시 idle 모션 0. 클릭-레벨 확장(semantic zoom, 누적 드릴다운): 도메인 클릭 → 그 도메인의 모든 역량이 wedge ",
-      "wordCount": 284,
-      "updatedAt": "2026-06-15T17:01:13.692Z",
+      "wordCount": 593,
+      "updatedAt": "2026-06-18T15:51:19.117Z",
       "linksOut": []
     },
     {
@@ -6270,9 +6290,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "cli/src/commands/agent-activity.mjs is the terminal writer for Atlas live agent activity. It writes, shows, and clears .ontology-atlas/agent-activity.json in the selected vault. The command validates the planning / editing / verifying / blocked / complete state enum, accepts repeated file, plan, MCP, CodeGraph, and ver",
-      "wordCount": 400,
-      "updatedAt": "2026-06-07T07:06:20.185Z",
+      "excerpt": "cli/src/commands/agent-activity.mjs is the terminal writer for Atlas live agent activity. It writes, shows, and clears .ontology-atlas/agent-activity.json in the selected vault. The command validates the planning / editing / verifying / blocked / complete state enum, accepts repeated file, plan, MCP, source lookup, and",
+      "wordCount": 431,
+      "updatedAt": "2026-06-21T12:03:29.870Z",
       "linksOut": []
     },
     {
@@ -6314,13 +6334,18 @@
         },
         {
           "depth": 2,
+          "text": "Coding-agent memory boundary decided on 2026-06-21",
+          "slug": "coding-agent-memory-boundary-decided-on-2026-06-21"
+        },
+        {
+          "depth": 2,
           "text": "MCP client connection UX check on 2026-06-05",
           "slug": "mcp-client-connection-ux-check-on-2026-06-05"
         }
       ],
       "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback. OpenAI Codex operating guid",
-      "wordCount": 1285,
-      "updatedAt": "2026-06-06T06:44:22.164Z",
+      "wordCount": 1504,
+      "updatedAt": "2026-06-21T12:29:58.942Z",
       "linksOut": []
     },
     {
@@ -7089,8 +7114,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
-      "wordCount": 1801,
-      "updatedAt": "2026-06-16T13:00:00.170Z",
+      "wordCount": 2050,
+      "updatedAt": "2026-06-17T05:49:26.036Z",
       "linksOut": []
     },
     {
@@ -7574,8 +7599,8 @@
       },
       "headings": [],
       "excerpt": "src/views/home/ui/TopologyAnalysisBar.tsx is the compact mode switcher shown over /topology. It owns the visible Overview / Focus / Path / Health controls, the small metrics line, the Overview graph handoff brief, the Health stale/orphan/promotion chips, and the first actionable Health inspect target. The bar is reacha",
-      "wordCount": 1266,
-      "updatedAt": "2026-06-12T04:16:09.096Z",
+      "wordCount": 1405,
+      "updatedAt": "2026-06-18T15:15:06.817Z",
       "linksOut": []
     },
     {
@@ -7912,8 +7937,8 @@
       },
       "headings": [],
       "excerpt": "src/features/docs-vault-local/model/agent-activity-status.ts defines the local-first heartbeat contract used by the /ontology live activity lane. It owns the reserved source path .ontology-atlas/agent-activity.json, validates the agent heartbeat JSON shape, normalizes current focus fields, reports heartbeat age, and ma",
-      "wordCount": 130,
-      "updatedAt": "2026-06-07T06:43:12.356Z",
+      "wordCount": 148,
+      "updatedAt": "2026-06-21T12:03:29.871Z",
       "linksOut": []
     },
     {
@@ -7928,9 +7953,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx renders the operations-nav Live badge that explains changed ontology nodes and the current AI-agent heartbeat. Dogfood evidence, 2026-06-06: Codex used CodeGraph to locate LiveActivityBadge, Atlas MCP to inspect capabilities/agent-live-activity-contract, and macO",
-      "wordCount": 540,
-      "updatedAt": "2026-06-07T08:44:31.858Z",
+      "excerpt": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx renders the operations-nav Live badge that explains changed ontology nodes and the current AI-agent heartbeat. Dogfood evidence, 2026-06-06: Codex used source lookup to locate LiveActivityBadge, Atlas MCP to inspect capabilities/agent-live-activity-contract, and ",
+      "wordCount": 541,
+      "updatedAt": "2026-06-21T12:03:29.874Z",
       "linksOut": []
     },
     {
@@ -8224,6 +8249,11 @@
         },
         {
           "depth": 3,
+          "text": "Relief/Topology Graph Engine Fit Gate",
+          "slug": "relieftopology-graph-engine-fit-gate"
+        },
+        {
+          "depth": 3,
           "text": "Relief/Topology Token And Anti-Pattern Gate",
           "slug": "relieftopology-token-and-anti-pattern-gate"
         },
@@ -8279,8 +8309,8 @@
         }
       ],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
-      "wordCount": 9588,
-      "updatedAt": "2026-06-15T16:32:20.957Z",
+      "wordCount": 10494,
+      "updatedAt": "2026-06-19T18:22:47.917Z",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
       ]
@@ -8469,8 +8499,8 @@
         }
       ],
       "excerpt": "Written (v2): 2026-05-01 Decisions captured: the user confirmed Direction A (ontology-first) and added dogfooding + AI-agent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology,",
-      "wordCount": 4605,
-      "updatedAt": "2026-06-07T02:22:04.128Z",
+      "wordCount": 4765,
+      "updatedAt": "2026-06-21T12:29:58.816Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -8604,8 +8634,8 @@
         }
       ],
       "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens before implementation is treated as valuable. Ontology Atlas does not need a backlog clerk. It needs a product owner that protects th",
-      "wordCount": 4868,
-      "updatedAt": "2026-06-13T16:35:18.365Z",
+      "wordCount": 4938,
+      "updatedAt": "2026-06-21T12:29:58.820Z",
       "linksOut": []
     },
     {
@@ -8735,8 +8765,8 @@
         }
       ],
       "excerpt": "Current as of 2026-05-18. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontology-engine.mjs, and cli/src/index.mjs first. ontology-atlas is now best described as a repo-native memory layer for Claude Code, Cursor,",
-      "wordCount": 675,
-      "updatedAt": "2026-06-14T16:26:38.831Z",
+      "wordCount": 809,
+      "updatedAt": "2026-06-21T12:29:58.932Z",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",
@@ -9179,7 +9209,7 @@
     "../README": [
       {
         "fromSlug": "README",
-        "context": "agent can read, query, and maintain through MCP. ## Current Canon | Document | Use it for | Status | |---|---|---| | **[`../README.md`]** | Public overview, quick start, workflows, verification promises | Canonical public entry | | [`PRODUCT-OWNER-OPERATING",
+        "context": "health, handoff packets, or memory update diffs. ## Current Canon | Document | Use it for | Status | |---|---|---| | **[`../README.md`]** | Public overview, quick start, workflows, verification promises | Canonical public entry | | [`PRODUCT-OWNER-OPERATING",
         "linkText": "`../README.md`"
       }
     ],

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { useTranslations } from 'next-intl';
 import { Check, ChevronDown, Clipboard, Maximize2 } from 'lucide-react';
@@ -45,6 +45,7 @@ import { useSyncedValueRef } from '@/shared/lib/use-synced-value-ref';
 import { computeDepthMap, shortestPath } from '../lib/depth';
 import { useCameraUrlSync } from '../lib/use-camera-url-sync';
 import { resolveTopologyPalette } from '../lib/topology-palette';
+import { createTrailingThrottle } from '../lib/trailing-throttle';
 import { useGraphKeyboardNav } from '../lib/use-graph-keyboard-nav';
 import type { SigmaForces, SigmaOverlays } from '../model/controls-state';
 import { startPhysics, type PhysicsController } from '../lib/physics';
@@ -57,7 +58,16 @@ import {
   STAGE_PAN_CLICK_CANCEL_PX,
   surfacesToDismissBeforeOpening,
 } from '../lib/stage-interaction';
-import { createWorkerLayoutController } from '../lib/worker-layout-controller';
+import {
+  TOPOLOGY_INITIAL_REVEAL_DURATION_MS,
+  TOPOLOGY_INITIAL_REVEAL_MOTION_CONTRACT,
+  TOPOLOGY_INITIAL_REVEAL_TRANSFORM_POLICY,
+  topologyInitialRevealTransition,
+} from '../lib/topology-reveal-motion';
+import {
+  createWorkerLayoutController,
+  type WorkerLayoutFrameStats,
+} from '../lib/worker-layout-controller';
 import { extractDomainLabel } from '../lib/labels';
 import {
   BOUNCE_DURATION_MS,
@@ -130,8 +140,11 @@ import {
   type SigmaEdgeTooltipData,
 } from './SigmaEdgeTooltip';
 import { SigmaLegendRow } from './SigmaLegendRow';
+import { SigmaRelationLegend } from './SigmaRelationLegend';
 import { SigmaSkeletonCards, type SkeletonCardModel } from './SigmaSkeletonCards';
 import {
+  clampSelectedFocusCameraSafeTarget,
+  isCameraMotionNearTarget,
   resolveSafeAreaCameraFit,
   resolveSelectedFocusCameraFit,
   resolveSelectedFocusCameraMotionProof,
@@ -157,6 +170,8 @@ const AUDIT_PROMOTION_MIN_FAN_IN = 4;
 // 토스·애플 감성의 "빠르게 출발해서 부드럽게 안착" — 기존 cubicInOut 의
 // 양 끝 대칭 감 대신 arrival 쪽을 더 길게 풀어 준다.
 const ARRANGE_FEEDBACK_MS = 950;
+const TOPOLOGY_CAMERA_MIN_RATIO = 0.42;
+const TOPOLOGY_CAMERA_MAX_RATIO = 4;
 
 // vault / 빌드타임 dogfood 진실원에 ontology 노드가 0 인 경우 fallback —
 // referential stability 보장 (매 render 새 Map 생성 회피).
@@ -237,8 +252,8 @@ function createSigma(
     edgeLabelSize: 10,
     zIndex: true,
     allowInvalidContainer: true,
-    minCameraRatio: 0.08,
-    maxCameraRatio: 4,
+    minCameraRatio: TOPOLOGY_CAMERA_MIN_RATIO,
+    maxCameraRatio: TOPOLOGY_CAMERA_MAX_RATIO,
     // 줌 민감도 — sigma default 1.7 은 트랙패드 작은 입력에도 "확확
     // 빨려드는" 느낌. 1.5 로 낮춰 세밀한 제어 + 자연스러운 점프 균형.
     zoomingRatio: 1.5,
@@ -333,6 +348,12 @@ interface SigmaTopologyProps {
   /** 증가할 때마다 physics를 reheat (자동 정렬). 상단 툴바의 "자동 정렬" 버튼이
    *  증분한다. 드래그로 고정한 노드는 유지되고 자유 노드만 다시 settle. */
   relayoutToken?: number;
+  /**
+   * Graph 모드(옵시디언식) — 노드 수와 무관하게 로드 직후부터 물리
+   * 시뮬레이션을 살아있는 상태로 시작한다. 레이아웃은 Web Worker 에서 돌므로
+   * 메인 스레드 비용은 position frame 적용뿐.
+   */
+  livePhysics?: boolean;
   /** 필터 후 "남은 노드" 수를 부모에게 알려 stats 패널 등에서 활용. */
   onVisibleCountChange?: (visible: number) => void;
   /** DOM Relief card layer 의 실제 visible/total 카드 수. */
@@ -373,9 +394,20 @@ interface SigmaTopologyProps {
   showOntologyNodes?: boolean;
   /** true면 Path analysis mode용 primer를 그래프 위에 표시한다. */
   pathWorkflowActive?: boolean;
+  /** Overview mode에서 선택된 map 지형을 읽기 전용 fixed geography로 유지한다. */
+  selectedMapFixedGeographyActive?: boolean;
+  /** 카드 배지/더블클릭의 명시적 펼치기 — SigmaSkeletonCards 로 중계. */
+  onExpandRequest?: (slug: string) => void;
+  /** Focus analysis mode에서는 선택 DOM 카드가 주의 중심이므로 viewport center anchor를 사용한다. */
+  selectedFocusCenterActive?: boolean;
   pathSelection?: {
     sourceSlug: string | null;
     targetSlug: string | null;
+  } | null;
+  /** Health mode가 현재 고치라고 제안한 단일 대상. overlay 집합과 패널 target을 연결하는 proof marker. */
+  healthRepairTarget?: {
+    slug: string;
+    kind: 'stale' | 'orphan' | 'promotion';
   } | null;
   onPathSelectionChange?: (selection: {
     sourceSlug: string | null;
@@ -406,6 +438,8 @@ interface SigmaTopologyProps {
   skeletonCards?: readonly SkeletonCardModel[] | null;
   /** true면 좌하단 kind legend 를 접어 부모 analysis rail 과 fixed-surface 충돌을 막는다. */
   suppressKindLegend?: boolean;
+  /** true면 선택 inspector 가 attention winner 이므로 하단 relation legend 를 접는다. */
+  suppressRelationLegend?: boolean;
   /** true면 blocking composer 같은 편집 표면 뒤의 minimap support chrome 을 접는다. */
   suppressMinimap?: boolean;
   /** true면 blocking composer/modal 이 attention winner 이므로 map transient surface 를 닫는다. */
@@ -428,6 +462,7 @@ function SigmaTopologyImpl({
   overlays,
   fitViewToken,
   relayoutToken,
+  livePhysics = false,
   onVisibleCountChange,
   onSkeletonCardVisibilityChange,
   onGraphStatsChange,
@@ -439,13 +474,18 @@ function SigmaTopologyImpl({
   changedSlugs,
   showOntologyNodes = false,
   pathWorkflowActive = false,
+  selectedMapFixedGeographyActive = false,
+  onExpandRequest,
+  selectedFocusCenterActive = false,
   pathSelection = null,
+  healthRepairTarget = null,
   onPathSelectionChange,
   impactNodes,
   skeletonLayout = null,
   skeletonSlugs = null,
   skeletonCards = null,
   suppressKindLegend = false,
+  suppressRelationLegend = false,
   suppressMinimap = false,
   blockingSurfaceActive = false,
   className,
@@ -483,9 +523,19 @@ function SigmaTopologyImpl({
   const skeletonCardsRef = useRef<readonly SkeletonCardModel[] | null>(skeletonCards);
   // 골격 잉크 — CSS 토큰을 resolve 해 캐시 (라이트 모드에서 백색 알파가
   // 잉크 0 으로 소실되던 결함의 해소; 테마 전환 effect 가 재해석).
-  const skeletonInkRef = useRef<{ hairline: string; spoke: string }>({
+  const skeletonInkRef = useRef<{
+    hairline: string;
+    spoke: string;
+    graphHairline: string;
+    graphSpoke: string;
+    graphNodeDim: string;
+  }>({
     hairline: 'rgba(255, 255, 255, 0.07)',
     spoke: 'rgba(255, 255, 255, 0.18)',
+    // graph 모드 전용 — 캔버스 프리블렌드 불투명 잉크 (알파 합성 결함 회피).
+    graphHairline: '#191a1b',
+    graphSpoke: '#343536',
+    graphNodeDim: '#23262c',
   });
   const pathWorkflowActiveRef = useRef(pathWorkflowActive);
   const pathSelectionRef = useRef(pathSelection);
@@ -499,6 +549,8 @@ function SigmaTopologyImpl({
     { initializeWithValue: false },
   );
   const reduceMotionRef = useSyncedValueRef(prefersReducedMotion);
+  // Graph 모드(옵시디언식) — reducer 가 매 프레임 읽는 boolean 이라 ref 로 동기화.
+  const livePhysicsRef = useSyncedValueRef(livePhysics);
   const cameraMotionTimerRef = useRef<number | null>(null);
   const cameraMotion = useCallback(
     (trigger: string, durationMs: number) => {
@@ -582,9 +634,11 @@ function SigmaTopologyImpl({
         viewport: { width, height },
         insets,
         currentRatio: state.ratio,
+        targetPolicy: 'viewport-center',
+        safeRectNoop: selectedEdgeRef.current === null,
       });
       const cameraMotionMaxDistancePx =
-        resolveSelectedFocusCameraMaxDistancePx(selectedFanoutRows);
+        resolveSelectedFocusCameraMaxDistancePx(selectedFanoutRows, width);
       if (!focusFit) {
         if (cameraMotionTimerRef.current !== null) {
           window.clearTimeout(cameraMotionTimerRef.current);
@@ -640,15 +694,26 @@ function SigmaTopologyImpl({
           containerRef.current.dataset.cameraMotionSafeInsetLeft = String(
             Math.round(insets.left),
           );
+          containerRef.current.dataset.cameraMotionRightReserveContract =
+            'selected-inspector-safe-reserve';
+          containerRef.current.dataset.cameraMotionSafeTargetRightClearance = String(
+            Math.round(width - insets.right - roundedSelectedViewport.x),
+          );
           containerRef.current.dataset.cameraMotionSelectedFanoutRows = String(
             selectedFanoutRows,
           );
         }
         return true;
       }
-      const motionProof = resolveSelectedFocusCameraMotionProof({
+      const safeTarget = clampSelectedFocusCameraSafeTarget({
         selectedViewport,
         safeTarget: focusFit.safeTarget,
+        maxDistancePx: cameraMotionMaxDistancePx,
+      });
+      const motionProof = resolveSelectedFocusCameraMotionProof({
+        selectedViewport,
+        safeTarget,
+        targetPolicy: 'viewport-center',
       });
       if (containerRef.current) {
         containerRef.current.dataset.cameraMotionIntent = motionProof.intent;
@@ -687,12 +752,17 @@ function SigmaTopologyImpl({
         containerRef.current.dataset.cameraMotionSafeInsetLeft = String(
           Math.round(insets.left),
         );
+        containerRef.current.dataset.cameraMotionRightReserveContract =
+          'selected-inspector-safe-reserve';
+        containerRef.current.dataset.cameraMotionSafeTargetRightClearance = String(
+          Math.round(width - insets.right - motionProof.safeTarget.x),
+        );
         containerRef.current.dataset.cameraMotionSelectedFanoutRows = String(
           selectedFanoutRows,
         );
       }
       const va = renderer.viewportToFramedGraph({ x: width / 2, y: height / 2 });
-      const vb = renderer.viewportToFramedGraph(focusFit.safeTarget);
+      const vb = renderer.viewportToFramedGraph(safeTarget);
       // 클릭 = 중앙 + 약한 줌인(읽기 배율 0.8 고정 — 곱연산이면 클릭마다
       // 누적 줌인됨), 바깥 클릭 = 선택 해제 → overview fit 이 줌아웃.
       const k2 = state.ratio > 0 ? focusFit.targetRatio / state.ratio : 1;
@@ -727,7 +797,9 @@ function SigmaTopologyImpl({
     const fit = resolveSafeAreaCameraFit({
       bbox: { minX, minY, maxX, maxY },
       viewport: { width, height },
-      insets: resolveSkeletonSafeInsets(width, Boolean(selectedSlugRef.current)),
+      insets: resolveSkeletonSafeInsets(width, Boolean(selectedSlugRef.current), {
+        compactFocusRail: selectedFocusCenterActive && !selectedSlugRef.current,
+      }),
     });
     const camera = renderer.getCamera();
     const state = camera.getState();
@@ -738,19 +810,40 @@ function SigmaTopologyImpl({
     const va = renderer.viewportToFramedGraph({ x: width / 2, y: height / 2 });
     const vb = renderer.viewportToFramedGraph(fit.safeTarget);
     const k = state.ratio > 0 ? newRatio / state.ratio : 1;
+    const targetCamera = {
+      x: centerFramed.x + (va.x - vb.x) * k,
+      y: centerFramed.y + (va.y - vb.y) * k,
+      ratio: newRatio,
+    };
+    if (
+      isCameraMotionNearTarget({
+        current: { x: state.x ?? 0, y: state.y ?? 0, ratio: state.ratio },
+        target: targetCamera,
+      })
+    ) {
+      if (containerRef.current) {
+        containerRef.current.dataset.cameraMotionTrigger = 'skeleton-overview-already-safe';
+        containerRef.current.dataset.cameraMotionContract = TOPOLOGY_CAMERA_MOTION_CONTRACT;
+        containerRef.current.dataset.cameraMotionDurationMs = '0';
+        containerRef.current.dataset.cameraMotionEasing = TOPOLOGY_CAMERA_EASING_NAME;
+        containerRef.current.dataset.cameraMotionReduced = reduceMotionRef.current
+          ? 'true'
+          : 'false';
+        containerRef.current.dataset.cameraMotionState = 'already-safe';
+        containerRef.current.dataset.cameraMotionOverviewNoopPolicy =
+          'skip-near-current-camera-target';
+      }
+      return true;
+    }
     camera.animate(
-      {
-        x: centerFramed.x + (va.x - vb.x) * k,
-        y: centerFramed.y + (va.y - vb.y) * k,
-        ratio: newRatio,
-      },
+      targetCamera,
       cameraMotion(
         'skeleton-overview-safe-fit',
         SELECTED_FOCUS_CAMERA_DURATION_MS,
       ),
     );
     return true;
-  }, [cameraMotion, reduceMotionRef]);
+  }, [cameraMotion, reduceMotionRef, selectedFocusCenterActive]);
 
   useEffect(() => {
     const rerunSelectedFocusFit = () => {
@@ -995,6 +1088,14 @@ function SigmaTopologyImpl({
   const overviewEdgesReadyRef = useRef(false);
   const lastRelationVisibilityRef = useRef<TopologyRelationVisibilityStats | null>(null);
   const LOD_HIDE_RATIO = minimal ? 2.4 : 1.8;
+  const SUPPORT_CHROME_ZOOM_LENS_RATIO = 0.98;
+  const canCollapseSupportChromeForZoomLens =
+    !minimal &&
+    !pathWorkflowActive &&
+    !selectedSlug &&
+    !suppressMinimap &&
+    !suppressRelationLegend;
+  const [supportChromeZoomLensActive, setSupportChromeZoomLensActive] = useState(false);
   const [hoverLabel, setHoverLabel] = useState<SigmaNodeTooltipData | null>(null);
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<SigmaContextMenuData | null>(null);
@@ -1292,17 +1393,35 @@ function SigmaTopologyImpl({
   useEffect(() => {
     if (!sigmaInstance) return;
     const camera = sigmaInstance.getCamera();
-    cameraRatioRef.current = camera.getState().ratio;
+    const syncCameraRatio = () => {
+      const ratio = camera.getState().ratio;
+      cameraRatioRef.current = ratio;
+      setSupportChromeZoomLensActive((current) => {
+        const next =
+          canCollapseSupportChromeForZoomLens &&
+          ratio <= SUPPORT_CHROME_ZOOM_LENS_RATIO;
+        return current === next ? current : next;
+      });
+    };
+    syncCameraRatio();
     emitRelationVisibility();
+    // 대표 관계 수 계산은 전체 엣지 순회라 카메라 프레임(120Hz ProMotion 에선
+    // 8.3ms 마다)마다 돌리기엔 비싸다. HUD 정보라 120ms trailing throttle 로
+    // 충분 — 제스처 중엔 interval 당 1회, 제스처가 멈추면 trailing 호출이
+    // 마지막 상태를 반드시 반영한다 (ratio ref 동기화는 싸므로 매 프레임 유지).
+    const relationVisibilityThrottle = createTrailingThrottle(emitRelationVisibility, {
+      intervalMs: 120,
+    });
     const handler = () => {
-      cameraRatioRef.current = camera.getState().ratio;
-      emitRelationVisibility();
+      syncCameraRatio();
+      relationVisibilityThrottle.invoke();
     };
     camera.on('updated', handler);
     return () => {
       camera.off('updated', handler);
+      relationVisibilityThrottle.dispose();
     };
-  }, [emitRelationVisibility, sigmaInstance]);
+  }, [canCollapseSupportChromeForZoomLens, emitRelationVisibility, sigmaInstance]);
 
   // 좌표 보존(charter perf north-star) — graph rebuild 시 paint 전에 기존 노드를
   // 직전 build 좌표로 되돌려 전체 reflow 를 회피한다(새 노드만 settle 위치 유지).
@@ -1569,7 +1688,8 @@ function SigmaTopologyImpl({
     // 반응하므로 중복 렌더를 피한다.
     // 골격 진입에선 물리 미가동 — stamp 한 결정론적 좌표를 FA2 가 흐트러뜨리지
     // 않게(작은 vault 는 order<=120 이라 평소 autoStart 였다).
-    const autoStartPhysics = !skeletonMode && (minimal || graph.order <= 120);
+    const autoStartPhysics =
+      !skeletonMode && (livePhysics || minimal || graph.order <= 120);
     // Live force layout runs in a Web Worker so the main thread / WKWebView
     // compositor stays free (drag / auto-arrange smoothness at scale). Falls
     // back to the main-thread d3-force sim if the worker can't be created
@@ -1583,6 +1703,28 @@ function SigmaTopologyImpl({
       physics = createWorkerLayoutController(graph, layoutWorker, {
         autoStart: autoStartPhysics,
         initialAlpha: autoStartPhysics ? 0.65 : 0.25,
+        shouldSkipFrame: () => {
+          const dragDataset = document.querySelector<HTMLElement>(
+            '[data-testid="sigma-skeleton-cards"]',
+          )?.dataset;
+          const dragState = dragDataset?.dragDynamicState;
+          const dragPhysicsSynced = dragDataset?.dragPhysicsSyncActive === 'true';
+          return (
+            !dragPhysicsSynced &&
+            (dragState === 'armed-cluster-follow' || dragState === 'active-cluster-follow')
+          );
+        },
+        onFrameStats: (stats: WorkerLayoutFrameStats) => {
+          const container = containerRef.current;
+          if (!container) return;
+          container.dataset.layoutWorkerFrameStatsContract = 'epsilon-skip-position-frames';
+          container.dataset.layoutWorkerPositionFrameSkipPolicy =
+            'skip-only-unsynced-skeleton-card-drag';
+          container.dataset.layoutWorkerPositionFrameReceivedCount = String(stats.received);
+          container.dataset.layoutWorkerPositionFrameAppliedCount = String(stats.applied);
+          container.dataset.layoutWorkerPositionFrameSkippedCount = String(stats.skipped);
+          container.dataset.layoutWorkerPositionFrameEpsilonPx = String(stats.epsilon);
+        },
       });
     } catch {
       physics = startPhysics(graph, undefined, {
@@ -1784,7 +1926,9 @@ function SigmaTopologyImpl({
         searchPassed: matchesSearch(attrs),
         categoryPassed: matchesCategory(attrs),
         depthPassed: passesDepth(node),
-        hoveredEdgePair,
+        // Graph 모드 — edge hover 의 전역 노드 dim 은 알파 합성 결함으로
+        // "전체 회색 플러드" 가 된다. 정보는 edge tooltip 이 전달하므로 생략.
+        hoveredEdgePair: livePhysicsRef.current ? null : hoveredEdgePair,
         pathNodes,
         impactNodes: impactNodesRef.current,
       });
@@ -1792,6 +1936,19 @@ function SigmaTopologyImpl({
 
       const focus = activeNode();
       if (!focus) return attrs;
+      // Graph 모드 — design.md ego 계약(포커스+이웃만 살리고 나머지 dim)을
+      // 알파 없이 구현: 저알파는 이 렌더러에서 불투명 합성되므로(Guardian
+      // blocker) 캔버스 프리블렌드 불투명 dim 디스크 토큰으로 강등한다.
+      if (livePhysicsRef.current && node !== focus && !neighbors.has(node)) {
+        const dim = skeletonInkRef.current.graphNodeDim;
+        return {
+          ...attrs,
+          color: dim,
+          borderColor: dim,
+          outerBorderColor: dim,
+          zIndex: 0,
+        };
+      }
       // focus / neighbor / 2-hop tint 분기는 ../lib/reducer-focus 의
       // applyFocusOverlay 에서 (A3-1 추출). bounceFactor 는 프레임당 1회
       // bounce RAF 루프가 계산해둔 ref 값 (한 프레임 안 모든 노드 동일).
@@ -1836,6 +1993,9 @@ function SigmaTopologyImpl({
       const shouldShowNeighborLabel =
         isNeighbor &&
         (skeletonModeRef.current ||
+          // Graph 모드: ego 이웃의 정체가 곧 답이다 — "34번 호버" 대신 라벨
+          // 을 바로 보여준다 (40개 캡은 라벨 수프 방지).
+          (livePhysicsRef.current && neighbors.size <= 40) ||
           (neighbors.size < 8 && cameraRatioRef.current <= 0.55));
       const ratio = cameraRatioRef.current;
 
@@ -1843,6 +2003,11 @@ function SigmaTopologyImpl({
         return { ...base, label: undefined, forceLabel: false };
       }
 
+      // Graph 모드 ego 포커스 — 비-ego 는 dim 디스크이므로 라벨(랜드마크
+      // 포함)도 함께 내려 시선이 ego 군집에만 머물게 한다.
+      if (!hidden && livePhysicsRef.current && focus && !isFocusOrNeighbor) {
+        return { ...base, label: undefined, forceLabel: false };
+      }
       // overview 랜드마크(degree 최상위 N) — 줌 무관 항상 라벨. 전체 축소에서
       // 앵커마저 솎여 라벨 0(익명 점)이 되는 걸 막아 최소 방향감 보장.
       if (!hidden && !isFocusOrNeighbor && isOverviewLandmark(attrs)) {
@@ -1938,6 +2103,56 @@ function SigmaTopologyImpl({
       }
       if (selectedEdgeRef.current?.edgeId === edge) {
         return applySelectedEdgeOverlay(attrs);
+      }
+      // Graph 모드(옵시디언식) — 알파 dim 금지 (저알파가 불투명 합성되는
+      // Design Guardian blocker). 위계는 hidden 대비 + 기존 resolve 된 잉크
+      // 토큰(skeletonInkRef, 불투명 계열)으로만 만든다:
+      //  · hover/선택 ego 엣지 = 인디고 하이라이트
+      //  · ego 이웃끼리 = hairline
+      //  · 그 외 = hidden
+      //  · idle = contains 백본만 hairline/spoke 상시 (typed 관계는 hover 로)
+      if (livePhysicsRef.current) {
+        if (
+          !matchesSearch(srcAttrs) ||
+          !matchesSearch(tgtAttrs) ||
+          !matchesCategory(srcAttrs) ||
+          !matchesCategory(tgtAttrs) ||
+          !passesDepth(src) ||
+          !passesDepth(tgt)
+        ) {
+          return { ...attrs, hidden: true };
+        }
+        const graphInk = skeletonInkRef.current;
+        const graphFocus = activeNode();
+        if (graphFocus) {
+          if (src === graphFocus || tgt === graphFocus) {
+            return {
+              ...attrs,
+              color: indigoRgba('highlight', 0.85),
+              size: Math.max(attrs.size ?? 1, 1.1),
+              zIndex: 5,
+              hidden: false,
+            };
+          }
+          if (neighbors.has(src) && neighbors.has(tgt)) {
+            return { ...attrs, color: graphInk.graphHairline, size: 0.4, hidden: false };
+          }
+          return { ...attrs, hidden: true };
+        }
+        if (attrs.kind !== 'contains') {
+          return { ...attrs, hidden: true };
+        }
+        const graphTouchesProject =
+          srcAttrs.ontologyTopKind === 'project' ||
+          tgtAttrs.ontologyTopKind === 'project';
+        return {
+          ...attrs,
+          color: graphTouchesProject ? graphInk.graphSpoke : graphInk.graphHairline,
+          size: graphTouchesProject ? 0.9 : 0.5,
+          // curvature 0 은 EdgeCurveProgram 퇴화 (골격 spine 실종 버그 전례).
+          curvature: graphTouchesProject ? 0.02 : 0.08,
+          hidden: false,
+        };
       }
       // Zoom-based LOD: 한쪽이라도 숨겨진 비허브면 엣지도 숨김. 허브-허브
       // 만 남아 멀리서 "정거장 지도" 느낌.
@@ -2103,7 +2318,11 @@ function SigmaTopologyImpl({
 
     renderer.on('downNode', ({ node, event }) => {
       draggedNode = node;
-      draggedCluster = collectSigmaDragCluster(graph, node);
+      // Graph 모드(옵시디언식): 잡은 노드 하나만 pin — 이웃은 링크 스프링으로
+      // 탄성 반응한다. 클러스터 강체 드래그는 Relief 지도의 계약.
+      draggedCluster = livePhysicsRef.current
+        ? new Set([node])
+        : collectSigmaDragCluster(graph, node);
       draggedClusterOffsets = snapshotSigmaDragClusterOffsets(
         graph,
         node,
@@ -2164,7 +2383,14 @@ function SigmaTopologyImpl({
           /* private mode — skip */
         }
       }
-      physics.releaseGroup(draggedCluster);
+      if (livePhysicsRef.current && draggedNode) {
+        // Graph 모드: 손을 떼면 물리로 돌려준다 — 스프링 정착 후 자연 냉각.
+        // releaseGroup 의 commit(영구 fx/fy) + alpha(0) 은 Relief 지도 계약이라
+        // 살아있는 그래프에선 "드래그 후 전체 정지" 로 읽힌다.
+        physics.release(draggedNode);
+      } else {
+        physics.releaseGroup(draggedCluster);
+      }
       draggedNode = null;
       draggedCluster = new Set<string>();
       draggedClusterOffsets = new Map<string, { dx: number; dy: number }>();
@@ -2503,6 +2729,15 @@ function SigmaTopologyImpl({
         spoke:
           rootStyle.getPropertyValue('--topology-edge-spoke').trim() ||
           'rgba(255, 255, 255, 0.10)',
+        graphHairline:
+          rootStyle.getPropertyValue('--topology-graph-edge-hairline').trim() ||
+          '#191a1b',
+        graphSpoke:
+          rootStyle.getPropertyValue('--topology-graph-edge-spoke').trim() ||
+          '#343536',
+        graphNodeDim:
+          rootStyle.getPropertyValue('--topology-graph-node-dim').trim() ||
+          '#23262c',
       };
     };
     resolveSkeletonInk();
@@ -2863,10 +3098,7 @@ function SigmaTopologyImpl({
       return;
     }
     setArranging(true);
-    const timer = window.setTimeout(
-      () => setArranging(false),
-      reduceMotionRef.current ? 180 : ARRANGE_FEEDBACK_MS,
-    );
+    const timer = window.setTimeout(() => setArranging(false), ARRANGE_FEEDBACK_MS);
     return () => window.clearTimeout(timer);
   }, [relayoutToken, reduceMotionRef]);
 
@@ -2898,11 +3130,10 @@ function SigmaTopologyImpl({
     onVisibleCountChange(count);
   }, [activeCategory, hubsOnly, searchQuery, selectedSlug, depthLimit, graph, onVisibleCountChange]);
 
-  const pathPromptStyle = {
-    '--topology-path-prompt-half': 'min(27vw, 340px)',
-    '--topology-path-panel-width': 'clamp(460px, 31vw, 560px)',
-    '--topology-path-prompt-left': 'clamp(calc(var(--topology-path-prompt-half) + 24px), calc(32px + var(--topology-path-panel-width) + 24px + var(--topology-path-prompt-half)), calc(100vw - var(--topology-path-prompt-half) - 24px))',
-  } as CSSProperties;
+  const selectedFocusVignetteSuppressed = Boolean(selectedSlug);
+  const relationLegendSuppressed =
+    suppressRelationLegend || supportChromeZoomLensActive;
+  const minimapSuppressed = suppressMinimap || supportChromeZoomLensActive;
 
   return (
     <div className={`relative h-full w-full overflow-hidden ${className ?? ''}`}>
@@ -2926,13 +3157,56 @@ function SigmaTopologyImpl({
       <div
         ref={containerRef}
         data-testid="sigma-topology-viewport"
+        data-graph-keyboard-nav-root="true"
         data-arranging={arranging ? 'true' : 'false'}
         data-sigma-ready={sigmaInstance ? 'true' : 'false'}
         data-sigma-boot-error={sigmaBootError ? 'true' : 'false'}
         data-skeleton-mode={skeletonMode ? 'true' : 'false'}
         data-skeleton-cards-active={skeletonCardsActive ? 'true' : 'false'}
         data-skeleton-card-model-count={skeletonCards?.length ?? 0}
+        data-initial-reveal-motion-contract={TOPOLOGY_INITIAL_REVEAL_MOTION_CONTRACT}
+        data-initial-reveal-transform-policy={TOPOLOGY_INITIAL_REVEAL_TRANSFORM_POLICY}
+        data-initial-reveal-duration-ms={TOPOLOGY_INITIAL_REVEAL_DURATION_MS}
+        data-layout-worker-frame-stats-contract="epsilon-skip-position-frames"
+        data-layout-worker-position-frame-received-count="0"
+        data-layout-worker-position-frame-applied-count="0"
+        data-layout-worker-position-frame-skipped-count="0"
+        data-layout-worker-position-frame-epsilon-px="0.05"
+        data-layout-worker-position-frame-skip-policy="skip-while-skeleton-card-drag-active"
         data-kind-legend-state={suppressKindLegend ? 'collapsed-support-chrome' : 'visible-support-chrome'}
+        data-relation-legend-state={
+          relationLegendSuppressed
+            ? supportChromeZoomLensActive
+              ? 'collapsed-zoom-lens-attention'
+              : 'collapsed-selected-inspector-attention'
+            : 'visible-support-chrome'
+        }
+        data-minimap-state={
+          minimapSuppressed
+            ? supportChromeZoomLensActive
+              ? 'collapsed-zoom-lens-attention'
+              : 'collapsed-active-surface-attention'
+            : 'visible-support-chrome'
+        }
+        data-support-chrome-zoom-lens-active={
+          supportChromeZoomLensActive ? 'true' : 'false'
+        }
+        data-support-chrome-zoom-lens-threshold-ratio={SUPPORT_CHROME_ZOOM_LENS_RATIO}
+        data-camera-depth-contract="wheel-zoom-clamps-before-map-loses-readable-structure"
+        data-camera-min-ratio={TOPOLOGY_CAMERA_MIN_RATIO}
+        data-camera-max-ratio={TOPOLOGY_CAMERA_MAX_RATIO}
+        data-selected-inspector-chrome-policy={
+          relationLegendSuppressed
+            ? supportChromeZoomLensActive
+              ? 'zoom-lens-suppresses-map-utility-chrome'
+              : 'selected-inspector-suppresses-map-utility-chrome'
+            : undefined
+        }
+        data-health-repair-map-target-contract={
+          healthRepairTarget ? 'analysis-panel-target-to-audit-overlay' : undefined
+        }
+        data-health-repair-map-target-slug={healthRepairTarget?.slug ?? undefined}
+        data-health-repair-map-target-kind={healthRepairTarget?.kind ?? undefined}
         data-camera-motion-trigger="idle"
         data-camera-motion-contract={TOPOLOGY_CAMERA_MOTION_CONTRACT}
         data-camera-motion-duration-ms="0"
@@ -2951,15 +3225,11 @@ function SigmaTopologyImpl({
         className="relative h-full w-full"
         style={{
           background: 'transparent',
-          // 첫 진입 cinematic — sigma 준비 전에는 투명 + 살짝 축소 상태.
-          // 준비되면 700ms 동안 스프링-like cubic-bezier 로 scale 1 + 불투명도
-          // 1 로 부드럽게 드러남. 애플·토스 의 "팝이 아닌 emergence" 감성.
-          // transform: scale 변화는 GPU 합성 경로라 성능 영향 미미.
+          // 첫 진입은 읽기 준비 신호여야 하므로 scale cinematic 없이 짧은 opacity
+          // 전환만 사용한다. 긴 transform reveal 은 준비 완료 후에도 렉처럼 보인다.
           opacity: sigmaInstance ? 1 : 0,
-          transform: sigmaInstance ? 'scale(1)' : 'scale(0.97)',
-          transition:
-            'opacity 700ms cubic-bezier(0.22, 1, 0.36, 1), transform 700ms cubic-bezier(0.22, 1, 0.36, 1)',
-          transformOrigin: 'center center',
+          transform: 'none',
+          transition: topologyInitialRevealTransition(),
         }}
       />
       {sigmaBootError ? (
@@ -2974,10 +3244,18 @@ function SigmaTopologyImpl({
           토큰 사용 — 다크에선 dark fade, 라이트에선 거의 invisible (까만
           vignette 가 흰 캔버스 위에선 grey smudge 로 보이던 fix). */}
       <div
+        data-topology-vignette
+        data-vignette-policy={
+          selectedFocusVignetteSuppressed
+            ? 'selected-focus-dimmed-context-owns-attention'
+            : 'overview-edge-focus'
+        }
+        data-vignette-visible={selectedFocusVignetteSuppressed ? 'false' : 'true'}
         className="pointer-events-none absolute inset-0"
         style={{
-          background:
-            'radial-gradient(ellipse at center, transparent 60%, var(--color-vignette) 100%)',
+          background: selectedFocusVignetteSuppressed
+            ? 'transparent'
+            : 'radial-gradient(ellipse at center, transparent 60%, var(--color-vignette) 100%)',
         }}
       />
 
@@ -3018,8 +3296,13 @@ function SigmaTopologyImpl({
           cards={skeletonCards}
           selectedSlug={selectedSlug}
           selectedRelationEdgeId={visibleSelectedEdge?.edgeId ?? null}
+          selectedRelationData={visibleSelectedEdge}
+          healthRepairTarget={healthRepairTarget}
           onSelect={(slug) => onSelectProjectRef.current?.(slug)}
+          onExpandRequest={onExpandRequest}
           pathWorkflowActive={pathWorkflowActive}
+          selectedMapFixedGeographyActive={selectedMapFixedGeographyActive}
+          selectedFocusCenterActive={selectedFocusCenterActive}
           pathSelection={pathSelection}
           onPathSelectionChange={(selection) => onPathSelectionChangeRef.current?.(selection)}
           onVisibilityChange={onSkeletonCardVisibilityChange}
@@ -3033,12 +3316,34 @@ function SigmaTopologyImpl({
             setHoverLabel(null);
             sigmaRef.current?.refresh();
           }}
+          onRelationHover={(data) => {
+            setEdgeHover(data);
+            if (data) setHoverLabel(null);
+          }}
+          onDragClusterStart={(positions) => {
+            physicsRef.current?.pinGroup(positions);
+          }}
+          onDragClusterMove={(positions) => {
+            physicsRef.current?.dragGroup(positions);
+          }}
+          onDragClusterEnd={(nodeIds) => {
+            physicsRef.current?.releaseGroup(nodeIds);
+          }}
           describeKind={(kind) =>
             kind === 'unknown'
               ? `${t('kindLegendUnknown')} · ${t('kindLegendTierUnclassified')}`
               : `${kindLabel(kind)} · ${t('kindLegendTier', {
                   tier: { project: 1, domain: 2, capability: 3, element: 4 }[kind],
                 })}`
+          }
+          describeKindBadge={(kind) =>
+            ({
+              project: t('cardKindBadgeProject'),
+              domain: t('cardKindBadgeDomain'),
+              capability: t('cardKindBadgeCapability'),
+              element: t('cardKindBadgeElement'),
+              unknown: t('cardKindBadgeUnknown'),
+            })[kind]
           }
         />
       ) : null}
@@ -3064,16 +3369,17 @@ function SigmaTopologyImpl({
           data-attention-layer="focus-path-state"
           data-path-result-contract="panel-clear-viewport-contained"
           data-path-result-lane="chrome-clear-path-lane"
+          data-path-result-responsive-contract="hidden-under-md-panel-owned"
           data-handoff-contract="agent-next-action-visible"
           data-overflow-contract="no-horizontal-scroll"
-          style={pathPromptStyle}
-          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(760px,calc(100vw-32px))] -translate-x-1/2 flex-col gap-2 overflow-hidden rounded-lg border border-[color:rgba(139,151,255,0.4)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[128px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)]"
+          data-path-prompt-left-token="--topology-path-prompt-left"
+          data-path-prompt-half-token="--topology-path-prompt-half"
+          data-path-prompt-panel-width-token="--topology-path-prompt-panel-width"
+          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 hidden w-[min(var(--topology-path-prompt-panel-width),calc(100vw-32px))] max-w-[min(760px,calc(100vw-32px))] -translate-x-1/2 flex-col gap-2 overflow-hidden rounded-lg border border-[color:rgba(139,151,255,0.4)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:flex md:top-[128px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)]"
         >
           <div
-            data-testid="topology-path-result-action-rail"
-            data-overflow-contract="no-horizontal-scroll"
-            data-action-hierarchy="primary-visible-secondary-disclosed"
-            className="flex min-w-0 flex-wrap items-center gap-2 overflow-visible"
+            data-path-result-header-contract="route-fact-readable-before-actions"
+            className="flex min-w-0 items-center gap-2 overflow-hidden"
           >
             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
               Path · {pathResultSlugs.length - 1} hop
@@ -3081,8 +3387,9 @@ function SigmaTopologyImpl({
             <div
               data-testid="topology-path-result-route-chain"
               data-overflow-contract="no-horizontal-scroll"
-              data-compact-contract="endpoint-badges-visible-relation-chips-truncated"
-              className="flex min-w-[220px] flex-1 items-center gap-1 overflow-hidden"
+              data-path-result-route-contract="fact-first-readable-before-actions"
+              data-compact-contract="endpoint-badges-visible-relation-chips-readable"
+              className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden"
             >
               {pathResultSlugs.map((slug, idx) => {
                 const label = graph.hasNode(slug)
@@ -3101,7 +3408,7 @@ function SigmaTopologyImpl({
                       <>
                         <span
                           data-path-result-relation-chip={relation ?? 'related'}
-                          className="max-w-[88px] shrink min-w-[2.8rem] truncate rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+                          className="max-w-[128px] shrink-0 truncate rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
                         >
                           {relation}
                         </span>
@@ -3113,7 +3420,7 @@ function SigmaTopologyImpl({
                       data-path-result-endpoint={endpointRole ?? undefined}
                       data-path-result-node={slug}
                       onClick={() => onSelectProjectRef.current?.(slug)}
-                      className="inline-flex min-w-0 max-w-[156px] items-center gap-1 rounded-sm px-1 py-0.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.12)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+                      className="inline-flex min-w-0 max-w-[240px] items-center gap-1 rounded-sm px-1 py-0.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.12)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
                       title={label}
                     >
                       {endpointRole ? (
@@ -3121,12 +3428,24 @@ function SigmaTopologyImpl({
                           {endpointRole === 'source' ? 'A' : 'B'}
                         </span>
                       ) : null}
-                      <span className="min-w-0 truncate">{label}</span>
+                      <span
+                        data-path-result-endpoint-title={endpointRole ?? 'middle'}
+                        className="min-w-0 truncate"
+                      >
+                        {label}
+                      </span>
                     </button>
                   </span>
                 );
               })}
             </div>
+          </div>
+          <div
+            data-testid="topology-path-result-action-rail"
+            data-overflow-contract="no-horizontal-scroll"
+            data-action-hierarchy="primary-visible-secondary-disclosed"
+            className="flex min-w-0 flex-wrap items-center gap-2 overflow-visible"
+          >
             <button
               type="button"
               data-path-result-action="evidence"
@@ -3305,7 +3624,9 @@ function SigmaTopologyImpl({
           data-overflow-contract="no-horizontal-scroll"
           data-mcp-action="find_path"
           data-cli-fallback="ontology-atlas path"
-          style={pathPromptStyle}
+          data-path-prompt-left-token="--topology-path-prompt-left"
+          data-path-prompt-half-token="--topology-path-prompt-half"
+          data-path-prompt-panel-width-token="--topology-path-prompt-panel-width"
           className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex min-w-0 max-w-[min(86vw,760px)] -translate-x-1/2 items-center gap-3 overflow-hidden rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[128px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)]"
         >
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
@@ -3342,7 +3663,9 @@ function SigmaTopologyImpl({
           data-overflow-contract="no-horizontal-scroll"
           data-mcp-action="find_path"
           data-cli-fallback="ontology-atlas path"
-          style={pathPromptStyle}
+          data-path-prompt-left-token="--topology-path-prompt-left"
+          data-path-prompt-half-token="--topology-path-prompt-half"
+          data-path-prompt-panel-width-token="--topology-path-prompt-panel-width"
           className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex min-w-0 max-w-[min(86vw,820px)] -translate-x-1/2 flex-wrap items-center justify-center gap-x-3 gap-y-1.5 overflow-hidden rounded-2xl border border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(14,16,22,0.94)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.42)] md:top-[128px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)] xl:flex-nowrap xl:rounded-full"
         >
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
@@ -3370,7 +3693,13 @@ function SigmaTopologyImpl({
       {/* Audit overlay 범례 — overlay on + non-minimal 에서만. 좌하단 stats 위로
           살짝 겹쳐 놓아 "지금 켜져 있는 해석" 을 명확히 드러낸다. */}
       {!minimal && overlays?.auditHighlight ? (
-        <div className="pointer-events-none absolute bottom-[60px] left-4 z-10 flex flex-col gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 md:left-6 xl:left-8">
+        <div
+          data-testid="topology-audit-legend"
+          data-audit-legend-contract="health-support-bottom-left-clear-of-minimap"
+          data-audit-legend-attention-role="support"
+          data-audit-legend-density="compact"
+          className="topology-ui-scale pointer-events-none absolute bottom-[60px] left-4 z-10 hidden max-w-[18rem] flex-col gap-1 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.90)] px-3 py-2 shadow-[0_10px_28px_rgba(0,0,0,0.26)] min-[1280px]:flex md:left-6 xl:left-8"
+        >
           <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('auditLegendTitle')}
           </span>
@@ -3443,7 +3772,23 @@ function SigmaTopologyImpl({
         </div>
       ) : null}
 
-      {!minimal && !suppressMinimap ? (
+      {!minimal && !overlays?.auditHighlight && skeletonCardsActive && !relationLegendSuppressed ? (
+        <SigmaRelationLegend
+          labels={{
+            title: t('relationLegendTitle'),
+            strong: t('relationLegendStrong'),
+            strongShort: t('relationLegendStrongShort'),
+            supported: t('relationLegendSupported'),
+            supportedShort: t('relationLegendSupportedShort'),
+            weak: t('relationLegendWeak'),
+            weakShort: t('relationLegendWeakShort'),
+            review: t('relationLegendReview'),
+            reviewShort: t('relationLegendReviewShort'),
+          }}
+        />
+      ) : null}
+
+      {!minimal && !minimapSuppressed ? (
         <SigmaMinimap sigma={sigmaInstance} graph={graph} />
       ) : null}
 

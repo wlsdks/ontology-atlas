@@ -1,7 +1,7 @@
 # Agent Memory Positioning
 
 > Current product framing for launch, README copy, and prioritization.
-> Last updated: 2026-06-05.
+> Last updated: 2026-06-21.
 
 ## One-line Position
 
@@ -24,6 +24,20 @@ codebase between sessions:
 Without a shared memory layer, every agent session starts by re-discovering the
 same project shape from source files and chat history.
 
+The minimum supported path is intentionally plain: connect Atlas MCP or run the
+Atlas CLI from Claude Code, Codex, Cursor, or another coding agent, and the agent
+should already receive a useful workspace brief, graph health check, handoff
+packet, and reviewable memory-diff workflow. No CodeGraph, Serena, language
+server, grep wrapper, or external source-index service is required for the
+product to be usable.
+
+Atlas should not promise to replace code-reading tools. Built-in source search,
+grep, language servers, Serena, CodeGraph, AST indexes, and similar tools are
+good at structural facts: definitions, callers, imports, routes, and local
+impact paths. Atlas helps the coding agent one layer above that: it preserves
+the task starting point, product meaning, capability boundary, implementation
+evidence, and validation path that explain why those code facts matter.
+
 ## Product Bet
 
 The product is not valuable because it is "an ontology editor." Developers do
@@ -38,6 +52,12 @@ The product is valuable if it reduces the maintenance cost of AI-agent memory:
    the repo.
 
 That loop is the product. The ontology graph is the implementation substrate.
+
+The coding-agent value is therefore not "Atlas reads all code for you." The
+value is "Atlas tells the agent what to inspect, why it matters, and what must
+be verified before acting." Store meaningful implementation evidence as
+`element` nodes and relations; leave exhaustive symbol graphs to deterministic
+code-intelligence tools.
 
 ## Why This Can Matter
 
@@ -176,3 +196,12 @@ memory layer" in launch copy and first-contact README text.
 
 The marketable promise is not that users can draw a better graph. The promise is
 that their AI coding agent stops starting from zero.
+
+When explaining the code side, use this boundary:
+
+```text
+Built-in search, grep, language servers, Serena, CodeGraph, and source indexes
+find code structure.
+Ontology Atlas preserves product/system meaning, implementation evidence, and
+the next verification path for humans and AI agents.
+```

@@ -79,6 +79,14 @@ input (humans + AI agents)     parse           store              output
 
 Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-link target, `/topology` = explicit deep-link namespace).
 
+#### Views (2-view rail) + workflow entry points
+- **지도 (overview, default)** — Relief skeleton: deterministic project/domain/hub layout with card choreography (read-first decision surface)
+- **그래프 (graph)** — Obsidian-style living graph: all ontology nodes under an always-on d3-force simulation (Web Worker), free node drag with position persistence, hover ego highlight. Node click keeps graph mode (no focus hijack)
+- 초점/경로/상태 are **not top-level tabs** (R+ owner feedback: "5 identical-looking modes"):
+  - **초점 (focus)** — enters via node click on the map (selection state); `mode=focus` deep links preserved
+  - **경로 (path)** — enters via shift-click of 2 nodes or `mode=path` deep links
+  - **상태 (health)** — enters via the 정리 queue count chip on the view rail; `mode=health` deep links preserved
+
 #### Canvas (Sigma + Graphology + ForceAtlas2)
 - **Click node** → right-side `ProjectDrawer` opens
 - **Drag node** → reposition (releases back to physics)

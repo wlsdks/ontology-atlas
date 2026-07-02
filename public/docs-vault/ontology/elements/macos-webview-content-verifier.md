@@ -68,6 +68,35 @@ map, left support panel, minimap, or relation label. That keeps the active
 relation fact inspector visually separated from the map layer without relying
 on blurred glass styling, and gives the installed app verifier a deterministic
 marker for the relation fact -> evidence -> gate -> action handoff surface.
+When the selected relation label exposes the root
+`label-level-mcp-cli-fallback` contract, saved WebView evidence also includes
+`relationLabelHandoffProof`. That proof summarizes the label gate, primary MCP
+action, CLI fallback, fact route, quality, and evidence from both the visible
+label and the skeleton-card aggregate, so the installed-app artifact can prove
+the relation label is actionable without requiring the next agent to inspect
+raw DOM marker names.
+
+Drag verification also proves the performance contract for topology relation
+chrome: card connectors reuse the card DOM index, relation labels build their
+query index once per frame, and connector geometry reports
+`frame-local-card-rect-cache` read/hit accounting. This keeps drag and relation
+inspection evidence tied to cache reuse instead of repeated layout reads.
+
+Selected node inspector verification has its own path:
+`--verify-topology-node-popover`. It expands the selected node popover without
+switching into selected-relation inspection, then requires the body/footer
+scroll contract, readable first relation row, anchored footer, and visible
+MCP/CLI action rail. It also checks that selected-focus camera safe targets
+carry the `selected-inspector-safe-reserve` right-reserve contract, so the
+selected node stays in the readable map area instead of drifting under the
+right inspector. When `--webview-evidence` is also present, the saved JSON can
+include `nodePopoverExpandedProof`, a compact proof that the installed WebView
+preserved the same selected-node handoff layout that the phone browser viewport
+tests measure. The node relation row must also expose the
+`fact-evidence-gate-action-payload` grammar contract: visible chips separate
+fact, evidence, localized gate, MCP action shorthand, and JSON payload, while
+the marker payload keeps the full `relation_check` / `explain_relation`
+operation for agent handoff.
 
 The DMG install smoke now reuses the same app launch verifier after copying the
 mounted app bundle to a temporary install directory, but it opens the copied app

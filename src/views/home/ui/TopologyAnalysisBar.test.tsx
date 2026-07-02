@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
+import { ONTOLOGY_KIND_TONE } from "@/entities/ontology-class";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -14,6 +15,8 @@ vi.mock("@/i18n/navigation", () => ({
 const labels = {
   title: "Topology analysis mode",
   overview: "Overview",
+  graph: "Graph",
+  graphPrompt: "Drag nodes freely; hover to trace neighbors.",
   focus: "Focus",
   path: "Path",
   health: "Health",
@@ -42,41 +45,54 @@ const labels = {
   healthRepairOrderRepair: "Repair ownership or evidence",
   healthRepairOrderSync: "Run sync gate",
   healthRepairTargetLabel: "Current repair target",
-  overviewBriefCopy: "Copy graph brief",
-  overviewBriefCopied: "Graph brief copied",
+  overviewBriefCopy: "Copy map brief",
+  overviewBriefCopied: "Map brief copied",
   overviewReanalyzeCopy: "Audit",
   overviewReanalyzeCopied: "Reanalysis command copied",
   overviewSyncCopy: "Sync",
   overviewSyncCopied: "Update check copied",
-  overviewHandoffSummary: "Agent handoff",
+  overviewHandoffSummary: "Next step",
+  overviewCopyTools: "Prepare agent handoff",
   overviewWorkOrderTitle: "Analysis order",
   overviewWorkOrderRead: "Read ontology map",
   overviewWorkOrderFocus: "Focus concept",
   overviewWorkOrderPath: "Prove path",
   overviewWorkOrderHealth: "Repair health",
-  overviewBriefCopyAriaLabel: "Copy topology overview brief",
-  overviewBriefCopiedAriaLabel: "Topology overview brief copied",
+  overviewReaderLensTitle: "Reader lens",
+  overviewReaderLensDomains: "Domains",
+  overviewReaderLensCapabilities: "Capabilities",
+  overviewReaderLensChangePaths: "Agent handoff",
+  overviewTierLegendTitle: "Map layers",
+  overviewTierLegendProject: "System",
+  overviewTierLegendDomain: "Domain",
+  overviewTierLegendCapability: "Feature",
+  overviewTierLegendElement: "Evidence",
+  overviewRelationLegendTitle: "Lines",
+  overviewRelationLegendSpine: "Contains",
+  overviewRelationLegendQuality: "Trust",
+  overviewBriefCopyAriaLabel: "Copy topology map brief",
+  overviewBriefCopiedAriaLabel: "Topology map brief copied",
   overviewReanalyzeCopyAriaLabel: "Copy ontology reanalysis command",
   overviewReanalyzeCopiedAriaLabel: "Ontology reanalysis command copied",
   overviewSyncCopyAriaLabel: "Copy ontology update check",
   overviewSyncCopiedAriaLabel: "Ontology update check copied",
-  overviewBriefTitle: "Topology overview brief",
+  overviewBriefTitle: "Topology map brief",
   overviewBriefTotalNodes: "Total nodes",
   overviewBriefTotalRelations: "Total relations",
   overviewBriefRelationReading: "Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
-  overviewBriefRelationProvenance: "Relation provenance",
-  overviewBriefRelationSourceBacked: "source-backed",
-  overviewBriefRelationAuthored: "authored",
-  overviewBriefRelationNeedsReview: "needs review",
-  overviewBriefRelationQuality: "Relation quality",
-  overviewBriefRelationQualityStrong: "strong",
+  overviewBriefRelationProvenance: "Evidence source",
+  overviewBriefRelationSourceBacked: "sourced",
+  overviewBriefRelationAuthored: "added",
+  overviewBriefRelationNeedsReview: "check",
+  overviewBriefRelationQuality: "Trust",
+  overviewBriefRelationQualityStrong: "clear",
   overviewBriefRelationQualitySupported: "supported",
-  overviewBriefRelationQualityWeak: "weak",
-  overviewBriefRelationQualityReview: "review",
-  overviewAgentReadiness: "Agent readiness",
-  overviewAgentReadinessReady: "handoff-ready",
-  overviewAgentReadinessPreflight: "preflight",
-  overviewAgentReadinessReview: "review",
+  overviewBriefRelationQualityWeak: "thin",
+  overviewBriefRelationQualityReview: "check",
+  overviewAgentReadiness: "Agent handoff",
+  overviewAgentReadinessReady: "ready",
+  overviewAgentReadinessPreflight: "check",
+  overviewAgentReadinessReview: "needs review",
   overviewBriefHealthSignals: "Health signals",
   overviewBriefHealthUrl: "Health URL",
   overviewBriefInsightsUrl: "Insights URL",
@@ -87,18 +103,20 @@ const labels = {
   overviewBriefMcpWorkspaceCheck: "MCP workspace check",
   overviewRelationVisibleCountSuffix: "shown",
   overviewSkeletonCardCountSuffix: "concept cards",
+  overviewSkeletonCardHiddenSuffix: "folded",
   overviewRelationLodNotice:
     "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
   overviewRelationPreparingNotice:
     "Arranging links before showing the readable skeleton.",
   overviewSkeletonNotice:
-    "Showing the readable card skeleton. Use Focus or Path to inspect exact relations.",
+    "Showing the readable concept map. Use Focus or Path for exact relation evidence.",
   focusBriefCopy: "Copy focus brief",
+  focusBriefCopySummary: "Brief + impact packet",
   focusBriefCopied: "Focus brief copied",
-  focusMcpCopy: "Copy MCP profile",
-  focusMcpCopied: "MCP profile copied",
-  focusMcpImpactCopy: "Copy MCP impact",
-  focusMcpImpactCopied: "MCP impact copied",
+  focusMcpCopy: "Copy concept check",
+  focusMcpCopied: "Concept check copied",
+  focusMcpImpactCopy: "Copy impact check",
+  focusMcpImpactCopied: "Impact check copied",
   focusSyncGateCopy: "Copy sync gate",
   focusSyncGateCopied: "Sync gate copied",
   focusEnhanceCopy: "Copy strengthen command",
@@ -107,16 +125,16 @@ const labels = {
   focusOpenBuilder: "Open builder",
   focusHandoffSummary: "Focus proof",
   focusReviewOrderTitle: "Focus review order",
-  focusReviewOrderProfile: "Read node profile",
+  focusReviewOrderProfile: "Read concept brief",
   focusReviewOrderImpact: "Trace incoming impact",
   focusReviewOrderRepair: "Edit or confirm meaning",
   focusReviewOrderSync: "Run sync gate",
   focusBriefCopyAriaLabel: "Copy focus review brief",
   focusBriefCopiedAriaLabel: "Focus review brief copied",
-  focusMcpCopyAriaLabel: "Copy focus MCP profile",
-  focusMcpCopiedAriaLabel: "Focus MCP profile copied",
-  focusMcpImpactCopyAriaLabel: "Copy focus MCP impact",
-  focusMcpImpactCopiedAriaLabel: "Focus MCP impact copied",
+  focusMcpCopyAriaLabel: "Copy focus concept check",
+  focusMcpCopiedAriaLabel: "Focus concept check copied",
+  focusMcpImpactCopyAriaLabel: "Copy focus impact check",
+  focusMcpImpactCopiedAriaLabel: "Focus impact check copied",
   focusSyncGateCopyAriaLabel: "Copy focus post-change sync gate",
   focusSyncGateCopiedAriaLabel: "Focus post-change sync gate copied",
   focusEnhanceCopyAriaLabel: "Copy selected concept strengthening command",
@@ -169,10 +187,10 @@ const labels = {
   pathSelected: "Path source is {title}. Click a target node.",
   pathResolved: "Path selected: {source} to {target}.",
   pathCandidateVisibility:
-    "Visible candidates {visible} / {total}; hidden for panel clearance.",
-  pathHandoffLabel: "Agent handoff",
-  pathHandoffMcpAction: "MCP find_path",
-  pathHandoffCliFallback: "CLI path",
+    "Showing {visible} of {total} path candidates so the map stays readable.",
+  pathHandoffLabel: "Share route",
+  pathHandoffMcpAction: "Agent check",
+  pathHandoffCliFallback: "Terminal check",
   pathEvidenceCopy: "Copy path evidence",
   pathEvidenceCopied: "Path evidence copied",
   pathEvidenceCopyAriaLabel: "Copy topology path evidence",
@@ -204,13 +222,13 @@ const labels = {
   pathCopyTools: "Path checks",
   pathProofOrderTitle: "Proof order",
   pathProofOrderDesc:
-    "Use the visible path as a clue, then run relation_check, explain_relation, and a bounded all_paths plan before treating it as write evidence.",
+    "Shows the visible link first, then the checks needed before changing the ontology.",
   pathProofChecklist: "Proof checklist",
   pathProofVisiblePath: "Visible path clue",
-  pathProofRelationPreflight: "relation_check preflight",
-  pathProofExplainRelation: "explain_relation context",
-  pathProofBoundedTraversal: "bounded all_paths plan",
-  pathProofPostWriteSync: "post-write sync gate",
+  pathProofRelationPreflight: "Check relation direction",
+  pathProofExplainRelation: "Explain why it connects",
+  pathProofBoundedTraversal: "Compare alternate paths",
+  pathProofPostWriteSync: "Sync after edits",
   pathProofStatusReady: "ready",
   pathProofStatusRequired: "required",
   pathProofStatusAfterWrite: "after write",
@@ -282,8 +300,66 @@ describe("TopologyAnalysisBar", () => {
     expect(panel).toHaveAttribute("data-panel-width-target", "overview-14-inch-compact");
     expect(panel).toHaveAttribute(
       "data-panel-width-contract",
-      "overview-support-max-360",
+      "overview-support-max-360-phone-utility-reserve",
     );
+    expect(panel).toHaveAttribute(
+      "data-panel-phone-utility-reserve-token",
+      "--topology-panel-phone-utility-rail-reserve",
+    );
+    expect(panel).toHaveAttribute("data-panel-layer-contract", "read-surface-above-map-cards");
+    expect(panel).toHaveAttribute("data-panel-z-index-token", "--topology-panel-read-layer-z-index");
+    const provenance = screen.getByTestId("topology-overview-relation-provenance");
+    expect(provenance).toHaveAttribute(
+      "data-overview-provenance-contract",
+      "summary-first-counts-retained",
+    );
+    expect(provenance).toHaveAttribute(
+      "data-overview-provenance-layout",
+      "single-line-summary",
+    );
+    const provenanceSummary = screen.getByTestId("topology-overview-relation-provenance-summary");
+    expect(provenanceSummary).toHaveAttribute(
+      "data-signal-summary-contract",
+      "human-readable-first",
+    );
+    expect(provenanceSummary).toHaveAttribute(
+      "data-summary-clamp-contract",
+      "single-line-proof-row-summary",
+    );
+    expect(provenanceSummary).toHaveAttribute(
+      "data-summary-lines-token",
+      "--topology-overview-proof-summary-lines",
+    );
+    expect(provenanceSummary.className).toContain("topology-overview-proof-summary");
+    expect(
+      provenance.querySelector('[data-overview-provenance-row="source-backed"]'),
+    ).toHaveTextContent("504");
+    expect(
+      provenance.querySelector('[data-overview-provenance-row="authored"]'),
+    ).toHaveTextContent("0");
+    expect(
+      provenance.querySelector('[data-overview-provenance-row="needs-review"]'),
+    ).toHaveTextContent("0");
+    const supportedQuality = screen.getByTestId("topology-overview-relation-quality-supported");
+    expect(supportedQuality).toHaveAttribute(
+      "data-proof-label-contract",
+      "compact-visible-full-aria",
+    );
+    expect(supportedQuality).toHaveAttribute("data-full-label", "supported");
+    expect(supportedQuality).toHaveAttribute("data-compact-label", "proof");
+    expect(supportedQuality).toHaveAttribute("aria-label", "supported: 0");
+    expect(supportedQuality).not.toHaveTextContent("proof");
+    const readyChip = screen
+      .getByTestId("topology-overview-agent-readiness")
+      .querySelector('[data-agent-readiness-chip="ready"]');
+    expect(readyChip).toHaveAttribute(
+      "data-proof-label-contract",
+      "compact-visible-full-aria",
+    );
+    expect(readyChip).toHaveAttribute("data-full-label", "ready");
+    expect(readyChip).toHaveAttribute("data-compact-label", "ready");
+    expect(readyChip).toHaveAttribute("aria-label", "ready: 387");
+    expect(readyChip).toHaveTextContent("ready");
   });
 
   it("promotes the panel to focus support when a node is selected from overview", () => {
@@ -327,7 +403,14 @@ describe("TopologyAnalysisBar", () => {
     expect(panel).toHaveAttribute("data-selected-context", "true");
     expect(panel).toHaveAttribute("data-attention-role", "support");
     expect(screen.getByText("Focused on Views.")).toBeInTheDocument();
-    expect(screen.getByTestId("topology-focus-review-order")).toBeVisible();
+    const selectedContextReviewOrder = screen.getByTestId(
+      "topology-focus-review-order",
+    );
+    expect(selectedContextReviewOrder).toBeVisible();
+    expect(selectedContextReviewOrder).toHaveAttribute(
+      "data-review-order-density",
+      "selected-detail",
+    );
     expect(screen.queryByTestId("topology-overview-signal-grid")).not.toBeInTheDocument();
   });
 
@@ -418,6 +501,188 @@ describe("TopologyAnalysisBar", () => {
       "data-panel-width-contract",
       "selected-focus-rail-max-320",
     );
+    expect(panel).toHaveAttribute(
+      "data-command-spine-padding-token",
+      "--topology-command-spine-padding",
+    );
+    expect(panel).toHaveAttribute(
+      "data-command-primary-height-token",
+      "--topology-command-primary-min-height",
+    );
+    expect(panel).toHaveAttribute(
+      "data-panel-surface-token",
+      "--topology-panel-support-surface",
+    );
+    expect(panel).toHaveAttribute(
+      "data-command-spine-surface-token",
+      "--topology-command-spine-surface",
+    );
+    expect(panel).toHaveAttribute(
+      "data-command-spine-border-token",
+      "--topology-command-spine-border",
+    );
+    const commandSpine = screen.getByTestId("topology-focus-command-spine");
+    expect(commandSpine).toHaveAttribute(
+      "data-command-hierarchy",
+      "brief-primary-review-agent-proof",
+    );
+    expect(commandSpine).toHaveAttribute(
+      "data-tokenized-surface",
+      "topology-command-spine",
+    );
+    expect(commandSpine).toHaveAttribute(
+      "data-command-spine-surface-token",
+      "--topology-command-spine-surface",
+    );
+    expect(commandSpine).toHaveAttribute(
+      "data-command-spine-border-token",
+      "--topology-command-spine-border",
+    );
+    expect(commandSpine.className).toContain(
+      "p-[var(--topology-command-spine-padding)]",
+    );
+    const primaryAction = screen.getByTestId("topology-focus-primary-action");
+    expect(primaryAction).toHaveTextContent("Copy focus brief");
+    expect(primaryAction).toHaveAttribute(
+      "data-command-primary-surface-token",
+      "--topology-command-primary-surface",
+    );
+    expect(primaryAction).toHaveAttribute(
+      "data-command-primary-border-token",
+      "--topology-command-primary-border",
+    );
+    expect(primaryAction.className).toContain(
+      "min-h-[var(--topology-command-primary-min-height)]",
+    );
+    expect(screen.getByTestId("topology-focus-review-order")).toHaveClass("grid");
+    expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
+      "data-review-order-contract",
+      "flat-numbered-rail",
+    );
+    expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
+      "data-review-order-density",
+      "selected-detail",
+    );
+    expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
+      "data-command-step-surface-token",
+      "--topology-command-step-surface",
+    );
+    expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
+      "data-command-step-border-token",
+      "--topology-command-step-border",
+    );
+    expect(screen.getByText("Read concept brief").closest("li")).toHaveAttribute(
+      "data-command-step-contract",
+      "flat-numbered-row",
+    );
+    expect(screen.getByText("Read concept brief").closest("li")).toHaveAttribute(
+      "data-command-step-density",
+      "detail-row",
+    );
+    expect(screen.getByTestId("topology-focus-secondary-actions")).toBeVisible();
+    expect(screen.getByTestId("topology-focus-secondary-actions")).toHaveAttribute(
+      "data-focus-secondary-action-contract",
+      "ontology-builder-exits",
+    );
+    expect(screen.getByTestId("topology-focus-secondary-actions")).toHaveAttribute(
+      "data-command-secondary-surface-token",
+      "--topology-command-secondary-surface",
+    );
+    expect(screen.getByTestId("topology-focus-secondary-actions")).toHaveAttribute(
+      "data-command-secondary-border-token",
+      "--topology-command-secondary-border",
+    );
+    const ontologyExit = screen.getByRole("link", { name: "Open ontology" });
+    expect(ontologyExit).toHaveAttribute("data-focus-secondary-action", "ontology");
+    expect(ontologyExit).toHaveAttribute(
+      "data-command-secondary-surface-token",
+      "--topology-command-secondary-surface",
+    );
+    const builderExit = screen.getByRole("link", { name: "Open builder" });
+    expect(builderExit).toHaveAttribute("data-focus-secondary-action", "builder");
+    expect(builderExit).toHaveAttribute(
+      "data-command-secondary-border-token",
+      "--topology-command-secondary-border",
+    );
+    expect(screen.getByTestId("topology-focus-agent-handoff")).toHaveAttribute(
+      "data-handoff-contract",
+      "mcp-cli-proof-disclosed",
+    );
+    const focusProofActions = [
+      ["Copy focus concept check", "mcp-profile"],
+      ["Copy focus impact check", "mcp-impact"],
+      ["Copy focus post-change sync gate", "sync-gate"],
+      ["Copy selected concept strengthening command", "strengthen-command"],
+    ] as const;
+    for (const [name, proofAction] of focusProofActions) {
+      const button = screen.getByRole("button", { name });
+      expect(button).toHaveAttribute("data-focus-proof-action", proofAction);
+      expect(button).toHaveAttribute(
+        "data-command-secondary-surface-token",
+        "--topology-command-secondary-surface",
+      );
+      expect(button).toHaveAttribute(
+        "data-command-secondary-border-token",
+        "--topology-command-secondary-border",
+      );
+    }
+  });
+
+  it("keeps the unselected focus guidance as a compact map support rail", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="focus"
+        summary={{
+          mode: "focus",
+          primaryMetric: 22,
+          secondaryMetric: 504,
+          needsSelection: true,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const panel = screen.getByTestId("topology-analysis-panel");
+    expect(panel).toHaveAttribute("data-analysis-mode", "focus");
+    expect(panel).toHaveAttribute("data-attention-role", "support");
+    expect(panel).toHaveAttribute("data-panel-width-policy", "mode-compact");
+    expect(panel).toHaveAttribute("data-panel-width-target", "focus-support-rail");
+    expect(panel).toHaveAttribute(
+      "data-panel-width-contract",
+      "focus-support-rail-max-300-map-centered",
+    );
+    expect(panel).toHaveAttribute(
+      "data-panel-padding-token",
+      "--topology-panel-focus-rail-padding",
+    );
+    expect(panel).toHaveAttribute(
+      "data-panel-width-css",
+      "var(--topology-panel-focus-rail-width)",
+    );
+    expect(panel).toHaveAttribute(
+      "data-panel-width-token",
+      "--topology-panel-focus-rail-width",
+    );
+    const reviewOrder = screen.getByTestId("topology-focus-review-order");
+    expect(reviewOrder).toBeVisible();
+    expect(reviewOrder).toHaveClass("grid-cols-2");
+    expect(reviewOrder).toHaveAttribute(
+      "data-review-order-density",
+      "unselected-compact",
+    );
+    expect(screen.getByText("Read concept brief").closest("li")).toHaveAttribute(
+      "data-command-step-density",
+      "compact-two-column",
+    );
   });
 
   it("keeps analysis modes reachable on mobile while preserving the desktop breakpoint", () => {
@@ -452,10 +717,72 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("top-[5.5rem]");
     expect(bar.className).toContain("max-h-[calc(100dvh-7rem)]");
     expect(bar.className).toContain("topology-ui-scale");
-    expect(screen.getByRole("button", { name: "Overview" }).className).toContain("h-9");
-    expect(screen.getByRole("button", { name: "Focus" }).className).toContain("h-9");
-    expect(screen.getByRole("button", { name: "Path" }).className).toContain("h-9");
-    expect(screen.getByRole("button", { name: "Health" }).className).toContain("h-9");
+    const modeRail = screen.getByTestId("topology-analysis-mode-rail");
+    expect(modeRail).toHaveAttribute(
+      "data-mode-rail-contract",
+      "two-view-tabs-health-queue-chip",
+    );
+    expect(modeRail).toHaveAttribute(
+      "data-surface-token",
+      "--topology-analysis-mode-rail-surface",
+    );
+    expect(modeRail).toHaveAttribute(
+      "data-mode-tab-height-token",
+      "--topology-analysis-mode-tab-height",
+    );
+    expect(modeRail).toHaveAttribute(
+      "data-active-surface-token",
+      "--topology-analysis-mode-active-surface",
+    );
+    expect(modeRail).toHaveAttribute(
+      "data-active-border-token",
+      "--topology-analysis-mode-active-border",
+    );
+    expect(modeRail).toHaveAttribute(
+      "data-active-text-token",
+      "--topology-analysis-mode-active-text",
+    );
+    expect(modeRail).toHaveAttribute(
+      "data-idle-text-token",
+      "--topology-analysis-mode-idle-text",
+    );
+    expect(modeRail).toHaveAttribute(
+      "data-focus-ring-token",
+      "--topology-analysis-mode-focus-ring",
+    );
+    expect(screen.getByRole("button", { name: "Overview" }).className).toContain(
+      "h-[var(--topology-analysis-mode-tab-height)]",
+    );
+    expect(screen.getByRole("button", { name: "Graph" }).className).toContain(
+      "h-[var(--topology-analysis-mode-tab-height)]",
+    );
+    // 초점/경로 탭은 제거 — 초점은 노드 선택 상태, 경로는 액션으로 재배치.
+    expect(screen.queryByRole("button", { name: "Focus" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Path" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute(
+      "data-mode-tab-state",
+      "active",
+    );
+    expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute(
+      "data-active-border-token",
+      "--topology-analysis-mode-active-border",
+    );
+    expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute(
+      "data-text-token",
+      "--topology-analysis-mode-active-text",
+    );
+    expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute(
+      "data-focus-ring-token",
+      "--topology-analysis-mode-focus-ring",
+    );
+    expect(screen.getByRole("button", { name: "Graph" })).toHaveAttribute(
+      "data-hover-surface-token",
+      "--topology-analysis-mode-hover-surface",
+    );
+    expect(screen.getByRole("button", { name: "Graph" })).toHaveAttribute(
+      "data-text-token",
+      "--topology-analysis-mode-idle-text",
+    );
   });
 
   it("renders mode tabs icon-only (text via aria-label/tooltip) to keep the panel compact", () => {
@@ -481,12 +808,111 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    for (const name of ["Overview", "Focus", "Path", "Health"] as const) {
+    for (const name of ["Overview", "Graph"] as const) {
       const tab = screen.getByRole("button", { name });
       // 아이콘만 — 라벨은 aria-label + hover Tooltip 컴포넌트가 담당.
       expect(tab.textContent).toBe("");
       expect(tab).toHaveAttribute("aria-label", name);
+      expect(tab).toHaveAttribute("data-analysis-mode-tab");
+      expect(tab).toHaveAttribute(
+        "data-focus-ring-token",
+        "--topology-analysis-mode-focus-ring",
+      );
     }
+  });
+
+  it("keeps the graph view rail compact so the living canvas stays the protagonist", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="graph"
+        summary={{
+          mode: "graph",
+          primaryMetric: 294,
+          secondaryMetric: 504,
+          needsSelection: false,
+          healthBreakdown: { stale: 0, orphan: 0, promotion: 0 },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+    const panel = screen.getByTestId("topology-analysis-panel");
+    expect(panel).toHaveAttribute("data-panel-width-target", "graph-compact-rail");
+    expect(panel.style.width).toBe("var(--topology-panel-graph-width)");
+  });
+
+  it("surfaces the health queue as a count chip and routes clicks to health mode", () => {
+    const onModeChange = vi.fn();
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 22,
+          secondaryMetric: 504,
+          needsSelection: false,
+          healthBreakdown: { stale: 0, orphan: 1, promotion: 22 },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={onModeChange}
+        onHealthAction={vi.fn()}
+      />,
+    );
+    const chip = screen.getByRole("button", { name: "Health" });
+    expect(chip).toHaveAttribute("data-analysis-health-chip");
+    // 칩 숫자 = 진짜 결함(오래된 근거 + 소속 미정)만. 허브 후보 22건은
+    // 통계적 제안이라 카운트에서 제외 (감사 ⑦-b: alert fatigue 방지).
+    expect(chip).toHaveAttribute("data-health-queue-count", "1");
+    expect(chip.textContent).toBe("1");
+    fireEvent.click(chip);
+    expect(onModeChange).toHaveBeenCalledWith("health");
+  });
+
+  it("hides the health chip when only statistical suggestions remain", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 22,
+          secondaryMetric: 504,
+          needsSelection: false,
+          healthBreakdown: { stale: 0, orphan: 0, promotion: 22 },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Health" })).toBeNull();
+  });
+
+  it("hides the health queue chip when the maintenance queue is empty", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 22,
+          secondaryMetric: 504,
+          needsSelection: false,
+          healthBreakdown: { stale: 0, orphan: 0, promotion: 0 },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Health" })).toBeNull();
   });
 
   it("keeps the overview guidance readable instead of truncating first-screen relief instructions", () => {
@@ -509,7 +935,7 @@ describe("TopologyAnalysisBar", () => {
         labels={{
           ...labels,
           overviewPrompt:
-            "Read the source-backed ontology map first, then copy an agent handoff.",
+            "Start with the product/system map: domains, capabilities, and change paths stay visible for team inspection and sharing.",
         }}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -517,11 +943,39 @@ describe("TopologyAnalysisBar", () => {
     );
 
     const prompt = screen.getByText(
-      "Read the source-backed ontology map first, then copy an agent handoff.",
+      "Start with the product/system map: domains, capabilities, and change paths stay visible for team inspection and sharing.",
     );
     expect(prompt.className).toContain("line-clamp-3");
     expect(prompt.className).not.toContain("truncate");
-    expect(screen.getByText("nodes").closest("div")?.className).toContain("grid-cols-2");
+    expect(prompt).toHaveAttribute(
+      "data-prompt-text-token",
+      "--topology-analysis-panel-prompt-text",
+    );
+    expect(prompt.className).toContain(
+      "text-[color:var(--topology-analysis-panel-prompt-text)]",
+    );
+    expect(prompt.className).not.toContain("--color-text-secondary");
+
+    const metrics = screen.getByTestId("topology-analysis-panel-metrics");
+    expect(metrics.className).toContain("grid-cols-2");
+    expect(metrics).toHaveAttribute(
+      "data-metric-label-text-token",
+      "--topology-analysis-panel-metric-label-text",
+    );
+    expect(metrics).toHaveAttribute(
+      "data-metric-value-text-token",
+      "--topology-analysis-panel-metric-value-text",
+    );
+    expect(metrics.className).toContain(
+      "text-[color:var(--topology-analysis-panel-metric-label-text)]",
+    );
+    expect(metrics.className).not.toContain("--color-text-quaternary");
+    expect(screen.getByText("292").className).toContain(
+      "text-[color:var(--topology-analysis-panel-metric-value-text)]",
+    );
+    expect(screen.getByText("498").className).toContain(
+      "text-[color:var(--topology-analysis-panel-metric-value-text)]",
+    );
   });
 
   it("keeps the primary overview brief visible and tucks secondary agent commands into a compact rail", () => {
@@ -553,20 +1007,69 @@ describe("TopologyAnalysisBar", () => {
     });
     const details = reanalyze.closest("details");
     expect(details).not.toBeNull();
+    expect(details).toHaveAttribute(
+      "data-secondary-actions-contract",
+      "closed-until-user-expands",
+    );
+    expect(details).toHaveClass("relative");
     const actions = screen.getByTestId("topology-overview-handoff-actions");
     expect(actions).toBeVisible();
-    expect(actions.textContent).toContain("Agent handoff");
+    expect(actions).toHaveAttribute(
+      "data-divider-token",
+      "--topology-overview-handoff-divider",
+    );
+    expect(actions).toHaveAttribute(
+      "data-next-action-contract",
+      "map-brief-before-agent-audit-sync",
+    );
+    expect(actions.textContent).toContain("Next step");
+    expect(actions.textContent).toContain("Prepare agent handoff");
     expect(actions.querySelectorAll("button")).toHaveLength(3);
     expect(actions.querySelector(".grid")?.className).not.toContain("grid-cols-2");
-    expect(
-      screen
-        .getByRole("button", { name: "Copy topology overview brief" })
-        .className,
-    ).toContain("min-h-9");
+    const briefCopy = screen.getByTestId("topology-overview-brief-copy");
+    expect(briefCopy.className).toContain("min-h-9");
+    expect(briefCopy).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-handoff-primary-surface",
+    );
+    expect(briefCopy).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-handoff-primary-border",
+    );
     const sync = screen.getByRole("button", {
       name: "Copy ontology update check",
     });
     expect(sync.closest("details")).not.toBeNull();
+    expect(screen.getByTestId("topology-overview-secondary-handoff-actions")).toHaveClass(
+      "hidden",
+      "group-open:grid",
+    );
+    expect(screen.getByTestId("topology-overview-secondary-handoff-actions")).toHaveAttribute(
+      "data-secondary-actions-contract",
+      "hidden-closed-overlay-row-open",
+    );
+    expect(screen.getByTestId("topology-overview-secondary-handoff-actions").className).toContain(
+      "absolute",
+    );
+    expect(screen.getByTestId("topology-overview-reanalyze-copy")).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-handoff-secondary-surface",
+    );
+    expect(screen.getByTestId("topology-overview-reanalyze-copy")).toHaveAttribute(
+      "data-density-contract",
+      "compact-disclosure-action",
+    );
+    expect(screen.getByTestId("topology-overview-reanalyze-copy").className).toContain(
+      "min-h-[26px]",
+    );
+    expect(screen.getByTestId("topology-overview-sync-copy")).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-handoff-secondary-border",
+    );
+    expect(screen.getByTestId("topology-overview-sync-copy")).toHaveAttribute(
+      "data-density-contract",
+      "compact-disclosure-action",
+    );
   });
 
   it("uses a disclosure for secondary overview commands so the first-screen panel stays about ontology reading", () => {
@@ -593,8 +1096,95 @@ describe("TopologyAnalysisBar", () => {
     );
 
     const actions = screen.getByTestId("topology-overview-handoff-actions");
+    const readerLens = screen.getByTestId("topology-overview-reader-lens");
+    expect(readerLens).toHaveTextContent("Reader lens");
+    expect(readerLens).toHaveAttribute(
+      "data-reader-lens-contract",
+      "single-business-to-agent-read-path",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-reader-lens-flow",
+      "project>domain>capability>element>agent-handoff",
+    );
+    expect(readerLens).toHaveTextContent("System");
+    expect(readerLens).toHaveTextContent("Domain");
+    expect(readerLens).toHaveTextContent("Feature");
+    expect(readerLens).toHaveTextContent("Evidence");
+    expect(readerLens).toHaveTextContent("Agent handoff");
+    const readerSteps = Array.from(
+      readerLens.querySelectorAll("[data-reader-lens-step]"),
+    );
+    expect(readerSteps.map((step) => step.getAttribute("data-reader-lens-step"))).toEqual([
+      "project",
+      "domain",
+      "capability",
+      "element",
+      "agent-handoff",
+    ]);
+    expect(
+      readerLens.querySelector('[data-reader-lens-step="project"]'),
+    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.project.fill);
+    expect(
+      readerLens.querySelector('[data-reader-lens-step="domain"]'),
+    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.domain.fill);
+    expect(
+      readerLens.querySelector('[data-reader-lens-step="capability"]'),
+    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.capability.fill);
+    expect(
+      readerLens.querySelector('[data-reader-lens-step="element"]'),
+    ).toHaveAttribute("data-kind-tone-fill", ONTOLOGY_KIND_TONE.element.fill);
+    expect(readerLens).not.toHaveTextContent(
+      "Find the main domains and ownership areas.",
+    );
+    expect(readerLens).not.toHaveTextContent(
+      "Trace what would change before handing it to an agent.",
+    );
+    const mapKey = screen.getByTestId("topology-overview-map-key");
+    expect(mapKey).toHaveAttribute(
+      "data-map-key-contract",
+      "relation-reading-after-hierarchy-rail",
+    );
+    expect(screen.queryByTestId("topology-overview-tier-legend")).toBeNull();
+    const relationLineLegend = screen.getByTestId(
+      "topology-overview-relation-line-legend",
+    );
+    expect(relationLineLegend).toHaveAttribute(
+      "data-relation-line-legend-contract",
+      "map-line-to-ontology-relation",
+    );
+    expect(relationLineLegend).toHaveAttribute(
+      "data-spine-token",
+      "--topology-relation-spine-halo",
+    );
+    expect(relationLineLegend).toHaveAttribute(
+      "data-spine-terminal-token",
+      "--topology-relation-spine-terminal",
+    );
+    expect(relationLineLegend).toHaveAttribute(
+      "data-quality-strong-token",
+      "--topology-relation-stroke-strong",
+    );
+    expect(relationLineLegend).toHaveAttribute(
+      "data-quality-weak-token",
+      "--topology-relation-stroke-weak",
+    );
+    expect(relationLineLegend).toHaveTextContent("Lines");
+    expect(relationLineLegend).toHaveTextContent("Contains");
+    expect(relationLineLegend).toHaveTextContent("Trust");
+    expect(relationLineLegend).not.toHaveTextContent("Containment backbone");
+    expect(relationLineLegend).not.toHaveTextContent("Relations to check");
     expect(actions.closest("details")).toBeNull();
-    expect(screen.getByText("Copy graph brief")).toBeVisible();
+    expect(actions).toHaveAttribute(
+      "data-overview-handoff-placement",
+      "after-reader-lens-before-proof-detail",
+    );
+    expect(readerLens.compareDocumentPosition(actions)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(
+      actions.compareDocumentPosition(screen.getByTestId("topology-overview-signal-grid")),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(screen.getByText("Copy map brief")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Copy ontology reanalysis command" }),
     ).toBeInTheDocument();
@@ -603,15 +1193,34 @@ describe("TopologyAnalysisBar", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByTestId("topology-overview-handoff-summary"),
-    ).toHaveTextContent("Copy tools");
+    ).toHaveTextContent("Audit · Sync");
+    expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
+      "data-secondary-visual-priority",
+      "tertiary-disclosure",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
+      "data-secondary-min-height-token",
+      "--topology-overview-secondary-disclosure-min-height",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
+      "data-text-token",
+      "--topology-overview-secondary-disclosure-text",
+    );
     expect(
       screen.getByText(
         "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
       ),
-    ).toBeVisible();
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("topology-overview-proof-disclosure")).toHaveAttribute(
+      "data-overview-proof-disclosure-contract",
+      "closed-by-default-map-first",
+    );
+    expect(screen.getByTestId("topology-overview-proof-summary")).toHaveTextContent(
+      "Evidence source · Agent handoff",
+    );
   });
 
-  it("names the overview command rail as an agent handoff, not a generic actions bucket", () => {
+  it("names the overview command rail as the next step before agent handoff tools", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -635,7 +1244,7 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByTestId("topology-overview-handoff-actions")).toHaveTextContent(
-      "Agent handoff",
+      "Next step",
     );
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
   });
@@ -664,7 +1273,14 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveTextContent(
-      "Copy tools",
+      "Audit · Sync",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-summary").className).toContain(
+      "text-[8.5px]",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
+      "data-min-height-token",
+      "--topology-overview-handoff-summary-min-height",
     );
     expect(screen.getByTestId("topology-overview-handoff-chevron")).toBeInTheDocument();
   });
@@ -727,19 +1343,62 @@ describe("TopologyAnalysisBar", () => {
     );
 
     const progress = screen.getByTestId("topology-overview-relation-progress");
-    expect(screen.getByTestId("topology-overview-signal-grid").className).toContain(
-      "rounded",
+    const signalGrid = screen.getByTestId("topology-overview-signal-grid");
+    expect(signalGrid.className).toContain("border-y");
+    expect(signalGrid.className).toContain("bg-transparent");
+    expect(signalGrid).toHaveAttribute(
+      "data-overview-evidence-density-contract",
+      "disclosed-proof-rows-map-first",
+    );
+    expect(screen.getByTestId("topology-overview-proof-disclosure")).toHaveAttribute(
+      "data-overview-proof-default-state",
+      "closed",
+    );
+    expect(screen.getByTestId("topology-overview-proof-summary")).toHaveAttribute(
+      "data-overview-proof-summary-contract",
+      "relation-proof-disclosed-on-demand",
+    );
+    expect(signalGrid).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-signal-grid-surface",
+    );
+    expect(signalGrid).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-signal-grid-border",
     );
     expect(progress).toHaveTextContent("shown");
     expect(progress).toHaveTextContent("36/428");
     expect(progress).toHaveAttribute("data-overview-signal-compact", "true");
     expect(progress).toHaveAttribute("data-overview-signal-card", "neutral");
+    expect(progress).toHaveAttribute(
+      "data-low-height-overview-progress-contract",
+      "sr-only-while-evidence-and-handoff-stay-visible",
+    );
+    expect(progress).toHaveClass("topology-overview-low-height-sr-only");
+    expect(progress).toHaveClass("topology-overview-medium-height-sr-only");
+    expect(progress).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-signal-neutral-surface",
+    );
+    expect(progress).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-signal-neutral-border",
+    );
 
     const notice = screen.getByText(
       "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
     );
     expect(notice.closest("p")?.className).toContain("leading-5");
+    expect(notice.closest("p")?.className).toContain("max-md:sr-only");
     expect(notice.closest("p")?.className).not.toContain("line-clamp-2");
+    expect(screen.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-notice-surface",
+    );
+    expect(screen.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
+      "data-phone-overview-notice-contract",
+      "sr-only-while-map-evidence-wins",
+    );
   });
 
   it("offers an agent reanalysis command from overview actions", () => {
@@ -816,7 +1475,7 @@ describe("TopologyAnalysisBar", () => {
         }}
         healthAction={null}
         selectedTitle={null}
-        overviewRelationVisibility={{ visible: 21, total: 292, mode: "skeleton" }}
+        overviewRelationVisibility={{ visible: 8, total: 21, mode: "skeleton" }}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -824,14 +1483,46 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByTestId("topology-overview-relation-progress")).toHaveTextContent(
-      "21 concept cards",
+      "8/21 concept cards · 13 folded",
     );
     expect(screen.queryByText(/0\/498/)).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        "Showing the readable card skeleton. Use Focus or Path to inspect exact relations.",
+        "Showing the readable concept map. Use Focus or Path for exact relation evidence.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("omits folded count when every overview skeleton card remains visible", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 294,
+          secondaryMetric: 498,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        overviewRelationVisibility={{ visible: 21, total: 21, mode: "skeleton" }}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("topology-overview-relation-progress")).toHaveTextContent(
+      "21/21 concept cards",
+    );
+    expect(screen.getByTestId("topology-overview-relation-progress")).not.toHaveTextContent(
+      "folded",
+    );
   });
 
   it("reserves space for the selected-node drawer on desktop", () => {
@@ -870,6 +1561,10 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-selected-focus-rail", "true");
     expect(bar).toHaveAttribute("data-panel-width-target", "selected-focus-rail");
     expect(bar).toHaveAttribute(
+      "data-compact-focus-collapse-contract",
+      "selected-focus-support-hidden-under-md",
+    );
+    expect(bar).toHaveAttribute(
       "data-panel-width-css",
       "var(--topology-panel-selected-rail-width)",
     );
@@ -877,6 +1572,7 @@ describe("TopologyAnalysisBar", () => {
       "data-panel-width-token",
       "--topology-panel-selected-rail-width",
     );
+    expect(bar.className).toContain("max-md:hidden");
     expect(bar).toHaveAttribute("data-attention-role", "support");
   });
 
@@ -988,6 +1684,9 @@ describe("TopologyAnalysisBar", () => {
       name: "Focus review brief copied",
     });
     expect(copiedButton).toHaveTextContent("Copy focus brief");
+    expect(screen.getByTestId("topology-focus-primary-summary")).toHaveTextContent(
+      "Brief + impact packet",
+    );
     expect(copiedButton).not.toHaveTextContent("Focus brief copied");
     expect(copiedButton.className).toContain("active:translate-y-[1px]");
     expect(copiedButton.className).toContain("motion-reduce:transition-none");
@@ -1072,35 +1771,265 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-width-policy", "overview-support");
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-target", "overview-14-inch-compact");
-    expect(bar).toHaveAttribute("data-panel-width-css", "var(--topology-panel-overview-rail-width)");
-    expect(bar).toHaveAttribute("data-panel-width-token", "--topology-panel-overview-rail-width");
+    expect(bar).toHaveAttribute("data-panel-width-css", "var(--topology-panel-overview-responsive-width)");
+    expect(bar).toHaveAttribute("data-panel-width-token", "--topology-panel-overview-responsive-width");
+    expect(bar).toHaveAttribute(
+      "data-panel-phone-utility-reserve-token",
+      "--topology-panel-phone-utility-rail-reserve",
+    );
+    expect(bar).toHaveAttribute(
+      "data-panel-compact-scroll-end-reserve-token",
+      "--topology-analysis-panel-compact-scroll-end-reserve",
+    );
+    expect(bar).toHaveAttribute(
+      "data-overview-panel-compact-gap-token",
+      "--topology-overview-panel-compact-gap",
+    );
+    expect(bar).toHaveAttribute(
+      "data-overview-panel-phone-max-height-token",
+      "--topology-overview-panel-phone-max-height",
+    );
     expect(bar).toHaveAttribute("data-attention-role", "support");
     expect(bar).toHaveAttribute("data-panel-surface-token", "--topology-panel-support-surface");
     expect(bar).toHaveAttribute("data-panel-shadow-token", "--topology-panel-support-shadow");
     expect(bar).toHaveAttribute("data-panel-radius-token", "--topology-panel-radius");
     expect(bar).toHaveAttribute("data-panel-padding-token", "--topology-panel-padding");
     expect(bar).toHaveAttribute("data-panel-motion-token", "--topology-motion-panel-duration");
-    expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
-    expect(bar.className).toContain("overflow-hidden");
+    expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[390px]");
+    expect(bar.className).toContain("overflow-x-hidden");
+    expect(bar.className).toContain("overflow-y-hidden");
+    expect(bar.className).toContain(
+      "data-[analysis-mode=overview]:max-md:max-h-[var(--topology-overview-panel-phone-max-height)]",
+    );
+    expect(bar.className).toContain("data-[analysis-mode=overview]:max-md:overflow-y-auto");
+    const body = screen.getByTestId("topology-analysis-panel-body");
+    expect(body).toHaveAttribute("data-analysis-body-mode", "overview");
+    expect(body).toHaveAttribute(
+      "data-panel-body-scroll-contract",
+      "compact-scrolls-above-bottom-tab",
+    );
+    expect(body).toHaveAttribute(
+      "data-panel-body-scroll-end-reserve-token",
+      "--topology-analysis-panel-compact-scroll-end-reserve",
+    );
+    expect(body.className).toContain(
+      "max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))]",
+    );
+    expect(body.className).toContain("max-md:overflow-y-auto");
+    expect(body.className).toContain(
+      "data-[analysis-body-mode=overview]:gap-[var(--topology-overview-panel-compact-gap)]",
+    );
+    expect(body.className).toContain(
+      "data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)]",
+    );
+    const readerLens = screen.getByTestId("topology-overview-reader-lens");
+    expect(readerLens).toHaveAttribute(
+      "data-reader-lens-contract",
+      "single-business-to-agent-read-path",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-reader-lens-flow",
+      "project>domain>capability>element>agent-handoff",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-reader-lens-surface",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-reader-lens-border",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-title-text-token",
+      "--topology-overview-reader-lens-title-text",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-item-text-token",
+      "--topology-overview-reader-lens-item-text",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-marker-surface-token",
+      "--topology-overview-reader-lens-marker-surface",
+    );
+    expect(readerLens).toHaveAttribute(
+      "data-marker-border-token",
+      "--topology-overview-reader-lens-marker-border",
+    );
     const relationQuality = screen.getByTestId("topology-overview-relation-quality");
+    const signalGrid = screen.getByTestId("topology-overview-signal-grid");
+    expect(screen.getByTestId("topology-overview-reader-lens")).toHaveAttribute(
+      "data-density-contract",
+      "inline-step-path-no-nested-card",
+    );
+    expect(signalGrid).toHaveAttribute(
+      "data-compact-padding-token",
+      "--topology-overview-signal-grid-compact-padding",
+    );
+    expect(signalGrid).toHaveAttribute(
+      "data-compact-gap-token",
+      "--topology-overview-signal-grid-compact-gap",
+    );
     expect(screen.getByTestId("topology-overview-signal-metric-row")).toHaveAttribute(
       "data-overview-signal-layout",
-      "compact-two-column",
+      "status-before-evidence",
     );
-    expect(relationQuality).toHaveAttribute("data-density", "scan-facts");
+    expect(
+      screen.getByTestId("topology-overview-signal-metric-row"),
+    ).not.toContainElement(screen.getByTestId("topology-overview-relation-provenance"));
+    expect(relationQuality).toHaveAttribute("data-density", "summary-first");
+    expect(relationQuality).toHaveAttribute(
+      "data-proof-strip-contract",
+      "summary-plus-meter",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-proof-row-density",
+      "tertiary-evidence-row",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-row-divider-token",
+      "--topology-overview-proof-row-divider",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-row-padding-y-token",
+      "--topology-overview-proof-row-padding-y",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-row-gap-token",
+      "--topology-overview-proof-row-gap",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-title-text-token",
+      "--topology-overview-proof-title-text",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-summary-text-token",
+      "--topology-overview-proof-summary-text",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-quality-meter-contract",
+      "distribution-bar-maps-relation-quality",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-quality-surface",
+    );
+    expect(relationQuality).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-quality-border",
+    );
     expect(relationQuality).toHaveAttribute(
       "aria-label",
-      expect.stringContaining("Relation quality: strong 384"),
+      expect.stringContaining("Trust: clear 384"),
     );
+    const qualitySummary = screen.getByTestId("topology-overview-relation-quality-summary");
+    expect(qualitySummary).toHaveAttribute(
+      "data-signal-summary-contract",
+      "human-readable-first",
+    );
+    expect(qualitySummary).toHaveAttribute(
+      "data-summary-clamp-contract",
+      "single-line-proof-row-summary",
+    );
+    expect(qualitySummary).toHaveAttribute(
+      "data-summary-lines-token",
+      "--topology-overview-proof-summary-lines",
+    );
+    expect(qualitySummary.className).toContain("topology-overview-proof-summary");
+    expect(qualitySummary).toHaveTextContent("clear 384");
+    expect(
+      within(relationQuality).getByTestId("topology-overview-relation-quality-strong")
+        .parentElement,
+    ).toHaveAttribute("data-distribution-visibility", "sr-only");
     expect(
       within(relationQuality).getByTestId("topology-overview-relation-quality-strong"),
     ).toHaveTextContent("384");
     expect(
+      within(relationQuality).getByTestId("topology-overview-relation-quality-strong"),
+    ).toHaveAttribute("data-proof-cell-contract", "flat-divider-cell");
+    expect(
+      within(relationQuality).getByTestId("topology-overview-relation-quality-strong"),
+    ).toHaveAttribute("data-text-token", "--topology-overview-proof-strong-text");
+    expect(
+      within(relationQuality).getByTestId("topology-overview-relation-quality-weak"),
+    ).toHaveAttribute("data-divider-token", "--topology-overview-proof-cell-divider");
+    expect(
       within(relationQuality).getByTestId("topology-overview-relation-quality-weak"),
     ).toHaveTextContent("114");
+    const qualityMeter = within(relationQuality).getByTestId(
+      "topology-overview-relation-quality-meter",
+    );
+    expect(qualityMeter).toHaveAttribute(
+      "data-quality-meter-contract",
+      "distribution-bar-maps-relation-quality",
+    );
+    expect(qualityMeter).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-quality-meter-surface",
+    );
+    expect(qualityMeter).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-quality-meter-border",
+    );
+    const strongSegment = qualityMeter.querySelector('[data-relation-quality-segment="strong"]');
+    const weakSegment = qualityMeter.querySelector('[data-relation-quality-segment="weak"]');
+    expect(strongSegment).toHaveAttribute("data-count", "384");
+    expect(strongSegment).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-quality-strong-meter",
+    );
+    expect(weakSegment).toHaveAttribute("data-count", "114");
+    expect(weakSegment).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-quality-weak-meter",
+    );
     expect(
-      screen.getByRole("button", { name: "Copy topology overview brief" }).className,
-    ).toContain("min-h-9");
+      screen.getByRole("button", { name: "Copy topology map brief" }).className,
+    ).toContain("min-h-[var(--topology-overview-handoff-primary-min-height)]");
+    expect(screen.getByRole("button", { name: "Copy topology map brief" })).toHaveAttribute(
+      "data-min-height-token",
+      "--topology-overview-handoff-primary-min-height",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-actions")).toHaveAttribute(
+      "data-compact-padding-top-token",
+      "--topology-overview-handoff-compact-padding-top",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-actions")).toHaveAttribute(
+      "data-low-height-density-contract",
+      "primary-copy-visible-secondary-tools-hidden",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-actions").querySelector(
+      "[data-overview-handoff-label-compact-contract]",
+    )).toHaveAttribute(
+      "data-overview-handoff-label-compact-contract",
+      "phone-action-label-hidden",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-actions").querySelector(
+      "[data-overview-handoff-label-low-height-contract]",
+    )).toHaveAttribute(
+      "data-overview-handoff-label-low-height-contract",
+      "hidden-under-800px",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-actions").querySelector(
+      "[data-overview-handoff-label-low-height-contract]",
+    )).toHaveClass("topology-overview-low-height-sr-only");
+    expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveAttribute(
+      "data-secondary-min-height-token",
+      "--topology-overview-secondary-disclosure-min-height",
+    );
+    expect(
+      screen.getByTestId("topology-overview-handoff-summary").closest("details"),
+    ).toHaveClass("topology-overview-low-height-sr-only");
+    expect(screen.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
+      "data-compact-padding-y-token",
+      "--topology-overview-notice-compact-padding-y",
+    );
+    expect(screen.getByTestId("topology-overview-relation-notice")).toHaveAttribute(
+      "data-low-height-overview-notice-contract",
+      "sr-only-while-primary-copy-stays-visible",
+    );
+    expect(screen.getByTestId("topology-overview-relation-notice")).toHaveClass(
+      "topology-overview-low-height-sr-only",
+    );
   });
 
   it("moves below the concept creation panel when that panel is open", () => {
@@ -1166,15 +2095,38 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-policy", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-target", "path-14-inch-rail");
-    expect(bar).toHaveAttribute("data-panel-width-contract", "path-support-rail-max-360");
+    expect(bar).toHaveAttribute(
+      "data-panel-width-contract",
+      "path-support-rail-max-360-phone-utility-reserve",
+    );
     expect(bar).toHaveAttribute("data-attention-role", "support");
     expect(bar).toHaveAttribute(
       "data-panel-width-css",
-      "var(--topology-panel-path-rail-width)",
+      "var(--topology-panel-path-responsive-width)",
     );
-    expect(bar).toHaveAttribute("data-panel-width-token", "--topology-panel-path-rail-width");
+    expect(bar).toHaveAttribute(
+      "data-panel-width-token",
+      "--topology-panel-path-responsive-width",
+    );
+    expect(bar).toHaveAttribute(
+      "data-panel-phone-utility-reserve-token",
+      "--topology-panel-phone-utility-rail-reserve",
+    );
     expect(bar).toHaveAttribute("data-panel-surface-token", "--topology-panel-support-surface");
     expect(bar).toHaveAttribute("data-panel-motion-token", "--topology-motion-panel-duration");
+    expect(bar).toHaveAttribute(
+      "data-panel-compact-scroll-end-reserve-token",
+      "--topology-analysis-panel-path-collapsed-scroll-end-reserve",
+    );
+    const body = screen.getByTestId("topology-analysis-panel-body");
+    expect(body).toHaveAttribute("data-analysis-body-mode", "path");
+    expect(body).toHaveAttribute(
+      "data-panel-body-scroll-end-reserve-token",
+      "--topology-analysis-panel-path-collapsed-scroll-end-reserve",
+    );
+    expect(body.className).toContain(
+      "max-md:pb-[var(--topology-analysis-panel-path-collapsed-scroll-end-reserve)]",
+    );
   });
 
   it("keeps the Path support rail contract even when a right detail surface is reserved", () => {
@@ -1207,10 +2159,68 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-analysis-mode", "path");
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-target", "path-14-inch-rail");
-    expect(bar).toHaveAttribute("data-panel-width-contract", "path-support-rail-max-360");
+    expect(bar).toHaveAttribute(
+      "data-panel-width-contract",
+      "path-support-rail-max-360-phone-utility-reserve",
+    );
     expect(bar).toHaveAttribute(
       "data-panel-width-token",
-      "--topology-panel-path-rail-width",
+      "--topology-panel-path-responsive-width",
+    );
+    expect(bar).toHaveAttribute(
+      "data-panel-phone-utility-reserve-token",
+      "--topology-panel-phone-utility-rail-reserve",
+    );
+  });
+
+  it("uses a phone-safe primary rail width for Health mode", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="health"
+        summary={{
+          mode: "health",
+          primaryMetric: 23,
+          secondaryMetric: 504,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 1,
+            promotion: 22,
+          },
+        }}
+        healthAction={{
+          slug: "ontology-atlas",
+          title: "ontology-atlas",
+          kind: "promotion",
+        }}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const bar = screen.getByRole("region", {
+      name: "Topology analysis mode",
+    });
+    expect(bar).toHaveAttribute("data-analysis-mode", "health");
+    expect(bar).toHaveAttribute("data-attention-role", "primary");
+    expect(bar).toHaveAttribute("data-panel-width-target", "health-phone-primary-rail");
+    expect(bar).toHaveAttribute(
+      "data-panel-width-contract",
+      "health-primary-max-360-phone-full-width",
+    );
+    expect(bar).toHaveAttribute(
+      "data-panel-width-token",
+      "--topology-panel-overview-responsive-width",
+    );
+    expect(bar).toHaveAttribute(
+      "data-panel-phone-utility-reserve-token",
+      "--topology-panel-phone-utility-rail-reserve",
+    );
+    expect(bar).toHaveAttribute(
+      "data-health-repair-lane-contract",
+      "target-to-builder-to-sync",
     );
   });
 
@@ -1240,10 +2250,39 @@ describe("TopologyAnalysisBar", () => {
 
     const visibility = screen.getByTestId("topology-path-candidate-visibility");
     expect(visibility).toHaveTextContent(
-      "Visible candidates 10 / 21; hidden for panel clearance.",
+      "Showing 10 of 21 path candidates so the map stays readable.",
+    );
+    expect(visibility).not.toHaveTextContent(/panel clearance|hidden/i);
+    expect(visibility).toHaveAttribute(
+      "data-copy-contract",
+      "reader-facing-map-readability",
+    );
+    expect(visibility).toHaveAttribute(
+      "data-path-rail-spacing-contract",
+      "parent-gap-owns-path-stack",
     );
     expect(visibility).toHaveAttribute("data-visible", "10");
     expect(visibility).toHaveAttribute("data-total", "21");
+    expect(visibility).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-candidate-visibility-surface",
+    );
+    expect(visibility).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-candidate-visibility-border",
+    );
+    expect(visibility).toHaveAttribute(
+      "data-notice-text-token",
+      "--topology-analysis-panel-notice-text",
+    );
+    expect(visibility.className).toContain(
+      "text-[color:var(--topology-analysis-panel-notice-text)]",
+    );
+    expect(visibility.className).toContain("tracking-normal");
+    expect(visibility.className).not.toContain("mt-");
+    expect(visibility.className).not.toContain("uppercase");
+    expect(visibility.className).not.toContain("font-mono");
+    expect(visibility.className).not.toContain("--color-text-tertiary");
   });
 
   it("shows the Path mode MCP and CLI handoff contract in the support panel", () => {
@@ -1272,12 +2311,198 @@ describe("TopologyAnalysisBar", () => {
 
     const handoff = screen.getByTestId("topology-path-agent-handoff");
     expect(handoff).toHaveAttribute("data-attention-layer", "focus-path-state");
+    expect(handoff).toHaveAttribute(
+      "data-handoff-contract",
+      "route-proof-action-visible",
+    );
+    expect(handoff).toHaveAttribute(
+      "data-handoff-layout-contract",
+      "evidence-first-agent-handoff-compact",
+    );
+    expect(handoff).toHaveAttribute(
+      "data-handoff-hierarchy",
+      "primary-evidence-secondary-agent-checks",
+    );
     expect(handoff).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+    expect(handoff).toHaveAttribute(
+      "data-path-rail-spacing-contract",
+      "parent-gap-owns-path-stack",
+    );
+    expect(handoff).toHaveAttribute("data-surface-token", "--topology-path-handoff-surface");
+    expect(handoff).toHaveAttribute("data-border-token", "--topology-path-handoff-border");
+    expect(handoff).toHaveAttribute("data-text-token", "--topology-path-handoff-text");
+    expect(handoff).toHaveAttribute(
+      "data-label-text-token",
+      "--topology-path-handoff-label-text",
+    );
+    expect(handoff.className).toContain(
+      "text-[color:var(--topology-path-handoff-text)]",
+    );
+    expect(handoff.className).toContain("gap-1");
+    expect(handoff.className).not.toContain("mt-");
+    expect(handoff.className).not.toContain("--color-text-tertiary");
+    expect(handoff).toHaveAttribute(
+      "data-action-min-height-token",
+      "--topology-path-handoff-action-min-height",
+    );
+    expect(handoff).toHaveAttribute(
+      "data-action-radius-token",
+      "--topology-path-handoff-action-radius",
+    );
+    expect(handoff).toHaveAttribute(
+      "data-compact-padding-y-token",
+      "--topology-path-handoff-compact-padding-y",
+    );
+    expect(handoff).toHaveAttribute(
+      "data-primary-evidence-min-height-token",
+      "--topology-path-primary-evidence-min-height",
+    );
+    expect(handoff).toHaveAttribute("data-primary-evidence-visible", "false");
     expect(handoff).toHaveAttribute("data-mcp-action", "find_path");
     expect(handoff).toHaveAttribute("data-cli-fallback", "ontology-atlas path");
-    expect(handoff).toHaveTextContent("Agent handoff");
-    expect(handoff).toHaveTextContent("MCP find_path");
-    expect(handoff).toHaveTextContent("CLI path");
+    expect(screen.getByTestId("topology-path-handoff-header")).toHaveAttribute(
+      "data-path-handoff-header-contract",
+      "share-label-before-actions",
+    );
+    expect(screen.getByTestId("topology-path-handoff-secondary-row")).toHaveAttribute(
+      "data-path-handoff-secondary-contract",
+      "agent-actions-demoted-after-evidence",
+    );
+    const mcpChip = screen.getByTestId("topology-path-handoff-mcp-chip");
+    expect(mcpChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-mcp-surface",
+    );
+    expect(mcpChip).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-handoff-mcp-border",
+    );
+    expect(mcpChip).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-handoff-mcp-text",
+    );
+    const cliChip = screen.getByTestId("topology-path-handoff-cli-chip");
+    expect(cliChip).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-cli-surface",
+    );
+    expect(cliChip).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-handoff-cli-border",
+    );
+    expect(cliChip).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-handoff-cli-text",
+    );
+    expect(cliChip.className).toContain(
+      "text-[color:var(--topology-path-handoff-cli-text)]",
+    );
+    expect(cliChip.className).not.toContain("--color-text-tertiary");
+    expect(handoff).toHaveTextContent("Share route");
+    expect(handoff).toHaveTextContent("Agent check");
+    expect(handoff).toHaveTextContent("Terminal check");
+  });
+
+  it("keeps the selected Path route visible before the proof disclosure", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="path"
+        summary={{
+          mode: "path",
+          primaryMetric: 21,
+          secondaryMetric: 504,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        pathSourceSlug="domain:views"
+        pathTargetSlug="capability:topology-analysis-modes"
+        pathSourceTitle="Views (Topology · Browse · Builder)"
+        pathTargetTitle="Topology Analysis Modes"
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const route = screen.getByTestId("topology-path-visible-route");
+    expect(route).toHaveAttribute(
+      "data-route-contract",
+      "source-target-visible-before-proof-disclosure",
+    );
+    expect(route).toHaveAttribute("data-attention-layer", "focus-path-state");
+    expect(route).toHaveAttribute("data-guidance-owner", "analysis-rail");
+    expect(route).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+    expect(route).toHaveAttribute("data-source-slug", "domain:views");
+    expect(route).toHaveAttribute("data-target-slug", "capability:topology-analysis-modes");
+    expect(route).toHaveAttribute("data-surface-token", "--topology-path-route-surface");
+    expect(route).toHaveAttribute("data-border-token", "--topology-path-route-border");
+    expect(route).toHaveAttribute("data-chip-surface-token", "--topology-path-route-chip-surface");
+    expect(route).toHaveAttribute("data-chip-border-token", "--topology-path-route-chip-border");
+    expect(route).toHaveAttribute(
+      "data-source-surface-token",
+      "--topology-path-route-source-surface",
+    );
+    expect(route).toHaveAttribute(
+      "data-source-border-token",
+      "--topology-path-route-source-border",
+    );
+    expect(route).toHaveAttribute(
+      "data-source-text-token",
+      "--topology-path-route-source-text",
+    );
+    expect(route).toHaveAttribute(
+      "data-target-surface-token",
+      "--topology-path-route-target-surface",
+    );
+    expect(route).toHaveAttribute(
+      "data-target-border-token",
+      "--topology-path-route-target-border",
+    );
+    expect(route).toHaveAttribute(
+      "data-target-text-token",
+      "--topology-path-route-target-text",
+    );
+    expect(route).toHaveAttribute(
+      "data-endpoint-marker-surface-token",
+      "--topology-path-route-endpoint-marker-surface",
+    );
+    expect(route).toHaveAttribute(
+      "data-endpoint-marker-border-token",
+      "--topology-path-route-endpoint-marker-border",
+    );
+    expect(route).toHaveAttribute(
+      "data-endpoint-marker-text-token",
+      "--topology-path-route-endpoint-marker-text",
+    );
+    expect(route).toHaveAttribute(
+      "data-route-compact-min-height-token",
+      "--topology-path-route-compact-min-height",
+    );
+    expect(route).toHaveAttribute(
+      "data-path-rail-spacing-contract",
+      "parent-gap-owns-path-stack",
+    );
+    expect(route).toHaveAttribute(
+      "data-route-responsive-contract",
+      "phone-fluid-tablet-stacked-wide-desktop-weighted-endpoints",
+    );
+    expect(route.className).toContain("grid-cols-[");
+    expect(route.className).toContain("md:grid-cols-1");
+    expect(route.className).toContain("2xl:grid-cols-[");
+    expect(route.className).toContain("2xl:gap-0");
+    expect(route.className).not.toContain("mt-");
+    expect(within(route).getByText("Source")).toBeInTheDocument();
+    expect(within(route).getByText("Views")).toBeInTheDocument();
+    expect(within(route).getByText("Target")).toBeInTheDocument();
+    expect(within(route).getByText("Topology Analysis Modes")).toBeInTheDocument();
+    expect(route.querySelector('[data-route-endpoint-marker="source"]')).toHaveTextContent("A");
+    expect(route.querySelector('[data-route-endpoint-marker="target"]')).toHaveTextContent("B");
   });
 
   it("copies an overview brief for first-contact agent and collaborator review", async () => {
@@ -1320,54 +2545,115 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.queryByTestId("topology-overview-work-order")).toBeNull();
-    expect(screen.getByText("Copy graph brief")).toBeVisible();
+    expect(screen.getByText("Copy map brief")).toBeVisible();
     const graphBriefButton = screen.getByRole("button", {
-      name: "Copy topology overview brief",
+      name: "Copy topology map brief",
     });
     expect(graphBriefButton.className).toContain("min-h-9");
     expect(graphBriefButton.className).not.toContain("col-span-2");
-    expect(graphBriefButton).toHaveAttribute("title", "Copy graph brief");
+    expect(graphBriefButton).toHaveAttribute("title", "Copy map brief");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
-    ).toHaveTextContent("Relation provenance");
+    ).toHaveTextContent("Evidence source");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
-    ).toHaveTextContent("source-backed 70 · authored 18 · needs review 0");
-    expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
-      "Relation quality",
+    ).toHaveTextContent("sourced 70 · added 18 · check 0");
+    expect(screen.getByTestId("topology-overview-relation-provenance")).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-signal-indigo-surface",
     );
     expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
-      "strong 62 · supported 20 · weak 4 · review 2",
+      "Trust",
     );
-	    const readinessGate = screen.getByTestId("topology-overview-agent-readiness");
-	    expect(readinessGate).toHaveTextContent("Agent readiness");
-	    expect(readinessGate).toHaveAttribute(
-	      "data-agent-readiness-summary",
-	      "handoff-ready 82 · preflight 4 · review 2",
-	    );
-	    expect(readinessGate).toHaveAccessibleName(
-	      "Agent readiness: handoff-ready 82 · preflight 4 · review 2",
-	    );
-	    expect(
-	      readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
-	    ).toHaveTextContent("82");
+    expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
+      "clear 62 · supported 20 · thin 4 · check 2",
+    );
+    const readinessGate = screen.getByTestId("topology-overview-agent-readiness");
+    expect(readinessGate).toHaveTextContent("Agent handoff");
+    expect(readinessGate).toHaveAttribute("data-density", "summary-first");
+    expect(readinessGate).toHaveAttribute(
+      "data-proof-strip-contract",
+      "summary-plus-meter",
+    );
+    expect(readinessGate).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-readiness-surface",
+    );
+    expect(readinessGate).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-readiness-border",
+    );
+    expect(readinessGate).toHaveAttribute(
+      "data-agent-readiness-summary",
+      "ready 82 · check 4 · needs review 2",
+    );
+    expect(readinessGate).toHaveAccessibleName(
+      "Agent handoff: ready 82 · check 4 · needs review 2",
+    );
+    const readinessSummary = screen.getByTestId("topology-overview-agent-readiness-summary");
+    expect(readinessSummary).toHaveTextContent("ready 82 · check 4 · needs review 2");
+    expect(readinessSummary).toHaveAttribute(
+      "data-signal-summary-contract",
+      "human-readable-first",
+    );
+    expect(readinessSummary).toHaveAttribute(
+      "data-summary-clamp-contract",
+      "single-line-proof-row-summary",
+    );
+    expect(readinessSummary).toHaveAttribute(
+      "data-summary-lines-token",
+      "--topology-overview-proof-summary-lines",
+    );
+    expect(readinessSummary.className).toContain("topology-overview-proof-summary");
+    expect(
+      readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
+    ).toHaveTextContent("82");
+    expect(
+      readinessGate.querySelector('[data-agent-readiness-chip="ready"]')?.parentElement,
+    ).toHaveAttribute("data-distribution-visibility", "sr-only");
+    expect(
+      readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
+    ).toHaveAttribute("data-proof-cell-contract", "flat-divider-cell");
+    expect(
+      readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
+    ).toHaveAttribute("data-text-token", "--topology-overview-proof-supported-text");
     expect(
       readinessGate.querySelector('[data-agent-readiness-chip="preflight"]'),
     ).toHaveTextContent("4");
+    expect(
+      readinessGate.querySelector('[data-agent-readiness-chip="preflight"]'),
+    ).toHaveAttribute("data-text-token", "--topology-overview-proof-warning-text");
     expect(
       readinessGate.querySelector('[data-agent-readiness-chip="review"]'),
     ).toHaveTextContent("2");
     const readinessMeter = screen.getByTestId("topology-overview-agent-readiness-meter");
     expect(readinessMeter).toHaveAttribute(
       "aria-label",
-      "Agent readiness: handoff-ready 82 · preflight 4 · review 2",
+      "Agent handoff: ready 82 · check 4 · needs review 2",
+    );
+    expect(readinessMeter).toHaveAttribute(
+      "data-surface-token",
+      "--topology-overview-readiness-meter-surface",
+    );
+    expect(readinessMeter).toHaveAttribute(
+      "data-border-token",
+      "--topology-overview-readiness-meter-border",
     );
     expect(
       readinessMeter.querySelector('[data-agent-readiness-segment="ready"]'),
     ).toHaveAttribute("data-count", "82");
     expect(
+      readinessMeter.querySelector('[data-agent-readiness-segment="ready"]'),
+    ).toHaveAttribute("data-meter-token", "--topology-overview-readiness-ready-meter");
+    expect(
       readinessMeter.querySelector('[data-agent-readiness-segment="preflight"]'),
     ).toHaveAttribute("data-count", "4");
+    expect(
+      readinessMeter.querySelector('[data-agent-readiness-segment="preflight"]'),
+    ).toHaveAttribute(
+      "data-meter-token",
+      "--topology-overview-readiness-preflight-meter",
+    );
     expect(
       readinessMeter.querySelector('[data-agent-readiness-segment="review"]'),
     ).toHaveAttribute("data-count", "2");
@@ -1376,12 +2662,12 @@ describe("TopologyAnalysisBar", () => {
     fireEvent.click(graphBriefButton);
 
     const copiedButton = await screen.findByRole("button", {
-      name: "Topology overview brief copied",
+      name: "Topology map brief copied",
     });
-    expect(copiedButton).toHaveTextContent("Copy graph brief");
-    expect(copiedButton).not.toHaveTextContent("Graph brief copied");
+    expect(copiedButton).toHaveTextContent("Copy map brief");
+    expect(copiedButton).not.toHaveTextContent("Map brief copied");
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("# Topology overview brief"),
+      expect.stringContaining("# Topology map brief"),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("- Total nodes: 36"),
@@ -1393,17 +2679,17 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Relation provenance: source-backed 70 · authored 18 · needs review 0",
+        "- Evidence source: sourced 70 · added 18 · check 0",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Relation quality: strong 62 · supported 20 · weak 4 · review 2",
+        "- Trust: clear 62 · supported 20 · thin 4 · check 2",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Agent readiness: handoff-ready 82 · preflight 4 · review 2",
+        "- Agent handoff: ready 82 · check 4 · needs review 2",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
@@ -1513,11 +2799,11 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.queryByText("Analysis order")).toBeNull();
     expect(screen.queryByTestId("topology-overview-work-order")).toBeNull();
     expect(
-      screen.getByRole("button", { name: "Copy topology overview brief" }),
+      screen.getByRole("button", { name: "Copy topology map brief" }),
     ).toBeVisible();
   });
 
-  it("copies MCP profile and impact checks for the focused node", async () => {
+  it("copies concept and impact checks for the focused node", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: { writeText },
@@ -1546,7 +2832,7 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy focus MCP profile" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy focus concept check" }));
     expect(writeText).toHaveBeenCalledWith(
       'query_ontology({"operation":"node_profile","slug":"capability:topology-analysis-modes","depth":2,"limit":12})',
     );
@@ -1563,7 +2849,7 @@ describe("TopologyAnalysisBar", () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy focus MCP impact" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy focus impact check" }));
     expect(writeText).toHaveBeenCalledWith(
       'query_ontology({"operation":"blast_radius","slug":"capability:topology-analysis-modes","depth":2,"direction":"incoming"})',
     );
@@ -1594,14 +2880,26 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByText("Focus review order")).toBeInTheDocument();
-    expect(screen.getByTestId("topology-focus-review-order")).toBeVisible();
-    expect(screen.getByText("Read node profile")).toBeInTheDocument();
+    const selectedReviewOrder = screen.getByTestId("topology-focus-review-order");
+    expect(selectedReviewOrder).toBeVisible();
+    expect(selectedReviewOrder).toHaveAttribute(
+      "data-review-order-density",
+      "selected-detail",
+    );
+    expect(screen.getByText("Read concept brief")).toBeInTheDocument();
     expect(screen.getByText("Trace incoming impact")).toBeInTheDocument();
     expect(screen.getByText("Edit or confirm meaning")).toBeInTheDocument();
     expect(screen.getByText("Run sync gate")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Copy focus review brief" }),
     ).toBeInTheDocument();
+    const primarySummary = screen.getByTestId("topology-focus-primary-summary");
+    expect(primarySummary).toHaveTextContent("Brief + impact packet");
+    expect(primarySummary.className).toContain("text-[10px]");
+    expect(primarySummary).toHaveAttribute(
+      "data-command-primary-summary-token",
+      "--topology-command-primary-summary-text",
+    );
     expect(screen.getByRole("link", { name: "Open ontology" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open builder" })).toBeInTheDocument();
     const summary = screen.getByTestId("topology-focus-proof-summary");
@@ -1639,7 +2937,12 @@ describe("TopologyAnalysisBar", () => {
 
     expect(screen.getByText("Select a node.")).toBeInTheDocument();
     const reviewOrder = screen.getByTestId("topology-focus-review-order");
-    expect(reviewOrder).toHaveTextContent("Read node profile");
+    expect(reviewOrder).toHaveClass("grid-cols-2");
+    expect(reviewOrder).toHaveAttribute(
+      "data-review-order-density",
+      "unselected-compact",
+    );
+    expect(reviewOrder).toHaveTextContent("Read concept brief");
     expect(reviewOrder).toHaveTextContent("Trace incoming impact");
     expect(reviewOrder).toHaveTextContent("Edit or confirm meaning");
     expect(reviewOrder).toHaveTextContent("Run sync gate");
@@ -1860,8 +3163,58 @@ describe("TopologyAnalysisBar", () => {
       "href",
       "/ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
     );
+    const visibleRoute = screen.getByTestId("topology-path-visible-route");
+    expect(visibleRoute).toHaveAttribute(
+      "data-route-responsive-contract",
+      "phone-fluid-tablet-stacked-wide-desktop-weighted-endpoints",
+    );
+    expect(visibleRoute.className).toContain("md:grid-cols-1");
+    expect(visibleRoute.className).toContain("2xl:grid-cols-[");
+    expect(visibleRoute.querySelector('[data-route-endpoint-title="target"]')).toHaveAttribute(
+      "data-route-endpoint-title-contract",
+      "weighted-route-title",
+    );
+    const handoff = screen.getByTestId("topology-path-agent-handoff");
+    expect(handoff).toHaveAttribute("data-primary-evidence-visible", "true");
+    expect(handoff).toHaveAttribute(
+      "data-path-primary-evidence-contract",
+      "visible-before-proof-disclosure",
+    );
+    const primaryEvidenceAction = screen.getByTestId("topology-path-primary-evidence-action");
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-path-primary-evidence-contract",
+      "visible-before-proof-disclosure",
+    );
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-primary-evidence-surface",
+    );
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-primary-evidence-border",
+    );
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-primary-evidence-text",
+    );
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-hover-surface-token",
+      "--topology-path-primary-evidence-hover-surface",
+    );
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-hover-border-token",
+      "--topology-path-primary-evidence-hover-border",
+    );
+    expect(primaryEvidenceAction).toHaveAttribute(
+      "data-hover-text-token",
+      "--topology-path-primary-evidence-hover-text",
+    );
+    expect(primaryEvidenceAction.className).toContain(
+      "text-[color:var(--topology-path-primary-evidence-text)]",
+    );
+    expect(primaryEvidenceAction.className).not.toContain("--color-text-secondary");
     expect(
-      screen.getByRole("button", { name: "Copy topology path evidence" }),
+      within(handoff).getByRole("button", { name: "Copy topology path evidence" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Copy topology path MCP check" }),
@@ -1869,22 +3222,76 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText("Proof order")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Use the visible path as a clue, then run relation_check, explain_relation, and a bounded all_paths plan before treating it as write evidence.",
+        "Shows the visible link first, then the checks needed before changing the ontology.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByTestId("topology-path-proof-route")).toHaveTextContent("Views");
     expect(screen.getByTestId("topology-path-proof-route")).toHaveTextContent(
       "Topology Analysis Modes",
     );
+    const proofRoute = screen.getByTestId("topology-path-proof-route");
+    expect(proofRoute).toHaveAttribute(
+      "data-route-contract",
+      "proof-disclosure-source-target",
+    );
+    expect(proofRoute).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-route-surface",
+    );
+    expect(proofRoute).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-route-border",
+    );
+    expect(proofRoute).toHaveAttribute(
+      "data-chip-surface-token",
+      "--topology-path-route-chip-surface",
+    );
+    expect(proofRoute).toHaveAttribute(
+      "data-chip-border-token",
+      "--topology-path-route-chip-border",
+    );
+    expect(
+      proofRoute.querySelector('[data-route-endpoint="source"]'),
+    ).toHaveTextContent("Views");
+    expect(
+      proofRoute.querySelector('[data-route-endpoint="target"]'),
+    ).toHaveTextContent("Topology Analysis Modes");
+    const pathProofActions = [
+      ["Source in ontology", "source-ontology", "--topology-path-route-surface"],
+      ["Target in ontology", "target-ontology", "--topology-path-route-surface"],
+      ["Source in builder", "source-builder", "--topology-path-route-chip-surface"],
+      ["Target in builder", "target-builder", "--topology-path-route-chip-surface"],
+    ] as const;
+    for (const [name, action, surfaceToken] of pathProofActions) {
+      const link = screen.getByRole("link", { name });
+      expect(link).toHaveAttribute("data-path-proof-action", action);
+      expect(link).toHaveAttribute("data-surface-token", surfaceToken);
+    }
     const checklist = screen.getByTestId("topology-path-proof-checklist");
     expect(checklist).toHaveTextContent("Visible path clue");
     expect(checklist).toHaveTextContent("ready");
-    expect(checklist).toHaveTextContent("relation_check preflight");
-    expect(checklist).toHaveTextContent("explain_relation context");
-    expect(checklist).toHaveTextContent("bounded all_paths plan");
-    expect(checklist).toHaveTextContent("post-write sync gate");
+    expect(checklist.querySelector('[data-path-proof-step="ready"]')).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-proof-step-surface",
+    );
+    expect(checklist.querySelector('[data-path-proof-status="ready"]')).toHaveAttribute(
+      "data-border-token",
+      "--topology-path-proof-ready-border",
+    );
+    expect(checklist).toHaveTextContent("Check relation direction");
+    expect(checklist).toHaveTextContent("Explain why it connects");
+    expect(checklist).toHaveTextContent("Compare alternate paths");
+    expect(checklist).toHaveTextContent("Sync after edits");
     expect(screen.getAllByText("required")).toHaveLength(3);
+    expect(checklist.querySelector('[data-path-proof-status="required"]')).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-proof-required-surface",
+    );
     expect(screen.getByText("after write")).toBeInTheDocument();
+    expect(checklist.querySelector('[data-path-proof-status="after-write"]')).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-proof-after-write-text",
+    );
     expect(
       screen.getByRole("button", {
         name: "Copy topology path relation preflight MCP check",
@@ -1935,17 +3342,154 @@ describe("TopologyAnalysisBar", () => {
     );
 
     const summary = screen.getByTestId("topology-path-proof-summary");
+    const disclosure = screen.getByTestId("topology-path-proof-disclosure");
+    expect(disclosure).toHaveAttribute(
+      "data-path-proof-disclosure-contract",
+      "closed-by-default-path-rail-proof",
+    );
+    expect(disclosure).toHaveAttribute(
+      "data-path-rail-spacing-contract",
+      "parent-gap-owns-path-stack",
+    );
+    expect(disclosure.className).not.toContain("mt-");
     expect(summary).toHaveTextContent("Path proof");
+    expect(summary).toHaveClass("w-full");
+    expect(summary).toHaveAttribute(
+      "data-summary-contract",
+      "full-width-proof-disclosure",
+    );
+    expect(summary).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-proof-summary-surface",
+    );
+    expect(summary).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-proof-summary-text",
+    );
+    expect(summary).toHaveAttribute(
+      "data-hover-surface-token",
+      "--topology-path-proof-summary-hover-surface",
+    );
+    expect(summary).toHaveAttribute(
+      "data-hover-text-token",
+      "--topology-path-proof-summary-hover-text",
+    );
+    expect(summary.className).toContain(
+      "text-[color:var(--topology-path-proof-summary-text)]",
+    );
+    expect(summary.className).not.toContain("--color-text-quaternary");
     expect(summary.closest("details")).not.toHaveAttribute("open");
     expect(screen.getByTestId("topology-path-proof-chevron")).toHaveClass(
       "group-open:rotate-180",
     );
+    const proofKicker = screen.getByTestId("topology-path-proof-kicker");
+    expect(proofKicker).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-proof-kicker-text",
+    );
+    expect(proofKicker.className).toContain(
+      "text-[color:var(--topology-path-proof-kicker-text)]",
+    );
+    expect(proofKicker.className).not.toContain("--color-text-quaternary");
+    const proofRoute = screen.getByTestId("topology-path-proof-route");
+    expect(proofRoute).toHaveAttribute(
+      "data-chip-text-token",
+      "--topology-path-route-chip-text",
+    );
+    expect(proofRoute).toHaveAttribute(
+      "data-arrow-text-token",
+      "--topology-path-route-arrow-text",
+    );
+    for (const endpoint of proofRoute.querySelectorAll("[data-route-endpoint]")) {
+      expect(endpoint.className).toContain(
+        "text-[color:var(--topology-path-route-chip-text)]",
+      );
+      expect(endpoint.className).not.toContain("--color-text-secondary");
+    }
+    const proofDescription = screen.getByTestId("topology-path-proof-description");
+    expect(proofDescription).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-proof-desc-text",
+    );
+    expect(proofDescription.className).toContain(
+      "text-[color:var(--topology-path-proof-desc-text)]",
+    );
+    expect(proofDescription.className).not.toContain("--color-text-tertiary");
+    for (const action of [
+      "source-ontology",
+      "target-ontology",
+      "source-builder",
+      "target-builder",
+    ] as const) {
+      const link = document.querySelector(`[data-path-proof-action="${action}"]`);
+      expect(link).toHaveAttribute(
+        "data-text-token",
+        "--topology-path-proof-action-text",
+      );
+      expect(link).toHaveAttribute(
+        "data-hover-text-token",
+        "--topology-path-proof-action-hover-text",
+      );
+      expect(link?.className).toContain(
+        "text-[color:var(--topology-path-proof-action-text)]",
+      );
+      expect(link?.className).not.toContain("--color-text-tertiary");
+    }
     const toolsSummary = screen.getByTestId("topology-path-checks-summary");
     expect(toolsSummary).toHaveTextContent("Path checks");
     expect(toolsSummary.className).toContain("min-h-8");
+    expect(toolsSummary).toHaveAttribute(
+      "data-text-token",
+      "--topology-path-check-summary-text",
+    );
+    expect(toolsSummary).toHaveAttribute(
+      "data-hover-text-token",
+      "--topology-path-check-summary-hover-text",
+    );
+    expect(toolsSummary.className).toContain(
+      "text-[color:var(--topology-path-check-summary-text)]",
+    );
+    expect(toolsSummary.className).not.toContain("--color-text-quaternary");
     expect(screen.getByTestId("topology-path-checks-chevron")).toHaveClass(
       "group-open:rotate-180",
     );
+    const checkActions = screen.getByTestId("topology-path-check-actions");
+    expect(checkActions).toHaveAttribute(
+      "data-path-check-action-contract",
+      "mcp-sequence-proof-actions",
+    );
+    expect(checkActions).toHaveAttribute(
+      "data-surface-token",
+      "--topology-path-handoff-surface",
+    );
+    const pathCheckActions = [
+      ["Copy topology path MCP check", "path-mcp", "--topology-path-handoff-mcp-surface"],
+      [
+        "Copy topology path relation preflight MCP check",
+        "relation-preflight",
+        "--topology-path-handoff-cli-surface",
+      ],
+      [
+        "Copy topology path explain_relation MCP check",
+        "explain-relation",
+        "--topology-path-handoff-cli-surface",
+      ],
+      [
+        "Copy topology path all_paths query plan MCP check",
+        "all-paths-plan",
+        "--topology-path-handoff-cli-surface",
+      ],
+      [
+        "Copy topology path all_paths MCP execution check",
+        "all-paths-run",
+        "--topology-path-handoff-cli-surface",
+      ],
+    ] as const;
+    for (const [name, action, surfaceToken] of pathCheckActions) {
+      const button = screen.getByRole("button", { name });
+      expect(button).toHaveAttribute("data-path-check-action", action);
+      expect(button).toHaveAttribute("data-surface-token", surfaceToken);
+    }
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
     expect(screen.queryByText("Copy tools")).not.toBeInTheDocument();
   });
@@ -2053,16 +3597,16 @@ describe("TopologyAnalysisBar", () => {
       expect.stringContaining("  - Visible path clue: ready"),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("  - relation_check preflight: required"),
+      expect.stringContaining("  - Check relation direction: required"),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("  - explain_relation context: required"),
+      expect.stringContaining("  - Explain why it connects: required"),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("  - bounded all_paths plan: required"),
+      expect.stringContaining("  - Compare alternate paths: required"),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("  - post-write sync gate: after write"),
+      expect.stringContaining("  - Sync after edits: after write"),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("- Post-write sync gate:"),
@@ -2340,11 +3884,122 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText("Inspect target")).toBeInTheDocument();
     expect(screen.getByText("Repair ownership or evidence")).toBeInTheDocument();
     expect(screen.getByText("Run sync gate")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
+      "data-health-repair-lane-contract",
+      "target-to-builder-to-sync",
+    );
+    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
+      "data-health-repair-target-slug",
+      "domain:views",
+    );
+    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
+      "data-health-repair-target-kind",
+      "orphan",
+    );
+    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
+      "data-health-panel-phone-max-height-token",
+      "--topology-health-panel-phone-max-height",
+    );
+    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
+      "data-panel-compact-scroll-end-reserve-token",
+      "--topology-health-panel-scroll-end-reserve",
+    );
+    expect(screen.getByTestId("topology-analysis-panel").className).toContain(
+      "data-[analysis-mode=health]:max-md:max-h-[var(--topology-health-panel-phone-max-height)]",
+    );
+    expect(screen.getByTestId("topology-analysis-panel-body").className).toContain(
+      "data-[analysis-body-mode=health]:max-md:pb-[var(--topology-health-panel-scroll-end-reserve)]",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-health-repair-order-contract",
+      "inspect-repair-sync",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-health-repair-action-order",
+      "builder-mcp-ontology",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-health-repair-visual-contract",
+      "builder-primary-full-secondary-row",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-health-repair-primary-action",
+      "builder",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-health-repair-sync-gate",
+      "post-change",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-primary-surface-token",
+      "--topology-health-repair-primary-surface",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-primary-border-token",
+      "--topology-health-repair-primary-border",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-secondary-surface-token",
+      "--topology-health-repair-secondary-surface",
+    );
+    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
+      "data-secondary-border-token",
+      "--topology-health-repair-secondary-border",
+    );
     expect(
       screen.getByRole("button", { name: "open question Views" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Inspect" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Repair in builder" })).toBeInTheDocument();
+    const actionRail = screen.getByTestId("topology-health-repair-order");
+    const primaryRepair = within(actionRail).getByRole("link", {
+      name: "Repair in builder",
+    });
+    expect(primaryRepair).toHaveAttribute(
+      "data-health-repair-primary-action",
+      "builder",
+    );
+    expect(primaryRepair).toHaveAttribute(
+      "data-health-repair-action-tier",
+      "primary",
+    );
+    expect(primaryRepair).toHaveAttribute(
+      "data-surface-token",
+      "--topology-health-repair-primary-surface",
+    );
+    expect(primaryRepair).toHaveAttribute(
+      "data-border-token",
+      "--topology-health-repair-primary-border",
+    );
+    expect(primaryRepair.className).toContain("min-h-9");
+    expect(primaryRepair.className).toContain("justify-center");
+    expect(primaryRepair.className).toContain("col-span-2");
+    expect(primaryRepair.querySelector("span")?.className).toContain("whitespace-nowrap");
+    expect(actionRail.className).toContain("grid-cols-2");
+    expect(within(actionRail).getAllByRole("link")[0]).toBe(primaryRepair);
+    const mcpCopy = within(actionRail).getByRole("button", {
+      name: "Copy health MCP check",
+    });
+    expect(mcpCopy).toHaveAttribute("data-health-repair-secondary-action", "mcp");
+    expect(mcpCopy).toHaveAttribute("data-health-repair-action-tier", "secondary");
+    expect(mcpCopy).toHaveAttribute(
+      "data-surface-token",
+      "--topology-health-repair-secondary-surface",
+    );
+    expect(mcpCopy).toHaveAttribute(
+      "data-border-token",
+      "--topology-health-repair-secondary-border",
+    );
+    const ontologyLink = within(actionRail).getByRole("link", {
+      name: "Open ontology",
+    });
+    expect(ontologyLink).toHaveAttribute(
+      "data-health-repair-secondary-action",
+      "ontology",
+    );
+    expect(ontologyLink).toHaveAttribute(
+      "data-border-token",
+      "--topology-health-repair-secondary-border",
+    );
   });
 
   it("names the health repair disclosure as repair proof instead of generic actions", () => {

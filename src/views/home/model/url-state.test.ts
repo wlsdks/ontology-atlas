@@ -4,6 +4,7 @@ import {
   DEFAULT_HOME_ROUTE_STATE,
   parseHomeRouteState,
   selectTopologyNodeRouteState,
+  selectTopologyPathRouteState,
 } from "./url-state";
 
 describe("parseHomeRouteState", () => {
@@ -13,15 +14,28 @@ describe("parseHomeRouteState", () => {
     );
 
     expect(parseHomeRouteState(params)).toEqual({
-      selectedSlug: "iam",
+      selectedSlug: null,
       activeCategory: "in-progress",
-      focusedHubSlug: "iam",
-      impactMode: "downstream",
+      focusedHubSlug: null,
+      impactMode: "none",
       pulseMode: "30d",
       analysisMode: "path",
       pathSourceSlug: "domain:views",
       pathTargetSlug: "capability:topology-analysis-modes",
       createNodeIntent: true,
+    });
+  });
+
+  it("ignores stale selected node drawer state when a Path result is complete", () => {
+    const params = new URLSearchParams(
+      "mode=path&p=ontology-atlas&pathFrom=ontology-atlas&pathTo=domain%3Aai-agent-partner",
+    );
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      selectedSlug: null,
+      analysisMode: "path",
+      pathSourceSlug: "ontology-atlas",
+      pathTargetSlug: "domain:ai-agent-partner",
     });
   });
 
@@ -54,6 +68,37 @@ describe("parseHomeRouteState", () => {
     });
   });
 
+  it("honors mode=graph as the living-graph exploration mode", () => {
+    const params = new URLSearchParams("mode=graph");
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      analysisMode: "graph",
+      selectedSlug: null,
+    });
+  });
+
+  it("keeps overview on node click — selection must not expand the map (explicit focus entry only)", () => {
+    // R+ 소유자 피드백: "클릭하면 그냥 [확장+재배치]돼서 헷갈린다".
+    // 클릭 = 선택(안전한 탐색), 확장(초점)은 배지/더블클릭/딥링크의 명시적 의도.
+    const state = parseHomeRouteState(new URLSearchParams(""));
+    expect(selectTopologyNodeRouteState(state, "domain:views")).toMatchObject({
+      selectedSlug: "domain:views",
+      analysisMode: "overview",
+    });
+  });
+
+  it("keeps graph mode on node selection instead of promoting to focus", () => {
+    const params = new URLSearchParams("mode=graph");
+    const state = parseHomeRouteState(params);
+
+    expect(
+      selectTopologyNodeRouteState(state, "domain:views"),
+    ).toMatchObject({
+      selectedSlug: "domain:views",
+      analysisMode: "graph",
+    });
+  });
+
   it("treats a selected Path route as a fixed source when pathFrom is absent", () => {
     const params = new URLSearchParams("mode=path&p=domain:views");
 
@@ -74,6 +119,30 @@ describe("parseHomeRouteState", () => {
       selectedSlug: "domain:views",
       analysisMode: "path",
       pathSourceSlug: "domain:agent",
+    });
+  });
+
+  it("accepts short from/to aliases for shared Path deep links", () => {
+    const params = new URLSearchParams(
+      "mode=path&from=domain:views&to=capability:topology-analysis-modes",
+    );
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      analysisMode: "path",
+      pathSourceSlug: "domain:views",
+      pathTargetSlug: "capability:topology-analysis-modes",
+    });
+  });
+
+  it("keeps canonical pathFrom/pathTo ahead of short Path aliases", () => {
+    const params = new URLSearchParams(
+      "mode=path&pathFrom=domain:canonical&from=domain:alias&pathTo=capability:canonical&to=capability:alias",
+    );
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      analysisMode: "path",
+      pathSourceSlug: "domain:canonical",
+      pathTargetSlug: "capability:canonical",
     });
   });
 });
@@ -129,6 +198,27 @@ describe("applyHomeRouteState", () => {
     expect(hidden.toString()).toBe("");
   });
 
+  it("canonicalizes short Path aliases away when serializing route state", () => {
+    const params = applyHomeRouteState(
+      new URLSearchParams("mode=path&from=domain:old&to=capability:old"),
+      {
+        selectedSlug: null,
+        activeCategory: null,
+        focusedHubSlug: null,
+        impactMode: "none",
+        pulseMode: "all",
+        analysisMode: "path",
+        pathSourceSlug: "domain:views",
+        pathTargetSlug: "capability:topology-analysis-modes",
+        createNodeIntent: false,
+      },
+    );
+
+    expect(params.toString()).toBe(
+      "mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+    );
+  });
+
   it("drops params when values match defaults", () => {
     const params = applyHomeRouteState(
       new URLSearchParams("p=pick&impact=network&pulse=7d"),
@@ -140,17 +230,16 @@ describe("applyHomeRouteState", () => {
 });
 
 describe("selectTopologyNodeRouteState", () => {
-  it("promotes overview node selection into Focus mode so click discovery owns the panel", () => {
-    // 클릭 discovery 가 drag preview 보다 약하면 사용자가 관계를 보려고 카드를
-    // 끌게 된다. 일반 overview 선택은 Focus 패널로 승격해 overview metric
-    // surface 를 접고 selected node / linked relation 맥락을 primary 로 만든다.
-    expect(
-      selectTopologyNodeRouteState(DEFAULT_HOME_ROUTE_STATE, "capabilities/mcp-server"),
-    ).toMatchObject({
-      selectedSlug: "capabilities/mcp-server",
-      analysisMode: "focus",
-      impactMode: "none",
-    });
+  it("keeps the analysis mode unchanged on node selection across all modes", () => {
+    // 구계약(overview 클릭 → focus 승격)은 클릭 한 번에 지형 재배치까지
+    // 겹쳐 폐기됐다 — 클릭은 어느 모드에서든 선택만 바꾼다.
+    for (const mode of ["overview", "focus", "health"] as const) {
+      const state = { ...DEFAULT_HOME_ROUTE_STATE, analysisMode: mode };
+      expect(selectTopologyNodeRouteState(state, "domain:views")).toMatchObject({
+        selectedSlug: "domain:views",
+        analysisMode: mode,
+      });
+    }
   });
 
   it("preserves active Path and Health workflows while updating the selected node", () => {
@@ -180,5 +269,54 @@ describe("selectTopologyNodeRouteState", () => {
       selectedSlug: "capabilities/orphan",
       analysisMode: "health",
     });
+  });
+});
+
+describe("selectTopologyPathRouteState", () => {
+  it("keeps the source drawer context while the path target is still missing", () => {
+    expect(
+      selectTopologyPathRouteState(DEFAULT_HOME_ROUTE_STATE, {
+        sourceSlug: "project:ontology-atlas",
+        targetSlug: null,
+      }),
+    ).toMatchObject({
+      analysisMode: "path",
+      selectedSlug: "project:ontology-atlas",
+      pathSourceSlug: "project:ontology-atlas",
+      pathTargetSlug: null,
+    });
+  });
+
+  it("clears stale node drawer state once Path result evidence owns the screen", () => {
+    const next = selectTopologyPathRouteState(
+      {
+        ...DEFAULT_HOME_ROUTE_STATE,
+        selectedSlug: "project:ontology-atlas",
+        focusedHubSlug: "project:ontology-atlas",
+        impactMode: "network",
+      },
+      {
+        sourceSlug: "project:ontology-atlas",
+        targetSlug: "domain:ai-agent-partner",
+      },
+    );
+
+    expect(next).toMatchObject({
+      analysisMode: "path",
+      selectedSlug: null,
+      focusedHubSlug: null,
+      impactMode: "none",
+      pathSourceSlug: "project:ontology-atlas",
+      pathTargetSlug: "domain:ai-agent-partner",
+    });
+
+    expect(
+      applyHomeRouteState(
+        new URLSearchParams("p=project%3Aontology-atlas"),
+        next,
+      ).toString(),
+    ).toBe(
+      "mode=path&pathFrom=project%3Aontology-atlas&pathTo=domain%3Aai-agent-partner",
+    );
   });
 });

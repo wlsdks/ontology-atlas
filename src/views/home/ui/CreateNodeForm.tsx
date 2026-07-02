@@ -69,7 +69,10 @@ export function CreateNodeForm({
       data-testid="create-node-form"
       data-surface-role="blocking-edit-surface"
       data-elevation-contract="solid-panel-over-dimmed-map"
-      className="rounded-lg border border-[color:rgba(139,151,255,0.48)] bg-[color:var(--color-panel)] px-4 py-3 shadow-[0_28px_72px_rgba(0,0,0,0.58),0_0_0_1px_rgba(255,255,255,0.08),0_0_0_6px_rgba(94,106,210,0.10)]"
+      data-surface-token="--topology-blocking-composer-surface"
+      data-border-token="--topology-blocking-composer-border"
+      data-shadow-token="--topology-blocking-composer-shadow"
+      className="rounded-lg border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-4 py-3 shadow-[var(--topology-blocking-composer-shadow)]"
     >
       <div className="flex items-center justify-between gap-2">
         <p

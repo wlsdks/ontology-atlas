@@ -47,7 +47,7 @@ const labels = {
   agentChipCurrent: "agent",
   agentProofChip: "proof · {count}",
   agentMcp: "MCP",
-  agentCodegraph: "CodeGraph",
+  agentCodegraph: "Source",
   agentVerification: "Verify",
   agentProofTrail: "Proof trail",
   close: "Close live activity popover",
@@ -190,10 +190,10 @@ describe("LiveActivityBadge", () => {
             count: 4,
             sources: {
               mcp: 1,
-              codegraph: 1,
+              source: 1,
               verification: 2,
             },
-            label: "MCP · 1, CodeGraph · 1, Verify · 2",
+            label: "MCP · 1, Source · 1, Verify · 2",
           },
           ageMs: 90_000,
           errorMessage: null,
@@ -212,7 +212,7 @@ describe("LiveActivityBadge", () => {
             plan: ["run focused tests", "sync ontology"],
             evidence: {
               mcp: ["validate_vault", "query_ontology health"],
-              codegraph: ["codegraph_context LiveActivityIndicator"],
+              source: ["serena symbols LiveActivityIndicator"],
               verification: ["pnpm exec vitest run ...", "pnpm desktop:verify-app"],
             },
             updatedAt: "2026-06-06T10:00:00.000Z",
@@ -258,11 +258,11 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("+1");
     expect(activity).toHaveTextContent("next · run focused tests");
     expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("MCP · 2");
-    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("CodeGraph · 1");
+    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("Source · 1");
     expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("Verify · 2");
     const proofTrail = screen.getByLabelText("Proof trail");
     expect(proofTrail).toHaveTextContent("validate_vault +1");
-    expect(proofTrail).toHaveTextContent("codegraph_context LiveActivityIndicator");
+    expect(proofTrail).toHaveTextContent("serena symbols LiveActivityIndicator");
     expect(proofTrail).toHaveTextContent("pnpm exec vitest run ... +1");
   });
 
@@ -661,10 +661,10 @@ describe("LiveActivityBadge", () => {
             count: 2,
             sources: {
               mcp: 1,
-              codegraph: 1,
+              source: 1,
               verification: 0,
             },
-            label: "MCP · 1, CodeGraph · 1",
+            label: "MCP · 1, Source · 1",
           },
           ageMs: 7 * 60 * 1000,
           errorMessage: null,
@@ -679,7 +679,7 @@ describe("LiveActivityBadge", () => {
             plan: ["continue stale work"],
             evidence: {
               mcp: ["query_ontology node_profile"],
-              codegraph: ["codegraph_context LiveActivityIndicator"],
+              source: ["rg LiveActivityIndicator"],
               verification: ["pnpm exec vitest run LiveActivityIndicator.test.tsx"],
             },
             updatedAt: "2026-06-06T09:00:00.000Z",
@@ -738,7 +738,7 @@ describe("LiveActivityBadge", () => {
             previousFiles: ["src/features/vault-ontology/ui/LiveActivityIndicator.tsx"],
             previousAgeMs: 8 * 60 * 1000,
             command:
-              "ontology-atlas agent-activity <vault> --agent codex --state planning --focus 'Parser supplied focus' --ontology-slug capabilities/agent-live-activity-contract --file src/features/vault-ontology/ui/LiveActivityIndicator.tsx --mcp 'query_ontology parser supplied' --codegraph 'codegraph_context parser supplied' --verify 'pnpm parser supplied verify' --json",
+              "ontology-atlas agent-activity <vault> --agent codex --state planning --focus 'Parser supplied focus' --ontology-slug capabilities/agent-live-activity-contract --file src/features/vault-ontology/ui/LiveActivityIndicator.tsx --mcp 'query_ontology parser supplied' --source 'rg parser supplied' --verify 'pnpm parser supplied verify' --json",
             message:
               "Do not treat the stale focus as current work until the refreshed heartbeat appears. Run the command, then `ontology-atlas agent-activity <vault> --show --json` and confirm stale: false.",
           },
@@ -753,7 +753,7 @@ describe("LiveActivityBadge", () => {
             plan: ["continue stale work"],
             evidence: {
               mcp: ["query_ontology node_profile"],
-              codegraph: ["codegraph_context LiveActivityIndicator"],
+              source: ["rg LiveActivityIndicator"],
               verification: ["pnpm exec vitest run LiveActivityIndicator.test.tsx"],
             },
             updatedAt: "2026-06-06T09:00:00.000Z",
@@ -781,7 +781,7 @@ describe("LiveActivityBadge", () => {
     expect(copied).toContain("--ontology-slug");
     expect(copied).toContain("--file");
     expect(copied).toContain("--mcp");
-    expect(copied).toContain("--codegraph");
+    expect(copied).toContain("--source");
     expect(copied).toContain("--verify");
     expect(copied).not.toContain("--verification");
     expect(copied).toContain("Do not treat the stale focus as current work until the refreshed heartbeat appears.");

@@ -2,18 +2,20 @@
 
 import { useCallback, useState, type CSSProperties, type HTMLAttributes } from "react";
 import {
-  Activity,
   ArrowRight,
   Check,
   ChevronDown,
   Clipboard,
-  GitBranch,
   HeartPulse,
   Network,
+  Waypoints,
 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Tooltip } from "@/shared/ui";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
+import {
+  ONTOLOGY_KIND_TONE,
+} from "@/entities/ontology-class";
 import { formatAgentPostChangeSyncPacket } from "@/shared/lib/ontology-tree";
 import type { TopologyAnalysisMode } from "../model/url-state";
 import type {
@@ -43,6 +45,8 @@ import { copyText } from "@/shared/lib/copy-text";
 interface TopologyAnalysisBarLabels {
   title: string;
   overview: string;
+  graph: string;
+  graphPrompt: string;
   focus: string;
   path: string;
   health: string;
@@ -78,11 +82,24 @@ interface TopologyAnalysisBarLabels {
   overviewSyncCopy: string;
   overviewSyncCopied: string;
   overviewHandoffSummary: string;
+  overviewCopyTools: string;
   overviewWorkOrderTitle: string;
   overviewWorkOrderRead: string;
   overviewWorkOrderFocus: string;
   overviewWorkOrderPath: string;
   overviewWorkOrderHealth: string;
+  overviewReaderLensTitle: string;
+  overviewReaderLensDomains: string;
+  overviewReaderLensCapabilities: string;
+  overviewReaderLensChangePaths: string;
+  overviewTierLegendTitle: string;
+  overviewTierLegendProject: string;
+  overviewTierLegendDomain: string;
+  overviewTierLegendCapability: string;
+  overviewTierLegendElement: string;
+  overviewRelationLegendTitle: string;
+  overviewRelationLegendSpine: string;
+  overviewRelationLegendQuality: string;
   overviewBriefCopyAriaLabel: string;
   overviewBriefCopiedAriaLabel: string;
   overviewReanalyzeCopyAriaLabel: string;
@@ -116,10 +133,12 @@ interface TopologyAnalysisBarLabels {
   overviewBriefMcpWorkspaceCheck: string;
   overviewRelationVisibleCountSuffix: string;
   overviewSkeletonCardCountSuffix: string;
+  overviewSkeletonCardHiddenSuffix: string;
   overviewRelationLodNotice: string;
   overviewRelationPreparingNotice: string;
   overviewSkeletonNotice: string;
   focusBriefCopy: string;
+  focusBriefCopySummary: string;
   focusBriefCopied: string;
   focusMcpCopy: string;
   focusMcpCopied: string;
@@ -286,11 +305,13 @@ interface TopologyAnalysisBarProps {
   onHealthAction: (slug: string) => void;
 }
 
+// 2-뷰 레일 — 지도(Relief: overview/focus/path/health 상태 계열의 대표)와
+// 그래프(살아있는 그래프)만 상위 뷰. 초점=노드 선택 상태, 경로=액션(shift-클릭
+// /URL), 상태=우측 정리 큐 칩 — 탭 승격은 "정체불명 5형제" 혼란(소유자 피드백)
+// 을 만들어 뷰 2개 + 진입점 재배치로 정리했다. URL 모드 계약은 전부 보존.
 const MODES = [
   { value: "overview", icon: Network, labelKey: "overview" },
-  { value: "focus", icon: Activity, labelKey: "focus" },
-  { value: "path", icon: GitBranch, labelKey: "path" },
-  { value: "health", icon: HeartPulse, labelKey: "health" },
+  { value: "graph", icon: Waypoints, labelKey: "graph" },
 ] as const;
 
 function formatOntologyReanalysisAgentCommand(): string {
@@ -388,6 +409,11 @@ export function TopologyAnalysisBar({
   const panelMode = selectedContextActive ? "focus" : mode;
   const selectedFocusRailActive =
     panelMode === "focus" && Boolean(selectedSlug && displaySelectedTitle);
+  // 칩 숫자 = 진짜 결함(오래된 근거 + 소속 미정)만. 허브 승격 후보는
+  // 통계적 *제안*이라 카운트에 넣으면 첫 클릭에 "고칠 게 없는 빨간 숫자"
+  // 가 되어 칩 신뢰가 무너진다 (기획자 감사 ⑦-b). 제안은 상태 패널 안에서.
+  const healthQueueCount =
+    summary.healthBreakdown.stale + summary.healthBreakdown.orphan;
   const handleModeRailChange = useCallback(
     (nextMode: TopologyAnalysisMode) => {
       if (selectedContextActive && nextMode === "overview") {
@@ -399,8 +425,6 @@ export function TopologyAnalysisBar({
   );
   const headerAlignedPanel = panelMode === "overview" || panelMode === "path";
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
-  const disclosureSummaryLabel =
-    panelMode === "overview" ? labels.overviewHandoffSummary : labels.actions;
   const relationVisibilityPreparing =
     panelMode === "overview" &&
     overviewRelationVisibility &&
@@ -409,6 +433,10 @@ export function TopologyAnalysisBar({
     overviewRelationVisibility.visible === 0;
   const relationVisibilitySkeleton =
     panelMode === "overview" && overviewRelationVisibility?.mode === "skeleton";
+  const overviewSkeletonHiddenCount =
+    relationVisibilitySkeleton && overviewRelationVisibility
+      ? Math.max(0, overviewRelationVisibility.total - overviewRelationVisibility.visible)
+      : 0;
   const overviewRelationNotice = relationVisibilitySkeleton
     ? labels.overviewSkeletonNotice
     : relationVisibilityPreparing
@@ -436,7 +464,9 @@ export function TopologyAnalysisBar({
           : labels.pathPrompt
         : panelMode === "health"
           ? labels.healthPrompt
-          : labels.overviewPrompt;
+          : panelMode === "graph"
+            ? labels.graphPrompt
+            : labels.overviewPrompt;
   const pathCandidateVisibilityText =
     panelMode === "path" && pathCandidateVisibility && pathCandidateVisibility.total > 0
       ? labels.pathCandidateVisibility
@@ -810,7 +840,7 @@ export function TopologyAnalysisBar({
   }, [pathSourceSlug, pathTargetSlug]);
 
   const attentionRole =
-    selectedFocusRailActive || panelMode === "overview" || panelMode === "path"
+    panelMode === "focus" || panelMode === "overview" || panelMode === "path"
       ? "support"
       : "primary";
   const panelSurfaceToken =
@@ -821,17 +851,27 @@ export function TopologyAnalysisBar({
     attentionRole === "support"
       ? "--topology-panel-support-shadow"
       : "--topology-panel-primary-shadow";
+  const panelPaddingToken =
+    panelMode === "focus" && !selectedFocusRailActive
+      ? "--topology-panel-focus-rail-padding"
+      : "--topology-panel-padding";
   const panelStyle: CSSProperties = {
     width:
       selectedFocusRailActive
         ? "var(--topology-panel-selected-rail-width)"
+        : panelMode === "focus"
+          ? "var(--topology-panel-focus-rail-width)"
+        : panelMode === "health"
+          ? "var(--topology-panel-overview-responsive-width)"
+        : panelMode === "graph"
+          ? "var(--topology-panel-graph-width)"
         : panelMode === "path"
-          ? "var(--topology-panel-path-rail-width)"
+          ? "var(--topology-panel-path-responsive-width)"
         : headerAlignedPanel
         ? panelMode === "overview"
           ? rightPanelReserved
             ? "var(--topology-panel-overview-reserved-width)"
-            : "var(--topology-panel-overview-rail-width)"
+            : "var(--topology-panel-overview-responsive-width)"
           : rightPanelReserved
             ? "var(--topology-panel-standard-reserved-width)"
             : "var(--topology-panel-standard-width)"
@@ -839,23 +879,36 @@ export function TopologyAnalysisBar({
           ? "var(--topology-panel-compact-reserved-width)"
           : "var(--topology-panel-compact-width)",
     borderRadius: "var(--topology-panel-radius)",
-    padding: "var(--topology-panel-padding)",
+    padding: `var(${panelPaddingToken})`,
     borderColor: "var(--topology-panel-border)",
     background: `var(${panelSurfaceToken})`,
     boxShadow: `var(${panelShadowToken})`,
+    zIndex: "var(--topology-panel-read-layer-z-index)",
     transition:
       "background var(--topology-motion-panel-duration) var(--topology-motion-ease-standard), box-shadow var(--topology-motion-panel-duration) var(--topology-motion-ease-standard)",
   };
   const panelWidthTarget =
     selectedFocusRailActive
       ? "selected-focus-rail"
+      : panelMode === "focus"
+        ? "focus-support-rail"
       : panelMode === "overview"
       ? "overview-14-inch-compact"
+      : panelMode === "health"
+        ? "health-phone-primary-rail"
+      : panelMode === "graph"
+        ? "graph-compact-rail"
       : panelMode === "path" && headerAlignedPanel
         ? "path-14-inch-rail"
-      : headerAlignedPanel
-        ? "header-aligned"
-        : "mode-compact";
+        : headerAlignedPanel
+          ? "header-aligned"
+          : "mode-compact";
+  const panelBodyScrollEndReserveToken =
+    panelMode === "path"
+      ? "--topology-analysis-panel-path-collapsed-scroll-end-reserve"
+      : panelMode === "health"
+        ? "--topology-health-panel-scroll-end-reserve"
+      : "--topology-analysis-panel-compact-scroll-end-reserve";
 
   return (
     <section
@@ -879,17 +932,75 @@ export function TopologyAnalysisBar({
       data-panel-width-token={String(panelStyle.width).replace(/^var\((.*)\)$/, "$1")}
       data-panel-surface-token={panelSurfaceToken}
       data-panel-shadow-token={panelShadowToken}
+      data-panel-layer-contract="read-surface-above-map-cards"
+      data-panel-z-index-token="--topology-panel-read-layer-z-index"
       data-panel-radius-token="--topology-panel-radius"
-      data-panel-padding-token="--topology-panel-padding"
+      data-panel-padding-token={panelPaddingToken}
       data-panel-motion-token="--topology-motion-panel-duration"
+      data-command-spine-padding-token={
+        panelMode === "focus" ? "--topology-command-spine-padding" : undefined
+      }
+      data-command-spine-gap-token={
+        panelMode === "focus" ? "--topology-command-spine-gap" : undefined
+      }
+      data-command-primary-height-token={
+        panelMode === "focus" ? "--topology-command-primary-min-height" : undefined
+      }
+      data-command-spine-surface-token={
+        panelMode === "focus" ? "--topology-command-spine-surface" : undefined
+      }
+      data-command-spine-border-token={
+        panelMode === "focus" ? "--topology-command-spine-border" : undefined
+      }
       data-panel-width-contract={
         selectedFocusRailActive
           ? "selected-focus-rail-max-320"
+          : panelMode === "focus"
+            ? "focus-support-rail-max-300-map-centered"
           : panelMode === "overview"
-            ? "overview-support-max-360"
+            ? "overview-support-max-360-phone-utility-reserve"
+            : panelMode === "health"
+              ? "health-primary-max-360-phone-full-width"
             : panelMode === "path" && headerAlignedPanel
-              ? "path-support-rail-max-360"
+              ? "path-support-rail-max-360-phone-utility-reserve"
             : "standard"
+      }
+      data-panel-phone-utility-reserve-token={
+        panelMode === "overview" || panelMode === "path" || panelMode === "health"
+          ? "--topology-panel-phone-utility-rail-reserve"
+          : undefined
+      }
+      data-panel-compact-scroll-end-reserve-token={panelBodyScrollEndReserveToken}
+      data-path-panel-compact-gap-token={
+        panelMode === "path" ? "--topology-path-panel-compact-gap" : undefined
+      }
+      data-overview-panel-compact-gap-token={
+        panelMode === "overview" ? "--topology-overview-panel-compact-gap" : undefined
+      }
+      data-overview-panel-phone-max-height-token={
+        panelMode === "overview" ? "--topology-overview-panel-phone-max-height" : undefined
+      }
+      data-health-panel-phone-max-height-token={
+        panelMode === "health" ? "--topology-health-panel-phone-max-height" : undefined
+      }
+      data-health-repair-lane-contract={
+        panelMode === "health" && healthAction
+          ? "target-to-builder-to-sync"
+          : undefined
+      }
+      data-health-repair-target-slug={
+        panelMode === "health" ? healthAction?.slug : undefined
+      }
+      data-health-repair-target-kind={
+        panelMode === "health" ? healthAction?.kind : undefined
+      }
+      data-health-repair-order-contract={
+        panelMode === "health" && healthAction
+          ? "inspect-repair-sync"
+          : undefined
+      }
+      data-compact-focus-collapse-contract={
+        selectedFocusRailActive ? "selected-focus-support-hidden-under-md" : undefined
       }
       data-path-guidance-owner={panelMode === "path" ? "analysis-rail" : undefined}
       data-path-prompt-policy={
@@ -897,20 +1008,40 @@ export function TopologyAnalysisBar({
       }
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 border data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
-        panelMode === "overview" ? "overflow-hidden" : "overflow-y-auto"
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 border data-[analysis-mode=overview]:max-md:max-h-[var(--topology-overview-panel-phone-max-height)] data-[analysis-mode=overview]:max-md:overflow-y-auto data-[analysis-mode=overview]:lg:min-h-[390px] data-[analysis-mode=health]:max-md:max-h-[var(--topology-health-panel-phone-max-height)] data-[analysis-mode=health]:max-md:overflow-y-auto md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+        panelMode === "overview" ? "overflow-x-hidden overflow-y-hidden" : "overflow-y-auto"
       } ${
         createPanelReserved
           ? "top-[31.5rem] max-h-[calc(100dvh-33.5rem)]"
           : // 헤더 pill 아래 16px — 9.5rem 은 ~90px 공백, 5rem 은 헤더에
             // 밀착이었다 (사용자 보고 2회). 헤더 bottom ≈ 72px 기준.
             "top-[5.5rem] max-h-[calc(100dvh-7rem)]"
-      } lg:left-6 xl:left-8 ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
+      } lg:left-6 xl:left-8 ${selectedFocusRailActive ? "max-md:hidden" : ""} ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
     >
-      <div className="flex flex-col gap-3">
-        <div className="grid w-full grid-cols-4 gap-1 rounded-lg bg-[color:var(--color-overlay-1)] p-1">
+      <div
+        data-testid="topology-analysis-panel-body"
+        data-panel-body-scroll-contract="compact-scrolls-above-bottom-tab"
+        data-panel-body-scroll-end-reserve-token={panelBodyScrollEndReserveToken}
+        className="flex flex-col gap-3 data-[analysis-body-mode=focus]:gap-[var(--topology-analysis-focus-body-gap)] data-[analysis-body-mode=overview]:gap-[var(--topology-overview-panel-compact-gap)] data-[analysis-body-mode=path]:gap-[var(--topology-path-panel-compact-gap)] max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-path-collapsed-scroll-end-reserve)] data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=focus]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=health]:max-md:pb-[var(--topology-health-panel-scroll-end-reserve)] max-md:pr-1"
+        data-analysis-body-mode={panelMode}
+      >
+        <div
+          className="flex w-full items-center gap-1 rounded-lg bg-[color:var(--topology-analysis-mode-rail-surface)] p-1"
+          data-testid="topology-analysis-mode-rail"
+          data-mode-rail-contract="two-view-tabs-health-queue-chip"
+          data-surface-token="--topology-analysis-mode-rail-surface"
+          data-mode-tab-height-token="--topology-analysis-mode-tab-height"
+          data-active-surface-token="--topology-analysis-mode-active-surface"
+          data-active-border-token="--topology-analysis-mode-active-border"
+          data-active-text-token="--topology-analysis-mode-active-text"
+          data-idle-text-token="--topology-analysis-mode-idle-text"
+          data-hover-surface-token="--topology-analysis-mode-hover-surface"
+          data-focus-ring-token="--topology-analysis-mode-focus-ring"
+        >
           {MODES.map(({ value, icon: Icon, labelKey }) => {
-            const active = value === panelMode;
+            // 지도 탭은 Relief 계열(overview/focus/path/health) 전체를 대표한다.
+            const active =
+              value === "graph" ? panelMode === "graph" : panelMode !== "graph";
             return (
               // 아이콘-전용 탭 — hover 즉시 라벨 tooltip (사용자: "마우스
               // 올리면 뭔지 나와야 선택을 하지").
@@ -920,10 +1051,25 @@ export function TopologyAnalysisBar({
                   onClick={() => handleModeRailChange(value)}
                   aria-pressed={active}
                   aria-label={labels[labelKey]}
-                  className={`inline-flex h-9 w-full items-center justify-center rounded-md px-2 transition-colors ${
+                  data-analysis-mode-tab={value}
+                  data-mode-tab-state={active ? "active" : "idle"}
+                  data-active-surface-token={
+                    active ? "--topology-analysis-mode-active-surface" : undefined
+                  }
+                  data-active-border-token={
+                    active ? "--topology-analysis-mode-active-border" : undefined
+                  }
+                  data-text-token={
                     active
-                      ? "bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]"
-                      : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                      ? "--topology-analysis-mode-active-text"
+                      : "--topology-analysis-mode-idle-text"
+                  }
+                  data-hover-surface-token="--topology-analysis-mode-hover-surface"
+                  data-focus-ring-token="--topology-analysis-mode-focus-ring"
+                  className={`inline-flex h-[var(--topology-analysis-mode-tab-height)] flex-1 items-center justify-center rounded-md border px-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-analysis-mode-focus-ring)] ${
+                    active
+                      ? "border-[color:var(--topology-analysis-mode-active-border)] bg-[color:var(--topology-analysis-mode-active-surface)] text-[color:var(--topology-analysis-mode-active-text)]"
+                      : "border-transparent text-[color:var(--topology-analysis-mode-idle-text)] hover:bg-[color:var(--topology-analysis-mode-hover-surface)] hover:text-[color:var(--topology-analysis-mode-active-text)]"
                   }`}
                 >
                   <Icon size={15} aria-hidden />
@@ -931,34 +1077,406 @@ export function TopologyAnalysisBar({
               </Tooltip>
             );
           })}
+          {healthQueueCount > 0 ? (
+            <Tooltip content={labels.health} side="bottom">
+              <button
+                type="button"
+                onClick={() => handleModeRailChange("health")}
+                aria-pressed={panelMode === "health"}
+                aria-label={labels.health}
+                data-analysis-health-chip
+                data-health-queue-count={healthQueueCount}
+                data-mode-tab-state={panelMode === "health" ? "active" : "idle"}
+                data-focus-ring-token="--topology-analysis-mode-focus-ring"
+                className={`inline-flex h-[var(--topology-analysis-mode-tab-height)] flex-none items-center gap-1 rounded-md border px-2 font-mono text-[10px] tabular-nums tracking-[0.08em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-analysis-mode-focus-ring)] ${
+                  panelMode === "health"
+                    ? "border-[color:var(--topology-analysis-mode-active-border)] bg-[color:var(--topology-analysis-mode-active-surface)] text-[color:var(--topology-analysis-mode-active-text)]"
+                    : "border-transparent text-[color:var(--topology-analysis-mode-idle-text)] hover:bg-[color:var(--topology-analysis-mode-hover-surface)] hover:text-[color:var(--topology-analysis-mode-active-text)]"
+                }`}
+              >
+                <HeartPulse size={13} aria-hidden />
+                {healthQueueCount}
+              </button>
+            </Tooltip>
+          ) : null}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-3 break-keep text-[14px] leading-6 text-[color:var(--color-text-secondary)]">
+          <p
+            data-testid="topology-analysis-panel-prompt"
+            data-prompt-text-token="--topology-analysis-panel-prompt-text"
+            className={`break-keep text-[13.5px] text-[color:var(--topology-analysis-panel-prompt-text)] ${
+              panelMode === "overview"
+                ? "line-clamp-3 leading-5 max-md:line-clamp-2"
+                : panelMode === "focus"
+                  ? "line-clamp-2 leading-5"
+                  : "line-clamp-3 leading-6"
+            }`}
+          >
             {prompt}
           </p>
-          <div className="mt-3 grid grid-cols-2 gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          <div
+            data-testid="topology-analysis-panel-metrics"
+            data-metric-label-text-token="--topology-analysis-panel-metric-label-text"
+            data-metric-value-text-token="--topology-analysis-panel-metric-value-text"
+            className={`grid grid-cols-2 gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--topology-analysis-panel-metric-label-text)] ${
+              panelMode === "focus" ? "mt-2" : "mt-3"
+            }`}
+          >
             <span>
-              <span className="text-[color:var(--color-text-secondary)]">
+              <span className="text-[color:var(--topology-analysis-panel-metric-value-text)]">
                 {summary.primaryMetric}
               </span>{" "}
               {primaryLabel}
             </span>
             <span>
-              <span className="text-[color:var(--color-text-secondary)]">
+              <span className="text-[color:var(--topology-analysis-panel-metric-value-text)]">
                 {summary.secondaryMetric}
               </span>{" "}
               {labels.metricRelations}
             </span>
           </div>
+          {panelMode === "overview" ? (
+            <div
+              data-testid="topology-overview-reader-lens"
+              data-reader-lens-contract="single-business-to-agent-read-path"
+              data-reader-lens-flow="project>domain>capability>element>agent-handoff"
+              data-surface-token="--topology-overview-reader-lens-surface"
+              data-border-token="--topology-overview-reader-lens-border"
+              data-title-text-token="--topology-overview-reader-lens-title-text"
+              data-item-text-token="--topology-overview-reader-lens-item-text"
+              data-marker-surface-token="--topology-overview-reader-lens-marker-surface"
+              data-marker-border-token="--topology-overview-reader-lens-marker-border"
+              data-density-contract="inline-step-path-no-nested-card"
+              className="mt-2 px-1 py-0.5"
+            >
+              <div className="grid min-w-0 gap-2">
+                <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
+                  {labels.overviewReaderLensTitle}
+                </p>
+                <ol className="grid min-w-0 gap-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
+                  {[
+                    {
+                      key: "project",
+                      label: labels.overviewTierLegendProject,
+                      tone: ONTOLOGY_KIND_TONE.project,
+                    },
+                    {
+                      key: "domain",
+                      label: labels.overviewTierLegendDomain,
+                      tone: ONTOLOGY_KIND_TONE.domain,
+                    },
+                    {
+                      key: "capability",
+                      label: labels.overviewTierLegendCapability,
+                      tone: ONTOLOGY_KIND_TONE.capability,
+                    },
+                    {
+                      key: "element",
+                      label: labels.overviewTierLegendElement,
+                      tone: ONTOLOGY_KIND_TONE.element,
+                    },
+                    {
+                      key: "agent-handoff",
+                      label: labels.overviewReaderLensChangePaths,
+                      tone: null,
+                    },
+                  ].map((item, index, steps) => (
+                    <li
+                      key={item.key}
+                      data-reader-lens-step={item.key}
+                      data-kind-tone-fill={item.tone?.fill}
+                      data-kind-tone-border={item.tone?.border}
+                      className="grid min-w-0 grid-cols-[0.875rem_minmax(0,1fr)] items-center gap-2"
+                    >
+                      <span
+                        aria-hidden
+                        className="relative grid size-3.5 shrink-0 place-items-center rounded-full border"
+                        style={
+                          item.tone
+                            ? ({
+                                backgroundColor: item.tone.fill,
+                                borderColor: item.tone.border,
+                              } as CSSProperties)
+                            : ({
+                                backgroundColor:
+                                  "var(--topology-overview-reader-lens-marker-surface)",
+                                borderColor:
+                                  "var(--topology-overview-reader-lens-marker-border)",
+                              } as CSSProperties)
+                        }
+                      >
+                        {index < steps.length - 1 ? (
+                          <span
+                            aria-hidden
+                            className="absolute left-1/2 top-[calc(100%+2px)] h-2 w-px -translate-x-1/2 rounded-full bg-[color:var(--topology-overview-reader-lens-border)]"
+                          />
+                        ) : null}
+                        <span
+                          aria-hidden
+                          className="size-1.5 rounded-full bg-[color:var(--topology-overview-reader-lens-title-text)] opacity-70"
+                        />
+                      </span>
+                      <span className="min-w-0 truncate">{item.label}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+              <div
+                data-testid="topology-overview-map-key"
+                data-map-key-contract="relation-reading-after-hierarchy-rail"
+                className="mt-2 border-t border-[color:var(--topology-overview-reader-lens-border)] pt-2"
+              >
+                <div
+                  data-testid="topology-overview-relation-line-legend"
+                  data-relation-line-legend-contract="map-line-to-ontology-relation"
+                  data-spine-token="--topology-relation-spine-halo"
+                  data-spine-terminal-token="--topology-relation-spine-terminal"
+                  data-quality-strong-token="--topology-relation-stroke-strong"
+                  data-quality-weak-token="--topology-relation-stroke-weak"
+                  className="min-w-0"
+                >
+                  <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-reader-lens-title-text)]">
+                    {labels.overviewRelationLegendTitle}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] leading-4 text-[color:var(--topology-overview-reader-lens-item-text)]">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span aria-hidden className="relative h-2.5 w-8 shrink-0">
+                        <span className="absolute left-0 right-1 top-1/2 h-px -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-halo)]" />
+                        <span className="absolute right-0 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-terminal)]" />
+                      </span>
+                      <span className="min-w-0 truncate">
+                        {labels.overviewRelationLegendSpine}
+                      </span>
+                    </span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span
+                        aria-hidden
+                        className="h-[2px] w-8 shrink-0 rounded-full"
+                        style={
+                          {
+                            backgroundImage:
+                              "linear-gradient(90deg, var(--topology-relation-stroke-strong), var(--topology-relation-stroke-weak))",
+                          } as CSSProperties
+                        }
+                      />
+                      <span className="min-w-0 truncate">
+                        {labels.overviewRelationLegendQuality}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {panelMode === "overview" ? (
+            <div
+              className="mt-2 border-t border-[color:var(--topology-overview-handoff-divider)] pt-[var(--topology-overview-handoff-compact-padding-top)]"
+              data-divider-token="--topology-overview-handoff-divider"
+              data-compact-padding-top-token="--topology-overview-handoff-compact-padding-top"
+              data-low-height-density-contract="primary-copy-visible-secondary-tools-hidden"
+              data-next-action-contract="map-brief-before-agent-audit-sync"
+              data-overview-handoff-placement="after-reader-lens-before-proof-detail"
+              data-testid="topology-overview-handoff-actions"
+            >
+              <div
+                className="topology-overview-low-height-sr-only mb-1.5 flex min-w-0 items-center justify-between gap-2 max-md:sr-only"
+                data-overview-handoff-label-compact-contract="phone-action-label-hidden"
+                data-overview-handoff-label-low-height-contract="hidden-under-800px"
+              >
+                <span className="min-w-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                  {labels.overviewHandoffSummary}
+                </span>
+                <span
+                  className="h-px min-w-6 flex-1 bg-[color:var(--topology-overview-handoff-divider)]"
+                  data-divider-token="--topology-overview-handoff-divider"
+                  aria-hidden
+                />
+                <span className="min-w-0 truncate text-right text-[10.5px] text-[color:var(--color-text-tertiary)]">
+                  {labels.overviewCopyTools}
+                </span>
+              </div>
+              <div className="grid gap-1.5">
+                <CompactCopyButton
+                  copied={overviewBriefCopied}
+                  label={labels.overviewBriefCopy}
+                  ariaLabel={
+                    overviewBriefCopied
+                      ? labels.overviewBriefCopiedAriaLabel
+                      : labels.overviewBriefCopyAriaLabel
+                  }
+                  onClick={copyOverviewBrief}
+                  className="min-h-[var(--topology-overview-handoff-primary-min-height)] border border-[color:var(--topology-overview-handoff-primary-border)] bg-[color:var(--topology-overview-handoff-primary-surface)] text-[10.5px] text-[color:var(--color-text-secondary)]"
+                  data-testid="topology-overview-brief-copy"
+                  data-surface-token="--topology-overview-handoff-primary-surface"
+                  data-border-token="--topology-overview-handoff-primary-border"
+                  data-min-height-token="--topology-overview-handoff-primary-min-height"
+                />
+                <details
+                  className="topology-overview-low-height-sr-only group relative mt-0.5"
+                  data-secondary-actions-contract="closed-until-user-expands"
+                  data-secondary-visual-priority="tertiary-disclosure"
+                >
+                  <summary
+                    data-testid="topology-overview-handoff-summary"
+                    className="inline-flex min-h-[var(--topology-overview-secondary-disclosure-min-height)] cursor-pointer list-none items-center gap-1 rounded px-0.5 py-0 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--topology-overview-secondary-disclosure-text)] transition-colors hover:text-[color:var(--topology-overview-secondary-disclosure-hover-text)]"
+                    data-min-height-token="--topology-overview-handoff-summary-min-height"
+                    data-secondary-min-height-token="--topology-overview-secondary-disclosure-min-height"
+                    data-text-token="--topology-overview-secondary-disclosure-text"
+                    data-hover-text-token="--topology-overview-secondary-disclosure-hover-text"
+                    data-secondary-visual-priority="tertiary-disclosure"
+                  >
+                    <ChevronDown
+                      size={10}
+                      aria-hidden
+                      className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
+                      data-testid="topology-overview-handoff-chevron"
+                    />
+                    <span className="group-open:sr-only">
+                      {labels.overviewReanalyzeCopy} · {labels.overviewSyncCopy}
+                    </span>
+                  </summary>
+                  <div
+                    className="absolute bottom-0 left-5 right-0 z-10 hidden grid-cols-2 gap-1 group-open:grid"
+                    data-testid="topology-overview-secondary-handoff-actions"
+                    data-secondary-actions-contract="hidden-closed-overlay-row-open"
+                  >
+                    <CompactCopyButton
+                      copied={overviewReanalyzeCopied}
+                      label={labels.overviewReanalyzeCopy}
+                      ariaLabel={
+                        overviewReanalyzeCopied
+                          ? labels.overviewReanalyzeCopiedAriaLabel
+                          : labels.overviewReanalyzeCopyAriaLabel
+                      }
+                      onClick={copyOverviewReanalysisCommand}
+                      className="min-h-[26px] justify-start border border-[color:var(--topology-overview-handoff-secondary-border)] bg-[color:var(--topology-overview-handoff-secondary-surface)] px-1.5 py-0 text-[9.5px] text-[color:var(--color-text-tertiary)]"
+                      data-testid="topology-overview-reanalyze-copy"
+                      data-surface-token="--topology-overview-handoff-secondary-surface"
+                      data-border-token="--topology-overview-handoff-secondary-border"
+                      data-density-contract="compact-disclosure-action"
+                    />
+                    <CompactCopyButton
+                      copied={overviewSyncCopied}
+                      label={labels.overviewSyncCopy}
+                      ariaLabel={
+                        overviewSyncCopied
+                          ? labels.overviewSyncCopiedAriaLabel
+                          : labels.overviewSyncCopyAriaLabel
+                      }
+                      onClick={copyOverviewSyncGate}
+                      className="min-h-[26px] justify-start border border-[color:var(--topology-overview-handoff-secondary-border)] bg-[color:var(--topology-overview-handoff-secondary-surface)] px-1.5 py-0 text-[9.5px] text-[color:var(--color-text-tertiary)]"
+                      data-testid="topology-overview-sync-copy"
+                      data-surface-token="--topology-overview-handoff-secondary-surface"
+                      data-border-token="--topology-overview-handoff-secondary-border"
+                      data-density-contract="compact-disclosure-action"
+                    />
+                  </div>
+                </details>
+              </div>
+            </div>
+          ) : null}
           {pathCandidateVisibilityText ? (
             <p
               data-testid="topology-path-candidate-visibility"
               data-visible={pathCandidateVisibility?.visible}
               data-total={pathCandidateVisibility?.total}
-              className="mt-3 rounded-md border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.06)] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+              data-copy-contract="reader-facing-map-readability"
+              data-path-rail-spacing-contract="parent-gap-owns-path-stack"
+              data-surface-token="--topology-path-candidate-visibility-surface"
+              data-border-token="--topology-path-candidate-visibility-border"
+              data-notice-text-token="--topology-analysis-panel-notice-text"
+              className="rounded-md border border-[color:var(--topology-path-candidate-visibility-border)] bg-[color:var(--topology-path-candidate-visibility-surface)] px-2.5 py-2 text-[11px] leading-4 tracking-normal text-[color:var(--topology-analysis-panel-notice-text)]"
             >
               {pathCandidateVisibilityText}
             </p>
+          ) : null}
+          {panelMode === "path" && pathSourceSlug && pathTargetSlug ? (
+            <div
+              data-testid="topology-path-visible-route"
+              data-route-contract="source-target-visible-before-proof-disclosure"
+              data-attention-layer="focus-path-state"
+              data-guidance-owner="analysis-rail"
+              data-overflow-contract="no-horizontal-scroll"
+              data-source-slug={pathSourceSlug}
+              data-target-slug={pathTargetSlug}
+              data-source-title={displayPathSourceTitle}
+              data-target-title={displayPathTargetTitle}
+              data-surface-token="--topology-path-route-surface"
+              data-border-token="--topology-path-route-border"
+              data-chip-surface-token="--topology-path-route-chip-surface"
+              data-chip-border-token="--topology-path-route-chip-border"
+              data-source-surface-token="--topology-path-route-source-surface"
+              data-source-border-token="--topology-path-route-source-border"
+              data-source-text-token="--topology-path-route-source-text"
+              data-target-surface-token="--topology-path-route-target-surface"
+              data-target-border-token="--topology-path-route-target-border"
+              data-target-text-token="--topology-path-route-target-text"
+              data-endpoint-marker-surface-token="--topology-path-route-endpoint-marker-surface"
+              data-endpoint-marker-border-token="--topology-path-route-endpoint-marker-border"
+              data-endpoint-marker-text-token="--topology-path-route-endpoint-marker-text"
+              data-route-compact-min-height-token="--topology-path-route-compact-min-height"
+              data-route-source-min-width-token="--topology-path-route-source-min-width"
+              data-route-target-min-width-token="--topology-path-route-target-min-width"
+              data-route-responsive-contract="phone-fluid-tablet-stacked-wide-desktop-weighted-endpoints"
+              data-path-rail-spacing-contract="parent-gap-owns-path-stack"
+              className="grid min-w-0 grid-cols-[minmax(0,0.68fr)_auto_minmax(0,1.42fr)] items-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5 md:grid-cols-1 md:gap-1 2xl:grid-cols-[minmax(5.75rem,0.9fr)_auto_minmax(7rem,1.5fr)] 2xl:gap-0"
+            >
+              <span
+                className="min-h-[var(--topology-path-route-compact-min-height)] min-w-0 rounded border border-[color:var(--topology-path-route-source-border)] bg-[color:var(--topology-path-route-source-surface)] px-2 py-1"
+                data-route-endpoint="source"
+                data-route-endpoint-marker-contract="source-a-marker"
+              >
+                <span className="flex min-w-0 items-center gap-1">
+                  <span
+                    aria-hidden
+                    data-route-endpoint-marker="source"
+                    className="grid size-3.5 shrink-0 place-items-center rounded-full border border-[color:var(--topology-path-route-endpoint-marker-border)] bg-[color:var(--topology-path-route-endpoint-marker-surface)] font-mono text-[7px] font-semibold leading-none text-[color:var(--topology-path-route-endpoint-marker-text)]"
+                  >
+                    A
+                  </span>
+                  <span className="block truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--topology-path-route-chip-text)]">
+                    {labels.pathEvidenceSource}
+                  </span>
+                </span>
+                <span
+                  className="block truncate text-[10.5px] text-[color:var(--topology-path-route-source-text)]"
+                  data-route-endpoint-title="source"
+                  data-route-endpoint-title-contract="weighted-route-title"
+                >
+                  {displayPathSourceTitle}
+                </span>
+              </span>
+              <ArrowRight
+                size={12}
+                aria-hidden
+                className="text-[color:var(--topology-path-route-arrow-text)] md:mx-auto md:rotate-90 2xl:mx-0 2xl:rotate-0"
+              />
+              <span
+                className="min-h-[var(--topology-path-route-compact-min-height)] min-w-0 rounded border border-[color:var(--topology-path-route-target-border)] bg-[color:var(--topology-path-route-target-surface)] px-2 py-1"
+                data-route-endpoint="target"
+                data-route-endpoint-marker-contract="target-b-marker"
+              >
+                <span className="flex min-w-0 items-center gap-1">
+                  <span
+                    aria-hidden
+                    data-route-endpoint-marker="target"
+                    className="grid size-3.5 shrink-0 place-items-center rounded-full border border-[color:var(--topology-path-route-endpoint-marker-border)] bg-[color:var(--topology-path-route-endpoint-marker-surface)] font-mono text-[7px] font-semibold leading-none text-[color:var(--topology-path-route-endpoint-marker-text)]"
+                  >
+                    B
+                  </span>
+                  <span className="block truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--topology-path-route-chip-text)]">
+                    {labels.pathEvidenceTarget}
+                  </span>
+                </span>
+                <span
+                  className="block truncate text-[10.5px] text-[color:var(--topology-path-route-target-text)]"
+                  data-route-endpoint-title="target"
+                  data-route-endpoint-title-contract="weighted-route-title"
+                >
+                  {displayPathTargetTitle}
+                </span>
+              </span>
+            </div>
           ) : null}
           {panelMode === "path" ? (
             <div
@@ -966,32 +1484,169 @@ export function TopologyAnalysisBar({
               data-attention-layer="focus-path-state"
               data-guidance-owner="analysis-rail"
               data-path-prompt-policy="panel-owned-when-card-mode"
-              data-handoff-contract="agent-next-action-visible"
+              data-handoff-contract="route-proof-action-visible"
+              data-handoff-layout-contract="evidence-first-agent-handoff-compact"
+              data-handoff-hierarchy="primary-evidence-secondary-agent-checks"
               data-overflow-contract="no-horizontal-scroll"
+              data-surface-token="--topology-path-handoff-surface"
+              data-border-token="--topology-path-handoff-border"
+              data-text-token="--topology-path-handoff-text"
+              data-label-text-token="--topology-path-handoff-label-text"
+              data-action-min-height-token="--topology-path-handoff-action-min-height"
+              data-action-radius-token="--topology-path-handoff-action-radius"
+              data-compact-padding-y-token="--topology-path-handoff-compact-padding-y"
+              data-primary-evidence-min-height-token="--topology-path-primary-evidence-min-height"
+              data-primary-evidence-visible={
+                pathSourceSlug && pathTargetSlug ? "true" : "false"
+              }
+              data-path-primary-evidence-contract={
+                pathSourceSlug && pathTargetSlug
+                  ? "visible-before-proof-disclosure"
+                  : undefined
+              }
               data-mcp-action="find_path"
               data-cli-fallback="ontology-atlas path"
-              className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 overflow-hidden rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.045)] px-2.5 py-2 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
+              data-path-rail-spacing-contract="parent-gap-owns-path-stack"
+              className="grid min-w-0 gap-1 overflow-hidden rounded-md border border-[color:var(--topology-path-handoff-border)] bg-[color:var(--topology-path-handoff-surface)] px-2 py-[var(--topology-path-handoff-compact-padding-y)] font-mono text-[10px] text-[color:var(--topology-path-handoff-text)]"
             >
-              <span className="uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                {labels.pathHandoffLabel}
-              </span>
-              <span className="rounded-sm border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.075)] px-1.5 py-0.5 uppercase tracking-[0.10em] text-[color:rgba(139,151,255,0.92)]">
-                {labels.pathHandoffMcpAction}
-              </span>
-              <span className="rounded-sm border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.035)] px-1.5 py-0.5 uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
-                {labels.pathHandoffCliFallback}
-              </span>
+              <div
+                className="flex min-w-0 items-center justify-between gap-2"
+                data-testid="topology-path-handoff-header"
+                data-path-handoff-header-contract="share-label-before-actions"
+              >
+                <span className="min-w-0 truncate uppercase tracking-[0.12em] text-[color:var(--topology-path-handoff-label-text)]">
+                  {labels.pathHandoffLabel}
+                </span>
+              </div>
+              {pathSourceSlug && pathTargetSlug ? (
+                <button
+                  type="button"
+                  onClick={copyPathEvidence}
+                  data-testid="topology-path-primary-evidence-action"
+                  data-path-primary-evidence-contract="visible-before-proof-disclosure"
+                  data-surface-token="--topology-path-primary-evidence-surface"
+                  data-border-token="--topology-path-primary-evidence-border"
+                  data-text-token="--topology-path-primary-evidence-text"
+                  data-hover-surface-token="--topology-path-primary-evidence-hover-surface"
+                  data-hover-border-token="--topology-path-primary-evidence-hover-border"
+                  data-hover-text-token="--topology-path-primary-evidence-hover-text"
+                  className="inline-flex min-h-[var(--topology-path-primary-evidence-min-height)] min-w-0 items-center justify-between gap-2 rounded-md border border-[color:var(--topology-path-primary-evidence-border)] bg-[color:var(--topology-path-primary-evidence-surface)] px-2 py-0.5 text-left text-[10.5px] text-[color:var(--topology-path-primary-evidence-text)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--topology-path-primary-evidence-hover-border)] hover:bg-[color:var(--topology-path-primary-evidence-hover-surface)] hover:text-[color:var(--topology-path-primary-evidence-hover-text)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
+                  aria-label={
+                    pathEvidenceCopied
+                      ? labels.pathEvidenceCopiedAriaLabel
+                      : labels.pathEvidenceCopyAriaLabel
+                  }
+                >
+                  <span className="min-w-0 truncate">{labels.pathEvidenceCopy}</span>
+                  {pathEvidenceCopied ? (
+                    <Check size={12} aria-hidden className="shrink-0" />
+                  ) : (
+                    <Clipboard size={12} aria-hidden className="shrink-0" />
+                  )}
+                </button>
+              ) : null}
+              <div
+                className="grid min-w-0 grid-cols-2 gap-1"
+                data-testid="topology-path-handoff-secondary-row"
+                data-path-handoff-secondary-contract="agent-actions-demoted-after-evidence"
+              >
+                <span
+                  data-testid="topology-path-handoff-mcp-chip"
+                  data-surface-token="--topology-path-handoff-mcp-surface"
+                  data-border-token="--topology-path-handoff-mcp-border"
+                  data-text-token="--topology-path-handoff-mcp-text"
+                  className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-mcp-border)] bg-[color:var(--topology-path-handoff-mcp-surface)] px-1.5 py-0 text-center uppercase tracking-[0.10em] text-[color:var(--topology-path-handoff-mcp-text)]"
+                >
+                  {labels.pathHandoffMcpAction}
+                </span>
+                <span
+                  data-testid="topology-path-handoff-cli-chip"
+                  data-surface-token="--topology-path-handoff-cli-surface"
+                  data-border-token="--topology-path-handoff-cli-border"
+                  data-text-token="--topology-path-handoff-cli-text"
+                  className="inline-flex min-h-[var(--topology-path-handoff-action-min-height)] min-w-0 items-center justify-center rounded-[var(--topology-path-handoff-action-radius)] border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] px-1.5 py-0 text-center uppercase tracking-[0.10em] text-[color:var(--topology-path-handoff-cli-text)]"
+                >
+                  {labels.pathHandoffCliFallback}
+                </span>
+              </div>
             </div>
           ) : null}
           {panelMode === "overview" ? (
-            <>
+            <details
+              className="topology-overview-proof-disclosure group mt-2 border-t border-[color:var(--topology-overview-signal-grid-border)] pt-1.5"
+              data-testid="topology-overview-proof-disclosure"
+              data-overview-proof-disclosure-contract="closed-by-default-map-first"
+              data-overview-proof-default-state="closed"
+              data-border-token="--topology-overview-signal-grid-border"
+              onToggle={() => {
+                window.dispatchEvent(new CustomEvent("topology:fixed-surface-resize"));
+              }}
+            >
+              <summary
+                data-testid="topology-overview-proof-summary"
+                data-overview-proof-summary-contract="relation-proof-disclosed-on-demand"
+                className="inline-flex min-h-[var(--topology-overview-secondary-disclosure-min-height)] cursor-pointer list-none items-center gap-1 rounded px-0.5 py-0 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--topology-overview-secondary-disclosure-text)] transition-colors hover:text-[color:var(--topology-overview-secondary-disclosure-hover-text)]"
+                data-secondary-min-height-token="--topology-overview-secondary-disclosure-min-height"
+                data-text-token="--topology-overview-secondary-disclosure-text"
+                data-hover-text-token="--topology-overview-secondary-disclosure-hover-text"
+                onClick={() => {
+                  window.requestAnimationFrame(() => {
+                    window.dispatchEvent(new CustomEvent("topology:fixed-surface-resize"));
+                    const layer = document.querySelector<HTMLElement>(
+                      '[data-testid="sigma-skeleton-cards"]',
+                    );
+                    const panel = document.querySelector<HTMLElement>(
+                      '[data-testid="topology-analysis-panel"]',
+                    );
+                    if (!layer || !panel) return;
+                    const panelRect = panel.getBoundingClientRect();
+                    let hiddenCount = 0;
+                    layer
+                      .querySelectorAll<HTMLElement>(
+                        '[data-skeleton-card]:not([data-surface-hidden="true"])',
+                      )
+                      .forEach((card) => {
+                        const rect = card.getBoundingClientRect();
+                        const overlaps =
+                          rect.left < panelRect.right + 8 &&
+                          rect.right > panelRect.left - 8 &&
+                          rect.top < panelRect.bottom + 8 &&
+                          rect.bottom > panelRect.top - 8;
+                        if (!overlaps) return;
+                        card.dataset.surfaceHidden = "true";
+                        card.dataset.fixedSurfaceEventHidden = "overview-proof-panel";
+                        card.style.opacity = "0";
+                        card.style.visibility = "hidden";
+                        hiddenCount += 1;
+                      });
+                    layer.dataset.fixedSurfaceEventRepositionPolicy =
+                      "raf-after-fixed-surface-event";
+                    layer.dataset.fixedSurfaceEventHiddenCount = String(hiddenCount);
+                  });
+                }}
+              >
+                <ChevronDown
+                  size={10}
+                  aria-hidden
+                  className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
+                  data-testid="topology-overview-proof-chevron"
+                />
+                <span>
+                  {labels.overviewBriefRelationProvenance} · {labels.overviewAgentReadiness}
+                </span>
+              </summary>
               <div
-                className="mt-3 grid min-w-0 gap-2 rounded-lg border border-[color:rgba(255,255,255,0.065)] bg-[color:rgba(255,255,255,0.025)] p-2.5"
+                className="mt-1.5 grid min-w-0 gap-[var(--topology-overview-signal-grid-compact-gap)] border-y border-[color:var(--topology-overview-signal-grid-border)] bg-transparent py-[var(--topology-overview-signal-grid-compact-padding)]"
+                data-surface-token="--topology-overview-signal-grid-surface"
+                data-border-token="--topology-overview-signal-grid-border"
+                data-compact-padding-token="--topology-overview-signal-grid-compact-padding"
+                data-compact-gap-token="--topology-overview-signal-grid-compact-gap"
+                data-overview-evidence-density-contract="disclosed-proof-rows-map-first"
                 data-testid="topology-overview-signal-grid"
               >
                 <div
-                  className="grid min-w-0 grid-cols-2 gap-2"
-                  data-overview-signal-layout="compact-two-column"
+                  className="grid min-w-0 grid-cols-1 gap-[var(--topology-overview-signal-grid-compact-gap)]"
+                  data-overview-signal-layout="status-before-evidence"
                   data-testid="topology-overview-signal-metric-row"
                 >
                   {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
@@ -999,23 +1654,36 @@ export function TopologyAnalysisBar({
                       label={labels.overviewRelationVisibleCountSuffix}
                       value={
                         relationVisibilitySkeleton
-                          ? `${overviewRelationVisibility.visible} ${labels.overviewSkeletonCardCountSuffix}`
+                          ? overviewSkeletonHiddenCount > 0
+                            ? `${overviewRelationVisibility.visible}/${overviewRelationVisibility.total} ${labels.overviewSkeletonCardCountSuffix} · ${overviewSkeletonHiddenCount} ${labels.overviewSkeletonCardHiddenSuffix}`
+                            : `${overviewRelationVisibility.visible}/${overviewRelationVisibility.total} ${labels.overviewSkeletonCardCountSuffix}`
                           : `${overviewRelationVisibility.visible}/${overviewRelationVisibility.total}`
                       }
                       compact
                       data-testid="topology-overview-relation-progress"
-                    />
-                  ) : null}
-                  {overviewRelationProvenanceSummary ? (
-                    <OverviewSignalCard
-                      label={labels.overviewBriefRelationProvenance}
-                      value={overviewRelationProvenanceSummary}
-                      tone="indigo"
-                      compact
-                      data-testid="topology-overview-relation-provenance"
+                      data-low-height-overview-progress-contract="sr-only-while-evidence-and-handoff-stay-visible"
+                      className="topology-overview-low-height-sr-only topology-overview-medium-height-sr-only"
                     />
                   ) : null}
                 </div>
+                {overviewRelationProvenanceSummary ? (
+                  <RelationProvenanceGate
+                    title={labels.overviewBriefRelationProvenance}
+                    labels={{
+                      sourceBacked: labels.overviewBriefRelationSourceBacked,
+                      authored: labels.overviewBriefRelationAuthored,
+                      needsReview: labels.overviewBriefRelationNeedsReview,
+                    }}
+                    summary={overviewRelationProvenanceSummary}
+                    counts={
+                      summary.relationProvenance ?? {
+                        sourceBacked: 0,
+                        authored: 0,
+                        needsReview: 0,
+                      }
+                    }
+                  />
+                ) : null}
                 {overviewRelationQualitySummary ? (
                   <RelationQualityGate
                     title={labels.overviewBriefRelationQuality}
@@ -1049,76 +1717,19 @@ export function TopologyAnalysisBar({
                     counts={overviewAgentReadinessCounts}
                   />
                 ) : null}
-                <p className="break-keep rounded-md border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.02)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                <p
+                  className="topology-overview-low-height-sr-only break-keep rounded-md border border-[color:var(--topology-overview-notice-border)] bg-[color:var(--topology-overview-notice-surface)] px-3 py-[var(--topology-overview-notice-compact-padding-y)] text-[12px] leading-5 text-[color:var(--color-text-tertiary)] max-md:sr-only"
+                  data-surface-token="--topology-overview-notice-surface"
+                  data-border-token="--topology-overview-notice-border"
+                  data-compact-padding-y-token="--topology-overview-notice-compact-padding-y"
+                  data-phone-overview-notice-contract="sr-only-while-map-evidence-wins"
+                  data-low-height-overview-notice-contract="sr-only-while-primary-copy-stays-visible"
+                  data-testid="topology-overview-relation-notice"
+                >
                   {overviewRelationNotice}
                 </p>
               </div>
-              <div
-                className="mt-3 border-t border-[color:rgba(255,255,255,0.07)] pt-3"
-                data-testid="topology-overview-handoff-actions"
-              >
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                    {disclosureSummaryLabel}
-                  </span>
-                  <span
-                    className="h-px min-w-6 flex-1 bg-[color:rgba(255,255,255,0.07)]"
-                    aria-hidden
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <CompactCopyButton
-                    copied={overviewBriefCopied}
-                    label={labels.overviewBriefCopy}
-                    ariaLabel={
-                      overviewBriefCopied
-                        ? labels.overviewBriefCopiedAriaLabel
-                        : labels.overviewBriefCopyAriaLabel
-                    }
-                    onClick={copyOverviewBrief}
-                    className="min-h-9 border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] text-[10.5px] text-[color:var(--color-text-secondary)]"
-                  />
-                  <details className="group">
-                    <summary
-                      data-testid="topology-overview-handoff-summary"
-                      className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
-                    >
-                      <ChevronDown
-                        size={12}
-                        aria-hidden
-                        className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
-                        data-testid="topology-overview-handoff-chevron"
-                      />
-                      <span>{labels.healthCopyTools}</span>
-                    </summary>
-                    <div className="mt-1 grid grid-cols-2 gap-1.5">
-                      <CompactCopyButton
-                        copied={overviewReanalyzeCopied}
-                        label={labels.overviewReanalyzeCopy}
-                        ariaLabel={
-                          overviewReanalyzeCopied
-                            ? labels.overviewReanalyzeCopiedAriaLabel
-                            : labels.overviewReanalyzeCopyAriaLabel
-                        }
-                        onClick={copyOverviewReanalysisCommand}
-                        className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10px] text-[color:var(--color-text-tertiary)]"
-                      />
-                      <CompactCopyButton
-                        copied={overviewSyncCopied}
-                        label={labels.overviewSyncCopy}
-                        ariaLabel={
-                          overviewSyncCopied
-                            ? labels.overviewSyncCopiedAriaLabel
-                            : labels.overviewSyncCopyAriaLabel
-                        }
-                        onClick={copyOverviewSyncGate}
-                        className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10px] text-[color:var(--color-text-tertiary)]"
-                      />
-                    </div>
-                  </details>
-                </div>
-              </div>
-            </>
+            </details>
           ) : null}
           {panelMode === "health" ? (
             <>
@@ -1184,10 +1795,38 @@ export function TopologyAnalysisBar({
                       </span>
                     </div>
                     <div
-                      className="mt-2 flex flex-wrap gap-1"
+                      className="mt-2 grid grid-cols-2 gap-1.5"
                       data-testid="topology-health-repair-order"
+                      data-health-repair-order-contract="inspect-repair-sync"
+                      data-health-repair-action-order="builder-mcp-ontology"
+                      data-health-repair-visual-contract="builder-primary-full-secondary-row"
+                      data-health-repair-target-slug={healthAction.slug}
+                      data-health-repair-target-kind={healthAction.kind}
+                      data-health-repair-primary-action="builder"
+                      data-health-repair-sync-gate="post-change"
+                      data-primary-surface-token="--topology-health-repair-primary-surface"
+                      data-primary-border-token="--topology-health-repair-primary-border"
+                      data-secondary-surface-token="--topology-health-repair-secondary-surface"
+                      data-secondary-border-token="--topology-health-repair-secondary-border"
                     >
+                      <Link
+                        href={buildTopologyHealthRepairHref(healthAction.slug)}
+                        data-health-repair-primary-action="builder"
+                        data-health-repair-action-tier="primary"
+                        data-surface-token="--topology-health-repair-primary-surface"
+                        data-border-token="--topology-health-repair-primary-border"
+                        data-hover-surface-token="--topology-health-repair-primary-hover-surface"
+                        className="col-span-2 inline-flex min-h-9 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-health-repair-primary-border)] bg-[color:var(--topology-health-repair-primary-surface)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--topology-health-repair-primary-hover-surface)]"
+                      >
+                        <span className="truncate whitespace-nowrap">{labels.healthRepair}</span>
+                      </Link>
                       <CompactCopyButton
+                        data-testid="topology-health-repair-mcp-copy"
+                        data-health-repair-secondary-action="mcp"
+                        data-health-repair-action-tier="secondary"
+                        data-surface-token="--topology-health-repair-secondary-surface"
+                        data-border-token="--topology-health-repair-secondary-border"
+                        data-hover-surface-token="--topology-health-repair-secondary-hover-surface"
                         copied={healthMcpCopied}
                         label={labels.healthMcpCopy}
                         ariaLabel={
@@ -1196,18 +1835,18 @@ export function TopologyAnalysisBar({
                             : labels.healthMcpCopyAriaLabel
                         }
                         onClick={copyHealthMcpCheck}
+                        className="min-w-0 border border-[color:var(--topology-health-repair-secondary-border)] bg-[color:var(--topology-health-repair-secondary-surface)] px-2.5 text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--topology-health-repair-secondary-hover-surface)]"
                       />
                       <Link
-                        href={buildTopologyHealthRepairHref(healthAction.slug)}
-                        className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-3)]"
-                      >
-                        {labels.healthRepair}
-                      </Link>
-                      <Link
                         href={buildOntologyNodeHref(healthAction.slug)}
-                        className="inline-flex min-h-8 items-center rounded-md px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                        data-health-repair-secondary-action="ontology"
+                        data-health-repair-action-tier="secondary"
+                        data-surface-token="--topology-health-repair-secondary-surface"
+                        data-border-token="--topology-health-repair-secondary-border"
+                        data-hover-surface-token="--topology-health-repair-secondary-hover-surface"
+                        className="inline-flex min-h-9 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-health-repair-secondary-border)] bg-[color:var(--topology-health-repair-secondary-surface)] px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--topology-health-repair-secondary-hover-surface)] hover:text-[color:var(--color-text-primary)]"
                       >
-                        {labels.healthOpenOntology}
+                        <span className="truncate whitespace-nowrap">{labels.healthOpenOntology}</span>
                       </Link>
                     </div>
                     <div className="mt-2">
@@ -1267,10 +1906,23 @@ export function TopologyAnalysisBar({
             </>
           ) : null}
           {panelMode === "path" && pathSourceSlug && pathTargetSlug ? (
-            <details className="group mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
+            <details
+              className="group border-t border-[color:var(--color-border-soft)] pt-1.5"
+              data-testid="topology-path-proof-disclosure"
+              data-path-proof-disclosure-contract="closed-by-default-path-rail-proof"
+              data-path-rail-spacing-contract="parent-gap-owns-path-stack"
+            >
               <summary
-                className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                className="flex min-h-[var(--topology-path-proof-summary-min-height)] w-full cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:var(--topology-path-proof-summary-border)] bg-[color:var(--topology-path-proof-summary-surface)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--topology-path-proof-summary-text)] transition-colors hover:border-[color:var(--topology-path-proof-summary-hover-border)] hover:bg-[color:var(--topology-path-proof-summary-hover-surface)] hover:text-[color:var(--topology-path-proof-summary-hover-text)]"
                 data-testid="topology-path-proof-summary"
+                data-summary-contract="full-width-proof-disclosure"
+                data-surface-token="--topology-path-proof-summary-surface"
+                data-border-token="--topology-path-proof-summary-border"
+                data-text-token="--topology-path-proof-summary-text"
+                data-hover-surface-token="--topology-path-proof-summary-hover-surface"
+                data-hover-border-token="--topology-path-proof-summary-hover-border"
+                data-hover-text-token="--topology-path-proof-summary-hover-text"
+                data-min-height-token="--topology-path-proof-summary-min-height"
               >
                 <ChevronDown
                   size={12}
@@ -1281,22 +1933,43 @@ export function TopologyAnalysisBar({
                 <span>{labels.pathHandoffSummary}</span>
               </summary>
               <div className="mt-2">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              <p
+                data-testid="topology-path-proof-kicker"
+                data-text-token="--topology-path-proof-kicker-text"
+                className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--topology-path-proof-kicker-text)]"
+              >
                 {labels.pathProofOrderTitle}
               </p>
               <div
                 data-testid="topology-path-proof-route"
-                className="mt-1.5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5"
+                data-route-contract="proof-disclosure-source-target"
+                data-surface-token="--topology-path-route-surface"
+                data-border-token="--topology-path-route-border"
+                data-chip-surface-token="--topology-path-route-chip-surface"
+                data-chip-border-token="--topology-path-route-chip-border"
+                data-chip-text-token="--topology-path-route-chip-text"
+                data-arrow-text-token="--topology-path-route-arrow-text"
+                className="mt-1.5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1.5"
               >
-                <span className="truncate text-[10.5px] text-[color:var(--color-text-secondary)]">
+                <span
+                  className="min-w-0 truncate rounded border border-[color:var(--topology-path-route-chip-border)] bg-[color:var(--topology-path-route-chip-surface)] px-1.5 py-1 text-[10.5px] text-[color:var(--topology-path-route-chip-text)]"
+                  data-route-endpoint="source"
+                >
                   {displayPathSourceTitle}
                 </span>
-                <ArrowRight size={12} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
-                <span className="truncate text-right text-[10.5px] text-[color:var(--color-text-secondary)]">
+                <ArrowRight size={12} aria-hidden className="text-[color:var(--topology-path-route-arrow-text)]" />
+                <span
+                  className="min-w-0 truncate rounded border border-[color:var(--topology-path-route-chip-border)] bg-[color:var(--topology-path-route-chip-surface)] px-1.5 py-1 text-right text-[10.5px] text-[color:var(--topology-path-route-chip-text)]"
+                  data-route-endpoint="target"
+                >
                   {displayPathTargetTitle}
                 </span>
               </div>
-              <p className="mt-2 line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+              <p
+                data-testid="topology-path-proof-description"
+                data-text-token="--topology-path-proof-desc-text"
+                className="mt-2 line-clamp-2 text-[10.5px] leading-4 text-[color:var(--topology-path-proof-desc-text)]"
+              >
                 {labels.pathProofOrderDesc}
               </p>
               <ol
@@ -1330,46 +2003,47 @@ export function TopologyAnalysisBar({
                 />
               </ol>
               <div className="mt-2 flex flex-wrap gap-1">
-                <button
-                  type="button"
-                  onClick={copyPathEvidence}
-                  className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
-                  aria-label={
-                    pathEvidenceCopied
-                      ? labels.pathEvidenceCopiedAriaLabel
-                      : labels.pathEvidenceCopyAriaLabel
-                  }
-                >
-                  {pathEvidenceCopied ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                  <span>
-                    {labels.pathEvidenceCopy}
-                  </span>
-                </button>
                 <Link
                   href={buildOntologyNodeHref(pathSourceSlug)}
-                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                  data-path-proof-action="source-ontology"
+                  data-surface-token="--topology-path-route-surface"
+                  data-border-token="--topology-path-route-border"
+                  data-text-token="--topology-path-proof-action-text"
+                  data-hover-text-token="--topology-path-proof-action-hover-text"
+                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1 text-[10.5px] text-[color:var(--topology-path-proof-action-text)] transition-colors hover:border-[color:var(--topology-path-route-chip-border)] hover:text-[color:var(--topology-path-proof-action-hover-text)]"
                 >
                   {labels.pathSourceOntology}
                 </Link>
                 <Link
                   href={buildOntologyNodeHref(pathTargetSlug)}
-                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                  data-path-proof-action="target-ontology"
+                  data-surface-token="--topology-path-route-surface"
+                  data-border-token="--topology-path-route-border"
+                  data-text-token="--topology-path-proof-action-text"
+                  data-hover-text-token="--topology-path-proof-action-hover-text"
+                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--topology-path-route-border)] bg-[color:var(--topology-path-route-surface)] px-2 py-1 text-[10.5px] text-[color:var(--topology-path-proof-action-text)] transition-colors hover:border-[color:var(--topology-path-route-chip-border)] hover:text-[color:var(--topology-path-proof-action-hover-text)]"
                 >
                   {labels.pathTargetOntology}
                 </Link>
                 <Link
                   href={buildTopologyHealthRepairHref(pathSourceSlug)}
-                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                  data-path-proof-action="source-builder"
+                  data-surface-token="--topology-path-route-chip-surface"
+                  data-border-token="--topology-path-route-chip-border"
+                  data-text-token="--topology-path-proof-action-text"
+                  data-hover-text-token="--topology-path-proof-action-hover-text"
+                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--topology-path-route-chip-border)] bg-[color:var(--topology-path-route-chip-surface)] px-2 py-1 text-[10.5px] text-[color:var(--topology-path-proof-action-text)] transition-colors hover:border-[color:var(--topology-path-route-border)] hover:text-[color:var(--topology-path-proof-action-hover-text)]"
                 >
                   {labels.pathSourceBuilder}
                 </Link>
                 <Link
                   href={buildTopologyHealthRepairHref(pathTargetSlug)}
-                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                  data-path-proof-action="target-builder"
+                  data-surface-token="--topology-path-route-chip-surface"
+                  data-border-token="--topology-path-route-chip-border"
+                  data-text-token="--topology-path-proof-action-text"
+                  data-hover-text-token="--topology-path-proof-action-hover-text"
+                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--topology-path-route-chip-border)] bg-[color:var(--topology-path-route-chip-surface)] px-2 py-1 text-[10.5px] text-[color:var(--topology-path-proof-action-text)] transition-colors hover:border-[color:var(--topology-path-route-border)] hover:text-[color:var(--topology-path-proof-action-hover-text)]"
                 >
                   {labels.pathTargetBuilder}
                 </Link>
@@ -1377,7 +2051,9 @@ export function TopologyAnalysisBar({
               <details className="group mt-2">
                 <summary
                   data-testid="topology-path-checks-summary"
-                  className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                  data-text-token="--topology-path-check-summary-text"
+                  data-hover-text-token="--topology-path-check-summary-hover-text"
+                  className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--topology-path-check-summary-text)] transition-colors hover:text-[color:var(--topology-path-check-summary-hover-text)]"
                 >
                   <ChevronDown
                     size={12}
@@ -1387,8 +2063,18 @@ export function TopologyAnalysisBar({
                   />
                   <span>{labels.pathCopyTools}</span>
                 </summary>
-                <div className="mt-1 flex flex-wrap gap-1">
+                <div
+                  className="mt-1 flex flex-wrap gap-1"
+                  data-testid="topology-path-check-actions"
+                  data-path-check-action-contract="mcp-sequence-proof-actions"
+                  data-surface-token="--topology-path-handoff-surface"
+                  data-border-token="--topology-path-handoff-border"
+                >
                   <CompactCopyButton
+                    data-path-check-action="path-mcp"
+                    data-surface-token="--topology-path-handoff-mcp-surface"
+                    data-border-token="--topology-path-handoff-mcp-border"
+                    data-text-token="--topology-path-handoff-mcp-text"
                     copied={pathMcpCopied}
                     label={labels.pathMcpCopy}
                     ariaLabel={
@@ -1397,8 +2083,12 @@ export function TopologyAnalysisBar({
                         : labels.pathMcpCopyAriaLabel
                     }
                     onClick={copyPathMcpCheck}
+                    className="border border-[color:var(--topology-path-handoff-mcp-border)] bg-[color:var(--topology-path-handoff-mcp-surface)] text-[color:var(--topology-path-handoff-mcp-text)] hover:border-[color:var(--topology-path-handoff-border)]"
                   />
                   <CompactCopyButton
+                    data-path-check-action="relation-preflight"
+                    data-surface-token="--topology-path-handoff-cli-surface"
+                    data-border-token="--topology-path-handoff-cli-border"
                     copied={pathRelationPreflightCopied}
                     label={labels.pathRelationPreflightCopy}
                     ariaLabel={
@@ -1407,8 +2097,12 @@ export function TopologyAnalysisBar({
                         : labels.pathRelationPreflightCopyAriaLabel
                     }
                     onClick={copyPathRelationPreflight}
+                    className="border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] hover:border-[color:var(--topology-path-handoff-border)]"
                   />
                   <CompactCopyButton
+                    data-path-check-action="explain-relation"
+                    data-surface-token="--topology-path-handoff-cli-surface"
+                    data-border-token="--topology-path-handoff-cli-border"
                     copied={pathExplainRelationCopied}
                     label={labels.pathExplainRelationCopy}
                     ariaLabel={
@@ -1417,8 +2111,12 @@ export function TopologyAnalysisBar({
                         : labels.pathExplainRelationCopyAriaLabel
                     }
                     onClick={copyPathExplainRelation}
+                    className="border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] hover:border-[color:var(--topology-path-handoff-border)]"
                   />
                   <CompactCopyButton
+                    data-path-check-action="all-paths-plan"
+                    data-surface-token="--topology-path-handoff-cli-surface"
+                    data-border-token="--topology-path-handoff-cli-border"
                     copied={pathAllPathsPlanCopied}
                     label={labels.pathAllPathsPlanCopy}
                     ariaLabel={
@@ -1427,8 +2125,12 @@ export function TopologyAnalysisBar({
                         : labels.pathAllPathsPlanCopyAriaLabel
                     }
                     onClick={copyPathAllPathsPlan}
+                    className="border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] hover:border-[color:var(--topology-path-handoff-border)]"
                   />
                   <CompactCopyButton
+                    data-path-check-action="all-paths-run"
+                    data-surface-token="--topology-path-handoff-cli-surface"
+                    data-border-token="--topology-path-handoff-cli-border"
                     copied={pathAllPathsCopied}
                     label={labels.pathAllPathsCopy}
                     ariaLabel={
@@ -1437,6 +2139,7 @@ export function TopologyAnalysisBar({
                         : labels.pathAllPathsCopyAriaLabel
                     }
                     onClick={copyPathAllPaths}
+                    className="border border-[color:var(--topology-path-handoff-cli-border)] bg-[color:var(--topology-path-handoff-cli-surface)] hover:border-[color:var(--topology-path-handoff-border)]"
                   />
                 </div>
               </details>
@@ -1444,69 +2147,147 @@ export function TopologyAnalysisBar({
             </details>
           ) : null}
           {panelMode === "focus" ? (
-            <div className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
-              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                {labels.focusReviewOrderTitle}
-              </p>
-              <ol
-                data-testid="topology-focus-review-order"
-                className="mt-1 flex min-w-0 flex-wrap gap-x-2 gap-y-1"
-              >
-                <OverviewWorkStep label={labels.focusReviewOrderProfile} />
-                <OverviewWorkStep label={labels.focusReviewOrderImpact} />
-                <OverviewWorkStep label={labels.focusReviewOrderRepair} />
-                <OverviewWorkStep label={labels.focusReviewOrderSync} />
-              </ol>
+            <div
+              data-testid="topology-focus-command-spine"
+              data-command-hierarchy="brief-primary-review-agent-proof"
+              data-attention-layer="support-command-spine"
+              data-tokenized-surface="topology-command-spine"
+              data-command-spine-surface-token="--topology-command-spine-surface"
+              data-command-spine-border-token="--topology-command-spine-border"
+              className="mt-3 rounded-[var(--topology-command-spine-radius)] border border-[color:var(--topology-command-spine-border)] bg-[image:var(--topology-command-spine-surface)] p-[var(--topology-command-spine-padding)] shadow-[inset_0_1px_0_var(--topology-command-spine-inset-highlight)]"
+            >
               {selectedSlug ? (
                 <>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    <button
-                      type="button"
-                      onClick={copyFocusBrief}
-                      className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
-                      aria-label={
-                        focusBriefCopied
-                          ? labels.focusBriefCopiedAriaLabel
-                          : labels.focusBriefCopyAriaLabel
-                      }
-                    >
-                      {focusBriefCopied ? (
-                        <Check size={12} aria-hidden />
-                      ) : (
-                        <Clipboard size={12} aria-hidden />
-                      )}
-                      <span>
-                        {labels.focusBriefCopy}
+                  <button
+                    type="button"
+                    onClick={copyFocusBrief}
+                    data-testid="topology-focus-primary-action"
+                    data-command-primary-surface-token="--topology-command-primary-surface"
+                    data-command-primary-border-token="--topology-command-primary-border"
+                    className="group/focus-action flex min-h-[var(--topology-command-primary-min-height)] w-full min-w-0 items-center justify-between gap-[var(--topology-command-spine-gap)] rounded-lg border border-[color:var(--topology-command-primary-border)] bg-[color:var(--topology-command-primary-surface)] px-3 py-2 text-left text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform,box-shadow] duration-180 ease-out hover:border-[color:var(--topology-command-primary-hover-border)] hover:bg-[color:var(--topology-command-primary-hover-surface)] hover:text-[color:var(--color-text-primary)] hover:shadow-[var(--topology-command-primary-hover-shadow)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
+                    aria-label={
+                      focusBriefCopied
+                        ? labels.focusBriefCopiedAriaLabel
+                        : labels.focusBriefCopyAriaLabel
+                    }
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[color:var(--topology-command-icon-surface)] text-[color:var(--topology-command-icon-text)]">
+                        {focusBriefCopied ? (
+                          <Check size={13} aria-hidden />
+                        ) : (
+                          <Clipboard size={13} aria-hidden />
+                        )}
                       </span>
-                    </button>
+                      <span className="min-w-0">
+                        <span className="block truncate text-[12px] font-medium leading-4">
+                          {labels.focusBriefCopy}
+                        </span>
+                        <span
+                          data-testid="topology-focus-primary-summary"
+                          data-command-primary-summary-token="--topology-command-primary-summary-text"
+                          className="block truncate text-[10px] leading-4 text-[color:var(--topology-command-primary-summary-text)]"
+                        >
+                          {labels.focusBriefCopySummary}
+                        </span>
+                      </span>
+                    </span>
+                    <ArrowRight
+                      size={14}
+                      aria-hidden
+                      className="shrink-0 text-[color:var(--topology-command-arrow-text)] transition-transform duration-180 group-hover/focus-action:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none"
+                    />
+                  </button>
+                </>
+              ) : null}
+              <div className={selectedSlug ? "mt-[var(--topology-command-spine-gap)]" : ""}>
+                <p className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {labels.focusReviewOrderTitle}
+                </p>
+                <ol
+                  data-testid="topology-focus-review-order"
+                  data-review-order-contract="flat-numbered-rail"
+                  data-review-order-density={
+                    selectedSlug ? "selected-detail" : "unselected-compact"
+                  }
+                  data-command-step-surface-token="--topology-command-step-surface"
+                  data-command-step-border-token="--topology-command-step-border"
+                  className={`mt-1.5 grid min-w-0 overflow-hidden rounded-md border border-[color:var(--topology-command-step-border)] bg-[color:var(--topology-command-step-surface)] ${
+                    selectedSlug ? "" : "grid-cols-2"
+                  }`}
+                >
+                  <FocusReviewStep
+                    compact={!selectedSlug}
+                    index={1}
+                    label={labels.focusReviewOrderProfile}
+                  />
+                  <FocusReviewStep
+                    compact={!selectedSlug}
+                    index={2}
+                    label={labels.focusReviewOrderImpact}
+                  />
+                  <FocusReviewStep
+                    compact={!selectedSlug}
+                    index={3}
+                    label={labels.focusReviewOrderRepair}
+                  />
+                  <FocusReviewStep
+                    compact={!selectedSlug}
+                    index={4}
+                    label={labels.focusReviewOrderSync}
+                  />
+                </ol>
+              </div>
+              {selectedSlug ? (
+                <>
+                  <div
+                    data-testid="topology-focus-secondary-actions"
+                    data-focus-secondary-action-contract="ontology-builder-exits"
+                    data-command-secondary-surface-token="--topology-command-secondary-surface"
+                    data-command-secondary-border-token="--topology-command-secondary-border"
+                    className="mt-[var(--topology-command-spine-gap)] grid grid-cols-2 gap-1"
+                  >
                     <Link
                       href={buildOntologyNodeHref(selectedSlug)}
-                      className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                      data-focus-secondary-action="ontology"
+                      data-command-secondary-surface-token="--topology-command-secondary-surface"
+                      data-command-secondary-border-token="--topology-command-secondary-border"
+                      className="inline-flex min-h-8 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--topology-command-secondary-hover-border)] hover:text-[color:var(--color-text-primary)]"
                     >
-                      {labels.focusOpenOntology}
+                      <span className="truncate">{labels.focusOpenOntology}</span>
                     </Link>
                     <Link
                       href={buildTopologyHealthRepairHref(selectedSlug)}
-                      className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                      data-focus-secondary-action="builder"
+                      data-command-secondary-surface-token="--topology-command-secondary-surface"
+                      data-command-secondary-border-token="--topology-command-secondary-border"
+                      className="inline-flex min-h-8 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--topology-command-secondary-hover-border)] hover:text-[color:var(--color-text-primary)]"
                     >
-                      {labels.focusOpenBuilder}
+                      <span className="truncate">{labels.focusOpenBuilder}</span>
                     </Link>
                   </div>
-                  <details className="group mt-2">
+                  <details
+                    className="group mt-[var(--topology-command-spine-gap)]"
+                    data-testid="topology-focus-agent-handoff"
+                    data-handoff-contract="mcp-cli-proof-disclosed"
+                  >
                     <summary
                       data-testid="topology-focus-proof-summary"
-                      className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                      className="inline-flex min-h-8 w-full cursor-pointer list-none items-center justify-between gap-2 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
                     >
+                      <span>{labels.focusHandoffSummary}</span>
                       <ChevronDown
                         size={12}
                         aria-hidden
                         className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
                         data-testid="topology-focus-proof-chevron"
                       />
-                      <span>{labels.focusHandoffSummary}</span>
                     </summary>
-                    <div className="mt-1 flex flex-wrap gap-1">
+                    <div className="mt-1 grid gap-1">
                       <CompactCopyButton
+                        data-focus-proof-action="mcp-profile"
+                        data-command-secondary-surface-token="--topology-command-secondary-surface"
+                        data-command-secondary-border-token="--topology-command-secondary-border"
                         copied={focusMcpCopied}
                         label={labels.focusMcpCopy}
                         ariaLabel={
@@ -1515,8 +2296,12 @@ export function TopologyAnalysisBar({
                             : labels.focusMcpCopyAriaLabel
                         }
                         onClick={copyFocusMcpCheck}
+                        className="border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] hover:border-[color:var(--topology-command-secondary-hover-border)]"
                       />
                       <CompactCopyButton
+                        data-focus-proof-action="mcp-impact"
+                        data-command-secondary-surface-token="--topology-command-secondary-surface"
+                        data-command-secondary-border-token="--topology-command-secondary-border"
                         copied={focusMcpImpactCopied}
                         label={labels.focusMcpImpactCopy}
                         ariaLabel={
@@ -1525,8 +2310,12 @@ export function TopologyAnalysisBar({
                             : labels.focusMcpImpactCopyAriaLabel
                         }
                         onClick={copyFocusMcpImpactCheck}
+                        className="border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] hover:border-[color:var(--topology-command-secondary-hover-border)]"
                       />
                       <CompactCopyButton
+                        data-focus-proof-action="sync-gate"
+                        data-command-secondary-surface-token="--topology-command-secondary-surface"
+                        data-command-secondary-border-token="--topology-command-secondary-border"
                         copied={focusSyncGateCopied}
                         label={labels.focusSyncGateCopy}
                         ariaLabel={
@@ -1535,8 +2324,12 @@ export function TopologyAnalysisBar({
                             : labels.focusSyncGateCopyAriaLabel
                         }
                         onClick={copyFocusSyncGate}
+                        className="border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] hover:border-[color:var(--topology-command-secondary-hover-border)]"
                       />
                       <CompactCopyButton
+                        data-focus-proof-action="strengthen-command"
+                        data-command-secondary-surface-token="--topology-command-secondary-surface"
+                        data-command-secondary-border-token="--topology-command-secondary-border"
                         copied={focusEnhanceCopied}
                         label={labels.focusEnhanceCopy}
                         ariaLabel={
@@ -1545,6 +2338,7 @@ export function TopologyAnalysisBar({
                             : labels.focusEnhanceCopyAriaLabel
                         }
                         onClick={copyFocusEnhancementCommand}
+                        className="border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] hover:border-[color:var(--topology-command-secondary-hover-border)]"
                       />
                     </div>
                   </details>
@@ -1613,21 +2407,38 @@ function OverviewSignalCard({
   compact?: boolean;
   tone?: "neutral" | "indigo" | "cyan";
 } & HTMLAttributes<HTMLDivElement>) {
-  const toneClass =
-    tone === "indigo"
-      ? "border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)]"
-      : tone === "cyan"
-        ? "border-[color:rgba(94,234,212,0.22)] bg-[color:rgba(94,234,212,0.045)]"
-        : "border-[color:rgba(255,255,255,0.065)] bg-[color:rgba(255,255,255,0.028)]";
+  const toneTokens = {
+    neutral: {
+      surface: "--topology-overview-signal-neutral-surface",
+      border: "--topology-overview-signal-neutral-border",
+    },
+    indigo: {
+      surface: "--topology-overview-signal-indigo-surface",
+      border: "--topology-overview-signal-indigo-border",
+    },
+    cyan: {
+      surface: "--topology-overview-signal-cyan-surface",
+      border: "--topology-overview-signal-cyan-border",
+    },
+  }[tone];
 
   return (
     <div
       {...attrs}
       data-overview-signal-card={tone}
       data-overview-signal-compact={compact ? "true" : "false"}
+      data-surface-token={toneTokens.surface}
+      data-border-token={toneTokens.border}
+      style={
+        {
+          ...attrs.style,
+          "--topology-overview-signal-card-surface": `var(${toneTokens.surface})`,
+          "--topology-overview-signal-card-border": `var(${toneTokens.border})`,
+        } as CSSProperties
+      }
       className={`grid min-w-0 ${
         compact ? "gap-0.5 rounded-md px-2.5 py-2" : "gap-1 rounded-md px-3 py-2"
-      } border ${toneClass} ${
+      } border border-[color:var(--topology-overview-signal-card-border)] bg-[color:var(--topology-overview-signal-card-surface)] ${
         attrs.className ?? ""
       }`}
     >
@@ -1636,6 +2447,87 @@ function OverviewSignalCard({
       </span>
       <span className="break-words font-mono text-[11.5px] uppercase leading-4 tracking-[0.08em] text-[color:var(--color-text-secondary)]">
         {value}
+      </span>
+    </div>
+  );
+}
+
+function RelationProvenanceGate({
+  title,
+  labels,
+  summary,
+  counts,
+}: {
+  title: string;
+  labels: {
+    sourceBacked: string;
+    authored: string;
+    needsReview: string;
+  };
+  summary: string;
+  counts: NonNullable<TopologyAnalysisSummary["relationProvenance"]>;
+}) {
+  const rows = [
+    {
+      key: "source-backed",
+      count: counts.sourceBacked,
+      label: labels.sourceBacked,
+      token: "--topology-overview-proof-strong-text",
+    },
+    {
+      key: "authored",
+      count: counts.authored,
+      label: labels.authored,
+      token: "--topology-overview-proof-supported-text",
+    },
+    {
+      key: "needs-review",
+      count: counts.needsReview,
+      label: labels.needsReview,
+      token: "--topology-overview-proof-review-text",
+    },
+  ] as const;
+
+  return (
+    <div
+      aria-label={`${title}: ${summary}`}
+      className="grid min-w-0 gap-[var(--topology-overview-proof-row-gap)] border-b border-[color:var(--topology-overview-proof-row-divider)] px-0 py-[var(--topology-overview-proof-row-padding-y)] first:pt-0"
+      data-overview-provenance-contract="summary-first-counts-retained"
+      data-overview-provenance-layout="single-line-summary"
+      data-overview-signal-card="indigo"
+      data-overview-signal-compact="true"
+      data-proof-row-density="tertiary-evidence-row"
+      data-surface-token="--topology-overview-signal-indigo-surface"
+      data-border-token="--topology-overview-signal-indigo-border"
+      data-row-divider-token="--topology-overview-proof-row-divider"
+      data-row-padding-y-token="--topology-overview-proof-row-padding-y"
+      data-row-gap-token="--topology-overview-proof-row-gap"
+      data-title-text-token="--topology-overview-proof-title-text"
+      data-summary-text-token="--topology-overview-proof-summary-text"
+      data-testid="topology-overview-relation-provenance"
+    >
+      <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-proof-title-text)]">
+        {title}
+      </span>
+      <span
+        className="topology-overview-proof-summary min-w-0 break-keep text-[10.5px] leading-4 text-[color:var(--topology-overview-proof-summary-text)]"
+        data-summary-clamp-contract="single-line-proof-row-summary"
+        data-summary-lines-token="--topology-overview-proof-summary-lines"
+        data-signal-summary-contract="human-readable-first"
+        data-testid="topology-overview-relation-provenance-summary"
+      >
+        {summary}
+      </span>
+      <span className="sr-only">
+        {rows.map((row) => (
+          <span
+            key={row.key}
+            data-overview-provenance-row={row.key}
+            data-text-token={row.token}
+          >
+            {row.count} {row.label}
+          </span>
+        ))}
       </span>
     </div>
   );
@@ -1662,23 +2554,34 @@ function AgentReadinessGate({
 }) {
   return (
     <div
-      className="grid gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)] px-3 py-1.5"
+      className="grid gap-[var(--topology-overview-proof-row-gap)] border-b border-[color:var(--topology-overview-proof-row-divider)] px-0 py-[var(--topology-overview-proof-row-padding-y)] last:pb-0"
       aria-label={`${title}: ${summary}`}
       data-agent-readiness-summary={summary}
+      data-density="summary-first"
       data-overview-signal-card="readiness"
+      data-proof-row-density="tertiary-evidence-row"
+      data-proof-strip-contract="summary-plus-meter"
+      data-surface-token="--topology-overview-readiness-surface"
+      data-border-token="--topology-overview-readiness-border"
+      data-row-divider-token="--topology-overview-proof-row-divider"
+      data-row-padding-y-token="--topology-overview-proof-row-padding-y"
+      data-row-gap-token="--topology-overview-proof-row-gap"
+      data-title-text-token="--topology-overview-proof-title-text"
+      data-summary-text-token="--topology-overview-proof-summary-text"
       data-testid="topology-overview-agent-readiness"
     >
       <div className="flex min-w-0 items-center">
         <span
-          className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+          className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-proof-title-text)]"
           aria-hidden
         >
           {title}
         </span>
       </div>
       <div
-        className="grid grid-cols-3 gap-1.5"
+        className="sr-only grid-cols-3 gap-1.5"
         aria-label={`${title}: ${summary}`}
+        data-distribution-visibility="sr-only"
       >
         <AgentReadinessChip
           count={counts.ready}
@@ -1696,6 +2599,15 @@ function AgentReadinessGate({
           tone="review"
         />
       </div>
+      <p
+        className="topology-overview-proof-summary min-w-0 break-keep text-[10.5px] leading-4 text-[color:var(--topology-overview-proof-summary-text)]"
+        data-summary-clamp-contract="single-line-proof-row-summary"
+        data-summary-lines-token="--topology-overview-proof-summary-lines"
+        data-signal-summary-contract="human-readable-first"
+        data-testid="topology-overview-agent-readiness-summary"
+      >
+        {summary}
+      </p>
       <AgentReadinessMeter
         label={`${title}: ${summary}`}
         counts={counts}
@@ -1729,24 +2641,47 @@ function RelationQualityGate({
   return (
     <div
       {...attrs}
-      className={`grid gap-1.5 rounded-md border border-[color:rgba(94,234,212,0.22)] bg-[color:rgba(94,234,212,0.045)] px-3 py-1.5 ${
+      className={`grid gap-[var(--topology-overview-proof-row-gap)] border-b border-[color:var(--topology-overview-proof-row-divider)] px-0 py-[var(--topology-overview-proof-row-padding-y)] ${
         attrs.className ?? ""
       }`}
       aria-label={`${title}: ${summary}`}
-      data-density="scan-facts"
+      data-density="summary-first"
+      data-proof-strip-contract="summary-plus-meter"
+      data-quality-meter-contract="distribution-bar-maps-relation-quality"
       data-overview-signal-card="quality"
+      data-proof-row-density="tertiary-evidence-row"
+      data-surface-token="--topology-overview-quality-surface"
+      data-border-token="--topology-overview-quality-border"
+      data-row-divider-token="--topology-overview-proof-row-divider"
+      data-row-padding-y-token="--topology-overview-proof-row-padding-y"
+      data-row-gap-token="--topology-overview-proof-row-gap"
+      data-title-text-token="--topology-overview-proof-title-text"
+      data-summary-text-token="--topology-overview-proof-summary-text"
       data-testid="topology-overview-relation-quality"
     >
-      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[color:var(--topology-overview-proof-title-text)]">
         {title}
       </span>
-      <span className="sr-only">{summary}</span>
-      <div className="grid grid-cols-4 gap-1.5">
+      <p
+        className="topology-overview-proof-summary min-w-0 break-keep text-[10.5px] leading-4 text-[color:var(--topology-overview-proof-summary-text)]"
+        data-summary-clamp-contract="single-line-proof-row-summary"
+        data-summary-lines-token="--topology-overview-proof-summary-lines"
+        data-signal-summary-contract="human-readable-first"
+        data-testid="topology-overview-relation-quality-summary"
+      >
+        {summary}
+      </p>
+      <div
+        className="sr-only grid-cols-4 overflow-hidden rounded-md border border-[color:var(--topology-overview-proof-cell-divider)]"
+        data-divider-token="--topology-overview-proof-cell-divider"
+        data-distribution-visibility="sr-only"
+      >
         <RelationQualityChip count={counts.strong} label={labels.strong} tone="strong" />
         <RelationQualityChip count={counts.supported} label={labels.supported} tone="supported" />
         <RelationQualityChip count={counts.weak} label={labels.weak} tone="weak" />
         <RelationQualityChip count={counts.review} label={labels.review} tone="review" />
       </div>
+      <RelationQualityMeter label={`${title}: ${summary}`} counts={counts} />
     </div>
   );
 }
@@ -1762,24 +2697,41 @@ function RelationQualityChip({
 }) {
   const toneClass =
     tone === "strong"
-      ? "border-[color:rgba(94,234,212,0.24)] bg-[color:rgba(94,234,212,0.055)]"
+      ? "text-[color:var(--topology-overview-proof-strong-text)]"
       : tone === "supported"
-        ? "border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.045)]"
+        ? "text-[color:var(--topology-overview-proof-supported-text)]"
         : tone === "weak"
-          ? "border-[color:rgba(217,161,65,0.24)] bg-[color:rgba(217,161,65,0.07)]"
-          : "border-[color:rgba(226,105,105,0.24)] bg-[color:rgba(226,105,105,0.07)]";
+          ? "text-[color:var(--topology-overview-proof-warning-text)]"
+          : "text-[color:var(--topology-overview-proof-review-text)]";
+  const textToken =
+    tone === "strong"
+      ? "--topology-overview-proof-strong-text"
+      : tone === "supported"
+        ? "--topology-overview-proof-supported-text"
+        : tone === "weak"
+          ? "--topology-overview-proof-warning-text"
+          : "--topology-overview-proof-review-text";
+  const displayLabel = compactOverviewProofLabel(label, tone);
+  const visibleLabel = count === 0 ? "" : displayLabel;
 
   return (
     <span
-      className={`grid min-w-0 gap-0.5 rounded-md border px-1.5 py-1 ${toneClass}`}
+      aria-label={`${label}: ${count}`}
+      className="grid min-w-0 gap-0.5 border-r border-[color:var(--topology-overview-proof-cell-divider)] px-1.5 py-1 last:border-r-0"
       data-relation-quality-chip={tone}
+      data-full-label={label}
+      data-compact-label={displayLabel}
+      data-proof-label-contract="compact-visible-full-aria"
+      data-proof-cell-contract="flat-divider-cell"
+      data-divider-token="--topology-overview-proof-cell-divider"
+      data-text-token={textToken}
       data-testid={`topology-overview-relation-quality-${tone}`}
     >
-      <span className="font-mono text-[11px] leading-3 text-[color:var(--color-text-secondary)]">
+      <span className={`font-mono text-[11px] leading-3 ${toneClass}`}>
         {count}
       </span>
-      <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-        {label}
+      <span className="truncate font-mono text-[6.5px] uppercase tracking-0 text-[color:var(--color-text-quaternary)]">
+        {visibleLabel}
       </span>
     </span>
   );
@@ -1796,23 +2748,108 @@ function AgentReadinessChip({
 }) {
   const toneClass =
     tone === "ready"
-      ? "border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.055)]"
+      ? "text-[color:var(--topology-overview-proof-supported-text)]"
       : tone === "preflight"
-        ? "border-[color:rgba(217,161,65,0.24)] bg-[color:rgba(217,161,65,0.07)]"
-        : "border-[color:rgba(226,105,105,0.24)] bg-[color:rgba(226,105,105,0.07)]";
+        ? "text-[color:var(--topology-overview-proof-warning-text)]"
+        : "text-[color:var(--topology-overview-proof-review-text)]";
+  const textToken =
+    tone === "ready"
+      ? "--topology-overview-proof-supported-text"
+      : tone === "preflight"
+        ? "--topology-overview-proof-warning-text"
+        : "--topology-overview-proof-review-text";
+  const displayLabel = compactOverviewProofLabel(label, tone);
+  const visibleLabel = count === 0 ? "" : displayLabel;
 
   return (
     <span
-      className={`grid min-w-0 gap-0.5 rounded-md border px-1.5 py-0.5 ${toneClass}`}
+      aria-label={`${label}: ${count}`}
+      className="grid min-w-0 gap-0.5 border-r border-[color:var(--topology-overview-proof-cell-divider)] px-1.5 py-0.5 last:border-r-0"
       data-agent-readiness-chip={tone}
+      data-full-label={label}
+      data-compact-label={displayLabel}
+      data-proof-label-contract="compact-visible-full-aria"
+      data-proof-cell-contract="flat-divider-cell"
+      data-divider-token="--topology-overview-proof-cell-divider"
+      data-text-token={textToken}
     >
-      <span className="font-mono text-[11px] leading-3 text-[color:var(--color-text-secondary)]">
+      <span className={`font-mono text-[11px] leading-3 ${toneClass}`}>
         {count}
       </span>
-      <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-        {label}
+      <span className="truncate font-mono text-[6.5px] uppercase tracking-0 text-[color:var(--color-text-quaternary)]">
+        {visibleLabel}
       </span>
     </span>
+  );
+}
+
+function compactOverviewProofLabel(label: string, tone: string): string {
+  if (tone === "supported") return "proof";
+  if (tone === "ready") return label.replace(/handoff[-\s]?ready/i, "ready");
+  if (tone === "preflight") return "check";
+  if (tone === "review") return "review";
+  return label;
+}
+
+function RelationQualityMeter({
+  label,
+  counts,
+}: {
+  label: string;
+  counts: {
+    strong: number;
+    supported: number;
+    weak: number;
+    review: number;
+  };
+}) {
+  const total = counts.strong + counts.supported + counts.weak + counts.review;
+  const segments = [
+    {
+      key: "strong",
+      count: counts.strong,
+      token: "--topology-overview-quality-strong-meter",
+    },
+    {
+      key: "supported",
+      count: counts.supported,
+      token: "--topology-overview-quality-supported-meter",
+    },
+    {
+      key: "weak",
+      count: counts.weak,
+      token: "--topology-overview-quality-weak-meter",
+    },
+    {
+      key: "review",
+      count: counts.review,
+      token: "--topology-overview-quality-review-meter",
+    },
+  ] as const;
+
+  return (
+    <div
+      aria-label={label}
+      data-testid="topology-overview-relation-quality-meter"
+      data-quality-meter-contract="distribution-bar-maps-relation-quality"
+      data-surface-token="--topology-overview-quality-meter-surface"
+      data-border-token="--topology-overview-quality-meter-border"
+      className="flex h-1.5 w-full overflow-hidden rounded-full border border-[color:var(--topology-overview-quality-meter-border)] bg-[color:var(--topology-overview-quality-meter-surface)]"
+    >
+      {segments.map((segment) => (
+        <span
+          key={segment.key}
+          aria-hidden
+          data-relation-quality-segment={segment.key}
+          data-count={segment.count}
+          data-meter-token={segment.token}
+          style={{
+            background: `var(${segment.token})`,
+            flexGrow: total > 0 ? segment.count : 1,
+          }}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -1832,19 +2869,17 @@ function AgentReadinessMeter({
     {
       key: "ready",
       count: counts.ready,
-      className:
-        "bg-[linear-gradient(90deg,rgba(139,151,255,0.86),rgba(72,184,203,0.78))]",
+      token: "--topology-overview-readiness-ready-meter",
     },
     {
       key: "preflight",
       count: counts.preflight,
-      className: "bg-[color:rgba(217,161,65,0.72)]",
+      token: "--topology-overview-readiness-preflight-meter",
     },
     {
       key: "review",
       count: counts.review,
-      className:
-        "bg-[repeating-linear-gradient(90deg,rgba(226,105,105,0.78)_0_4px,rgba(226,105,105,0.30)_4px_7px)]",
+      token: "--topology-overview-readiness-review-meter",
     },
   ] as const;
 
@@ -1852,7 +2887,9 @@ function AgentReadinessMeter({
     <div
       aria-label={label}
       data-testid="topology-overview-agent-readiness-meter"
-      className="flex h-2 w-full overflow-hidden rounded-full border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.045)]"
+      data-surface-token="--topology-overview-readiness-meter-surface"
+      data-border-token="--topology-overview-readiness-meter-border"
+      className="flex h-2 w-full overflow-hidden rounded-full border border-[color:var(--topology-overview-readiness-meter-border)] bg-[color:var(--topology-overview-readiness-meter-surface)]"
     >
       {segments.map((segment) => (
         <span
@@ -1860,8 +2897,11 @@ function AgentReadinessMeter({
           aria-hidden
           data-agent-readiness-segment={segment.key}
           data-count={segment.count}
-          className={segment.className}
-          style={{ flexGrow: total > 0 ? segment.count : 1 }}
+          data-meter-token={segment.token}
+          style={{
+            background: `var(${segment.token})`,
+            flexGrow: total > 0 ? segment.count : 1,
+          }}
         />
       ))}
     </div>
@@ -1883,6 +2923,37 @@ function OverviewWorkStep({
   );
 }
 
+function FocusReviewStep({
+  compact,
+  index,
+  label,
+}: {
+  compact?: boolean;
+  index: number;
+  label: string;
+}) {
+  return (
+    <li
+      data-focus-review-step={index}
+      data-command-step-contract="flat-numbered-row"
+      data-command-step-density={compact ? "compact-two-column" : "detail-row"}
+      className={`grid min-h-[var(--topology-command-step-min-height)] grid-cols-[var(--topology-command-step-index-size)_minmax(0,1fr)] items-center border-b border-[color:var(--topology-command-step-border)] py-1 last:border-b-0 ${
+        compact ? "gap-1.5 px-1.5 even:border-l" : "gap-2 px-2"
+      }`}
+    >
+      <span
+        aria-hidden
+        className="flex h-[var(--topology-command-step-index-size)] w-[var(--topology-command-step-index-size)] items-center justify-center rounded-full border border-[color:var(--topology-command-step-index-border)] bg-[color:var(--topology-command-step-index-surface)] font-mono text-[8.5px] text-[color:var(--topology-command-step-index-text)]"
+      >
+        {index}
+      </span>
+      <span className="min-w-0 truncate text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
+        {label}
+      </span>
+    </li>
+  );
+}
+
 function PathProofStep({
   label,
   status,
@@ -1892,23 +2963,47 @@ function PathProofStep({
   status: string;
   tone: "ready" | "required" | "after-write";
 }) {
-  const statusClass =
-    tone === "ready"
-      ? "border-[color:rgba(92,214,138,0.28)] bg-[color:rgba(92,214,138,0.08)] text-[color:var(--color-text-secondary)]"
-      : tone === "after-write"
-        ? "border-[color:rgba(212,160,72,0.28)] bg-[color:rgba(212,160,72,0.08)] text-[color:var(--color-text-secondary)]"
-        : "border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] text-[color:var(--color-text-tertiary)]";
+  const statusTokens = {
+    ready: {
+      surface: "--topology-path-proof-ready-surface",
+      border: "--topology-path-proof-ready-border",
+      text: "--topology-path-proof-ready-text",
+    },
+    required: {
+      surface: "--topology-path-proof-required-surface",
+      border: "--topology-path-proof-required-border",
+      text: "--topology-path-proof-required-text",
+    },
+    "after-write": {
+      surface: "--topology-path-proof-after-write-surface",
+      border: "--topology-path-proof-after-write-border",
+      text: "--topology-path-proof-after-write-text",
+    },
+  }[tone];
 
   return (
     <li
       data-path-proof-step={tone}
-      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-2 py-1.5"
+      data-surface-token="--topology-path-proof-step-surface"
+      data-border-token="--topology-path-proof-step-border"
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-[color:var(--topology-path-proof-step-border)] bg-[color:var(--topology-path-proof-step-surface)] px-2 py-1.5"
     >
       <span className="min-w-0 truncate text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
         {label}
       </span>
       <span
-        className={`shrink-0 rounded-full border px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.1em] ${statusClass}`}
+        data-path-proof-status={tone}
+        data-surface-token={statusTokens.surface}
+        data-border-token={statusTokens.border}
+        data-text-token={statusTokens.text}
+        className="shrink-0 rounded-full border border-[color:var(--path-proof-status-border)] bg-[color:var(--path-proof-status-surface)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.1em] text-[color:var(--path-proof-status-text)]"
+        style={
+          {
+            "--path-proof-status-surface": `var(${statusTokens.surface})`,
+            "--path-proof-status-border": `var(${statusTokens.border})`,
+            "--path-proof-status-text": `var(${statusTokens.text})`,
+          } as CSSProperties
+        }
       >
         {status}
       </span>
@@ -1922,15 +3017,17 @@ function CompactCopyButton({
   ariaLabel,
   onClick,
   className = "",
+  ...attrs
 }: {
   copied: boolean;
   label: string;
   ariaLabel: string;
   onClick: () => void;
   className?: string;
-}) {
+} & Omit<HTMLAttributes<HTMLButtonElement>, "className" | "onClick">) {
   return (
     <button
+      {...attrs}
       type="button"
       onClick={onClick}
       className={`inline-flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-180 ease-out hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none ${className}`}

@@ -16,6 +16,21 @@ interface Options {
   enabled?: boolean;
 }
 
+export function shouldPreserveNativeTabNavigation(
+  target: EventTarget | null,
+  searchInputId = 'sigma-search-input',
+): boolean {
+  if (!(target instanceof HTMLElement)) return true;
+  if (!target.closest('[data-graph-keyboard-nav-root="true"]')) return true;
+  if (target.id === searchInputId) return true;
+  if (target.isContentEditable) return true;
+
+  const nativeFocusable = target.closest(
+    'button, [href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])',
+  );
+  return nativeFocusable instanceof HTMLElement;
+}
+
 /**
  * 토폴로지 그래프의 키보드 네비게이션 한 번에 처리.
  * - Tab / Shift+Tab: 선택 노드의 이웃들을 이름 사전순으로 순회
@@ -90,6 +105,7 @@ export function useGraphKeyboardNav({
       }
 
       if (event.key !== 'Tab') return;
+      if (shouldPreserveNativeTabNavigation(target, searchInputId)) return;
       const focus = selectedSlugRef.current;
       if (!focus || !graph.hasNode(focus)) {
         // 선택 노드 없을 때 Tab 은 첫 허브 (이름순) 로 진입시킨다. 허브도

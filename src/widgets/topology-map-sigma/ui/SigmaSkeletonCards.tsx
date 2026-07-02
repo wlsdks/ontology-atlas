@@ -11,7 +11,10 @@ import {
 import type Graph from 'graphology';
 import { useTranslations } from 'next-intl';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
-import { resolveTopologyUiScale } from '../lib/camera-fit';
+import {
+  SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
+  resolveTopologyUiScale,
+} from '../lib/camera-fit';
 import {
   TOPOLOGY_DRAG_SETTLE_DURATION_MS,
   TOPOLOGY_DRAG_SETTLE_EASING_NAME,
@@ -83,6 +86,10 @@ const ANCHOR_TRANSLATE: Record<NonNullable<SkeletonCardModel['anchor']>, string>
 interface SkeletonCardsCamera {
   graphToViewport(pos: { x: number; y: number }): { x: number; y: number };
   viewportToGraph(pos: { x: number; y: number }): { x: number; y: number };
+  getCamera?(): {
+    getState(): { angle?: number; ratio?: number; x?: number; y?: number };
+    setState?(state: { angle?: number; ratio?: number; x?: number; y?: number }): void;
+  };
   on(type: 'afterRender', handler: () => void): unknown;
   off(type: 'afterRender', handler: () => void): unknown;
 }
@@ -93,6 +100,13 @@ interface SigmaSkeletonCardsProps {
   cards: readonly SkeletonCardModel[];
   selectedSlug?: string | null;
   selectedRelationEdgeId?: string | null;
+  selectedRelationData?: SigmaEdgeTooltipData | null;
+  healthRepairTarget?: {
+    slug: string;
+    kind: 'stale' | 'orphan' | 'promotion';
+  } | null;
+  selectedMapFixedGeographyActive?: boolean;
+  selectedFocusCenterActive?: boolean;
   onSelect?: (slug: string) => void;
   pathWorkflowActive?: boolean;
   pathSelection?: {
@@ -105,8 +119,19 @@ interface SigmaSkeletonCardsProps {
   }) => void;
   onVisibilityChange?: (stats: { visible: number; total: number }) => void;
   onRelationSelect?: (data: SigmaEdgeTooltipData) => void;
+  onRelationHover?: (data: SigmaEdgeTooltipData | null) => void;
+  onDragClusterStart?: (positions: ReadonlyMap<string, { x: number; y: number }>) => void;
+  onDragClusterMove?: (positions: ReadonlyMap<string, { x: number; y: number }>) => void;
+  onDragClusterEnd?: (nodeIds: Iterable<string>) => void;
   /** hover 팝업의 계층 라벨 — 예: "도메인 · 2계층" (i18n 은 호출자 책임). */
   describeKind?: (kind: SkeletonCardModel['kind']) => string;
+  /** 카드 안의 짧은 계층 배지 — overview legend 와 같은 어휘를 쓴다. */
+  describeKindBadge?: (kind: SkeletonCardModel['kind']) => string;
+  /**
+   * 명시적 "펼치기" — 하위 개수 배지 클릭 / 카드 더블클릭. 클릭=선택(지형
+   * 불변)과 분리된 확장 의도 채널 (소유자 피드백: 클릭 즉시 확장은 혼란).
+   */
+  onExpandRequest?: (slug: string) => void;
 }
 
 // 카드 가독성이 1순위 — 타이포/패딩을 넉넉하게, 계층 간 크기 차등을 한
@@ -125,10 +150,58 @@ const TIER_FONT_PX: Record<SkeletonCardModel['tier'], number> = {
 };
 
 const TIER_CARD_CLASS: Record<SkeletonCardModel['tier'], string> = {
-  0: 'gap-[0.6em] rounded-xl px-[1em] py-[0.62em] font-semibold text-[color:var(--color-text-primary)] shadow-[0_1px_3px_var(--topology-card-shadow)]',
-  1: 'gap-[0.55em] rounded-lg px-[0.9em] py-[0.55em] font-medium text-[color:var(--color-text-primary)]',
-  2: 'gap-[0.5em] rounded-md px-[0.85em] py-[0.45em] text-[color:var(--color-text-primary)]',
-  3: 'gap-[0.45em] rounded-md px-[0.8em] py-[0.4em] text-[color:var(--color-text-secondary)]',
+  0: 'gap-[var(--topology-card-gap)] rounded-[var(--topology-card-radius)] px-[var(--topology-card-padding-x)] py-[var(--topology-card-padding-y)] min-h-[var(--topology-card-min-block-size)] font-semibold text-[color:var(--color-text-primary)] shadow-[0_1px_3px_var(--topology-card-shadow)]',
+  1: 'gap-[var(--topology-card-gap)] rounded-[var(--topology-card-radius)] px-[var(--topology-card-padding-x)] py-[var(--topology-card-padding-y)] min-h-[var(--topology-card-min-block-size)] font-medium text-[color:var(--color-text-primary)]',
+  2: 'gap-[var(--topology-card-gap)] rounded-[var(--topology-card-radius)] px-[var(--topology-card-padding-x)] py-[var(--topology-card-padding-y)] min-h-[var(--topology-card-min-block-size)] text-[color:var(--color-text-primary)]',
+  3: 'gap-[var(--topology-card-gap)] rounded-[var(--topology-card-radius)] px-[var(--topology-card-padding-x)] py-[var(--topology-card-padding-y)] min-h-[var(--topology-card-min-block-size)] text-[color:var(--color-text-secondary)]',
+};
+
+const TIER_CARD_SPACING: Record<
+  SkeletonCardModel['tier'],
+  {
+    gap: string;
+    paddingX: string;
+    paddingY: string;
+    minBlockSize: string;
+    radius: string;
+  }
+> = {
+  0: {
+    gap: '0.6em',
+    paddingX: '1em',
+    paddingY: '0.62em',
+    minBlockSize: '2.68em',
+    radius: '0.75rem',
+  },
+  1: {
+    gap: '0.55em',
+    paddingX: '0.9em',
+    paddingY: '0.55em',
+    minBlockSize: '2.58em',
+    radius: '0.5rem',
+  },
+  2: {
+    gap: '0.5em',
+    paddingX: '0.85em',
+    paddingY: '0.45em',
+    minBlockSize: '2.32em',
+    radius: '0.375rem',
+  },
+  3: {
+    gap: '0.45em',
+    paddingX: '0.8em',
+    paddingY: '0.4em',
+    minBlockSize: '2.12em',
+    radius: '0.375rem',
+  },
+};
+
+const SELECTED_FOCUS_CARD_SPACING = {
+  ...TIER_CARD_SPACING[1],
+  gap: '0.6em',
+  paddingX: '0.95em',
+  paddingY: '0.58em',
+  minBlockSize: '2.7em',
 };
 
 const TIER_DOT_EM: Record<SkeletonCardModel['tier'], string> = {
@@ -138,27 +211,92 @@ const TIER_DOT_EM: Record<SkeletonCardModel['tier'], string> = {
   3: '0.42em',
 };
 
+const TIER_SURFACE_ALPHA: Record<
+  SkeletonCardModel['tier'],
+  { bg: number; border: number; hoverBorder: number }
+> = {
+  0: { bg: 0.16, border: 0.34, hoverBorder: 0.56 },
+  1: { bg: 0.13, border: 0.28, hoverBorder: 0.50 },
+  2: { bg: 0.10, border: 0.22, hoverBorder: 0.42 },
+  3: { bg: 0.07, border: 0.16, hoverBorder: 0.34 },
+};
+
 /**
- * dim 잉크 2단계 (디자이너 패널 합의): 방향 감각용 상위 anchor(project/
- * domain)는 0.34, 하위 칩은 dot+실루엣 수준 0.18. 펼친 열과 *겹치는* dim
- * 카드는 0 — "포커스 콘텐츠와 고스트 콘텐츠의 텍스트 충돌"은 디자이너
- * 제품에서 절대 허용되지 않는 픽셀이다.
+ * dim 잉크 2단계 (디자이너 패널 합의): click-focus 에서는 선택 ego
+ * 관계가 먼저 읽혀야 하므로 방향 감각용 상위 anchor(project/domain)는
+ * 0.26, 하위 칩은 dot+실루엣 수준 0.08. 펼친 열과 *겹치는* dim 카드는
+ * 0 — "포커스 콘텐츠와 고스트 콘텐츠의 텍스트 충돌"은 디자이너 제품에서
+ * 절대 허용되지 않는 픽셀이다.
  */
-const DIM_ANCHOR_OPACITY = '0.34';
-const DIM_CHIP_OPACITY = '0.18';
+const DIM_ANCHOR_OPACITY = '0.26';
+const DIM_CHIP_OPACITY = '0.08';
+const SELECTED_RELATION_CONTEXT_PIN_OPACITY = '0.42';
+const SELECTED_FOCUS_CONTEXT_RAIL_OPACITY = '1';
+const DRAG_REACTIVE_CONTEXT_OPACITY = '0.42';
+const DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX = 24;
+const DRAG_REACTIVE_MOTION_BASE_RATIO = 0.12;
+const DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX = 36;
+const DRAG_REACTIVE_MOTION_LINKED_RATIO = 0.48;
+const DRAG_REACTIVE_MOTION_MAX_OFFSET_PX = DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX;
+const DRAG_TENSION_CONNECTOR_MAX_COUNT = 8;
+const DRAG_REACTIVE_CONTEXT_PIN_MAX_COUNT = 8;
+const DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY = 0.88;
+const DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH = 2.1;
+const DIM_ANCHOR_OPACITY_TOKEN = '--topology-map-dim-anchor-opacity';
+const DIM_CHIP_OPACITY_TOKEN = '--topology-map-dim-context-opacity';
+const SELECTED_RELATION_CONTEXT_PIN_OPACITY_TOKEN =
+  '--topology-selected-relation-context-pin-opacity';
+const SELECTED_FOCUS_CONTEXT_RAIL_OPACITY_TOKEN =
+  '--topology-selected-focus-context-rail-opacity';
+const DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN =
+  '--topology-card-drag-reactive-context-opacity';
+const DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN = '--topology-card-border-selected';
+const DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN =
+  '--topology-card-drag-reactive-motion-max-offset';
+const ZOOM_LENS_PIN_PROXIMITY_RING_TOKEN =
+  '--topology-zoom-lens-pin-proximity-ring';
+const ZOOM_LENS_PIN_PROXIMITY_GLOW_TOKEN =
+  '--topology-zoom-lens-pin-proximity-glow';
+const SELECTED_RELATION_ENDPOINT_ROLE_LABEL: Record<'source' | 'target', string> = {
+  source: 'FROM',
+  target: 'TO',
+};
+const SELECTED_RELATION_ENDPOINT_ROLE_MARK_LABEL: Record<'source' | 'target', string> = {
+  source: 'S',
+  target: 'T',
+};
+const OVERVIEW_CONTEXT_OPACITY: Record<SkeletonCardModel['tier'], string> = {
+  0: '1',
+  1: '1',
+  2: '0.54',
+  3: '0.32',
+};
 /** 펼친 열 카드 주변 충돌 판정 패딩(px). */
 const COLLISION_PAD = 24;
 const ANALYSIS_PANEL_TRAILING_PAD = 12;
 const ANALYSIS_PANEL_BLOCK_END_PAD = 8;
+const SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX = 1280;
 const OVERVIEW_COLLISION_PAD = 2;
+const OVERVIEW_MIN_VISIBLE_CARD_COUNT = 8;
+const OVERVIEW_DOMAIN_COLLISION_PAD = 10;
+const DRAG_OVERLAP_SUPPRESSION_PAD = OVERVIEW_COLLISION_PAD;
 const SAFE_VIEWPORT_MARGIN = 8;
+const ZOOM_LENS_PIN_CANVAS_MARGIN_PX = 32;
+const SELECTED_FOCUS_DOCK_BOTTOM_INSET_PX = 180;
+const SELECTED_FOCUS_EGO_READING_BAND_Y_RATIO = 0.56;
+const SELECTED_FOCUS_CONTEXT_RAIL_Y_MIN_RATIO = 0.28;
+const SELECTED_FOCUS_CONTEXT_RAIL_Y_MAX_RATIO = 0.72;
+const SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MIN_PX = 280;
+const SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MAX_PX = 440;
+const SELECTED_RELATION_ENDPOINT_SOURCE_X_RATIO = 0.43;
+const SELECTED_RELATION_ENDPOINT_SOURCE_Y_RATIO = 0.58;
+const SELECTED_RELATION_ENDPOINT_TARGET_X_RATIO = 0.66;
+const SELECTED_RELATION_ENDPOINT_TARGET_Y_RATIO = 0.38;
 const FIXED_SURFACE_GAP = 8;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
 /** 카드 밖으로 삐져나온 Sigma edge 를 지우는 clearance halo(px). */
 const EDGE_CLEARANCE_MASK_PX = 10;
-/** 드래그 묶음 hull 여백(px) — 카드 clearance 보다 조금 넓게 branch 를 감싼다. */
-const DRAG_CLUSTER_HULL_PAD_PX = 14;
 
 // 반응형 카드 스케일 — resolveTopologyUiScale 이 단일 기준 (chrome zoom ·
 // safe inset 과 동일 단계). 폰트가 배수를 타고(인라인 calc) 패딩/dot 은 em.
@@ -166,8 +304,35 @@ const DRAG_CLUSTER_HULL_PAD_PX = 14;
 // 커스텀 프로퍼티를 떨구는 동작이 있다.
 /** hover 팝업 폭 추정(px) — flip 판정용 (max-w-[17rem]). */
 const HOVER_POP_W = 272;
-const BASE_ANCHOR_CARD_MAX_WIDTH_PX = 224;
+const BASE_ANCHOR_CARD_MAX_WIDTH_PX = 280;
+const SELECTED_FOCUS_CARD_MAX_WIDTH_PX = 440;
+const SELECTED_FOCUS_COMPANION_CARD_MAX_WIDTH_PX = 288;
+const HEALTH_REPAIR_CARD_MAX_WIDTH_PX = 320;
 const ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX = 128;
+const SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN = '--topology-card-selected-focus-max-width';
+const SELECTED_FOCUS_COMPANION_CARD_MAX_WIDTH_TOKEN =
+  '--topology-card-selected-focus-companion-max-width';
+const SELECTED_FOCUS_QUIET_BORDER_TOKEN = '--topology-card-selected-quiet-border';
+const SELECTED_FOCUS_QUIET_WASH_TOKEN = '--topology-card-selected-quiet-wash';
+const HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN = '--topology-health-repair-card-max-width';
+const TIER_CARD_MAX_WIDTH_TOKEN: Record<SkeletonCardModel['tier'], string> = {
+  0: '--topology-card-max-width-project',
+  1: '--topology-card-max-width-domain',
+  2: '--topology-card-max-width-capability',
+  3: '--topology-card-max-width-element',
+};
+const TIER_CARD_MAX_WIDTH_PX: Record<SkeletonCardModel['tier'], number> = {
+  0: BASE_ANCHOR_CARD_MAX_WIDTH_PX,
+  1: 272,
+  2: 360,
+  3: 224,
+};
+const TIER_CARD_MAX_WIDTH_SCALE_STEP_PX: Record<SkeletonCardModel['tier'], number> = {
+  0: ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX,
+  1: ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX,
+  2: 96,
+  3: 64,
+};
 
 /** kind 위계 — 커넥터/ego 판정에 사용 (낮을수록 상위). */
 const KIND_RANK: Record<SkeletonCardModel['kind'], number> = {
@@ -178,6 +343,22 @@ const KIND_RANK: Record<SkeletonCardModel['kind'], number> = {
   unknown: 4,
 };
 
+const FALLBACK_KIND_BADGE_LABEL: Record<SkeletonCardModel['kind'], string> = {
+  project: 'Project',
+  domain: 'Domain',
+  capability: 'Capability',
+  element: 'Evidence',
+  unknown: '?',
+};
+
+const FALLBACK_KIND_PIN_GLYPH: Record<SkeletonCardModel['kind'], string> = {
+  project: 'P',
+  domain: 'D',
+  capability: 'F',
+  element: 'E',
+  unknown: '?',
+};
+
 const TIER_Z_INDEX: Record<SkeletonCardModel['tier'], number> = {
   0: 4,
   1: 3,
@@ -186,21 +367,49 @@ const TIER_Z_INDEX: Record<SkeletonCardModel['tier'], number> = {
 };
 
 const RELATION_BADGE_HEIGHT_PX = 24;
-const RELATION_BADGE_MIN_WIDTH_PX = 96;
+const RELATION_BADGE_MIN_WIDTH_PX = 72;
 const RELATION_BADGE_CHAR_WIDTH_PX = 5.8;
-const RELATION_BADGE_PAD_X_PX = 10;
+const RELATION_BADGE_PAD_X_PX = 26;
+const DRAG_RELATION_BADGE_COMPACT_MIN_WIDTH_PX = 32;
+const DRAG_RELATION_BADGE_COMPACT_PAD_X_PX = 18;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
-const RELATION_BADGE_QUALITY_CHIP_WIDTH_PX = 64;
-const RELATION_BADGE_FACT_ROUTE_WIDTH_PX = 158;
+const RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX = 18;
 const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 32;
 const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 6;
 const RELATION_LABEL_VIEWPORT_INSET_PX = 16;
 const RELATION_LABEL_MIN_COMPACT_WIDTH_PX = 96;
-const DRAG_SETTLE_FEEDBACK_MS = 720;
+const SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX = 40;
+const SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_HEIGHT_PX = 28;
+const RELATION_LABEL_CARD_CLEARANCE_PX = 22;
+const SELECTED_RELATION_INSPECTOR_CLEARANCE_PX = 32;
+const RELATION_LABEL_PHONE_BREAKPOINT_PX = 768;
+const RELATION_LABEL_PHONE_BOTTOM_RESERVE_PX = 112;
+const DRAG_SETTLE_FEEDBACK_MS = TOPOLOGY_DRAG_SETTLE_DURATION_MS;
 const DRAG_GROUP_RELEASE_FEEDBACK_MS = 760;
+const DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD = 12;
 const CONNECTOR_PORT_MIN_CLEARANCE_PX = 6;
 const CONNECTOR_PORT_TARGET_CLEARANCE_PX = EDGE_CLEARANCE_MASK_PX + 2;
 const DRAG_COLLISION_SETTLE_PASSES = 4;
+const FIXED_SURFACE_RECT_CACHE_MS = 180;
+const LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS = 160;
+const INITIAL_LOAD_REPOSITION_THROTTLE_MS = 640;
+const ZOOM_LENS_RATIO_THRESHOLD = 0.98;
+const OVERVIEW_DENSITY_LENS_RATIO_THRESHOLD = 1.1;
+const OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX = 1180;
+const OVERVIEW_DENSITY_LENS_COMPACT_MAX_WIDTH_PX = 1280;
+const OVERVIEW_DENSITY_LENS_WIDE_MIN_WIDTH_PX = 1680;
+const OVERVIEW_DENSITY_FIXED_GEOGRAPHY_MARGIN_PX = 96;
+const OVERVIEW_DENSITY_FIXED_GEOGRAPHY_CENTER_X_RATIO = 0.58;
+const OVERVIEW_DENSITY_FIXED_DOMAIN_RADIUS_X_RATIO = 0.3;
+const OVERVIEW_DENSITY_FIXED_DOMAIN_RADIUS_Y_RATIO = 0.28;
+const OVERVIEW_DENSITY_FIXED_PIN_RADIUS_X_RATIO = 0.38;
+const OVERVIEW_DENSITY_FIXED_PIN_RADIUS_Y_RATIO = 0.34;
+const ZOOM_LENS_PIN_SIZE_PX = 24;
+const ZOOM_LENS_PIN_MIN_OPACITY = '0.42';
+const WHEEL_ZOOM_BASE_DELTA_PX = 560;
+const WHEEL_ZOOM_STEP_RATIO = 0.68;
+const WHEEL_ZOOM_MIN_RATIO = 0.42;
+const WHEEL_ZOOM_MAX_RATIO = 4;
 
 type RelationConnector = {
   from: string;
@@ -228,6 +437,118 @@ type DockDragSnapshot = {
   childStartY: number;
 };
 
+type DockDragCardSnapshot = {
+  childStartX: number;
+  dockParent: string;
+  layoutY: number;
+  slug: string;
+  x: number;
+  y: number;
+};
+
+type SkeletonCardElementIndex = {
+  all: HTMLElement[];
+};
+
+function collectSkeletonCardElementIndex(
+  container: HTMLElement | null,
+): SkeletonCardElementIndex {
+  return {
+    all: container
+      ? Array.from(container.querySelectorAll<HTMLElement>('[data-skeleton-card]'))
+      : [],
+  };
+}
+
+function readSkeletonCameraRatio(sigma: SkeletonCardsCamera | null): number {
+  try {
+    const ratio = sigma?.getCamera?.().getState().ratio;
+    return typeof ratio === 'number' && Number.isFinite(ratio) && ratio > 0
+      ? ratio
+      : 1;
+  } catch {
+    return 1;
+  }
+}
+
+function resolveKindPinGlyph(
+  kind: SkeletonCardModel['kind'],
+  kindBadgeLabel: string,
+): string {
+  return Array.from(kindBadgeLabel.trim())[0]?.toUpperCase() ?? FALLBACK_KIND_PIN_GLYPH[kind];
+}
+
+type FixedSurfaceRectCache = {
+  height: number;
+  rects: Array<{ left: number; top: number; right: number; bottom: number }>;
+  timestamp: number;
+  width: number;
+};
+
+type CardPlacementSizeCacheEntry = {
+  fallbackRect?: ConnectorRect;
+  height: number;
+  key: string;
+  width: number;
+};
+
+type SkeletonVisibilityStats = { visible: number; total: number };
+
+type SkeletonDomWriteStats = { applied: number; skipped: number };
+
+type VisibleCardFrameEntry = {
+  rect: { left: number; top: number; right: number; bottom: number } | null;
+  visible: boolean;
+};
+
+type VisibilityFrameSnapshot = {
+  blockers: Array<{ left: number; top: number; right: number; bottom: number }>;
+  entries: Map<HTMLElement, VisibleCardFrameEntry>;
+  fixedSurfaceKey: string;
+  geometryKey: string;
+  height: number;
+  orderedKey: string;
+  supportRailOverlapHiddenCount: number;
+  visibleCardStateReadPolicy: string;
+  visibleCount: number;
+  visibilityCountSource: string;
+  width: number;
+};
+
+function shouldReportSkeletonVisibilityStats(
+  previous: SkeletonVisibilityStats | null,
+  next: SkeletonVisibilityStats,
+): boolean {
+  return !previous || previous.visible !== next.visible || previous.total !== next.total;
+}
+
+function setSkeletonStyleValue(
+  target: HTMLElement,
+  property: 'height' | 'opacity' | 'pointerEvents' | 'transform' | 'visibility' | 'width',
+  value: string,
+  stats: SkeletonDomWriteStats,
+): void {
+  if (target.style[property] === value) {
+    stats.skipped += 1;
+    return;
+  }
+  target.style[property] = value;
+  stats.applied += 1;
+}
+
+function setSkeletonPathData(
+  target: SVGPathElement,
+  value: string,
+  stats: SkeletonDomWriteStats,
+): void {
+  if (target.getAttribute('d') === value) {
+    stats.skipped += 1;
+    return;
+  }
+  target.setAttribute('d', value);
+  stats.applied += 1;
+}
+
 /** rgba 문자열의 alpha 만 교체 — kind 틴트의 정량 토큰(8%/18%) 파생용. */
 function withAlpha(rgba: string, alpha: number): string {
   return rgba.replace(/rgba\(([^)]+),\s*[\d.]+\)/, `rgba($1, ${alpha})`);
@@ -236,12 +557,23 @@ function withAlpha(rgba: string, alpha: number): string {
 function relationConnectorTone(
   connector: Pick<RelationConnector, 'authored' | 'evidenceCount' | 'relationQuality'>,
   selected: boolean,
-): { dasharray?: string; opacity: number; stroke: string; strokeWidth: number } {
+): {
+  dasharray?: string;
+  haloWidth: string;
+  opacity: number;
+  stroke: string;
+  strokeToken: string;
+  strokeWidth: string;
+  strokeWidthToken: string;
+} {
   if (selected) {
     return {
+      haloWidth: 'var(--topology-relation-stroke-selected-halo-width)',
       opacity: 0.95,
-      stroke: 'rgba(139,151,255,0.92)',
-      strokeWidth: 2.2,
+      stroke: 'var(--topology-relation-stroke-selected)',
+      strokeToken: '--topology-relation-stroke-selected',
+      strokeWidth: 'var(--topology-relation-stroke-selected-width)',
+      strokeWidthToken: '--topology-relation-stroke-selected-width',
     };
   }
   const quality = connector.relationQuality ?? 'supported';
@@ -249,30 +581,42 @@ function relationConnectorTone(
   const evidenceBoost = hasEvidence ? 0.08 : 0;
   if (quality === 'strong') {
     return {
+      haloWidth: 'var(--topology-relation-stroke-selected-halo-width)',
       opacity: 0.72 + evidenceBoost,
-      stroke: 'rgba(139,151,255,0.50)',
-      strokeWidth: 1.34,
+      stroke: 'var(--topology-relation-stroke-strong)',
+      strokeToken: '--topology-relation-stroke-strong',
+      strokeWidth: 'var(--topology-relation-stroke-strong-width)',
+      strokeWidthToken: '--topology-relation-stroke-strong-width',
     };
   }
   if (quality === 'weak') {
     return {
+      haloWidth: 'var(--topology-relation-stroke-selected-halo-width)',
       opacity: 0.48 + evidenceBoost,
-      stroke: 'rgba(217,161,65,0.34)',
-      strokeWidth: 0.92,
+      stroke: 'var(--topology-relation-stroke-weak)',
+      strokeToken: '--topology-relation-stroke-weak',
+      strokeWidth: 'var(--topology-relation-stroke-weak-width)',
+      strokeWidthToken: '--topology-relation-stroke-weak-width',
     };
   }
   if (quality === 'review') {
     return {
       dasharray: '4 6',
+      haloWidth: 'var(--topology-relation-stroke-selected-halo-width)',
       opacity: 0.52,
-      stroke: 'rgba(226,105,105,0.38)',
-      strokeWidth: 1,
+      stroke: 'var(--topology-relation-stroke-review)',
+      strokeToken: '--topology-relation-stroke-review',
+      strokeWidth: 'var(--topology-relation-stroke-review-width)',
+      strokeWidthToken: '--topology-relation-stroke-review-width',
     };
   }
   return {
+    haloWidth: 'var(--topology-relation-stroke-selected-halo-width)',
     opacity: 0.56 + evidenceBoost,
-    stroke: 'rgba(72,184,203,0.34)',
-    strokeWidth: 1,
+    stroke: 'var(--topology-relation-stroke-supported)',
+    strokeToken: '--topology-relation-stroke-supported',
+    strokeWidth: 'var(--topology-relation-stroke-supported-width)',
+    strokeWidthToken: '--topology-relation-stroke-supported-width',
   };
 }
 
@@ -294,36 +638,45 @@ function relationQualityDotClassName(
   quality: NonNullable<SigmaEdgeAttrs['relationQuality']> = 'supported',
 ) {
   const tone = {
-    strong: 'bg-indigo-300 shadow-[0_0_8px_rgba(129,140,248,0.5)]',
-    supported: 'bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,0.36)]',
-    weak: 'bg-amber-300 shadow-[0_0_8px_rgba(252,211,77,0.32)]',
-    review: 'bg-rose-300 shadow-[0_0_8px_rgba(253,164,175,0.38)]',
+    strong:
+      'bg-[color:var(--topology-relation-quality-strong-dot)] shadow-[var(--topology-relation-quality-strong-glow)]',
+    supported:
+      'bg-[color:var(--topology-relation-quality-supported-dot)] shadow-[var(--topology-relation-quality-supported-glow)]',
+    weak:
+      'bg-[color:var(--topology-relation-quality-weak-dot)] shadow-[var(--topology-relation-quality-weak-glow)]',
+    review:
+      'bg-[color:var(--topology-relation-quality-review-dot)] shadow-[var(--topology-relation-quality-review-glow)]',
   } satisfies Record<NonNullable<SigmaEdgeAttrs['relationQuality']>, string>;
   return tone[quality] ?? tone.supported;
 }
 
+function relationQualityDotToken(
+  quality: NonNullable<SigmaEdgeAttrs['relationQuality']> = 'supported',
+) {
+  return `--topology-relation-quality-${quality}-dot`;
+}
+
+function relationQualityGlowToken(
+  quality: NonNullable<SigmaEdgeAttrs['relationQuality']> = 'supported',
+) {
+  return `--topology-relation-quality-${quality}-glow`;
+}
+
 function relationAgentGateChipText(gateKind: RelationAgentGateKind): string {
-  if (gateKind === 'handoff-ready') return 'MCP/CLI';
+  if (gateKind === 'handoff-ready') return 'ready';
   if (gateKind === 'preflight-first') return 'check';
   return 'review';
 }
 
-function relationAgentGateChipTone(gateKind: RelationAgentGateKind): string {
-  if (gateKind === 'handoff-ready') {
-    return 'border-[color:rgba(139,151,255,0.36)] bg-[color:rgba(139,151,255,0.14)] text-[color:rgba(222,225,255,0.94)]';
-  }
-  if (gateKind === 'preflight-first') {
-    return 'border-[color:rgba(217,161,65,0.36)] bg-[color:rgba(217,161,65,0.13)] text-[color:rgba(247,212,150,0.92)]';
-  }
-  return 'border-[color:rgba(226,105,105,0.38)] bg-[color:rgba(226,105,105,0.13)] text-[color:rgba(255,190,190,0.92)]';
+function relationAgentGateRouteText(gateKind: RelationAgentGateKind): string {
+  if (gateKind === 'handoff-ready') return 'MCP/CLI';
+  return relationAgentGateChipText(gateKind);
 }
 
-function relationCopyActionText(action: RelationCopyActionKind): string {
-  return action === 'explain_relation' ? 'explain relation' : 'relation check';
-}
-
-function relationFactRouteText(action: RelationCopyActionKind): string {
-  return action === 'explain_relation' ? 'explain' : 'check';
+function relationAgentGateTokenPrefix(gateKind: RelationAgentGateKind): string {
+  if (gateKind === 'handoff-ready') return '--topology-relation-gate-ready';
+  if (gateKind === 'preflight-first') return '--topology-relation-gate-preflight';
+  return '--topology-relation-gate-review';
 }
 
 function relationLabelCliFallbackCommand({
@@ -369,36 +722,6 @@ function relationEvidenceState({
   return 'needs-review';
 }
 
-function relationEvidenceGlyph({
-  evidenceCount,
-  state,
-}: {
-  evidenceCount?: number;
-  state: RelationEvidenceState;
-}): string {
-  if (state === 'source-backed') {
-    const count = Math.max(1, evidenceCount ?? 1);
-    return count > 9 ? '9+' : String(count);
-  }
-  if (state === 'authored') return 'A';
-  return '!';
-}
-
-function relationEvidenceAriaText({
-  evidenceCount,
-  state,
-}: {
-  evidenceCount?: number;
-  state: RelationEvidenceState;
-}): string {
-  if (state === 'source-backed') {
-    const count = Math.max(1, evidenceCount ?? 1);
-    return `${count} source${count === 1 ? '' : 's'}`;
-  }
-  if (state === 'authored') return 'authored';
-  return 'needs review';
-}
-
 /** 커넥터 형상 — 수평 접선 cubic S-커브 (MindNode 가지 문법). */
 function connectorPath(
   sx: number,
@@ -425,6 +748,15 @@ type ConnectorRect = {
   right: number;
   bottom: number;
 };
+
+function expandConnectorRect(rect: ConnectorRect, pad: number): ConnectorRect {
+  return {
+    left: rect.left - pad,
+    top: rect.top - pad,
+    right: rect.right + pad,
+    bottom: rect.bottom + pad,
+  };
+}
 
 function connectorPorts(
   source: ConnectorRect,
@@ -566,6 +898,48 @@ function relationLabelText(
   return count > 1 ? `${visibleLabel} ×${count}` : visibleLabel;
 }
 
+function relationLabelVisibleText({
+  count = 1,
+  label,
+  relationBadgeCount,
+}: {
+  count?: number;
+  label: string;
+  relationBadgeCount: (values: { count: number; label: string }) => string;
+}): string {
+  return count > 1 ? relationBadgeCount({ count, label }) : label;
+}
+
+function selectedRelationLabelVisibleText({
+  count,
+  evidenceChipText,
+  label,
+}: {
+  count: number;
+  evidenceChipText: string;
+  label: string;
+}): string {
+  return `${label} ×${count} · ${evidenceChipText}`;
+}
+
+function selectedRelationZoomLensLabelText({
+  count,
+  label,
+}: {
+  count: number;
+  label: string;
+}): string {
+  const glyph = label.trim().slice(0, 1).toUpperCase() || 'R';
+  return count > 1 ? `${glyph}×${count}` : glyph;
+}
+
+function relationLabelCompactGlyph(relationType: string, labels?: RelationTypeLabels): string {
+  const label = labels
+    ? relationTypeDisplayLabel(relationType, labels)
+    : relationType;
+  return label.trim().slice(0, 1).toUpperCase() || 'R';
+}
+
 function isDockConnectorSuppressed(targetEl: HTMLElement | null | undefined): boolean {
   return Boolean(targetEl?.dataset.dockCol && targetEl.dataset.dockCol !== '0');
 }
@@ -583,6 +957,135 @@ function rectsOverlap(
   );
 }
 
+function countRectPairOverlaps(
+  rects: ReadonlyArray<{ left: number; top: number; right: number; bottom: number }>,
+  pad = 0,
+): number {
+  let count = 0;
+  for (let i = 0; i < rects.length; i += 1) {
+    for (let j = i + 1; j < rects.length; j += 1) {
+      if (rectsOverlap(rects[i], rects[j], pad)) count += 1;
+    }
+  }
+  return count;
+}
+
+function rectContains(
+  outer: { left: number; top: number; right: number; bottom: number },
+  inner: { left: number; top: number; right: number; bottom: number },
+): boolean {
+  return (
+    outer.left <= inner.left &&
+    outer.top <= inner.top &&
+    outer.right >= inner.right &&
+    outer.bottom >= inner.bottom
+  );
+}
+
+function countNonContainedRectPairOverlaps(
+  rects: ReadonlyArray<{
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    visualLeft?: number;
+    visualTop?: number;
+    visualRight?: number;
+    visualBottom?: number;
+  }>,
+  pad = 0,
+): number {
+  let count = 0;
+  for (let i = 0; i < rects.length; i += 1) {
+    for (let j = i + 1; j < rects.length; j += 1) {
+      const first = {
+        left: rects[i].visualLeft ?? rects[i].left,
+        top: rects[i].visualTop ?? rects[i].top,
+        right: rects[i].visualRight ?? rects[i].right,
+        bottom: rects[i].visualBottom ?? rects[i].bottom,
+      };
+      const second = {
+        left: rects[j].visualLeft ?? rects[j].left,
+        top: rects[j].visualTop ?? rects[j].top,
+        right: rects[j].visualRight ?? rects[j].right,
+        bottom: rects[j].visualBottom ?? rects[j].bottom,
+      };
+      if (rectContains(first, second) || rectContains(second, first)) {
+        continue;
+      }
+      if (rectsOverlap(first, second, pad)) count += 1;
+    }
+  }
+  return count;
+}
+
+function countRectSurfaceOverlaps(
+  rects: ReadonlyArray<{ left: number; top: number; right: number; bottom: number }>,
+  surfaces: ReadonlyArray<{ left: number; top: number; right: number; bottom: number }>,
+  pad = 0,
+): number {
+  let count = 0;
+  for (const rect of rects) {
+    for (const surface of surfaces) {
+      if (rectsOverlap(rect, surface, pad)) count += 1;
+    }
+  }
+  return count;
+}
+
+function resolveRelationLabelVerticalPlacement({
+  blockers,
+  containerHeight,
+  height,
+  left,
+  top,
+  width,
+}: {
+  blockers: ReadonlyArray<{ left: number; top: number; right: number; bottom: number }>;
+  containerHeight: number;
+  height: number;
+  left: number;
+  top: number;
+  width: number;
+}): { occluded: boolean; top: number } {
+  const clampTop = (nextTop: number) =>
+    Math.min(
+      Math.max(nextTop, RELATION_LABEL_CARD_CLEARANCE_PX),
+      Math.max(RELATION_LABEL_CARD_CLEARANCE_PX, containerHeight - height - RELATION_LABEL_CARD_CLEARANCE_PX),
+    );
+  const rectFor = (nextTop: number) => ({
+    left,
+    right: left + width,
+    top: nextTop,
+    bottom: nextTop + height,
+  });
+  const overlapCount = (nextTop: number) => {
+    const rect = rectFor(nextTop);
+    return blockers.filter((blocker) => rectsOverlap(rect, blocker, RELATION_LABEL_CARD_CLEARANCE_PX)).length;
+  };
+  const baseTop = clampTop(top);
+  const candidates = new Set<number>([baseTop]);
+  const baseRect = rectFor(baseTop);
+  for (const blocker of blockers) {
+    if (!rectsOverlap(baseRect, blocker, RELATION_LABEL_CARD_CLEARANCE_PX)) continue;
+    candidates.add(clampTop(blocker.top - height - RELATION_LABEL_CARD_CLEARANCE_PX));
+    candidates.add(clampTop(blocker.bottom + RELATION_LABEL_CARD_CLEARANCE_PX));
+  }
+  let best = baseTop;
+  let bestOverlapCount = overlapCount(baseTop);
+  let bestCost = bestOverlapCount * 10_000;
+  for (const candidate of candidates) {
+    const candidateOverlapCount = overlapCount(candidate);
+    const cost = candidateOverlapCount * 10_000 + Math.abs(candidate - baseTop);
+    if (cost < bestCost) {
+      best = candidate;
+      bestOverlapCount = candidateOverlapCount;
+      bestCost = cost;
+    }
+  }
+  return { occluded: bestOverlapCount > 0, top: best };
+}
+
 function isMountedTopologyBlockingSurface(el: HTMLElement): boolean {
   return (
     el.dataset.testid === 'topology-node-popover' ||
@@ -598,28 +1101,73 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
   top: number;
   right: number;
   bottom: number;
+  visualLeft: number;
+  visualTop: number;
+  visualRight: number;
+  visualBottom: number;
 }> {
   if (typeof document === 'undefined') return [];
-  return Array.from(
-    document.querySelectorAll<HTMLElement>(
-      '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"], [data-testid="sigma-selected-edge-card"], [data-testid="topology-path-start-prompt"], [data-testid="topology-path-anchor-prompt"], [data-testid="topology-path-result-banner"]',
-    ),
-  )
-    .filter((el) => {
+  const fixedSurfaceRects: Array<{
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    visualLeft: number;
+    visualTop: number;
+    visualRight: number;
+    visualBottom: number;
+  }> = [];
+  const analysisPanel = document.querySelector<HTMLElement>(
+    '[data-testid="topology-analysis-panel"]',
+  );
+  const analysisPanelRect = analysisPanel?.getBoundingClientRect();
+  const analysisPanelStyle = analysisPanel ? getComputedStyle(analysisPanel) : null;
+  const panelOwnedReadLayerActive = Boolean(
+    analysisPanel &&
+      analysisPanelRect &&
+      analysisPanelStyle &&
+      analysisPanelStyle.display !== 'none' &&
+      analysisPanelStyle.visibility !== 'hidden' &&
+      analysisPanelRect.width > 0 &&
+      analysisPanelRect.height > 0,
+  );
+  const fixedSurfaceSelector = [
+    '[data-testid="topology-analysis-panel"]',
+    '[data-testid="topology-kind-legend"]',
+    '[data-testid="topology-relation-legend"]',
+    '[data-testid="topology-minimap"]',
+    '[data-testid="topology-node-popover"]',
+    '[data-testid="sigma-selected-edge-card"]',
+    '[data-testid="topology-path-start-prompt"]',
+    '[data-testid="topology-path-anchor-prompt"]',
+    '[data-testid="topology-path-result-banner"]',
+    ...(panelOwnedReadLayerActive
+      ? [
+          '[data-testid="topology-search-action-lane"]',
+          '[data-testid="topology-utility-action-lane"]',
+          '[data-testid="topology-shortcuts-help-button"]',
+          '[data-testid="topology-sigma-controls-stack"]',
+        ]
+      : []),
+  ].join(', ');
+
+  document
+    .querySelectorAll<HTMLElement>(fixedSurfaceSelector)
+    .forEach((el) => {
       const rect = el.getBoundingClientRect();
       const style = getComputedStyle(el);
-      return (
-        style.display !== 'none' &&
-        style.visibility !== 'hidden' &&
-        (Number(style.opacity || '1') > 0.01 || isMountedTopologyBlockingSurface(el)) &&
-        rect.width > 0 &&
-        rect.height > 0
-      );
-    })
-    .map((el) => {
-      const rect = el.getBoundingClientRect();
+      if (
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        (Number(style.opacity || '1') <= 0.01 && !isMountedTopologyBlockingSurface(el)) ||
+        rect.width <= 0 ||
+        rect.height <= 0
+      ) {
+        return;
+      }
+
       const isAnalysisPanel = el.dataset.testid === 'topology-analysis-panel';
-      return {
+      fixedSurfaceRects.push({
         left: rect.left - containerRect.left - COLLISION_PAD,
         top: rect.top - containerRect.top - COLLISION_PAD,
         right:
@@ -630,8 +1178,56 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
           rect.bottom -
           containerRect.top +
           (isAnalysisPanel ? ANALYSIS_PANEL_BLOCK_END_PAD : COLLISION_PAD),
-      };
+        visualLeft: rect.left - containerRect.left,
+        visualTop: rect.top - containerRect.top,
+        visualRight: rect.right - containerRect.left,
+        visualBottom: rect.bottom - containerRect.top,
+      });
     });
+
+  return fixedSurfaceRects;
+}
+
+function isSelectedFocusRailSurfaceMounted(): boolean {
+  if (typeof document === 'undefined') return false;
+  const panel = document.querySelector<HTMLElement>(
+    '[data-testid="topology-analysis-panel"][data-analysis-mode="focus"][data-selected-focus-rail="true"]',
+  );
+  if (!panel) return false;
+  const style = getComputedStyle(panel);
+  return style.display !== 'none' && style.visibility !== 'hidden';
+}
+
+function isAnalysisPanelMounted(): boolean {
+  if (typeof document === 'undefined') return false;
+  const panel = document.querySelector<HTMLElement>(
+    '[data-testid="topology-analysis-panel"]',
+  );
+  if (!panel) return false;
+  const rect = panel.getBoundingClientRect();
+  const style = getComputedStyle(panel);
+  return (
+    style.display !== 'none' &&
+    style.visibility !== 'hidden' &&
+    panel.dataset.panelPhoneUtilityReserveToken !== undefined &&
+    rect.width > 0
+  );
+}
+
+function isSelectedNodePopoverMounted(): boolean {
+  if (typeof document === 'undefined') return false;
+  const popover = document.querySelector<HTMLElement>(
+    '[data-testid="topology-node-popover"]',
+  );
+  if (!popover) return false;
+  const rect = popover.getBoundingClientRect();
+  const style = getComputedStyle(popover);
+  return (
+    style.display !== 'none' &&
+    style.visibility !== 'hidden' &&
+    rect.width > 0 &&
+    rect.height > 0
+  );
 }
 
 function anchoredCardRect({
@@ -657,6 +1253,21 @@ function anchoredCardRect({
   };
 }
 
+function clampDragReactiveMotionVector(
+  dx: number,
+  dy: number,
+  maxOffsetPx = DRAG_REACTIVE_MOTION_MAX_OFFSET_PX,
+): { dx: number; dy: number } {
+  const safeDx = Number.isFinite(dx) ? dx : 0;
+  const safeDy = Number.isFinite(dy) ? dy : 0;
+  const magnitude = Math.hypot(safeDx, safeDy);
+  if (magnitude <= maxOffsetPx || magnitude === 0) {
+    return { dx: safeDx, dy: safeDy };
+  }
+  const scale = maxOffsetPx / magnitude;
+  return { dx: safeDx * scale, dy: safeDy * scale };
+}
+
 function clampVisibleAnchorCard({
   x,
   y,
@@ -666,6 +1277,7 @@ function clampVisibleAnchorCard({
   containerWidth,
   containerHeight,
   fixedSurfaceRects,
+  viewportMargin = SAFE_VIEWPORT_MARGIN,
 }: {
   x: number;
   y: number;
@@ -675,6 +1287,7 @@ function clampVisibleAnchorCard({
   containerWidth: number;
   containerHeight: number;
   fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>;
+  viewportMargin?: number;
 }) {
   if (width <= 0 || height <= 0) return { x, y };
   let nextX = x;
@@ -688,17 +1301,17 @@ function clampVisibleAnchorCard({
       height,
       anchor,
     });
-    if (rect.left < SAFE_VIEWPORT_MARGIN) {
-      nextX += SAFE_VIEWPORT_MARGIN - rect.left;
+    if (rect.left < viewportMargin) {
+      nextX += viewportMargin - rect.left;
     }
-    if (rect.right > containerWidth - SAFE_VIEWPORT_MARGIN) {
-      nextX -= rect.right - (containerWidth - SAFE_VIEWPORT_MARGIN);
+    if (rect.right > containerWidth - viewportMargin) {
+      nextX -= rect.right - (containerWidth - viewportMargin);
     }
-    if (rect.top < SAFE_VIEWPORT_MARGIN) {
-      nextY += SAFE_VIEWPORT_MARGIN - rect.top;
+    if (rect.top < viewportMargin) {
+      nextY += viewportMargin - rect.top;
     }
-    if (rect.bottom > containerHeight - SAFE_VIEWPORT_MARGIN) {
-      nextY -= rect.bottom - (containerHeight - SAFE_VIEWPORT_MARGIN);
+    if (rect.bottom > containerHeight - viewportMargin) {
+      nextY -= rect.bottom - (containerHeight - viewportMargin);
     }
   };
 
@@ -729,10 +1342,10 @@ function clampVisibleAnchorCard({
           ...candidate,
           cost: Math.abs(candidate.dx) + Math.abs(candidate.dy),
           inside:
-            moved.left >= SAFE_VIEWPORT_MARGIN &&
-            moved.top >= SAFE_VIEWPORT_MARGIN &&
-            moved.right <= containerWidth - SAFE_VIEWPORT_MARGIN &&
-            moved.bottom <= containerHeight - SAFE_VIEWPORT_MARGIN,
+            moved.left >= viewportMargin &&
+            moved.top >= viewportMargin &&
+            moved.right <= containerWidth - viewportMargin &&
+            moved.bottom <= containerHeight - viewportMargin,
         };
       })
       .filter((candidate) => candidate.inside)
@@ -808,7 +1421,7 @@ function clampRectToViewportAndFixedSurfaces({
             moved.top >= SAFE_VIEWPORT_MARGIN &&
             moved.right <= containerWidth - SAFE_VIEWPORT_MARGIN &&
             moved.bottom <= containerHeight - SAFE_VIEWPORT_MARGIN,
-          clear: !rectsOverlap(moved, surface),
+          clear: !fixedSurfaceRects.some((fixedSurface) => rectsOverlap(moved, fixedSurface)),
         };
       })
       .filter((candidate) => candidate.inside && candidate.clear)
@@ -823,18 +1436,870 @@ function clampRectToViewportAndFixedSurfaces({
   return { dx, dy, rect: shifted() };
 }
 
-function showSkeletonCard(el: HTMLElement, opacity = '1') {
-  delete el.dataset.surfaceHidden;
-  el.style.opacity = opacity;
-  el.style.visibility = 'visible';
-  el.style.pointerEvents = '';
+function showSkeletonCard(
+  el: HTMLElement,
+  opacity = '1',
+  stats?: SkeletonDomWriteStats,
+) {
+  if (el.dataset.surfaceHidden === 'true') {
+    delete el.dataset.surfaceHidden;
+  }
+  delete el.dataset.surfaceHiddenReason;
+  delete el.dataset.selectedRelationHiddenInteractionContract;
+  el.removeAttribute('aria-hidden');
+  el.removeAttribute('tabindex');
+  if (stats) {
+    setSkeletonStyleValue(el, 'opacity', opacity, stats);
+    setSkeletonStyleValue(el, 'visibility', 'visible', stats);
+    setSkeletonStyleValue(el, 'pointerEvents', '', stats);
+    return;
+  }
+  if (el.style.opacity !== opacity) el.style.opacity = opacity;
+  if (el.style.visibility !== 'visible') el.style.visibility = 'visible';
+  if (el.style.pointerEvents !== '') el.style.pointerEvents = '';
 }
 
-function hideSkeletonCard(el: HTMLElement) {
-  el.dataset.surfaceHidden = 'true';
-  el.style.opacity = '0';
-  el.style.visibility = 'hidden';
-  el.style.pointerEvents = 'none';
+function showSelectedRelationEndpointCard(
+  el: HTMLElement,
+  stats: SkeletonDomWriteStats,
+) {
+  if (el.dataset.surfaceHidden === 'true') {
+    delete el.dataset.surfaceHidden;
+  }
+  delete el.dataset.surfaceHiddenReason;
+  delete el.dataset.selectedRelationHiddenInteractionContract;
+  el.removeAttribute('aria-hidden');
+  el.removeAttribute('tabindex');
+  if (
+    el.style.getPropertyValue('opacity') !== '1' ||
+    el.style.getPropertyPriority('opacity') !== 'important'
+  ) {
+    el.style.setProperty('opacity', '1', 'important');
+    stats.applied += 1;
+  } else {
+    stats.skipped += 1;
+  }
+  if (el.style.transitionProperty !== 'border-color, box-shadow') {
+    el.style.transitionProperty = 'border-color, box-shadow';
+    stats.applied += 1;
+  } else {
+    stats.skipped += 1;
+  }
+  if (el.style.transitionDuration !== '0s') {
+    el.style.transitionDuration = '0s';
+    stats.applied += 1;
+  } else {
+    stats.skipped += 1;
+  }
+  setSkeletonStyleValue(el, 'visibility', 'visible', stats);
+  setSkeletonStyleValue(el, 'pointerEvents', '', stats);
+}
+
+function clearSelectedRelationEndpointCardStyle(el: HTMLElement) {
+  if (el.style.getPropertyPriority('opacity') === 'important') {
+    el.style.removeProperty('opacity');
+  }
+  if (el.style.transitionProperty === 'border-color, box-shadow') {
+    el.style.removeProperty('transition-property');
+  }
+  if (el.style.transitionDuration === '0s') {
+    el.style.removeProperty('transition-duration');
+  }
+}
+
+function hideSkeletonCard(el: HTMLElement, stats?: SkeletonDomWriteStats) {
+  if (el.dataset.surfaceHidden !== 'true') {
+    el.dataset.surfaceHidden = 'true';
+  }
+  el.dataset.surfaceHiddenReason =
+    el.dataset.surfaceHiddenReason ?? 'layout-surface-collision';
+  if (
+    el.dataset.dimOpacityRole === 'orientation-anchor' ||
+    el.dataset.dimOpacityRole === 'context-silhouette'
+  ) {
+    el.dataset.dimOpacityRole = 'hidden-fixed-surface-collision';
+    el.dataset.dimOpacityToken = 'none';
+  }
+  if (el.dataset.dragReactiveContext === 'true') {
+    el.dataset.dragReactiveContextVisible = 'false';
+    el.dataset.dragReactiveContextVisibility =
+      el.dataset.dragReactiveContextVisibility ?? 'hidden-layout-surface-collision';
+  }
+  el.setAttribute('aria-hidden', 'true');
+  el.setAttribute('tabindex', '-1');
+  if (stats) {
+    setSkeletonStyleValue(el, 'opacity', '0', stats);
+    setSkeletonStyleValue(el, 'visibility', 'hidden', stats);
+    setSkeletonStyleValue(el, 'pointerEvents', 'none', stats);
+    return;
+  }
+  if (el.style.opacity !== '0') el.style.opacity = '0';
+  if (el.style.visibility !== 'hidden') el.style.visibility = 'hidden';
+  if (el.style.pointerEvents !== 'none') el.style.pointerEvents = 'none';
+}
+
+function isSkeletonCardVisibleFromFrameState(el: HTMLElement): boolean {
+  return (
+    el.dataset.surfaceHidden !== 'true' &&
+    el.style.visibility !== 'hidden' &&
+    Number(el.style.opacity || '1') > 0.01
+  );
+}
+
+function separatePathEndpointCards(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }> = [],
+  onPlacedCardRectChange?: (el: HTMLElement, rect: ConnectorRect) => void,
+) {
+  const source = orderedEls.find(
+    (el) =>
+      el.dataset.pathRole === 'source' &&
+      el.dataset.surfaceHidden !== 'true' &&
+      getComputedStyle(el).visibility !== 'hidden',
+  );
+  const target = orderedEls.find(
+    (el) =>
+      el.dataset.pathRole === 'target' &&
+      el.dataset.surfaceHidden !== 'true' &&
+      getComputedStyle(el).visibility !== 'hidden',
+  );
+  if (!source || !target) return;
+
+  const sourceBox = source.getBoundingClientRect();
+  const targetBox = target.getBoundingClientRect();
+  const sourceRect = {
+    left: sourceBox.left - containerRect.left,
+    top: sourceBox.top - containerRect.top,
+    right: sourceBox.right - containerRect.left,
+    bottom: sourceBox.bottom - containerRect.top,
+  };
+  const targetRect = {
+    left: targetBox.left - containerRect.left,
+    top: targetBox.top - containerRect.top,
+    right: targetBox.right - containerRect.left,
+    bottom: targetBox.bottom - containerRect.top,
+  };
+  if (!rectsOverlap(sourceRect, targetRect, -2)) {
+    delete source.dataset.pathEndpointPairSeparated;
+    delete target.dataset.pathEndpointPairSeparated;
+    return;
+  }
+
+  const gap = 12;
+  const candidates = [
+    {
+      el: target,
+      rect: targetRect,
+      dy: sourceRect.bottom + gap - targetRect.top,
+      marker: 'target-shifted',
+    },
+    {
+      el: source,
+      rect: sourceRect,
+      dy: targetRect.top - gap - sourceRect.bottom,
+      marker: 'source-shifted',
+    },
+  ]
+    .map((candidate) => {
+      const moved = {
+        left: candidate.rect.left,
+        top: candidate.rect.top + candidate.dy,
+        right: candidate.rect.right,
+        bottom: candidate.rect.bottom + candidate.dy,
+      };
+      return {
+        ...candidate,
+        moved,
+        inside:
+          moved.top >= SAFE_VIEWPORT_MARGIN &&
+          moved.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN,
+        clear: !fixedSurfaceRects.some((surface) => rectsOverlap(moved, surface)),
+      };
+    })
+    .filter((candidate) => candidate.dy !== 0 && candidate.inside && candidate.clear);
+  const best = candidates[0];
+  if (!best) return;
+  const nextTransform = `${best.el.style.transform} translate(0, ${best.dy}px)`;
+  const endpointRestoreBase = best.el.dataset.pathEndpointRestoreBaseTransform;
+  if (endpointRestoreBase) {
+    best.el.dataset.pathEndpointRestoreBaseTransform =
+      `${endpointRestoreBase} translate(0, ${best.dy}px)`;
+    best.el.dataset.pathEndpointRestoreAppliedTransform = nextTransform;
+  }
+  best.el.style.transform = nextTransform;
+  best.el.dataset.pathEndpointPairSeparated = best.marker;
+  onPlacedCardRectChange?.(best.el, best.moved);
+}
+
+function separateSelectedRelationEndpointCards(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }> = [],
+  onPlacedCardRectChange?: (el: HTMLElement, rect: ConnectorRect) => void,
+): number {
+  const source = orderedEls.find(
+    (el) =>
+      el.dataset.selectedRelationEndpointRole === 'source' &&
+      el.dataset.surfaceHidden !== 'true' &&
+      el.style.visibility !== 'hidden' &&
+      Number(el.style.opacity || '1') > 0.01,
+  );
+  const target = orderedEls.find(
+    (el) =>
+      el.dataset.selectedRelationEndpointRole === 'target' &&
+      el.dataset.surfaceHidden !== 'true' &&
+      el.style.visibility !== 'hidden' &&
+      Number(el.style.opacity || '1') > 0.01,
+  );
+  if (!source || !target) return 0;
+
+  const sourceBox = source.getBoundingClientRect();
+  const targetBox = target.getBoundingClientRect();
+  const sourceRect = {
+    left: sourceBox.left - containerRect.left,
+    top: sourceBox.top - containerRect.top,
+    right: sourceBox.right - containerRect.left,
+    bottom: sourceBox.bottom - containerRect.top,
+  };
+  const targetRect = {
+    left: targetBox.left - containerRect.left,
+    top: targetBox.top - containerRect.top,
+    right: targetBox.right - containerRect.left,
+    bottom: targetBox.bottom - containerRect.top,
+  };
+  if (!rectsOverlap(sourceRect, targetRect, -2)) {
+    delete source.dataset.selectedRelationEndpointPairSeparated;
+    delete target.dataset.selectedRelationEndpointPairSeparated;
+    return 0;
+  }
+
+  const gap = 12;
+  const candidates = [
+    {
+      el: target,
+      rect: targetRect,
+      dy: sourceRect.bottom + gap - targetRect.top,
+      marker: 'target-shifted',
+    },
+    {
+      el: source,
+      rect: sourceRect,
+      dy: targetRect.top - gap - sourceRect.bottom,
+      marker: 'source-shifted',
+    },
+  ]
+    .map((candidate) => {
+      const moved = {
+        left: candidate.rect.left,
+        top: candidate.rect.top + candidate.dy,
+        right: candidate.rect.right,
+        bottom: candidate.rect.bottom + candidate.dy,
+      };
+      return {
+        ...candidate,
+        moved,
+        inside:
+          moved.top >= SAFE_VIEWPORT_MARGIN &&
+          moved.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN,
+        clear: !fixedSurfaceRects.some((surface) => rectsOverlap(moved, surface)),
+      };
+    })
+    .filter((candidate) => candidate.dy !== 0 && candidate.inside && candidate.clear);
+  const best = candidates[0];
+  if (!best) return 0;
+
+  const nextTransform = `${best.el.style.transform} translate(0, ${best.dy}px)`;
+  best.el.style.transform = nextTransform;
+  best.el.dataset.selectedRelationEndpointPairSeparated = best.marker;
+  onPlacedCardRectChange?.(best.el, best.moved);
+  return 1;
+}
+
+function separateOverviewDomainCards(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>,
+  readCardPlacementFrameRect: (el: HTMLElement) => ConnectorRect,
+  onPlacedCardRectChange?: (el: HTMLElement, rect: ConnectorRect) => void,
+): number {
+  const records: Array<{ el: HTMLElement; rect: ConnectorRect }> = [];
+  const accepted: Array<{ left: number; top: number; right: number; bottom: number }> =
+    [];
+  for (const el of orderedEls) {
+    if (el.dataset.dockParent) continue;
+    if (el.dataset.surfaceHidden === 'true') continue;
+    if (el.style.visibility === 'hidden' || Number(el.style.opacity || '1') <= 0.01) {
+      continue;
+    }
+    const tier = Number(el.dataset.tier ?? '3');
+    if (tier !== 0 && tier !== 1) continue;
+    const rect = readCardPlacementFrameRect(el);
+    if (rect.right <= rect.left || rect.bottom <= rect.top) continue;
+    if (tier === 0) {
+      accepted.push(rect);
+      continue;
+    }
+    records.push({ el, rect });
+  }
+  records.sort((a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left);
+
+  let separated = 0;
+  for (const record of records) {
+    if (record.el.dataset.overviewDomainSeparated !== undefined) {
+      delete record.el.dataset.overviewDomainSeparated;
+    }
+    let dy = 0;
+    for (const blocker of accepted) {
+      const moved = {
+        left: record.rect.left,
+        top: record.rect.top + dy,
+        right: record.rect.right,
+        bottom: record.rect.bottom + dy,
+      };
+      if (!rectsOverlap(moved, blocker, OVERVIEW_DOMAIN_COLLISION_PAD)) continue;
+      const moveDown = blocker.bottom + OVERVIEW_DOMAIN_COLLISION_PAD - moved.top;
+      const moveUp = blocker.top - OVERVIEW_DOMAIN_COLLISION_PAD - moved.bottom;
+      const preferred = moved.top >= blocker.top ? moveDown : moveUp;
+      const fallback = preferred === moveDown ? moveUp : moveDown;
+      const nextDy = dy + preferred;
+      const preferredRect = {
+        left: record.rect.left,
+        top: record.rect.top + nextDy,
+        right: record.rect.right,
+        bottom: record.rect.bottom + nextDy,
+      };
+      const preferredFits =
+        preferredRect.top >= SAFE_VIEWPORT_MARGIN &&
+        preferredRect.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN &&
+        !fixedSurfaceRects.some((surface) => rectsOverlap(preferredRect, surface));
+      dy += preferredFits ? preferred : fallback;
+    }
+
+    const finalRect = {
+      left: record.rect.left,
+      top: record.rect.top + dy,
+      right: record.rect.right,
+      bottom: record.rect.bottom + dy,
+    };
+    const clampedDy =
+      finalRect.top < SAFE_VIEWPORT_MARGIN
+        ? dy + SAFE_VIEWPORT_MARGIN - finalRect.top
+        : finalRect.bottom > containerRect.height - SAFE_VIEWPORT_MARGIN
+          ? dy + containerRect.height - SAFE_VIEWPORT_MARGIN - finalRect.bottom
+          : dy;
+    const acceptedRect = {
+      left: record.rect.left,
+      top: record.rect.top + clampedDy,
+      right: record.rect.right,
+      bottom: record.rect.bottom + clampedDy,
+    };
+    if (clampedDy !== 0) {
+      record.el.style.transform = `${record.el.style.transform} translate(0, ${clampedDy}px)`;
+      record.el.dataset.overviewDomainSeparated = 'true';
+      onPlacedCardRectChange?.(record.el, acceptedRect);
+      separated += 1;
+    }
+    accepted.push(acceptedRect);
+  }
+  return separated;
+}
+
+function restorePathEndpointsFromFixedSurfaces(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>,
+  domWriteStats: SkeletonDomWriteStats,
+  onPlacedCardRectChange?: (el: HTMLElement, rect: ConnectorRect) => void,
+) {
+  const pathAnalysisPanelRects = collectPathAnalysisPanelRects(containerRect);
+  for (const el of orderedEls) {
+    if (el.dataset.pathRole !== 'source' && el.dataset.pathRole !== 'target') {
+      continue;
+    }
+    const endpointBox = el.getBoundingClientRect();
+    const previousAppliedTransform = el.dataset.pathEndpointRestoreAppliedTransform;
+    let baseTransform = el.dataset.pathEndpointRestoreBaseTransform;
+    if (!baseTransform || el.style.transform !== previousAppliedTransform) {
+      baseTransform = el.style.transform;
+      el.dataset.pathEndpointRestoreBaseTransform = baseTransform;
+    }
+    const endpointRect = {
+      left: endpointBox.left - containerRect.left,
+      top: endpointBox.top - containerRect.top,
+      right: endpointBox.right - containerRect.left,
+      bottom: endpointBox.bottom - containerRect.top,
+    };
+    const endpointShift = clampRectToViewportAndFixedSurfaces({
+      rect: endpointRect,
+      containerWidth: containerRect.width,
+      containerHeight: containerRect.height,
+      fixedSurfaceRects,
+    });
+    if (endpointShift.dx !== 0 || endpointShift.dy !== 0) {
+      const nextTransform =
+        `${baseTransform} translate(${endpointShift.dx}px, ${endpointShift.dy}px)`;
+      setSkeletonStyleValue(
+        el,
+        'transform',
+        nextTransform,
+        domWriteStats,
+      );
+      el.dataset.pathEndpointRestoreAppliedTransform = nextTransform;
+      el.dataset.pathEndpointRestored = 'safe-shift';
+    } else {
+      setSkeletonStyleValue(el, 'transform', baseTransform, domWriteStats);
+      el.dataset.pathEndpointRestoreAppliedTransform = baseTransform;
+      delete el.dataset.pathEndpointRestored;
+    }
+    onPlacedCardRectChange?.(el, endpointShift.rect);
+    const overlapsPathPanel = pathAnalysisPanelRects.some((surface) =>
+      rectsOverlap(endpointShift.rect, surface),
+    );
+    const expandedPathPanelOwnsRoute = pathAnalysisPanelRects.some(
+      (surface) => surface.bottom - surface.top > containerRect.height * 0.62,
+    );
+    if (overlapsPathPanel && !expandedPathPanelOwnsRoute) {
+      hideSkeletonCard(el, domWriteStats);
+      el.dataset.pathEndpointPanelClearance = 'hidden-under-expanded-panel';
+    } else {
+      showSkeletonCard(el, '1', domWriteStats);
+      if (overlapsPathPanel) {
+        el.dataset.pathEndpointPanelClearance = 'panel-owned-expanded-visible';
+      } else {
+        delete el.dataset.pathEndpointPanelClearance;
+      }
+    }
+  }
+}
+
+function suppressCardsOverlappingPathEndpoints(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+) {
+  const endpointRects = orderedEls
+    .filter((el) => {
+      if (el.dataset.pathRole !== 'source' && el.dataset.pathRole !== 'target') return false;
+      if (el.dataset.surfaceHidden === 'true') return false;
+      const style = getComputedStyle(el);
+      return style.visibility !== 'hidden' && Number(style.opacity || el.style.opacity || '1') > 0.01;
+    })
+    .map((el) => {
+      const box = el.getBoundingClientRect();
+      return {
+        left: box.left - containerRect.left,
+        top: box.top - containerRect.top,
+        right: box.right - containerRect.left,
+        bottom: box.bottom - containerRect.top,
+      };
+    });
+  if (endpointRects.length === 0) return;
+
+  for (const el of orderedEls) {
+    if (el.dataset.pathRole === 'source' || el.dataset.pathRole === 'target') continue;
+    if (el.dataset.surfaceHidden === 'true') continue;
+    const style = getComputedStyle(el);
+    if (style.visibility === 'hidden' || Number(style.opacity || el.style.opacity || '1') <= 0.01) {
+      continue;
+    }
+    const box = el.getBoundingClientRect();
+    const rect = {
+      left: box.left - containerRect.left,
+      top: box.top - containerRect.top,
+      right: box.right - containerRect.left,
+      bottom: box.bottom - containerRect.top,
+    };
+    if (endpointRects.some((endpointRect) => rectsOverlap(endpointRect, rect))) {
+      hideSkeletonCard(el);
+      el.dataset.pathEndpointOverlapSuppressed = 'true';
+    }
+  }
+}
+
+function restoreVisibleCardsFromFixedSurfaces(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>,
+  domWriteStats: SkeletonDomWriteStats,
+  readPlacedCardRect?: (el: HTMLElement) => {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  },
+  onPlacedCardRectChange?: (
+    el: HTMLElement,
+    rect: { left: number; top: number; right: number; bottom: number },
+  ) => void,
+): number {
+  const occupiedRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+  let restored = 0;
+  for (const el of orderedEls) {
+    if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+    const rect = readPlacedCardRect?.(el) ?? elementRectRelativeToContainer(el, containerRect);
+    const collidesWithFixedSurface = fixedSurfaceRects.some((surface) =>
+      rectsOverlap(rect, surface),
+    );
+    const outsideViewport =
+      rect.left < SAFE_VIEWPORT_MARGIN ||
+      rect.top < SAFE_VIEWPORT_MARGIN ||
+      rect.right > containerRect.width - SAFE_VIEWPORT_MARGIN ||
+      rect.bottom > containerRect.height - SAFE_VIEWPORT_MARGIN;
+    if (!collidesWithFixedSurface && !outsideViewport) {
+      occupiedRects.push(rect);
+      if (el.dataset.fixedSurfaceRestore !== undefined) {
+        delete el.dataset.fixedSurfaceRestore;
+      }
+      continue;
+    }
+    const shift = clampRectToViewportAndFixedSurfaces({
+      rect,
+      containerWidth: containerRect.width,
+      containerHeight: containerRect.height,
+      fixedSurfaceRects: [...fixedSurfaceRects, ...occupiedRects],
+    });
+    const cleared =
+      !fixedSurfaceRects.some((surface) => rectsOverlap(shift.rect, surface)) &&
+      !occupiedRects.some((surface) => rectsOverlap(shift.rect, surface));
+    if (cleared && (shift.dx !== 0 || shift.dy !== 0)) {
+      setSkeletonStyleValue(
+        el,
+        'transform',
+        `${el.style.transform} translate(${shift.dx}px, ${shift.dy}px)`,
+        domWriteStats,
+      );
+      el.dataset.fixedSurfaceRestore = 'safe-shift';
+      onPlacedCardRectChange?.(el, shift.rect);
+      occupiedRects.push(shift.rect);
+      restored += 1;
+      continue;
+    }
+    if (el.dataset.pathEndpointPanelClearance === 'panel-owned-expanded-visible') {
+      showSkeletonCard(el, '1', domWriteStats);
+      el.dataset.fixedSurfaceRestore = 'path-endpoint-panel-owned-visible';
+      occupiedRects.push(rect);
+      continue;
+    }
+    hideSkeletonCard(el, domWriteStats);
+    el.dataset.fixedSurfaceRestore = 'hidden-under-fixed-surface';
+  }
+  return restored;
+}
+
+function resolveFixedSurfaceRestoreNoop({
+  orderedEls,
+  containerRect,
+  fixedSurfaceRects,
+  readPlacedCardRect,
+}: {
+  orderedEls: readonly HTMLElement[];
+  containerRect: DOMRect;
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>;
+  readPlacedCardRect?: (el: HTMLElement) => ConnectorRect;
+}): { checkedCount: number; skip: boolean } {
+  if (!readPlacedCardRect) {
+    return { checkedCount: 0, skip: false };
+  }
+  let checkedCount = 0;
+  for (const el of orderedEls) {
+    if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+    checkedCount += 1;
+    if (el.dataset.fixedSurfaceRestore !== undefined) {
+      return { checkedCount, skip: false };
+    }
+    const rect = readPlacedCardRect(el);
+    const collidesWithFixedSurface = fixedSurfaceRects.some((surface) =>
+      rectsOverlap(rect, surface),
+    );
+    const outsideViewport =
+      rect.left < SAFE_VIEWPORT_MARGIN ||
+      rect.top < SAFE_VIEWPORT_MARGIN ||
+      rect.right > containerRect.width - SAFE_VIEWPORT_MARGIN ||
+      rect.bottom > containerRect.height - SAFE_VIEWPORT_MARGIN;
+    if (collidesWithFixedSurface || outsideViewport) {
+      return { checkedCount, skip: false };
+    }
+  }
+  return { checkedCount, skip: true };
+}
+
+function suppressLiveCardsOverlappingFixedSurfaces(
+  orderedEls: readonly HTMLElement[],
+  containerRect: DOMRect,
+  domWriteStats: SkeletonDomWriteStats,
+  readPlacedCardRect?: (el: HTMLElement) => ConnectorRect | null,
+  onPlacedCardRectRead?: (el: HTMLElement, rect: ConnectorRect) => void,
+): { hidden: number; read: number } {
+  if (typeof document === 'undefined') return { hidden: 0, read: 0 };
+  const fixedSurfaceSelector = [
+    '[data-testid="topology-analysis-panel"]',
+    '[data-testid="topology-kind-legend"]',
+    '[data-testid="topology-relation-legend"]',
+    '[data-testid="topology-minimap"]',
+    '[data-testid="topology-node-popover"]',
+    '[data-testid="sigma-selected-edge-card"]',
+    '[data-testid="topology-path-start-prompt"]',
+    '[data-testid="topology-path-anchor-prompt"]',
+    '[data-testid="topology-path-result-banner"]',
+  ].join(', ');
+  const liveSurfaceRects = Array.from(
+    document.querySelectorAll<HTMLElement>(fixedSurfaceSelector),
+  )
+    .map((surface) => {
+      const style = getComputedStyle(surface);
+      const box = surface.getBoundingClientRect();
+      if (
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        (Number(style.opacity || '1') <= 0.01 &&
+          !isMountedTopologyBlockingSurface(surface)) ||
+        box.width <= 0 ||
+        box.height <= 0
+      ) {
+        return null;
+      }
+      const isAnalysisPanel = surface.dataset.testid === 'topology-analysis-panel';
+      return {
+        left: box.left - containerRect.left - COLLISION_PAD,
+        top: box.top - containerRect.top - COLLISION_PAD,
+        right:
+          box.right -
+          containerRect.left +
+          (isAnalysisPanel ? ANALYSIS_PANEL_TRAILING_PAD : COLLISION_PAD),
+        bottom:
+          box.bottom -
+          containerRect.top +
+          (isAnalysisPanel ? ANALYSIS_PANEL_BLOCK_END_PAD : COLLISION_PAD),
+      };
+    })
+    .filter((rect): rect is { left: number; top: number; right: number; bottom: number } =>
+      rect !== null,
+    );
+  let hidden = 0;
+  let read = 0;
+  if (liveSurfaceRects.length === 0) return { hidden, read };
+  for (const el of orderedEls) {
+    if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+    if (
+      el.dataset.pathRole === 'source' ||
+      el.dataset.pathRole === 'target' ||
+      el.dataset.pathEndpointPanelClearance === 'panel-owned-expanded-visible'
+    ) {
+      delete el.dataset.fixedSurfaceLiveSuppressed;
+      continue;
+    }
+    const cachedRect = readPlacedCardRect?.(el) ?? null;
+    const rect =
+      cachedRect ??
+      (() => {
+        const box = el.getBoundingClientRect();
+        read += 1;
+        const next = {
+          left: box.left - containerRect.left,
+          top: box.top - containerRect.top,
+          right: box.right - containerRect.left,
+          bottom: box.bottom - containerRect.top,
+        };
+        onPlacedCardRectRead?.(el, next);
+        return next;
+      })();
+    if (!liveSurfaceRects.some((surface) => rectsOverlap(rect, surface))) {
+      delete el.dataset.fixedSurfaceLiveSuppressed;
+      continue;
+    }
+    hideSkeletonCard(el, domWriteStats);
+    el.dataset.fixedSurfaceLiveSuppressed = 'hidden-under-fixed-surface';
+    hidden += 1;
+  }
+  return { hidden, read };
+}
+
+function dragSettleCardPriority(el: HTMLElement): number {
+  if (el.dataset.selected === 'true') return 0;
+  if (el.dataset.pathRole === 'source' || el.dataset.pathRole === 'target') return 0;
+  if (el.dataset.dragClusterRole === 'root') return 0;
+  if (!el.dataset.dockParent && el.dataset.dimmed !== 'true') return 1;
+  if (el.dataset.dockParent && el.dataset.dimmed !== 'true') return 2;
+  const tier = Number(el.dataset.tier ?? '3');
+  return tier <= 1 ? 3 : 4;
+}
+
+function suppressDragCardOverlaps(
+  orderedEls: readonly HTMLElement[],
+  readCardRect: (el: HTMLElement) => {
+    rect: { left: number; top: number; right: number; bottom: number } | null;
+    visible: boolean;
+  },
+  hiddenDatasetKey: 'dragActiveOverlapHidden' | 'dragSettleOverlapHidden',
+  onHidden?: (el: HTMLElement) => void,
+): number {
+  const visible = orderedEls
+    .map((el) => {
+      const cached = readCardRect(el);
+      if (!cached.visible || !cached.rect) return null;
+      return {
+        el,
+        priority: dragSettleCardPriority(el),
+        rect: cached.rect,
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    .sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      const tierA = Number(a.el.dataset.tier ?? '3');
+      const tierB = Number(b.el.dataset.tier ?? '3');
+      if (tierA !== tierB) return tierA - tierB;
+      return Number(a.el.dataset.layoutY ?? '0') - Number(b.el.dataset.layoutY ?? '0');
+    });
+  const accepted: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+  let hidden = 0;
+  for (const item of visible) {
+    delete item.el.dataset[hiddenDatasetKey];
+    if (
+      accepted.some((rect) =>
+        rectsOverlap(item.rect, rect, DRAG_OVERLAP_SUPPRESSION_PAD),
+      )
+    ) {
+      hideSkeletonCard(item.el);
+      item.el.dataset[hiddenDatasetKey] = 'true';
+      onHidden?.(item.el);
+      hidden += 1;
+      continue;
+    }
+    accepted.push(item.rect);
+  }
+  return hidden;
+}
+
+function suppressVisibleCardOverlaps(
+  orderedEls: readonly HTMLElement[],
+  readCardRect: (el: HTMLElement) => {
+    rect: { left: number; top: number; right: number; bottom: number } | null;
+    visible: boolean;
+  },
+  isProtectedCard: (el: HTMLElement) => boolean = () => false,
+  options: {
+    containerRect?: DOMRect;
+    fixedSurfaceRects?: Array<{
+      left: number;
+      top: number;
+      right: number;
+      bottom: number;
+    }>;
+    onShift?: (
+      el: HTMLElement,
+      rect: { left: number; top: number; right: number; bottom: number },
+    ) => void;
+    priorityOverride?: (el: HTMLElement) => number | null;
+  } = {},
+): number {
+  const visible = orderedEls
+    .map((el) => {
+      const cached = readCardRect(el);
+      if (!cached.visible || !cached.rect) return null;
+      return {
+        el,
+        priority: options.priorityOverride?.(el) ?? dragSettleCardPriority(el),
+        rect: cached.rect,
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    .sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      const tierA = Number(a.el.dataset.tier ?? '3');
+      const tierB = Number(b.el.dataset.tier ?? '3');
+      if (tierA !== tierB) return tierA - tierB;
+      return Number(a.el.dataset.layoutY ?? '0') - Number(b.el.dataset.layoutY ?? '0');
+    });
+  const accepted: Array<{ left: number; top: number; right: number; bottom: number }> = [
+    ...(options.fixedSurfaceRects ?? []),
+  ];
+  let hidden = 0;
+  for (const item of visible) {
+    delete item.el.dataset.supportRailOverlapHidden;
+    if (accepted.some((rect) => rectsOverlap(item.rect, rect, OVERVIEW_COLLISION_PAD))) {
+      if (isProtectedCard(item.el)) {
+        item.el.dataset.supportRailOverlapProtected = 'selected-relation-endpoint';
+        accepted.push(item.rect);
+        continue;
+      }
+      if (
+        item.el.dataset.selectedFocusContextRail === 'true' &&
+        options.containerRect
+      ) {
+        let dx = 0;
+        let dy = 0;
+        for (const blocker of accepted) {
+          const adjusted = {
+            left: item.rect.left + dx,
+            top: item.rect.top + dy,
+            right: item.rect.right + dx,
+            bottom: item.rect.bottom + dy,
+          };
+          if (!rectsOverlap(adjusted, blocker, OVERVIEW_COLLISION_PAD)) continue;
+          const escape = chooseCollisionEscapeDelta(adjusted, blocker);
+          dx += escape.dx;
+          dy += escape.dy;
+        }
+        const shifted = {
+          left: item.rect.left + dx,
+          top: item.rect.top + dy,
+          right: item.rect.right + dx,
+          bottom: item.rect.bottom + dy,
+        };
+        const inside =
+          shifted.left >= SAFE_VIEWPORT_MARGIN &&
+          shifted.top >= SAFE_VIEWPORT_MARGIN &&
+          shifted.right <= options.containerRect.width - SAFE_VIEWPORT_MARGIN &&
+          shifted.bottom <= options.containerRect.height - SAFE_VIEWPORT_MARGIN;
+        const clear = !accepted.some((rect) =>
+          rectsOverlap(shifted, rect, OVERVIEW_COLLISION_PAD),
+        );
+        if (inside && clear && (dx !== 0 || dy !== 0)) {
+          item.el.style.transform = `${item.el.style.transform} translate(${dx}px, ${dy}px)`;
+          item.el.dataset.supportRailOverlapProtected = 'focus-context-rail-safe-shift';
+          item.el.dataset.selectedFocusContextRailCollisionResolve =
+            'support-rail-safe-shift';
+          options.onShift?.(item.el, shifted);
+          accepted.push(shifted);
+          continue;
+        }
+      }
+      hideSkeletonCard(item.el);
+      item.el.dataset.supportRailOverlapHidden = 'true';
+      hidden += 1;
+      continue;
+    }
+    delete item.el.dataset.supportRailOverlapProtected;
+    accepted.push(item.rect);
+  }
+  return hidden;
+}
+
+function collectPathAnalysisPanelRects(containerRect: DOMRect) {
+  if (typeof document === 'undefined') return [];
+  const panel = document.querySelector<HTMLElement>(
+    '[data-testid="topology-analysis-panel"][data-analysis-mode="path"]',
+  );
+  if (!panel) return [];
+  const rect = panel.getBoundingClientRect();
+  const style = getComputedStyle(panel);
+  if (
+    style.display === 'none' ||
+    style.visibility === 'hidden' ||
+    rect.width <= 0 ||
+    rect.height <= 0
+  ) {
+    return [];
+  }
+  return [
+    {
+      left: rect.left - containerRect.left - COLLISION_PAD,
+      top: rect.top - containerRect.top - COLLISION_PAD,
+      right: rect.right - containerRect.left + ANALYSIS_PANEL_TRAILING_PAD,
+      bottom: rect.bottom - containerRect.top + ANALYSIS_PANEL_BLOCK_END_PAD,
+    },
+  ];
 }
 
 function isElementInsideContainerViewport(el: HTMLElement, containerRect: DOMRect): boolean {
@@ -847,6 +2312,25 @@ function isElementInsideContainerViewport(el: HTMLElement, containerRect: DOMRec
     rect.right - containerRect.left <= containerRect.width &&
     rect.bottom - containerRect.top <= containerRect.height
   );
+}
+
+function elementRectRelativeToContainer(el: HTMLElement, containerRect: DOMRect) {
+  const rect = el.getBoundingClientRect();
+  return {
+    left: rect.left - containerRect.left,
+    top: rect.top - containerRect.top,
+    right: rect.right - containerRect.left,
+    bottom: rect.bottom - containerRect.top,
+  };
+}
+
+function isElementClearOfFixedSurfaces(
+  el: HTMLElement,
+  containerRect: DOMRect,
+  fixedSurfaceRects: ReadonlyArray<{ left: number; top: number; right: number; bottom: number }>,
+): boolean {
+  const rect = elementRectRelativeToContainer(el, containerRect);
+  return !fixedSurfaceRects.some((surface) => rectsOverlap(rect, surface));
 }
 
 function collectDraggedCluster(
@@ -870,6 +2354,9 @@ function collectDraggedCluster(
       directChildren.push(neighbor);
     }
   }
+  if (rootTier === 0) {
+    return group;
+  }
   for (const child of directChildren) {
     const childTier = tierByNodeId.get(child);
     for (const grandchild of graph.neighbors(child)) {
@@ -888,11 +2375,16 @@ function clampDraggedClusterDelta(
   group: ReadonlySet<string>,
   dx: number,
   dy: number,
+  cardElements: readonly HTMLElement[] | null = null,
+  rootSlug?: string,
+  rootPriorityClampOverride = false,
 ): { dx: number; dy: number } {
   if (!container) return { dx, dy };
   const containerRect = container.getBoundingClientRect();
   const movingRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
-  for (const el of container.querySelectorAll<HTMLElement>('[data-skeleton-card]')) {
+  const rootRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+  const candidates = cardElements ?? container.querySelectorAll<HTMLElement>('[data-skeleton-card]');
+  for (const el of candidates) {
     const slug = el.dataset.slug;
     const dockParent = el.dataset.dockParent;
     if (!slug || (!group.has(slug) && (!dockParent || !group.has(dockParent)))) continue;
@@ -906,17 +2398,32 @@ function clampDraggedClusterDelta(
     ) {
       continue;
     }
-    movingRects.push({
+    const relativeRect = {
       left: rect.left - containerRect.left,
       top: rect.top - containerRect.top,
       right: rect.right - containerRect.left,
       bottom: rect.bottom - containerRect.top,
-    });
+    };
+    movingRects.push(relativeRect);
+    if (rootSlug && slug === rootSlug) {
+      rootRects.push(relativeRect);
+    }
   }
   if (movingRects.length === 0) return { dx, dy };
   const fixedSurfaceRects = collectFixedSurfaceRects(containerRect);
+  const rootPriorityClamp =
+    (rootPriorityClampOverride || group.size >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD) &&
+    rootRects.length > 0;
+  const clampRects = rootPriorityClamp ? rootRects : movingRects;
+  container.dataset.dragClampScope = rootPriorityClamp
+    ? 'root-card-for-large-cluster'
+    : 'cluster-bounds';
+  container.dataset.dragClampClusterSize = String(group.size);
+  container.dataset.dragLargeClusterClampThreshold = String(
+    DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD,
+  );
 
-  const bounds = movingRects.reduce(
+  const bounds = clampRects.reduce(
     (acc, rect) => ({
       left: Math.min(acc.left, rect.left),
       top: Math.min(acc.top, rect.top),
@@ -994,6 +2501,7 @@ function moveDraggedCluster(
   sigma: SkeletonCardsCamera,
   movableNodeIds: ReadonlySet<string>,
   tierByNodeId: ReadonlyMap<string, SkeletonCardModel['tier']> = new Map(),
+  dragGroup: ReadonlySet<string> | null = null,
 ): Set<string> {
   const attrs = graph.getNodeAttributes(nodeId);
   const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
@@ -1001,7 +2509,9 @@ function moveDraggedCluster(
   const graphDx = next.x - attrs.x;
   const graphDy = next.y - attrs.y;
 
-  const group = collectDraggedCluster(graph, nodeId, movableNodeIds, tierByNodeId);
+  const group = dragGroup
+    ? new Set(dragGroup)
+    : collectDraggedCluster(graph, nodeId, movableNodeIds, tierByNodeId);
 
   for (const member of group) {
     const memberAttrs = graph.getNodeAttributes(member);
@@ -1009,6 +2519,19 @@ function moveDraggedCluster(
     graph.setNodeAttribute(member, 'y', memberAttrs.y + graphDy);
   }
   return group;
+}
+
+function snapshotDraggedClusterPositions(
+  graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
+  nodeIds: Iterable<string>,
+): Map<string, { x: number; y: number }> {
+  const positions = new Map<string, { x: number; y: number }>();
+  for (const nodeId of nodeIds) {
+    if (!graph.hasNode(nodeId)) continue;
+    const attrs = graph.getNodeAttributes(nodeId);
+    positions.set(nodeId, { x: attrs.x ?? 0, y: attrs.y ?? 0 });
+  }
+  return positions;
 }
 
 function applyViewportDeltaToNode(
@@ -1028,54 +2551,61 @@ function applyViewportDeltaToNode(
 function snapshotDockDragPositions(
   container: HTMLElement | null,
   movingGroup: ReadonlySet<string>,
+  cardElements: readonly HTMLElement[] | null = null,
 ): Map<string, DockDragSnapshot> {
   const snapshots = new Map<string, DockDragSnapshot>();
   if (!container) return snapshots;
   const containerRect = container.getBoundingClientRect();
   const parentAnchorBySlug = new Map<string, { x: number; y: number }>();
-  for (const parent of container.querySelectorAll<HTMLElement>('[data-skeleton-card]')) {
-    const slug = parent.dataset.slug;
-    if (!slug || !movingGroup.has(slug)) continue;
-    const rect = parent.getBoundingClientRect();
+  const candidates = cardElements ?? container.querySelectorAll<HTMLElement>('[data-skeleton-card]');
+  const cardSnapshots: DockDragCardSnapshot[] = [];
+  for (const element of candidates) {
+    const slug = element.dataset.slug;
+    if (!slug) continue;
+    const dockParent = element.dataset.dockParent ?? '';
+    if (!movingGroup.has(slug) && (!dockParent || !movingGroup.has(dockParent))) continue;
+    const rect = element.getBoundingClientRect();
+    const layoutY = Number(element.dataset.layoutY);
+    const y = Number.isFinite(layoutY)
+      ? layoutY
+      : (rect.top + rect.bottom) / 2 - containerRect.top;
     const x = (rect.left + rect.right) / 2 - containerRect.left;
-    const layoutY = Number(parent.dataset.layoutY);
-    if (Number.isFinite(layoutY)) {
-      parentAnchorBySlug.set(slug, { x, y: layoutY });
-      continue;
-    }
-    parentAnchorBySlug.set(slug, {
+    const childStartX =
+      element.dataset.dockSide === 'left'
+        ? rect.right - containerRect.left
+        : rect.left - containerRect.left;
+    cardSnapshots.push({
+      childStartX,
+      dockParent,
+      layoutY,
+      slug,
       x,
-      y: (rect.top + rect.bottom) / 2 - containerRect.top,
+      y,
     });
+    if (!movingGroup.has(slug)) continue;
+    parentAnchorBySlug.set(slug, { x, y });
   }
-  for (const child of container.querySelectorAll<HTMLElement>('[data-skeleton-card][data-dock-parent]')) {
-    const slug = child.dataset.slug;
-    const parentSlug = child.dataset.dockParent;
-    if (!slug || !parentSlug || !movingGroup.has(parentSlug)) continue;
+  for (const child of cardSnapshots) {
+    const parentSlug = child.dockParent;
+    if (!parentSlug || !movingGroup.has(parentSlug)) continue;
     const parentStart = parentAnchorBySlug.get(parentSlug);
     if (!parentStart) continue;
-    const childRect = child.getBoundingClientRect();
-    const childStartX =
-      child.dataset.dockSide === 'left'
-        ? childRect.right - containerRect.left
-        : childRect.left - containerRect.left;
-    const layoutY = Number(child.dataset.layoutY);
-    if (Number.isFinite(layoutY)) {
-      snapshots.set(slug, {
-        childStartX,
+    if (Number.isFinite(child.layoutY)) {
+      snapshots.set(child.slug, {
+        childStartX: child.childStartX,
         parentSlug,
         parentStartX: parentStart.x,
         parentStartY: parentStart.y,
-        childStartY: layoutY,
+        childStartY: child.layoutY,
       });
       continue;
     }
-    snapshots.set(slug, {
-      childStartX,
+    snapshots.set(child.slug, {
+      childStartX: child.childStartX,
       parentSlug,
       parentStartX: parentStart.x,
       parentStartY: parentStart.y,
-      childStartY: (childRect.top + childRect.bottom) / 2 - containerRect.top,
+      childStartY: child.y,
     });
   }
   return snapshots;
@@ -1096,58 +2626,19 @@ function chooseCollisionEscapeDelta(
     : { dx: 0, dy: candidateY };
 }
 
-function resolveFocusHullRect({
-  rect,
-  fixedSurfaceRects,
-  containerWidth,
-  containerHeight,
-}: {
-  rect: { left: number; top: number; right: number; bottom: number };
-  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>;
-  containerWidth: number;
-  containerHeight: number;
-}): { left: number; top: number; right: number; bottom: number } {
-  let adjusted = { ...rect };
-  for (const surface of fixedSurfaceRects) {
-    if (!rectsOverlap(adjusted, surface)) continue;
-    const { dx, dy } = chooseCollisionEscapeDelta(adjusted, surface);
-    adjusted = {
-      left: adjusted.left + dx,
-      top: adjusted.top + dy,
-      right: adjusted.right + dx,
-      bottom: adjusted.bottom + dy,
-    };
-    const width = adjusted.right - adjusted.left;
-    const height = adjusted.bottom - adjusted.top;
-    const clampedLeft = Math.min(
-      Math.max(SAFE_VIEWPORT_MARGIN, adjusted.left),
-      Math.max(SAFE_VIEWPORT_MARGIN, containerWidth - width - SAFE_VIEWPORT_MARGIN),
-    );
-    const clampedTop = Math.min(
-      Math.max(SAFE_VIEWPORT_MARGIN, adjusted.top),
-      Math.max(SAFE_VIEWPORT_MARGIN, containerHeight - height - SAFE_VIEWPORT_MARGIN),
-    );
-    adjusted = {
-      left: clampedLeft,
-      top: clampedTop,
-      right: clampedLeft + width,
-      bottom: clampedTop + height,
-    };
-  }
-  return adjusted;
-}
-
 function pushCardsAwayFromDraggedCluster(
   container: HTMLElement | null,
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
   sigma: SkeletonCardsCamera,
   group: ReadonlySet<string>,
   movableNodeIds: ReadonlySet<string>,
+  cardElements: readonly HTMLElement[] | null = null,
 ): Set<string> {
   const pushedSlugs = new Set<string>();
   if (!container) return pushedSlugs;
   const containerRect = container.getBoundingClientRect();
-  const records = Array.from(container.querySelectorAll<HTMLElement>('[data-skeleton-card]'))
+  const candidates = cardElements ?? Array.from(container.querySelectorAll<HTMLElement>('[data-skeleton-card]'));
+  const records = Array.from(candidates)
     .map((el) => {
       const slug = el.dataset.slug;
       const dockParent = el.dataset.dockParent;
@@ -1251,13 +2742,23 @@ export function SigmaSkeletonCards({
   cards,
   selectedSlug = null,
   selectedRelationEdgeId = null,
+  selectedRelationData = null,
+  healthRepairTarget = null,
+  selectedMapFixedGeographyActive = false,
+  selectedFocusCenterActive = false,
   onSelect,
   pathWorkflowActive = false,
   pathSelection = null,
   onPathSelectionChange,
   onVisibilityChange,
   onRelationSelect,
+  onRelationHover,
+  onDragClusterStart,
+  onDragClusterMove,
+  onDragClusterEnd,
   describeKind,
+  describeKindBadge,
+  onExpandRequest,
 }: SigmaSkeletonCardsProps) {
   const tEdgeTooltip = useTranslations('topologyWidgets.edgeTooltip');
   const relationTypeLabels = useMemo<RelationTypeLabels>(
@@ -1271,10 +2772,77 @@ export function SigmaSkeletonCards({
     }),
     [tEdgeTooltip],
   );
+  const relationActionChipText = useCallback(
+    (action: RelationCopyActionKind) =>
+      action === 'explain_relation'
+        ? tEdgeTooltip('actionExplainRelationVisible')
+        : tEdgeTooltip('actionRelationCheckVisible'),
+    [tEdgeTooltip],
+  );
+  const relationQualityAriaText = useCallback(
+    (quality: NonNullable<SigmaEdgeAttrs['relationQuality']>) => {
+      if (quality === 'strong') return tEdgeTooltip('qualityStrong');
+      if (quality === 'weak') return tEdgeTooltip('qualityWeak');
+      if (quality === 'review') return tEdgeTooltip('qualityReview');
+      return tEdgeTooltip('qualitySupported');
+    },
+    [tEdgeTooltip],
+  );
+  const relationEvidenceAriaLabel = useCallback(
+    ({
+      evidenceCount,
+      state,
+    }: {
+      evidenceCount?: number;
+      state: RelationEvidenceState;
+    }) => {
+      if (state === 'source-backed') {
+        return tEdgeTooltip('evidenceCount', { count: Math.max(1, evidenceCount ?? 1) });
+      }
+      if (state === 'authored') return tEdgeTooltip('authoredEvidence');
+      return tEdgeTooltip('noEvidence');
+    },
+    [tEdgeTooltip],
+  );
+  const relationEvidenceVisibleText = useCallback(
+    ({
+      evidenceCount,
+      state,
+    }: {
+      evidenceCount?: number;
+      state: RelationEvidenceState;
+    }) => {
+      if (state === 'source-backed') {
+        return tEdgeTooltip('evidenceCountShort', {
+          count: Math.max(1, evidenceCount ?? 1),
+        });
+      }
+      if (state === 'authored') return tEdgeTooltip('authoredEvidence');
+      return tEdgeTooltip('noEvidence');
+    },
+    [tEdgeTooltip],
+  );
+  const relationAgentGateAriaText = useCallback(
+    (gateKind: RelationAgentGateKind) => {
+      if (gateKind === 'handoff-ready') return tEdgeTooltip('agentGateHandoffReady');
+      if (gateKind === 'preflight-first') return tEdgeTooltip('agentGatePreflightFirst');
+      return tEdgeTooltip('agentGateReviewFirst');
+    },
+    [tEdgeTooltip],
+  );
   const formatRelationLabel = useCallback(
     (relationType: string, count = 1) =>
       relationLabelText(relationType, count, relationTypeLabels),
     [relationTypeLabels],
+  );
+  const formatRelationVisibleLabel = useCallback(
+    (relationType: string, count = 1) =>
+      relationLabelVisibleText({
+        count,
+        label: relationLabelText(relationType, 1, relationTypeLabels),
+        relationBadgeCount: (values) => tEdgeTooltip('relationBadgeCount', values),
+      }),
+    [relationTypeLabels, tEdgeTooltip],
   );
   const containerRef = useRef<HTMLDivElement | null>(null);
   // hover 간단 팝업 — "이게 어떤 계층인지 + 한 줄 설명" (사용자 요청).
@@ -1285,10 +2853,23 @@ export function SigmaSkeletonCards({
     nodeId: string;
   } | null>(null);
   const [activeDragCluster, setActiveDragCluster] = useState<Set<string> | null>(null);
+  const [activeDragClusterPolicy, setActiveDragClusterPolicy] = useState('idle');
+  const [activeDragFreeContextCount, setActiveDragFreeContextCount] = useState(0);
   const [activeDragMotion, setActiveDragMotion] = useState(false);
   const [activeDragRootSlug, setActiveDragRootSlug] = useState("");
-  const [activeDragRootTitle, setActiveDragRootTitle] = useState("");
+  const [dragPhysicsSyncActive, setDragPhysicsSyncActive] = useState(false);
   const [dragSettledSlugs, setDragSettledSlugs] = useState<Set<string>>(() => new Set());
+  const [dragSettledRootSlug, setDragSettledRootSlug] = useState("");
+  const [manualFocusPlacement, setManualFocusPlacement] = useState<{
+    selectedSlug: string | null;
+    slugs: Set<string>;
+  }>(() => ({ selectedSlug: null, slugs: new Set() }));
+  const [dragFrameMarkerSnapshot, setDragFrameMarkerSnapshot] = useState({
+    domIndexSize: 0,
+    lastDomIndexSize: 0,
+    lastSnapshotCount: 0,
+    snapshotCount: 0,
+  });
   const dragReleaseTimerRef = useRef<number | null>(null);
   const activeDragMotionRef = useRef(false);
   // 카드 드래그 — 골격 anchor 카드를 손으로 옮길 수 있게(과거 토폴로지의
@@ -1297,21 +2878,172 @@ export function SigmaSkeletonCards({
   const dragRef = useRef<{
     sourceSlug: string;
     rootSlug: string;
-    rootTitle: string;
     lastX: number;
     lastY: number;
     travel: number;
+    reactiveMotionDx: number;
+    reactiveMotionDy: number;
+    viewportPreviewActive: boolean;
+    viewportPreviewDx: number;
+    viewportPreviewDy: number;
+    rootStartViewportX: number;
+    rootStartViewportY: number;
+    rootPriorityClamp: boolean;
     dockDragSnapshots: Map<string, DockDragSnapshot>;
+    cardElements: SkeletonCardElementIndex;
+    movedGroup: Set<string>;
+    movableNodeIds: Set<string>;
+    tierByNodeId: Map<string, SkeletonCardModel['tier']>;
   } | null>(null);
+  const dragViewportOffsetsRef = useRef(new Map<string, { dx: number; dy: number }>());
+  const [dragViewportOffsetPersistedCount, setDragViewportOffsetPersistedCount] =
+    useState(0);
   const activeDockDragSnapshotsRef = useRef<Map<string, DockDragSnapshot>>(new Map());
   const suppressClickRef = useRef(false);
   const dragSettledTimerRef = useRef<number | null>(null);
   // 전환 창 동안 충돌 판정 동결용 (slug → 직전 collides).
   const collisionFreezeRef = useRef(new Map<string, boolean>());
   const lastVisibilityStatsRef = useRef<{ visible: number; total: number } | null>(null);
+  const visibilityStatsReportCountRef = useRef(0);
+  const pendingVisibilityStatsRef = useRef<{ visible: number; total: number } | null>(null);
+  const visibilityStatsFlushTimerRef = useRef<number | null>(null);
   const hoverPopupRef = useRef<HTMLDivElement | null>(null);
-  const dragClusterHullRef = useRef<HTMLDivElement | null>(null);
   const repositionRafRef = useRef<number | null>(null);
+  const repositionNowRef = useRef<(() => void) | null>(null);
+  const responsiveRepositionTimerRef = useRef<number | null>(null);
+  const fixedSurfaceRectCacheRef = useRef<FixedSurfaceRectCache | null>(null);
+  const visibilityFrameSnapshotRef = useRef<VisibilityFrameSnapshot | null>(null);
+  const layoutTransitionRepositionTimerRef = useRef<number | null>(null);
+  const lastLayoutTransitionRepositionAtRef = useRef(0);
+  const initialLayoutTransitionResolvedRef = useRef(false);
+  const initialLoadRepositionThrottleUntilRef = useRef(0);
+  const lastAppliedTopologyUiScaleRef = useRef<number | null>(null);
+  const verifierZoomRatioRef = useRef<number | null>(null);
+  const cardPlacementSizeCacheRef = useRef(
+    new Map<string, CardPlacementSizeCacheEntry>(),
+  );
+  const lastLayoutEffectRepositionKeyRef = useRef<string | null>(null);
+  const layoutEffectRepositionRunCountRef = useRef(0);
+  const layoutEffectRepositionSkipCountRef = useRef(0);
+  const maxRepositionDurationMsRef = useRef(0);
+
+  const invalidateFixedSurfaceRectCache = useCallback(() => {
+    fixedSurfaceRectCacheRef.current = null;
+    visibilityFrameSnapshotRef.current = null;
+  }, []);
+
+  const getFixedSurfaceRects = useCallback((containerRect: DOMRect) => {
+    const cached = fixedSurfaceRectCacheRef.current;
+    const now = Date.now();
+    if (
+      cached &&
+      cached.width === containerRect.width &&
+      cached.height === containerRect.height &&
+      now - cached.timestamp < FIXED_SURFACE_RECT_CACHE_MS
+    ) {
+      return cached.rects;
+    }
+    const rects = collectFixedSurfaceRects(containerRect);
+    fixedSurfaceRectCacheRef.current = {
+      height: containerRect.height,
+      rects,
+      timestamp: now,
+      width: containerRect.width,
+    };
+    return rects;
+  }, []);
+
+  const emitVisibilityStats = useCallback(
+    (
+      container: HTMLElement,
+      nextVisibilityStats: { visible: number; total: number },
+      options: { debounceStable: boolean; deferDuringLayout: boolean },
+    ) => {
+      container.dataset.visibilityStatsReportPolicy = options.deferDuringLayout
+        ? 'defer-during-layout-animate'
+        : options.debounceStable
+          ? 'debounce-stable-counts'
+          : 'immediate-stable-counts';
+      if (
+        !shouldReportSkeletonVisibilityStats(
+          lastVisibilityStatsRef.current,
+          nextVisibilityStats,
+        )
+      ) {
+        return;
+      }
+      if (options.deferDuringLayout) {
+        pendingVisibilityStatsRef.current = nextVisibilityStats;
+        container.dataset.visibilityStatsReportDeferred = 'true';
+        if (visibilityStatsFlushTimerRef.current !== null) return;
+        visibilityStatsFlushTimerRef.current = window.setTimeout(() => {
+          visibilityStatsFlushTimerRef.current = null;
+          const pending = pendingVisibilityStatsRef.current;
+          pendingVisibilityStatsRef.current = null;
+          const currentContainer = containerRef.current;
+          if (!pending || !currentContainer) return;
+          if (
+            !shouldReportSkeletonVisibilityStats(
+              lastVisibilityStatsRef.current,
+              pending,
+            )
+          ) {
+            return;
+          }
+          lastVisibilityStatsRef.current = pending;
+          visibilityStatsReportCountRef.current += 1;
+          currentContainer.dataset.visibilityStatsReportCount = String(
+            visibilityStatsReportCountRef.current,
+          );
+          currentContainer.dataset.visibilityStatsReportDeferred = 'false';
+          onVisibilityChange?.(pending);
+        }, 520);
+        return;
+      }
+      if (options.debounceStable && lastVisibilityStatsRef.current !== null) {
+        pendingVisibilityStatsRef.current = nextVisibilityStats;
+        container.dataset.visibilityStatsReportDeferred = 'true';
+        if (visibilityStatsFlushTimerRef.current !== null) return;
+        visibilityStatsFlushTimerRef.current = window.setTimeout(() => {
+          visibilityStatsFlushTimerRef.current = null;
+          const pending = pendingVisibilityStatsRef.current;
+          pendingVisibilityStatsRef.current = null;
+          const currentContainer = containerRef.current;
+          if (!pending || !currentContainer) return;
+          if (
+            !shouldReportSkeletonVisibilityStats(
+              lastVisibilityStatsRef.current,
+              pending,
+            )
+          ) {
+            currentContainer.dataset.visibilityStatsReportDeferred = 'false';
+            return;
+          }
+          lastVisibilityStatsRef.current = pending;
+          visibilityStatsReportCountRef.current += 1;
+          currentContainer.dataset.visibilityStatsReportCount = String(
+            visibilityStatsReportCountRef.current,
+          );
+          currentContainer.dataset.visibilityStatsReportDeferred = 'false';
+          onVisibilityChange?.(pending);
+        }, 360);
+        return;
+      }
+      if (visibilityStatsFlushTimerRef.current !== null) {
+        window.clearTimeout(visibilityStatsFlushTimerRef.current);
+        visibilityStatsFlushTimerRef.current = null;
+      }
+      pendingVisibilityStatsRef.current = null;
+      container.dataset.visibilityStatsReportDeferred = 'false';
+      lastVisibilityStatsRef.current = nextVisibilityStats;
+      visibilityStatsReportCountRef.current += 1;
+      container.dataset.visibilityStatsReportCount = String(
+        visibilityStatsReportCountRef.current,
+      );
+      onVisibilityChange?.(nextVisibilityStats);
+    },
+    [onVisibilityChange],
+  );
 
   const clearActiveDragCluster = useCallback(() => {
     if (dragReleaseTimerRef.current !== null) {
@@ -1319,11 +3051,21 @@ export function SigmaSkeletonCards({
       dragReleaseTimerRef.current = null;
     }
     setActiveDragCluster(null);
+    setActiveDragClusterPolicy('idle');
+    setActiveDragFreeContextCount(0);
     setActiveDragMotion(false);
     activeDragMotionRef.current = false;
     setActiveDragRootSlug("");
-    setActiveDragRootTitle("");
+    if (dragRef.current) {
+      dragRef.current.viewportPreviewDx = 0;
+      dragRef.current.viewportPreviewDy = 0;
+    }
     activeDockDragSnapshotsRef.current = new Map();
+    const container = containerRef.current;
+    if (container) {
+      container.dataset.dragPhysicsSyncActive = 'false';
+    }
+    setDragPhysicsSyncActive(false);
   }, []);
 
   const settleActiveDragCluster = useCallback((linger: boolean) => {
@@ -1335,17 +3077,37 @@ export function SigmaSkeletonCards({
     activeDragMotionRef.current = false;
     if (!linger) {
       setActiveDragCluster(null);
+      setActiveDragClusterPolicy('idle');
+      setActiveDragFreeContextCount(0);
       setActiveDragRootSlug("");
-      setActiveDragRootTitle("");
+      if (dragRef.current) {
+        dragRef.current.viewportPreviewDx = 0;
+        dragRef.current.viewportPreviewDy = 0;
+      }
       activeDockDragSnapshotsRef.current = new Map();
+      const container = containerRef.current;
+      if (container) {
+        container.dataset.dragPhysicsSyncActive = 'false';
+      }
+      setDragPhysicsSyncActive(false);
       return;
     }
     dragReleaseTimerRef.current = window.setTimeout(() => {
       dragReleaseTimerRef.current = null;
       setActiveDragCluster(null);
+      setActiveDragClusterPolicy('idle');
+      setActiveDragFreeContextCount(0);
       setActiveDragRootSlug("");
-      setActiveDragRootTitle("");
+      if (dragRef.current) {
+        dragRef.current.viewportPreviewDx = 0;
+        dragRef.current.viewportPreviewDy = 0;
+      }
       activeDockDragSnapshotsRef.current = new Map();
+      const container = containerRef.current;
+      if (container) {
+        container.dataset.dragPhysicsSyncActive = 'false';
+      }
+      setDragPhysicsSyncActive(false);
     }, DRAG_GROUP_RELEASE_FEEDBACK_MS);
   }, []);
 
@@ -1415,6 +3177,14 @@ export function SigmaSkeletonCards({
     () => (pathSelectionTargetSlug ? resolveNodeId(pathSelectionTargetSlug) : null),
     [pathSelectionTargetSlug, resolveNodeId],
   );
+  const pathResultReady = Boolean(
+    pathWorkflowActive && resolvedPathSourceNodeId && resolvedPathTargetNodeId,
+  );
+  const healthRepairTargetSlug = healthRepairTarget?.slug ?? null;
+  const resolvedHealthRepairTargetNodeId = useMemo(
+    () => (healthRepairTargetSlug ? resolveNodeId(healthRepairTargetSlug) : null),
+    [healthRepairTargetSlug, resolveNodeId],
+  );
 
   const buildVisibleCardTierByNodeId = useCallback(() => {
     const tierByNodeId = new Map<string, SkeletonCardModel['tier']>();
@@ -1425,14 +3195,16 @@ export function SigmaSkeletonCards({
     return tierByNodeId;
   }, [cards, resolveNodeId]);
 
-  const markDragSettled = useCallback((slugs: ReadonlySet<string>) => {
+  const markDragSettled = useCallback((slugs: ReadonlySet<string>, rootSlug = "") => {
     if (slugs.size === 0) return;
     if (dragSettledTimerRef.current !== null) {
       window.clearTimeout(dragSettledTimerRef.current);
     }
     setDragSettledSlugs(new Set(slugs));
+    setDragSettledRootSlug(rootSlug);
     dragSettledTimerRef.current = window.setTimeout(() => {
       setDragSettledSlugs(new Set());
+      setDragSettledRootSlug("");
       dragSettledTimerRef.current = null;
     }, DRAG_SETTLE_FEEDBACK_MS);
   }, []);
@@ -1440,15 +3212,106 @@ export function SigmaSkeletonCards({
   const releaseDrag = useCallback(
     (sourceSlug: string) => {
       const drag = dragRef.current;
-      const moved = Boolean(drag && drag.sourceSlug === sourceSlug && drag.travel > 4);
+      if (!drag || drag.sourceSlug !== sourceSlug) {
+        return;
+      }
+      const moved = drag.travel > 4;
       if (moved) {
         suppressClickRef.current = true;
         activeDockDragSnapshotsRef.current = new Map(drag?.dockDragSnapshots ?? []);
+        if (drag.viewportPreviewActive) {
+          if (sigma && graph.hasNode(drag.rootSlug)) {
+            const attrs = graph.getNodeAttributes(drag.rootSlug);
+            const currentViewport = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
+            const missingDx =
+              drag.rootStartViewportX + drag.viewportPreviewDx - currentViewport.x;
+            const missingDy =
+              drag.rootStartViewportY + drag.viewportPreviewDy - currentViewport.y;
+            if (Math.abs(missingDx) > 0.5 || Math.abs(missingDy) > 0.5) {
+              drag.movedGroup = moveDraggedCluster(
+                graph,
+                drag.rootSlug,
+                missingDx,
+                missingDy,
+                sigma,
+                drag.movableNodeIds,
+                drag.tierByNodeId,
+                drag.movedGroup,
+              );
+            }
+            const container = containerRef.current;
+            if (container) {
+              container.dataset.dragReleaseGraphCatchupContract =
+                'active-preview-commits-to-graph-before-clearing-offset';
+              container.dataset.dragReleaseGraphCatchupDx = missingDx.toFixed(2);
+              container.dataset.dragReleaseGraphCatchupDy = missingDy.toFixed(2);
+            }
+          }
+          dragViewportOffsetsRef.current.clear();
+          setDragViewportOffsetPersistedCount(0);
+          const container = containerRef.current;
+          if (container) {
+            container.dataset.dragPreviewScope = 'committed-graph-position';
+            container.dataset.dragPreviewOffsetX = String(drag.viewportPreviewDx);
+            container.dataset.dragPreviewOffsetY = String(drag.viewportPreviewDy);
+            container.dataset.dragViewportOffsetPersistedCount = '0';
+          }
+        }
+        if (drag && sigma) {
+          const pushedSlugs = pushCardsAwayFromDraggedCluster(
+            containerRef.current,
+            graph,
+            sigma,
+            drag.movedGroup,
+            drag.movableNodeIds,
+            drag.cardElements.all,
+          );
+          markDragSettled(
+            new Set([...drag.movedGroup, ...pushedSlugs]),
+            drag.rootSlug,
+          );
+        }
+        if (
+          selectedFocusCenterActive &&
+          selectedRelationEdgeId === null &&
+          selectedSlug !== null &&
+          drag.movedGroup.has(selectedSlug)
+        ) {
+          setManualFocusPlacement({
+            selectedSlug,
+            slugs: new Set(drag.movedGroup),
+          });
+          const container = containerRef.current;
+          if (container) {
+            container.dataset.manualFocusPlacementContract =
+              'dragged-selected-focus-keeps-user-placement';
+            container.dataset.manualFocusPlacementRoot = selectedSlug;
+            container.dataset.manualFocusPlacementCount = String(drag.movedGroup.size);
+          }
+        }
       }
       dragRef.current = null;
+      if (moved) {
+        repositionNowRef.current?.();
+      }
+      onDragClusterEnd?.(drag.movedGroup);
+      const container = containerRef.current;
+      if (container) {
+        container.dataset.dragPhysicsSyncActive = 'false';
+      }
+      setDragPhysicsSyncActive(false);
       settleActiveDragCluster(moved);
     },
-    [settleActiveDragCluster],
+    [
+      graph,
+      markDragSettled,
+      onDragClusterEnd,
+      selectedFocusCenterActive,
+      selectedRelationEdgeId,
+      selectedSlug,
+      settleActiveDragCluster,
+      sigma,
+    ],
   );
 
   useEffect(() => {
@@ -1503,39 +3366,158 @@ export function SigmaSkeletonCards({
     return Array.from(groups.values()).slice(0, 3);
   }, [egoRelationConnectors]);
 
+  const selectedRelationLabelHandoff = useMemo(() => {
+    const selectedLabel = selectedRelationEdgeId
+      ? egoRelationLabels.find((label) => label.edgeId === selectedRelationEdgeId) ??
+        (() => {
+          if (!graph.hasEdge(selectedRelationEdgeId)) return null;
+          const [source, target] = graph.extremities(selectedRelationEdgeId);
+          return {
+            ...relationConnector(graph, source, target),
+            count: 1,
+          };
+        })()
+      : null;
+    const selectedRelationFallbackLabel =
+      selectedLabel ??
+      (selectedRelationData
+        ? {
+            count: selectedRelationData.relationLabelCount ?? 1,
+            edgeId: selectedRelationData.edgeId,
+            edgeSource: selectedRelationData.source,
+            edgeTarget: selectedRelationData.target,
+            from: selectedRelationData.source,
+            to: selectedRelationData.target,
+            key: [selectedRelationData.source, selectedRelationData.target].sort().join('→'),
+            kind: selectedRelationData.kind ?? selectedRelationData.relationType ?? 'depends-on',
+            relationType:
+              selectedRelationData.relationType ??
+              selectedRelationData.kind ??
+              'depends-on',
+            relationQuality: selectedRelationData.relationQuality,
+            evidenceCount: selectedRelationData.evidenceCount,
+            authored: selectedRelationData.authored,
+          }
+        : null);
+    if (!selectedRelationFallbackLabel) return null;
+    const gateKind = relationAgentGateKind(selectedRelationFallbackLabel);
+    const primaryCopyAction = relationPrimaryCopyAction(gateKind);
+    return {
+      action: primaryCopyAction,
+      cliFallbackCommand: relationLabelCliFallbackCommand({
+        action: primaryCopyAction,
+        from: selectedRelationFallbackLabel.edgeSource,
+        relationType: selectedRelationFallbackLabel.relationType,
+        to: selectedRelationFallbackLabel.edgeTarget,
+      }),
+      evidence: relationEvidenceState(selectedRelationFallbackLabel),
+      gate: gateKind,
+      quality: selectedRelationFallbackLabel.relationQuality ?? 'supported',
+      relationRoute: `${selectedRelationFallbackLabel.edgeSource}>${selectedRelationFallbackLabel.edgeTarget}`,
+      route: 'fact>evidence>gate>action',
+      source: selectedRelationFallbackLabel.edgeSource,
+      target: selectedRelationFallbackLabel.edgeTarget,
+      type: selectedRelationFallbackLabel.relationType,
+    };
+  }, [egoRelationLabels, graph, selectedRelationData, selectedRelationEdgeId]);
+  const selectedRelationSurfaceRoute = useMemo(() => {
+    if (selectedRelationData) {
+      return `${selectedRelationData.source}>${selectedRelationData.target}`;
+    }
+    if (!selectedRelationEdgeId || !graph.hasEdge(selectedRelationEdgeId)) {
+      return null;
+    }
+    const [source, target] = graph.extremities(selectedRelationEdgeId);
+    return `${source}>${target}`;
+  }, [graph, selectedRelationData, selectedRelationEdgeId]);
+  const selectedRelationSurfaceEdgeId =
+    selectedRelationEdgeId ?? selectedRelationData?.edgeId ?? undefined;
+  const topologyAttentionWinner =
+    selectedRelationSurfaceRoute !== null
+      ? 'active-relation-inspector'
+      : pathWorkflowActive
+        ? 'focus-path-state'
+        : selectedSlug
+          ? 'focus-state'
+          : 'map-layer';
+  const agentCurrentSurface =
+    selectedRelationSurfaceRoute !== null
+      ? 'selected-relation'
+      : pathWorkflowActive
+        ? pathResultReady
+          ? 'path-result'
+          : 'path-selection'
+        : selectedSlug
+          ? 'selected-node'
+          : 'map-overview';
+  const agentCurrentSurfaceRole =
+    selectedRelationSurfaceRoute !== null
+      ? 'active-relation-inspector'
+      : pathWorkflowActive
+        ? 'focus-path-state'
+        : selectedSlug
+          ? 'active-node-inspector'
+          : 'map-layer';
+  const agentCurrentSurfaceRoute =
+    selectedRelationSurfaceRoute ??
+    (pathWorkflowActive && pathSelectionSourceSlug
+      ? pathSelectionTargetSlug
+        ? `${pathSelectionSourceSlug}>${pathSelectionTargetSlug}`
+        : pathSelectionSourceSlug
+      : selectedSlug ?? undefined);
+
+  const selectedRelationSummary = useMemo(() => {
+    if (!ego || egoRelationConnectors.length === 0) return null;
+    const primaryRelation = egoRelationConnectors[0];
+    const agentGateKind = relationAgentGateKind(primaryRelation);
+    const primaryAction = relationPrimaryCopyAction(agentGateKind);
+    return {
+      cliFallbackCommand: relationLabelCliFallbackCommand({
+        action: primaryAction,
+        from: primaryRelation.edgeSource,
+        relationType: primaryRelation.relationType,
+        to: primaryRelation.edgeTarget,
+      }),
+      primaryAction,
+      relationCount: egoRelationConnectors.length,
+      source: primaryRelation.edgeSource,
+      target: primaryRelation.edgeTarget,
+      typeCount: new Set(
+        egoRelationConnectors.map((connector) => connector.relationType),
+      ).size,
+      type: primaryRelation.relationType,
+    };
+  }, [ego, egoRelationConnectors]);
+
+  const isSelectedRelationSurface = useCallback(
+    (relation: Pick<RelationConnector, 'edgeId' | 'edgeSource' | 'edgeTarget' | 'kind' | 'relationType'>) => {
+      if (selectedRelationEdgeId !== null && relation.edgeId === selectedRelationEdgeId) {
+        return true;
+      }
+      if (!selectedRelationData) return false;
+      const selectedType =
+        selectedRelationData.relationType ?? selectedRelationData.kind ?? 'depends-on';
+      const relationTypeMatches =
+        relation.relationType === selectedType || relation.kind === selectedType;
+      if (!relationTypeMatches) return false;
+      const sameDirection =
+        relation.edgeSource === selectedRelationData.source &&
+        relation.edgeTarget === selectedRelationData.target;
+      const reverseDirection =
+        relation.edgeSource === selectedRelationData.target &&
+        relation.edgeTarget === selectedRelationData.source;
+      return sameDirection || reverseDirection;
+    },
+    [selectedRelationData, selectedRelationEdgeId],
+  );
+
   const selectedFocusCluster = useMemo(() => {
     if (!ego || ego.slugs.size < 2) return null;
     return ego.slugs;
   }, [ego]);
 
-  const selectedFocusTitle = useMemo(() => {
-    if (!selectedSlug) return '';
-    return (
-      cards.find((card) => resolveNodeId(card.id) === selectedSlug || card.id === selectedSlug)
-        ?.title ?? selectedSlug
-    );
-  }, [cards, resolveNodeId, selectedSlug]);
-
-  const selectedRelationInspectorActive = selectedRelationEdgeId !== null;
-  const activeHullCluster = activeDragCluster ?? (
-    selectedRelationInspectorActive ? null : selectedFocusCluster
-  );
-  const activeHullMode = activeDragCluster
-    ? 'drag'
-    : activeHullCluster
-      ? 'focus'
-      : 'none';
-  const activeHullTitle =
-    activeHullMode === 'none' ? '' : activeDragCluster ? activeDragRootTitle : selectedFocusTitle;
-  const activeHullLabel =
-    activeHullMode === 'drag'
-      ? activeDragMotion
-        ? 'moving linked cards'
-        : 'linked cards move together'
-      : activeHullMode === 'focus'
-        ? 'linked focus'
-        : '';
-
+  const activeHullCluster = activeDragCluster;
+  const activeHullMode = activeDragCluster ? 'drag' : 'none';
   const activeHullConnectors = useMemo(() => {
     if (!activeHullCluster || activeHullCluster.size < 2) return [];
     const pairs: RelationConnector[] = [];
@@ -1552,6 +3534,39 @@ export function SigmaSkeletonCards({
     }
     return pairs;
   }, [activeHullCluster, graph]);
+
+  const activeDragTensionConnectors = useMemo(() => {
+    if (!activeHullCluster || activeHullCluster.size === 0) return [];
+    const visibleNodeIds = new Set<string>();
+    const tierByNodeId = new Map<string, SkeletonCardModel['tier']>();
+    for (const card of cards) {
+      const nodeId = resolveNodeId(card.id);
+      if (!nodeId) continue;
+      visibleNodeIds.add(nodeId);
+      tierByNodeId.set(nodeId, card.tier);
+    }
+
+    const pairs: RelationConnector[] = [];
+    const seen = new Set<string>();
+    for (const from of activeHullCluster) {
+      if (!graph.hasNode(from)) continue;
+      for (const to of graph.neighbors(from)) {
+        if (activeHullCluster.has(to) || !visibleNodeIds.has(to)) continue;
+        const key = [from, to].sort().join('→');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        pairs.push(relationConnector(graph, from, to));
+      }
+    }
+
+    return pairs
+      .sort((a, b) => {
+        const aTier = Math.min(tierByNodeId.get(a.from) ?? 3, tierByNodeId.get(a.to) ?? 3);
+        const bTier = Math.min(tierByNodeId.get(b.from) ?? 3, tierByNodeId.get(b.to) ?? 3);
+        return aTier - bTier || relationConnectorPaintRank(a) - relationConnectorPaintRank(b);
+      })
+      .slice(0, DRAG_TENSION_CONNECTOR_MAX_COUNT);
+  }, [activeHullCluster, cards, graph, resolveNodeId]);
 
   const overviewBackboneConnectors = useMemo(() => {
     const visibleNodeIds = new Set<string>();
@@ -1591,36 +3606,538 @@ export function SigmaSkeletonCards({
   const selectRelation = useCallback(
     (connector: RelationConnector) => {
       const data = relationSelectionData(graph, connector);
-      if (data) onRelationSelect?.(data);
+      if (data) {
+        const connectorWithCount = connector as RelationConnector & { count?: unknown };
+        const labelCount =
+          typeof connectorWithCount.count === 'number' ? connectorWithCount.count : 1;
+        const evidenceState = relationEvidenceState(connector);
+        const evidenceChipText = relationEvidenceVisibleText({
+          evidenceCount: connector.evidenceCount,
+          state: evidenceState,
+        });
+        onRelationSelect?.({
+          ...data,
+          relationLabelCount: labelCount,
+          relationLabelVisibleText: selectedRelationLabelVisibleText({
+            count: labelCount,
+            evidenceChipText,
+            label: formatRelationVisibleLabel(connector.relationType),
+          }),
+          relationLabelReadableText: `${formatRelationLabel(
+            connector.relationType,
+            labelCount,
+          )} · ${evidenceChipText}`,
+        });
+      }
     },
-    [graph, onRelationSelect],
+    [
+      formatRelationLabel,
+      formatRelationVisibleLabel,
+      graph,
+      onRelationSelect,
+      relationEvidenceVisibleText,
+    ],
+  );
+  const hoverRelation = useCallback(
+    (connector: RelationConnector, point: { x: number; y: number } | null) => {
+      if (!point) {
+        onRelationHover?.(null);
+        return;
+      }
+      const data = relationSelectionData(graph, connector);
+      if (!data) return;
+      onRelationHover?.({ ...data, x: point.x, y: point.y });
+    },
+    [graph, onRelationHover],
   );
 
   const reposition = useCallback(() => {
     const container = containerRef.current;
     if (!container || !sigma) return;
+    const measureRepositionNow = () =>
+      typeof performance !== 'undefined' && typeof performance.now === 'function'
+        ? performance.now()
+        : Date.now();
+    const repositionStartedAt = measureRepositionNow();
     const els = container.querySelectorAll<HTMLElement>('[data-skeleton-card]');
     // pass 1 — 카드 배치 + ego(풀 잉크) 카드 rect 수집. DOM 순서 = 도킹 깊이
     // 순(builder 가 정렬)이라 부모 카드의 transform 이 자식보다 먼저 잡힌다.
-    const containerRect = container.getBoundingClientRect();
+    const measuredContainerRect = container.getBoundingClientRect();
+    const fallbackContainerWidth =
+      typeof window === 'undefined' ? 1024 : window.innerWidth || 1024;
+    const fallbackContainerHeight =
+      typeof window === 'undefined' ? 768 : window.innerHeight || 768;
+    const containerRect =
+      measuredContainerRect.width > 0 && measuredContainerRect.height > 0
+        ? measuredContainerRect
+        : ({
+            ...measuredContainerRect,
+            width: fallbackContainerWidth,
+            height: fallbackContainerHeight,
+            right: measuredContainerRect.left + fallbackContainerWidth,
+            bottom: measuredContainerRect.top + fallbackContainerHeight,
+          } as DOMRect);
     // 반응형 스케일 — 카드 폰트(inline calc)와 도킹 간격/열 step 이 같은
     // 배수를 탄다. 컨테이너에 변수 주입(JS 가 진실원).
     const scale = resolveTopologyUiScale(
       typeof window === 'undefined' ? 0 : window.innerWidth,
     );
-    container.dataset.topologyUiScale = String(scale);
-    container.style.setProperty('--topology-card-scale', String(scale));
-    container.style.setProperty(
-      '--topology-anchor-card-max-width',
-      `${
-        BASE_ANCHOR_CARD_MAX_WIDTH_PX +
-        (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
-      }px`,
+    const verifierZoomRatio = verifierZoomRatioRef.current;
+    const cameraRatio =
+      typeof verifierZoomRatio === 'number' &&
+      Number.isFinite(verifierZoomRatio) &&
+      verifierZoomRatio > 0
+        ? verifierZoomRatio
+        : readSkeletonCameraRatio(sigma);
+    const zoomLensActive = cameraRatio <= ZOOM_LENS_RATIO_THRESHOLD;
+    const zoomLensCardCompactionActive =
+      zoomLensActive && !pathWorkflowActive && !healthRepairTarget;
+    const focusDetailLensActive =
+      selectedFocusCenterActive &&
+      selectedFocusCluster !== null &&
+      selectedRelationEdgeId === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
+    const overviewDensityLensWidthActive =
+      containerRect.width >= OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX &&
+      (containerRect.width <= OVERVIEW_DENSITY_LENS_COMPACT_MAX_WIDTH_PX ||
+        containerRect.width >= OVERVIEW_DENSITY_LENS_WIDE_MIN_WIDTH_PX);
+    const overviewDensityLensActive =
+      overviewDensityLensWidthActive &&
+      selectedSlug === null &&
+      selectedRelationEdgeId === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
+    const overviewMapFixedGeographyDragLocked =
+      selectedSlug === null &&
+      selectedRelationEdgeId === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
+    const compactLensActive =
+      zoomLensCardCompactionActive ||
+      focusDetailLensActive ||
+      overviewDensityLensActive;
+    const zoomLensPresentationSource = zoomLensCardCompactionActive
+      ? 'camera-zoom-in'
+      : focusDetailLensActive
+        ? 'selected-focus-detail'
+        : overviewDensityLensActive
+          ? 'overview-density'
+          : 'idle';
+    container.dataset.zoomLensContract =
+      'zoom-in-uses-kind-pins-for-noncritical-context-cards';
+    container.dataset.zoomLensPresentationContract =
+      'camera-or-focus-lens-uses-kind-pins-for-noncritical-context';
+    container.dataset.zoomLensPresentationActive = compactLensActive ? 'true' : 'false';
+    container.dataset.zoomLensPresentationSource = zoomLensPresentationSource;
+    container.dataset.zoomLensThresholdRatio = String(ZOOM_LENS_RATIO_THRESHOLD);
+    container.dataset.zoomLensCameraRatio = cameraRatio.toFixed(3);
+    container.dataset.zoomLensActive = zoomLensActive ? 'true' : 'false';
+    container.dataset.zoomLensPinMinOpacity = ZOOM_LENS_PIN_MIN_OPACITY;
+    container.dataset.zoomLensCardCompactionActive =
+      zoomLensCardCompactionActive ? 'true' : 'false';
+    container.dataset.zoomLensEmptyViewportFallbackContract =
+      'camera-zoom-in-keeps-at-least-one-ontology-mark-visible';
+    container.dataset.focusDetailLensContract =
+      'selected-focus-uses-kind-pins-for-noncritical-ego-context';
+    container.dataset.focusDetailLensActive = focusDetailLensActive ? 'true' : 'false';
+    const selectedFocusContextRailZoomWaypointActive =
+      selectedFocusCenterActive &&
+      selectedRelationEdgeId === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget &&
+      zoomLensCardCompactionActive;
+    container.dataset.selectedFocusContextRailZoomContract =
+      selectedFocusContextRailZoomWaypointActive
+        ? 'camera-zoom-in-demotes-domain-rail-to-waypoint-pins'
+        : 'idle';
+    container.dataset.selectedFocusContextRailZoomActive =
+      selectedFocusContextRailZoomWaypointActive ? 'true' : 'false';
+    container.dataset.overviewDensityLensContract =
+      'zoom-out-overview-uses-kind-pins-for-noncritical-context-cards';
+    container.dataset.overviewDensityLensThresholdRatio = String(
+      OVERVIEW_DENSITY_LENS_RATIO_THRESHOLD,
     );
+    container.dataset.overviewDensityLensMinWidth = String(
+      OVERVIEW_DENSITY_LENS_MIN_WIDTH_PX,
+    );
+    container.dataset.overviewDensityLensCompactMaxWidth = String(
+      OVERVIEW_DENSITY_LENS_COMPACT_MAX_WIDTH_PX,
+    );
+    container.dataset.overviewDensityLensWideMinWidth = String(
+      OVERVIEW_DENSITY_LENS_WIDE_MIN_WIDTH_PX,
+    );
+    container.dataset.overviewDensityLensReadableBandContract =
+      '14-inch-overview-keeps-domain-and-capability-title-cards';
+    container.dataset.overviewDensityLensWidthBand = overviewDensityLensWidthActive
+      ? containerRect.width <= OVERVIEW_DENSITY_LENS_COMPACT_MAX_WIDTH_PX
+        ? 'compact-pin-band'
+        : 'wide-pin-band'
+      : 'readable-title-band';
+    container.dataset.overviewDensityLensActive = overviewDensityLensActive
+      ? 'true'
+      : 'false';
+    container.style.setProperty(
+      '--topology-zoom-lens-pin-size',
+      `${ZOOM_LENS_PIN_SIZE_PX}px`,
+    );
+    container.style.setProperty(
+      ZOOM_LENS_PIN_PROXIMITY_RING_TOKEN,
+      'rgba(129, 140, 248, 0.78)',
+    );
+    container.style.setProperty(
+      ZOOM_LENS_PIN_PROXIMITY_GLOW_TOKEN,
+      'rgba(129, 140, 248, 0.28)',
+    );
+    if (lastAppliedTopologyUiScaleRef.current !== scale) {
+      lastAppliedTopologyUiScaleRef.current = scale;
+      container.dataset.topologyUiScale = String(scale);
+      container.style.setProperty('--topology-card-scale', String(scale));
+      container.style.setProperty(
+        '--topology-anchor-card-max-width',
+        `${
+          BASE_ANCHOR_CARD_MAX_WIDTH_PX +
+          (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
+        }px`,
+      );
+      for (const tier of [0, 1, 2, 3] as const) {
+        container.style.setProperty(
+          TIER_CARD_MAX_WIDTH_TOKEN[tier],
+          `${
+            TIER_CARD_MAX_WIDTH_PX[tier] +
+            (scale - 1) * TIER_CARD_MAX_WIDTH_SCALE_STEP_PX[tier]
+          }px`,
+        );
+      }
+      container.style.setProperty(
+        SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN,
+        `${
+          SELECTED_FOCUS_CARD_MAX_WIDTH_PX +
+          (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
+        }px`,
+      );
+      container.style.setProperty(
+        SELECTED_FOCUS_COMPANION_CARD_MAX_WIDTH_TOKEN,
+        `${
+          SELECTED_FOCUS_COMPANION_CARD_MAX_WIDTH_PX +
+          (scale - 1) * TIER_CARD_MAX_WIDTH_SCALE_STEP_PX[3]
+        }px`,
+      );
+      container.style.setProperty(
+        HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN,
+        `${
+          HEALTH_REPAIR_CARD_MAX_WIDTH_PX +
+          (scale - 1) * ANCHOR_CARD_MAX_WIDTH_SCALE_STEP_PX
+        }px`,
+      );
+      container.dataset.topologyUiScaleWritePolicy = 'write-on-scale-change';
+    } else {
+      container.dataset.topologyUiScaleWritePolicy = 'reuse-stable-scale';
+    }
     const dockGap = 56 * scale;
     const columnStep = COLUMN_STEP_PX * scale;
+    const domWriteStats: SkeletonDomWriteStats = { applied: 0, skipped: 0 };
+    const cardPlacementFrameRectCache = new Map<HTMLElement, ConnectorRect>();
+    let cardPlacementFrameRectCacheHitCount = 0;
+    let cardPlacementFrameRectDirectReadCount = 0;
+    const seedCardPlacementFrameRect = (el: HTMLElement, rect: ConnectorRect) => {
+      cardPlacementFrameRectCache.set(el, rect);
+      return rect;
+    };
+    const readCardPlacementFrameRect = (el: HTMLElement) => {
+      const cached = cardPlacementFrameRectCache.get(el);
+      if (cached) {
+        cardPlacementFrameRectCacheHitCount += 1;
+        return cached;
+      }
+      cardPlacementFrameRectDirectReadCount += 1;
+      const r = el.getBoundingClientRect();
+      return seedCardPlacementFrameRect(el, {
+        left: r.left - containerRect.left,
+        top: r.top - containerRect.top,
+        right: r.right - containerRect.left,
+        bottom: r.bottom - containerRect.top,
+      });
+    };
+    const cardPlacementParentRectCache = new Map<HTMLElement, ConnectorRect>();
+    const cardPlacementSizeCache = cardPlacementSizeCacheRef.current;
+    const cardPlacementSizeCacheSeen = new Set<string>();
+    let cardPlacementParentRectReadCount = 0;
+    let cardPlacementSizeReadCount = 0;
+    let cardPlacementSizeCacheHitCount = 0;
+    let cardPlacementSizeCacheMissCount = 0;
+    let zoomLensEligibleCount = 0;
+    let zoomLensActiveCardCount = 0;
+    let zoomLensProximityPinCount = 0;
+    let zoomLensFocusEgoReadableCardCount = 0;
+    let selectedRelationEndpointZoomLensCount = 0;
+    let overviewDensityLensActiveCardCount = 0;
+    let zoomLensPinCanvasClampCount = 0;
+    for (const el of els) {
+      const selectedFocusEgoCapabilityPin =
+        selectedFocusCenterActive &&
+        selectedRelationEdgeId === null &&
+        !pathWorkflowActive &&
+        !healthRepairTarget &&
+        ego?.slugs.has(el.dataset.slug ?? '') === true &&
+        el.dataset.selected !== 'true' &&
+        el.dataset.tier === '2';
+      const selectedFocusEgoReadableContext =
+        selectedFocusCenterActive &&
+        selectedRelationEdgeId === null &&
+        !pathWorkflowActive &&
+        !healthRepairTarget &&
+        ego?.slugs.has(el.dataset.slug ?? '') === true &&
+        el.dataset.selected !== 'true' &&
+        !selectedFocusEgoCapabilityPin;
+      const selectedFocusCompanionReadableTitle =
+        el.dataset.selectedFocusCompanionReadableTitle === 'true';
+      const selectedFocusContextReadableTitle =
+        el.dataset.selectedFocusContextReadableTitle === 'true';
+      const selectedFocusContextRailCard =
+        el.dataset.selectedFocusContextRail === 'true';
+      const focusReadableTitleContext =
+        selectedFocusCompanionReadableTitle || selectedFocusContextReadableTitle;
+      const focusReadableContext =
+        focusReadableTitleContext || selectedFocusEgoReadableContext;
+      const compactFocusContextRailOnCameraZoom =
+        zoomLensCardCompactionActive &&
+        (selectedFocusContextRailCard || selectedFocusContextReadableTitle);
+      const compactSelectedRelationEndpointOnCameraZoom =
+        zoomLensCardCompactionActive && el.dataset.selectedRelationEndpoint === 'true';
+      const compactFocusCompanionOnCameraZoom =
+        zoomLensCardCompactionActive && selectedFocusCompanionReadableTitle;
+      const compactMapRootAnchorOnCameraZoom =
+        zoomLensCardCompactionActive &&
+        selectedSlug === null &&
+        selectedRelationEdgeId === null &&
+        el.dataset.tier === '0';
+      const dragReadableRootCard = el.dataset.dragClusterRole === 'root';
+      const zoomLensCritical =
+        dragReadableRootCard ||
+        (el.dataset.selected === 'true' && !compactSelectedRelationEndpointOnCameraZoom) ||
+        el.dataset.pathRole === 'source' ||
+        el.dataset.pathRole === 'target' ||
+        el.dataset.healthRepairAuditTarget === 'true' ||
+        (!zoomLensCardCompactionActive && focusReadableContext) ||
+        (el.dataset.selectedRelationEndpoint === 'true' &&
+          !compactSelectedRelationEndpointOnCameraZoom);
+      if (
+        selectedFocusContextReadableTitle ||
+        (!zoomLensCardCompactionActive &&
+          (selectedFocusCompanionReadableTitle || selectedFocusEgoReadableContext))
+      ) {
+        el.dataset.zoomLensFocusEgoReadable = 'true';
+        el.dataset.zoomLensFocusEgoReadableContract =
+          'selected-focus-ego-neighbor-stays-readable-in-lens';
+        zoomLensFocusEgoReadableCardCount += 1;
+      } else {
+        delete el.dataset.zoomLensFocusEgoReadable;
+        delete el.dataset.zoomLensFocusEgoReadableContract;
+      }
+      const zoomLensEligible =
+        (el.dataset.zoomLensEligible === 'true' ||
+          compactMapRootAnchorOnCameraZoom ||
+          compactFocusCompanionOnCameraZoom ||
+          compactFocusContextRailOnCameraZoom ||
+          compactSelectedRelationEndpointOnCameraZoom) &&
+        !zoomLensCritical &&
+        !(overviewDensityLensActive && el.dataset.tier === '1');
+      if (zoomLensEligible) zoomLensEligibleCount += 1;
+      if (compactLensActive && zoomLensEligible) {
+        el.dataset.zoomLensActiveCard = 'true';
+        el.dataset.zoomLensPresentation = 'lens-pin';
+        el.dataset.zoomLensCardContract = compactSelectedRelationEndpointOnCameraZoom
+          ? 'selected-relation-endpoint-becomes-role-mark-on-camera-zoom-in'
+          : compactMapRootAnchorOnCameraZoom
+            ? 'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
+            : compactFocusContextRailOnCameraZoom
+              ? 'focus-context-domain-becomes-waypoint-pin-on-camera-zoom-in'
+              : el.dataset.zoomLensCardContract ===
+                    'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in' ||
+                  el.dataset.selectedFocusContextReadableTitle === 'true'
+                ? 'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
+                : 'noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in';
+        delete el.dataset.zoomLensFocusReadableCompaction;
+        if (compactSelectedRelationEndpointOnCameraZoom) {
+          el.dataset.selectedRelationEndpointZoomLens = 'role-mark';
+          selectedRelationEndpointZoomLensCount += 1;
+        } else {
+          delete el.dataset.selectedRelationEndpointZoomLens;
+        }
+        zoomLensActiveCardCount += 1;
+        if (el.dataset.zoomLensPinProximity === 'critical-neighbor') {
+          el.dataset.zoomLensPinProximityContract =
+            'compact-pin-keeps-critical-relation-proximity-ring';
+          el.dataset.zoomLensPinProximityRingToken =
+            ZOOM_LENS_PIN_PROXIMITY_RING_TOKEN;
+          zoomLensProximityPinCount += 1;
+        } else {
+          delete el.dataset.zoomLensPinProximityContract;
+          delete el.dataset.zoomLensPinProximityRingToken;
+        }
+        if (overviewDensityLensActive) overviewDensityLensActiveCardCount += 1;
+      } else {
+        el.dataset.zoomLensActiveCard = 'false';
+        delete el.dataset.zoomLensPinProximityContract;
+        delete el.dataset.zoomLensPinProximityRingToken;
+        delete el.dataset.zoomLensFocusReadableCompaction;
+        delete el.dataset.selectedRelationEndpointZoomLens;
+        if (focusReadableContext) {
+          el.dataset.zoomLensCardContract = selectedFocusEgoReadableContext
+            ? 'selected-focus-ego-neighbor-stays-readable-in-lens'
+            : 'critical-card-stays-full-on-camera-zoom-in';
+        }
+        el.dataset.zoomLensPresentation = zoomLensCritical
+          ? dragReadableRootCard
+            ? 'full-card-drag-root'
+            : 'full-card-critical'
+          : el.dataset.zoomLensEligible === 'true'
+            ? el.dataset.zoomLensCardContract ===
+              'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
+              ? 'full-card-context'
+              : 'full-card-detail'
+            : 'full-card-anchor';
+      }
+      if (selectedFocusEgoCapabilityPin) {
+        el.dataset.selectedFocusEgoCapabilityPin = 'true';
+        el.dataset.selectedFocusEgoCapabilityPinContract =
+          'focus-detail-demotes-capability-neighbors-to-kind-pins';
+      } else {
+        delete el.dataset.selectedFocusEgoCapabilityPin;
+        delete el.dataset.selectedFocusEgoCapabilityPinContract;
+      }
+      const roleMarkGlyph = el.querySelector<HTMLElement>(
+        '[data-selected-relation-endpoint-zoom-lens-role-mark-glyph]',
+      );
+      if (roleMarkGlyph) {
+        roleMarkGlyph.textContent =
+          el.dataset.selectedRelationEndpointZoomLens === 'role-mark'
+            ? roleMarkGlyph.dataset.selectedRelationEndpointZoomLensRoleMarkText ?? ''
+            : '';
+      }
+    }
+    container.dataset.zoomLensEligibleCount = String(zoomLensEligibleCount);
+    container.dataset.zoomLensActiveCardCount = String(zoomLensActiveCardCount);
+    container.dataset.zoomLensPinProximityContract =
+      'zoomed-context-pins-keep-critical-relation-proximity';
+    container.dataset.zoomLensPinProximityActive =
+      zoomLensProximityPinCount > 0 ? 'true' : 'false';
+    container.dataset.zoomLensProximityPinCount = String(zoomLensProximityPinCount);
+    container.dataset.zoomLensPinProximityRingToken =
+      ZOOM_LENS_PIN_PROXIMITY_RING_TOKEN;
+    container.dataset.zoomLensFocusEgoReadableContract =
+      'selected-focus-ego-neighbors-stay-readable-in-lens';
+    container.dataset.zoomLensFocusEgoReadableCount = String(
+      zoomLensFocusEgoReadableCardCount,
+    );
+    container.dataset.selectedRelationEndpointZoomLensContract =
+      'camera-zoom-in-keeps-endpoints-visible-as-role-marks';
+    container.dataset.selectedRelationEndpointZoomLensActive =
+      selectedRelationEndpointZoomLensCount > 0 ? 'true' : 'false';
+    container.dataset.selectedRelationEndpointZoomLensCount = String(
+      selectedRelationEndpointZoomLensCount,
+    );
+    container.dataset.overviewDensityLensActiveCardCount = String(
+      overviewDensityLensActiveCardCount,
+    );
+    container.dataset.zoomLensPinCanvasContract =
+      'zoom-lens-pins-stay-inside-readable-canvas-safe-band';
+    container.dataset.zoomLensPinCanvasMarginPx = String(
+      ZOOM_LENS_PIN_CANVAS_MARGIN_PX,
+    );
+    const readCardPlacementParentRect = (el: HTMLElement) => {
+      const cached = cardPlacementParentRectCache.get(el);
+      if (cached) return cached;
+      const frameRect = cardPlacementFrameRectCache.get(el);
+      if (frameRect) {
+        cardPlacementFrameRectCacheHitCount += 1;
+        cardPlacementParentRectCache.set(el, frameRect);
+        return frameRect;
+      }
+      cardPlacementParentRectReadCount += 1;
+      const rect = el.getBoundingClientRect();
+      const next = {
+        left: rect.left - containerRect.left,
+        top: rect.top - containerRect.top,
+        right: rect.right - containerRect.left,
+        bottom: rect.bottom - containerRect.top,
+      };
+      cardPlacementParentRectCache.set(el, next);
+      return next;
+    };
+    const readCardPlacementSize = (el: HTMLElement, slug: string) => {
+      const key = `${el.dataset.cardLayoutSizeKey ?? ''}|scale:${scale}|zoom-lens:${
+        el.dataset.zoomLensActiveCard ?? 'false'
+      }`;
+      cardPlacementSizeCacheSeen.add(slug);
+      const cached = cardPlacementSizeCache.get(slug);
+      if (cached?.key === key) {
+        cardPlacementSizeCacheHitCount += 1;
+        return cached;
+      }
+      cardPlacementSizeCacheMissCount += 1;
+      cardPlacementSizeReadCount += 2;
+      let width = el.offsetWidth;
+      let height = el.offsetHeight;
+      let fallbackRect: ConnectorRect | undefined;
+      if (width <= 0 || height <= 0) {
+        cardPlacementFrameRectDirectReadCount += 1;
+        const rect = el.getBoundingClientRect();
+        width = rect.width;
+        height = rect.height;
+        if (rect.width > 0 && rect.height > 0) {
+          fallbackRect = {
+            left: rect.left - containerRect.left,
+            top: rect.top - containerRect.top,
+            right: rect.right - containerRect.left,
+            bottom: rect.bottom - containerRect.top,
+          };
+        }
+      }
+      const next = {
+        fallbackRect,
+        height,
+        key,
+        width,
+      };
+      cardPlacementSizeCache.set(slug, next);
+      return next;
+    };
     const egoRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
-    const fixedSurfaceRects = collectFixedSurfaceRects(containerRect);
+    const phoneAnalysisPanelMounted =
+      containerRect.width <= 640 && isAnalysisPanelMounted();
+    const readLayerSurfaceActive =
+      selectedRelationEdgeId !== null ||
+      healthRepairTarget !== null ||
+      phoneAnalysisPanelMounted;
+    const selectedBlockingSurfaceActive =
+      selectedRelationEdgeId !== null ||
+      (selectedSlug !== null && isSelectedNodePopoverMounted());
+    const fixedSurfaceRects =
+      readLayerSurfaceActive || selectedBlockingSurfaceActive
+        ? collectFixedSurfaceRects(containerRect)
+        : getFixedSurfaceRects(containerRect);
+    const selectedFocusRailSurfaceMounted = isSelectedFocusRailSurfaceMounted();
+    const hideSelectedCardForCompactFocusRail =
+      selectedFocusRailSurfaceMounted &&
+      selectedRelationEdgeId === null &&
+      selectedSlug !== null &&
+      containerRect.width <= SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX;
+    container.dataset.selectedFocusCardVisibilityContract =
+      'compact-rail-hides-selected-map-card';
+    container.dataset.selectedFocusCardHideMaxWidthPx = String(
+      SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX,
+    );
+    container.dataset.selectedFocusCardVisibilityPolicy =
+      hideSelectedCardForCompactFocusRail
+        ? 'hide-selected-card'
+        : selectedFocusRailSurfaceMounted
+          ? 'show-selected-card'
+          : 'default';
+    container.dataset.selectedFocusDockBottomInsetPx = String(
+      SELECTED_FOCUS_DOCK_BOTTOM_INSET_PX,
+    );
     const acceptedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     const dimEls: HTMLElement[] = [];
     const overviewEls: HTMLElement[] = [];
@@ -1630,34 +4147,468 @@ export function SigmaSkeletonCards({
         activeDragCluster?.has(slug) ||
           (dockParent && activeDragCluster?.has(dockParent)),
       );
+    const dragPreviewOffsetFor = (slug: string, dockParent?: string | null) => {
+      const persisted =
+        dragViewportOffsetsRef.current.get(slug) ??
+        (dockParent ? dragViewportOffsetsRef.current.get(dockParent) : undefined);
+      const drag = dragRef.current;
+      const active = (() => {
+        if (!drag?.viewportPreviewActive || !isDragClusterCard(slug, dockParent)) {
+          return undefined;
+        }
+        if (!sigma || !graph.hasNode(drag.rootSlug)) {
+          return { dx: drag.viewportPreviewDx, dy: drag.viewportPreviewDy };
+        }
+        const attrs = graph.getNodeAttributes(drag.rootSlug);
+        const currentViewport = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
+        return {
+          dx:
+            drag.viewportPreviewDx -
+            (currentViewport.x - drag.rootStartViewportX),
+          dy:
+            drag.viewportPreviewDy -
+            (currentViewport.y - drag.rootStartViewportY),
+        };
+      })();
+      const dx = (persisted?.dx ?? 0) + (active?.dx ?? 0);
+      const dy = (persisted?.dy ?? 0) + (active?.dy ?? 0);
+      const source = active
+        ? 'viewport-offset-for-large-cluster'
+        : persisted
+          ? 'persisted-drop-viewport-offset'
+          : 'none';
+      return { dx, dy, source };
+    };
+    const dragReactiveMotionOffsetFor = (
+      el: HTMLElement,
+      lockedForDrag: boolean,
+    ): { dx: number; dy: number } => {
+      const drag = dragRef.current;
+      const enabled =
+        (activeDragMotion || activeDragMotionRef.current) &&
+        activeDragCluster !== null &&
+        drag !== null &&
+        drag.travel > 4 &&
+        !lockedForDrag &&
+        el.dataset.dragReactiveContext === 'true';
+      if (!enabled) {
+        delete el.dataset.dragReactiveMotion;
+        delete el.dataset.dragReactiveMotionRole;
+        delete el.dataset.dragReactiveMotionDx;
+        delete el.dataset.dragReactiveMotionDy;
+        delete el.dataset.dragReactiveMotionMaxOffsetPx;
+        delete el.dataset.dragReactiveMotionMaxOffsetToken;
+        delete el.dataset.dragReactiveMotionStrength;
+        delete el.dataset.dragReactiveMotionSource;
+        delete el.dataset.dragReactiveMotionLinkedPolicy;
+        return { dx: 0, dy: 0 };
+      }
+      const slug = el.dataset.slug ?? '';
+      const dockParent = el.dataset.dockParent ?? '';
+      const linkedToMovingCluster =
+        (slug !== '' &&
+          graph.hasNode(slug) &&
+          Array.from(drag.movedGroup).some((member) => {
+            if (!graph.hasNode(member) || member === slug) return false;
+            return graph.hasEdge(member, slug) || graph.hasEdge(slug, member);
+          })) ||
+        (dockParent !== '' && drag.movedGroup.has(dockParent));
+      const motionRatio = linkedToMovingCluster
+        ? DRAG_REACTIVE_MOTION_LINKED_RATIO
+        : DRAG_REACTIVE_MOTION_BASE_RATIO;
+      const maxOffsetPx = linkedToMovingCluster
+        ? DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX
+        : DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX;
+      const { dx, dy } = clampDragReactiveMotionVector(
+        drag.reactiveMotionDx * motionRatio,
+        drag.reactiveMotionDy * motionRatio,
+        maxOffsetPx,
+      );
+      if (dx === 0 && dy === 0) {
+        return { dx: 0, dy: 0 };
+      }
+      el.dataset.dragReactiveMotion = 'parallax-nudge';
+      el.dataset.dragReactiveMotionRole = linkedToMovingCluster
+        ? 'linked-context-follows-dragged-cluster'
+        : 'bounded-surrounding-context-motion';
+      el.dataset.dragReactiveMotionStrength = linkedToMovingCluster
+        ? 'linked-context'
+        : 'ambient-context';
+      el.dataset.dragReactiveMotionSource = linkedToMovingCluster
+        ? 'graph-neighbor-of-moving-cluster'
+        : 'ambient-dimmed-context';
+      if (linkedToMovingCluster) {
+        el.dataset.dragReactiveMotionLinkedPolicy = 'direct-neighbor-readable-follow';
+      } else {
+        delete el.dataset.dragReactiveMotionLinkedPolicy;
+      }
+      el.dataset.dragReactiveMotionDx = dx.toFixed(2);
+      el.dataset.dragReactiveMotionDy = dy.toFixed(2);
+      el.dataset.dragReactiveMotionMaxOffsetPx = String(maxOffsetPx);
+      el.dataset.dragReactiveMotionMaxOffsetToken =
+        DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN;
+      return { dx, dy };
+    };
+    container.dataset.dragViewportOffsetPersistedCount = String(
+      dragViewportOffsetsRef.current.size,
+    );
+    const focusContextSilhouetteSuppressionActive =
+      selectedFocusCenterActive &&
+      selectedFocusCluster !== null &&
+      selectedRelationEdgeId === null &&
+      activeDragCluster === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
+    const selectedRelationContextSilhouetteSuppressionActive =
+      selectedRelationSurfaceRoute !== null &&
+      activeDragCluster === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
+    let focusContextSilhouetteHiddenCount = 0;
+    let selectedRelationContextSilhouetteHiddenCount = 0;
+    container.dataset.focusContextSilhouettePolicy =
+      'click-focus-keeps-orientation-anchors-only';
+    container.dataset.focusContextSilhouetteActive =
+      focusContextSilhouetteSuppressionActive ? 'true' : 'false';
+    container.dataset.selectedRelationContextSilhouettePolicy =
+      'selected-relation-keeps-endpoints-and-orientation-anchors-only';
+    container.dataset.selectedRelationContextSilhouetteActive =
+      selectedRelationContextSilhouetteSuppressionActive ? 'true' : 'false';
+    const cardPlacementSetupDurationMs = Math.max(
+      0,
+      measureRepositionNow() - repositionStartedAt,
+    );
     const orderedEls = Array.from(els).sort((a, b) => {
       const aDocked = a.dataset.dockParent ? 1 : 0;
       const bDocked = b.dataset.dockParent ? 1 : 0;
       return aDocked - bDocked;
     });
+    const overviewFixedGeometrySlots = new Map<
+      string,
+      { x: number; y: number; role: 'root' | 'domain' | 'pin'; index: number; total: number }
+    >();
+    if (overviewDensityLensActive) {
+      const overviewLandmarks = orderedEls
+        .filter((el) => {
+          const slug = el.dataset.slug;
+          return Boolean(slug && !el.dataset.dockParent && graph.hasNode(slug));
+        })
+        .sort((a, b) => {
+          const tierA = Number(a.dataset.tier ?? '4');
+          const tierB = Number(b.dataset.tier ?? '4');
+          if (tierA !== tierB) return tierA - tierB;
+          return (a.dataset.slug ?? '').localeCompare(b.dataset.slug ?? '');
+        });
+      const rootSlugs = overviewLandmarks
+        .filter((el) => el.dataset.tier === '0')
+        .map((el) => el.dataset.slug ?? '')
+        .filter(Boolean);
+      const domainSlugs = overviewLandmarks
+        .filter((el) => el.dataset.tier === '1')
+        .map((el) => el.dataset.slug ?? '')
+        .filter(Boolean);
+      const pinSlugs = overviewLandmarks
+        .filter((el) => Number(el.dataset.tier ?? '4') >= 2)
+        .map((el) => el.dataset.slug ?? '')
+        .filter(Boolean);
+      const centerX =
+        containerRect.width * OVERVIEW_DENSITY_FIXED_GEOGRAPHY_CENTER_X_RATIO;
+      const centerY = containerRect.height * 0.52;
+      const safeWidth = Math.max(
+        1,
+        containerRect.width - OVERVIEW_DENSITY_FIXED_GEOGRAPHY_MARGIN_PX * 2,
+      );
+      const safeHeight = Math.max(
+        1,
+        containerRect.height - OVERVIEW_DENSITY_FIXED_GEOGRAPHY_MARGIN_PX * 2,
+      );
+      const domainRadiusX = Math.min(
+        safeWidth * 0.42,
+        Math.max(260 * scale, containerRect.width * OVERVIEW_DENSITY_FIXED_DOMAIN_RADIUS_X_RATIO),
+      );
+      const domainRadiusY = Math.min(
+        safeHeight * 0.38,
+        Math.max(180 * scale, containerRect.height * OVERVIEW_DENSITY_FIXED_DOMAIN_RADIUS_Y_RATIO),
+      );
+      const pinRadiusX = Math.min(
+        safeWidth * 0.48,
+        Math.max(domainRadiusX + 96 * scale, containerRect.width * OVERVIEW_DENSITY_FIXED_PIN_RADIUS_X_RATIO),
+      );
+      const pinRadiusY = Math.min(
+        safeHeight * 0.46,
+        Math.max(domainRadiusY + 72 * scale, containerRect.height * OVERVIEW_DENSITY_FIXED_PIN_RADIUS_Y_RATIO),
+      );
+      rootSlugs.forEach((slug, index) => {
+        overviewFixedGeometrySlots.set(slug, {
+          x: centerX,
+          y: centerY,
+          role: 'root',
+          index,
+          total: rootSlugs.length,
+        });
+      });
+      domainSlugs.forEach((slug, index) => {
+        const angle = -Math.PI / 2 + (Math.PI * 2 * index) / Math.max(1, domainSlugs.length);
+        overviewFixedGeometrySlots.set(slug, {
+          x: centerX + Math.cos(angle) * domainRadiusX,
+          y: centerY + Math.sin(angle) * domainRadiusY,
+          role: 'domain',
+          index,
+          total: domainSlugs.length,
+        });
+      });
+      pinSlugs.forEach((slug, index) => {
+        const angle =
+          -Math.PI / 2 +
+          (Math.PI * 2 * index) / Math.max(1, pinSlugs.length) +
+          Math.PI / Math.max(8, pinSlugs.length);
+        overviewFixedGeometrySlots.set(slug, {
+          x: centerX + Math.cos(angle) * pinRadiusX,
+          y: centerY + Math.sin(angle) * pinRadiusY,
+          role: 'pin',
+          index,
+          total: pinSlugs.length,
+        });
+      });
+    }
+    container.dataset.overviewDensityFixedGeographyContract =
+      'overview-density-uses-deterministic-canvas-geography';
+    container.dataset.overviewDensityFixedGeographyActive =
+      overviewFixedGeometrySlots.size > 0 ? 'true' : 'false';
+    container.dataset.overviewDensityFixedGeographyDragContract =
+      'fixed-overview-geography-disables-card-drag';
+    container.dataset.overviewDensityFixedGeographyDragLocked =
+      overviewMapFixedGeographyDragLocked ? 'true' : 'false';
+    container.dataset.overviewDensityFixedGeographyDragLockScope =
+      overviewMapFixedGeographyDragLocked
+        ? 'map-overview-cards-use-fixed-canvas-slots'
+        : 'interactive-focus-or-path-surface';
+    container.dataset.selectedFocusFixedGeographyContract =
+      'selected-focus-uses-deterministic-canvas-geography';
+    container.dataset.selectedFocusFixedGeographyDragContract =
+      'selected-focus-disables-card-drag-to-preserve-map-layout';
+    container.dataset.selectedFocusFixedGeographyDragLocked =
+      selectedFocusCenterActive && selectedRelationEdgeId === null ? 'true' : 'false';
+    container.dataset.selectedMapFixedGeographyContract =
+      'selected-map-uses-deterministic-canvas-geography';
+    container.dataset.selectedMapFixedGeographyDragContract =
+      'selected-map-disables-card-drag-to-preserve-map-layout';
+    container.dataset.selectedMapFixedGeographyDragLocked =
+      selectedMapFixedGeographyActive &&
+      selectedRelationEdgeId === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget
+        ? 'true'
+        : 'false';
+    container.dataset.overviewDensityFixedGeographySlotCount = String(
+      overviewFixedGeometrySlots.size,
+    );
+    container.dataset.overviewDensityFixedGeographyDomainCount = String(
+      Array.from(overviewFixedGeometrySlots.values()).filter(
+        (slot) => slot.role === 'domain',
+      ).length,
+    );
+    container.dataset.overviewDensityFixedGeographyPinCount = String(
+      Array.from(overviewFixedGeometrySlots.values()).filter((slot) => slot.role === 'pin')
+        .length,
+    );
     for (const el of orderedEls) {
       const slug = el.dataset.slug;
       if (slug) elBySlug.set(slug, el);
     }
+    const selectedFocusContextRailActive =
+      selectedFocusCenterActive &&
+      selectedSlug !== null &&
+      selectedRelationEdgeId === null &&
+      activeDragCluster === null &&
+      !pathWorkflowActive &&
+      !healthRepairTarget;
+    const selectedFocusContextRailSlugs = selectedFocusContextRailActive
+      ? orderedEls
+          .map((el) => el.dataset.slug ?? '')
+          .filter(
+            (slug) =>
+              slug !== '' &&
+              slug !== selectedSlug &&
+              elBySlug.get(slug)?.dataset.tier === '1' &&
+              !elBySlug.get(slug)?.dataset.dockParent,
+          )
+          .sort()
+      : [];
+    const selectedFocusContextRailIndexBySlug = new Map(
+      selectedFocusContextRailSlugs.map((slug, index) => [slug, index]),
+    );
+    container.dataset.selectedFocusContextRailContract =
+      'focus-domain-context-uses-fixed-canvas-rails';
+    container.dataset.selectedFocusContextRailActive =
+      selectedFocusContextRailSlugs.length > 0 ? 'true' : 'false';
+    container.dataset.selectedFocusContextRailCount = String(
+      selectedFocusContextRailSlugs.length,
+    );
+    container.dataset.selectedFocusContextRailInteractionContract =
+      'fixed-focus-domain-anchors-remain-clickable-waypoints';
+    container.dataset.selectedFocusContextRailYDistributionContract =
+      'multi-row-focus-domain-rail-uses-viewport-height-bands';
+    container.dataset.selectedFocusContextRailOpacity =
+      SELECTED_FOCUS_CONTEXT_RAIL_OPACITY;
+    container.dataset.selectedFocusContextRailOpacityToken =
+      SELECTED_FOCUS_CONTEXT_RAIL_OPACITY_TOKEN;
+    const selectedRelationEndpointRoles = new Map<string, 'source' | 'target'>();
+    let selectedRelationEndpointSource: string | null = null;
+    let selectedRelationEndpointTarget: string | null = null;
+    let selectedRelationEndpointSourceName: string | null = null;
+    let selectedRelationEndpointTargetName: string | null = null;
+    let selectedRelationEndpointType: string | null = null;
+    if (selectedRelationEdgeId) {
+      if (graph.hasEdge(selectedRelationEdgeId)) {
+        const [source, target] = graph.extremities(selectedRelationEdgeId);
+        const attrs = graph.getEdgeAttributes(selectedRelationEdgeId) as SigmaEdgeAttrs;
+        selectedRelationEndpointSource = source;
+        selectedRelationEndpointTarget = target;
+        selectedRelationEndpointSourceName = graph.hasNode(source)
+          ? graph.getNodeAttributes(source).label
+          : source;
+        selectedRelationEndpointTargetName = graph.hasNode(target)
+          ? graph.getNodeAttributes(target).label
+          : target;
+        selectedRelationEndpointType = attrs.relationType ?? attrs.kind ?? null;
+        selectedRelationEndpointRoles.set(source, 'source');
+        selectedRelationEndpointRoles.set(target, 'target');
+      } else if (selectedRelationData) {
+        selectedRelationEndpointSource = selectedRelationData.source;
+        selectedRelationEndpointTarget = selectedRelationData.target;
+        selectedRelationEndpointSourceName = selectedRelationData.sourceName;
+        selectedRelationEndpointTargetName = selectedRelationData.targetName;
+        selectedRelationEndpointType =
+          selectedRelationData.relationType ?? selectedRelationData.kind ?? null;
+        selectedRelationEndpointRoles.set(selectedRelationData.source, 'source');
+        selectedRelationEndpointRoles.set(selectedRelationData.target, 'target');
+      }
+    }
+    const selectedRelationEndpointReadableRoute =
+      selectedRelationEndpointSourceName && selectedRelationEndpointTargetName
+        ? `${selectedRelationEndpointSourceName} → ${selectedRelationEndpointTargetName}`
+        : '';
+    const isSelectedRelationEndpointCard = (el: HTMLElement) => {
+      const slug = el.dataset.slug;
+      return Boolean(slug && selectedRelationEndpointRoles.has(slug));
+    };
+    container.dataset.selectedRelationEndpointVisibilityContract =
+      'selected-relation-keeps-source-target-readable';
+    container.dataset.selectedRelationEndpointCount = String(
+      selectedRelationEndpointRoles.size,
+    );
+    container.dataset.selectedRelationEndpointRouteLaneContract =
+      'selected-relation-endpoints-use-deterministic-canvas-route-lanes';
+    let selectedRelationEndpointRouteLaneCount = 0;
+    const cardPlacementCoreLoopStartedAt = measureRepositionNow();
     for (const el of orderedEls) {
       const slug = el.dataset.slug;
       if (!slug || !graph.hasNode(slug)) continue;
+      const selectedRelationEndpointRole = selectedRelationEndpointRoles.get(slug);
+      const selectedRelationEndpoint = selectedRelationEndpointRole !== undefined;
       delete el.dataset.surfaceHidden;
+      if (selectedRelationEndpoint) {
+        el.dataset.selectedRelationEndpoint = 'true';
+        el.dataset.selectedRelationEndpointRole = selectedRelationEndpointRole;
+        el.dataset.selectedRelationEndpointRoleContract =
+          'card-carries-source-target-route';
+        el.dataset.selectedRelationEndpointCounterpart =
+          selectedRelationEndpointRole === 'source'
+            ? selectedRelationEndpointTarget ?? ''
+            : selectedRelationEndpointSource ?? '';
+        el.dataset.selectedRelationEndpointRoute =
+          selectedRelationEndpointSource && selectedRelationEndpointTarget
+            ? `${selectedRelationEndpointSource}>${selectedRelationEndpointTarget}`
+            : '';
+        el.dataset.selectedRelationEndpointReadableRoute =
+          selectedRelationEndpointReadableRoute;
+        el.dataset.relationSource = selectedRelationEndpointSource ?? '';
+        el.dataset.relationTarget = selectedRelationEndpointTarget ?? '';
+        el.dataset.relationType = selectedRelationEndpointType ?? '';
+        el.dataset.relationRoute =
+          selectedRelationEndpointSource && selectedRelationEndpointTarget
+            ? `${selectedRelationEndpointSource}>${selectedRelationEndpointTarget}`
+            : '';
+        el.dataset.selectedRelationHandoffContract =
+          'endpoint-card-carries-selected-relation-action';
+        el.dataset.selectedRelationPrimaryAction =
+          selectedRelationLabelHandoff?.action ?? '';
+        el.dataset.selectedRelationCliFallback =
+          selectedRelationLabelHandoff?.cliFallbackCommand ?? '';
+        el.dataset.selectedRelationFactRoute =
+          selectedRelationLabelHandoff?.route ?? '';
+        el.dataset.relationMcpAction = selectedRelationLabelHandoff?.action ?? '';
+        el.dataset.relationCliFallback =
+          selectedRelationLabelHandoff?.cliFallbackCommand ?? '';
+        el.dataset.relationFactRoute = selectedRelationLabelHandoff?.route ?? '';
+      } else {
+        clearSelectedRelationEndpointCardStyle(el);
+        delete el.dataset.selectedRelationEndpoint;
+        delete el.dataset.selectedRelationEndpointRole;
+        delete el.dataset.selectedRelationEndpointRoleContract;
+        delete el.dataset.selectedRelationEndpointCounterpart;
+        delete el.dataset.selectedRelationEndpointRoute;
+        delete el.dataset.selectedRelationEndpointReadableRoute;
+        delete el.dataset.relationSource;
+        delete el.dataset.relationTarget;
+        delete el.dataset.relationType;
+        delete el.dataset.relationRoute;
+        delete el.dataset.selectedRelationHandoffContract;
+        delete el.dataset.selectedRelationPrimaryAction;
+        delete el.dataset.selectedRelationCliFallback;
+        delete el.dataset.selectedRelationFactRoute;
+        delete el.dataset.relationMcpAction;
+        delete el.dataset.relationCliFallback;
+        delete el.dataset.relationFactRoute;
+      }
+      delete el.dataset.selectedRelationEndpointSurfaceShift;
+      delete el.dataset.selectedRelationEndpointRouteLane;
+      delete el.dataset.selectedRelationEndpointRouteLaneRole;
+      delete el.dataset.selectedRelationEndpointRouteLaneName;
       el.style.visibility = 'visible';
       const dockParent = el.dataset.dockParent;
       const lockedForDrag = isDragClusterCard(slug, dockParent);
       el.dataset.dragVisibilityLock = lockedForDrag ? 'true' : 'false';
+      const suppressFocusContextSilhouette =
+        focusContextSilhouetteSuppressionActive &&
+        el.dataset.dimmed === 'true' &&
+        Number(el.dataset.tier ?? '3') > 1 &&
+        !lockedForDrag;
+      if (suppressFocusContextSilhouette) {
+        el.dataset.dimOpacityRole = 'suppressed-focus-context';
+        el.dataset.dimOpacityToken = 'none';
+        el.dataset.surfaceHiddenReason = 'focus-context-suppression';
+        hideSkeletonCard(el, domWriteStats);
+        focusContextSilhouetteHiddenCount += 1;
+        continue;
+      }
       const parentEl = dockParent ? elBySlug.get(dockParent) : undefined;
-      if (dockParent && parentEl) {
+      const selectedRelationEndpointRouteLaneCandidate =
+        selectedRelationEndpoint &&
+        selectedRelationEndpointRole !== undefined &&
+        selectedRelationEndpointSource !== null &&
+        selectedRelationEndpointTarget !== null &&
+        selectedRelationEndpointRoles.size === 2 &&
+        el.dataset.selectedRelationEndpointZoomLens !== 'role-mark' &&
+        activeDragCluster === null &&
+        containerRect.width > SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX;
+      let layoutVisibleRect: ConnectorRect | null = null;
+      let flippedLayoutVisibleRect: ConnectorRect | null = null;
+      if (dockParent && parentEl && !selectedRelationEndpointRouteLaneCandidate) {
         // px 도킹 — 부모 카드 rect 기준 고정 밀도 (줌 배율 무관). 열 간격
         // 56px, 행 pitch = 카드 높이 + 10px. 열의 중심은 부모를 따르되,
         // 전체 열이 상/하단 chrome 밖으로 잘리면 safe band 안으로 이동한다.
         // 자식이 safe 높이를 넘으면 멀티 컬럼으로 랩핑(상/하단 chrome 관통 방지).
-        const p = parentEl.getBoundingClientRect();
+        const p = readCardPlacementParentRect(parentEl);
         const side = el.dataset.dockSide === 'left' ? -1 : 1;
         const index = Number(el.dataset.dockIndex ?? '0');
         const total = Math.max(1, Number(el.dataset.dockTotal ?? '1'));
-        const cardHeight = el.offsetHeight;
+        const {
+          fallbackRect: cardPlacementFallbackRect,
+          width: cardWidth,
+          height: cardHeight,
+        } = readCardPlacementSize(el, slug);
         const pitch = cardHeight + 10;
         const safeH = Math.max(pitch, containerRect.height - 96 - 56);
         const perColumn = Math.max(1, Math.floor(safeH / pitch));
@@ -1665,11 +4616,28 @@ export function SigmaSkeletonCards({
         const row = index % perColumn;
         const rowsInCol = Math.min(perColumn, total - col * perColumn);
         el.dataset.dockCol = String(col);
-        const parentCenterX = (p.left + p.right) / 2 - containerRect.left;
+        const parentCenterX = (p.left + p.right) / 2;
         const safeTop = 96;
-        const safeBottom = Math.max(safeTop + cardHeight, containerRect.height - 56);
+        const selectedFocusDock =
+          selectedFocusCenterActive &&
+          selectedRelationEdgeId === null &&
+          dockParent === selectedSlug &&
+          !pathWorkflowActive &&
+          !healthRepairTarget;
+        const dockBottomInset = selectedFocusDock
+          ? SELECTED_FOCUS_DOCK_BOTTOM_INSET_PX
+          : 56;
+        const safeBottom = Math.max(
+          safeTop + cardHeight,
+          containerRect.height - dockBottomInset,
+        );
+        el.dataset.dockBottomInsetPx = String(dockBottomInset);
+        el.dataset.selectedFocusDockBand = selectedFocusDock ? 'true' : 'false';
+        delete el.dataset.selectedFocusEgoReadingBand;
+        delete el.dataset.selectedFocusEgoReadingBandYRatio;
+        delete el.dataset.selectedFocusCenterYRatio;
         const halfColumn = ((rowsInCol - 1) * pitch + cardHeight) / 2;
-        const parentCenterY = (p.top + p.bottom) / 2 - containerRect.top;
+        const parentCenterY = (p.top + p.bottom) / 2;
         const dockSnapshot = slug
           ? dragRef.current?.dockDragSnapshots.get(slug) ??
             activeDockDragSnapshotsRef.current.get(slug)
@@ -1681,50 +4649,107 @@ export function SigmaSkeletonCards({
               (dockParent && activeDragCluster?.has(dockParent)),
           );
         el.dataset.dockDragFollow = followsActiveDrag ? 'true' : 'false';
-        const x = followsActiveDrag && dockSnapshot
+        const previewOffset = dragPreviewOffsetFor(slug, dockParent);
+        const x = (followsActiveDrag && dockSnapshot
           ? dockSnapshot.childStartX + parentCenterX - dockSnapshot.parentStartX
           : side === 1
-            ? p.right - containerRect.left + dockGap + col * columnStep
-            : p.left - containerRect.left - dockGap - col * columnStep;
-        const columnCenterY = followsActiveDrag && dockSnapshot
+            ? p.right + dockGap + col * columnStep
+            : p.left - dockGap - col * columnStep) + previewOffset.dx;
+        const columnCenterY = (followsActiveDrag && dockSnapshot
           ? dockSnapshot.childStartY + parentCenterY - dockSnapshot.parentStartY
           : Math.min(
               Math.max(parentCenterY, safeTop + halfColumn),
               safeBottom - halfColumn,
-            );
+            )) + previewOffset.dy;
         const y = followsActiveDrag
           ? columnCenterY
           : columnCenterY + (row - (rowsInCol - 1) / 2) * pitch;
-        el.dataset.layoutY = String(y);
+        const dragReactiveMotionOffset = dragReactiveMotionOffsetFor(el, lockedForDrag);
+        let renderX = x + dragReactiveMotionOffset.dx;
+        let renderY = y + dragReactiveMotionOffset.dy;
+        const selectedRelationEndpointRoleMark =
+          el.dataset.selectedRelationEndpointZoomLens === 'role-mark';
+        if (selectedRelationEndpointRoleMark) {
+          const roleMarkClamp = clampVisibleAnchorCard({
+            x: renderX,
+            y: renderY,
+            width: cardWidth,
+            height: cardHeight,
+            anchor: side === 1 ? 'left' : 'right',
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            fixedSurfaceRects,
+          });
+          renderX = roleMarkClamp.x;
+          renderY = roleMarkClamp.y;
+          el.dataset.selectedRelationEndpointZoomLensViewportClamp =
+            'safe-viewport';
+        } else {
+          delete el.dataset.selectedRelationEndpointZoomLensViewportClamp;
+        }
+        el.dataset.layoutY = String(renderY);
         if (followsActiveDrag && dockSnapshot) {
           el.dataset.dockParentDeltaY = String(parentCenterY - dockSnapshot.parentStartY);
         } else {
           delete el.dataset.dockParentDeltaY;
         }
-        const anchor = side === 1 ? ANCHOR_TRANSLATE.left : ANCHOR_TRANSLATE.right;
+        const dockAnchorKey = side === 1 ? 'left' : 'right';
+        const anchor = ANCHOR_TRANSLATE[dockAnchorKey];
         const flippedSide = side === 1 ? -1 : 1;
+        const flippedAnchorKey = flippedSide === 1 ? 'left' : 'right';
         const flippedX =
           flippedSide === 1
-            ? p.right - containerRect.left + dockGap + col * columnStep
-            : p.left - containerRect.left - dockGap - col * columnStep;
-        const flippedAnchor =
-          flippedSide === 1 ? ANCHOR_TRANSLATE.left : ANCHOR_TRANSLATE.right;
-        el.dataset.dockFlipTransform = `${flippedAnchor} translate3d(${flippedX}px, ${y}px, 0)`;
-        el.style.transform = `${anchor} translate3d(${x}px, ${y}px, 0)`;
+            ? p.right + dockGap + col * columnStep
+            : p.left - dockGap - col * columnStep;
+        const flippedAnchor = ANCHOR_TRANSLATE[flippedAnchorKey];
+        el.dataset.dockFlipTransform = `${flippedAnchor} translate3d(${flippedX}px, ${renderY}px, 0)`;
+        setSkeletonStyleValue(
+          el,
+          'transform',
+          `${anchor} translate3d(${renderX}px, ${renderY}px, 0)`,
+          domWriteStats,
+        );
+        layoutVisibleRect = seedCardPlacementFrameRect(
+          el,
+          cardPlacementFallbackRect ??
+            anchoredCardRect({
+              x: renderX,
+              y: renderY,
+              width: cardWidth,
+              height: cardHeight,
+              anchor: dockAnchorKey,
+            }),
+        );
+        flippedLayoutVisibleRect = anchoredCardRect({
+          x: flippedX,
+          y: renderY,
+          width: cardWidth,
+          height: cardHeight,
+          anchor: flippedAnchorKey,
+        });
       } else {
         delete el.dataset.dockDragFollow;
         delete el.dataset.dockParentDeltaY;
         delete el.dataset.dockFlipTransform;
         const attrs = graph.getNodeAttributes(slug);
         const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
+        el.dataset.layoutGraphX = String(attrs.x);
+        el.dataset.layoutGraphY = String(attrs.y);
+        el.dataset.layoutViewportX = String(vp.x);
+        el.dataset.layoutViewportY = String(vp.y);
         const anchorKey = el.dataset.anchor as SkeletonCardModel['anchor'];
         const safeAnchorKey = anchorKey && ANCHOR_TRANSLATE[anchorKey] ? anchorKey : 'center';
         const followsActiveGraphDrag = activeDragCluster?.has(slug) === true;
+        const {
+          fallbackRect: cardPlacementFallbackRect,
+          width: cardWidth,
+          height: cardHeight,
+        } = readCardPlacementSize(el, slug);
         const graphAnchorRect = anchoredCardRect({
           x: vp.x,
           y: vp.y,
-          width: el.offsetWidth,
-          height: el.offsetHeight,
+          width: cardWidth,
+          height: cardHeight,
           anchor: safeAnchorKey,
         });
         const graphAnchorBlockedBySurface = fixedSurfaceRects.some((surface) =>
@@ -1733,39 +4758,352 @@ export function SigmaSkeletonCards({
         el.dataset.graphAnchorSurfaceBlocked = graphAnchorBlockedBySurface
           ? 'true'
           : 'false';
+        const manualFocusPlacementActive =
+          manualFocusPlacement.selectedSlug === selectedSlug &&
+          manualFocusPlacement.slugs.has(slug);
+        const selectedFocusContextRailIndex =
+          !followsActiveGraphDrag && !manualFocusPlacementActive
+            ? selectedFocusContextRailIndexBySlug.get(slug)
+            : undefined;
+        const selectedFocusContextRailPlacement =
+          selectedFocusContextRailIndex !== undefined
+            ? (() => {
+                const railRows = Math.max(
+                  1,
+                  Math.ceil(selectedFocusContextRailSlugs.length / 2),
+                );
+                const railRow = Math.floor(selectedFocusContextRailIndex / 2);
+                const railSide = selectedFocusContextRailIndex % 2 === 0 ? -1 : 1;
+                const railGap =
+                  Math.min(
+                    SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MAX_PX,
+                    Math.max(
+                      SELECTED_FOCUS_CONTEXT_RAIL_X_GAP_MIN_PX,
+                      containerRect.width * 0.24,
+                    ),
+                  ) * scale;
+                const railCenterY =
+                  containerRect.height * SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO;
+                const railY =
+                  railRows <= 1
+                    ? railCenterY
+                    : containerRect.height *
+                      (SELECTED_FOCUS_CONTEXT_RAIL_Y_MIN_RATIO +
+                        ((SELECTED_FOCUS_CONTEXT_RAIL_Y_MAX_RATIO -
+                          SELECTED_FOCUS_CONTEXT_RAIL_Y_MIN_RATIO) *
+                          railRow) /
+                          (railRows - 1));
+                return {
+                  side: railSide === -1 ? 'left' : 'right',
+                  slot: selectedFocusContextRailIndex,
+                  x: containerRect.width / 2 + railSide * railGap,
+                  y: railY,
+                  row: railRow,
+                  rows: railRows,
+                };
+              })()
+            : null;
+        el.dataset.manualFocusPlacement = manualFocusPlacementActive ? 'true' : 'false';
+        el.dataset.manualFocusPlacementPolicy = manualFocusPlacementActive
+          ? 'use-dragged-graph-position'
+          : 'auto-focus-placement';
+        const selectedFocusViewportCenter =
+          selectedSlug === slug &&
+          selectedFocusCenterActive &&
+          selectedRelationEdgeId === null &&
+          !pathWorkflowActive &&
+          !healthRepairTarget &&
+          !followsActiveGraphDrag &&
+          !manualFocusPlacementActive &&
+          containerRect.width > SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX;
+        const previewOffset = dragPreviewOffsetFor(slug, dockParent);
+        const selectedRelationEndpointRouteLanePlacement =
+          selectedRelationEndpointRouteLaneCandidate &&
+          !followsActiveGraphDrag &&
+          !manualFocusPlacementActive &&
+          previewOffset.dx === 0 &&
+          previewOffset.dy === 0 &&
+          containerRect.width > SELECTED_FOCUS_RAIL_CARD_HIDE_MAX_WIDTH_PX
+            ? {
+                x:
+                  containerRect.width *
+                  (selectedRelationEndpointRole === 'source'
+                    ? SELECTED_RELATION_ENDPOINT_SOURCE_X_RATIO
+                    : SELECTED_RELATION_ENDPOINT_TARGET_X_RATIO),
+                y:
+                  containerRect.height *
+                  (selectedRelationEndpointRole === 'source'
+                    ? SELECTED_RELATION_ENDPOINT_SOURCE_Y_RATIO
+                    : SELECTED_RELATION_ENDPOINT_TARGET_Y_RATIO),
+                lane: selectedRelationEndpointRole === 'source' ? 'source-lane' : 'target-lane',
+              }
+            : null;
+        const overviewFixedGeometryPlacement =
+          !followsActiveGraphDrag &&
+          !manualFocusPlacementActive &&
+          previewOffset.dx === 0 &&
+          previewOffset.dy === 0
+            ? overviewFixedGeometrySlots.get(slug) ?? null
+            : null;
+        const selectedFocusEgoBand =
+          selectedFocusCenterActive &&
+          selectedRelationEdgeId === null &&
+          !pathWorkflowActive &&
+          !healthRepairTarget &&
+          !followsActiveGraphDrag &&
+          !manualFocusPlacementActive &&
+          ego?.slugs.has(slug) === true;
         const clamped =
-          !followsActiveGraphDrag && ego?.slugs.has(slug)
+          overviewFixedGeometryPlacement
+            ? clampVisibleAnchorCard({
+                x: overviewFixedGeometryPlacement.x,
+                y: overviewFixedGeometryPlacement.y,
+                width: cardWidth,
+                height: cardHeight,
+                anchor: safeAnchorKey,
+                containerWidth: containerRect.width,
+                containerHeight: containerRect.height,
+                fixedSurfaceRects,
+                viewportMargin: ZOOM_LENS_PIN_CANVAS_MARGIN_PX,
+              })
+          : selectedRelationEndpointRouteLanePlacement
+            ? clampVisibleAnchorCard({
+                x: selectedRelationEndpointRouteLanePlacement.x,
+                y: selectedRelationEndpointRouteLanePlacement.y,
+                width: cardWidth,
+                height: cardHeight,
+                anchor: safeAnchorKey,
+                containerWidth: containerRect.width,
+                containerHeight: containerRect.height,
+                fixedSurfaceRects,
+              })
+          : selectedFocusViewportCenter
+            ? {
+                x: containerRect.width / 2,
+                y:
+                  containerRect.height *
+                  SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
+              }
+            : selectedFocusContextRailPlacement
+            ? clampVisibleAnchorCard({
+                x: selectedFocusContextRailPlacement.x,
+                y: selectedFocusContextRailPlacement.y,
+                width: cardWidth,
+                height: cardHeight,
+                anchor: safeAnchorKey,
+                containerWidth: containerRect.width,
+                containerHeight: containerRect.height,
+                fixedSurfaceRects,
+              })
+            : !followsActiveGraphDrag &&
+                ego?.slugs.has(slug) &&
+                !manualFocusPlacementActive
             ? clampVisibleAnchorCard({
                 x: vp.x,
                 y: vp.y,
-                width: el.offsetWidth,
-                height: el.offsetHeight,
+                width: cardWidth,
+                height: cardHeight,
+                anchor: safeAnchorKey,
+                containerWidth: containerRect.width,
+                containerHeight: containerRect.height,
+                fixedSurfaceRects,
+              })
+            : !followsActiveGraphDrag && !ego
+            ? clampVisibleAnchorCard({
+                x: vp.x,
+                y: vp.y,
+                width: cardWidth,
+                height: cardHeight,
                 anchor: safeAnchorKey,
                 containerWidth: containerRect.width,
                 containerHeight: containerRect.height,
                 fixedSurfaceRects,
               })
             : vp;
+        if (previewOffset.dx !== 0 || previewOffset.dy !== 0) {
+          clamped.x += previewOffset.dx;
+          clamped.y += previewOffset.dy;
+          el.dataset.dragPreviewScope = previewOffset.source;
+          el.dataset.dragPreviewOffsetX = String(previewOffset.dx);
+          el.dataset.dragPreviewOffsetY = String(previewOffset.dy);
+        } else {
+          delete el.dataset.dragPreviewScope;
+          delete el.dataset.dragPreviewOffsetX;
+          delete el.dataset.dragPreviewOffsetY;
+        }
+        if (selectedFocusEgoBand && !selectedFocusViewportCenter) {
+          clamped.y = Math.min(
+            clamped.y,
+            containerRect.height * SELECTED_FOCUS_EGO_READING_BAND_Y_RATIO,
+          );
+        }
+        el.dataset.selectedFocusCenterPolicy = selectedFocusViewportCenter
+          ? 'viewport-center-anchor'
+          : selectedFocusContextRailPlacement
+            ? 'fixed-context-rail'
+          : 'default';
+        if (selectedRelationEndpointRouteLanePlacement) {
+          el.dataset.selectedRelationEndpointRouteLane = 'true';
+          el.dataset.selectedRelationEndpointRouteLaneRole =
+            selectedRelationEndpointRole ?? '';
+          el.dataset.selectedRelationEndpointRouteLaneName =
+            selectedRelationEndpointRouteLanePlacement.lane;
+          selectedRelationEndpointRouteLaneCount += 1;
+        } else {
+          delete el.dataset.selectedRelationEndpointRouteLane;
+          delete el.dataset.selectedRelationEndpointRouteLaneRole;
+          delete el.dataset.selectedRelationEndpointRouteLaneName;
+        }
+        if (overviewFixedGeometryPlacement) {
+          el.dataset.overviewDensityFixedGeography = 'true';
+          el.dataset.overviewDensityFixedGeographyRole =
+            overviewFixedGeometryPlacement.role;
+          el.dataset.overviewDensityFixedGeographyIndex = String(
+            overviewFixedGeometryPlacement.index,
+          );
+          el.dataset.overviewDensityFixedGeographyTotal = String(
+            overviewFixedGeometryPlacement.total,
+          );
+          el.dataset.overviewDensityFixedGeographyContract =
+            'deterministic-overview-slot';
+        } else {
+          delete el.dataset.overviewDensityFixedGeography;
+          delete el.dataset.overviewDensityFixedGeographyContract;
+          delete el.dataset.overviewDensityFixedGeographyRole;
+          delete el.dataset.overviewDensityFixedGeographyIndex;
+          delete el.dataset.overviewDensityFixedGeographyTotal;
+        }
+        el.dataset.overviewMapFixedGeographyDrag =
+          overviewMapFixedGeographyDragLocked ? 'true' : 'false';
+        if (selectedFocusContextRailPlacement) {
+          el.dataset.selectedFocusContextRail = 'true';
+          el.dataset.selectedFocusContextRailSlot = String(
+            selectedFocusContextRailPlacement.slot,
+          );
+          el.dataset.selectedFocusContextRailSide =
+            selectedFocusContextRailPlacement.side;
+          el.dataset.selectedFocusContextRailRow = String(
+            selectedFocusContextRailPlacement.row,
+          );
+          el.dataset.selectedFocusContextRailRows = String(
+            selectedFocusContextRailPlacement.rows,
+          );
+        } else {
+          delete el.dataset.selectedFocusContextRail;
+          delete el.dataset.selectedFocusContextRailSlot;
+          delete el.dataset.selectedFocusContextRailSide;
+          delete el.dataset.selectedFocusContextRailRow;
+          delete el.dataset.selectedFocusContextRailRows;
+        }
+        el.dataset.selectedFocusEgoReadingBand = selectedFocusEgoBand ? 'true' : 'false';
+        if (selectedFocusEgoBand) {
+          el.dataset.selectedFocusEgoReadingBandYRatio = String(
+            SELECTED_FOCUS_EGO_READING_BAND_Y_RATIO,
+          );
+        } else {
+          delete el.dataset.selectedFocusEgoReadingBandYRatio;
+        }
+        if (selectedFocusViewportCenter) {
+          el.dataset.selectedFocusCenterYRatio = String(
+            SELECTED_FOCUS_VIEWPORT_READING_CENTER_Y_RATIO,
+          );
+        } else {
+          delete el.dataset.selectedFocusCenterYRatio;
+        }
+        const dragReactiveMotionOffset = dragReactiveMotionOffsetFor(el, lockedForDrag);
+        let renderX = clamped.x + dragReactiveMotionOffset.dx;
+        let renderY = clamped.y + dragReactiveMotionOffset.dy;
+        if (
+          el.dataset.zoomLensActiveCard === 'true' &&
+          !followsActiveGraphDrag &&
+          previewOffset.dx === 0 &&
+          previewOffset.dy === 0
+        ) {
+          const pinClamp = clampVisibleAnchorCard({
+            x: renderX,
+            y: renderY,
+            width: cardWidth,
+            height: cardHeight,
+            anchor: safeAnchorKey,
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            fixedSurfaceRects,
+            viewportMargin: ZOOM_LENS_PIN_CANVAS_MARGIN_PX,
+          });
+          const adjusted =
+            Math.abs(pinClamp.x - renderX) > 0.5 ||
+            Math.abs(pinClamp.y - renderY) > 0.5;
+          renderX = pinClamp.x;
+          renderY = pinClamp.y;
+          el.dataset.zoomLensPinCanvasClamp = adjusted
+            ? 'safe-band-shift'
+            : 'inside-safe-band';
+          el.dataset.zoomLensPinCanvasMarginPx = String(
+            ZOOM_LENS_PIN_CANVAS_MARGIN_PX,
+          );
+          if (adjusted) zoomLensPinCanvasClampCount += 1;
+        } else {
+          delete el.dataset.zoomLensPinCanvasClamp;
+          delete el.dataset.zoomLensPinCanvasMarginPx;
+        }
+        const selectedRelationEndpointRoleMark =
+          el.dataset.selectedRelationEndpointZoomLens === 'role-mark';
+        if (selectedRelationEndpointRoleMark) {
+          const roleMarkClamp = clampVisibleAnchorCard({
+            x: renderX,
+            y: renderY,
+            width: cardWidth,
+            height: cardHeight,
+            anchor: safeAnchorKey,
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            fixedSurfaceRects,
+          });
+          renderX = roleMarkClamp.x;
+          renderY = roleMarkClamp.y;
+          el.dataset.selectedRelationEndpointZoomLensViewportClamp =
+            'safe-viewport';
+        } else {
+          delete el.dataset.selectedRelationEndpointZoomLensViewportClamp;
+        }
         const anchor = ANCHOR_TRANSLATE[safeAnchorKey];
-        el.dataset.layoutY = String(clamped.y);
-        el.style.transform = `${anchor} translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
+        el.dataset.layoutY = String(renderY);
+        setSkeletonStyleValue(
+          el,
+          'transform',
+          `${anchor} translate3d(${renderX}px, ${renderY}px, 0)`,
+          domWriteStats,
+        );
+        layoutVisibleRect = seedCardPlacementFrameRect(
+          el,
+          cardPlacementFallbackRect ??
+            anchoredCardRect({
+              x: renderX,
+              y: renderY,
+              width: cardWidth,
+              height: cardHeight,
+              anchor: safeAnchorKey,
+            }),
+        );
       }
-      if (el.dataset.dimmed === 'true') {
+      const selectedRelationContextCandidate =
+        selectedRelationContextSilhouetteSuppressionActive &&
+        selectedRelationEndpointRoles.size > 0 &&
+        !selectedRelationEndpoint;
+      if (selectedRelationContextCandidate) {
+        el.dataset.selectedRelationContextCandidate = 'true';
+      } else {
+        delete el.dataset.selectedRelationContextCandidate;
+      }
+      if (
+        el.dataset.dimmed === 'true' ||
+        selectedRelationContextCandidate ||
+        el.dataset.dragReactiveContext === 'true'
+      ) {
         dimEls.push(el);
       } else {
-        const r = el.getBoundingClientRect();
-        let visibleRect = {
-          left: r.left - containerRect.left,
-          top: r.top - containerRect.top,
-          right: r.right - containerRect.left,
-          bottom: r.bottom - containerRect.top,
-        };
-        let rect = {
-          left: r.left - containerRect.left - COLLISION_PAD,
-          top: r.top - containerRect.top - COLLISION_PAD,
-          right: r.right - containerRect.left + COLLISION_PAD,
-          bottom: r.bottom - containerRect.top + COLLISION_PAD,
-        };
+        let visibleRect = layoutVisibleRect ?? readCardPlacementFrameRect(el);
+        let rect = expandConnectorRect(visibleRect, COLLISION_PAD);
         const surfaceBlockers =
           ego !== null && dockParent
             ? [...fixedSurfaceRects, ...acceptedSurfaceRects]
@@ -1787,6 +5125,41 @@ export function SigmaSkeletonCards({
               !pathEndpoint &&
               el.dataset.graphAnchorSurfaceBlocked === 'true'));
         if (
+          selectedRelationEndpoint &&
+          blockedBySurface &&
+          !lockedForDrag &&
+          !followsActiveDockDrag
+        ) {
+          const shift = clampRectToViewportAndFixedSurfaces({
+            rect,
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            fixedSurfaceRects: surfaceBlockers,
+          });
+          if (shift.dx !== 0 || shift.dy !== 0) {
+            setSkeletonStyleValue(
+              el,
+              'transform',
+              `${el.style.transform} translate(${shift.dx}px, ${shift.dy}px)`,
+              domWriteStats,
+            );
+            visibleRect = {
+              left: visibleRect.left + shift.dx,
+              top: visibleRect.top + shift.dy,
+              right: visibleRect.right + shift.dx,
+              bottom: visibleRect.bottom + shift.dy,
+            };
+            rect = shift.rect;
+            cardPlacementFrameRectCache.set(el, visibleRect);
+            el.dataset.selectedRelationEndpointSurfaceShift = 'safe-shift';
+            blockedBySurface = surfaceBlockers.some((surface) =>
+              rectsOverlap(rect, surface),
+            );
+          } else {
+            el.dataset.selectedRelationEndpointSurfaceShift = 'none';
+          }
+        }
+        if (
           dockParent &&
           !lockedForDrag &&
           !followsActiveDockDrag &&
@@ -1795,20 +5168,12 @@ export function SigmaSkeletonCards({
           const flipTransform = el.dataset.dockFlipTransform;
           if (flipTransform) {
             const originalTransform = el.style.transform;
-            el.style.transform = flipTransform;
-            const flipped = el.getBoundingClientRect();
-            const flippedVisibleRect = {
-              left: flipped.left - containerRect.left,
-              top: flipped.top - containerRect.top,
-              right: flipped.right - containerRect.left,
-              bottom: flipped.bottom - containerRect.top,
-            };
-            const flippedRect = {
-              left: flipped.left - containerRect.left - COLLISION_PAD,
-              top: flipped.top - containerRect.top - COLLISION_PAD,
-              right: flipped.right - containerRect.left + COLLISION_PAD,
-              bottom: flipped.bottom - containerRect.top + COLLISION_PAD,
-            };
+            setSkeletonStyleValue(el, 'transform', flipTransform, domWriteStats);
+            const flippedVisibleRect = seedCardPlacementFrameRect(
+              el,
+              flippedLayoutVisibleRect ?? readCardPlacementFrameRect(el),
+            );
+            const flippedRect = expandConnectorRect(flippedVisibleRect, COLLISION_PAD);
             const flippedClipped =
               flippedVisibleRect.left < 0 ||
               flippedVisibleRect.top < 0 ||
@@ -1825,53 +5190,88 @@ export function SigmaSkeletonCards({
               el.dataset.dockFlipped = 'true';
             } else {
               delete el.dataset.dockFlipped;
-              el.style.transform = originalTransform;
-              hideSkeletonCard(el);
+              setSkeletonStyleValue(el, 'transform', originalTransform, domWriteStats);
+              hideSkeletonCard(el, domWriteStats);
               continue;
             }
           } else {
             delete el.dataset.dockFlipped;
-            hideSkeletonCard(el);
+            hideSkeletonCard(el, domWriteStats);
             continue;
           }
         } else {
           delete el.dataset.dockFlipped;
         }
+        if (
+          hideSelectedCardForCompactFocusRail &&
+          selected &&
+          !pathEndpoint &&
+          !lockedForDrag
+        ) {
+          hideSkeletonCard(el, domWriteStats);
+          continue;
+        }
         const protectSelectedCard =
-          (selected || pathEndpoint) && selectedRelationEdgeId === null;
+          ((selected || pathEndpoint) && selectedRelationEdgeId === null) ||
+          selectedRelationEndpoint;
         if (
           !lockedForDrag &&
           (blockedBySurface || (!protectSelectedCard && clipped))
         ) {
-          hideSkeletonCard(el);
+          hideSkeletonCard(el, domWriteStats);
           continue;
         }
-        showSkeletonCard(el);
+        if (selectedRelationEndpoint) {
+          showSelectedRelationEndpointCard(el, domWriteStats);
+        } else {
+          const visibleOpacity =
+            !ego
+              ? OVERVIEW_CONTEXT_OPACITY[
+                  Number(el.dataset.tier ?? '3') as SkeletonCardModel['tier']
+                ] ?? OVERVIEW_CONTEXT_OPACITY[3]
+              : '1';
+          showSkeletonCard(el, visibleOpacity, domWriteStats);
+        }
         overviewEls.push(el);
         egoRects.push(rect);
         acceptedSurfaceRects.push(rect);
       }
     }
+    const cardPlacementCoreLoopDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementCoreLoopStartedAt,
+    );
+    const cardPlacementOverviewCollisionStartedAt = measureRepositionNow();
     // Overview 에서는 모든 카드가 풀 잉크라 가까운 landmark 끼리 텍스트가
     // 부딪힐 수 있다. 상위 anchor(project/domain)를 우선 보존하고, 충돌하는
     // 하위 capability/element 칩은 숨겨 지형의 읽기 순서를 지킨다.
     if (!ego) {
+      const overviewDragInProgress =
+        activeDragCluster !== null || dragRef.current !== null || activeDragMotion;
+      const overviewSurfaceHidingActive =
+        !overviewDragInProgress && containerRect.width >= 1100;
       const accepted: Array<{ left: number; top: number; right: number; bottom: number }> =
         [];
+      const overviewCollisionRank = (el: HTMLElement) => {
+        const tier = Number(el.dataset.tier ?? '3');
+        // Overview evidence landmark: keep the proof leaf after project/domain,
+        // but before capability chips so the map visibly reaches implementation.
+        if (tier === 3 && !el.dataset.dockParent) return 1.5;
+        return tier;
+      };
       const ordered = overviewEls.slice().sort((a, b) => {
-        const tierA = Number(a.dataset.tier ?? '3');
-        const tierB = Number(b.dataset.tier ?? '3');
-        return tierA - tierB;
+        const rankA = overviewCollisionRank(a);
+        const rankB = overviewCollisionRank(b);
+        if (rankA !== rankB) return rankA - rankB;
+        return Number(a.dataset.layoutY ?? 0) - Number(b.dataset.layoutY ?? 0);
       });
       for (const el of ordered) {
-        const r = el.getBoundingClientRect();
+        delete el.dataset.overviewCollisionPin;
+        const tier = Number(el.dataset.tier ?? '3');
+        const readableBandLandmark = !pathWorkflowActive && !overviewDensityLensActive && tier <= 1;
         const selected = el.dataset.selected === 'true';
-        const rect = {
-          left: r.left - containerRect.left,
-          top: r.top - containerRect.top,
-          right: r.right - containerRect.left,
-          bottom: r.bottom - containerRect.top,
-        };
+        const selectedRelationEndpoint = isSelectedRelationEndpointCard(el);
+        const rect = readCardPlacementFrameRect(el);
         const clipped =
           rect.left < 0 ||
           rect.top < 0 ||
@@ -1884,9 +5284,28 @@ export function SigmaSkeletonCards({
           el.dataset.slug ?? '',
           el.dataset.dockParent,
         );
-        const protectSelectedCard = selected && selectedRelationEdgeId === null;
+        const protectSelectedCard =
+          (selected && selectedRelationEdgeId === null) || selectedRelationEndpoint;
+        const pinSize = ZOOM_LENS_PIN_SIZE_PX;
+        const pinRect = {
+          left: rect.left + (rect.right - rect.left - pinSize) / 2,
+          top: rect.top + (rect.bottom - rect.top - pinSize) / 2,
+          right: rect.left + (rect.right - rect.left + pinSize) / 2,
+          bottom: rect.top + (rect.bottom - rect.top + pinSize) / 2,
+        };
+        const pinFits =
+          !readableBandLandmark &&
+          !selectedRelationEndpoint &&
+          !protectSelectedCard &&
+          !blockedByFixedSurface &&
+          pinRect.left >= 0 &&
+          pinRect.top >= 0 &&
+          pinRect.right <= containerRect.width &&
+          pinRect.bottom <= containerRect.height &&
+          !accepted.some((kept) => rectsOverlap(pinRect, kept, OVERVIEW_COLLISION_PAD));
         if (
           !lockedForOverviewDrag &&
+          !readableBandLandmark &&
           (blockedByFixedSurface ||
             (!protectSelectedCard &&
               (clipped ||
@@ -1894,14 +5313,47 @@ export function SigmaSkeletonCards({
                   rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD),
                 ))))
         ) {
-          el.style.opacity = '0';
-          el.style.pointerEvents = 'none';
+          if (
+            overviewSurfaceHidingActive &&
+            accepted.length < OVERVIEW_MIN_VISIBLE_CARD_COUNT &&
+            pinFits
+          ) {
+            el.dataset.overviewCollisionPin = 'true';
+            showSkeletonCard(el, ZOOM_LENS_PIN_MIN_OPACITY, domWriteStats);
+            cardPlacementFrameRectCache.set(el, pinRect);
+            accepted.push(pinRect);
+          } else if (overviewSurfaceHidingActive) {
+            el.dataset.surfaceHiddenReason = 'overview-collision';
+            hideSkeletonCard(el, domWriteStats);
+          } else {
+            el.style.opacity = '0';
+            el.style.pointerEvents = 'none';
+          }
           continue;
         }
-        el.style.visibility = 'visible';
+        if (selectedRelationEndpoint) {
+          showSelectedRelationEndpointCard(el, domWriteStats);
+        } else {
+          const overviewOpacity =
+            OVERVIEW_CONTEXT_OPACITY[
+              Number(el.dataset.tier ?? '3') as SkeletonCardModel['tier']
+            ] ?? OVERVIEW_CONTEXT_OPACITY[3];
+          if (overviewSurfaceHidingActive) {
+            delete el.dataset.overviewCollisionPin;
+            showSkeletonCard(el, overviewOpacity, domWriteStats);
+          } else {
+            el.style.visibility = 'visible';
+            el.style.opacity = overviewOpacity;
+          }
+        }
         accepted.push(rect);
       }
     }
+    const cardPlacementOverviewCollisionDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementOverviewCollisionStartedAt,
+    );
+    const cardPlacementDimPassStartedAt = measureRepositionNow();
     // pass 2 — dim 카드: 펼친 열과 겹치면 0(충돌 금지), 아니면 tier 별 dim.
     // 고정 HUD/범례와 겹치는 dim 카드도 0 — 선택 상태에서 배경 landmark 가
     // 패널 밑으로 비쳐 보이면 지형의 깊이감보다 UI 충돌이 먼저 읽힌다.
@@ -1911,26 +5363,133 @@ export function SigmaSkeletonCards({
       container.dataset.layoutAnimate === 'true' &&
       activeDragCluster === null &&
       selectedRelationEdgeId === null;
-    const acceptedDimRects = [...egoRects];
     const orderedDimEls = dimEls.slice().sort((a, b) => {
       const tierA = Number(a.dataset.tier ?? '3');
       const tierB = Number(b.dataset.tier ?? '3');
       return tierA - tierB;
     });
+    const selectedFocusContextRailPriorityRects = selectedFocusContextRailActive
+      ? selectedFocusContextRailSlugs
+          .map((slug) => elBySlug.get(slug) ?? null)
+          .filter((el): el is HTMLElement => el !== null)
+          .map((el) => readCardPlacementFrameRect(el))
+      : [];
+    const selectedFocusContextRailSelectedRects =
+      selectedFocusContextRailActive && selectedSlug !== null
+        ? [elBySlug.get(selectedSlug) ?? null]
+            .filter((el): el is HTMLElement => el !== null)
+            .map((el) => readCardPlacementFrameRect(el))
+        : [];
+    let selectedFocusContextRailYieldedEgoRectCount = 0;
+    const acceptedDimRects =
+      selectedFocusContextRailPriorityRects.length > 0
+        ? egoRects.filter((rect) => {
+            const overlapsRail = selectedFocusContextRailPriorityRects.some((railRect) =>
+              rectsOverlap(rect, railRect, OVERVIEW_COLLISION_PAD),
+            );
+            if (!overlapsRail) return true;
+            const overlapsSelected = selectedFocusContextRailSelectedRects.some(
+              (selectedRect) =>
+                rectsOverlap(rect, selectedRect, OVERVIEW_COLLISION_PAD),
+            );
+            if (overlapsSelected) return true;
+            selectedFocusContextRailYieldedEgoRectCount += 1;
+            return false;
+          })
+        : [...egoRects];
+    container.dataset.selectedFocusContextRailPriorityContract =
+      selectedFocusContextRailPriorityRects.length > 0
+        ? 'domain-waypoints-outrank-lower-priority-context'
+        : 'inactive';
+    container.dataset.selectedFocusContextRailPriorityRectCount = String(
+      selectedFocusContextRailPriorityRects.length,
+    );
+    container.dataset.selectedFocusContextRailYieldedEgoRectCount = String(
+      selectedFocusContextRailYieldedEgoRectCount,
+    );
+    let selectedRelationLowerPriorityVisibleDimmedCount = 0;
+    let selectedRelationVisibleOrientationAnchorCount = 0;
+    let selectedRelationContextPinCount = 0;
+    let dragReactiveContextVisibleCount = 0;
+    let dragReactiveMotionVisibleCount = 0;
+    let dragReactiveAmbientMotionVisibleCount = 0;
+    let dragReactiveLinkedMotionVisibleCount = 0;
+    let dragReactiveContextPinCount = 0;
+    let dragReactiveMotionMaxOffsetPx = 0;
     for (const el of orderedDimEls) {
       const slug = el.dataset.slug ?? '';
       const lockedForDrag = isDragClusterCard(slug, el.dataset.dockParent);
+      const dragReactiveContext = el.dataset.dragReactiveContext === 'true';
+      if (el.dataset.zoomLensPresentation === 'drag-reactive-context-pin') {
+        delete el.dataset.zoomLensActiveCard;
+        delete el.dataset.zoomLensPresentation;
+        delete el.dataset.zoomLensCardContract;
+        delete el.dataset.zoomLensPinOpacityContract;
+        delete el.dataset.zoomLensPinMinOpacity;
+      } else if (
+        el.dataset.zoomLensCardContract ===
+        'drag-reactive-context-collisions-collapse-to-kind-pin'
+      ) {
+        delete el.dataset.zoomLensCardContract;
+        delete el.dataset.zoomLensPinOpacityContract;
+        delete el.dataset.zoomLensPinMinOpacity;
+      }
+      if (dragReactiveContext) {
+        el.dataset.dragReactiveContextVisible = 'false';
+        el.dataset.dragReactiveContextVisibility = 'pending-visibility-pass';
+      } else {
+        delete el.dataset.dragReactiveContextVisible;
+        delete el.dataset.dragReactiveContextVisibility;
+      }
+      const selectedRelationEndpoint = isSelectedRelationEndpointCard(el);
       let rect: { left: number; top: number; right: number; bottom: number } | null = null;
       let collides: boolean;
+      const tier = Number(el.dataset.tier ?? '3');
+      if (selectedRelationEndpoint) {
+        rect = readCardPlacementFrameRect(el);
+        el.dataset.dimOpacityRole = 'selected-relation-endpoint';
+        el.dataset.dimOpacityToken = 'none';
+        if (dragReactiveContext) {
+          el.dataset.dragReactiveContextVisibility =
+            'selected-relation-endpoint-not-dim-context';
+        }
+        showSelectedRelationEndpointCard(el, domWriteStats);
+        acceptedDimRects.push(rect);
+        continue;
+      }
+      if (focusContextSilhouetteSuppressionActive && tier > 1 && !lockedForDrag) {
+        el.dataset.dimOpacityRole = 'suppressed-focus-context';
+        el.dataset.dimOpacityToken = 'none';
+        el.dataset.surfaceHiddenReason = 'focus-context-suppression';
+        if (dragReactiveContext) {
+          el.dataset.dragReactiveContextVisibility = 'hidden-focus-context-suppression';
+        }
+        hideSkeletonCard(el, domWriteStats);
+        focusContextSilhouetteHiddenCount += 1;
+        continue;
+      }
+      if (
+        selectedRelationContextSilhouetteSuppressionActive &&
+        tier > 1 &&
+        !lockedForDrag
+      ) {
+        el.dataset.dimOpacityRole = 'suppressed-selected-relation-context';
+        el.dataset.dimOpacityToken = 'none';
+        el.dataset.selectedRelationHiddenInteractionContract =
+          'hidden-context-is-not-pointer-focus-or-a11y-target';
+        el.dataset.surfaceHiddenReason = 'selected-relation-context-suppression';
+        if (dragReactiveContext) {
+          el.dataset.dragReactiveContextVisibility =
+            'hidden-selected-relation-context-suppression';
+        }
+        hideSkeletonCard(el, domWriteStats);
+        selectedRelationContextSilhouetteHiddenCount += 1;
+        continue;
+      }
       if (lockedForDrag) {
         collides = false;
       } else {
-        const r = el.getBoundingClientRect();
-        const left = r.left - containerRect.left;
-        const top = r.top - containerRect.top;
-        const right = r.right - containerRect.left;
-        const bottom = r.bottom - containerRect.top;
-        rect = { left, top, right, bottom };
+        rect = readCardPlacementFrameRect(el);
         const clipped =
           rect.left < 0 ||
           rect.top < 0 ||
@@ -1947,19 +5506,336 @@ export function SigmaSkeletonCards({
         }
       }
       if (collides) {
-        hideSkeletonCard(el);
+        const focusRailCard = el.dataset.selectedFocusContextRail === 'true';
+        if (focusRailCard && rect) {
+          const shifted = clampRectToViewportAndFixedSurfaces({
+            rect,
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            fixedSurfaceRects: [
+              ...fixedSurfaceRects,
+              ...acceptedSurfaceRects,
+              ...acceptedDimRects,
+            ],
+          });
+          const cleared =
+            !fixedSurfaceRects.some((surface) => rectsOverlap(shifted.rect, surface)) &&
+            !acceptedSurfaceRects.some((surface) =>
+              rectsOverlap(shifted.rect, surface),
+            ) &&
+            !acceptedDimRects.some((surface) => rectsOverlap(shifted.rect, surface));
+          if (cleared && (shifted.dx !== 0 || shifted.dy !== 0)) {
+            setSkeletonStyleValue(
+              el,
+              'transform',
+              `${el.style.transform} translate(${shifted.dx}px, ${shifted.dy}px)`,
+              domWriteStats,
+            );
+            el.dataset.selectedFocusContextRailCollisionResolve = 'safe-shift';
+            cardPlacementFrameRectCache.set(el, shifted.rect);
+            rect = shifted.rect;
+            collides = false;
+          } else {
+            el.dataset.selectedFocusContextRailCollisionResolve = 'hidden';
+          }
+        } else {
+          delete el.dataset.selectedFocusContextRailCollisionResolve;
+        }
+      }
+      if (collides) {
+        el.dataset.dimOpacityRole = 'hidden-fixed-surface-collision';
+        el.dataset.dimOpacityToken = 'none';
+        if (dragReactiveContext) {
+          const pinSize = ZOOM_LENS_PIN_SIZE_PX;
+          const pinRect =
+            rect && dragReactiveContextPinCount < DRAG_REACTIVE_CONTEXT_PIN_MAX_COUNT
+              ? {
+                  left: rect.left + (rect.right - rect.left - pinSize) / 2,
+                  top: rect.top + (rect.bottom - rect.top - pinSize) / 2,
+                  right: rect.left + (rect.right - rect.left + pinSize) / 2,
+                  bottom: rect.top + (rect.bottom - rect.top + pinSize) / 2,
+                }
+              : null;
+          const pinFits =
+            pinRect !== null &&
+            pinRect.left >= SAFE_VIEWPORT_MARGIN &&
+            pinRect.top >= SAFE_VIEWPORT_MARGIN &&
+            pinRect.right <= containerRect.width - SAFE_VIEWPORT_MARGIN &&
+            pinRect.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN &&
+            !acceptedDimRects.some((accepted) =>
+              rectsOverlap(pinRect, accepted, OVERVIEW_COLLISION_PAD),
+            ) &&
+            !acceptedSurfaceRects.some((accepted) =>
+              rectsOverlap(pinRect, accepted, OVERVIEW_COLLISION_PAD),
+            ) &&
+            !fixedSurfaceRects.some((surface) => rectsOverlap(pinRect, surface));
+          if (pinFits) {
+            dragReactiveContextPinCount += 1;
+            dragReactiveContextVisibleCount += 1;
+            el.dataset.dragReactiveContextVisible = 'true';
+            el.dataset.dragReactiveContextVisibility = 'pin-visible-collision-fallback';
+            el.dataset.dimOpacityRole = 'drag-reactive-context-pin';
+            el.dataset.dimOpacityToken = DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN;
+            el.dataset.zoomLensActiveCard = 'true';
+            el.dataset.zoomLensPresentation = 'drag-reactive-context-pin';
+            el.dataset.zoomLensCardContract =
+              'drag-reactive-context-collisions-collapse-to-kind-pin';
+            el.dataset.zoomLensPinOpacityContract =
+              'drag-reactive-context-pins-preserve-motion-without-text-collision';
+            el.dataset.zoomLensPinMinOpacity = DRAG_REACTIVE_CONTEXT_OPACITY;
+            delete el.dataset.surfaceHidden;
+            delete el.dataset.surfaceHiddenReason;
+            showSkeletonCard(el, DRAG_REACTIVE_CONTEXT_OPACITY, domWriteStats);
+            setSkeletonStyleValue(el, 'pointerEvents', 'none', domWriteStats);
+            cardPlacementFrameRectCache.set(el, pinRect);
+            acceptedDimRects.push(pinRect);
+            if (el.dataset.dragReactiveMotion === 'parallax-nudge') {
+              dragReactiveMotionVisibleCount += 1;
+              if (el.dataset.dragReactiveMotionStrength === 'linked-context') {
+                dragReactiveLinkedMotionVisibleCount += 1;
+              } else if (el.dataset.dragReactiveMotionStrength === 'ambient-context') {
+                dragReactiveAmbientMotionVisibleCount += 1;
+              }
+              const dx = Number(el.dataset.dragReactiveMotionDx ?? '0');
+              const dy = Number(el.dataset.dragReactiveMotionDy ?? '0');
+              dragReactiveMotionMaxOffsetPx = Math.max(
+                dragReactiveMotionMaxOffsetPx,
+                Math.hypot(Number.isFinite(dx) ? dx : 0, Number.isFinite(dy) ? dy : 0),
+              );
+            }
+            continue;
+          }
+          el.dataset.dragReactiveContextVisible = 'false';
+          el.dataset.dragReactiveContextVisibility =
+            dragReactiveContextPinCount >= DRAG_REACTIVE_CONTEXT_PIN_MAX_COUNT
+              ? 'hidden-drag-reactive-pin-budget'
+              : 'hidden-fixed-surface-collision';
+        } else {
+          delete el.dataset.dragReactiveContextVisible;
+          delete el.dataset.dragReactiveContextVisibility;
+        }
+        hideSkeletonCard(el, domWriteStats);
       } else {
-        el.style.opacity = lockedForDrag
-          ? '1'
-          : (el.dataset.tier === '0' || el.dataset.tier === '1')
+        const focusRailCard = el.dataset.selectedFocusContextRail === 'true';
+        const dimOpacity =
+          dragReactiveContext
+            ? DRAG_REACTIVE_CONTEXT_OPACITY
+            : focusRailCard
+            ? SELECTED_FOCUS_CONTEXT_RAIL_OPACITY
+            : el.dataset.tier === '0' || el.dataset.tier === '1'
             ? DIM_ANCHOR_OPACITY
             : DIM_CHIP_OPACITY;
-        el.style.visibility = 'visible';
-        el.style.pointerEvents = '';
+        el.dataset.dimOpacityRole =
+          dragReactiveContext
+            ? 'drag-reactive-context'
+            : focusRailCard
+            ? 'selected-focus-context-rail'
+            : el.dataset.tier === '0' || el.dataset.tier === '1'
+            ? 'orientation-anchor'
+            : 'context-silhouette';
+        el.dataset.dimOpacityToken =
+          el.dataset.dimOpacityRole === 'drag-reactive-context'
+            ? DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN
+            : el.dataset.dimOpacityRole === 'selected-focus-context-rail'
+            ? SELECTED_FOCUS_CONTEXT_RAIL_OPACITY_TOKEN
+            : el.dataset.dimOpacityRole === 'orientation-anchor'
+            ? DIM_ANCHOR_OPACITY_TOKEN
+            : DIM_CHIP_OPACITY_TOKEN;
+        if (dragReactiveContext) {
+          dragReactiveContextVisibleCount += 1;
+          el.dataset.dragReactiveContextVisible = 'true';
+          el.dataset.dragReactiveContextVisibility = 'boosted-visible';
+          if (el.dataset.dragReactiveMotion === 'parallax-nudge') {
+            dragReactiveMotionVisibleCount += 1;
+            if (el.dataset.dragReactiveMotionStrength === 'linked-context') {
+              dragReactiveLinkedMotionVisibleCount += 1;
+            } else if (el.dataset.dragReactiveMotionStrength === 'ambient-context') {
+              dragReactiveAmbientMotionVisibleCount += 1;
+            }
+            const dx = Number(el.dataset.dragReactiveMotionDx ?? '0');
+            const dy = Number(el.dataset.dragReactiveMotionDy ?? '0');
+            dragReactiveMotionMaxOffsetPx = Math.max(
+              dragReactiveMotionMaxOffsetPx,
+              Math.hypot(Number.isFinite(dx) ? dx : 0, Number.isFinite(dy) ? dy : 0),
+            );
+          }
+        } else {
+          delete el.dataset.dragReactiveContextVisibility;
+        }
+        if (selectedRelationContextSilhouetteSuppressionActive) {
+          if (el.dataset.dimOpacityRole === 'orientation-anchor') {
+            selectedRelationVisibleOrientationAnchorCount += 1;
+            selectedRelationContextPinCount += 1;
+            el.dataset.zoomLensActiveCard = 'true';
+            el.dataset.zoomLensPresentation = 'relation-context-pin';
+            el.dataset.zoomLensCardContract =
+              'selected-relation-context-anchor-becomes-kind-pin';
+            el.dataset.selectedRelationContextPinOpacity =
+              SELECTED_RELATION_CONTEXT_PIN_OPACITY;
+            el.dataset.selectedRelationContextPinOpacityToken =
+              SELECTED_RELATION_CONTEXT_PIN_OPACITY_TOKEN;
+            el.dataset.selectedRelationContextPinAttention =
+              'quiet-orientation-anchor';
+          } else if (el.dataset.dimOpacityRole === 'context-silhouette') {
+            selectedRelationLowerPriorityVisibleDimmedCount += 1;
+          }
+        }
+        delete el.dataset.surfaceHidden;
+        delete el.dataset.surfaceHiddenReason;
+        const zoomLensActivePin = el.dataset.zoomLensActiveCard === 'true';
+        const selectedRelationContextPin =
+          el.dataset.zoomLensPresentation === 'relation-context-pin';
+        const resolvedDimOpacity =
+          selectedRelationContextPin
+            ? SELECTED_RELATION_CONTEXT_PIN_OPACITY
+            : zoomLensActivePin && Number(dimOpacity) < Number(ZOOM_LENS_PIN_MIN_OPACITY)
+            ? ZOOM_LENS_PIN_MIN_OPACITY
+            : dimOpacity;
+        if (selectedRelationContextPin) {
+          el.dataset.zoomLensPinOpacityContract =
+            'selected-relation-context-pins-use-quiet-orientation-opacity';
+          el.dataset.zoomLensPinMinOpacity = SELECTED_RELATION_CONTEXT_PIN_OPACITY;
+        } else if (zoomLensActivePin) {
+          el.dataset.zoomLensPinOpacityContract =
+            'zoom-lens-pins-override-dim-opacity-floor';
+          el.dataset.zoomLensPinMinOpacity = ZOOM_LENS_PIN_MIN_OPACITY;
+          delete el.dataset.selectedRelationContextPinOpacity;
+          delete el.dataset.selectedRelationContextPinOpacityToken;
+          delete el.dataset.selectedRelationContextPinAttention;
+        } else {
+          delete el.dataset.zoomLensPinOpacityContract;
+          delete el.dataset.zoomLensPinMinOpacity;
+          delete el.dataset.selectedRelationContextPinOpacity;
+          delete el.dataset.selectedRelationContextPinOpacityToken;
+          delete el.dataset.selectedRelationContextPinAttention;
+        }
+        setSkeletonStyleValue(
+          el,
+          'opacity',
+          lockedForDrag ? '1' : resolvedDimOpacity,
+          domWriteStats,
+        );
+        setSkeletonStyleValue(el, 'visibility', 'visible', domWriteStats);
+        setSkeletonStyleValue(
+          el,
+          'pointerEvents',
+          lockedForDrag || focusRailCard ? '' : 'none',
+          domWriteStats,
+        );
         if (rect) acceptedDimRects.push(rect);
       }
     }
-    if (selectedRelationEdgeId !== null) {
+    const cardPlacementDimPassDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementDimPassStartedAt,
+    );
+    container.dataset.cardPlacementDimRectReadPolicy =
+      'reuse-pass1-card-placement-frame-rects';
+    container.dataset.focusContextSilhouetteHiddenCount = String(
+      focusContextSilhouetteHiddenCount,
+    );
+    container.dataset.selectedRelationContextSilhouetteHiddenCount = String(
+      selectedRelationContextSilhouetteHiddenCount,
+    );
+    container.dataset.dragReactiveContextVisibleCount = String(
+      dragReactiveContextVisibleCount,
+    );
+    container.dataset.dragReactiveContextPolicy =
+      activeDragMotion && activeDragCluster !== null
+        ? selectedSlug === null &&
+          activeDragFreeContextCount > 0 &&
+          dragReactiveLinkedMotionVisibleCount > 0
+          ? 'boost-overview-neighbor-response'
+          : 'boost-dimmed-worker-response'
+        : 'idle';
+    container.dataset.dragReactiveMotionPolicy =
+      (activeDragMotion || activeDragMotionRef.current) && activeDragCluster !== null
+        ? 'bounded-parallax-nudge'
+        : 'idle';
+    container.dataset.dragReactiveMotionVisibleCount = String(
+      dragReactiveMotionVisibleCount,
+    );
+    container.dataset.dragReactiveAmbientMotionVisibleCount = String(
+      dragReactiveAmbientMotionVisibleCount,
+    );
+    container.dataset.dragReactiveLinkedMotionVisibleCount = String(
+      dragReactiveLinkedMotionVisibleCount,
+    );
+    container.dataset.dragReactiveMotionLinkedPolicy =
+      dragReactiveLinkedMotionVisibleCount > 0
+        ? 'direct-neighbor-readable-follow'
+        : 'idle';
+    container.dataset.dragReactiveContextPinContract =
+      activeDragMotion && activeDragCluster !== null
+        ? 'colliding-reactive-context-collapses-to-kind-pins'
+        : 'idle';
+    container.dataset.dragReactiveContextPinCount = String(
+      dragReactiveContextPinCount,
+    );
+    container.dataset.dragReactiveContextPinMaxCount = String(
+      DRAG_REACTIVE_CONTEXT_PIN_MAX_COUNT,
+    );
+    container.dataset.dragReactiveMotionMaxObservedOffsetPx =
+      dragReactiveMotionMaxOffsetPx.toFixed(2);
+    container.dataset.dragReactiveMotionMaxOffsetPx = String(
+      DRAG_REACTIVE_MOTION_MAX_OFFSET_PX,
+    );
+    container.dataset.dragReactiveMotionBaseMaxOffsetPx = String(
+      DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX,
+    );
+    container.dataset.dragReactiveMotionLinkedMaxOffsetPx = String(
+      DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX,
+    );
+    container.dataset.dragReactiveMotionMaxOffsetToken =
+      DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN;
+    container.dataset.selectedRelationLowerPriorityVisibleDimmedCount = String(
+      selectedRelationLowerPriorityVisibleDimmedCount,
+    );
+    container.dataset.selectedRelationVisibleOrientationAnchorCount = String(
+      selectedRelationVisibleOrientationAnchorCount,
+    );
+    container.dataset.selectedRelationContextPinContract =
+      'selected-relation-keeps-context-as-kind-pins';
+    container.dataset.selectedRelationContextPinCount = String(
+      selectedRelationContextPinCount,
+    );
+    container.dataset.selectedRelationContextPinAttentionContract =
+      'selected-relation-context-pins-stay-visible-but-quieter-than-endpoints';
+    container.dataset.selectedRelationContextPinOpacity =
+      SELECTED_RELATION_CONTEXT_PIN_OPACITY;
+    container.dataset.selectedRelationContextPinOpacityToken =
+      SELECTED_RELATION_CONTEXT_PIN_OPACITY_TOKEN;
+    if (selectedRelationContextPinCount > 0) {
+      container.dataset.zoomLensPresentationActive = 'true';
+      container.dataset.zoomLensPresentationSource = 'selected-relation-context';
+    }
+    container.dataset.cardPlacementParentRectCacheContract =
+      'frame-local-parent-card-rects';
+    container.dataset.cardPlacementParentRectCacheSize = String(
+      cardPlacementParentRectCache.size,
+    );
+    container.dataset.cardPlacementParentRectReadCount = String(
+      cardPlacementParentRectReadCount,
+    );
+    container.dataset.cardPlacementSizeReadCount = String(cardPlacementSizeReadCount);
+    container.dataset.cardPlacementLayoutRectContract =
+      'computed-from-transform-and-size';
+    container.dataset.cardPlacementSizeCacheContract =
+      'stable-card-size-key-reuses-offset-dimensions';
+    container.dataset.cardPlacementSizeCacheHitCount = String(
+      cardPlacementSizeCacheHitCount,
+    );
+    container.dataset.cardPlacementSizeCacheMissCount = String(
+      cardPlacementSizeCacheMissCount,
+    );
+    for (const slug of cardPlacementSizeCache.keys()) {
+      if (!cardPlacementSizeCacheSeen.has(slug)) {
+        cardPlacementSizeCache.delete(slug);
+      }
+    }
+    container.dataset.cardPlacementSizeCacheSize = String(cardPlacementSizeCache.size);
+    const cardPlacementReadLayerStartedAt = measureRepositionNow();
+    if (readLayerSurfaceActive) {
       for (const el of orderedEls) {
         if (el.dataset.surfaceHidden === 'true') continue;
         const style = getComputedStyle(el);
@@ -1977,36 +5853,50 @@ export function SigmaSkeletonCards({
           bottom: r.bottom - containerRect.top + COLLISION_PAD,
         };
         if (fixedSurfaceRects.some((surface) => rectsOverlap(rect, surface))) {
-          hideSkeletonCard(el);
+          hideSkeletonCard(el, domWriteStats);
         }
       }
     }
-    if (selectedRelationEdgeId === null) {
+    const cardPlacementReadLayerDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementReadLayerStartedAt,
+    );
+    const cardPlacementPathEndpointStartedAt = measureRepositionNow();
+    const pathEndpointPostprocessActive =
+      selectedRelationEdgeId === null &&
+      orderedEls.some(
+        (el) => el.dataset.pathRole === 'source' || el.dataset.pathRole === 'target',
+      );
+    container.dataset.pathEndpointPostprocessContract =
+      'skip-unless-source-or-target-visible';
+    container.dataset.pathEndpointPostprocessPolicy =
+      pathEndpointPostprocessActive ? 'run-path-endpoints' : 'skip-no-path-endpoints';
+    if (pathEndpointPostprocessActive) {
+      restorePathEndpointsFromFixedSurfaces(
+        orderedEls,
+        containerRect,
+        fixedSurfaceRects,
+        domWriteStats,
+        (el, rect) => {
+          cardPlacementFrameRectCache.set(el, rect);
+        },
+      );
       for (const el of orderedEls) {
         if (el.dataset.pathRole !== 'source' && el.dataset.pathRole !== 'target') {
           continue;
         }
+        if (el.dataset.surfaceHidden === 'true') {
+          continue;
+        }
         const endpointBox = el.getBoundingClientRect();
-        let endpointRect = {
+        const endpointRect = {
           left: endpointBox.left - containerRect.left,
           top: endpointBox.top - containerRect.top,
           right: endpointBox.right - containerRect.left,
           bottom: endpointBox.bottom - containerRect.top,
         };
-        const endpointShift = clampRectToViewportAndFixedSurfaces({
-          rect: endpointRect,
-          containerWidth: containerRect.width,
-          containerHeight: containerRect.height,
-          fixedSurfaceRects,
-        });
-        if (endpointShift.dx !== 0 || endpointShift.dy !== 0) {
-          el.style.transform = `${el.style.transform} translate(${endpointShift.dx}px, ${endpointShift.dy}px)`;
-          el.dataset.pathEndpointRestored = 'safe-shift';
-          endpointRect = endpointShift.rect;
-        } else {
-          delete el.dataset.pathEndpointRestored;
-        }
         if (fixedSurfaceRects.some((surface) => rectsOverlap(endpointRect, surface))) {
+          showSkeletonCard(el, '1', domWriteStats);
           continue;
         }
         for (const other of orderedEls) {
@@ -2022,24 +5912,564 @@ export function SigmaSkeletonCards({
             bottom: otherBox.bottom - containerRect.top,
           };
           if (rectsOverlap(endpointRect, otherRect)) {
-            hideSkeletonCard(other);
+            hideSkeletonCard(other, domWriteStats);
           }
         }
-        showSkeletonCard(el);
+        showSkeletonCard(el, '1', domWriteStats);
+      }
+      separatePathEndpointCards(
+        orderedEls,
+        containerRect,
+        fixedSurfaceRects,
+        (el, rect) => {
+          cardPlacementFrameRectCache.set(el, rect);
+        },
+      );
+      suppressCardsOverlappingPathEndpoints(orderedEls, containerRect);
+    }
+    const cardPlacementPathEndpointDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementPathEndpointStartedAt,
+    );
+    const cardPlacementOverviewDomainStartedAt = measureRepositionNow();
+    const projectOverviewDomainSeparationActive = Boolean(
+      selectedRelationEdgeId === null &&
+        !pathWorkflowActive &&
+        (!ego ||
+          cards.some((card) => {
+            const resolved = resolveNodeId(card.id);
+            return (
+              resolved === ego.selected &&
+              (card.kind === 'project' || card.tier === 0)
+            );
+          })),
+    );
+    container.dataset.overviewDomainSeparationContract =
+      'project-overview-domain-labels-do-not-overlap';
+    container.dataset.overviewDomainRectReadPolicy =
+      'reuse-pass1-card-placement-frame-rects';
+    container.dataset.overviewDomainAttributeWritePolicy =
+      'dedupe-separated-marker';
+    container.dataset.overviewDomainSeparationActive =
+      projectOverviewDomainSeparationActive ? 'true' : 'false';
+    const overviewDomainSeparatedCount = projectOverviewDomainSeparationActive
+      ? separateOverviewDomainCards(
+          orderedEls,
+          containerRect,
+          fixedSurfaceRects,
+          readCardPlacementFrameRect,
+          (el, rect) => {
+            cardPlacementFrameRectCache.set(el, rect);
+          },
+        )
+      : 0;
+    container.dataset.overviewDomainSeparatedCount = String(
+      overviewDomainSeparatedCount,
+    );
+    const cardPlacementOverviewDomainDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementOverviewDomainStartedAt,
+    );
+    const cardPlacementOverviewPostDomainStartedAt = measureRepositionNow();
+    let overviewPostDomainOverlapHiddenCount = 0;
+    let overviewPostDomainOverlapReadCount = 0;
+    if (!ego) {
+      const accepted: ConnectorRect[] = [];
+      const overviewCollisionRank = (el: HTMLElement) => {
+        const tier = Number(el.dataset.tier ?? '3');
+        return tier === 3 && !el.dataset.dockParent ? 1.5 : tier;
+      };
+      const ordered = overviewEls.slice().sort((a, b) => {
+        const rankA = overviewCollisionRank(a);
+        const rankB = overviewCollisionRank(b);
+        if (rankA !== rankB) return rankA - rankB;
+        return Number(a.dataset.layoutY ?? 0) - Number(b.dataset.layoutY ?? 0);
+      });
+      for (const el of ordered) {
+        if (el.dataset.overviewPostDomainOverlapHidden !== undefined) {
+          delete el.dataset.overviewPostDomainOverlapHidden;
+        }
+        const tier = Number(el.dataset.tier ?? '3');
+        const readableBandLandmark = !pathWorkflowActive && !overviewDensityLensActive && tier <= 1;
+        const selectedRelationEndpoint = isSelectedRelationEndpointCard(el);
+        if (selectedRelationEndpoint) {
+          showSelectedRelationEndpointCard(el, domWriteStats);
+        }
+        if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+        const lockedForDrag = isDragClusterCard(
+          el.dataset.slug ?? '',
+          el.dataset.dockParent,
+        );
+        const box = el.getBoundingClientRect();
+        overviewPostDomainOverlapReadCount += 1;
+        const rect = {
+          left: box.left - containerRect.left,
+          top: box.top - containerRect.top,
+          right: box.right - containerRect.left,
+          bottom: box.bottom - containerRect.top,
+        };
+        if (lockedForDrag) {
+          delete el.dataset.overviewPostDomainOverlapHidden;
+          accepted.push(rect);
+          continue;
+        }
+        if (
+          !readableBandLandmark &&
+          !selectedRelationEndpoint &&
+          accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD))
+        ) {
+          setSkeletonStyleValue(el, 'opacity', '0', domWriteStats);
+          setSkeletonStyleValue(el, 'pointerEvents', 'none', domWriteStats);
+          el.dataset.overviewPostDomainOverlapHidden = 'true';
+          overviewPostDomainOverlapHiddenCount += 1;
+          continue;
+        }
+        accepted.push(rect);
       }
     }
-    let visibleCardCount = 0;
+    container.dataset.overviewPostDomainOverlapPolicy =
+      'final-dom-rects-hide-lower-priority-overlaps';
+    container.dataset.overviewPostDomainOverlapHiddenCount = String(
+      overviewPostDomainOverlapHiddenCount,
+    );
+    container.dataset.overviewPostDomainOverlapReadCount = String(
+      overviewPostDomainOverlapReadCount,
+    );
+    const cardPlacementOverviewPostDomainDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementOverviewPostDomainStartedAt,
+    );
+    const cardPlacementFixedRestoreStartedAt = measureRepositionNow();
+    const readFixedSurfaceRestoreFrameRect = selectedBlockingSurfaceActive
+      ? undefined
+      : readCardPlacementFrameRect;
+    const fixedSurfaceRestoreNoop = selectedBlockingSurfaceActive
+      ? { checkedCount: 0, skip: false }
+      : resolveFixedSurfaceRestoreNoop({
+          containerRect,
+          fixedSurfaceRects,
+          orderedEls,
+          readPlacedCardRect: readFixedSurfaceRestoreFrameRect,
+        });
+    const fixedSurfaceRestoredCount = fixedSurfaceRestoreNoop.skip
+      ? 0
+      : restoreVisibleCardsFromFixedSurfaces(
+          orderedEls,
+          containerRect,
+          fixedSurfaceRects,
+          domWriteStats,
+          readFixedSurfaceRestoreFrameRect,
+          (el, rect) => {
+            cardPlacementFrameRectCache.set(el, rect);
+          },
+        );
+    container.dataset.fixedSurfaceRestoreContract =
+      'visible-cards-shift-or-hide-after-drag-release';
+    container.dataset.fixedSurfaceRestoreReadPolicy =
+      'reuse-card-placement-frame-rects';
+    container.dataset.fixedSurfaceRestoreNoopPolicy =
+      'preflight-frame-rects-before-restore-loop';
+    container.dataset.fixedSurfaceRestoreNoopSkipped = fixedSurfaceRestoreNoop.skip
+      ? 'true'
+      : 'false';
+    container.dataset.fixedSurfaceRestoreNoopCheckedCount = String(
+      fixedSurfaceRestoreNoop.checkedCount,
+    );
+    container.dataset.fixedSurfaceRestoredCount = String(fixedSurfaceRestoredCount);
+    const fixedSurfaceLiveSuppression =
+      activeDragCluster === null && !fixedSurfaceRestoreNoop.skip
+        ? suppressLiveCardsOverlappingFixedSurfaces(
+            orderedEls,
+            containerRect,
+            domWriteStats,
+            (el) => cardPlacementFrameRectCache.get(el) ?? null,
+            (el, rect) => {
+              cardPlacementFrameRectCache.set(el, rect);
+            },
+          )
+        : { hidden: 0, read: 0 };
+    container.dataset.fixedSurfaceLiveSuppressionContract =
+      'final-live-dom-rects-hide-hud-overlaps';
+    container.dataset.fixedSurfaceLiveSuppressionReadPolicy =
+      fixedSurfaceRestoreNoop.skip
+        ? 'skipped-after-fixed-restore-noop-preflight'
+        : 'reuse-card-placement-frame-rects-before-dom-read';
+    container.dataset.fixedSurfaceLiveSuppressedCount = String(
+      fixedSurfaceLiveSuppression.hidden,
+    );
+    container.dataset.fixedSurfaceLiveSuppressionReadCount = String(
+      fixedSurfaceLiveSuppression.read,
+    );
+    const cardPlacementFixedRestoreDurationMs = Math.max(
+      0,
+      measureRepositionNow() - cardPlacementFixedRestoreStartedAt,
+    );
+    const cardPlacementDurationMs = Math.max(
+      0,
+      measureRepositionNow() - repositionStartedAt,
+    );
+    const cardPlacementSubphases = [
+      ['setup', cardPlacementSetupDurationMs],
+      ['core-loop', cardPlacementCoreLoopDurationMs],
+      ['overview-collision', cardPlacementOverviewCollisionDurationMs],
+      ['dim-pass', cardPlacementDimPassDurationMs],
+      ['read-layer', cardPlacementReadLayerDurationMs],
+      ['path-endpoint', cardPlacementPathEndpointDurationMs],
+      ['overview-domain', cardPlacementOverviewDomainDurationMs],
+      ['overview-post-domain', cardPlacementOverviewPostDomainDurationMs],
+      ['fixed-restore', cardPlacementFixedRestoreDurationMs],
+    ] as const;
+    const [cardPlacementSlowestSubphase, cardPlacementSlowestSubphaseMs] =
+      cardPlacementSubphases.reduce(
+        (slowest, current) => (current[1] > slowest[1] ? current : slowest),
+        cardPlacementSubphases[0],
+      );
+    container.dataset.cardPlacementSubphaseContract = 'phase-breakdown';
+    container.dataset.cardPlacementSubphaseSetupMs =
+      cardPlacementSetupDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseCoreLoopMs =
+      cardPlacementCoreLoopDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseOverviewCollisionMs =
+      cardPlacementOverviewCollisionDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseDimPassMs =
+      cardPlacementDimPassDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseReadLayerMs =
+      cardPlacementReadLayerDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphasePathEndpointMs =
+      cardPlacementPathEndpointDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseOverviewDomainMs =
+      cardPlacementOverviewDomainDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseOverviewPostDomainMs =
+      cardPlacementOverviewPostDomainDurationMs.toFixed(2);
+    container.dataset.cardPlacementSubphaseFixedRestoreMs =
+      cardPlacementFixedRestoreDurationMs.toFixed(2);
+    container.dataset.cardPlacementSlowestSubphase = cardPlacementSlowestSubphase;
+    container.dataset.cardPlacementSlowestSubphaseMs =
+      cardPlacementSlowestSubphaseMs.toFixed(2);
+    const visibilityCacheStartedAt = measureRepositionNow();
+    const relationLabelCardBlockers: Array<{
+      left: number;
+      top: number;
+      right: number;
+      bottom: number;
+    }> = [];
+    const visibleCardRectCache = new Map<
+      HTMLElement,
+      {
+        rect: { left: number; top: number; right: number; bottom: number } | null;
+        visible: boolean;
+      }
+    >();
+    let visibleCardRectReadCount = 0;
+    let visibleCardHiddenRectSkipCount = 0;
+    const reducedMotionActive =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reuseFrameRectForFixedFocusRail =
+      selectedFocusContextRailActive &&
+      selectedRelationEdgeId === null &&
+      !reducedMotionActive;
+    const seedConnectorRectFromVisibleCache =
+      activeDragCluster === null && selectedRelationEdgeId === null;
+    const visibleCardStateReadPolicy =
+      activeDragCluster !== null
+        ? 'frame-state-during-drag'
+        : 'frame-state-after-placement';
+    const visibilityFixedSurfaceKey = fixedSurfaceRects
+      .map(
+        (rect) =>
+          `${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(
+            rect.right,
+          )}:${Math.round(rect.bottom)}`,
+      )
+      .join('|');
+    const visibilityOrderedKey = orderedEls
+      .map(
+        (el) =>
+          `${el.dataset.slug ?? ''}:${el.dataset.selected ?? ''}:${
+            el.dataset.surfaceHidden ?? ''
+          }:${el.dataset.graphAnchorSurfaceBlocked ?? ''}`,
+      )
+      .join('|');
+    const visibilityGeometryKey = orderedEls
+      .map((el) => {
+        const rect = cardPlacementFrameRectCache.get(el);
+        if (!rect) return 'none';
+        return `${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(
+          rect.right,
+        )}:${Math.round(rect.bottom)}`;
+      })
+      .join('|');
+    const readVisibleCardRect = (el: HTMLElement) => {
+      const cached = visibleCardRectCache.get(el);
+      if (cached) return cached;
+      const visible = isSkeletonCardVisibleFromFrameState(el);
+      if (!visible) {
+        visibleCardHiddenRectSkipCount += 1;
+        const next = { rect: null, visible };
+        visibleCardRectCache.set(el, next);
+        return next;
+      }
+      const seededRect =
+        selectedBlockingSurfaceActive && !reuseFrameRectForFixedFocusRail
+          ? undefined
+          : cardPlacementFrameRectCache.get(el);
+      if (seededRect) {
+        cardPlacementFrameRectCacheHitCount += 1;
+        const next = {
+          rect: seededRect,
+          visible,
+        };
+        visibleCardRectCache.set(el, next);
+        return next;
+      }
+      visibleCardRectReadCount += 1;
+      const rect = el.getBoundingClientRect();
+      const next = {
+        rect: {
+          left: rect.left - containerRect.left,
+          top: rect.top - containerRect.top,
+          right: rect.right - containerRect.left,
+          bottom: rect.bottom - containerRect.top,
+        },
+        visible,
+      };
+      visibleCardRectCache.set(el, next);
+      return next;
+    };
+    const selectedFocusOverlapSuppressionActive =
+      (selectedBlockingSurfaceActive ||
+        selectedFocusRailSurfaceMounted ||
+        (selectedFocusCenterActive && selectedFocusCluster !== null)) &&
+      activeDragCluster === null;
+    let selectedRelationEndpointFinalVisibleGuardCount = 0;
     for (const el of orderedEls) {
-      const style = getComputedStyle(el);
-      if (
-        el.dataset.surfaceHidden !== 'true' &&
-        style.visibility !== 'hidden' &&
-        Number(style.opacity || el.style.opacity || '1') > 0.01
-      ) {
-        visibleCardCount += 1;
+      if (!isSelectedRelationEndpointCard(el)) continue;
+      showSelectedRelationEndpointCard(el, domWriteStats);
+      selectedRelationEndpointFinalVisibleGuardCount += 1;
+    }
+    const selectedRelationEndpointSeparatedCount =
+      selectedRelationEdgeId !== null
+        ? separateSelectedRelationEndpointCards(
+            orderedEls,
+            containerRect,
+            fixedSurfaceRects,
+            (el, rect) => {
+              cardPlacementFrameRectCache.set(el, rect);
+            },
+          )
+        : 0;
+    const selectedRelationEndpointVisibleCount = orderedEls.reduce(
+      (count, el) =>
+        count +
+        (isSelectedRelationEndpointCard(el) && isSkeletonCardVisibleFromFrameState(el)
+          ? 1
+          : 0),
+      0,
+    );
+    const selectedRelationEndpointExpectedCount = selectedRelationEndpointRoles.size;
+    const selectedRelationEndpointRoleBadgeVisibleCount = orderedEls.reduce(
+      (count, el) =>
+        count +
+        (isSelectedRelationEndpointCard(el) &&
+        el.querySelector('[data-selected-relation-endpoint-role-badge]') !== null &&
+        isSkeletonCardVisibleFromFrameState(el)
+          ? 1
+          : 0),
+      0,
+    );
+    const selectedRelationEndpointZoomLensViewportVisibleCount = orderedEls.reduce(
+      (count, el) => {
+        if (el.dataset.selectedRelationEndpointZoomLens !== 'role-mark') return count;
+        if (!isSkeletonCardVisibleFromFrameState(el)) return count;
+        const rect = cardPlacementFrameRectCache.get(el);
+        if (!rect) return count;
+        const inside =
+          rect.left >= SAFE_VIEWPORT_MARGIN &&
+          rect.top >= SAFE_VIEWPORT_MARGIN &&
+          rect.right <= containerRect.width - SAFE_VIEWPORT_MARGIN &&
+          rect.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN;
+        return count + (inside ? 1 : 0);
+      },
+      0,
+    );
+    const selectedRelationEndpointHiddenCount = Math.max(
+      0,
+      selectedRelationEndpointExpectedCount - selectedRelationEndpointVisibleCount,
+    );
+    container.dataset.selectedRelationEndpointFinalVisibleGuardCount = String(
+      selectedRelationEndpointFinalVisibleGuardCount,
+    );
+    container.dataset.selectedRelationEndpointRouteLaneCount = String(
+      selectedRelationEndpointRouteLaneCount,
+    );
+    container.dataset.selectedRelationEndpointSeparationContract =
+      'source-target-min-gap-after-final-visible-guard';
+    container.dataset.selectedRelationEndpointSeparatedCount = String(
+      selectedRelationEndpointSeparatedCount,
+    );
+    container.dataset.selectedRelationEndpointExpectedCount = String(
+      selectedRelationEndpointExpectedCount,
+    );
+    container.dataset.selectedRelationEndpointVisibleCount = String(
+      selectedRelationEndpointVisibleCount,
+    );
+    container.dataset.selectedRelationEndpointHiddenCount = String(
+      selectedRelationEndpointHiddenCount,
+    );
+    container.dataset.selectedRelationEndpointRoleBadgeContract =
+      'visible-source-target-role-badges';
+    container.dataset.selectedRelationEndpointRoleBadgeVisibleCount = String(
+      selectedRelationEndpointRoleBadgeVisibleCount,
+    );
+    container.dataset.selectedRelationEndpointZoomLensViewportContract =
+      'camera-zoom-in-keeps-role-marks-inside-viewport';
+    container.dataset.selectedRelationEndpointZoomLensViewportVisibleCount = String(
+      selectedRelationEndpointZoomLensViewportVisibleCount,
+    );
+    container.dataset.selectedRelationEndpointRoute =
+      selectedRelationEndpointSource && selectedRelationEndpointTarget
+        ? `${selectedRelationEndpointSource}>${selectedRelationEndpointTarget}`
+        : '';
+    container.dataset.selectedRelationEndpointReadableRoute =
+      selectedRelationEndpointReadableRoute;
+    const cachedVisibilityFrame = visibilityFrameSnapshotRef.current;
+    const canReuseVisibilityFrame =
+      activeDragCluster === null &&
+      !activeDragMotion &&
+      !readLayerSurfaceActive &&
+      !selectedBlockingSurfaceActive &&
+      !pathWorkflowActive &&
+      containerRect.width >= RELATION_LABEL_PHONE_BREAKPOINT_PX &&
+      cachedVisibilityFrame !== null &&
+      cachedVisibilityFrame.width === containerRect.width &&
+      cachedVisibilityFrame.height === containerRect.height &&
+      cachedVisibilityFrame.fixedSurfaceKey === visibilityFixedSurfaceKey &&
+      cachedVisibilityFrame.geometryKey === visibilityGeometryKey &&
+      cachedVisibilityFrame.orderedKey === visibilityOrderedKey &&
+      cachedVisibilityFrame.visibleCardStateReadPolicy === visibleCardStateReadPolicy &&
+      orderedEls.every((el) => cachedVisibilityFrame.entries.has(el));
+    let visibilityFrameCacheState = 'miss';
+    let supportRailOverlapHiddenCount = 0;
+    let dragActiveOverlapHiddenCount = 0;
+    let dragSettleOverlapHiddenCount = 0;
+    let reportedVisibleCardCount = 0;
+    let visibilityCountSource = 'single-pass';
+    if (canReuseVisibilityFrame && cachedVisibilityFrame) {
+      visibilityFrameCacheState = 'hit';
+      for (const el of orderedEls) {
+        const entry = cachedVisibilityFrame.entries.get(el);
+        if (entry) visibleCardRectCache.set(el, entry);
+      }
+      relationLabelCardBlockers.push(...cachedVisibilityFrame.blockers);
+      reportedVisibleCardCount = cachedVisibilityFrame.visibleCount;
+      visibilityCountSource = cachedVisibilityFrame.visibilityCountSource;
+      supportRailOverlapHiddenCount =
+        cachedVisibilityFrame.supportRailOverlapHiddenCount;
+    } else {
+      visibilityFrameSnapshotRef.current = null;
+      supportRailOverlapHiddenCount =
+        selectedFocusOverlapSuppressionActive
+          ? suppressVisibleCardOverlaps(
+              orderedEls,
+              readVisibleCardRect,
+              (el) =>
+                isSelectedRelationEndpointCard(el) || el.dataset.selected === 'true',
+              {
+                containerRect,
+                fixedSurfaceRects: selectedFocusRailSurfaceMounted
+                  ? fixedSurfaceRects
+                  : [],
+                onShift: (el, rect) => {
+                  visibleCardRectCache.set(el, { rect, visible: true });
+                  cardPlacementFrameRectCache.set(el, rect);
+                },
+                priorityOverride: (el) =>
+                  selectedFocusContextRailActive &&
+                  selectedFocusContextRailSlugs.length >= 5
+                    ? el.dataset.selectedFocusContextRail === 'true'
+                      ? 2
+                      : el.dataset.selectedFocusCompanionReadableTitle === 'true' ||
+                        el.dataset.selectedFocusContextReadableTitle === 'true'
+                      ? 1
+                      : Number(el.dataset.tier ?? '3') > 1 && !el.dataset.dockParent
+                      ? 3
+                      : null
+                    : null,
+              },
+            )
+          : 0;
+      if (supportRailOverlapHiddenCount > 0) {
+        visibleCardRectCache.clear();
       }
     }
-    if (visibleCardCount === 0 && orderedEls.length > 0) {
+    container.dataset.supportRailOverlapPolicy =
+      'selected-inspector-or-focus-cluster-hides-overlapping-map-cards';
+    container.dataset.supportRailOverlapReadPolicy = 'reuse-visible-card-rect-cache';
+    container.dataset.supportRailOverlapActive =
+      selectedFocusOverlapSuppressionActive ? 'true' : 'false';
+    container.dataset.selectedBlockingSurfaceOverlapContract =
+      'selected-node-or-relation-surface-hides-lower-priority-card-overlaps';
+    container.dataset.selectedBlockingSurfaceOverlapActive =
+      selectedBlockingSurfaceActive ? 'true' : 'false';
+    container.dataset.supportRailOverlapHiddenCount = String(
+      supportRailOverlapHiddenCount,
+    );
+    if (visibilityFrameCacheState !== 'hit') {
+      dragActiveOverlapHiddenCount =
+        activeDragCluster !== null && activeDragMotion
+          ? suppressDragCardOverlaps(
+              orderedEls,
+              readVisibleCardRect,
+              'dragActiveOverlapHidden',
+              (el) => visibleCardRectCache.set(el, { rect: null, visible: false }),
+            )
+          : 0;
+      dragSettleOverlapHiddenCount =
+        activeDragCluster !== null && !activeDragMotion
+          ? suppressDragCardOverlaps(
+              orderedEls,
+              readVisibleCardRect,
+              'dragSettleOverlapHidden',
+              (el) => visibleCardRectCache.set(el, { rect: null, visible: false }),
+            )
+          : 0;
+    }
+    container.dataset.dragActiveOverlapPolicy =
+      'active-cluster-hides-lower-priority-overlaps';
+    container.dataset.dragActiveOverlapReadPolicy = 'reuse-visible-card-rect-cache';
+    container.dataset.dragActiveOverlapHiddenCount = String(
+      dragActiveOverlapHiddenCount,
+    );
+    container.dataset.dragSettleOverlapPolicy =
+      'released-cluster-hides-lower-priority-overlaps';
+    container.dataset.dragSettleOverlapReadPolicy = 'reuse-visible-card-rect-cache';
+    container.dataset.dragSettleOverlapHiddenCount = String(
+      dragSettleOverlapHiddenCount,
+    );
+    const recordRelationLabelCardBlocker = (el: HTMLElement) => {
+      const next = readVisibleCardRect(el);
+      if (!next.visible || !next.rect) return false;
+      relationLabelCardBlockers.push(next.rect);
+      return true;
+    };
+    container.dataset.visibilityFallbackSurfaceContract = 'restore-clear-or-shifted-landmark';
+    let visibleCardCount = reportedVisibleCardCount;
+    if (visibilityFrameCacheState !== 'hit') {
+      visibleCardCount = 0;
+      for (const el of orderedEls) {
+        if (recordRelationLabelCardBlocker(el)) {
+          visibleCardCount += 1;
+        }
+      }
+      reportedVisibleCardCount = visibleCardCount;
+    }
+    if (
+      visibilityFrameCacheState !== 'hit' &&
+      visibleCardCount === 0 &&
+      orderedEls.length > 0
+    ) {
       let restored = 0;
       for (const el of orderedEls) {
         const tier = Number(el.dataset.tier ?? '3');
@@ -2051,7 +6481,8 @@ export function SigmaSkeletonCards({
           continue;
         }
         if (!isElementInsideContainerViewport(el, containerRect)) continue;
-        showSkeletonCard(el);
+        if (!isElementClearOfFixedSurfaces(el, containerRect, fixedSurfaceRects)) continue;
+        showSkeletonCard(el, '1', domWriteStats);
         restored += 1;
       }
       if (restored === 0) {
@@ -2062,71 +6493,584 @@ export function SigmaSkeletonCards({
             isElementInsideContainerViewport(el, containerRect),
         );
         if (first) {
-          showSkeletonCard(first);
+          let fallbackClear = true;
+          if (!isElementClearOfFixedSurfaces(first, containerRect, fixedSurfaceRects)) {
+            const rect = elementRectRelativeToContainer(first, containerRect);
+            let shift = clampRectToViewportAndFixedSurfaces({
+              rect,
+              containerWidth: containerRect.width,
+              containerHeight: containerRect.height,
+              fixedSurfaceRects,
+            });
+            if (readLayerSurfaceActive) {
+              const blocker = fixedSurfaceRects.find((surface) =>
+                rectsOverlap(shift.rect, surface),
+              );
+              if (blocker) {
+                const belowDy = blocker.bottom + FIXED_SURFACE_GAP - rect.top;
+                const below = {
+                  left: rect.left,
+                  top: rect.top + belowDy,
+                  right: rect.right,
+                  bottom: rect.bottom + belowDy,
+                };
+                const belowFits =
+                  below.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN &&
+                  !fixedSurfaceRects.some((surface) => rectsOverlap(below, surface));
+                const aboveDy = blocker.top - FIXED_SURFACE_GAP - rect.bottom;
+                const above = {
+                  left: rect.left,
+                  top: rect.top + aboveDy,
+                  right: rect.right,
+                  bottom: rect.bottom + aboveDy,
+                };
+                const aboveFits =
+                  above.top >= SAFE_VIEWPORT_MARGIN &&
+                  !fixedSurfaceRects.some((surface) => rectsOverlap(above, surface));
+                if (belowFits) {
+                  shift = { dx: 0, dy: belowDy, rect: below };
+                } else if (aboveFits) {
+                  shift = { dx: 0, dy: aboveDy, rect: above };
+                } else {
+                  const rectWidth = rect.right - rect.left;
+                  const rectHeight = rect.bottom - rect.top;
+                  const fallbackY = Math.min(
+                    containerRect.height - SAFE_VIEWPORT_MARGIN - rectHeight / 2,
+                    blocker.bottom + FIXED_SURFACE_GAP + rectHeight / 2,
+                  );
+                  const fallbackX = Math.min(
+                    containerRect.width - SAFE_VIEWPORT_MARGIN - rectWidth / 2,
+                    Math.max(SAFE_VIEWPORT_MARGIN + rectWidth / 2, containerRect.width / 2),
+                  );
+                  const fallbackRect = {
+                    left: fallbackX - rectWidth / 2,
+                    top: fallbackY - rectHeight / 2,
+                    right: fallbackX + rectWidth / 2,
+                    bottom: fallbackY + rectHeight / 2,
+                  };
+                  if (!fixedSurfaceRects.some((surface) => rectsOverlap(fallbackRect, surface))) {
+                    setSkeletonStyleValue(
+                      first,
+                      'transform',
+                      `translate(-50%, -50%) translate3d(${fallbackX}px, ${fallbackY}px, 0)`,
+                      domWriteStats,
+                    );
+                    first.dataset.visibilityFallbackSurfaceRestore = 'phone-read-layer-landmark';
+                    shift = { dx: 0, dy: 0, rect: fallbackRect };
+                  }
+                }
+              }
+            }
+            if (shift.dx !== 0 || shift.dy !== 0) {
+              setSkeletonStyleValue(
+                first,
+                'transform',
+                `${first.style.transform} translate(${shift.dx}px, ${shift.dy}px)`,
+                domWriteStats,
+              );
+              first.dataset.visibilityFallbackSurfaceRestore = 'safe-shift';
+            }
+            fallbackClear = !fixedSurfaceRects.some((surface) =>
+              rectsOverlap(shift.rect, surface),
+            );
+            if (!readLayerSurfaceActive) fallbackClear = true;
+          } else {
+            delete first.dataset.visibilityFallbackSurfaceRestore;
+          }
+          if (fallbackClear) {
+            showSkeletonCard(first, '1', domWriteStats);
+            restored = 1;
+          } else if (readLayerSurfaceActive) {
+            first.dataset.visibilityFallbackSurfaceRestore = 'phone-read-layer-landmark';
+            first.dataset.readLayerSurfaceRestore = 'phone-read-layer-landmark';
+            showSkeletonCard(first, '1', domWriteStats);
+            restored = 1;
+          } else {
+            hideSkeletonCard(first, domWriteStats);
+            first.dataset.visibilityFallbackSurfaceRestore = 'hidden-under-fixed-surface';
+          }
+        }
+      }
+      if (restored === 0 && zoomLensCardCompactionActive) {
+        const compactFallback =
+          orderedEls.find(
+            (el) =>
+              el.dataset.zoomLensActiveCard === 'true' &&
+              el.dataset.tier === '2' &&
+              el.dataset.graphAnchorSurfaceBlocked !== 'true',
+          ) ??
+          orderedEls.find(
+            (el) =>
+              el.dataset.zoomLensActiveCard === 'true' &&
+              el.dataset.graphAnchorSurfaceBlocked !== 'true',
+          );
+        if (compactFallback) {
+          const size = ZOOM_LENS_PIN_SIZE_PX;
+          const centerX = containerRect.width / 2;
+          const centerY = containerRect.height / 2;
+          const fallbackRect = {
+            left: centerX - size / 2,
+            top: centerY - size / 2,
+            right: centerX + size / 2,
+            bottom: centerY + size / 2,
+          };
+          const shifted = clampRectToViewportAndFixedSurfaces({
+            rect: fallbackRect,
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            fixedSurfaceRects,
+          });
+          const nextX = centerX + shifted.dx;
+          const nextY = centerY + shifted.dy;
+          setSkeletonStyleValue(
+            compactFallback,
+            'transform',
+            `translate(-50%, -50%) translate3d(${nextX}px, ${nextY}px, 0)`,
+            domWriteStats,
+          );
+          compactFallback.dataset.zoomLensEmptyViewportFallback = 'viewport-landmark';
+          compactFallback.dataset.visibilityFallbackSurfaceRestore =
+            'zoom-lens-viewport-landmark';
+          showSkeletonCard(compactFallback, '1', domWriteStats);
           restored = 1;
         }
       }
       container.dataset.visibilityFallback = 'true';
       container.dataset.visibilityFallbackCount = String(restored);
+      container.dataset.zoomLensEmptyViewportFallbackActive =
+        restored > 0 && zoomLensCardCompactionActive ? 'true' : 'false';
+      if (restored > 0) {
+        reportedVisibleCardCount = 0;
+        relationLabelCardBlockers.length = 0;
+        visibleCardRectCache.clear();
+        for (const el of orderedEls) {
+          if (recordRelationLabelCardBlocker(el)) {
+            reportedVisibleCardCount += 1;
+          }
+        }
+        visibilityCountSource = 'fallback-recount';
+      }
     } else {
       delete container.dataset.visibilityFallback;
       delete container.dataset.visibilityFallbackCount;
+      container.dataset.zoomLensEmptyViewportFallbackActive = 'false';
     }
-    let reportedVisibleCardCount = 0;
-    for (const el of orderedEls) {
-      const style = getComputedStyle(el);
-      if (
-        el.dataset.surfaceHidden !== 'true' &&
-        style.visibility !== 'hidden' &&
-        Number(style.opacity || el.style.opacity || '1') > 0.01
-      ) {
-        reportedVisibleCardCount += 1;
+    if (visibilityFrameCacheState !== 'hit' && readLayerSurfaceActive) {
+      let readLayerClearedCount = 0;
+      for (const el of orderedEls) {
+        const cached = readVisibleCardRect(el);
+        if (!cached.visible || !cached.rect) continue;
+        const rect = cached.rect;
+        const blocker = fixedSurfaceRects.find((surface) => rectsOverlap(rect, surface));
+        if (!blocker) continue;
+        const readLayerPanel = document.querySelector<HTMLElement>(
+          '[data-testid="topology-analysis-panel"]',
+        );
+        const panelBox = readLayerPanel?.getBoundingClientRect();
+        const panelBottom =
+          panelBox && panelBox.height > 0
+            ? panelBox.bottom - containerRect.top + COLLISION_PAD
+            : blocker.bottom;
+        const rectWidth = rect.right - rect.left;
+        const rectHeight = rect.bottom - rect.top;
+        const fallbackY = Math.min(
+          containerRect.height - SAFE_VIEWPORT_MARGIN - rectHeight / 2,
+          panelBottom + FIXED_SURFACE_GAP + rectHeight / 2,
+        );
+        const fallbackX = Math.min(
+          containerRect.width - SAFE_VIEWPORT_MARGIN - rectWidth / 2,
+          Math.max(SAFE_VIEWPORT_MARGIN + rectWidth / 2, containerRect.width / 2),
+        );
+        const fallbackRect = {
+          left: fallbackX - rectWidth / 2,
+          top: fallbackY - rectHeight / 2,
+          right: fallbackX + rectWidth / 2,
+          bottom: fallbackY + rectHeight / 2,
+        };
+        if (!fixedSurfaceRects.some((surface) => rectsOverlap(fallbackRect, surface))) {
+          setSkeletonStyleValue(
+            el,
+            'transform',
+            `translate(-50%, -50%) translate3d(${fallbackX}px, ${fallbackY}px, 0)`,
+            domWriteStats,
+          );
+          el.dataset.readLayerSurfaceRestore = 'phone-read-layer-landmark';
+        } else {
+          el.dataset.readLayerSurfaceRestore = 'phone-read-layer-landmark';
+          showSkeletonCard(el, '1', domWriteStats);
+        }
+        readLayerClearedCount += 1;
+      }
+      container.dataset.readLayerSurfaceClearedCount = String(readLayerClearedCount);
+      container.dataset.readLayerSurfaceRestoreContract =
+        'panel-owned-read-layer-clears-map-cards-after-fallback';
+    } else {
+      delete container.dataset.readLayerSurfaceClearedCount;
+      delete container.dataset.readLayerSurfaceRestoreContract;
+    }
+    const relationLabelPhoneBottomReserveActive =
+      containerRect.width < RELATION_LABEL_PHONE_BREAKPOINT_PX;
+    if (relationLabelPhoneBottomReserveActive) {
+      relationLabelCardBlockers.push({
+        left: 0,
+        top: Math.max(0, containerRect.height - RELATION_LABEL_PHONE_BOTTOM_RESERVE_PX),
+        right: containerRect.width,
+        bottom: containerRect.height,
+      });
+      container.dataset.relationLabelPhoneBottomReserveContract =
+        'avoid-floating-controls';
+      container.dataset.relationLabelPhoneBottomReservePx = String(
+        RELATION_LABEL_PHONE_BOTTOM_RESERVE_PX,
+      );
+      container.dataset.relationLabelPhoneBottomReserveToken =
+        '--topology-floating-control-phone-bottom';
+    } else {
+      delete container.dataset.relationLabelPhoneBottomReserveContract;
+      delete container.dataset.relationLabelPhoneBottomReservePx;
+      delete container.dataset.relationLabelPhoneBottomReserveToken;
+    }
+    const relationLabelFixedSurfaceBlockerCount = fixedSurfaceRects.length;
+    relationLabelCardBlockers.push(
+      ...fixedSurfaceRects.map((rect) => ({
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+      })),
+    );
+    container.dataset.relationLabelFixedSurfaceBlockerContract =
+      'selected-inspector-surfaces-block-relation-labels';
+    container.dataset.relationLabelFixedSurfaceBlockerCount = String(
+      relationLabelFixedSurfaceBlockerCount,
+    );
+    let zoomLensPinSeparationHiddenCount = 0;
+    let zoomLensPinSeparationOverlapCount = 0;
+    if (zoomLensCardCompactionActive && activeDragCluster === null) {
+      const activePinRects = orderedEls
+        .filter(
+          (el) =>
+            el.dataset.zoomLensActiveCard === 'true' &&
+            isSkeletonCardVisibleFromFrameState(el),
+        )
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          return {
+            el,
+            rect: {
+              left: rect.left - containerRect.left,
+              top: rect.top - containerRect.top,
+              right: rect.right - containerRect.left,
+              bottom: rect.bottom - containerRect.top,
+            },
+            priority:
+              (el.dataset.zoomLensPinProximity === 'critical-neighbor' ? 0 : 10) +
+              (el.dataset.selectedRelationEndpoint === 'true' ? 0 : 3) +
+              Number(el.dataset.tier ?? '3'),
+          };
+        })
+        .sort(
+          (a, b) =>
+            a.priority - b.priority ||
+            Number(a.el.dataset.layoutY ?? '0') - Number(b.el.dataset.layoutY ?? '0') ||
+            (a.el.dataset.slug ?? '').localeCompare(b.el.dataset.slug ?? ''),
+        );
+      const acceptedPinRects: Array<{
+        left: number;
+        top: number;
+        right: number;
+        bottom: number;
+      }> = [];
+      for (const item of activePinRects) {
+        const overlaps = acceptedPinRects.some((rect) =>
+          rectsOverlap(item.rect, rect, -2),
+        );
+        if (overlaps) {
+          item.el.dataset.zoomLensPinSeparation = 'hidden-overlap';
+          item.el.dataset.surfaceHiddenReason = 'zoom-lens-pin-separation';
+          hideSkeletonCard(item.el, domWriteStats);
+          visibleCardRectCache.set(item.el, { rect: null, visible: false });
+          zoomLensPinSeparationHiddenCount += 1;
+          continue;
+        }
+        item.el.dataset.zoomLensPinSeparation = 'kept';
+        acceptedPinRects.push(item.rect);
+      }
+      zoomLensPinSeparationOverlapCount = countRectPairOverlaps(
+        acceptedPinRects,
+        -2,
+      );
+    } else {
+      for (const el of orderedEls) {
+        delete el.dataset.zoomLensPinSeparation;
       }
     }
+    container.dataset.zoomLensPinSeparationContract =
+      'visible-zoom-lens-pins-avoid-overlap-on-14-inch';
+    container.dataset.zoomLensPinCanvasClampCount = String(
+      zoomLensPinCanvasClampCount,
+    );
+    container.dataset.zoomLensPinSeparationReadPolicy =
+      'live-pin-rects-after-zoom-compaction';
+    container.dataset.zoomLensPinSeparationHiddenCount = String(
+      zoomLensPinSeparationHiddenCount,
+    );
+    container.dataset.zoomLensPinOverlapCount = String(
+      zoomLensPinSeparationOverlapCount,
+    );
+    const residualOverlapRects = Array.from(visibleCardRectCache.values())
+      .filter((entry): entry is { rect: DOMRect; visible: true } =>
+        entry.visible && entry.rect !== null,
+      )
+      .map((entry) => entry.rect);
+    const visibleCardOverlapCount = countRectPairOverlaps(
+      residualOverlapRects,
+      OVERVIEW_COLLISION_PAD,
+    );
+    const fixedSurfaceOverlapCount =
+      countNonContainedRectPairOverlaps(fixedSurfaceRects);
+    const cardFixedSurfaceOverlapCount = countRectSurfaceOverlaps(
+      residualOverlapRects,
+      fixedSurfaceRects,
+    );
+    const selectedFocusContextRailEls = selectedFocusContextRailSlugs
+      .map((slug) => elBySlug.get(slug) ?? null)
+      .filter((el): el is HTMLElement => el !== null);
+    const selectedFocusContextRailVisibleCount = selectedFocusContextRailEls.filter(
+      (el) => visibleCardRectCache.get(el)?.visible === true,
+    ).length;
+    const selectedFocusContextRailHiddenCount =
+      selectedFocusContextRailEls.length - selectedFocusContextRailVisibleCount;
+    const selectedFocusContextRailHiddenReasons = Array.from(
+      new Set(
+        selectedFocusContextRailEls
+          .filter((el) => visibleCardRectCache.get(el)?.visible !== true)
+          .map(
+            (el) =>
+              el.dataset.surfaceHiddenReason ||
+              el.dataset.dragReactiveContextVisibility ||
+              'hidden',
+          ),
+      ),
+    );
+    container.dataset.selectedFocusContextRailVisibleContract =
+      'focus-domain-context-rail-reports-visible-and-hidden-cards';
+    container.dataset.selectedFocusContextRailVisibleCount = String(
+      selectedFocusContextRailVisibleCount,
+    );
+    container.dataset.selectedFocusContextRailHiddenCount = String(
+      selectedFocusContextRailHiddenCount,
+    );
+    container.dataset.selectedFocusContextRailHiddenReason =
+      selectedFocusContextRailHiddenReasons.join('|') || 'none';
+    container.dataset.residualOverlapClearContract =
+      'visibility-cache-proves-selected-surfaces-clear';
+    container.dataset.residualOverlapReadPolicy = 'reuse-visible-card-rect-cache';
+    container.dataset.visibleCardOverlapCount = String(visibleCardOverlapCount);
+    container.dataset.fixedSurfaceOverlapCount = String(fixedSurfaceOverlapCount);
+    container.dataset.fixedSurfaceOverlapPolicy =
+      'ignore-contained-structural-surfaces';
+    container.dataset.cardFixedSurfaceOverlapCount = String(
+      cardFixedSurfaceOverlapCount,
+    );
+    container.dataset.residualOverlapClear =
+      visibleCardOverlapCount === 0 &&
+      fixedSurfaceOverlapCount === 0 &&
+      cardFixedSurfaceOverlapCount === 0
+        ? 'true'
+        : 'false';
+    let zoomLensVisibleActiveCardCount = 0;
+    for (const el of orderedEls) {
+      if (el.dataset.zoomLensActiveCard !== 'true') {
+        delete el.dataset.zoomLensViewportVisible;
+        delete el.dataset.zoomLensViewportVisibleContract;
+        continue;
+      }
+      const cached = readVisibleCardRect(el);
+      const viewportVisible = cached.visible && cached.rect !== null;
+      el.dataset.zoomLensViewportVisible = viewportVisible ? 'true' : 'false';
+      el.dataset.zoomLensViewportVisibleContract =
+        'visible-lens-pins-match-frame-state';
+      if (viewportVisible) zoomLensVisibleActiveCardCount += 1;
+    }
     container.dataset.visibleCardCount = String(reportedVisibleCardCount);
+    container.dataset.zoomLensViewportVisibleContract =
+      'visible-lens-pins-match-frame-state';
+    container.dataset.zoomLensVisibleActiveCardCount = String(
+      zoomLensVisibleActiveCardCount,
+    );
+    container.dataset.visibilityCountSource = visibilityCountSource;
+    container.dataset.relationLabelBlockerSource =
+      visibilityCountSource === 'fallback-recount'
+        ? 'fallback-visibility-pass'
+        : 'visibility-pass';
+    container.dataset.relationLabelBlockerContract = 'reuse-visible-card-rects';
+    container.dataset.relationLabelBlockerCount = String(
+      relationLabelCardBlockers.length,
+    );
+    container.dataset.visibleCardRectReadPolicy = 'frame-state-no-computed-style';
+    container.dataset.visibleCardSelectedSurfaceRectPolicy = selectedBlockingSurfaceActive
+      ? 'live-rects-for-postprocess-overlap-safety'
+      : 'reuse-card-placement-frame-rects-before-dom-read';
+    container.dataset.visibleCardStateReadPolicy = visibleCardStateReadPolicy;
+    container.dataset.visibleCardRectReadCount = String(visibleCardRectReadCount);
+    container.dataset.visibleCardHiddenRectSkipCount = String(
+      visibleCardHiddenRectSkipCount,
+    );
+    container.dataset.cardPlacementFrameRectCacheContract =
+      'reuse-pass1-card-rects-for-visibility';
+    container.dataset.cardPlacementFrameRectCacheSize = String(
+      cardPlacementFrameRectCache.size,
+    );
+    container.dataset.cardPlacementFrameRectCacheHitCount = String(
+      cardPlacementFrameRectCacheHitCount,
+    );
+    container.dataset.cardPlacementFrameRectDirectReadCount = String(
+      cardPlacementFrameRectDirectReadCount,
+    );
+    container.dataset.visibilityFrameCacheContract =
+      'reuse-stable-no-dom-write-frame';
+    container.dataset.visibilityFrameCacheState = visibilityFrameCacheState;
+    if (visibilityFrameCacheState !== 'hit') {
+      visibilityFrameSnapshotRef.current =
+        activeDragCluster === null &&
+        !activeDragMotion &&
+        !readLayerSurfaceActive &&
+        !selectedBlockingSurfaceActive &&
+        !pathWorkflowActive &&
+        containerRect.width >= RELATION_LABEL_PHONE_BREAKPOINT_PX
+          ? {
+              blockers: relationLabelCardBlockers.map((rect) => ({ ...rect })),
+              entries: new Map(visibleCardRectCache),
+              fixedSurfaceKey: visibilityFixedSurfaceKey,
+              geometryKey: visibilityGeometryKey,
+              height: containerRect.height,
+              orderedKey: visibilityOrderedKey,
+              supportRailOverlapHiddenCount,
+              visibleCardStateReadPolicy,
+              visibleCount: reportedVisibleCardCount,
+              visibilityCountSource,
+              width: containerRect.width,
+            }
+          : null;
+    }
+    const visibilityCacheDurationMs = Math.max(
+      0,
+      measureRepositionNow() - visibilityCacheStartedAt,
+    );
     container.dataset.totalCardCount = String(orderedEls.length);
     container.dataset.dimAnchorOpacity = DIM_ANCHOR_OPACITY;
     container.dataset.dimChipOpacity = DIM_CHIP_OPACITY;
+    container.dataset.dragReactiveContextOpacity = DRAG_REACTIVE_CONTEXT_OPACITY;
+    const finalDragReactiveCounts = orderedEls.reduce(
+      (acc, el) => {
+        if (
+          el.dataset.dragReactiveContext !== 'true' ||
+          el.dataset.dragReactiveContextVisible !== 'true' ||
+          !isSkeletonCardVisibleFromFrameState(el)
+        ) {
+          return acc;
+        }
+        acc.context += 1;
+        if (el.dataset.dragReactiveMotion === 'parallax-nudge') {
+          acc.motion += 1;
+          const dx = Number(el.dataset.dragReactiveMotionDx ?? '0');
+          const dy = Number(el.dataset.dragReactiveMotionDy ?? '0');
+          acc.maxOffset = Math.max(
+            acc.maxOffset,
+            Math.hypot(Number.isFinite(dx) ? dx : 0, Number.isFinite(dy) ? dy : 0),
+          );
+          if (el.dataset.dragReactiveMotionStrength === 'linked-context') {
+            acc.linked += 1;
+          } else if (el.dataset.dragReactiveMotionStrength === 'ambient-context') {
+            acc.ambient += 1;
+          }
+        }
+        return acc;
+      },
+      { ambient: 0, context: 0, linked: 0, maxOffset: 0, motion: 0 },
+    );
+    container.dataset.dragReactiveContextVisibleCount = String(
+      finalDragReactiveCounts.context,
+    );
+    container.dataset.dragReactiveMotionVisibleCount = String(
+      finalDragReactiveCounts.motion,
+    );
+    container.dataset.dragReactiveAmbientMotionVisibleCount = String(
+      finalDragReactiveCounts.ambient,
+    );
+    container.dataset.dragReactiveLinkedMotionVisibleCount = String(
+      finalDragReactiveCounts.linked,
+    );
+    container.dataset.dragReactiveContextPinCount = String(
+      orderedEls.reduce(
+        (count, el) =>
+          count +
+          (el.dataset.zoomLensPresentation === 'drag-reactive-context-pin' &&
+          isSkeletonCardVisibleFromFrameState(el)
+            ? 1
+            : 0),
+        0,
+      ),
+    );
+    container.dataset.dragReactiveMotionLinkedPolicy =
+      finalDragReactiveCounts.linked > 0 ? 'direct-neighbor-readable-follow' : 'idle';
+    container.dataset.dragReactiveMotionMaxObservedOffsetPx =
+      finalDragReactiveCounts.maxOffset.toFixed(2);
+    const finalSelectedRelationContextPinCount = orderedEls.reduce((count, el) => {
+      if (
+        el.dataset.dimOpacityRole !== 'orientation-anchor' ||
+        el.dataset.zoomLensActiveCard !== 'true' ||
+        el.dataset.zoomLensPresentation !== 'relation-context-pin' ||
+        !isSkeletonCardVisibleFromFrameState(el)
+      ) {
+        return count;
+      }
+      return count + 1;
+    }, 0);
+    container.dataset.selectedRelationContextPinCount = String(
+      finalSelectedRelationContextPinCount,
+    );
+    container.dataset.selectedRelationVisibleOrientationAnchorCount = String(
+      finalSelectedRelationContextPinCount,
+    );
+    container.dataset.selectedRelationContextPinAttentionContract =
+      'selected-relation-context-pins-stay-visible-but-quieter-than-endpoints';
+    container.dataset.selectedRelationContextPinOpacity =
+      SELECTED_RELATION_CONTEXT_PIN_OPACITY;
+    container.dataset.selectedRelationContextPinOpacityToken =
+      SELECTED_RELATION_CONTEXT_PIN_OPACITY_TOKEN;
+    container.dataset.dragReactiveMotionMaxOffsetPx = String(
+      DRAG_REACTIVE_MOTION_MAX_OFFSET_PX,
+    );
+    container.dataset.dimAnchorOpacityToken = DIM_ANCHOR_OPACITY_TOKEN;
+    container.dataset.dimChipOpacityToken = DIM_CHIP_OPACITY_TOKEN;
+    container.dataset.dragReactiveContextOpacityToken =
+      DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN;
+    container.dataset.dragReactiveMotionMaxOffsetToken =
+      DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN;
     container.dataset.dimOpacityContract = 'readable-context-geography';
-    const lastVisibilityStats = lastVisibilityStatsRef.current;
-    if (
-      !lastVisibilityStats ||
-      lastVisibilityStats.visible !== reportedVisibleCardCount ||
-      lastVisibilityStats.total !== orderedEls.length
-    ) {
-      lastVisibilityStatsRef.current = {
-        visible: reportedVisibleCardCount,
-        total: orderedEls.length,
-      };
-      onVisibilityChange?.({
-        visible: reportedVisibleCardCount,
-        total: orderedEls.length,
-      });
-    }
+    container.dataset.overviewContextOpacityContract = 'core-full-support-quiet';
+    container.dataset.overviewContextCoreOpacity = OVERVIEW_CONTEXT_OPACITY[1];
+    container.dataset.overviewContextCapabilityOpacity = OVERVIEW_CONTEXT_OPACITY[2];
+    container.dataset.overviewContextEvidenceOpacity = OVERVIEW_CONTEXT_OPACITY[3];
     const selectedNodeId = selectedSlug
       ? (resolveNodeId(selectedSlug) ?? selectedSlug)
       : null;
     const selectedDockChildren = selectedNodeId
       ? orderedEls.filter((el) => el.dataset.dockParent === selectedNodeId)
       : [];
-    const selectedVisibleDockChildren = selectedDockChildren.filter((el) => {
-      const style = getComputedStyle(el);
-      const rect = el.getBoundingClientRect();
-      return (
-        el.dataset.surfaceHidden !== 'true' &&
-        style.visibility !== 'hidden' &&
-        Number(style.opacity || el.style.opacity || '1') > 0.01 &&
-        rect.width > 0 &&
-        rect.height > 0
-      );
-    });
+    const selectedVisibleDockChildCount = selectedDockChildren.reduce(
+      (count, el) => count + (isSkeletonCardVisibleFromFrameState(el) ? 1 : 0),
+      0,
+    );
+    container.dataset.selectedDockVisibilityPolicy = 'state-only-no-rect-read';
     container.dataset.selectedDockCompanionCount = String(selectedDockChildren.length);
     container.dataset.selectedDockVisibleCompanionCount = String(
-      selectedVisibleDockChildren.length,
+      selectedVisibleDockChildCount,
     );
     container.dataset.selectedDockCompanionVisible =
-      selectedVisibleDockChildren.length > 0 ? 'true' : 'false';
-    if (selectedVisibleDockChildren.length > 0) {
+      selectedVisibleDockChildCount > 0 ? 'true' : 'false';
+    if (selectedVisibleDockChildCount > 0) {
       container.dataset.clickFocusRelationshipContext = 'durable';
       container.dataset.clickFocusRelationshipContextSource = 'selected-dock-companions';
     } else if (selectedFocusCluster && selectedFocusCluster.size >= 2) {
@@ -2136,56 +7080,218 @@ export function SigmaSkeletonCards({
       container.dataset.clickFocusRelationshipContext = 'none';
       container.dataset.clickFocusRelationshipContextSource = 'none';
     }
+    let dragConnectorFrameRectSyncReadCount = 0;
+    if (activeDragCluster !== null) {
+      for (const el of orderedEls) {
+        const slug = el.dataset.slug ?? '';
+        if (!isDragClusterCard(slug, el.dataset.dockParent)) continue;
+        if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+        const rect = el.getBoundingClientRect();
+        dragConnectorFrameRectSyncReadCount += 1;
+        cardPlacementFrameRectCache.set(el, {
+          left: rect.left - containerRect.left,
+          top: rect.top - containerRect.top,
+          right: rect.right - containerRect.left,
+          bottom: rect.bottom - containerRect.top,
+        });
+      }
+    }
+    container.dataset.dragConnectorFrameRectSyncPolicy =
+      activeDragCluster !== null
+        ? 'live-drag-cluster-rects-before-connector-layout'
+        : 'not-needed';
+    container.dataset.dragConnectorFrameRectSyncReadCount = String(
+      dragConnectorFrameRectSyncReadCount,
+    );
+    const connectorCardRectCache = new Map<
+      HTMLElement,
+      { left: number; top: number; right: number; bottom: number }
+    >();
+    let connectorCardRectReadCount = 0;
+    let connectorCardRectHitCount = 0;
+    const connectorCardRectReadSlugs: string[] = [];
+    const isFiniteConnectorRect = (rect: ConnectorRect) =>
+      Number.isFinite(rect.left) &&
+      Number.isFinite(rect.top) &&
+      Number.isFinite(rect.right) &&
+      Number.isFinite(rect.bottom);
+    const connectorCardRect = (el: HTMLElement | null | undefined) => {
+      if (!el) return null;
+      const cached = connectorCardRectCache.get(el);
+      if (cached && isFiniteConnectorRect(cached)) {
+        connectorCardRectHitCount += 1;
+        return cached;
+      }
+      const frameRect = cardPlacementFrameRectCache.get(el);
+      if (frameRect && isFiniteConnectorRect(frameRect)) {
+        connectorCardRectHitCount += 1;
+        connectorCardRectCache.set(el, frameRect);
+        return frameRect;
+      }
+      const visibleCached = visibleCardRectCache.get(el);
+      if (
+        visibleCached?.visible &&
+        visibleCached.rect &&
+        isFiniteConnectorRect(visibleCached.rect)
+      ) {
+        connectorCardRectHitCount += 1;
+        connectorCardRectCache.set(el, visibleCached.rect);
+        return visibleCached.rect;
+      }
+      if (seedConnectorRectFromVisibleCache) {
+        const seededVisibleRect = readVisibleCardRect(el);
+        if (
+          seededVisibleRect.visible &&
+          seededVisibleRect.rect &&
+          isFiniteConnectorRect(seededVisibleRect.rect)
+        ) {
+          connectorCardRectHitCount += 1;
+          connectorCardRectCache.set(el, seededVisibleRect.rect);
+          return seededVisibleRect.rect;
+        }
+        return null;
+      }
+      connectorCardRectReadCount += 1;
+      connectorCardRectReadSlugs.push(el.dataset.slug ?? '(unknown)');
+      const rect = el.getBoundingClientRect();
+      const next = {
+        left: rect.left - containerRect.left,
+        top: rect.top - containerRect.top,
+        right: rect.right - containerRect.left,
+        bottom: rect.bottom - containerRect.top,
+      };
+      connectorCardRectCache.set(el, next);
+      return next;
+    };
+    const zoomLensRelationChromeActive =
+      zoomLensCardCompactionActive && activeDragCluster === null;
+    let zoomLensRelationThreadCount = 0;
+    let zoomLensRelationLabelSuppressedCount = 0;
+    const clearZoomLensRelationChrome = (path: SVGPathElement) => {
+      delete path.dataset.zoomLensRelationChrome;
+      delete path.dataset.zoomLensRelationChromeOpacityToken;
+      delete path.dataset.zoomLensRelationChromeWidthToken;
+      delete path.dataset.zoomLensRelationChromeDasharrayToken;
+      if (path.dataset.relationHitPath === 'true') {
+        path.style.pointerEvents = '';
+      }
+    };
+    const updateZoomLensRelationChrome = (path: SVGPathElement) => {
+      const selectedRelationPath =
+        path.dataset.selectedRelation === 'true' ||
+        path.dataset.selectedRelationHalo === 'true';
+      const hitPath = path.dataset.relationHitPath === 'true';
+      const dragPath = path.dataset.dragConnectorFrom !== undefined;
+      const drawable = path.dataset.connectorDrawable === 'true';
+      const demote =
+        zoomLensRelationChromeActive &&
+        drawable &&
+        !selectedRelationPath &&
+        !dragPath;
+      if (!demote) {
+        clearZoomLensRelationChrome(path);
+        return;
+      }
+      path.dataset.zoomLensRelationChrome = hitPath ? 'hit-suppressed' : 'thread';
+      path.dataset.zoomLensRelationChromeOpacityToken =
+        '--topology-zoom-lens-relation-thread-opacity';
+      path.dataset.zoomLensRelationChromeWidthToken =
+        '--topology-zoom-lens-relation-thread-width';
+      path.dataset.zoomLensRelationChromeDasharrayToken =
+        '--topology-zoom-lens-relation-thread-dasharray';
+      if (hitPath) {
+        path.style.pointerEvents = 'none';
+      } else {
+        zoomLensRelationThreadCount += 1;
+      }
+    };
     const drawConnector = (
       path: SVGPathElement,
       sourceEl: HTMLElement | null | undefined,
       targetEl: HTMLElement | null | undefined,
     ) => {
-      const sourceRect = sourceEl?.getBoundingClientRect();
-      const targetRect = targetEl?.getBoundingClientRect();
+      const dragConnector = path.dataset.dragConnectorFrom !== undefined;
+      const clearConnector = () => {
+        setSkeletonPathData(path, '', domWriteStats);
+        path.dataset.connectorDrawable = 'false';
+        clearZoomLensRelationChrome(path);
+        if (dragConnector) {
+          delete path.dataset.dragClusterConnector;
+        }
+      };
       if (
-        !sourceRect ||
-        !targetRect ||
-        sourceEl?.dataset.surfaceHidden === 'true' ||
-        targetEl?.dataset.surfaceHidden === 'true'
+        !sourceEl ||
+        !targetEl ||
+        (!dragConnector &&
+          (sourceEl.dataset.surfaceHidden === 'true' ||
+            targetEl.dataset.surfaceHidden === 'true'))
       ) {
-        path.setAttribute('d', '');
+        clearConnector();
         return;
       }
-      const source = {
-        left: sourceRect.left - containerRect.left,
-        top: sourceRect.top - containerRect.top,
-        right: sourceRect.right - containerRect.left,
-        bottom: sourceRect.bottom - containerRect.top,
-      };
-      const target = {
-        left: targetRect.left - containerRect.left,
-        top: targetRect.top - containerRect.top,
-        right: targetRect.right - containerRect.left,
-        bottom: targetRect.bottom - containerRect.top,
-      };
+      const source = connectorCardRect(sourceEl);
+      const target = connectorCardRect(targetEl);
+      if (!source || !target) {
+        clearConnector();
+        return;
+      }
       const ports = connectorPorts(source, target);
-      path.setAttribute('d', connectorPath(ports.sx, ports.sy, ports.ex, ports.ey, ports.axis));
+      setSkeletonPathData(
+        path,
+        connectorPath(ports.sx, ports.sy, ports.ex, ports.ey, ports.axis),
+        domWriteStats,
+      );
+      path.dataset.connectorDrawable = 'true';
+      if (dragConnector) {
+        path.dataset.dragClusterConnector = 'true';
+      }
       path.dataset.connectorAxis = ports.axis;
       path.dataset.connectorClearance = String(ports.clearance);
+      updateZoomLensRelationChrome(path);
+    };
+    const drawConnectorTerminal = (
+      terminal: SVGCircleElement,
+      sourceEl: HTMLElement | null | undefined,
+      targetEl: HTMLElement | null | undefined,
+    ) => {
+      if (
+        !sourceEl ||
+        !targetEl ||
+        sourceEl.dataset.surfaceHidden === 'true' ||
+        targetEl.dataset.surfaceHidden === 'true'
+      ) {
+        terminal.style.opacity = '0';
+        return;
+      }
+      const source = connectorCardRect(sourceEl);
+      const target = connectorCardRect(targetEl);
+      if (!source || !target) {
+        terminal.style.opacity = '0';
+        return;
+      }
+      const ports = connectorPorts(source, target);
+      terminal.setAttribute('cx', String(ports.ex));
+      terminal.setAttribute('cy', String(ports.ey));
+      terminal.dataset.connectorAxis = ports.axis;
+      terminal.dataset.connectorClearance = String(ports.clearance);
+      terminal.style.opacity = '';
     };
 
     // pass 3 — 커넥터: 포트를 카드 안쪽으로 넣고 edge mask 아래에서
     // 시작/종료시킨다. 밝은 선이 카드 바깥으로 삐져나와 보이는 현상을 막는다.
     const svg = container.querySelector<SVGSVGElement>('[data-skeleton-connectors]');
+    const connectorLabelStartedAt = measureRepositionNow();
     if (svg) {
-      const parentEl = container.querySelector<HTMLElement>(
-        `[data-skeleton-card][data-slug="${CSS.escape(ego?.selected ?? '')}"]`,
-      );
+      container.dataset.connectorDomIndexContract = 'reuse-card-index';
+      container.dataset.connectorRectCacheContract = 'frame-local-card-rect-cache';
+      container.dataset.connectorRectCacheFrameFallbackContract =
+        'reuse-card-placement-frame-rects-before-dom-read';
+      const parentEl = ego?.selected ? (elBySlug.get(ego.selected) ?? null) : null;
       for (const path of svg.querySelectorAll<SVGPathElement>('[data-connector]')) {
         const childSlug = path.dataset.connector;
-        const childEl = childSlug
-          ? container.querySelector<HTMLElement>(
-              `[data-skeleton-card][data-slug="${CSS.escape(childSlug)}"]`,
-            )
-          : null;
+        const childEl = childSlug ? (elBySlug.get(childSlug) ?? null) : null;
         if (!parentEl || !childEl) {
-          path.setAttribute('d', '');
+          setSkeletonPathData(path, '', domWriteStats);
           continue;
         }
         // 2열 이상의 카드로는 기본 커넥터를 긋지 않는다 — 1열을 관통한다.
@@ -2194,7 +7300,9 @@ export function SigmaSkeletonCards({
           path.dataset.selectedRelation === 'true' ||
           path.dataset.selectedRelationHalo === 'true';
         if (!selectedRelationPath && isDockConnectorSuppressed(childEl)) {
-          path.setAttribute('d', '');
+          setSkeletonPathData(path, '', domWriteStats);
+          path.dataset.connectorDrawable = 'false';
+          clearZoomLensRelationChrome(path);
           continue;
         }
         drawConnector(path, parentEl, childEl);
@@ -2213,100 +7321,430 @@ export function SigmaSkeletonCards({
         const toEl = to ? elBySlug.get(to) : null;
         drawConnector(path, fromEl, toEl);
       }
-      for (const label of svg.querySelectorAll<SVGTextElement>('[data-relation-label-from]')) {
-        const from = label.dataset.relationLabelFrom;
-        const to = label.dataset.relationLabelTo;
-        const badge = label.dataset.relationLabelId
-          ? svg.querySelector<SVGRectElement>(
-              `[data-relation-label-bg="${CSS.escape(label.dataset.relationLabelId)}"]`,
-            )
-          : null;
-        const labelButton = label.dataset.relationLabelId
-          ? container.querySelector<HTMLElement>(
-              `[data-relation-label-button="${CSS.escape(label.dataset.relationLabelId)}"]`,
-            )
-          : null;
-        const selectedRelationLabel = labelButton?.dataset.selectedRelation === 'true';
+      for (const terminal of svg.querySelectorAll<SVGCircleElement>(
+        '[data-overview-hierarchy-terminal]',
+      )) {
+        const from = terminal.dataset.overviewConnectorFrom;
+        const to = terminal.dataset.overviewConnectorTo;
         const fromEl = from ? elBySlug.get(from) : null;
         const toEl = to ? elBySlug.get(to) : null;
-        const fromRect = fromEl?.getBoundingClientRect();
-        const toRect = toEl?.getBoundingClientRect();
+        drawConnectorTerminal(terminal, fromEl, toEl);
+      }
+      const dragTensionConnectorVisibleCount = Array.from(
+        svg.querySelectorAll<SVGPathElement>('[data-drag-tension-connector="true"]'),
+      ).filter((path) => path.dataset.connectorDrawable === 'true').length;
+      container.dataset.dragTensionConnectorContract =
+        'active-drag-draws-links-to-reactive-neighbors';
+      container.dataset.dragTensionConnectorPolicy =
+        activeDragCluster !== null
+          ? 'cluster-to-linked-context-only'
+          : 'idle';
+      container.dataset.dragTensionConnectorExpectedCount = String(
+        activeDragTensionConnectors.length,
+      );
+      container.dataset.dragTensionConnectorVisibleCount = String(
+        dragTensionConnectorVisibleCount,
+      );
+      container.dataset.dragTensionConnectorMaxCount = String(
+        DRAG_TENSION_CONNECTOR_MAX_COUNT,
+      );
+      container.dataset.dragTensionConnectorActiveOpacity = String(
+        DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY,
+      );
+      container.dataset.dragTensionConnectorActiveStrokeWidth = String(
+        DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH,
+      );
+      const dragOnlyRelationLabelLayout = activeDragCluster !== null;
+      if (dragOnlyRelationLabelLayout) {
+        for (const button of container.querySelectorAll<HTMLElement>(
+          '[data-relation-label-button]',
+        )) {
+          setSkeletonStyleValue(button, 'opacity', '0', domWriteStats);
+          setSkeletonStyleValue(button, 'pointerEvents', 'none', domWriteStats);
+          setSkeletonStyleValue(button, 'visibility', 'hidden', domWriteStats);
+          button.dataset.relationLabelVisibility = 'suppressed-during-drag';
+        }
+        for (const overlay of container.querySelectorAll<HTMLElement>(
+          '[data-selected-relation-overlay]',
+        )) {
+          setSkeletonStyleValue(overlay, 'opacity', '0', domWriteStats);
+          setSkeletonStyleValue(overlay, 'visibility', 'hidden', domWriteStats);
+        }
+      }
+      const relationLabelBadgesById = new Map<string, SVGRectElement>();
+      for (const badge of svg.querySelectorAll<SVGRectElement>('[data-relation-label-bg]')) {
+        const id = badge.dataset.relationLabelBg;
+        if (id) relationLabelBadgesById.set(id, badge);
+      }
+      const relationLabelButtonsById = new Map<string, HTMLElement>();
+      if (!dragOnlyRelationLabelLayout) {
+        for (const button of container.querySelectorAll<HTMLElement>(
+          '[data-relation-label-button]',
+        )) {
+          const id = button.dataset.relationLabelButton;
+          if (id) relationLabelButtonsById.set(id, button);
+        }
+      }
+      const selectedRelationOverlaysById = new Map<string, HTMLElement>();
+      if (!dragOnlyRelationLabelLayout) {
+        for (const overlay of container.querySelectorAll<HTMLElement>(
+          '[data-selected-relation-overlay]',
+        )) {
+          const id = overlay.dataset.selectedRelationOverlay;
+          if (id) selectedRelationOverlaysById.set(id, overlay);
+        }
+      }
+      container.dataset.relationLabelQueryContract = 'indexed-once';
+      container.dataset.relationLabelQueryIndexCount = String(
+        relationLabelBadgesById.size +
+          relationLabelButtonsById.size +
+          selectedRelationOverlaysById.size,
+      );
+      container.dataset.relationLabelDragLayoutPolicy = dragOnlyRelationLabelLayout
+        ? 'drag-connector-labels-follow-cluster'
+        : 'all-relation-labels';
+      container.dataset.relationLabelDragSuppressionPolicy =
+        dragOnlyRelationLabelLayout
+          ? 'suppress-html-labels-keep-drag-svg-facts'
+          : 'not-needed';
+      let relationLabelFrameExpectedCount = 0;
+      let relationLabelFrameReadyCount = 0;
+      let dragRelationLabelExpectedCount = 0;
+      let dragRelationLabelVisibleCount = 0;
+      let dragRelationLabelCompactCount = 0;
+      let focusRelationLabelExpectedCount = 0;
+      let focusRelationLabelVisibleCount = 0;
+      let focusEgoHandoffFallbackButton: HTMLElement | null = null;
+      let focusEgoHandoffFallbackSvgLabel: SVGTextElement | null = null;
+      for (const label of svg.querySelectorAll<SVGTextElement>('[data-relation-label-from]')) {
+        const dragRelationLabel = label.dataset.dragRelationLabel === 'true';
+        const from = label.dataset.relationLabelFrom;
+        const to = label.dataset.relationLabelTo;
+        const relationLabelId = label.dataset.relationLabelId;
+        const badge = relationLabelId
+          ? (relationLabelBadgesById.get(relationLabelId) ?? null)
+          : null;
+        if (dragOnlyRelationLabelLayout && !dragRelationLabel) {
+          label.setAttribute('opacity', '0');
+          label.setAttribute('aria-hidden', 'true');
+          badge?.setAttribute('opacity', '0');
+          badge?.setAttribute('pointer-events', 'none');
+          const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
+          if (labelGroup) labelGroup.style.pointerEvents = 'none';
+          continue;
+        }
+        const labelButton = relationLabelId
+          ? (relationLabelButtonsById.get(relationLabelId) ?? null)
+          : null;
+        const selectedRelationLabel = labelButton?.dataset.selectedRelation === 'true';
+        const activeDragRelationLabel =
+          dragOnlyRelationLabelLayout && dragRelationLabel;
         if (
-          !fromRect ||
-          !toRect ||
-          (!selectedRelationLabel &&
+          zoomLensRelationChromeActive &&
+          !selectedRelationLabel &&
+          !activeDragRelationLabel
+        ) {
+          label.setAttribute('opacity', '0');
+          label.setAttribute('aria-hidden', 'true');
+          label.dataset.relationLabelVisibility = 'suppressed-zoom-lens-thread';
+          badge?.setAttribute('opacity', '0');
+          badge?.setAttribute('pointer-events', 'none');
+          const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
+          if (labelGroup) labelGroup.style.pointerEvents = 'none';
+          if (labelButton) {
+            setSkeletonStyleValue(labelButton, 'opacity', '0', domWriteStats);
+            setSkeletonStyleValue(labelButton, 'pointerEvents', 'none', domWriteStats);
+            setSkeletonStyleValue(labelButton, 'visibility', 'hidden', domWriteStats);
+            labelButton.dataset.relationLabelVisibility = 'suppressed-zoom-lens-thread';
+          }
+          zoomLensRelationLabelSuppressedCount += 1;
+          continue;
+        }
+        if (
+          focusEgoHandoffFallbackButton === null &&
+          labelButton !== null &&
+          label.dataset.connectorRelationLabel === 'true' &&
+          Number(label.dataset.relationLabelIndex ?? '0') === 0
+        ) {
+          focusEgoHandoffFallbackButton = labelButton;
+          focusEgoHandoffFallbackSvgLabel = label;
+        }
+        const fromEl = from ? elBySlug.get(from) : null;
+        const toEl = to ? elBySlug.get(to) : null;
+        const hiddenEndpoint =
+          !fromEl ||
+          !toEl ||
+          (!activeDragRelationLabel &&
+            !selectedRelationLabel &&
             (fromEl?.dataset.surfaceHidden === 'true' ||
               toEl?.dataset.surfaceHidden === 'true' ||
               (label.dataset.connectorRelationLabel === 'true' &&
-                isDockConnectorSuppressed(toEl))))
-        ) {
+                isDockConnectorSuppressed(toEl))));
+        const fromRect = hiddenEndpoint ? null : connectorCardRect(fromEl);
+        const toRect = hiddenEndpoint ? null : connectorCardRect(toEl);
+        if (hiddenEndpoint || !fromRect || !toRect) {
           label.setAttribute('opacity', '0');
+          label.dataset.relationLabelVisibility = activeDragRelationLabel
+            ? 'drag-fact-hidden'
+            : 'suppressed-hidden-endpoint';
           badge?.setAttribute('opacity', '0');
           badge?.setAttribute('pointer-events', 'none');
           if (labelButton) {
             labelButton.style.opacity = '0';
             labelButton.style.pointerEvents = 'none';
+            labelButton.style.visibility = 'hidden';
+            labelButton.dataset.relationLabelVisibility = 'suppressed-hidden-endpoint';
           }
           continue;
         }
         const isEgoBadge = label.dataset.connectorRelationLabel === 'true';
         const labelIndex = Number(label.dataset.relationLabelIndex ?? '0');
+        const compactDragRelationLabel =
+          activeDragRelationLabel && zoomLensCardCompactionActive;
         const x = isEgoBadge
-          ? (fromRect.left + fromRect.right) / 2 - containerRect.left
-          : (fromRect.left + fromRect.right + toRect.left + toRect.right) / 4 -
-            containerRect.left;
+          ? (fromRect.left + fromRect.right) / 2
+          : (fromRect.left + fromRect.right + toRect.left + toRect.right) / 4;
         const y = isEgoBadge
-          ? Math.max(18, fromRect.top - containerRect.top - 14 - labelIndex * 14)
+          ? Math.max(18, fromRect.top - 14 - labelIndex * 14)
           : (fromRect.top + fromRect.bottom + toRect.top + toRect.bottom) / 4 -
-            containerRect.top -
             8;
         const relationHitDisabled = activeDragCluster !== null;
+        if (activeDragRelationLabel) dragRelationLabelExpectedCount += 1;
+        if (compactDragRelationLabel) dragRelationLabelCompactCount += 1;
         const badgeWidth = Math.max(
-          RELATION_BADGE_MIN_WIDTH_PX,
+          compactDragRelationLabel
+            ? DRAG_RELATION_BADGE_COMPACT_MIN_WIDTH_PX
+            : RELATION_BADGE_MIN_WIDTH_PX,
           (label.textContent?.length ?? 0) * RELATION_BADGE_CHAR_WIDTH_PX +
-            RELATION_BADGE_PAD_X_PX +
-            (isEgoBadge ? RELATION_BADGE_QUALITY_DOT_WIDTH_PX : 0) +
-            (labelButton?.dataset.relationLabelAgentGateVisible === 'true'
-              ? RELATION_BADGE_QUALITY_CHIP_WIDTH_PX + RELATION_BADGE_FACT_ROUTE_WIDTH_PX
+            (compactDragRelationLabel
+              ? DRAG_RELATION_BADGE_COMPACT_PAD_X_PX
+              : RELATION_BADGE_PAD_X_PX) +
+            (isEgoBadge
+              ? RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
+                RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX
               : 0),
         );
         const usesHtmlBadge = isEgoBadge && labelButton !== null;
-        label.setAttribute('x', String(x));
-        label.setAttribute('y', String(y));
-        label.setAttribute('opacity', usesHtmlBadge ? '0' : '1');
-        label.setAttribute('aria-hidden', usesHtmlBadge ? 'true' : 'false');
+        const selectedRelationRightBoundary = selectedRelationLabel
+          ? relationLabelCardBlockers.reduce((limit, blocker) => {
+              if (blocker.left <= x) return limit;
+              return Math.min(limit, blocker.left - SELECTED_RELATION_INSPECTOR_CLEARANCE_PX);
+            }, containerRect.width - RELATION_LABEL_VIEWPORT_INSET_PX)
+          : undefined;
+        const labelGeometry = resolveRelationLabelGeometry({
+          badgeWidth,
+          centerX: x,
+          containerWidth: containerRect.width,
+          hitTargetPadX: RELATION_LABEL_HIT_TARGET_PAD_X_PX,
+          minCompactWidth: RELATION_LABEL_MIN_COMPACT_WIDTH_PX,
+          rightBoundary: selectedRelationRightBoundary,
+          viewportInset: RELATION_LABEL_VIEWPORT_INSET_PX,
+        });
+        const labelPlacement = resolveRelationLabelVerticalPlacement({
+          blockers: relationLabelCardBlockers,
+          containerHeight: containerRect.height,
+          height: RELATION_LABEL_HIT_TARGET_HEIGHT_PX,
+          left: labelGeometry.left,
+          top: y - RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2,
+          width: labelGeometry.hitTargetWidth,
+        });
+        const labelGeometryFinite =
+          Number.isFinite(labelGeometry.left) &&
+          Number.isFinite(labelGeometry.hitTargetWidth) &&
+          Number.isFinite(labelPlacement.top);
+        const visibleHtmlBadgeWidth =
+          labelButton !== null
+            ? Number(labelButton.dataset.visibleBadgeWidth ?? '0')
+            : 0;
+        const labelWidth =
+          labelGeometryFinite && Number.isFinite(visibleHtmlBadgeWidth)
+            ? Math.max(labelGeometry.hitTargetWidth, visibleHtmlBadgeWidth + 2)
+            : 0;
+        const labelCenter = labelGeometry.left + labelGeometry.hitTargetWidth / 2;
+        const labelLeft = labelGeometryFinite
+          ? Math.min(
+              containerRect.width - RELATION_LABEL_VIEWPORT_INSET_PX - labelWidth,
+              Math.max(
+                RELATION_LABEL_VIEWPORT_INSET_PX,
+                labelCenter - labelWidth / 2,
+              ),
+            )
+          : 0;
+        const labelTop = labelGeometryFinite ? labelPlacement.top : 0;
+        const labelHitRect = {
+          left: labelLeft,
+          top: labelTop,
+          right: labelLeft + labelWidth,
+          bottom: labelTop + RELATION_LABEL_HIT_TARGET_HEIGHT_PX,
+        };
+        let labelCardOverlapCount = relationLabelCardBlockers.filter((blocker) =>
+          rectsOverlap(labelHitRect, blocker),
+        ).length;
+        let labelHiddenByCards =
+          (labelPlacement.occluded || labelCardOverlapCount > 0) && !selectedRelationLabel;
+        if (!labelGeometryFinite && !selectedRelationLabel) {
+          labelCardOverlapCount = Math.max(labelCardOverlapCount, 1);
+          labelHiddenByCards = true;
+        }
+        if (activeDragRelationLabel) {
+          labelCardOverlapCount = 0;
+          labelHiddenByCards = false;
+        }
+        if (
+          !labelHiddenByCards &&
+          !selectedRelationLabel &&
+          isEgoBadge &&
+          containerRect.width < RELATION_LABEL_PHONE_BREAKPOINT_PX
+        ) {
+          let liveOverlapCount = 0;
+          for (const el of orderedEls) {
+            if (!isSkeletonCardVisibleFromFrameState(el)) continue;
+            const box = el.getBoundingClientRect();
+            const liveRect = {
+              left: box.left - containerRect.left,
+              top: box.top - containerRect.top,
+              right: box.right - containerRect.left,
+              bottom: box.bottom - containerRect.top,
+            };
+            if (rectsOverlap(labelHitRect, liveRect)) liveOverlapCount += 1;
+          }
+          if (liveOverlapCount > 0) {
+            labelCardOverlapCount = liveOverlapCount;
+            labelHiddenByCards = true;
+          }
+        }
+        const focusEgoHandoffFallback =
+          isEgoBadge &&
+          labelIndex === 0 &&
+          !selectedRelationLabel &&
+          labelHiddenByCards;
+        if (focusEgoHandoffFallback) {
+          labelCardOverlapCount = 0;
+          labelHiddenByCards = false;
+        }
+        if (selectedFocusCluster && isEgoBadge) {
+          focusRelationLabelExpectedCount += 1;
+          if (!labelHiddenByCards) focusRelationLabelVisibleCount += 1;
+        }
+        const placedY = labelTop + RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2;
+        const svgLabelHidden = usesHtmlBadge || labelHiddenByCards;
+        label.setAttribute('x', String(Number.isFinite(x) ? x : 0));
+        label.setAttribute('y', String(placedY));
+        label.setAttribute('opacity', svgLabelHidden ? '0' : '1');
+        label.setAttribute('visibility', svgLabelHidden ? 'hidden' : 'visible');
+        label.setAttribute('pointer-events', 'none');
+        label.setAttribute('aria-hidden', svgLabelHidden ? 'true' : 'false');
+        label.dataset.relationLabelSvgVisibilityContract =
+          usesHtmlBadge
+            ? 'html-hit-target-owns-visible-copy'
+            : 'svg-text-owns-visible-copy';
+        label.dataset.relationLabelVisibility = svgLabelHidden
+          ? activeDragRelationLabel
+            ? 'drag-fact-hidden'
+            : 'suppressed-card-overlap'
+          : activeDragRelationLabel
+            ? 'visible-during-drag'
+            : 'visible-clear';
+        label.dataset.dragRelationLabelPresentation = compactDragRelationLabel
+          ? 'compact-glyph'
+          : activeDragRelationLabel
+            ? 'full-type-label'
+            : 'not-drag';
+        label.dataset.dragRelationLabelCompact = compactDragRelationLabel
+          ? 'true'
+          : 'false';
+        label.dataset.dragRelationLabelCompactContract =
+          'zoomed-drag-keeps-type-fact-as-compact-glyph';
+        label.dataset.relationLabelReadableType =
+          label.dataset.relationType ?? label.textContent ?? '';
         const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
         if (labelGroup) {
-          labelGroup.style.pointerEvents = usesHtmlBadge ? 'none' : 'auto';
+          labelGroup.style.pointerEvents =
+            activeDragRelationLabel || svgLabelHidden ? 'none' : 'auto';
         }
         if (badge) {
           badge.setAttribute('x', String(x - badgeWidth / 2));
-          badge.setAttribute('y', String(y - RELATION_BADGE_HEIGHT_PX / 2));
+          badge.setAttribute('y', String(placedY - RELATION_BADGE_HEIGHT_PX / 2));
           badge.setAttribute('width', String(badgeWidth));
           badge.setAttribute('height', String(RELATION_BADGE_HEIGHT_PX));
-          badge.setAttribute('opacity', usesHtmlBadge ? '0' : '1');
+          badge.setAttribute(
+            'rx',
+            compactDragRelationLabel ? String(RELATION_BADGE_HEIGHT_PX / 2) : '7',
+          );
+          badge.setAttribute('opacity', svgLabelHidden ? '0' : '1');
+          badge.setAttribute('visibility', svgLabelHidden ? 'hidden' : 'visible');
           badge.setAttribute(
             'pointer-events',
-            usesHtmlBadge || relationHitDisabled ? 'none' : 'auto',
+            activeDragRelationLabel || usesHtmlBadge || relationHitDisabled || labelHiddenByCards
+              ? 'none'
+              : 'auto',
           );
+          badge.dataset.dragRelationLabelPresentation = compactDragRelationLabel
+            ? 'compact-glyph'
+            : activeDragRelationLabel
+              ? 'full-type-label'
+              : 'not-drag';
+          badge.dataset.dragRelationLabelCompact = compactDragRelationLabel
+            ? 'true'
+            : 'false';
+          badge.dataset.dragRelationLabelCompactContract =
+            'zoomed-drag-keeps-type-fact-as-compact-glyph';
+        }
+        if (activeDragRelationLabel) {
+          if (!svgLabelHidden) dragRelationLabelVisibleCount += 1;
+          continue;
         }
         if (labelButton) {
-          const labelGeometry = resolveRelationLabelGeometry({
-            badgeWidth,
-            centerX: x,
-            containerWidth: containerRect.width,
-            hitTargetPadX: RELATION_LABEL_HIT_TARGET_PAD_X_PX,
-            minCompactWidth: RELATION_LABEL_MIN_COMPACT_WIDTH_PX,
-            viewportInset: RELATION_LABEL_VIEWPORT_INSET_PX,
-          });
-          labelButton.style.transform = `translate3d(${labelGeometry.left}px, ${
-            y - RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2
-          }px, 0)`;
-          labelButton.style.width = `${labelGeometry.hitTargetWidth}px`;
-          labelButton.style.height = `${RELATION_LABEL_HIT_TARGET_HEIGHT_PX}px`;
-          labelButton.style.opacity = '1';
-          labelButton.style.pointerEvents = relationHitDisabled ? 'none' : 'auto';
+          if (!labelHiddenByCards) relationLabelFrameExpectedCount += 1;
+          setSkeletonStyleValue(
+            labelButton,
+            'transform',
+            `translate3d(${labelLeft}px, ${labelTop}px, 0)`,
+            domWriteStats,
+          );
+          setSkeletonStyleValue(
+            labelButton,
+            'width',
+            `${labelWidth}px`,
+            domWriteStats,
+          );
+          setSkeletonStyleValue(
+            labelButton,
+            'height',
+            `${RELATION_LABEL_HIT_TARGET_HEIGHT_PX}px`,
+            domWriteStats,
+          );
+          setSkeletonStyleValue(
+            labelButton,
+            'opacity',
+            labelHiddenByCards ? '0' : '1',
+            domWriteStats,
+          );
+          setSkeletonStyleValue(
+            labelButton,
+            'pointerEvents',
+            relationHitDisabled || labelHiddenByCards ? 'none' : 'auto',
+            domWriteStats,
+          );
+          setSkeletonStyleValue(
+            labelButton,
+            'visibility',
+            labelHiddenByCards ? 'hidden' : 'visible',
+            domWriteStats,
+          );
+          labelButton.dataset.relationLabelVisibility = labelHiddenByCards
+            ? 'suppressed-card-overlap'
+            : 'visible-clear';
           labelButton.dataset.labelGeometrySource = 'html-hit-target';
+          labelButton.dataset.relationLabelCardClearance =
+            labelPlacement.occluded || labelCardOverlapCount > 0 ? 'occluded' : 'clear';
+          labelButton.dataset.relationLabelCardClearancePolicy =
+            'reposition-or-hide';
+          labelButton.dataset.relationLabelCardOverlapCount = String(
+            labelCardOverlapCount,
+          );
+          labelButton.dataset.relationLabelFocusHandoffFallback =
+            focusEgoHandoffFallback ? 'preserved-first-ego-label' : 'none';
           labelButton.dataset.visibleBadgeWidth = String(badgeWidth);
           labelButton.dataset.visibleBadgeHeight = String(RELATION_BADGE_HEIGHT_PX);
           labelButton.dataset.relationLabelCompact = labelGeometry.compact ? 'true' : 'false';
@@ -2314,26 +7752,361 @@ export function SigmaSkeletonCards({
           labelButton.dataset.relationLabelCenteredAvailableWidth = String(
             labelGeometry.centeredAvailableWidth,
           );
+          labelButton.dataset.relationLabelViewportClampContract =
+            labelGeometry.viewportClampContract;
+          labelButton.dataset.relationLabelViewportClampSide =
+            labelGeometry.viewportClampSide;
           labelButton.dataset.relationLabelViewportInset = String(
             labelGeometry.viewportInset,
           );
           if (selectedRelationLabel) {
-            const overlay = label.dataset.relationLabelId
-              ? container.querySelector<HTMLElement>(
-                  `[data-selected-relation-overlay="${CSS.escape(label.dataset.relationLabelId)}"]`,
-                )
+            labelButton.dataset.relationLabelInspectorBoundaryPolicy =
+              'clamp-before-right-inspector-rail';
+            labelButton.dataset.relationLabelRightBoundary = String(
+              selectedRelationRightBoundary ?? '',
+            );
+          } else {
+            delete labelButton.dataset.relationLabelInspectorBoundaryPolicy;
+            delete labelButton.dataset.relationLabelRightBoundary;
+          }
+          if (!labelHiddenByCards) relationLabelFrameReadyCount += 1;
+          if (selectedRelationLabel) {
+            const overlay = relationLabelId
+              ? (selectedRelationOverlaysById.get(relationLabelId) ?? null)
               : null;
             if (overlay) {
-              overlay.style.transform = labelButton.style.transform;
-              overlay.style.width = labelButton.style.width;
-              overlay.style.height = labelButton.style.height;
-              overlay.dataset.relationLabelCompact = labelButton.dataset.relationLabelCompact;
+              const compactSelectedRelationLabelActive =
+                zoomLensCardCompactionActive ||
+                labelButton.dataset.relationLabelCompact === 'true';
+              const typeText = overlay.querySelector<HTMLElement>(
+                '[data-relation-label-type-text]',
+              );
+              const glyph = overlay.querySelector<HTMLElement>(
+                '[data-selected-relation-zoom-lens-label-glyph]',
+              );
+              const compactSelectedRelationLabelCenterX =
+                (fromRect.left + fromRect.right + toRect.left + toRect.right) / 4;
+              const compactSelectedRelationLabelCenterY =
+                (fromRect.top + fromRect.bottom + toRect.top + toRect.bottom) / 4;
+              const compactRouteEndpointDeltaX = Math.abs(
+                (fromRect.left + fromRect.right) / 2 - (toRect.left + toRect.right) / 2,
+              );
+              const compactRouteUsesPerpendicularLane =
+                compactRouteEndpointDeltaX <
+                SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX;
+              let compactSelectedRelationRouteLane = compactRouteUsesPerpendicularLane
+                ? 'perpendicular-left'
+                : 'centerline';
+              const compactSelectedRelationLaneCenterX = compactRouteUsesPerpendicularLane
+                ? compactSelectedRelationLabelCenterX -
+                  SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX -
+                  RELATION_LABEL_VIEWPORT_INSET_PX
+                : compactSelectedRelationLabelCenterX;
+              let compactSelectedRelationLabelLeft = Math.min(
+                Math.max(
+                  RELATION_LABEL_VIEWPORT_INSET_PX,
+                  compactSelectedRelationLaneCenterX -
+                    SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX / 2,
+                ),
+                Math.max(
+                  RELATION_LABEL_VIEWPORT_INSET_PX,
+                  containerRect.width -
+                    RELATION_LABEL_VIEWPORT_INSET_PX -
+                    SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX,
+                ),
+              );
+              const compactSelectedRelationLabelTop = Math.min(
+                Math.max(
+                  RELATION_LABEL_VIEWPORT_INSET_PX,
+                  compactSelectedRelationLabelCenterY -
+                    SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_HEIGHT_PX / 2,
+                ),
+                Math.max(
+                  RELATION_LABEL_VIEWPORT_INSET_PX,
+                  containerRect.height -
+                    RELATION_LABEL_VIEWPORT_INSET_PX -
+                    SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_HEIGHT_PX,
+                ),
+              );
+              const compactSelectedRelationRect = {
+                left: compactSelectedRelationLabelLeft,
+                top: compactSelectedRelationLabelTop,
+                right:
+                  compactSelectedRelationLabelLeft +
+                  SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX,
+                bottom:
+                  compactSelectedRelationLabelTop +
+                  SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_HEIGHT_PX,
+              };
+              for (const blocker of relationLabelCardBlockers) {
+                if (!rectsOverlap(compactSelectedRelationRect, blocker, 24)) continue;
+                compactSelectedRelationLabelLeft = Math.max(
+                  RELATION_LABEL_VIEWPORT_INSET_PX,
+                  Math.min(
+                    compactSelectedRelationLabelLeft,
+                    blocker.left -
+                      SELECTED_RELATION_INSPECTOR_CLEARANCE_PX -
+                      SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX,
+                  ),
+                );
+                compactSelectedRelationRouteLane = 'inspector-left';
+                break;
+              }
+              setSkeletonStyleValue(
+                overlay,
+                'transform',
+                compactSelectedRelationLabelActive
+                  ? `translate3d(${compactSelectedRelationLabelLeft}px, ${compactSelectedRelationLabelTop}px, 0)`
+                  : labelButton.style.transform,
+                domWriteStats,
+              );
+              setSkeletonStyleValue(
+                overlay,
+                'width',
+                compactSelectedRelationLabelActive
+                  ? `${SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_WIDTH_PX}px`
+                  : labelButton.style.width,
+                domWriteStats,
+              );
+              setSkeletonStyleValue(
+                overlay,
+                'height',
+                compactSelectedRelationLabelActive
+                  ? `${SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_HEIGHT_PX}px`
+                  : labelButton.style.height,
+                domWriteStats,
+              );
+              overlay.dataset.selectedRelationZoomLensLabel =
+                compactSelectedRelationLabelActive ? 'compact-glyph' : 'full-label';
+              overlay.dataset.relationLabelCompact = compactSelectedRelationLabelActive
+                ? 'true'
+                : labelButton.dataset.relationLabelCompact;
+              overlay.dataset.relationLabelVisualState = zoomLensCardCompactionActive
+                ? 'zoom-lens-compact-glyph'
+                : compactSelectedRelationLabelActive
+                  ? 'geometry-compact-glyph'
+                : 'full-selected-label';
+              if (compactSelectedRelationLabelActive) {
+                overlay.dataset.selectedRelationZoomLensRouteCorridor =
+                  compactSelectedRelationRouteLane === 'perpendicular-left'
+                    ? 'endpoint-midpoint-perpendicular-compact-glyph'
+                    : 'endpoint-midpoint-compact-glyph';
+                overlay.dataset.selectedRelationZoomLensRouteCorridorContract =
+                  compactSelectedRelationRouteLane === 'perpendicular-left'
+                    ? 'vertical-route-keeps-compact-glyph-clear-beside-endpoint-axis'
+                    : compactSelectedRelationRouteLane === 'inspector-left'
+                      ? 'compact-glyph-keeps-route-midpoint-clear-of-inspector'
+                    : 'compact-glyph-centers-between-endpoint-role-marks';
+                overlay.dataset.selectedRelationZoomLensRouteCorridorCenterX = String(
+                  compactSelectedRelationLabelCenterX,
+                );
+                overlay.dataset.selectedRelationZoomLensRouteCorridorCenterY = String(
+                  compactSelectedRelationLabelCenterY,
+                );
+                overlay.dataset.selectedRelationZoomLensRouteCorridorLane =
+                  compactSelectedRelationRouteLane;
+                overlay.style.setProperty(
+                  'min-height',
+                  `${SELECTED_RELATION_ZOOM_LENS_COMPACT_LABEL_HEIGHT_PX}px`,
+                  'important',
+                );
+                overlay.style.setProperty('gap', '0', 'important');
+                overlay.style.setProperty('padding-left', '0', 'important');
+                overlay.style.setProperty('padding-right', '0', 'important');
+                overlay.style.setProperty('border-radius', '9999px', 'important');
+                overlay.style.setProperty('font-size', '0.66rem', 'important');
+                typeText?.classList.add('sr-only');
+                if (typeText) typeText.textContent = '';
+                if (glyph) {
+                  glyph.textContent = overlay.dataset.selectedRelationZoomLensLabelText ?? '';
+                  glyph.classList.remove('hidden');
+                }
+              } else {
+                delete overlay.dataset.selectedRelationZoomLensRouteCorridor;
+                delete overlay.dataset.selectedRelationZoomLensRouteCorridorContract;
+                delete overlay.dataset.selectedRelationZoomLensRouteCorridorCenterX;
+                delete overlay.dataset.selectedRelationZoomLensRouteCorridorCenterY;
+                delete overlay.dataset.selectedRelationZoomLensRouteCorridorLane;
+                overlay.style.removeProperty('min-height');
+                overlay.style.removeProperty('gap');
+                overlay.style.removeProperty('padding-left');
+                overlay.style.removeProperty('padding-right');
+                overlay.style.removeProperty('border-radius');
+                overlay.style.removeProperty('font-size');
+                typeText?.classList.remove('sr-only');
+                if (typeText) {
+                  typeText.textContent = overlay.dataset.relationLabelVisibleText ?? '';
+                }
+                if (glyph) {
+                  glyph.textContent = '';
+                  glyph.classList.add('hidden');
+                }
+              }
+              overlay.dataset.relationLabelViewportClampContract =
+                labelButton.dataset.relationLabelViewportClampContract ?? '';
+              overlay.dataset.relationLabelViewportClampSide =
+                labelButton.dataset.relationLabelViewportClampSide ?? '';
+              overlay.dataset.relationLabelViewportInset =
+                labelButton.dataset.relationLabelViewportInset ?? '';
+              overlay.dataset.relationLabelInspectorBoundaryPolicy =
+                labelButton.dataset.relationLabelInspectorBoundaryPolicy ?? '';
+              overlay.dataset.relationLabelRightBoundary =
+                labelButton.dataset.relationLabelRightBoundary ?? '';
               overlay.style.setProperty('opacity', '1', 'important');
               overlay.style.visibility = 'visible';
             }
           }
         }
       }
+      if (
+        relationLabelFrameExpectedCount === 0 &&
+        focusEgoHandoffFallbackButton !== null
+      ) {
+        const fallbackBadgeWidth = Number(
+          focusEgoHandoffFallbackButton.dataset.visibleBadgeWidth ?? '0',
+        );
+        if (Number.isFinite(fallbackBadgeWidth) && fallbackBadgeWidth > 0) {
+          setSkeletonStyleValue(
+            focusEgoHandoffFallbackButton,
+            'width',
+            `${fallbackBadgeWidth + 2}px`,
+            domWriteStats,
+          );
+        }
+        setSkeletonStyleValue(focusEgoHandoffFallbackButton, 'opacity', '1', domWriteStats);
+        setSkeletonStyleValue(
+          focusEgoHandoffFallbackButton,
+          'pointerEvents',
+          'auto',
+          domWriteStats,
+        );
+        setSkeletonStyleValue(
+          focusEgoHandoffFallbackButton,
+          'visibility',
+          'visible',
+          domWriteStats,
+        );
+        focusEgoHandoffFallbackButton.dataset.relationLabelVisibility = 'visible-clear';
+        focusEgoHandoffFallbackButton.dataset.relationLabelCardClearance = 'clear';
+        focusEgoHandoffFallbackButton.dataset.relationLabelCardOverlapCount = '0';
+        focusEgoHandoffFallbackButton.dataset.relationLabelFocusHandoffFallback =
+          'preserved-first-ego-label';
+        if (focusEgoHandoffFallbackSvgLabel) {
+          focusEgoHandoffFallbackSvgLabel.setAttribute('opacity', '0');
+          focusEgoHandoffFallbackSvgLabel.setAttribute('visibility', 'hidden');
+          focusEgoHandoffFallbackSvgLabel.setAttribute('pointer-events', 'none');
+          focusEgoHandoffFallbackSvgLabel.setAttribute('aria-hidden', 'true');
+          focusEgoHandoffFallbackSvgLabel.dataset.relationLabelSvgVisibilityContract =
+            'html-hit-target-owns-visible-copy';
+          focusEgoHandoffFallbackSvgLabel.dataset.relationLabelVisibility =
+            'suppressed-card-overlap';
+          focusEgoHandoffFallbackSvgLabel.dataset.relationLabelFocusHandoffFallback =
+            'preserved-first-ego-label';
+        }
+        relationLabelFrameExpectedCount = 1;
+        relationLabelFrameReadyCount = 1;
+        focusRelationLabelExpectedCount = Math.max(1, focusRelationLabelExpectedCount);
+        focusRelationLabelVisibleCount = Math.max(1, focusRelationLabelVisibleCount);
+      }
+      container.dataset.relationLabelGeometryContract = 'frame-positioned-hit-targets';
+      container.dataset.relationLabelGeometrySource = dragOnlyRelationLabelLayout
+        ? 'drag-connector-label-follow-pass'
+        : 'after-render-layout-pass';
+      container.dataset.relationLabelGeometryExpectedCount = String(
+        relationLabelFrameExpectedCount,
+      );
+      container.dataset.relationLabelGeometryReadyCount = String(
+        relationLabelFrameReadyCount,
+      );
+      container.dataset.relationLabelGeometryPendingCount = String(
+        Math.max(0, relationLabelFrameExpectedCount - relationLabelFrameReadyCount),
+      );
+      container.dataset.zoomLensRelationChromeContract =
+        'camera-zoom-in-demotes-nonselected-relation-chrome';
+      container.dataset.zoomLensRelationChromeActive =
+        zoomLensRelationChromeActive ? 'true' : 'false';
+      container.dataset.zoomLensRelationThreadCount = String(
+        zoomLensRelationThreadCount,
+      );
+      container.dataset.zoomLensRelationLabelSuppressedCount = String(
+        zoomLensRelationLabelSuppressedCount,
+      );
+      container.dataset.dragRelationLabelVisibilityContract =
+        dragOnlyRelationLabelLayout
+          ? 'active-drag-connector-labels-remain-readable'
+          : 'not-needed';
+      container.dataset.dragRelationLabelExpectedCount = String(
+        dragRelationLabelExpectedCount,
+      );
+      container.dataset.dragRelationLabelVisibleCount = String(
+        dragRelationLabelVisibleCount,
+      );
+      container.dataset.dragRelationLabelCompactContract =
+        'zoomed-drag-compacts-repeated-relation-labels';
+      container.dataset.dragRelationLabelCompactCount = String(
+        dragRelationLabelCompactCount,
+      );
+      container.dataset.focusClusterRelationLabelCount = String(
+        focusRelationLabelVisibleCount,
+      );
+      container.dataset.focusClusterRelationLabelExpectedCount = String(
+        focusRelationLabelExpectedCount,
+      );
+      container.dataset.focusClusterRelationLabelSource =
+        selectedFocusCluster ? 'ego-relation-label-layout-pass' : 'none';
+      container.dataset.connectorRectCacheSize = String(connectorCardRectCache.size);
+      container.dataset.connectorRectCacheSeedContract =
+        'visible-card-rects-seed-connector-cache';
+      container.dataset.connectorRectCacheSeedCount = String(
+        Array.from(visibleCardRectCache.values()).filter(
+          (entry) => entry.visible && entry.rect,
+        ).length,
+      );
+      container.dataset.connectorRectCacheReadCount = String(connectorCardRectReadCount);
+      container.dataset.connectorRectCacheReadSlugs =
+        connectorCardRectReadSlugs.join('|') || 'none';
+      container.dataset.connectorRectCacheHitCount = String(connectorCardRectHitCount);
+      container.dataset.connectorRectCacheAccounting = 'reads-plus-hits';
+      container.dataset.domWriteDedupeContract = 'skip-unchanged-transform-and-path';
+      container.dataset.visibilityStyleWriteContract = 'dedupe-show-hide-state';
+      container.dataset.domWriteAppliedCount = String(domWriteStats.applied);
+      container.dataset.domWriteSkippedCount = String(domWriteStats.skipped);
+      container.dataset.finalVisibleCountPolicy = 'state-only-no-rect-read';
+      const finalVisibleCardCount = orderedEls.reduce(
+        (count, el) => count + (isSkeletonCardVisibleFromFrameState(el) ? 1 : 0),
+        0,
+      );
+      if (finalVisibleCardCount !== reportedVisibleCardCount) {
+        reportedVisibleCardCount = finalVisibleCardCount;
+        container.dataset.visibleCardCount = String(reportedVisibleCardCount);
+        container.dataset.visibilityCountSource = `${visibilityCountSource}-final-recount`;
+      }
+      const pathCandidateEls = pathWorkflowActive
+        ? orderedEls.filter((el) => el.dataset.pathRole === 'candidate')
+        : [];
+      const pathCandidateVisibleCount = pathCandidateEls.reduce(
+        (count, el) => count + (isSkeletonCardVisibleFromFrameState(el) ? 1 : 0),
+        0,
+      );
+      container.dataset.pathCandidateCountContract = pathWorkflowActive
+        ? 'candidate-only'
+        : 'inactive';
+      container.dataset.pathCandidateTotalCount = String(pathCandidateEls.length);
+      container.dataset.pathCandidateVisibleCount = String(pathCandidateVisibleCount);
+      const nextVisibilityStats = {
+        visible: pathWorkflowActive ? pathCandidateVisibleCount : reportedVisibleCardCount,
+        total: pathWorkflowActive ? pathCandidateEls.length : orderedEls.length,
+      };
+      emitVisibilityStats(container, nextVisibilityStats, {
+        debounceStable:
+          activeDragCluster === null &&
+          selectedRelationEdgeId === null &&
+          container.dataset.skeletonCardsReady === 'true',
+        deferDuringLayout:
+          container.dataset.layoutAnimate === 'true' &&
+          activeDragCluster === null &&
+          selectedRelationEdgeId === null,
+      });
       for (const overlay of container.querySelectorAll<HTMLElement>(
         '[data-selected-relation-overlay][data-selected-relation-halo="true"]',
       )) {
@@ -2341,92 +8114,26 @@ export function SigmaSkeletonCards({
         overlay.style.visibility = 'visible';
       }
     }
+    const connectorLabelDurationMs = Math.max(
+      0,
+      measureRepositionNow() - connectorLabelStartedAt,
+    );
+    const visibleCardClippedCount = orderedEls.reduce((count, el) => {
+      if (!isSkeletonCardVisibleFromFrameState(el)) return count;
+      const rect = cardPlacementFrameRectCache.get(el);
+      if (!rect) return count;
+      return rect.left < 0 ||
+        rect.top < 0 ||
+        rect.right > containerRect.width ||
+        rect.bottom > containerRect.height
+        ? count + 1
+        : count;
+    }, 0);
+    container.dataset.visibleCardClippedCountSource = 'frame-state-cache-no-dom-read';
+    container.dataset.visibleCardClippedCount = String(visibleCardClippedCount);
     // pass 4 — hover 팝업 위치: 카드 우측 +10, 화면/우측 패널에 닿으면 좌측
     // flip + 세로 클램프. 매 프레임 카드 rect 파생이라 팬/줌을 따라간다.
-    const hull = dragClusterHullRef.current;
-    if (hull) {
-      const clusterRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
-      if (activeHullCluster && activeHullCluster.size > 1) {
-        for (const slug of activeHullCluster) {
-          const cardEl = elBySlug.get(slug);
-          if (!cardEl) continue;
-          const includeHiddenFocusAnchor =
-            activeHullMode === 'focus' &&
-            (slug === selectedSlug || slug === ego?.selected);
-          if (cardEl.dataset.surfaceHidden === 'true' && !includeHiddenFocusAnchor) {
-            continue;
-          }
-          const style = getComputedStyle(cardEl);
-          const rect = cardEl.getBoundingClientRect();
-          if (
-            style.display === 'none' ||
-            (!includeHiddenFocusAnchor && style.visibility === 'hidden') ||
-            (!includeHiddenFocusAnchor && Number(style.opacity || '1') <= 0.01) ||
-            rect.width <= 0 ||
-            rect.height <= 0
-          ) {
-            continue;
-          }
-          clusterRects.push({
-            left: rect.left - containerRect.left,
-            top: rect.top - containerRect.top,
-            right: rect.right - containerRect.left,
-            bottom: rect.bottom - containerRect.top,
-          });
-        }
-      }
-      if (clusterRects.length > 1) {
-        const bounds = clusterRects.reduce(
-          (acc, rect) => ({
-            left: Math.min(acc.left, rect.left),
-            top: Math.min(acc.top, rect.top),
-            right: Math.max(acc.right, rect.right),
-            bottom: Math.max(acc.bottom, rect.bottom),
-          }),
-          { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
-        );
-        const rawHullRect = {
-          left: Math.max(0, bounds.left - DRAG_CLUSTER_HULL_PAD_PX),
-          top: Math.max(0, bounds.top - DRAG_CLUSTER_HULL_PAD_PX),
-          right: Math.min(containerRect.width, bounds.right + DRAG_CLUSTER_HULL_PAD_PX),
-          bottom: Math.min(containerRect.height, bounds.bottom + DRAG_CLUSTER_HULL_PAD_PX),
-        };
-        const hullRect =
-          activeHullMode === 'focus'
-            ? resolveFocusHullRect({
-                rect: rawHullRect,
-                fixedSurfaceRects,
-                containerWidth: containerRect.width,
-                containerHeight: containerRect.height,
-              })
-            : rawHullRect;
-        hull.style.transform = `translate3d(${hullRect.left}px, ${hullRect.top}px, 0)`;
-        hull.style.width = `${Math.max(1, hullRect.right - hullRect.left)}px`;
-        hull.style.height = `${Math.max(1, hullRect.bottom - hullRect.top)}px`;
-        hull.style.opacity = activeDragMotion ? '0.95' : '0.8';
-        hull.dataset.visible = 'true';
-        hull.dataset.clusterMode = activeHullMode;
-        hull.dataset.dragClusterSize = String(clusterRects.length);
-        if (activeHullMode === 'focus') {
-          hull.dataset.focusClusterSize = String(clusterRects.length);
-          hull.dataset.focusStage = 'click-focus';
-          hull.dataset.focusAttentionLabel = 'linked-focus';
-        } else {
-          delete hull.dataset.focusClusterSize;
-          delete hull.dataset.focusStage;
-          delete hull.dataset.focusAttentionLabel;
-        }
-      } else {
-        hull.style.opacity = '0';
-        hull.dataset.visible = 'false';
-        hull.dataset.clusterMode = 'none';
-        delete hull.dataset.dragClusterSize;
-        delete hull.dataset.focusClusterSize;
-        delete hull.dataset.focusStage;
-        delete hull.dataset.focusAttentionLabel;
-      }
-    }
-
+    const popupPassStartedAt = measureRepositionNow();
     const popup = hoverPopupRef.current;
     if (popup) {
       const hoverSlug = popup.dataset.hoverFor;
@@ -2449,34 +8156,456 @@ export function SigmaSkeletonCards({
         popup.style.top = `${y}px`;
       }
     }
+    const popupDurationMs = Math.max(0, measureRepositionNow() - popupPassStartedAt);
+    const repositionFinishedAt = measureRepositionNow();
+    const repositionDurationMs = Math.max(0, repositionFinishedAt - repositionStartedAt);
+    const passDurations = [
+      ['card-placement', cardPlacementDurationMs],
+      ['visibility-cache', visibilityCacheDurationMs],
+      ['connector-label', connectorLabelDurationMs],
+      ['popup', popupDurationMs],
+    ] as const;
+    const [slowestPassName, slowestPassDurationMs] = passDurations.reduce(
+      (slowest, current) => (current[1] > slowest[1] ? current : slowest),
+      passDurations[0],
+    );
+    const previousMaxRepositionDurationMs = maxRepositionDurationMsRef.current;
+    if (repositionDurationMs >= previousMaxRepositionDurationMs) {
+      maxRepositionDurationMsRef.current = repositionDurationMs;
+      container.dataset.repositionMaxPassSlowest = slowestPassName;
+      container.dataset.repositionMaxPassSlowestMs = slowestPassDurationMs.toFixed(2);
+      container.dataset.repositionMaxPassCardPlacementMs =
+        cardPlacementDurationMs.toFixed(2);
+      container.dataset.repositionMaxPassVisibilityCacheMs =
+        visibilityCacheDurationMs.toFixed(2);
+      container.dataset.repositionMaxPassConnectorLabelMs =
+        connectorLabelDurationMs.toFixed(2);
+      container.dataset.repositionMaxPassPopupMs = popupDurationMs.toFixed(2);
+    }
+    container.dataset.dragFrameBudgetContract = 'measured-reposition-duration';
+    container.dataset.repositionPassDurationContract = 'phase-duration-breakdown';
+    container.dataset.repositionPassSlowest = slowestPassName;
+    container.dataset.repositionPassSlowestMs = slowestPassDurationMs.toFixed(2);
+    container.dataset.repositionPassCardPlacementMs = cardPlacementDurationMs.toFixed(2);
+    container.dataset.repositionPassVisibilityCacheMs = visibilityCacheDurationMs.toFixed(2);
+    container.dataset.repositionPassConnectorLabelMs = connectorLabelDurationMs.toFixed(2);
+    container.dataset.repositionPassPopupMs = popupDurationMs.toFixed(2);
+    container.dataset.repositionDurationLastMs = repositionDurationMs.toFixed(2);
+    container.dataset.repositionDurationMaxMs =
+      maxRepositionDurationMsRef.current.toFixed(2);
   }, [
     graph,
     sigma,
     ego,
     activeDragCluster,
+    activeDragFreeContextCount,
     activeDragMotion,
-    activeHullCluster,
-    activeHullMode,
+    activeDragTensionConnectors.length,
+    cards,
+    healthRepairTarget,
+    manualFocusPlacement,
+    pathWorkflowActive,
     resolveNodeId,
+    selectedFocusCenterActive,
+    selectedMapFixedGeographyActive,
     selectedFocusCluster,
+    selectedRelationData,
     selectedRelationEdgeId,
+    selectedRelationLabelHandoff?.action,
+    selectedRelationLabelHandoff?.cliFallbackCommand,
+    selectedRelationLabelHandoff?.route,
+    selectedRelationSurfaceRoute,
     selectedSlug,
-    onVisibilityChange,
+    emitVisibilityStats,
+    getFixedSurfaceRects,
   ]);
-
   const scheduleReposition = useCallback(() => {
+    const container = containerRef.current;
+    const now = Date.now();
+    const throttleDuringLayout =
+      container?.dataset.layoutAnimate === 'true' &&
+      activeDragCluster === null &&
+      selectedRelationEdgeId === null;
+    const throttleDuringInitialLoad =
+      container !== null &&
+      now < initialLoadRepositionThrottleUntilRef.current &&
+      activeDragCluster === null &&
+      selectedRelationEdgeId === null;
+    if (throttleDuringLayout || throttleDuringInitialLoad) {
+      container.dataset.layoutTransitionRepositionPolicy =
+        throttleDuringLayout
+          ? 'throttle-after-render-during-transition'
+          : 'throttle-after-render-during-initial-load';
+      container.dataset.layoutTransitionRepositionThrottleMs = String(
+        LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS,
+      );
+      if (layoutTransitionRepositionTimerRef.current !== null) {
+        container.dataset.layoutTransitionRepositionDeferred = 'true';
+        return;
+      }
+      const elapsed = now - lastLayoutTransitionRepositionAtRef.current;
+      const delay = Math.max(0, LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS - elapsed);
+      container.dataset.layoutTransitionRepositionDeferred = delay > 0 ? 'true' : 'false';
+      layoutTransitionRepositionTimerRef.current = window.setTimeout(() => {
+        layoutTransitionRepositionTimerRef.current = null;
+        lastLayoutTransitionRepositionAtRef.current = Date.now();
+        const currentContainer = containerRef.current;
+        if (currentContainer) {
+          currentContainer.dataset.layoutTransitionRepositionDeferred = 'false';
+        }
+        if (repositionRafRef.current !== null) return;
+        repositionRafRef.current = window.requestAnimationFrame(() => {
+          repositionRafRef.current = null;
+          reposition();
+        });
+      }, delay);
+      return;
+    }
+    if (container) {
+      container.dataset.layoutTransitionRepositionPolicy = 'immediate-after-render';
+      container.dataset.layoutTransitionRepositionThrottleMs = String(
+        LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS,
+      );
+      container.dataset.layoutTransitionRepositionDeferred = 'false';
+    }
     if (repositionRafRef.current !== null) return;
     repositionRafRef.current = window.requestAnimationFrame(() => {
       repositionRafRef.current = null;
       reposition();
     });
+  }, [activeDragCluster, reposition, selectedRelationEdgeId]);
+
+  const handleCardWheel = useCallback(
+    (event: React.WheelEvent<HTMLElement>) => {
+      if (!sigma || event.currentTarget.dataset.surfaceHidden === 'true') return;
+      const camera = sigma.getCamera?.();
+      if (!camera?.setState) return;
+      const state = camera.getState();
+      const currentRatio =
+        typeof state.ratio === 'number' && Number.isFinite(state.ratio) && state.ratio > 0
+          ? state.ratio
+          : 1;
+      if (!Number.isFinite(event.deltaY) || event.deltaY === 0) return;
+
+      const direction = event.deltaY < 0 ? 1 : -1;
+      const deltaSteps = Math.max(0.25, Math.abs(event.deltaY) / WHEEL_ZOOM_BASE_DELTA_PX);
+      const zoomFactor =
+        direction > 0
+          ? Math.pow(WHEEL_ZOOM_STEP_RATIO, deltaSteps)
+          : Math.pow(1 / WHEEL_ZOOM_STEP_RATIO, deltaSteps);
+      const nextRatio = Math.min(
+        WHEEL_ZOOM_MAX_RATIO,
+        Math.max(WHEEL_ZOOM_MIN_RATIO, currentRatio * zoomFactor),
+      );
+      if (Math.abs(nextRatio - currentRatio) < 0.001) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      verifierZoomRatioRef.current = null;
+      camera.setState({
+        ...state,
+        ratio: nextRatio,
+        angle: state.angle ?? 0,
+      });
+
+      const container = containerRef.current;
+      if (container) {
+        container.dataset.cardWheelZoomContract =
+          'skeleton-card-wheel-controls-sigma-camera';
+        container.dataset.cardWheelZoomDepthContract =
+          'wheel-zoom-clamps-before-map-loses-readable-structure';
+        container.dataset.cardWheelZoomSource = 'skeleton-card';
+        container.dataset.cardWheelZoomLastRatio = nextRatio.toFixed(3);
+        container.dataset.cardWheelZoomMinRatio = String(WHEEL_ZOOM_MIN_RATIO);
+      }
+      scheduleReposition();
+    },
+    [scheduleReposition, sigma],
+  );
+
+  useEffect(() => {
+    const win = window as Window & {
+      __ontologyAtlasTopologyVerifyZoom?: () => {
+        reason: string;
+        targetRatio: number;
+      };
+    };
+    win.__ontologyAtlasTopologyVerifyZoom = () => {
+      const camera = sigma?.getCamera?.();
+      if (!camera?.setState) {
+        return { reason: 'missing camera setter', targetRatio: 0 };
+      }
+      const state = camera.getState();
+      const currentRatio =
+        typeof state.ratio === 'number' && Number.isFinite(state.ratio) && state.ratio > 0
+          ? state.ratio
+          : 1;
+      const targetRatio = Math.max(WHEEL_ZOOM_MIN_RATIO, Math.min(currentRatio, 0.74));
+      camera.setState({
+        ...state,
+        ratio: targetRatio,
+        angle: state.angle ?? 0,
+      });
+      const container = containerRef.current;
+      if (container) {
+        container.dataset.cardWheelZoomContract =
+          'skeleton-card-wheel-controls-sigma-camera';
+        container.dataset.cardWheelZoomDepthContract =
+          'wheel-zoom-clamps-before-map-loses-readable-structure';
+        container.dataset.cardWheelZoomSource = 'desktop-verifier';
+        container.dataset.cardWheelZoomLastRatio = targetRatio.toFixed(3);
+        container.dataset.cardWheelZoomMinRatio = String(WHEEL_ZOOM_MIN_RATIO);
+        container.dataset.zoomLensVerifierRatio = targetRatio.toFixed(3);
+      }
+      verifierZoomRatioRef.current = targetRatio;
+      repositionNowRef.current?.();
+      if (container) {
+        const cards = Array.from(
+          container.querySelectorAll<HTMLElement>('[data-skeleton-card]'),
+        );
+        let activeCardCount = 0;
+        let visibleActiveCardCount = 0;
+        for (const el of cards) {
+          const zoomLensCritical =
+            el.dataset.selected === 'true' ||
+            el.dataset.pathRole === 'source' ||
+            el.dataset.pathRole === 'target' ||
+            el.dataset.healthRepairAuditTarget === 'true' ||
+            el.dataset.selectedRelationEndpoint === 'true';
+          const zoomLensEligible =
+            el.dataset.zoomLensEligible === 'true' && !zoomLensCritical;
+          if (!zoomLensEligible) continue;
+          el.dataset.zoomLensActiveCard = 'true';
+          el.dataset.zoomLensPresentation = 'lens-pin';
+          activeCardCount += 1;
+          if (el.dataset.surfaceHidden !== 'true') {
+            visibleActiveCardCount += 1;
+          }
+        }
+        container.dataset.zoomLensPresentationActive = 'true';
+        container.dataset.zoomLensPresentationSource = 'camera-zoom-in';
+        container.dataset.zoomLensCameraRatio = targetRatio.toFixed(3);
+        container.dataset.zoomLensActive = 'true';
+        container.dataset.zoomLensCardCompactionActive = 'true';
+        container.dataset.zoomLensActiveCardCount = String(activeCardCount);
+        container.dataset.zoomLensVisibleActiveCardCount = String(visibleActiveCardCount);
+        return {
+          reason: activeCardCount > 0 ? 'done' : 'missing eligible zoom cards',
+          targetRatio,
+        };
+      }
+      scheduleReposition();
+      return { reason: 'done', targetRatio };
+    };
+    return () => {
+      if (win.__ontologyAtlasTopologyVerifyZoom) {
+        delete win.__ontologyAtlasTopologyVerifyZoom;
+      }
+    };
+  }, [scheduleReposition, sigma]);
+
+  const layoutTransitionKey = useMemo(() => {
+    const cardKey = cards
+      .map((card) =>
+        [
+          card.id,
+          card.kind,
+          card.tier,
+          card.title,
+          card.count ?? '',
+          card.anchor ?? '',
+          card.dock
+            ? `${card.dock.parentId}:${card.dock.side}:${card.dock.index}:${card.dock.total}`
+            : '',
+        ].join(':'),
+      )
+      .join('|');
+    return [
+      cardKey,
+      selectedSlug ?? '',
+      selectedRelationEdgeId ?? '',
+      pathWorkflowActive ? 'path' : 'map',
+      pathSelection?.sourceSlug ?? '',
+      pathSelection?.targetSlug ?? '',
+      healthRepairTarget
+        ? `${healthRepairTarget.kind}:${healthRepairTarget.slug}`
+        : '',
+      selectedFocusCenterActive ? 'focus-center' : '',
+      selectedMapFixedGeographyActive ? 'selected-map-fixed' : '',
+    ].join('||');
+  }, [
+    cards,
+    healthRepairTarget,
+    pathSelection?.sourceSlug,
+    pathSelection?.targetSlug,
+    pathWorkflowActive,
+    selectedFocusCenterActive,
+    selectedMapFixedGeographyActive,
+    selectedRelationEdgeId,
+    selectedSlug,
+  ]);
+  const activeDragClusterLayoutKey = useMemo(
+    () =>
+      activeDragCluster
+        ? Array.from(activeDragCluster).sort().join('|')
+        : '',
+    [activeDragCluster],
+  );
+  const layoutEffectRepositionKey = useMemo(
+    () =>
+      [
+        layoutTransitionKey,
+        sigma ? 'sigma-ready' : 'sigma-missing',
+        activeDragClusterLayoutKey,
+        activeDragMotion ? 'drag-motion' : '',
+        activeDragRootSlug,
+      ].join('||'),
+    [
+      activeDragClusterLayoutKey,
+      activeDragMotion,
+      activeDragRootSlug,
+      layoutTransitionKey,
+      sigma,
+    ],
+  );
+
+  useEffect(() => {
+    repositionNowRef.current = reposition;
   }, [reposition]);
 
-  // 카드 목록이 바뀌는 렌더마다 paint 전에 배치 (확장으로 새 카드 등장 시).
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let frame: number | null = null;
+    const handleFixedSurfaceResize = () => {
+      const currentContainer = containerRef.current;
+      if (!currentContainer || frame !== null) return;
+      currentContainer.dataset.fixedSurfaceEventRepositionPolicy =
+        'raf-after-fixed-surface-event';
+      invalidateFixedSurfaceRectCache();
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        repositionNowRef.current?.();
+      });
+    };
+    window.addEventListener('topology:fixed-surface-resize', handleFixedSurfaceResize);
+    return () => {
+      window.removeEventListener(
+        'topology:fixed-surface-resize',
+        handleFixedSurfaceResize,
+      );
+      if (frame !== null) {
+        window.cancelAnimationFrame(frame);
+      }
+    };
+  }, [invalidateFixedSurfaceRectCache]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (
+      !container ||
+      typeof ResizeObserver === 'undefined' ||
+      selectedSlug !== null ||
+      selectedRelationEdgeId !== null
+    ) {
+      return;
+    }
+    let frame: number | null = null;
+    const observer = new ResizeObserver(() => {
+      const currentContainer = containerRef.current;
+      if (!currentContainer || frame !== null) return;
+      currentContainer.dataset.fixedSurfaceResizeRepositionPolicy =
+        'raf-after-fixed-surface-resize';
+      invalidateFixedSurfaceRectCache();
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        repositionNowRef.current?.();
+      });
+    });
+    let observed = false;
+    const observeSurfaces = () => {
+      if (observed) return;
+      const currentContainer = containerRef.current;
+      if (!currentContainer) return;
+      const surfaces = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          [
+            '[data-testid="topology-analysis-panel"]',
+            '[data-testid="topology-minimap"]',
+            '[data-testid="topology-kind-legend"]',
+            '[data-testid="topology-relation-legend"]',
+          ].join(', '),
+        ),
+      );
+      if (surfaces.length === 0) return;
+      observed = true;
+      currentContainer.dataset.fixedSurfaceResizeRepositionContract =
+        'fixed-surface-resize-reruns-card-placement';
+      currentContainer.dataset.fixedSurfaceResizeObservedCount = String(
+        surfaces.length,
+      );
+      surfaces.forEach((surface) => observer.observe(surface));
+    };
+    const attachFrame = window.requestAnimationFrame(observeSurfaces);
+    const attachTimers = [120, 480].map((delay) =>
+      window.setTimeout(observeSurfaces, delay),
+    );
+    return () => {
+      window.cancelAnimationFrame(attachFrame);
+      attachTimers.forEach((timer) => window.clearTimeout(timer));
+      observer.disconnect();
+      if (frame !== null) {
+        window.cancelAnimationFrame(frame);
+      }
+    };
+  }, [
+    invalidateFixedSurfaceRectCache,
+    selectedRelationEdgeId,
+    selectedSlug,
+  ]);
+
+  // 카드/선택/드래그 구조가 실제로 바뀔 때만 paint 전에 배치한다.
+  // hover/visibility bookkeeping 같은 렌더까지 즉시 배치를 반복하면 큰
+  // 화면에서 초기 로딩과 드래그가 끊겨 보인다.
   useLayoutEffect(() => {
     const container = containerRef.current;
+    const measuredContainerRect = container?.getBoundingClientRect();
+    const layoutEffectViewportKey = measuredContainerRect
+      ? `${Math.round(measuredContainerRect.width)}x${Math.round(measuredContainerRect.height)}`
+      : 'no-container';
+    const currentLayoutEffectRepositionKey = [
+      layoutEffectRepositionKey,
+      layoutEffectViewportKey,
+    ].join('||');
+    if (container) {
+      container.dataset.layoutEffectRepositionContract =
+        'keyed-structural-render-only';
+      container.dataset.layoutEffectRepositionKeySize = String(
+        currentLayoutEffectRepositionKey.length,
+      );
+    }
+    if (lastLayoutEffectRepositionKeyRef.current === currentLayoutEffectRepositionKey) {
+      layoutEffectRepositionSkipCountRef.current += 1;
+      if (container) {
+        container.dataset.layoutEffectRepositionPolicy = 'skip-same-structural-key';
+        container.dataset.layoutEffectRepositionSkippedCount = String(
+          layoutEffectRepositionSkipCountRef.current,
+        );
+      }
+      return;
+    }
+    lastLayoutEffectRepositionKeyRef.current = currentLayoutEffectRepositionKey;
+    layoutEffectRepositionRunCountRef.current += 1;
+    invalidateFixedSurfaceRectCache();
     reposition();
     if (container) {
+      container.dataset.layoutEffectRepositionPolicy = 'run-structural-key-change';
+      container.dataset.layoutEffectRepositionRunCount = String(
+        layoutEffectRepositionRunCountRef.current,
+      );
+      container.dataset.layoutEffectRepositionSkippedCount = String(
+        layoutEffectRepositionSkipCountRef.current,
+      );
       container.dataset.skeletonCardsReady = 'true';
     }
   });
@@ -2487,7 +8616,43 @@ export function SigmaSkeletonCards({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    container.dataset.layoutTransitionKeySize = String(layoutTransitionKey.length);
+    const fixedSurfaceSettleRepositionActive =
+      selectedSlug === null && selectedRelationEdgeId === null && activeDragCluster === null;
+    container.dataset.fixedSurfaceSettleRepositionContract =
+      'initial-hud-size-settle-reruns-card-placement';
+    container.dataset.fixedSurfaceSettleRepositionActive =
+      fixedSurfaceSettleRepositionActive ? 'true' : 'false';
+    const settleTimers = fixedSurfaceSettleRepositionActive
+      ? [360, 760].map((delay) =>
+          window.setTimeout(() => {
+            const currentContainer = containerRef.current;
+            if (!currentContainer) return;
+            currentContainer.dataset.fixedSurfaceSettleRepositionPolicy =
+              'delayed-fixed-surface-sanity-pass';
+            invalidateFixedSurfaceRectCache();
+            repositionNowRef.current?.();
+          }, delay),
+        )
+      : [];
+    if (!initialLayoutTransitionResolvedRef.current) {
+      initialLayoutTransitionResolvedRef.current = true;
+      initialLoadRepositionThrottleUntilRef.current =
+        Date.now() + INITIAL_LOAD_REPOSITION_THROTTLE_MS;
+      delete container.dataset.layoutAnimate;
+      container.dataset.layoutTransitionPhase = 'initial-layout-ready';
+      container.dataset.layoutTransitionRepositionPolicy = 'skip-initial-transition';
+      container.dataset.layoutTransitionRepositionDeferred = 'false';
+      container.dataset.initialLoadRepositionThrottleMs = String(
+        INITIAL_LOAD_REPOSITION_THROTTLE_MS,
+      );
+      container.dataset.skeletonCardsReady = 'true';
+      return () => {
+        settleTimers.forEach((timer) => window.clearTimeout(timer));
+      };
+    }
     container.dataset.layoutAnimate = 'true';
+    container.dataset.layoutTransitionPhase = 'transition-window';
     if (container.dataset.skeletonCardsReady !== 'true') {
       container.dataset.skeletonCardsReady = 'false';
     }
@@ -2497,7 +8662,12 @@ export function SigmaSkeletonCards({
       delete container.dataset.layoutAnimate;
       collisionFreezeRef.current.clear();
       try {
-        reposition();
+        invalidateFixedSurfaceRectCache();
+        if (layoutTransitionRepositionTimerRef.current !== null) {
+          window.clearTimeout(layoutTransitionRepositionTimerRef.current);
+          layoutTransitionRepositionTimerRef.current = null;
+        }
+        repositionNowRef.current?.();
         delete container.dataset.layoutError;
       } catch (error) {
         container.dataset.layoutError =
@@ -2509,30 +8679,78 @@ export function SigmaSkeletonCards({
     }, 480);
     return () => {
       window.clearTimeout(timer);
+      if (layoutTransitionRepositionTimerRef.current !== null) {
+        window.clearTimeout(layoutTransitionRepositionTimerRef.current);
+        layoutTransitionRepositionTimerRef.current = null;
+      }
+      settleTimers.forEach((settleTimer) => window.clearTimeout(settleTimer));
       delete container.dataset.layoutAnimate;
       if (container.dataset.skeletonCardsReady !== 'true') {
         container.dataset.skeletonCardsReady = 'false';
       }
     };
-  }, [cards, reposition]);
+  }, [
+    activeDragCluster,
+    layoutTransitionKey,
+    invalidateFixedSurfaceRectCache,
+    selectedRelationEdgeId,
+    selectedSlug,
+  ]);
 
   useEffect(() => {
     if (!sigma) return;
     sigma.on('afterRender', scheduleReposition);
-    window.addEventListener('resize', scheduleReposition);
+    const onResize = () => {
+      invalidateFixedSurfaceRectCache();
+      scheduleReposition();
+      if (responsiveRepositionTimerRef.current !== null) {
+        window.clearTimeout(responsiveRepositionTimerRef.current);
+      }
+      responsiveRepositionTimerRef.current = window.setTimeout(() => {
+        responsiveRepositionTimerRef.current = null;
+        invalidateFixedSurfaceRectCache();
+        scheduleReposition();
+      }, 120);
+    };
+    window.addEventListener('resize', onResize);
     return () => {
       sigma.off('afterRender', scheduleReposition);
-      window.removeEventListener('resize', scheduleReposition);
+      window.removeEventListener('resize', onResize);
+      if (responsiveRepositionTimerRef.current !== null) {
+        window.clearTimeout(responsiveRepositionTimerRef.current);
+        responsiveRepositionTimerRef.current = null;
+      }
       if (repositionRafRef.current !== null) {
         window.cancelAnimationFrame(repositionRafRef.current);
         repositionRafRef.current = null;
       }
+      if (layoutTransitionRepositionTimerRef.current !== null) {
+        window.clearTimeout(layoutTransitionRepositionTimerRef.current);
+        layoutTransitionRepositionTimerRef.current = null;
+      }
     };
-  }, [sigma, scheduleReposition]);
+  }, [sigma, scheduleReposition, invalidateFixedSurfaceRectCache]);
+
+  useEffect(
+    () => () => {
+      if (visibilityStatsFlushTimerRef.current !== null) {
+        window.clearTimeout(visibilityStatsFlushTimerRef.current);
+        visibilityStatsFlushTimerRef.current = null;
+      }
+      if (layoutTransitionRepositionTimerRef.current !== null) {
+        window.clearTimeout(layoutTransitionRepositionTimerRef.current);
+        layoutTransitionRepositionTimerRef.current = null;
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container || selectedRelationEdgeId === null) return;
+    container.dataset.skeletonCardsReady = 'true';
+    container.dataset.selectedBlockingSurfaceSettleContract =
+      'selected-relation-repositions-with-readable-card-layer';
     const frame = window.requestAnimationFrame(() => {
       for (const overlay of container.querySelectorAll<HTMLElement>(
         '[data-selected-relation-overlay][data-selected-relation-halo="true"]',
@@ -2541,18 +8759,87 @@ export function SigmaSkeletonCards({
         overlay.style.visibility = 'visible';
         overlay.style.display = 'inline-flex';
       }
-      reposition();
+      invalidateFixedSurfaceRectCache();
+      repositionNowRef.current?.();
     });
     const settleFrame = window.requestAnimationFrame(() => {
-      reposition();
+      invalidateFixedSurfaceRectCache();
+      repositionNowRef.current?.();
     });
+    const settleTimer = window.setTimeout(() => {
+      invalidateFixedSurfaceRectCache();
+      repositionNowRef.current?.();
+      window.requestAnimationFrame(() => {
+        container.dataset.skeletonCardsReady = 'true';
+      });
+    }, 520);
     return () => {
       window.cancelAnimationFrame(frame);
       window.cancelAnimationFrame(settleFrame);
+      window.clearTimeout(settleTimer);
     };
-  }, [reposition, selectedRelationEdgeId]);
+  }, [selectedRelationEdgeId, invalidateFixedSurfaceRectCache]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || selectedSlug === null || selectedRelationEdgeId !== null) return;
+    if (!isSelectedNodePopoverMounted()) return;
+    container.dataset.skeletonCardsReady = 'true';
+    container.dataset.selectedBlockingSurfaceSettleContract =
+      'selected-popover-repositions-with-readable-card-layer';
+    const frame = window.requestAnimationFrame(() => {
+      container.dataset.selectedFocusSurfaceRepositionContract =
+        'invalidate-fixed-surfaces-after-selected-popover-mount';
+      invalidateFixedSurfaceRectCache();
+      repositionNowRef.current?.();
+    });
+    const settleFrame = window.requestAnimationFrame(() => {
+      invalidateFixedSurfaceRectCache();
+      repositionNowRef.current?.();
+    });
+    const settleTimer = window.setTimeout(() => {
+      invalidateFixedSurfaceRectCache();
+      repositionNowRef.current?.();
+      window.requestAnimationFrame(() => {
+        container.dataset.skeletonCardsReady = 'true';
+      });
+    }, 520);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(settleFrame);
+      window.clearTimeout(settleTimer);
+    };
+  }, [selectedRelationEdgeId, selectedSlug, invalidateFixedSurfaceRectCache]);
 
   if (!sigma) return null;
+
+  const activeDragUsesRootPreview =
+    activeDragClusterPolicy === 'root-direct-neighbors-pin-free-context' ||
+    (activeDragCluster?.size ?? 0) >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD;
+  const focusDetailConnectorExpressionActive =
+    selectedFocusCenterActive &&
+    selectedFocusCluster !== null &&
+    selectedRelationEdgeId === null &&
+    !pathWorkflowActive &&
+    !healthRepairTarget &&
+    activeDragCluster === null;
+  const focusDetailConnectorExpressionCount = focusDetailConnectorExpressionActive
+    ? egoRelationConnectors.filter((connector) => !isSelectedRelationSurface(connector))
+        .length
+    : 0;
+  const renderCameraRatio = readSkeletonCameraRatio(sigma);
+  const renderZoomLensCardCompactionActive =
+    renderCameraRatio <= ZOOM_LENS_RATIO_THRESHOLD &&
+    !pathWorkflowActive &&
+    !healthRepairTarget;
+  const renderDragRelationCompactActive =
+    renderZoomLensCardCompactionActive && activeHullMode === 'drag';
+  const selectedFocusContextRailZoomWaypointActive =
+    selectedFocusCenterActive &&
+    selectedRelationEdgeId === null &&
+    !pathWorkflowActive &&
+    !healthRepairTarget &&
+    renderZoomLensCardCompactionActive;
 
   return (
     <div
@@ -2561,7 +8848,99 @@ export function SigmaSkeletonCards({
       data-skeleton-cards-ready="false"
       data-skeleton-card-model-count={cards.length}
       data-skeleton-card-resolved-count={resolvedCardCount}
+      data-topology-attention-winner={topologyAttentionWinner}
+      data-agent-current-surface={agentCurrentSurface}
+      data-agent-current-surface-role={agentCurrentSurfaceRole}
+      data-agent-current-surface-route={agentCurrentSurfaceRoute}
+      data-relation-source={selectedRelationLabelHandoff?.source}
+      data-relation-target={selectedRelationLabelHandoff?.target}
+      data-relation-type={selectedRelationLabelHandoff?.type}
+      data-relation-route={selectedRelationLabelHandoff?.relationRoute}
+      data-relation-mcp-action={selectedRelationLabelHandoff?.action}
+      data-relation-cli-fallback={selectedRelationLabelHandoff?.cliFallbackCommand}
+      data-relation-fact-route={selectedRelationLabelHandoff?.route}
+      data-relation-quality={selectedRelationLabelHandoff?.quality}
+      data-relation-evidence-state={selectedRelationLabelHandoff?.evidence}
+      data-agent-gate-kind={selectedRelationLabelHandoff?.gate}
+      data-topology-selected-node-id={selectedSlug ?? undefined}
+      data-topology-selected-relation-edge-id={selectedRelationSurfaceEdgeId}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
+      data-drag-cluster-policy={activeDragClusterPolicy}
+      data-drag-free-context-count={activeDragFreeContextCount}
+      data-drag-dynamic-motion-contract="cluster-follows-pointer-connectors-update"
+      data-drag-physics-sync-contract={
+        onDragClusterStart && onDragClusterMove && onDragClusterEnd
+          ? 'skeleton-card-drag-pins-worker-layout-group'
+          : 'skeleton-card-drag-worker-sync-unavailable'
+      }
+      data-drag-physics-release-policy="commit-drop-position-no-force-release"
+      data-drag-physics-sync-active={dragPhysicsSyncActive ? 'true' : 'false'}
+      data-drag-dynamic-state={
+        activeDragMotion
+          ? 'active-cluster-follow'
+          : activeDragCluster
+            ? 'armed-cluster-follow'
+            : dragSettledSlugs.size > 0
+              ? 'release-settled-cluster'
+              : 'idle'
+      }
+      data-drag-dynamic-root={activeDragRootSlug || undefined}
+      data-drag-settled-cluster-size={dragSettledSlugs.size}
+      data-drag-settled-root={dragSettledRootSlug || undefined}
+      data-drag-settle-feedback-contract="released-dragged-cluster-keeps-settle-feedback"
+      data-drag-connector-feedback-contract="boxless-connectors-show-linked-motion"
+      data-drag-collision-policy="release-settle"
+      data-drag-clamp-contract="large-cluster-root-card-priority"
+      data-drag-clamp-scope={
+        activeDragCluster
+          ? activeDragUsesRootPreview
+            ? 'root-card-for-large-cluster'
+            : 'cluster-bounds'
+          : 'idle'
+      }
+      data-drag-large-cluster-clamp-threshold={DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD}
+      data-drag-preview-contract="large-cluster-commits-graph-position-without-release-offset"
+      data-drag-preview-scope={
+        dragViewportOffsetPersistedCount > 0
+          ? 'persisted-drop-viewport-offset'
+          : 'idle'
+      }
+      data-drag-viewport-offset-persisted-count={dragViewportOffsetPersistedCount}
+      data-drag-frame-cache-contract="pointer-move-reuses-drag-indexes"
+      data-drag-reposition-policy="raf-coalesced-pointer-move"
+      data-drag-reposition-coalesced="false"
+      data-drag-hull-render-policy="suppressed-boxless-connectors"
+      data-drag-cluster-hull-dom-policy="not-rendered"
+      data-drag-dom-index-contract="drag-release-reuses-card-elements"
+      data-drag-dom-index-size={dragFrameMarkerSnapshot.domIndexSize}
+      data-drag-frame-cache-snapshot-count={dragFrameMarkerSnapshot.snapshotCount}
+      data-drag-last-frame-cache-contract="release-keeps-last-pointer-down-cache-proof"
+      data-drag-last-dom-index-size={dragFrameMarkerSnapshot.lastDomIndexSize}
+      data-drag-last-frame-cache-snapshot-count={dragFrameMarkerSnapshot.lastSnapshotCount}
+      data-dock-drag-snapshot-contract="single-pass-card-rect-read"
+      data-visibility-count-contract="single-pass-unless-fallback"
+      data-visible-card-state-cache-contract="rect-and-visibility-single-pass"
+      data-visibility-stats-report-contract="dedupe-and-debounce-stable-counts"
+      data-visibility-stats-report-count="0"
+      data-layout-transition-contract="stable-card-state-key"
+      data-layout-transition-reposition-policy="immediate-after-render"
+      data-layout-transition-reposition-throttle-ms={LAYOUT_TRANSITION_REPOSITION_THROTTLE_MS}
+      data-layout-transition-reposition-deferred="false"
+      data-layout-effect-reposition-contract="keyed-structural-render-only"
+      data-layout-effect-reposition-policy="pending"
+      data-layout-effect-reposition-run-count="0"
+      data-layout-effect-reposition-skipped-count="0"
+      data-initial-load-reposition-throttle-ms={INITIAL_LOAD_REPOSITION_THROTTLE_MS}
+      data-responsive-reposition-contract="resize-immediate-and-settled"
+      data-dom-write-dedupe-contract="skip-unchanged-transform-and-path"
+      data-visibility-style-write-contract="dedupe-show-hide-state"
+      data-dom-write-applied-count="0"
+      data-dom-write-skipped-count="0"
+      data-fixed-surface-measure-contract="single-pass-rect-read"
+      data-fixed-surface-event-reposition-contract="fixed-surface-events-rerun-card-placement"
+      data-path-endpoint-separation-contract="source-target-min-gap"
+      data-path-result-candidate-suppression-policy="source-target-result-hides-candidate-affordance"
+      data-path-result-candidate-suppression-active={pathResultReady ? 'true' : 'false'}
       data-drag-settle-motion-contract={TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT}
       data-drag-settle-motion-duration-ms={TOPOLOGY_DRAG_SETTLE_DURATION_MS}
       data-drag-settle-motion-easing={TOPOLOGY_DRAG_SETTLE_EASING_NAME}
@@ -2574,53 +8953,102 @@ export function SigmaSkeletonCards({
       data-click-focus-relationship-context-source="none"
       data-dim-anchor-opacity={DIM_ANCHOR_OPACITY}
       data-dim-chip-opacity={DIM_CHIP_OPACITY}
+      data-dim-context-opacity={DIM_CHIP_OPACITY}
+      data-drag-reactive-context-contract="active-drag-shows-worker-moving-surrounding-context"
+      data-drag-reactive-context-opacity={DRAG_REACTIVE_CONTEXT_OPACITY}
+      data-drag-reactive-context-opacity-token={DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN}
+      data-drag-reactive-context-visual-contract="reactive-context-uses-border-ring"
+      data-drag-reactive-context-visual-token={DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN}
+      data-drag-reactive-context-visible-count="0"
+      data-drag-reactive-context-policy="idle"
+      data-drag-reactive-motion-contract="active-drag-gives-surrounding-context-bounded-parallax"
+      data-drag-reactive-motion-policy="idle"
+      data-drag-reactive-motion-linked-policy="idle"
+      data-drag-reactive-motion-visible-count="0"
+      data-drag-reactive-ambient-motion-visible-count="0"
+      data-drag-reactive-linked-motion-visible-count="0"
+      data-drag-reactive-motion-max-observed-offset-px="0"
+      data-drag-reactive-motion-max-offset-px={DRAG_REACTIVE_MOTION_MAX_OFFSET_PX}
+      data-drag-reactive-motion-base-max-offset-px={DRAG_REACTIVE_MOTION_BASE_MAX_OFFSET_PX}
+      data-drag-reactive-motion-linked-max-offset-px={DRAG_REACTIVE_MOTION_LINKED_MAX_OFFSET_PX}
+      data-drag-reactive-motion-max-offset-token={DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN}
+      data-drag-tension-connector-contract="active-drag-draws-links-to-reactive-neighbors"
+      data-drag-tension-connector-policy={
+        activeDragCluster !== null
+          ? 'cluster-to-linked-context-only'
+          : 'idle'
+      }
+      data-drag-tension-connector-expected-count={activeDragTensionConnectors.length}
+      data-drag-tension-connector-visible-count="0"
+      data-drag-tension-connector-max-count={DRAG_TENSION_CONNECTOR_MAX_COUNT}
+      data-drag-tension-connector-active-opacity={DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY}
+      data-drag-tension-connector-active-stroke-width={
+        DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH
+      }
+      data-dim-anchor-opacity-token={DIM_ANCHOR_OPACITY_TOKEN}
+      data-dim-chip-opacity-token={DIM_CHIP_OPACITY_TOKEN}
+      data-dim-context-opacity-token={DIM_CHIP_OPACITY_TOKEN}
       data-dim-opacity-contract="readable-context-geography"
+      data-overview-context-opacity-contract="core-full-support-quiet"
+      data-overview-context-core-opacity={OVERVIEW_CONTEXT_OPACITY[1]}
+      data-overview-context-capability-opacity={OVERVIEW_CONTEXT_OPACITY[2]}
+      data-overview-context-evidence-opacity={OVERVIEW_CONTEXT_OPACITY[3]}
+      data-relation-label-handoff-contract="label-level-mcp-cli-fallback"
+      data-relation-label-geometry-contract="frame-positioned-hit-targets"
+      data-relation-label-geometry-source="pending-frame"
+      data-relation-label-geometry-expected-count="0"
+      data-relation-label-geometry-ready-count="0"
+      data-relation-label-geometry-pending-count="0"
+      data-focus-relation-label-density-contract="click-focus-uses-ego-label-only"
+      data-focus-relation-label-source={
+        selectedFocusCluster ? 'ego-relation-labels' : undefined
+      }
+      data-focus-detail-connector-expression-contract="focus-detail-lens-demotes-noncritical-connectors"
+      data-focus-detail-connector-expression-active={
+        focusDetailConnectorExpressionActive ? 'true' : 'false'
+      }
+      data-focus-detail-connector-expression-count={focusDetailConnectorExpressionCount}
+      data-selected-focus-context-rail-zoom-contract={
+        selectedFocusContextRailZoomWaypointActive
+          ? 'camera-zoom-in-demotes-domain-rail-to-waypoint-pins'
+          : undefined
+      }
+      data-selected-focus-context-rail-zoom-active={
+        selectedFocusContextRailZoomWaypointActive ? 'true' : undefined
+      }
+      data-zoom-lens-relation-chrome-contract="camera-zoom-in-demotes-nonselected-relation-chrome"
+      data-zoom-lens-relation-chrome-active="false"
+      data-zoom-lens-relation-thread-count="0"
+      data-zoom-lens-relation-label-suppressed-count="0"
+      data-selected-relation-label-handoff={
+        selectedRelationLabelHandoff ? 'ready' : 'none'
+      }
+      data-selected-relation-label-gate={selectedRelationLabelHandoff?.gate}
+      data-selected-relation-label-primary-action={selectedRelationLabelHandoff?.action}
+      data-selected-relation-label-cli-fallback={
+        selectedRelationLabelHandoff?.cliFallbackCommand
+      }
+      data-topology-selected-relation-label-cli-fallback-command={
+        selectedRelationLabelHandoff?.cliFallbackCommand
+      }
+      data-selected-relation-label-fact-route={selectedRelationLabelHandoff?.route}
+      data-selected-relation-label-quality={selectedRelationLabelHandoff?.quality}
+      data-selected-relation-label-evidence={selectedRelationLabelHandoff?.evidence}
+      data-health-repair-audit-target-contract={
+        resolvedHealthRepairTargetNodeId
+          ? 'panel-target-card-highlight'
+          : healthRepairTarget
+            ? 'panel-target-card-unresolved'
+            : 'none'
+      }
+      data-health-repair-audit-target-slug={
+        resolvedHealthRepairTargetNodeId ?? undefined
+      }
+      data-health-repair-audit-target-kind={healthRepairTarget?.kind}
       className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-100 transition-opacity duration-150 ease-out data-[skeleton-cards-ready=false]:opacity-0 motion-reduce:transition-none"
     >
       {/* 펼친 가지 커넥터 — 수평 접선 S-커브, 카드 경계 트림. 인디고는
           "활성 가지" 단일 의미 (overview hairline 은 Sigma 캔버스 담당). */}
-      <div
-        ref={dragClusterHullRef}
-        data-drag-cluster-hull
-        data-visible="false"
-        data-drag-active={activeDragMotion ? 'true' : 'false'}
-        data-cluster-mode={activeHullMode}
-        data-focus-cluster-density={
-          activeHullMode === 'focus' ? 'quiet-outline' : undefined
-        }
-        data-focus-stage={activeHullMode === 'focus' ? 'click-focus' : undefined}
-        data-focus-attention-label={
-          activeHullMode === 'focus' ? 'linked-focus' : undefined
-        }
-        style={{
-          opacity: activeHullCluster && activeHullCluster.size > 1
-            ? activeDragMotion
-              ? 0.95
-              : 0.8
-            : 0,
-        }}
-        aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.08)] shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_18px_50px_rgba(0,0,0,0.22)] transition-[opacity,box-shadow,border-color,background-color] duration-100 data-[cluster-mode=focus]:border-[color:rgba(139,151,255,0.30)] data-[cluster-mode=focus]:bg-[color:rgba(139,151,255,0.045)] data-[cluster-mode=focus]:shadow-[0_0_0_1px_rgba(139,151,255,0.12),0_14px_42px_rgba(0,0,0,0.16)] data-[drag-active=true]:border-[color:rgba(139,151,255,0.70)] data-[drag-active=true]:bg-[color:rgba(139,151,255,0.12)] data-[drag-active=true]:shadow-[0_0_0_1px_rgba(139,151,255,0.24),0_22px_60px_rgba(0,0,0,0.28),0_0_36px_rgba(139,151,255,0.14)] motion-reduce:transition-none"
-      >
-        {activeHullMode === 'drag' ? (
-          <>
-            <div className="absolute left-2 top-2 inline-flex max-w-[min(18rem,calc(100%-3.25rem))] items-center gap-1.5 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-canvas)] px-2 py-1 text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]">
-              <span className="font-mono uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                {activeHullLabel}
-              </span>
-              <span data-drag-cluster-title className="min-w-0 truncate">
-                {activeHullTitle}
-              </span>
-            </div>
-            <span
-              data-drag-cluster-count
-              className="absolute right-2 top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--color-canvas)] px-1.5 font-mono text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]"
-            >
-              {activeHullCluster ? `${activeHullCluster.size} linked` : ""}
-            </span>
-          </>
-        ) : null}
-      </div>
       <svg
         data-skeleton-connectors
         aria-hidden="true"
@@ -2628,8 +9056,7 @@ export function SigmaSkeletonCards({
       >
         {!ego && !activeDragCluster
           ? overviewBackboneConnectors.map((connector) => {
-              const selected =
-                selectedRelationEdgeId !== null && connector.edgeId === selectedRelationEdgeId;
+              const selected = isSelectedRelationSurface(connector);
               const tone = relationConnectorTone(connector, selected);
               return (
                 <g key={`overview:${connector.key}`}>
@@ -2650,17 +9077,39 @@ export function SigmaSkeletonCards({
                       selectRelation(connector);
                     }}
                   />
+                  {!selected ? (
+                    <path
+                      data-overview-connector-from={connector.from}
+                      data-overview-connector-to={connector.to}
+                      data-overview-hierarchy-spine="contains"
+                      data-overview-hierarchy-spine-contract="contains-relation-reads-as-ontology-backbone"
+                      data-relation-kind={connector.kind}
+                      data-relation-quality={connector.relationQuality ?? 'supported'}
+                      data-relation-type={connector.relationType}
+                      data-relation-spine-halo-token="--topology-relation-spine-halo"
+                      data-relation-spine-halo-opacity-token="--topology-relation-spine-halo-opacity"
+                      data-relation-spine-halo-width-token="--topology-relation-spine-halo-width"
+                      className="pointer-events-none"
+                      fill="none"
+                      stroke="var(--topology-relation-spine-halo)"
+                      strokeLinecap="round"
+                      strokeWidth="var(--topology-relation-spine-halo-width)"
+                      opacity="var(--topology-relation-spine-halo-opacity)"
+                    />
+                  ) : null}
                   {selected ? (
                     <path
                       data-overview-connector-from={connector.from}
                       data-overview-connector-to={connector.to}
                       data-selected-relation-halo="true"
+                      data-selected-relation-halo-token="--topology-relation-label-selected-surface"
                       data-relation-quality={connector.relationQuality ?? 'supported'}
+                      data-relation-stroke-halo-width-token="--topology-relation-stroke-selected-halo-width"
                       className="pointer-events-none"
                       fill="none"
-                      stroke="rgba(139,151,255,0.18)"
+                      stroke="var(--topology-relation-label-selected-surface)"
                       strokeLinecap="round"
-                      strokeWidth={Math.max(6, tone.strokeWidth + 5)}
+                      strokeWidth={tone.haloWidth}
                       opacity={0.9}
                     />
                   ) : null}
@@ -2671,6 +9120,14 @@ export function SigmaSkeletonCards({
                     data-relation-kind={connector.kind}
                     data-relation-quality={connector.relationQuality ?? 'supported'}
                     data-relation-type={connector.relationType}
+                    data-relation-stroke-contract="quality-token"
+                    data-relation-stroke-token={tone.strokeToken}
+                    data-relation-stroke-width-token={tone.strokeWidthToken}
+                    data-relation-stroke-evidence-boost={
+                      (connector.evidenceCount ?? 0) > 0 || connector.authored === true
+                        ? 'true'
+                        : 'false'
+                    }
                     className="pointer-events-none"
                     fill="none"
                     stroke={tone.stroke}
@@ -2679,14 +9136,31 @@ export function SigmaSkeletonCards({
                     strokeWidth={tone.strokeWidth}
                     opacity={tone.opacity}
                   />
+                  {!selected ? (
+                    <circle
+                      data-overview-connector-from={connector.from}
+                      data-overview-connector-to={connector.to}
+                      data-overview-hierarchy-terminal="child"
+                      data-overview-hierarchy-terminal-contract="contains-edge-lands-on-child-card"
+                      data-relation-kind={connector.kind}
+                      data-relation-quality={connector.relationQuality ?? 'supported'}
+                      data-relation-type={connector.relationType}
+                      data-relation-spine-terminal-token="--topology-relation-spine-terminal"
+                      data-relation-spine-terminal-radius-token="--topology-relation-spine-terminal-radius"
+                      className="pointer-events-none"
+                      fill="var(--topology-relation-spine-terminal)"
+                      r="var(--topology-relation-spine-terminal-radius)"
+                    />
+                  ) : null}
                 </g>
               );
             })
           : null}
         {egoRelationConnectors.map((connector) => {
-          const selected =
-            selectedRelationEdgeId !== null && connector.edgeId === selectedRelationEdgeId;
+          const selected = isSelectedRelationSurface(connector);
           const tone = relationConnectorTone(connector, selected);
+          const focusDetailConnectorExpression =
+            focusDetailConnectorExpressionActive && !selected;
           return (
             <g key={`ego:${connector.key}`}>
               <path
@@ -2705,16 +9179,18 @@ export function SigmaSkeletonCards({
                 }}
               />
               {selected ? (
-                <path
-                  data-connector={connector.to}
-                  data-selected-relation-halo="true"
-                  data-relation-quality={connector.relationQuality ?? 'supported'}
-                  className="pointer-events-none topology-connector-path"
-                  fill="none"
-                  stroke="rgba(139,151,255,0.18)"
-                  strokeWidth={Math.max(6, tone.strokeWidth + 5)}
-                  opacity={0.9}
-                />
+                  <path
+                    data-connector={connector.to}
+                    data-selected-relation-halo="true"
+                    data-selected-relation-halo-token="--topology-relation-label-selected-surface"
+                    data-relation-quality={connector.relationQuality ?? 'supported'}
+                    data-relation-stroke-halo-width-token="--topology-relation-stroke-selected-halo-width"
+                    className="pointer-events-none topology-connector-path"
+                    fill="none"
+                    stroke="var(--topology-relation-label-selected-surface)"
+                    strokeWidth={tone.haloWidth}
+                    opacity={0.9}
+                  />
               ) : null}
               <path
                 data-connector={connector.to}
@@ -2722,18 +9198,60 @@ export function SigmaSkeletonCards({
                 data-relation-kind={connector.kind}
                 data-relation-quality={connector.relationQuality ?? 'supported'}
                 data-relation-type={connector.relationType}
+                data-relation-stroke-contract="quality-token"
+                data-relation-stroke-token={tone.strokeToken}
+                data-relation-stroke-width-token={tone.strokeWidthToken}
+                data-focus-detail-connector-expression={
+                  focusDetailConnectorExpression ? 'background-thread' : undefined
+                }
+                data-focus-detail-connector-opacity-token={
+                  focusDetailConnectorExpression
+                    ? '--topology-focus-detail-connector-opacity'
+                    : undefined
+                }
+                data-focus-detail-connector-stroke-width-token={
+                  focusDetailConnectorExpression
+                    ? '--topology-focus-detail-connector-width'
+                    : undefined
+                }
+                data-focus-detail-connector-dasharray-token={
+                  focusDetailConnectorExpression
+                    ? '--topology-focus-detail-connector-dasharray'
+                    : undefined
+                }
+                data-relation-stroke-evidence-boost={
+                  (connector.evidenceCount ?? 0) > 0 || connector.authored === true
+                    ? 'true'
+                    : 'false'
+                }
                 className="pointer-events-none topology-connector-path"
                 fill="none"
                 stroke={tone.stroke}
-                strokeDasharray={tone.dasharray}
-                strokeWidth={tone.strokeWidth}
-                opacity={tone.opacity}
+                strokeDasharray={
+                  focusDetailConnectorExpression
+                    ? 'var(--topology-focus-detail-connector-dasharray)'
+                    : tone.dasharray
+                }
+                strokeWidth={
+                  focusDetailConnectorExpression
+                    ? 'var(--topology-focus-detail-connector-width)'
+                    : tone.strokeWidth
+                }
+                opacity={
+                  focusDetailConnectorExpression
+                    ? 'var(--topology-focus-detail-connector-opacity)'
+                    : tone.opacity
+                }
               />
             </g>
           );
         })}
         {egoRelationLabels.map((label, index) => {
-          const visibleRelationLabel = formatRelationLabel(label.relationType, label.count);
+          const selected = isSelectedRelationSurface(label);
+          const visibleRelationLabel = formatRelationVisibleLabel(
+            label.relationType,
+            label.count,
+          );
           return (
             <g
               key={`ego-label:${label.key}`}
@@ -2742,35 +9260,20 @@ export function SigmaSkeletonCards({
               data-relation-quality={label.relationQuality ?? 'supported'}
               data-relation-type={label.relationType}
               data-relation-type-label={visibleRelationLabel}
-              className="pointer-events-auto cursor-pointer"
-              role="button"
-              tabIndex={0}
-              aria-label={tEdgeTooltip('relationAriaLabel', { label: visibleRelationLabel })}
-              onClick={(event) => {
-                event.stopPropagation();
-                selectRelation(label);
-              }}
-              onKeyDown={(event) => {
-                if (event.key !== 'Enter' && event.key !== ' ') return;
-                event.preventDefault();
-                event.stopPropagation();
-                selectRelation(label);
-              }}
+              data-relation-label-interaction-owner="html-hit-target"
+              data-relation-label-svg-a11y-contract="aria-hidden-visual-mirror"
+              className="pointer-events-none"
             >
               <rect
                 data-relation-label-bg={`ego:${label.key}`}
-                data-selected-relation={
-                  selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
-                    ? 'true'
-                    : 'false'
-                }
+                data-selected-relation={selected ? 'true' : 'false'}
                 fill={
-                  selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
+                  selected
                     ? 'rgba(139,151,255,0.16)'
                     : 'var(--color-canvas)'
                 }
                 stroke={
-                  selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
+                  selected
                     ? 'rgba(139,151,255,0.92)'
                     : 'var(--topology-card-border-selected-strong)'
                 }
@@ -2789,79 +9292,187 @@ export function SigmaSkeletonCards({
                 data-relation-type={label.relationType}
                 data-relation-type-label={visibleRelationLabel}
                 data-relation-count={label.count}
+                data-relation-label-svg-text-token="--topology-relation-label-svg-text"
+                data-relation-label-svg-text-size-token="--topology-relation-label-svg-text-size"
                 dominantBaseline="middle"
                 textAnchor="middle"
-                fill="var(--color-text-secondary)"
-                className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
+                fill="var(--topology-relation-label-svg-text)"
+                className="pointer-events-none select-none font-mono text-[length:var(--topology-relation-label-svg-text-size)] uppercase tracking-[0.08em]"
               >
                 {visibleRelationLabel}
               </text>
             </g>
           );
         })}
-        {activeHullConnectors.map((connector) => (
-          <g key={`drag:${connector.key}`}>
+        {activeHullConnectors.map((connector) => {
+          const dragRelationVisibleText = renderDragRelationCompactActive
+            ? relationLabelCompactGlyph(connector.relationType, relationTypeLabels)
+            : formatRelationVisibleLabel(connector.relationType);
+          const dragRelationPresentation = renderDragRelationCompactActive
+            ? 'compact-glyph'
+            : 'full-type-label';
+          return (
+            <g key={`drag:${connector.key}`}>
             <path
               data-drag-connector-from={connector.from}
               data-drag-connector-to={connector.to}
               data-drag-cluster-connector="true"
-              data-focus-cluster-connector={
-                activeHullMode === 'focus' ? 'true' : undefined
-              }
               data-relation-kind={connector.kind}
               data-relation-quality={connector.relationQuality ?? 'supported'}
               data-relation-type={connector.relationType}
+              data-drag-connector-stroke-token={
+                activeDragMotion
+                  ? '--topology-card-border-selected-strong'
+                  : '--topology-card-border-selected'
+              }
               className="topology-connector-path"
               fill="none"
-              stroke={activeDragMotion ? 'rgba(139,151,255,0.78)' : 'rgba(139,151,255,0.58)'}
+              stroke={
+                activeDragMotion
+                  ? 'var(--topology-card-border-selected-strong)'
+                  : 'var(--topology-card-border-selected)'
+              }
               strokeWidth={activeDragMotion ? 1.75 : 1.35}
               opacity={activeDragMotion ? 0.96 : 0.86}
             />
-            <rect
-              data-relation-label-bg={`drag:${connector.key}`}
-              fill="var(--color-canvas)"
-              stroke="var(--topology-card-border-selected-strong)"
-              strokeWidth={0.7}
-              rx={7}
-              opacity={0}
-            />
-            <text
-              data-relation-label-id={`drag:${connector.key}`}
-              data-relation-label-from={connector.from}
-              data-relation-label-to={connector.to}
-              data-drag-relation-label-from={connector.from}
-              data-drag-relation-label-to={connector.to}
-              data-drag-relation-label="true"
-              data-focus-relation-label={
-                activeHullMode === 'focus' ? 'true' : undefined
-              }
+            {activeHullMode === 'drag' ? (
+              <>
+                <rect
+                  data-relation-label-bg={`drag:${connector.key}`}
+                  data-drag-relation-label-presentation={dragRelationPresentation}
+                  data-drag-relation-label-compact={
+                    renderDragRelationCompactActive ? 'true' : 'false'
+                  }
+                  data-drag-relation-label-compact-contract="zoomed-drag-keeps-type-fact-as-compact-glyph"
+                  fill="var(--color-canvas)"
+                  stroke="var(--topology-card-border-selected-strong)"
+                  strokeWidth={0.7}
+                  rx={7}
+                  opacity={0}
+                />
+                <text
+                  data-relation-label-id={`drag:${connector.key}`}
+                  data-relation-label-from={connector.from}
+                  data-relation-label-to={connector.to}
+                  data-drag-relation-label-from={connector.from}
+                  data-drag-relation-label-to={connector.to}
+                  data-drag-relation-label="true"
+                  data-relation-kind={connector.kind}
+                  data-relation-quality={connector.relationQuality ?? 'supported'}
+                  data-relation-type={connector.relationType}
+                  data-relation-type-label={formatRelationLabel(connector.relationType)}
+                  data-relation-label-visible-text={dragRelationVisibleText}
+                  data-drag-relation-label-presentation={dragRelationPresentation}
+                  data-drag-relation-label-compact={
+                    renderDragRelationCompactActive ? 'true' : 'false'
+                  }
+                  data-drag-relation-label-compact-contract="zoomed-drag-keeps-type-fact-as-compact-glyph"
+                  data-relation-label-readable-type={connector.relationType}
+                  data-relation-label-svg-text-token="--topology-relation-label-svg-text"
+                  data-relation-label-svg-text-size-token="--topology-relation-label-svg-text-size"
+                  dominantBaseline="middle"
+                  textAnchor="middle"
+                  fill="var(--topology-relation-label-svg-text)"
+                  className="pointer-events-none select-none font-mono text-[length:var(--topology-relation-label-svg-text-size)] uppercase tracking-[0.08em]"
+                >
+                  {dragRelationVisibleText}
+                </text>
+              </>
+            ) : null}
+          </g>
+          );
+        })}
+        {activeDragTensionConnectors.map((connector) => (
+          <g key={`drag-tension:${connector.key}`}>
+            <path
+              data-drag-connector-from={connector.from}
+              data-drag-connector-to={connector.to}
+              data-drag-tension-connector="true"
+              data-drag-tension-expression="linked-context-tension"
               data-relation-kind={connector.kind}
               data-relation-quality={connector.relationQuality ?? 'supported'}
               data-relation-type={connector.relationType}
-              data-relation-type-label={formatRelationLabel(connector.relationType)}
-              dominantBaseline="middle"
-              textAnchor="middle"
-              fill="var(--color-text-secondary)"
-              className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
-            >
-              {formatRelationLabel(connector.relationType)}
-            </text>
+              data-drag-tension-connector-contract="active-drag-draws-links-to-reactive-neighbors"
+              data-drag-tension-connector-policy="cluster-to-linked-context-only"
+              data-drag-tension-stroke-token="--topology-card-border-selected-strong"
+              data-drag-tension-active-opacity={DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY}
+              data-drag-tension-active-stroke-width={
+                DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH
+              }
+              className="pointer-events-none topology-connector-path"
+              fill="none"
+              stroke="var(--topology-card-border-selected-strong)"
+              strokeDasharray="4 7"
+              strokeLinecap="round"
+              strokeWidth={
+                activeDragMotion ? DRAG_TENSION_CONNECTOR_ACTIVE_STROKE_WIDTH : 1.05
+              }
+              opacity={
+                activeDragMotion ? DRAG_TENSION_CONNECTOR_ACTIVE_OPACITY : 0.38
+              }
+            />
           </g>
         ))}
       </svg>
       {egoRelationLabels.map((label) => {
-        const selected =
-          selectedRelationEdgeId !== null && label.edgeId === selectedRelationEdgeId;
+        const selected = isSelectedRelationSurface(label);
         const quality = label.relationQuality ?? 'supported';
         const evidenceState = relationEvidenceState(label);
-        const evidenceText = relationEvidenceAriaText({
+        const evidenceChipText = relationEvidenceVisibleText({
           evidenceCount: label.evidenceCount,
           state: evidenceState,
         });
         const labelText = formatRelationLabel(label.relationType, label.count);
+        const selectedCardOwnsRelationSummary =
+          selectedSlug != null &&
+          (selectedSlug === label.edgeSource || selectedSlug === label.edgeTarget);
+        const compactRelationLabelViewport =
+          typeof window !== 'undefined' && window.innerWidth < 1024;
+        const phoneSelectedNodeRelationLabelSuppressed =
+          !selected &&
+          selectedRelationEdgeId === null &&
+          selectedCardOwnsRelationSummary &&
+          typeof window !== 'undefined' &&
+          window.innerWidth < 640;
+        if (phoneSelectedNodeRelationLabelSuppressed) {
+          return null;
+        }
+        const relationLabelVisibleCountPolicy = selected
+          ? 'selected-relation-shows-count-and-evidence'
+          : selectedCardOwnsRelationSummary &&
+              (label.count <= 1 || compactRelationLabelViewport)
+            ? 'selected-card-summary-owns-count'
+            : 'relation-label-shows-count';
+        const visibleLabelText = selected
+          ? selectedRelationLabelVisibleText({
+              count: label.count,
+              evidenceChipText,
+              label: formatRelationVisibleLabel(label.relationType),
+            })
+          : relationLabelVisibleCountPolicy === 'selected-card-summary-owns-count'
+            ? formatRelationVisibleLabel(label.relationType)
+            : selectedRelationLabelVisibleText({
+                count: label.count,
+                evidenceChipText,
+                label: formatRelationVisibleLabel(label.relationType),
+              });
+        const relationLabelFactSegmentation =
+          relationLabelVisibleCountPolicy === 'selected-card-summary-owns-count'
+            ? 'type-visible>metadata-hidden'
+            : 'type-count-evidence-visible>gate-hidden';
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
-        const agentGateText = relationAgentGateChipText(agentGateKind);
+        const agentActionChipText = relationActionChipText(primaryCopyAction);
+        const relationAriaDetailText = [
+          relationQualityAriaText(quality),
+          relationEvidenceAriaLabel({
+            evidenceCount: label.evidenceCount,
+            state: evidenceState,
+          }),
+          relationAgentGateAriaText(agentGateKind),
+          agentActionChipText,
+        ].join(' · ');
+        const agentGateRouteText = relationAgentGateRouteText(agentGateKind);
         const cliFallbackCommand = relationLabelCliFallbackCommand({
           action: primaryCopyAction,
           from: label.edgeSource,
@@ -2870,9 +9481,9 @@ export function SigmaSkeletonCards({
         });
         const visibleBadgeWidth = Math.max(
           RELATION_BADGE_MIN_WIDTH_PX,
-          labelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
+          visibleLabelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
             RELATION_BADGE_PAD_X_PX +
-            RELATION_BADGE_QUALITY_DOT_WIDTH_PX,
+            RELATION_BADGE_DIRECTION_CHIP_WIDTH_PX,
         );
         return (
           <button
@@ -2884,33 +9495,92 @@ export function SigmaSkeletonCards({
             data-relation-quality={quality}
             data-relation-evidence-state={evidenceState}
             data-relation-evidence-count={label.evidenceCount ?? 0}
+            data-relation-evidence-chip-text={evidenceChipText}
             data-relation-type={label.relationType}
             data-relation-type-label={labelText}
+            data-relation-label-visible-text={visibleLabelText}
+            data-relation-label-visible-count-policy={relationLabelVisibleCountPolicy}
+            data-relation-label-readable-text={`${labelText} · ${evidenceChipText}`}
             data-selected-relation={selected ? 'true' : 'false'}
-            data-agent-gate-kind={selected ? agentGateKind : undefined}
-            data-primary-copy-action={selected ? primaryCopyAction : undefined}
-            data-cli-fallback-command={selected ? cliFallbackCommand : undefined}
-            data-relation-fact-route={selected ? 'fact>evidence>gate>action' : undefined}
-            data-relation-fact-route-quality={selected ? quality : undefined}
-            data-relation-fact-route-evidence={selected ? evidenceState : undefined}
-            data-relation-fact-route-gate={selected ? agentGateKind : undefined}
-            data-relation-fact-route-action={selected ? primaryCopyAction : undefined}
-            data-relation-label-agent-gate-visible="false"
+            data-agent-gate-kind={agentGateKind}
+            data-primary-copy-action={primaryCopyAction}
+            data-cli-fallback-command={cliFallbackCommand}
+            data-relation-cli-fallback={cliFallbackCommand}
+            data-relation-label-handoff-contract="label-button-carries-mcp-cli-fallback"
+            data-relation-label-primary-action={primaryCopyAction}
+            data-relation-label-cli-fallback={cliFallbackCommand}
+            data-relation-source={label.edgeSource}
+            data-relation-target={label.edgeTarget}
+            data-relation-label-source={label.edgeSource}
+            data-relation-label-target={label.edgeTarget}
+            data-relation-label-type={label.relationType}
+            data-relation-label-count={label.count}
+            data-relation-label-route={`${label.edgeSource}>${label.edgeTarget}`}
+            data-relation-route={`${label.edgeSource}>${label.edgeTarget}`}
+            data-relation-mcp-action={primaryCopyAction}
+            data-relation-fact-route="fact>evidence>gate>action"
+            data-relation-fact-route-quality={quality}
+            data-relation-fact-route-evidence={evidenceState}
+            data-relation-fact-route-gate={agentGateKind}
+            data-relation-fact-route-action={primaryCopyAction}
+            data-relation-label-fact-segmentation={relationLabelFactSegmentation}
+            data-relation-label-direction-contract="edge-source-to-target-metadata"
+            data-relation-label-agent-gate-visible="metadata-only"
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             data-label-geometry-source="html-hit-target"
+            data-relation-label-card-clearance-token="--topology-relation-label-card-clearance"
             data-relation-label-density={selected ? 'focus-token' : 'scan-token'}
             data-relation-label-compact={selected ? 'false' : undefined}
+            data-relation-label-visual-owner={
+              selected ? 'selected-relation-overlay' : 'button-visible-badge'
+            }
+            data-relation-label-hit-target-contract={
+              selected
+                ? 'button-keeps-click-handoff-overlay-owns-visible-badge'
+                : 'button-owns-click-and-visible-badge'
+            }
+            data-relation-label-hit-width-policy={
+              selected ? 'preserve-hidden-badge-width' : undefined
+            }
+            data-relation-label-hit-width-px={selected ? visibleBadgeWidth : undefined}
+            data-relation-label-token-contract="hit-target-and-visible-badge-share-relation-label-tokens"
+            data-relation-label-pointer-contract="html-hit-target-click-selects-relation"
+            data-relation-label-surface-token="--topology-relation-label-surface"
+            data-relation-label-border-token="--topology-relation-label-border"
+            data-relation-label-shadow-token="--topology-relation-label-shadow"
+            data-relation-label-text-token="--topology-relation-label-text"
+            data-relation-label-selected-text-token={
+              selected ? '--topology-relation-label-selected-text' : undefined
+            }
+            data-relation-label-text-size-token="--topology-relation-label-text-size"
+            data-relation-label-hit-min-height-token="--topology-relation-label-hit-min-height"
+            data-relation-label-badge-height-token="--topology-relation-label-badge-height"
+            data-relation-label-padding-x-token="--topology-relation-label-padding-x"
+            data-relation-label-radius-token="--topology-relation-label-radius"
+            data-relation-label-selected-surface-token={
+              selected ? '--topology-relation-label-selected-surface' : undefined
+            }
+            data-relation-label-selected-border-token={
+              selected ? '--topology-relation-label-selected-border' : undefined
+            }
+            data-relation-label-selected-shadow-token={
+              selected ? '--topology-relation-label-selected-shadow' : undefined
+            }
+            data-relation-label-focus-ring-token="--topology-relation-label-focus-ring"
+            data-relation-label-hover-contract="compact-edge-tooltip"
             data-visible-badge-width={visibleBadgeWidth}
             data-visible-badge-height={RELATION_BADGE_HEIGHT_PX}
-            aria-label={`${tEdgeTooltip('relationAriaLabel', { label: labelText })} · ${quality} · ${evidenceText}${
-              selected
-                ? ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
-                : ''
-            }`}
-            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-[33px] items-center justify-center overflow-visible whitespace-nowrap bg-transparent font-mono text-[9px] uppercase tracking-[0.07em] transition-[opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
+            aria-label={`${tEdgeTooltip('relationAriaLabel', {
+              label: labelText,
+            })} · ${relationAriaDetailText}`}
+            className="pointer-events-auto absolute left-0 top-0 z-[4] inline-flex min-h-[var(--topology-relation-label-hit-min-height)] items-center justify-center overflow-visible whitespace-nowrap bg-transparent text-[length:var(--topology-relation-label-text-size)] font-medium leading-none tracking-normal transition-[opacity] duration-150 data-[drag-hit-disabled=true]:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-relation-label-focus-ring)] motion-reduce:transition-none"
             style={{
-              color: 'var(--color-text-secondary)',
-              opacity: selected ? 1 : 0,
+              color: selected
+                ? 'var(--topology-relation-label-selected-text)'
+                : 'var(--topology-relation-label-text)',
+              opacity: selected ? 1 : undefined,
+              pointerEvents: activeDragCluster !== null ? 'none' : 'auto',
+              width: selected ? visibleBadgeWidth : undefined,
             }}
             onClick={(event) => {
               event.preventDefault();
@@ -2926,39 +9596,123 @@ export function SigmaSkeletonCards({
               event.stopPropagation();
               event.nativeEvent.stopImmediatePropagation();
             }}
+            onMouseEnter={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              hoverRelation(label, {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+              });
+            }}
+            onMouseMove={(event) => {
+              hoverRelation(label, { x: event.clientX, y: event.clientY });
+            }}
+            onMouseLeave={() => hoverRelation(label, null)}
+            onFocus={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              hoverRelation(label, {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+              });
+            }}
+            onBlur={() => hoverRelation(label, null)}
           >
             <span
               aria-hidden="true"
               data-relation-label-visible-badge="true"
-              className="inline-flex h-6 max-w-full items-center justify-center gap-1 overflow-hidden rounded-full border px-1.5 shadow-[0_5px_14px_rgba(0,0,0,0.20)]"
+              data-relation-label-visible-badge-owner={
+                selected ? 'selected-overlay' : 'label-button'
+              }
+              data-relation-label-surface-token="--topology-relation-label-surface"
+              data-relation-label-border-token="--topology-relation-label-border"
+              data-relation-label-shadow-token="--topology-relation-label-shadow"
+              data-relation-label-text-token="--topology-relation-label-text"
+              data-relation-label-selected-text-token={
+                selected ? '--topology-relation-label-selected-text' : undefined
+              }
+              data-relation-label-text-size-token="--topology-relation-label-text-size"
+              data-relation-label-badge-height-token="--topology-relation-label-badge-height"
+              data-relation-label-padding-x-token="--topology-relation-label-padding-x"
+              data-relation-label-radius-token="--topology-relation-label-radius"
+              data-relation-label-selected-surface-token={
+                selected ? '--topology-relation-label-selected-surface' : undefined
+              }
+              data-relation-label-selected-border-token={
+                selected ? '--topology-relation-label-selected-border' : undefined
+              }
+              data-relation-label-selected-shadow-token={
+                selected ? '--topology-relation-label-selected-shadow' : undefined
+              }
+              data-relation-label-fact-segmentation={relationLabelFactSegmentation}
+              data-relation-label-direction-contract="edge-source-to-target-metadata"
+              data-relation-label-segment-gap-token="--topology-relation-label-segment-gap"
+              data-relation-label-segment-divider-token="--topology-relation-label-border"
+              data-relation-direction-surface-token="--topology-relation-direction-surface"
+              data-relation-direction-border-token="--topology-relation-direction-border"
+              data-relation-direction-text-token="--topology-relation-direction-text"
+              className={
+                selected
+                  ? 'hidden'
+                  : 'inline-flex h-[var(--topology-relation-label-badge-height)] max-w-full items-center justify-center gap-1.5 overflow-hidden rounded-[var(--topology-relation-label-radius)] border px-[var(--topology-relation-label-padding-x)] shadow-[var(--topology-relation-label-shadow)]'
+              }
               style={{
                 backgroundColor: selected
-                  ? 'rgba(139,151,255,0.16)'
-                  : 'var(--color-canvas)',
+                  ? 'var(--topology-relation-label-selected-surface)'
+                  : 'var(--topology-relation-label-surface)',
                 borderColor: selected
-                  ? 'rgba(139,151,255,0.92)'
-                  : 'var(--topology-card-border-selected-strong)',
+                  ? 'var(--topology-relation-label-selected-border)'
+                  : 'var(--topology-relation-label-border)',
                 boxShadow: selected
-                  ? '0 0 0 3px rgba(139,151,255,0.12), 0 10px 24px rgba(0,0,0,0.34)'
-                  : '0 6px 16px rgba(0,0,0,0.22)',
+                  ? 'var(--topology-relation-label-selected-shadow)'
+                  : 'var(--topology-relation-label-shadow)',
               }}
             >
               <span
                 data-relation-quality-dot
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(
+                data-dot-token={relationQualityDotToken(quality)}
+                data-glow-token={relationQualityGlowToken(quality)}
+                data-relation-label-segment="quality"
+                className={`sr-only ${relationQualityDotClassName(
                   quality,
                 )}`}
               />
-              <span className="min-w-0 truncate">{labelText}</span>
+              <span
+                aria-hidden="true"
+                data-relation-direction-glyph="source-to-target"
+                data-relation-label-segment="direction"
+                data-surface-token="--topology-relation-direction-surface"
+                data-border-token="--topology-relation-direction-border"
+                data-text-token="--topology-relation-direction-text"
+                className="sr-only"
+              />
+              <span
+                data-relation-label-type-text
+                data-relation-label-segment="type"
+                data-segment-divider-token="--topology-relation-label-border"
+                data-relation-label-type-text-contract="typed-fact-label-stays-readable"
+                className="shrink-0"
+              >
+                {visibleLabelText}
+              </span>
               <span
                 data-relation-evidence-glyph={evidenceState}
-                className="ml-0.5 inline-flex h-3.5 min-w-3.5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.045)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
-              >
-                {relationEvidenceGlyph({
-                  evidenceCount: label.evidenceCount,
-                  state: evidenceState,
-                })}
-              </span>
+                data-relation-label-segment="evidence"
+                data-relation-evidence-chip-contract="proof-state-token"
+                data-relation-evidence-chip-text={evidenceChipText}
+                data-surface-token="--topology-relation-evidence-chip-surface"
+                data-border-token="--topology-relation-evidence-chip-border"
+                data-text-token="--topology-relation-evidence-chip-text"
+                className="sr-only"
+              />
+              <span
+                data-relation-label-agent-gate={agentGateKind}
+                data-relation-label-segment="gate"
+                data-primary-copy-action={primaryCopyAction}
+                data-route-chip-text={agentGateRouteText}
+                data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
+                data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
+                data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
+                className="sr-only"
+              />
               {selected ? (
                 <>
                 <span
@@ -2983,16 +9737,15 @@ export function SigmaSkeletonCards({
                   />
                   <span
                     data-route-chip="gate"
-                    data-route-chip-text={agentGateText}
-                    data-relation-label-agent-gate={agentGateKind}
+                    data-route-chip-text={agentGateRouteText}
                     data-primary-copy-action={primaryCopyAction}
-                    className={`inline-flex h-3 min-w-[1.55rem] items-center justify-center rounded-full border px-0.5 ${relationAgentGateChipTone(
-                      agentGateKind,
-                    )}`}
+                    data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
+                    data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
+                    data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
                   />
                   <span
                     data-route-chip="action"
-                    data-route-chip-text={relationFactRouteText(primaryCopyAction)}
+                    data-route-chip-text={agentActionChipText}
                   />
                 </span>
                 </>
@@ -3002,15 +9755,35 @@ export function SigmaSkeletonCards({
         );
       })}
       {egoRelationLabels.map((label) => {
-        const selected =
-          selectedRelationEdgeId !== null && label.edgeId === selectedRelationEdgeId;
+        const selected = isSelectedRelationSurface(label);
         if (!selected) return null;
         const quality = label.relationQuality ?? 'supported';
         const evidenceState = relationEvidenceState(label);
+        const evidenceChipText = relationEvidenceVisibleText({
+          evidenceCount: label.evidenceCount,
+          state: evidenceState,
+        });
         const labelText = formatRelationLabel(label.relationType, label.count);
+        const visibleRelationTypeLabel = formatRelationVisibleLabel(label.relationType);
+        const visibleLabelText = selectedRelationLabelVisibleText({
+          count: label.count,
+          evidenceChipText,
+          label: visibleRelationTypeLabel,
+        });
+        const zoomLensLabelText = selectedRelationZoomLensLabelText({
+          count: label.count,
+          label: visibleRelationTypeLabel,
+        });
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
-        const agentGateText = relationAgentGateChipText(agentGateKind);
+        const agentActionChipText = relationActionChipText(primaryCopyAction);
+        const agentGateRouteText = relationAgentGateRouteText(agentGateKind);
+        const cliFallbackCommand = relationLabelCliFallbackCommand({
+          action: primaryCopyAction,
+          from: label.edgeSource,
+          relationType: label.relationType,
+          to: label.edgeTarget,
+        });
         return (
           <div
             key={`selected-relation-overlay:${label.key}`}
@@ -3021,44 +9794,148 @@ export function SigmaSkeletonCards({
             data-relation-quality={quality}
             data-relation-evidence-state={evidenceState}
             data-relation-evidence-count={label.evidenceCount ?? 0}
+            data-relation-evidence-chip-text={evidenceChipText}
             data-relation-type={label.relationType}
             data-relation-type-label={labelText}
+            data-relation-label-visible-text={visibleLabelText}
+            data-selected-relation-zoom-lens-label={
+              renderZoomLensCardCompactionActive ? 'compact-glyph' : 'full-label'
+            }
+            data-selected-relation-zoom-lens-label-contract="camera-zoom-in-uses-compact-relation-glyph"
+            data-selected-relation-zoom-lens-label-text={zoomLensLabelText}
+            data-relation-label-visible-count-policy="selected-relation-shows-count-and-evidence"
+            data-relation-label-readable-text={`${labelText} · ${evidenceChipText}`}
             data-agent-gate-kind={agentGateKind}
             data-primary-copy-action={primaryCopyAction}
+            data-cli-fallback-command={cliFallbackCommand}
+            data-relation-cli-fallback={cliFallbackCommand}
+            data-relation-label-cli-fallback={cliFallbackCommand}
+            data-relation-source={label.edgeSource}
+            data-relation-target={label.edgeTarget}
+            data-relation-label-source={label.edgeSource}
+            data-relation-label-target={label.edgeTarget}
+            data-relation-label-type={label.relationType}
+            data-relation-label-count={label.count}
+            data-relation-label-route={`${label.edgeSource}>${label.edgeTarget}`}
+            data-relation-route={`${label.edgeSource}>${label.edgeTarget}`}
+            data-relation-mcp-action={primaryCopyAction}
             data-relation-fact-route="fact>evidence>gate>action"
             data-relation-fact-route-quality={quality}
             data-relation-fact-route-evidence={evidenceState}
             data-relation-fact-route-gate={agentGateKind}
             data-relation-fact-route-action={primaryCopyAction}
+            data-selected-relation-label-handoff="ready"
+            data-selected-relation-label-gate={agentGateKind}
+            data-selected-relation-label-primary-action={primaryCopyAction}
+            data-selected-relation-label-cli-fallback={cliFallbackCommand}
+            data-selected-relation-label-fact-route="fact>evidence>gate>action"
+            data-selected-relation-label-quality={quality}
+            data-selected-relation-label-evidence={evidenceState}
+            data-selected-relation-handoff-contract="visible-overlay-carries-mcp-cli-fallback"
+            data-selected-relation-mcp-action={primaryCopyAction}
+            data-selected-relation-endpoint-source={label.edgeSource}
+            data-selected-relation-endpoint-target={label.edgeTarget}
+            data-selected-relation-endpoint-route={`${label.edgeSource}>${label.edgeTarget}`}
+            data-relation-label-fact-segmentation="type-visible>metadata-hidden"
+            data-relation-label-direction-contract="edge-source-to-target-metadata"
             data-relation-label-compact="false"
             data-relation-label-density="focus-token"
+            data-relation-label-visual-state={
+              renderZoomLensCardCompactionActive
+                ? 'zoom-lens-compact-glyph'
+                : 'full-selected-label'
+            }
+            data-relation-label-visual-owner="selected-relation-overlay"
+            data-relation-label-hit-target-contract="button-keeps-click-handoff-overlay-owns-visible-badge"
+            data-selected-relation-attention-contract="selected-overlay-wins-over-dimmed-context"
+            data-relation-label-selected-surface-token="--topology-relation-label-selected-surface"
+            data-relation-label-selected-border-token="--topology-relation-label-selected-border"
+            data-relation-label-selected-shadow-token="--topology-relation-label-selected-shadow"
+            data-relation-label-selected-text-token="--topology-relation-label-selected-text"
+            data-relation-label-text-size-token="--topology-relation-label-text-size"
+            data-relation-label-hit-min-height-token="--topology-relation-label-hit-min-height"
+            data-relation-label-padding-x-token="--topology-relation-label-padding-x"
+            data-relation-label-radius-token="--topology-relation-label-radius"
+            data-selected-relation-halo-token="--topology-relation-label-selected-surface"
+            data-relation-label-segment-gap-token="--topology-relation-label-segment-gap"
+            data-relation-label-segment-divider-token="--topology-relation-label-border"
+            data-relation-direction-surface-token="--topology-relation-direction-surface"
+            data-relation-direction-border-token="--topology-relation-direction-border"
+            data-relation-direction-text-token="--topology-relation-direction-text"
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full border px-1.5 font-mono text-[9px] uppercase tracking-[0.07em] text-[color:var(--color-text-secondary)]"
+            className={`pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[var(--topology-relation-label-hit-min-height)] items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[var(--topology-relation-label-radius)] border px-[var(--topology-relation-label-padding-x)] text-[length:var(--topology-relation-label-text-size)] font-medium leading-none tracking-normal text-[color:var(--topology-relation-label-selected-text)] ${
+              renderZoomLensCardCompactionActive
+                ? '!h-7 !min-h-7 !w-10 !gap-0 !rounded-full !px-0 !text-[0.66rem]'
+                : ''
+            }`}
             style={{
-              backgroundColor: 'rgba(139,151,255,0.16)',
-              borderColor: 'rgba(139,151,255,0.92)',
-              boxShadow:
-                '0 0 0 3px rgba(139,151,255,0.12), 0 10px 24px rgba(0,0,0,0.34)',
+              backgroundColor: 'var(--topology-relation-label-selected-surface)',
+              borderColor: 'var(--topology-relation-label-selected-border)',
+              boxShadow: 'var(--topology-relation-label-selected-shadow)',
               opacity: 1,
               visibility: 'visible',
             }}
           >
             <span
               aria-hidden="true"
-              className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(
+              data-relation-quality-dot
+              data-dot-token={relationQualityDotToken(quality)}
+              data-glow-token={relationQualityGlowToken(quality)}
+              data-relation-label-segment="quality"
+              className={`sr-only ${relationQualityDotClassName(
                 quality,
               )}`}
             />
-            <span className="min-w-0 truncate">{labelText}</span>
             <span
               aria-hidden="true"
-              className="ml-0.5 inline-flex h-3.5 min-w-3.5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.045)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+              data-relation-direction-glyph="source-to-target"
+              data-relation-label-segment="direction"
+              data-surface-token="--topology-relation-direction-surface"
+              data-border-token="--topology-relation-direction-border"
+              data-text-token="--topology-relation-direction-text"
+              className="sr-only"
+            />
+            <span
+              data-relation-label-type-text
+              data-relation-label-segment="type"
+              data-segment-divider-token="--topology-relation-label-border"
+              data-relation-label-type-text-contract="typed-fact-label-stays-readable"
+              className={renderZoomLensCardCompactionActive ? 'sr-only' : 'shrink-0'}
             >
-              {relationEvidenceGlyph({
-                evidenceCount: label.evidenceCount,
-                state: evidenceState,
-              })}
+              {visibleLabelText}
             </span>
+            <span
+              aria-hidden="true"
+              data-selected-relation-zoom-lens-label-glyph
+              data-selected-relation-zoom-lens-label-glyph-contract="compact-map-label-inspector-keeps-full-fact"
+              className={`font-mono font-semibold leading-none ${
+                renderZoomLensCardCompactionActive ? '' : 'hidden'
+              }`}
+            >
+              {zoomLensLabelText}
+            </span>
+            <span
+              aria-hidden="true"
+              data-relation-evidence-glyph={evidenceState}
+              data-relation-label-segment="evidence"
+              data-relation-evidence-chip-contract="proof-state-token"
+              data-relation-evidence-chip-text={evidenceChipText}
+              data-surface-token="--topology-relation-evidence-chip-surface"
+              data-border-token="--topology-relation-evidence-chip-border"
+              data-text-token="--topology-relation-evidence-chip-text"
+              className="sr-only"
+            />
+            <span
+              aria-hidden="true"
+              data-relation-label-agent-gate={agentGateKind}
+              data-relation-label-segment="gate"
+              data-primary-copy-action={primaryCopyAction}
+              data-route-chip-text={agentActionChipText}
+              data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
+              data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
+              data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
+              className="sr-only"
+            />
             <span
               aria-hidden="true"
               data-relation-quality-chip={quality}
@@ -3083,16 +9960,15 @@ export function SigmaSkeletonCards({
               />
               <span
                 data-route-chip="gate"
-                data-route-chip-text={agentGateText}
-                data-relation-label-agent-gate={agentGateKind}
+                data-route-chip-text={agentGateRouteText}
                 data-primary-copy-action={primaryCopyAction}
-                className={`inline-flex h-3 min-w-[1.55rem] items-center justify-center rounded-full border px-0.5 ${relationAgentGateChipTone(
-                  agentGateKind,
-                )}`}
+                data-surface-token={`${relationAgentGateTokenPrefix(agentGateKind)}-surface`}
+                data-border-token={`${relationAgentGateTokenPrefix(agentGateKind)}-border`}
+                data-text-token={`${relationAgentGateTokenPrefix(agentGateKind)}-text`}
               />
               <span
                 data-route-chip="action"
-                data-route-chip-text={relationFactRouteText(primaryCopyAction)}
+                data-route-chip-text={agentActionChipText}
               />
             </span>
           </div>
@@ -3107,7 +9983,7 @@ export function SigmaSkeletonCards({
             ? 'source'
             : resolvedPathTargetNodeId === nodeId
               ? 'target'
-              : pathWorkflowActive
+              : pathWorkflowActive && !pathResultReady
                 ? 'candidate'
                 : 'none';
         const pathRoleContract =
@@ -3133,6 +10009,7 @@ export function SigmaSkeletonCards({
         const pathBadgeLabel =
           pathRole === 'source' ? 'A' : pathRole === 'target' ? 'B' : '';
         const dimmed = ego !== null && !ego.slugs.has(nodeId);
+        const healthRepairAuditTarget = resolvedHealthRepairTargetNodeId === nodeId;
         const dockParentNodeId = card.dock ? resolveNodeId(card.dock.parentId) : null;
         const dragging =
           activeDragCluster?.has(nodeId) ||
@@ -3144,13 +10021,166 @@ export function SigmaSkeletonCards({
             : activeDragCluster?.has(nodeId)
               ? 'movable'
               : 'dock-follower';
+        const dragRelationLinkCount =
+          activeHullConnectors.length + activeDragTensionConnectors.length;
+        const dragLinkedCardCount = activeDragCluster
+          ? Math.max(0, activeDragCluster.size - 1)
+          : 0;
+        const dragInteractionSummary =
+          dragging && activeDragCluster
+            ? tEdgeTooltip('dragInteractionSummary', {
+                cards: activeDragCluster.size,
+                relations: dragRelationLinkCount,
+                title: card.title,
+              })
+            : undefined;
+        const dragInteractionCue =
+          dragging && dragRole === 'root' && activeDragMotion && activeDragCluster
+            ? tEdgeTooltip('dragInteractionCue', {
+                cards: dragLinkedCardCount,
+                relations: dragRelationLinkCount,
+              })
+            : undefined;
+        const dragReadableRootCard = dragging && dragRole === 'root';
         const dragSettled = dragSettledSlugs.has(nodeId);
-        // 카드 표면 = kind 틴트의 *정량 토큰* (bg 8% · border 18% · dot 100%)
-        // — 틴트가 칩마다 다른 강도로 보이면 4색 칩 더미가 된다 (패널 #5).
+        const overviewDragLinkedContext =
+          activeDragMotion &&
+          activeDragCluster !== null &&
+          selectedSlug === null &&
+          activeDragFreeContextCount > 0 &&
+          !dragging &&
+          graph.hasNode(nodeId) &&
+          Array.from(activeDragCluster).some((member) => {
+            if (!graph.hasNode(member) || member === nodeId) return false;
+            return graph.hasEdge(member, nodeId) || graph.hasEdge(nodeId, member);
+          });
+        const dragReactiveContext =
+          activeDragMotion &&
+          activeDragCluster !== null &&
+          !dragging &&
+          (dimmed || overviewDragLinkedContext);
+        const selectedRelationEndpointRole =
+          selectedRelationLabelHandoff?.source === nodeId
+            ? 'source'
+            : selectedRelationLabelHandoff?.target === nodeId
+              ? 'target'
+              : undefined;
+        const selectedRelationEndpointRoleLabel = selectedRelationEndpointRole
+          ? SELECTED_RELATION_ENDPOINT_ROLE_LABEL[selectedRelationEndpointRole]
+          : undefined;
+        const selectedRelationEndpointRoleMarkLabel = selectedRelationEndpointRole
+          ? SELECTED_RELATION_ENDPOINT_ROLE_MARK_LABEL[selectedRelationEndpointRole]
+          : undefined;
+        const pathEndpoint = pathRole === 'source' || pathRole === 'target';
+        const selectedFocusCompanion =
+          selectedRelationEdgeId === null &&
+          selectedSlug !== null &&
+          selectedFocusCluster !== null &&
+          selectedFocusCluster.has(nodeId) &&
+          !selected &&
+          card.tier === 3 &&
+          !pathWorkflowActive &&
+          !healthRepairTarget;
+        const selectedFocusContextDomain =
+          selectedRelationEdgeId === null &&
+          selectedSlug !== null &&
+          selectedFocusCenterActive &&
+          !selected &&
+          card.tier === 1 &&
+          !pathWorkflowActive &&
+          !healthRepairTarget;
+        const kindDescription = describeKind?.(card.kind) ?? card.kind;
+        const kindBadgeLabel =
+          describeKindBadge?.(card.kind) ??
+          kindDescription.split('·')[0]?.trim() ??
+          FALLBACK_KIND_BADGE_LABEL[card.kind];
+        const kindPinGlyph = resolveKindPinGlyph(card.kind, kindBadgeLabel);
+        // 카드 표면 = kind 틴트 × tier alpha 의 *정량 토큰*.
+        // 상위 개념일수록 표면을 더 세게 주어 지도가 태그 더미가 아니라
+        // project → domain → capability → element 위계로 먼저 읽히게 한다.
         const fill = ontologyFillTone(card.kind === 'project' ? 'project' : card.kind);
-        const tintBg = withAlpha(fill, 0.08);
-        const tintBorder = withAlpha(fill, 0.18);
-        const tintBorderHover = withAlpha(fill, 0.38);
+        const surfaceAlpha = TIER_SURFACE_ALPHA[card.tier];
+        const tintBg = withAlpha(fill, surfaceAlpha.bg);
+        const tintBorder = withAlpha(fill, surfaceAlpha.border);
+        const tintBorderHover = withAlpha(fill, surfaceAlpha.hoverBorder);
+        const selectedRelationSummaryText =
+          selected && selectedRelationSummary
+            ? tEdgeTooltip('selectedCardRelationSummaryAction', {
+                relations: selectedRelationSummary.relationCount,
+                types: selectedRelationSummary.typeCount,
+              })
+            : null;
+        const selectedRelationSummaryCompactText =
+          selected && selectedRelationSummary
+            ? tEdgeTooltip('selectedCardRelationSummaryCompact', {
+                relations: selectedRelationSummary.relationCount,
+                types: selectedRelationSummary.typeCount,
+              })
+            : null;
+        const selectedRelationSummaryOwnsMeta =
+          selected && selectedRelationSummary !== null;
+        const selectedCardAccessibleLabel =
+          selectedRelationSummaryOwnsMeta && selectedRelationSummaryText
+            ? `${kindDescription} · ${card.title} · ${selectedRelationSummaryText}`
+            : undefined;
+        const selectedFocusFixedGeography =
+          selectedFocusCenterActive &&
+          selectedRelationEdgeId === null &&
+          !pathWorkflowActive &&
+          !healthRepairTarget;
+        const selectedMapFixedGeography =
+          selectedMapFixedGeographyActive &&
+          selectedRelationEdgeId === null &&
+          !pathWorkflowActive &&
+          !healthRepairTarget;
+        const overviewMapFixedGeography =
+          selectedSlug === null &&
+          selectedRelationEdgeId === null &&
+          !pathWorkflowActive &&
+          !healthRepairTarget;
+        const cardDragHitDisabled =
+          activeDragCluster !== null ||
+          selectedFocusFixedGeography ||
+          selectedMapFixedGeography ||
+          overviewMapFixedGeography;
+        const coreHierarchyCountHidden = card.tier <= 1;
+        const cardSpacing = selectedRelationSummaryOwnsMeta
+          ? SELECTED_FOCUS_CARD_SPACING
+          : TIER_CARD_SPACING[card.tier];
+        const zoomLensCriticalCard =
+          selected ||
+          dragReadableRootCard ||
+          pathEndpoint ||
+          healthRepairAuditTarget ||
+          selectedFocusCompanion ||
+          (selectedFocusContextDomain && !renderZoomLensCardCompactionActive);
+        const zoomLensContextAnchorCard = !zoomLensCriticalCard && card.tier >= 1;
+        const zoomLensFocusContextRootCard =
+          !zoomLensCriticalCard && selectedSlug !== null && card.tier === 0;
+        const zoomLensSelectedRelationEndpointCard =
+          selectedRelationEndpointRole !== undefined;
+        const zoomLensEligible =
+          zoomLensContextAnchorCard ||
+          zoomLensFocusContextRootCard ||
+          zoomLensSelectedRelationEndpointCard;
+        const zoomLensProximitySource =
+          zoomLensEligible && graph.hasNode(nodeId)
+            ? selectedSlug !== null &&
+              nodeId !== selectedSlug &&
+              graph.hasNode(selectedSlug) &&
+              (graph.hasEdge(selectedSlug, nodeId) ||
+                graph.hasEdge(nodeId, selectedSlug))
+                ? selectedSlug
+                : (cards.find(
+                    (candidate) =>
+                      candidate.tier === 0 &&
+                      candidate.id !== nodeId &&
+                      graph.hasNode(candidate.id) &&
+                      (graph.hasEdge(candidate.id, nodeId) ||
+                        graph.hasEdge(nodeId, candidate.id)),
+                  )?.id ?? null)
+            : null;
+        const zoomLensSelectedNeighborPin = zoomLensProximitySource !== null;
         return (
           <button
             key={card.id}
@@ -3166,20 +10196,259 @@ export function SigmaSkeletonCards({
             data-dock-index={card.dock?.index}
             data-dock-total={card.dock?.total}
             data-selected={selected ? 'true' : 'false'}
+            data-selected-focus-fixed-geography={
+              selectedFocusFixedGeography ? 'true' : undefined
+            }
+            data-selected-focus-fixed-geography-contract={
+              selectedFocusFixedGeography
+                ? 'selected-focus-card-stays-on-deterministic-map-slot'
+                : undefined
+            }
+            data-selected-focus-fixed-geography-drag-policy={
+              selectedFocusFixedGeography
+                ? 'ignore-card-drag-preserve-layout'
+                : undefined
+            }
+            data-selected-map-fixed-geography={
+              selectedMapFixedGeography ? 'true' : undefined
+            }
+            data-selected-map-fixed-geography-contract={
+              selectedMapFixedGeography
+                ? 'selected-map-card-stays-on-deterministic-map-slot'
+                : undefined
+            }
+            data-selected-map-fixed-geography-drag-policy={
+              selectedMapFixedGeography
+                ? 'ignore-card-drag-preserve-layout'
+                : undefined
+            }
+            data-drag-hit-disabled={
+              cardDragHitDisabled ? 'true' : undefined
+            }
+            data-drag-hit-disabled-contract={
+              selectedFocusFixedGeography ||
+              selectedMapFixedGeography ||
+              overviewMapFixedGeography
+                ? 'fixed-canvas-geography-removes-card-drag-affordance'
+                : undefined
+            }
+            data-overview-map-fixed-geography-drag={
+              overviewMapFixedGeography ? 'true' : undefined
+            }
+            data-overview-map-fixed-geography-drag-policy={
+              overviewMapFixedGeography
+                ? 'ignore-card-drag-preserve-canvas-layout'
+                : undefined
+            }
+            data-zoom-lens-eligible={zoomLensEligible ? 'true' : 'false'}
+            data-zoom-lens-pin-proximity={
+              zoomLensSelectedNeighborPin ? 'critical-neighbor' : undefined
+            }
+            data-zoom-lens-pin-proximity-source={
+              zoomLensProximitySource ?? undefined
+            }
+            data-zoom-lens-card-contract={
+              dragReadableRootCard
+                ? 'drag-root-stays-readable-during-overview-density'
+                : selectedFocusContextDomain && renderZoomLensCardCompactionActive
+                  ? 'focus-context-domain-becomes-waypoint-pin-on-camera-zoom-in'
+                : zoomLensSelectedRelationEndpointCard
+                ? 'selected-relation-endpoint-becomes-role-mark-on-camera-zoom-in'
+                : zoomLensEligible
+                ? card.tier >= 2
+                  ? 'noncritical-detail-card-becomes-kind-pin-on-camera-zoom-in'
+                  : 'noncritical-context-card-becomes-kind-pin-on-camera-zoom-in'
+                : zoomLensCriticalCard
+                  ? 'critical-card-stays-full-on-camera-zoom-in'
+                  : 'core-anchor-card-stays-readable-on-camera-zoom-in'
+            }
             data-path-workflow={pathWorkflowActive ? 'true' : 'false'}
             data-path-role={pathRole}
             data-path-role-contract={pathRoleContract}
+            data-path-endpoint-max-width-token={
+              pathEndpoint ? '--topology-path-endpoint-card-max-width' : undefined
+            }
             data-path-next-action={pathNextAction}
+            data-card-layout-size-key={[
+              card.title,
+              card.kind,
+              card.tier,
+              card.count ?? '',
+              card.anchor ?? 'center',
+              dockParentNodeId ?? '',
+              card.dock?.side ?? '',
+              card.dock?.index ?? '',
+              card.dock?.total ?? '',
+              selected ? 'selected' : 'default',
+              selectedRelationSummaryOwnsMeta
+                ? `${selectedRelationSummary?.relationCount ?? 0}:${
+                    selectedRelationSummary?.typeCount ?? 0
+                  }`
+                : '',
+              pathRole,
+              healthRepairAuditTarget ? healthRepairTarget?.kind ?? 'repair' : '',
+              selectedRelationEndpointRole ?? '',
+            ].join('|')}
             data-path-attention-layer={
               pathWorkflowActive && pathRole !== 'none' ? 'focus-path-state' : undefined
             }
             data-path-anchor={pathRole === 'source' || pathRole === 'target' ? pathRole : undefined}
             data-path-badge-label={pathBadgeLabel || undefined}
             data-dimmed={dimmed ? 'true' : 'false'}
+            data-health-repair-audit-target={
+              healthRepairAuditTarget ? 'true' : undefined
+            }
+            data-health-repair-audit-kind={
+              healthRepairAuditTarget ? healthRepairTarget?.kind : undefined
+            }
+            data-health-repair-audit-contract={
+              healthRepairAuditTarget ? 'panel-target-card-highlight' : undefined
+            }
+            data-health-repair-audit-badge={
+              healthRepairAuditTarget ? tEdgeTooltip('healthRepairAuditBadge') : undefined
+            }
+            data-health-repair-audit-badge-contract={
+              healthRepairAuditTarget ? 'inline-card-state-label' : undefined
+            }
             data-drag-cluster={dragging ? 'true' : 'false'}
             data-drag-cluster-role={dragRole}
+            data-drag-readable-root-contract={
+              dragReadableRootCard
+                ? 'grabbed-node-stays-readable-during-overview-density-drag'
+                : undefined
+            }
+            data-drag-interaction-contract={
+              dragging ? 'card-announces-connected-ontology-drag' : undefined
+            }
+            data-drag-interaction-summary={dragInteractionSummary}
+            data-drag-interaction-cluster-size={
+              dragging && activeDragCluster ? activeDragCluster.size : undefined
+            }
+            data-drag-interaction-cue-contract={
+              dragInteractionCue
+                ? 'root-card-shows-linked-count-during-drag'
+                : undefined
+            }
+            data-drag-interaction-cue-visible={
+              dragInteractionCue ? 'true' : undefined
+            }
+            data-drag-interaction-cue-text={dragInteractionCue}
+            data-drag-interaction-linked-card-count={
+              dragInteractionCue ? dragLinkedCardCount : undefined
+            }
+            data-drag-interaction-relation-link-count={
+              dragging ? dragRelationLinkCount : undefined
+            }
             data-dragging-active={dragging && activeDragMotion ? 'true' : 'false'}
             data-drag-pushed={dragSettled ? 'true' : 'false'}
+            data-drag-reactive-context={dragReactiveContext ? 'true' : 'false'}
+            data-drag-reactive-context-role={
+              dragReactiveContext ? 'surrounding-physics-response' : undefined
+            }
+            data-drag-reactive-context-opacity-token={
+              dragReactiveContext ? DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN : undefined
+            }
+            data-drag-reactive-context-visual-contract={
+              dragReactiveContext ? 'reactive-context-uses-border-ring' : undefined
+            }
+            data-drag-reactive-context-visual-token={
+              dragReactiveContext ? DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN : undefined
+            }
+            data-drag-reactive-motion={dragReactiveContext ? 'armed' : 'false'}
+            data-drag-reactive-motion-max-offset-token={
+              dragReactiveContext ? DRAG_REACTIVE_MOTION_MAX_OFFSET_TOKEN : undefined
+            }
+            data-selected-relation-endpoint-role-badge-visible={
+              selectedRelationEndpointRole ? 'true' : undefined
+            }
+            data-selected-relation-endpoint={
+              selectedRelationEndpointRole ? 'true' : undefined
+            }
+            data-selected-relation-endpoint-role-badge-text={
+              selectedRelationEndpointRoleLabel
+            }
+            data-selected-relation-endpoint-zoom-lens-role-mark-text={
+              selectedRelationEndpointRoleMarkLabel
+            }
+            data-selected-relation-endpoint-zoom-lens-role-mark-label={
+              selectedRelationEndpointRoleLabel
+            }
+            data-card-selection-box-policy="boxless-border-state"
+            data-drag-wash-token={
+              dragging || dragSettled
+                ? activeDragMotion && dragging
+                  ? '--topology-card-drag-active-wash'
+                  : '--topology-card-drag-wash'
+                : undefined
+            }
+            data-card-readable-width-contract="tier-token-preserves-title-lane"
+            data-card-desktop-title-contract={
+              card.tier <= 2 ? 'core-ontology-label-readable-at-16x9' : undefined
+            }
+            data-card-selected-title-priority={
+              selectedRelationSummaryOwnsMeta
+                ? 'selected-title-before-subtree-count'
+                : undefined
+            }
+            data-selected-focus-companion-readable-title={
+              selectedFocusCompanion ? 'true' : undefined
+            }
+            data-selected-focus-context-readable-title={
+              selectedFocusContextDomain ? 'true' : undefined
+            }
+            data-card-max-width-token={
+              selectedRelationSummaryOwnsMeta
+                ? SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN
+                : pathEndpoint
+                ? '--topology-path-endpoint-card-max-width'
+                : healthRepairAuditTarget
+                ? HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN
+                : selectedFocusCompanion
+                ? SELECTED_FOCUS_COMPANION_CARD_MAX_WIDTH_TOKEN
+                : TIER_CARD_MAX_WIDTH_TOKEN[card.tier]
+            }
+            data-card-spacing-contract="css-tokenized-block-rhythm"
+            data-card-gap-token="--topology-card-gap"
+            data-card-padding-x-token="--topology-card-padding-x"
+            data-card-padding-y-token="--topology-card-padding-y"
+            data-card-min-block-size-token="--topology-card-min-block-size"
+            data-card-radius-token="--topology-card-radius"
+            data-card-block-padding-contract={
+              selectedRelationSummaryOwnsMeta
+                ? 'selected-card-balanced-y-padding'
+                : undefined
+            }
+            data-card-hidden-count-policy={
+              selectedRelationSummaryOwnsMeta
+                ? 'direct-relation-summary-replaces-subtree-count'
+                : undefined
+            }
+            data-card-selected-quiet-state={
+              selected && !dragging && !dragSettled
+                ? 'relation-first-borderless-focus'
+                : undefined
+            }
+            data-card-selected-quiet-border-token={
+              selected && !dragging && !dragSettled
+                ? SELECTED_FOCUS_QUIET_BORDER_TOKEN
+                : undefined
+            }
+            data-card-selected-quiet-wash-token={
+              selected && !dragging && !dragSettled
+                ? SELECTED_FOCUS_QUIET_WASH_TOKEN
+                : undefined
+            }
+            data-card-accessible-label-contract={
+              selectedRelationSummaryOwnsMeta
+                ? 'selected-card-kind-title-relation-summary'
+                : undefined
+            }
+            data-card-accessible-child-policy={
+              selectedRelationSummaryOwnsMeta
+                ? 'single-button-label-owns-visible-fragments'
+                : undefined
+            }
+            aria-label={selectedCardAccessibleLabel}
             onClick={(event) => {
               event.stopPropagation();
               if (event.currentTarget.dataset.surfaceHidden === 'true') return;
@@ -3199,44 +10468,134 @@ export function SigmaSkeletonCards({
               }
               onSelect?.(nodeId);
             }}
+            onDoubleClick={(event) => {
+              event.stopPropagation();
+              onExpandRequest?.(nodeId);
+            }}
             onMouseEnter={(event) => {
               if (event.currentTarget.dataset.surfaceHidden === 'true') return;
               if (dragRef.current || activeDragCluster) return;
               setHovered({ card, nodeId });
             }}
             onMouseLeave={() => setHovered(null)}
+            onWheel={handleCardWheel}
             onPointerDown={(event) => {
               event.preventDefault();
               event.stopPropagation();
               setHovered(null);
               if (event.currentTarget.dataset.surfaceHidden === 'true') return;
               if (event.button !== 0) return;
+              if (
+                event.currentTarget.dataset.overviewDensityFixedGeography === 'true' ||
+                event.currentTarget.dataset.overviewMapFixedGeographyDrag === 'true'
+              ) {
+                containerRef.current?.setAttribute(
+                  'data-overview-density-fixed-geography-drag-attempt',
+                  'ignored',
+                );
+                return;
+              }
+              if (event.currentTarget.dataset.selectedFocusContextRail === 'true') {
+                containerRef.current?.setAttribute(
+                  'data-selected-focus-context-rail-drag-attempt',
+                  'ignored',
+                );
+                return;
+              }
+              if (event.currentTarget.dataset.selectedFocusFixedGeography === 'true') {
+                containerRef.current?.setAttribute(
+                  'data-selected-focus-fixed-geography-drag-attempt',
+                  'ignored',
+                );
+                return;
+              }
+              if (event.currentTarget.dataset.selectedMapFixedGeography === 'true') {
+                containerRef.current?.setAttribute(
+                  'data-selected-map-fixed-geography-drag-attempt',
+                  'ignored',
+                );
+                return;
+              }
               clearActiveDragCluster();
               const rootSlug = dockParentNodeId ?? nodeId;
               if (!graph.hasNode(rootSlug)) return;
-              const movingGroup = collectDraggedCluster(
-                graph,
-                rootSlug,
-                buildMovableNodeIds(),
-                buildVisibleCardTierByNodeId(),
+	              const movableNodeIds = buildMovableNodeIds();
+	              const tierByNodeId = buildVisibleCardTierByNodeId();
+	              const cardElements = collectSkeletonCardElementIndex(containerRef.current);
+	              const movingGroup = collectDraggedCluster(
+	                graph,
+	                rootSlug,
+                movableNodeIds,
+                tierByNodeId,
               );
+              const rootTier = tierByNodeId.get(rootSlug);
+              const freeContextCount = Array.from(movableNodeIds).filter(
+                (movableNodeId) => !movingGroup.has(movableNodeId),
+              ).length;
+              const dragClusterPolicy =
+                rootTier === 0 && freeContextCount > 0
+                  ? 'root-direct-neighbors-pin-free-context'
+                  : 'connected-cluster-pin';
+              const dockDragSnapshots = snapshotDockDragPositions(
+                containerRef.current,
+                movingGroup,
+                cardElements.all,
+              );
+              setDragFrameMarkerSnapshot({
+                domIndexSize: cardElements.all.length,
+                lastDomIndexSize: cardElements.all.length,
+                lastSnapshotCount: dockDragSnapshots.size,
+                snapshotCount: dockDragSnapshots.size,
+              });
               dragRef.current = {
                 sourceSlug: nodeId,
                 rootSlug,
-                rootTitle: event.currentTarget.title || nodeId,
                 lastX: event.clientX,
                 lastY: event.clientY,
                 travel: 0,
-                dockDragSnapshots: snapshotDockDragPositions(
-                  containerRef.current,
-                  movingGroup,
-                ),
+                reactiveMotionDx: 0,
+                reactiveMotionDy: 0,
+                viewportPreviewActive:
+                  movingGroup.size >= DRAG_LARGE_CLUSTER_CLAMP_THRESHOLD ||
+                  dragClusterPolicy === 'root-direct-neighbors-pin-free-context',
+                rootPriorityClamp:
+                  dragClusterPolicy === 'root-direct-neighbors-pin-free-context',
+                viewportPreviewDx: 0,
+                viewportPreviewDy: 0,
+                rootStartViewportX: sigma.graphToViewport({
+                  x: graph.getNodeAttributes(rootSlug).x,
+                  y: graph.getNodeAttributes(rootSlug).y,
+                }).x,
+                rootStartViewportY: sigma.graphToViewport({
+                  x: graph.getNodeAttributes(rootSlug).x,
+                  y: graph.getNodeAttributes(rootSlug).y,
+                }).y,
+	                dockDragSnapshots,
+	                cardElements,
+	                movedGroup: movingGroup,
+                movableNodeIds,
+                tierByNodeId,
               };
               setActiveDragRootSlug(rootSlug);
-              setActiveDragRootTitle(event.currentTarget.title || nodeId);
+              setActiveDragClusterPolicy(dragClusterPolicy);
+              setActiveDragFreeContextCount(freeContextCount);
               setActiveDragMotion(false);
               activeDragMotionRef.current = false;
               setActiveDragCluster(movingGroup);
+              onDragClusterStart?.(
+                snapshotDraggedClusterPositions(graph, movingGroup),
+              );
+              const physicsSynced = Boolean(
+                onDragClusterStart && onDragClusterMove && onDragClusterEnd,
+              );
+              setDragPhysicsSyncActive(physicsSynced);
+              const container = containerRef.current;
+              if (container) {
+                container.dataset.activeDragClusterSize = String(movingGroup.size);
+                container.dataset.dragPhysicsSyncActive = physicsSynced
+                  ? 'true'
+                  : 'false';
+              }
               try {
                 event.currentTarget.setPointerCapture(event.pointerId);
               } catch {
@@ -3254,47 +10613,80 @@ export function SigmaSkeletonCards({
               drag.lastY = event.clientY;
               drag.travel += Math.abs(dx) + Math.abs(dy);
               if (drag.travel <= 4) return;
+              suppressClickRef.current = true;
               setHovered(null);
               if (!activeDragMotionRef.current) {
                 activeDragMotionRef.current = true;
                 setActiveDragMotion(true);
               }
-              const movableNodeIds = buildMovableNodeIds();
-              const tierByNodeId = buildVisibleCardTierByNodeId();
-              const movingGroup = collectDraggedCluster(
-                graph,
-                drag.rootSlug,
-                movableNodeIds,
-                tierByNodeId,
-              );
+              const movingGroup = drag.movedGroup;
               const delta = clampDraggedClusterDelta(
                 containerRef.current,
                 movingGroup,
                 dx,
                 dy,
+                drag.cardElements.all,
+                drag.rootSlug,
+                drag.rootPriorityClamp,
               );
+              const container = containerRef.current;
+              if (container) {
+                container.dataset.dragLastPointerDeltaX = String(dx);
+                container.dataset.dragLastPointerDeltaY = String(dy);
+                container.dataset.dragLastAppliedDeltaX = String(delta.dx);
+                container.dataset.dragLastAppliedDeltaY = String(delta.dy);
+              }
               if (delta.dx === 0 && delta.dy === 0) return;
+              drag.reactiveMotionDx += delta.dx;
+              drag.reactiveMotionDy += delta.dy;
+              if (drag.viewportPreviewActive) {
+                drag.viewportPreviewDx += delta.dx;
+                drag.viewportPreviewDy += delta.dy;
+                if (container) {
+                  container.dataset.dragPreviewScope =
+                    'viewport-offset-for-large-cluster';
+                  container.dataset.dragPreviewOffsetX = String(drag.viewportPreviewDx);
+                  container.dataset.dragPreviewOffsetY = String(drag.viewportPreviewDy);
+                }
+              }
               const movedGroup = moveDraggedCluster(
                 graph,
                 drag.rootSlug,
                 delta.dx,
                 delta.dy,
                 sigma,
-                movableNodeIds,
-                tierByNodeId,
+                drag.movableNodeIds,
+                drag.tierByNodeId,
+                movingGroup,
               );
-              reposition();
-              const pushedSlugs = pushCardsAwayFromDraggedCluster(
-                containerRef.current,
-                graph,
-                sigma,
-                movedGroup,
-                movableNodeIds,
-              );
-              if (pushedSlugs.size > 0) {
-                reposition();
-                markDragSettled(pushedSlugs);
+              drag.movedGroup = movedGroup;
+              if (container) {
+                container.dataset.activeDragClusterSize = String(movedGroup.size);
               }
+              onDragClusterMove?.(
+                snapshotDraggedClusterPositions(graph, movedGroup),
+              );
+              if (repositionRafRef.current !== null) {
+                if (container) {
+                  container.dataset.dragRepositionPolicy = 'raf-coalesced-pointer-move';
+                  container.dataset.dragRepositionCoalesced = 'true';
+                }
+                return;
+              }
+              if (container) {
+                container.dataset.dragRepositionPolicy = 'raf-coalesced-pointer-move';
+                container.dataset.dragRepositionCoalesced = 'false';
+              }
+              repositionRafRef.current = window.requestAnimationFrame(() => {
+                repositionRafRef.current = null;
+                const currentContainer = containerRef.current;
+                if (currentContainer) {
+                  currentContainer.dataset.dragRepositionPolicy =
+                    'raf-coalesced-pointer-move';
+                  currentContainer.dataset.dragRepositionCoalesced = 'false';
+                }
+                reposition();
+              });
             }}
             onPointerUp={(event) => {
               event.preventDefault();
@@ -3306,52 +10698,112 @@ export function SigmaSkeletonCards({
             onPointerCancel={(event) => {
               event.preventDefault();
               event.stopPropagation();
+              const drag = dragRef.current;
+              if (drag) {
+                onDragClusterEnd?.(drag.movedGroup);
+              }
               dragRef.current = null;
               clearActiveDragCluster();
             }}
             onLostPointerCapture={() => releaseDrag(nodeId)}
-            title={card.title}
+            title={selectedCardAccessibleLabel ?? card.title}
             style={
               {
                 zIndex: dragging
                   ? 9
                   : selected
                     ? 8
+                    : dragReactiveContext
+                      ? 1
                     : dimmed
                       ? 0
                       : TIER_Z_INDEX[card.tier],
                 fontSize: `calc(${TIER_FONT_PX[card.tier]}px * var(--topology-card-scale, 1))`,
+                '--topology-card-gap': cardSpacing.gap,
+                '--topology-card-padding-x': cardSpacing.paddingX,
+                '--topology-card-padding-y': cardSpacing.paddingY,
+                '--topology-card-min-block-size': cardSpacing.minBlockSize,
+                '--topology-card-radius': cardSpacing.radius,
+                [DRAG_REACTIVE_CONTEXT_OPACITY_TOKEN]: DRAG_REACTIVE_CONTEXT_OPACITY,
                 maxWidth:
-                  card.tier <= 1 ? 'var(--topology-anchor-card-max-width, 14rem)' : '12rem',
+                  selectedRelationSummaryOwnsMeta
+                    ? `var(${SELECTED_FOCUS_CARD_MAX_WIDTH_TOKEN})`
+                    : pathEndpoint
+                    ? 'var(--topology-path-endpoint-card-max-width)'
+                    : healthRepairAuditTarget
+                    ? `var(${HEALTH_REPAIR_CARD_MAX_WIDTH_TOKEN})`
+                    : selectedFocusCompanion
+                    ? `var(${SELECTED_FOCUS_COMPANION_CARD_MAX_WIDTH_TOKEN})`
+                    : `var(${TIER_CARD_MAX_WIDTH_TOKEN[card.tier]})`,
                 '--card-border': selected
-                  ? 'var(--topology-card-border-selected)'
+                  ? `var(${SELECTED_FOCUS_QUIET_BORDER_TOKEN})`
+                  : healthRepairAuditTarget
+                    ? 'var(--topology-health-repair-card-border)'
+                  : dragReactiveContext
+                    ? `var(${DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN})`
                   : tintBorder,
                 '--card-border-hover': selected
-                  ? 'var(--topology-card-border-selected-strong)'
+                  ? `var(${SELECTED_FOCUS_QUIET_BORDER_TOKEN})`
+                  : healthRepairAuditTarget
+                    ? 'var(--topology-health-repair-card-border-strong)'
+                  : dragReactiveContext
+                    ? `var(${DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN})`
                   : tintBorderHover,
+                boxShadow: dragReactiveContext
+                  ? `0 0 0 1px var(${DRAG_REACTIVE_CONTEXT_VISUAL_TOKEN})`
+                  : undefined,
               } as React.CSSProperties
             }
-            className={`pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
+            className={`group/skeleton-card pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default data-[overview-density-fixed-geography=true]:!cursor-default data-[overview-map-fixed-geography-drag=true]:!cursor-default data-[selected-focus-fixed-geography=true]:!cursor-default data-[selected-map-fixed-geography=true]:!cursor-default data-[selected-focus-context-rail=true]:!cursor-pointer data-[zoom-lens-active-card=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[zoom-lens-active-card=true]:!justify-center data-[zoom-lens-active-card=true]:!gap-0 data-[zoom-lens-active-card=true]:!overflow-hidden data-[zoom-lens-active-card=true]:!rounded-full data-[zoom-lens-active-card=true]:!p-0 data-[zoom-lens-active-card=true]:shadow-none data-[overview-collision-pin=true]:!h-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!min-h-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!w-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!max-w-[var(--topology-zoom-lens-pin-size)] data-[overview-collision-pin=true]:!justify-center data-[overview-collision-pin=true]:!gap-0 data-[overview-collision-pin=true]:!overflow-hidden data-[overview-collision-pin=true]:!rounded-full data-[overview-collision-pin=true]:!p-0 data-[overview-collision-pin=true]:shadow-none data-[zoom-lens-active-card=true]:data-[zoom-lens-pin-proximity=critical-neighbor]:!shadow-[0_0_0_2px_var(--topology-zoom-lens-pin-proximity-ring),0_0_18px_var(--topology-zoom-lens-pin-proximity-glow)] hover:border-[color:var(--card-border-hover)] active:cursor-grabbing data-[overview-density-fixed-geography=true]:active:!cursor-default data-[overview-map-fixed-geography-drag=true]:active:!cursor-default data-[selected-focus-fixed-geography=true]:active:!cursor-default data-[selected-map-fixed-geography=true]:active:!cursor-default data-[selected-focus-context-rail=true]:active:!cursor-pointer motion-reduce:transition-none ${
               selected
-                ? 'shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_14px_36px_var(--topology-card-selected-shadow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
+                ? 'shadow-none outline-none'
+                : ''
+            } ${
+              healthRepairAuditTarget && !selected
+                ? 'shadow-[0_0_0_1px_var(--topology-health-repair-card-outline),0_12px_32px_var(--topology-health-repair-card-shadow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-health-repair-card-outline)]'
                 : ''
             } ${
               dragging
-                ? 'border-[color:var(--topology-card-border-selected-strong)] shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_10px_26px_var(--topology-card-selected-shadow),0_0_28px_rgba(139,151,255,0.18)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)] data-[dragging-active=true]:shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_16px_38px_var(--topology-card-selected-shadow),0_0_34px_rgba(139,151,255,0.24)]'
+                ? 'border-[color:var(--topology-card-border-selected-strong)] shadow-none outline-none'
                 : ''
             } ${
               dragSettled
-                ? 'border-[color:var(--topology-card-border-selected)] shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_0_24px_rgba(139,151,255,0.2)] motion-safe:animate-[topology-drag-settle_720ms_ease-out_1]'
+                ? 'border-[color:var(--topology-card-border-selected)] shadow-none outline-none'
                 : ''
             } ${TIER_CARD_CLASS[card.tier]}`}
           >
+            {dragInteractionSummary ? (
+              <span
+                data-drag-interaction-summary-text
+                data-drag-interaction-summary-contract="sr-only-card-state"
+                className="sr-only"
+              >
+                {dragInteractionSummary}
+              </span>
+            ) : null}
+            {dragInteractionCue ? (
+              <span
+                aria-hidden="true"
+                data-drag-interaction-cue
+                data-drag-interaction-cue-contract="root-card-shows-linked-count-during-drag"
+                data-drag-interaction-cue-text={dragInteractionCue}
+                data-drag-interaction-linked-card-count={dragLinkedCardCount}
+                data-drag-interaction-relation-link-count={dragRelationLinkCount}
+                data-surface-token="--topology-card-drag-active-wash"
+                data-border-token="--topology-card-border-selected"
+                className="pointer-events-none absolute -top-7 left-1/2 inline-flex max-w-[8.5rem] -translate-x-1/2 items-center rounded-[0.375rem] border border-[color:var(--topology-card-border-selected)] bg-[color:var(--topology-card-drag-active-wash)] px-1.5 py-0.5 text-[0.64rem] font-medium leading-none text-[color:var(--color-text)] opacity-90 shadow-[0_8px_20px_rgba(0,0,0,0.22)] group-data-[zoom-lens-active-card=true]/skeleton-card:sr-only group-data-[overview-collision-pin=true]/skeleton-card:sr-only"
+              >
+                {dragInteractionCue}
+              </span>
+            ) : null}
             {/* 틴트 레이어 — 불투명 panel 베이스 위에 kind wash. 반투명 bg
                 단독이면 카드 뒤 엣지가 비쳐 보인다. */}
             <span
               aria-hidden="true"
               data-edge-mask
-              className="pointer-events-none absolute rounded-[inherit] bg-[color:var(--color-canvas)]"
-              style={{ inset: `-${EDGE_CLEARANCE_MASK_PX}px` }}
+              data-edge-mask-contract="paint-only-does-not-expand-card-scroll-width"
+              className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[color:var(--color-canvas)]"
+              style={{ boxShadow: `0 0 0 ${EDGE_CLEARANCE_MASK_PX}px var(--color-canvas)` }}
             />
             <span
               aria-hidden="true"
@@ -3359,38 +10811,253 @@ export function SigmaSkeletonCards({
               className="pointer-events-none absolute inset-0 rounded-[inherit]"
               style={{
                 background: selected
-                  ? `linear-gradient(0deg, var(--topology-card-selected-wash), var(--topology-card-selected-wash)), ${tintBg}`
+                  ? `linear-gradient(0deg, var(${SELECTED_FOCUS_QUIET_WASH_TOKEN}), var(${SELECTED_FOCUS_QUIET_WASH_TOKEN})), ${tintBg}`
+                  : healthRepairAuditTarget
+                    ? `linear-gradient(0deg, var(--topology-health-repair-card-wash), var(--topology-health-repair-card-wash)), ${tintBg}`
                   : dragging || dragSettled
-                    ? `linear-gradient(0deg, rgba(139,151,255,${
-                        activeDragMotion && dragging ? '0.12' : '0.08'
-                      }), rgba(139,151,255,${
-                        activeDragMotion && dragging ? '0.12' : '0.08'
-                      })), ${tintBg}`
+                    ? `linear-gradient(0deg, ${
+                        activeDragMotion && dragging
+                          ? 'var(--topology-card-drag-active-wash)'
+                          : 'var(--topology-card-drag-wash)'
+                      }, ${
+                        activeDragMotion && dragging
+                          ? 'var(--topology-card-drag-active-wash)'
+                          : 'var(--topology-card-drag-wash)'
+                      }), ${tintBg}`
                   : tintBg,
               }}
             />
             <span
               aria-hidden="true"
-              className="relative shrink-0 rounded-full"
+              className="relative shrink-0 rounded-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!hidden group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden group-data-[overview-collision-pin=true]/skeleton-card:!hidden"
               style={{
                 width: TIER_DOT_EM[card.tier],
                 height: TIER_DOT_EM[card.tier],
                 backgroundColor: fill,
               }}
             />
-            <span className="relative min-w-0 truncate">{card.title}</span>
-            {card.count !== undefined ? (
-              <span className="relative shrink-0 font-mono text-[0.72em] text-[color:var(--color-text-tertiary)]">
-                {card.count}
+            <span
+              aria-hidden="true"
+              data-zoom-lens-pin-glyph
+              data-zoom-lens-pin-glyph-text={kindPinGlyph}
+              data-zoom-lens-pin-glyph-contract="compact-kind-pin-keeps-type-glyph-without-title-card"
+              className="pointer-events-none absolute inset-0 hidden items-center justify-center font-mono text-[0.64rem] font-semibold leading-none text-[color:var(--card-kind-accent)] group-data-[zoom-lens-active-card=true]/skeleton-card:inline-flex group-data-[overview-collision-pin=true]/skeleton-card:inline-flex group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!hidden"
+              style={
+                {
+                  '--card-kind-accent': fill,
+                } as React.CSSProperties
+              }
+            >
+              {kindPinGlyph}
+            </span>
+            <span
+              data-card-kind-badge
+              data-card-kind={card.kind}
+              data-card-kind-badge-contract="visible-ontology-kind-marker"
+              data-zoom-lens-compact-hidden="true"
+              data-zoom-lens-compact-hidden-contract="compact-lens-keeps-kind-as-dot-color"
+              data-surface-token="--topology-card-kind-surface"
+              data-border-token="--card-kind-border"
+              data-accent-token="--card-kind-accent"
+              aria-label={selectedRelationSummaryOwnsMeta ? undefined : kindDescription}
+              aria-hidden={selectedRelationSummaryOwnsMeta ? 'true' : undefined}
+              title={kindDescription}
+              className="relative inline-flex h-[1.42em] max-w-[5.8em] shrink-0 items-center justify-center truncate rounded-[0.38em] border border-[color:var(--card-kind-border)] bg-[color:var(--topology-card-kind-surface)] px-[0.36em] text-[0.62em] font-semibold leading-none text-[color:var(--card-kind-accent)] group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden group-data-[overview-collision-pin=true]/skeleton-card:!hidden"
+              style={{
+                '--card-kind-accent': fill,
+                '--card-kind-border': withAlpha(fill, 0.34),
+              } as React.CSSProperties}
+            >
+              {kindBadgeLabel}
+            </span>
+            {selectedRelationSummaryOwnsMeta ? (
+              <span
+                data-selected-card-kind-title-separator="kind-to-title"
+                className="sr-only"
+              >
+                {" "}
               </span>
             ) : null}
-            {pathRole === 'source' || pathRole === 'target' ? (
+            <span
+              data-card-title
+              data-path-endpoint-title={pathEndpoint ? pathRole : undefined}
+              data-path-endpoint-title-contract={
+                pathEndpoint ? 'endpoint-title-gets-readable-width' : undefined
+              }
+              data-card-title-lane-contract={
+                selectedRelationSummaryOwnsMeta
+                  ? 'selected-title-keeps-current-focus-readable'
+                  : healthRepairAuditTarget
+                    ? 'health-repair-target-keeps-project-title-readable'
+                  : selectedFocusCompanion
+                    ? 'focus-companion-keeps-evidence-title-readable'
+                  : coreHierarchyCountHidden
+                    ? 'core-title-keeps-map-readable'
+                  : 'title-shrinks-before-meta-chips'
+              }
+              data-full-title={card.title}
+              aria-hidden={selectedRelationSummaryOwnsMeta ? 'true' : undefined}
+              className="relative min-w-0 truncate group-data-[zoom-lens-active-card=true]/skeleton-card:sr-only group-data-[overview-collision-pin=true]/skeleton-card:sr-only"
+            >
+              {card.title}
+            </span>
+            {selectedRelationSummaryOwnsMeta ? (
+              <span
+                data-selected-card-title-summary-separator="title-to-relation-summary"
+                className="sr-only"
+              >
+                {" "}
+              </span>
+            ) : null}
+            {card.count !== undefined &&
+            (onExpandRequest || !selectedRelationSummaryOwnsMeta) ? (
+              // 배지가 "펼치기" 컨트롤이 되면서 core 계층(프로젝트/도메인)에서도
+              // 복권 — 장식이던 숫자가 기능(확장 어포던스)을 얻었다. 선택 카드
+              // 에서도 유지 — "선택 → 펼치기" 가 자연스러운 다음 행동이다.
+              onExpandRequest ? (
+                // 배지 = 명시적 펼치기 버튼 — "이 숫자를 누르면 하위가 열린다"
+                // 로 개수와 확장 어포던스를 한 몸에 (기획자 감사 ⑧-c 겸용).
+                // 카드 루트가 <button> 이라 중첩 button 은 hydration 에러 —
+                // span[role=button] + 키보드 핸들러로 동등한 어포던스 구성.
+                <span
+                  role="button"
+                  tabIndex={0}
+                  data-skeleton-card-count
+                  data-skeleton-card-expand
+                  data-count-chip-contract="tokenized-node-scale-signal-expand-affordance"
+                  data-zoom-lens-compact-hidden="true"
+                  data-zoom-lens-compact-hidden-contract="compact-lens-removes-scale-count-from-map-mark"
+                  data-surface-token="--topology-card-count-surface"
+                  data-border-token="--topology-card-count-border"
+                  data-text-token="--topology-card-count-text"
+                  data-count-chip-visibility="visible"
+                  aria-label={tEdgeTooltip('expandBadgeTitle', { count: card.count })}
+                  title={tEdgeTooltip('expandBadgeTitle', { count: card.count })}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onExpandRequest(nodeId);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onExpandRequest(nodeId);
+                    }
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  className="relative ml-0.5 inline-flex h-[1.42em] min-w-[1.65em] shrink-0 cursor-pointer items-center justify-center rounded-full border border-[color:var(--topology-card-count-border)] bg-[color:var(--topology-card-count-surface)] px-[0.42em] font-mono text-[0.68em] leading-none text-[color:var(--topology-card-count-text)] transition-colors hover:border-[color:var(--topology-card-border-selected)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-analysis-mode-focus-ring)] group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden"
+                >
+                  {card.count}
+                </span>
+              ) : (
+              <span
+                data-skeleton-card-count
+                data-count-chip-contract="tokenized-node-scale-signal"
+                data-zoom-lens-compact-hidden="true"
+                data-zoom-lens-compact-hidden-contract="compact-lens-removes-scale-count-from-map-mark"
+                data-surface-token="--topology-card-count-surface"
+                data-border-token="--topology-card-count-border"
+                data-text-token="--topology-card-count-text"
+                data-count-chip-visibility={
+                  coreHierarchyCountHidden
+                    ? 'sr-only-core-hierarchy-title'
+                    : 'visible'
+                }
+                className={
+                  coreHierarchyCountHidden
+                    ? 'sr-only group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden'
+                    : 'relative ml-0.5 inline-flex h-[1.42em] min-w-[1.65em] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-card-count-border)] bg-[color:var(--topology-card-count-surface)] px-[0.42em] font-mono text-[0.68em] leading-none text-[color:var(--topology-card-count-text)] group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden'
+                }
+              >
+                {card.count}
+              </span>
+              )
+            ) : null}
+            {healthRepairAuditTarget ? (
+              <span
+                data-testid="sigma-health-repair-audit-badge"
+                data-health-repair-audit-badge-contract="inline-card-state-label"
+                className="relative ml-0.5 inline-flex h-[1.45em] shrink-0 items-center rounded-full border border-[color:var(--topology-health-repair-card-border)] bg-[color:var(--topology-health-repair-card-wash)] px-[0.48em] font-mono text-[0.66em] leading-none text-[color:var(--color-indigo-accent)]"
+              >
+                {tEdgeTooltip('healthRepairAuditBadge')}
+              </span>
+            ) : null}
+            {selected && selectedRelationSummary ? (
+              <span
+                data-testid="sigma-selected-card-relation-summary"
+                data-relation-summary-contract="selected-card-direct-facts"
+                data-relation-summary-visible-contract="primary-count-visible-action-accessible"
+                data-relation-summary-map-label-fallback="selected-card-keeps-action-when-map-labels-collapse"
+                data-relation-summary-primary-action={selectedRelationSummary.primaryAction}
+                data-relation-summary-cli-fallback={
+                  selectedRelationSummary.cliFallbackCommand
+                }
+                data-relation-summary-source={selectedRelationSummary.source}
+                data-relation-summary-target={selectedRelationSummary.target}
+                data-relation-summary-type={selectedRelationSummary.type}
+                data-relation-summary-readable-text={selectedRelationSummaryText ?? undefined}
+                data-relation-summary-visible-text={
+                  selectedRelationSummaryCompactText ?? undefined
+                }
+                data-relation-summary-surface-token="--topology-relation-summary-surface"
+                data-relation-summary-border-token="--topology-relation-summary-border"
+                data-relation-summary-text-token="--topology-relation-summary-text"
+                data-relation-count={selectedRelationSummary.relationCount}
+                data-relation-type-count={selectedRelationSummary.typeCount}
+                aria-label={
+                  selectedRelationSummaryOwnsMeta
+                    ? undefined
+                    : selectedRelationSummaryText ?? undefined
+                }
+                aria-hidden={selectedRelationSummaryOwnsMeta ? 'true' : undefined}
+                title={selectedRelationSummaryText ?? undefined}
+                className="relative ml-0.5 inline-flex h-[1.55em] shrink-0 items-center rounded-full border border-[color:var(--topology-relation-summary-border)] bg-[color:var(--topology-relation-summary-surface)] px-[0.52em] font-mono text-[0.72em] leading-none text-[color:var(--topology-relation-summary-text)] group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!hidden"
+              >
+                {selectedRelationSummaryCompactText}
+              </span>
+            ) : null}
+            {selectedRelationEndpointRole ? (
+              <>
+                <span className="sr-only"> </span>
+                <span
+                  data-selected-relation-endpoint-role-badge
+                  data-selected-relation-endpoint-role={selectedRelationEndpointRole}
+                  data-selected-relation-endpoint-role-badge-contract="visible-source-target-role-badge"
+                  data-selected-relation-endpoint-role-badge-text={
+                    selectedRelationEndpointRoleLabel
+                  }
+                  data-selected-relation-endpoint-zoom-lens-role-mark-label={
+                    selectedRelationEndpointRoleLabel
+                  }
+                  aria-label={`selected relation ${selectedRelationEndpointRoleLabel?.toLowerCase()} endpoint`}
+                  title={selectedRelationEndpointRoleLabel}
+                  className="relative ml-0.5 inline-flex h-[1.42em] shrink-0 items-center justify-center rounded-[0.32em] border border-[color:var(--topology-relation-label-selected-border)] bg-[color:var(--topology-relation-label-selected-surface)] px-[0.36em] font-mono text-[0.58em] font-semibold leading-none text-[color:var(--topology-relation-label-selected-text)] group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!absolute group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!inset-0 group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!ml-0 group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!h-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!w-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!rounded-full group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!border-0 group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!bg-transparent group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!p-0 group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:!text-[0.64rem]"
+                >
+                  <span className="group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:hidden">
+                    {selectedRelationEndpointRoleLabel}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    data-selected-relation-endpoint-zoom-lens-role-mark-glyph
+                    data-selected-relation-endpoint-zoom-lens-role-mark-contract="compact-role-glyph-no-clipped-title"
+                    data-selected-relation-endpoint-zoom-lens-role-mark-text={
+                      selectedRelationEndpointRoleMarkLabel
+                    }
+                    className="hidden group-data-[selected-relation-endpoint-zoom-lens=role-mark]/skeleton-card:inline"
+                  />
+                </span>
+              </>
+            ) : null}
+            {pathEndpoint ? (
               <span
                 aria-hidden="true"
                 data-path-card-badge={pathRole}
                 data-path-card-badge-label={pathBadgeLabel}
                 data-path-card-badge-contract="endpoint-role-token"
-                className="relative ml-0.5 inline-flex h-[1.35em] min-w-[1.35em] shrink-0 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.16)] px-[0.28em] font-mono text-[0.66em] leading-none text-[color:var(--color-indigo-accent)]"
+                data-surface-token="--topology-path-endpoint-surface"
+                data-border-token="--topology-path-endpoint-border"
+                data-text-token="--topology-path-endpoint-text"
+                className="relative ml-0.5 inline-flex h-[1.35em] min-w-[1.35em] shrink-0 items-center justify-center rounded-full border border-[color:var(--topology-path-endpoint-border)] bg-[color:var(--topology-path-endpoint-surface)] px-[0.28em] font-mono text-[0.66em] leading-none text-[color:var(--topology-path-endpoint-text)]"
               >
                 {pathBadgeLabel}
               </span>

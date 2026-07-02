@@ -4,6 +4,7 @@ export interface RelationLabelGeometryInput {
   containerWidth: number;
   hitTargetPadX: number;
   minCompactWidth: number;
+  rightBoundary?: number;
   viewportInset: number;
 }
 
@@ -14,6 +15,8 @@ export interface RelationLabelGeometry {
   hitTargetWidth: number;
   left: number;
   right: number;
+  viewportClampContract: 'centered-within-viewport' | 'compacted-to-viewport-edge';
+  viewportClampSide: 'left' | 'right' | 'none';
   viewportInset: number;
 }
 
@@ -23,15 +26,25 @@ export function resolveRelationLabelGeometry({
   containerWidth,
   hitTargetPadX,
   minCompactWidth,
+  rightBoundary,
   viewportInset,
 }: RelationLabelGeometryInput): RelationLabelGeometry {
   const desiredWidth = badgeWidth + hitTargetPadX * 2;
-  const centeredAvailableWidth = Math.max(
+  const rightLimit =
+    typeof rightBoundary === 'number' && Number.isFinite(rightBoundary)
+      ? Math.min(containerWidth - viewportInset, Math.max(viewportInset, rightBoundary))
+      : containerWidth - viewportInset;
+  const availableWidth = Math.max(0, rightLimit - viewportInset);
+  const centeredWidth = Math.max(
     0,
     Math.min(
-      containerWidth - viewportInset * 2,
-      Math.min(centerX - viewportInset, containerWidth - centerX - viewportInset) * 2,
+      availableWidth,
+      Math.min(centerX - viewportInset, rightLimit - centerX) * 2,
     ),
+  );
+  const centeredAvailableWidth = Math.max(
+    0,
+    centeredWidth > 0 ? centeredWidth : availableWidth,
   );
   const compactWidthFloor =
     centeredAvailableWidth >= minCompactWidth ? minCompactWidth : centeredAvailableWidth;
@@ -39,7 +52,18 @@ export function resolveRelationLabelGeometry({
     compactWidthFloor,
     Math.min(desiredWidth, centeredAvailableWidth),
   );
-  const left = centerX - hitTargetWidth / 2;
+  const centeredLeft = centerX - hitTargetWidth / 2;
+  const left = Math.min(
+    Math.max(centeredLeft, viewportInset),
+    Math.max(viewportInset, rightLimit - hitTargetWidth),
+  );
+  const right = left + hitTargetWidth;
+  const viewportClampSide =
+    Math.abs(left - viewportInset) <= 0.5
+      ? 'left'
+      : Math.abs(right - rightLimit) <= 0.5
+        ? 'right'
+        : 'none';
 
   return {
     centeredAvailableWidth,
@@ -47,7 +71,10 @@ export function resolveRelationLabelGeometry({
     desiredWidth,
     hitTargetWidth,
     left,
-    right: left + hitTargetWidth,
+    right,
+    viewportClampContract:
+      viewportClampSide === 'none' ? 'centered-within-viewport' : 'compacted-to-viewport-edge',
+    viewportClampSide,
     viewportInset,
   };
 }

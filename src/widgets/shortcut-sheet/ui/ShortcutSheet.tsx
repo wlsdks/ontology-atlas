@@ -184,7 +184,11 @@ export function ShortcutSheet({ open, onClose }: Props) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={MOTION.fast}
-          className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-backdrop-medium)] p-4 sm:p-6"
+          data-shortcut-sheet-responsive-contract="mobile-sheet-sm-floating"
+          data-shortcut-sheet-floating-width-token="--topology-shortcut-sheet-floating-width"
+          data-shortcut-sheet-radius-token="--topology-shortcut-sheet-radius"
+          data-shortcut-sheet-mobile-bottom-reserve-token="--topology-mobile-bottom-tab-reserve"
+          className="pointer-events-auto fixed inset-0 z-50 flex items-stretch justify-center bg-[color:var(--color-backdrop-medium)] sm:items-center sm:p-6"
           onClick={onClose}
         >
           <motion.section
@@ -198,7 +202,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
             aria-label={t("dialogAriaLabel")}
             aria-modal="true"
             aria-describedby="shortcut-sheet-help"
-            className="flex max-h-[calc(100vh-2rem)] w-full max-w-[720px] flex-col overflow-hidden rounded-[22px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-2xl sm:max-h-[calc(100vh-3rem)]"
+            className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-hidden border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-2xl sm:h-auto sm:max-h-[calc(100vh-3rem)] sm:max-w-[var(--topology-shortcut-sheet-floating-width)] sm:rounded-[var(--topology-shortcut-sheet-radius)]"
           >
             <header className="flex shrink-0 items-center justify-between border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>
@@ -216,7 +220,10 @@ export function ShortcutSheet({ open, onClose }: Props) {
                 type="button"
                 onClick={onClose}
                 aria-label={t("closeAriaLabel")}
-                className="flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+                data-testid="shortcut-sheet-close"
+                data-shortcut-sheet-close-contract="touch-visible"
+                data-shortcut-sheet-close-size-token="--topology-shortcut-sheet-close-size"
+                className="flex h-[var(--topology-shortcut-sheet-close-size)] w-[var(--topology-shortcut-sheet-close-size)] items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
               >
                 <X size={15} />
               </button>
@@ -277,6 +284,13 @@ export function ShortcutSheet({ open, onClose }: Props) {
               </p>
             </footer>
           </motion.section>
+          <div
+            aria-hidden="true"
+            data-testid="shortcut-sheet-bottom-reserve-scrim"
+            data-bottom-reserve-scrim-contract="opaque-sheet-continuation"
+            data-bottom-reserve-token="--topology-mobile-bottom-tab-reserve"
+            className="fixed inset-x-0 bottom-0 h-[var(--topology-mobile-bottom-tab-reserve)] border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] sm:hidden"
+          />
         </motion.div>
       )}
     </AnimatePresence>

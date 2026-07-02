@@ -53,6 +53,10 @@ describe("TopologyReviewLink — 재진입 훅 (Self-Drawing Diff #5)", () => {
     expect(link).toHaveTextContent("변경점 3개"); // a + b,c = 3
     expect(link.getAttribute("href")).toContain("/ontology");
     expect(link).toHaveAccessibleName(/온톨로지 변경점 패널/);
+    expect(link).toHaveAttribute(
+      "data-utility-action-focus-ring-token",
+      "--topology-utility-lane-focus-ring",
+    );
   });
 
   it("removed 노드도 카운트에 포함", () => {

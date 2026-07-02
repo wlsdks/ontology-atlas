@@ -22,6 +22,7 @@ export interface AgentActivityHeartbeat {
   plan: string[];
   evidence: {
     mcp: string[];
+    source: string[];
     codegraph: string[];
     verification: string[];
   };
@@ -41,7 +42,7 @@ export interface AgentActivityProofSummary {
   count: number;
   sources: {
     mcp: number;
-    codegraph: number;
+    source: number;
     verification: number;
   };
   label: string;
@@ -113,7 +114,7 @@ function stringArray(value: unknown): string[] {
 
 function readStringArrayRecord(
   value: unknown,
-  key: "mcp" | "codegraph" | "verification",
+  key: "mcp" | "source" | "codegraph" | "verification",
 ): string[] {
   if (!value || typeof value !== "object") return [];
   return stringArray((value as Record<string, unknown>)[key]);
@@ -152,6 +153,10 @@ export function parseAgentActivityStatus(
       plan: stringArray(parsed.plan),
       evidence: {
         mcp: readStringArrayRecord(parsed.evidence, "mcp"),
+        source: [
+          ...readStringArrayRecord(parsed.evidence, "source"),
+          ...readStringArrayRecord(parsed.evidence, "codegraph"),
+        ],
         codegraph: readStringArrayRecord(parsed.evidence, "codegraph"),
         verification: readStringArrayRecord(parsed.evidence, "verification"),
       },
@@ -235,7 +240,7 @@ function emptyProofSummary(): AgentActivityProofSummary {
     count: 0,
     sources: {
       mcp: 0,
-      codegraph: 0,
+      source: 0,
       verification: 0,
     },
     label: "",
@@ -245,17 +250,17 @@ function emptyProofSummary(): AgentActivityProofSummary {
 function deriveProofSummary(evidence: AgentActivityHeartbeat["evidence"]): AgentActivityProofSummary {
   const sources = {
     mcp: evidence.mcp.length,
-    codegraph: evidence.codegraph.length,
+    source: evidence.source.length,
     verification: evidence.verification.length,
   };
   const labelParts = [
     ["MCP", sources.mcp],
-    ["CodeGraph", sources.codegraph],
+    ["Source", sources.source],
     ["Verify", sources.verification],
   ] as const;
   const visibleLabelParts = labelParts.filter(([, count]) => count > 0);
   return {
-    count: sources.mcp + sources.codegraph + sources.verification,
+    count: sources.mcp + sources.source + sources.verification,
     sources,
     label: visibleLabelParts.map(([label, count]) => `${label} · ${count}`).join(", "),
   };
@@ -305,7 +310,7 @@ function deriveRefreshRequest({
 function formatRefreshCommand(heartbeat: AgentActivityHeartbeat): string {
   const evidenceArgs = [
     heartbeat.evidence.mcp[0] ? ["--mcp", heartbeat.evidence.mcp[0]] : null,
-    heartbeat.evidence.codegraph[0] ? ["--codegraph", heartbeat.evidence.codegraph[0]] : null,
+    heartbeat.evidence.source[0] ? ["--source", heartbeat.evidence.source[0]] : null,
     heartbeat.evidence.verification[0] ? ["--verify", heartbeat.evidence.verification[0]] : null,
   ]
     .filter((entry): entry is [string, string] => entry !== null)

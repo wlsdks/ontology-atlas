@@ -18,6 +18,8 @@ import {
   formatVisualEvidenceHandoffLines,
   gracefulQuitCommandOptions,
   gracefulQuitExistingAppCommands,
+  isSelectedRelationAgentGateText,
+  isSelectedRelationPrimaryCopyActionText,
   normalizeWebviewRoute,
   parseAccessibilityWindowRows,
   parseMinWindowSize,
@@ -27,7 +29,14 @@ import {
   selectedRelationRouteRailTextLeak,
   validateSelectedRelationCardAttentionLane,
   validateSelectedRelationCardDensityContract,
+  validateSelectedRelationContextSilhouetteMarkers,
+  validateSelectedRelationIdentityMarkers,
+  validateSelectedRelationEndpointVisibilityMarkers,
+  validateSelectedRelationEndpointRouteMarkers,
+  validateRelationLabelFrameGeometryMarkers,
+  validateTopologyConnectorCacheMarkers,
   validateSelectedRelationLabelCompactMarkers,
+  topologyDragCompanionVectorTolerance,
   validateAccessibilityWindowRows,
   validateAccessibilityText,
   validateCapturableWindowRows,
@@ -43,11 +52,31 @@ import {
   windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
 
+function compactZoomDragRelationLabelMarkers(overrides = {}) {
+  return {
+    topologyDragRelationLabelCompactContract:
+      "zoomed-drag-compacts-repeated-relation-labels",
+    topologyDragRelationLabelCompactCount: 2,
+    topologyDragRelationLabelPresentation: "compact-glyph",
+    topologyDragRelationLabelCompact: true,
+    topologyDragRelationLabelCompactItemContract:
+      "zoomed-drag-keeps-type-fact-as-compact-glyph",
+    topologyDragRelationLabelReadableType: "contains",
+    topologyDragRelationLabelVisibleText: "C",
+    topologyDragRelationLabelBadgeWidth: 32,
+    topologyDragRelationLabelBadgeHeight: 24,
+    topologyDragRelationLabelBadgeRadius: 12,
+    ...overrides,
+  };
+}
+
 test("WebView verification env patch carries route, drag, composer, and requested window size", () => {
   assert.deepEqual(
     webviewVerifyEnvPatch({
       requireWebviewRoute: "/en/topology/",
       verifyTopologyDrag: true,
+      verifyTopologySelectedRelation: true,
+      verifyTopologyNodePopover: true,
       verifyTopologyCreateNode: true,
       verifyTopologyFocusNoop: true,
       webviewWindowSize: { width: 1100, height: 800 },
@@ -56,6 +85,8 @@ test("WebView verification env patch carries route, drag, composer, and requeste
       ONTOLOGY_ATLAS_VERIFY_WEBVIEW: "1",
       ONTOLOGY_ATLAS_VERIFY_ROUTE: "/en/topology/",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG: "1",
+      ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_SELECTED_RELATION: "1",
+      ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_NODE_POPOVER: "1",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE: "1",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP: "1",
       ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE: "1100x800",
@@ -63,10 +94,99 @@ test("WebView verification env patch carries route, drag, composer, and requeste
   );
 });
 
+test("Tauri node popover verifier captures compact facts even when the inspector starts expanded", () => {
+  const tauriLib = fs.readFileSync("src-tauri/src/lib.rs", "utf8");
+
+  assert.equal(
+    tauriLib.includes('data-node-popover-toggle="collapse"'),
+    true,
+    "expanded node popover verifier needs the existing collapse control",
+  );
+  assert.equal(
+    tauriLib.includes("clicked-collapse-for-compact"),
+    true,
+    "verifier should collapse an already-expanded popover before taking compact facts snapshot",
+  );
+  assert.equal(
+    tauriLib.includes("result.compact?.factsVisible"),
+    true,
+    "verifier should only accept an expanded popover after compact facts were captured",
+  );
+});
+
 test("selected relation label agent gate text exposes MCP and CLI for handoff-ready facts", () => {
   assert.equal(expectedRelationLabelAgentGateText("handoff-ready"), "MCP/CLI");
   assert.equal(expectedRelationLabelAgentGateText("preflight-first"), "check");
   assert.equal(expectedRelationLabelAgentGateText("review-first"), "review");
+});
+
+test("selected relation inspector agent gate text accepts localized proof copy", () => {
+  assert.equal(isSelectedRelationAgentGateText("MCP/CLI ready"), true);
+  assert.equal(isSelectedRelationAgentGateText("Agent gate handoff ready"), true);
+  assert.equal(isSelectedRelationAgentGateText("설명 가능"), true);
+  assert.equal(isSelectedRelationAgentGateText("사전 점검 먼저"), true);
+  assert.equal(isSelectedRelationAgentGateText("검토 먼저"), true);
+  assert.equal(isSelectedRelationAgentGateText("설명"), false);
+  assert.equal(isSelectedRelationAgentGateText(""), false);
+});
+
+test("selected relation primary copy action text accepts compact localized labels", () => {
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "설명",
+      action: "explain_relation",
+      locale: "ko",
+    }),
+    true,
+  );
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "설명 복사",
+      action: "explain_relation",
+      locale: "ko",
+    }),
+    true,
+  );
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "관계 설명 복사",
+      action: "explain_relation",
+      locale: "ko",
+    }),
+    true,
+  );
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "점검 복사",
+      action: "relation_check",
+      locale: "ko",
+    }),
+    true,
+  );
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "점검",
+      action: "relation_check",
+      locale: "ko",
+    }),
+    true,
+  );
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "Copy explain",
+      action: "explain_relation",
+      locale: "en",
+    }),
+    true,
+  );
+  assert.equal(
+    isSelectedRelationPrimaryCopyActionText({
+      text: "설명 가능",
+      action: "explain_relation",
+      locale: "ko",
+    }),
+    false,
+  );
 });
 
 test("selected relation hidden route rail text leak detector catches collapsed chip text", () => {
@@ -78,9 +198,38 @@ test("selected relation hidden route rail text leak detector catches collapsed c
   );
   assert.equal(
     selectedRelationRouteRailTextLeak({
+      bodyText: "CONTAINS 6\ncontains 6\nS1MCP/CLI",
+    }),
+    true,
+  );
+  assert.equal(
+    selectedRelationRouteRailTextLeak({
       bodyText: "CONTAINS ×5 1\nOntology Hub — Mode-Aware\nMCP/CLI",
     }),
     false,
+  );
+});
+
+test("topology drag companion vector tolerance scales with wide WebView UI scale", () => {
+  assert.equal(topologyDragCompanionVectorTolerance({}), 8);
+  assert.equal(topologyDragCompanionVectorTolerance({ topologyUiScale: 0.9 }), 8);
+  assert.equal(topologyDragCompanionVectorTolerance({ topologyUiScale: 1.32 }), 10.56);
+  assert.equal(topologyDragCompanionVectorTolerance({ topologyUiScale: 4 }), 14);
+});
+
+test("topology drag verifier captures reactive motion before selecting a relation label", () => {
+  const source = fs.readFileSync(
+    path.resolve("src-tauri/src/lib.rs"),
+    "utf8",
+  );
+  const relationClickIndex = source.indexOf("result.relationLabelClicked = true");
+  const reactiveMotionIndex = source.indexOf("result.dragReactiveMotionLinkedPolicy");
+
+  assert.notEqual(relationClickIndex, -1);
+  assert.notEqual(reactiveMotionIndex, -1);
+  assert.ok(
+    reactiveMotionIndex < relationClickIndex,
+    "drag reactive proof must be captured before relation label click mutates the topology state",
   );
 });
 
@@ -104,6 +253,7 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyCardOverlapCount: 0,
       topologyCardClippedCount: 0,
       topologyFixedSurfaceCount: 3,
+      topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
       topologyFixedSurfaceOverlapCount: 0,
       topologyCardFixedSurfaceOverlapCount: 0,
       topologyTransientSurfaceCount: 0,
@@ -137,6 +287,12 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyCreateNodeSurfaceRole: "blocking-edit-surface",
       topologyCreateNodeElevationContract: "solid-panel-over-dimmed-map",
       topologyCreateNodeSizeContract: "bounded-centered-composer",
+      topologyCreateNodePanelTopToken: "--topology-blocking-composer-top",
+      topologyCreateNodePanelWidthToken: "--topology-blocking-composer-width",
+      topologyCreateNodePanelMaxHeightToken: "--topology-blocking-composer-max-height",
+      topologyCreateNodeFormSurfaceToken: "--topology-blocking-composer-surface",
+      topologyCreateNodeFormBorderToken: "--topology-blocking-composer-border",
+      topologyCreateNodeFormShadowToken: "--topology-blocking-composer-shadow",
       topologyCreateNodePanelRole: "dialog",
       topologyCreateNodePanelAriaModal: "true",
       topologyCreateNodePanelLabelledBy: "topology-create-node-dialog-title",
@@ -153,6 +309,8 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyCreateNodeBackdropVisible: true,
       topologyCreateNodeBackdropCoversViewport: true,
       topologyCreateNodeBackdropPointerEvents: "auto",
+      topologyCreateNodeBackdropContract: "blocks-map-and-closes-composer",
+      topologyCreateNodeBackdropSurfaceToken: "--topology-blocking-backdrop-surface",
       topologyCreateNodeBackdropBackground: "oklab(0 0 0 / 0.68)",
       topologyCreateNodeBackdropFilter: "none",
       topologyInteractiveOverlayCount: 1,
@@ -161,6 +319,9 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyMapSurfaceBlockingEdit: true,
       topologyMapSurfaceDemoted: true,
       topologyMapSurfaceDimOpacity: 0.24,
+      topologyMapSurfaceDimOpacityToken: "--topology-blocking-map-opacity",
+      topologyMapSurfaceFilterToken: "--topology-blocking-map-filter",
+      topologyMapSurfaceInteractionContract: "suppressed-while-blocking-composer",
       topologyMapSurfacePointerEvents: "none",
       topologyCreateNodePanelText: "개념 추가\n종류\n만들기",
       topologyCreateNodeTitlePlaceholder: "개념 이름",
@@ -198,6 +359,109 @@ test("WebView verification requires Add Concept backdrop when the composer is op
           topologyDragConnectorCount: 6,
           topologyDragConnectorDrawable: true,
           topologyDragConnectorClearance: 12,
+          topologyDragCollisionPolicy: "release-settle",
+          topologyDragPhysicsSyncContract: "skeleton-card-drag-pins-worker-layout-group",
+          topologyDragPhysicsReleasePolicy: "commit-drop-position-no-force-release",
+          topologyDragPhysicsSyncActiveDuring: true,
+          topologyDragWorkerAppliedFrameDelta: 4,
+          topologyDragWorkerAppliedFrameChangeCount: 2,
+          topologyDragRelationLabelVisibilityContract: "active-drag-connector-labels-remain-readable",
+          topologyDragRelationLabelExpectedCount: 2,
+          topologyDragRelationLabelVisibleCount: 2,
+          topologyDragRelationLabelVisibleDuringDrag: true,
+          ...compactZoomDragRelationLabelMarkers(),
+          topologyDragInteractionCueContract: "root-card-shows-linked-count-during-drag",
+          topologyDragInteractionCueVisible: true,
+          topologyDragInteractionCueText: "2 linked · 3 relations",
+          topologyDragInteractionCueLinkedCardCount: 2,
+          topologyDragInteractionCueRelationLinkCount: 3,
+          topologyDragReactiveContextContract: "active-drag-shows-worker-moving-surrounding-context",
+          topologyDragReactiveContextPolicy: "boost-dimmed-worker-response",
+          topologyDragReactiveContextOpacity: "0.42",
+          topologyDragReactiveContextOpacityToken: "--topology-card-drag-reactive-context-opacity",
+          topologyDragReactiveContextVisualContract: "reactive-context-uses-border-ring",
+          topologyDragReactiveContextVisualToken: "--topology-card-border-selected",
+          topologyDragReactiveContextVisibleCount: 2,
+          topologyDragReactiveMotionContract: "active-drag-gives-surrounding-context-bounded-parallax",
+          topologyDragReactiveMotionPolicy: "bounded-parallax-nudge",
+          topologyDragReactiveMotionLinkedPolicy: "direct-neighbor-readable-follow",
+          topologyDragReactiveMotionVisibleCount: 2,
+          topologyDragReactiveAmbientMotionVisibleCount: 1,
+          topologyDragReactiveLinkedMotionVisibleCount: 1,
+          topologyDragReactiveMotionMaxObservedOffsetPx: 36,
+          topologyDragReactiveMotionMaxOffsetPx: 36,
+          topologyDragReactiveMotionBaseMaxOffsetPx: 24,
+          topologyDragReactiveMotionLinkedMaxOffsetPx: 36,
+          topologyDragReactiveMotionMaxOffsetToken: "--topology-card-drag-reactive-motion-max-offset",
+          topologyDragTensionConnectorContract: "active-drag-draws-links-to-reactive-neighbors",
+          topologyDragTensionConnectorPolicy: "cluster-to-linked-context-only",
+          topologyDragTensionConnectorExpectedCount: 1,
+          topologyDragTensionConnectorVisibleCount: 1,
+          topologyDragTensionConnectorActiveOpacity: "0.88",
+          topologyDragTensionConnectorActiveStrokeWidth: "2.1",
+          topologyLayoutWorkerPositionFrameSkipPolicy: "skip-only-unsynced-skeleton-card-drag",
+          topologyDragFrameCacheContract: "pointer-move-reuses-drag-indexes",
+          topologyDragDomIndexContract: "drag-release-reuses-card-elements",
+          topologyDragDomIndexSize: 21,
+          topologyDragFrameCacheSnapshotCount: 4,
+          topologyDockDragSnapshotContract: "single-pass-card-rect-read",
+          topologyConnectorDomIndexContract: "reuse-card-index",
+          topologyConnectorRectCacheContract: "frame-local-card-rect-cache",
+          topologyConnectorRectCacheFrameFallbackContract:
+            "reuse-card-placement-frame-rects-before-dom-read",
+          topologyConnectorRectCacheAccounting: "reads-plus-hits",
+          topologyConnectorRectCacheSize: 8,
+          topologyConnectorRectCacheReadCount: 0,
+          topologyConnectorRectCacheHitCount: 6,
+          topologyCameraDepthContract: "wheel-zoom-clamps-before-map-loses-readable-structure",
+          topologyCameraMinRatio: 0.42,
+          topologyCameraMaxRatio: 4,
+          topologyZoomVerifyAttempted: true,
+          topologyZoomVerifyReason: "done",
+          topologyZoomLensContract: "zoom-in-uses-kind-pins-for-noncritical-context-cards",
+          topologyZoomLensPresentationContract:
+            "camera-or-focus-lens-uses-kind-pins-for-noncritical-context",
+          topologyZoomLensPresentationActive: true,
+          topologyZoomLensPresentationSource: "selected-relation-context",
+          topologyZoomLensThresholdRatio: 0.98,
+          topologyZoomLensCardCompactionActive: true,
+          topologyZoomLensCameraRatio: 0.74,
+          topologyZoomLensActive: true,
+          topologyZoomLensEligibleCount: 5,
+          topologyZoomLensActiveCardCount: 3,
+          topologyZoomLensPinMinOpacity: 0.42,
+          topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensPinProximityContract:
+            "zoomed-context-pins-keep-critical-relation-proximity",
+          topologyZoomLensPinProximityActive: true,
+          topologyZoomLensProximityPinCount: 2,
+          topologyZoomLensPinProximityRingToken: "--topology-zoom-lens-pin-proximity-ring",
+          topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+          topologyZoomLensPinGlyphVisibleCount: 2,
+          topologyZoomLensViewportVisibleContract:
+            "visible-lens-pins-match-frame-state",
+          topologyZoomLensPinCanvasContract:
+            "zoom-lens-pins-stay-inside-readable-canvas-safe-band",
+          topologyZoomLensPinCanvasMarginPx: 32,
+          topologyZoomLensPinCanvasClampCount: 4,
+          topologyZoomLensEmptyViewportFallbackContract:
+            "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
+          topologyZoomLensEmptyViewportFallbackActive: true,
+          topologyZoomLensRelationChromeContract:
+            "camera-zoom-in-demotes-nonselected-relation-chrome",
+          topologyZoomLensRelationChromeActive: true,
+          topologyZoomLensRelationThreadCount: 4,
+          topologyZoomLensRelationLabelSuppressedCount: 2,
+          topologyRelationLabelBlockerContract: "reuse-visible-card-rects",
+          topologyRelationLabelBlockerSource: "visibility-pass",
+          topologyRelationLabelQueryContract: "indexed-once",
+          topologyRelationLabelQueryIndexCount: 3,
+          topologyVisibilityCountContract: "single-pass-unless-fallback",
+          topologyVisibilityCountSource: "single-pass",
+          topologyDragSettleFeedbackContract:
+            "released-dragged-cluster-keeps-settle-feedback",
+          topologyDragSettledRoot: "domain:views",
+          topologyDragSettledClusterSize: 4,
           topologyDragSettleMotionContract: "linked-cluster-drag-settle",
           topologyDragSettleMotionDurationMs: 720,
           topologyDragSettleMotionEasing: "ease-out",
@@ -212,6 +476,38 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       {
         expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus",
         requireTopologyCreateNode: true,
+        requireTopologyDrag: true,
+      },
+    ),
+    null,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus",
+        markers: {
+          ...payload.markers,
+          topologyDragAttempted: true,
+          topologyDragReason: "done",
+          topologyDragFocusMoved: false,
+          topologyDragFocusDelta: { x: 0, y: 0 },
+          topologyDragCompanionVisible: true,
+          topologyDragCompanionAligned: true,
+          topologyDragCompanionDelta: { x: 0, y: 0 },
+          topologyDragCompanionSlug: "capability:agent-onboarding-brief",
+          topologyDragCompanionCount: 4,
+          topologyDragVisibleCompanionCount: 1,
+          topologyDragAlignedCompanionCount: 1,
+          topologyDragRelationLabelClicked: true,
+          topologyDragClusterSize: 7,
+          topologySelectedDockCompanionCount: 4,
+          topologySelectedDockVisibleCompanionCount: 1,
+          topologySelectedDockCompanionVisible: true,
+        },
+      },
+      {
+        expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus",
         requireTopologyDrag: true,
       },
     ),
@@ -629,6 +925,12 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
         topologyCreateNodeSurfaceRole: "blocking-edit-surface",
         topologyCreateNodeElevationContract: "solid-panel-over-dimmed-map",
         topologyCreateNodeSizeContract: "bounded-centered-composer",
+        topologyCreateNodePanelTopToken: "--topology-blocking-composer-top",
+        topologyCreateNodePanelWidthToken: "--topology-blocking-composer-width",
+        topologyCreateNodePanelMaxHeightToken: "--topology-blocking-composer-max-height",
+        topologyCreateNodeFormSurfaceToken: "--topology-blocking-composer-surface",
+        topologyCreateNodeFormBorderToken: "--topology-blocking-composer-border",
+        topologyCreateNodeFormShadowToken: "--topology-blocking-composer-shadow",
         topologyCreateNodePanelRole: "dialog",
         topologyCreateNodePanelAriaModal: "true",
         topologyCreateNodeFocusInside: true,
@@ -636,6 +938,8 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
         topologyCreateNodeBackdropVisible: true,
         topologyCreateNodeBackdropCoversViewport: true,
         topologyCreateNodeBackdropPointerEvents: "auto",
+        topologyCreateNodeBackdropContract: "blocks-map-and-closes-composer",
+        topologyCreateNodeBackdropSurfaceToken: "--topology-blocking-backdrop-surface",
         topologyCreateNodeBackdropBackground: "oklab(0 0 0 / 0.68)",
         topologyCreateNodeBackdropFilter: "none",
         topologyBlockingComposerOverlayContract: "exclusive-blocking-composer",
@@ -644,6 +948,9 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
         topologyMapSurfaceBlockingEdit: true,
         topologyMapSurfaceDemoted: true,
         topologyMapSurfaceDimOpacity: 0.24,
+        topologyMapSurfaceDimOpacityToken: "--topology-blocking-map-opacity",
+        topologyMapSurfaceFilterToken: "--topology-blocking-map-filter",
+        topologyMapSurfaceInteractionContract: "suppressed-while-blocking-composer",
         topologyMapSurfacePointerEvents: "none",
         topologyTransientSurfaceCount: 0,
         topologyTransientSurfaceNames: [],
@@ -680,6 +987,12 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
       surfaceRole: "blocking-edit-surface",
       elevationContract: "solid-panel-over-dimmed-map",
       sizeContract: "bounded-centered-composer",
+      topToken: "--topology-blocking-composer-top",
+      widthToken: "--topology-blocking-composer-width",
+      maxHeightToken: "--topology-blocking-composer-max-height",
+      surfaceToken: "--topology-blocking-composer-surface",
+      borderToken: "--topology-blocking-composer-border",
+      shadowToken: "--topology-blocking-composer-shadow",
       role: "dialog",
       ariaModal: "true",
       focusInside: true,
@@ -689,6 +1002,8 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
       visible: true,
       coversViewport: true,
       pointerEvents: "auto",
+      contract: "blocks-map-and-closes-composer",
+      surfaceToken: "--topology-blocking-backdrop-surface",
       background: "oklab(0 0 0 / 0.68)",
       dimAlpha: 0.68,
       filter: "none",
@@ -697,6 +1012,9 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
       blockingEdit: true,
       demoted: true,
       dimOpacity: 0.24,
+      dimOpacityToken: "--topology-blocking-map-opacity",
+      filterToken: "--topology-blocking-map-filter",
+      interactionContract: "suppressed-while-blocking-composer",
       pointerEvents: "none",
     },
     overlays: {
@@ -749,6 +1067,949 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
       },
       nextActions: ["complete-create-node-form", "cancel-composer"],
     },
+  });
+});
+
+test("WebView evidence summarizes selected relation label handoff proof for agent handoff", () => {
+  const evidence = verifier.buildWebviewEvidencePayload(
+    {
+      href: "tauri://localhost/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+      markers: {
+        topologyCardsReady: true,
+        topologyRelationLabelHandoffContract: "label-level-mcp-cli-fallback",
+        topologyRootAttentionWinner: "active-relation-inspector",
+        topologyAgentCurrentSurface: "selected-relation",
+        topologyAgentCurrentSurfaceRole: "active-relation-inspector",
+        topologyAgentCurrentSurfaceRoute:
+          "domain:ai-agent-partner>capability:agent-config-onboarding",
+        topologySelectedNodeId: "",
+        topologySelectedRelationLabelHandoffState: "ready",
+        topologySelectedRelationLabelHandoffGate: "handoff-ready",
+        topologySelectedRelationLabelHandoffPrimaryAction: "explain_relation",
+        topologySelectedRelationLabelHandoffCliFallbackCommand:
+          "ontology-atlas explain 'domain:ai-agent-partner' 'capability:agent-config-onboarding' [vault] --type 'contains'",
+        topologySelectedRelationLabelHandoffFactRoute: "fact>evidence>gate>action",
+        topologySelectedRelationLabelHandoffQuality: "strong",
+        topologySelectedRelationLabelHandoffEvidence: "source-backed",
+        topologySelectedRelationLabelAgentGateKind: "handoff-ready",
+        topologySelectedRelationLabelPrimaryCopyAction: "explain_relation",
+        topologySelectedRelationLabelCliFallbackCommand:
+          "ontology-atlas explain 'domain:ai-agent-partner' 'capability:agent-config-onboarding' [vault] --type 'contains'",
+        topologySelectedRelationLabelFactRoute: "fact>evidence>gate>action",
+        topologySelectedRelationLabelQuality: "strong",
+        topologySelectedRelationLabelEvidenceState: "source-backed",
+        topologySelectedRelationLabelSource: "domain:ai-agent-partner",
+        topologySelectedRelationLabelTarget: "capability:agent-config-onboarding",
+        topologySelectedRelationLabelType: "contains",
+        topologySelectedRelationLabelCount: 4,
+        topologyFocusRelationLabelVisibleText: "포함 ×4 · S1",
+        topologySelectedRelationLabelRoute:
+          "domain:ai-agent-partner>capability:agent-config-onboarding",
+        topologySelectedRelationLabelTypeLabel: "포함 ×4",
+        topologySelectedRelationCardHandoffContract:
+          "selected-relation-card-carries-mcp-cli-fallback",
+        topologySelectedRelationCardHandoffAliasContract:
+          "selected-relation-card-carries-mcp-cli-fallback",
+        topologySelectedRelationCardRoute: "source>target>type>action",
+        topologySelectedRelationCardEndpointRoute:
+          "domain:ai-agent-partner>capability:agent-config-onboarding",
+        topologySelectedRelationCardPrimaryAction: "explain_relation",
+        topologySelectedRelationCardCliFallback:
+          "ontology-atlas explain 'domain:ai-agent-partner' 'capability:agent-config-onboarding' [vault] --type 'contains'",
+        topologySelectedRelationCardSource: "domain:ai-agent-partner",
+        topologySelectedRelationCardTarget: "capability:agent-config-onboarding",
+        topologySelectedRelationCardType: "contains",
+        topologySelectedRelationCardLabelContextContract:
+          "selected-card-preserves-aggregate-label-context",
+        topologySelectedRelationCardLabelCount: 4,
+        topologySelectedRelationCardLabelVisibleText: "포함 ×4 · S1",
+        topologySelectedRelationCardLabelReadableText: "포함 ×4 · S1",
+        topologySelectedRelationCopyPayloadFrom: "domain:ai-agent-partner",
+        topologySelectedRelationCopyPayloadTo: "capability:agent-config-onboarding",
+        topologySelectedRelationHandleStripSource: "domain:ai-agent-partner",
+        topologySelectedRelationHandleStripTarget: "capability:agent-config-onboarding",
+        topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
+        topologySelectedRelationEndpointRouteWrapPolicy:
+          "wrap-allowed-no-horizontal-overflow",
+        topologySelectedRelationEndpointRouteLineBudget: "2",
+        topologySelectedRelationEndpointRouteSourceName: "AI Agent Partner",
+        topologySelectedRelationEndpointRouteTargetName: "Agent Config Onboarding",
+        topologySelectedRelationEndpointRouteSourceHandle: "domain:ai-agent-partner",
+        topologySelectedRelationEndpointRouteTargetHandle:
+          "capability:agent-config-onboarding",
+        topologySelectedRelationEndpointRouteHandleSummary:
+          "domain:ai-agent-partner → capability:agent-config-onboarding",
+        topologySelectedRelationEndpointRouteText:
+          "AI Agent Partner→Agent Config Onboarding",
+        topologySelectedRelationEndpointRouteReadableText:
+          "AI Agent Partner → Agent Config Onboarding",
+        topologySelectedRelationEndpointReadableRoute:
+          "AI Agent Partner → Agent Config Onboarding",
+        topologySelectedRelationEndpointRouteWidth: 213,
+        topologySelectedRelationEndpointRouteHeight: 30,
+        topologySelectedRelationEndpointRouteClientWidth: 213,
+        topologySelectedRelationEndpointRouteScrollWidth: 213,
+        topologySelectedRelationEndpointVisibilityContract:
+          "selected-relation-keeps-source-target-readable",
+        topologySelectedRelationEndpointExpectedCount: 2,
+        topologySelectedRelationEndpointVisibleCount: 2,
+        topologySelectedRelationEndpointHiddenCount: 0,
+        topologySelectedRelationEndpointCards: [
+          {
+            slug: "domain:ai-agent-partner",
+            roleBadgeText: "FROM",
+            roleBadgeContract: "visible-source-target-role-badge",
+            roleBadgeVisible: true,
+            visible: true,
+            surfaceHidden: "",
+            shift: "safe-shift",
+          },
+          {
+            slug: "capability:agent-config-onboarding",
+            roleBadgeText: "TO",
+            roleBadgeContract: "visible-source-target-role-badge",
+            roleBadgeVisible: true,
+            visible: true,
+            surfaceHidden: "",
+            shift: "safe-shift",
+          },
+        ],
+        topologySelectedRelationContextSilhouettePolicy:
+          "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+        topologySelectedRelationContextSilhouetteActive: true,
+        topologySelectedRelationContextSilhouetteHiddenCount: 8,
+        topologySelectedRelationLowerPriorityVisibleDimmedCount: 0,
+        topologySelectedRelationVisibleOrientationAnchorCount: 3,
+        topologySelectedRelationHiddenContextInteractionContract:
+          "hidden-context-is-not-pointer-focus-or-a11y-target",
+        topologySelectedRelationHiddenContextInteractiveCount: 0,
+        topologyRelationLabelGeometryContract: "frame-positioned-hit-targets",
+        topologyRelationLabelGeometrySource: "after-render-layout-pass",
+        topologyRelationLabelGeometryExpectedCount: 1,
+        topologyRelationLabelGeometryReadyCount: 1,
+        topologyRelationLabelGeometryPendingCount: 0,
+        topologySelectedBlockingSurfaceOverlapActive: true,
+        topologyVisibleCardRectReadPolicy: "frame-state-no-computed-style",
+        topologyVisibleCardSelectedSurfaceRectPolicy:
+          "live-rects-for-postprocess-overlap-safety",
+        topologyVisibleCardRectReadCount: 10,
+        topologyConnectorDomIndexContract: "reuse-card-index",
+        topologyConnectorRectCacheContract: "frame-local-card-rect-cache",
+        topologyConnectorRectCacheFrameFallbackContract:
+          "reuse-card-placement-frame-rects-before-dom-read",
+        topologyConnectorRectCacheAccounting: "reads-plus-hits",
+        topologyConnectorRectCacheSize: 7,
+        topologyConnectorRectCacheSeedCount: 6,
+        topologyConnectorRectCacheReadCount: 0,
+        topologyConnectorRectCacheHitCount: 26,
+        topologyRepositionPassConnectorLabelMs: 0.18,
+        topologyRepositionMaxPassConnectorLabelMs: 0.42,
+        topologyRepositionPassSlowest: "card-placement",
+        topologyRelief: true,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceOverlapCount: 0,
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyResidualOverlapClearContract:
+          "visibility-cache-proves-selected-surfaces-clear",
+        topologyResidualOverlapReadPolicy: "reuse-visible-card-rect-cache",
+        topologyResidualOverlapClear: true,
+        topologyResidualVisibleCardOverlapCount: 0,
+        topologyResidualFixedSurfaceOverlapCount: 0,
+        topologyResidualCardFixedSurfaceOverlapCount: 0,
+        topologyZoomLensContract: "zoom-in-uses-kind-pins-for-noncritical-context-cards",
+        topologyZoomLensPresentationContract:
+          "camera-or-focus-lens-uses-kind-pins-for-noncritical-context",
+        topologyZoomLensPresentationActive: true,
+        topologyZoomLensPresentationSource: "camera-zoom-in",
+        topologyZoomLensThresholdRatio: 0.98,
+        topologyZoomLensCardCompactionActive: true,
+        topologyZoomLensCameraRatio: 0.74,
+        topologyZoomLensActive: true,
+        topologyZoomLensEligibleCount: 5,
+        topologyZoomLensActiveCardCount: 3,
+          topologyZoomLensPinMinOpacity: 0.42,
+        topologyVisibleCardCount: 2,
+        topologyZoomLensVisibleActiveCardCount: 2,
+        topologyZoomLensFocusEgoReadableContract:
+          "selected-focus-ego-neighbors-stay-readable-in-lens",
+        topologyZoomLensFocusEgoReadableCount: 6,
+        topologyZoomLensPinProximityContract:
+          "zoomed-context-pins-keep-critical-relation-proximity",
+        topologyZoomLensPinProximityActive: true,
+        topologyZoomLensProximityPinCount: 2,
+        topologyZoomLensPinProximityRingToken: "--topology-zoom-lens-pin-proximity-ring",
+          topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+          topologyZoomLensPinGlyphVisibleCount: 2,
+        topologyZoomLensViewportVisibleContract:
+          "visible-lens-pins-match-frame-state",
+        topologyZoomLensPinCanvasContract:
+          "zoom-lens-pins-stay-inside-readable-canvas-safe-band",
+        topologyZoomLensPinCanvasMarginPx: 32,
+        topologyZoomLensPinCanvasClampCount: 4,
+        topologyZoomLensEmptyViewportFallbackContract:
+          "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
+        topologyZoomLensEmptyViewportFallbackActive: true,
+        topologyZoomLensRelationChromeContract:
+          "camera-zoom-in-demotes-nonselected-relation-chrome",
+        topologyZoomLensRelationChromeActive: true,
+        topologyZoomLensRelationThreadCount: 4,
+        topologyZoomLensRelationLabelSuppressedCount: 2,
+        topologyFocusDetailLensContract:
+          "selected-focus-uses-kind-pins-for-noncritical-ego-context",
+        topologyFocusDetailLensActive: true,
+        topologyFocusDetailConnectorExpressionContract:
+          "focus-detail-lens-demotes-noncritical-connectors",
+        topologyFocusDetailConnectorExpressionActive: true,
+        topologyFocusDetailConnectorExpressionCount: 3,
+        topologySelectedFocusContextRailVisibleContract:
+          "focus-domain-context-rail-reports-visible-and-hidden-cards",
+        topologySelectedFocusContextRailCount: 5,
+        topologySelectedFocusContextRailVisibleCount: 1,
+        topologySelectedFocusContextRailHiddenCount: 4,
+        topologySelectedFocusContextRailHiddenReason: "layout-surface-collision",
+        topologyOverviewDensityLensContract:
+          "zoom-out-overview-uses-kind-pins-for-noncritical-context-cards",
+        topologyOverviewDensityLensThresholdRatio: 1.2,
+        topologyOverviewDensityLensMinWidth: 1800,
+        topologyOverviewDensityLensActive: false,
+        topologyOverviewDensityLensActiveCardCount: 0,
+        topologyOverviewDensityFixedGeographyContract:
+          "overview-density-uses-deterministic-canvas-geography",
+        topologyOverviewDensityFixedGeographyActive: true,
+        topologyOverviewDensityFixedGeographyDragContract:
+          "fixed-overview-geography-disables-card-drag",
+        topologyOverviewDensityFixedGeographyDragLocked: true,
+        topologyOverviewDensityFixedGeographyDragAttempt: "ignored",
+        topologyOverviewDensityFixedGeographySlotCount: 22,
+        topologyOverviewDensityFixedGeographyDomainCount: 6,
+        topologyOverviewDensityFixedGeographyPinCount: 15,
+        topologySupportRailOverlapReadPolicy: "reuse-visible-card-rect-cache",
+        topologyDragActiveOverlapPolicy:
+          "active-cluster-hides-lower-priority-overlaps",
+        topologyDragActiveOverlapReadPolicy: "reuse-visible-card-rect-cache",
+        topologyDragActiveOverlapHiddenCount: 0,
+        topologyFixedSurfaceLiveSuppressionReadPolicy:
+          "reuse-card-placement-frame-rects-before-dom-read",
+        topologyFixedSurfaceLiveSuppressionReadCount: 0,
+        topologyFixedSurfaceLiveSuppressedCount: 0,
+        topologyDragSettleOverlapReadPolicy: "reuse-visible-card-rect-cache",
+      },
+    },
+    { capturedAt: "2026-06-17T12:00:00.000Z" },
+  );
+
+  assert.deepEqual(evidence.agentCurrentSurfaceProof, {
+    proof: "topology-agent-current-surface",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    attentionWinner: "active-relation-inspector",
+    currentSurface: "selected-relation",
+    currentSurfaceRole: "active-relation-inspector",
+    currentSurfaceRoute: "domain:ai-agent-partner>capability:agent-config-onboarding",
+    selectedNodeId: null,
+    rootSelectedNodeId: null,
+    agentNextAction: "read-selected-relation-surface-before-map-context",
+  });
+  assert.deepEqual(evidence.relationLabelHandoffProof, {
+    proof: "topology-relation-label-handoff",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    contract: "label-level-mcp-cli-fallback",
+    label: {
+      gate: "handoff-ready",
+      primaryAction: "explain_relation",
+      cliFallback:
+        "ontology-atlas explain 'domain:ai-agent-partner' 'capability:agent-config-onboarding' [vault] --type 'contains'",
+      factRoute: "fact>evidence>gate>action",
+      quality: "strong",
+      evidence: "source-backed",
+      source: "domain:ai-agent-partner",
+      target: "capability:agent-config-onboarding",
+      type: "contains",
+      count: 4,
+      route: "domain:ai-agent-partner>capability:agent-config-onboarding",
+      typeLabel: "포함 ×4",
+    },
+    card: {
+      contract: "selected-relation-card-carries-mcp-cli-fallback",
+      handoffAliasContract: "selected-relation-card-carries-mcp-cli-fallback",
+      route: "source>target>type>action",
+      endpointRoute: "domain:ai-agent-partner>capability:agent-config-onboarding",
+      primaryAction: "explain_relation",
+      cliFallback:
+        "ontology-atlas explain 'domain:ai-agent-partner' 'capability:agent-config-onboarding' [vault] --type 'contains'",
+      source: "domain:ai-agent-partner",
+      target: "capability:agent-config-onboarding",
+      type: "contains",
+      labelContextContract: "selected-card-preserves-aggregate-label-context",
+      labelCount: 4,
+      labelVisibleText: "포함 ×4 · S1",
+      labelReadableText: "포함 ×4 · S1",
+    },
+    root: {
+      attentionWinner: "active-relation-inspector",
+      currentSurface: "selected-relation",
+      currentSurfaceRole: "active-relation-inspector",
+      currentSurfaceRoute: "domain:ai-agent-partner>capability:agent-config-onboarding",
+    },
+    aggregate: {
+      gate: "handoff-ready",
+      primaryAction: "explain_relation",
+      cliFallback:
+        "ontology-atlas explain 'domain:ai-agent-partner' 'capability:agent-config-onboarding' [vault] --type 'contains'",
+      factRoute: "fact>evidence>gate>action",
+      quality: "strong",
+      evidence: "source-backed",
+    },
+    agentNextAction: "run-explain-relation-for-handoff",
+  });
+  assert.deepEqual(evidence.relationEndpointVisibilityProof, {
+    proof: "topology-selected-relation-endpoint-visibility",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    contract: "selected-relation-keeps-source-target-readable",
+    expectedCount: 2,
+    visibleCount: 2,
+    hiddenCount: 0,
+    source: "domain:ai-agent-partner",
+    target: "capability:agent-config-onboarding",
+    readableRoute: "AI Agent Partner → Agent Config Onboarding",
+    layerReadableRoute: "AI Agent Partner → Agent Config Onboarding",
+    routeProof: {
+      contract: "visible-source-target-names-wrap",
+      wrapPolicy: "wrap-allowed-no-horizontal-overflow",
+      lineBudget: 2,
+      clientWidth: 213,
+      scrollWidth: 213,
+      horizontalOverflow: 0,
+    },
+    cards: [
+      {
+        slug: "domain:ai-agent-partner",
+        visible: true,
+        surfaceHidden: "",
+        shift: "safe-shift",
+      },
+      {
+        slug: "capability:agent-config-onboarding",
+        visible: true,
+        surfaceHidden: "",
+        shift: "safe-shift",
+      },
+    ],
+    agentNextAction: "read-selected-relation-with-source-and-target-cards",
+  });
+  assert.deepEqual(evidence.relationContextSilhouetteProof, {
+    proof: "topology-selected-relation-context-silhouette",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    policy: "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+    active: true,
+    hiddenCount: 8,
+    lowerPriorityVisibleDimmedCount: 0,
+    visibleOrientationAnchorCount: 3,
+    agentNextAction: "read-selected-relation-before-background-context",
+  });
+  assert.deepEqual(evidence.relationLabelFrameGeometryProof, {
+    proof: "topology-relation-label-frame-geometry",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    contract: "frame-positioned-hit-targets",
+    source: "after-render-layout-pass",
+    expected: 1,
+    ready: 1,
+    pending: 0,
+    agentNextAction: "trust-frame-positioned-relation-label-hit-targets",
+  });
+  assert.deepEqual(evidence.connectorCacheProof, {
+    proof: "topology-connector-cache-frame-fallback",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    domIndexContract: "reuse-card-index",
+    cacheContract: "frame-local-card-rect-cache",
+    frameFallbackContract: "reuse-card-placement-frame-rects-before-dom-read",
+    accounting: "reads-plus-hits",
+    size: 7,
+    seedCount: 6,
+    readCount: 0,
+    hitCount: 26,
+    visibleCardClippedCount: 0,
+    agentNextAction: "trust-frame-local-connector-rect-cache-before-reading-labels",
+  });
+  assert.deepEqual(evidence.connectorLabelPassProof, {
+    proof: "topology-connector-label-pass-budget",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    passMs: 0.18,
+    budgetMs: 3,
+    maxPassMs: 0.42,
+    slowestPass: "card-placement",
+    agentNextAction: "read-relation-labels-after-connector-label-pass-budget",
+  });
+  assert.deepEqual(evidence.visibleCardSelectedSurfaceRectProof, {
+    proof: "topology-visible-card-selected-surface-rect-policy",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    selectedBlockingSurfaceOverlapActive: true,
+    readPolicy: "frame-state-no-computed-style",
+    selectedSurfaceRectPolicy: "live-rects-for-postprocess-overlap-safety",
+    readCount: 10,
+    agentNextAction: "trust-selected-surface-rect-policy-before-reading-relation",
+  });
+  assert.deepEqual(evidence.residualOverlapProof, {
+    proof: "topology-residual-overlap-clear",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    visibleCardOverlapCount: 0,
+    visibleCardClippedCount: 0,
+    fixedSurfaceOverlapCount: 0,
+    cardFixedSurfaceOverlapCount: 0,
+    supportRailOverlapReadPolicy: "reuse-visible-card-rect-cache",
+    dragActiveOverlapPolicy: "active-cluster-hides-lower-priority-overlaps",
+    dragActiveOverlapReadPolicy: "reuse-visible-card-rect-cache",
+    dragActiveOverlapHiddenCount: 0,
+    fixedSurfaceLiveSuppressionReadPolicy:
+      "reuse-card-placement-frame-rects-before-dom-read",
+    fixedSurfaceLiveSuppressionReadCount: 0,
+    fixedSurfaceLiveSuppressedCount: 0,
+    dragSettleOverlapReadPolicy: "reuse-visible-card-rect-cache",
+    domMarker: {
+      clearContract: "visibility-cache-proves-selected-surfaces-clear",
+      readPolicy: "reuse-visible-card-rect-cache",
+      clear: true,
+      visibleCardOverlapCount: 0,
+      fixedSurfaceOverlapCount: 0,
+      cardFixedSurfaceOverlapCount: 0,
+    },
+    agentNextAction: "read-relation-surfaces-after-residual-overlap-clear",
+  });
+  assert.deepEqual(evidence.zoomLensProof, {
+    proof: "topology-zoom-lens-kind-pins",
+    status: "proved",
+    route: "/ko/topology/?p=domain%3Aai-agent-partner&mode=focus",
+    contract: "zoom-in-uses-kind-pins-for-noncritical-context-cards",
+    presentationContract: "camera-or-focus-lens-uses-kind-pins-for-noncritical-context",
+    thresholdRatio: 0.98,
+    cardCompactionActive: true,
+    presentationActive: true,
+    presentationSource: "camera-zoom-in",
+    cameraRatio: 0.74,
+    active: true,
+    eligibleCount: 5,
+    activeCardCount: 3,
+    visibleCardCount: 2,
+    visibleActiveCardCount: 2,
+    pinMinOpacity: 0.42,
+    focusEgoReadable: {
+      contract: "selected-focus-ego-neighbors-stay-readable-in-lens",
+      count: 6,
+    },
+    pinGlyph: {
+      contract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+      visibleCount: 2,
+    },
+    proximityPins: {
+      contract: "zoomed-context-pins-keep-critical-relation-proximity",
+      active: true,
+      count: 2,
+      ringToken: "--topology-zoom-lens-pin-proximity-ring",
+    },
+    viewportVisibleContract: "visible-lens-pins-match-frame-state",
+    pinCanvas: {
+      contract: "zoom-lens-pins-stay-inside-readable-canvas-safe-band",
+      marginPx: 32,
+      clampCount: 4,
+    },
+    emptyViewportFallback: {
+      contract: "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
+      active: true,
+    },
+    relationChrome: {
+      contract: "camera-zoom-in-demotes-nonselected-relation-chrome",
+      active: true,
+      threadCount: 4,
+      labelSuppressedCount: 2,
+    },
+    focusDetail: {
+      contract: "selected-focus-uses-kind-pins-for-noncritical-ego-context",
+      active: true,
+      connectorExpression: {
+        contract: "focus-detail-lens-demotes-noncritical-connectors",
+        active: true,
+        count: 3,
+      },
+      contextRail: {
+        contract: "focus-domain-context-rail-reports-visible-and-hidden-cards",
+        totalCount: 5,
+        visibleCount: 1,
+        hiddenCount: 4,
+        hiddenReason: "layout-surface-collision",
+      },
+    },
+    overviewDensity: {
+      contract: "zoom-out-overview-uses-kind-pins-for-noncritical-context-cards",
+      thresholdRatio: 1.2,
+      minWidth: 1800,
+      active: false,
+      activeCardCount: 0,
+      fixedGeography: {
+        contract: "overview-density-uses-deterministic-canvas-geography",
+        active: true,
+        dragContract: "fixed-overview-geography-disables-card-drag",
+        dragLocked: true,
+        dragAttempt: "ignored",
+        slotCount: 22,
+        domainCount: 6,
+        pinCount: 15,
+      },
+    },
+    agentNextAction: "trust-kind-pin-lens-before-reading-dense-map-cards",
+  });
+});
+
+test("WebView evidence summarizes selected relation visible fact route proof for agent handoff", () => {
+  const evidence = verifier.buildWebviewEvidencePayload(
+    {
+      href: "tauri://localhost/ko/topology/?p=capability%3Aagent-config-onboarding&mode=focus",
+      width: 1512,
+      height: 917,
+      markers: {
+        topologyRootAttentionWinner: "active-relation-inspector",
+        topologyAgentCurrentSurface: "selected-relation",
+        topologyAgentCurrentSurfaceRole: "active-relation-inspector",
+        topologyAgentCurrentSurfaceRoute:
+          "capability:agent-config-onboarding>element:operations-nav",
+        topologySelectedRelationCardHandoffContract:
+          "selected-relation-card-carries-mcp-cli-fallback",
+        topologySelectedRelationCardRoute: "source>target>type>action",
+        topologySelectedRelationCardEndpointRoute:
+          "capability:agent-config-onboarding>element:operations-nav",
+        topologySelectedRelationCardPrimaryAction: "explain_relation",
+        topologySelectedRelationCardCliFallback:
+          "ontology-atlas explain 'capability:agent-config-onboarding' 'element:operations-nav' [vault] --type 'contains'",
+        topologySelectedRelationCardSource: "capability:agent-config-onboarding",
+        topologySelectedRelationCardTarget: "element:operations-nav",
+        topologySelectedRelationCardType: "contains",
+        topologySelectedRelationCardLabelContextContract:
+          "selected-card-preserves-aggregate-label-context",
+        topologySelectedRelationCardLabelCount: 6,
+        topologySelectedRelationCardLabelVisibleText: "포함 ×6 · S1",
+        topologySelectedRelationCardLabelReadableText: "포함 ×6 · S1",
+        topologyFocusRelationLabelVisibleText: "포함 ×6 · S1",
+        topologySelectedRelationLabelCount: 6,
+        topologySelectedRelationClaimLensVisible: true,
+        topologySelectedRelationClaimLensText:
+          "강한 구조 · 출처 1개 · 타입이 있는 온톨로지 사실",
+        topologySelectedRelationClaimLensQuality: "strong",
+        topologySelectedRelationContractKind: "typed-fact-not-similarity",
+        topologySelectedRelationContractText:
+          "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+        topologySelectedRelationProofBandWidth: 236,
+        topologySelectedRelationProofBandHeight: 42,
+        topologySelectedRelationAgentDecisionText:
+          "타입과 근거가 있어 에이전트 전달에 포함할 수 있습니다.",
+        topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
+        topologySelectedRelationEndpointRouteReadableText:
+          "Agent Config Onboarding → Operations Nav",
+        topologySelectedRelationCopyPayloadTool: "query_ontology",
+        topologySelectedRelationCopyPayloadAction: "explain_relation",
+        topologySelectedRelationCopyPayloadFrom: "capability:agent-config-onboarding",
+        topologySelectedRelationCopyPayloadTo: "element:operations-nav",
+        topologySelectedRelationCopyPayloadType: "contains",
+        topologySelectedRelationCopyPayloadEvidence: "source-backed",
+        topologySelectedRelationCopyPayloadGate: "handoff-ready",
+        topologySelectedRelationCopyPayloadCall:
+          'query_ontology({"operation":"explain_relation","from":"capability:agent-config-onboarding","to":"element:operations-nav","direction":"undirected","maxHops":5,"limit":10})',
+        topologySelectedRelationCopyPayloadSummary:
+          "query_ontology · explain_relation · capability:agent-config-onboarding → element:operations-nav · contains · source-backed · handoff-ready",
+        topologySelectedRelationCopyPayloadVisibleSummary: "설명 준비",
+        topologySelectedRelationCopyPayloadVisibleHandleSummary:
+          "agent-config-onboarding → operations-nav",
+        topologySelectedRelationCopyPayloadLayoutContract:
+          "visible-summary-and-handle-readable",
+      },
+    },
+    { capturedAt: "2026-06-22T12:00:00.000Z" },
+  );
+
+  assert.deepEqual(evidence.selectedRelationVisibleFactRouteProof, {
+    proof: "topology-selected-relation-visible-fact-route",
+    status: "proved",
+    route: "/ko/topology/?p=capability%3Aagent-config-onboarding&mode=focus",
+    root: {
+      attentionWinner: "active-relation-inspector",
+      currentSurface: "selected-relation",
+      currentSurfaceRole: "active-relation-inspector",
+      currentSurfaceRoute: "capability:agent-config-onboarding>element:operations-nav",
+    },
+    card: {
+      contract: "selected-relation-card-carries-mcp-cli-fallback",
+      route: "source>target>type>action",
+      endpointRoute: "capability:agent-config-onboarding>element:operations-nav",
+      primaryAction: "explain_relation",
+      cliFallback:
+        "ontology-atlas explain 'capability:agent-config-onboarding' 'element:operations-nav' [vault] --type 'contains'",
+      source: "capability:agent-config-onboarding",
+      target: "element:operations-nav",
+      type: "contains",
+    },
+    visibleFactRoute: {
+      claimLensVisible: true,
+      claimLensText: "강한 구조 · 출처 1개 · 타입이 있는 온톨로지 사실",
+      claimLensQuality: "strong",
+      contractKind: "typed-fact-not-similarity",
+      contractText: "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+      proofBandWidth: 236,
+      proofBandHeight: 42,
+      agentDecisionText: "타입과 근거가 있어 에이전트 전달에 포함할 수 있습니다.",
+      agentGateKind: "handoff-ready",
+      endpointRouteContract: "visible-source-target-names-wrap",
+      readableRoute: "Agent Config Onboarding → Operations Nav",
+    },
+    copyPayload: {
+      tool: "query_ontology",
+      action: "explain_relation",
+      from: "capability:agent-config-onboarding",
+      to: "element:operations-nav",
+      type: "contains",
+      evidence: "source-backed",
+      gate: "handoff-ready",
+      call:
+        'query_ontology({"operation":"explain_relation","from":"capability:agent-config-onboarding","to":"element:operations-nav","direction":"undirected","maxHops":5,"limit":10})',
+      summary:
+        "query_ontology · explain_relation · capability:agent-config-onboarding → element:operations-nav · contains · source-backed · handoff-ready",
+      visibleSummary: "설명 준비",
+      visibleHandleSummary: "agent-config-onboarding → operations-nav",
+      layoutContract: "visible-summary-and-handle-readable",
+    },
+    agentNextAction: "run-selected-relation-copy-payload",
+  });
+});
+
+test("WebView evidence flags slow connector label pass budget regressions", () => {
+  const evidence = verifier.buildWebviewEvidencePayload(
+    {
+      href: "tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus",
+      markers: {
+        topologyRepositionPassConnectorLabelMs: 3.2,
+        topologyRepositionMaxPassConnectorLabelMs: 3.2,
+        topologyRepositionPassSlowest: "connector-label",
+      },
+    },
+    { capturedAt: "2026-06-17T12:00:00.000Z" },
+  );
+
+  assert.deepEqual(evidence.connectorLabelPassProof, {
+    proof: "topology-connector-label-pass-budget",
+    status: "incomplete",
+    route: "/ko/topology/?p=domain%3Aviews&mode=focus",
+    passMs: 3.2,
+    budgetMs: 3,
+    maxPassMs: 3.2,
+    slowestPass: "connector-label",
+    agentNextAction: "read-relation-labels-after-connector-label-pass-budget",
+  });
+});
+
+test("WebView evidence summarizes selected focus dim context proof for agent handoff", () => {
+  const evidence = verifier.buildWebviewEvidencePayload(
+    {
+      href: "tauri://localhost/en/topology/?p=domain%3Aviews&mode=focus",
+      markers: {
+        topologyAttentionWinner: "focus-state",
+        topologyRootAttentionWinner: "focus-state",
+        topologyAgentCurrentSurface: "selected-node",
+        topologyAgentCurrentSurfaceRole: "active-node-inspector",
+        topologyAgentCurrentSurfaceRoute: "domain:views",
+        topologyUiScale: 1,
+        topologyUiScaleWritePolicy: "reuse-stable-scale",
+        topologyRootSelectedNodeId: "domain:views",
+        topologyNodePopoverVisible: true,
+        topologyNodePopoverSurfaceRole: "active-node-inspector",
+        topologyNodePopoverCollapsed: true,
+        topologySelectedNodePopoverVisible: true,
+        topologySelectedNodeId: "domain:views",
+        topologySelectedNodeTitle: "Views",
+        topologyNodePopoverRelationFactCount: "3",
+        topologyNodePopoverRelationTypeCount: "2",
+        topologyNodePopoverCompactMeaningText: "A core hub — 10 places depend on it",
+        topologyNodePopoverCompactMeaningContract: "plain-language-meaning-before-typed-facts",
+        topologyNodePopoverCompactMeaningResponsiveContract: "visible-desktop-sr-only-compact",
+        topologyNodePopoverCompactCommandRowContract: "facts-and-actions-share-final-scanline",
+        topologyNodePopoverCompactCommandRowGapToken:
+          "--topology-node-popover-compact-command-row-gap",
+        topologyNodePopoverCompactActionsContract: "actions-share-command-row-with-facts",
+        topologyNodePopoverCompactActionsReadableFlow:
+          "selected-node-facts-to-agent-handoff",
+        topologyNodePopoverCompactBriefActionReadableFlow:
+          "selected-node-facts-to-agent-brief",
+        topologyNodePopoverAgentHandoffContract: "selected-node-actions-visible",
+        topologyNodePopoverAgentHandoffRoute: "selected-node>facts>actions",
+        topologyNodePopoverAgentHandoffPrimaryAction: "focus-brief",
+        topologyNodePopoverAgentHandoffActionCount: "3",
+        topologyNodePopoverAgentHandoffRelationFactCount: "3",
+        topologyNodePopoverAgentHandoffRelationTypeCount: "2",
+        topologyNodePopoverAgentHandoffSummaryContract: "visible-mcp-cli-focus-brief",
+        topologyNodePopoverAgentHandoffVisibleSummary: "MCP/CLI · Brief",
+        topologyNodePopoverAgentHandoffSelectedNode: "domain:views",
+        topologyNodePopoverCompactRelationFactsContract:
+          "collapsed-dock-surfaces-typed-facts",
+        topologyNodePopoverCompactRelationFactsReadableContract:
+          "direct-typed-facts-not-scores",
+        topologyNodePopoverCompactRelationFactsNoScores:
+          "Typed ontology facts, not inferred similarity scores.",
+        topologyNodePopoverCompactRelationFactsAccessibleName:
+          "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+        topologyNodePopoverCompactRelationFactsTitle:
+          "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+        topologyNodePopoverCompactRelationFactsHandoffContract:
+          "compact-counts-route-to-relation-list-handoff",
+        topologyNodePopoverCompactRelationFactsHandoffRoute:
+          "selected-node>relations>fact>evidence>gate>action>payload",
+        topologyNodePopoverCompactRelationFactsHandoffTool: "query_ontology",
+        topologyNodePopoverCompactRelationFactsHandoffSummary:
+          "query_ontology · 2 rendered · 0 hidden · 3 direct facts",
+        topologyNodePopoverCompactRelationFactsHiddenRemainderCount: 0,
+        topologyNodePopoverCompactRelationFactsVisible: true,
+        topologyNodePopoverCompactActionsVisible: true,
+        topologyNodePopoverCompactRelationFactsTop: 212,
+        topologyNodePopoverCompactActionsTop: 206,
+        topologyNodePopoverCompactHandoffSummaryVisible: true,
+        topologyNodePopoverCompactHandoffSummaryContract: "visible-mcp-cli-focus-brief",
+        topologyNodePopoverCompactHandoffSummaryVisibleLabel: "MCP/CLI",
+        topologyNodePopoverCompactHandoffSummaryText: "MCP/CLI · Brief",
+        topologyNodePopoverCompactHandoffSummarySelectedNode: "domain:views",
+        topologyNodePopoverCompactHandoffSummaryClientWidth: 98,
+        topologyNodePopoverCompactHandoffSummaryScrollWidth: 98,
+        topologyNodePopoverCompactHandoffSummaryTop: 212,
+        topologyClickFocusRelationshipContext: "durable",
+        topologyClickFocusRelationshipContextSource: "selected-dock-companions",
+        topologyFocusClusterMode: "none",
+        topologyFocusClusterStage: "",
+        topologyFocusClusterSize: 6,
+        topologyFocusClusterVisible: false,
+        topologyDimOpacityContract: "readable-context-geography",
+        topologyDimAnchorOpacity: 0.26,
+        topologyDimChipOpacity: 0.08,
+        topologyDimContextOpacity: 0.08,
+        topologyDimAnchorVisibleCount: 3,
+        topologyDimChipVisibleCount: 4,
+        topologyDimAnchorMinOpacity: 0.26,
+        topologyDimChipMinOpacity: 0.08,
+      },
+    },
+    { capturedAt: "2026-06-20T12:00:00.000Z" },
+  );
+
+  assert.deepEqual(evidence.agentCurrentSurfaceProof, {
+    proof: "topology-agent-current-surface",
+    status: "proved",
+    route: "/en/topology/?p=domain%3Aviews&mode=focus",
+    attentionWinner: "focus-state",
+    currentSurface: "selected-node",
+    currentSurfaceRole: "active-node-inspector",
+    currentSurfaceRoute: "domain:views",
+    selectedNodeId: "domain:views",
+    rootSelectedNodeId: "domain:views",
+    handoff: {
+      contract: "selected-node-actions-visible",
+      route: "selected-node>facts>actions",
+      primaryAction: "focus-brief",
+      summaryContract: "visible-mcp-cli-focus-brief",
+      visibleSummary: "MCP/CLI · Brief",
+      actionCount: 3,
+      relationFactCount: 3,
+      relationTypeCount: 2,
+      agentNextAction: "copy-selected-node-focus-brief-or-expand-detail",
+    },
+    agentNextAction: "read-selected-node-surface-before-map-context",
+  });
+  assert.deepEqual(evidence.agentUiScaleStabilityProof, {
+    proof: "topology-ui-scale-stability",
+    status: "proved",
+    route: "/en/topology/?p=domain%3Aviews&mode=focus",
+    uiScale: 1,
+    writePolicy: "reuse-stable-scale",
+    stableScaleReused: true,
+    agentNextAction: "trust-stable-ui-scale-before-reading-surface-proof",
+  });
+  assert.deepEqual(evidence.selectedFocusDimProof, {
+    proof: "topology-selected-focus-dim-context",
+    status: "proved",
+    route: "/en/topology/?p=domain%3Aviews&mode=focus",
+    attention: {
+      winner: "focus-state",
+      selectedNodeId: "domain:views",
+      selectedNodeTitle: "Views",
+      compactMeaning: "A core hub — 10 places depend on it",
+      compactMeaningContract: "plain-language-meaning-before-typed-facts",
+      compactMeaningResponsiveContract: "visible-desktop-sr-only-compact",
+      positionContract: null,
+      gutterContract: null,
+      rightInsetToken: null,
+      rightInset: null,
+      supportContract: null,
+      commandRowContract: "facts-and-actions-share-final-scanline",
+      commandRowGapToken: "--topology-node-popover-compact-command-row-gap",
+      actionsContract: "actions-share-command-row-with-facts",
+      actionsReadableFlow: "selected-node-facts-to-agent-handoff",
+      relationFactsReadableContract: "direct-typed-facts-not-scores",
+      relationFactsAccessibleName:
+        "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      relationFactsHandoff: {
+        contract: "compact-counts-route-to-relation-list-handoff",
+        route: "selected-node>relations>fact>evidence>gate>action>payload",
+        tool: "query_ontology",
+        summary: "query_ontology · 2 rendered · 0 hidden · 3 direct facts",
+        hiddenRemainderCount: 0,
+      },
+      briefActionReadableFlow: "selected-node-facts-to-agent-brief",
+      factsAndActionsShareScanline: true,
+      relationshipContext: "durable",
+      relationshipContextSource: "selected-dock-companions",
+      focusClusterMode: "none",
+      focusClusterStage: "",
+      focusClusterSize: 6,
+      focusClusterVisible: false,
+      hull: "not-rendered",
+    },
+    dim: {
+      contract: "readable-context-geography",
+      anchorOpacity: 0.26,
+      contextOpacity: 0.08,
+      contextOpacityAlias: 0.08,
+      anchorVisibleCount: 3,
+      contextVisibleCount: 4,
+      anchorMinOpacity: 0.26,
+      contextMinOpacity: 0.08,
+      anchorMinContract: 0.26,
+      contextMinContract: 0.08,
+      anchorToken: "--topology-map-dim-anchor-opacity",
+      contextToken: "--topology-map-dim-context-opacity",
+    },
+    agentNextAction: "read-selected-node-popover-before-background-map-context",
+  });
+  assert.deepEqual(evidence.nodePopoverCompactHandoffProof, {
+    proof: "topology-node-popover-compact-handoff-root",
+    status: "proved",
+    route: "/en/topology/?p=domain%3Aviews&mode=focus",
+    selectedNode: {
+      id: "domain:views",
+      title: "Views",
+      compactMeaning: "A core hub — 10 places depend on it",
+      relationFactCount: 3,
+      relationTypeCount: 2,
+    },
+    root: {
+      attentionWinner: "focus-state",
+      currentSurface: "selected-node",
+      currentSurfaceRole: "active-node-inspector",
+      currentSurfaceRoute: "domain:views",
+      selectedNodeId: "domain:views",
+    },
+    handoff: {
+      contract: "selected-node-actions-visible",
+      route: "selected-node>facts>actions",
+      primaryAction: "focus-brief",
+      summaryContract: "visible-mcp-cli-focus-brief",
+      visibleSummary: "MCP/CLI · Brief",
+      actionCount: 3,
+      relationFactCount: 3,
+      relationTypeCount: 2,
+      readableFlow: "selected-node-facts-to-agent-handoff",
+      briefActionFlow: "selected-node-facts-to-agent-brief",
+      compactSummary: {
+        visible: true,
+        contract: "visible-mcp-cli-focus-brief",
+        visibleLabel: "MCP/CLI",
+        text: "MCP/CLI · Brief",
+        selectedNode: "domain:views",
+        clientWidth: 98,
+        scrollWidth: 98,
+      },
+      relationFacts: {
+        contract: "compact-counts-route-to-relation-list-handoff",
+        route: "selected-node>relations>fact>evidence>gate>action>payload",
+        tool: "query_ontology",
+        summary: "query_ontology · 2 rendered · 0 hidden · 3 direct facts",
+        hiddenRemainderCount: 0,
+      },
+    },
+    agentNextAction: "copy-selected-node-focus-brief-or-expand-detail",
+  });
+});
+
+test("WebView evidence summarizes node popover compact verification proof for agent handoff", () => {
+  const evidence = verifier.buildWebviewEvidencePayload(
+    {
+      href: "tauri://localhost/en/topology/?p=domain%3Aviews&mode=focus",
+      markers: {
+        topologyNodePopoverVerifyAttempted: true,
+        topologyNodePopoverVerifyReason: "done",
+        topologyNodePopoverVerifyExpanded: true,
+        topologyNodePopoverVerifyCompactFactsVisible: true,
+        topologyNodePopoverVerifyCompactFactsContract: "collapsed-dock-surfaces-typed-facts",
+        topologyNodePopoverVerifyCompactFactsReadableContract: "direct-typed-facts-not-scores",
+        topologyNodePopoverVerifyCompactFactsAccessibleName:
+          "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+        topologyNodePopoverVerifyCompactFactsNoScores:
+          "Typed ontology facts, not inferred similarity scores.",
+        topologyNodePopoverVerifyCompactFactsHandoffContract:
+          "compact-counts-route-to-relation-list-handoff",
+        topologyNodePopoverVerifyCompactFactsHandoffRoute:
+          "selected-node>relations>fact>evidence>gate>action>payload",
+        topologyNodePopoverVerifyCompactFactsHandoffTool: "query_ontology",
+        topologyNodePopoverVerifyCompactFactsHandoffSummary:
+          "query_ontology · 2 rendered · 10 hidden · 15 direct facts",
+        topologyNodePopoverVerifyCompactFactsHiddenRemainderCount: 10,
+        topologyNodePopoverVerifyCompactActionsVisible: true,
+        topologyNodePopoverVerifyCompactActionsContract:
+          "actions-share-command-row-with-facts",
+        topologyNodePopoverVerifyCompactActionsReadableFlow:
+          "selected-node-facts-to-agent-handoff",
+        topologyNodePopoverVerifyCompactBriefVisible: true,
+        topologyNodePopoverVerifyCompactBriefAction: "copy-focus-brief",
+        topologyNodePopoverVerifyCompactBriefReadableFlow:
+          "selected-node-facts-to-agent-brief",
+        topologyNodePopoverVerifyCompactBriefRailLabel: "Agent handoff",
+        topologyNodePopoverVerifyCompactBriefTitle: "Agent handoff: Copy focus brief",
+      },
+    },
+    { capturedAt: "2026-06-20T12:10:00.000Z" },
+  );
+
+  assert.deepEqual(evidence.nodePopoverCompactVerificationProof, {
+    proof: "topology-node-popover-compact-verification",
+    status: "proved",
+    route: "/en/topology/?p=domain%3Aviews&mode=focus",
+    attempted: true,
+    expanded: true,
+    reason: "done",
+    compactFacts: {
+      visible: true,
+      contract: "collapsed-dock-surfaces-typed-facts",
+      readableContract: "direct-typed-facts-not-scores",
+      accessibleName:
+        "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      noScores: "Typed ontology facts, not inferred similarity scores.",
+      handoffContract: "compact-counts-route-to-relation-list-handoff",
+      handoffRoute: "selected-node>relations>fact>evidence>gate>action>payload",
+      handoffTool: "query_ontology",
+      handoffSummary: "query_ontology · 2 rendered · 10 hidden · 15 direct facts",
+      hiddenRemainderCount: 10,
+    },
+    compactActions: {
+      visible: true,
+      contract: "actions-share-command-row-with-facts",
+      readableFlow: "selected-node-facts-to-agent-handoff",
+      briefVisible: true,
+      briefAction: "copy-focus-brief",
+      briefReadableFlow: "selected-node-facts-to-agent-brief",
+      briefRailLabel: "Agent handoff",
+      briefTitle: "Agent handoff: Copy focus brief",
+    },
+    agentNextAction: "read-compact-node-facts-before-expanded-popover-proof",
   });
 });
 
@@ -824,10 +2085,14 @@ test("WebView verification rejects stacked Relief transient surfaces", () => {
       topologyAnalysisPanelVisible: true,
       topologyAnalysisPanelMode: "overview",
       topologyAnalysisPanelAttentionRole: "support",
+        topologyAnalysisPanelLayerContract: "read-surface-above-map-cards",
+        topologyAnalysisPanelZIndexToken: "--topology-panel-read-layer-z-index",
+        topologyAnalysisPanelZIndexComputed: "30",
       topologyAnalysisPanelWidthPolicy: "overview-support",
       topologyAnalysisPanelWidthBand: "header-aligned",
-      topologyAnalysisPanelWidthContract: "overview-support-max-360",
-      topologyAnalysisPanelWidthToken: "--topology-panel-overview-rail-width",
+      topologyAnalysisPanelWidthContract: "overview-support-max-360-phone-utility-reserve",
+      topologyAnalysisPanelWidthToken: "--topology-panel-overview-responsive-width",
+        topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
       topologyAnalysisPanelWidthTarget: "overview-14-inch-compact",
       topologyAnalysisPanelWidth: 320,
       topologyAnalysisPanelHeight: 360,
@@ -863,8 +2128,12 @@ test("verify app launch args keep executable launch defaults", () => {
       requireWebviewContent: true,
       requireWebviewRoute: null,
       verifyTopologyDrag: false,
+      verifyTopologySelectedRelation: false,
+      verifyTopologyNodePopover: false,
       verifyTopologyCreateNode: false,
       verifyTopologyFocusNoop: false,
+      verifyTopologyFocusZoom: false,
+      verifyTopologyFrameProfile: false,
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
@@ -901,8 +2170,12 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       requireWebviewContent: false,
       requireWebviewRoute: null,
       verifyTopologyDrag: false,
+      verifyTopologySelectedRelation: false,
+      verifyTopologyNodePopover: false,
       verifyTopologyCreateNode: false,
       verifyTopologyFocusNoop: false,
+      verifyTopologyFocusZoom: false,
+      verifyTopologyFrameProfile: false,
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
@@ -959,8 +2232,12 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       requireWebviewContent: true,
       requireWebviewRoute: "/en/topology/",
       verifyTopologyDrag: true,
+      verifyTopologySelectedRelation: false,
+      verifyTopologyNodePopover: false,
       verifyTopologyCreateNode: true,
       verifyTopologyFocusNoop: true,
+      verifyTopologyFocusZoom: false,
+      verifyTopologyFrameProfile: false,
       printWindowDiagnostics: true,
       requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
@@ -1003,8 +2280,12 @@ test("verify app launch args normalize direct WebView route checks and allow rou
       requireWebviewContent: true,
       requireWebviewRoute: "/en/topology/",
       verifyTopologyDrag: false,
+      verifyTopologySelectedRelation: false,
+      verifyTopologyNodePopover: false,
       verifyTopologyCreateNode: false,
       verifyTopologyFocusNoop: false,
+      verifyTopologyFocusZoom: false,
+      verifyTopologyFrameProfile: false,
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
@@ -1188,11 +2469,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyCardOverlapCount: 0,
       topologyCardClippedCount: 0,
       topologyFixedSurfaceCount: 0,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
       topologyFixedSurfaceOverlapCount: 0,
       topologyFixedSurfaceOverlapSample: [],
       topologyCardFixedSurfaceOverlapCount: 0,
-      topologyAnalysisPanelWidthContract: "overview-support-max-360",
-        topologyAnalysisPanelWidthToken: "--topology-panel-overview-rail-width",
+      topologyAnalysisPanelWidthContract: "overview-support-max-360-phone-utility-reserve",
+        topologyAnalysisPanelWidthToken: "--topology-panel-overview-responsive-width",
+        topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
       topologyAnalysisPanelWidthTarget: "overview-14-inch-compact",
       topologyAnalysisPanelWidth: 312,
       topologyPathStartPromptVisible: false,
@@ -1241,6 +2524,75 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyClickFocusRelationshipContext: "durable",
       topologyClickFocusRelationshipContextSource: "selected-dock-companions",
       topologyDragClusterSize: 2,
+      topologyDragCollisionPolicy: "release-settle",
+      topologyDragPhysicsSyncContract: "skeleton-card-drag-pins-worker-layout-group",
+      topologyDragPhysicsReleasePolicy: "commit-drop-position-no-force-release",
+      topologyDragPhysicsSyncActiveDuring: true,
+      topologyDragWorkerAppliedFrameDelta: 4,
+      topologyDragWorkerAppliedFrameChangeCount: 2,
+      topologyDragRelationLabelVisibilityContract: "active-drag-connector-labels-remain-readable",
+      topologyDragRelationLabelExpectedCount: 2,
+      topologyDragRelationLabelVisibleCount: 2,
+      topologyDragRelationLabelVisibleDuringDrag: true,
+      ...compactZoomDragRelationLabelMarkers(),
+      topologyDragInteractionCueContract: "root-card-shows-linked-count-during-drag",
+      topologyDragInteractionCueVisible: true,
+      topologyDragInteractionCueText: "2 linked · 3 relations",
+      topologyDragInteractionCueLinkedCardCount: 2,
+      topologyDragInteractionCueRelationLinkCount: 3,
+      topologyDragReactiveContextContract: "active-drag-shows-worker-moving-surrounding-context",
+      topologyDragReactiveContextPolicy: "boost-dimmed-worker-response",
+      topologyDragReactiveContextOpacity: "0.42",
+      topologyDragReactiveContextOpacityToken: "--topology-card-drag-reactive-context-opacity",
+          topologyDragReactiveContextVisualContract: "reactive-context-uses-border-ring",
+          topologyDragReactiveContextVisualToken: "--topology-card-border-selected",
+      topologyDragReactiveContextVisibleCount: 2,
+      topologyDragReactiveMotionContract: "active-drag-gives-surrounding-context-bounded-parallax",
+      topologyDragReactiveMotionPolicy: "bounded-parallax-nudge",
+      topologyDragReactiveMotionLinkedPolicy: "direct-neighbor-readable-follow",
+      topologyDragReactiveMotionVisibleCount: 2,
+      topologyDragReactiveAmbientMotionVisibleCount: 1,
+      topologyDragReactiveLinkedMotionVisibleCount: 1,
+      topologyDragReactiveMotionMaxObservedOffsetPx: 36,
+      topologyDragReactiveMotionMaxOffsetPx: 36,
+      topologyDragReactiveMotionBaseMaxOffsetPx: 24,
+      topologyDragReactiveMotionLinkedMaxOffsetPx: 36,
+      topologyDragReactiveMotionMaxOffsetToken: "--topology-card-drag-reactive-motion-max-offset",
+      topologyDragTensionConnectorContract: "active-drag-draws-links-to-reactive-neighbors",
+      topologyDragTensionConnectorPolicy: "cluster-to-linked-context-only",
+      topologyDragTensionConnectorExpectedCount: 1,
+      topologyDragTensionConnectorVisibleCount: 1,
+      topologyDragTensionConnectorActiveOpacity: "0.88",
+      topologyDragTensionConnectorActiveStrokeWidth: "2.1",
+      topologyLayoutWorkerPositionFrameSkipPolicy: "skip-only-unsynced-skeleton-card-drag",
+      topologyDragFrameCacheContract: "pointer-move-reuses-drag-indexes",
+      topologyDragDomIndexContract: "drag-release-reuses-card-elements",
+      topologyDragDomIndexSize: 21,
+      topologyDragFrameCacheSnapshotCount: 4,
+      topologyDockDragSnapshotContract: "single-pass-card-rect-read",
+      topologyConnectorDomIndexContract: "reuse-card-index",
+      topologyConnectorRectCacheContract: "frame-local-card-rect-cache",
+      topologyConnectorRectCacheFrameFallbackContract:
+        "reuse-card-placement-frame-rects-before-dom-read",
+      topologyConnectorRectCacheAccounting: "reads-plus-hits",
+      topologyConnectorRectCacheSize: 8,
+      topologyConnectorRectCacheReadCount: 0,
+      topologyConnectorRectCacheHitCount: 6,
+      topologyRelationLabelBlockerContract: "reuse-visible-card-rects",
+      topologyRelationLabelBlockerSource: "visibility-pass",
+      topologyRelationLabelQueryContract: "indexed-once",
+      topologyRelationLabelQueryIndexCount: 3,
+      topologyRelationLabelGeometryContract: "frame-positioned-hit-targets",
+      topologyRelationLabelGeometrySource: "after-render-layout-pass",
+      topologyRelationLabelGeometryExpectedCount: 1,
+      topologyRelationLabelGeometryReadyCount: 1,
+      topologyRelationLabelGeometryPendingCount: 0,
+      topologyVisibilityCountContract: "single-pass-unless-fallback",
+      topologyVisibilityCountSource: "single-pass-final-recount",
+      topologyDragSettleFeedbackContract:
+        "released-dragged-cluster-keeps-settle-feedback",
+      topologyDragSettledRoot: "domain:views",
+      topologyDragSettledClusterSize: 4,
       topologyDragSettleMotionContract: "linked-cluster-drag-settle",
       topologyDragSettleMotionDurationMs: 720,
       topologyDragSettleMotionEasing: "ease-out",
@@ -1255,12 +2607,39 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelDensity: "focus-token",
       topologySelectedRelationLabelDesiredWidth: 116,
       topologySelectedRelationLabelCenteredAvailableWidth: 116,
+      topologySelectedRelationLabelViewportClampContract: "centered-within-viewport",
+      topologySelectedRelationLabelViewportClampSide: "none",
       topologySelectedRelationLabelViewportInset: 16,
+      topologySelectedRelationCardMaxHeightToken: "--topology-selected-relation-card-max-height",
+      topologySelectedRelationCardHandoffContract:
+        "selected-relation-card-carries-mcp-cli-fallback",
+      topologySelectedRelationCardHandoffAliasContract:
+        "selected-relation-card-carries-mcp-cli-fallback",
+      topologySelectedRelationCardRoute: "source>target>type>action",
+      topologySelectedRelationCardEndpointRoute:
+        "domain:views>capability:topology-analysis-modes",
+      topologySelectedRelationCardPrimaryAction: "explain_relation",
+      topologySelectedRelationCardCliFallback:
+        "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+      topologySelectedRelationCardSource: "domain:views",
+      topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
+      topologySelectedRelationCardType: "contains",
+      topologySelectedRelationCardLabelContextContract:
+        "selected-card-preserves-aggregate-label-context",
+      topologySelectedRelationCardLabelCount: 1,
+      topologySelectedRelationCardLabelVisibleText: "contains ×1 · S1",
+      topologySelectedRelationCardLabelReadableText: "contains ×1 · S1",
       topologySelectedRelationLabelQualityChipText: "support",
       topologySelectedRelationLabelPrimaryCopyAction: "explain_relation",
       topologySelectedRelationLabelAgentGateText: "MCP/CLI",
       topologySelectedRelationLabelCliFallbackCommand:
         "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+      topologySelectedRelationLabelSource: "domain:views",
+      topologySelectedRelationLabelTarget: "capability:topology-analysis-modes",
+      topologySelectedRelationLabelType: "contains",
+      topologySelectedRelationLabelCount: 1,
+      topologyFocusRelationLabelVisibleText: "contains ×1 · S1",
+      topologySelectedRelationLabelRoute: "domain:views>capability:topology-analysis-modes",
       topologySelectedRelationLabelFactRoute: "fact>evidence>gate>action",
       topologySelectedRelationLabelFactRouteQuality: "supported",
       topologySelectedRelationLabelFactRouteEvidence: "source-backed",
@@ -1273,10 +2652,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         { kind: "action", text: "explain" },
       ],
       topologySelectedRelationAgentRouteSteps: [
-        { kind: "fact", label: "Fact", value: "typed ontology fact", width: 58, height: 27 },
-        { kind: "evidence", label: "Evidence", value: "1 source", width: 58, height: 27 },
-        { kind: "gate", label: "Gate", value: "handoff ready", width: 58, height: 27 },
-        { kind: "action", label: "MCP action", value: "explain_relation", width: 58, height: 27 },
+        { kind: "fact", label: "Fact", value: "typed ontology fact", labelFontSize: "8px", valueFontSize: "10px", width: 58, height: 27 },
+        { kind: "evidence", label: "Evidence", value: "1 source", labelFontSize: "8px", valueFontSize: "10px", width: 58, height: 27 },
+        { kind: "gate", label: "Gate", value: "handoff ready", labelFontSize: "8px", valueFontSize: "10px", width: 58, height: 27 },
+        { kind: "action", label: "MCP action", value: "explain_relation", labelFontSize: "8px", valueFontSize: "10px", width: 58, height: 27 },
       ],
       topologySelectedRelationAgentRouteGateKind: "handoff-ready",
         topologySelectedRelationAgentRouteEvidenceState: "source-backed",
@@ -1296,7 +2675,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationPrimaryCopyActionTitle:
         'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
       topologySelectedRelationPrimaryCopyRecommended: true,
-      topologySelectedRelationPrimaryCopyBadgeText: "Best next",
+      topologySelectedRelationPrimaryCopyBadgeText: "Next step",
       topologySelectedRelationCopyActions: [
         {
           kind: "relation_check",
@@ -1313,7 +2692,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           kind: "explain_relation",
           priority: "primary",
           recommended: true,
-          recommendationLabel: "Best next",
+          recommendationLabel: "Next step",
           call: 'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
           title: 'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
           text: "Copy explain",
@@ -1342,13 +2721,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
       topologySelectedRelationCopyPayloadSummary:
         "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
-      topologySelectedRelationCopyPayloadVisibleSummary: "query_ontology · explain_relation",
+      topologySelectedRelationCopyPayloadVisibleSummary: "Ready to explain",
+      topologySelectedRelationCopyPayloadLayoutContract: "visible-summary-and-handle-readable",
+      topologySelectedRelationCopyPayloadVisibleHandleSummary: "views → topology-analysis-modes",
       topologySelectedRelationCliFallbackCommand:
         "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       topologySelectedRelationCliFallbackSummary:
         "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       topologySelectedRelationCopyPayloadWidth: 236,
-      topologySelectedRelationCopyPayloadHeight: 31,
+      topologySelectedRelationCopyPayloadHeight: 42,
       topologySelectedRelationCopyPayloadClientWidth: 236,
       topologySelectedRelationCopyPayloadScrollWidth: 236,
       topologySelectedRelationCopyPayloadOverflowContract: "no-horizontal-scroll",
@@ -1366,6 +2747,23 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardSurfaceRole: "active-relation-inspector",
       topologySelectedRelationCardDensity: "compact",
       topologySelectedRelationCardDensityContract: "mini-relation-inspector",
+      topologySelectedRelationCardSurfaceToken:
+        "--topology-selected-relation-card-surface",
+      topologySelectedRelationCardBorderToken:
+        "--topology-selected-relation-card-border",
+      topologySelectedRelationCardShadowToken:
+        "--topology-selected-relation-card-shadow",
+      topologySelectedRelationCardTypographyContract: "legible-compact-relation-inspector",
+      topologySelectedRelationCardKickerFontSizeToken:
+        "--topology-selected-relation-kicker-font-size",
+      topologySelectedRelationCardChipFontSizeToken:
+        "--topology-selected-relation-chip-font-size",
+      topologySelectedRelationCardRouteLabelFontSizeToken:
+        "--topology-selected-relation-route-label-font-size",
+      topologySelectedRelationCardRouteValueFontSizeToken:
+        "--topology-selected-relation-route-value-font-size",
+      topologySelectedRelationCardPayloadFontSizeToken:
+        "--topology-selected-relation-payload-font-size",
       topologySelectedRelationCardDockContract: "right-compact-relation-rail",
       topologySelectedRelationCardAttentionLane: "right-inspector-rail",
       topologySelectedRelationCardMapClearanceContract: "selected-label-keeps-map-lane",
@@ -1380,9 +2778,18 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardRouteStepMinWidthToken:
         "--topology-selected-relation-route-step-min-width",
       topologySelectedRelationActionMinWidthTokenValue: "86px",
-      topologySelectedRelationCopyPayloadMinHeightTokenValue: "30px",
+      topologySelectedRelationCopyPayloadMinHeightTokenValue: "42px",
       topologySelectedRelationRouteStepMinWidthTokenValue: "48px",
+      topologySelectedRelationKickerFontSizeTokenValue: "9px",
+      topologySelectedRelationChipFontSizeTokenValue: "9px",
+      topologySelectedRelationRouteLabelFontSizeTokenValue: "8px",
+      topologySelectedRelationRouteValueFontSizeTokenValue: "10px",
+      topologySelectedRelationPayloadFontSizeTokenValue: "10px",
       topologySelectedRelationCardMotionSyncState: "settled-with-camera",
+      topologySelectedRelationCommandCueContract:
+        "visible-compact-primary-command-cue",
+      topologySelectedRelationCommandCueVisibleText: "Next step · Explain",
+      topologySelectedRelationCommandCueAction: "explain_relation",
       topologySelectedRelationProofBandWidth: 236,
       topologySelectedRelationProofBandHeight: 36,
       topologySelectedRelationContractTop: 188,
@@ -1391,8 +2798,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationAgentDecisionTop: 188,
       topologySelectedRelationAgentDecisionWidth: 116,
       topologySelectedRelationAgentDecisionHeight: 36,
-      topologySelectedRelationMetricStripWidth: 1,
-      topologySelectedRelationMetricStripHeight: 1,
+      topologySelectedRelationMetricStripContract:
+        "visible-compact-relation-fact-rail",
+      topologySelectedRelationMetricStripWidth: 236,
+      topologySelectedRelationMetricStripHeight: 24,
       topologySelectedRelationHandleStripSource: "domain:views",
       topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
       topologySelectedRelationHandleStripType: "contains",
@@ -1400,23 +2809,114 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         "domain:views → capability:topology-analysis-modes · contains",
       topologySelectedRelationHandleStripWidth: 1,
       topologySelectedRelationHandleStripHeight: 1,
+      topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
+      topologySelectedRelationEndpointRouteWrapPolicy:
+        "wrap-allowed-no-horizontal-overflow",
+      topologySelectedRelationEndpointRouteLineBudget: "2",
+      topologySelectedRelationEndpointRouteSourceName: "Views",
+      topologySelectedRelationEndpointRouteTargetName: "Topology Analysis Modes",
+      topologySelectedRelationEndpointRouteSourceHandle: "domain:views",
+      topologySelectedRelationEndpointRouteTargetHandle: "capability:topology-analysis-modes",
+      topologySelectedRelationEndpointRouteHandleSummary:
+        "domain:views → capability:topology-analysis-modes",
+      topologySelectedRelationEndpointRouteText: "Views→Topology Analysis Modes",
+      topologySelectedRelationEndpointRouteReadableText: "Views → Topology Analysis Modes",
+      topologySelectedRelationEndpointReadableRoute: "Views → Topology Analysis Modes",
+      topologySelectedRelationEndpointRouteWidth: 212,
+      topologySelectedRelationEndpointRouteHeight: 30,
+      topologySelectedRelationEndpointRouteClientWidth: 212,
+      topologySelectedRelationEndpointRouteScrollWidth: 212,
+      topologySelectedRelationEndpointVisibilityContract:
+        "selected-relation-keeps-source-target-readable",
+      topologySelectedRelationEndpointExpectedCount: 2,
+      topologySelectedRelationEndpointVisibleCount: 2,
+      topologySelectedRelationEndpointHiddenCount: 0,
+      topologySelectedRelationEndpointCards: [
+        {
+          slug: "domain:views",
+          roleBadgeText: "FROM",
+          roleBadgeContract: "visible-source-target-role-badge",
+          roleBadgeVisible: true,
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+        {
+          slug: "capability:topology-analysis-modes",
+          roleBadgeText: "TO",
+          roleBadgeContract: "visible-source-target-role-badge",
+          roleBadgeVisible: true,
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+      ],
+      topologySelectedRelationContextSilhouettePolicy:
+        "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+      topologySelectedRelationContextSilhouetteActive: true,
+      topologySelectedRelationContextSilhouetteHiddenCount: 10,
+      topologySelectedRelationLowerPriorityVisibleDimmedCount: 0,
+      topologySelectedRelationVisibleOrientationAnchorCount: 5,
+      topologySelectedRelationHiddenContextInteractionContract:
+        "hidden-context-is-not-pointer-focus-or-a11y-target",
+      topologySelectedRelationHiddenContextInteractiveCount: 0,
       topologyDragNodePopoverExpandClicked: true,
       topologyNodePopoverVisible: true,
       topologyNodePopoverSurfaceRole: "active-node-inspector",
       topologyNodePopoverAttentionRole: "supporting-detail",
       topologyNodePopoverFocusPrimary: "linked-focus-cluster",
       topologyNodePopoverHierarchyContract: "click-focus-detail-support",
+      topologyNodePopoverPositionContract: "selected-inspector-aligns-to-right-inset",
+      topologyNodePopoverGutterContract: "no-phantom-utility-rail",
+      topologyNodePopoverRightInsetToken: "--topology-node-popover-right-inset",
+      topologyTopLeftChromeGroupSupportContract: "left-panel-collapsed-until-user-expands",
       topologyNodePopoverCollapsed: false,
       topologyNodePopoverSizePolicy: "inspector-rail",
+      topologyNodePopoverScrollContract: "expanded-internal-scroll",
+      topologyNodePopoverOverflowY: "hidden",
+      topologyNodePopoverOverflowX: "hidden",
+      topologyNodePopoverBodyScrollContract: "content-scrolls-above-fixed-footer",
+      topologyNodePopoverBodyOverflowY: "auto",
+      topologyNodePopoverBodyOverflowX: "hidden",
+      topologyNodePopoverBodyTop: 88,
+      topologyNodePopoverBodyBottom: 552,
+      topologyNodePopoverBodyClientHeight: 464,
+      topologyNodePopoverBodyScrollHeight: 520,
+      topologyNodePopoverCompactHandoffContract: "selected-node-actions-visible",
+      topologyNodePopoverAgentHandoffContract: "selected-node-actions-visible",
+      topologyNodePopoverAgentHandoffRoute: "selected-node>facts>actions",
+      topologyNodePopoverAgentHandoffPrimaryAction: "focus-brief",
+      topologyNodePopoverAgentHandoffActionCount: "3",
+      topologyNodePopoverAgentHandoffRelationFactCount: "15",
+      topologyNodePopoverAgentHandoffRelationTypeCount: "1",
+      topologyNodePopoverAgentHandoffSummaryContract: "visible-mcp-cli-focus-brief",
+      topologyNodePopoverAgentHandoffVisibleSummary: "MCP/CLI · Brief",
+      topologyNodePopoverAgentHandoffSelectedNode: "domain:views",
+      topologySelectedSkeletonCardRelationSummaryVisible: true,
+      topologySelectedSkeletonCardRelationSummaryContract: "selected-card-direct-facts",
+      topologySelectedSkeletonCardRelationSummarySurfaceToken:
+        "--topology-relation-summary-surface",
+      topologySelectedSkeletonCardRelationSummaryBorderToken:
+        "--topology-relation-summary-border",
+      topologySelectedSkeletonCardRelationSummaryTextToken:
+        "--topology-relation-summary-text",
+      topologySelectedSkeletonCardRelationSummaryCount: 3,
+      topologySelectedSkeletonCardRelationSummaryTypeCount: 2,
       topologyNodePopoverWidth: 286,
       topologyNodePopoverHeight: 512,
-      topologyNodePopoverLeft: 820,
-      topologyNodePopoverRight: 1240,
+      topologyNodePopoverClientWidth: 286,
+      topologyNodePopoverScrollWidth: 286,
+      topologyNodePopoverClientHeight: 512,
+      topologyNodePopoverScrollHeight: 560,
+      topologyNodePopoverLeft: 1048,
+      topologyNodePopoverRight: 1468,
       topologyNodePopoverTop: 88,
       topologyNodePopoverBottom: 600,
       topologyNodePopoverRelationRowVisible: true,
       topologyNodePopoverConnectionsOverflowContract: "single-vertical-scroll-region",
       topologyNodePopoverConnectionListOverflowContract: "vertical-scroll-only",
+      topologyNodePopoverConnectionListReadableRowContract:
+        "at-least-one-full-relation-row",
       topologyNodePopoverConnectionListWidth: 254,
       topologyNodePopoverConnectionListTop: 336,
       topologyNodePopoverConnectionListBottom: 552,
@@ -1424,8 +2924,24 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverConnectionListScrollWidth: 254,
       topologyNodePopoverConnectionListRowDensityContract: "agent-handoff-scan-list",
       topologyNodePopoverConnectionListRowMinHitHeight: 72,
+      topologyNodePopoverConnectionListRowRenderContract: "capped-preview-plus-remainder",
+      topologyNodePopoverConnectionListRowRenderBudget: 2,
+      topologyNodePopoverConnectionListRenderedCount: 2,
+      topologyNodePopoverConnectionListHiddenCount: 78,
+      topologyNodePopoverConnectionListTotalCount: 82,
+      topologyNodePopoverConnectionListHandoffContract:
+        "list-summary-routes-to-row-payload-or-full-detail",
+      topologyNodePopoverConnectionListHandoffRoute:
+        "selected-node>relations>fact>evidence>gate>action>payload",
+      topologyNodePopoverConnectionListHandoffTool: "query_ontology",
+      topologyNodePopoverConnectionListVisibleRowCount: 2,
+      topologyNodePopoverConnectionListHiddenRemainderCount: 78,
+      topologyNodePopoverConnectionListDirectFactCount: 82,
+      topologyNodePopoverConnectionListHandoffSummary:
+        "query_ontology · 2 rendered · 78 hidden · 82 direct facts",
       topologyNodePopoverFooterVisible: true,
       topologyNodePopoverFooterContract: "fixed-outside-scroll-region",
+      topologyNodePopoverFooterPositionContract: "anchored-bottom-visible",
       topologyNodePopoverFooterOverflowContract: "no-horizontal-scroll",
       topologyNodePopoverFooterWidth: 286,
       topologyNodePopoverFooterHeight: 48,
@@ -1433,14 +2949,19 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverFooterBottom: 600,
       topologyNodePopoverFooterClientWidth: 286,
       topologyNodePopoverFooterScrollWidth: 286,
+      topologyNodePopoverActionRailVisible: true,
+      topologyNodePopoverActionRailContract: "compact-mcp-cli-handoff",
+      topologyNodePopoverActionRailCount: 3,
       topologyNodePopoverRelationRowOverflowContract: "no-horizontal-scroll",
       topologyNodePopoverRelationRowWidth: 250,
       topologyNodePopoverRelationRowHeight: 74,
+      topologyNodePopoverVisibleRelationRowHeight: 74,
+      topologyNodePopoverRelationRowFullyVisible: true,
       topologyNodePopoverRelationRowClientWidth: 250,
       topologyNodePopoverRelationRowScrollWidth: 250,
       topologyNodePopoverRelationRowDensityContract: "agent-handoff-scan-row",
       topologyNodePopoverRelationRowMinHitHeight: 72,
-      topologyNodePopoverRelationRowScanOrder: "relation>title>direction>endpoint>handoff",
+      topologyNodePopoverRelationRowScanOrder: "title>relation>kind",
       topologyNodePopoverRelationTitlePrimaryScanTarget: "true",
       topologyNodePopoverRelationHandoffLane: "mcp-cli-next-action",
       topologyNodePopoverRelationQuality: "strong",
@@ -1455,10 +2976,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverRelationFactRouteEvidence: "source-backed",
       topologyNodePopoverRelationFactRouteGate: "handoff-ready",
       topologyNodePopoverRelationFactRouteAction: "explain_relation",
+      topologyNodePopoverRelationHandoffGrammarContract:
+        "fact-evidence-gate-action-payload",
       topologyNodePopoverRelationFactRouteChips: [
         { kind: "fact", text: "uses" },
         { kind: "evidence", text: "1" },
-        { kind: "action", text: "MCP" },
+        { kind: "gate", text: "MCP" },
+        { kind: "action", text: "explain" },
         { kind: "payload", text: "JSON" },
       ],
       topologyNodePopoverRelationRouteState: "compact-json-ready",
@@ -1500,11 +3024,24 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ],
       topologyNodePopoverMapContextVisible: true,
       topologyNodePopoverMapContextCount: 3,
+      topologyNodePopoverMapContextContract: "expanded-relations-stay-on-map",
+      topologyNodePopoverMapContextHandoffContract: "map-visible-relations-summarized",
+      topologyNodePopoverMapContextRelationTypeCount: 2,
+      topologyNodePopoverMapContextQualitySummary: "strong 1 · supported 2 · weak 0 · review 0",
+      topologyNodePopoverMapContextAgentReadinessSummary:
+        "handoff-ready 2 · preflight 1 · review 0",
       topologyNodePopoverMapContextText:
         "3 direct connections are on the map; use Map view to inspect them without panel overlap.",
     },
   };
   const stdout = `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(payload))}\n`;
+  const selectedRelationRootMarkers = {
+    topologyRootAttentionWinner: "active-relation-inspector",
+    topologyAgentCurrentSurface: "selected-relation",
+    topologyAgentCurrentSurfaceRole: "active-relation-inspector",
+    topologyAgentCurrentSurfaceRoute: "domain:views>capability:topology-analysis-modes",
+    topologySelectedRelationEdgeId: "geid_fixture_17",
+  };
   const selectedRelationPayload = {
     ...payload,
     href: "tauri://localhost/en/topology/?p=domain%3Aviews",
@@ -1516,8 +3053,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyRelief: true,
       topologyCardsReady: true,
       topologyCardCount: 21,
+      ...selectedRelationRootMarkers,
       topologyUiScale: 1.12,
       topologyCommandChromeState: "collapsed-active-relation",
+      topologyUtilityLaneSuppressionContract: "selected-relation-inspector-owns-right-rail",
       topologyTopLeftChromeGroupState: "compact-active-relation",
       topologyTopLeftChromeGroupWidth: 188,
       topologySelectedRelationLabelHitWidth: 124,
@@ -1530,6 +3069,36 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyDragRelationLabelClicked: true,
       topologyDragConnectorDrawable: true,
       topologyDragConnectorClearance: 12,
+      topologyZoomVerifyAttempted: true,
+      topologyZoomVerifyReason: "done",
+      topologyZoomLensContract: "zoom-in-uses-kind-pins-for-noncritical-context-cards",
+      topologyZoomLensPresentationContract:
+        "camera-or-focus-lens-uses-kind-pins-for-noncritical-context",
+      topologyZoomLensPresentationActive: true,
+      topologyZoomLensPresentationSource: "camera-zoom-in",
+      topologyZoomLensThresholdRatio: 0.98,
+      topologyZoomLensCardCompactionActive: true,
+      topologyZoomLensCameraRatio: 0.74,
+      topologyZoomLensActive: true,
+      topologyZoomLensEligibleCount: 5,
+      topologyZoomLensActiveCardCount: 3,
+          topologyZoomLensPinMinOpacity: 0.42,
+      topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+          topologyZoomLensPinGlyphVisibleCount: 2,
+      topologyZoomLensEmptyViewportFallbackContract:
+        "camera-zoom-in-keeps-at-least-one-ontology-mark-visible",
+      topologyZoomLensEmptyViewportFallbackActive: true,
+      topologyZoomLensRelationChromeContract:
+        "camera-zoom-in-demotes-nonselected-relation-chrome",
+      topologyZoomLensRelationChromeActive: true,
+      topologyZoomLensRelationThreadCount: 4,
+      topologyZoomLensRelationLabelSuppressedCount: 2,
+      topologySelectedRelationVerifyAttempted: true,
+      topologySelectedRelationVerifyReason: "already-selected",
+      topologySelectedRelationVerifyClicked: true,
+      topologySelectedRelationVerifySelected: true,
+      topologySelectedRelationVerifyAttempts: 1,
       topologySelectedRelationHaloVisible: true,
       topologySelectedRelationHaloQuality: "supported",
       topologySelectedRelationLabelHitAligned: true,
@@ -1540,6 +3109,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelEvidenceGlyph: "1",
       topologySelectedRelationLabelType: "contains",
       topologySelectedRelationLabelTypeLabel: "contains",
+      topologySelectedRelationHandleStripSource: "domain:views",
+      topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
+      topologySelectedRelationHandleStripType: "contains",
+      topologySelectedRelationHandleStripSummary:
+        "domain:views → capability:topology-analysis-modes · contains",
+      topologySelectedRelationHandleStripWidth: 1,
+      topologySelectedRelationHandleStripHeight: 1,
       topologySelectedRelationCardLeft: 1209.37,
       topologySelectedRelationCardTop: 103.84,
       topologySelectedRelationCardRight: 1476.1,
@@ -1549,6 +3125,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardClientWidth: 270,
       topologySelectedRelationCardScrollWidth: 270,
       topologyFixedSurfaceNames: ["sigma-selected-edge-card"],
+      topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
       topologySelectedRelationProofBandWidth: 256.93,
       topologySelectedRelationProofBandHeight: 35.28,
       topologySelectedRelationContractTop: 183.22,
@@ -1572,6 +3149,66 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardAgentGateKind: "handoff-ready",
       topologySelectedRelationCardAgentDecision:
         "Include this relation in agent handoff; it has typed evidence.",
+      topologySelectedRelationCardHandoffContract:
+        "selected-relation-card-carries-mcp-cli-fallback",
+      topologySelectedRelationCardRoute: "source>target>type>action",
+      topologySelectedRelationCardPrimaryAction: "explain_relation",
+      topologySelectedRelationCardCliFallback:
+        "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+      topologySelectedRelationCardSource: "domain:views",
+      topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
+      topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
+      topologySelectedRelationEndpointRouteWrapPolicy:
+        "wrap-allowed-no-horizontal-overflow",
+      topologySelectedRelationEndpointRouteLineBudget: "2",
+      topologySelectedRelationEndpointRouteSourceName: "Views",
+      topologySelectedRelationEndpointRouteTargetName: "Topology Analysis Modes",
+      topologySelectedRelationEndpointRouteSourceHandle: "domain:views",
+      topologySelectedRelationEndpointRouteTargetHandle:
+        "capability:topology-analysis-modes",
+      topologySelectedRelationEndpointRouteHandleSummary:
+        "domain:views → capability:topology-analysis-modes",
+      topologySelectedRelationEndpointRouteText: "Views→Topology Analysis Modes",
+      topologySelectedRelationEndpointRouteReadableText: "Views → Topology Analysis Modes",
+      topologySelectedRelationEndpointReadableRoute: "Views → Topology Analysis Modes",
+      topologySelectedRelationEndpointRouteWidth: 212,
+      topologySelectedRelationEndpointRouteHeight: 30,
+      topologySelectedRelationEndpointRouteClientWidth: 212,
+      topologySelectedRelationEndpointRouteScrollWidth: 212,
+      topologySelectedRelationEndpointVisibilityContract:
+        "selected-relation-keeps-source-target-readable",
+      topologySelectedRelationEndpointExpectedCount: 2,
+      topologySelectedRelationEndpointVisibleCount: 2,
+      topologySelectedRelationEndpointHiddenCount: 0,
+      topologySelectedRelationEndpointCards: [
+        {
+          slug: "domain:views",
+          roleBadgeText: "FROM",
+          roleBadgeContract: "visible-source-target-role-badge",
+          roleBadgeVisible: true,
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+        {
+          slug: "capability:topology-analysis-modes",
+          roleBadgeText: "TO",
+          roleBadgeContract: "visible-source-target-role-badge",
+          roleBadgeVisible: true,
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+      ],
+      topologySelectedRelationContextSilhouettePolicy:
+        "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+      topologySelectedRelationContextSilhouetteActive: true,
+      topologySelectedRelationContextSilhouetteHiddenCount: 10,
+      topologySelectedRelationLowerPriorityVisibleDimmedCount: 0,
+      topologySelectedRelationVisibleOrientationAnchorCount: 5,
+      topologySelectedRelationHiddenContextInteractionContract:
+        "hidden-context-is-not-pointer-focus-or-a11y-target",
+      topologySelectedRelationHiddenContextInteractiveCount: 0,
       topologySelectedRelationAgentGateText: "Agent gate handoff ready",
       topologySelectedRelationAgentDecisionText:
         "Include this relation in agent handoff; it has typed evidence.",
@@ -1602,12 +3239,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyCardsReady: true,
       topologyCardCount: 21,
       topologyDimOpacityContract: "readable-context-geography",
-      topologyDimAnchorOpacity: 0.34,
-      topologyDimChipOpacity: 0.18,
+      topologyDimAnchorOpacity: 0.26,
+      topologyDimChipOpacity: 0.08,
       topologyDimAnchorVisibleCount: 3,
       topologyDimChipVisibleCount: 4,
-      topologyDimAnchorMinOpacity: 0.34,
-      topologyDimChipMinOpacity: 0.18,
+      topologyDimAnchorMinOpacity: 0.26,
+      topologyDimChipMinOpacity: 0.08,
       topologySelectedNodePopoverVisible: true,
       topologySelectedNodeId: "domain:views",
       topologySelectedNodeKind: "domain",
@@ -1619,10 +3256,177 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyAnalysisPanelSelectedFocusRail: true,
       topologyAnalysisPanelAttentionRole: "support",
       topologyAnalysisPanelWidthContract: "selected-focus-rail-max-320",
+      topologyAnalysisPanelSurfaceToken: "--topology-panel-support-surface",
+      topologyVerifierTokenContractVersion: "command-spine-v1",
+      topologyAnalysisPanelCommandSpinePaddingToken: "--topology-command-spine-padding",
+      topologyAnalysisPanelCommandSpineGapToken: "--topology-command-spine-gap",
+      topologyAnalysisPanelCommandPrimaryHeightToken:
+        "--topology-command-primary-min-height",
+      topologyAnalysisPanelCommandSpineSurfaceToken:
+        "--topology-command-spine-surface",
+      topologyAnalysisPanelCommandSpineBorderToken:
+        "--topology-command-spine-border",
       topologyAnalysisPanelWidth: 312,
-      topologyFocusClusterMode: "focus",
-      topologyFocusClusterStage: "click-focus",
+      topologyAnalysisPanelHeight: 291,
+      topologyFocusCommandSpineVisible: true,
+      topologyFocusCommandSpineHierarchy: "brief-primary-review-agent-proof",
+      topologyFocusCommandSpineAttentionLayer: "support-command-spine",
+      topologyFocusCommandSpineTokenizedSurface: "topology-command-spine",
+      topologyFocusCommandSpineSurfaceToken: "--topology-command-spine-surface",
+      topologyFocusCommandSpineBorderToken: "--topology-command-spine-border",
+      topologyFocusCommandSpineWidth: 280,
+      topologyFocusCommandSpineHeight: 320,
+      topologyFocusCommandSpinePaddingTokenValue: "10px",
+      topologyFocusCommandPrimaryActionVisible: true,
+      topologyFocusCommandPrimaryActionText: "Copy focus brief Read node profile",
+      topologyFocusCommandPrimaryActionSurfaceToken:
+        "--topology-command-primary-surface",
+      topologyFocusCommandPrimaryActionBorderToken:
+        "--topology-command-primary-border",
+      topologyFocusCommandPrimaryActionWidth: 252,
+      topologyFocusCommandPrimaryActionHeight: 48,
+      topologyFocusReviewOrderVisible: true,
+      topologyFocusSecondaryActionsVisible: true,
+      topologyFocusAgentHandoffVisible: true,
+      topologyFocusAgentHandoffContract: "mcp-cli-proof-disclosed",
+      topologyCommandChromeState: "compact-focus",
+      topologyUtilityLaneHeightToken: "--topology-utility-lane-height",
+      topologyUtilityLaneGapToken: "--topology-utility-lane-gap",
+      topologyUtilityLaneCompactWidthToken: "--topology-utility-lane-compact-width",
+      topologyUtilityActionLaneVisible: true,
+      topologyUtilityActionLaneDensity: "compact-focus",
+      topologyUtilityActionLaneContract: "icon-first-focus-utility",
+      topologyUtilityActionLaneWidth: 96,
+      topologyUtilityActionLaneHeight: 42,
+      topologySearchActionLaneVisible: true,
+      topologySearchActionLaneDensity: "compact-focus",
+      topologySearchActionLaneContract: "icon-first-focus-search",
+      topologySearchLaneCompactWidthToken: "--topology-search-lane-compact-width",
+      topologySearchActionLaneWidth: 92,
+      topologySearchActionLaneHeight: 42,
+      topologySigmaControlsStackVisible: true,
+      topologySigmaControlsStackDensity: "compact-focus",
+      topologySigmaControlsStackContract: "focus-support-utility-stack",
+      topologySigmaControlsStackSurfaceToken: "--topology-floating-control-surface",
+      topologySigmaControlsStackBorderToken: "--topology-floating-control-border",
+      topologySigmaControlsStackWidth: 36,
+      topologySigmaControlsStackHeight: 73,
+      topologyShortcutsHelpButtonVisible: true,
+      topologyShortcutsHelpButtonDensity: "compact-focus",
+      topologyShortcutsHelpButtonContract: "focus-support-help-entry",
+      topologyShortcutsHelpButtonWidth: 36,
+      topologyShortcutsHelpButtonHeight: 36,
+      topologyNodePopoverVisible: true,
+      topologyNodePopoverCollapsed: true,
+      topologyNodePopoverPositionContract: "selected-inspector-aligns-to-right-inset",
+      topologyNodePopoverGutterContract: "no-phantom-utility-rail",
+      topologyNodePopoverRightInsetToken: "--topology-node-popover-right-inset",
+      topologyTopLeftChromeGroupSupportContract: "left-panel-collapsed-until-user-expands",
+      topologyNodePopoverSizePolicy: "context-chip",
+      topologyNodePopoverWidthToken: "--topology-node-popover-fluid-width",
+      topologyNodePopoverRailWidthToken: "--topology-node-popover-rail-width",
+      topologyNodePopoverSurfaceToken: "--topology-node-popover-surface",
+      topologyNodePopoverBorderToken: "--topology-node-popover-border",
+      topologyNodePopoverResponsiveWidthContract: "fluid-chip-to-rail",
+      topologyNodePopoverScrollContract: "collapsed-chip-no-scroll",
+      topologyNodePopoverOverflowY: "hidden",
+      topologyNodePopoverOverflowX: "hidden",
+      topologyNodePopoverCompactHandoffContract: "selected-node-actions-visible",
+      topologyNodePopoverAgentHandoffContract: "selected-node-actions-visible",
+      topologyNodePopoverAgentHandoffRoute: "selected-node>facts>actions",
+      topologyNodePopoverAgentHandoffPrimaryAction: "focus-brief",
+      topologyNodePopoverAgentHandoffActionCount: "3",
+      topologyNodePopoverAgentHandoffRelationFactCount: "15",
+      topologyNodePopoverAgentHandoffRelationTypeCount: "1",
+      topologyNodePopoverAgentHandoffSummaryContract: "visible-mcp-cli-focus-brief",
+      topologyNodePopoverAgentHandoffVisibleSummary: "MCP/CLI · Brief",
+      topologyNodePopoverAgentHandoffSelectedNode: "domain:views",
+      topologyNodePopoverCompactBriefActionVisible: true,
+      topologyNodePopoverCompactBriefActionKind: "focus-brief",
+      topologyNodePopoverCompactBriefActionContract: "copy-focus-brief",
+      topologyNodePopoverCompactBriefActionReadableFlow:
+        "selected-node-facts-to-agent-brief",
+      topologyNodePopoverCompactBriefActionRailLabel: "Agent handoff",
+      topologyNodePopoverCompactBriefActionTitle: "Agent handoff: Copy focus brief",
+      topologyNodePopoverCompactBriefActionSurfaceToken:
+        "--topology-node-popover-action-icon-surface",
+      topologyNodePopoverCompactBriefActionBorderToken:
+        "--topology-node-popover-action-icon-border",
+      topologyNodePopoverCompactBriefActionWidth: 65,
+      topologyNodePopoverCompactBriefActionHeight: 32,
+      topologyNodePopoverCompactCommandRowVisible: true,
+      topologyNodePopoverCompactCommandRowContract: "facts-and-actions-share-final-scanline",
+      topologyNodePopoverCompactCommandRowGapToken:
+        "--topology-node-popover-compact-command-row-gap",
+      topologyNodePopoverCompactActionsVisible: true,
+      topologyNodePopoverCompactActionsContract: "actions-share-command-row-with-facts",
+      topologyNodePopoverCompactActionsReadableFlow:
+        "selected-node-facts-to-agent-handoff",
+      topologyNodePopoverCompactActionsTop: 206,
+      topologyNodePopoverCompactRelationFactsVisible: true,
+      topologyNodePopoverCompactRelationFactsContract:
+        "collapsed-dock-surfaces-typed-facts",
+      topologyNodePopoverCompactRelationFactsReadableContract:
+        "direct-typed-facts-not-scores",
+      topologyNodePopoverCompactRelationFactsNoScores:
+        "Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverCompactRelationFactsAccessibleName:
+        "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverCompactRelationFactsTitle:
+        "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverCompactRelationFactsHandoffContract:
+        "compact-counts-route-to-relation-list-handoff",
+      topologyNodePopoverCompactRelationFactsHandoffRoute:
+        "selected-node>relations>fact>evidence>gate>action>payload",
+      topologyNodePopoverCompactRelationFactsHandoffTool: "query_ontology",
+      topologyNodePopoverCompactRelationFactsHandoffSummary:
+        "query_ontology · 2 rendered · 10 hidden · 15 direct facts",
+      topologyNodePopoverCompactRelationFactsHiddenRemainderCount: 10,
+      topologyNodePopoverCompactRelationFactsTop: 212,
+      topologyNodePopoverCompactHandoffSummaryVisible: true,
+      topologyNodePopoverCompactHandoffSummaryContract: "visible-mcp-cli-focus-brief",
+      topologyNodePopoverCompactHandoffSummaryVisibleLabel: "MCP/CLI",
+      topologyNodePopoverCompactHandoffSummaryText: "MCP/CLI · Brief",
+      topologyNodePopoverCompactHandoffSummarySelectedNode: "domain:views",
+      topologyNodePopoverCompactHandoffSummaryClientWidth: 98,
+      topologyNodePopoverCompactHandoffSummaryScrollWidth: 98,
+      topologyNodePopoverCompactHandoffSummaryTop: 212,
+      topologyNodePopoverCompactMeaningVisible: true,
+      topologyNodePopoverCompactMeaningText: "A core hub — 10 places depend on it",
+      topologyNodePopoverCompactMeaningContract: "plain-language-meaning-before-typed-facts",
+      topologyNodePopoverCompactMeaningResponsiveContract: "visible-desktop-sr-only-compact",
+      topologyNodePopoverCompactMeaningLevel: "core",
+      topologyNodePopoverCompactMeaningTextToken:
+        "--topology-node-popover-compact-meaning-text",
+      topologyNodePopoverCompactMeaningSizeToken:
+        "--topology-node-popover-compact-meaning-size",
+      topologyNodePopoverCompactMeaningLeadingToken:
+        "--topology-node-popover-compact-meaning-leading",
+      topologyNodePopoverCompactMeaningGapToken:
+        "--topology-node-popover-compact-meaning-gap",
+      topologyNodePopoverWidth: 420,
+      topologyNodePopoverLeft: 1048,
+      topologyNodePopoverRight: 1468,
+      topologyNodePopoverTop: 104,
+      topologyNodePopoverBottom: 248,
+      topologySelectedSkeletonCardRelationSummaryVisible: true,
+      topologySelectedSkeletonCardRelationSummaryContract: "selected-card-direct-facts",
+      topologySelectedSkeletonCardRelationSummarySurfaceToken:
+        "--topology-relation-summary-surface",
+      topologySelectedSkeletonCardRelationSummaryBorderToken:
+        "--topology-relation-summary-border",
+      topologySelectedSkeletonCardRelationSummaryTextToken:
+        "--topology-relation-summary-text",
+      topologySelectedSkeletonCardRelationSummaryCount: 3,
+      topologySelectedSkeletonCardRelationSummaryTypeCount: 2,
+      topologyNodePopoverRelationRowVisible: false,
+      topologyFocusClusterMode: "none",
+      topologyFocusClusterStage: "",
       topologyFocusClusterAttentionLabel: "linked-focus",
+      topologyFocusClusterBreathingRoomContract: "viewport-edge-clearance",
+      topologyFocusClusterBreathingRoomPx: 16,
+      topologyFocusClusterRightClearance: 552,
+      topologyFocusClusterBottomClearance: 477,
       topologyClickFocusRelationshipContext: "durable",
       topologyClickFocusRelationshipContextSource: "selected-dock-companions",
       topologyCameraMotionTrigger: "selected-focus-safe-fit",
@@ -1632,9 +3436,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyCameraMotionReduced: false,
       topologyCameraMotionState: "settled",
       topologyCameraMotionIntent: "selected-focus-safe-rect",
-      topologyCameraMotionTargetPolicy: "nearest-safe-target",
+      topologyCameraMotionTargetPolicy: "viewport-center",
       topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-      topologyCameraMotionMaxDistancePx: 220,
+      topologyCameraMotionMaxDistancePx: 318,
       topologyCameraMotionSelectedViewportX: 652,
       topologyCameraMotionSelectedViewportY: 412,
       topologyCameraMotionSafeTargetX: 734,
@@ -1645,6 +3449,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyCameraMotionSafeInsetRight: 439,
       topologyCameraMotionSafeInsetBottom: 152,
       topologyCameraMotionSafeInsetLeft: 696,
+      topologyCameraMotionRightReserveContract: "selected-inspector-safe-reserve",
+      topologyCameraMotionSafeTargetRightClearance: 339,
       topologyCameraMotionSelectedFanoutRows: 2,
       topologyFocusClusterVisible: true,
       topologyFocusClusterSize: 6,
@@ -1658,14 +3464,281 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyFocusClusterRelationLabelCount: 5,
       topologyCardOverlapCount: 0,
       topologyCardClippedCount: 0,
+      topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
       topologyFixedSurfaceOverlapCount: 0,
       topologyCardFixedSurfaceOverlapCount: 0,
       ...markerOverrides,
     },
   });
+  const selectedNodeExpandedFocusPayload = (markerOverrides = {}) =>
+    selectedNodeFocusPayload({
+      topologyNodePopoverCollapsed: false,
+      topologyNodePopoverSizePolicy: "inspector-rail",
+      topologyNodePopoverWidthToken: "--topology-node-popover-fluid-width",
+      topologyNodePopoverRailWidthToken: "--topology-node-popover-rail-width",
+      topologyNodePopoverMaxHeightToken: "--topology-node-popover-max-height",
+      topologyNodePopoverResponsiveWidthContract: "fluid-inspector-to-rail",
+      topologyNodePopoverScrollContract: "expanded-internal-scroll",
+      topologyNodePopoverOverflowY: "hidden",
+      topologyNodePopoverOverflowX: "hidden",
+      topologyNodePopoverBodyScrollContract: "content-scrolls-above-fixed-footer",
+      topologyNodePopoverBodyOverflowY: "auto",
+      topologyNodePopoverBodyOverflowX: "hidden",
+      topologyNodePopoverBodyTop: 88,
+      topologyNodePopoverBodyBottom: 500,
+      topologyNodePopoverBodyClientHeight: 412,
+      topologyNodePopoverBodyScrollHeight: 520,
+      topologyNodePopoverWidth: 420,
+      topologyNodePopoverHeight: 512,
+      topologyNodePopoverLeft: 1048,
+      topologyNodePopoverRight: 1468,
+      topologyNodePopoverTop: 88,
+      topologyNodePopoverBottom: 600,
+      topologyNodePopoverClientWidth: 286,
+      topologyNodePopoverScrollWidth: 286,
+      topologyNodePopoverClientHeight: 512,
+      topologyNodePopoverScrollHeight: 560,
+      topologyNodePopoverCompactHandoffContract: "selected-node-actions-visible",
+      topologyNodePopoverAgentHandoffContract: "selected-node-actions-visible",
+      topologyNodePopoverAgentHandoffRoute: "selected-node>facts>actions",
+      topologyNodePopoverAgentHandoffPrimaryAction: "focus-brief",
+      topologyNodePopoverAgentHandoffActionCount: "3",
+      topologyNodePopoverAgentHandoffRelationFactCount: "15",
+      topologyNodePopoverAgentHandoffRelationTypeCount: "1",
+      topologySelectedSkeletonCardRelationSummaryVisible: true,
+      topologySelectedSkeletonCardRelationSummaryContract: "selected-card-direct-facts",
+      topologySelectedSkeletonCardRelationSummarySurfaceToken:
+        "--topology-relation-summary-surface",
+      topologySelectedSkeletonCardRelationSummaryBorderToken:
+        "--topology-relation-summary-border",
+      topologySelectedSkeletonCardRelationSummaryTextToken:
+        "--topology-relation-summary-text",
+      topologySelectedSkeletonCardRelationSummaryCount: 3,
+      topologySelectedSkeletonCardRelationSummaryTypeCount: 2,
+      topologyNodePopoverActionRailVisible: true,
+      topologyNodePopoverActionRailContract: "compact-mcp-cli-handoff",
+      topologyNodePopoverActionRailCount: 3,
+      topologyNodePopoverVerifyAttempted: true,
+      topologyNodePopoverVerifyReason: "done",
+      topologyNodePopoverVerifyExpanded: true,
+      topologyNodePopoverVerifyCompactFactsVisible: true,
+      topologyNodePopoverVerifyCompactFactsContract: "collapsed-dock-surfaces-typed-facts",
+      topologyNodePopoverVerifyCompactFactsReadableContract: "direct-typed-facts-not-scores",
+      topologyNodePopoverVerifyCompactFactsAccessibleName:
+        "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverVerifyCompactFactsTitle:
+        "3 direct facts · 2 relation types · Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverVerifyCompactFactsNoScores:
+        "Typed ontology facts, not inferred similarity scores.",
+      topologyNodePopoverVerifyCompactFactsHandoffContract:
+        "compact-counts-route-to-relation-list-handoff",
+      topologyNodePopoverVerifyCompactFactsHandoffRoute:
+        "selected-node>relations>fact>evidence>gate>action>payload",
+      topologyNodePopoverVerifyCompactFactsHandoffTool: "query_ontology",
+      topologyNodePopoverVerifyCompactFactsHandoffSummary:
+        "query_ontology · 2 rendered · 10 hidden · 15 direct facts",
+      topologyNodePopoverVerifyCompactFactsHiddenRemainderCount: 10,
+      topologyNodePopoverVerifyCompactActionsVisible: true,
+      topologyNodePopoverVerifyCompactActionsContract: "actions-share-command-row-with-facts",
+      topologyNodePopoverVerifyCompactActionsReadableFlow:
+        "selected-node-facts-to-agent-handoff",
+      topologyNodePopoverVerifyCompactBriefVisible: true,
+      topologyNodePopoverVerifyCompactBriefAction: "copy-focus-brief",
+      topologyNodePopoverVerifyCompactBriefReadableFlow:
+        "selected-node-facts-to-agent-brief",
+      topologyNodePopoverVerifyCompactBriefRailLabel: "Agent handoff",
+      topologyNodePopoverVerifyCompactBriefTitle: "Agent handoff: Copy focus brief",
+      topologyNodePopoverConnectionListReadableRowContract:
+        "at-least-one-full-relation-row",
+      topologyNodePopoverFooterPositionContract: "anchored-bottom-visible",
+      topologyNodePopoverRelationRowHeight: 82,
+      topologyNodePopoverVisibleRelationRowHeight: 82,
+      topologyNodePopoverRelationRowFullyVisible: true,
+      topologyNodePopoverRelationRowVisible: true,
+      ...markerOverrides,
+    });
+  const selectedNodeClosedSupportPayload = (markerOverrides = {}) =>
+    selectedNodeFocusPayload({
+      topologyAnalysisPanelVisible: false,
+      topologyAnalysisPanelMode: "",
+      topologyAnalysisPanelSelectedContext: false,
+      topologyAnalysisPanelSelectedFocusRail: false,
+      topologyAnalysisPanelAttentionRole: "",
+      topologyAnalysisPanelWidthContract: "",
+      topologyAnalysisPanelWidth: 0,
+      topologyFocusCommandSpineVisible: false,
+      topologyFocusCommandPrimaryActionVisible: false,
+      topologyFocusReviewOrderVisible: false,
+      topologyFocusSecondaryActionsVisible: false,
+      topologyFocusAgentHandoffVisible: false,
+      topologyCommandChromeState: "selected-node-inspector",
+      topologyUtilityActionLaneVisible: false,
+      topologyUtilityActionLaneDensity: "",
+      topologyUtilityActionLaneContract: "",
+      topologyUtilityActionLaneWidth: 0,
+      topologyUtilityActionLaneHeight: 0,
+      topologySigmaControlsStackVisible: false,
+      topologySigmaControlsStackDensity: "",
+      topologySigmaControlsStackContract: "",
+      topologySigmaControlsStackWidth: 0,
+      topologySigmaControlsStackHeight: 0,
+      topologyShortcutsHelpButtonVisible: false,
+      topologyShortcutsHelpButtonDensity: "",
+      topologyShortcutsHelpButtonContract: "",
+      topologyShortcutsHelpButtonWidth: 0,
+      topologyShortcutsHelpButtonHeight: 0,
+      ...markerOverrides,
+    });
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
+  assert.equal(validateWebviewVerifyPayload(selectedNodeFocusPayload()), null);
+  assert.equal(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyDragAttempted: false,
+        topologyDragReason: "waiting for selected reveal companion",
+        topologyDragFocusMoved: false,
+        topologyDragFocusDelta: null,
+        topologyDragCompanionVisible: false,
+        topologyDragCompanionAligned: false,
+        topologyDragCompanionDelta: null,
+        topologyDragCompanionSlug: "",
+        topologyDragCompanionCount: 0,
+        topologyDragVisibleCompanionCount: 0,
+        topologyDragAlignedCompanionCount: 0,
+        topologySelectedDockCompanionCount: 4,
+        topologySelectedDockVisibleCompanionCount: 1,
+        topologySelectedDockCompanionVisible: true,
+        topologyResidualOverlapClear: true,
+        topologySupportRailOverlapActive: true,
+        topologyCardFixedSurfaceOverlapCount: 0,
+      }),
+      {
+        expectedPath: "/en/topology/?p=domain%3Aviews",
+        requireTopologyDrag: true,
+      },
+    ),
+    null,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({ topologyFocusClusterVisible: false }),
+    ),
+    null,
+  );
+  assert.equal(validateWebviewVerifyPayload(selectedNodeClosedSupportPayload()), null);
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...selectedNodeClosedSupportPayload({
+          topologyTopWorkspaceLabel: "",
+          topologyTopRelayoutLabel: "자동 정렬",
+          topologyTopSearchLabel: "검색",
+          topologyTopCreateLabel: "",
+        }),
+        href: "tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus",
+      },
+      { expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus" },
+    ),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeClosedSupportPayload({
+        topologyUtilityActionLaneVisible: true,
+      }),
+    ),
+    /selected node utility action lane was visible/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeClosedSupportPayload({
+        topologySigmaControlsStackVisible: true,
+      }),
+    ),
+    /selected node controls stack was visible/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeClosedSupportPayload({
+        topologyShortcutsHelpButtonVisible: true,
+      }),
+    ),
+    /selected node shortcuts help was visible/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyFocusCommandSpineTokenizedSurface: "",
+      }),
+    ),
+    /selected focus command surface token/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyFocusCommandSpineSurfaceToken: "--wrong-token",
+      }),
+    ),
+    /command spine surface token/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverWidthToken: "--wrong-token",
+      }),
+    ),
+    /selected node popover width token/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverCompactBriefActionVisible: false,
+      }),
+    ),
+    /selected node popover compact brief action/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologySelectedSkeletonCardRelationSummarySurfaceToken: "--wrong-token",
+      }),
+    ),
+    /relation summary surface token/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyUtilityActionLaneContract: "wide-labeled-utility",
+      }),
+    ),
+    /selected focus utility lane contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologySearchActionLaneWidth: 208,
+      }),
+    ),
+    /selected focus search lane stayed too wide/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologySigmaControlsStackContract: "map-utility-stack",
+      }),
+    ),
+    /selected focus right controls stack contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyShortcutsHelpButtonDensity: "default",
+      }),
+    ),
+    /selected focus shortcuts help density/,
+  );
   assert.match(
     validateWebviewVerifyPayload({
       ...selectedRelationPayload,
@@ -1675,6 +3748,65 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
     /selected relation card as a fixed topology surface/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(selectedRelationPayload, {
+      expectedPath: "/en/topology/?p=domain%3Aviews",
+      requireTopologySelectedRelation: true,
+    }),
+    null,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...selectedRelationPayload,
+        markers: {
+          ...selectedRelationPayload.markers,
+          topologyCardCount: 7,
+          topologyCardRawCount: 23,
+          topologySelectedRelationEndpointVisibleCount: 2,
+          topologySelectedRelationVisibleOrientationAnchorCount: 5,
+        },
+      },
+      {
+        expectedPath: "/en/topology/?p=domain%3Aviews",
+        requireTopologySelectedRelation: true,
+      },
+    ),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...selectedRelationPayload,
+        markers: {
+          ...selectedRelationPayload.markers,
+          topologySelectedRelationVerifyClicked: false,
+          topologySelectedRelationVerifyReason: "missing relation label",
+        },
+      },
+      {
+        expectedPath: "/en/topology/?p=domain%3Aviews",
+        requireTopologySelectedRelation: true,
+      },
+    ),
+    /did not click a Relief relation label/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...selectedRelationPayload,
+        markers: {
+          ...selectedRelationPayload.markers,
+          topologyUtilityLaneSuppressionContract: "",
+        },
+      },
+      {
+        expectedPath: "/en/topology/?p=domain%3Aviews",
+        requireTopologySelectedRelation: true,
+      },
+    ),
+    /selected relation utility suppression contract/,
   );
   assert.equal(
     validateWebviewVerifyPayload({
@@ -1689,7 +3821,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyNodePopoverRelationAgentGateText: "전달",
         topologyNodePopoverRelationFactRouteChips:
           selectedRelationPayload.markers.topologyNodePopoverRelationFactRouteChips.map((chip) =>
-            chip.kind === "action" ? { ...chip, text: "전달" } : chip,
+            chip.kind === "gate" ? { ...chip, text: "전달" } : chip,
           ),
         topologySelectedRelationCopyActions:
           selectedRelationPayload.markers.topologySelectedRelationCopyActions.map((action) =>
@@ -1719,6 +3851,20 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({ topologyDimAnchorOpacity: 0.25 }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /dimmed Relief anchor opacity token/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({ topologyDimChipOpacity: 0.07 }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /dimmed Relief chip opacity token/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
       selectedNodeFocusPayload({ topologyDimAnchorMinOpacity: 0.25 }),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
@@ -1726,7 +3872,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload(
-      selectedNodeFocusPayload({ topologyDimChipMinOpacity: 0.12 }),
+      selectedNodeFocusPayload({ topologyDimChipMinOpacity: 0.07 }),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     /dimmed Relief chip opacity/,
@@ -1759,6 +3905,51 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.equal(
     validateWebviewVerifyPayload(
       selectedNodeFocusPayload({
+        width: 1512,
+        height: 917,
+        topologyCameraMotionMaxDistancePx: 318,
+        topologyCameraMotionSelectedViewportX: 946,
+        topologyCameraMotionSelectedViewportY: 172,
+        topologyCameraMotionSafeTargetX: 756,
+        topologyCameraMotionSafeTargetY: 425,
+        topologyCameraMotionDistancePx: 316,
+        topologyCameraMotionSafeInsetLeft: 358,
+        topologyCameraMotionSafeInsetRight: 439,
+        topologyCameraMotionSafeTargetRightClearance: 317,
+        topologyCameraMotionSelectedFanoutRows: 4,
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    null,
+  );
+  const compactBrowserFocusPayload = selectedNodeFocusPayload({
+    topologyCameraMotionMaxDistancePx: 412,
+    topologyCameraMotionSelectedViewportX: 1011,
+    topologyCameraMotionSelectedViewportY: 453,
+    topologyCameraMotionSafeTargetX: 643,
+    topologyCameraMotionSafeTargetY: 633,
+    topologyCameraMotionDistancePx: 410,
+    topologyCameraMotionSafeInsetLeft: 412,
+    topologyCameraMotionSafeInsetRight: 320,
+    topologyCameraMotionSafeInsetTop: 224,
+    topologyCameraMotionSafeInsetBottom: 136,
+    topologyCameraMotionSafeTargetRightClearance: 317,
+    topologyCameraMotionSelectedFanoutRows: 6,
+  });
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...compactBrowserFocusPayload,
+        width: 1280,
+        height: 917,
+      },
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    null,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
         topologyCameraMotionTrigger: "selected-focus-already-safe",
         topologyCameraMotionDurationMs: 0,
         topologyCameraMotionState: "already-safe",
@@ -1780,6 +3971,52 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     ),
     null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverCompactRelationFactsHandoffContract: "missing-route",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /compact relation facts handoff contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverCompactRelationFactsHandoffRoute: "selected-node>facts",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /compact relation facts handoff route/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverCompactRelationFactsHandoffTool: "list_concepts",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /compact relation facts handoff tool/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverCompactRelationFactsHandoffSummary:
+          "2 rendered · 10 hidden",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /compact relation facts handoff summary/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyNodePopoverCompactRelationFactsHiddenRemainderCount: -1,
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /compact relation facts hidden remainder count/,
   );
   assert.match(
     validateWebviewVerifyPayload(
@@ -1850,6 +4087,124 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     /camera motion target was outside the computed safe rect/,
   );
   assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyCameraMotionRightReserveContract: "floating-inspector-reserve",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /camera right reserve contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyCameraMotionSafeTargetRightClearance: 120,
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /camera safe target right clearance mismatched/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyZoomLensCardCompactionActive: false,
+        topologyDragDomIndexSize: 0,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /drag DOM index size/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyZoomLensCardCompactionActive: false,
+        topologyDragFrameCacheSnapshotCount: undefined,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /drag frame cache snapshot count/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyZoomLensCardCompactionActive: false,
+        topologyConnectorRectCacheFrameFallbackContract: "",
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /connector rect cache frame fallback contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyZoomLensCardCompactionActive: false,
+        topologyConnectorRectCacheReadCount: 1,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /connector rect cache proof/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyConnectorRectCacheHitCount: 0,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /connector rect cache proof/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyZoomVerifyReason: "zoom lens inactive",
+        topologyZoomLensActive: false,
+        topologyZoomLensPresentationSource: "idle",
+        topologyZoomLensCardCompactionActive: false,
+        topologyZoomLensActiveCardCount: 0,
+          topologyZoomLensPinMinOpacity: 0.42,
+        topologyZoomLensVisibleActiveCardCount: 0,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /zoom probe did not activate/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyZoomLensCardCompactionActive: false,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /did not compact text cards/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyZoomLensVisibleActiveCardCount: 0,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /no visible compact cards/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyRelationLabelQueryContract: "",
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /relation label query contract/,
+  );
+  assert.match(
     validateWebviewVerifyPayload({
       ...selectedRelationPayload,
       markers: {
@@ -1894,9 +4249,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload({
-      ...selectedRelationPayload,
+      ...selectedNodeExpandedFocusPayload(),
       markers: {
-        ...selectedRelationPayload.markers,
+        ...selectedNodeExpandedFocusPayload().markers,
         topologyNodePopoverFooterContract: "",
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
@@ -1904,9 +4259,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload({
-      ...selectedRelationPayload,
+      ...selectedNodeExpandedFocusPayload(),
       markers: {
-        ...selectedRelationPayload.markers,
+        ...selectedNodeExpandedFocusPayload().markers,
         topologyNodePopoverFooterTop: 520,
         topologyNodePopoverConnectionListBottom: 552,
       },
@@ -1915,9 +4270,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload({
-      ...selectedRelationPayload,
+      ...selectedNodeExpandedFocusPayload(),
       markers: {
-        ...selectedRelationPayload.markers,
+        ...selectedNodeExpandedFocusPayload().markers,
         topologyNodePopoverHeight: 608,
         topologyNodePopoverBottom: 696,
         topologyNodePopoverConnectionListTop: 492,
@@ -1930,23 +4285,23 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload({
-      ...selectedRelationPayload,
+      ...selectedNodeExpandedFocusPayload(),
       markers: {
-        ...selectedRelationPayload.markers,
+        ...selectedNodeExpandedFocusPayload().markers,
         topologyNodePopoverConnectionListTop: 492,
-        topologyNodePopoverConnectionListBottom: 694,
-        topologyNodePopoverFooterTop: 722,
-        topologyNodePopoverFooterBottom: 778,
-        topologyNodePopoverBottom: 779,
+        topologyNodePopoverConnectionListBottom: 610,
+        topologyNodePopoverFooterTop: 638,
+        topologyNodePopoverFooterBottom: 694,
+        topologyNodePopoverBottom: 695,
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
     /selected node popover connection list was too short/,
   );
   assert.match(
     validateWebviewVerifyPayload({
-      ...selectedRelationPayload,
+      ...selectedNodeExpandedFocusPayload(),
       markers: {
-        ...selectedRelationPayload.markers,
+        ...selectedNodeExpandedFocusPayload().markers,
         topologyNodePopoverFooterClientWidth: 286,
         topologyNodePopoverFooterScrollWidth: 304,
       },
@@ -1955,7 +4310,26 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload(
-      selectedNodeFocusPayload({
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverVerifyCompactFactsHandoffContract: "",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyNodePopover: true },
+    ),
+    /compact selected node relation facts handoff contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverVerifyCompactFactsHandoffSummary:
+          "2 rendered · 10 hidden",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyNodePopover: true },
+    ),
+    /compact selected node relation facts handoff summary/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
         topologyNodePopoverConnectionListRowDensityContract: "dense-technical-list",
       }),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
@@ -1964,7 +4338,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload(
-      selectedNodeFocusPayload({
+      selectedNodeExpandedFocusPayload({
         topologyNodePopoverRelationRowHeight: 54,
       }),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
@@ -1973,12 +4347,68 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload(
-      selectedNodeFocusPayload({
+      selectedNodeExpandedFocusPayload({
         topologyNodePopoverRelationHandoffLane: "hidden-json-tail",
       }),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     /selected node popover relation row handoff lane/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverConnectionListRowRenderContract: "uncapped-scroll-list",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node popover connection list row render contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverConnectionListRowRenderBudget: 12,
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node popover connection list row render budget/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverConnectionListRenderedCount: 9,
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node popover rendered too many relation rows/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverConnectionListTotalCount: 82,
+        topologyNodePopoverConnectionListRenderedCount: 2,
+        topologyNodePopoverConnectionListHiddenCount: 0,
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node popover hidden relation remainder/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverConnectionListHandoffContract: "",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node popover connection list handoff contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverConnectionListHandoffRoute: "selected-node>relations",
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node popover connection list handoff route/,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -2053,6 +4483,27 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
     /overflowing Relief selected relation copy payload strip/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationCopyPayloadLayoutContract: "single-line-payload",
+      },
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
+    /copy payload layout contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationCopyPayloadVisibleHandleSummary:
+          "domain:views → capability:topology-analysis-modes",
+      },
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
+    /visible copy payload handle/,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -2428,6 +4879,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyFocusClusterMode: "focus",
           topologyFocusClusterStage: "click-focus",
           topologyFocusClusterAttentionLabel: "linked-focus",
+          topologyFocusClusterBreathingRoomContract: "viewport-edge-clearance",
+          topologyFocusClusterBreathingRoomPx: 16,
+          topologyFocusClusterRightClearance: 552,
+          topologyFocusClusterBottomClearance: 477,
           topologyCameraMotionTrigger: "selected-focus-safe-fit",
           topologyCameraMotionContract: "purposeful-safe-fit-motion",
           topologyCameraMotionDurationMs: 420,
@@ -2435,9 +4890,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionReduced: false,
           topologyCameraMotionState: "settled",
           topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
+          topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -2448,6 +4903,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionSafeInsetRight: 439,
           topologyCameraMotionSafeInsetBottom: 152,
           topologyCameraMotionSafeInsetLeft: 696,
+          topologyCameraMotionRightReserveContract: "selected-inspector-safe-reserve",
+          topologyCameraMotionSafeTargetRightClearance: 339,
           topologyCameraMotionSelectedFanoutRows: 2,
           topologyFocusClusterVisible: true,
           topologyFocusClusterSize: 6,
@@ -2471,80 +4928,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload(
-      {
-        ...payload,
-        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
-        width: 1512,
-        height: 917,
-        markers: {
-          ...payload.markers,
-          topologyRelief: true,
-          topologyAttentionWinner: "focus-state",
-          topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
-          topologyMinimapWidth: 220,
-          topologyMinimapHeight: 181,
-          topologyMinimapRight: 32,
-          topologyMinimapBottom: 24,
-          topologyMinimapViewportVisible: true,
-          topologyMinimapViewportFrameState: "readable",
-          topologyMinimapViewportWidth: 180,
-          topologyMinimapViewportHeight: 120,
-          topologySkeletonMode: true,
-          topologyCardsReady: true,
-          topologyCardCount: 21,
-          topologySelectedNodePopoverVisible: true,
-          topologySelectedNodeId: "domain:views",
-          topologySelectedNodeKind: "domain",
-          topologySelectedNodeTitle: "Views",
-          topologySelectedNodeSummary: "domain:views · 84 relations",
-          topologyAnalysisPanelMode: "focus",
-          topologyAnalysisPanelRequestedMode: "overview",
-          topologyAnalysisPanelSelectedContext: true,
-          topologyAnalysisPanelSelectedFocusRail: true,
-          topologyAnalysisPanelAttentionRole: "support",
-          topologyAnalysisPanelWidthContract: "selected-focus-rail-max-320",
-          topologyAnalysisPanelWidth: 312,
-          topologyFocusClusterMode: "focus",
-          topologyFocusClusterStage: "click-focus",
-          topologyFocusClusterAttentionLabel: "linked-focus",
-          topologyCameraMotionTrigger: "selected-focus-safe-fit",
-          topologyCameraMotionContract: "legacy-camera-values",
-          topologyCameraMotionDurationMs: 420,
-          topologyCameraMotionEasing: "ease-out-quart",
-          topologyCameraMotionReduced: false,
-          topologyCameraMotionState: "settled",
-          topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
-          topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
-          topologyCameraMotionSelectedViewportX: 652,
-          topologyCameraMotionSelectedViewportY: 412,
-          topologyCameraMotionSafeTargetX: 734,
-          topologyCameraMotionSafeTargetY: 412,
-          topologyCameraMotionDistancePx: 82,
-          topologyCameraMotionTargetInsideSafeRect: true,
-          topologyCameraMotionSafeInsetTop: 251,
-          topologyCameraMotionSafeInsetRight: 439,
-          topologyCameraMotionSafeInsetBottom: 152,
-          topologyCameraMotionSafeInsetLeft: 696,
-          topologyCameraMotionSelectedFanoutRows: 2,
-          topologyFocusClusterVisible: true,
-          topologyFocusClusterSize: 6,
-          topologyFocusClusterWidth: 520,
-          topologyFocusClusterHeight: 260,
-          topologyFocusClusterLeft: 440,
-          topologyFocusClusterTop: 180,
-          topologyFocusClusterRight: 960,
-          topologyFocusClusterBottom: 440,
-          topologyFocusClusterConnectorCount: 5,
-          topologyFocusClusterRelationLabelCount: 5,
-          topologyCardOverlapCount: 0,
-          topologyCardClippedCount: 0,
-          topologyFixedSurfaceOverlapCount: 0,
-          topologyCardFixedSurfaceOverlapCount: 0,
-        },
-      },
+      selectedNodeFocusPayload({
+        topologyCameraMotionContract: "legacy-camera-values",
+      }),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     /selected node camera motion contract/,
@@ -2607,235 +4993,31 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload(
-      {
-        ...payload,
-        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
-        width: 1512,
-        height: 917,
-        markers: {
-          ...payload.markers,
-          topologyRelief: true,
-          topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
-          topologyMinimapWidth: 220,
-          topologyMinimapHeight: 181,
-          topologyMinimapRight: 32,
-          topologyMinimapBottom: 24,
-          topologyMinimapViewportVisible: true,
-          topologyMinimapViewportFrameState: "readable",
-          topologyMinimapViewportWidth: 180,
-          topologyMinimapViewportHeight: 120,
-          topologySkeletonMode: true,
-          topologyCardsReady: true,
-          topologyCardCount: 21,
-          topologySelectedNodePopoverVisible: true,
-          topologyAttentionWinner: "focus-state",
-          topologySelectedNodeId: "domain:views",
-          topologySelectedNodeKind: "domain",
-          topologySelectedNodeTitle: "Views",
-          topologySelectedNodeSummary: "domain:views · 84 relations",
-          topologyNodePopoverVisible: true,
-          topologyNodePopoverSurfaceRole: "active-node-inspector",
-          topologyNodePopoverCollapsed: false,
-          topologyNodePopoverSizePolicy: "inspector-rail",
-          topologyNodePopoverRelationRowVisible: true,
-          topologyAnalysisPanelMode: "focus",
-          topologyAnalysisPanelRequestedMode: "overview",
-          topologyAnalysisPanelSelectedContext: true,
-          topologyAnalysisPanelSelectedFocusRail: true,
-          topologyAnalysisPanelAttentionRole: "support",
-          topologyAnalysisPanelWidthContract: "selected-focus-rail-max-320",
-          topologyFocusClusterMode: "focus",
-          topologyFocusClusterStage: "click-focus",
-          topologyFocusClusterAttentionLabel: "linked-focus",
-          topologyCameraMotionTrigger: "selected-focus-safe-fit",
-          topologyCameraMotionContract: "purposeful-safe-fit-motion",
-          topologyCameraMotionDurationMs: 420,
-          topologyCameraMotionEasing: "ease-out-quart",
-          topologyCameraMotionReduced: false,
-          topologyCameraMotionState: "settled",
-          topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
-          topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
-          topologyCameraMotionSelectedViewportX: 652,
-          topologyCameraMotionSelectedViewportY: 412,
-          topologyCameraMotionSafeTargetX: 734,
-          topologyCameraMotionSafeTargetY: 412,
-          topologyCameraMotionDistancePx: 82,
-          topologyCameraMotionTargetInsideSafeRect: true,
-          topologyCameraMotionSafeInsetTop: 251,
-          topologyCameraMotionSafeInsetRight: 439,
-          topologyCameraMotionSafeInsetBottom: 152,
-          topologyCameraMotionSafeInsetLeft: 696,
-          topologyCameraMotionSelectedFanoutRows: 2,
-          topologyFocusClusterVisible: true,
-          topologyFocusClusterSize: 6,
-          topologyFocusClusterConnectorCount: 0,
-          topologyFocusClusterRelationLabelCount: 0,
-          topologyRelationQualityLensVisible: false,
-          topologyRelationQualityLensText: "",
-          topologyOverviewRelationQualityText: "",
-          topologyOverviewAgentReadinessText: "",
-          topologyOverviewAgentReadinessMeterSegments: [],
-          topologyCardOverlapCount: 0,
-          topologyCardClippedCount: 0,
-          topologyFixedSurfaceOverlapCount: 0,
-          topologyCardFixedSurfaceOverlapCount: 0,
-        },
-      },
+      selectedNodeFocusPayload({
+        topologyFocusClusterConnectorCount: 0,
+        topologyFocusClusterRelationLabelCount: 0,
+        topologySelectedDockCompanionCount: 0,
+        topologySelectedDockVisibleCompanionCount: 0,
+      }),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     /selected node focus cluster did not expose linked relation connectors/,
   );
   assert.match(
     validateWebviewVerifyPayload(
-      {
-        ...payload,
-        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
-        markers: {
-          ...payload.markers,
-          topologyRelief: true,
-          topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
-          topologyMinimapWidth: 220,
-          topologyMinimapHeight: 181,
-          topologyMinimapRight: 32,
-          topologyMinimapBottom: 24,
-          topologyMinimapViewportVisible: true,
-          topologyMinimapViewportFrameState: "readable",
-          topologyMinimapViewportWidth: 180,
-          topologyMinimapViewportHeight: 120,
-          topologySkeletonMode: true,
-          topologyCardsReady: true,
-          topologyCardCount: 21,
-          topologySelectedNodePopoverVisible: true,
-          topologyAttentionWinner: "focus-state",
-          topologySelectedNodeId: "domain:views",
-          topologySelectedNodeKind: "domain",
-          topologySelectedNodeTitle: "Views",
-          topologySelectedNodeSummary: "domain:views · 84 relations",
-          topologyNodePopoverVisible: true,
-          topologyNodePopoverSurfaceRole: "active-node-inspector",
-          topologyNodePopoverCollapsed: false,
-          topologyNodePopoverSizePolicy: "inspector-rail",
-          topologyNodePopoverRelationRowVisible: true,
-          topologyAnalysisPanelMode: "focus",
-          topologyAnalysisPanelRequestedMode: "overview",
-          topologyAnalysisPanelSelectedContext: true,
-          topologyAnalysisPanelSelectedFocusRail: true,
-          topologyAnalysisPanelAttentionRole: "support",
-          topologyAnalysisPanelWidthContract: "selected-focus-rail-max-320",
-          topologyFocusClusterMode: "focus",
-          topologyFocusClusterStage: "click-focus",
-          topologyFocusClusterAttentionLabel: "linked-focus",
-          topologyCameraMotionTrigger: "selected-focus-safe-fit",
-          topologyCameraMotionContract: "purposeful-safe-fit-motion",
-          topologyCameraMotionDurationMs: 420,
-          topologyCameraMotionEasing: "ease-out-quart",
-          topologyCameraMotionReduced: false,
-          topologyCameraMotionState: "settled",
-          topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
-          topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
-          topologyCameraMotionSelectedViewportX: 652,
-          topologyCameraMotionSelectedViewportY: 412,
-          topologyCameraMotionSafeTargetX: 734,
-          topologyCameraMotionSafeTargetY: 412,
-          topologyCameraMotionDistancePx: 82,
-          topologyCameraMotionTargetInsideSafeRect: true,
-          topologyCameraMotionSafeInsetTop: 251,
-          topologyCameraMotionSafeInsetRight: 439,
-          topologyCameraMotionSafeInsetBottom: 152,
-          topologyCameraMotionSafeInsetLeft: 696,
-          topologyCameraMotionSelectedFanoutRows: 2,
-          topologyFocusClusterVisible: true,
-          topologyFocusClusterSize: 6,
-          topologyFocusClusterConnectorCount: 2,
-          topologyFocusClusterRelationLabelCount: 0,
-          topologyCardOverlapCount: 0,
-          topologyCardClippedCount: 0,
-          topologyFixedSurfaceOverlapCount: 0,
-          topologyCardFixedSurfaceOverlapCount: 0,
-        },
-      },
+      selectedNodeFocusPayload({
+        topologyFocusClusterConnectorCount: 2,
+        topologyFocusClusterRelationLabelCount: 0,
+        topologySelectedDockCompanionCount: 0,
+        topologySelectedDockVisibleCompanionCount: 0,
+      }),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     /selected node focus cluster did not expose linked relation labels/,
   );
   assert.equal(
     validateWebviewVerifyPayload(
-      {
-        ...payload,
-        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
-        markers: {
-          ...payload.markers,
-          topologyRelief: true,
-          topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
-          topologyMinimapWidth: 220,
-          topologyMinimapHeight: 181,
-          topologyMinimapRight: 32,
-          topologyMinimapBottom: 24,
-          topologyMinimapViewportVisible: true,
-          topologyMinimapViewportFrameState: "readable",
-          topologyMinimapViewportWidth: 180,
-          topologyMinimapViewportHeight: 120,
-          topologySkeletonMode: true,
-          topologyCardsReady: true,
-          topologyCardCount: 21,
-          topologySelectedNodePopoverVisible: true,
-          topologyAttentionWinner: "focus-state",
-          topologySelectedNodeId: "domain:views",
-          topologySelectedNodeKind: "domain",
-          topologySelectedNodeTitle: "Views",
-          topologySelectedNodeSummary: "domain:views · 84 relations",
-          topologyNodePopoverVisible: true,
-          topologyNodePopoverSurfaceRole: "active-node-inspector",
-          topologyNodePopoverCollapsed: false,
-          topologyNodePopoverSizePolicy: "inspector-rail",
-          topologyNodePopoverRelationRowVisible: true,
-          topologyAnalysisPanelMode: "focus",
-          topologyAnalysisPanelRequestedMode: "overview",
-          topologyAnalysisPanelSelectedContext: true,
-          topologyAnalysisPanelSelectedFocusRail: true,
-          topologyAnalysisPanelAttentionRole: "support",
-          topologyAnalysisPanelWidthContract: "selected-focus-rail-max-320",
-          topologyFocusClusterMode: "focus",
-          topologyFocusClusterStage: "click-focus",
-          topologyFocusClusterAttentionLabel: "linked-focus",
-          topologyCameraMotionTrigger: "selected-focus-safe-fit",
-          topologyCameraMotionContract: "purposeful-safe-fit-motion",
-          topologyCameraMotionDurationMs: 420,
-          topologyCameraMotionEasing: "ease-out-quart",
-          topologyCameraMotionReduced: false,
-          topologyCameraMotionState: "settled",
-          topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
-          topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
-          topologyCameraMotionSelectedViewportX: 652,
-          topologyCameraMotionSelectedViewportY: 412,
-          topologyCameraMotionSafeTargetX: 734,
-          topologyCameraMotionSafeTargetY: 412,
-          topologyCameraMotionDistancePx: 82,
-          topologyCameraMotionTargetInsideSafeRect: true,
-          topologyCameraMotionSafeInsetTop: 251,
-          topologyCameraMotionSafeInsetRight: 439,
-          topologyCameraMotionSafeInsetBottom: 152,
-          topologyCameraMotionSafeInsetLeft: 696,
-          topologyCameraMotionSelectedFanoutRows: 2,
-          topologyFocusClusterVisible: true,
-          topologyFocusClusterSize: 6,
-          topologyFocusClusterConnectorCount: 2,
-          topologyFocusClusterRelationLabelCount: 1,
-          topologyCardOverlapCount: 0,
-          topologyCardClippedCount: 0,
-          topologyFixedSurfaceOverlapCount: 0,
-          topologyCardFixedSurfaceOverlapCount: 0,
-        },
-      },
+      selectedNodeExpandedFocusPayload(),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     null,
@@ -2862,8 +5044,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 347.75,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
         },
       },
@@ -2892,7 +5076,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathAgentHandoffLayer: "focus-path-state",
           topologyPathGuidanceOwner: "floating-prompt",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
-          topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffContract: "passive-copy-only",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -2901,8 +5085,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
         },
       },
@@ -2932,6 +5118,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "floating-prompt-allowed",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -2940,8 +5131,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
         },
       },
@@ -2971,6 +5164,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "passive-copy-only",
+
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -2979,8 +5182,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
         },
       },
@@ -3011,6 +5216,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathPromptSuppressionContract: "",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -3021,8 +5231,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
         },
       },
@@ -3052,6 +5264,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyPathHandoffOverflowContract: "",
           topologyPathAgentHandoffClientWidth: 300,
           topologyPathAgentHandoffScrollWidth: 300,
@@ -3063,8 +5280,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
         },
       },
@@ -3094,6 +5313,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "query_ontology",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -3102,8 +5326,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
         },
       },
@@ -3133,6 +5359,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
           topologyPathStartPromptVisible: false,
@@ -3140,14 +5371,109 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
         },
       },
       { expectedPath: "/en/topology/?mode=path" },
     ),
     /attention winner/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href:
+          "tauri://localhost/ko/topology/?mode=path&from=project%3Aontology-atlas&to=domain%3Aviews",
+        width: 1920,
+        height: 917,
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyUiScale: 1.18,
+          topologyTopWorkspaceLabel: "작업공간",
+          topologyTopCreateLabel: "개념",
+          topologyTopRelayoutLabel: "자동 정렬",
+          topologyTopSearchLabel: "검색",
+          topologyCardsReady: true,
+          topologySkeletonCardsActive: true,
+          topologyCardCount: 14,
+          topologyPathCandidateCardCount: 12,
+          topologyPathSourceCardCount: 1,
+          topologyPathTargetCardCount: 1,
+          topologyPathSourceCardSlug: "ontology-atlas",
+          topologyPathSourceCardRoleContract: "source-anchor-visible",
+          topologyPathSourceCardAttentionLayer: "focus-path-state",
+          topologyPathSourceCardNextAction: "review-path",
+          topologyPathSourceCardAnchor: "source",
+          topologyPathSourceCardBadgeLabel: "A",
+          topologyPathTargetCardSlug: "domain:views",
+          topologyPathTargetCardRoleContract: "target-anchor-visible",
+          topologyPathTargetCardBadgeLabel: "B",
+          topologyPathCandidateVisibilityVisible: "14",
+          topologyPathCandidateVisibilityTotal: "22",
+          topologyPathCandidateVisibilityText:
+            "지도가 읽히도록 경로 후보 22개 중 14개만 보여줍니다.",
+          topologyPathVisibleRouteVisible: true,
+          topologyPathVisibleRouteContract: "source-target-visible-before-proof-disclosure",
+          topologyPathVisibleRouteAttentionLayer: "focus-path-state",
+          topologyPathVisibleRouteGuidanceOwner: "analysis-rail",
+          topologyPathVisibleRouteOverflowContract: "no-horizontal-scroll",
+          topologyPathVisibleRouteSurfaceToken: "--topology-path-route-surface",
+          topologyPathVisibleRouteBorderToken: "--topology-path-route-border",
+          topologyPathVisibleRouteChipSurfaceToken: "--topology-path-route-chip-surface",
+          topologyPathVisibleRouteChipBorderToken: "--topology-path-route-chip-border",
+          topologyPathVisibleRouteClientWidth: 277,
+          topologyPathVisibleRouteScrollWidth: 278,
+          topologyPathAgentHandoffVisible: true,
+          topologyPathAgentHandoffLayer: "focus-path-state",
+          topologyPathGuidanceOwner: "analysis-rail",
+          topologyPathPromptPolicy: "panel-owned-when-card-mode",
+          topologyPathHandoffContract: "route-proof-action-visible",
+          topologyPathHandoffLayoutContract:
+            "evidence-first-agent-handoff-compact",
+          topologyPathHandoffHierarchy:
+            "primary-evidence-secondary-agent-checks",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken:
+            "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
+          topologyPathHandoffOverflowContract: "no-horizontal-scroll",
+          topologyPathAgentHandoffClientWidth: 277,
+          topologyPathAgentHandoffScrollWidth: 278,
+          topologyPathAgentHandoffMcpAction: "find_path",
+          topologyPathAgentHandoffCliFallback: "ontology-atlas path",
+          topologyPathPromptSuppressionContract: "analysis-rail-owns-path-start",
+          topologyPathStartPromptVisible: false,
+          topologyPathAnchorPromptVisible: false,
+          topologyPathResultBannerVisible: false,
+          topologyAttentionWinner: "focus-path-state",
+          topologyMinimapVisible: false,
+          topologyKindLegendVisible: false,
+          topologyKindLegendState: "collapsed-support-chrome",
+          topologySelectedNodePopoverVisible: false,
+          topologyAnalysisPanelMode: "path",
+          topologyAnalysisPanelWidth: 360,
+          topologyAnalysisPanelWidthBand: "header-aligned",
+          topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
+          topologyAnalysisPanelWidthContract:
+            "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+          topologyAnalysisPanelPhoneUtilityReserveToken:
+            "--topology-panel-phone-utility-rail-reserve",
+          topologyAnalysisPanelAttentionRole: "support",
+        },
+      },
+      {
+        expectedPath:
+          "/ko/topology/?mode=path&from=project%3Aontology-atlas&to=domain%3Aviews",
+      },
+    ),
+    null,
   );
   assert.match(
     validateWebviewVerifyPayload(
@@ -3196,9 +5522,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionReduced: false,
           topologyCameraMotionState: "settled",
           topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
+          topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -3281,9 +5607,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionReduced: false,
           topologyCameraMotionState: "settled",
           topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
+          topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -3325,6 +5651,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         markers: {
           ...payload.markers,
           topologyRelief: true,
+          topologyUiScale: 1.12,
           topologySkeletonMode: true,
           topologySelectedNodePopoverVisible: true,
           topologyAttentionWinner: "focus-state",
@@ -3353,9 +5680,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionReduced: false,
           topologyCameraMotionState: "settled",
           topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
+          topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -3391,130 +5718,81 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload(
-      {
-        ...payload,
-        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
-        markers: {
-          ...payload.markers,
-          topologyRelief: true,
-          topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
-          topologyMinimapWidth: 220,
-          topologyMinimapHeight: 181,
-          topologyMinimapRight: 32,
-          topologyMinimapBottom: 24,
-          topologyMinimapViewportVisible: true,
-          topologyMinimapViewportFrameState: "readable",
-          topologyMinimapViewportWidth: 180,
-          topologyMinimapViewportHeight: 120,
-          topologySkeletonMode: true,
-          topologyCardsReady: true,
-          topologyCardCount: 21,
-          topologySelectedNodePopoverVisible: true,
-          topologyAttentionWinner: "focus-state",
-          topologySelectedNodeId: "domain:views",
-          topologySelectedNodeKind: "domain",
-          topologySelectedNodeTitle: "Views",
-          topologySelectedNodeSummary: "domain:views · 84 relations",
-          topologyNodePopoverVisible: true,
-          topologyNodePopoverSurfaceRole: "active-node-inspector",
-          topologyNodePopoverCollapsed: false,
-          topologyNodePopoverSizePolicy: "inspector-rail",
-          topologyNodePopoverRelationRowVisible: true,
-          topologyAnalysisPanelMode: "focus",
-          topologyAnalysisPanelRequestedMode: "overview",
-          topologyAnalysisPanelSelectedContext: true,
-          topologyAnalysisPanelSelectedFocusRail: true,
-          topologyAnalysisPanelAttentionRole: "support",
-          topologyAnalysisPanelWidthContract: "selected-focus-rail-max-320",
-          topologyFocusClusterMode: "focus",
-          topologyFocusClusterStage: "click-focus",
-          topologyFocusClusterVisible: true,
-          topologyFocusClusterSize: 6,
-          topologyFocusClusterConnectorCount: 2,
-          topologyFocusClusterRelationLabelCount: 1,
-          topologyCardOverlapCount: 0,
-          topologyCardClippedCount: 0,
-          topologyFixedSurfaceOverlapCount: 0,
-          topologyCardFixedSurfaceOverlapCount: 0,
-        },
-      },
+      selectedNodeFocusPayload({ topologyClickFocusRelationshipContext: "" }),
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
-    /selected node focus cluster attention label/,
+    /selected node click-focus context/,
   );
   assert.equal(
     validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload(),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    null,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload(),
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
-        markers: {
-          ...payload.markers,
-          topologyRelief: true,
-          topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
-          topologyMinimapWidth: 220,
-          topologyMinimapHeight: 181,
-          topologyMinimapRight: 32,
-          topologyMinimapBottom: 24,
-          topologyMinimapViewportVisible: true,
-          topologyMinimapViewportFrameState: "readable",
-          topologyMinimapViewportWidth: 180,
-          topologyMinimapViewportHeight: 120,
-          topologySkeletonMode: true,
-          topologyCardsReady: true,
-          topologyCardCount: 21,
-          topologySelectedNodePopoverVisible: true,
-          topologyAttentionWinner: "focus-state",
-          topologySelectedNodeId: "domain:views",
-          topologySelectedNodeKind: "domain",
-          topologySelectedNodeTitle: "Views",
-          topologySelectedNodeSummary: "domain:views · 84 relations",
-          topologyNodePopoverVisible: true,
-          topologyNodePopoverSurfaceRole: "active-node-inspector",
-          topologyNodePopoverCollapsed: false,
-          topologyNodePopoverSizePolicy: "inspector-rail",
-          topologyNodePopoverRelationRowVisible: true,
-          topologyAnalysisPanelMode: "focus",
-          topologyAnalysisPanelRequestedMode: "overview",
-          topologyAnalysisPanelSelectedContext: true,
-          topologyAnalysisPanelSelectedFocusRail: true,
-          topologyAnalysisPanelAttentionRole: "support",
-          topologyAnalysisPanelWidthContract: "selected-focus-rail-max-320",
-          topologyFocusClusterMode: "focus",
-          topologyFocusClusterStage: "click-focus",
-          topologyFocusClusterAttentionLabel: "linked-focus",
-          topologyCameraMotionTrigger: "selected-focus-safe-fit",
-          topologyCameraMotionContract: "purposeful-safe-fit-motion",
-          topologyCameraMotionDurationMs: 420,
-          topologyCameraMotionEasing: "ease-out-quart",
-          topologyCameraMotionReduced: false,
-          topologyCameraMotionState: "settled",
-          topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
-          topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
-          topologyCameraMotionSelectedViewportX: 652,
-          topologyCameraMotionSelectedViewportY: 412,
-          topologyCameraMotionSafeTargetX: 734,
-          topologyCameraMotionSafeTargetY: 412,
-          topologyCameraMotionDistancePx: 82,
-          topologyCameraMotionTargetInsideSafeRect: true,
-          topologyCameraMotionSafeInsetTop: 251,
-          topologyCameraMotionSafeInsetRight: 439,
-          topologyCameraMotionSafeInsetBottom: 152,
-          topologyCameraMotionSafeInsetLeft: 696,
-          topologyCameraMotionSelectedFanoutRows: 2,
-          topologyFocusClusterVisible: true,
-          topologyFocusClusterSize: 6,
-          topologyFocusClusterConnectorCount: 2,
-          topologyFocusClusterRelationLabelCount: 1,
-          topologyCardOverlapCount: 0,
-          topologyCardClippedCount: 0,
-          topologyFixedSurfaceOverlapCount: 0,
-          topologyCardFixedSurfaceOverlapCount: 0,
-        },
+        expectedPath: "/en/topology/?p=domain%3Aviews",
+        requireTopologyNodePopover: true,
       },
+    ),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeExpandedFocusPayload({
+        topologyNodePopoverVerifyExpanded: false,
+        topologyNodePopoverVerifyReason: "missing expand control",
+      }),
+      {
+        expectedPath: "/en/topology/?p=domain%3Aviews",
+        requireTopologyNodePopover: true,
+      },
+    ),
+    /selected node popover expansion/,
+  );
+  const collapsedFocusPayload = selectedNodeFocusPayload({
+      topologyAnalysisPanelVisible: true,
+      topologyAnalysisPanelWidth: 312,
+      topologyAnalysisPanelHeight: 291,
+      topologyFocusClusterMode: "focus",
+      topologyFocusClusterStage: "click-focus",
+      topologyFocusClusterAttentionLabel: "linked-focus",
+      topologyCameraMotionTrigger: "selected-focus-safe-fit",
+      topologyCameraMotionContract: "purposeful-safe-fit-motion",
+      topologyCameraMotionDurationMs: 420,
+      topologyCameraMotionEasing: "ease-out-quart",
+      topologyCameraMotionReduced: false,
+      topologyCameraMotionState: "settled",
+      topologyCameraMotionIntent: "selected-focus-safe-rect",
+      topologyCameraMotionTargetPolicy: "viewport-center",
+      topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
+      topologyCameraMotionMaxDistancePx: 318,
+      topologyCameraMotionSelectedViewportX: 652,
+      topologyCameraMotionSelectedViewportY: 412,
+      topologyCameraMotionSafeTargetX: 734,
+      topologyCameraMotionSafeTargetY: 412,
+      topologyCameraMotionDistancePx: 82,
+      topologyCameraMotionTargetInsideSafeRect: true,
+      topologyCameraMotionSafeInsetTop: 251,
+      topologyCameraMotionSafeInsetRight: 439,
+      topologyCameraMotionSafeInsetBottom: 152,
+      topologyCameraMotionSafeInsetLeft: 696,
+      topologyCameraMotionSelectedFanoutRows: 2,
+      topologyFocusClusterVisible: true,
+      topologyFocusClusterSize: 6,
+      topologyFocusClusterConnectorCount: 2,
+      topologyFocusClusterRelationLabelCount: 1,
+      topologyCardOverlapCount: 0,
+      topologyCardClippedCount: 0,
+      topologyFixedSurfaceOverlapCount: 0,
+      topologyCardFixedSurfaceOverlapCount: 0,
+  });
+  assert.equal(
+    validateWebviewVerifyPayload(
+      collapsedFocusPayload,
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     null,
@@ -3522,69 +5800,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
+        ...collapsedFocusPayload,
         markers: {
-          ...payload.markers,
-          topologyRelief: true,
-          topologySkeletonMode: true,
-          topologyCardsReady: true,
-          topologyCardCount: 21,
-          topologySelectedNodePopoverVisible: true,
-          topologyAttentionWinner: "focus-state",
-          topologySelectedNodeId: "domain:views",
-          topologySelectedNodeKind: "domain",
-          topologySelectedNodeTitle: "Views",
-          topologySelectedNodeSummary: "domain:views · 84 relations",
-          topologyNodePopoverVisible: true,
-          topologyNodePopoverSurfaceRole: "active-node-inspector",
-          topologyNodePopoverCollapsed: true,
-          topologyNodePopoverSizePolicy: "context-chip",
-          topologyNodePopoverRelationRowVisible: false,
-          topologyAnalysisPanelMode: "focus",
-          topologyAnalysisPanelVisible: true,
-          topologyAnalysisPanelSelectedContext: true,
-          topologyAnalysisPanelSelectedFocusRail: true,
-          topologyAnalysisPanelAttentionRole: "support",
-          topologyAnalysisPanelWidthContract: "selected-focus-rail-max-320",
-          topologyAnalysisPanelWidth: 312,
-          topologyFocusClusterMode: "focus",
-          topologyFocusClusterStage: "click-focus",
-          topologyFocusClusterAttentionLabel: "linked-focus",
-          topologyCameraMotionTrigger: "selected-focus-safe-fit",
-          topologyCameraMotionContract: "purposeful-safe-fit-motion",
-          topologyCameraMotionDurationMs: 420,
-          topologyCameraMotionEasing: "ease-out-quart",
-          topologyCameraMotionReduced: false,
-          topologyCameraMotionState: "settled",
-          topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
-          topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
-          topologyCameraMotionSelectedViewportX: 652,
-          topologyCameraMotionSelectedViewportY: 412,
-          topologyCameraMotionSafeTargetX: 734,
-          topologyCameraMotionSafeTargetY: 412,
-          topologyCameraMotionDistancePx: 82,
-          topologyCameraMotionTargetInsideSafeRect: true,
-          topologyCameraMotionSafeInsetTop: 251,
-          topologyCameraMotionSafeInsetRight: 439,
-          topologyCameraMotionSafeInsetBottom: 152,
-          topologyCameraMotionSafeInsetLeft: 696,
-          topologyCameraMotionSelectedFanoutRows: 2,
-          topologyFocusClusterVisible: true,
-          topologyFocusClusterSize: 6,
-          topologyFocusClusterConnectorCount: 2,
-          topologyFocusClusterRelationLabelCount: 1,
-          topologyCardOverlapCount: 0,
-          topologyCardClippedCount: 0,
-          topologyFixedSurfaceOverlapCount: 0,
-          topologyCardFixedSurfaceOverlapCount: 0,
+          ...collapsedFocusPayload.markers,
+          topologyNodePopoverSizePolicy: "inspector-rail",
         },
       },
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
-    /selected node popover stayed collapsed during selected-node focus/,
+    /selected node popover used inspector-rail collapsed size policy/,
   );
   assert.match(
     validateWebviewVerifyPayload(
@@ -3643,9 +5867,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionReduced: false,
           topologyCameraMotionState: "settled",
           topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
+          topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -3708,11 +5932,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       {
         ...payload,
         href: "tauri://localhost/en/topology/?p=domain%3Aviews&mode=focus",
+        width: 1512,
         bodyText:
           "온톨로지 지형도 작업공간 개념 Views 주변을 보고 있습니다. LINKED FOCUS 6 linked CONTAINS ×5",
         markers: {
           ...payload.markers,
           topologyRelief: true,
+          topologyUiScale: 1.12,
           topologySkeletonMode: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
@@ -3742,9 +5968,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionReduced: false,
           topologyCameraMotionState: "settled",
           topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
+          topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -3775,9 +6001,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       {
         ...payload,
         href: "tauri://localhost/en/topology/?p=domain%3Aviews",
+        width: 1512,
         markers: {
           ...payload.markers,
           topologyRelief: true,
+          topologyUiScale: 1.12,
           topologySkeletonMode: true,
           topologyCardsReady: true,
           topologyCardCount: 6,
@@ -3797,6 +6025,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyFocusClusterMode: "focus",
           topologyFocusClusterStage: "click-focus",
           topologyFocusClusterAttentionLabel: "linked-focus",
+          topologyFocusClusterBreathingRoomContract: "viewport-edge-clearance",
+          topologyFocusClusterBreathingRoomPx: 16,
+          topologyFocusClusterRightClearance: 552,
+          topologyFocusClusterBottomClearance: 477,
           topologyCameraMotionTrigger: "selected-focus-safe-fit",
           topologyCameraMotionContract: "purposeful-safe-fit-motion",
           topologyCameraMotionDurationMs: 420,
@@ -3804,9 +6036,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionReduced: false,
           topologyCameraMotionState: "settled",
           topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
+          topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -3867,9 +6099,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionReduced: false,
           topologyCameraMotionState: "settled",
           topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
+          topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -3930,9 +6162,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionReduced: false,
           topologyCameraMotionState: "settled",
           topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
+          topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -3975,6 +6207,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedNodeKind: "domain",
           topologySelectedNodeTitle: "Views",
           topologySelectedNodeSummary: "domain:views · 84 relations",
+          topologyAnalysisPanelVisible: true,
           topologyAnalysisPanelMode: "overview",
           topologyAnalysisPanelSelectedContext: false,
           topologyAnalysisPanelAttentionRole: "primary",
@@ -3988,9 +6221,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionReduced: false,
           topologyCameraMotionState: "settled",
           topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
+          topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -4014,7 +6247,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
-    /selected node panel stayed in overview mode/,
+    /selected node support rail was visible without the focus rail marker/,
   );
   assert.match(
     validateWebviewVerifyPayload(
@@ -4050,9 +6283,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCameraMotionReduced: false,
           topologyCameraMotionState: "settled",
           topologyCameraMotionIntent: "selected-focus-safe-rect",
-          topologyCameraMotionTargetPolicy: "nearest-safe-target",
+          topologyCameraMotionTargetPolicy: "viewport-center",
           topologyCameraMotionDistancePolicy: "bounded-safe-fit-distance",
-          topologyCameraMotionMaxDistancePx: 220,
+          topologyCameraMotionMaxDistancePx: 318,
           topologyCameraMotionSelectedViewportX: 652,
           topologyCameraMotionSelectedViewportY: 412,
           topologyCameraMotionSafeTargetX: 734,
@@ -4100,6 +6333,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4108,8 +6346,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
           topologyRelationQualityLensVisible: false,
           topologyRelationQualityLensText: "",
@@ -4144,6 +6384,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4168,8 +6413,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
           topologyAnalysisPanelHeight: 320,
           topologyAnalysisPanelRight: 420,
@@ -4242,6 +6489,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4284,6 +6536,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4292,8 +6549,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
           topologyMinimapVisible: false,
           topologyKindLegendVisible: false,
@@ -4361,6 +6620,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4369,8 +6633,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 348,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
           topologyMinimapVisible: false,
           topologyKindLegendVisible: false,
@@ -4404,6 +6670,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4428,8 +6699,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
           topologyAnalysisPanelHeight: 320,
           topologyAnalysisPanelRight: 420,
@@ -4462,6 +6735,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4486,8 +6764,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
           topologyAnalysisPanelHeight: 320,
           topologyAnalysisPanelRight: 420,
@@ -4520,6 +6800,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4544,8 +6829,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
           topologyAnalysisPanelHeight: 320,
           topologyAnalysisPanelRight: 420,
@@ -4578,6 +6865,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4602,8 +6894,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
           topologyAnalysisPanelHeight: 320,
           topologyAnalysisPanelRight: 420,
@@ -4636,6 +6930,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4660,8 +6959,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
           topologyAnalysisPanelHeight: 320,
           topologyAnalysisPanelRight: 420,
@@ -4694,6 +6995,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4716,8 +7022,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
           topologyAnalysisPanelHeight: 320,
           topologyAnalysisPanelRight: 420,
@@ -4749,6 +7057,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathGuidanceOwner: "analysis-rail",
           topologyPathPromptPolicy: "panel-owned-when-card-mode",
           topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
           topologyAttentionWinner: "focus-path-state",
           topologyPathAgentHandoffMcpAction: "find_path",
           topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4778,8 +7091,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidth: 360,
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-          topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-          topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+          topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+          topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+          topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
           topologyAnalysisPanelAttentionRole: "support",
           topologyAnalysisPanelHeight: 320,
           topologyAnalysisPanelRight: 420,
@@ -4795,7 +7110,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     topologyCardsReady: true,
     topologySkeletonCardsActive: true,
     topologyCardCount: 21,
-    topologyPathCandidateCardCount: 19,
+    topologyPathCandidateCardCount: 0,
+    topologyPathResultCandidateSuppressionPolicy:
+      "source-target-result-hides-candidate-affordance",
+    topologyPathResultCandidateSuppressionActive: "true",
     topologyPathSourceCardCount: 1,
     topologyPathSourceCardSlug: "domain:views",
     topologyPathSourceCardRoleContract: "source-anchor-visible",
@@ -4811,11 +7129,31 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     topologyPathCandidateVisibilityTotal: "21",
     topologyPathCandidateVisibilityText:
       "Visible candidates 21 / 21; hidden for panel clearance.",
+    topologyPathVisibleRouteVisible: true,
+    topologyPathVisibleRouteContract: "source-target-visible-before-proof-disclosure",
+    topologyPathVisibleRouteAttentionLayer: "focus-path-state",
+    topologyPathVisibleRouteGuidanceOwner: "analysis-rail",
+    topologyPathVisibleRouteOverflowContract: "no-horizontal-scroll",
+    topologyPathVisibleRouteSourceSlug: "domain:views",
+    topologyPathVisibleRouteTargetSlug: "capability:topology-analysis-modes",
+    topologyPathVisibleRouteSourceTitle: "Views",
+    topologyPathVisibleRouteTargetTitle: "Topology Analysis Modes",
+    topologyPathVisibleRouteSurfaceToken: "--topology-path-route-surface",
+    topologyPathVisibleRouteBorderToken: "--topology-path-route-border",
+    topologyPathVisibleRouteChipSurfaceToken: "--topology-path-route-chip-surface",
+    topologyPathVisibleRouteChipBorderToken: "--topology-path-route-chip-border",
+    topologyPathVisibleRouteClientWidth: 300,
+    topologyPathVisibleRouteScrollWidth: 300,
     topologyPathAgentHandoffVisible: true,
     topologyPathAgentHandoffLayer: "focus-path-state",
     topologyPathGuidanceOwner: "analysis-rail",
     topologyPathPromptPolicy: "panel-owned-when-card-mode",
     topologyPathHandoffContract: "agent-next-action-visible",
+          topologyPathHandoffLayoutContract: "compact-proof-strip",
+          topologyPathHandoffSurfaceToken: "--topology-path-handoff-surface",
+          topologyPathHandoffBorderToken: "--topology-path-handoff-border",
+          topologyPathHandoffActionMinHeightToken: "--topology-path-handoff-action-min-height",
+          topologyPathHandoffActionRadiusToken: "--topology-path-handoff-action-radius",
     topologyAttentionWinner: "focus-path-state",
     topologyPathAgentHandoffMcpAction: "find_path",
     topologyPathAgentHandoffCliFallback: "ontology-atlas path",
@@ -4825,8 +7163,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     topologyAnalysisPanelWidth: 360,
     topologyAnalysisPanelWidthBand: "header-aligned",
     topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
-    topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
-    topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+    topologyAnalysisPanelWidthContract: "path-support-rail-max-360-phone-utility-reserve",
+    topologyAnalysisPanelWidthToken: "--topology-panel-path-responsive-width",
+
+    topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
     topologyAnalysisPanelAttentionRole: "support",
     topologyAnalysisPanelRight: 420,
     topologyFixedSurfaceNames: ["topology-analysis-panel", "topology-path-result-banner"],
@@ -4891,7 +7231,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
           topologyPathResultRouteChainCompactContract:
-            "endpoint-badges-visible-relation-chips-truncated",
+            "endpoint-badges-visible-relation-chips-readable",
           topologyPathResultRouteChainWidth: 260,
           topologyPathResultRouteChainHeight: 24,
           topologyPathResultRouteChainClientWidth: 260,
@@ -4993,7 +7333,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
           topologyPathResultRouteChainCompactContract:
-            "endpoint-badges-visible-relation-chips-truncated",
+            "endpoint-badges-visible-relation-chips-readable",
           topologyPathResultRouteChainClientWidth: 260,
           topologyPathResultRouteChainScrollWidth: 320,
           topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
@@ -5064,7 +7404,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
           topologyPathResultRouteChainCompactContract:
-            "endpoint-badges-visible-relation-chips-truncated",
+            "endpoint-badges-visible-relation-chips-readable",
           topologyPathResultRouteChainClientWidth: 260,
           topologyPathResultRouteChainScrollWidth: 260,
           topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
@@ -5097,7 +7437,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
           topologyPathResultRouteChainCompactContract:
-            "endpoint-badges-visible-relation-chips-truncated",
+            "endpoint-badges-visible-relation-chips-readable",
           topologyPathResultRouteChainClientWidth: 260,
           topologyPathResultRouteChainScrollWidth: 260,
           topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
@@ -5138,7 +7478,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
           topologyPathResultRouteChainCompactContract:
-            "endpoint-badges-visible-relation-chips-truncated",
+            "endpoint-badges-visible-relation-chips-readable",
           topologyPathResultRouteChainClientWidth: 260,
           topologyPathResultRouteChainScrollWidth: 260,
           topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
@@ -5179,6 +7519,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCardOverlapCount: 0,
           topologyCardClippedCount: 0,
           topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyRelationLensVisible: false,
           topologyRelationLensText: "",
@@ -5236,21 +7577,22 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
           topologyCardOverlapCount: 0,
           topologyCardClippedCount: 0,
           topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -5296,28 +7638,29 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationCardHeight: 222,
         },
       },
-      { expectedPath: "/en/topology/", requireTopologyDrag: true },
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true },
     ),
     /undersized Relief selected relation card/,
   );
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
           topologyCardOverlapCount: 0,
           topologyCardClippedCount: 0,
           topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -5360,28 +7703,29 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationCardHeight: 720,
         },
       },
-      { expectedPath: "/en/topology/", requireTopologyDrag: true },
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true },
     ),
     /oversized Relief selected relation card/,
   );
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
           topologyCardOverlapCount: 0,
           topologyCardClippedCount: 0,
           topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -5438,21 +7782,22 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
           topologyCardOverlapCount: 0,
           topologyCardClippedCount: 0,
           topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -5507,28 +7852,29 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationAgentDecisionTop: 320,
         },
       },
-      { expectedPath: "/en/topology/", requireTopologyDrag: true },
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true },
     ),
     /malformed compact Relief selected relation proof band/,
   );
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
           topologyCardOverlapCount: 0,
           topologyCardClippedCount: 0,
           topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -5572,28 +7918,29 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         },
       },
-      { expectedPath: "/en/topology/", requireTopologyDrag: true },
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true },
     ),
     /selected relation card surface role/,
   );
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
           topologyCardOverlapCount: 0,
           topologyCardClippedCount: 0,
           topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -5639,28 +7986,29 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationCardTop: 96,
         },
       },
-      { expectedPath: "/en/topology/", requireTopologyDrag: true },
+      { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true },
     ),
     /selected relation card elevation contract/,
   );
   assert.match(
     validateWebviewVerifyPayload(
       {
-        ...payload,
-        href: "tauri://localhost/en/topology/",
+        ...selectedRelationPayload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
         markers: {
-          ...payload.markers,
+          ...selectedRelationPayload.markers,
           topologyRelief: true,
           topologyCardsReady: true,
           topologyCardCount: 21,
           topologyCardOverlapCount: 0,
           topologyCardClippedCount: 0,
           topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyUiScale: 1.12,
-          topologyMinimapVisible: true,
+          topologyMinimapVisible: false,
           topologyMinimapWidth: 260,
           topologyMinimapHeight: 190,
           topologyMinimapRight: 24,
@@ -5730,6 +8078,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 0,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: false,
         topologyRelationLensText: "",
@@ -5772,6 +8121,21 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       { maxWebviewSize: { width: 1100, height: 800 } },
     ),
     /expected at most 1100x800/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyRepositionPassConnectorLabelMs: 3.2,
+      },
+    }),
+    /connector-label pass took 3\.2ms/,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -5911,7 +8275,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.equal(
     validateWebviewVerifyPayload({
-      ...payload,
+      ...selectedRelationPayload,
       href: "tauri://localhost/en/topology/?p=domain%3Aviews&mode=focus",
       title: "Relief · ontology-atlas",
       width: 1512,
@@ -5919,7 +8283,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       bodyText:
         "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
       markers: {
-        ...payload.markers,
+        ...selectedRelationPayload.markers,
         topologyRelief: true,
         topologyUiScale: 1.12,
         topologyCommandChromeState: "collapsed-active-relation",
@@ -5946,6 +8310,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+        topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type · Typed ontology facts, not inferred similarity scores.",
@@ -5953,6 +8318,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationQualityLensVisible: true,
         topologyRelationQualityLensText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
         topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
+        topologyNodePopoverVisible: false,
         topologyDragAttempted: true,
         topologyDragReason: "done",
         topologyDragFocusMoved: true,
@@ -5969,8 +8335,27 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyDragConnectorCount: 5,
         topologyDragConnectorDrawable: true,
         topologyDragConnectorClearance: 12,
+        topologyZoomVerifyAttempted: true,
+        topologyZoomVerifyReason: "done",
+        topologyZoomLensContract: "zoom-in-uses-kind-pins-for-noncritical-context-cards",
+        topologyZoomLensPresentationContract:
+          "camera-or-focus-lens-uses-kind-pins-for-noncritical-context",
+        topologyZoomLensPresentationActive: true,
+        topologyZoomLensPresentationSource: "camera-zoom-in",
+        topologyZoomLensThresholdRatio: 0.98,
+        topologyZoomLensCardCompactionActive: true,
+        topologyZoomLensCameraRatio: 0.74,
+        topologyZoomLensActive: true,
+        topologyZoomLensEligibleCount: 5,
+        topologyZoomLensActiveCardCount: 3,
+          topologyZoomLensPinMinOpacity: 0.42,
+        topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+          topologyZoomLensPinGlyphVisibleCount: 2,
         topologySelectedRelationHaloVisible: true,
         topologySelectedRelationHaloQuality: "supported",
+        topologySelectedRelationHandleStripSource: "domain:views",
+        topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
         topologySelectedRelationLabelHitAligned: true,
         topologySelectedRelationLabelQuality: "supported",
         topologySelectedRelationLabelEvidenceState: "source-backed",
@@ -5984,6 +8369,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
           topologySelectedRelationCardEvidenceState: "source-backed",
+        topologySelectedRelationCardType: "contains",
+        topologySelectedRelationCardHandoffContract:
+          "selected-relation-card-carries-mcp-cli-fallback",
+        topologySelectedRelationCardRoute: "source>target>type>action",
+        topologySelectedRelationCardPrimaryAction: "explain_relation",
+        topologySelectedRelationCardCliFallback:
+          "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+        topologySelectedRelationCardSource: "domain:views",
+        topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
@@ -5997,7 +8391,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationPrimaryCopyActionTitle:
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationPrimaryCopyRecommended: true,
-        topologySelectedRelationPrimaryCopyBadgeText: "Best next",
+        topologySelectedRelationPrimaryCopyBadgeText: "Next step",
         topologySelectedRelationPrimaryCopyActionWidth: 124,
         topologySelectedRelationPrimaryCopyActionHeight: 32,
         topologySelectedRelationCopyPayloadTool: "query_ontology",
@@ -6011,13 +8405,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationCopyPayloadSummary:
           "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
-        topologySelectedRelationCopyPayloadVisibleSummary: "query_ontology · explain_relation",
+        topologySelectedRelationCopyPayloadVisibleSummary: "Ready to explain",
+        topologySelectedRelationCopyPayloadLayoutContract: "visible-summary-and-handle-readable",
+        topologySelectedRelationCopyPayloadVisibleHandleSummary: "views → topology-analysis-modes",
         topologySelectedRelationCliFallbackCommand:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCliFallbackSummary:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCopyPayloadWidth: 240,
-        topologySelectedRelationCopyPayloadHeight: 31,
+        topologySelectedRelationCopyPayloadHeight: 42,
         topologySelectedRelationHandleStripSource: "domain:views",
         topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
         topologySelectedRelationHandleStripType: "contains",
@@ -6028,10 +8424,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentRouteSteps: [
-          { kind: "fact", label: "Fact", value: "typed ontology fact", width: 120, height: 54 },
-          { kind: "evidence", label: "Evidence", value: "1 source", width: 120, height: 54 },
-          { kind: "gate", label: "Gate", value: "handoff ready", width: 120, height: 54 },
-          { kind: "action", label: "MCP action", value: "explain_relation", width: 120, height: 54 },
+          { kind: "fact", label: "Fact", value: "typed ontology fact", labelFontSize: "8px", valueFontSize: "10px", width: 120, height: 54 },
+          { kind: "evidence", label: "Evidence", value: "1 source", labelFontSize: "8px", valueFontSize: "10px", width: 120, height: 54 },
+          { kind: "gate", label: "Gate", value: "handoff ready", labelFontSize: "8px", valueFontSize: "10px", width: 120, height: 54 },
+          { kind: "action", label: "MCP action", value: "explain_relation", labelFontSize: "8px", valueFontSize: "10px", width: 120, height: 54 },
         ],
         topologySelectedRelationAgentRouteGateKind: "handoff-ready",
         topologySelectedRelationAgentRouteEvidenceState: "source-backed",
@@ -6059,14 +8455,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCardOverlapCount: 0,
           topologyCardClippedCount: 0,
           topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyDragAttempted: true,
           topologyDragReason: "done",
           topologyDragFocusMoved: true,
           topologyDragCompanionVisible: true,
           topologyDragCompanionAligned: true,
-          topologyDragFocusDelta: { x: 390, y: 0 },
-          topologyDragCompanionDelta: { x: 390, y: 0 },
+          topologyDragFocusDelta: { x: 620, y: 0 },
+          topologyDragCompanionDelta: { x: 620, y: 0 },
         },
       },
       { expectedPath: "/en/topology/", requireTopologyDrag: true },
@@ -6086,6 +8483,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCardOverlapCount: 0,
           topologyCardClippedCount: 0,
           topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyDragAttempted: true,
           topologyDragReason: "done",
@@ -6113,6 +8511,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyCardOverlapCount: 0,
           topologyCardClippedCount: 0,
           topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
           topologyCardFixedSurfaceOverlapCount: 0,
           topologyDragAttempted: true,
           topologyDragReason: "done",
@@ -6124,6 +8523,91 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyDragConnectorDrawable: true,
           topologyDragConnectorCount: 5,
           topologyDragConnectorClearance: 12,
+          topologyDragCollisionPolicy: "pointer-move-settle",
+          topologyDragSettleMotionContract: "linked-cluster-drag-settle",
+          topologyDragSettleMotionDurationMs: 720,
+          topologyDragSettleMotionEasing: "ease-out",
+        },
+      },
+      { expectedPath: "/en/topology/", requireTopologyDrag: true },
+    ),
+    /drag collision policy/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/",
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyCardsReady: true,
+          topologyCardCount: 21,
+          topologyCardOverlapCount: 0,
+          topologyCardClippedCount: 0,
+          topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
+          topologyCardFixedSurfaceOverlapCount: 0,
+          topologyDragAttempted: true,
+          topologyDragReason: "done",
+          topologyDragFocusMoved: true,
+          topologyDragCompanionVisible: true,
+          topologyDragCompanionAligned: true,
+          topologyDragRelationLabelClicked: true,
+          topologyDragClusterSize: 6,
+          topologyDragConnectorDrawable: true,
+          topologyDragConnectorCount: 5,
+          topologyDragConnectorClearance: 12,
+          topologyDragCollisionPolicy: "release-settle",
+          topologyDragPhysicsSyncContract: "skeleton-card-drag-pins-worker-layout-group",
+          topologyDragPhysicsReleasePolicy: "commit-drop-position-no-force-release",
+          topologyDragPhysicsSyncActiveDuring: true,
+          topologyDragWorkerAppliedFrameDelta: 4,
+          topologyDragWorkerAppliedFrameChangeCount: 2,
+          topologyDragRelationLabelVisibilityContract: "active-drag-connector-labels-remain-readable",
+          topologyDragRelationLabelExpectedCount: 2,
+          topologyDragRelationLabelVisibleCount: 2,
+          topologyDragRelationLabelVisibleDuringDrag: true,
+          ...compactZoomDragRelationLabelMarkers(),
+          topologyDragInteractionCueContract: "root-card-shows-linked-count-during-drag",
+          topologyDragInteractionCueVisible: true,
+          topologyDragInteractionCueText: "2 linked · 3 relations",
+          topologyDragInteractionCueLinkedCardCount: 2,
+          topologyDragInteractionCueRelationLinkCount: 3,
+          topologyDragReactiveContextContract: "active-drag-shows-worker-moving-surrounding-context",
+          topologyDragReactiveContextPolicy: "boost-dimmed-worker-response",
+          topologyDragReactiveContextOpacity: "0.42",
+          topologyDragReactiveContextOpacityToken: "--topology-card-drag-reactive-context-opacity",
+          topologyDragReactiveContextVisualContract: "reactive-context-uses-border-ring",
+          topologyDragReactiveContextVisualToken: "--topology-card-border-selected",
+          topologyDragReactiveContextVisibleCount: 2,
+          topologyDragReactiveMotionContract: "active-drag-gives-surrounding-context-bounded-parallax",
+          topologyDragReactiveMotionPolicy: "bounded-parallax-nudge",
+          topologyDragReactiveMotionLinkedPolicy: "direct-neighbor-readable-follow",
+          topologyDragReactiveMotionVisibleCount: 2,
+          topologyDragReactiveAmbientMotionVisibleCount: 1,
+          topologyDragReactiveLinkedMotionVisibleCount: 1,
+          topologyDragReactiveMotionMaxObservedOffsetPx: 36,
+          topologyDragReactiveMotionMaxOffsetPx: 36,
+          topologyDragReactiveMotionBaseMaxOffsetPx: 24,
+          topologyDragReactiveMotionLinkedMaxOffsetPx: 36,
+          topologyDragReactiveMotionMaxOffsetToken: "--topology-card-drag-reactive-motion-max-offset",
+          topologyDragTensionConnectorContract: "active-drag-draws-links-to-reactive-neighbors",
+          topologyDragTensionConnectorPolicy: "cluster-to-linked-context-only",
+          topologyDragTensionConnectorExpectedCount: 1,
+          topologyDragTensionConnectorVisibleCount: 1,
+          topologyDragTensionConnectorActiveOpacity: "0.88",
+          topologyDragTensionConnectorActiveStrokeWidth: "2.1",
+          topologyLayoutWorkerPositionFrameSkipPolicy: "skip-only-unsynced-skeleton-card-drag",
+          topologyDragFrameCacheContract: "pointer-move-reuses-drag-indexes",
+          topologyDragDomIndexContract: "drag-release-reuses-card-elements",
+          topologyDockDragSnapshotContract: "single-pass-card-rect-read",
+          topologyVisibilityCountContract: "single-pass-unless-fallback",
+          topologyVisibilityCountSource: "single-pass",
+          topologyDragSettleFeedbackContract:
+            "released-dragged-cluster-keeps-settle-feedback",
+          topologyDragSettledRoot: "domain:views",
+          topologyDragSettledClusterSize: 4,
           topologyDragSettleMotionContract: "legacy-drag-animation",
         },
       },
@@ -6133,15 +8617,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(
     validateWebviewVerifyPayload({
-      ...payload,
-      href: "tauri://localhost/en/topology/",
+      ...selectedRelationPayload,
+      href: "tauri://localhost/en/topology/?p=domain%3Aviews",
       title: "Relief · ontology-atlas",
       bodyText:
         "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
       width: 1512,
       height: 917,
       markers: {
-        ...payload.markers,
+        ...selectedRelationPayload.markers,
         topologyRelief: true,
         topologyUiScale: 1.12,
         topologyCardsReady: true,
@@ -6149,23 +8633,25 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyUiScale: 1.12,
-        topologyMinimapVisible: true,
-        topologyMinimapWidth: 220,
-        topologyMinimapHeight: 182,
-        topologyMinimapRight: 24,
-        topologyMinimapBottom: 24,
-        topologyMinimapViewportVisible: true,
-        topologyMinimapViewportWidth: 44,
-        topologyMinimapViewportHeight: 38,
-        topologyMinimapViewportFrameState: "readable",
+        topologyMinimapVisible: false,
+        topologyMinimapWidth: 0,
+        topologyMinimapHeight: 0,
+        topologyMinimapRight: 0,
+        topologyMinimapBottom: 0,
+        topologyMinimapViewportVisible: false,
+        topologyMinimapViewportWidth: 0,
+        topologyMinimapViewportHeight: 0,
+        topologyMinimapViewportFrameState: "",
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
         topologyRelationLensPluralMismatch: false,
         topologyRelationQualityLensVisible: true,
         topologyRelationQualityLensText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
         topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
+        topologyNodePopoverVisible: false,
         topologyDragAttempted: true,
         topologyDragReason: "done",
         topologyDragFocusMoved: true,
@@ -6185,6 +8671,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyDragConnectorClearance: 12,
         topologySelectedRelationHaloVisible: true,
         topologySelectedRelationHaloQuality: "supported",
+        topologySelectedRelationHandleStripSource: "domain:views",
+        topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
+        topologyFocusClusterVisible: false,
+        topologyFocusClusterMode: "none",
+        topologyAnalysisPanelVisible: false,
+        topologyKindLegendState: "collapsed-support-chrome",
+        topologyKindLegendVisible: false,
+        topologyCommandChromeState: "collapsed-active-relation",
+        topologyTopLeftChromeGroupState: "compact-active-relation",
+        topologyTopLeftChromeGroupWidth: 172,
         topologySelectedRelationLabelHitAligned: true,
         topologySelectedRelationLabelQuality: "supported",
         topologySelectedRelationLabelEvidenceState: "source-backed",
@@ -6203,6 +8699,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
           topologySelectedRelationCardEvidenceState: "source-backed",
+        topologySelectedRelationCardType: "contains",
+        topologySelectedRelationCardHandoffContract:
+          "selected-relation-card-carries-mcp-cli-fallback",
+        topologySelectedRelationCardRoute: "source>target>type>action",
+        topologySelectedRelationCardPrimaryAction: "explain_relation",
+        topologySelectedRelationCardCliFallback:
+          "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+        topologySelectedRelationCardSource: "domain:views",
+        topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
         topologySelectedRelationCardAgentGate: "handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
@@ -6216,7 +8721,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationPrimaryCopyActionTitle:
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationPrimaryCopyRecommended: true,
-        topologySelectedRelationPrimaryCopyBadgeText: "Best next",
+        topologySelectedRelationPrimaryCopyBadgeText: "Next step",
         topologySelectedRelationPrimaryCopyActionWidth: 124,
         topologySelectedRelationPrimaryCopyActionHeight: 32,
         topologySelectedRelationCopyPayloadTool: "query_ontology",
@@ -6230,13 +8735,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationCopyPayloadSummary:
           "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
-        topologySelectedRelationCopyPayloadVisibleSummary: "query_ontology · explain_relation",
+        topologySelectedRelationCopyPayloadVisibleSummary: "Ready to explain",
+        topologySelectedRelationCopyPayloadLayoutContract: "visible-summary-and-handle-readable",
+        topologySelectedRelationCopyPayloadVisibleHandleSummary: "views → topology-analysis-modes",
         topologySelectedRelationCliFallbackCommand:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCliFallbackSummary:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCopyPayloadWidth: 240,
-        topologySelectedRelationCopyPayloadHeight: 31,
+        topologySelectedRelationCopyPayloadHeight: 42,
         topologySelectedRelationHandleStripSource: "domain:views",
         topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
         topologySelectedRelationHandleStripType: "contains",
@@ -6247,9 +8754,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentRouteSteps: [
-          { kind: "fact", label: "Fact", value: "typed ontology fact" },
-          { kind: "action", label: "MCP action", value: "explain_relation" },
-          { kind: "gate", label: "Gate", value: "handoff ready" },
+          { kind: "fact", label: "Fact", value: "typed ontology fact", labelFontSize: "8px", valueFontSize: "10px" },
+          { kind: "action", label: "MCP action", value: "explain_relation", labelFontSize: "8px", valueFontSize: "10px" },
+          { kind: "gate", label: "Gate", value: "handoff ready", labelFontSize: "8px", valueFontSize: "10px" },
         ],
         topologySelectedRelationAgentRouteGateKind: "handoff-ready",
         topologySelectedRelationAgentRouteEvidenceState: "source-backed",
@@ -6281,6 +8788,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+        topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyMinimapVisible: true,
         topologyMinimapWidth: 220,
@@ -6296,7 +8804,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationLensPluralMismatch: false,
         topologyRelationQualityLensVisible: true,
         topologyRelationQualityLensText: "Relation quality: strong 384 · supported 0 · weak 114 · review 0",
-        topologyOverviewRelationQualityDensity: "scan-facts",
+        topologyOverviewRelationQualityDensity: "summary-first",
         topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 384 · preflight 114 · review 0",
         topologyOverviewAgentReadinessMeterSegments: [
           { kind: "ready", count: "384" },
@@ -6306,8 +8814,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyAnalysisPanelVisible: true,
         topologyAnalysisPanelMode: "overview",
         topologyAnalysisPanelAttentionRole: "support",
-        topologyAnalysisPanelWidthContract: "overview-support-max-360",
-        topologyAnalysisPanelWidthToken: "--topology-panel-overview-rail-width",
+        topologyAnalysisPanelLayerContract: "read-surface-above-map-cards",
+        topologyAnalysisPanelZIndexToken: "--topology-panel-read-layer-z-index",
+        topologyAnalysisPanelZIndexComputed: "30",
+        topologyAnalysisPanelWidthContract: "overview-support-max-360-phone-utility-reserve",
+        topologyAnalysisPanelWidthToken: "--topology-panel-overview-responsive-width",
+        topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
         topologyAnalysisPanelWidthTarget: "overview-14-inch-compact",
         topologyAnalysisPanelWidthPolicy: "overview-support",
         topologyAnalysisPanelWidthBand: "header-aligned",
@@ -6319,6 +8831,38 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyAnalysisPanelScrollHeight: 456,
         topologyOverviewPrimaryCopyWidth: 286,
         topologyOverviewPrimaryCopyHeight: 36,
+      },
+    }, { expectedPath: "/en/topology/" }),
+    null,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 2,
+        topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
+        topologyOverviewAgentReadinessText: "인계 가능 387 · 사전 점검 117 · 검토 필요 0",
+        topologyOverviewAgentReadinessMeterSegments: [
+          { kind: "ready", count: "387" },
+          { kind: "preflight", count: "117" },
+          { kind: "review", count: "0" },
+        ],
       },
     }, { expectedPath: "/en/topology/" }),
     null,
@@ -6341,6 +8885,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyMinimapVisible: true,
         topologyMinimapWidth: 220,
@@ -6366,8 +8911,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyAnalysisPanelVisible: true,
         topologyAnalysisPanelMode: "overview",
         topologyAnalysisPanelAttentionRole: "support",
-        topologyAnalysisPanelWidthContract: "overview-support-max-360",
-        topologyAnalysisPanelWidthToken: "--topology-panel-overview-rail-width",
+        topologyAnalysisPanelLayerContract: "read-surface-above-map-cards",
+        topologyAnalysisPanelZIndexToken: "--topology-panel-read-layer-z-index",
+        topologyAnalysisPanelZIndexComputed: "30",
+        topologyAnalysisPanelWidthContract: "overview-support-max-360-phone-utility-reserve",
+        topologyAnalysisPanelWidthToken: "--topology-panel-overview-responsive-width",
+        topologyAnalysisPanelPhoneUtilityReserveToken: "--topology-panel-phone-utility-rail-reserve",
         topologyAnalysisPanelWidthTarget: "overview-14-inch-compact",
         topologyAnalysisPanelWidthPolicy: "overview-support",
         topologyAnalysisPanelWidthBand: "header-aligned",
@@ -6400,6 +8949,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyMinimapVisible: true,
         topologyMinimapWidth: 220,
@@ -6425,6 +8975,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyAnalysisPanelVisible: true,
         topologyAnalysisPanelMode: "overview",
         topologyAnalysisPanelAttentionRole: "support",
+        topologyAnalysisPanelLayerContract: "read-surface-above-map-cards",
+        topologyAnalysisPanelZIndexToken: "--topology-panel-read-layer-z-index",
+        topologyAnalysisPanelZIndexComputed: "30",
         topologyAnalysisPanelWidthPolicy: "overview-support",
         topologyAnalysisPanelWidthBand: "header-aligned",
         topologyAnalysisPanelWidth: 340,
@@ -6462,6 +9015,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyMinimapVisible: true,
         topologyMinimapWidth: 220,
@@ -6514,6 +9068,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: false,
         topologyRelationLensText: "",
@@ -6529,6 +9084,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyAnalysisPanelVisible: true,
         topologyAnalysisPanelMode: "overview",
         topologyAnalysisPanelAttentionRole: "support",
+        topologyAnalysisPanelLayerContract: "read-surface-above-map-cards",
+        topologyAnalysisPanelZIndexToken: "--topology-panel-read-layer-z-index",
+        topologyAnalysisPanelZIndexComputed: "30",
         topologyAnalysisPanelWidthPolicy: "overview-support",
         topologyAnalysisPanelWidthBand: "header-aligned",
         topologyOverviewRelationQualityDensity: "scan-facts",
@@ -6560,6 +9118,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: false,
         topologyRelationLensText: "",
@@ -6575,6 +9134,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyAnalysisPanelVisible: true,
         topologyAnalysisPanelMode: "overview",
         topologyAnalysisPanelAttentionRole: "support",
+        topologyAnalysisPanelLayerContract: "read-surface-above-map-cards",
+        topologyAnalysisPanelZIndexToken: "--topology-panel-read-layer-z-index",
+        topologyAnalysisPanelZIndexComputed: "30",
         topologyAnalysisPanelWidthPolicy: "overview-support",
         topologyAnalysisPanelWidthBand: "header-aligned",
         topologyOverviewRelationQualityDensity: "scan-facts",
@@ -6605,6 +9167,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: false,
         topologyRelationLensText: "",
@@ -6620,6 +9183,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyAnalysisPanelVisible: true,
         topologyAnalysisPanelMode: "overview",
         topologyAnalysisPanelAttentionRole: "support",
+        topologyAnalysisPanelLayerContract: "read-surface-above-map-cards",
+        topologyAnalysisPanelZIndexToken: "--topology-panel-read-layer-z-index",
+        topologyAnalysisPanelZIndexComputed: "30",
         topologyAnalysisPanelWidthPolicy: "overview-support",
         topologyAnalysisPanelWidthBand: "header-aligned",
         topologyOverviewRelationQualityDensity: "scan-facts",
@@ -6663,22 +9229,27 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationAgentDecisionTop: 183.22,
         topologySelectedRelationAgentDecisionWidth: 126.51,
         topologySelectedRelationAgentDecisionHeight: 35.28,
-        topologyCardsReady: false,
+        topologyCardsReady: true,
         topologyCardCount: 1,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 82 direct facts · 1 relation type · Typed ontology facts, not inferred similarity scores.",
         topologyRelationLensPluralMismatch: false,
         topologySelectedNodePopoverVisible: true,
+        topologyNodePopoverVisible: true,
           topologyAttentionWinner: "active-relation-inspector",
+        ...selectedRelationRootMarkers,
         topologySelectedNodeId: "domain:views",
         topologySelectedNodeKind: "domain",
         topologySelectedNodeTitle: "Views",
         topologySelectedNodeSource: "domains/views",
         topologySelectedNodeSummary: "domain domain:views · Views",
+        topologyNodePopoverLeft: 816,
+        topologyNodePopoverRight: 1236,
         topologyAnalysisPanelMode: "focus",
         topologyAnalysisPanelRequestedMode: "overview",
         topologyAnalysisPanelSelectedContext: true,
@@ -6716,6 +9287,23 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyDragRelationLabelClicked: true,
         topologyDragConnectorDrawable: true,
         topologyDragConnectorClearance: 12,
+        topologyZoomVerifyAttempted: true,
+        topologyZoomVerifyReason: "done",
+        topologyZoomLensContract: "zoom-in-uses-kind-pins-for-noncritical-context-cards",
+        topologyZoomLensPresentationContract:
+          "camera-or-focus-lens-uses-kind-pins-for-noncritical-context",
+        topologyZoomLensPresentationActive: true,
+        topologyZoomLensPresentationSource: "camera-zoom-in",
+        topologyZoomLensThresholdRatio: 0.98,
+        topologyZoomLensCardCompactionActive: true,
+        topologyZoomLensCameraRatio: 0.74,
+        topologyZoomLensActive: true,
+        topologyZoomLensEligibleCount: 5,
+        topologyZoomLensActiveCardCount: 3,
+          topologyZoomLensPinMinOpacity: 0.42,
+        topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+          topologyZoomLensPinGlyphVisibleCount: 2,
         topologySelectedRelationHaloVisible: true,
         topologySelectedRelationHaloCount: 1,
         topologySelectedRelationVisibleHaloCount: 1,
@@ -6745,6 +9333,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCommandChromeState: "collapsed-active-relation",
         topologyTopLeftChromeGroupState: "compact-active-relation",
         topologyTopLeftChromeGroupWidth: 172,
+        topologyNodePopoverVisible: true,
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
     null,
@@ -6765,6 +9354,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedNodeKind: "capability",
         topologySelectedNodeTitle: "Wrong Node",
         topologySelectedNodeSummary: "capability capabilities/wrong-node · Wrong Node",
+        topologyNodePopoverLeft: 816,
+        topologyNodePopoverRight: 1236,
       },
     }, { expectedPath: "/en/topology/" }),
     /selected node capabilities\/wrong-node, expected domain:views/,
@@ -6772,7 +9363,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.equal(
     validateWebviewVerifyPayload({
       ...payload,
-      href: "tauri://localhost/en/topology/",
+      href: "tauri://localhost/en/topology/?p=domain%3Aviews",
       title: "Relief · ontology-atlas",
       bodyText:
         "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
@@ -6784,20 +9375,25 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 5,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologySelectedDockCompanionCount: 4,
-        topologySelectedDockVisibleCompanionCount: 0,
-        topologySelectedDockCompanionVisible: false,
+        topologySelectedDockVisibleCompanionCount: 1,
+        topologySelectedDockCompanionVisible: true,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 82 direct facts · 1 relation type · Typed ontology facts, not inferred similarity scores.",
         topologyRelationLensPluralMismatch: false,
         topologySelectedNodePopoverVisible: true,
+        topologyNodePopoverVisible: true,
           topologyAttentionWinner: "active-relation-inspector",
+        ...selectedRelationRootMarkers,
         topologySelectedNodeId: "domain:views",
         topologySelectedNodeKind: "domain",
         topologySelectedNodeTitle: "Views",
         topologySelectedNodeSource: "domains/views",
         topologySelectedNodeSummary: "domain domain:views · Views",
+        topologyNodePopoverLeft: 816,
+        topologyNodePopoverRight: 1236,
         topologyAnalysisPanelMode: "focus",
         topologyAnalysisPanelRequestedMode: "overview",
         topologyAnalysisPanelSelectedContext: true,
@@ -6819,10 +9415,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyDragAttempted: true,
         topologyDragReason: "done",
         topologyDragFocusMoved: true,
-        topologyDragFocusDelta: { x: -9, y: 58 },
+        topologyDragFocusDelta: { x: -0.6, y: 23.86 },
         topologyDragCompanionVisible: true,
         topologyDragCompanionAligned: true,
-        topologyDragCompanionDelta: { x: -13, y: 56 },
+        topologyDragCompanionDelta: { x: -0.67, y: 23.95 },
         topologyDragCompanionSlug: "capability:builder-relation-write-confirm",
         topologyDragCompanionCount: 1,
         topologyDragVisibleCompanionCount: 1,
@@ -6832,6 +9428,23 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyDragConnectorCount: 6,
         topologyDragConnectorDrawable: true,
         topologyDragConnectorClearance: 12,
+        topologyZoomVerifyAttempted: true,
+        topologyZoomVerifyReason: "done",
+        topologyZoomLensContract: "zoom-in-uses-kind-pins-for-noncritical-context-cards",
+        topologyZoomLensPresentationContract:
+          "camera-or-focus-lens-uses-kind-pins-for-noncritical-context",
+        topologyZoomLensPresentationActive: true,
+        topologyZoomLensPresentationSource: "camera-zoom-in",
+        topologyZoomLensThresholdRatio: 0.98,
+        topologyZoomLensCardCompactionActive: true,
+        topologyZoomLensCameraRatio: 0.74,
+        topologyZoomLensActive: true,
+        topologyZoomLensEligibleCount: 5,
+        topologyZoomLensActiveCardCount: 3,
+          topologyZoomLensPinMinOpacity: 0.42,
+        topologyZoomLensVisibleActiveCardCount: 2,
+          topologyZoomLensPinGlyphContract: "compact-kind-pin-keeps-type-glyph-without-title-card",
+          topologyZoomLensPinGlyphVisibleCount: 2,
         topologySelectedRelationHaloVisible: true,
         topologySelectedRelationHaloQuality: "strong",
         topologySelectedRelationLabelHitAligned: true,
@@ -6879,12 +9492,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 82 direct facts · 1 relation type · Typed ontology facts, not inferred similarity scores.",
         topologyRelationLensPluralMismatch: false,
         topologySelectedNodePopoverVisible: true,
           topologyAttentionWinner: "active-relation-inspector",
+        ...selectedRelationRootMarkers,
         topologySelectedNodeId: "domain:views",
         topologySelectedNodeKind: "domain",
         topologySelectedNodeTitle: "Views",
@@ -6973,6 +9588,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -6999,6 +9615,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7009,6 +9626,36 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/" }),
     /before the skeleton overlay was ready/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: false,
+        topologySkeletonLayerPresent: true,
+        topologySkeletonLayerResolvedCount: 21,
+        topologySkeletonCardResolvedCount: 21,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 2,
+        topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
+        topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
+      },
+    }, { expectedPath: "/en/topology/" }),
+    null,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -7025,6 +9672,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7052,6 +9700,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7080,6 +9729,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7108,6 +9758,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7118,6 +9769,38 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/" }),
     /agent readiness marker/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
+        topologyOverviewAgentReadinessText: "ready 2 · check 0 · needs review 0",
+        topologyOverviewAgentReadinessMeterSegments: [
+          { kind: "ready", count: "2" },
+          { kind: "preflight", count: "0" },
+          { kind: "review", count: "0" },
+        ],
+      },
+    }, { expectedPath: "/en/topology/" }),
+    null,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -7134,6 +9817,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7160,6 +9844,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7187,6 +9872,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 2,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
       },
     }, { expectedPath: "/en/topology/" }),
@@ -7207,6 +9893,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 2,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7233,6 +9920,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 1,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7243,6 +9931,37 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/" }),
     /fixed topology surfaces/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 2,
+        topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
+        topologyCardFixedSurfaceOverlapCount: 1,
+        topologyResidualOverlapClear: true,
+        topologyResidualVisibleCardOverlapCount: 0,
+        topologyResidualFixedSurfaceOverlapCount: 0,
+        topologyResidualCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
+        topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
+      },
+    }, { expectedPath: "/en/topology/" }),
+    null,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -7259,6 +9978,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 4,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyFixedSurfaceOverlapCount: 1,
         topologyFixedSurfaceOverlapSample: [
           ["sigma-selected-edge-card", "topology-minimap"],
@@ -7291,6 +10011,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyUiScale: 1.12,
         topologyMinimapVisible: false,
@@ -7326,6 +10047,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyUiScale: 1.12,
         topologyMinimapVisible: true,
@@ -7364,6 +10086,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyUiScale: 1.12,
         topologyMinimapVisible: true,
@@ -7405,6 +10128,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7432,10 +10156,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7455,6 +10181,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyDragVisibleCompanionCount: 3,
         topologyDragAlignedCompanionCount: 1,
         topologyDragRelationLabelClicked: false,
+        topologyZoomLensCardCompactionActive: false,
         topologySelectedRelationHaloVisible: false,
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
@@ -7471,10 +10198,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7499,6 +10228,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyDragClusterSize: 6,
         topologyDragConnectorCount: 1,
         topologyDragConnectorClearance: 12,
+        topologyZoomLensCardCompactionActive: false,
         topologySelectedRelationHaloVisible: false,
         topologySelectedRelationHaloCount: 1,
         topologySelectedRelationVisibleHaloCount: 0,
@@ -7517,10 +10247,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7559,10 +10291,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7607,10 +10341,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7656,10 +10392,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7705,10 +10443,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7758,10 +10498,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7809,80 +10551,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       title: "Relief · ontology-atlas",
       bodyText:
         "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
-      width: 1512,
       markers: {
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
-        topologyCardFixedSurfaceOverlapCount: 0,
-        topologyUiScale: 1.12,
-        topologyMinimapVisible: true,
-        topologyMinimapWidth: 220,
-        topologyMinimapHeight: 182,
-        topologyMinimapRight: 24,
-        topologyMinimapBottom: 24,
-        topologyMinimapViewportVisible: true,
-        topologyMinimapViewportWidth: 44,
-        topologyMinimapViewportHeight: 38,
-        topologyMinimapViewportFrameState: "readable",
-        topologyRelationLensVisible: true,
-        topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
-        topologyRelationLensPluralMismatch: false,
-        topologyRelationQualityLensVisible: true,
-        topologyRelationQualityLensText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
-        topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
-        topologyDragAttempted: true,
-        topologyDragReason: "done",
-        topologyDragFocusMoved: true,
-        topologyDragFocusDelta: { x: -128, y: 58 },
-        topologyDragCompanionVisible: true,
-        topologyDragCompanionAligned: true,
-        topologyDragCompanionDelta: { x: -126, y: 60 },
-        topologyDragCompanionSlug: "capability:agent-onboarding-brief",
-        topologyDragCompanionCount: 6,
-        topologyDragVisibleCompanionCount: 3,
-        topologyDragAlignedCompanionCount: 1,
-        topologyDragRelationLabelClicked: true,
-        topologyDragNodePopoverExpandClicked: true,
-        topologyDragConnectorDrawable: true,
-        topologyDragConnectorClearance: 12,
-        topologySelectedRelationHaloVisible: true,
-        topologySelectedRelationHaloQuality: "supported",
-        topologySelectedRelationLabelHitAligned: true,
-        topologySelectedRelationLabelQuality: "supported",
-        topologySelectedRelationLabelEvidenceState: "source-backed",
-        topologySelectedRelationLabelEvidenceGlyph: "1",
-        topologyNodePopoverVisible: true,
-        topologyNodePopoverCollapsed: false,
-        topologyNodePopoverSizePolicy: "inspector-rail",
-        topologyNodePopoverWidth: 286,
-        topologyNodePopoverLeft: 1040,
-        topologyNodePopoverRight: 1460,
-        topologyNodePopoverTop: 88,
-        topologyNodePopoverBottom: 600,
-      },
-    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
-    /selected node popover overflowed the right control rail/,
-  );
-  assert.match(
-    validateWebviewVerifyPayload({
-      ...payload,
-      href: "tauri://localhost/en/topology/",
-      title: "Relief · ontology-atlas",
-      bodyText:
-        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
-      markers: {
-        ...payload.markers,
-        topologyRelief: true,
-        topologyCardsReady: true,
-        topologyCardCount: 21,
-        topologyCardOverlapCount: 0,
-        topologyCardClippedCount: 0,
-        topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7932,10 +10610,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -7967,7 +10647,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyNodePopoverVisible: true,
         topologyNodePopoverCollapsed: false,
         topologyNodePopoverSizePolicy: "inspector-rail",
+        topologyNodePopoverPositionContract: "selected-inspector-aligns-to-right-inset",
+        topologyNodePopoverGutterContract: "no-phantom-utility-rail",
+        topologyNodePopoverRightInsetToken: "--topology-node-popover-right-inset",
+        topologyTopLeftChromeGroupSupportContract: "left-panel-collapsed-until-user-expands",
         topologyNodePopoverWidth: 286,
+        topologyNodePopoverLeft: 1048,
+        topologyNodePopoverRight: 1468,
         topologyNodePopoverTop: 88,
         topologyNodePopoverBottom: 600,
         topologyNodePopoverRelationRowVisible: true,
@@ -7982,26 +10668,36 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.match(
     validateWebviewVerifyPayload({
       ...payload,
-      href: "tauri://localhost/ko/topology/",
+      href: "tauri://localhost/ko/topology/?p=domain%3Aviews",
       title: "ontology-atlas · 지형도",
       bodyText:
         "온톨로지\n지형도\n292 개념\n21 concept cards\n읽을 수 있는 카드 골격을 보고 있습니다.",
       markers: {
         ...payload.markers,
         topologyRelief: true,
+        topologyAttentionWinner: "focus-state",
+        topologyTopRelayoutLabel: "자동 정렬",
+        topologyTopSearchLabel: "검색",
+        topologyTopWorkspaceLabel: "",
+        topologyTopCreateLabel: "개념",
         topologyCardsReady: true,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "관계 렌즈 · 직접 의미 관계 21개 · 관계 유형 1종",
         topologyRelationLensPluralMismatch: false,
         topologyRelationQualityLensVisible: true,
-        topologyRelationQualityLensText: "관계 품질: 강한 구조 1 · 근거 있는 관계 1 · 약한 관련 0 · 검토 0",
+        topologyRelationQualityLensText:
+          "분명함 70 · 근거 있는 관계 0 · 얇은 근거 12 · 확인 0",
         topologyOverviewAgentReadinessText: "에이전트 준비도: 전달 가능 2 · 사전 점검 0 · 검토 0",
-        topologyCommandChromeState: "collapsed-active-relation",
+        topologyCommandChromeState: "selected-node-inspector",
+        topologyUtilityActionLaneVisible: false,
+        topologySigmaControlsStackVisible: false,
+        topologyShortcutsHelpButtonVisible: false,
         topologyDragAttempted: true,
         topologyDragReason: "done",
         topologyDragFocusMoved: true,
@@ -8023,10 +10719,22 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationLabelQuality: "supported",
         topologySelectedRelationLabelEvidenceState: "source-backed",
         topologySelectedRelationLabelEvidenceGlyph: "1",
+        topologySelectedNodePopoverVisible: true,
+        topologySelectedNodeId: "domain:views",
+        topologySelectedNodeKind: "domain",
+        topologySelectedNodeTitle: "Views",
+        topologySelectedNodeSource: "domains/views",
+        topologySelectedNodeSummary: "domain domain:views · Views",
         topologyNodePopoverVisible: true,
         topologyNodePopoverCollapsed: false,
         topologyNodePopoverSizePolicy: "inspector-rail",
+        topologyNodePopoverPositionContract: "selected-inspector-aligns-to-right-inset",
+        topologyNodePopoverGutterContract: "no-phantom-utility-rail",
+        topologyNodePopoverRightInsetToken: "--topology-node-popover-right-inset",
+        topologyTopLeftChromeGroupSupportContract: "left-panel-collapsed-until-user-expands",
         topologyNodePopoverWidth: 286,
+        topologyNodePopoverLeft: 1048,
+        topologyNodePopoverRight: 1468,
         topologyNodePopoverTop: 88,
         topologyNodePopoverBottom: 600,
         topologyNodePopoverRelationRowVisible: true,
@@ -8049,10 +10757,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -8108,10 +10818,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -8167,10 +10879,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -8235,6 +10949,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 3,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -8287,10 +11002,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -8341,10 +11058,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -8405,10 +11124,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -8469,10 +11190,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -8532,10 +11255,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -8596,10 +11321,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -8660,10 +11387,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyCardsReady: true,
+        ...selectedRelationRootMarkers,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
@@ -8700,6 +11429,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
         topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
         topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation types",
@@ -8737,6 +11467,7 @@ test("WebView verification payload parser uses the latest reported DOM snapshot"
       topologyCardOverlapCount: 0,
       topologyCardClippedCount: 0,
       topologyFixedSurfaceCount: 0,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
       topologyCardFixedSurfaceOverlapCount: 0,
       topologyDragAttempted: false,
       topologyDragReason: "",
@@ -8792,6 +11523,8 @@ test("selected relation label compact markers match rendered width and viewport 
     topologySelectedRelationLabelCompact: "false",
     topologySelectedRelationLabelDesiredWidth: 144,
     topologySelectedRelationLabelCenteredAvailableWidth: 144,
+    topologySelectedRelationLabelViewportClampContract: "centered-within-viewport",
+    topologySelectedRelationLabelViewportClampSide: "none",
     topologySelectedRelationLabelViewportInset: 16,
   };
 
@@ -8806,6 +11539,8 @@ test("selected relation label compact markers match rendered width and viewport 
         topologySelectedRelationLabelCompact: "true",
         topologySelectedRelationLabelDesiredWidth: 314,
         topologySelectedRelationLabelCenteredAvailableWidth: 150,
+        topologySelectedRelationLabelViewportClampContract: "compacted-to-viewport-edge",
+        topologySelectedRelationLabelViewportClampSide: "left",
       },
       1512,
     ),
@@ -8821,6 +11556,8 @@ test("selected relation label compact markers match rendered width and viewport 
         topologySelectedRelationLabelCompact: "false",
         topologySelectedRelationLabelDesiredWidth: 314,
         topologySelectedRelationLabelCenteredAvailableWidth: 150,
+        topologySelectedRelationLabelViewportClampContract: "compacted-to-viewport-edge",
+        topologySelectedRelationLabelViewportClampSide: "left",
       },
       1512,
     ),
@@ -8836,6 +11573,86 @@ test("selected relation label compact markers match rendered width and viewport 
       1512,
     ),
     /overflowed the viewport left/,
+  );
+  assert.match(
+    validateSelectedRelationLabelCompactMarkers(
+      {
+        ...baseMarkers,
+        topologySelectedRelationLabelViewportClampContract: "compacted-to-viewport-edge",
+        topologySelectedRelationLabelViewportClampSide: "none",
+      },
+      1512,
+    ),
+    /edge compaction without a clamp side/,
+  );
+});
+
+test("relation label frame geometry markers require after-render ready counts", () => {
+  const markers = {
+    topologyRelationLabelGeometryContract: "frame-positioned-hit-targets",
+    topologyRelationLabelGeometrySource: "after-render-layout-pass",
+    topologyRelationLabelGeometryExpectedCount: 2,
+    topologyRelationLabelGeometryReadyCount: 2,
+    topologyRelationLabelGeometryPendingCount: 0,
+  };
+
+  assert.equal(validateRelationLabelFrameGeometryMarkers(markers), null);
+  assert.match(
+    validateRelationLabelFrameGeometryMarkers({
+      ...markers,
+      topologyRelationLabelGeometrySource: "pending-frame",
+    }),
+    /frame geometry source/,
+  );
+  assert.match(
+    validateRelationLabelFrameGeometryMarkers({
+      ...markers,
+      topologyRelationLabelGeometryReadyCount: 1,
+    }),
+    /ready count/,
+  );
+  assert.match(
+    validateRelationLabelFrameGeometryMarkers({
+      ...markers,
+      topologyRelationLabelGeometryPendingCount: 1,
+    }),
+    /pending labels/,
+  );
+});
+
+test("topology connector cache markers require frame fallback with zero DOM reads", () => {
+  const markers = {
+    topologyConnectorDomIndexContract: "reuse-card-index",
+    topologyConnectorRectCacheContract: "frame-local-card-rect-cache",
+    topologyConnectorRectCacheFrameFallbackContract:
+      "reuse-card-placement-frame-rects-before-dom-read",
+    topologyConnectorRectCacheAccounting: "reads-plus-hits",
+    topologyConnectorRectCacheSize: 7,
+    topologyConnectorRectCacheReadCount: 0,
+    topologyConnectorRectCacheHitCount: 26,
+  };
+
+  assert.equal(validateTopologyConnectorCacheMarkers(markers), null);
+  assert.match(
+    validateTopologyConnectorCacheMarkers({
+      ...markers,
+      topologyConnectorRectCacheFrameFallbackContract: "direct-dom-read",
+    }),
+    /frame fallback contract/,
+  );
+  assert.match(
+    validateTopologyConnectorCacheMarkers({
+      ...markers,
+      topologyConnectorRectCacheReadCount: 1,
+    }),
+    /connector rect cache proof/,
+  );
+  assert.match(
+    validateTopologyConnectorCacheMarkers({
+      ...markers,
+      topologyConnectorRectCacheHitCount: 0,
+    }),
+    /connector rect cache proof/,
   );
 });
 
@@ -8885,21 +11702,329 @@ test("selected relation card attention lane keeps map label and support panel cl
   );
 });
 
+test("selected relation endpoint route markers prove visible source and target names", () => {
+  const baseMarkers = {
+    topologySelectedRelationCopyPayloadFrom: "domain:views",
+    topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
+    topologySelectedRelationHandleStripSource: "domain:views",
+    topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
+    topologySelectedRelationEndpointRouteContract: "visible-source-target-names-wrap",
+    topologySelectedRelationEndpointRouteSourceName: "Views",
+    topologySelectedRelationEndpointRouteTargetName: "Topology Analysis Modes",
+    topologySelectedRelationEndpointRouteWrapPolicy:
+      "wrap-allowed-no-horizontal-overflow",
+    topologySelectedRelationEndpointRouteLineBudget: "2",
+    topologySelectedRelationEndpointRouteSourceHandle: "domain:views",
+    topologySelectedRelationEndpointRouteTargetHandle: "capability:topology-analysis-modes",
+    topologySelectedRelationEndpointRouteHandleSummary:
+      "domain:views → capability:topology-analysis-modes",
+    topologySelectedRelationEndpointRouteReadableText:
+      "Views → Topology Analysis Modes",
+    topologySelectedRelationEndpointReadableRoute: "Views → Topology Analysis Modes",
+    topologySelectedRelationEndpointRouteText: "Views→Topology Analysis Modes",
+    topologySelectedRelationEndpointRouteWidth: 212,
+    topologySelectedRelationEndpointRouteHeight: 30,
+    topologySelectedRelationEndpointRouteClientWidth: 212,
+    topologySelectedRelationEndpointRouteScrollWidth: 212,
+  };
+
+  assert.equal(validateSelectedRelationEndpointRouteMarkers(baseMarkers), null);
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteContract: "hidden-handles-only",
+    }),
+    /endpoint route contract/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteWrapPolicy: "truncate",
+    }),
+    /endpoint route wrap policy/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteLineBudget: "1",
+    }),
+    /endpoint route line budget/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteText: "Views",
+    }),
+    /endpoint names not visible/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteReadableText: "Views",
+    }),
+    /endpoint readable route/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointReadableRoute: "Views",
+    }),
+    /endpoint layer readable route/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteTargetHandle: "capability:wrong",
+    }),
+    /visible endpoint handles/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointRouteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointRouteClientWidth: 180,
+      topologySelectedRelationEndpointRouteScrollWidth: 212,
+    }),
+    /overflowing Relief selected relation endpoint route/,
+  );
+});
+
+test("selected relation identity markers expose the root selected edge id", () => {
+  const baseMarkers = {
+    topologySelectedRelationVerifySelected: true,
+    topologyAgentCurrentSurface: "selected-relation",
+    topologyAgentCurrentSurfaceRoute: "domain:views>capability:topology-analysis-modes",
+    topologySelectedRelationEdgeId: "geid_138_17",
+    topologySelectedRelationLabelSource: "domain:views",
+    topologySelectedRelationLabelTarget: "capability:topology-analysis-modes",
+    topologySelectedRelationLabelRoute: "domain:views>capability:topology-analysis-modes",
+  };
+
+  assert.equal(validateSelectedRelationIdentityMarkers(baseMarkers), null);
+  assert.match(
+    validateSelectedRelationIdentityMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEdgeId: "",
+    }),
+    /selected relation edge id/,
+  );
+  assert.match(
+    validateSelectedRelationIdentityMarkers({
+      ...baseMarkers,
+      topologyAgentCurrentSurfaceRoute: "domain:wrong>capability:topology-analysis-modes",
+    }),
+    /selected relation route/,
+  );
+});
+
+test("selected relation endpoint visibility markers prove source and target cards stay readable", () => {
+  const baseMarkers = {
+    topologyCardsReady: true,
+    topologySelectedRelationCardSource: "domain:views",
+    topologySelectedRelationCardTarget: "capability:topology-analysis-modes",
+    topologySelectedRelationEndpointVisibilityContract:
+      "selected-relation-keeps-source-target-readable",
+    topologySelectedRelationEndpointExpectedCount: 2,
+    topologySelectedRelationEndpointVisibleCount: 2,
+    topologySelectedRelationEndpointHiddenCount: 0,
+    topologySelectedRelationEndpointCards: [
+      {
+        slug: "domain:views",
+        roleBadgeText: "FROM",
+        roleBadgeContract: "visible-source-target-role-badge",
+        roleBadgeVisible: true,
+        visible: true,
+        surfaceHidden: "",
+        shift: "safe-shift",
+      },
+      {
+        slug: "capability:topology-analysis-modes",
+        roleBadgeText: "TO",
+        roleBadgeContract: "visible-source-target-role-badge",
+        roleBadgeVisible: true,
+        visible: true,
+        surfaceHidden: "",
+        shift: "safe-shift",
+      },
+    ],
+  };
+
+  assert.equal(validateSelectedRelationEndpointVisibilityMarkers(baseMarkers), null);
+  assert.match(
+    validateSelectedRelationEndpointVisibilityMarkers({
+      ...baseMarkers,
+      topologyCardsReady: false,
+    }),
+    /skeleton card layer was not ready/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointVisibilityMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointVisibilityContract: "best-effort",
+    }),
+    /endpoint visibility contract/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointVisibilityMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointHiddenCount: 1,
+    }),
+    /endpoint visibility proof/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointVisibilityMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointCards: [
+        {
+          slug: "domain:views",
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+        {
+          slug: "capability:wrong",
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+      ],
+    }),
+    /without source and target/,
+  );
+  assert.match(
+    validateSelectedRelationEndpointVisibilityMarkers({
+      ...baseMarkers,
+      topologySelectedRelationEndpointCards: [
+        {
+          slug: "domain:views",
+          visible: true,
+          surfaceHidden: "",
+          shift: "safe-shift",
+        },
+        {
+          slug: "capability:topology-analysis-modes",
+          visible: false,
+          surfaceHidden: "true",
+          shift: "safe-shift",
+        },
+      ],
+    }),
+    /hidden Relief selected relation endpoint card/,
+  );
+});
+
+test("selected relation context silhouette markers suppress lower-priority background cards", () => {
+  const baseMarkers = {
+    topologySelectedRelationContextSilhouettePolicy:
+      "selected-relation-keeps-endpoints-and-orientation-anchors-only",
+    topologySelectedRelationContextSilhouetteActive: true,
+    topologySelectedRelationContextSilhouetteHiddenCount: 6,
+    topologySelectedRelationLowerPriorityVisibleDimmedCount: 0,
+    topologySelectedRelationVisibleOrientationAnchorCount: 3,
+    topologySelectedRelationHiddenContextInteractionContract:
+      "hidden-context-is-not-pointer-focus-or-a11y-target",
+    topologySelectedRelationHiddenContextInteractiveCount: 0,
+  };
+
+  assert.equal(validateSelectedRelationContextSilhouetteMarkers(baseMarkers), null);
+  assert.match(
+    validateSelectedRelationContextSilhouetteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationContextSilhouettePolicy: "all-context-visible",
+    }),
+    /context silhouette policy/,
+  );
+  assert.match(
+    validateSelectedRelationContextSilhouetteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationContextSilhouetteActive: false,
+    }),
+    /did not activate/,
+  );
+  assert.match(
+    validateSelectedRelationContextSilhouetteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationLowerPriorityVisibleDimmedCount: 2,
+    }),
+    /noisy Relief selected relation context/,
+  );
+  assert.match(
+    validateSelectedRelationContextSilhouetteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationHiddenContextInteractionContract:
+        "hidden-context-is-only-transparent",
+    }),
+    /hidden context interaction contract/,
+  );
+  assert.match(
+    validateSelectedRelationContextSilhouetteMarkers({
+      ...baseMarkers,
+      topologySelectedRelationHiddenContextInteractiveCount: 1,
+    }),
+    /interactive hidden Relief selected relation context/,
+  );
+});
+
 test("selected relation card density contract keeps the relation inspector compact", () => {
   const baseMarkers = {
     topologySelectedRelationCardDensity: "compact",
     topologySelectedRelationCardDensityContract: "mini-relation-inspector",
     topologySelectedRelationCardScaleContract: "density-fixed-no-ui-zoom",
+    topologySelectedRelationCardTypographyContract: "legible-compact-relation-inspector",
+    topologySelectedRelationCardMaxHeightToken: "--topology-selected-relation-card-max-height",
+    topologySelectedRelationCardKickerFontSizeToken:
+      "--topology-selected-relation-kicker-font-size",
+    topologySelectedRelationCardChipFontSizeToken:
+      "--topology-selected-relation-chip-font-size",
+    topologySelectedRelationCardRouteLabelFontSizeToken:
+      "--topology-selected-relation-route-label-font-size",
+    topologySelectedRelationCardRouteValueFontSizeToken:
+      "--topology-selected-relation-route-value-font-size",
+    topologySelectedRelationCardPayloadFontSizeToken:
+      "--topology-selected-relation-payload-font-size",
+    topologySelectedRelationAgentRouteSteps: [
+      { kind: "fact", labelFontSize: "8px", valueFontSize: "10px" },
+      { kind: "evidence", labelFontSize: "8px", valueFontSize: "10px" },
+      { kind: "action", visibility: "metadata-only" },
+    ],
     topologySelectedRelationCardWidth: 248,
     topologySelectedRelationCardHeight: 222,
     topologySelectedRelationProofBandHeight: 36,
     topologySelectedRelationCopyActionRailHeight: 29,
-    topologySelectedRelationCopyPayloadHeight: 31,
+    topologySelectedRelationCopyPayloadHeight: 42,
     topologySelectedRelationAgentRouteHeight: 29,
+    topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
+    topologySelectedRelationCommandCueContract:
+      "visible-compact-primary-command-cue",
+    topologySelectedRelationCommandCueVisibleText: "Next step · Explain",
+    topologySelectedRelationCommandCueAction: "explain_relation",
   };
 
   assert.equal(validateSelectedRelationCardDensityContract(baseMarkers, 1512), null);
   assert.equal(validateSelectedRelationCardDensityContract(baseMarkers, 1920), null);
+  assert.equal(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCardWidth: 352,
+      },
+      2560,
+    ),
+    null,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCardWidth: 352,
+      },
+      1512,
+    ),
+    /oversized compact Relief selected relation card/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(baseMarkers, 2560),
+    /cramped wide Relief selected relation card/,
+  );
   assert.match(
     validateSelectedRelationCardDensityContract(
       {
@@ -8914,7 +12039,40 @@ test("selected relation card density contract keeps the relation inspector compa
     validateSelectedRelationCardDensityContract(
       {
         ...baseMarkers,
-        topologySelectedRelationCardHeight: 268,
+        topologySelectedRelationCardTypographyContract: "micro-type",
+      },
+      1512,
+    ),
+    /typography contract/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCardRouteValueFontSizeToken:
+          "--topology-selected-relation-old-route-value-font-size",
+      },
+      1512,
+    ),
+    /typography token/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationAgentRouteSteps: [
+          { kind: "fact", labelFontSize: "7px", valueFontSize: "9px" },
+        ],
+      },
+      1512,
+    ),
+    /too-small Relief selected relation route typography/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCardHeight: 336,
       },
       1512,
     ),
@@ -8944,7 +12102,7 @@ test("selected relation card density contract keeps the relation inspector compa
     validateSelectedRelationCardDensityContract(
       {
         ...baseMarkers,
-        topologySelectedRelationCopyPayloadHeight: 48,
+        topologySelectedRelationCopyPayloadHeight: 56,
       },
       1512,
     ),
@@ -8959,6 +12117,36 @@ test("selected relation card density contract keeps the relation inspector compa
       1512,
     ),
     /oversized Relief selected relation agent route rail/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCommandCueContract: "sr-only-command",
+      },
+      1512,
+    ),
+    /command cue contract/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCommandCueVisibleText: "",
+      },
+      1512,
+    ),
+    /command cue text/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCommandCueAction: "relation_check",
+      },
+      1512,
+    ),
+    /command cue action/,
   );
 });
 
@@ -8983,6 +12171,7 @@ test("WebView verification waits for the latest snapshot that passes route gates
       topologyCardOverlapCount: 0,
       topologyCardClippedCount: 0,
       topologyFixedSurfaceCount: 2,
+          topologyFixedSurfaceMeasureContract: "single-pass-rect-read",
       topologyFixedSurfaceOverlapCount: 0,
       topologyFixedSurfaceOverlapSample: [],
       topologyCardFixedSurfaceOverlapCount: 0,

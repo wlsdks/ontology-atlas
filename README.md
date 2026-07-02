@@ -46,6 +46,21 @@ and design decisions.
 `ontology-atlas` gives agents a durable local memory they can query before
 touching code and update after real changes.
 
+The minimum useful setup is just Atlas plus a normal agent. If Claude Code,
+Codex, Cursor, or another MCP-capable agent can connect to the Atlas MCP server
+or run the Atlas CLI, the product must already work. CodeGraph, Serena, language
+servers, grep, and other source tools can make investigation faster, but none of
+them are required for Atlas to deliver the first graph brief, handoff packet,
+health check, or memory update diff.
+
+It helps coding agents by giving them the right starting point, product
+meaning, and verification path before they inspect code. It is not trying to
+replace CodeGraph, Serena, grep, AST indexes, language servers, or source search. Those tools answer
+structural questions such as where a symbol lives and what calls it. Atlas
+answers meaning questions: which domain or capability the code proves, why the
+change matters, what impact to check, and which validation path should run
+before the memory is trusted.
+
 The product is not "please maintain an ontology." The useful loop is:
 
 1. Open a repo.
@@ -55,6 +70,52 @@ The product is not "please maintain an ontology." The useful loop is:
 4. After code work, let the agent propose memory updates.
 5. Review the markdown diff.
 6. The next agent session starts with better context.
+
+## How It Helps A Coding Agent
+
+Atlas helps before, during, and after a coding task. It does not replace the
+agent's source-code tools; it gives the agent a smaller, better starting packet
+so those tools are aimed at the right problem.
+
+```mermaid
+flowchart LR
+  A["User asks: improve or add something"] --> B["Atlas finds the related domain and capability"]
+  B --> C["Atlas returns implementation evidence: files, commands, tests, MCP tools"]
+  C --> D["Agent uses available source tools on that narrow code area"]
+  D --> E["Agent changes code and runs the named verification path"]
+  E --> F["Agent proposes ontology updates as a markdown diff"]
+  F --> G["Next session starts from the updated meaning model"]
+```
+
+For a request like "improve the topology relation labels," the useful memory is
+not every symbol in the graph renderer. The useful memory is a compact handoff:
+
+```text
+Relevant capability: topology ontology inspection
+Meaning: relation labels must expose typed ontology facts without covering the
+graph or hiding the next action.
+Implementation evidence:
+- src/widgets/topology-map-sigma/ui/SigmaSkeletonCards.tsx
+- src/widgets/topology-map-sigma/ui/SigmaSkeletonCards.test.tsx
+- scripts/verify-macos-app-launch.mjs
+Recommended code lookup:
+- Use the available source tool: built-in search, grep, language server,
+  Serena, CodeGraph, or another local code index.
+- If no source tool is available beyond the agent's normal file access, start
+  from the Atlas MCP/CLI packet and inspect only the implementation evidence it
+  names.
+Verification path:
+- focused unit test for the topology label contract
+- macOS app verification when desktop topology behavior changes
+Memory update rule:
+- update the ontology only if the change adds, renames, or clarifies a domain,
+  capability, element, relation, or verification contract.
+```
+
+That packet saves tokens because the agent no longer has to rebuild the whole
+product story from source files and chat history. More importantly, it reduces
+wrong edits: the agent knows what the code is for, which proof matters, and
+when the durable repo memory should change.
 
 ## What It Does
 
@@ -82,6 +143,13 @@ files belong as `element` nodes when they prove or realize a higher-level
 `domain` or `capability`. The daily target is the layer that connects those two
 worlds: a durable map of what the business/system means, why it matters, and
 which implementation carries it.
+
+That means Atlas stores meaningful implementation evidence, not every code
+fact. A class, route, command, test, or file path is useful when it helps an AI
+agent start a task with the right capability, trace the change impact, or run
+the right proof. Exhaustive symbol graphs remain the job of code-intelligence
+tools; Atlas keeps the repo-native meaning layer those tools cannot infer on
+their own.
 
 Every markdown file is one graph node. Frontmatter is the machine-readable
 record; the body is the human-readable explanation.

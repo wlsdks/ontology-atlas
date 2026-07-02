@@ -14,6 +14,7 @@ const ROUTES = [
   "/en/project/ontology-atlas/",
   "/en/docs/",
   "/en/topology/",
+  "/ko/topology/?mode=focus&p=capability%3Aagent-config-onboarding",
 ];
 
 test("접근성 없는 버튼·링크 탐지", async ({ page }) => {
@@ -46,6 +47,29 @@ test("접근성 없는 버튼·링크 탐지", async ({ page }) => {
     if (offenders.length > 0) {
       for (const o of offenders) {
         findings.push(`${url} · <${o.tag}> ${o.html}`);
+      }
+    }
+    if (url.includes("/topology/")) {
+      const hiddenInteractive = await page.evaluate(() => {
+        const els = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            [
+              '[aria-hidden="true"] button',
+              '[aria-hidden="true"] [role="button"]',
+              '[aria-hidden="true"] a',
+              '[aria-hidden="true"] [tabindex]:not([tabindex="-1"])',
+            ].join(","),
+          ),
+        );
+        return els.map((el) => ({
+          tag: el.tagName.toLowerCase(),
+          html: el.outerHTML.slice(0, 160),
+        }));
+      });
+      if (hiddenInteractive.length > 0) {
+        for (const o of hiddenInteractive) {
+          findings.push(`${url} · aria-hidden subtree exposes <${o.tag}> ${o.html}`);
+        }
       }
     }
   }
