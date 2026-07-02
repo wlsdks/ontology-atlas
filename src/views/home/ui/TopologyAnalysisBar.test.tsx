@@ -865,10 +865,33 @@ describe("TopologyAnalysisBar", () => {
     );
     const chip = screen.getByRole("button", { name: "Health" });
     expect(chip).toHaveAttribute("data-analysis-health-chip");
-    expect(chip).toHaveAttribute("data-health-queue-count", "23");
-    expect(chip.textContent).toBe("23");
+    // 칩 숫자 = 진짜 결함(오래된 근거 + 소속 미정)만. 허브 후보 22건은
+    // 통계적 제안이라 카운트에서 제외 (감사 ⑦-b: alert fatigue 방지).
+    expect(chip).toHaveAttribute("data-health-queue-count", "1");
+    expect(chip.textContent).toBe("1");
     fireEvent.click(chip);
     expect(onModeChange).toHaveBeenCalledWith("health");
+  });
+
+  it("hides the health chip when only statistical suggestions remain", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 22,
+          secondaryMetric: 504,
+          needsSelection: false,
+          healthBreakdown: { stale: 0, orphan: 0, promotion: 22 },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Health" })).toBeNull();
   });
 
   it("hides the health queue chip when the maintenance queue is empty", () => {

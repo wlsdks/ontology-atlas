@@ -409,10 +409,11 @@ export function TopologyAnalysisBar({
   const panelMode = selectedContextActive ? "focus" : mode;
   const selectedFocusRailActive =
     panelMode === "focus" && Boolean(selectedSlug && displaySelectedTitle);
+  // 칩 숫자 = 진짜 결함(오래된 근거 + 소속 미정)만. 허브 승격 후보는
+  // 통계적 *제안*이라 카운트에 넣으면 첫 클릭에 "고칠 게 없는 빨간 숫자"
+  // 가 되어 칩 신뢰가 무너진다 (기획자 감사 ⑦-b). 제안은 상태 패널 안에서.
   const healthQueueCount =
-    summary.healthBreakdown.stale +
-    summary.healthBreakdown.orphan +
-    summary.healthBreakdown.promotion;
+    summary.healthBreakdown.stale + summary.healthBreakdown.orphan;
   const handleModeRailChange = useCallback(
     (nextMode: TopologyAnalysisMode) => {
       if (selectedContextActive && nextMode === "overview") {

@@ -174,6 +174,7 @@ import {
   formatTopologyHealthImpactMcpCheck,
   formatTopologyHealthMcpCheck,
 } from "../lib/topology-analysis";
+import { filterOntologyConnectedOrphans } from "../lib/topology-health";
 import {
   countProjectRelationsWithinGraph,
   resolveTopologyOverlayState,
@@ -1057,7 +1058,12 @@ export function HomePage() {
       now,
       daysThreshold: 30,
     });
-    const orphan = detectOrphanProjects(renderProjects);
+    // ontology containment 에 참여하는 프로젝트(루트 등)는 소속 미정 오탐에서
+    // 제외 — project-deps 렌즈만으로는 contains 그래프가 안 보인다 (감사 ⑦-a).
+    const orphan = filterOntologyConnectedOrphans(
+      detectOrphanProjects(renderProjects),
+      ontologyInsight?.edges ?? [],
+    );
     const promotion = detectPromotionCandidates(renderProjects, {
       minFanIn: 4,
     });

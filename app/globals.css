@@ -140,6 +140,9 @@
        미리 블렌드한 "불투명" 잉크만 쓴다. 위 알파 토큰과 같은 시각 무게. */
     --topology-graph-edge-hairline: #191a1b;
     --topology-graph-edge-spoke: #343536;
+    /* graph 모드 ego 포커스 시 비-ego 노드의 불투명 dim 디스크 — 알파 dim
+       금지 계약 아래에서 design.md 의 "ego 만 살리고 나머지 dim" 을 구현. */
+    --topology-graph-node-dim: #23262c;
     --topology-connector: rgba(94, 106, 210, 0.4);
     --topology-card-border-selected: rgba(139, 151, 255, 0.8);
     --topology-card-border-selected-strong: rgba(139, 151, 255, 0.9);
@@ -205,18 +208,21 @@
     --topology-relation-stroke-selected-width: 2.35;
     --topology-relation-stroke-selected-halo-width: 7.6;
     --topology-relation-spine-halo: rgba(139, 151, 255, 0.34);
-    --topology-relation-spine-halo-opacity: 0.28;
+    --topology-relation-spine-halo-opacity: 0.4;
     --topology-relation-spine-halo-width: 6.2;
     --topology-relation-spine-terminal: rgba(205, 210, 255, 0.86);
     --topology-relation-spine-terminal-radius: 2.8;
-    --topology-relation-stroke-strong: rgba(139, 151, 255, 0.68);
-    --topology-relation-stroke-strong-width: 1.64;
-    --topology-relation-stroke-supported: rgba(72, 184, 203, 0.52);
-    --topology-relation-stroke-supported-width: 1.28;
-    --topology-relation-stroke-weak: rgba(217, 161, 65, 0.50);
-    --topology-relation-stroke-weak-width: 1.12;
-    --topology-relation-stroke-review: rgba(226, 105, 105, 0.54);
-    --topology-relation-stroke-review-width: 1.16;
+    /* R+ 기획자 감사 ①: 1.1~1.6px × 실효알파 ~0.25 는 다크 캔버스에서
+       비가시 — 카드가 "허공에 뜬 라벨" 로 읽혔다. 소속/신뢰 구조가 지도의
+       존재 이유이므로 잉크를 한 단계 상향 (3:1 대비 목표). */
+    --topology-relation-stroke-strong: rgba(139, 151, 255, 0.82);
+    --topology-relation-stroke-strong-width: 2.2;
+    --topology-relation-stroke-supported: rgba(72, 184, 203, 0.68);
+    --topology-relation-stroke-supported-width: 1.8;
+    --topology-relation-stroke-weak: rgba(217, 161, 65, 0.62);
+    --topology-relation-stroke-weak-width: 1.5;
+    --topology-relation-stroke-review: rgba(226, 105, 105, 0.66);
+    --topology-relation-stroke-review-width: 1.6;
     --topology-focus-detail-connector-opacity: 0.26;
     --topology-focus-detail-connector-width: 0.76;
     --topology-focus-detail-connector-dasharray: 2 8;
@@ -1047,6 +1053,7 @@
     /* Graph 모드 불투명 잉크 — 라이트 캔버스(#f3f5f9) 프리블렌드. */
     --topology-graph-edge-hairline: #dcdfe4;
     --topology-graph-edge-spoke: #cacdd4;
+    --topology-graph-node-dim: #d3d7de;
     --topology-card-selected-wash: rgba(94, 106, 210, 0.10);
     --topology-card-selected-quiet-border: rgba(94, 106, 210, 0.36);
     --topology-card-selected-quiet-wash: rgba(94, 106, 210, 0.05);

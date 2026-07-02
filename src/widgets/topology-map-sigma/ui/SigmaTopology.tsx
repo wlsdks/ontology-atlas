@@ -525,12 +525,14 @@ function SigmaTopologyImpl({
     spoke: string;
     graphHairline: string;
     graphSpoke: string;
+    graphNodeDim: string;
   }>({
     hairline: 'rgba(255, 255, 255, 0.07)',
     spoke: 'rgba(255, 255, 255, 0.18)',
     // graph 모드 전용 — 캔버스 프리블렌드 불투명 잉크 (알파 합성 결함 회피).
     graphHairline: '#191a1b',
     graphSpoke: '#343536',
+    graphNodeDim: '#23262c',
   });
   const pathWorkflowActiveRef = useRef(pathWorkflowActive);
   const pathSelectionRef = useRef(pathSelection);
@@ -1931,12 +1933,18 @@ function SigmaTopologyImpl({
 
       const focus = activeNode();
       if (!focus) return attrs;
-      // Graph 모드 — 이 렌더러 구성(EdgeCurve + node-border)은 저알파 색이
-      // 사실상 불투명으로 합성돼 (Design Guardian blocker) 알파 기반 deep-dim
-      // 이 "밝은 링 플러드" 가 된다. ego 는 기존 highlight 경로, 비-ego 는
-      // 평상 유지 — 강조는 엣지 hidden 대비가 만든다.
+      // Graph 모드 — design.md ego 계약(포커스+이웃만 살리고 나머지 dim)을
+      // 알파 없이 구현: 저알파는 이 렌더러에서 불투명 합성되므로(Guardian
+      // blocker) 캔버스 프리블렌드 불투명 dim 디스크 토큰으로 강등한다.
       if (livePhysicsRef.current && node !== focus && !neighbors.has(node)) {
-        return attrs;
+        const dim = skeletonInkRef.current.graphNodeDim;
+        return {
+          ...attrs,
+          color: dim,
+          borderColor: dim,
+          outerBorderColor: dim,
+          zIndex: 0,
+        };
       }
       // focus / neighbor / 2-hop tint 분기는 ../lib/reducer-focus 의
       // applyFocusOverlay 에서 (A3-1 추출). bounceFactor 는 프레임당 1회
@@ -1982,6 +1990,9 @@ function SigmaTopologyImpl({
       const shouldShowNeighborLabel =
         isNeighbor &&
         (skeletonModeRef.current ||
+          // Graph 모드: ego 이웃의 정체가 곧 답이다 — "34번 호버" 대신 라벨
+          // 을 바로 보여준다 (40개 캡은 라벨 수프 방지).
+          (livePhysicsRef.current && neighbors.size <= 40) ||
           (neighbors.size < 8 && cameraRatioRef.current <= 0.55));
       const ratio = cameraRatioRef.current;
 
@@ -1989,6 +2000,11 @@ function SigmaTopologyImpl({
         return { ...base, label: undefined, forceLabel: false };
       }
 
+      // Graph 모드 ego 포커스 — 비-ego 는 dim 디스크이므로 라벨(랜드마크
+      // 포함)도 함께 내려 시선이 ego 군집에만 머물게 한다.
+      if (!hidden && livePhysicsRef.current && focus && !isFocusOrNeighbor) {
+        return { ...base, label: undefined, forceLabel: false };
+      }
       // overview 랜드마크(degree 최상위 N) — 줌 무관 항상 라벨. 전체 축소에서
       // 앵커마저 솎여 라벨 0(익명 점)이 되는 걸 막아 최소 방향감 보장.
       if (!hidden && !isFocusOrNeighbor && isOverviewLandmark(attrs)) {
@@ -2716,6 +2732,9 @@ function SigmaTopologyImpl({
         graphSpoke:
           rootStyle.getPropertyValue('--topology-graph-edge-spoke').trim() ||
           '#343536',
+        graphNodeDim:
+          rootStyle.getPropertyValue('--topology-graph-node-dim').trim() ||
+          '#23262c',
       };
     };
     resolveSkeletonInk();
