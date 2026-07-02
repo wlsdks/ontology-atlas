@@ -135,6 +135,11 @@
     /* spoke 는 "project↔domain 연결이 안 보인다" 사용자 보고로 한 단계 업. */
     --topology-edge-hairline: rgba(255, 255, 255, 0.07);
     --topology-edge-spoke: rgba(255, 255, 255, 0.18);
+    /* Graph 모드(살아있는 그래프) 전용 — WebGL edge 합성이 저알파를 사실상
+       불투명으로 그리는 결함(Design Guardian blocker) 때문에 캔버스 색에
+       미리 블렌드한 "불투명" 잉크만 쓴다. 위 알파 토큰과 같은 시각 무게. */
+    --topology-graph-edge-hairline: #191a1b;
+    --topology-graph-edge-spoke: #343536;
     --topology-connector: rgba(94, 106, 210, 0.4);
     --topology-card-border-selected: rgba(139, 151, 255, 0.8);
     --topology-card-border-selected-strong: rgba(139, 151, 255, 0.9);
@@ -276,6 +281,10 @@
     --topology-panel-standard-width: clamp(460px, 31vw, 560px);
     --topology-panel-standard-reserved-width: clamp(440px, calc(44vw - 190px), 560px);
     --topology-panel-compact-width: clamp(380px, calc(50vw - 270px), 560px);
+    /* Graph 모드(살아있는 그래프) 레일 — 콘텐츠가 프롬프트 1줄 + 카운트뿐이라
+       overview 계열 폭(560px)은 지도를 가리는 빈 상자가 된다 (소유자 피드백
+       "가로가 너무 길다"). 캔버스가 주인공인 뷰의 최소 폭. */
+    --topology-panel-graph-width: clamp(280px, 21vw, 336px);
     --topology-panel-compact-reserved-width: min(
       clamp(360px, calc(50vw - 290px), 540px),
       calc(100vw - 520px)
@@ -1035,6 +1044,9 @@
        다크보다 1단계 진하게). 인디고/선택 토큰은 양 모드 동일. */
     --topology-edge-hairline: rgba(15, 23, 42, 0.10);
     --topology-edge-spoke: rgba(15, 23, 42, 0.18);
+    /* Graph 모드 불투명 잉크 — 라이트 캔버스(#f3f5f9) 프리블렌드. */
+    --topology-graph-edge-hairline: #dcdfe4;
+    --topology-graph-edge-spoke: #cacdd4;
     --topology-card-selected-wash: rgba(94, 106, 210, 0.10);
     --topology-card-selected-quiet-border: rgba(94, 106, 210, 0.36);
     --topology-card-selected-quiet-wash: rgba(94, 106, 210, 0.05);

@@ -45,6 +45,7 @@ import { useSyncedValueRef } from '@/shared/lib/use-synced-value-ref';
 import { computeDepthMap, shortestPath } from '../lib/depth';
 import { useCameraUrlSync } from '../lib/use-camera-url-sync';
 import { resolveTopologyPalette } from '../lib/topology-palette';
+import { createTrailingThrottle } from '../lib/trailing-throttle';
 import { useGraphKeyboardNav } from '../lib/use-graph-keyboard-nav';
 import type { SigmaForces, SigmaOverlays } from '../model/controls-state';
 import { startPhysics, type PhysicsController } from '../lib/physics';
@@ -347,6 +348,12 @@ interface SigmaTopologyProps {
   /** 증가할 때마다 physics를 reheat (자동 정렬). 상단 툴바의 "자동 정렬" 버튼이
    *  증분한다. 드래그로 고정한 노드는 유지되고 자유 노드만 다시 settle. */
   relayoutToken?: number;
+  /**
+   * Graph 모드(옵시디언식) — 노드 수와 무관하게 로드 직후부터 물리
+   * 시뮬레이션을 살아있는 상태로 시작한다. 레이아웃은 Web Worker 에서 돌므로
+   * 메인 스레드 비용은 position frame 적용뿐.
+   */
+  livePhysics?: boolean;
   /** 필터 후 "남은 노드" 수를 부모에게 알려 stats 패널 등에서 활용. */
   onVisibleCountChange?: (visible: number) => void;
   /** DOM Relief card layer 의 실제 visible/total 카드 수. */
@@ -453,6 +460,7 @@ function SigmaTopologyImpl({
   overlays,
   fitViewToken,
   relayoutToken,
+  livePhysics = false,
   onVisibleCountChange,
   onSkeletonCardVisibilityChange,
   onGraphStatsChange,
@@ -512,9 +520,17 @@ function SigmaTopologyImpl({
   const skeletonCardsRef = useRef<readonly SkeletonCardModel[] | null>(skeletonCards);
   // 골격 잉크 — CSS 토큰을 resolve 해 캐시 (라이트 모드에서 백색 알파가
   // 잉크 0 으로 소실되던 결함의 해소; 테마 전환 effect 가 재해석).
-  const skeletonInkRef = useRef<{ hairline: string; spoke: string }>({
+  const skeletonInkRef = useRef<{
+    hairline: string;
+    spoke: string;
+    graphHairline: string;
+    graphSpoke: string;
+  }>({
     hairline: 'rgba(255, 255, 255, 0.07)',
     spoke: 'rgba(255, 255, 255, 0.18)',
+    // graph 모드 전용 — 캔버스 프리블렌드 불투명 잉크 (알파 합성 결함 회피).
+    graphHairline: '#191a1b',
+    graphSpoke: '#343536',
   });
   const pathWorkflowActiveRef = useRef(pathWorkflowActive);
   const pathSelectionRef = useRef(pathSelection);
@@ -528,6 +544,8 @@ function SigmaTopologyImpl({
     { initializeWithValue: false },
   );
   const reduceMotionRef = useSyncedValueRef(prefersReducedMotion);
+  // Graph 모드(옵시디언식) — reducer 가 매 프레임 읽는 boolean 이라 ref 로 동기화.
+  const livePhysicsRef = useSyncedValueRef(livePhysics);
   const cameraMotionTimerRef = useRef<number | null>(null);
   const cameraMotion = useCallback(
     (trigger: string, durationMs: number) => {
@@ -1382,13 +1400,21 @@ function SigmaTopologyImpl({
     };
     syncCameraRatio();
     emitRelationVisibility();
+    // 대표 관계 수 계산은 전체 엣지 순회라 카메라 프레임(120Hz ProMotion 에선
+    // 8.3ms 마다)마다 돌리기엔 비싸다. HUD 정보라 120ms trailing throttle 로
+    // 충분 — 제스처 중엔 interval 당 1회, 제스처가 멈추면 trailing 호출이
+    // 마지막 상태를 반드시 반영한다 (ratio ref 동기화는 싸므로 매 프레임 유지).
+    const relationVisibilityThrottle = createTrailingThrottle(emitRelationVisibility, {
+      intervalMs: 120,
+    });
     const handler = () => {
       syncCameraRatio();
-      emitRelationVisibility();
+      relationVisibilityThrottle.invoke();
     };
     camera.on('updated', handler);
     return () => {
       camera.off('updated', handler);
+      relationVisibilityThrottle.dispose();
     };
   }, [canCollapseSupportChromeForZoomLens, emitRelationVisibility, sigmaInstance]);
 
@@ -1657,7 +1683,8 @@ function SigmaTopologyImpl({
     // 반응하므로 중복 렌더를 피한다.
     // 골격 진입에선 물리 미가동 — stamp 한 결정론적 좌표를 FA2 가 흐트러뜨리지
     // 않게(작은 vault 는 order<=120 이라 평소 autoStart 였다).
-    const autoStartPhysics = !skeletonMode && (minimal || graph.order <= 120);
+    const autoStartPhysics =
+      !skeletonMode && (livePhysics || minimal || graph.order <= 120);
     // Live force layout runs in a Web Worker so the main thread / WKWebView
     // compositor stays free (drag / auto-arrange smoothness at scale). Falls
     // back to the main-thread d3-force sim if the worker can't be created
@@ -1894,7 +1921,9 @@ function SigmaTopologyImpl({
         searchPassed: matchesSearch(attrs),
         categoryPassed: matchesCategory(attrs),
         depthPassed: passesDepth(node),
-        hoveredEdgePair,
+        // Graph 모드 — edge hover 의 전역 노드 dim 은 알파 합성 결함으로
+        // "전체 회색 플러드" 가 된다. 정보는 edge tooltip 이 전달하므로 생략.
+        hoveredEdgePair: livePhysicsRef.current ? null : hoveredEdgePair,
         pathNodes,
         impactNodes: impactNodesRef.current,
       });
@@ -1902,6 +1931,13 @@ function SigmaTopologyImpl({
 
       const focus = activeNode();
       if (!focus) return attrs;
+      // Graph 모드 — 이 렌더러 구성(EdgeCurve + node-border)은 저알파 색이
+      // 사실상 불투명으로 합성돼 (Design Guardian blocker) 알파 기반 deep-dim
+      // 이 "밝은 링 플러드" 가 된다. ego 는 기존 highlight 경로, 비-ego 는
+      // 평상 유지 — 강조는 엣지 hidden 대비가 만든다.
+      if (livePhysicsRef.current && node !== focus && !neighbors.has(node)) {
+        return attrs;
+      }
       // focus / neighbor / 2-hop tint 분기는 ../lib/reducer-focus 의
       // applyFocusOverlay 에서 (A3-1 추출). bounceFactor 는 프레임당 1회
       // bounce RAF 루프가 계산해둔 ref 값 (한 프레임 안 모든 노드 동일).
@@ -2048,6 +2084,56 @@ function SigmaTopologyImpl({
       }
       if (selectedEdgeRef.current?.edgeId === edge) {
         return applySelectedEdgeOverlay(attrs);
+      }
+      // Graph 모드(옵시디언식) — 알파 dim 금지 (저알파가 불투명 합성되는
+      // Design Guardian blocker). 위계는 hidden 대비 + 기존 resolve 된 잉크
+      // 토큰(skeletonInkRef, 불투명 계열)으로만 만든다:
+      //  · hover/선택 ego 엣지 = 인디고 하이라이트
+      //  · ego 이웃끼리 = hairline
+      //  · 그 외 = hidden
+      //  · idle = contains 백본만 hairline/spoke 상시 (typed 관계는 hover 로)
+      if (livePhysicsRef.current) {
+        if (
+          !matchesSearch(srcAttrs) ||
+          !matchesSearch(tgtAttrs) ||
+          !matchesCategory(srcAttrs) ||
+          !matchesCategory(tgtAttrs) ||
+          !passesDepth(src) ||
+          !passesDepth(tgt)
+        ) {
+          return { ...attrs, hidden: true };
+        }
+        const graphInk = skeletonInkRef.current;
+        const graphFocus = activeNode();
+        if (graphFocus) {
+          if (src === graphFocus || tgt === graphFocus) {
+            return {
+              ...attrs,
+              color: indigoRgba('highlight', 0.85),
+              size: Math.max(attrs.size ?? 1, 1.1),
+              zIndex: 5,
+              hidden: false,
+            };
+          }
+          if (neighbors.has(src) && neighbors.has(tgt)) {
+            return { ...attrs, color: graphInk.graphHairline, size: 0.4, hidden: false };
+          }
+          return { ...attrs, hidden: true };
+        }
+        if (attrs.kind !== 'contains') {
+          return { ...attrs, hidden: true };
+        }
+        const graphTouchesProject =
+          srcAttrs.ontologyTopKind === 'project' ||
+          tgtAttrs.ontologyTopKind === 'project';
+        return {
+          ...attrs,
+          color: graphTouchesProject ? graphInk.graphSpoke : graphInk.graphHairline,
+          size: graphTouchesProject ? 0.9 : 0.5,
+          // curvature 0 은 EdgeCurveProgram 퇴화 (골격 spine 실종 버그 전례).
+          curvature: graphTouchesProject ? 0.02 : 0.08,
+          hidden: false,
+        };
       }
       // Zoom-based LOD: 한쪽이라도 숨겨진 비허브면 엣지도 숨김. 허브-허브
       // 만 남아 멀리서 "정거장 지도" 느낌.
@@ -2213,7 +2299,11 @@ function SigmaTopologyImpl({
 
     renderer.on('downNode', ({ node, event }) => {
       draggedNode = node;
-      draggedCluster = collectSigmaDragCluster(graph, node);
+      // Graph 모드(옵시디언식): 잡은 노드 하나만 pin — 이웃은 링크 스프링으로
+      // 탄성 반응한다. 클러스터 강체 드래그는 Relief 지도의 계약.
+      draggedCluster = livePhysicsRef.current
+        ? new Set([node])
+        : collectSigmaDragCluster(graph, node);
       draggedClusterOffsets = snapshotSigmaDragClusterOffsets(
         graph,
         node,
@@ -2274,7 +2364,14 @@ function SigmaTopologyImpl({
           /* private mode — skip */
         }
       }
-      physics.releaseGroup(draggedCluster);
+      if (livePhysicsRef.current && draggedNode) {
+        // Graph 모드: 손을 떼면 물리로 돌려준다 — 스프링 정착 후 자연 냉각.
+        // releaseGroup 의 commit(영구 fx/fy) + alpha(0) 은 Relief 지도 계약이라
+        // 살아있는 그래프에선 "드래그 후 전체 정지" 로 읽힌다.
+        physics.release(draggedNode);
+      } else {
+        physics.releaseGroup(draggedCluster);
+      }
       draggedNode = null;
       draggedCluster = new Set<string>();
       draggedClusterOffsets = new Map<string, { dx: number; dy: number }>();
@@ -2613,6 +2710,12 @@ function SigmaTopologyImpl({
         spoke:
           rootStyle.getPropertyValue('--topology-edge-spoke').trim() ||
           'rgba(255, 255, 255, 0.10)',
+        graphHairline:
+          rootStyle.getPropertyValue('--topology-graph-edge-hairline').trim() ||
+          '#191a1b',
+        graphSpoke:
+          rootStyle.getPropertyValue('--topology-graph-edge-spoke').trim() ||
+          '#343536',
       };
     };
     resolveSkeletonInk();

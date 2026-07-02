@@ -68,6 +68,27 @@ describe("parseHomeRouteState", () => {
     });
   });
 
+  it("honors mode=graph as the living-graph exploration mode", () => {
+    const params = new URLSearchParams("mode=graph");
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      analysisMode: "graph",
+      selectedSlug: null,
+    });
+  });
+
+  it("keeps graph mode on node selection instead of promoting to focus", () => {
+    const params = new URLSearchParams("mode=graph");
+    const state = parseHomeRouteState(params);
+
+    expect(
+      selectTopologyNodeRouteState(state, "domain:views"),
+    ).toMatchObject({
+      selectedSlug: "domain:views",
+      analysisMode: "graph",
+    });
+  });
+
   it("treats a selected Path route as a fixed source when pathFrom is absent", () => {
     const params = new URLSearchParams("mode=path&p=domain:views");
 

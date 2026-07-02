@@ -126,6 +126,12 @@ they are runtime workbench contracts, not Tailwind-only decoration. Use token
 names in component data markers and tests whenever a surface depends on
 14-inch fullscreen geometry.
 
+- `--topology-graph-edge-hairline` / `--topology-graph-edge-spoke`: Graph 모드
+  (살아있는 그래프) 전용 엣지 잉크. Sigma 의 WebGL edge 합성이 저알파 색을
+  사실상 불투명으로 그리는 결함(Design Guardian blocker, 2026-07) 때문에
+  알파 토큰(`--topology-edge-*`) 대신 캔버스 색에 미리 블렌드한 **불투명**
+  값을 쓴다. 시각 무게는 알파 토큰과 동일하게 유지 — 다크 `#191a1b`/`#343536`,
+  라이트 `#dcdfe4`/`#cacdd4`.
 - `--topology-panel-selected-rail-width`: selected node support rail.
 - `--topology-panel-overview-rail-width`: overview left support rail.
 - `--topology-panel-overview-reserved-width`: overview rail when a right-side
@@ -137,6 +143,9 @@ names in component data markers and tests whenever a surface depends on
   right-side inspector space.
 - `--topology-panel-compact-width`: compact fallback when header alignment is
   unavailable.
+- `--topology-panel-graph-width`: Graph 모드(살아있는 그래프) 레일 —
+  프롬프트 1줄 + 카운트만 담는 최소 폭. 캔버스가 주인공인 뷰라 overview 계열
+  폭을 물려받지 않는다.
 - `--topology-panel-compact-reserved-width`: compact fallback with reserved
   right-side inspector space.
 - `--topology-card-selected-focus-max-width`: selected focus map card width;

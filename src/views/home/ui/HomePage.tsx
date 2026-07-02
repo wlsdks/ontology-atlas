@@ -664,6 +664,13 @@ export function HomePage() {
     if (localGraphRoot !== null || !ontologyInsight || ontologyInsight.nodes.length === 0) {
       return null;
     }
+    // Graph 모드(옵시디언식 살아있는 그래프)는 골격 카드 안무 없이 전체
+    // ontology 노드를 라이브 물리로 그린다 — skeleton 을 끄면 SigmaTopology
+    // 의 기존 free-graph 경로(드래그 pin/release, hover ego, 좌표 persist)가
+    // 그대로 살아난다.
+    if (analysisMode === "graph") {
+      return null;
+    }
     const skel = buildOntologySkeleton(ontologyInsight.nodes, ontologyInsight.edges);
     const reveal = computeRevealState({
       skeleton: skel,
@@ -1829,6 +1836,8 @@ export function HomePage() {
                 labels={{
                 title: t("analysis.title"),
                 overview: t("analysis.overview"),
+                graph: t("analysis.graph"),
+                graphPrompt: t("analysis.graphPrompt"),
                 focus: t("analysis.focus"),
                 path: t("analysis.path"),
                 health: t("analysis.health"),
@@ -2294,6 +2303,7 @@ export function HomePage() {
                     onProjectOpen={(slug) => setLocalGraphStack((stack) => [...stack, slug])}
                     fitViewToken={combinedFitToken}
                     relayoutToken={topologyRelayoutToken}
+                    livePhysics={analysisMode === "graph"}
                     onVisibleCountChange={setSigmaVisibleCount}
                     onSkeletonCardVisibilityChange={setTopologyCardVisibility}
                     onGraphStatsChange={handleSigmaGraphStatsChange}

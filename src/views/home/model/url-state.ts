@@ -2,7 +2,12 @@ import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
 
 export type HomePulseMode = "all" | "7d" | "30d";
-export type TopologyAnalysisMode = "overview" | "focus" | "path" | "health";
+export type TopologyAnalysisMode =
+  | "overview"
+  | "graph"
+  | "focus"
+  | "path"
+  | "health";
 
 export interface HomeRouteState {
   selectedSlug: string | null;
@@ -39,6 +44,7 @@ const VALID_IMPACT: ProjectImpactMode[] = [
 const VALID_PULSE: HomePulseMode[] = ["all", "7d", "30d"];
 const VALID_ANALYSIS_MODE: TopologyAnalysisMode[] = [
   "overview",
+  "graph",
   "focus",
   "path",
   "health",

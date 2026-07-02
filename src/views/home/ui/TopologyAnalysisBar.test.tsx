@@ -15,6 +15,8 @@ vi.mock("@/i18n/navigation", () => ({
 const labels = {
   title: "Topology analysis mode",
   overview: "Overview",
+  graph: "Graph",
+  graphPrompt: "Drag nodes freely; hover to trace neighbors.",
   focus: "Focus",
   path: "Path",
   health: "Health",
@@ -718,7 +720,7 @@ describe("TopologyAnalysisBar", () => {
     const modeRail = screen.getByTestId("topology-analysis-mode-rail");
     expect(modeRail).toHaveAttribute(
       "data-mode-rail-contract",
-      "four-icon-tabs-tooltip-labels",
+      "two-view-tabs-health-queue-chip",
     );
     expect(modeRail).toHaveAttribute(
       "data-surface-token",
@@ -751,15 +753,12 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByRole("button", { name: "Overview" }).className).toContain(
       "h-[var(--topology-analysis-mode-tab-height)]",
     );
-    expect(screen.getByRole("button", { name: "Focus" }).className).toContain(
+    expect(screen.getByRole("button", { name: "Graph" }).className).toContain(
       "h-[var(--topology-analysis-mode-tab-height)]",
     );
-    expect(screen.getByRole("button", { name: "Path" }).className).toContain(
-      "h-[var(--topology-analysis-mode-tab-height)]",
-    );
-    expect(screen.getByRole("button", { name: "Health" }).className).toContain(
-      "h-[var(--topology-analysis-mode-tab-height)]",
-    );
+    // 초점/경로 탭은 제거 — 초점은 노드 선택 상태, 경로는 액션으로 재배치.
+    expect(screen.queryByRole("button", { name: "Focus" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Path" })).toBeNull();
     expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute(
       "data-mode-tab-state",
       "active",
@@ -776,11 +775,11 @@ describe("TopologyAnalysisBar", () => {
       "data-focus-ring-token",
       "--topology-analysis-mode-focus-ring",
     );
-    expect(screen.getByRole("button", { name: "Path" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Graph" })).toHaveAttribute(
       "data-hover-surface-token",
       "--topology-analysis-mode-hover-surface",
     );
-    expect(screen.getByRole("button", { name: "Path" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Graph" })).toHaveAttribute(
       "data-text-token",
       "--topology-analysis-mode-idle-text",
     );
@@ -809,7 +808,7 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    for (const name of ["Overview", "Focus", "Path", "Health"] as const) {
+    for (const name of ["Overview", "Graph"] as const) {
       const tab = screen.getByRole("button", { name });
       // 아이콘만 — 라벨은 aria-label + hover Tooltip 컴포넌트가 담당.
       expect(tab.textContent).toBe("");
@@ -820,6 +819,77 @@ describe("TopologyAnalysisBar", () => {
         "--topology-analysis-mode-focus-ring",
       );
     }
+  });
+
+  it("keeps the graph view rail compact so the living canvas stays the protagonist", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="graph"
+        summary={{
+          mode: "graph",
+          primaryMetric: 294,
+          secondaryMetric: 504,
+          needsSelection: false,
+          healthBreakdown: { stale: 0, orphan: 0, promotion: 0 },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+    const panel = screen.getByTestId("topology-analysis-panel");
+    expect(panel).toHaveAttribute("data-panel-width-target", "graph-compact-rail");
+    expect(panel.style.width).toBe("var(--topology-panel-graph-width)");
+  });
+
+  it("surfaces the health queue as a count chip and routes clicks to health mode", () => {
+    const onModeChange = vi.fn();
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 22,
+          secondaryMetric: 504,
+          needsSelection: false,
+          healthBreakdown: { stale: 0, orphan: 1, promotion: 22 },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={onModeChange}
+        onHealthAction={vi.fn()}
+      />,
+    );
+    const chip = screen.getByRole("button", { name: "Health" });
+    expect(chip).toHaveAttribute("data-analysis-health-chip");
+    expect(chip).toHaveAttribute("data-health-queue-count", "23");
+    expect(chip.textContent).toBe("23");
+    fireEvent.click(chip);
+    expect(onModeChange).toHaveBeenCalledWith("health");
+  });
+
+  it("hides the health queue chip when the maintenance queue is empty", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 22,
+          secondaryMetric: 504,
+          needsSelection: false,
+          healthBreakdown: { stale: 0, orphan: 0, promotion: 0 },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Health" })).toBeNull();
   });
 
   it("keeps the overview guidance readable instead of truncating first-screen relief instructions", () => {

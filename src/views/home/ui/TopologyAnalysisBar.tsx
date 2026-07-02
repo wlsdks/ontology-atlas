@@ -2,14 +2,13 @@
 
 import { useCallback, useState, type CSSProperties, type HTMLAttributes } from "react";
 import {
-  Activity,
   ArrowRight,
   Check,
   ChevronDown,
   Clipboard,
-  GitBranch,
   HeartPulse,
   Network,
+  Waypoints,
 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Tooltip } from "@/shared/ui";
@@ -46,6 +45,8 @@ import { copyText } from "@/shared/lib/copy-text";
 interface TopologyAnalysisBarLabels {
   title: string;
   overview: string;
+  graph: string;
+  graphPrompt: string;
   focus: string;
   path: string;
   health: string;
@@ -304,11 +305,13 @@ interface TopologyAnalysisBarProps {
   onHealthAction: (slug: string) => void;
 }
 
+// 2-뷰 레일 — 지도(Relief: overview/focus/path/health 상태 계열의 대표)와
+// 그래프(살아있는 그래프)만 상위 뷰. 초점=노드 선택 상태, 경로=액션(shift-클릭
+// /URL), 상태=우측 정리 큐 칩 — 탭 승격은 "정체불명 5형제" 혼란(소유자 피드백)
+// 을 만들어 뷰 2개 + 진입점 재배치로 정리했다. URL 모드 계약은 전부 보존.
 const MODES = [
   { value: "overview", icon: Network, labelKey: "overview" },
-  { value: "focus", icon: Activity, labelKey: "focus" },
-  { value: "path", icon: GitBranch, labelKey: "path" },
-  { value: "health", icon: HeartPulse, labelKey: "health" },
+  { value: "graph", icon: Waypoints, labelKey: "graph" },
 ] as const;
 
 function formatOntologyReanalysisAgentCommand(): string {
@@ -406,6 +409,10 @@ export function TopologyAnalysisBar({
   const panelMode = selectedContextActive ? "focus" : mode;
   const selectedFocusRailActive =
     panelMode === "focus" && Boolean(selectedSlug && displaySelectedTitle);
+  const healthQueueCount =
+    summary.healthBreakdown.stale +
+    summary.healthBreakdown.orphan +
+    summary.healthBreakdown.promotion;
   const handleModeRailChange = useCallback(
     (nextMode: TopologyAnalysisMode) => {
       if (selectedContextActive && nextMode === "overview") {
@@ -456,7 +463,9 @@ export function TopologyAnalysisBar({
           : labels.pathPrompt
         : panelMode === "health"
           ? labels.healthPrompt
-          : labels.overviewPrompt;
+          : panelMode === "graph"
+            ? labels.graphPrompt
+            : labels.overviewPrompt;
   const pathCandidateVisibilityText =
     panelMode === "path" && pathCandidateVisibility && pathCandidateVisibility.total > 0
       ? labels.pathCandidateVisibility
@@ -853,6 +862,8 @@ export function TopologyAnalysisBar({
           ? "var(--topology-panel-focus-rail-width)"
         : panelMode === "health"
           ? "var(--topology-panel-overview-responsive-width)"
+        : panelMode === "graph"
+          ? "var(--topology-panel-graph-width)"
         : panelMode === "path"
           ? "var(--topology-panel-path-responsive-width)"
         : headerAlignedPanel
@@ -884,6 +895,8 @@ export function TopologyAnalysisBar({
       ? "overview-14-inch-compact"
       : panelMode === "health"
         ? "health-phone-primary-rail"
+      : panelMode === "graph"
+        ? "graph-compact-rail"
       : panelMode === "path" && headerAlignedPanel
         ? "path-14-inch-rail"
         : headerAlignedPanel
@@ -1012,9 +1025,9 @@ export function TopologyAnalysisBar({
         data-analysis-body-mode={panelMode}
       >
         <div
-          className="grid w-full grid-cols-4 gap-1 rounded-lg bg-[color:var(--topology-analysis-mode-rail-surface)] p-1"
+          className="flex w-full items-center gap-1 rounded-lg bg-[color:var(--topology-analysis-mode-rail-surface)] p-1"
           data-testid="topology-analysis-mode-rail"
-          data-mode-rail-contract="four-icon-tabs-tooltip-labels"
+          data-mode-rail-contract="two-view-tabs-health-queue-chip"
           data-surface-token="--topology-analysis-mode-rail-surface"
           data-mode-tab-height-token="--topology-analysis-mode-tab-height"
           data-active-surface-token="--topology-analysis-mode-active-surface"
@@ -1025,7 +1038,9 @@ export function TopologyAnalysisBar({
           data-focus-ring-token="--topology-analysis-mode-focus-ring"
         >
           {MODES.map(({ value, icon: Icon, labelKey }) => {
-            const active = value === panelMode;
+            // 지도 탭은 Relief 계열(overview/focus/path/health) 전체를 대표한다.
+            const active =
+              value === "graph" ? panelMode === "graph" : panelMode !== "graph";
             return (
               // 아이콘-전용 탭 — hover 즉시 라벨 tooltip (사용자: "마우스
               // 올리면 뭔지 나와야 선택을 하지").
@@ -1050,7 +1065,7 @@ export function TopologyAnalysisBar({
                   }
                   data-hover-surface-token="--topology-analysis-mode-hover-surface"
                   data-focus-ring-token="--topology-analysis-mode-focus-ring"
-                  className={`inline-flex h-[var(--topology-analysis-mode-tab-height)] w-full items-center justify-center rounded-md border px-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-analysis-mode-focus-ring)] ${
+                  className={`inline-flex h-[var(--topology-analysis-mode-tab-height)] flex-1 items-center justify-center rounded-md border px-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-analysis-mode-focus-ring)] ${
                     active
                       ? "border-[color:var(--topology-analysis-mode-active-border)] bg-[color:var(--topology-analysis-mode-active-surface)] text-[color:var(--topology-analysis-mode-active-text)]"
                       : "border-transparent text-[color:var(--topology-analysis-mode-idle-text)] hover:bg-[color:var(--topology-analysis-mode-hover-surface)] hover:text-[color:var(--topology-analysis-mode-active-text)]"
@@ -1061,6 +1076,28 @@ export function TopologyAnalysisBar({
               </Tooltip>
             );
           })}
+          {healthQueueCount > 0 ? (
+            <Tooltip content={labels.health} side="bottom">
+              <button
+                type="button"
+                onClick={() => handleModeRailChange("health")}
+                aria-pressed={panelMode === "health"}
+                aria-label={labels.health}
+                data-analysis-health-chip
+                data-health-queue-count={healthQueueCount}
+                data-mode-tab-state={panelMode === "health" ? "active" : "idle"}
+                data-focus-ring-token="--topology-analysis-mode-focus-ring"
+                className={`inline-flex h-[var(--topology-analysis-mode-tab-height)] flex-none items-center gap-1 rounded-md border px-2 font-mono text-[10px] tabular-nums tracking-[0.08em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-analysis-mode-focus-ring)] ${
+                  panelMode === "health"
+                    ? "border-[color:var(--topology-analysis-mode-active-border)] bg-[color:var(--topology-analysis-mode-active-surface)] text-[color:var(--topology-analysis-mode-active-text)]"
+                    : "border-transparent text-[color:var(--topology-analysis-mode-idle-text)] hover:bg-[color:var(--topology-analysis-mode-hover-surface)] hover:text-[color:var(--topology-analysis-mode-active-text)]"
+                }`}
+              >
+                <HeartPulse size={13} aria-hidden />
+                {healthQueueCount}
+              </button>
+            </Tooltip>
+          ) : null}
         </div>
         <div className="min-w-0 flex-1">
           <p
