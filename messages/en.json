@@ -546,7 +546,8 @@
       "dragInteractionSummary": "Dragging {title} with {cards, plural, one {# connected card} other {# connected cards}} and {relations, plural, one {# relation link} other {# relation links}}",
       "dragInteractionCue": "{cards, plural, one {# linked} other {# linked}} · {relations, plural, one {# relation} other {# relations}}",
       "healthRepairAuditBadge": "repair",
-      "copied": "Copied"
+      "copied": "Copied",
+      "expandBadgeTitle": "Expand {count} descendants"
     }
   },
   "ontologyWidgets": {

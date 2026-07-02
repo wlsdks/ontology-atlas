@@ -653,7 +653,12 @@ export function HomePage() {
   const topologyRevealFocusSlug =
     analysisMode === "path"
       ? (pathSourceSlug ?? selectedOntologyNode?.id ?? null)
-      : (selectedOntologyNode?.id ?? null);
+      : analysisMode === "overview"
+        ? // 클릭 = 선택만 — overview 지형은 불변. 확장(전개)은 배지/더블클릭
+          // 으로 초점 모드에 명시적으로 진입했을 때만 (소유자 피드백:
+          // "클릭하면 바로 확장돼서 헷갈린다").
+          null
+        : (selectedOntologyNode?.id ?? null);
 
   // 구조 골격 진입 — root /topology 에서만(local-graph ego 제외). ontology 노드를
   // 결정론적 radial 골격으로 배치할 precomputed 좌표(slug→{x,y,size}) + 진입에
@@ -948,6 +953,10 @@ export function HomePage() {
       selectedSlug: null,
       focusedHubSlug: null,
       impactMode: "none",
+      // 펼침(초점)의 닫기 = 지도 복귀. 배경 클릭/Esc/팝오버 X 가 전개를
+      // 접는다 — 클릭=선택, 배지=펼치기, 닫기=접기의 대칭 완성.
+      analysisMode:
+        current.analysisMode === "focus" ? "overview" : current.analysisMode,
     }));
   }, [setRouteState]);
 
@@ -1343,6 +1352,23 @@ export function HomePage() {
       };
     });
   }, [analysisMode]);
+
+  // 카드 배지/더블클릭의 명시적 "펼치기" — 선택과 초점 진입을 한 번에.
+  const handleExpandRequest = useCallback(
+    (slug: string) => {
+      interactionSelectedSlugRef.current = slug;
+      setFullDetailSlug(null);
+      setNodePopoverCollapsed(false);
+      setSelectedRelationActive(false);
+      setRouteState((current) => ({
+        ...selectTopologyNodeRouteState(current, slug, {
+          isHub: Boolean(projectBySlug.get(slug)?.isHub),
+        }),
+        analysisMode: "focus",
+      }));
+    },
+    [projectBySlug, setRouteState],
+  );
 
   const handleSelectAnalysisMode = useCallback(
     (mode: TopologyAnalysisMode) => {
@@ -2306,6 +2332,7 @@ export function HomePage() {
                     categories={taxonomyCategories}
                     selectedSlug={canvasSelectedSlug}
                     onSelectProject={(slug) => handleSelect(slug)}
+                    onExpandRequest={handleExpandRequest}
                     onProjectOpen={(slug) => setLocalGraphStack((stack) => [...stack, slug])}
                     fitViewToken={combinedFitToken}
                     relayoutToken={topologyRelayoutToken}

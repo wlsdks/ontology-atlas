@@ -546,7 +546,8 @@
       "dragInteractionSummary": "{title} 포함 연결 카드 {cards}개와 관계 링크 {relations}개를 이동 중",
       "dragInteractionCue": "연결 {cards} · 관계 {relations}",
       "healthRepairAuditBadge": "수리 대상",
-      "copied": "복사됨"
+      "copied": "복사됨",
+      "expandBadgeTitle": "하위 {count}개 펼치기"
     }
   },
   "ontologyWidgets": {

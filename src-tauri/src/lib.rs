@@ -740,6 +740,11 @@ pub fn run() {
                                       clientY: y
                                     }));
                                     if (typeof focus.click === "function") focus.click();
+                                    // 클릭=선택만 계약 — 전개(초점)는 배지의 명시적 펼치기.
+                                    const expandBadge = focus.querySelector("[data-skeleton-card-expand]");
+                                    if (expandBadge && typeof expandBadge.click === "function") {
+                                      window.setTimeout(() => expandBadge.click(), 120);
+                                    }
                                   };
                                   const captureCompactSnapshot = (popover) => {
                                     const facts = popover?.querySelector('[data-testid="topology-node-popover-compact-relation-facts"]');
@@ -899,6 +904,11 @@ pub fn run() {
                                       clientY: center.y
                                     }));
                                     if (typeof focus.click === "function") focus.click();
+                                    // 클릭=선택만 계약 — 전개(초점)는 배지의 명시적 펼치기.
+                                    const expandBadge = focus.querySelector("[data-skeleton-card-expand]");
+                                    if (expandBadge && typeof expandBadge.click === "function") {
+                                      window.setTimeout(() => expandBadge.click(), 120);
+                                    }
                                   };
                                   const zoomFocusCardForDrag = (focus, done, step = 0) => {
                                     const layer = document.querySelector('[data-testid="sigma-skeleton-cards"]');

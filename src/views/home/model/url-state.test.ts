@@ -77,6 +77,16 @@ describe("parseHomeRouteState", () => {
     });
   });
 
+  it("keeps overview on node click — selection must not expand the map (explicit focus entry only)", () => {
+    // R+ 소유자 피드백: "클릭하면 그냥 [확장+재배치]돼서 헷갈린다".
+    // 클릭 = 선택(안전한 탐색), 확장(초점)은 배지/더블클릭/딥링크의 명시적 의도.
+    const state = parseHomeRouteState(new URLSearchParams(""));
+    expect(selectTopologyNodeRouteState(state, "domain:views")).toMatchObject({
+      selectedSlug: "domain:views",
+      analysisMode: "overview",
+    });
+  });
+
   it("keeps graph mode on node selection instead of promoting to focus", () => {
     const params = new URLSearchParams("mode=graph");
     const state = parseHomeRouteState(params);
@@ -220,17 +230,16 @@ describe("applyHomeRouteState", () => {
 });
 
 describe("selectTopologyNodeRouteState", () => {
-  it("promotes overview node selection into Focus mode so click discovery owns the panel", () => {
-    // 클릭 discovery 가 drag preview 보다 약하면 사용자가 관계를 보려고 카드를
-    // 끌게 된다. 일반 overview 선택은 Focus 패널로 승격해 overview metric
-    // surface 를 접고 selected node / linked relation 맥락을 primary 로 만든다.
-    expect(
-      selectTopologyNodeRouteState(DEFAULT_HOME_ROUTE_STATE, "capabilities/mcp-server"),
-    ).toMatchObject({
-      selectedSlug: "capabilities/mcp-server",
-      analysisMode: "focus",
-      impactMode: "none",
-    });
+  it("keeps the analysis mode unchanged on node selection across all modes", () => {
+    // 구계약(overview 클릭 → focus 승격)은 클릭 한 번에 지형 재배치까지
+    // 겹쳐 폐기됐다 — 클릭은 어느 모드에서든 선택만 바꾼다.
+    for (const mode of ["overview", "focus", "health"] as const) {
+      const state = { ...DEFAULT_HOME_ROUTE_STATE, analysisMode: mode };
+      expect(selectTopologyNodeRouteState(state, "domain:views")).toMatchObject({
+        selectedSlug: "domain:views",
+        analysisMode: mode,
+      });
+    }
   });
 
   it("preserves active Path and Health workflows while updating the selected node", () => {

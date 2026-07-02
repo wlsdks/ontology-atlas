@@ -127,6 +127,11 @@ interface SigmaSkeletonCardsProps {
   describeKind?: (kind: SkeletonCardModel['kind']) => string;
   /** 카드 안의 짧은 계층 배지 — overview legend 와 같은 어휘를 쓴다. */
   describeKindBadge?: (kind: SkeletonCardModel['kind']) => string;
+  /**
+   * 명시적 "펼치기" — 하위 개수 배지 클릭 / 카드 더블클릭. 클릭=선택(지형
+   * 불변)과 분리된 확장 의도 채널 (소유자 피드백: 클릭 즉시 확장은 혼란).
+   */
+  onExpandRequest?: (slug: string) => void;
 }
 
 // 카드 가독성이 1순위 — 타이포/패딩을 넉넉하게, 계층 간 크기 차등을 한
@@ -2753,6 +2758,7 @@ export function SigmaSkeletonCards({
   onDragClusterEnd,
   describeKind,
   describeKindBadge,
+  onExpandRequest,
 }: SigmaSkeletonCardsProps) {
   const tEdgeTooltip = useTranslations('topologyWidgets.edgeTooltip');
   const relationTypeLabels = useMemo<RelationTypeLabels>(
@@ -10462,6 +10468,10 @@ export function SigmaSkeletonCards({
               }
               onSelect?.(nodeId);
             }}
+            onDoubleClick={(event) => {
+              event.stopPropagation();
+              onExpandRequest?.(nodeId);
+            }}
             onMouseEnter={(event) => {
               if (event.currentTarget.dataset.surfaceHidden === 'true') return;
               if (dragRef.current || activeDragCluster) return;
@@ -10899,7 +10909,47 @@ export function SigmaSkeletonCards({
                 {" "}
               </span>
             ) : null}
-            {card.count !== undefined && !selectedRelationSummaryOwnsMeta ? (
+            {card.count !== undefined &&
+            (onExpandRequest || !selectedRelationSummaryOwnsMeta) ? (
+              // 배지가 "펼치기" 컨트롤이 되면서 core 계층(프로젝트/도메인)에서도
+              // 복권 — 장식이던 숫자가 기능(확장 어포던스)을 얻었다. 선택 카드
+              // 에서도 유지 — "선택 → 펼치기" 가 자연스러운 다음 행동이다.
+              onExpandRequest ? (
+                // 배지 = 명시적 펼치기 버튼 — "이 숫자를 누르면 하위가 열린다"
+                // 로 개수와 확장 어포던스를 한 몸에 (기획자 감사 ⑧-c 겸용).
+                // 카드 루트가 <button> 이라 중첩 button 은 hydration 에러 —
+                // span[role=button] + 키보드 핸들러로 동등한 어포던스 구성.
+                <span
+                  role="button"
+                  tabIndex={0}
+                  data-skeleton-card-count
+                  data-skeleton-card-expand
+                  data-count-chip-contract="tokenized-node-scale-signal-expand-affordance"
+                  data-zoom-lens-compact-hidden="true"
+                  data-zoom-lens-compact-hidden-contract="compact-lens-removes-scale-count-from-map-mark"
+                  data-surface-token="--topology-card-count-surface"
+                  data-border-token="--topology-card-count-border"
+                  data-text-token="--topology-card-count-text"
+                  data-count-chip-visibility="visible"
+                  aria-label={tEdgeTooltip('expandBadgeTitle', { count: card.count })}
+                  title={tEdgeTooltip('expandBadgeTitle', { count: card.count })}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onExpandRequest(nodeId);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onExpandRequest(nodeId);
+                    }
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  className="relative ml-0.5 inline-flex h-[1.42em] min-w-[1.65em] shrink-0 cursor-pointer items-center justify-center rounded-full border border-[color:var(--topology-card-count-border)] bg-[color:var(--topology-card-count-surface)] px-[0.42em] font-mono text-[0.68em] leading-none text-[color:var(--topology-card-count-text)] transition-colors hover:border-[color:var(--topology-card-border-selected)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-analysis-mode-focus-ring)] group-data-[zoom-lens-active-card=true]/skeleton-card:!hidden"
+                >
+                  {card.count}
+                </span>
+              ) : (
               <span
                 data-skeleton-card-count
                 data-count-chip-contract="tokenized-node-scale-signal"
@@ -10921,6 +10971,7 @@ export function SigmaSkeletonCards({
               >
                 {card.count}
               </span>
+              )
             ) : null}
             {healthRepairAuditTarget ? (
               <span

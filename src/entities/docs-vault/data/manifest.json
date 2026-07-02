@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-02T15:45:44.908Z",
+  "generatedAt": "2026-07-02T23:02:24.881Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2576,6 +2576,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-03 — 기획자 감사 Top 3: 지도 잉크·그래프 ego dim·정리 칩 신호",
+          "slug": "2026-07-03-기획자-감사-top-3-지도-잉크그래프-ego-dim정리-칩-신호"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-03 — 토폴로지 모드 레일 5탭 → 2뷰 통합",
           "slug": "2026-07-03-토폴로지-모드-레일-5탭-2뷰-통합"
         },
@@ -3665,9 +3670,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 피드백: \"그래프 빼고는 다 이상한데.. 애초에 5개나 필요한 거임?\" — 지도/초점/경로/상태 4개 모드가 같은 골격 화면에 패널만 갈아끼우는 구",
-      "wordCount": 19023,
-      "updatedAt": "2026-07-02T15:08:37.947Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 온톨로지 제품 기획자 렌즈의 감사(경쟁: Obsidian graph / Foundry ontology)로 토폴로지 표면을 점검하고 최고 가치 3건을 즉시 ",
+      "wordCount": 19197,
+      "updatedAt": "2026-07-02T15:48:26.877Z",
       "linksOut": [
         "slug"
       ]

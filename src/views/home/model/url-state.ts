@@ -122,11 +122,11 @@ export function selectTopologyNodeRouteState(
     selectedSlug: slug,
     focusedHubSlug: options?.isHub ? slug : null,
     impactMode: options?.preserveImpact ? current.impactMode : "none",
-    // Drag 는 editing, click 은 discovery. overview 에서 노드를 클릭하면
-    // overview metric panel 을 접고 Focus handoff panel 로 승격한다. Path/Health 는
-    // 사용자가 시작한 워크플로라 선택만 갱신하고 mode 는 보존한다.
-    analysisMode:
-      current.analysisMode === "overview" ? "focus" : current.analysisMode,
+    // 클릭 = 선택(안전한 탐색)만 — 어떤 모드에서도 mode 를 바꾸지 않는다.
+    // 이전의 overview→focus 자동 승격은 [선택+확장+재배치+카메라핏]을 한
+    // 클릭에 겹쳐 인과를 지웠다 (R+ 소유자 피드백 "클릭하면 그냥 바뀌어서
+    // 헷갈린다"). 확장(초점)은 카드 배지/더블클릭/딥링크의 명시적 의도로만.
+    analysisMode: current.analysisMode,
   };
 }
 

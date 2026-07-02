@@ -396,6 +396,8 @@ interface SigmaTopologyProps {
   pathWorkflowActive?: boolean;
   /** Overview mode에서 선택된 map 지형을 읽기 전용 fixed geography로 유지한다. */
   selectedMapFixedGeographyActive?: boolean;
+  /** 카드 배지/더블클릭의 명시적 펼치기 — SigmaSkeletonCards 로 중계. */
+  onExpandRequest?: (slug: string) => void;
   /** Focus analysis mode에서는 선택 DOM 카드가 주의 중심이므로 viewport center anchor를 사용한다. */
   selectedFocusCenterActive?: boolean;
   pathSelection?: {
@@ -473,6 +475,7 @@ function SigmaTopologyImpl({
   showOntologyNodes = false,
   pathWorkflowActive = false,
   selectedMapFixedGeographyActive = false,
+  onExpandRequest,
   selectedFocusCenterActive = false,
   pathSelection = null,
   healthRepairTarget = null,
@@ -3296,6 +3299,7 @@ function SigmaTopologyImpl({
           selectedRelationData={visibleSelectedEdge}
           healthRepairTarget={healthRepairTarget}
           onSelect={(slug) => onSelectProjectRef.current?.(slug)}
+          onExpandRequest={onExpandRequest}
           pathWorkflowActive={pathWorkflowActive}
           selectedMapFixedGeographyActive={selectedMapFixedGeographyActive}
           selectedFocusCenterActive={selectedFocusCenterActive}
