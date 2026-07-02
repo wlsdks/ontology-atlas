@@ -19,6 +19,8 @@ const WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV: &str =
 const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
 const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP";
 const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_ZOOM";
+const WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV: &str =
+    "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FRAME_PROFILE";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
@@ -516,6 +518,89 @@ fn start_vault_watch(
     Ok(())
 }
 
+/// WKWebView 의 rAF 60fps 캡 해제 — ProMotion(120Hz) 디스플레이 대응.
+///
+/// macOS 13~15 의 WKWebView 는 WebKit 내부 feature
+/// `PreferPageRenderingUpdatesNear60FPSEnabled`(기본 true) 때문에 디스플레이
+/// 주사율과 무관하게 requestAnimationFrame 을 60fps 로 묶는다. 이 머신 실측
+/// (frame-profile probe) 에서도 120Hz 디스플레이 위 17ms 고정이 확인됐다.
+/// Safari 가 내부에서 쓰는 것과 같은 private `_features` /
+/// `_setEnabled:forFeature:` API 로 해당 feature 를 끈다. selector 존재를
+/// 먼저 확인하므로 미래 macOS 에서 API 가 사라져도 조용히 60fps 로 남을 뿐
+/// crash 하지 않는다.
+#[cfg(target_os = "macos")]
+fn disable_webview_frame_rate_cap(window: &tauri::WebviewWindow) {
+    let _ = window.with_webview(|platform_webview| {
+        use objc2::runtime::{AnyClass, AnyObject, Bool};
+        use objc2::{msg_send, sel};
+
+        unsafe {
+            let webview = platform_webview.inner() as *mut AnyObject;
+            if webview.is_null() {
+                return;
+            }
+            let configuration: *mut AnyObject = msg_send![&*webview, configuration];
+            if configuration.is_null() {
+                return;
+            }
+            let preferences: *mut AnyObject = msg_send![&*configuration, preferences];
+            if preferences.is_null() {
+                return;
+            }
+            let Some(preferences_class) = AnyClass::get(c"WKPreferences") else {
+                return;
+            };
+            let class_object = preferences_class as *const AnyClass as *mut AnyObject;
+            let class_responds: Bool =
+                msg_send![&*class_object, respondsToSelector: sel!(_features)];
+            let instance_responds: Bool = msg_send![
+                &*preferences,
+                respondsToSelector: sel!(_setEnabled:forFeature:)
+            ];
+            if !class_responds.as_bool() || !instance_responds.as_bool() {
+                eprintln!(
+                    "[frame-rate-cap] WKPreferences private feature API unavailable; staying at default frame pacing"
+                );
+                return;
+            }
+            let features: *mut AnyObject = msg_send![&*class_object, _features];
+            if features.is_null() {
+                return;
+            }
+            let count: usize = msg_send![&*features, count];
+            for index in 0..count {
+                let feature: *mut AnyObject = msg_send![&*features, objectAtIndex: index];
+                if feature.is_null() {
+                    continue;
+                }
+                let key: *mut AnyObject = msg_send![&*feature, key];
+                if key.is_null() {
+                    continue;
+                }
+                let utf8: *const std::ffi::c_char = msg_send![&*key, UTF8String];
+                if utf8.is_null() {
+                    continue;
+                }
+                let key_str = std::ffi::CStr::from_ptr(utf8).to_string_lossy();
+                if key_str == "PreferPageRenderingUpdatesNear60FPSEnabled" {
+                    let _: () = msg_send![
+                        &*preferences,
+                        _setEnabled: Bool::NO,
+                        forFeature: &*feature
+                    ];
+                    eprintln!(
+                        "[frame-rate-cap] disabled PreferPageRenderingUpdatesNear60FPSEnabled — WebView follows display refresh rate"
+                    );
+                    return;
+                }
+            }
+            eprintln!(
+                "[frame-rate-cap] PreferPageRenderingUpdatesNear60FPSEnabled feature not found; staying at default frame pacing"
+            );
+        }
+    });
+}
+
 pub fn run() {
     tauri::Builder::default()
         .manage(VaultWatcherState::default())
@@ -525,6 +610,11 @@ pub fn run() {
 
             show_main_window(app.handle());
             apply_verify_window_size(app.handle());
+
+            #[cfg(target_os = "macos")]
+            if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+                disable_webview_frame_rate_cap(&window);
+            }
 
             if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
                 if std::env::var_os(WEBVIEW_VERIFY_ENV).is_some() {
@@ -544,6 +634,8 @@ pub fn run() {
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV).is_some();
                     let verify_topology_focus_zoom =
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV).is_some();
+                    let verify_topology_frame_profile =
+                        std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV).is_some();
                     tauri::async_runtime::spawn(async move {
                         if let Some(route) = verify_route {
                             let reset_script = build_webview_verify_route_reset_script(&route);
@@ -1505,9 +1597,156 @@ pub fn run() {
                             );
                             std::thread::sleep(Duration::from_millis(1800));
                         }
+                        if verify_topology_frame_profile {
+                            // rAF 프레임 계측 프로브 — WKWebView 안에서 합성 줌/팬/호버/카드드래그를
+                            // 돌리고 phase 별 프레임 시간 분포를 window 전역에 남긴다. marker 수집
+                            // 루프가 progressive 하게 최신 스냅샷을 evidence JSON 으로 가져간다.
+                            let _ = verify_window.eval(
+                                r#"(() => {
+                                  const profile = {
+                                    attempted: true,
+                                    reason: 'scheduled',
+                                    devicePixelRatio: window.devicePixelRatio || 1,
+                                    canvasBacking: null,
+                                    phases: {},
+                                    longTasks: [],
+                                    done: false
+                                  };
+                                  window.__ontologyAtlasTopologyFrameProfile = profile;
+                                  const sleep = (ms) => new Promise((r) => window.setTimeout(r, ms));
+                                  const run = async () => {
+                                    const bootStart = Date.now();
+                                    let mouse = null;
+                                    while (Date.now() - bootStart < 8000) {
+                                      mouse = document.querySelector('.sigma-mouse');
+                                      if (mouse) break;
+                                      await sleep(300);
+                                    }
+                                    if (!mouse) { profile.reason = 'missing sigma-mouse layer'; profile.done = true; return; }
+                                    const nodesCanvas = document.querySelector('canvas.sigma-nodes');
+                                    if (nodesCanvas) {
+                                      profile.canvasBacking = { width: nodesCanvas.width, height: nodesCanvas.height };
+                                    }
+                                    const rect = mouse.getBoundingClientRect();
+                                    const cx = rect.left + rect.width / 2;
+                                    const cy = rect.top + rect.height / 2;
+                                    const fire = (el, type, x, y, buttons) => el.dispatchEvent(new MouseEvent(type, {
+                                      bubbles: true, cancelable: true, view: window,
+                                      clientX: x, clientY: y, buttons: buttons || 0, button: 0
+                                    }));
+                                    const wheel = (x, y, dy) => mouse.dispatchEvent(new WheelEvent('wheel', {
+                                      bubbles: true, cancelable: true, view: window,
+                                      clientX: x, clientY: y, deltaY: dy, deltaMode: 0
+                                    }));
+                                    let currentPhase = null;
+                                    let lastT = performance.now();
+                                    let running = true;
+                                    const raw = {};
+                                    const tick = (t) => {
+                                      if (!running) return;
+                                      const dt = t - lastT;
+                                      lastT = t;
+                                      if (currentPhase) raw[currentPhase].push(dt);
+                                      window.requestAnimationFrame(tick);
+                                    };
+                                    window.requestAnimationFrame(tick);
+                                    try {
+                                      const lt = new PerformanceObserver((list) => {
+                                        for (const e of list.getEntries()) {
+                                          profile.longTasks.push({ phase: currentPhase, dur: Math.round(e.duration) });
+                                        }
+                                      });
+                                      lt.observe({ entryTypes: ['longtask'] });
+                                    } catch (_) { /* Safari: longtask 미지원 */ }
+                                    const summarize = () => {
+                                      for (const name of Object.keys(raw)) {
+                                        const frames = raw[name];
+                                        if (!frames.length) continue;
+                                        const sorted = frames.slice().sort((a, b) => a - b);
+                                        const q = (p) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
+                                        profile.phases[name] = {
+                                          frames: frames.length,
+                                          avgMs: Math.round(frames.reduce((a, b) => a + b, 0) / frames.length * 10) / 10,
+                                          p50: Math.round(q(0.5) * 10) / 10,
+                                          p95: Math.round(q(0.95) * 10) / 10,
+                                          worst: Math.round(Math.max.apply(null, frames) * 10) / 10,
+                                          over33ms: frames.filter((f) => f > 33).length,
+                                          over100ms: frames.filter((f) => f > 100).length
+                                        };
+                                      }
+                                    };
+                                    const setPhase = (p) => { summarize(); currentPhase = p; if (p && !raw[p]) raw[p] = []; };
+                                    profile.reason = 'running';
+                                    setPhase('zoom-in');
+                                    for (let i = 0; i < 12; i++) { wheel(cx, cy, -120); await sleep(50); }
+                                    await sleep(400);
+                                    setPhase('zoom-out');
+                                    for (let i = 0; i < 12; i++) { wheel(cx, cy, 120); await sleep(50); }
+                                    await sleep(400);
+                                    setPhase('pan-drag');
+                                    fire(mouse, 'mousedown', cx - 150, cy, 1);
+                                    for (let i = 0; i < 40; i++) { fire(mouse, 'mousemove', cx - 150 + i * 6, cy + i * 2, 1); await sleep(16); }
+                                    fire(mouse, 'mouseup', cx + 90, cy + 80, 0);
+                                    await sleep(400);
+                                    setPhase('hover-sweep');
+                                    for (let i = 0; i < 40; i++) {
+                                      fire(mouse, 'mousemove', rect.left + 60 + i * (rect.width - 120) / 40, cy + Math.sin(i / 4) * 60, 0);
+                                      await sleep(16);
+                                    }
+                                    const card = document.querySelector('[data-skeleton-card]');
+                                    if (card) {
+                                      setPhase('card-drag');
+                                      const cr = card.getBoundingClientRect();
+                                      const sx = cr.left + cr.width / 2;
+                                      const sy = cr.top + 10;
+                                      const pfire = (el, type, x, y, buttons) => el.dispatchEvent(new PointerEvent(type, {
+                                        bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse',
+                                        clientX: x, clientY: y, buttons: buttons, button: 0, isPrimary: true
+                                      }));
+                                      pfire(card, 'pointerdown', sx, sy, 1);
+                                      for (let i = 0; i < 40; i++) {
+                                        pfire(card, 'pointermove', sx + i * 4, sy + i * 3, 1);
+                                        pfire(window, 'pointermove', sx + i * 4, sy + i * 3, 1);
+                                        await sleep(16);
+                                      }
+                                      pfire(card, 'pointerup', sx + 160, sy + 120, 0);
+                                      await sleep(400);
+                                      // 뒷정리 — 카드를 원위치로 되돌려 Relief 오버랩
+                                      // 계약 검증(3 overlap pairs 실패)을 건드리지 않는다.
+                                      const back = document.querySelector('[data-skeleton-card]');
+                                      if (back) {
+                                        const br = back.getBoundingClientRect();
+                                        const bx = br.left + br.width / 2;
+                                        const by = br.top + 10;
+                                        pfire(back, 'pointerdown', bx, by, 1);
+                                        for (let i = 0; i < 40; i++) {
+                                          pfire(back, 'pointermove', bx - i * 4, by - i * 3, 1);
+                                          pfire(window, 'pointermove', bx - i * 4, by - i * 3, 1);
+                                          await sleep(16);
+                                        }
+                                        pfire(back, 'pointerup', bx - 160, by - 120, 0);
+                                        await sleep(400);
+                                      }
+                                    }
+                                    setPhase('idle-after');
+                                    await sleep(800);
+                                    setPhase(null);
+                                    running = false;
+                                    profile.reason = 'done';
+                                    profile.done = true;
+                                  };
+                                  run().catch((err) => {
+                                    profile.reason = 'error: ' + (err && err.message ? err.message : String(err));
+                                    profile.done = true;
+                                  });
+                                })()"#,
+                            );
+                            std::thread::sleep(Duration::from_millis(10500));
+                        }
                         for _ in 0..WEBVIEW_VERIFY_MARKER_ATTEMPTS {
                             let _ = verify_window.eval_with_callback(
                             r#"(() => {
+                              try {
                               const bodyText = document.body ? document.body.innerText : "";
                               const links = Array.from(document.querySelectorAll("a")).map((link) => ({
                                 href: link.getAttribute("href") || "",
@@ -1521,6 +1760,7 @@ pub fn run() {
                                 document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
                               );
                               const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
+                              const topologyFrameProfile = window.__ontologyAtlasTopologyFrameProfile || null;
                               const topologyZoomVerification = window.__ontologyAtlasTopologyZoomVerify || null;
                               const topologySelectedRelationVerification =
                                 window.__ontologyAtlasTopologySelectedRelationVerify || null;
@@ -5187,6 +5427,7 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-card-fixed-surface-overlap-count") || "0"),
                                   topologyZoomLensContract:
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-contract") || "",
+                                  topologyFrameProfile,
                                   topologyZoomVerifyAttempted:
                                     topologyZoomVerification?.attempted === true,
                                   topologyZoomVerifyReason:
@@ -5204,10 +5445,11 @@ pub fn run() {
                                   topologyZoomLensThresholdRatio:
                                     Number(skeletonCardsLayer?.getAttribute("data-zoom-lens-threshold-ratio") || "0"),
                                   topologyZoomLensCardMaxWidthPx:
-                                    Number.parseFloat(
-                                      getComputedStyle(skeletonCardsLayer)
-                                        .getPropertyValue("--topology-zoom-lens-card-max-width")
-                                    ) || 0,
+                                    (skeletonCardsLayer &&
+                                      Number.parseFloat(
+                                        getComputedStyle(skeletonCardsLayer)
+                                          .getPropertyValue("--topology-zoom-lens-card-max-width")
+                                      )) || 0,
                                   topologyZoomLensCameraRatio:
                                     Number(
                                       topologyZoomVerification?.cameraRatio ||
@@ -5410,6 +5652,26 @@ pub fn run() {
                                   topologyDragConnectorClearance
                                 }
                               });
+                              } catch (markerError) {
+                                // marker 수집이 특정 모드의 DOM 에서 throw 하면 빈 payload
+                                // 가 12번 찍히고 원인이 사라진다 — 에러를 payload 로 노출.
+                                return JSON.stringify({
+                                  href: location.href,
+                                  title: document.title,
+                                  bodyText: "",
+                                  bodyChildren: document.body ? document.body.children.length : null,
+                                  readyState: document.readyState,
+                                  bg: "",
+                                  color: "",
+                                  width: innerWidth,
+                                  height: innerHeight,
+                                  markers: {
+                                    markerScriptError: String(
+                                      (markerError && (markerError.message || markerError.stack)) || markerError
+                                    )
+                                  }
+                                });
+                              }
                             })()"#,
                             |result| write_verify_line(format!("[ontology-atlas-webview-verify] {result}")),
                             );

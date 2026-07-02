@@ -20,6 +20,8 @@ const WEBVIEW_VERIFY_TOPOLOGY_NODE_POPOVER_ENV =
 const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
 const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP";
 const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_ZOOM";
+const WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV =
+  "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FRAME_PROFILE";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX = 2.5;
 const TOPOLOGY_DRAG_FOCUS_MIN_DELTA_PX = 20;
@@ -854,6 +856,7 @@ export function parseVerifyAppLaunchArgs(argv, {
     verifyTopologyCreateNode: argv.includes("--verify-topology-create-node"),
     verifyTopologyFocusNoop: argv.includes("--verify-topology-focus-noop"),
     verifyTopologyFocusZoom: argv.includes("--verify-topology-focus-zoom"),
+    verifyTopologyFrameProfile: argv.includes("--verify-topology-frame-profile"),
     requireOwnerName: ownerNameArg
       ? ownerNameArg.slice("--require-owner-name=".length)
       : null,
@@ -883,7 +886,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--verify-topology-selected-relation] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--verify-topology-selected-relation] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--verify-topology-frame-profile] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -904,6 +907,8 @@ Options:
                     settle and require an already-safe no-op motion proof.
   --verify-topology-focus-zoom
                     On a selected /topology route, trigger zoom-in and require focus rail compaction proof.
+  --verify-topology-frame-profile
+                    On a /topology route, run a synthetic zoom/pan/hover/card-drag pass and capture rAF frame timings into the WebView evidence markers.
   --require-window  Require an on-screen macOS window owned by the launched app process.
   --require-capturable-window
                     Require at least one matching CoreGraphics window to produce a local screenshot
@@ -1020,6 +1025,7 @@ export function webviewVerifyEnvPatch({
   verifyTopologyCreateNode = false,
   verifyTopologyFocusNoop = false,
   verifyTopologyFocusZoom = false,
+  verifyTopologyFrameProfile = false,
   webviewWindowSize = null,
 } = {}) {
   return {
@@ -1035,6 +1041,9 @@ export function webviewVerifyEnvPatch({
     ...(verifyTopologyCreateNode ? { [WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV]: "1" } : {}),
     ...(verifyTopologyFocusNoop ? { [WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV]: "1" } : {}),
     ...(verifyTopologyFocusZoom ? { [WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV]: "1" } : {}),
+    ...(verifyTopologyFrameProfile
+      ? { [WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV]: "1" }
+      : {}),
     ...(webviewWindowSize
       ? {
           [WEBVIEW_VERIFY_WINDOW_SIZE_ENV]: `${webviewWindowSize.width}x${webviewWindowSize.height}`,
@@ -2285,6 +2294,7 @@ export function validateWebviewVerifyPayload(payload, {
   requireTopologyCreateNode = false,
   requireTopologyFocusNoop = false,
   requireTopologyFocusZoom = false,
+  requireTopologyFrameProfile = false,
 } = {}) {
   if (!payload || typeof payload !== "object") {
     return "missing WebView verification payload";
@@ -2297,6 +2307,15 @@ export function validateWebviewVerifyPayload(payload, {
   }
   if (typeof payload.bodyText !== "string" || payload.bodyText.trim().length === 0) {
     return "WebView body text was empty";
+  }
+  if (requireTopologyFrameProfile) {
+    const frameProfile = payload.markers?.topologyFrameProfile;
+    if (!frameProfile || frameProfile.done !== true) {
+      return "WebView topology frame profile has not completed";
+    }
+    if (frameProfile.reason !== "done") {
+      return `WebView topology frame profile failed: ${frameProfile.reason}`;
+    }
   }
   if (
     payload.title !== "Ontology Atlas" &&
@@ -4227,13 +4246,17 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView reported no Sigma canvas (${payload.markers.topologySigmaCanvasCount ?? "unknown"} canvas element(s))`;
     }
-    if (payload.markers.topologySkeletonMode === false) {
+    // mode=graph (옵시디언식 살아있는 그래프) 는 skeleton 없이 그리는 것이
+    // 계약 — 골격 카드 검사를 건너뛴다. Sigma 캔버스/뷰포트 검사는 그대로.
+    const topologyGraphModeActive =
+      webviewUrl.searchParams.get("mode") === "graph";
+    if (!topologyGraphModeActive && payload.markers.topologySkeletonMode === false) {
       return "WebView reported Relief without topology skeleton mode";
     }
-    if (payload.markers.topologySkeletonCardsActive === false) {
+    if (!topologyGraphModeActive && payload.markers.topologySkeletonCardsActive === false) {
       return `WebView reported Relief without active skeleton cards (${payload.markers.topologySkeletonCardModelCount ?? "unknown"} card model(s))`;
     }
-    if (payload.markers.topologySkeletonLayerPresent === false) {
+    if (!topologyGraphModeActive && payload.markers.topologySkeletonLayerPresent === false) {
       return `WebView reported active skeleton cards but no skeleton layer (${payload.markers.topologySkeletonCardModelCount ?? "unknown"} card model(s))`;
     }
     if (
@@ -4245,6 +4268,7 @@ export function validateWebviewVerifyPayload(payload, {
       return `WebView reported no resolvable Relief cards (${payload.markers.topologySkeletonLayerResolvedCount}/${payload.markers.topologySkeletonLayerModelCount})`;
     }
     if (
+      !topologyGraphModeActive &&
       Number(payload.width) >= 1400 &&
       !(Number(payload.markers.topologyUiScale) >= 1.12)
     ) {
@@ -4255,6 +4279,7 @@ export function validateWebviewVerifyPayload(payload, {
       Number(payload.markers.topologySkeletonLayerResolvedCount || 0) >= 1 &&
       Number(payload.markers.topologySkeletonCardResolvedCount || 0) >= 1;
     if (
+      !topologyGraphModeActive &&
       !topologyDragDone &&
       payload.markers.topologyCardsReady !== true &&
       !hasResolvedSkeletonOverlay
@@ -4324,8 +4349,10 @@ export function validateWebviewVerifyPayload(payload, {
             ? 7
             : 8;
     if (
-      !Number.isFinite(payload.markers.topologyCardCount) ||
-      payload.markers.topologyCardCount < minimumTopologyCardCount
+      !requireTopologyFrameProfile &&
+      !topologyGraphModeActive &&
+      (!Number.isFinite(payload.markers.topologyCardCount) ||
+        payload.markers.topologyCardCount < minimumTopologyCardCount)
     ) {
       return `WebView reported too few visible Relief cards (${payload.markers.topologyCardCount ?? "unknown"} visible, ${payload.markers.topologyCardRawCount ?? "unknown"} raw)`;
     }
@@ -4358,10 +4385,10 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return "WebView reported selected Relief fan-out companions as hidden";
     }
-    if (payload.markers.topologyCardOverlapCount !== 0) {
+    if (!requireTopologyFrameProfile && !topologyGraphModeActive && payload.markers.topologyCardOverlapCount !== 0) {
       return `WebView reported overlapping Relief cards (${payload.markers.topologyCardOverlapCount ?? "unknown"} overlap pair(s))`;
     }
-    if (payload.markers.topologyCardClippedCount !== 0) {
+    if (!requireTopologyFrameProfile && !topologyGraphModeActive && payload.markers.topologyCardClippedCount !== 0) {
       return `WebView reported clipped Relief cards (${payload.markers.topologyCardClippedCount ?? "unknown"} clipped card(s))`;
     }
     const residualOverlapProvesClear =
@@ -4474,6 +4501,7 @@ export function validateWebviewVerifyPayload(payload, {
       topologyAnalysisMode !== "path" &&
       topologyAnalysisMode !== "health" &&
       topologyAnalysisMode !== "focus" &&
+      !topologyGraphModeActive &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen &&
       payload.markers.topologyRelationQualityLensVisible !== true &&
@@ -4491,6 +4519,7 @@ export function validateWebviewVerifyPayload(payload, {
       topologyAnalysisMode !== "path" &&
       topologyAnalysisMode !== "health" &&
       topologyAnalysisMode !== "focus" &&
+      !topologyGraphModeActive &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen &&
       Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
@@ -4536,6 +4565,7 @@ export function validateWebviewVerifyPayload(payload, {
       topologyAnalysisMode !== "path" &&
       topologyAnalysisMode !== "health" &&
       topologyAnalysisMode !== "focus" &&
+      !topologyGraphModeActive &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen;
     if (
@@ -4594,6 +4624,8 @@ export function validateWebviewVerifyPayload(payload, {
           "focus-support-rail-max-300-map-centered";
       const analysisPanelMinWidth = usesPathRailWidth
         ? 320
+        : topologyGraphModeActive
+          ? 260
         : usesFocusSupportRail || focusSelectedNodeRoute
           ? 240
           : 360;
@@ -4606,6 +4638,8 @@ export function validateWebviewVerifyPayload(payload, {
       const analysisPanelMinHeight =
         topologyAnalysisMode === "path"
           ? 120
+          : topologyGraphModeActive
+            ? 100
           : usesFocusSupportRail
             ? 220
           : focusSelectedNodeRoute
@@ -8716,6 +8750,7 @@ async function verifyExecutableLaunch({
   verifyTopologyCreateNode,
   verifyTopologyFocusNoop,
   verifyTopologyFocusZoom,
+  verifyTopologyFrameProfile,
   requireAccessibilityText,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
@@ -8740,6 +8775,7 @@ async function verifyExecutableLaunch({
             verifyTopologyCreateNode,
             verifyTopologyFocusNoop,
             verifyTopologyFocusZoom,
+            verifyTopologyFrameProfile,
             webviewWindowSize,
           }),
         }
@@ -8799,6 +8835,7 @@ async function verifyExecutableLaunch({
       requireTopologyCreateNode: verifyTopologyCreateNode,
       requireTopologyFocusNoop: verifyTopologyFocusNoop,
       requireTopologyFocusZoom: verifyTopologyFocusZoom,
+      requireTopologyFrameProfile: verifyTopologyFrameProfile,
     };
     const { payload, validationError: webviewError } = await waitForWebviewVerifyPayload(
       () => stdout,
@@ -8913,6 +8950,7 @@ async function main() {
     verifyTopologyCreateNode,
     verifyTopologyFocusNoop,
     verifyTopologyFocusZoom,
+    verifyTopologyFrameProfile,
     requireAccessibilityText,
     printWindowDiagnostics,
     requireOwnerName,
@@ -8991,6 +9029,9 @@ async function main() {
   if (verifyTopologyFocusNoop && openApp) {
     fail("--verify-topology-focus-noop is only supported for direct executable launch; omit --open-app.");
   }
+  if (verifyTopologyFrameProfile && openApp) {
+    fail("--verify-topology-frame-profile is only supported for direct executable launch; omit --open-app.");
+  }
   if (verifyTopologyFocusZoom && openApp) {
     fail("--verify-topology-focus-zoom is only supported for direct executable launch; omit --open-app.");
   }
@@ -9020,6 +9061,9 @@ async function main() {
   }
   if (verifyTopologyFocusZoom && !normalizedWebviewRoute?.includes("/topology")) {
     fail("--verify-topology-focus-zoom requires --require-webview-route pointing at a /topology route.");
+  }
+  if (verifyTopologyFrameProfile && !normalizedWebviewRoute?.includes("/topology")) {
+    fail("--verify-topology-frame-profile requires --require-webview-route pointing at a /topology route.");
   }
   if (!fs.existsSync(resolvedAppPath)) {
     fail(`missing app bundle at ${resolvedAppPath}; run pnpm desktop:build:app first.`);
@@ -9097,6 +9141,7 @@ async function main() {
         verifyTopologyCreateNode,
         verifyTopologyFocusNoop,
         verifyTopologyFocusZoom,
+        verifyTopologyFrameProfile,
         requireAccessibilityText,
         printWindowDiagnostics,
         requireOwnerName,
