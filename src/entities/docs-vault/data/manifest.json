@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-02T23:02:24.881Z",
+  "generatedAt": "2026-07-02T23:55:22.045Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2576,6 +2576,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-03 — 지도 인터랙션 계약: 클릭=선택 · 배지=펼치기 · 닫기=접기",
+          "slug": "2026-07-03-지도-인터랙션-계약-클릭선택-배지펼치기-닫기접기"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-03 — 기획자 감사 Top 3: 지도 잉크·그래프 ego dim·정리 칩 신호",
           "slug": "2026-07-03-기획자-감사-top-3-지도-잉크그래프-ego-dim정리-칩-신호"
         },
@@ -3670,9 +3675,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 온톨로지 제품 기획자 렌즈의 감사(경쟁: Obsidian graph / Foundry ontology)로 토폴로지 표면을 점검하고 최고 가치 3건을 즉시 ",
-      "wordCount": 19197,
-      "updatedAt": "2026-07-02T15:48:26.877Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 피드백: \"클릭하면 그냥 바뀌고 헷갈린다 — 바로 확장돼서 그런가?\" — 정확한 진단이었다. 클릭 한 번에 [선택+focus 승격+지형 재배치+카메",
+      "wordCount": 19343,
+      "updatedAt": "2026-07-02T23:46:14.604Z",
       "linksOut": [
         "slug"
       ]
@@ -8882,6 +8887,64 @@
       "linksOut": []
     },
     {
+      "slug": "TOPOLOGY-MAP-REBUILD",
+      "path": "docs/TOPOLOGY-MAP-REBUILD.md",
+      "title": "지도(Relief) 뷰 재구성 설계 — 단일 컨테이너 변환 아키텍처",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "지도(Relief) 뷰 재구성 설계 — 단일 컨테이너 변환 아키텍처",
+          "slug": "지도relief-뷰-재구성-설계-단일-컨테이너-변환-아키텍처"
+        },
+        {
+          "depth": 2,
+          "text": "1. 증상과 실측 근거",
+          "slug": "1-증상과-실측-근거"
+        },
+        {
+          "depth": 2,
+          "text": "2. 현 구조 (문제의 원천)",
+          "slug": "2-현-구조-문제의-원천"
+        },
+        {
+          "depth": 2,
+          "text": "3. 목표 아키텍처 — 단일 컨테이너 변환 + FLIP",
+          "slug": "3-목표-아키텍처-단일-컨테이너-변환-flip"
+        },
+        {
+          "depth": 2,
+          "text": "4. 보존해야 할 계약 (깨지면 안 되는 것)",
+          "slug": "4-보존해야-할-계약-깨지면-안-되는-것"
+        },
+        {
+          "depth": 2,
+          "text": "5. 마이그레이션 순서 (슬라이스)",
+          "slug": "5-마이그레이션-순서-슬라이스"
+        },
+        {
+          "depth": 2,
+          "text": "6. 검증 계획",
+          "slug": "6-검증-계획"
+        },
+        {
+          "depth": 2,
+          "text": "7. 조사 티켓 (재구성과 별도)",
+          "slug": "7-조사-티켓-재구성과-별도"
+        },
+        {
+          "depth": 2,
+          "text": "8. 참고 파일",
+          "slug": "8-참고-파일"
+        }
+      ],
+      "excerpt": "2026-07-03. 소유자 결정: \"지도쪽이 부드럽지도 않고 버벅거림 — 전체 재구성\". 이 문서는 다음 세션이 바로 구현에 들어가기 위한 단일 진실원이다. 브랜치: feat/topology-map-rebuild (main = PR 305 머지 직후). 실측 프레임은 문제없다: 설치 앱 frame-profile 프로브 (pnpm desktop:verify-topology-frame-profile:ko) 기준 지도 뷰 팬/호버/줌 전부 avg 8.3~11.6ms (120Hz). 소유자가 느끼는 \"버벅임\"은 fps 가 아니라 모션 문법의 부재다. 버벅임의 실체 3가지:",
+      "wordCount": 791,
+      "updatedAt": "2026-07-02T23:49:09.308Z",
+      "linksOut": []
+    },
+    {
       "slug": "TROUBLESHOOTING",
       "path": "docs/TROUBLESHOOTING.md",
       "title": "Troubleshooting",
@@ -10627,6 +10690,13 @@
         "type": "doc",
         "slug": "TOPOLOGY-FOCUS-AND-SCALE",
         "title": "Topology — Node Focus & Scale"
+      },
+      {
+        "name": "TOPOLOGY-MAP-REBUILD",
+        "path": "TOPOLOGY-MAP-REBUILD",
+        "type": "doc",
+        "slug": "TOPOLOGY-MAP-REBUILD",
+        "title": "지도(Relief) 뷰 재구성 설계 — 단일 컨테이너 변환 아키텍처"
       },
       {
         "name": "TROUBLESHOOTING",

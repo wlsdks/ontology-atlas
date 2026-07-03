@@ -2364,6 +2364,10 @@ export function validateWebviewVerifyPayload(payload, {
   }
   const webviewUrl = new URL(payload.href);
   const webviewPath = webviewUrl.pathname;
+  // 지도 재구성 엔진 (docs/TOPOLOGY-MAP-REBUILD.md) — Sigma/skeleton 계약
+  // 대신 map-canvas 계약을 검증한다. 함수 전역에서 게이트로 쓰인다.
+  const topologyMapCanvasActive =
+    payload?.markers?.topologyMapEngine === "canvas";
   const topologyAnalysisMode =
     typeof payload.markers.topologyAnalysisPanelMode === "string"
       ? payload.markers.topologyAnalysisPanelMode.trim() || webviewUrl.searchParams.get("mode") || ""
@@ -4222,13 +4226,13 @@ export function validateWebviewVerifyPayload(payload, {
       requireTopologyDrag &&
       payload.markers.topologyDragAttempted === true &&
       payload.markers.topologyDragReason === "done";
-    if (payload.markers.topologySigmaViewportVisible === false) {
+    if (!topologyMapCanvasActive && payload.markers.topologySigmaViewportVisible === false) {
       return "WebView did not report a visible Sigma topology viewport";
     }
     if (payload.markers.topologySigmaBootError === true) {
       return "WebView reported a Sigma topology boot error";
     }
-    if (payload.markers.topologySigmaReady === false) {
+    if (!topologyMapCanvasActive && payload.markers.topologySigmaReady === false) {
       return "WebView reported Relief before the Sigma renderer was ready";
     }
     if (!(Number(payload.markers.topologyStagePanClickCancelPx) >= 12)) {
@@ -4241,6 +4245,7 @@ export function validateWebviewVerifyPayload(payload, {
       return "WebView reported a visible Relief engine loading indicator after Sigma was ready";
     }
     if (
+      !topologyMapCanvasActive &&
       Number.isFinite(payload.markers.topologySigmaCanvasCount) &&
       payload.markers.topologySigmaCanvasCount < 1
     ) {
@@ -4250,13 +4255,18 @@ export function validateWebviewVerifyPayload(payload, {
     // 계약 — 골격 카드 검사를 건너뛴다. Sigma 캔버스/뷰포트 검사는 그대로.
     const topologyGraphModeActive =
       webviewUrl.searchParams.get("mode") === "graph";
-    if (!topologyGraphModeActive && payload.markers.topologySkeletonMode === false) {
+    if (topologyMapCanvasActive) {
+      if (!(Number(payload.markers.topologyMapCanvasCardCount) >= 8)) {
+        return `WebView map canvas rendered too few cards (${payload.markers.topologyMapCanvasCardCount ?? "unknown"})`;
+      }
+    }
+    if (!topologyGraphModeActive && !topologyMapCanvasActive && payload.markers.topologySkeletonMode === false) {
       return "WebView reported Relief without topology skeleton mode";
     }
-    if (!topologyGraphModeActive && payload.markers.topologySkeletonCardsActive === false) {
+    if (!topologyGraphModeActive && !topologyMapCanvasActive && payload.markers.topologySkeletonCardsActive === false) {
       return `WebView reported Relief without active skeleton cards (${payload.markers.topologySkeletonCardModelCount ?? "unknown"} card model(s))`;
     }
-    if (!topologyGraphModeActive && payload.markers.topologySkeletonLayerPresent === false) {
+    if (!topologyGraphModeActive && !topologyMapCanvasActive && payload.markers.topologySkeletonLayerPresent === false) {
       return `WebView reported active skeleton cards but no skeleton layer (${payload.markers.topologySkeletonCardModelCount ?? "unknown"} card model(s))`;
     }
     if (
@@ -4268,7 +4278,7 @@ export function validateWebviewVerifyPayload(payload, {
       return `WebView reported no resolvable Relief cards (${payload.markers.topologySkeletonLayerResolvedCount}/${payload.markers.topologySkeletonLayerModelCount})`;
     }
     if (
-      !topologyGraphModeActive &&
+      !topologyGraphModeActive && !topologyMapCanvasActive &&
       Number(payload.width) >= 1400 &&
       !(Number(payload.markers.topologyUiScale) >= 1.12)
     ) {
@@ -4279,7 +4289,7 @@ export function validateWebviewVerifyPayload(payload, {
       Number(payload.markers.topologySkeletonLayerResolvedCount || 0) >= 1 &&
       Number(payload.markers.topologySkeletonCardResolvedCount || 0) >= 1;
     if (
-      !topologyGraphModeActive &&
+      !topologyGraphModeActive && !topologyMapCanvasActive &&
       !topologyDragDone &&
       payload.markers.topologyCardsReady !== true &&
       !hasResolvedSkeletonOverlay
@@ -4350,7 +4360,7 @@ export function validateWebviewVerifyPayload(payload, {
             : 8;
     if (
       !requireTopologyFrameProfile &&
-      !topologyGraphModeActive &&
+      !topologyGraphModeActive && !topologyMapCanvasActive &&
       (!Number.isFinite(payload.markers.topologyCardCount) ||
         payload.markers.topologyCardCount < minimumTopologyCardCount)
     ) {
@@ -4385,10 +4395,10 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return "WebView reported selected Relief fan-out companions as hidden";
     }
-    if (!requireTopologyFrameProfile && !topologyGraphModeActive && payload.markers.topologyCardOverlapCount !== 0) {
+    if (!requireTopologyFrameProfile && !topologyGraphModeActive && !topologyMapCanvasActive && payload.markers.topologyCardOverlapCount !== 0) {
       return `WebView reported overlapping Relief cards (${payload.markers.topologyCardOverlapCount ?? "unknown"} overlap pair(s))`;
     }
-    if (!requireTopologyFrameProfile && !topologyGraphModeActive && payload.markers.topologyCardClippedCount !== 0) {
+    if (!requireTopologyFrameProfile && !topologyGraphModeActive && !topologyMapCanvasActive && payload.markers.topologyCardClippedCount !== 0) {
       return `WebView reported clipped Relief cards (${payload.markers.topologyCardClippedCount ?? "unknown"} clipped card(s))`;
     }
     const residualOverlapProvesClear =
@@ -4433,6 +4443,7 @@ export function validateWebviewVerifyPayload(payload, {
       return `WebView reported a stacked Relief transient surface contract (${transientContract}: ${JSON.stringify(payload.markers.topologyTransientSurfaceNames ?? [])})`;
     }
     if (
+      !topologyMapCanvasActive &&
       Number(payload.width) >= 1400 &&
       payload.markers.topologyCreateNodeOpen !== true &&
       !selectedRelationContextVisible &&
@@ -4501,7 +4512,7 @@ export function validateWebviewVerifyPayload(payload, {
       topologyAnalysisMode !== "path" &&
       topologyAnalysisMode !== "health" &&
       topologyAnalysisMode !== "focus" &&
-      !topologyGraphModeActive &&
+      !topologyGraphModeActive && !topologyMapCanvasActive &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen &&
       payload.markers.topologyRelationQualityLensVisible !== true &&
@@ -4519,7 +4530,7 @@ export function validateWebviewVerifyPayload(payload, {
       topologyAnalysisMode !== "path" &&
       topologyAnalysisMode !== "health" &&
       topologyAnalysisMode !== "focus" &&
-      !topologyGraphModeActive &&
+      !topologyGraphModeActive && !topologyMapCanvasActive &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen &&
       Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
@@ -4565,7 +4576,7 @@ export function validateWebviewVerifyPayload(payload, {
       topologyAnalysisMode !== "path" &&
       topologyAnalysisMode !== "health" &&
       topologyAnalysisMode !== "focus" &&
-      !topologyGraphModeActive &&
+      !topologyGraphModeActive && !topologyMapCanvasActive &&
       !focusSelectedNodeRoute &&
       !blockingComposerOpen;
     if (

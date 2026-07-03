@@ -30,7 +30,7 @@ test("local macOS app deploy default route falls back to English without a Korea
   );
 });
 
-test("local macOS app deploy defaults to build, Applications install, Relief route, and drag proof", () => {
+test("local macOS app deploy defaults to build, Applications install, and the map route (drag proof opt-in)", () => {
   const options = parseDeployMacosAppArgs([], {
     env: { LANG: "C.UTF-8" },
     appleLanguagesRaw: '("en-US")',
@@ -39,7 +39,8 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
 
   assert.equal(options.skipBuild, false);
   assert.equal(options.leaveRunning, true);
-  assert.equal(options.verifyTopologyDrag, true);
+  // 지도 재구성(map-canvas) 이후 드래그 클러스터 증명은 opt-in (--topology-drag).
+  assert.equal(options.verifyTopologyDrag, false);
   assert.equal(options.requireScreenshot, false);
   assert.equal(options.visualEvidence, true);
   assert.equal(
@@ -83,7 +84,6 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
       "--min-webview-size=1400x860",
       `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json")}`,
       "--leave-running",
-      "--verify-topology-drag",
     ],
   ]);
   assert.deepEqual(plan.fallbackVerify, [
@@ -97,7 +97,6 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
       "--min-webview-size=1400x860",
       `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json")}`,
       "--leave-running",
-      "--verify-topology-drag",
     ],
   ]);
 });
@@ -116,7 +115,7 @@ test("local macOS app deploy does not let drag proof rewrite a query-specific ro
   ]);
   const plan = buildDeployMacosAppPlan(options);
 
-  assert.equal(options.verifyTopologyDrag, true);
+  assert.equal(options.verifyTopologyDrag, false);
   assert.ok(plan.verify[1].includes("--require-webview-route=/ko/topology/?mode=path"));
   assert.equal(plan.verify[1].includes("--verify-topology-drag"), false);
   assert.ok(plan.fallbackVerify?.[1].includes("--require-webview-route=/ko/topology/?mode=path"));
@@ -141,7 +140,7 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
   const options = parseDeployMacosAppArgs([
     "--skip-build",
     "--no-leave-running",
-    "--no-topology-drag",
+    "--topology-drag",
     "--no-visual-evidence",
     "--require-screenshot",
     "--route=/ko/topology/",
@@ -157,7 +156,7 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
 
   assert.equal(options.skipBuild, true);
   assert.equal(options.leaveRunning, false);
-  assert.equal(options.verifyTopologyDrag, false);
+  assert.equal(options.verifyTopologyDrag, true);
   assert.equal(options.requireScreenshot, true);
   assert.equal(options.visualEvidence, false);
   assert.equal(plan.build, null);
@@ -166,7 +165,8 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
     ["/tmp/build/Ontology Atlas.app", "/tmp/Ontology Atlas.app"],
   ]);
   assert.equal(plan.verify[1].includes("--leave-running"), false);
-  assert.equal(plan.verify[1].includes("--verify-topology-drag"), false);
+  // --topology-drag opt-in + 드래그 증명 지원 라우트(/ko/topology/) → 포함.
+  assert.equal(plan.verify[1].includes("--verify-topology-drag"), true);
   assert.ok(plan.verify[1].includes("--require-webview-route=/ko/topology/"));
   assert.ok(plan.verify[1].includes("--hold-ms=9000"));
   assert.ok(plan.verify[1].includes("--min-window-size=1500x920"));
@@ -191,7 +191,7 @@ test("local macOS app deploy can use deterministic WebView-only verification", (
   assert.ok(plan.verify[1].includes("--min-webview-size=1400x860"));
   assert.equal(plan.verify[1].some((arg) => arg.startsWith("--try-window-screenshot=")), false);
   assert.ok(plan.verify[1].includes("--require-webview-route=/en/topology/"));
-  assert.ok(plan.verify[1].includes("--verify-topology-drag"));
+  assert.equal(plan.verify[1].includes("--verify-topology-drag"), false);
   assert.equal(plan.fallbackVerify, null);
 });
 
