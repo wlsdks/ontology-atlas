@@ -1771,6 +1771,11 @@ pub fn run() {
                               );
                               const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
                               const topologyFrameProfile = window.__ontologyAtlasTopologyFrameProfile || null;
+                              const topologyMapEngineEl = document.querySelector("[data-map-engine]");
+                              const topologyMapEngine = topologyMapEngineEl?.getAttribute("data-map-engine") || "";
+                              const topologyMapCanvasCardCount = document.querySelectorAll(
+                                '[data-testid="topology-map-canvas"] [data-skeleton-card]'
+                              ).length;
                               const topologyZoomVerification = window.__ontologyAtlasTopologyZoomVerify || null;
                               const topologySelectedRelationVerification =
                                 window.__ontologyAtlasTopologySelectedRelationVerify || null;
@@ -1791,7 +1796,9 @@ pub fn run() {
                               const sigmaViewportRect = sigmaViewport?.getBoundingClientRect();
                               const sigmaViewportStyle = sigmaViewport ? getComputedStyle(sigmaViewport) : null;
                               const topologyStagePanClickCancelPx = Number(
-                                sigmaViewport?.getAttribute("data-stage-pan-click-cancel-px") || "0"
+                                sigmaViewport?.getAttribute("data-stage-pan-click-cancel-px") ||
+                                topologyMapEngineEl?.getAttribute("data-stage-pan-click-cancel-px") ||
+                                "0"
                               );
                               const sigmaCanvases = sigmaViewport
                                 ? Array.from(sigmaViewport.querySelectorAll("canvas")).map((canvas) => {
@@ -5438,6 +5445,8 @@ pub fn run() {
                                   topologyZoomLensContract:
                                     skeletonCardsLayer?.getAttribute("data-zoom-lens-contract") || "",
                                   topologyFrameProfile,
+                                  topologyMapEngine,
+                                  topologyMapCanvasCardCount,
                                   topologyZoomVerifyAttempted:
                                     topologyZoomVerification?.attempted === true,
                                   topologyZoomVerifyReason:

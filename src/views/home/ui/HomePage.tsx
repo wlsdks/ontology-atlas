@@ -195,6 +195,7 @@ import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
 import { TopologyNodePopover } from "./TopologyNodePopover";
+import { TopologyMapCanvas } from "@/widgets/topology-map-canvas";
 import {
   buildTopologyOntologyDrawerModel,
   classifyTopologyRelationProvenance,
@@ -2318,14 +2319,49 @@ export function HomePage() {
                     variant="sparse"
                   />
                 ) : null}
-                {topologyRenderState.renderCanvas && !currentSigmaGraphStats ? (
+                {topologyRenderState.renderCanvas &&
+                !currentSigmaGraphStats &&
+                !(
+                  analysisMode !== "graph" &&
+                  localGraphRoot === null &&
+                  topologySkeleton
+                ) ? (
                   <TopologyLoadingFallback
                     concepts={visibleTopologyNodeCount}
                     relations={visibleTopologyRelationCount}
                     mode={analysisMode}
                   />
                 ) : null}
-                {topologyRenderState.renderCanvas ? (
+                {topologyRenderState.renderCanvas &&
+                analysisMode !== "graph" &&
+                localGraphRoot === null &&
+                topologySkeleton &&
+                ontologyInsight ? (
+                  // 지도(Relief) 재구성 엔진 — 단일 컨테이너 변환
+                  // (docs/TOPOLOGY-MAP-REBUILD.md). 그래프 뷰와 local-graph
+                  // ego 는 기존 Sigma 경로 유지.
+                  <TopologyMapCanvas
+                    cards={topologySkeleton.cards}
+                    layout={topologySkeleton.layout}
+                    edges={ontologyInsight.edges}
+                    selectedSlug={canvasSelectedSlug}
+                    healthRepairTargetSlug={
+                      analysisMode === "health"
+                        ? (topologyHealthSummary.actionTarget?.slug ?? null)
+                        : null
+                    }
+                    pathWorkflowActive={analysisMode === "path"}
+                    pathSelection={{
+                      sourceSlug: pathSourceSlug,
+                      targetSlug: pathTargetSlug,
+                    }}
+                    onPathSelectionChange={handlePathSelectionChange}
+                    onSelect={(slug) => handleSelect(slug)}
+                    onExpandRequest={handleExpandRequest}
+                    onPaneClick={handleClose}
+                    fitViewToken={combinedFitToken}
+                  />
+                ) : topologyRenderState.renderCanvas ? (
                   <SigmaTopology
                     key={localGraphRoot ?? "__root__"}
                     projects={localGraphProjects}
