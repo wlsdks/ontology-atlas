@@ -39,9 +39,11 @@ export interface TopologyV2Tokens {
   edgeDepends: string;
   edgeDim: string;
   hullStroke: string;
+  labelProject: string;
   labelDomain: string;
   labelCapability: string;
   labelElement: string;
+  labelMaxWidth: number;
   canvasBgNear: string;
   canvasBgFar: string;
   gridMinor: string;
@@ -84,6 +86,12 @@ export interface TopologyV2Tokens {
   breatheFreqRad: number;
   pulseDurationMs: number;
   tipFadeMs: number;
+
+  // 2.5 안전 영역 (fixed chrome inset, px — 라벨 컬링 + 카메라 fit)
+  safeInsetLeft: number;
+  safeInsetRight: number;
+  safeInsetTop: number;
+  safeInsetBottom: number;
 }
 
 type TokenKind = "color" | "number";
@@ -121,9 +129,11 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "edgeDepends", cssVar: "--topology-v2-edge-depends", kind: "color" },
   { key: "edgeDim", cssVar: "--topology-v2-edge-dim", kind: "color" },
   { key: "hullStroke", cssVar: "--topology-v2-hull-stroke", kind: "color" },
+  { key: "labelProject", cssVar: "--topology-v2-label-project", kind: "color" },
   { key: "labelDomain", cssVar: "--topology-v2-label-domain", kind: "color" },
   { key: "labelCapability", cssVar: "--topology-v2-label-capability", kind: "color" },
   { key: "labelElement", cssVar: "--topology-v2-label-element", kind: "color" },
+  { key: "labelMaxWidth", cssVar: "--topology-v2-label-max-width", kind: "number" },
   { key: "canvasBgNear", cssVar: "--topology-v2-canvas-bg-near", kind: "color" },
   { key: "canvasBgFar", cssVar: "--topology-v2-canvas-bg-far", kind: "color" },
   { key: "gridMinor", cssVar: "--topology-v2-grid-minor", kind: "color" },
@@ -164,6 +174,11 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "breatheFreqRad", cssVar: "--topology-v2-breathe-freq-rad", kind: "number" },
   { key: "pulseDurationMs", cssVar: "--topology-v2-pulse-duration-ms", kind: "number" },
   { key: "tipFadeMs", cssVar: "--topology-v2-tip-fade-ms", kind: "number" },
+
+  { key: "safeInsetLeft", cssVar: "--topology-v2-safe-inset-left", kind: "number" },
+  { key: "safeInsetRight", cssVar: "--topology-v2-safe-inset-right", kind: "number" },
+  { key: "safeInsetTop", cssVar: "--topology-v2-safe-inset-top", kind: "number" },
+  { key: "safeInsetBottom", cssVar: "--topology-v2-safe-inset-bottom", kind: "number" },
 ];
 
 export class TopologyV2TokenError extends Error {

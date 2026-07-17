@@ -929,9 +929,14 @@
     --topology-v2-edge-depends: #39394a;
     --topology-v2-edge-dim: #1e1e22;
     --topology-v2-hull-stroke: #3a3a42;
+    --topology-v2-label-project: #ececf0;
     --topology-v2-label-domain: #b8b8c1;
     --topology-v2-label-capability: #84848c;
     --topology-v2-label-element: #57575f;
+    /* Max on-screen label width (px) before word-boundary ellipsis — keeps a
+       long element title (file path) from clipping the right edge / colliding
+       with its horizontal neighbor (Design Guardian 가독성 반려). */
+    --topology-v2-label-max-width: 168;
     --topology-v2-canvas-bg-near: #0a0a0d;
     --topology-v2-canvas-bg-far: #050507;
     --topology-v2-grid-minor: #0e0e13;
@@ -977,6 +982,17 @@
     --topology-v2-breathe-freq-rad: 1.15;
     --topology-v2-pulse-duration-ms: 420;
     --topology-v2-tip-fade-ms: 120;
+
+    /* 2.5 안전 영역 (fixed chrome inset — px, canvas 2D 가 숫자로 소비)
+       좌측 ReaderLens 분석 패널 + 우측 팝오버 레일 + 상단 유틸리티 레인 +
+       하단 힌트가 캔버스 위를 덮는 폭. 라벨 컬링과 카메라 fit 이 이 값을
+       읽어 "보이는 영역"에 그래프를 센터링한다 (Design Guardian 가독성 +
+       카메라 반려). 구엔진 `--topology-map-safe-inset-*` (px 문자열, DOM 소비)
+       의 v2 등가물 — 여기선 단위 없는 숫자다 (canvas 2D getComputedStyle). */
+    --topology-v2-safe-inset-left: 344;
+    --topology-v2-safe-inset-right: 120;
+    --topology-v2-safe-inset-top: 96;
+    --topology-v2-safe-inset-bottom: 96;
   }
 
   html {

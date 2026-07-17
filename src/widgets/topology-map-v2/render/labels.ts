@@ -39,9 +39,47 @@ export interface LabelDrawState {
 }
 
 export interface LabelTokens {
+  labelProject: string;
   labelDomain: string;
   labelCapability: string;
   labelElement: string;
+}
+
+/** Font string per kind — single source shared by `draw` and `measureLabelWidth` so measured bboxes match painted glyphs. */
+export const LABEL_FONT: Record<LabelDrawState["kind"], string> = {
+  project: "600 13px -apple-system, 'SF Pro Text', sans-serif",
+  domain: "600 10px -apple-system, 'SF Pro Text', sans-serif",
+  capability: "500 10.5px -apple-system, 'SF Pro Text', sans-serif",
+  element: "400 9.5px -apple-system, 'SF Pro Text', sans-serif",
+};
+
+/** Approximate glyph height per kind (px) — used to build the label bbox for greedy suppression. */
+export const LABEL_FONT_SIZE: Record<LabelDrawState["kind"], number> = {
+  project: 13,
+  domain: 10,
+  capability: 10.5,
+  element: 9.5,
+};
+
+/** Manual letter-tracking added to domain labels (they're uppercased + tracked, see `drawTrackedText`). */
+const DOMAIN_TRACKING = 1.6;
+
+/**
+ * Measures a label's painted width for bbox suppression. Mirrors `draw`'s
+ * per-kind font + the domain uppercase/tracking, so the measured box matches
+ * what actually lands on the canvas.
+ */
+export function measureLabelWidth(ctx: CanvasRenderingContext2D, kind: LabelDrawState["kind"], text: string): number {
+  ctx.font = LABEL_FONT[kind];
+  if (kind === "domain") {
+    const upper = text.toUpperCase();
+    let total = 0;
+    for (let i = 0; i < upper.length; i += 1) {
+      total += ctx.measureText(upper[i]).width + (i < upper.length - 1 ? DOMAIN_TRACKING : 0);
+    }
+    return total;
+  }
+  return ctx.measureText(text).width;
 }
 
 /**
@@ -73,7 +111,7 @@ export function computeLabelAlpha(
 }
 
 /** Screen-Y offset below the node's own radius, per kind (prototype `drawLabel()`). */
-const LABEL_OFFSET: Record<LabelDrawState["kind"], number> = {
+export const LABEL_OFFSET: Record<LabelDrawState["kind"], number> = {
   project: 20,
   domain: 17,
   capability: 13,
@@ -118,19 +156,19 @@ export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, token
   const ty = y + r + LABEL_OFFSET[kind];
 
   if (kind === "domain") {
-    ctx.font = "600 10px -apple-system, 'SF Pro Text', sans-serif";
-    drawTrackedText(ctx, text.toUpperCase(), x, ty, tokens.labelDomain, 1.6, alpha);
+    ctx.font = LABEL_FONT.domain;
+    drawTrackedText(ctx, text.toUpperCase(), x, ty, tokens.labelDomain, DOMAIN_TRACKING, alpha);
     return;
   }
 
   if (kind === "project") {
-    ctx.font = "600 13px -apple-system, 'SF Pro Text', sans-serif";
-    ctx.fillStyle = "#ececf0"; // project label has no dedicated §2.2 token, prototype literal
+    ctx.font = LABEL_FONT.project;
+    ctx.fillStyle = tokens.labelProject; // §2.2 --topology-v2-label-project (was a prototype literal)
   } else if (kind === "capability") {
-    ctx.font = "500 10.5px -apple-system, 'SF Pro Text', sans-serif";
+    ctx.font = LABEL_FONT.capability;
     ctx.fillStyle = tokens.labelCapability;
   } else {
-    ctx.font = "400 9.5px -apple-system, 'SF Pro Text', sans-serif";
+    ctx.font = LABEL_FONT.element;
     ctx.fillStyle = tokens.labelElement;
   }
   ctx.textAlign = "center";

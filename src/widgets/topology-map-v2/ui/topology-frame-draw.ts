@@ -10,7 +10,20 @@ import { resolveEdgeEgoState, resolveNodeEgoState, type NodeEgoState } from "../
 import { resolveFreshnessVisual } from "../model/freshness";
 import { DEFAULT_TIER_REVEAL, edgeTierAlpha, nodeTierAlpha } from "../model/tier-visibility";
 import { draw as gridDraw, lerpColorHex } from "../render/grid";
-import { draw as labelsDraw } from "../render/labels";
+import {
+  computeLabelAlpha,
+  draw as labelsDraw,
+  LABEL_FONT_SIZE,
+  LABEL_OFFSET,
+  measureLabelWidth,
+} from "../render/labels";
+import {
+  ellipsizeToWidth,
+  greedyPlaceLabels,
+  isWithinSafeRect,
+  type LabelCandidate,
+  type SafeRect,
+} from "../render/label-layout";
 import { draw as nodeShapesDraw } from "../render/node-shapes";
 import { drawDiffractionSpike, drawStarDust, type DustPoint } from "../render/starfield";
 import { draw as tracesDraw } from "../render/traces";
@@ -245,24 +258,66 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ctx.globalAlpha = 1;
   }
 
-  for (const node of world.nodes) {
-    if ((tierAlphaById.get(node.id) ?? 1) <= 0.02) continue;
+  // --- labels: viewport/panel cull + priority greedy suppression + ellipsis ---
+  // (Design Guardian 가독성 반려) Labels used to leak behind the left ReaderLens
+  // panel, clip off the right edge, and collide horizontally. Build a candidate
+  // per still-visible label, drop any whose anchor is outside the safe rect,
+  // word-boundary-ellipsize long titles, then greedily place by priority so no
+  // two boxes overlap.
+  const safeRect: SafeRect = {
+    left: tokens.safeInsetLeft,
+    right: viewportWidth - tokens.safeInsetRight,
+    top: tokens.safeInsetTop,
+    bottom: viewportHeight - tokens.safeInsetBottom,
+  };
+  const KIND_PRIORITY: Record<WorldNode["kind"], number> = { project: 0, domain: 1, capability: 2, element: 3 };
+  interface LabelPayload {
+    kind: WorldNode["kind"];
+    text: string;
+    screenX: number;
+    screenY: number;
+    screenRadius: number;
+    egoState: NodeEgoState;
+  }
+  const labelCandidates: LabelCandidate<LabelPayload>[] = [];
+  world.nodes.forEach((node, index) => {
+    if ((tierAlphaById.get(node.id) ?? 1) <= 0.02) return;
     const egoState = resolveNodeEgoState(node.id, focusedNodeId, neighborsOfFocused);
-    const baseRadius = radiusForKind(node.kind, tokens);
+    if (computeLabelAlpha(node.kind, farT, camera.scale.value, egoState) <= 0.02) return;
+
     const screen = project(node.x, node.y);
+    const screenRadius = radiusForKind(node.kind, tokens) * camera.scale.value;
+    const anchorY = screen.y + screenRadius + LABEL_OFFSET[node.kind];
+    if (!isWithinSafeRect(screen.x, anchorY, safeRect)) return;
+
+    const text = ellipsizeToWidth(node.label, tokens.labelMaxWidth, (candidate) =>
+      measureLabelWidth(ctx, node.kind, candidate),
+    );
+    const width = measureLabelWidth(ctx, node.kind, text);
+    const fontSize = LABEL_FONT_SIZE[node.kind];
+    labelCandidates.push({
+      priority: KIND_PRIORITY[node.kind],
+      order: index,
+      bbox: { minX: screen.x - width / 2, maxX: screen.x + width / 2, minY: anchorY - fontSize, maxY: anchorY + 2 },
+      payload: { kind: node.kind, text, screenX: screen.x, screenY: screen.y, screenRadius, egoState },
+    });
+  });
+
+  for (const { payload } of greedyPlaceLabels(labelCandidates)) {
     labelsDraw(
       ctx,
       {
-        kind: node.kind,
-        text: node.label,
-        screenX: screen.x,
-        screenY: screen.y,
-        screenRadius: baseRadius * camera.scale.value,
+        kind: payload.kind,
+        text: payload.text,
+        screenX: payload.screenX,
+        screenY: payload.screenY,
+        screenRadius: payload.screenRadius,
         farT,
         cameraScale: camera.scale.value,
-        egoState,
+        egoState: payload.egoState,
       },
       {
+        labelProject: tokens.labelProject,
         labelDomain: tokens.labelDomain,
         labelCapability: tokens.labelCapability,
         labelElement: tokens.labelElement,

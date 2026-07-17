@@ -36,9 +36,11 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-edge-depends": "#39394a",
   "--topology-v2-edge-dim": "#1e1e22",
   "--topology-v2-hull-stroke": "#3a3a42",
+  "--topology-v2-label-project": "#ececf0",
   "--topology-v2-label-domain": "#b8b8c1",
   "--topology-v2-label-capability": "#84848c",
   "--topology-v2-label-element": "#57575f",
+  "--topology-v2-label-max-width": "168",
   "--topology-v2-canvas-bg-near": "#0a0a0d",
   "--topology-v2-canvas-bg-far": "#050507",
   "--topology-v2-grid-minor": "#0e0e13",
@@ -79,6 +81,11 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-breathe-freq-rad": "1.15",
   "--topology-v2-pulse-duration-ms": "420",
   "--topology-v2-tip-fade-ms": "120",
+
+  "--topology-v2-safe-inset-left": "344",
+  "--topology-v2-safe-inset-right": "120",
+  "--topology-v2-safe-inset-top": "96",
+  "--topology-v2-safe-inset-bottom": "96",
 };
 
 function fixtureReader(overrides: Record<string, string> = {}) {
@@ -87,11 +94,15 @@ function fixtureReader(overrides: Record<string, string> = {}) {
 }
 
 describe("resolveTopologyV2Tokens", () => {
-  it("resolves all 65 §2 tokens to the exact prototype-sourced values", () => {
+  it("resolves all 71 §2 tokens to the exact prototype-sourced values", () => {
     const tokens = resolveTopologyV2Tokens(fixtureReader());
 
     expect(tokens.nodeFillProject).toBe("#1c1c22");
     expect(tokens.indigo).toBe("#5e6ad2");
+    expect(tokens.labelProject).toBe("#ececf0");
+    expect(tokens.labelMaxWidth).toBe(168);
+    expect(tokens.safeInsetLeft).toBe(344);
+    expect(tokens.safeInsetBottom).toBe(96);
     expect(tokens.nodeSheenTint).toBe("#232329");
     expect(tokens.nodeSheenBlend).toBeCloseTo(0.6, 3);
     expect(tokens.radiusProject).toBe(25);
