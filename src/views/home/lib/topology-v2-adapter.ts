@@ -106,6 +106,10 @@ export function buildTopologyV2Graph(
     ownerKey: null,
     recentlyUpdated: options.changedSlugs?.has(node.id) ?? false,
     fullDegree: fullDegreeById.get(node.id) ?? 0,
+    // Engraved-numeral source (project/domain only, drawn in circuit range) —
+    // the transitive descendant count, reusing the same `subtreeWeightBySlug`
+    // signal `size` derives from so the numeral and the magnitude agree.
+    descendantCount: subtreeWeightBySlug.get(node.id) ?? 0,
   }));
 
   const v2Edges: TopologyV2Edge[] = includedEdges.map((edge) => {

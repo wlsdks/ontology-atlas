@@ -90,6 +90,31 @@ describe("buildTopologyV2Graph — regression: TopologyMapV2 must not be mounted
     expect(degreeById.get("c")).toBe(1);
   });
 
+  it("threads a transitive descendantCount (project counts its whole subtree; a leaf counts zero)", () => {
+    const nodes = [
+      node({ id: "proj", kind: "project" }),
+      node({ id: "dom", kind: "domain" }),
+      node({ id: "cap", kind: "capability" }),
+      node({ id: "el", kind: "element" }),
+    ];
+    const edges = [
+      edge({ id: "e1", from: "proj", to: "dom", type: "contains" }),
+      edge({ id: "e2", from: "dom", to: "cap", type: "contains" }),
+      edge({ id: "e3", from: "cap", to: "el", type: "contains" }),
+    ];
+
+    const graph = buildTopologyV2Graph(nodes, edges);
+    const countById = new Map(graph.nodes.map((n) => [n.id, n.descendantCount]));
+
+    // The project sits above the deepest subtree, so its count is the largest;
+    // the leaf element has no descendants. descendantCount mirrors `size` (both
+    // derive from subtreeWeightBySlug) so the engraved numeral and magnitude agree.
+    expect(countById.get("proj")).toBeGreaterThan(0);
+    expect(countById.get("proj")).toBeGreaterThanOrEqual(countById.get("dom") ?? 0);
+    expect(countById.get("el")).toBe(0);
+    for (const n of graph.nodes) expect(n.descendantCount).toBe(n.size);
+  });
+
   // Regression (owner live-test, blocker 3): "amber on multiple nodes" —
   // the charter (`docs/prototypes/topology-b2plus.html`'s own fixture data
   // marks exactly one node `hub: true`) is a SINGLE amber-ring hub, the

@@ -24,6 +24,8 @@ export interface WorldNode {
   fresh: boolean;
   /** Adapter contract (`TopologyV2Node`) has no staleness signal yet — always false until a follow-up adds one. */
   stale: boolean;
+  /** Transitive descendant count — engraved as a numeral on project/domain chips in circuit range (0 = skip). */
+  count: number;
 }
 
 export interface WorldEdge {
@@ -90,6 +92,7 @@ export function buildTopologyWorld(
       isHub: n.isHub,
       fresh: n.recentlyUpdated,
       stale: false,
+      count: n.descendantCount,
     };
   });
   const nodeById = new Map(worldNodes.map((n) => [n.id, n]));

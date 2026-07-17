@@ -28,6 +28,8 @@ export interface TopologyV2Node {
   ownerKey: string | null;
   recentlyUpdated: boolean;
   fullDegree: number;
+  /** Transitive contained-descendant count — the engraved numeral shown on project/domain chips in circuit range (prototype `n.count`). */
+  descendantCount: number;
 }
 
 export interface TopologyV2Edge {
