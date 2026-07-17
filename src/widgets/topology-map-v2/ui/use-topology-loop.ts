@@ -129,17 +129,24 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const { width, height } = viewportRef.current;
     if (!world || width <= 0 || height <= 0) return;
     // Passive default = the simplified overview scale (blocker 2 fix,
-    // `computeOverviewCameraTarget`'s own JSDoc), not the tight bounding fit
-    // — `overviewScaleRef` still anchors on the tight fit itself, since that's
-    // the altitude band's "100%" reference regardless of where the camera starts.
-    const target = computeOverviewCameraTarget(world.bounds, width, height, tokens);
+    // `computeOverviewCameraTarget`'s own JSDoc), fit to the SPINE bbox
+    // (project+domain+hub — the only tier drawn at entry), NOT the full
+    // 295-node bounds. Fitting the full bounds after the de-pileup spread them
+    // wide shrank the ~8 visible spine nodes to a dot (the fit regression).
+    // `overviewScaleRef` MUST anchor on the SAME spine bounds — it feeds both
+    // the altitude band's "100%" reference AND the zoom-ratio entry scale
+    // (`overviewEntryScale = overviewScale × overviewEntryRatio`), so if it used
+    // the full bounds while the camera sits at the spine fit, zoomRatio would be
+    // ≫1 at entry and capabilities would cross-fade in immediately (soup) and
+    // farT would drift off circuit.
+    const target = computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
     cameraRef.current = {
       x: { value: target.tx, velocity: 0 },
       y: { value: target.ty, velocity: 0 },
       scale: { value: target.tscale, velocity: 0 },
     };
     cameraTargetRef.current = target;
-    overviewScaleRef.current = computeOverviewFitScale(world.bounds, width, height, tokens);
+    overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
     hasInitializedRef.current = true;
   };
 
@@ -222,9 +229,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const { width, height } = viewportRef.current;
     if (!tokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) return;
     // Panel-aware: spring back to the overview centered in the VISIBLE area, not
-    // behind the left ReaderLens panel (Design Guardian 카메라 반려).
-    cameraTargetRef.current = computeOverviewCameraTarget(world.bounds, width, height, tokens);
-    overviewScaleRef.current = computeOverviewFitScale(world.bounds, width, height, tokens);
+    // behind the left ReaderLens panel (Design Guardian 카메라 반려). Fits the
+    // SPINE bbox (not the full 295-node bounds) so "fit view" reframes the same
+    // legible 8-node spine as the initial entry — and keeps `overviewScaleRef`
+    // on the same spine bounds so the zoom-ratio/altitude anchor stays at ratio 1.
+    cameraTargetRef.current = computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
+    overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
     dampingRef.current = tokens.cameraDampingDefault;
   }, [relayoutToken, fitViewToken]);
 

@@ -190,7 +190,9 @@ export function computeFocusCameraTarget(
   focusedSlug: string | null,
 ): CameraTarget | null {
   if (focusedSlug === null) {
-    return computeOverviewCameraTarget(world.bounds, viewportWidth, viewportHeight, tokens);
+    // Overview fits the SPINE bbox (project+domain+hub — the only tier drawn at
+    // entry), not the full 295-node bounds; see `topology-world.ts#spineBounds`.
+    return computeOverviewCameraTarget(world.spineBounds, viewportWidth, viewportHeight, tokens);
   }
   const focusNode = world.nodeById.get(focusedSlug);
   if (!focusNode) return null;

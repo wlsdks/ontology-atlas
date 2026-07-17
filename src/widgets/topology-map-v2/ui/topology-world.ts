@@ -42,6 +42,13 @@ export interface WorldEdge {
   t: number;
 }
 
+export interface Bounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
 export interface TopologyWorld {
   nodes: readonly WorldNode[];
   nodeById: ReadonlyMap<string, WorldNode>;
@@ -49,7 +56,17 @@ export interface TopologyWorld {
   neighborMap: ReadonlyMap<string, ReadonlySet<string>>;
   /** Top `starCount` nodes by magnitude — get the far-field diffraction-spike overlay. */
   brightStarIds: ReadonlySet<string>;
-  bounds: { minX: number; minY: number; maxX: number; maxY: number };
+  /** Bbox of ALL nodes — used for pan clamping and focus-mode context. */
+  bounds: Bounds;
+  /**
+   * Bbox of just the level-0 SPINE (project + domain + hub) — what the overview
+   * camera fits to. The overview only DRAWS the spine (tier gating in
+   * `model/tier-visibility.ts`), so fitting the full `bounds` — which the
+   * de-pileup deliberately spreads wide across all 295 nodes — zooms the ~8
+   * visible spine nodes down to a dot (the fit regression). Recomputed with
+   * `bounds` whenever geometry changes.
+   */
+  spineBounds: Bounds;
 }
 
 export function radiusForKind(kind: WorldNodeKind, tokens: TopologyV2Tokens): number {
@@ -57,6 +74,58 @@ export function radiusForKind(kind: WorldNodeKind, tokens: TopologyV2Tokens): nu
   if (kind === "domain") return tokens.radiusDomain;
   if (kind === "capability") return tokens.radiusCapability;
   return tokens.radiusElement;
+}
+
+const FALLBACK_BOUNDS: Bounds = { minX: -100, minY: -100, maxX: 100, maxY: 100 };
+
+/**
+ * A "spine" node is one shown at the overview entry (tier alpha = 1 at zoom
+ * ratio 1): the project root, every domain, and any hub node. MUST mirror
+ * `nodeTierAlpha`'s always-visible branch in `model/tier-visibility.ts` — if
+ * that gate changes, this must too, or the fit and the visible set drift apart.
+ */
+export function isSpineNode(node: Pick<WorldNode, "kind" | "isHub">): boolean {
+  return node.isHub || node.kind === "project" || node.kind === "domain";
+}
+
+/**
+ * Radius-padded bbox of the nodes matching `include` (all nodes when omitted).
+ * Returns `null` when nothing matched so callers can pick their own fallback.
+ */
+function accumulateBounds(
+  nodes: readonly WorldNode[],
+  tokens: TopologyV2Tokens,
+  include?: (node: WorldNode) => boolean,
+): Bounds | null {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const node of nodes) {
+    if (include && !include(node)) continue;
+    const r = radiusForKind(node.kind, tokens);
+    minX = Math.min(minX, node.x - r);
+    maxX = Math.max(maxX, node.x + r);
+    minY = Math.min(minY, node.y - r);
+    maxY = Math.max(maxY, node.y + r);
+  }
+  if (!Number.isFinite(minX)) return null;
+  return { minX, minY, maxX, maxY };
+}
+
+/** Radius-padded bbox of all nodes, with a finite fallback for an empty graph. */
+export function computeFullBounds(nodes: readonly WorldNode[], tokens: TopologyV2Tokens): Bounds {
+  return accumulateBounds(nodes, tokens) ?? { ...FALLBACK_BOUNDS };
+}
+
+/**
+ * Overview-fit bbox: just the spine (project + domain + hub). Falls back to the
+ * full-graph bounds when no spine node exists (degenerate vault), then to a
+ * finite default for an empty graph. Pure — the overview camera + its altitude/
+ * zoom-ratio anchor both fit to THIS, not the full 295-node bounds.
+ */
+export function computeSpineBounds(nodes: readonly WorldNode[], tokens: TopologyV2Tokens): Bounds {
+  return accumulateBounds(nodes, tokens, isSpineNode) ?? computeFullBounds(nodes, tokens);
 }
 
 export function buildTopologyWorld(
@@ -144,31 +213,14 @@ export function buildTopologyWorld(
   const ranked = [...nodes].sort((x, y) => y.size + y.fullDegree * 18 - (x.size + x.fullDegree * 18));
   const brightStarIds = new Set(ranked.slice(0, Math.max(0, Math.round(tokens.starCount))).map((n) => n.id));
 
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const n of worldNodes) {
-    const r = radiusForKind(n.kind, tokens);
-    minX = Math.min(minX, n.x - r);
-    maxX = Math.max(maxX, n.x + r);
-    minY = Math.min(minY, n.y - r);
-    maxY = Math.max(maxY, n.y + r);
-  }
-  if (!Number.isFinite(minX)) {
-    minX = -100;
-    minY = -100;
-    maxX = 100;
-    maxY = 100;
-  }
-
   return {
     nodes: worldNodes,
     nodeById,
     edges: worldEdges,
     neighborMap,
     brightStarIds,
-    bounds: { minX, minY, maxX, maxY },
+    bounds: computeFullBounds(worldNodes, tokens),
+    spineBounds: computeSpineBounds(worldNodes, tokens),
   };
 }
 
@@ -209,21 +261,16 @@ export function recomputeWorldGeometry(world: TopologyWorld, tokens: TopologyV2T
     edge.controlY = control.y;
   }
 
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const node of world.nodes) {
-    const r = radiusForKind(node.kind, tokens);
-    minX = Math.min(minX, node.x - r);
-    maxX = Math.max(maxX, node.x + r);
-    minY = Math.min(minY, node.y - r);
-    maxY = Math.max(maxY, node.y + r);
+  const full = accumulateBounds(world.nodes, tokens);
+  if (full) {
+    world.bounds.minX = full.minX;
+    world.bounds.minY = full.minY;
+    world.bounds.maxX = full.maxX;
+    world.bounds.maxY = full.maxY;
   }
-  if (Number.isFinite(minX)) {
-    world.bounds.minX = minX;
-    world.bounds.minY = minY;
-    world.bounds.maxX = maxX;
-    world.bounds.maxY = maxY;
-  }
+  const spine = computeSpineBounds(world.nodes, tokens);
+  world.spineBounds.minX = spine.minX;
+  world.spineBounds.minY = spine.minY;
+  world.spineBounds.maxX = spine.maxX;
+  world.spineBounds.maxY = spine.maxY;
 }
