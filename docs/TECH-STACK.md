@@ -10,7 +10,7 @@
 |---|---|---|---|
 | Next.js | 16.2.x static export | **KEEP** | static export 완숙. Astro/React Router 전환은 local-first 재설계 비용 > 이득 |
 | React | 19.2.x | **KEEP** | React Compiler는 Slice 2(topology-map-v2)에서 성능 측정 후 활성화 판단 |
-| TypeScript | 5.x | **KEEP → 6.0 예약** | TS 6.0 안정. 업그레이드는 Slice 1 통과 후 (2~3일, 슬라이스 중 churn 금지). Go 기반 v7은 공개 시 재평가 |
+| TypeScript | 5.x | **UPGRADE → 7.0 (소유자 지시)** | **TS 7.0 정식 릴리스 확인 (2026-07-08, Go 네이티브 10x).** 공식 경로: 6.0 (`stableTypeOrdering`) 경유 → 7.0, tsconfig 기본값 변경 대응 (strict 기본 on·baseUrl 제거·rootDir 기본 `./`). 리스크: Next.js는 TS 7 지원 미발표 (16.3, 6/29) — `next build` 타입체크가 프로그래매틱 API 의존 시 공식 폴백 `@typescript/typescript6` 별칭 병행. 브랜치에서 시도 → 게이트 통과 여부로 확정 |
 | Tailwind | 4.2.x | **KEEP** | @theme CSS 토큰 안정, 디자인 시스템 정합 |
 | ESLint | 9 flat | **KEEP (확정)** | Biome 2.5는 eslint-plugin-boundaries(FSD 가드) 미지원 — 아키텍처 강제가 걸린 한 ESLint 유일 선택지 |
 | pnpm | 10.x | **KEEP** | Bun은 Anthropic 인수 후 로드맵 미공표 + Next static export 호환 미성숙 — watch만 |
@@ -44,7 +44,7 @@
 | 클라우드 CORS | **Tauri sidecar 프록시** | Slice 3 | Anthropic/OpenAI API 브라우저 직결 불가 추정 ⚠ — 키는 OS keychain (Tauri v2 API 명칭 재검증 ⚠) |
 | 좌표 서버 | **Cloudflare Workers + Durable Objects** (1순위 후보) | N3 (Sync 수요 게이트) | 솔로 운영 최소·감사 가능. 자체 바이너리(Rust/Go)는 후속 전환 옵션 |
 | E2E 암호화 | **age** (rage/Typage) | Sync 2단계 | git-native·다중 수신자·post-quantum 하이브리드. 신뢰 헌장 #6 (구현 공개) 전제 |
-| 결제 | **Polar.sh** (MoR) + GitHub Sponsors 병행 | N3 (과금 개시점) | 수수료 합리·MoR로 세무 단순화. 한국 개발자 payout·세금 절차 실행 전 검증 필수 ⚠ |
+| 결제 | **없음 (소유자 결정 2026-07-17)** | — | 판매 목적 아님 — 순수 오픈소스, 로컬 실행(셀프호스트) 모델. 후원은 GitHub Sponsors 정도만 선택적. Team Sync가 만들어지더라도 셀프호스트 가능한 오픈소스로 |
 
 ## 하지 않기로 한 것 (반려 기록)
 
