@@ -32,12 +32,14 @@
  *   17. tools/call query_ontology overview + query_plan(overview/project_map) — graph-query smoke contract
  *   18. tools/call query_ontology neighbors/node-to-project path/all_paths/project_scope — core graph query smoke contract
  *   19. tools/call query_ontology relation_check + graph kind typo rejection — write/query preflight fail-closed smoke
+ *   20. tools/call absorb_document dry-run against a temp fixture (Slice 0) — CLAUDE.md/AGENTS.md absorption tool smoke, never touches the vault under test
  *
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
  */
 
 import { spawn } from 'node:child_process';
-import { statSync } from 'node:fs';
+import { mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
@@ -100,6 +102,43 @@ export const VERIFY_TUNED_HEALTH_ARGS = {
   componentTypes: ['domains', 'domain', 'capabilities', 'dependencies'],
 };
 export const VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT = 3;
+
+// Slice 0 (PRODUCT-PLAN-2026-07.md §9) — absorb_document dry-run smoke.
+// A fixed, per-verify-process temp file so the live walk exercises the tool
+// end-to-end without touching the vault under test (dry-run only — never
+// confirm:true here). One heading matches the policy vocabulary (→ absorb
+// candidate) and one matches the architecture vocabulary (→ suggest
+// candidate, never auto-written) so both classification branches are
+// covered; neither is injection-suspect.
+const ABSORB_FIXTURE_DIR = join(tmpdir(), `ontology-atlas-verify-absorb-${process.pid}`);
+export const ABSORB_FIXTURE_PATH = join(ABSORB_FIXTURE_DIR, 'CLAUDE.md');
+const ABSORB_FIXTURE_CONTENT = [
+  '# Sample Team Agent Guide',
+  '',
+  '## Testing rules',
+  '',
+  '- Always write a failing test before implementing a fix.',
+  '- Never skip the pre-commit hook.',
+  '',
+  '## Architecture',
+  '',
+  'The billing service calls the ledger service through gRPC.',
+  '',
+].join('\n');
+
+export function ensureAbsorbFixture() {
+  mkdirSync(ABSORB_FIXTURE_DIR, { recursive: true });
+  writeFileSync(ABSORB_FIXTURE_PATH, ABSORB_FIXTURE_CONTENT, 'utf-8');
+  return ABSORB_FIXTURE_PATH;
+}
+
+export function cleanupAbsorbFixture() {
+  try {
+    rmSync(ABSORB_FIXTURE_DIR, { recursive: true, force: true });
+  } catch {
+    // best-effort cleanup only — a leftover temp file is harmless.
+  }
+}
 
 export const EXPECTED_READ_TOOLS = [
   'list_concepts',
@@ -3291,6 +3330,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [66, 'agent_brief'],
   [67, 'all_paths'],
   [68, 'index_project'],
+  [69, 'absorb_document_dry_run'],
 ]);
 
 export const OPTIONAL_FIRST_CONTACT_RESPONSE_IDS = [
@@ -3603,6 +3643,7 @@ export function verifyUsage() {
     'tools/list inventory names, initialize-instruction tool inventory, schema strictness, and annotation coverage (title/read/write/destructive/idempotent/local-only),\n' +
     'batch reader/writer row isolation for non-object rows and unknown row fields with concepts[n]/relations[n] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection,\n' +
     'destructive writer dry-runs for rename_concept/merge_concepts/delete_concept with every planned response present and no changed/postWriteMaintenance,\n' +
+    'an absorb_document dry-run against a temp fixture file (Slice 0 — never the vault under test) covering both the policy-absorb and architecture-suggest classification branches,\n' +
     'structuredContent coverage summary splits direct reads, batch row-isolation writes with no write metadata, destructive dry-runs, maintenance cursor checks, and graph queries,\n' +
     'and maintenance_plan cursor handling: ready page (cursor.found=true, cursor.reason=null)\n' +
     'plus missing afterActionId (cursor.found=false, reason, empty page, nextAfterActionId=null, hasMore=false).\n' +
@@ -3757,6 +3798,16 @@ export function buildFirstContactRequests() {
       id: 68,
       method: 'tools/call',
       params: { name: 'index_project', arguments: { rootPath: REPO_ROOT, maxFiles: 5000 } },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 69,
+      method: 'tools/call',
+      // Slice 0 — absorb_document dry-run against a temp fixture (never the
+      // vault under test). Unconditional: no vault dependency, so this is
+      // part of the initial batch rather than a reactive follow-up like the
+      // rename/merge/delete dry-run smokes.
+      params: { name: 'absorb_document', arguments: { filePath: ABSORB_FIXTURE_PATH } },
     },
     {
       jsonrpc: '2.0',
@@ -4408,6 +4459,76 @@ export function destructiveDryRunFailure(response, toolName) {
     }
     const backlinkRowsFailure = destructiveBacklinkRowsFailure(parsed.backlinks, toolName, 'backlinks');
     if (backlinkRowsFailure) return backlinkRowsFailure;
+  }
+  return null;
+}
+
+// Slice 0 — absorb_document dry-run smoke (separate from
+// destructiveDryRunFailure/destructiveDryRunSmokeFailure: it targets a temp
+// fixture file rather than a vault node, so it is checked and logged as its
+// own line instead of joining the rename/merge/delete dry-run count).
+export function absorbDocumentDryRunFailure(response) {
+  if (!response || !response.result) {
+    return 'no absorb_document dry-run response';
+  }
+  if (response.result.isError === true) {
+    return 'absorb_document dry-run returned top-level tool error';
+  }
+  let parsed = null;
+  try {
+    parsed = JSON.parse(response.result.content?.[0]?.text || '{}');
+  } catch (err) {
+    return `failed to parse absorb_document dry-run response: ${err.message}`;
+  }
+  const structuredFailure = structuredContentFailure(response, parsed, 'absorb_document dry-run');
+  if (structuredFailure) return structuredFailure;
+  if (parsed.ok !== false || parsed.dryRun !== true) {
+    return 'absorb_document dry-run response must be ok:false with dryRun:true';
+  }
+  if (Object.prototype.hasOwnProperty.call(parsed, 'changed')) {
+    return 'absorb_document dry-run response unexpectedly included changed';
+  }
+  if (Object.prototype.hasOwnProperty.call(parsed, 'postWriteMaintenance')) {
+    return 'absorb_document dry-run response unexpectedly included postWriteMaintenance';
+  }
+  if (typeof parsed.message !== 'string' || !/confirm:\s*true/.test(parsed.message)) {
+    return 'absorb_document dry-run response missing follow-up safety hint';
+  }
+  if (!isCleanNonBlankString(parsed.filePath) || !isCleanNonBlankString(parsed.sourceLabel)) {
+    return 'absorb_document dry-run response missing file identity fields';
+  }
+  const summary = parsed.summary;
+  if (
+    !summary ||
+    !Number.isInteger(summary.total) ||
+    !Number.isInteger(summary.absorbed) ||
+    !Number.isInteger(summary.suggested) ||
+    !Number.isInteger(summary.injectionSuspect) ||
+    !Number.isInteger(summary.unclassified)
+  ) {
+    return 'absorb_document dry-run response missing summary counts';
+  }
+  if (!Array.isArray(parsed.sections) || parsed.sections.length !== summary.total) {
+    return 'absorb_document dry-run response sections/summary.total mismatch';
+  }
+  for (let index = 0; index < parsed.sections.length; index += 1) {
+    const section = parsed.sections[index];
+    if (
+      !section ||
+      !isCleanNonBlankString(section.heading) ||
+      !isCleanNonBlankString(section.category) ||
+      !isCleanNonBlankString(section.action) ||
+      typeof section.injectionSuspect !== 'boolean' ||
+      !Array.isArray(section.injectionMatches)
+    ) {
+      return `absorb_document dry-run response sections[${index}] shape drift`;
+    }
+  }
+  // The verify fixture (ensureAbsorbFixture) is crafted with one policy
+  // heading and one architecture heading so both branches are exercised —
+  // guard against a classifier regression silently collapsing that.
+  if (summary.absorbed < 1 || summary.suggested < 1) {
+    return 'absorb_document dry-run response did not classify the fixture as expected (need >=1 absorb and >=1 suggest section)';
   }
   return null;
 }
@@ -7278,9 +7399,15 @@ async function step2BootAndCall() {
   }
   log('info', `step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=${VAULT}, timeout=${timeoutMs}ms)`);
 
+  // Slice 0 — the absorb_document dry-run request (id 69, part of the
+  // initial batch above) targets this temp fixture. Must exist before the
+  // server can process it; cleaned up in the finally below regardless of
+  // outcome.
+  ensureAbsorbFixture();
   const lines = buildFirstContactRequests().map((request) => JSON.stringify(request));
 
-  return new Promise((res) => {
+  try {
+    return await new Promise((res) => {
     const proc = spawn(process.execPath, [SERVER_ENTRY], {
       env: { ...process.env, OATLAS_VAULT: VAULT },
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -7522,6 +7649,7 @@ async function step2BootAndCall() {
       const strictQueryConceptsHasKeyFilterRes = responses.find((r) => r.id === 59);
       const strictListConceptsKindFilterRes = responses.find((r) => r.id === 60);
       const patchConflictGuardRes = responses.find((r) => r.id === 61);
+      const absorbDocumentDryRunRes = responses.find((r) => r.id === 69);
       const strictGraphFromKindFilterRes = responses.find((r) => r.id === 48);
       const strictGraphToKindFilterRes = responses.find((r) => r.id === 49);
       const maintenanceMissingCursorRes = responses.find((r) => r.id === 25);
@@ -7652,6 +7780,12 @@ async function step2BootAndCall() {
         destructiveDryRunCount = destructiveDryRunResponses.length;
         log('ok', `destructive dry-runs — ${destructiveDryRunResponses.map(([toolName]) => toolName).join(' · ')} preview without write-maintenance`);
       }
+      const absorbDocumentDryRunFailureMessage = absorbDocumentDryRunFailure(absorbDocumentDryRunRes);
+      if (absorbDocumentDryRunFailureMessage) {
+        log('fail', absorbDocumentDryRunFailureMessage);
+        return res(false);
+      }
+      log('ok', 'absorb_document dry-run — temp fixture classified (policy + architecture sections) without writing');
       if (patchConflictGuardRes) {
         const patchConflictFailure = patchConflictGuardFailure(patchConflictGuardRes);
         if (patchConflictFailure) {
@@ -8713,7 +8847,10 @@ async function step2BootAndCall() {
       log('fail', `server spawn failed: ${err.message}`);
       res(false);
     });
-  });
+    });
+  } finally {
+    cleanupAbsorbFixture();
+  }
 }
 
 async function main() {
