@@ -8,6 +8,7 @@
 import type { CameraAxes } from "../engine/camera";
 import { resolveEdgeEgoState, resolveNodeEgoState, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
+import { DEFAULT_TIER_REVEAL, edgeTierAlpha, nodeTierAlpha } from "../model/tier-visibility";
 import { draw as gridDraw, lerpColorHex } from "../render/grid";
 import { draw as labelsDraw } from "../render/labels";
 import { draw as nodeShapesDraw } from "../render/node-shapes";
@@ -135,10 +136,22 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
   const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
 
+  // Semantic-zoom tier gating (`model/tier-visibility.ts`): at overview
+  // altitude only project + domain + hub draw; capabilities/elements (and any
+  // edge touching a hidden one) fade in as you zoom in. This is the fan-arc/
+  // soup fix — precomputed once per frame so nodes/edges/labels agree.
+  const tierAlphaById = new Map<string, number>();
+  for (const node of world.nodes) {
+    tierAlphaById.set(node.id, nodeTierAlpha(node.kind, node.isHub, farT, DEFAULT_TIER_REVEAL));
+  }
+
   for (const kind of ["contains", "depends"] as const) {
     for (const edge of world.edges) {
       if (edge.kind !== kind) continue;
+      const edgeAlpha = edgeTierAlpha(tierAlphaById.get(edge.sourceId) ?? 1, tierAlphaById.get(edge.targetId) ?? 1);
+      if (edgeAlpha <= 0.02) continue;
       const touches = focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
+      ctx.globalAlpha = edgeAlpha;
       tracesDraw(
         ctx,
         {
@@ -158,10 +171,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           indigoBright: tokens.indigoBright,
         },
       );
+      ctx.globalAlpha = 1;
     }
   }
 
   for (const node of world.nodes) {
+    const tierAlpha = tierAlphaById.get(node.id) ?? 1;
+    if (tierAlpha <= 0.02) continue;
     const egoState = resolveNodeEgoState(node.id, focusedNodeId, neighborsOfFocused);
     const emphasis = emphasisById.get(node.id) ?? 0;
     const visual = resolveNodeVisual(node, egoState, emphasis, focusedNodeId, tokens, reducedMotion);
@@ -180,6 +196,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const screen = project(node.x, node.y);
     const screenRadius = effRadius * camera.scale.value;
 
+    ctx.globalAlpha = tierAlpha;
     nodeShapesDraw(
       ctx,
       {
@@ -210,12 +227,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenY: screen.y,
         screenRadius,
         color: egoState === "dim" ? tokens.nodeStrokeDim : visual.stroke,
-        alpha: farT,
+        alpha: farT * tierAlpha,
       });
     }
+    ctx.globalAlpha = 1;
   }
 
   for (const node of world.nodes) {
+    if ((tierAlphaById.get(node.id) ?? 1) <= 0.02) continue;
     const egoState = resolveNodeEgoState(node.id, focusedNodeId, neighborsOfFocused);
     const baseRadius = radiusForKind(node.kind, tokens);
     const screen = project(node.x, node.y);
