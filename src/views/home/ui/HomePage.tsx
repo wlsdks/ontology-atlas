@@ -196,7 +196,13 @@ import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
 import { TopologyNodePopover } from "./TopologyNodePopover";
 import { TopologyMapCanvas } from "@/widgets/topology-map-canvas";
-import { TopologyMapV2 } from "@/widgets/topology-map-v2";
+import {
+  TopologyMapV2,
+  TopologyV2DetailPanel,
+  formatV2HandoffText,
+  groupV2Connections,
+  type V2DatasheetConnection,
+} from "@/widgets/topology-map-v2";
 import { useTopologyMapV2Enabled } from "@/shared/lib/use-topology-map-v2-enabled";
 import { selectTopologyEngine } from "../lib/topology-engine-select";
 import { buildTopologyV2Graph } from "../lib/topology-v2-adapter";
@@ -946,6 +952,57 @@ export function HomePage() {
       level: significance.importance.level,
     };
   }, [nodeFocusData, t, tKinds]);
+  // topology-map-v2 "component datasheet" panel (flag ON only). Re-presents the
+  // SAME nodeFocus/significance facts the shared popover consumes — grouped
+  // connections + one engraved metric line + an agent handoff payload — without
+  // editing the shared TopologyNodePopover, so the Sigma path stays byte-
+  // identical when the flag is off. See widgets/topology-map-v2/TopologyV2DetailPanel.
+  const v2DatasheetModel = useMemo(() => {
+    if (!nodeFocus || !selectedOntologyNode) return null;
+    const slug = nodeFocus.sourceSlug ?? selectedOntologyNode.id;
+    const connections: V2DatasheetConnection[] = nodeFocus.connections.map(
+      (connection) => ({
+        id: connection.id,
+        title: connection.title,
+        kind: connection.kind,
+        relationType: connection.relationType,
+        direction: connection.direction,
+      }),
+    );
+    const grouped = groupV2Connections(connections);
+    const metric = {
+      usedBy: nodeFocus.usedByCount,
+      dependsOn: nodeFocus.dependsOnCount,
+      evidence: selectedOntologyNode.evidenceIds.length,
+    };
+    const handoffText = formatV2HandoffText({
+      slug,
+      kind: nodeFocus.kind,
+      domainTitle: nodeFocusData?.significance.ownerDomainTitle ?? null,
+      usedBy: metric.usedBy,
+      dependsOn: metric.dependsOn,
+      evidence: metric.evidence,
+      containsNames: grouped.contains.map((connection) => connection.title),
+      dependsNames: grouped.depends.map((connection) => connection.title),
+    });
+    return {
+      slug,
+      title: nodeFocus.title,
+      kind: nodeFocus.kind,
+      powered: changedSlugs.has(selectedOntologyNode.id),
+      metric,
+      connections,
+      hiddenConnectionCount: nodeFocus.hiddenConnectionCount,
+      handoffText,
+    };
+  }, [nodeFocus, selectedOntologyNode, nodeFocusData, changedSlugs]);
+  const copyV2NodeHandoff = useCallback(
+    async (text: string) => {
+      const ok = await copyText(text);
+      if (ok) toast.show(t("nodeDatasheet.handoffCopied"), "success");
+    },
+    [t, toast],
+  );
   const selectedNodeFocusActive =
     Boolean(
       selectedOntologyNode &&
@@ -2713,6 +2770,35 @@ export function HomePage() {
             data-position-right-inset-token="--topology-node-popover-right-inset"
             className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
+            {topologyMapV2Enabled && v2DatasheetModel ? (
+              <TopologyV2DetailPanel
+                slug={v2DatasheetModel.slug}
+                title={v2DatasheetModel.title}
+                kind={v2DatasheetModel.kind}
+                powered={v2DatasheetModel.powered}
+                metric={v2DatasheetModel.metric}
+                connections={v2DatasheetModel.connections}
+                hiddenConnectionCount={v2DatasheetModel.hiddenConnectionCount}
+                handoffText={v2DatasheetModel.handoffText}
+                labels={{
+                  kindLabel: tKinds(normalizeKindLabelKey(v2DatasheetModel.kind)),
+                  poweredOn: t("nodeDatasheet.poweredOn"),
+                  poweredOff: t("nodeDatasheet.poweredOff"),
+                  metricUsedBy: t("nodeDatasheet.metricUsedBy"),
+                  metricDependsOn: t("nodeDatasheet.metricDependsOn"),
+                  metricEvidence: t("nodeDatasheet.metricEvidence"),
+                  groupContains: t("nodeDatasheet.groupContains"),
+                  groupDepends: t("nodeDatasheet.groupDepends"),
+                  noConnections: t("nodeDatasheet.noConnections"),
+                  handoff: t("nodeDatasheet.handoff"),
+                  close: t("controls.close"),
+                }}
+                onSelectConnection={(id) => handleSelect(id)}
+                onCopyHandoff={copyV2NodeHandoff}
+                onClose={handleClose}
+                className="max-lg:w-[min(520px,calc(100vw-1.5rem))]"
+              />
+            ) : (
             <TopologyNodePopover
               focus={nodeFocus}
               significance={nodeSignificancePresentation}
@@ -2803,6 +2889,7 @@ export function HomePage() {
                   : "max-lg:max-h-[var(--topology-node-popover-mobile-expanded-max-height)] max-lg:w-[min(520px,calc(100vw-1.5rem))]"
               }
             />
+            )}
           </div>
         ) : null}
         {selectedOntologyNode && ontologyInsight && fullDetailOpen && !createNodeOpen ? (

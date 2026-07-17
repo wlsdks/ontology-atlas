@@ -2788,6 +2788,18 @@
       "relationPayloadCopyShort": "copy",
       "relationEvidenceShort": "proof"
     },
+    "nodeDatasheet": {
+      "poweredOn": "fresh",
+      "poweredOff": "idle",
+      "metricUsedBy": "used by",
+      "metricDependsOn": "depends on",
+      "metricEvidence": "evidence",
+      "groupContains": "contains",
+      "groupDepends": "depends",
+      "noConnections": "no direct connections",
+      "handoff": "Copy next action",
+      "handoffCopied": "Agent handoff copied"
+    },
     "ontologyDrawer": {
       "caption": "Concept profile",
       "source": "Document",
