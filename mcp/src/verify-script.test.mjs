@@ -216,7 +216,7 @@ describe('verify.mjs first-contact gates', () => {
     tools.find((tool) => tool.name === 'list_concepts').annotations.openWorldHint = true;
     assert.equal(
       toolsListAnnotationSummary(tools),
-      '24/24 titled; 16/16 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 23/24 local-only',
+      '25/25 titled; 16/16 read; 9/9 write; 4/4 destructive; 2/2 idempotent; 24/25 local-only',
     );
     assert.equal(toolsListAnnotationSummary(null), 'missing tools/list');
   });
