@@ -26,9 +26,9 @@
  *   (`model/focus-state.ts` owns the suppression rule). This module only
  *   answers "is the pointer idle/pressed/dragging", not "what is hovered".
  *
- * STUB: the lead implements the body (wiring `engine/hysteresis.ts`'s
- * `exceedsHysteresisThreshold`). See `pointer-state-machine.test.ts`.
  */
+
+import { exceedsHysteresisThreshold } from "../engine/hysteresis";
 
 export type PointerPhase = "idle" | "pressed" | "dragging";
 
@@ -76,12 +76,38 @@ export const INITIAL_POINTER_MACHINE_STATE: PointerMachineState = {
  * `commitClick` into `model/focus-state.ts`'s focus transitions.
  */
 export function transitionPointerState(
-  _current: PointerMachineState,
-  _event: PointerMachineEvent,
-  _hysteresisThresholdPx: number,
+  current: PointerMachineState,
+  event: PointerMachineEvent,
+  hysteresisThresholdPx: number,
 ): PointerMachineTransition {
-  throw new Error(
-    "TODO(lead): implement transitionPointerState per docs/TOPOLOGY-V2-DESIGN.md §3.6 " +
-      "and the prototype's pointerdown/pointermove/releaseDrag() — pointer-state-machine.test.ts pins the contract.",
-  );
+  switch (event.type) {
+    case "pointerdown":
+      return {
+        next: { phase: "pressed", downPoint: event.point, pressedNodeId: event.hitNodeId },
+        commitClick: null,
+      };
+
+    case "pointermove": {
+      if (
+        current.phase === "pressed" &&
+        current.downPoint &&
+        exceedsHysteresisThreshold(current.downPoint, event.point, hysteresisThresholdPx)
+      ) {
+        return {
+          next: { phase: "dragging", downPoint: current.downPoint, pressedNodeId: null },
+          commitClick: null,
+        };
+      }
+      return { next: current, commitClick: null };
+    }
+
+    case "pointerup":
+      return {
+        next: INITIAL_POINTER_MACHINE_STATE,
+        commitClick: current.phase === "pressed" ? { nodeId: current.pressedNodeId } : null,
+      };
+
+    case "pointercancel":
+      return { next: INITIAL_POINTER_MACHINE_STATE, commitClick: null };
+  }
 }
