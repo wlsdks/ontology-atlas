@@ -104,17 +104,74 @@ export function hitTestWorld(
  * OUT from here still crosses `farHigh`→`farLow`, so the far-field
  * constellation/diffraction expression still appears when the user pulls back.
  */
+/**
+ * Fixed-chrome safe insets (px) — the left ReaderLens panel, right popover rail,
+ * top utility lane, bottom hint. Optional on the token param so the pure
+ * camera-math tests (which pass a token literal without insets) still type-check
+ * and behave as a zero-inset full-viewport fit.
+ */
+export type SafeInsetTokens = Partial<
+  Pick<TopologyV2Tokens, "safeInsetLeft" | "safeInsetRight" | "safeInsetTop" | "safeInsetBottom">
+>;
+
+interface SafeInsets {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+function readSafeInsets(tokens: SafeInsetTokens): SafeInsets {
+  return {
+    left: tokens.safeInsetLeft ?? 0,
+    right: tokens.safeInsetRight ?? 0,
+    top: tokens.safeInsetTop ?? 0,
+    bottom: tokens.safeInsetBottom ?? 0,
+  };
+}
+
+/**
+ * The tight-fit scale against the VISIBLE area (viewport minus the fixed
+ * chrome). This is the altitude band's "100%" anchor (`overviewScaleRef`) —
+ * derived here so the anchor and the panel-aware overview target stay in sync.
+ */
+export function computeOverviewFitScale(
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+  viewportWidth: number,
+  viewportHeight: number,
+  tokens: Pick<TopologyV2Tokens, "cameraScaleMax" | "cameraScaleMin"> & SafeInsetTokens,
+): number {
+  const insets = readSafeInsets(tokens);
+  const effW = Math.max(1, viewportWidth - insets.left - insets.right);
+  const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
+  return fitWorldTarget(bounds, effW, effH, tokens.cameraScaleMax, tokens.cameraScaleMin).tscale;
+}
+
+/**
+ * PANEL-AWARE overview fit (Design Guardian 카메라 반려): the fit used to center
+ * on the full viewport, so the left third of the graph hid behind the ReaderLens
+ * panel. Now the scale is computed against the VISIBLE area (viewport minus the
+ * safe insets), and the camera center is shifted so the graph's own center lands
+ * at the visible-area center rather than the raw screen center. With zero insets
+ * this reduces exactly to the previous behavior (`topology-camera-math.test.ts`).
+ */
 export function computeOverviewCameraTarget(
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
   viewportWidth: number,
   viewportHeight: number,
-  tokens: Pick<TopologyV2Tokens, "cameraScaleMax" | "cameraScaleMin" | "overviewEntryRatio">,
+  tokens: Pick<TopologyV2Tokens, "cameraScaleMax" | "cameraScaleMin" | "overviewEntryRatio"> & SafeInsetTokens,
 ): CameraTarget {
-  const fit = fitWorldTarget(bounds, viewportWidth, viewportHeight, tokens.cameraScaleMax, tokens.cameraScaleMin);
+  const insets = readSafeInsets(tokens);
+  const fitScale = computeOverviewFitScale(bounds, viewportWidth, viewportHeight, tokens);
+  const tscale = Math.min(tokens.cameraScaleMax, Math.max(tokens.cameraScaleMin, fitScale * tokens.overviewEntryRatio));
+  const centerX = (bounds.minX + bounds.maxX) / 2;
+  const centerY = (bounds.minY + bounds.maxY) / 2;
+  // worldToScreen centers on the raw screen midpoint; offset the camera so the
+  // graph center renders at the visible-area midpoint instead.
   return {
-    tx: fit.tx,
-    ty: fit.ty,
-    tscale: Math.min(tokens.cameraScaleMax, Math.max(tokens.cameraScaleMin, fit.tscale * tokens.overviewEntryRatio)),
+    tx: centerX - (insets.left - insets.right) / (2 * tscale),
+    ty: centerY - (insets.top - insets.bottom) / (2 * tscale),
+    tscale,
   };
 }
 

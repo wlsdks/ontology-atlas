@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { computeOverviewCameraTarget, fitWorldTarget } from "./topology-camera-math";
+import {
+  computeOverviewCameraTarget,
+  computeOverviewFitScale,
+  fitWorldTarget,
+  worldToScreen,
+} from "./topology-camera-math";
 
 /**
  * DECOUPLING (topology-map-v2 axis split): the overview entry scale is the
@@ -52,5 +57,46 @@ describe("computeOverviewCameraTarget", () => {
     const tiny = { minX: -1, minY: -1, maxX: 1, maxY: 1 };
     const overview = computeOverviewCameraTarget(tiny, 1000, 1000, tokens);
     expect(overview.tscale).toBeLessThanOrEqual(tokens.cameraScaleMax + 1e-9);
+  });
+});
+
+/**
+ * Panel-aware fit (Design Guardian 카메라 반려) — the graph center must land in
+ * the VISIBLE area (viewport minus the left ReaderLens panel + right rail), not
+ * behind the panel.
+ */
+describe("computeOverviewCameraTarget — panel-aware safe insets", () => {
+  const bounds = { minX: -100, minY: -100, maxX: 100, maxY: 100 };
+  const W = 1000;
+  const H = 800;
+  const base = { cameraScaleMax: 2.6, cameraScaleMin: 0.24, overviewEntryRatio: 0.95 };
+
+  it("renders the graph center at the visible-area midpoint, not the raw screen center", () => {
+    const insetTokens = { ...base, safeInsetLeft: 344, safeInsetRight: 120, safeInsetTop: 96, safeInsetBottom: 96 };
+    const target = computeOverviewCameraTarget(bounds, W, H, insetTokens);
+    const camera = {
+      x: { value: target.tx, velocity: 0 },
+      y: { value: target.ty, velocity: 0 },
+      scale: { value: target.tscale, velocity: 0 },
+    };
+    const centerScreen = worldToScreen(camera, W, H, 0, 0); // graph bounds center is (0,0)
+    // Visible-area midpoint = (left + (W - right)) / 2, (top + (H - bottom)) / 2.
+    expect(centerScreen.x).toBeCloseTo((344 + (W - 120)) / 2, 4);
+    expect(centerScreen.y).toBeCloseTo((96 + (H - 96)) / 2, 4);
+  });
+
+  it("with a wider left panel than right, shifts the camera left so content clears the panel", () => {
+    const insetTokens = { ...base, safeInsetLeft: 344, safeInsetRight: 120 };
+    const withInsets = computeOverviewCameraTarget(bounds, W, H, insetTokens);
+    const noInsets = computeOverviewCameraTarget(bounds, W, H, base);
+    expect(withInsets.tx).toBeLessThan(noInsets.tx);
+  });
+
+  it("scales against the visible area, so a big left+right inset zooms the graph out", () => {
+    // Large bounds so neither fit clamps to cameraScaleMax — the shrink is real.
+    const big = { minX: -400, minY: -400, maxX: 400, maxY: 400 };
+    const insetScale = computeOverviewFitScale(big, W, H, { ...base, safeInsetLeft: 344, safeInsetRight: 120 });
+    const fullScale = computeOverviewFitScale(big, W, H, base);
+    expect(insetScale).toBeLessThan(fullScale);
   });
 });
