@@ -1,0 +1,6 @@
+# ontology-atlas local-only data — never commit.
+#
+# .ontology-atlas/ holds machine-local state only: the live agent-activity
+# heartbeat and the Slice 0 magic-moment telemetry.local.json (init/absorb
+# timing, local only, never transmitted — see AGENTS.md trust charter).
+.ontology-atlas/

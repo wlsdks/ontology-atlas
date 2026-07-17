@@ -32,6 +32,7 @@ import { writeDoc, slugToPath } from '../lib/write-vault.mjs';
 import { buildFrontmatter } from '../lib/schema.mjs';
 import { buildAbsorptionPlan, buildSlimPointer } from '../lib/absorb.mjs';
 import { formatUnknownFlagError, parseVaultFlag } from '../lib/cli-args.mjs';
+import { stampAbsorbWriteCompleted } from '../lib/telemetry.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--write'];
 const BACKUP_SUFFIX = '.pre-absorb.bak';
@@ -112,6 +113,10 @@ export function runAbsorb(args) {
     copyFileSync(filePath, backupPath);
     const pointer = buildSlimPointer(plan);
     writeFileSync(filePath, pointer, 'utf-8');
+
+    // Slice 0 magic-moment instrumentation (PRODUCT-PLAN-2026-07.md §4/§9) —
+    // local-only baseline for "vault worth asking" (see lib/telemetry.mjs).
+    stampAbsorbWriteCompleted(vaultPath);
 
     process.stdout.write(
       `${COLORS.green}written${COLORS.reset}  ${plan.summary.absorbed} node(s) · ` +

@@ -10,6 +10,7 @@ import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { formatUnknownFlagError, parsePositiveIntegerFlag, parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
 import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-options.mjs';
 import { diagnosisStatusColor } from '../lib/diagnosis-colors.mjs';
+import { stampMomentIfFirst } from '../lib/telemetry.mjs';
 
 const CLI_ENTRYPOINT = fileURLToPath(new URL('../index.mjs', import.meta.url));
 const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--fallback-timeout-ms', '--fallback-slow-ms', '--fallback-concurrency', ...DIAGNOSIS_OPTION_FLAGS];
@@ -48,6 +49,16 @@ export async function runAgentBrief(args) {
       `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
     );
     return 2;
+  }
+  // Slice 0 magic-moment instrumentation (PRODUCT-PLAN-2026-07.md §4/§9) —
+  // this CLI command is the cheapest safe proxy for "an agent read the vault
+  // and answered" (see lib/telemetry.mjs for why the MCP-side read tools
+  // themselves are intentionally NOT instrumented). Best-effort only — a
+  // telemetry write failure must never break the actual agent-brief output.
+  try {
+    stampMomentIfFirst(vaultRoot, { source: 'agent-brief' });
+  } catch {
+    // local-only instrumentation is advisory; ignore write failures.
   }
   if (verifyFallbacks) {
     const effectiveFallbackTimeoutMs = fallbackTimeoutMs ?? agentFallbackTimeoutMs();

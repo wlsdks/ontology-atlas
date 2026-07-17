@@ -523,6 +523,7 @@ A successful run looks like this:
 
 ```
 [ontology-atlas-mcp verify]
+
 · step 1 — parser smoke test
 ✓ result: 7 passed, 0 failed
 · step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=../docs/ontology, timeout=15000ms)
@@ -538,14 +539,15 @@ A successful run looks like this:
 ✓ add_relations — non-object, single/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata
 ✓ batch caps — get_concepts/add_concepts/add_relations reject 51 rows with invalid_arguments
 ✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance
+✓ absorb_document dry-run — temp fixture classified (policy + architecture sections) without writing
 ✓ patch_concept conflict guard — stale expected_mtime rejected with vault_conflict
 ✓ strict enums — invalid query operation rejected with closest-value hint
 ✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain)
 ✓ strict relation filters — invalid dependencyTypes rejected with closest-value hint
-✓ strict list_concepts filters — invalid kind rejected with closest-value hint
-✓ strict query_concepts filters — invalid kind/has-key rejected with closest-value hints
 ✓ strict find_neighbors filters — invalid relation types rejected before slug resolution with closest-value hint
 ✓ strict find_orphans filters — invalid kind/excludeKinds rejected with closest-value hints
+✓ strict list_concepts filters — invalid kind rejected with closest-value hint
+✓ strict query_concepts filters — invalid kind/has-key rejected with closest-value hints
 ✓ strict relation_check — invalid type rejected before endpoint resolution with closest-value hint and structured repair
 ✓ strict add_relation — invalid type rejected before endpoint resolution with structured repair and no write metadata
 ✓ strict graph filters — invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejected with narrowed diagnostics
@@ -556,7 +558,7 @@ A successful run looks like this:
 ✓ list_concepts — vault total 107 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 59 evidence results for "project"
+✓ find_evidence — 58 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 106 total query results (limited true)

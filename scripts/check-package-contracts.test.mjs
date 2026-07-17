@@ -70,13 +70,17 @@ function regexEscape(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Mirrors mcp/src/index.js findEvidence()'s scoreEvidence() inclusion rule
+// (mcp/src/evidence-rank.mjs): title / frontmatter capabilities+elements /
+// body substring match. Deliberately does NOT match on slug — scoreEvidence
+// never checks the slug, so including it here over-counts relative to the
+// live find_evidence tool (this drifted the README-alignment assertion by
+// one doc whose slug, but not title/frontmatter/body, contained the query).
 function findEvidenceCount(docs, query) {
   const needle = query.toLowerCase();
   return docs.filter((doc) => {
-    const docSlug = String(doc.slug || doc.frontmatter.slug || '').toLowerCase();
     const docTitle = String(doc.frontmatter.title || doc.frontmatter.name || '').toLowerCase();
     const inFrontmatter =
-      docSlug.includes(needle) ||
       docTitle.includes(needle) ||
       String(doc.frontmatter.capabilities || '').toLowerCase().includes(needle) ||
       String(doc.frontmatter.elements || '').toLowerCase().includes(needle);
