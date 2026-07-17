@@ -15,6 +15,8 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   add: runner('add.mjs', 'runAdd'),
   find: runner('find.mjs', 'runFind'),
   import: runner('import.mjs', 'runImport'),
+  absorb: runner('absorb.mjs', 'runAbsorb'),
+  moment: runner('moment.mjs', 'runMoment'),
   backlinks: runner('backlinks.mjs', 'runBacklinks'),
   orphans: runner('orphans.mjs', 'runOrphans'),
   path: runner('path.mjs', 'runPath'),

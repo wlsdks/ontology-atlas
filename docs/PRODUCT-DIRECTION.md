@@ -1,5 +1,8 @@
 # PRODUCT DIRECTION — Ontology workbench (humans + AI agents co-author)
 
+> **[v9, 2026-07-17] 현행 방향은 `docs/PRODUCT-PLAN-2026-07.md` 가 canonical 이다.**
+> v9 요지: 2층 정체성 (Layer 1 로컬 코어 불변 + Layer 2 Atlas Network — Spec 표준 · Hub · 수요 게이트 뒤 Team Sync) · 1차 타겟을 "2~10인 팀 테크리드" 단일로 정밀화 · v8 의 다중 이해관계자 문구는 "질문자 (게이트 뒤)" 모델로 정정 · 신선도 증명 (drift 감지 + 승인 3계층 + 인젝션 방어) 이 핵심 차별화. 이 파일의 v2~v8 본문은 역사 기록으로 보존한다.
+
 > Written (v2): 2026-05-01
 > Decisions captured: the user confirmed **Direction A** (ontology-first) and added **dogfooding + AI-agent partnership** as a new direction.
 > This file overlays v2 on top of v1's strategic diagnosis (left in place); **the decisions and the new direction** below are what's current.
@@ -556,7 +559,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 2. ✅ 24 tools (read 16 + write 8): `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` / `find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `compile_ontology` / `query_ontology` / `validate_vault` / `analyze_repo_structure` (R16) / `infer_imports` (R17) / `index_project` (R+) / `add_concept` / `add_concepts` / `add_relation` / `add_relations` / `patch_concept` / `delete_concept` / `rename_concept` / `merge_concepts` (R11 — atomic graph-level write)
 3. ✅ CLI command (`ontology-atlas`) — `npx ontology-atlas init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 106 nodes describing our own mental model, including agent-practice notes as document nodes
+5. ✅ `docs/ontology/` dogfood vault — 107 nodes describing our own mental model, including agent-practice notes as document nodes
 
 ### Agent practitioner concerns map
 

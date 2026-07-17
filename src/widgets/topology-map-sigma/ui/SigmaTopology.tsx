@@ -141,7 +141,7 @@ import {
 } from './SigmaEdgeTooltip';
 import { SigmaLegendRow } from './SigmaLegendRow';
 import { SigmaRelationLegend } from './SigmaRelationLegend';
-import { SigmaSkeletonCards, type SkeletonCardModel } from './SigmaSkeletonCards';
+import type { SkeletonCardModel } from '../model/skeleton-card';
 import {
   clampSelectedFocusCameraSafeTarget,
   isCameraMotionNearTarget,
@@ -394,10 +394,6 @@ interface SigmaTopologyProps {
   showOntologyNodes?: boolean;
   /** true면 Path analysis mode용 primer를 그래프 위에 표시한다. */
   pathWorkflowActive?: boolean;
-  /** Overview mode에서 선택된 map 지형을 읽기 전용 fixed geography로 유지한다. */
-  selectedMapFixedGeographyActive?: boolean;
-  /** 카드 배지/더블클릭의 명시적 펼치기 — SigmaSkeletonCards 로 중계. */
-  onExpandRequest?: (slug: string) => void;
   /** Focus analysis mode에서는 선택 DOM 카드가 주의 중심이므로 viewport center anchor를 사용한다. */
   selectedFocusCenterActive?: boolean;
   pathSelection?: {
@@ -464,6 +460,12 @@ function SigmaTopologyImpl({
   relayoutToken,
   livePhysics = false,
   onVisibleCountChange,
+  // 골격 DOM 카드 오버레이 삭제(위 SigmaSkeletonCards 주석 참고)로 이 콜백은
+  // 이 컴포넌트 내부에서는 이제 미사용이다. 그러나 HomePage 의
+  // `topologyCardVisibility` state(관계 카운트 표시 로직, 2026-07)가 이
+  // 콜백이 계속 전달된다는 계약에 기대고 있어, prop 자체를 제거하면
+  // HomePage 쪽 살아있는 로직까지 건드리게 된다 — Slice 2 로 남긴다
+  // (docs/TOPOLOGY-V2-PHASE0.md 후속).
   onSkeletonCardVisibilityChange,
   onGraphStatsChange,
   onRelationVisibilityChange,
@@ -474,8 +476,6 @@ function SigmaTopologyImpl({
   changedSlugs,
   showOntologyNodes = false,
   pathWorkflowActive = false,
-  selectedMapFixedGeographyActive = false,
-  onExpandRequest,
   selectedFocusCenterActive = false,
   pathSelection = null,
   healthRepairTarget = null,
@@ -3288,65 +3288,12 @@ function SigmaTopologyImpl({
         />
       ) : null}
 
-      {/* 골격 DOM 카드 — 노드의 "상". 라벨/선택 ring/kind data-mark 전담. */}
-      {skeletonCardsActive && skeletonCards ? (
-        <SigmaSkeletonCards
-          sigma={sigmaInstance}
-          graph={graph}
-          cards={skeletonCards}
-          selectedSlug={selectedSlug}
-          selectedRelationEdgeId={visibleSelectedEdge?.edgeId ?? null}
-          selectedRelationData={visibleSelectedEdge}
-          healthRepairTarget={healthRepairTarget}
-          onSelect={(slug) => onSelectProjectRef.current?.(slug)}
-          onExpandRequest={onExpandRequest}
-          pathWorkflowActive={pathWorkflowActive}
-          selectedMapFixedGeographyActive={selectedMapFixedGeographyActive}
-          selectedFocusCenterActive={selectedFocusCenterActive}
-          pathSelection={pathSelection}
-          onPathSelectionChange={(selection) => onPathSelectionChangeRef.current?.(selection)}
-          onVisibilityChange={onSkeletonCardVisibilityChange}
-          onRelationSelect={(data) => {
-            if (surfacesToDismissBeforeOpening('selected-relation').includes('context-menu')) {
-              setContextMenu(null);
-            }
-            selectedEdgeRef.current = data;
-            setSelectedEdge(data);
-            setEdgeHover(null);
-            setHoverLabel(null);
-            sigmaRef.current?.refresh();
-          }}
-          onRelationHover={(data) => {
-            setEdgeHover(data);
-            if (data) setHoverLabel(null);
-          }}
-          onDragClusterStart={(positions) => {
-            physicsRef.current?.pinGroup(positions);
-          }}
-          onDragClusterMove={(positions) => {
-            physicsRef.current?.dragGroup(positions);
-          }}
-          onDragClusterEnd={(nodeIds) => {
-            physicsRef.current?.releaseGroup(nodeIds);
-          }}
-          describeKind={(kind) =>
-            kind === 'unknown'
-              ? `${t('kindLegendUnknown')} · ${t('kindLegendTierUnclassified')}`
-              : `${kindLabel(kind)} · ${t('kindLegendTier', {
-                  tier: { project: 1, domain: 2, capability: 3, element: 4 }[kind],
-                })}`
-          }
-          describeKindBadge={(kind) =>
-            ({
-              project: t('cardKindBadgeProject'),
-              domain: t('cardKindBadgeDomain'),
-              capability: t('cardKindBadgeCapability'),
-              element: t('cardKindBadgeElement'),
-              unknown: t('cardKindBadgeUnknown'),
-            })[kind]
-          }
-        />
-      ) : null}
+      {/* 골격 DOM 카드 오버레이(구 SigmaSkeletonCards) 는 도달 불가능 코드로
+          삭제됐다 (docs/TOPOLOGY-V2-PHASE0.md §0 — codegraph callers 0, 두
+          호출부(HomePage/ProjectDetailPage) 모두 skeletonCardsActive 를 항상
+          false 로 마운트). skeletonMode/skeletonCardsActive 게이트 자체(카메라
+          fit·라벨 LOD·엣지 hide 등 이 컴포넌트 곳곳에 걸친 분기)는 제거 시
+          라이브 로직까지 함께 건드리게 되어 Slice 2 정리 대상으로 남긴다. */}
 
       {/* 호버 라벨 — hover 중인 노드 이름 pill. 선택된 노드와 겹치면 중복
           표시 방지. 호버 노드는 reducer 에서 확대되지 않으므로 focused=false

@@ -70,13 +70,17 @@ function regexEscape(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Mirrors mcp/src/index.js findEvidence()'s scoreEvidence() inclusion rule
+// (mcp/src/evidence-rank.mjs): title / frontmatter capabilities+elements /
+// body substring match. Deliberately does NOT match on slug — scoreEvidence
+// never checks the slug, so including it here over-counts relative to the
+// live find_evidence tool (this drifted the README-alignment assertion by
+// one doc whose slug, but not title/frontmatter/body, contained the query).
 function findEvidenceCount(docs, query) {
   const needle = query.toLowerCase();
   return docs.filter((doc) => {
-    const docSlug = String(doc.slug || doc.frontmatter.slug || '').toLowerCase();
     const docTitle = String(doc.frontmatter.title || doc.frontmatter.name || '').toLowerCase();
     const inFrontmatter =
-      docSlug.includes(needle) ||
       docTitle.includes(needle) ||
       String(doc.frontmatter.capabilities || '').toLowerCase().includes(needle) ||
       String(doc.frontmatter.elements || '').toLowerCase().includes(needle);
@@ -205,7 +209,7 @@ describe('package contract helpers', () => {
     );
     assert.equal(
       pkg.scripts?.['package:check'],
-      'node scripts/check-package-contracts.mjs && pnpm test:cli:lib && pnpm perf:graph:check && node --test scripts/check-package-contracts.test.mjs',
+      'node scripts/check-package-contracts.mjs && pnpm test:cli:lib && pnpm test:cli:commands && pnpm perf:graph:check && node --test scripts/check-package-contracts.test.mjs',
     );
     assert.equal(pkg.scripts?.['perf:graph'], 'node scripts/perf-graph.mjs');
     assert.equal(pkg.scripts?.['perf:graph:check'], 'node scripts/perf-graph.mjs --check --n=1000');
@@ -1455,7 +1459,7 @@ describe('package contract helpers', () => {
       verifySection,
       /✓ structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance (2\/2 \(resume skipped: no actions\)|3\/3), graph 13\/13/,
     );
-    assert.match(verifySection, /All passed — register \.mcp\.json with your MCP client and restart to use the 24 tools/);
+    assert.match(verifySection, /All passed — register \.mcp\.json with your MCP client and restart to use the 25 tools/);
     assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,\s+`query_concepts`, limited `query_concepts`, `analyze_repo_structure`,\s+`infer_imports`, `index_project`, `find_neighbors`, `find_path`, `find_orphans`,\s+`list_kinds`, `validate_vault`/);
     assert.match(verifySection, /batch success rows\s+and partial rows are verified during installation checks/);
     assert.match(verifySection, /`query_ontology\(\{operation:"neighbors"\}\)`/);
@@ -2563,7 +2567,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /vault total 5 nodes/);
     assert.match(smoke, /expectedToolsListAnnotationSummary/);
     assert.match(smoke, /expectedToolsListAnnotationRe/);
-    assert.equal(expectedToolsListAnnotationSummary(), '24/24 titled; 16/16 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 24/24 local-only');
+    assert.equal(expectedToolsListAnnotationSummary(), '25/25 titled; 16/16 read; 9/9 write; 4/4 destructive; 2/2 idempotent; 25/25 local-only');
     assert.match(smoke, /--vault requires a path value/);
     assert.match(smoke, /npm run verify -- \\\[vault\\\] \\\[--timeout-ms N\\\]/);
     assert.match(smoke, /npm run verify -- --vault path --timeout-ms 15000/);

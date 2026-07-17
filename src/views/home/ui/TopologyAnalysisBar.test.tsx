@@ -915,7 +915,7 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.queryByRole("button", { name: "Health" })).toBeNull();
   });
 
-  it("keeps the overview guidance readable instead of truncating first-screen relief instructions", () => {
+  it("keeps the overview guidance to a single line and defers concept/relation census to the workspace HUD (design guardian verdict a6)", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -945,7 +945,11 @@ describe("TopologyAnalysisBar", () => {
     const prompt = screen.getByText(
       "Start with the product/system map: domains, capabilities, and change paths stay visible for team inspection and sharing.",
     );
-    expect(prompt.className).toContain("line-clamp-3");
+    // 산문 1줄화(verdict a6) — overview 는 더 이상 2~3줄로 펼쳐지지 않는다.
+    // (문안 자체는 scripts/validate-messages.test.mjs 계약이 고정 — 시각
+    // 압축은 line-clamp-1 로, ellipsis 로 1줄에 자연스럽게 잘린다.)
+    expect(prompt.className).toContain("line-clamp-1");
+    expect(prompt.className).not.toContain("line-clamp-3");
     expect(prompt.className).not.toContain("truncate");
     expect(prompt).toHaveAttribute(
       "data-prompt-text-token",
@@ -956,26 +960,13 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(prompt.className).not.toContain("--color-text-secondary");
 
-    const metrics = screen.getByTestId("topology-analysis-panel-metrics");
-    expect(metrics.className).toContain("grid-cols-2");
-    expect(metrics).toHaveAttribute(
-      "data-metric-label-text-token",
-      "--topology-analysis-panel-metric-label-text",
-    );
-    expect(metrics).toHaveAttribute(
-      "data-metric-value-text-token",
-      "--topology-analysis-panel-metric-value-text",
-    );
-    expect(metrics.className).toContain(
-      "text-[color:var(--topology-analysis-panel-metric-label-text)]",
-    );
-    expect(metrics.className).not.toContain("--color-text-quaternary");
-    expect(screen.getByText("292").className).toContain(
-      "text-[color:var(--topology-analysis-panel-metric-value-text)]",
-    );
-    expect(screen.getByText("498").className).toContain(
-      "text-[color:var(--topology-analysis-panel-metric-value-text)]",
-    );
+    // census 중복 삭제(verdict a6) — concepts/relations 숫자는 상단 워크스페이스
+    // HUD(HeroCollapsed subtitle) 가 이미 보여주므로 overview 패널은 반복하지
+    // 않는다. 값 자체는 렌더되지 않아야 한다(다른 모드 프롬프트에 우연히
+    // "292"/"498" 이 없다는 전제 — 이 테스트의 labels 는 기본 labels 를 씀).
+    expect(screen.queryByTestId("topology-analysis-panel-metrics")).toBeNull();
+    expect(screen.queryByText("292")).toBeNull();
+    expect(screen.queryByText("498")).toBeNull();
   });
 
   it("keeps the primary overview brief visible and tucks secondary agent commands into a compact rail", () => {

@@ -19,6 +19,7 @@ import {
 } from './ontology-engine.mjs';
 
 import {
+  absorbDocumentDryRunFailure,
   advisoryHealthChecksSummary,
   advisoryNextActionsSummary,
   agentBriefFailure,
@@ -27,6 +28,8 @@ import {
   batchCapFailure,
   batchRowIsolationFailure,
   buildFirstContactRequests,
+  cleanupAbsorbFixture,
+  ensureAbsorbFixture,
   buildGetConceptSmokeSlug,
   buildGetConceptsSmokeSlugs,
   buildDestructiveDryRunSmokeRequests,
@@ -149,6 +152,7 @@ import {
 import { expectedResponseIds, missingResponseLabels } from '../scripts/json-rpc-lines.mjs';
 import { GRAPH_ARRAY_KEYS } from './vault.mjs';
 import { assertPnpmScriptsExist } from '../../scripts/lib/pnpm-script-refs.mjs';
+import { buildAbsorptionPlan } from './absorb.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MCP_PKG = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
@@ -216,7 +220,7 @@ describe('verify.mjs first-contact gates', () => {
     tools.find((tool) => tool.name === 'list_concepts').annotations.openWorldHint = true;
     assert.equal(
       toolsListAnnotationSummary(tools),
-      '24/24 titled; 16/16 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 23/24 local-only',
+      '25/25 titled; 16/16 read; 9/9 write; 4/4 destructive; 2/2 idempotent; 24/25 local-only',
     );
     assert.equal(toolsListAnnotationSummary(null), 'missing tools/list');
   });
@@ -7061,6 +7065,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(65), 'strict_unknown_tool');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(67), 'all_paths');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(68), 'index_project');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(69), 'absorb_document_dry_run');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), ...DYNAMIC_FIRST_CONTACT_RESPONSE_IDS].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -7173,6 +7178,113 @@ describe('verify.mjs first-contact gates', () => {
         expectedTotal: 2,
       },
     );
+  });
+
+  it('sends an absorb_document dry-run request against the temp fixture at boot (unconditional — no vault dependency)', () => {
+    const requests = buildFirstContactRequests();
+    const request = requests.find((r) => r.id === 69);
+    assert.ok(request, 'expected an id:69 absorb_document request in the first-contact batch');
+    assert.equal(request.method, 'tools/call');
+    assert.equal(request.params.name, 'absorb_document');
+    assert.equal(typeof request.params.arguments.filePath, 'string');
+    assert.ok(request.params.arguments.filePath.length > 0);
+    // dry-run — confirm must be omitted/false so the live walk never writes.
+    assert.equal(request.params.arguments.confirm, undefined);
+  });
+
+  it('the absorb_document fixture classifies to at least one absorb and one suggest section', () => {
+    const fixturePath = ensureAbsorbFixture();
+    try {
+      const raw = readFileSync(fixturePath, 'utf-8');
+      const plan = buildAbsorptionPlan(raw, { sourceLabel: 'CLAUDE', isSlugTaken: () => false });
+      assert.ok(plan.summary.absorbed >= 1, `expected >=1 absorbed section, got ${plan.summary.absorbed}`);
+      assert.ok(plan.summary.suggested >= 1, `expected >=1 suggested section, got ${plan.summary.suggested}`);
+      assert.equal(plan.summary.injectionSuspect, 0);
+    } finally {
+      cleanupAbsorbFixture();
+    }
+  });
+
+  function wrapAbsorbResponse(parsed) {
+    return {
+      result: {
+        content: [{ type: 'text', text: JSON.stringify(parsed) }],
+        structuredContent: parsed,
+      },
+    };
+  }
+
+  it('accepts a clean absorb_document dry-run response', () => {
+    assert.equal(
+      absorbDocumentDryRunFailure(
+        wrapAbsorbResponse({
+          ok: false,
+          dryRun: true,
+          filePath: '/tmp/CLAUDE.md',
+          sourceLabel: 'CLAUDE',
+          title: 'Sample Team Agent Guide',
+          summary: { total: 2, absorbed: 1, suggested: 1, injectionSuspect: 0, unclassified: 0 },
+          sections: [
+            {
+              heading: 'Testing rules',
+              category: 'policy',
+              kind: 'document',
+              role: 'policy',
+              confidence: 0.7,
+              action: 'absorb',
+              targetSlug: 'claude-testing-rules',
+              injectionSuspect: false,
+              injectionMatches: [],
+            },
+            {
+              heading: 'Architecture',
+              category: 'architecture',
+              kind: 'capability',
+              role: null,
+              confidence: 0.6,
+              action: 'suggest',
+              targetSlug: 'capabilities/architecture',
+              injectionSuspect: false,
+              injectionMatches: [],
+            },
+          ],
+          message: 'dry-run — 1 section(s) would be absorbed as document/policy nodes, 1 suggested (not written), 0 injection-suspect (excluded from absorption). Pass confirm:true to write.',
+        }),
+      ),
+      null,
+    );
+  });
+
+  it('rejects a malformed absorb_document dry-run response', () => {
+    const base = {
+      ok: false,
+      dryRun: true,
+      filePath: '/tmp/CLAUDE.md',
+      sourceLabel: 'CLAUDE',
+      summary: { total: 1, absorbed: 1, suggested: 0, injectionSuspect: 0, unclassified: 0 },
+      sections: [{
+        heading: 'Testing rules',
+        category: 'policy',
+        confidence: 0.7,
+        action: 'absorb',
+        injectionSuspect: false,
+        injectionMatches: [],
+      }],
+      message: 'dry-run — pass confirm:true to write.',
+    };
+    const wrap = wrapAbsorbResponse;
+
+    assert.match(absorbDocumentDryRunFailure(wrap({ ...base, ok: true })), /ok:false with dryRun:true/);
+    assert.match(absorbDocumentDryRunFailure(wrap({ ...base, changed: true })), /unexpectedly included changed/);
+    assert.match(absorbDocumentDryRunFailure(wrap({ ...base, postWriteMaintenance: {} })), /unexpectedly included postWriteMaintenance/);
+    assert.match(absorbDocumentDryRunFailure(wrap({ ...base, message: 'no safety hint here' })), /missing follow-up safety hint/);
+    assert.match(absorbDocumentDryRunFailure(wrap({ ...base, summary: { total: 2, absorbed: 1, suggested: 0, injectionSuspect: 0, unclassified: 0 } })), /sections\/summary\.total mismatch/);
+    assert.match(
+      absorbDocumentDryRunFailure(wrap({ ...base, summary: { total: 1, absorbed: 0, suggested: 0, injectionSuspect: 0, unclassified: 1 } })),
+      /did not classify the fixture as expected/,
+    );
+    assert.match(absorbDocumentDryRunFailure({ result: { isError: true } }), /top-level tool error/);
+    assert.match(absorbDocumentDryRunFailure(null), /no absorb_document dry-run response/);
   });
 
   it('builds destructive writer dry-run smoke requests from listed nodes', () => {

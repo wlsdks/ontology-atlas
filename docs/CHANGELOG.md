@@ -6,6 +6,30 @@
 
 ---
 
+## 2026-07-17 — ONTOLOGY-ATLAS-SPEC v1.0-rc 공개 (N0)
+
+제품 계획 v9 (`docs/PRODUCT-PLAN-2026-07.md`) 네트워크 트랙 N0 실행 — 이미
+구현·검증된 vault frontmatter 스키마를 `docs/ONTOLOGY-ATLAS-SPEC.md` 공개
+명세로 승격했다. 새 필드/규칙 없음, 문서 전용. 5 kind · 관계 타입 ·
+untrusted-content 원칙 · 준수 테스트로 기존 contract test 스위트를 인용한다.
+8주 RFC 피드백 창 (kill criteria) 동안 GitHub Issues 로 코멘트 받는다.
+## 2026-07-17 — 제품 계획 v9: 2층 정체성 (Layer 1 로컬 코어 + Layer 2 Atlas Network)
+
+하루 집중 재기획의 확정 (조사 17건 · 페르소나 7인 · CPO 심사 · 사상가 렌즈
+10인 × 3라운드 · 도입 심사 10인). 캘리브레이션 결과 기획 단계 평가 7.6은
+Obsidian/dbt 의 기획 단계 소급 점수(7.3)를 상회 — 문서 단계 종료 판정.
+
+- **`docs/PRODUCT-PLAN-2026-07.md` 신설** — canonical 제품 계획. 1차 타겟을
+  "2~10인 팀 테크리드" 단일로 정밀화, 매직 모먼트·kill criteria 13행·해자
+  5층·승인 3계층·인젝션 방어 Tier 1~3 정의.
+- **정체성 개정** — R10 "클라우드 영구 제거"를 2층 구조로 개정 (AGENTS.md 의
+  cloud collab 재설계 예약 조항의 조기 개시). Layer 1 은 불변 (영원히
+  무료·오프라인·백엔드 0), Layer 2 (Spec/Hub/Team Sync) 는 신뢰 헌장 6조
+  준수 시에만. `.claude/rules/forbidden.md` · `local-first.md` 개정.
+- **다중 이해관계자 문구 정정** — v8 의 "기획자·마케터·C-level" 을 증거
+  기반("비개발자는 유지하지 않는다, 질문한다")으로 "질문자 (게이트 뒤)"
+  모델로 교체.
+
 ## 2026-07-03 — 지도 뷰 재구성: 단일 컨테이너 변환 엔진 (TopologyMapCanvas)
 
 소유자 결정("지도가 부드럽지도 않고 버벅거림 — 전체 재구성")의 실행.

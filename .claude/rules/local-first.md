@@ -6,7 +6,16 @@
 
 > **Notion / Obsidian 처럼 — markdown 폴더만 선택하면 바로 쓴다. 백엔드 의존 0.**
 
-## 이게 의미하는 바 (R10 — auth + cloud surface 영구 제거)
+## [v9 개정, 2026-07-17] 2층 정체성
+
+이 문서의 약속은 이제 **Layer 1 (로컬 코어)** 의 불변 계약이다. v9 계획
+(`docs/PRODUCT-PLAN-2026-07.md`) 이 **Layer 2 (Atlas Network — Spec 표준 ·
+Hub 레지스트리 · 수요 게이트 뒤 유료 Team Sync 좌표 모델)** 를 추가했다.
+Layer 2 는 선택적이며 forbidden.md 의 신뢰 헌장을 따를 때만 존재할 수 있다.
+Layer 1 사용자는 Layer 2 없이 어떤 기능 저하도 겪지 않는다. LLM 연결 (BYOK /
+localhost) 은 opt-in + 전송 범위 UI 명시 + 로컬 감사 로그 조건으로 허용된다.
+
+## 이게 의미하는 바 (R10 — auth + cloud surface 영구 제거, Layer 1 기준)
 
 1. **0 마찰 진입** — `pnpm dev` 후 첫 화면이 즉시 사용 가능. 인증 / 가드 자체가
    존재하지 않는다 (R10).

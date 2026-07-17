@@ -217,8 +217,12 @@
        존재 이유이므로 잉크를 한 단계 상향 (3:1 대비 목표). */
     --topology-relation-stroke-strong: rgba(139, 151, 255, 0.82);
     --topology-relation-stroke-strong-width: 2.2;
-    --topology-relation-stroke-supported: rgba(72, 184, 203, 0.68);
+    /* R+ 디자인 가디언 verdict a5: cyan(72,184,203) 은 인디고 외 제2 채색
+       시스템이었다(헌장 위반 — "카테고리 구분은 색이 아닌 보더 스타일"). 같은
+       인디고 잉크로 통일하고 dash 로 spine(실선/strong)과 구분한다. */
+    --topology-relation-stroke-supported: rgba(139, 151, 255, 0.5);
     --topology-relation-stroke-supported-width: 1.8;
+    --topology-relation-stroke-supported-dasharray: 5 3;
     --topology-relation-stroke-weak: rgba(217, 161, 65, 0.62);
     --topology-relation-stroke-weak-width: 1.5;
     --topology-relation-stroke-review: rgba(226, 105, 105, 0.66);
@@ -296,6 +300,18 @@
       calc(100vw - 520px)
     );
     --topology-path-endpoint-card-max-width: min(26rem, calc(100vw - 1rem));
+    /*
+     * 지도(TopologyMapCanvas) fit 안전영역 — fixed chrome(좌측 분석 패널 +
+     * 상단 HUD)이 차지하는 px. 디자인 가디언 verdict a4: 이전 하드코딩
+     * 480px 좌측 예약이 실측 패널 우측 엣지(24px 여백 + ~320px 폭 ≈ 344px)
+     * 보다 136px 과대해 카드 절반이 안전영역 밑에 숨었다. 이 네 토큰이
+     * 단일 진실원 — camera.ts 의 fit 수학은 이 값을 그대로 읽는다
+     * (TopologyMapCanvas.tsx readSafeInsetTokens).
+     */
+    --topology-map-safe-inset-top: 120px;
+    --topology-map-safe-inset-right: 120px;
+    --topology-map-safe-inset-bottom: 110px;
+    --topology-map-safe-inset-left: 344px;
     --topology-panel-radius: 12px;
     --topology-panel-padding: 16px;
     --topology-panel-border: rgba(255, 255, 255, 0.07);
@@ -1201,6 +1217,9 @@
     --topology-relation-direction-surface: rgba(77, 86, 200, 0.08);
     --topology-relation-direction-border: rgba(77, 86, 200, 0.18);
     --topology-relation-direction-text: rgba(40, 50, 175, 0.90);
+    /* verdict a5: cyan(72,184,203) 이 라이트 배경(#f3f5f9)에서 소멸했던
+       실측 대비 결함 — 인디고로 통일(다크와 동일 원칙, 라이트 팔레트 톤). */
+    --topology-relation-stroke-supported: rgba(77, 86, 200, 0.44);
     --topology-relation-spine-halo: rgba(77, 86, 200, 0.24);
     --topology-relation-spine-halo-opacity: 0.24;
     --topology-relation-spine-halo-width: 5.6;
@@ -1282,6 +1301,10 @@
     --topology-overview-handoff-primary-border: rgba(77, 86, 200, 0.22);
     --topology-overview-handoff-secondary-surface: rgba(15, 23, 42, 0.035);
     --topology-overview-handoff-secondary-border: rgba(15, 23, 42, 0.10);
+    /* verdict a5: 다크 전용 rgba(222,225,255,*) 라이트 오버라이드가 아예
+       없어 접힘 섹션("다음 단계") 헤더가 유령 텍스트 수준으로 소멸했다. */
+    --topology-overview-secondary-disclosure-text: rgba(15, 23, 42, 0.42);
+    --topology-overview-secondary-disclosure-hover-text: rgba(15, 23, 42, 0.68);
     --topology-overview-quality-surface: rgba(20, 148, 128, 0.055);
     --topology-overview-quality-border: rgba(20, 148, 128, 0.22);
     --topology-overview-quality-meter-surface: rgba(15, 23, 42, 0.045);
