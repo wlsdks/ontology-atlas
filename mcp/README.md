@@ -523,6 +523,7 @@ A successful run looks like this:
 
 ```
 [ontology-atlas-mcp verify]
+
 · step 1 — parser smoke test
 ✓ result: 7 passed, 0 failed
 · step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=../docs/ontology, timeout=15000ms)
@@ -538,14 +539,15 @@ A successful run looks like this:
 ✓ add_relations — non-object, single/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata
 ✓ batch caps — get_concepts/add_concepts/add_relations reject 51 rows with invalid_arguments
 ✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance
+✓ absorb_document dry-run — temp fixture classified (policy + architecture sections) without writing
 ✓ patch_concept conflict guard — stale expected_mtime rejected with vault_conflict
 ✓ strict enums — invalid query operation rejected with closest-value hint
 ✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain)
 ✓ strict relation filters — invalid dependencyTypes rejected with closest-value hint
-✓ strict list_concepts filters — invalid kind rejected with closest-value hint
-✓ strict query_concepts filters — invalid kind/has-key rejected with closest-value hints
 ✓ strict find_neighbors filters — invalid relation types rejected before slug resolution with closest-value hint
 ✓ strict find_orphans filters — invalid kind/excludeKinds rejected with closest-value hints
+✓ strict list_concepts filters — invalid kind rejected with closest-value hint
+✓ strict query_concepts filters — invalid kind/has-key rejected with closest-value hints
 ✓ strict relation_check — invalid type rejected before endpoint resolution with closest-value hint and structured repair
 ✓ strict add_relation — invalid type rejected before endpoint resolution with structured repair and no write metadata
 ✓ strict graph filters — invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejected with narrowed diagnostics
@@ -553,41 +555,41 @@ A successful run looks like this:
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
 ✓ maintenance cursor — ready page stable (1 remaining action; phase materialize:1; severity info:1; kind materialize_external_element:1; executable maint_198312e5:materialize/materialize_external_element:info->add_concept; review none)
 ✓ maintenance cursor — resume afterActionId advanced (maint_198312e5; 0 remaining actions; phase none; severity none; kind none; executable none; review none)
-✓ list_concepts — vault total 106 nodes (vaultRoot /path/to/docs/ontology)
+✓ list_concepts — vault total 107 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 60 evidence results for "project"
+✓ find_evidence — 58 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
-✓ query_concepts limited — 1 query result / 105 total query results (limited true)
-✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 29 element candidates)
-✓ infer_imports — 659 files scanned, 484 module edges (elements/src/views/home->capabilities/knowledge-graph x24 (static:24), elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), +482 more)
-✓ index_project — 54 concept candidates, 484 import relations, validation 0 problem files
+✓ query_concepts limited — 1 query result / 106 total query results (limited true)
+✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 30 element candidates)
+✓ infer_imports — 679 files scanned, 487 module edges (elements/src/views/home->capabilities/knowledge-graph x24 (static:24), elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), +485 more)
+✓ index_project — 55 concept candidates, 487 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
-✓ list_kinds — 106 nodes (capability:36, document:3, domain:6, element:59, project:1, vault-readme:1)
-✓ validate_vault — 106 files, 0 problem files
+✓ list_kinds — 107 nodes (capability:36, document:3, domain:6, element:60, project:1, vault-readme:1)
+✓ validate_vault — 107 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (106 nodes, 1 next action, 5 health checks, growth actions:1 external:1 ignoredExternal:203)
+✓ workspace_brief — healthy (107 nodes, 1 next action, 5 health checks, growth actions:1 external:1 ignoredExternal:203)
 · workspace_brief non-blocking advisory nextActions — materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (106 nodes, 2 next actions, 5 health checks, growth actions:1 external:1 ignoredExternal:203; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (107 nodes, 2 next actions, 5 health checks, growth actions:1 external:1 ignoredExternal:203; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 · workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands., materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 4eaa32583fa9 (106 nodes, 595 edges, issues 0)
-✓ compile_ontology page — 1/106 nodes, 1/595 edges
-✓ compile_ontology indexes — out 106, in 105, edgeById 595, aliases 211, edges 391/204/0
-✓ overview — graph 4eaa32583fa9 (106 nodes, 595 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 106, edges 595)
-✓ project_map query_plan — aggregate_scan (medium, nodes 106, edges 595)
+✓ compile_ontology — graph cc6d014dac81 (107 nodes, 597 edges, issues 0)
+✓ compile_ontology page — 1/107 nodes, 1/597 edges
+✓ compile_ontology indexes — out 107, in 106, edgeById 597, aliases 213, edges 393/204/0
+✓ overview — graph cc6d014dac81 (107 nodes, 597 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 107, edges 597)
+✓ project_map query_plan — aggregate_scan (medium, nodes 107, edges 597)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ all_paths — src/widgets/bottom-tab-bar → project (5/16 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
-✓ project_scope — project (102 nodes, internalEdges 372)
-✓ read census consistency — 106 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
+✓ project_scope — project (103 nodes, internalEdges 374)
+✓ read census consistency — 107 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 13/13
 
 All passed — register .mcp.json with your MCP client and restart to use the 25 tools.

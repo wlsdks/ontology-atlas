@@ -85,6 +85,7 @@ const WRITE_TOOL_NAMES = new Set([
   "delete_concept",
   "rename_concept",
   "merge_concepts",
+  "absorb_document",
 ]);
 const ROOT_PKG = JSON.parse(readFileSync("package.json", "utf-8"));
 
@@ -122,7 +123,7 @@ function makeDogfoodInitialize() {
       "maintenance_plan afterActionId cursor misses return cursor.found=false and cursor.reason.",
       "maintenance_plan missing cursors return cursor.nextAfterActionId=null and cursor.hasMore=false.",
       "query_ontology agent_brief returns relationDecisionGuide for relation_check outcomes skip_existing, review_inverse, safe_to_add, and review_new_schema.",
-      "query_ontology agent_brief returns graphDbQueryPack for match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation.",
+      "query_ontology agent_brief returns graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation.",
       "query_ontology agent_brief returns traversalStrategy plan_before_enumeration, bounded_path_evidence, and containment_cross_check.",
       "query_ontology agent_brief resultContracts describe all_paths limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.",
     ].join("\n"),
@@ -487,7 +488,7 @@ function makeDogfoodToolsList() {
         },
       };
       if (name === "query_ontology") {
-        tool.description = "Graph query tool with current-page `nextExecutableAction` / `nextReviewAction` pointers and cursor `nextAfterActionId`/`hasMore` pagination metadata. `agent_brief` includes graphDbQueryPack for match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation, traversalStrategy plan_before_enumeration, bounded_path_evidence, and containment_cross_check guidance plus resultContracts for all_paths completeness. `all_paths` responses include limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance.";
+        tool.description = "Graph query tool with current-page `nextExecutableAction` / `nextReviewAction` pointers and cursor `nextAfterActionId`/`hasMore` pagination metadata. `agent_brief` includes graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation, traversalStrategy plan_before_enumeration, bounded_path_evidence, and containment_cross_check guidance plus resultContracts for all_paths completeness. `all_paths` responses include limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance.";
         tool.inputSchema.required = ["operation"];
         tool.inputSchema.properties = {
           operation: { enum: QUERY_ONTOLOGY_OPERATIONS },
@@ -1205,7 +1206,7 @@ function makeDogfoodToolsList() {
         };
         tool.outputSchema = {
           type: "object",
-          required: ["rootPath", "framework", "domains", "capabilities", "elements", "suggestedRelations", "skipped"],
+          required: ["rootPath", "framework", "domains", "capabilities", "elements", "meaningGate", "suggestedRelations", "skipped"],
           properties: {
             rootPath: { type: "string" },
             project: {
@@ -1271,6 +1272,64 @@ function makeDogfoodToolsList() {
                 },
                 additionalProperties: false,
               },
+            },
+            meaningGate: {
+              type: "object",
+              required: ["policy", "sourceStructureRole", "businessOntology", "implementationEvidence", "reviewQuestions"],
+              properties: {
+                policy: { type: "string" },
+                sourceStructureRole: { type: "string" },
+                businessOntology: {
+                  type: "object",
+                  required: ["domains", "capabilities", "evidence"],
+                  properties: {
+                    domains: { type: "array", items: { type: "string" } },
+                    capabilities: { type: "array", items: { type: "string" } },
+                    evidence: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        required: ["slug", "kind", "source"],
+                        properties: {
+                          slug: { type: "string" },
+                          kind: { type: "string", enum: ["domain", "capability"] },
+                          source: { type: "string" },
+                        },
+                        additionalProperties: false,
+                      },
+                    },
+                  },
+                  additionalProperties: false,
+                },
+                implementationEvidence: {
+                  type: "object",
+                  required: ["elements", "reviewRequiredCapabilities"],
+                  properties: {
+                    elements: { type: "array", items: { type: "string" } },
+                    reviewRequiredCapabilities: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        required: ["slug", "reason", "evidence"],
+                        properties: {
+                          slug: { type: "string" },
+                          reason: { type: "string" },
+                          evidence: {
+                            type: "object",
+                            required: ["source"],
+                            properties: { source: { type: "string" } },
+                            additionalProperties: false,
+                          },
+                        },
+                        additionalProperties: false,
+                      },
+                    },
+                  },
+                  additionalProperties: false,
+                },
+                reviewQuestions: { type: "array", items: { type: "string" } },
+              },
+              additionalProperties: false,
             },
             suggestedRelations: {
               type: "array",
@@ -3805,7 +3864,7 @@ describe("rpc response completion helpers", () => {
     drifted.find((tool) => tool.name === "list_concepts").annotations.openWorldHint = true;
     assert.equal(
       toolsListAnnotationSummary(drifted),
-      "23/23 titled; 15/15 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 22/23 local-only",
+      "25/25 titled; 16/16 read; 9/9 write; 4/4 destructive; 2/2 idempotent; 24/25 local-only",
     );
     assert.equal(toolsListAnnotationSummary(null), "missing tools/list");
   });
