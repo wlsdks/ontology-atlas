@@ -222,6 +222,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         now,
         focusedNodeId,
         hoveredNodeId,
+        isDragging: pointerMachineRef.current.phase === "dragging",
         emphasisById: emphasisRef.current,
         rippleStartById: rippleStartRef.current,
       });

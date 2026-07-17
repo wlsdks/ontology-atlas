@@ -19,6 +19,22 @@
  * module contract forbids cross-widget engine imports anyway. Bounds are
  * threaded as explicit parameters; the old widget keeps its own values until
  * P6 deletes it.
+ *
+ * FIX (QA first-light pass, blocker 1 — "drag makes everything vanish"): the
+ * prototype's elastic pan-bounds clamp (`updateCamera()`'s `< panBounds.minX`
+ * branch, `docs/prototypes/topology-b2plus.html` lines 906-915) was left as a
+ * `test.todo` when `stepCamera`/`momentum.ts` first landed — genuinely
+ * undecided whether this module or a separate one should own it. Without it,
+ * `momentum.ts`'s intentionally aggressive flick projection (its own test
+ * pins a landing target of -14870 world units for a modest 0.5px/ms flick at
+ * scale=1) is safe in the prototype ONLY because this per-frame clamp reins
+ * the camera back toward the graph's own bounds every frame; the v2 port had
+ * the projection but not the compensating clamp, so a single realistic
+ * pan/flick release genuinely arrived at that huge target and stranded the
+ * camera in blank canvas (repro: chrome-devtools pointerdown/move/up with
+ * ~30ms spacing over ~220px — only "지도 전체 맞추기"/fitViewToken recovered
+ * it). `panBounds`/`isDragging` are optional so existing call sites (and the
+ * pre-existing scale-only tests above) keep working unchanged when omitted.
  */
 
 import { stepSpring, type SpringAxisState } from "./spring";
@@ -36,6 +52,13 @@ export interface CameraTarget {
   tscale: number;
 }
 
+export interface PanBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
 export interface CameraStepInput {
   camera: CameraAxes;
   target: CameraTarget;
@@ -49,6 +72,10 @@ export interface CameraStepInput {
   scaleMin: number;
   /** `--topology-v2-camera-scale-max` (2.6 in the prototype). */
   scaleMax: number;
+  /** World-space soft pan limits (world bounds + margin) — omit to skip the elastic clamp entirely (e.g. before the world is built). */
+  panBounds?: PanBounds;
+  /** True while the pointer is actively dragging — the prototype's `updateCamera()` returns before ever reaching the clamp during a live drag, so the 1:1 tracking contract (`topology-pointer-handlers.ts`) never fights it. */
+  isDragging?: boolean;
 }
 
 /**
@@ -56,14 +83,68 @@ export interface CameraStepInput {
  * critically damped (ζ=1.0 in the prototype, independent of the x/y
  * `damping` passed in — see `updateCamera()`: `stepSpring(camera.scale, ...,
  * 1.0)` is hardcoded even during a flick). The result's `scale` is clamped to
- * `[scaleMin, scaleMax]` after the spring step.
+ * `[scaleMin, scaleMax]` after the spring step, and — when `panBounds` is
+ * given and the pointer isn't actively dragging — x/y are elastically pulled
+ * back toward `panBounds` (prototype: 14%/frame pull, 15% velocity bleed).
  */
 const SCALE_CRITICAL_DAMPING = 1.0;
+/** Prototype `updateCamera()` pan-bounds branch — pulls 14% of the way back toward the bound each frame. */
+const PAN_BOUNDS_PULL_FACTOR = 0.14;
+/** Prototype `updateCamera()` pan-bounds branch — bleeds 15% of the out-of-bounds axis's velocity each frame it stays clamped. */
+const PAN_BOUNDS_VELOCITY_RETENTION = 0.85;
+
+/**
+ * Prototype `panBounds = bbox(allNodes, 320)` (`docs/prototypes/topology-
+ * b2plus.html` line 602) — generous slack past the world's own node bbox.
+ * No assigned `--topology-v2-*` token yet (same "no token" precedent as
+ * `topology-pointer-handlers.ts`'s `RIPPLE_PER_NEIGHBOR_DELAY_MS`).
+ */
+export const DEFAULT_PAN_BOUNDS_MARGIN = 320;
+
+/** Expands a world-space bounding box by `margin` on every side — the soft pan-bounds envelope. */
+export function computePanBounds(
+  worldBounds: PanBounds,
+  margin: number = DEFAULT_PAN_BOUNDS_MARGIN,
+): PanBounds {
+  return {
+    minX: worldBounds.minX - margin,
+    minY: worldBounds.minY - margin,
+    maxX: worldBounds.maxX + margin,
+    maxY: worldBounds.maxY + margin,
+  };
+}
+
+/**
+ * Hard-clamps a single world-space point into `panBounds` — used to cap a
+ * flick's projected landing target (`topology-pointer-handlers.ts`) so the
+ * spring is never asked to chase a point far outside the graph's content.
+ * (The softer, per-frame `clampAxisToPanBounds` below handles the *live*
+ * camera position elastically; this one is a hard ceiling on the *target*.)
+ */
+export function clampPointToPanBounds(
+  x: number,
+  y: number,
+  panBounds: PanBounds,
+): { x: number; y: number } {
+  return {
+    x: Math.min(panBounds.maxX, Math.max(panBounds.minX, x)),
+    y: Math.min(panBounds.maxY, Math.max(panBounds.minY, y)),
+  };
+}
+
+function clampAxisToPanBounds(axis: SpringAxisState, min: number, max: number): SpringAxisState {
+  if (axis.value >= min && axis.value <= max) return axis;
+  const target = Math.min(max, Math.max(min, axis.value));
+  return {
+    value: axis.value + (target - axis.value) * PAN_BOUNDS_PULL_FACTOR,
+    velocity: axis.velocity * PAN_BOUNDS_VELOCITY_RETENTION,
+  };
+}
 
 export function stepCamera(input: CameraStepInput): CameraAxes {
-  const { camera, target, dt, damping, angularFrequency, scaleMin, scaleMax } = input;
-  const x = stepSpring(camera.x, target.tx, dt, angularFrequency, damping);
-  const y = stepSpring(camera.y, target.ty, dt, angularFrequency, damping);
+  const { camera, target, dt, damping, angularFrequency, scaleMin, scaleMax, panBounds, isDragging } = input;
+  let x = stepSpring(camera.x, target.tx, dt, angularFrequency, damping);
+  let y = stepSpring(camera.y, target.ty, dt, angularFrequency, damping);
   const steppedScale = stepSpring(
     camera.scale,
     target.tscale,
@@ -75,5 +156,11 @@ export function stepCamera(input: CameraStepInput): CameraAxes {
     value: Math.min(scaleMax, Math.max(scaleMin, steppedScale.value)),
     velocity: steppedScale.velocity,
   };
+
+  if (panBounds && !isDragging) {
+    x = clampAxisToPanBounds(x, panBounds.minX, panBounds.maxX);
+    y = clampAxisToPanBounds(y, panBounds.minY, panBounds.maxY);
+  }
+
   return { x, y, scale };
 }

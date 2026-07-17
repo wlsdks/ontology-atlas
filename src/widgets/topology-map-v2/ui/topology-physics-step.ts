@@ -8,7 +8,7 @@
  * "live state, stepped every frame" contract (`engine/camera.ts`).
  */
 
-import { stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera";
+import { computePanBounds, stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { stepEmphasis } from "../model/focus-state";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
@@ -25,6 +25,8 @@ export interface PhysicsStepInput {
   now: number;
   focusedNodeId: string | null;
   hoveredNodeId: string | null;
+  /** True while the pointer is actively dragging — suppresses the elastic pan-bounds clamp (see `engine/camera.ts`). */
+  isDragging: boolean;
   /** Mutated in place — the hook owns this map's lifetime across frames. */
   emphasisById: Map<string, number>;
   rippleStartById: ReadonlyMap<string, number>;
@@ -36,8 +38,21 @@ export interface PhysicsStepResult {
 }
 
 export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult {
-  const { world, camera, target, damping, overviewScale, tokens, dt, now, focusedNodeId, hoveredNodeId, emphasisById, rippleStartById } =
-    input;
+  const {
+    world,
+    camera,
+    target,
+    damping,
+    overviewScale,
+    tokens,
+    dt,
+    now,
+    focusedNodeId,
+    hoveredNodeId,
+    isDragging,
+    emphasisById,
+    rippleStartById,
+  } = input;
 
   const nextCamera = stepCamera({
     camera,
@@ -47,6 +62,8 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     angularFrequency: tokens.cameraSpringAngFreq,
     scaleMin: tokens.cameraScaleMin,
     scaleMax: tokens.cameraScaleMax,
+    panBounds: computePanBounds(world.bounds),
+    isDragging,
   });
 
   const band = computeAltitudeBand(overviewScale, tokens.altitudeFarHighRatio, tokens.altitudeFarLowRatio);

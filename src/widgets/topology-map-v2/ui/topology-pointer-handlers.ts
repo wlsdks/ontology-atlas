@@ -5,11 +5,23 @@
  * `releaseDrag()`/`wheel`). Split out of `use-topology-loop.ts` to keep both
  * files under the 300-line budget — `Ref<T>` here is any mutable box the
  * hook owns (`useRef`'s `.current`), not necessarily React's own ref type.
+ *
+ * FIX (QA first-light pass, blocker 1 — "drag makes everything vanish"):
+ * `projectFlickLanding`'s landing target grows unboundedly with flick speed
+ * (its own test pins -14870 world units for a routine 0.5px/ms flick at
+ * scale=1) — `handlePointerUp` now clamps that target into the world's own
+ * pan bounds (`engine/camera.ts#computePanBounds`) before handing it to the
+ * spring, so a fast flick still glides but can never strand the camera
+ * outside the graph's content. `stepCamera`'s own per-frame elastic clamp
+ * (`clampAxisToPanBounds`) alone was not enough — the spring's restoring
+ * force toward a fixed, far-away target outpaces a flat 14%/frame pull-back
+ * (verified manually via chrome-devtools: the camera was still lost 5+
+ * seconds after release without this).
  */
 
-import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 
-import type { CameraAxes, CameraTarget } from "../engine/camera";
+import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { projectFlickLanding } from "../engine/momentum";
 import { scheduleRipple } from "../model/focus-state";
 import {
@@ -50,7 +62,18 @@ export interface TopologyPointerHandlers {
   handlePointerMove: (e: ReactPointerEvent<HTMLCanvasElement>) => void;
   handlePointerUp: () => void;
   handlePointerCancel: () => void;
-  handleWheel: (e: ReactWheelEvent<HTMLCanvasElement>) => void;
+  /**
+   * FIX (QA first-light pass — console error sweep): takes a native
+   * `WheelEvent`, not React's synthetic `WheelEvent<...>`. React attaches its
+   * delegated `wheel` listener as passive by default, so a JSX `onWheel`
+   * prop calling `e.preventDefault()` logs "Unable to preventDefault inside
+   * passive event listener invocation" on every scroll/pinch and silently
+   * fails to stop the page from also scrolling underneath the canvas
+   * (reproduced via chrome-devtools: 37 warnings from one zoom gesture).
+   * `use-topology-loop.ts` now attaches this via a native, explicitly
+   * `{ passive: false }` listener instead of the JSX prop.
+   */
+  handleWheel: (e: WheelEvent) => void;
 }
 
 /** Builds the five pointer/wheel handlers, closing over the hook's refs (cheap — plain closures, no hook rules to satisfy). */
@@ -152,7 +175,15 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         cameraScale: cameraRef.current.scale.value,
         decay: tokens.cameraMomentumDecay,
       });
-      cameraTargetRef.current = { tx: px.landingTarget, ty: py.landingTarget, tscale: cameraTargetRef.current.tscale };
+      // The raw landing target can be thousands of world units past the
+      // graph's own content (see file header) — clamp it into the world's
+      // pan bounds before handing it to the spring so a fast flick still
+      // glides but never strands the camera in blank canvas.
+      const world = worldRef.current;
+      const clampedLanding = world
+        ? clampPointToPanBounds(px.landingTarget, py.landingTarget, computePanBounds(world.bounds))
+        : { x: px.landingTarget, y: py.landingTarget };
+      cameraTargetRef.current = { tx: clampedLanding.x, ty: clampedLanding.y, tscale: cameraTargetRef.current.tscale };
       cameraRef.current = {
         ...cameraRef.current,
         x: { value: cameraRef.current.x.value, velocity: px.worldVelocity },
@@ -182,12 +213,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     pointerMachineRef.current = next;
   };
 
-  const handleWheel = (e: ReactWheelEvent<HTMLCanvasElement>) => {
+  const handleWheel = (e: WheelEvent) => {
     e.preventDefault();
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
     const { width, height } = viewportRef.current;
-    const rect = e.currentTarget.getBoundingClientRect();
+    const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
 
