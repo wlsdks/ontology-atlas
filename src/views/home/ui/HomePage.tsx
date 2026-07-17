@@ -214,7 +214,14 @@ import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
-const TOPOLOGY_OVERVIEW_WIDE_CANVAS_ASPECT_X = 8;
+// aspectX 는 렌더 엔진에 종속된 상수다 — 옛 Sigma 경로는 `autoRescale` 이
+// bounds 를 뷰포트에 재정규화해주므로 늘려도 다시 맞춰졌지만, 신 지도 엔진
+// (TopologyMapCanvas) 은 진짜 metric 카메라라 8배 늘림이 그대로 노출되어
+// radial ring 이 수평 띠로 붕괴한다(디자인 가디언 verdict a1). 캔버스 엔진은
+// 늘리지 않는다(1) — ring 위치가 kind 위계의 1차 인코딩이라는 계약
+// (topology-skeleton-layout.ts) 을 지키는 값.
+const TOPOLOGY_OVERVIEW_MAP_CANVAS_ASPECT_X = 1;
+const TOPOLOGY_OVERVIEW_LEGACY_SIGMA_ASPECT_X = 8;
 
 export function HomePage() {
   const t = useTranslations('topology');
@@ -661,6 +668,14 @@ export function HomePage() {
           null
         : (selectedOntologyNode?.id ?? null);
 
+  // 어떤 렌더 엔진이 골격을 그리는지(verdict a1) — 캔버스 엔진
+  // (TopologyMapCanvas) 은 이 조건이 참일 때만 마운트된다(아래 JSX,
+  // `analysisMode !== "graph" && localGraphRoot === null` 과 동일 조건).
+  // useMemo 콜백 안에서 매번 `analysisMode === "graph"` 를 다시 비교하면
+  // 이른 return 이후 TS 가 리터럴 타입을 좁혀 "unintentional comparison"
+  // 오류가 나므로, 바깥 스코프에서 한 번만 계산해 boolean 으로 넘긴다.
+  const isTopologyMapCanvasEngine = localGraphRoot === null && analysisMode !== "graph";
+
   // 구조 골격 진입 — root /topology 에서만(local-graph ego 제외). ontology 노드를
   // 결정론적 radial 골격으로 배치할 precomputed 좌표(slug→{x,y,size}) + 진입에
   // 보일 slug 집합을 계산해 SigmaTopology 에 데이터로 넘긴다. 클릭-레벨 확장:
@@ -690,10 +705,15 @@ export function HomePage() {
     const layout = buildRevealRadialLayout(skel, ontologyInsight.nodes, reveal, {
       width: 1000,
       height: 1000,
-      // 와이드 뷰포트 — 정원은 autoRescale 후 좌우가 비고 세로 거리가 멀어
-      // 보인다. 캔버스를 다시 움직이는 대신, 결정론적 overview projection 을
-      // 넓게 잡아 시작 지형 자체가 desktop canvas 를 쓰게 한다.
-      aspectX: TOPOLOGY_OVERVIEW_WIDE_CANVAS_ASPECT_X,
+      // 엔진별 분기(verdict a1) — 이 시점에선 위의 이른 return 때문에
+      // isTopologyMapCanvasEngine 이 항상 참이라 실질적으로 캔버스 엔진(1)만
+      // 쓰이지만, Sigma 의 옛 skeleton 경로가 나중에 다시 켜질 때를 대비해
+      // 어떤 상수가 어떤 엔진 것인지 분기로 명시해 둔다. Sigma 는
+      // `autoRescale` 이 bounds 를 재정규화해줘 늘려도 다시 맞춰졌지만, 캔버스
+      // 엔진은 진짜 metric 카메라라 늘리면 radial ring 이 수평 띠로 붕괴한다.
+      aspectX: isTopologyMapCanvasEngine
+        ? TOPOLOGY_OVERVIEW_MAP_CANVAS_ASPECT_X
+        : TOPOLOGY_OVERVIEW_LEGACY_SIGMA_ASPECT_X,
     });
     const map = new Map<string, { x: number; y: number; size: number }>();
     const slugs = new Set<string>(reveal.visibleSlugs);
@@ -760,7 +780,14 @@ export function HomePage() {
         dock: true,
       }),
     };
-  }, [analysisMode, localGraphRoot, ontologyInsight, pathTargetSlug, topologyRevealFocusSlug]);
+  }, [
+    analysisMode,
+    isTopologyMapCanvasEngine,
+    localGraphRoot,
+    ontologyInsight,
+    pathTargetSlug,
+    topologyRevealFocusSlug,
+  ]);
 
   useEffect(() => {
     if (!localGraphRoot) return;
