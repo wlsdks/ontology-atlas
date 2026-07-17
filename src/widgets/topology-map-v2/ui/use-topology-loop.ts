@@ -81,6 +81,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const pointerMachineRef = useRef<PointerMachineState>(INITIAL_POINTER_MACHINE_STATE);
   const dragHistoryRef = useRef<{ x: number; y: number; t: number }[]>([]);
   const camStartAtDownRef = useRef({ x: 0, y: 0 });
+  const canvasRectRef = useRef<{ left: number; top: number } | null>(null);
 
   const focusedSlugRef = useRef<string | null>(focusedSlug);
   const lastFocusedSlugRef = useRef<string | null>(focusedSlug);
@@ -150,6 +151,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       if (canvas.width !== backingWidth) canvas.width = backingWidth;
       if (canvas.height !== backingHeight) canvas.height = backingHeight;
       viewportRef.current = { width: rect.width, height: rect.height, dpr };
+      // Keep the cached pointer rect fresh whenever layout changes (see
+      // `canvasRectRef` in `topology-pointer-handlers.ts`).
+      canvasRectRef.current = { left: rect.left, top: rect.top };
 
       const tokens = readTopologyV2TokensOrNull();
       if (!tokens) return;
@@ -296,6 +300,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     pointerMachineRef,
     dragHistoryRef,
     camStartAtDownRef,
+    canvasRectRef,
     focusedSlugRef,
     hoveredNodeIdRef,
     rippleStartRef,

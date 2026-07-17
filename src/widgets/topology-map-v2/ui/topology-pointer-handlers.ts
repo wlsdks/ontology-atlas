@@ -29,6 +29,7 @@ import {
   transitionPointerState,
   type PointerMachineState,
 } from "../interaction/pointer-state-machine";
+import { normalizeWheelDeltaY } from "../interaction/wheel";
 import { hitTestWorld } from "./topology-camera-math";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyWorld } from "./topology-world";
@@ -49,6 +50,13 @@ export interface PointerHandlerRefs {
   pointerMachineRef: Ref<PointerMachineState>;
   dragHistoryRef: Ref<{ x: number; y: number; t: number }[]>;
   camStartAtDownRef: Ref<{ x: number; y: number }>;
+  /**
+   * Cached canvas bounding rect. `getBoundingClientRect()` forces a synchronous
+   * layout/reflow; calling it on every `pointermove` was a per-drag-frame
+   * reflow (a real source of the owner-reported "pan is janky"). We snapshot it
+   * once at `pointerdown` and reuse it for the whole gesture instead.
+   */
+  canvasRectRef: Ref<{ left: number; top: number } | null>;
   focusedSlugRef: Ref<string | null>;
   hoveredNodeIdRef: Ref<string | null>;
   rippleStartRef: Ref<Map<string, number>>;
@@ -87,6 +95,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     pointerMachineRef,
     dragHistoryRef,
     camStartAtDownRef,
+    canvasRectRef,
     focusedSlugRef,
     hoveredNodeIdRef,
     rippleStartRef,
@@ -95,11 +104,24 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     onPaneClick,
   } = refs;
 
+  /** Reuse the cached rect during a gesture; refresh lazily if we somehow don't have one yet. */
+  const currentRect = (el: HTMLCanvasElement): { left: number; top: number } => {
+    const cached = canvasRectRef.current;
+    if (cached) return cached;
+    const rect = el.getBoundingClientRect();
+    const snapshot = { left: rect.left, top: rect.top };
+    canvasRectRef.current = snapshot;
+    return snapshot;
+  };
+
   const handlePointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
     const tokens = readTopologyV2TokensOrNull();
     const world = worldRef.current;
     if (!tokens || !world) return;
-    const rect = e.currentTarget.getBoundingClientRect();
+    // Snapshot the rect once per gesture (see `canvasRectRef` JSDoc).
+    const domRect = e.currentTarget.getBoundingClientRect();
+    canvasRectRef.current = { left: domRect.left, top: domRect.top };
+    const rect = canvasRectRef.current;
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     const hitNodeId = hitTestWorld(world, cameraRef.current, viewportRef.current.width, viewportRef.current.height, tokens, point.x, point.y);
     const { next } = transitionPointerState(pointerMachineRef.current, { type: "pointerdown", point, hitNodeId }, tokens.hysteresisPx);
@@ -112,7 +134,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const tokens = readTopologyV2TokensOrNull();
     const world = worldRef.current;
     if (!tokens || !world) return;
-    const rect = e.currentTarget.getBoundingClientRect();
+    const rect = currentRect(e.currentTarget);
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
     const { next } = transitionPointerState(pointerMachineRef.current, { type: "pointermove", point }, tokens.hysteresisPx);
@@ -218,14 +240,18 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
     const { width, height } = viewportRef.current;
-    const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
+    const rect = currentRect(e.currentTarget as HTMLCanvasElement);
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
 
     const camera = cameraRef.current;
     const beforeX = (sx - width / 2) / camera.scale.value + camera.x.value;
     const beforeY = (sy - height / 2) / camera.scale.value + camera.y.value;
-    const factor = Math.exp(-e.deltaY * 0.0016);
+    // Normalize deltaMode first — a line/page-mode wheel reports a tiny raw
+    // deltaY that the old `exp(-deltaY*0.0016)` turned into ~0% zoom (the
+    // owner's "휠 확대 안 됨" bug). See `interaction/wheel.ts`.
+    const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, height);
+    const factor = Math.exp(-pixelDeltaY * 0.0016);
     const newScale = Math.min(tokens.cameraScaleMax, Math.max(tokens.cameraScaleMin, camera.scale.value * factor));
     const afterX = beforeX - (sx - width / 2) / newScale;
     const afterY = beforeY - (sy - height / 2) / newScale;
