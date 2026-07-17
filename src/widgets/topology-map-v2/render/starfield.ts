@@ -14,8 +14,6 @@
  *
  * Zero React imports — pure Canvas 2D drawing plus one extractable pure
  * helper (`computeStarDustCount`, unit-tested in `starfield.test.ts`).
- *
- * STUB: the lead implements both draw bodies.
  */
 
 export interface DustPoint {
@@ -33,13 +31,11 @@ export interface DustPoint {
  * placement lives in `draw()`'s TODO body, this helper only pins the count.
  */
 export function computeStarDustCount(
-  _viewportWidth: number,
-  _viewportHeight: number,
-  _areaPerPoint: number,
+  viewportWidth: number,
+  viewportHeight: number,
+  areaPerPoint: number,
 ): number {
-  throw new Error(
-    "TODO(lead): implement computeStarDustCount per the prototype's buildStarDust() — starfield.test.ts pins the contract.",
-  );
+  return Math.round((viewportWidth * viewportHeight) / areaPerPoint);
 }
 
 export interface StarDustDrawState {
@@ -49,13 +45,15 @@ export interface StarDustDrawState {
 }
 
 /** Draws the static dust texture, fading in with `farT` (never fully at circuit altitude). */
-export function drawStarDust(
-  _ctx: CanvasRenderingContext2D,
-  _state: StarDustDrawState,
-): void {
-  throw new Error(
-    "TODO(lead): implement drawStarDust per the prototype's dust-drawing loop in render() — see docs/TOPOLOGY-V2-DESIGN.md §3.1.",
-  );
+export function drawStarDust(ctx: CanvasRenderingContext2D, state: StarDustDrawState): void {
+  if (state.farT <= 0.02) return;
+  const { points, farT, devicePixelRatio } = state;
+  points.forEach((point) => {
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(236,236,240,${point.alpha * farT})`;
+    ctx.arc(point.x * devicePixelRatio, point.y * devicePixelRatio, point.r * devicePixelRatio, 0, Math.PI * 2);
+    ctx.fill();
+  });
 }
 
 export interface DiffractionSpikeDrawState {
@@ -69,11 +67,32 @@ export interface DiffractionSpikeDrawState {
 }
 
 /** Draws one crisp 4-point diffraction spike — solid tapering slivers, no gradient/blur/glow. */
-export function drawDiffractionSpike(
-  _ctx: CanvasRenderingContext2D,
-  _state: DiffractionSpikeDrawState,
-): void {
-  throw new Error(
-    "TODO(lead): implement drawDiffractionSpike per the prototype's drawSpike() — forbidden.md bans glow/halo, this must stay solid-fill.",
-  );
+export function drawDiffractionSpike(ctx: CanvasRenderingContext2D, state: DiffractionSpikeDrawState): void {
+  if (state.alpha <= 0.01) return;
+  const { screenX: cx, screenY: cy, screenRadius: r, color, alpha } = state;
+  const long = r * 2.6;
+  const short = r * 1.5;
+  const baseW = Math.max(0.6, r * 0.09);
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - long);
+  ctx.lineTo(cx + baseW, cy);
+  ctx.lineTo(cx, cy + long);
+  ctx.lineTo(cx - baseW, cy);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(cx - short, cy);
+  ctx.lineTo(cx, cy - baseW);
+  ctx.lineTo(cx + short, cy);
+  ctx.lineTo(cx, cy + baseW);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
 }

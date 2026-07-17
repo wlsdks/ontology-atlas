@@ -14,13 +14,15 @@
  * Zero React imports — pure Canvas 2D drawing plus one extractable pure
  * geometry helper (`computeBowControlPoint`, unit-tested in `traces.test.ts`
  * without a canvas).
- *
- * STUB: the lead implements both bodies.
  */
 
 export interface Point {
   x: number;
   y: number;
+}
+
+function polarOf(p: Point): { r: number; angle: number } {
+  return { r: Math.hypot(p.x, p.y), angle: Math.atan2(p.y, p.x) };
 }
 
 /**
@@ -42,25 +44,35 @@ export interface Point {
  * @param maxBow `--topology-v2-edge-bow-contains` (70) or `-depends` (92)
  * @param blend `--topology-v2-edge-blend-contains` (0.46) or `-depends` (0.62)
  */
-export function computeBowControlPoint(
-  _a: Point,
-  _b: Point,
-  _maxBow: number,
-  _blend: number,
-): Point {
-  throw new Error(
-    "TODO(lead): implement computeBowControlPoint per the prototype's buildEdges() — traces.test.ts pins the contract.",
-  );
+export function computeBowControlPoint(a: Point, b: Point, maxBow: number, blend: number): Point {
+  const pa = polarOf(a);
+  const pb = polarOf(b);
+  const innerIsA = pa.r <= pb.r;
+  const innerR = innerIsA ? pa.r : pb.r;
+  const farAngle = innerIsA ? pb.angle : pa.angle;
+  const cpFull = { x: Math.cos(farAngle) * innerR, y: Math.sin(farAngle) * innerR };
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const vx = cpFull.x - mid.x;
+  const vy = cpFull.y - mid.y;
+  const vlen = Math.sqrt(vx * vx + vy * vy) || 1;
+  const capped = Math.min(vlen, maxBow);
+  return {
+    x: mid.x + (vx / vlen) * capped * blend,
+    y: mid.y + (vy / vlen) * capped * blend,
+  };
 }
 
 /** Point at parameter `t` (0..1) along the quadratic bezier `p0 -> p1(control) -> p2`. */
-export function bezierPoint(_p0: Point, _p1: Point, _p2: Point, _t: number): Point {
-  throw new Error(
-    "TODO(lead): implement bezierPoint per the prototype's bezierPoint() — traces.test.ts pins the contract.",
-  );
+export function bezierPoint(p0: Point, p1: Point, p2: Point, t: number): Point {
+  const u = 1 - t;
+  return {
+    x: u * u * p0.x + 2 * u * t * p1.x + t * t * p2.x,
+    y: u * u * p0.y + 2 * u * t * p1.y + t * t * p2.y,
+  };
 }
 
 export interface TraceDrawState {
+  /** Screen-space endpoints/control point — the caller converts world coordinates first. */
   a: Point;
   b: Point;
   control: Point;
@@ -85,12 +97,51 @@ export interface TraceTokens {
  * — drawn by the caller looping active pulses through this same curve math,
  * not owned by this per-edge `draw()`.
  */
-export function draw(
-  _ctx: CanvasRenderingContext2D,
-  _state: TraceDrawState,
-  _tokens: TraceTokens,
-): void {
-  throw new Error(
-    "TODO(lead): implement draw() per the prototype's drawEdge() — see docs/TOPOLOGY-V2-DESIGN.md §3.1.",
-  );
+const DEPENDS_DASH = [3, 4];
+const COMET_TAIL_STEPS = [0, 0.028, 0.056];
+const COMET_TAIL_FAR_SIZES = [1.3, 0.9, 0.6];
+
+export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, tokens: TraceTokens): void {
+  const { a, b, control, farT, egoState, t } = state;
+  const isDepends = state.relationType === "depends";
+
+  let stroke: string;
+  let width: number;
+  if (egoState === "dim") {
+    stroke = tokens.edgeDim;
+    width = 1;
+  } else if (egoState === "ego") {
+    stroke = isDepends ? tokens.indigoBright : tokens.indigo;
+    width = (isDepends ? 1.8 : 1.5) - farT * 0.5;
+  } else {
+    stroke = isDepends ? tokens.edgeDepends : tokens.edgeContains;
+    width = (isDepends ? 1.3 : 1) + ((isDepends ? 0.6 : 0.45) - (isDepends ? 1.3 : 1)) * farT;
+  }
+
+  ctx.beginPath();
+  ctx.setLineDash(isDepends ? DEPENDS_DASH : []);
+  ctx.moveTo(a.x, a.y);
+  ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = Math.max(0.35, width);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  if (!isDepends || egoState === "dim") return;
+
+  // ambient comet tail — three shrinking dots trailing the live pulse
+  // position, thinning toward hairline dust as altitude rises rather than
+  // fading via alpha (forbidden.md bans glow/alpha-based "signal" motifs).
+  const baseSizes = egoState === "ego" ? [2.9, 2.1, 1.3] : [2.1, 1.5, 0.9];
+  const tailColor = egoState === "ego" ? tokens.indigoBright : tokens.indigo;
+  COMET_TAIL_STEPS.forEach((step, i) => {
+    let tt = t - step;
+    if (tt < 0) tt += 1;
+    const point = bezierPoint(a, control, b, tt);
+    const size = baseSizes[i] + (COMET_TAIL_FAR_SIZES[i] - baseSizes[i]) * farT;
+    ctx.beginPath();
+    ctx.fillStyle = tailColor;
+    ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+    ctx.fill();
+  });
 }
