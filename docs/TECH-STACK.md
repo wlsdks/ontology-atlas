@@ -10,7 +10,7 @@
 |---|---|---|---|
 | Next.js | 16.2.x static export | **KEEP** | static export 완숙. Astro/React Router 전환은 local-first 재설계 비용 > 이득 |
 | React | 19.2.x | **KEEP** | React Compiler는 Slice 2(topology-map-v2)에서 성능 측정 후 활성화 판단 |
-| TypeScript | 5.x | **UPGRADE → 7.0 (소유자 지시)** | **TS 7.0 정식 릴리스 확인 (2026-07-08, Go 네이티브 10x).** 공식 경로: 6.0 (`stableTypeOrdering`) 경유 → 7.0, tsconfig 기본값 변경 대응 (strict 기본 on·baseUrl 제거·rootDir 기본 `./`). 리스크: Next.js는 TS 7 지원 미발표 (16.3, 6/29) — `next build` 타입체크가 프로그래매틱 API 의존 시 공식 폴백 `@typescript/typescript6` 별칭 병행. 브랜치에서 시도 → 게이트 통과 여부로 확정 |
+| TypeScript | 5.x | **UPGRADE → 7.0 (소유자 지시)** | **TS 7.0 정식 릴리스 확인 (2026-07-08, Go 네이티브 10x).** 공식 경로: 6.0 (`stableTypeOrdering`) 경유 → 7.0, tsconfig 기본값 변경 대응 (strict 기본 on·baseUrl 제거·rootDir 기본 `./`). **확정 (PR #309, 게이트 전부 그린)**: tsc = 네이티브 7.0.2, Next/eslint의 JS API 소비는 공식 별칭 `@typescript/typescript6`으로 병행 (예견된 next build 비호환을 공식 폴백으로 해결). Next가 TS 7 API 지원 시 별칭 제거 |
 | Tailwind | 4.2.x | **KEEP** | @theme CSS 토큰 안정, 디자인 시스템 정합 |
 | ESLint | 9 flat | **KEEP (확정)** | Biome 2.5는 eslint-plugin-boundaries(FSD 가드) 미지원 — 아키텍처 강제가 걸린 한 ESLint 유일 선택지 |
 | pnpm | 10.x | **KEEP** | Bun은 Anthropic 인수 후 로드맵 미공표 + Next static export 호환 미성숙 — watch만 |
