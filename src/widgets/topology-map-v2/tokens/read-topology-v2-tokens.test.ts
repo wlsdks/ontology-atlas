@@ -84,6 +84,8 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-breathe-freq-rad": "1.15",
   "--topology-v2-pulse-duration-ms": "420",
   "--topology-v2-tip-fade-ms": "120",
+  "--topology-v2-edge-pulse-speed": "0.075",
+  "--topology-v2-edge-pulse-speed-ego": "0.2",
 
   "--topology-v2-safe-inset-left": "344",
   "--topology-v2-safe-inset-right": "120",
@@ -97,7 +99,7 @@ function fixtureReader(overrides: Record<string, string> = {}) {
 }
 
 describe("resolveTopologyV2Tokens", () => {
-  it("resolves all 74 §2 tokens to the exact prototype-sourced values", () => {
+  it("resolves all 77 §2 tokens to the exact prototype-sourced values", () => {
     const tokens = resolveTopologyV2Tokens(fixtureReader());
 
     expect(tokens.nodeFillProject).toBe("#1c1c22");
@@ -116,6 +118,8 @@ describe("resolveTopologyV2Tokens", () => {
     expect(tokens.starCount).toBe(4);
     expect(tokens.overviewEntryRatio).toBeCloseTo(0.95, 3);
     expect(tokens.tipFadeMs).toBe(120);
+    expect(tokens.edgePulseSpeed).toBeCloseTo(0.075, 4);
+    expect(tokens.edgePulseSpeedEgo).toBeCloseTo(0.2, 4);
   });
 
   it("parses declared numeric tokens as numbers, not strings", () => {

@@ -40,6 +40,13 @@ export interface UseTopologyLoopArgs {
   nodes: TopologyMapV2Props["nodes"];
   edges: TopologyMapV2Props["edges"];
   focusedSlug: string | null;
+  /**
+   * The neighbor slug the user is hovering in the detail panel's "연결된 노드"
+   * list, or null. Under focus this one node (+ its connecting edge) lights up
+   * on the canvas so panel and map read as one ("emphasis ripple" linkage,
+   * lead spec §4). Null until the panel-hover wiring feeds it in.
+   */
+  emphasizedNeighborSlug?: string | null;
   fitViewToken: number;
   relayoutToken: number;
   onSelect?: (slug: string) => void;
@@ -54,7 +61,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -103,6 +110,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
   const focusedSlugRef = useRef<string | null>(focusedSlug);
   const lastFocusedSlugRef = useRef<string | null>(focusedSlug);
+  const panelEmphasisNodeIdRef = useRef<string | null>(emphasizedNeighborSlug);
   const hoveredNodeIdRef = useRef<string | null>(null);
   const emphasisRef = useRef<Map<string, number>>(new Map());
   const rippleStartRef = useRef<Map<string, number>>(new Map());
@@ -111,6 +119,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     focusedSlugRef.current = focusedSlug;
   }, [focusedSlug]);
+
+  useEffect(() => {
+    panelEmphasisNodeIdRef.current = emphasizedNeighborSlug;
+  }, [emphasizedNeighborSlug]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
@@ -292,6 +304,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
       const focusedNodeId = focusedSlugRef.current;
       const hoveredNodeId = focusedNodeId ? null : hoveredNodeIdRef.current;
+      // Panel-row emphasis only bites while a node is focused (that's the only
+      // time the "연결된 노드" list exists) — otherwise hover owns the ripple.
+      const panelEmphasisNodeId = focusedNodeId ? panelEmphasisNodeIdRef.current : null;
 
       const { camera, farT, zoomRatio } = stepTopologyPhysics({
         world,
@@ -304,6 +319,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         now,
         focusedNodeId,
         hoveredNodeId,
+        panelEmphasisNodeId,
         isDragging: pointerMachineRef.current.phase === "dragging",
         emphasisById: emphasisRef.current,
         rippleStartById: rippleStartRef.current,
@@ -326,6 +342,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         tokens,
         focusedNodeId,
         hoveredNodeId,
+        emphasizedNeighborId: panelEmphasisNodeId,
         emphasisById: emphasisRef.current,
         reducedMotion: reducedMotionRef.current,
       });

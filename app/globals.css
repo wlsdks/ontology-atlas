@@ -994,6 +994,11 @@
     --topology-v2-breathe-freq-rad: 1.15;
     --topology-v2-pulse-duration-ms: 420;
     --topology-v2-tip-fade-ms: 120;
+    /* depends 엣지 comet-tail 진행 속도(t += dt × speed). 기본은 ambient
+       흐름, ego(선택 노드에 물린 엣지)는 "전류가 더 흐른다"는 회로 은유로
+       가속 — B2+ 연결 하이라이트(lead spec §2). */
+    --topology-v2-edge-pulse-speed: 0.075;
+    --topology-v2-edge-pulse-speed-ego: 0.2;
 
     /* 2.5 안전 영역 (fixed chrome inset — px, canvas 2D 가 숫자로 소비)
        좌측 ReaderLens 분석 패널 + 우측 팝오버 레일 + 상단 유틸리티 레인 +

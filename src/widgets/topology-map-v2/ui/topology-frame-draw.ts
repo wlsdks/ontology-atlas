@@ -73,6 +73,7 @@ function resolveNodeVisual(
   egoState: NodeEgoState,
   emphasis: number,
   focusedNodeId: string | null,
+  isEmphasizedNeighbor: boolean,
   tokens: TopologyV2Tokens,
   reducedMotion: boolean,
 ): NodeVisual {
@@ -90,6 +91,9 @@ function resolveNodeVisual(
   if (freshness.strokeIndigoLerp > 0) stroke = lerpColorHex(stroke, tokens.indigo, freshness.strokeIndigoLerp);
   if (!focusedNodeId && emphasis > 0.02) stroke = lerpColorHex(stroke, tokens.indigo, Math.min(1, emphasis));
   if (egoState === "neighbor") stroke = lerpColorHex(stroke, tokens.indigo, 0.5);
+  // Panel-linked ripple: the hovered detail-row's neighbor pushes past the flat
+  // 0.5 neighbor tint toward the brightest indigo, tracking its emphasis ramp.
+  if (isEmphasizedNeighbor && emphasis > 0.02) stroke = lerpColorHex(stroke, tokens.indigoBright, Math.min(1, emphasis));
   if (egoState === "center") stroke = tokens.indigoBright;
 
   return { fill: tierFill(node.kind, tokens), stroke, dash: freshness.dash, lineWidth, breatheEnabled: freshness.breatheEnabled };
@@ -111,6 +115,13 @@ export interface FrameDrawParams {
   tokens: TopologyV2Tokens;
   focusedNodeId: string | null;
   hoveredNodeId: string | null;
+  /**
+   * Under focus, the one neighbor whose detail-panel row the user is hovering.
+   * Its node + the ego edge that connects it to the focused node get an extra
+   * "emphasis ripple" brightening so panel and map read as one (lead spec §4).
+   * Null in the common case (no panel hover).
+   */
+  emphasizedNeighborId: string | null;
   emphasisById: ReadonlyMap<string, number>;
   reducedMotion: boolean;
 }
@@ -131,6 +142,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     tokens,
     focusedNodeId,
     hoveredNodeId,
+    emphasizedNeighborId,
     emphasisById,
     reducedMotion,
   } = params;
@@ -169,6 +181,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       const edgeAlpha = edgeTierAlpha(tierAlphaById.get(edge.sourceId) ?? 1, tierAlphaById.get(edge.targetId) ?? 1);
       if (edgeAlpha <= 0.02) continue;
       const touches = focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
+      const emphasized =
+        emphasizedNeighborId !== null &&
+        touches &&
+        (edge.sourceId === emphasizedNeighborId || edge.targetId === emphasizedNeighborId);
       ctx.globalAlpha = edgeAlpha;
       tracesDraw(
         ctx,
@@ -180,6 +196,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           egoState: resolveEdgeEgoState(touches, focusedNodeId),
           farT,
           t: edge.t,
+          emphasized,
         },
         {
           edgeContains: tokens.edgeContains,
@@ -198,7 +215,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     if (tierAlpha <= 0.02) continue;
     const egoState = resolveNodeEgoState(node.id, focusedNodeId, neighborsOfFocused);
     const emphasis = emphasisById.get(node.id) ?? 0;
-    const visual = resolveNodeVisual(node, egoState, emphasis, focusedNodeId, tokens, reducedMotion);
+    const isEmphasizedNeighbor = emphasizedNeighborId !== null && node.id === emphasizedNeighborId && egoState === "neighbor";
+    const visual = resolveNodeVisual(node, egoState, emphasis, focusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion);
 
     const baseRadius = radiusForKind(node.kind, tokens);
     let breathe = 1;
@@ -209,6 +227,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     if (egoState === "center") effRadius *= 1.12;
     if (!focusedNodeId) {
       effRadius += emphasis * (node.id === hoveredNodeId ? baseRadius * 0.16 : baseRadius * 0.08);
+    } else if (isEmphasizedNeighbor) {
+      effRadius += emphasis * baseRadius * 0.12;
     }
 
     const screen = project(node.x, node.y);

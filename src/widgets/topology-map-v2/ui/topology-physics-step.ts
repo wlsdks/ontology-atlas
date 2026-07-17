@@ -10,7 +10,7 @@
 
 import { computePanBounds, stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { computeAltitudeBand, computeFarT } from "../model/altitude";
-import { stepEmphasis } from "../model/focus-state";
+import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis } from "../model/focus-state";
 import { computeZoomRatio } from "../model/tier-visibility";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import type { TopologyWorld } from "./topology-world";
@@ -26,6 +26,14 @@ export interface PhysicsStepInput {
   now: number;
   focusedNodeId: string | null;
   hoveredNodeId: string | null;
+  /**
+   * The one neighbor the user is hovering in the detail panel's "연결된 노드"
+   * list, or null. Under focus (hover suppressed) this node still ramps its
+   * emphasis so the panel row and the on-canvas node/edge light up together
+   * ("emphasis ripple" linkage, lead spec §4). Null until the panel-hover API
+   * feeds it in.
+   */
+  panelEmphasisNodeId: string | null;
   /** True while the pointer is actively dragging — suppresses the elastic pan-bounds clamp (see `engine/camera.ts`). */
   isDragging: boolean;
   /** Mutated in place — the hook owns this map's lifetime across frames. */
@@ -58,6 +66,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     now,
     focusedNodeId,
     hoveredNodeId,
+    panelEmphasisNodeId,
     isDragging,
     emphasisById,
     rippleStartById,
@@ -107,7 +116,9 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
 
   const activeEgoId = focusedNodeId ? null : hoveredNodeId;
   for (const node of world.nodes) {
-    const isInActiveEgoSet = !!activeEgoId && (node.id === activeEgoId || world.neighborMap.get(activeEgoId)?.has(node.id) === true);
+    const isHoverEgoMember =
+      !!activeEgoId && (node.id === activeEgoId || world.neighborMap.get(activeEgoId)?.has(node.id) === true);
+    const isInActiveEgoSet = isNodeEmphasisActive(node.id, focusedNodeId, isHoverEgoMember, panelEmphasisNodeId);
     const rippleHasStarted = now >= (rippleStartById.get(node.id) ?? 0);
     const previous = emphasisById.get(node.id) ?? 0;
     emphasisById.set(
@@ -116,8 +127,15 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     );
   }
 
+  // Powered subgraph carries more current: an edge incident to the focused node
+  // advances its comet-tail at the accelerated ego speed, everything else at the
+  // ambient base speed (`resolveEdgePulseSpeed`, lead spec §2).
   for (const edge of world.edges) {
-    if (edge.kind === "depends") edge.t = (edge.t + dt * 0.075) % 1;
+    if (edge.kind !== "depends") continue;
+    const touchesFocused =
+      focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
+    const speed = resolveEdgePulseSpeed(touchesFocused, focusedNodeId, tokens.edgePulseSpeed, tokens.edgePulseSpeedEgo);
+    edge.t = (edge.t + dt * speed) % 1;
   }
 
   return { camera: nextCamera, farT, zoomRatio };
