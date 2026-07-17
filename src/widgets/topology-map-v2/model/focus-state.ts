@@ -28,8 +28,6 @@
  * Pure state — no DOM/pointer-event/canvas knowledge. `interaction/pointer-state-machine.ts`
  * owns translating raw pointer events into `focusedNodeId`/`hoveredNodeId`
  * changes that this module reacts to.
- *
- * STUB: the lead implements the bodies. See `focus-state.test.ts`.
  */
 
 export type NodeEgoState = "center" | "neighbor" | "dim" | "normal";
@@ -41,23 +39,23 @@ export type EdgeEgoState = "ego" | "dim" | "normal";
  * focus is active at all; with no focus, every node is `"normal"`.
  */
 export function resolveNodeEgoState(
-  _nodeId: string,
-  _focusedNodeId: string | null,
-  _neighborsOfFocused: ReadonlySet<string>,
+  nodeId: string,
+  focusedNodeId: string | null,
+  neighborsOfFocused: ReadonlySet<string>,
 ): NodeEgoState {
-  throw new Error(
-    "TODO(lead): implement resolveNodeEgoState per the prototype's nodeEgoState() — focus-state.test.ts pins the contract.",
-  );
+  if (focusedNodeId === null) return "normal";
+  if (nodeId === focusedNodeId) return "center";
+  if (neighborsOfFocused.has(nodeId)) return "neighbor";
+  return "dim";
 }
 
 /** `"ego"` if the edge touches the focused node, `"dim"` otherwise; `"normal"` with no focus. */
 export function resolveEdgeEgoState(
-  _edgeTouchesFocusedNode: boolean,
-  _focusedNodeId: string | null,
+  edgeTouchesFocusedNode: boolean,
+  focusedNodeId: string | null,
 ): EdgeEgoState {
-  throw new Error(
-    "TODO(lead): implement resolveEdgeEgoState per the prototype's edgeEgoState() — focus-state.test.ts pins the contract.",
-  );
+  if (focusedNodeId === null) return "normal";
+  return edgeTouchesFocusedNode ? "ego" : "dim";
 }
 
 export interface RippleSchedule {
@@ -72,15 +70,18 @@ export interface RippleSchedule {
  * `--topology-v2-ripple-stagger-ms`.
  */
 export function scheduleRipple(
-  _hoveredNodeId: string,
-  _nowMs: number,
-  _neighborIds: readonly string[],
-  _baseDelayMs: number,
-  _perNeighborDelayMs: number,
+  hoveredNodeId: string,
+  nowMs: number,
+  neighborIds: readonly string[],
+  baseDelayMs: number,
+  perNeighborDelayMs: number,
 ): readonly RippleSchedule[] {
-  throw new Error(
-    "TODO(lead): implement scheduleRipple per the prototype's startRipple() — focus-state.test.ts pins the contract.",
-  );
+  const own: RippleSchedule = { nodeId: hoveredNodeId, startAtMs: nowMs };
+  const neighbors = neighborIds.map((nodeId, i) => ({
+    nodeId,
+    startAtMs: nowMs + baseDelayMs + i * perNeighborDelayMs,
+  }));
+  return [own, ...neighbors];
 }
 
 /**
@@ -96,14 +97,16 @@ export function scheduleRipple(
  * @param decayTau `--topology-v2-emphasis-decay-tau` = 0.15
  */
 export function stepEmphasis(
-  _currentEmphasis: number,
-  _isInActiveEgoSet: boolean,
-  _rippleHasStarted: boolean,
-  _dt: number,
-  _riseTau: number,
-  _decayTau: number,
+  currentEmphasis: number,
+  isInActiveEgoSet: boolean,
+  rippleHasStarted: boolean,
+  dt: number,
+  riseTau: number,
+  decayTau: number,
 ): number {
-  throw new Error(
-    "TODO(lead): implement stepEmphasis per the prototype's updateEmphasis() — focus-state.test.ts pins the contract.",
-  );
+  if (isInActiveEgoSet) {
+    if (!rippleHasStarted) return currentEmphasis;
+    return currentEmphasis + (1 - currentEmphasis) * (1 - Math.exp(-dt / riseTau));
+  }
+  return currentEmphasis + (0 - currentEmphasis) * (1 - Math.exp(-dt / decayTau));
 }

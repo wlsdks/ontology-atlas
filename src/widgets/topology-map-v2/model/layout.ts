@@ -28,8 +28,6 @@
  * seeds a PRNG only for node breathe-phase offsets, which is NOT part of
  * this module's contract; phase offsets belong to `model/freshness.ts` /
  * `render/node-shapes.ts`, not layout).
- *
- * STUB: the lead implements the body. See `layout.test.ts`.
  */
 
 export type LayoutNodeKind = "project" | "domain" | "capability" | "element";
@@ -63,12 +61,72 @@ export interface LayoutPoint {
  * shared root — this module does not validate that it's literally the
  * project, only that siblings sharing a `parentId` fan out together).
  */
+const TAU = Math.PI * 2;
+
+interface PlacedPoint {
+  x: number;
+  y: number;
+  /** Angle from this node's own parent — only domains/capabilities need it, to seed their children's fan. */
+  angle: number;
+}
+
 export function computeConcentricLayout(
-  _nodes: readonly LayoutGraphNode[],
-  _rings: LayoutRings,
+  nodes: readonly LayoutGraphNode[],
+  rings: LayoutRings,
 ): LayoutPoint[] {
-  throw new Error(
-    "TODO(lead): implement computeConcentricLayout per docs/TOPOLOGY-V2-DESIGN.md §4 P2 " +
-      "and the prototype's layout() — layout.test.ts pins the exact contract.",
-  );
+  const placed = new Map<string, PlacedPoint>();
+
+  const project = nodes.find((n) => n.kind === "project");
+  if (project) {
+    placed.set(project.id, { x: 0, y: 0, angle: 0 });
+  }
+
+  const domainNodes = nodes.filter((n) => n.kind === "domain");
+  domainNodes.forEach((domain, i) => {
+    const angle = (i / domainNodes.length) * TAU - Math.PI / 2;
+    placed.set(domain.id, {
+      x: Math.cos(angle) * rings.domain,
+      y: Math.sin(angle) * rings.domain,
+      angle,
+    });
+  });
+
+  domainNodes.forEach((domain) => {
+    const domainPoint = placed.get(domain.id);
+    if (!domainPoint) return;
+    const caps = nodes.filter((n) => n.kind === "capability" && n.parentId === domain.id);
+    const spread = Math.min(0.95, 0.32 + caps.length * 0.22);
+    caps.forEach((cap, i) => {
+      const t = caps.length === 1 ? 0 : i / (caps.length - 1) - 0.5;
+      const angle = domainPoint.angle + t * spread;
+      placed.set(cap.id, {
+        x: domainPoint.x + Math.cos(angle) * rings.capability,
+        y: domainPoint.y + Math.sin(angle) * rings.capability,
+        angle,
+      });
+    });
+  });
+
+  const capabilityNodes = nodes.filter((n) => n.kind === "capability");
+  capabilityNodes.forEach((cap) => {
+    const capPoint = placed.get(cap.id);
+    if (!capPoint) return;
+    const elements = nodes.filter((n) => n.kind === "element" && n.parentId === cap.id);
+    if (!elements.length) return;
+    const spread = Math.min(1.05, 0.26 + elements.length * 0.26);
+    elements.forEach((element, i) => {
+      const t = elements.length === 1 ? 0 : i / (elements.length - 1) - 0.5;
+      const angle = capPoint.angle + t * spread;
+      placed.set(element.id, {
+        x: capPoint.x + Math.cos(angle) * rings.element,
+        y: capPoint.y + Math.sin(angle) * rings.element,
+        angle,
+      });
+    });
+  });
+
+  return nodes.map((n) => {
+    const point = placed.get(n.id);
+    return { id: n.id, x: point?.x ?? 0, y: point?.y ?? 0 };
+  });
 }
