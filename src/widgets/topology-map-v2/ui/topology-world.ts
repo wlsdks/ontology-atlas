@@ -157,3 +157,59 @@ export function buildTopologyWorld(
     bounds: { minX, minY, maxX, maxY },
   };
 }
+
+/**
+ * Writes live force-simulation positions back into the (mutable) world nodes.
+ * Positions the sim didn't produce (non-finite, guarded out in
+ * `force-layout.ts#positions`) leave the node's last-good coordinate intact.
+ */
+export function applyForcePositions(world: TopologyWorld, positions: ReadonlyMap<string, { x: number; y: number }>): void {
+  for (const node of world.nodes) {
+    const p = positions.get(node.id);
+    if (p) {
+      node.x = p.x;
+      node.y = p.y;
+    }
+  }
+}
+
+/**
+ * Recomputes every edge's endpoints + bow control point and the world bounds
+ * from the current (force-updated) node positions. Called each frame while the
+ * sim is warm — the "layout precomputed once" invariant only held while
+ * positions were static; a living graph refreshes derived geometry per frame.
+ */
+export function recomputeWorldGeometry(world: TopologyWorld, tokens: TopologyV2Tokens): void {
+  for (const edge of world.edges) {
+    const a = world.nodeById.get(edge.sourceId);
+    const b = world.nodeById.get(edge.targetId);
+    if (!a || !b) continue;
+    edge.ax = a.x;
+    edge.ay = a.y;
+    edge.bx = b.x;
+    edge.by = b.y;
+    const maxBow = edge.kind === "depends" ? tokens.edgeBowDepends : tokens.edgeBowContains;
+    const blend = edge.kind === "depends" ? tokens.edgeBlendDepends : tokens.edgeBlendContains;
+    const control = computeBowControlPoint({ x: a.x, y: a.y }, { x: b.x, y: b.y }, maxBow, blend);
+    edge.controlX = control.x;
+    edge.controlY = control.y;
+  }
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const node of world.nodes) {
+    const r = radiusForKind(node.kind, tokens);
+    minX = Math.min(minX, node.x - r);
+    maxX = Math.max(maxX, node.x + r);
+    minY = Math.min(minY, node.y - r);
+    maxY = Math.max(maxY, node.y + r);
+  }
+  if (Number.isFinite(minX)) {
+    world.bounds.minX = minX;
+    world.bounds.minY = minY;
+    world.bounds.maxX = maxX;
+    world.bounds.maxY = maxY;
+  }
+}

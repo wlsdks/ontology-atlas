@@ -66,10 +66,13 @@ export function hitTestWorld(
   tokens: TopologyV2Tokens,
   screenX: number,
   screenY: number,
+  /** Optional filter — skips nodes that aren't currently hittable (e.g. semantic-zoom-hidden tiers). Defaults to "all hittable". */
+  isHittable?: (node: WorldNode) => boolean,
 ): string | null {
   let bestId: string | null = null;
   let bestDistance = Infinity;
   for (const node of world.nodes) {
+    if (isHittable && !isHittable(node)) continue;
     const screen = worldToScreen(camera, viewportWidth, viewportHeight, node.x, node.y);
     const effRadius = radiusForKind(node.kind, tokens) * camera.scale.value + 5;
     const distance = Math.hypot(screenX - screen.x, screenY - screen.y);

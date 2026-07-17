@@ -23,16 +23,33 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { projectFlickLanding } from "../engine/momentum";
+import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { scheduleRipple } from "../model/focus-state";
+import type { ForceSimulation } from "../model/force-layout";
+import { DEFAULT_TIER_REVEAL, nodeTierAlpha } from "../model/tier-visibility";
+import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
 import {
   INITIAL_POINTER_MACHINE_STATE,
   transitionPointerState,
   type PointerMachineState,
 } from "../interaction/pointer-state-machine";
 import { normalizeWheelDeltaY } from "../interaction/wheel";
-import { hitTestWorld } from "./topology-camera-math";
+import { hitTestWorld, screenToWorld } from "./topology-camera-math";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyWorld } from "./topology-world";
+
+/** Frames of sim warmth to top up while a node is actively pin-dragged (kept warm so neighbors keep reflowing). */
+export const NODE_DRAG_HEAT_FRAMES = 20;
+/** A settle burst after a node is released so the graph (and the dropped node) relaxes around the drop, Obsidian-style. */
+export const NODE_RELEASE_HEAT_FRAMES = 90;
+/** Minimum tier alpha for a node to be grabbable/hoverable — hidden (semantic-zoom-gated) nodes must not be hit. */
+const HITTABLE_MIN_TIER_ALPHA = 0.5;
+
+/** Active node-drag: which node is pinned + the world-space grab offset (respects where inside the node it was grabbed). */
+export interface NodeDragState {
+  nodeId: string;
+  offset: WorldOffset;
+}
 
 /** Prototype `startRipple()` — the +12ms/neighbor stagger has no separate token (design doc §2.4). */
 const RIPPLE_PER_NEIGHBOR_DELAY_MS = 12;
@@ -61,6 +78,14 @@ export interface PointerHandlerRefs {
   hoveredNodeIdRef: Ref<string | null>;
   rippleStartRef: Ref<Map<string, number>>;
   reducedMotionRef: Ref<boolean>;
+  /** The live force simulation (`model/force-layout.ts`) — pin/movePin/clearPin during node-drag. Null before the world is built. */
+  simRef: Ref<ForceSimulation | null>;
+  /** Frames of remaining sim warmth — the rAF loop ticks the sim while > 0 (or while a node is pinned). Bumped by node-drag. */
+  heatRef: Ref<number>;
+  /** Active node pin-drag, or null when the drag is a camera pan / no drag. */
+  nodeDragRef: Ref<NodeDragState | null>;
+  /** The altitude band's "100%" fit scale — used to derive farT for tier-aware (visible-only) hit-testing. */
+  overviewScaleRef: Ref<number>;
   onSelect?: (slug: string) => void;
   onPaneClick?: () => void;
 }
@@ -100,9 +125,40 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     hoveredNodeIdRef,
     rippleStartRef,
     reducedMotionRef,
+    simRef,
+    heatRef,
+    nodeDragRef,
+    overviewScaleRef,
     onSelect,
     onPaneClick,
   } = refs;
+
+  /**
+   * Tier-aware hit test — only nodes currently visible at this altitude
+   * (`model/tier-visibility.ts`) can be grabbed/hovered, so the pointer never
+   * grabs an invisible semantic-zoom-gated capability/element.
+   */
+  const hitVisibleNode = (
+    world: TopologyWorld,
+    camera: CameraAxes,
+    tokens: ReturnType<typeof readTopologyV2TokensOrNull>,
+    px: number,
+    py: number,
+  ): string | null => {
+    if (!tokens) return null;
+    const band = computeAltitudeBand(overviewScaleRef.current, tokens.altitudeFarHighRatio, tokens.altitudeFarLowRatio);
+    const farT = computeFarT(camera.scale.value, band.farLow, band.farHigh);
+    return hitTestWorld(
+      world,
+      camera,
+      viewportRef.current.width,
+      viewportRef.current.height,
+      tokens,
+      px,
+      py,
+      (node) => nodeTierAlpha(node.kind, node.isHub, farT, DEFAULT_TIER_REVEAL) >= HITTABLE_MIN_TIER_ALPHA,
+    );
+  };
 
   /** Reuse the cached rect during a gesture; refresh lazily if we somehow don't have one yet. */
   const currentRect = (el: HTMLCanvasElement): { left: number; top: number } => {
@@ -123,7 +179,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     canvasRectRef.current = { left: domRect.left, top: domRect.top };
     const rect = canvasRectRef.current;
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    const hitNodeId = hitTestWorld(world, cameraRef.current, viewportRef.current.width, viewportRef.current.height, tokens, point.x, point.y);
+    const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
     const { next } = transitionPointerState(pointerMachineRef.current, { type: "pointerdown", point, hitNodeId }, tokens.hysteresisPx);
     pointerMachineRef.current = next;
     camStartAtDownRef.current = { x: cameraRef.current.x.value, y: cameraRef.current.y.value };
@@ -137,10 +193,41 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const rect = currentRect(e.currentTarget);
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
+    // Capture the pressed node BEFORE the transition — the pressed→dragging
+    // transition clears `pressedNodeId`, but we need it to know whether this
+    // drag grabbed a node (pin-drag) or empty space (camera pan).
+    const pressedNodeId = pointerMachineRef.current.pressedNodeId;
     const { next } = transitionPointerState(pointerMachineRef.current, { type: "pointermove", point }, tokens.hysteresisPx);
     pointerMachineRef.current = next;
 
     if (next.phase === "dragging") {
+      const sim = simRef.current;
+      const { width, height } = viewportRef.current;
+
+      // Start a node pin-drag the moment we cross into dragging on a node.
+      if (nodeDragRef.current === null && pressedNodeId !== null && sim?.hasNode(pressedNodeId)) {
+        const grabNode = world.nodeById.get(pressedNodeId);
+        if (grabNode) {
+          const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
+          const offset = computeGrabOffsetWorld(grabNode.x, grabNode.y, pw.x, pw.y);
+          sim.pin(pressedNodeId, grabNode.x, grabNode.y);
+          nodeDragRef.current = { nodeId: pressedNodeId, offset };
+          heatRef.current = NODE_DRAG_HEAT_FRAMES;
+        }
+      }
+
+      // Active node pin-drag: move the pin 1:1 in world space, keep the sim
+      // warm so neighbors reflow. The camera does NOT pan (headline fix — a
+      // node drag moves the NODE, not the whole viewport).
+      const drag = nodeDragRef.current;
+      if (drag && sim) {
+        const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
+        const pin = computePinWorld(pw.x, pw.y, drag.offset);
+        sim.movePin(pin.x, pin.y);
+        heatRef.current = NODE_DRAG_HEAT_FRAMES;
+        return;
+      }
+
       const anchor = next.downPoint ?? point;
       const worldDX = (point.x - anchor.x) / cameraRef.current.scale.value;
       const worldDY = (point.y - anchor.y) / cameraRef.current.scale.value;
@@ -156,7 +243,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
 
     if (next.phase !== "idle" || focusedSlugRef.current) return; // pressed-not-dragging, or focus owns emphasis
-    const hitNodeId = hitTestWorld(world, cameraRef.current, viewportRef.current.width, viewportRef.current.height, tokens, point.x, point.y);
+    const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
     if (hitNodeId === hoveredNodeIdRef.current) return;
     hoveredNodeIdRef.current = hitNodeId;
     if (hitNodeId) {
@@ -172,6 +259,17 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const wasDragging = pointerMachineRef.current.phase === "dragging";
     const { next, commitClick } = transitionPointerState(pointerMachineRef.current, { type: "pointerup" }, tokens.hysteresisPx);
     pointerMachineRef.current = next;
+
+    // Node pin-drag release: unpin and give the graph a settle burst so it
+    // (and the dropped node) relaxes around the drop, Obsidian-style. No
+    // camera flick, no click commit (the state machine already suppressed the
+    // click for a drag).
+    if (nodeDragRef.current !== null) {
+      simRef.current?.clearPin();
+      nodeDragRef.current = null;
+      heatRef.current = Math.max(heatRef.current, NODE_RELEASE_HEAT_FRAMES);
+      return;
+    }
 
     if (wasDragging) {
       const history = dragHistoryRef.current;
@@ -226,6 +324,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   };
 
   const handlePointerCancel = () => {
+    // Abort any in-flight node pin-drag cleanly (release the pin, let it settle).
+    if (nodeDragRef.current !== null) {
+      simRef.current?.clearPin();
+      nodeDragRef.current = null;
+      heatRef.current = Math.max(heatRef.current, NODE_RELEASE_HEAT_FRAMES);
+    }
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) {
       pointerMachineRef.current = INITIAL_POINTER_MACHINE_STATE;

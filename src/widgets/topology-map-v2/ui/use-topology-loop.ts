@@ -12,7 +12,9 @@
 import { useEffect, useRef, type RefObject } from "react";
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
+import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
+import type { NodeDragState } from "./topology-pointer-handlers";
 import { buildGridPattern } from "../render/grid";
 import { buildDustPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import { computeFocusCameraTarget, computeOverviewCameraTarget, fitWorldTarget } from "./topology-camera-math";
@@ -21,8 +23,13 @@ import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./t
 import { stepTopologyPhysics } from "./topology-physics-step";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyMapV2Props } from "./TopologyMapV2";
-import { buildTopologyWorld, type TopologyWorld } from "./topology-world";
+import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
+
+/** FA2 iterations to run per warm frame — a bounded synchronous tick budget (`model/force-layout.ts` integration note). */
+const FORCE_ITERATIONS_PER_FRAME = 1;
+/** Frames of warmth after a fresh world build — a light seeded settle that un-piles overlaps without erasing the concentric structure. */
+const INITIAL_SETTLE_FRAMES = 90;
 
 export interface UseTopologyLoopArgs {
   nodes: TopologyMapV2Props["nodes"];
@@ -53,6 +60,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const dustPointsRef = useRef<DustPoint[]>([]);
   const gridPatternRef = useRef<CanvasPattern | null>(null);
 
+  // Live force simulation (`model/force-layout.ts`) — seeded off the concentric
+  // layout, ticked while warm (`heatRef > 0`) or while a node is pinned.
+  const simRef = useRef<ForceSimulation | null>(null);
+  const heatRef = useRef(0);
+  const nodeDragRef = useRef<NodeDragState | null>(null);
+
   const cameraRef = useRef<CameraAxes>({
     x: { value: 0, velocity: 0 },
     y: { value: 0, velocity: 0 },
@@ -82,6 +95,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const dragHistoryRef = useRef<{ x: number; y: number; t: number }[]>([]);
   const camStartAtDownRef = useRef({ x: 0, y: 0 });
   const canvasRectRef = useRef<{ left: number; top: number } | null>(null);
+  // Once the user pans/zooms/clicks, stop auto-reframing the overview while the
+  // initial force settle is still running (so a re-fit never fights the user).
+  const userInteractedRef = useRef(false);
 
   const focusedSlugRef = useRef<string | null>(focusedSlug);
   const lastFocusedSlugRef = useRef<string | null>(focusedSlug);
@@ -130,7 +146,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
-    worldRef.current = buildTopologyWorld(nodes, edges, tokens);
+    const world = buildTopologyWorld(nodes, edges, tokens);
+    worldRef.current = world;
+    // Seed the force sim off the concentric layout (spatial memory) and warm it
+    // so it settles into an organic layout that un-piles the fan-arcs.
+    simRef.current = createForceSimulation(
+      world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
+      world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
+    );
+    nodeDragRef.current = null;
+    heatRef.current = INITIAL_SETTLE_FRAMES;
     onVisibleCountChange?.(nodes.length);
     onGraphStatsChange?.({ nodes: nodes.length, relations: edges.length });
     trySnapInitialCamera(tokens);
@@ -237,6 +262,24 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       const dt = lastFrameTimeRef.current === 0 ? 0 : Math.min((now - lastFrameTimeRef.current) / 1000, 0.05);
       lastFrameTimeRef.current = now;
 
+      // --- force simulation: tick while warm or while a node is pinned ---
+      const sim = simRef.current;
+      const pinned = nodeDragRef.current !== null;
+      if (sim && (heatRef.current > 0 || pinned)) {
+        sim.tick(FORCE_ITERATIONS_PER_FRAME);
+        applyForcePositions(world, sim.positions());
+        recomputeWorldGeometry(world, tokens);
+        if (!pinned && heatRef.current > 0) heatRef.current -= 1;
+        // Keep the graph framed while the initial seeded settle relaxes — but
+        // only until the user takes over (pan/zoom/click) or a focus is active.
+        if (!userInteractedRef.current && focusedSlugRef.current === null && pointerMachineRef.current.phase === "idle") {
+          const refit = computeOverviewCameraTarget(world.bounds, width, height, tokens);
+          const fit = fitWorldTarget(world.bounds, width, height, tokens.cameraScaleMax, tokens.cameraScaleMin);
+          cameraTargetRef.current = refit;
+          overviewScaleRef.current = fit.tscale;
+        }
+      }
+
       const focusedNodeId = focusedSlugRef.current;
       const hoveredNodeId = focusedNodeId ? null : hoveredNodeIdRef.current;
 
@@ -305,9 +348,26 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredNodeIdRef,
     rippleStartRef,
     reducedMotionRef,
+    simRef,
+    heatRef,
+    nodeDragRef,
+    overviewScaleRef,
     onSelect,
     onPaneClick,
   });
+
+  // Any pan/zoom/click means the user has taken over — stop auto-reframing the
+  // still-settling overview (see `userInteractedRef` + the rAF re-fit above).
+  const baseHandlePointerDown = handlers.handlePointerDown;
+  handlers.handlePointerDown = (e) => {
+    userInteractedRef.current = true;
+    baseHandlePointerDown(e);
+  };
+  const baseHandleWheel = handlers.handleWheel;
+  handlers.handleWheel = (e) => {
+    userInteractedRef.current = true;
+    baseHandleWheel(e);
+  };
   /* eslint-enable react-hooks/refs */
 
   // FIX (QA first-light pass — console error sweep): a JSX `onWheel` prop
