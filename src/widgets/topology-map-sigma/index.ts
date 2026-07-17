@@ -2,7 +2,7 @@ export {
   SigmaTopology,
   type TopologyRelationVisibilityStats,
 } from './ui/SigmaTopology';
-export { type SkeletonCardModel } from './ui/SigmaSkeletonCards';
+export { type SkeletonCardModel } from './model/skeleton-card';
 export { SigmaControls } from './ui/SigmaControls';
 export { SigmaHubRail } from './ui/SigmaHubRail';
 export { TopologyEmptyState } from './ui/TopologyEmptyState';

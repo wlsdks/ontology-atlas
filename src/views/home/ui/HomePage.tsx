@@ -2368,7 +2368,6 @@ export function HomePage() {
                     categories={taxonomyCategories}
                     selectedSlug={canvasSelectedSlug}
                     onSelectProject={(slug) => handleSelect(slug)}
-                    onExpandRequest={handleExpandRequest}
                     onProjectOpen={(slug) => setLocalGraphStack((stack) => [...stack, slug])}
                     fitViewToken={combinedFitToken}
                     relayoutToken={topologyRelayoutToken}
@@ -2398,9 +2397,6 @@ export function HomePage() {
                     skeletonSlugs={topologySkeleton?.slugs ?? null}
                     skeletonCards={topologySkeleton?.cards ?? null}
                     pathWorkflowActive={analysisMode === "path"}
-                    selectedMapFixedGeographyActive={
-                      analysisMode === "overview" && canvasSelectedSlug !== null
-                    }
                     selectedFocusCenterActive={analysisMode === "focus"}
                     suppressKindLegend={
                       createNodeOpen ||
