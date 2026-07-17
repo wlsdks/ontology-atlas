@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ontology-atlas-mcp — MCP 서버 (도구 24종 = read 16 + write 8).
+ * ontology-atlas-mcp — MCP 서버 (도구 25종 = read 16 + write 9).
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
  *
@@ -22,7 +22,7 @@
  *   - infer_imports          — R17, TS/JS import graph → depends_on 후보 (side effect 0)
  *   - index_project          — repo 분석 + import graph + vault validation plan (side effect 0)
  *
- * write 8:
+ * write 9:
  *   - add_concept       — 새 노드 (.md 파일 작성, 기존 slug 면 throw)
  *   - add_concepts      — 배치 write (concepts[] → results[], partial 허용)
  *   - add_relation      — 두 노드 사이 edge (frontmatter 배열 키 append)
@@ -31,6 +31,7 @@
  *   - delete_concept    — 노드 영구 삭제 (dry-run + backlinks 가드 + force)
  *   - rename_concept    — slug 변경 + 모든 backlink 의 array/body 자동 redirect
  *   - merge_concepts    — 두 노드 합치기 (from 의 모든 backlink 를 into 로 redirect 후 from 삭제)
+ *   - absorb_document   — Slice 0, CLAUDE.md/AGENTS.md 흡수 → document/policy 노드 + slim pointer (dry-run + 인젝션 Tier 1)
  *
  * 환경 변수:
  *   OATLAS_VAULT=/abs/path/to/vault   — vault root 디렉토리. 미지정 시 cwd.
@@ -46,9 +47,9 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { relative, resolve } from 'node:path';
+import { basename, relative, resolve } from 'node:path';
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, copyFileSync, statSync } from 'node:fs';
 import {
   GRAPH_ARRAY_KEYS,
   VaultConflictError,
@@ -77,6 +78,7 @@ import { dirname } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { buildMarkdown } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
+import { buildAbsorptionPlan, buildSlimPointer } from './absorb.mjs';
 import {
   IMPORT_EDGE_KIND_VALUES,
   IMPORT_UNRESOLVED_REASON_VALUES,
@@ -516,10 +518,10 @@ try {
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
 const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
-## Tool inventory (24 tools = read 16 + write 8)
+## Tool inventory (25 tools = read 16 + write 9)
 
 **read** — \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`query_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\` · \`index_project\`.
-**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`patch_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\`.
+**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`patch_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\` · \`absorb_document\`.
 
 ## Kind hierarchy (top → leaf)
 
@@ -575,6 +577,7 @@ Throughout: the user (via your add_concepts / add_relations calls) is the single
 - **\`add_concept\`** throws on duplicate slug — use \`patch_concept\` to update an existing node, never delete-then-add (that loses backlinks).
 - **\`rename_concept\` / \`merge_concepts\`** are dry-run by default. The first call returns an \`updates\` preview (every affected file's before/after). To commit, repeat the call with \`confirm: true\`. \`rename_concept\` refuses an existing \`newSlug\` unless you intentionally pass \`overwrite: true\`. Backlinks are redirected atomically — much safer than \`patch_concept\` + N find_backlinks loops.
 - **\`delete_concept\`** refuses by default if any backlinks remain. The error response captures the deleted frontmatter + body so a mistake is recoverable. Pass \`force: true\` only after confirming with the user that dangling referrers are acceptable.
+- **\`absorb_document\`** (Slice 0 — the "absorption tool") converts a CLAUDE.md/AGENTS.md-style file into typed vault nodes. Dry-run by default (plan only); \`confirm: true\` writes rule/policy sections as \`kind: document\` (\`role: policy\`) nodes, backs up the source to \`<file>.pre-absorb.bak\`, and rewrites it into a slim pointer that preserves every non-absorbed section (architecture/component suggestions, unclassified prose, and injection-suspect sections) verbatim. Architecture/component sections are reported as candidates only — never auto-written; land them yourself with \`add_concept\` if useful.
 - **\`expected_mtime\` (all write tools)** — to guard against concurrent edits by the human or another agent: capture \`mtime\` from \`get_concept\`, pass it as \`expected_mtime\` on the next write. If the file changed in between, the call throws \`VaultConflictError\` instead of silently overwriting.
 
 ## When a tool throws — read the error suffix
@@ -2873,6 +2876,95 @@ const TOOLS = [
       additionalProperties: false,
     },
   },
+  {
+    name: 'absorb_document',
+    description:
+      'Slice 0 (PRODUCT-PLAN-2026-07.md §4/§9) — the "absorption tool". Converts a CLAUDE.md/AGENTS.md-style ' +
+      'markdown file into typed vault nodes so a tech lead\'s existing agent-instruction file stops needing ' +
+      'dual maintenance. Splits the file by `##` sections and classifies each:\n' +
+      '  - rule/policy/decision sections → `kind: document` nodes with a `role: policy` frontmatter extra.\n' +
+      '  - architecture/component sections → element/capability SUGGESTIONS only — never auto-written; ' +
+      'review and land with add_concept if useful.\n' +
+      '  - sections matching an injection-suspect pattern (Tier 1 — imperative instruction-hijack phrasing, ' +
+      'shell/SQL fragments) are excluded from absorption regardless of category and reported for human review. ' +
+      'The file body is always treated as untrusted data; parsing never executes or evaluates its content.\n' +
+      'Two-stage safety, same shape as delete_concept:\n' +
+      '  1. Without confirm: true the call is a dry-run — returns the classification plan per section, no writes.\n' +
+      '  2. With confirm: true, absorbed sections are written as document nodes, the source file is backed up ' +
+      'to `<file>.pre-absorb.bak`, then rewritten into a "slim pointer" that reproduces every non-absorbed ' +
+      'section (suggested, unclassified, or injection-suspect) verbatim — content is never destroyed. ' +
+      'Throws instead of overwriting an existing backup file.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filePath: nonBlankStringSchema('Path to the CLAUDE.md/AGENTS.md-style markdown file to absorb (absolute, or relative to the MCP server cwd).'),
+        confirm: {
+          type: 'boolean',
+          description: 'Actually write when true. Omit or false for a dry-run (plan only, no writes).',
+        },
+      },
+      required: ['filePath'],
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        ok: { type: 'boolean' },
+        dryRun: { type: 'boolean' },
+        filePath: NON_BLANK_STRING_SCHEMA,
+        sourceLabel: NON_BLANK_STRING_SCHEMA,
+        title: { type: ['string', 'null'] },
+        summary: {
+          type: 'object',
+          properties: {
+            total: { type: 'integer', minimum: 0 },
+            absorbed: { type: 'integer', minimum: 0 },
+            suggested: { type: 'integer', minimum: 0 },
+            injectionSuspect: { type: 'integer', minimum: 0 },
+            unclassified: { type: 'integer', minimum: 0 },
+          },
+          required: ['total', 'absorbed', 'suggested', 'injectionSuspect', 'unclassified'],
+          additionalProperties: false,
+        },
+        sections: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              heading: NON_BLANK_STRING_SCHEMA,
+              category: { type: 'string', enum: ['policy', 'architecture', 'unclassified'] },
+              kind: { type: ['string', 'null'] },
+              role: { type: ['string', 'null'] },
+              confidence: { type: 'number', minimum: 0, maximum: 1 },
+              action: { type: 'string', enum: ['absorb', 'suggest', 'skip'] },
+              targetSlug: { type: ['string', 'null'] },
+              injectionSuspect: { type: 'boolean' },
+              injectionMatches: { type: 'array', items: { type: 'string' } },
+            },
+            required: ['heading', 'category', 'confidence', 'action', 'injectionSuspect', 'injectionMatches'],
+            additionalProperties: false,
+          },
+        },
+        written: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              slug: NON_BLANK_STRING_SCHEMA,
+              filePath: NON_BLANK_STRING_SCHEMA,
+            },
+            required: ['slug', 'filePath'],
+            additionalProperties: false,
+          },
+        },
+        backupPath: { type: 'string' },
+        changed: { type: 'boolean' },
+        message: NON_BLANK_STRING_SCHEMA,
+        postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+      },
+      required: ['ok', 'dryRun', 'filePath', 'sourceLabel', 'summary', 'sections', 'message'],
+      additionalProperties: false,
+    },
+  },
 ];
 
 const READ_TOOL_NAMES = new Set([
@@ -2898,6 +2990,10 @@ const DESTRUCTIVE_TOOL_NAMES = new Set([
   'delete_concept',
   'merge_concepts',
   'rename_concept',
+  // absorb_document overwrites the external source file in place (backed up
+  // first to <file>.pre-absorb.bak, but still an irreversible-by-default
+  // rewrite of a file outside the vault).
+  'absorb_document',
 ]);
 
 const IDEMPOTENT_TOOL_NAMES = new Set([
@@ -2987,6 +3083,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(mergeConcepts(args));
       case 'delete_concept':
         return ok(deleteConcept(args));
+      case 'absorb_document':
+        return ok(absorbDocumentTool(args));
       default:
         throw new Error(formatUnknownToolError(name));
     }
@@ -4886,6 +4984,98 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) 
       body: fromDoc.body,
       bodyExcerpt: extractSummaryExcerpt(fromDoc.body, 200),
     },
+    postWriteMaintenance: compactPostWriteMaintenance(),
+  };
+}
+
+const ABSORB_BACKUP_SUFFIX = '.pre-absorb.bak';
+
+// Slice 0 — absorb_document. Mirror of cli/src/commands/absorb.mjs's write
+// path; core plan logic lives in ./absorb.mjs (mirrored at
+// cli/src/lib/absorb.mjs, kept in lock-step by
+// tests/contract/absorb.contract.test.ts).
+function absorbDocumentTool({ filePath, confirm = false }) {
+  requireNonBlankString(filePath, 'filePath');
+  requireOptionalBoolean(confirm, 'confirm');
+  const abs = resolve(filePath);
+  if (!existsSync(abs) || !statSync(abs).isFile()) {
+    throw new Error(`file not found: ${abs}`);
+  }
+  const raw = readFileSync(abs, 'utf-8');
+  const sourceLabel = basename(abs).replace(/\.md$/i, '');
+  const plan = buildAbsorptionPlan(raw, {
+    sourceLabel,
+    isSlugTaken: (slug) => existsSync(slugToPath(VAULT_ROOT, slug)),
+  });
+
+  const sectionsOut = plan.sections.map((section) => ({
+    heading: section.heading,
+    category: section.category,
+    kind: section.kind,
+    role: section.role,
+    confidence: section.confidence,
+    action: section.action,
+    targetSlug: section.targetSlug,
+    injectionSuspect: section.injection.suspect,
+    injectionMatches: section.injection.matches.map((m) => m.pattern),
+  }));
+
+  if (!confirm) {
+    return {
+      ok: false,
+      dryRun: true,
+      filePath: abs,
+      sourceLabel,
+      title: plan.title,
+      summary: plan.summary,
+      sections: sectionsOut,
+      message:
+        `dry-run — ${plan.summary.absorbed} section(s) would be absorbed as document/policy nodes, ` +
+        `${plan.summary.suggested} suggested (not written), ${plan.summary.injectionSuspect} injection-suspect ` +
+        `(excluded from absorption). Pass confirm:true to write.`,
+    };
+  }
+
+  const backupPath = `${abs}${ABSORB_BACKUP_SUFFIX}`;
+  if (existsSync(backupPath)) {
+    throw new Error(
+      `backup already exists, refusing to overwrite: ${backupPath} — remove or rename it first.`,
+    );
+  }
+
+  const written = [];
+  for (const section of plan.sections) {
+    if (section.action !== 'absorb') continue;
+    const fm = buildFrontmatter({
+      slug: section.targetSlug,
+      kind: 'document',
+      title: section.targetTitle,
+      role: 'policy',
+      source: relative(VAULT_ROOT, abs),
+    });
+    const body = `# ${section.targetTitle}\n\n${section.body}\n`;
+    const writtenPath = writeDoc(VAULT_ROOT, section.targetSlug, { frontmatter: fm, body });
+    written.push({ slug: section.targetSlug, filePath: writtenPath });
+  }
+
+  // Backup *after* the vault writes succeed — if a write throws above, the
+  // original source file is left untouched and the caller can retry safely.
+  copyFileSync(abs, backupPath);
+  const pointer = buildSlimPointer(plan);
+  writeFileSync(abs, pointer, 'utf-8');
+
+  return {
+    ok: true,
+    dryRun: false,
+    filePath: abs,
+    sourceLabel,
+    title: plan.title,
+    summary: plan.summary,
+    sections: sectionsOut,
+    written,
+    backupPath,
+    changed: true,
+    message: `absorbed ${written.length} section(s) into the vault; source rewritten as a slim pointer (backup at ${backupPath}).`,
     postWriteMaintenance: compactPostWriteMaintenance(),
   };
 }

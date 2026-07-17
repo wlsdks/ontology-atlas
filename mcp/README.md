@@ -265,7 +265,7 @@ the explicit CLI wrapper arguments without changing into `mcp/`; use
 
 ### 2. Restart the agent
 
-The server connects over stdio. You should now see 24 tools under the `ontology-atlas` namespace.
+The server connects over stdio. You should now see 25 tools under the `ontology-atlas` namespace.
 
 ### 3. Call the tools
 
@@ -277,7 +277,7 @@ The server connects over stdio. You should now see 24 tools under the `ontology-
 → mcp__ontology-atlas__get_concept({ slug: 'capabilities/mcp-server' })
 ```
 
-## The 24 tools
+## The 25 tools
 
 | Tool | What it does |
 |---|---|
@@ -307,6 +307,7 @@ The server connects over stdio. You should now see 24 tools under the `ontology-
 | `delete_concept` | **v0.4 ⚠ DESTRUCTIVE** Permanently deletes a node. Two-stage safety: ① without `confirm:true`, runs as a dry-run (with a backlinks preview); ② if backlinks exist, throws unless `force:true`. The response captures the deleted frontmatter + body so you can recover from mistakes. **R11**: optional `expected_mtime` for conflict detection. Confirmed deletes return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers. |
 | `rename_concept` | **v0.7 ⚠ MULTI-FILE** Atomically renames a slug — moves the .md file, updates the moved file's `slug:` key, and rewrites every backlink (frontmatter array entries, inline string keys like `domain`, body links `[[oldSlug]]` / `(oldSlug.md)`). Tail-only references (`mcp-server` for `capabilities/mcp-server`) are also redirected. Without `confirm:true`, runs as a dry-run with a full update preview; each `backlinkUpdates.updates[]` row includes the referrer `slug`, `title`, changed frontmatter keys, and `bodyChanged`. Throws if `newSlug` already exists unless `overwrite:true` is passed. Replaces the manual loop of `find_backlinks` + N `patch_concept` calls. **R11**: optional `expected_mtime` for the source slug. Confirmed renames return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers. |
 | `merge_concepts` | **v0.7 ⚠ DESTRUCTIVE MULTI-FILE** Folds `fromSlug` into `intoSlug` — every backlink to `fromSlug` is redirected, then `fromSlug.md` is deleted. The `intoSlug` node is preserved as-is (frontmatter / body are not auto-merged — use `patch_concept` after if you want to combine descriptions). Without `confirm:true`, runs as a dry-run; each `backlinkUpdates.updates[]` row includes the referrer `slug`, `title`, changed frontmatter keys, and `bodyChanged`. **R11**: optional `expected_mtime` for `fromSlug`. Confirmed merges return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers. |
+| `absorb_document` | **Slice 0 ⚠ DESTRUCTIVE (external file)** — the "absorption tool". Converts a CLAUDE.md/AGENTS.md-style markdown file into typed vault nodes so a tech lead's existing agent-instruction file stops needing dual maintenance. Splits the file by `##` sections; rule/policy/decision sections become `kind: document` nodes with a `role: policy` frontmatter extra, architecture/component sections are reported as element/capability *suggestions only* (never auto-written), and sections matching an injection-suspect pattern (Tier 1 — instruction-hijack phrasing, shell/SQL fragments) are excluded from absorption regardless of category. Without `confirm:true`, runs as a dry-run (classification plan only, no writes). With `confirm:true`, absorbed sections are written, the source file is backed up to `<file>.pre-absorb.bak`, and rewritten into a slim pointer that reproduces every non-absorbed section verbatim — content is never destroyed. Throws instead of overwriting an existing backup. CLI equivalent: `ontology-atlas absorb <file...> [--write]`. |
 
 `query_ontology({operation:"cycles"})` keeps the slug path in each
 `cycles[].nodes` array and also returns aligned `cycles[].nodeSummaries`
@@ -527,7 +528,7 @@ A successful run looks like this:
 · step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=../docs/ontology, timeout=15000ms)
 ✓ initialize OK — server ontology-atlas-mcp@0.12.0
 ✓ initialize instructions — tool inventory plus first-contact safety and recovery guidance present
-✓ tools/list 24/24 (24/24 titled; 16/16 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 24/24 local-only) — add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · index_project · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
+✓ tools/list 25/25 (25/25 titled; 16/16 read; 9/9 write; 4/4 destructive; 2/2 idempotent; 25/25 local-only) — absorb_document · add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · index_project · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
 ✓ tools/list inventory names — missing/extra/duplicate/invalid checks passed
 ✓ tools/list schema contract — strict arguments + annotations + graph-query enums + graph kind enums/descriptions + write relation enums + health tuning + post-write maintenance schema
 ✓ strict arguments — unknown tool argument rejected at runtime
@@ -552,44 +553,44 @@ A successful run looks like this:
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
 ✓ maintenance cursor — ready page stable (1 remaining action; phase materialize:1; severity info:1; kind materialize_external_element:1; executable maint_198312e5:materialize/materialize_external_element:info->add_concept; review none)
 ✓ maintenance cursor — resume afterActionId advanced (maint_198312e5; 0 remaining actions; phase none; severity none; kind none; executable none; review none)
-✓ list_concepts — vault total 106 nodes (vaultRoot /path/to/docs/ontology)
+✓ list_concepts — vault total 107 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 60 evidence results for "project"
+✓ find_evidence — 59 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
-✓ query_concepts limited — 1 query result / 105 total query results (limited true)
-✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 29 element candidates)
-✓ infer_imports — 659 files scanned, 484 module edges (elements/src/views/home->capabilities/knowledge-graph x24 (static:24), elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), +482 more)
-✓ index_project — 54 concept candidates, 484 import relations, validation 0 problem files
+✓ query_concepts limited — 1 query result / 106 total query results (limited true)
+✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 30 element candidates)
+✓ infer_imports — 679 files scanned, 487 module edges (elements/src/views/home->capabilities/knowledge-graph x24 (static:24), elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), +485 more)
+✓ index_project — 55 concept candidates, 487 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
-✓ list_kinds — 106 nodes (capability:36, document:3, domain:6, element:59, project:1, vault-readme:1)
-✓ validate_vault — 106 files, 0 problem files
+✓ list_kinds — 107 nodes (capability:36, document:3, domain:6, element:60, project:1, vault-readme:1)
+✓ validate_vault — 107 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (106 nodes, 1 next action, 5 health checks, growth actions:1 external:1 ignoredExternal:203)
+✓ workspace_brief — healthy (107 nodes, 1 next action, 5 health checks, growth actions:1 external:1 ignoredExternal:203)
 · workspace_brief non-blocking advisory nextActions — materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (106 nodes, 2 next actions, 5 health checks, growth actions:1 external:1 ignoredExternal:203; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (107 nodes, 2 next actions, 5 health checks, growth actions:1 external:1 ignoredExternal:203; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 · workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands., materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 4eaa32583fa9 (106 nodes, 595 edges, issues 0)
-✓ compile_ontology page — 1/106 nodes, 1/595 edges
-✓ compile_ontology indexes — out 106, in 105, edgeById 595, aliases 211, edges 391/204/0
-✓ overview — graph 4eaa32583fa9 (106 nodes, 595 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 106, edges 595)
-✓ project_map query_plan — aggregate_scan (medium, nodes 106, edges 595)
+✓ compile_ontology — graph cc6d014dac81 (107 nodes, 597 edges, issues 0)
+✓ compile_ontology page — 1/107 nodes, 1/597 edges
+✓ compile_ontology indexes — out 107, in 106, edgeById 597, aliases 213, edges 393/204/0
+✓ overview — graph cc6d014dac81 (107 nodes, 597 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 107, edges 597)
+✓ project_map query_plan — aggregate_scan (medium, nodes 107, edges 597)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ all_paths — src/widgets/bottom-tab-bar → project (5/16 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
-✓ project_scope — project (102 nodes, internalEdges 372)
-✓ read census consistency — 106 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
+✓ project_scope — project (103 nodes, internalEdges 374)
+✓ read census consistency — 107 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 13/13
 
-All passed — register .mcp.json with your MCP client and restart to use the 24 tools.
+All passed — register .mcp.json with your MCP client and restart to use the 25 tools.
 ```
 
 On failure, it tells you which step blocked progress and prints a diagnostic message. The
@@ -801,7 +802,7 @@ After you add `.mcp.json` / `.codex/config.toml` and restart the agent, try the 
 > 7. Call `query_ontology({ operation: "overview", limit: 5 })` to confirm graph-query summaries work without fetching the full compile artifact.
 > 8. Call `query_ontology({ operation: "query_plan", targetOperation: "overview" })` and `query_ontology({ operation: "query_plan", targetOperation: "project_map" })` before heavier graph exploration so the agent sees the cost/index contract across more than one operation.
 
-If those read-only calls respond cleanly, the agent can see the vault and its graph health. Once an agent starts *committing* its analysis of your codebase to the ontology through these 24 tools (16 read + 8 write), the human + AI co-authoring loop is officially open.
+If those read-only calls respond cleanly, the agent can see the vault and its graph health. Once an agent starts *committing* its analysis of your codebase to the ontology through these 25 tools (16 read + 9 write), the human + AI co-authoring loop is officially open.
 
 ## Design principles
 
@@ -812,6 +813,7 @@ If those read-only calls respond cleanly, the agent can see the vault and its gr
 
 ## Status
 
+- Slice 0 (PRODUCT-PLAN-2026-07.md) — 25 tools. Added `absorb_document` — converts a CLAUDE.md/AGENTS.md-style markdown file into typed `document`/`role: policy` vault nodes (dry-run by default, `confirm:true` to write), reports architecture/component sections as suggestions only, and flags injection-suspect sections (Tier 1) for exclusion. CLI equivalent: `ontology-atlas absorb`.
 - 0.10.0 — 23 tools. Added `get_concepts`, `add_concepts`, `add_relations`, `validate_vault`, `find_neighbors`, `compile_ontology`, and `query_ontology` (`neighbors` / `path` / `all_paths` / `query_plan` with executable run/narrow advice / `centrality` / `communities` / `similar_nodes` / `explain_relation` / `reachability` / `pattern_walk` / `impact` / `blast_radius` / `subgraph` / `overview` / `schema` / `facets` / `match_nodes` / `match_edges` / `node_profile` / `domain_profile` / `domain_matrix` / `project_scope` / `project_map` / `relation_check` / `components` / `lineage` / `containment_tree` / `cycles` / `topological_order` / `recommend_relations` / `growth_plan` / `maintenance_plan` / `agent_brief` / `workspace_brief` / `health`); current split was 15 read + 8 write in that release.
 - 0.7.1 — 16 tools. Added `instructions` field on initialize response — Claude Code / Cursor see kind hierarchy + workflow + write-tool dry-run pattern + `expected_mtime` conflict guard guidance on connect, no per-session trial-and-error.
 - Current initialize instructions also surface destructive-write safety: `rename_concept` refuses an existing `newSlug` unless `overwrite: true`, and `delete_concept` needs `force: true` only after accepting dangling referrers.

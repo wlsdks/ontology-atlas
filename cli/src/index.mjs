@@ -68,6 +68,8 @@ ${COLORS.bold}Usage:${COLORS.reset}
        --vault path                           ${COLORS.dim}target vault root (default: cwd)${COLORS.reset}
        --kind K                               ${COLORS.dim}fallback kind when input has no kind:${COLORS.reset}
        --raw-slug --rename --dry-run          ${COLORS.dim}no folder prefix · slug rename · plan-only${COLORS.reset}
+  npx ontology-atlas absorb <file...>         ${COLORS.green}Absorb CLAUDE.md/AGENTS.md into typed vault nodes${COLORS.reset} (Slice 0)
+       --vault path --write                   ${COLORS.dim}default dry-run plan · --write lands + rewrites source as slim pointer${COLORS.reset}
 
 ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17 — autonomous ingest base)${COLORS.reset}
   npx ontology-atlas index [rootPath]         ${COLORS.green}project ontology index${COLORS.reset} — analyze + imports + validate plan

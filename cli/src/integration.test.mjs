@@ -146,7 +146,7 @@ await test('command inventory — help and command modules stay aligned', async 
   }
 
   const commandFiles = readdirSync(join(__dirname, 'commands'))
-    .filter((name) => name.endsWith('.mjs'))
+    .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
     .sort();
   assert.deepEqual(commandFiles, Object.values(CLI_COMMAND_MODULES).sort());
 });

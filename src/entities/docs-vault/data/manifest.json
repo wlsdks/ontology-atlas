@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-02T23:55:22.045Z",
+  "generatedAt": "2026-07-17T14:28:14.190Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1955,9 +1955,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 106 노드, CLI 45 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 107 노드, CLI 45 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
       "wordCount": 1499,
-      "updatedAt": "2026-06-14T07:44:49.891Z",
+      "updatedAt": "2026-07-17T14:27:20.684Z",
       "linksOut": []
     },
     {
@@ -2573,6 +2573,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-03 — 지도 뷰 재구성: 단일 컨테이너 변환 엔진 (TopologyMapCanvas)",
+          "slug": "2026-07-03-지도-뷰-재구성-단일-컨테이너-변환-엔진-topologymapcanvas"
         },
         {
           "depth": 2,
@@ -3675,9 +3680,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 피드백: \"클릭하면 그냥 바뀌고 헷갈린다 — 바로 확장돼서 그런가?\" — 정확한 진단이었다. 클릭 한 번에 [선택+focus 승격+지형 재배치+카메",
-      "wordCount": 19343,
-      "updatedAt": "2026-07-02T23:46:14.604Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 결정(\"지도가 부드럽지도 않고 버벅거림 — 전체 재구성\")의 실행. docs/TOPOLOGY-MAP-REBUILD.md 설계대로 per-frame ",
+      "wordCount": 19507,
+      "updatedAt": "2026-07-17T14:18:41.061Z",
       "linksOut": [
         "slug"
       ]
@@ -6712,6 +6717,7 @@
           "elements/topology-kind-color-research-basis",
           "elements/topology-kind-color-tests",
           "elements/topology-kind-color-tones",
+          "elements/topology-map-canvas",
           "elements/topology-owner-tint-overlay",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
@@ -6748,7 +6754,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-10T10:38:28.759Z",
+      "updatedAt": "2026-07-17T14:18:41.075Z",
       "linksOut": []
     },
     {
@@ -7738,6 +7744,23 @@
       "excerpt": "src/entities/ontology-class/model/tone.ts defines the shared ontology-kind tone contract. src/widgets/topology-map-sigma/lib/ontology-tone.ts is the Sigma adapter for that contract, not a separate palette source. The contract uses explicit kind colors so users and agents can distinguish what a node means before opening",
       "wordCount": 410,
       "updatedAt": "2026-06-06T03:33:51.102Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-map-canvas",
+      "path": "docs/ontology/elements/topology-map-canvas.md",
+      "title": "Topology Map Canvas (single-container transform engine)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-map-canvas",
+        "kind": "element",
+        "title": "Topology Map Canvas (single-container transform engine)",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/widgets/topology-map-canvas/ — the rebuilt map (Relief) rendering engine (2026-07, docs/TOPOLOGY-MAP-REBUILD.md). Card and connector coordinates are written once; pan/zoom is a single container CSS transform (pure camera math in lib/camera.ts with unit tests), so per-frame DOM synchronization — the jank source of t",
+      "wordCount": 94,
+      "updatedAt": "2026-07-17T14:18:41.081Z",
       "linksOut": []
     },
     {
@@ -8939,9 +8962,9 @@
           "slug": "8-참고-파일"
         }
       ],
-      "excerpt": "2026-07-03. 소유자 결정: \"지도쪽이 부드럽지도 않고 버벅거림 — 전체 재구성\". 이 문서는 다음 세션이 바로 구현에 들어가기 위한 단일 진실원이다. 브랜치: feat/topology-map-rebuild (main = PR 305 머지 직후). 실측 프레임은 문제없다: 설치 앱 frame-profile 프로브 (pnpm desktop:verify-topology-frame-profile:ko) 기준 지도 뷰 팬/호버/줌 전부 avg 8.3~11.6ms (120Hz). 소유자가 느끼는 \"버벅임\"은 fps 가 아니라 모션 문법의 부재다. 버벅임의 실체 3가지:",
-      "wordCount": 791,
-      "updatedAt": "2026-07-02T23:49:09.308Z",
+      "excerpt": "2026-07-03. 소유자 결정: \"지도쪽이 부드럽지도 않고 버벅거림 — 전체 재구성\". 상태: S1~S5 구현·출하됨 (src/widgets/topology-map-canvas/) — 잔여는 §5 의 S6 후보(미니맵/범례 재공급, 관계 커넥터 클릭, 카드 드래그 재배치)와 §7 조사 티켓. 브랜치: feat/topology-map-rebuild (main = PR 305 이후). 실측 프레임은 문제없다: 설치 앱 frame-profile 프로브 (pnpm desktop:verify-topology-frame-profile:ko) 기준 지도 뷰 팬/호버/줌 전부 ",
+      "wordCount": 801,
+      "updatedAt": "2026-07-17T14:18:41.065Z",
       "linksOut": []
     },
     {
@@ -10364,6 +10387,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/topology-kind-color-tones",
                 "title": "Topology Kind Color Tones"
+              },
+              {
+                "name": "topology-map-canvas",
+                "path": "ontology/elements/topology-map-canvas",
+                "type": "doc",
+                "slug": "ontology/elements/topology-map-canvas",
+                "title": "Topology Map Canvas (single-container transform engine)"
               },
               {
                 "name": "topology-ontology-drawer",
