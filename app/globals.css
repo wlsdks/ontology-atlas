@@ -972,6 +972,12 @@
     --topology-v2-camera-flick-min-speed: 0.05;
     --topology-v2-camera-scale-min: 0.24;
     --topology-v2-camera-scale-max: 2.6;
+    /* 포커스(ego) 상태에서 빈 공간 팬 시 카메라 중심이 포커스 노드로부터 이
+       world-unit 이상 벗어나지 못한다 — "둘러볼 순 있어도 대상을 놓치진 않는다"
+       (옵시디언 촉각). 넘어서면 러버밴드로 복귀. 최대 포커스 스케일(1.9)에서도
+       180×1.9≈342px < 안전영역 반높이(354px) 라 대상이 화면 밖으로 안 나간다.
+       줌인 상태에서만 적용(fit view/포커스 해제 시엔 전체 bounds). */
+    --topology-v2-camera-focus-pan-margin: 180;
     --topology-v2-altitude-far-high-ratio: 0.92;
     --topology-v2-altitude-far-low-ratio: 0.62;
     /* Overview entry scale = tight-fit × this ratio. Kept above the far-high

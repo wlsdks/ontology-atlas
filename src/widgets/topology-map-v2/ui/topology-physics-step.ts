@@ -63,6 +63,28 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     rippleStartById,
   } = input;
 
+  // Focus-aware pan clamp (drag-while-focused must not lose the subject): while
+  // a node is ego-focused AND the camera is zoomed IN past the overview scale,
+  // clamp the pan so the camera centre stays within `cameraFocusPanMargin` world
+  // units of the FOCUSED NODE — so an empty-space pan can look around the cluster
+  // but the subject can never leave the frame; overshooting rubber-bands back
+  // (Obsidian feel). Clamping to the focused node's own point (not the whole ego
+  // bbox) is what keeps the subject on screen: a wide ego bbox + margin would let
+  // the camera reach the cluster's far corner and slide the focused node off the
+  // opposite edge. The zoom gate is essential: "지도 전체 맞추기"/fit-view keeps the
+  // node selected (focusedNodeId stays set) while springing OUT to the overview;
+  // once the camera scale drops below the overview fit scale the clamp reverts to
+  // the full world bounds, so fit-view/close-focus recovery is never fought.
+  const focusNode = focusedNodeId !== null && camera.scale.value > overviewScale
+    ? world.nodeById.get(focusedNodeId)
+    : undefined;
+  const panBounds = focusNode
+    ? computePanBounds(
+        { minX: focusNode.x, minY: focusNode.y, maxX: focusNode.x, maxY: focusNode.y },
+        tokens.cameraFocusPanMargin,
+      )
+    : computePanBounds(world.bounds);
+
   const nextCamera = stepCamera({
     camera,
     target,
@@ -71,7 +93,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     angularFrequency: tokens.cameraSpringAngFreq,
     scaleMin: tokens.cameraScaleMin,
     scaleMax: tokens.cameraScaleMax,
-    panBounds: computePanBounds(world.bounds),
+    panBounds,
     isDragging,
   });
 

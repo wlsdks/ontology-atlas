@@ -75,6 +75,7 @@ export interface TopologyV2Tokens {
   cameraFlickMinSpeed: number;
   cameraScaleMin: number;
   cameraScaleMax: number;
+  cameraFocusPanMargin: number;
   altitudeFarHighRatio: number;
   altitudeFarLowRatio: number;
   overviewEntryRatio: number;
@@ -165,6 +166,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "cameraFlickMinSpeed", cssVar: "--topology-v2-camera-flick-min-speed", kind: "number" },
   { key: "cameraScaleMin", cssVar: "--topology-v2-camera-scale-min", kind: "number" },
   { key: "cameraScaleMax", cssVar: "--topology-v2-camera-scale-max", kind: "number" },
+  { key: "cameraFocusPanMargin", cssVar: "--topology-v2-camera-focus-pan-margin", kind: "number" },
   { key: "altitudeFarHighRatio", cssVar: "--topology-v2-altitude-far-high-ratio", kind: "number" },
   { key: "altitudeFarLowRatio", cssVar: "--topology-v2-altitude-far-low-ratio", kind: "number" },
   { key: "overviewEntryRatio", cssVar: "--topology-v2-overview-entry-ratio", kind: "number" },

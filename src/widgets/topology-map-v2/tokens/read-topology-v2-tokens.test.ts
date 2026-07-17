@@ -70,6 +70,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-camera-flick-min-speed": "0.05",
   "--topology-v2-camera-scale-min": "0.24",
   "--topology-v2-camera-scale-max": "2.6",
+  "--topology-v2-camera-focus-pan-margin": "180",
   "--topology-v2-altitude-far-high-ratio": "0.92",
   "--topology-v2-altitude-far-low-ratio": "0.62",
   "--topology-v2-overview-entry-ratio": "0.95",
@@ -96,7 +97,7 @@ function fixtureReader(overrides: Record<string, string> = {}) {
 }
 
 describe("resolveTopologyV2Tokens", () => {
-  it("resolves all 73 §2 tokens to the exact prototype-sourced values", () => {
+  it("resolves all 74 §2 tokens to the exact prototype-sourced values", () => {
     const tokens = resolveTopologyV2Tokens(fixtureReader());
 
     expect(tokens.nodeFillProject).toBe("#1c1c22");

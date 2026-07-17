@@ -15,7 +15,7 @@
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
-import { radiusForKind, type TopologyWorld } from "./topology-world";
+import { computeEgoBounds, radiusForKind, type TopologyWorld } from "./topology-world";
 import type { WorldNode } from "./topology-world";
 
 interface Point {
@@ -194,30 +194,17 @@ export function computeFocusCameraTarget(
     // entry), not the full 295-node bounds; see `topology-world.ts#spineBounds`.
     return computeOverviewCameraTarget(world.spineBounds, viewportWidth, viewportHeight, tokens);
   }
-  const focusNode = world.nodeById.get(focusedSlug);
-  if (!focusNode) return null;
+  const egoBounds = computeEgoBounds(world, tokens, focusedSlug);
+  if (!egoBounds) return null;
 
-  const neighborIds = world.neighborMap.get(focusedSlug) ?? new Set<string>();
-  const egoNodes: WorldNode[] = [focusNode];
-  for (const id of neighborIds) {
-    const neighbor = world.nodeById.get(id);
-    if (neighbor) egoNodes.push(neighbor);
-  }
-
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const n of egoNodes) {
-    const r = radiusForKind(n.kind, tokens);
-    minX = Math.min(minX, n.x - r);
-    maxX = Math.max(maxX, n.x + r);
-    minY = Math.min(minY, n.y - r);
-    maxY = Math.max(maxY, n.y + r);
-  }
   const margin = tokens.focusBboxMargin;
   return fitWorldTarget(
-    { minX: minX - margin, minY: minY - margin, maxX: maxX + margin, maxY: maxY + margin },
+    {
+      minX: egoBounds.minX - margin,
+      minY: egoBounds.minY - margin,
+      maxX: egoBounds.maxX + margin,
+      maxY: egoBounds.maxY + margin,
+    },
     viewportWidth,
     viewportHeight,
     tokens.focusFitMaxScale,

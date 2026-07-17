@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
-import { computeSpineBounds, isSpineNode, type WorldNode } from "./topology-world";
+import { computeEgoBounds, computeSpineBounds, isSpineNode, type WorldNode } from "./topology-world";
 
 /**
  * Spine bounds (fit-fix): the overview camera must fit to the level-0 spine
@@ -87,5 +87,49 @@ describe("computeSpineBounds", () => {
     const bounds = computeSpineBounds([], tokens);
     expect(Number.isFinite(bounds.minX)).toBe(true);
     expect(bounds.maxX).toBeGreaterThan(bounds.minX);
+  });
+});
+
+/**
+ * Ego bounds — the radius-padded bbox of a focused node + its 1-hop neighbors.
+ * Feeds the focus-aware pan clamp (drag-while-focused must not lose the cluster)
+ * and the focus camera fit. Pure — derived from `nodeById` + `neighborMap`.
+ */
+describe("computeEgoBounds", () => {
+  function egoWorld(nodes: WorldNode[], neighbors: Record<string, string[]>) {
+    const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
+    const neighborMap = new Map<string, ReadonlySet<string>>(
+      Object.entries(neighbors).map(([id, ns]) => [id, new Set(ns)] as const),
+    );
+    return { nodeById, neighborMap };
+  }
+
+  it("returns the padded bbox of the focused node plus its 1-hop neighbors only", () => {
+    const nodes: WorldNode[] = [
+      node({ id: "f", kind: "domain", x: 0, y: 0 }), // r14
+      node({ id: "n1", kind: "capability", x: 100, y: 0 }), // r8 → maxX 108
+      node({ id: "n2", kind: "element", x: 0, y: -50 }), // r5 → minY -55
+      // Not a neighbor of f — must be excluded even though it's far out.
+      node({ id: "far", kind: "element", x: 900, y: 900 }),
+    ];
+    const world = egoWorld(nodes, { f: ["n1", "n2"], n1: ["f"], n2: ["f"], far: [] });
+    const bounds = computeEgoBounds(world, tokens, "f");
+    expect(bounds).not.toBeNull();
+    expect(bounds!.minX).toBe(-14); // focused domain r14 at 0
+    expect(bounds!.maxX).toBe(108); // n1 at 100 + r8
+    expect(bounds!.minY).toBe(-55); // n2 at -50 - r5
+    expect(bounds!.maxY).toBe(14); // focused domain r14
+  });
+
+  it("returns just the focused node's own bbox when it has no neighbors", () => {
+    const nodes: WorldNode[] = [node({ id: "lonely", kind: "capability", x: 10, y: 10 })];
+    const world = egoWorld(nodes, { lonely: [] });
+    const bounds = computeEgoBounds(world, tokens, "lonely");
+    expect(bounds).toEqual({ minX: 2, minY: 2, maxX: 18, maxY: 18 }); // r8 around (10,10)
+  });
+
+  it("returns null when the focused slug doesn't resolve to a node", () => {
+    const world = egoWorld([node({ id: "a", kind: "domain", x: 0, y: 0 })], { a: [] });
+    expect(computeEgoBounds(world, tokens, "missing")).toBeNull();
   });
 });

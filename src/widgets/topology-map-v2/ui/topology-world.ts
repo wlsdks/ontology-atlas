@@ -128,6 +128,40 @@ export function computeSpineBounds(nodes: readonly WorldNode[], tokens: Topology
   return accumulateBounds(nodes, tokens, isSpineNode) ?? computeFullBounds(nodes, tokens);
 }
 
+/**
+ * Radius-padded bbox of a focused node + its 1-hop neighbors (the ego cluster).
+ * Returns `null` when `focusedSlug` doesn't resolve. Shared by the focus camera
+ * fit (`topology-camera-math.ts#computeFocusCameraTarget`, which adds its own
+ * fit margin) and the focus-aware pan clamp (`topology-physics-step.ts`, which
+ * adds `--topology-v2-camera-focus-pan-margin`) so the "ego cluster" is defined
+ * in exactly one place. Pure — derived from `nodeById` + `neighborMap`.
+ */
+export function computeEgoBounds(
+  world: Pick<TopologyWorld, "nodeById" | "neighborMap">,
+  tokens: TopologyV2Tokens,
+  focusedSlug: string,
+): Bounds | null {
+  const focusNode = world.nodeById.get(focusedSlug);
+  if (!focusNode) return null;
+  const egoIds = new Set<string>([focusedSlug]);
+  for (const id of world.neighborMap.get(focusedSlug) ?? []) egoIds.add(id);
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const id of egoIds) {
+    const n = world.nodeById.get(id);
+    if (!n) continue;
+    const r = radiusForKind(n.kind, tokens);
+    minX = Math.min(minX, n.x - r);
+    maxX = Math.max(maxX, n.x + r);
+    minY = Math.min(minY, n.y - r);
+    maxY = Math.max(maxY, n.y + r);
+  }
+  if (!Number.isFinite(minX)) return null;
+  return { minX, minY, maxX, maxY };
+}
+
 export function buildTopologyWorld(
   nodes: readonly TopologyV2Node[],
   edges: readonly TopologyV2Edge[],
