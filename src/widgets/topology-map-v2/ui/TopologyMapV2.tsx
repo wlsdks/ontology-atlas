@@ -88,7 +88,9 @@ export interface TopologyMapV2Props {
 export function TopologyMapV2(props: TopologyMapV2Props) {
   const { nodes, edges, focus, minimal, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange } = props;
 
-  const { canvasRef, containerRef, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleWheel } =
+  // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
+  // see its own FIX comment — not bound here as a JSX prop.
+  const { canvasRef, containerRef, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel } =
     useTopologyLoop({
       nodes,
       edges,
@@ -117,7 +119,6 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
-        onWheel={handleWheel}
       />
     </div>
   );

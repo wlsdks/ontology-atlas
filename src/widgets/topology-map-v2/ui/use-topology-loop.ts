@@ -305,5 +305,26 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   });
   /* eslint-enable react-hooks/refs */
 
+  // FIX (QA first-light pass — console error sweep): a JSX `onWheel` prop
+  // binds to React's delegated listener, which is registered `passive` by
+  // default — calling `preventDefault()` inside it throws "Unable to
+  // preventDefault inside passive event listener invocation" on every wheel
+  // tick and doesn't actually stop the page from scrolling under the canvas.
+  // Attaching the SAME handler natively with `{ passive: false }` fixes both.
+  // `handleWheelRef` always points at the latest closure (refreshed every
+  // render) so the effect below can stay mount-only (`[]`) without going
+  // stale — `handlers` itself isn't memoized, so it isn't a safe effect dep.
+  const handleWheelRef = useRef(handlers.handleWheel);
+  useEffect(() => {
+    handleWheelRef.current = handlers.handleWheel;
+  });
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const listener = (e: WheelEvent) => handleWheelRef.current(e);
+    canvas.addEventListener("wheel", listener, { passive: false });
+    return () => canvas.removeEventListener("wheel", listener);
+  }, []);
+
   return { canvasRef, containerRef, ...handlers };
 }
