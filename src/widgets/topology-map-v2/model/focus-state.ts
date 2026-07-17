@@ -58,6 +58,48 @@ export function resolveEdgeEgoState(
   return edgeTouchesFocusedNode ? "ego" : "dim";
 }
 
+/**
+ * Ambient comet-tail advance speed for one `depends` edge (`world.edges[].t +=
+ * dt * speed`). When a node is clicked ("powered"), its own incident edges carry
+ * *more current* — the pulse advances at `egoSpeed` instead of the ambient
+ * `baseSpeed`, so the selected subgraph visibly reads as energized (B2+ circuit
+ * metaphor, lead spec §2). Every other edge keeps the ambient `baseSpeed`.
+ *
+ * Pure — the caller decides `edgeTouchesFocusedNode` from
+ * `edge.sourceId/targetId === focusedNodeId`. Speeds are tokens
+ * (`--topology-v2-edge-pulse-speed` / `-ego`).
+ */
+export function resolveEdgePulseSpeed(
+  edgeTouchesFocusedNode: boolean,
+  focusedNodeId: string | null,
+  baseSpeed: number,
+  egoSpeed: number,
+): number {
+  return focusedNodeId !== null && edgeTouchesFocusedNode ? egoSpeed : baseSpeed;
+}
+
+/**
+ * Whether a node may ramp its `emphasis` (hover-ripple) this frame.
+ *
+ * - **No focus:** hover owns the ripple — the hovered node and its 1-hop
+ *   neighbors (`isHoverEgoMember`) ramp.
+ * - **Focus active:** hover is suppressed (focus owns attention), EXCEPT the one
+ *   node the user is hovering in the detail panel's "연결된 노드" list
+ *   (`panelEmphasisNodeId`). That single neighbor still ramps so the panel row
+ *   and the on-canvas node/edge light up together ("emphasis ripple" linkage,
+ *   lead spec §4). `panelEmphasisNodeId` is null until the panel-hover API feeds
+ *   it in.
+ */
+export function isNodeEmphasisActive(
+  nodeId: string,
+  focusedNodeId: string | null,
+  isHoverEgoMember: boolean,
+  panelEmphasisNodeId: string | null,
+): boolean {
+  if (focusedNodeId !== null) return nodeId === panelEmphasisNodeId;
+  return isHoverEgoMember;
+}
+
 export interface RippleSchedule {
   nodeId: string;
   /** Absolute ms timestamp (same clock as `performance.now()`) when this node's ramp may begin. */

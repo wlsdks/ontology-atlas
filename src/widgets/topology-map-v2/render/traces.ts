@@ -81,6 +81,13 @@ export interface TraceDrawState {
   farT: number;
   /** 0..1 progress of the ambient comet-tail / pulse position along the curve, `depends` edges only. */
   t: number;
+  /**
+   * True for the single ego edge the user is hovering in the detail panel's
+   * "연결된 노드" list — an extra "emphasis ripple" over the ego brightening so
+   * the panel row and this edge read as one (lead spec §4). Ignored unless
+   * `egoState === "ego"`.
+   */
+  emphasized?: boolean;
 }
 
 export interface TraceTokens {
@@ -104,6 +111,7 @@ const COMET_TAIL_FAR_SIZES = [1.3, 0.9, 0.6];
 export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, tokens: TraceTokens): void {
   const { a, b, control, farT, egoState, t } = state;
   const isDepends = state.relationType === "depends";
+  const emphasized = egoState === "ego" && state.emphasized === true;
 
   let stroke: string;
   let width: number;
@@ -111,8 +119,10 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     stroke = tokens.edgeDim;
     width = 1;
   } else if (egoState === "ego") {
-    stroke = isDepends ? tokens.indigoBright : tokens.indigo;
-    width = (isDepends ? 1.8 : 1.5) - farT * 0.5;
+    // Panel-linked ripple: brightest indigo + thicker; otherwise the standard
+    // ego brightening (depends bright, contains indigo).
+    stroke = emphasized || isDepends ? tokens.indigoBright : tokens.indigo;
+    width = (isDepends ? 1.8 : 1.5) - farT * 0.5 + (emphasized ? 0.9 : 0);
   } else {
     stroke = isDepends ? tokens.edgeDepends : tokens.edgeContains;
     width = (isDepends ? 1.3 : 1) + ((isDepends ? 0.6 : 0.45) - (isDepends ? 1.3 : 1)) * farT;
@@ -132,7 +142,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
   // ambient comet tail — three shrinking dots trailing the live pulse
   // position, thinning toward hairline dust as altitude rises rather than
   // fading via alpha (forbidden.md bans glow/alpha-based "signal" motifs).
-  const baseSizes = egoState === "ego" ? [2.9, 2.1, 1.3] : [2.1, 1.5, 0.9];
+  const baseSizes = emphasized ? [3.6, 2.7, 1.7] : egoState === "ego" ? [2.9, 2.1, 1.3] : [2.1, 1.5, 0.9];
   const tailColor = egoState === "ego" ? tokens.indigoBright : tokens.indigo;
   COMET_TAIL_STEPS.forEach((step, i) => {
     let tt = t - step;

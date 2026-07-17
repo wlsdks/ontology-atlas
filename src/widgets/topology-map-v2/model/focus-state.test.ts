@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isNodeEmphasisActive,
   resolveEdgeEgoState,
+  resolveEdgePulseSpeed,
   resolveNodeEgoState,
   scheduleRipple,
   stepEmphasis,
@@ -37,6 +39,41 @@ describe("resolveEdgeEgoState", () => {
 
   it("is dim when the edge does not touch the focused node", () => {
     expect(resolveEdgeEgoState(false, "a")).toBe("dim");
+  });
+});
+
+describe("resolveEdgePulseSpeed", () => {
+  const BASE = 0.075;
+  const EGO = 0.2;
+
+  it("keeps the ambient base speed when there is no focus", () => {
+    expect(resolveEdgePulseSpeed(true, null, BASE, EGO)).toBe(BASE);
+    expect(resolveEdgePulseSpeed(false, null, BASE, EGO)).toBe(BASE);
+  });
+
+  it("accelerates to the ego speed for an edge touching the focused node", () => {
+    expect(resolveEdgePulseSpeed(true, "a", BASE, EGO)).toBe(EGO);
+  });
+
+  it("keeps the base speed for an edge not touching the focused node", () => {
+    expect(resolveEdgePulseSpeed(false, "a", BASE, EGO)).toBe(BASE);
+  });
+});
+
+describe("isNodeEmphasisActive", () => {
+  it("follows the hover ego-set membership when there is no focus", () => {
+    expect(isNodeEmphasisActive("b", null, true, null)).toBe(true);
+    expect(isNodeEmphasisActive("z", null, false, null)).toBe(false);
+  });
+
+  it("suppresses hover emphasis while a focus is active", () => {
+    // b is a live hover ego-member, but focus owns attention -> suppressed
+    expect(isNodeEmphasisActive("b", "a", true, null)).toBe(false);
+  });
+
+  it("lets the panel-designated neighbor ramp under focus (panel↔map linkage)", () => {
+    expect(isNodeEmphasisActive("b", "a", false, "b")).toBe(true);
+    expect(isNodeEmphasisActive("c", "a", true, "b")).toBe(false);
   });
 });
 

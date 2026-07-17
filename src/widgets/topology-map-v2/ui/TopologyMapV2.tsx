@@ -78,6 +78,14 @@ export interface TopologyMapV2Props {
   fitViewToken: number;
   /** Increment to force a full relayout. */
   relayoutToken: number;
+  /**
+   * The connected-node slug the user is hovering in the detail panel's
+   * "연결된 노드" list. Under focus, that node + its connecting edge light up on
+   * the canvas so panel and map read as one (lead spec §4). Optional — the
+   * panel-hover wiring is a follow-up; omitting it keeps the map behavior
+   * identical.
+   */
+  emphasizedNeighborSlug?: string | null;
   onSelect?: (slug: string) => void;
   onOpen?: (slug: string) => void;
   onPaneClick?: () => void;
@@ -88,7 +96,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange } = props;
 
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.
@@ -97,6 +105,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       nodes,
       edges,
       focusedSlug: focus.selectedSlug,
+      emphasizedNeighborSlug,
       fitViewToken,
       relayoutToken,
       onSelect,
