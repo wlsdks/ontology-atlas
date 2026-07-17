@@ -79,7 +79,18 @@ export function buildTopologyWorld(
     capability: tokens.layoutRingCapability,
     element: tokens.layoutRingElement,
   };
-  const pointById = new Map(computeConcentricLayout(layoutInput, rings).map((p) => [p.id, p]));
+  // Feed the real §2.3 node radii into the deterministic de-pileup so its
+  // collision min-distance matches what actually gets drawn.
+  const pointById = new Map(
+    computeConcentricLayout(layoutInput, rings, {
+      radii: {
+        project: tokens.radiusProject,
+        domain: tokens.radiusDomain,
+        capability: tokens.radiusCapability,
+        element: tokens.radiusElement,
+      },
+    }).map((p) => [p.id, p]),
+  );
 
   const worldNodes: WorldNode[] = nodes.map((n) => {
     const point = pointById.get(n.id);

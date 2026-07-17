@@ -89,3 +89,60 @@ describe("computeConcentricLayout", () => {
     expect(points).toHaveLength(FIXTURE.length);
   });
 });
+
+/**
+ * De-pileup / determinism contract (Design Guardian 충실도 반려): the static
+ * default must be a clean deterministic grid, NOT an FA2 settlement. The
+ * collision-relax post-process spreads overlapping arcs with a FIXED iteration
+ * count and a seeded tie-break — same input → byte-identical output.
+ */
+describe("computeConcentricLayout — deterministic de-pileup", () => {
+  // One domain with a fat fan of capabilities (each with several elements) —
+  // the 295-vs-40-concept density the guardian flagged, in miniature.
+  const DENSE: LayoutGraphNode[] = [{ id: "p", kind: "project", parentId: null }];
+  DENSE.push({ id: "d", kind: "domain", parentId: "p" });
+  for (let c = 0; c < 10; c += 1) {
+    const capId = `cap-${c}`;
+    DENSE.push({ id: capId, kind: "capability", parentId: "d" });
+    for (let e = 0; e < 6; e += 1) {
+      DENSE.push({ id: `el-${c}-${e}`, kind: "element", parentId: capId });
+    }
+  }
+
+  const RADII = { project: 25, domain: 17, capability: 11, element: 7 };
+
+  function minPairwiseDistance(points: { x: number; y: number }[]): number {
+    let min = Infinity;
+    for (let i = 0; i < points.length; i += 1) {
+      for (let j = i + 1; j < points.length; j += 1) {
+        min = Math.min(min, Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y));
+      }
+    }
+    return min;
+  }
+
+  it("is byte-identical across two runs on a dense graph (no organic jitter)", () => {
+    const a = computeConcentricLayout(DENSE, RINGS, { radii: RADII });
+    const b = computeConcentricLayout(DENSE, RINGS, { radii: RADII });
+    expect(b).toEqual(a);
+  });
+
+  it("leaves no two nodes closer than their combined collision radii", () => {
+    const points = computeConcentricLayout(DENSE, RINGS, { radii: RADII, relaxPadding: 6 });
+    // Smallest possible min-distance = two elements = 7 + 7 = 14 (padding is
+    // extra headroom the relax targets, so we assert against the hard radii).
+    expect(minPairwiseDistance(points)).toBeGreaterThanOrEqual(14);
+  });
+
+  it("actually separates an overlapping seed (relax does work), deterministically", () => {
+    // Inflate radii so even the concentric seed overlaps heavily, forcing the
+    // relax to push nodes apart.
+    const huge = { project: 400, domain: 400, capability: 400, element: 400 };
+    const seedOnly = computeConcentricLayout(DENSE, RINGS, { radii: huge, relaxIterations: 0 });
+    const relaxed = computeConcentricLayout(DENSE, RINGS, { radii: huge, relaxIterations: 80 });
+    expect(minPairwiseDistance(relaxed)).toBeGreaterThan(minPairwiseDistance(seedOnly));
+    // Still fully deterministic under the heavy relax.
+    const relaxedAgain = computeConcentricLayout(DENSE, RINGS, { radii: huge, relaxIterations: 80 });
+    expect(relaxedAgain).toEqual(relaxed);
+  });
+});
