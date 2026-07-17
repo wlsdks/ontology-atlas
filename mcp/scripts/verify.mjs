@@ -129,6 +129,7 @@ export const EXPECTED_WRITE_TOOLS = [
   'delete_concept',
   'rename_concept',
   'merge_concepts',
+  'absorb_document',
 ];
 
 export const EXPECTED_TOOLS = [...EXPECTED_READ_TOOLS, ...EXPECTED_WRITE_TOOLS];
@@ -136,6 +137,7 @@ export const EXPECTED_DESTRUCTIVE_TOOLS = [
   'delete_concept',
   'merge_concepts',
   'rename_concept',
+  'absorb_document',
 ];
 export const EXPECTED_IDEMPOTENT_TOOLS = [
   'add_relation',
