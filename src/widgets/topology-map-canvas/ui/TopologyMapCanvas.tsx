@@ -16,6 +16,7 @@ import {
   fitBounds,
   panBy,
   zoomAt,
+  type CardOverhang,
   type MapCamera,
   type MapInsets,
 } from '../lib/camera';
@@ -58,12 +59,36 @@ export interface TopologyMapCanvasProps {
   fitInsets?: MapInsets;
 }
 
-// 좌측 분석 패널(최대 ~430px 스케일 포함) + 상단 HUD 를 피하는 안전 영역.
-// 카드가 fixed chrome 아래 깔리면 verify 의 fixed-surface overlap 계약 위반.
-const DEFAULT_INSETS: MapInsets = { top: 120, right: 120, bottom: 110, left: 480 };
+// 좌측 분석 패널 + 상단 HUD 를 피하는 안전 영역 — `--topology-map-safe-inset-*`
+// 토큰이 단일 진실원(app/globals.css). 패널 실측(344px 우측 엣지, 디자인
+// 가디언 verdict a4)과 어긋났던 하드코딩 480px 을 제거한다: 토큰 해석 실패
+// (SSR/구 브라우저) 시에만 이 리터럴이 안전망으로 쓰인다.
+const SAFE_INSET_FALLBACK: MapInsets = { top: 120, right: 120, bottom: 110, left: 344 };
+
+function readSafeInsetTokens(): MapInsets {
+  if (typeof window === 'undefined' || typeof getComputedStyle !== 'function') {
+    return SAFE_INSET_FALLBACK;
+  }
+  const style = getComputedStyle(document.documentElement);
+  const read = (name: string, fallback: number) => {
+    const parsed = parseFloat(style.getPropertyValue(name));
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  return {
+    top: read('--topology-map-safe-inset-top', SAFE_INSET_FALLBACK.top),
+    right: read('--topology-map-safe-inset-right', SAFE_INSET_FALLBACK.right),
+    bottom: read('--topology-map-safe-inset-bottom', SAFE_INSET_FALLBACK.bottom),
+    left: read('--topology-map-safe-inset-left', SAFE_INSET_FALLBACK.left),
+  };
+}
+
+// 모듈 로드 시 1회만 해석 — 토큰 값은 런타임에 바뀌지 않는 레이아웃 상수라
+// per-render 재계산이 낭비다.
+const DEFAULT_INSETS: MapInsets = readSafeInsetTokens();
 const DOCK_COL_GAP = 56;
 const DOCK_ROW_PITCH = 44;
 const CARD_HALF_WIDTH_FALLBACK = 150;
+const CARD_HALF_HEIGHT_FALLBACK = 24;
 // 트랙패드 지터가 클릭을 팬으로 오인·취소하지 않는 하한 — 구 엔진과 동일
 // 계약 (verify: topologyStagePanClickCancelPx >= 12).
 const PAN_CLICK_CANCEL_PX = 12;
@@ -209,22 +234,55 @@ export function TopologyMapCanvas({
   const runFit = useCallback(() => {
     const viewport = viewportRef.current;
     if (!viewport || positions.size === 0) return;
+    // world bounds 는 카드 "중심" 좌표만 — 카드 자체의 화면-px 크기는
+    // overhang 으로 별도 예산 처리한다(px-고정 카드에 world-px 여백을 더하면
+    // 차원이 안 맞는다는 게 verdict a2 의 핵심 진단).
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
     let maxY = -Infinity;
-    for (const pos of positions.values()) {
-      minX = Math.min(minX, pos.x - CARD_HALF_WIDTH_FALLBACK);
-      maxX = Math.max(maxX, pos.x + CARD_HALF_WIDTH_FALLBACK);
-      minY = Math.min(minY, pos.y - 24);
-      maxY = Math.max(maxY, pos.y + 24);
+    let minXId: string | null = null;
+    let maxXId: string | null = null;
+    let minYId: string | null = null;
+    let maxYId: string | null = null;
+    for (const [id, pos] of positions) {
+      if (pos.x < minX) {
+        minX = pos.x;
+        minXId = id;
+      }
+      if (pos.x > maxX) {
+        maxX = pos.x;
+        maxXId = id;
+      }
+      if (pos.y < minY) {
+        minY = pos.y;
+        minYId = id;
+      }
+      if (pos.y > maxY) {
+        maxY = pos.y;
+        maxYId = id;
+      }
     }
+    const halfExtentOf = (id: string | null) => {
+      const el = id ? cardElsRef.current.get(id) : null;
+      if (!el || el.offsetWidth === 0) {
+        return { halfWidth: CARD_HALF_WIDTH_FALLBACK, halfHeight: CARD_HALF_HEIGHT_FALLBACK };
+      }
+      return { halfWidth: el.offsetWidth / 2, halfHeight: el.offsetHeight / 2 };
+    };
+    const overhang: CardOverhang = {
+      left: halfExtentOf(minXId).halfWidth,
+      right: halfExtentOf(maxXId).halfWidth,
+      top: halfExtentOf(minYId).halfHeight,
+      bottom: halfExtentOf(maxYId).halfHeight,
+    };
     const rect = viewport.getBoundingClientRect();
     applyCamera(
       fitBounds(
         { minX, minY, maxX, maxY },
         { width: rect.width, height: rect.height },
         fitInsets,
+        { overhang },
       ),
     );
   }, [applyCamera, fitInsets, positions]);
@@ -434,6 +492,14 @@ export function TopologyMapCanvas({
                 strokeLinecap="round"
                 vectorEffect="non-scaling-stroke"
                 opacity={touchesSelected ? 0.95 : spine ? 0.8 : 0.6}
+                // 신뢰(branch) 선은 spine 과 같은 인디고 잉크 — 색이 아니라
+                // dash 로 구분한다(verdict a5: 카테고리 구분은 색이 아닌
+                // 보더/선 스타일이라는 헌장).
+                strokeDasharray={
+                  !touchesSelected && !spine
+                    ? 'var(--topology-relation-stroke-supported-dasharray)'
+                    : undefined
+                }
               />
             );
           })}
