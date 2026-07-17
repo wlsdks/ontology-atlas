@@ -1106,7 +1106,7 @@ export function TopologyAnalysisBar({
             data-prompt-text-token="--topology-analysis-panel-prompt-text"
             className={`break-keep text-[13.5px] text-[color:var(--topology-analysis-panel-prompt-text)] ${
               panelMode === "overview"
-                ? "line-clamp-3 leading-5 max-md:line-clamp-2"
+                ? "line-clamp-1 leading-5"
                 : panelMode === "focus"
                   ? "line-clamp-2 leading-5"
                   : "line-clamp-3 leading-6"
@@ -1114,27 +1114,33 @@ export function TopologyAnalysisBar({
           >
             {prompt}
           </p>
-          <div
-            data-testid="topology-analysis-panel-metrics"
-            data-metric-label-text-token="--topology-analysis-panel-metric-label-text"
-            data-metric-value-text-token="--topology-analysis-panel-metric-value-text"
-            className={`grid grid-cols-2 gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--topology-analysis-panel-metric-label-text)] ${
-              panelMode === "focus" ? "mt-2" : "mt-3"
-            }`}
-          >
-            <span>
-              <span className="text-[color:var(--topology-analysis-panel-metric-value-text)]">
-                {summary.primaryMetric}
-              </span>{" "}
-              {primaryLabel}
-            </span>
-            <span>
-              <span className="text-[color:var(--topology-analysis-panel-metric-value-text)]">
-                {summary.secondaryMetric}
-              </span>{" "}
-              {labels.metricRelations}
-            </span>
-          </div>
+          {/* overview 는 census(concepts/relations) 를 상단 워크스페이스 HUD
+              (HeroCollapsed subtitle) 가 이미 보여준다 — 같은 숫자를 패널에서
+              또 반복하면 "295·505 중복" 이 된다(디자인 가디언 verdict a6).
+              다른 모드(health/focus/path)는 그 모드 고유 지표라 유지한다. */}
+          {panelMode !== "overview" ? (
+            <div
+              data-testid="topology-analysis-panel-metrics"
+              data-metric-label-text-token="--topology-analysis-panel-metric-label-text"
+              data-metric-value-text-token="--topology-analysis-panel-metric-value-text"
+              className={`grid grid-cols-2 gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--topology-analysis-panel-metric-label-text)] ${
+                panelMode === "focus" ? "mt-2" : "mt-3"
+              }`}
+            >
+              <span>
+                <span className="text-[color:var(--topology-analysis-panel-metric-value-text)]">
+                  {summary.primaryMetric}
+                </span>{" "}
+                {primaryLabel}
+              </span>
+              <span>
+                <span className="text-[color:var(--topology-analysis-panel-metric-value-text)]">
+                  {summary.secondaryMetric}
+                </span>{" "}
+                {labels.metricRelations}
+              </span>
+            </div>
+          ) : null}
           {panelMode === "overview" ? (
             <div
               data-testid="topology-overview-reader-lens"
