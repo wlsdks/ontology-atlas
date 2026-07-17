@@ -1,8 +1,4 @@
-import {
-  PROMOTION_MIN_FAN_IN,
-  type KnowledgeGraphEdge,
-  type KnowledgeGraphNode,
-} from "@/entities/knowledge-graph";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { isContainmentRelation } from "@/shared/lib/ontology-tree";
 import type { TopologyV2Edge, TopologyV2Node } from "@/widgets/topology-map-v2";
 import { buildOntologySkeleton } from "./topology-ontology-skeleton";
@@ -40,9 +36,15 @@ export interface TopologyV2Graph {
  *
  * Known simplifications (documented rather than silently guessed, matching
  * this codebase's own "알려진 단순화" convention):
- * - `isHub` reuses the same fan-in threshold (`PROMOTION_MIN_FAN_IN`) as the
- *   existing "core" significance level (`topology-node-significance.ts`) —
- *   there is no separate hub flag for domain/capability/element nodes today.
+ * - `isHub` marks exactly ONE node — the single highest fan-in (incoming
+ *   count) node in the whole graph, ties broken by slug ascending for
+ *   determinism. This is the v2 charter (`docs/prototypes/topology-
+ *   b2plus.html`'s own fixture data marks exactly one node `hub: true`; the
+ *   amber hub ring is a single-node highlight, not a "sufficiently
+ *   connected" threshold band) — an earlier version of this adapter used
+ *   `incoming >= PROMOTION_MIN_FAN_IN`, which marked every well-connected
+ *   node as a hub and was fixed after an owner live-test flagged "amber on
+ *   multiple nodes".
  * - `ownerKey` is always `null` — ontology nodes have no `owner:` frontmatter
  *   field (unlike `project.owner`, which feeds the old Sigma engine's
  *   owner-tint). `topology-world.ts`'s `WorldNode` doesn't even carry the
@@ -76,6 +78,23 @@ export function buildTopologyV2Graph(
     bump(incomingById, edge.to);
   }
 
+  // Single-hub charter: rank by fan-in desc, slug asc as the deterministic
+  // tie-break, and mark only the top node — never a threshold band.
+  let hubId: string | null = null;
+  let hubIncoming = 0;
+  for (const node of includedNodes) {
+    const incoming = incomingById.get(node.id) ?? 0;
+    if (incoming === 0) continue;
+    if (
+      hubId === null ||
+      incoming > hubIncoming ||
+      (incoming === hubIncoming && node.id < hubId)
+    ) {
+      hubId = node.id;
+      hubIncoming = incoming;
+    }
+  }
+
   const v2Nodes: TopologyV2Node[] = includedNodes.map((node) => ({
     id: node.id,
     label: node.title,
@@ -83,7 +102,7 @@ export function buildTopologyV2Graph(
     size: subtreeWeightBySlug.get(node.id) ?? 0,
     x: 0,
     y: 0,
-    isHub: (incomingById.get(node.id) ?? 0) >= PROMOTION_MIN_FAN_IN,
+    isHub: node.id === hubId,
     ownerKey: null,
     recentlyUpdated: options.changedSlugs?.has(node.id) ?? false,
     fullDegree: fullDegreeById.get(node.id) ?? 0,

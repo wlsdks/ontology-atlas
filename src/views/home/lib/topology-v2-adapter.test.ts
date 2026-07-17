@@ -90,35 +90,57 @@ describe("buildTopologyV2Graph — regression: TopologyMapV2 must not be mounted
     expect(degreeById.get("c")).toBe(1);
   });
 
-  it("marks a node isHub when its incoming (fan-in) count reaches PROMOTION_MIN_FAN_IN", () => {
+  // Regression (owner live-test, blocker 3): "amber on multiple nodes" —
+  // the charter (`docs/prototypes/topology-b2plus.html`'s own fixture data
+  // marks exactly one node `hub: true`) is a SINGLE amber-ring hub, the
+  // highest-degree node in the graph — not every node past a threshold.
+  // `isHub` used to be `incoming >= PROMOTION_MIN_FAN_IN`, which marks every
+  // sufficiently-connected node as a hub; fixed to rank all nodes by
+  // incoming (fan-in) count and mark only the single top one.
+  it("marks isHub true for only the single highest fan-in node in the whole graph", () => {
     const nodes = [
       node({ id: "core", kind: "capability" }),
+      node({ id: "second", kind: "capability" }),
       node({ id: "d1", kind: "domain" }),
       node({ id: "d2", kind: "domain" }),
       node({ id: "d3", kind: "domain" }),
       node({ id: "d4", kind: "domain" }),
+      node({ id: "d5", kind: "domain" }),
     ];
-    const edges = ["d1", "d2", "d3", "d4"].map((from, i) =>
-      edge({ id: `e${i}`, from, to: "core", type: "depends_on" }),
-    );
+    const edges = [
+      ...["d1", "d2", "d3", "d4"].map((from, i) => edge({ id: `e${i}`, from, to: "core", type: "depends_on" })),
+      ...["d1", "d2", "d5"].map((from, i) => edge({ id: `f${i}`, from, to: "second", type: "depends_on" })),
+    ];
 
     const graph = buildTopologyV2Graph(nodes, edges);
-    const core = graph.nodes.find((n) => n.id === "core");
+    const hubs = graph.nodes.filter((n) => n.isHub).map((n) => n.id);
 
-    expect(core?.isHub).toBe(true);
+    expect(hubs).toEqual(["core"]); // 4 incoming, vs "second"'s 3 — single top node only
   });
 
-  it("does not mark a node isHub when fan-in is below the threshold", () => {
+  it("marks no node isHub when the graph has no edges at all", () => {
+    const nodes = [node({ id: "a", kind: "project" }), node({ id: "b", kind: "domain" })];
+
+    const graph = buildTopologyV2Graph(nodes, []);
+
+    expect(graph.nodes.every((n) => !n.isHub)).toBe(true);
+  });
+
+  it("breaks a fan-in tie deterministically by slug (ascending)", () => {
     const nodes = [
-      node({ id: "core", kind: "capability" }),
+      node({ id: "zeta", kind: "capability" }),
+      node({ id: "alpha", kind: "capability" }),
       node({ id: "d1", kind: "domain" }),
     ];
-    const edges = [edge({ id: "e0", from: "d1", to: "core", type: "depends_on" })];
+    const edges = [
+      edge({ id: "e0", from: "d1", to: "zeta", type: "depends_on" }),
+      edge({ id: "e1", from: "d1", to: "alpha", type: "depends_on" }),
+    ];
 
     const graph = buildTopologyV2Graph(nodes, edges);
-    const core = graph.nodes.find((n) => n.id === "core");
+    const hubs = graph.nodes.filter((n) => n.isHub).map((n) => n.id);
 
-    expect(core?.isHub).toBe(false);
+    expect(hubs).toEqual(["alpha"]);
   });
 
   it("marks recentlyUpdated true only for slugs present in the changedSlugs set", () => {
