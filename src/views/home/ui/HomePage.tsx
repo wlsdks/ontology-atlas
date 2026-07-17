@@ -199,6 +199,7 @@ import { TopologyMapCanvas } from "@/widgets/topology-map-canvas";
 import { TopologyMapV2 } from "@/widgets/topology-map-v2";
 import { useTopologyMapV2Enabled } from "@/shared/lib/use-topology-map-v2-enabled";
 import { selectTopologyEngine } from "../lib/topology-engine-select";
+import { buildTopologyV2Graph } from "../lib/topology-v2-adapter";
 import {
   buildTopologyOntologyDrawerModel,
   classifyTopologyRelationProvenance,
@@ -809,6 +810,22 @@ export function HomePage() {
     hasTopologySkeleton: topologySkeleton != null,
     hasOntologyInsight: ontologyInsight != null,
   });
+
+  // topology-map-v2 mount gap fix — the P2 scaffold (87edec961) wired
+  // `<TopologyMapV2 nodes={[]} edges={[]} />` as a deliberate placeholder,
+  // so flipping the flag mounted the v2 canvas but left it with nothing to
+  // draw. `buildTopologyV2Graph` derives the real adapter-contract
+  // nodes/edges from the same `ontologyInsight` the other two engines
+  // already draw (topology-v2-adapter.ts).
+  const topologyV2Graph = useMemo(
+    () =>
+      ontologyInsight
+        ? buildTopologyV2Graph(ontologyInsight.nodes, ontologyInsight.edges, {
+            changedSlugs,
+          })
+        : { nodes: [], edges: [] },
+    [ontologyInsight, changedSlugs],
+  );
 
   useEffect(() => {
     if (!localGraphRoot) return;
@@ -2382,17 +2399,16 @@ export function HomePage() {
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas && topologyEngineChoice === "map-v2" ? (
-                  // topology-map-v2 (docs/TOPOLOGY-V2-DESIGN.md §4 P2) —
-                  // scaffold-only placeholder behind the `topology-map-v2`
-                  // flag. Unifies the map tab, graph tab, and project-detail
+                  // topology-map-v2 (docs/TOPOLOGY-V2-DESIGN.md §4 P2/P3) —
+                  // unifies the map tab, graph tab, and project-detail
                   // neighbor map into one engine (§1.2); this call site is
                   // wired once for all three, per §5.3's unchanged adapter
-                  // contract. `nodes`/`edges` adapter mapping from
-                  // `ontologyInsight` is intentionally left empty here — that
-                  // derivation is P3+ work, not part of this scaffold.
+                  // contract. `nodes`/`edges` come from `topologyV2Graph`
+                  // (topology-v2-adapter.ts), derived from the same
+                  // `ontologyInsight` the map-canvas/Sigma engines draw.
                   <TopologyMapV2
-                    nodes={[]}
-                    edges={[]}
+                    nodes={topologyV2Graph.nodes}
+                    edges={topologyV2Graph.edges}
                     focus={{
                       selectedSlug: canvasSelectedSlug,
                       depthLimit: sigmaControls.depthLimit,
@@ -2409,6 +2425,7 @@ export function HomePage() {
                     onOpen={handleExpandRequest}
                     onPaneClick={handleClose}
                     onVisibleCountChange={setSigmaVisibleCount}
+                    onGraphStatsChange={handleSigmaGraphStatsChange}
                     minimal={localGraphRoot !== null}
                   />
                 ) : topologyRenderState.renderCanvas &&
