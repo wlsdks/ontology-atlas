@@ -17,7 +17,7 @@ import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../inte
 import type { NodeDragState } from "./topology-pointer-handlers";
 import { buildGridPattern } from "../render/grid";
 import { buildDustPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
-import { computeFocusCameraTarget, computeOverviewCameraTarget, fitWorldTarget } from "./topology-camera-math";
+import { computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./topology-pointer-handlers";
 import { stepTopologyPhysics } from "./topology-physics-step";
@@ -26,10 +26,15 @@ import type { TopologyMapV2Props } from "./TopologyMapV2";
 import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 
-/** FA2 iterations to run per warm frame — a bounded synchronous tick budget (`model/force-layout.ts` integration note). */
+/**
+ * FA2 iterations to run per warm frame — a bounded synchronous tick budget
+ * (`model/force-layout.ts` integration note). The sim is warm ONLY while a
+ * node is being pin-dragged (or its brief release settle) — never on load. The
+ * static default is the deterministic de-piled concentric grid built in
+ * `model/layout.ts`; running FA2 on mount turned that clean circuit into a
+ * generic force hairball, which was the guardian's 충실도 반려 reason.
+ */
 const FORCE_ITERATIONS_PER_FRAME = 1;
-/** Frames of warmth after a fresh world build — a light seeded settle that un-piles overlaps without erasing the concentric structure. */
-const INITIAL_SETTLE_FRAMES = 90;
 
 export interface UseTopologyLoopArgs {
   nodes: TopologyMapV2Props["nodes"];
@@ -95,9 +100,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const dragHistoryRef = useRef<{ x: number; y: number; t: number }[]>([]);
   const camStartAtDownRef = useRef({ x: 0, y: 0 });
   const canvasRectRef = useRef<{ left: number; top: number } | null>(null);
-  // Once the user pans/zooms/clicks, stop auto-reframing the overview while the
-  // initial force settle is still running (so a re-fit never fights the user).
-  const userInteractedRef = useRef(false);
 
   const focusedSlugRef = useRef<string | null>(focusedSlug);
   const lastFocusedSlugRef = useRef<string | null>(focusedSlug);
@@ -130,7 +132,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // `computeOverviewCameraTarget`'s own JSDoc), not the tight bounding fit
     // — `overviewScaleRef` still anchors on the tight fit itself, since that's
     // the altitude band's "100%" reference regardless of where the camera starts.
-    const fit = fitWorldTarget(world.bounds, width, height, tokens.cameraScaleMax, tokens.cameraScaleMin);
     const target = computeOverviewCameraTarget(world.bounds, width, height, tokens);
     cameraRef.current = {
       x: { value: target.tx, velocity: 0 },
@@ -138,7 +139,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       scale: { value: target.tscale, velocity: 0 },
     };
     cameraTargetRef.current = target;
-    overviewScaleRef.current = fit.tscale;
+    overviewScaleRef.current = computeOverviewFitScale(world.bounds, width, height, tokens);
     hasInitializedRef.current = true;
   };
 
@@ -155,7 +156,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
     );
     nodeDragRef.current = null;
-    heatRef.current = INITIAL_SETTLE_FRAMES;
+    // No load-time settle: the sim stays cold until a node is pin-dragged. The
+    // static default is the deterministic de-piled grid from `topology-world`.
+    heatRef.current = 0;
     onVisibleCountChange?.(nodes.length);
     onGraphStatsChange?.({ nodes: nodes.length, relations: edges.length });
     trySnapInitialCamera(tokens);
@@ -218,8 +221,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!tokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) return;
-    cameraTargetRef.current = fitWorldTarget(world.bounds, width, height, tokens.cameraScaleMax, tokens.cameraScaleMin);
-    overviewScaleRef.current = cameraTargetRef.current.tscale;
+    // Panel-aware: spring back to the overview centered in the VISIBLE area, not
+    // behind the left ReaderLens panel (Design Guardian 카메라 반려).
+    cameraTargetRef.current = computeOverviewCameraTarget(world.bounds, width, height, tokens);
+    overviewScaleRef.current = computeOverviewFitScale(world.bounds, width, height, tokens);
     dampingRef.current = tokens.cameraDampingDefault;
   }, [relayoutToken, fitViewToken]);
 
@@ -262,7 +267,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       const dt = lastFrameTimeRef.current === 0 ? 0 : Math.min((now - lastFrameTimeRef.current) / 1000, 0.05);
       lastFrameTimeRef.current = now;
 
-      // --- force simulation: tick while warm or while a node is pinned ---
+      // --- force simulation: tick ONLY while a node is pin-dragged (or its
+      // brief release settle). Never on load — the static default is the
+      // deterministic grid, and the camera is NOT auto-reframed here (that
+      // reframing only existed to chase the removed load settle). ---
       const sim = simRef.current;
       const pinned = nodeDragRef.current !== null;
       if (sim && (heatRef.current > 0 || pinned)) {
@@ -270,14 +278,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         applyForcePositions(world, sim.positions());
         recomputeWorldGeometry(world, tokens);
         if (!pinned && heatRef.current > 0) heatRef.current -= 1;
-        // Keep the graph framed while the initial seeded settle relaxes — but
-        // only until the user takes over (pan/zoom/click) or a focus is active.
-        if (!userInteractedRef.current && focusedSlugRef.current === null && pointerMachineRef.current.phase === "idle") {
-          const refit = computeOverviewCameraTarget(world.bounds, width, height, tokens);
-          const fit = fitWorldTarget(world.bounds, width, height, tokens.cameraScaleMax, tokens.cameraScaleMin);
-          cameraTargetRef.current = refit;
-          overviewScaleRef.current = fit.tscale;
-        }
       }
 
       const focusedNodeId = focusedSlugRef.current;
@@ -356,19 +356,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onSelect,
     onPaneClick,
   });
-
-  // Any pan/zoom/click means the user has taken over — stop auto-reframing the
-  // still-settling overview (see `userInteractedRef` + the rAF re-fit above).
-  const baseHandlePointerDown = handlers.handlePointerDown;
-  handlers.handlePointerDown = (e) => {
-    userInteractedRef.current = true;
-    baseHandlePointerDown(e);
-  };
-  const baseHandleWheel = handlers.handleWheel;
-  handlers.handleWheel = (e) => {
-    userInteractedRef.current = true;
-    baseHandleWheel(e);
-  };
   /* eslint-enable react-hooks/refs */
 
   // FIX (QA first-light pass — console error sweep): a JSX `onWheel` prop
