@@ -22,6 +22,8 @@ import { stdout, stderr, argv, cwd } from 'node:process';
 import { CLI_COMMAND_COUNT, CLI_COMMAND_RUNNERS, CLI_COMMANDS } from './lib/cli-commands.mjs';
 import { closestAllowedValue, formatUnknownFlagError } from './lib/cli-args.mjs';
 import { readMcpPackageMetadata } from './lib/mcp-metadata.mjs';
+import { runBootstrap } from './commands/bootstrap.mjs';
+import { stampInitCompleted } from './lib/telemetry.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_ROOT = resolve(__dirname, '..', 'templates', 'vault');
@@ -32,7 +34,7 @@ const require_ = createRequire(import.meta.url);
 const MCP_METADATA = readMcpPackageMetadata();
 const MCP_TOOL_COUNT = MCP_METADATA.toolCount ?? 'current';
 const MCP_TOOL_SPLIT = MCP_METADATA.splitText ?? 'read/write';
-const INIT_ALLOWED_FLAGS = ['--help'];
+const INIT_ALLOWED_FLAGS = ['--help', '--quick-start'];
 const TOP_LEVEL_COMMAND_VALUES = ['--help', '-h', 'help', '--version', '-v', ...CLI_COMMANDS];
 
 
@@ -46,6 +48,7 @@ AI-native codebase ontology workbench — ${CLI_COMMAND_COUNT} commands + MCP se
 
 ${COLORS.bold}Usage:${COLORS.reset}
   npx ontology-atlas init [folder]            Scaffold a new ontology vault (default: ./vault)
+       --quick-start                          ${COLORS.dim}Slice 0 one-liner: + bootstrap + absorb suggestion + compact next steps${COLORS.reset}
   npx ontology-atlas list [vault]             List ontology nodes in a vault
                                               ${COLORS.dim}--kind <kind>     filter by kind${COLORS.reset}
                                               ${COLORS.dim}--json            JSON output${COLORS.reset}
@@ -70,6 +73,8 @@ ${COLORS.bold}Usage:${COLORS.reset}
        --raw-slug --rename --dry-run          ${COLORS.dim}no folder prefix · slug rename · plan-only${COLORS.reset}
   npx ontology-atlas absorb <file...>         ${COLORS.green}Absorb CLAUDE.md/AGENTS.md into typed vault nodes${COLORS.reset} (Slice 0)
        --vault path --write                   ${COLORS.dim}default dry-run plan · --write lands + rewrites source as slim pointer${COLORS.reset}
+  npx ontology-atlas moment [vault]            ${COLORS.green}Slice 0 magic-moment readout${COLORS.reset} — init/absorb → first agent-brief elapsed
+       --mark --json                           ${COLORS.dim}manual stamp fallback · machine output${COLORS.reset}
 
 ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17 — autonomous ingest base)${COLORS.reset}
   npx ontology-atlas index [rootPath]         ${COLORS.green}project ontology index${COLORS.reset} — analyze + imports + validate plan
@@ -187,21 +192,30 @@ function parseInitArgs(args) {
     return { help: true };
   }
   const positional = [];
+  let quickStart = false;
   for (const arg of args) {
+    if (arg === '--quick-start') {
+      quickStart = true;
+      continue;
+    }
     if (arg.startsWith('-')) return { error: formatUnknownFlagError(arg, INIT_ALLOWED_FLAGS) };
     positional.push(arg);
   }
   if (positional.length > 1) {
     return { error: `too many arguments: ${positional.slice(1).join(' ')}` };
   }
-  return { target: positional[0] };
+  return { target: positional[0], quickStart };
 }
 
 function printInitUsage(stream = stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  ontology-atlas init [folder]\n\n` +
-      `Scaffold a local ontology vault. Default folder: ./vault\n`,
+      `  ontology-atlas init [folder]\n` +
+      `  ontology-atlas init [folder] --quick-start\n\n` +
+      `Scaffold a local ontology vault. Default folder: ./vault\n\n` +
+      `${COLORS.bold}--quick-start${COLORS.reset}  no-prompt one-liner (Slice 0): scaffold + bootstrap from\n` +
+      `  this repo + .mcp.json (already unconditional) + an absorb suggestion when\n` +
+      `  CLAUDE.md/AGENTS.md exists (never auto-absorbed) + a compact next-steps block.\n`,
   );
 }
 
@@ -275,7 +289,8 @@ function copyTree(srcRoot, destRoot) {
   return { created, skipped };
 }
 
-function runInit(targetArg) {
+async function runInit(targetArg, opts = {}) {
+  const quickStart = Boolean(opts.quickStart);
   const target = resolve(cwd(), targetArg ?? 'vault');
   let serverCommand;
   try {
@@ -407,6 +422,15 @@ function runInit(targetArg) {
     cwdVaultArg,
   ].map(shellQuote).join(' ');
 
+  // Slice 0 magic-moment instrumentation (PRODUCT-PLAN-2026-07.md §4/§9) —
+  // local-only baseline for "vault worth asking" (see lib/telemetry.mjs).
+  // Applies to every init, quick-start or not.
+  stampInitCompleted(target);
+
+  if (quickStart) {
+    return runQuickStart({ target, cwdVaultArg });
+  }
+
   stdout.write(`
 ${COLORS.green}${COLORS.bold}done${COLORS.reset} — vault scaffolded.
 
@@ -454,6 +478,46 @@ ${COLORS.bold}Next steps:${COLORS.reset}
 ${COLORS.dim}AI agents and humans now share the same vault. Have fun.${COLORS.reset}
 `);
   return 0;
+}
+
+// `init --quick-start` (Slice 0 — docs/PRODUCT-PLAN-2026-07.md §9): one
+// command = scaffold (already done by the time this runs, no prompts either
+// way) + bootstrap from the repo (reuses the existing analyze/infer-imports
+// pipeline via `runBootstrap` — no reimplementation) + .mcp.json (already
+// unconditional above) + an absorb suggestion when CLAUDE.md/AGENTS.md
+// exists (approval-tier principle: never auto-absorbed, human opt-in only)
+// + a compact next-steps block (3 lines max).
+async function runQuickStart({ target, cwdVaultArg }) {
+  stdout.write(`\n${COLORS.bold}quick start${COLORS.reset} — bootstrapping from your repo...\n`);
+  const bootstrapCode = await runBootstrap(['.', '--vault', cwdVaultArg]);
+
+  const repoRoot = cwd();
+  const foundGuides = ['AGENTS.md', 'CLAUDE.md'].filter((name) => existsSync(join(repoRoot, name)));
+  if (foundGuides.length > 0) {
+    stdout.write(
+      `\n${COLORS.yellow}note${COLORS.reset}  found ${foundGuides.join(', ')} — consider absorbing ` +
+        `${foundGuides.length > 1 ? 'them' : 'it'} into the vault (never automatic — your call):\n`,
+    );
+    for (const guide of foundGuides) {
+      const absorbCommand = ['ontology-atlas', 'absorb', guide, '--vault', cwdVaultArg]
+        .map(shellQuote)
+        .join(' ');
+      stdout.write(`       ${COLORS.cyan}${absorbCommand}${COLORS.reset}\n`);
+    }
+    stdout.write(
+      `       ${COLORS.dim}dry-run by default — review the plan, then land it yourself by adding --write${COLORS.reset}\n`,
+    );
+  }
+
+  stdout.write(`
+${COLORS.green}${COLORS.bold}quick start done${COLORS.reset} — vault scaffolded + bootstrapped from your repo.
+
+${COLORS.bold}Next:${COLORS.reset}
+  ${COLORS.dim}1.${COLORS.reset} Open the vault        ${COLORS.cyan}cd ${target} && ontology-atlas list${COLORS.reset}
+  ${COLORS.dim}2.${COLORS.reset} MCP already wired      restart Claude Code / Cursor / Codex from this folder
+  ${COLORS.dim}3.${COLORS.reset} Try asking your agent  e.g. "what does the auth capability depend on?"
+`);
+  return bootstrapCode;
 }
 
 async function runCommandHelp(command) {
@@ -523,7 +587,7 @@ async function main() {
       printInitUsage();
       return 1;
     }
-    return runInit(parsed.target);
+    return runInit(parsed.target, { quickStart: parsed.quickStart });
   }
 
   const runner = CLI_COMMAND_RUNNERS[SUBCOMMAND];

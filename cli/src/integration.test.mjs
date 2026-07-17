@@ -262,6 +262,124 @@ await test('init — generated MCP config points at a runnable local server in s
   }
 });
 
+// ── init --quick-start (Slice 0 — docs/PRODUCT-PLAN-2026-07.md §9) ──────
+//
+// One command = scaffold (no prompts, already the default) + bootstrap from
+// the repo (reuses the existing analyze/infer-imports pipeline, no
+// reimplementation) + .mcp.json (already unconditional) + an absorb
+// suggestion when CLAUDE.md/AGENTS.md exists (never auto-absorbed — human
+// opt-in) + a compact 3-line next-steps block.
+
+function makeQuickStartRepoFixture() {
+  const repo = mkdtempSync(join(tmpdir(), 'cli-quick-start-'));
+  writeFileSync(
+    join(repo, 'package.json'),
+    JSON.stringify({ name: 'quick-start-app', description: 'Quick start fixture app' }, null, 2),
+    'utf-8',
+  );
+  mkdirSync(join(repo, 'src', 'features', 'auth'), { recursive: true });
+  return repo;
+}
+
+await test('init --quick-start — scaffolds, bootstraps from the repo, and ends with a compact next-steps block', async () => {
+  const repo = makeQuickStartRepoFixture();
+  try {
+    const r = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+
+    const vault = join(repo, 'ontology');
+    // bootstrap actually ran — same evidence the analyze --apply tests use
+    // (untouched starter project.md is pruned and replaced by <slug>.md).
+    const projectDoc = readFileSync(join(vault, 'quick-start-app.md'), 'utf-8');
+    assert.match(projectDoc, /title: Quick start fixture app/);
+    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), true);
+
+    // .mcp.json still generated (already unconditional, verify quick-start keeps it).
+    assert.equal(existsSyncTest(join(repo, '.mcp.json')), true);
+    assert.equal(existsSyncTest(join(vault, '.mcp.json')), true);
+
+    // compact next-steps block, not the long 6-step default block.
+    assert.match(clean, /quick start done/);
+    assert.equal((clean.match(/^\s*\d\.\s/gm) || []).length, 3, `expected exactly 3 next-step lines:\n${clean}`);
+    assert.doesNotMatch(clean, /Open this folder in an AI agent/);
+    assert.doesNotMatch(clean, /See the graph/);
+
+    // Slice 0 magic-moment baseline stamped (local only, never transmitted).
+    const telemetry = JSON.parse(
+      readFileSync(join(vault, '.ontology-atlas', 'telemetry.local.json'), 'utf-8'),
+    );
+    assert.ok(typeof telemetry.initCompletedAt === 'string' && telemetry.initCompletedAt.length > 0);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('init --quick-start — suggests absorbing an existing AGENTS.md without auto-absorbing it', async () => {
+  const repo = makeQuickStartRepoFixture();
+  try {
+    const agentsBefore = '# Team guide\n\n## Rules\n\nNever skip tests.\n';
+    writeFileSync(join(repo, 'AGENTS.md'), agentsBefore, 'utf-8');
+
+    const r = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+
+    assert.match(clean, /found AGENTS\.md/);
+    assert.match(clean, /ontology-atlas absorb AGENTS\.md --vault \.\/ontology/);
+    const absorbLine = clean.split('\n').find((line) => line.includes('ontology-atlas absorb AGENTS.md'));
+    assert.ok(absorbLine, `expected an absorb suggestion line in:\n${clean}`);
+    assert.doesNotMatch(absorbLine, /--write/);
+
+    // never auto-absorbed — human opt-in only (approval-tier principle).
+    assert.equal(readFileSync(join(repo, 'AGENTS.md'), 'utf-8'), agentsBefore);
+    assert.equal(existsSyncTest(join(repo, 'AGENTS.md.pre-absorb.bak')), false);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('init --quick-start — no CLAUDE.md/AGENTS.md present skips the absorb suggestion', async () => {
+  const repo = makeQuickStartRepoFixture();
+  try {
+    const r = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.doesNotMatch(stripAnsi(r.stdout), /ontology-atlas absorb/);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('init --quick-start — unaffected plain init keeps the original verbose next-steps block', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-init-plain-'));
+  try {
+    const r = await run(['init', 'ontology'], { cwd: root });
+    assert.equal(r.code, 0);
+    assert.doesNotMatch(stripAnsi(r.stdout), /quick start done/);
+    assert.match(stripAnsi(r.stdout), /Open this folder in an AI agent/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('init --quick-start — --help documents the flag', async () => {
+  const help = await run(['init', '--help']);
+  assert.equal(help.code, 0);
+  assert.match(stripAnsi(help.stdout), /--quick-start/);
+});
+
+await test('init — starter .gitignore keeps the local-only Slice 0 telemetry file out of git', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-init-gitignore-'));
+  try {
+    const r = await run(['init', 'ontology'], { cwd: root });
+    assert.equal(r.code, 0);
+    const gitignore = readFileSync(join(root, 'ontology', '.gitignore'), 'utf-8');
+    assert.match(gitignore, /\.ontology-atlas\//);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('agent-setup — writes agent configs for an existing vault without starter files', async () => {
   const root = mkdtempSync(join(tmpdir(), 'cli-agent-setup-'));
   try {
@@ -361,6 +479,42 @@ await test('agent-setup — terminal output points humans to the workflow guide'
     assert.match(stripAnsi(r.stdout), /sync docs\/ontology before finishing/);
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('moment — end-to-end via init --quick-start then agent-brief', async () => {
+  const repo = mkdtempSync(join(tmpdir(), 'cli-moment-e2e-'));
+  try {
+    writeFileSync(
+      join(repo, 'package.json'),
+      JSON.stringify({ name: 'moment-e2e-app', description: 'Moment e2e fixture' }, null, 2),
+      'utf-8',
+    );
+    mkdirSync(join(repo, 'src', 'features', 'auth'), { recursive: true });
+
+    const init = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
+    assert.equal(init.code, 0, `init failed: ${init.stdout}\n${init.stderr}`);
+
+    const vault = join(repo, 'ontology');
+    const before = await run(['moment', vault, '--json']);
+    assert.equal(before.code, 0, before.stderr);
+    const beforeData = JSON.parse(before.stdout);
+    assert.equal(beforeData.hasBaseline, true);
+    assert.equal(beforeData.moment, null);
+
+    // agent-brief's exit code reflects vault readiness (not telemetry) — a
+    // freshly bootstrapped fixture vault can be `needs_shape`. Only the
+    // telemetry side effect matters here.
+    const brief = await run(['agent-brief', vault]);
+    assert.equal(brief.stderr, '', `agent-brief errored: ${brief.stderr}`);
+
+    const after = await run(['moment', vault, '--json']);
+    assert.equal(after.code, 0, after.stderr);
+    const afterData = JSON.parse(after.stdout);
+    assert.equal(afterData.moment.source, 'agent-brief');
+    assert.equal(typeof afterData.moment.elapsedMs, 'number');
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
   }
 });
 
@@ -4978,6 +5132,36 @@ await test('agent-brief — prints agent handoff entrypoints and playbooks', asy
     assert.match(clean, /all_paths\s+report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence\.status, evidence\.reason, evidence\.pathsComplete/);
     assert.match(clean, /partial evidence/);
     assert.match(clean, /WRITE POLICY/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-brief — stamps the Slice 0 magic-moment telemetry the first time it runs after init', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const initTelemetryPath = join(root, '.ontology-atlas', 'telemetry.local.json');
+    mkdirSync(dirname(initTelemetryPath), { recursive: true });
+    writeFileSync(
+      initTelemetryPath,
+      JSON.stringify({ initCompletedAt: '2020-01-01T00:00:00.000Z', absorbWriteCompletedAt: null, moment: null }, null, 2),
+      'utf-8',
+    );
+
+    const r = await run(['agent-brief', root]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+
+    const telemetry = JSON.parse(readFileSync(initTelemetryPath, 'utf-8'));
+    assert.equal(telemetry.moment.source, 'agent-brief');
+    assert.equal(typeof telemetry.moment.elapsedMs, 'number');
+    assert.ok(telemetry.moment.elapsedMs >= 0);
+
+    // a second run must not overwrite the first recorded moment.
+    const before = telemetry.moment.at;
+    const r2 = await run(['agent-brief', root]);
+    assert.equal(r2.code, 0);
+    const telemetryAfter = JSON.parse(readFileSync(initTelemetryPath, 'utf-8'));
+    assert.equal(telemetryAfter.moment.at, before);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
