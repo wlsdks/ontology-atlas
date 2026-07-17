@@ -1888,9 +1888,12 @@ describe('queryCompiledOntology', () => {
       'query_plan',
       'all_paths',
       'explain_relation',
+      'facets',
       'query_plan',
       'match_nodes',
       'domain_matrix',
+      'query_plan',
+      'match_nodes',
       'query_plan',
       'match_edges',
     ]);
@@ -1899,8 +1902,11 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.graphDbQueryPack[2].calls[0].arguments.targetOperation, 'match_edges');
     assert.equal(result.graphDbQueryPack[3].calls[1].arguments.targetOperation, 'centrality');
     assert.equal(result.graphDbQueryPack[4].calls[0].arguments.targetOperation, 'all_paths');
-    assert.equal(result.graphDbQueryPack[5].calls[0].arguments.targetOperation, 'match_nodes');
-    assert.equal(result.graphDbQueryPack[5].calls[3].arguments.targetOperation, 'match_edges');
+    assert.equal(result.graphDbQueryPack[5].calls[0].arguments.operation, 'facets');
+    assert.equal(result.graphDbQueryPack[5].calls[1].arguments.targetOperation, 'match_nodes');
+    assert.equal(result.graphDbQueryPack[5].calls[4].arguments.targetOperation, 'match_nodes');
+    assert.equal(result.graphDbQueryPack[5].calls[4].arguments.kind, 'capability');
+    assert.equal(result.graphDbQueryPack[5].calls[6].arguments.targetOperation, 'match_edges');
     assert.match(result.handoffPrompt, /Traversal strategy/);
     assert.match(result.handoffPrompt, /plan_before_enumeration/);
     assert.match(result.handoffPrompt, /Write guardrails/);

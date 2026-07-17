@@ -1,0 +1,1436 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Circuit × Constellation — B2+</title>
+<style>
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #77777f;
+    --text-quaternary: #4c4c53;
+    --indigo: #5e6ad2;
+    --amber: #d4b478;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--canvas-bg);
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+    color: var(--text-primary);
+  }
+  #stage {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    touch-action: none;
+    cursor: grab;
+  }
+  #stage.dragging { cursor: grabbing; }
+
+  .chip {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 7px 13px;
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 560;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+    pointer-events: none;
+    user-select: none;
+  }
+  .chip .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--indigo);
+    margin-right: 7px;
+    vertical-align: middle;
+    transform: translateY(-1px);
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11.5px;
+    color: var(--text-tertiary);
+    letter-spacing: 0;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .hint b { color: var(--text-secondary); font-weight: 560; }
+
+  .altitude {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 7px 13px;
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 7px;
+    font-size: 11.5px;
+    font-weight: 520;
+    letter-spacing: -0.01em;
+    color: var(--text-secondary);
+    pointer-events: none;
+    user-select: none;
+    min-width: 150px;
+  }
+  .altitude .bar {
+    position: relative;
+    margin-top: 6px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--border-soft);
+    overflow: hidden;
+  }
+  .altitude .bar i {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 40%;
+    background: var(--indigo);
+    border-radius: 2px;
+  }
+
+  .tip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    max-width: 240px;
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 9px 11px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(0, 0);
+    transition: opacity 120ms ease-out;
+    z-index: 5;
+  }
+  .tip.show { opacity: 1; }
+  .tip .t-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: -0.01em;
+    margin-bottom: 3px;
+  }
+  .tip .t-row { display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+  .tip .t-kind {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    text-transform: none;
+  }
+  .tip .badge {
+    display: inline-block;
+    font-size: 10.5px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border-soft);
+    color: var(--text-secondary);
+  }
+  .tip .badge.fresh { color: var(--indigo); border-color: rgba(94,106,210,0.5); }
+  .tip .badge.stale { color: var(--text-quaternary); border-style: dashed; }
+  .tip .badge.hub { color: var(--amber); border-color: rgba(212,180,120,0.5); }
+  .tip .fact { color: var(--text-tertiary); font-size: 11.5px; margin-top: 5px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tip { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <canvas id="stage"></canvas>
+  <div class="chip"><span class="dot"></span>Circuit × Constellation — B2+</div>
+  <div class="altitude" id="altitude">
+    <span id="altitude-label">circuit</span>
+    <div class="bar"><i id="altitude-fill"></i></div>
+  </div>
+  <div class="hint">
+    <b>드래그</b> 이동 · <b>스크롤</b> 확대/축소 · <b>Hover</b> 신호 전파 · <b>Click</b> 포커스 · <b>Esc</b> 개요로 복귀
+  </div>
+  <div class="tip" id="tip"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------------
+  // 0. Reduced-motion
+  // ---------------------------------------------------------------------
+  var reducedQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var reduced = reducedQuery.matches;
+  reducedQuery.addEventListener && reducedQuery.addEventListener("change", function (e) {
+    reduced = e.matches;
+  });
+
+  // ---------------------------------------------------------------------
+  // 1. Deterministic PRNG (seeded — used only for node phase offsets; the
+  //    B2 grid layout is the shared foundation for both expressions, no
+  //    organic jitter of node positions).
+  // ---------------------------------------------------------------------
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  var rng = mulberry32(20260718);
+
+  // ---------------------------------------------------------------------
+  // 2. Data — identical dogfood-shaped sample, shared by both source
+  //    prototypes. Motion still carries meaning: only `depends` edges
+  //    (live traversal) carry ambient signal pulses.
+  // ---------------------------------------------------------------------
+  var project = { id: "ontology-atlas", kind: "project", title: "ontology-atlas", count: 247 };
+
+  var domains = [
+    { id: "ai-agent-partner",   title: "AI Agent Partner",       count: 39,  fresh: true  },
+    { id: "views",              title: "Views",                  count: 85,  fresh: true  },
+    { id: "vault-local-first",  title: "Vault — Local-First",    count: 35 },
+    { id: "ontology-core",      title: "Ontology Core",          count: 7  },
+    { id: "onboarding-ux",      title: "Onboarding & UX",        count: 101 },
+    { id: "mode-aware-adapters",title: "Mode-Aware Adapters",    count: 11,  stale: true }
+  ];
+
+  var capabilities = [
+    { id: "mcp-server",            title: "MCP 서버",              domain: "ai-agent-partner", fresh: true, hub: true },
+    { id: "agent-brief",           title: "에이전트 브리핑",         domain: "ai-agent-partner", fresh: true },
+    { id: "topology-map-canvas",   title: "토폴로지 맵 캔버스",      domain: "views",             fresh: true },
+    { id: "ontology-insights",     title: "온톨로지 인사이트",       domain: "views" },
+    { id: "local-vault-adapter",   title: "로컬 볼트 어댑터",        domain: "vault-local-first" },
+    { id: "vault-validate",        title: "볼트 검증",              domain: "vault-local-first" },
+    { id: "frontmatter-schema",    title: "프론트매터 스키마",       domain: "ontology-core" },
+    { id: "relation-graph",        title: "관계 그래프",            domain: "ontology-core" },
+    { id: "docs-vault-picker",     title: "문서 볼트 선택기",        domain: "onboarding-ux" },
+    { id: "unified-palette",       title: "통합 팔레트",            domain: "onboarding-ux" },
+    { id: "mode-detection",        title: "모드 감지",              domain: "mode-aware-adapters" },
+    { id: "adapter-registry",      title: "어댑터 레지스트리",       domain: "mode-aware-adapters", stale: true }
+  ];
+
+  var elements = [
+    { id: "mcp-tool-registry",   title: "MCP 툴 레지스트리",   capability: "mcp-server" },
+    { id: "stdio-transport",     title: "stdio 트랜스포트",    capability: "mcp-server" },
+    { id: "mcp-readme",          title: "MCP README",         capability: "mcp-server" },
+    { id: "agent-brief-formatter", title: "브리핑 포매터",     capability: "agent-brief", fresh: true },
+    { id: "sigma-renderer",      title: "Sigma 렌더러",       capability: "topology-map-canvas", fresh: true },
+    { id: "camera-controller",   title: "카메라 컨트롤러",     capability: "topology-map-canvas", fresh: true },
+    { id: "node-reducer",        title: "노드 리듀서",         capability: "topology-map-canvas", fresh: true },
+    { id: "insights-chart",      title: "인사이트 차트",       capability: "ontology-insights" },
+    { id: "kind-census",         title: "kind 집계",           capability: "ontology-insights" },
+    { id: "fs-access-handle",    title: "FS Access 핸들",      capability: "local-vault-adapter" },
+    { id: "indexeddb-cache",     title: "IndexedDB 캐시",      capability: "local-vault-adapter" },
+    { id: "vault-validator-cli", title: "볼트 검증 CLI",       capability: "vault-validate" },
+    { id: "schema-mjs",          title: "schema.mjs",          capability: "vault-validate" },
+    { id: "schema-normalizer",   title: "스키마 정규화기",      capability: "frontmatter-schema" },
+    { id: "graph-compiler",      title: "그래프 컴파일러",      capability: "relation-graph" },
+    { id: "path-finder",         title: "경로 탐색기",         capability: "relation-graph" },
+    { id: "vault-picker-ui",     title: "볼트 선택기 UI",      capability: "docs-vault-picker" },
+    { id: "command-palette",     title: "커맨드 팔레트",       capability: "unified-palette" },
+    { id: "mode-context-provider", title: "모드 컨텍스트 프로바이더", capability: "mode-detection" },
+    { id: "adapter-factory",     title: "어댑터 팩토리",       capability: "adapter-registry", stale: true }
+  ];
+
+  var CONTAINS = [];
+  domains.forEach(function (d) { CONTAINS.push(["ontology-atlas", d.id]); });
+  capabilities.forEach(function (c) { CONTAINS.push([c.domain, c.id]); });
+  elements.forEach(function (e) { CONTAINS.push([e.capability, e.id]); });
+
+  var DEPENDS = [
+    ["agent-brief", "mcp-server"],
+    ["topology-map-canvas", "mcp-server"],
+    ["docs-vault-picker", "mcp-server"],
+    ["unified-palette", "mcp-server"],
+    ["vault-validate", "mcp-server"],
+    ["mcp-server", "relation-graph"],
+    ["mcp-server", "frontmatter-schema"],
+    ["mode-detection", "local-vault-adapter"],
+    ["adapter-registry", "mode-detection"],
+    ["ontology-insights", "relation-graph"],
+    ["sigma-renderer", "camera-controller"]
+  ];
+
+  // ---------------------------------------------------------------------
+  // 3. Assemble node list with shape/size tiers by kind
+  // ---------------------------------------------------------------------
+  var RADIUS = { project: 25, domain: 17, capability: 11, element: 7 };
+  var allNodes = [];
+
+  function pushNode(src, kind) {
+    var n = {
+      id: src.id,
+      kind: kind,
+      title: src.title,
+      count: src.count,
+      fresh: !!src.fresh,
+      stale: !!src.stale,
+      hub: !!src.hub,
+      domain: src.domain,
+      capability: src.capability,
+      r: RADIUS[kind],
+      phase: rng() * Math.PI * 2,
+      x: 0, y: 0
+    };
+    allNodes.push(n);
+    return n;
+  }
+
+  var nodeById = {};
+  pushNode(project, "project");
+  domains.forEach(function (d) { pushNode(d, "domain"); });
+  capabilities.forEach(function (c) { pushNode(c, "capability"); });
+  elements.forEach(function (e) { pushNode(e, "element"); });
+  allNodes.forEach(function (n) { nodeById[n.id] = n; });
+
+  // ---------------------------------------------------------------------
+  // 4. Layout — B2's structured concentric grid, precomputed once. This is
+  //    the ONE shared identity: node position never changes with zoom —
+  //    only the rendered expression of that position does. No organic
+  //    jitter: alignment/even-spacing reads as circuit at close range and
+  //    as a radial star-chart at far range, from the SAME coordinates.
+  // ---------------------------------------------------------------------
+  (function layout() {
+    var TAU = Math.PI * 2;
+    var proj = nodeById["ontology-atlas"];
+    proj.x = 0; proj.y = 0;
+
+    var domainR = 250;
+    var domainNodes = domains.map(function (d) { return nodeById[d.id]; });
+    domainNodes.forEach(function (d, i) {
+      var angle = (i / domainNodes.length) * TAU - Math.PI / 2;
+      d.angle = angle;
+      d.x = Math.cos(angle) * domainR;
+      d.y = Math.sin(angle) * domainR;
+    });
+
+    domainNodes.forEach(function (d) {
+      var caps = capabilities.filter(function (c) { return c.domain === d.id; }).map(function (c) { return nodeById[c.id]; });
+      var spread = Math.min(0.95, 0.32 + caps.length * 0.22);
+      var capR = 145;
+      caps.forEach(function (c, i) {
+        var t = caps.length === 1 ? 0 : (i / (caps.length - 1) - 0.5);
+        var a = d.angle + t * spread;
+        c.angle = a;
+        c.x = d.x + Math.cos(a) * capR;
+        c.y = d.y + Math.sin(a) * capR;
+      });
+    });
+
+    capabilities.forEach(function (cSrc) {
+      var c = nodeById[cSrc.id];
+      var els = elements.filter(function (e) { return e.capability === c.id; }).map(function (e) { return nodeById[e.id]; });
+      if (!els.length) return;
+      var spread = Math.min(1.05, 0.26 + els.length * 0.26);
+      var elR = 90;
+      els.forEach(function (e, i) {
+        var t = els.length === 1 ? 0 : (i / (els.length - 1) - 0.5);
+        var a = c.angle + t * spread;
+        e.x = c.x + Math.cos(a) * elR;
+        e.y = c.y + Math.sin(a) * elR;
+      });
+    });
+  })();
+
+  // ---------------------------------------------------------------------
+  // 5. Edges — routed traces, precomputed once from real polar geometry so
+  //    every trace bends with the SAME consistent ratio (board-router
+  //    feel). Far field thins these toward hairlines by width/color only —
+  //    the path itself never changes, so the transition never re-routes.
+  // ---------------------------------------------------------------------
+  function polarOf(n) { return { r: Math.hypot(n.x, n.y), a: Math.atan2(n.y, n.x) }; }
+
+  function buildEdges(pairs, type, blend, maxBow) {
+    return pairs.map(function (p, i) {
+      var a = nodeById[p[0]], b = nodeById[p[1]];
+      var pa = polarOf(a), pb = polarOf(b);
+      var innerIsA = pa.r <= pb.r;
+      var innerR = innerIsA ? pa.r : pb.r;
+      var farAngle = innerIsA ? pb.a : pa.a;
+      var cpFull = { x: Math.cos(farAngle) * innerR, y: Math.sin(farAngle) * innerR };
+      var mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      var vx = cpFull.x - mid.x, vy = cpFull.y - mid.y;
+      var vlen = Math.sqrt(vx * vx + vy * vy) || 1;
+      var capped = Math.min(vlen, maxBow);
+      var cx = mid.x + (vx / vlen) * capped * blend;
+      var cy = mid.y + (vy / vlen) * capped * blend;
+      return { a: a, b: b, type: type, cx: cx, cy: cy, t: (i / pairs.length) };
+    });
+  }
+  var containsEdges = buildEdges(CONTAINS, "contains", 0.46, 70);
+  var dependsEdges = buildEdges(DEPENDS, "depends", 0.62, 92);
+
+  function bezierPoint(p0, p1, p2, t) {
+    var u = 1 - t;
+    return { x: u * u * p0.x + 2 * u * t * p1.x + t * t * p2.x, y: u * u * p0.y + 2 * u * t * p1.y + t * t * p2.y };
+  }
+
+  // ---------------------------------------------------------------------
+  // 6. Adjacency (for 1-hop hover ripple + ego focus)
+  // ---------------------------------------------------------------------
+  var neighborMap = {};
+  var outDependsCount = {}, inDependsCount = {};
+  allNodes.forEach(function (n) { neighborMap[n.id] = []; outDependsCount[n.id] = 0; inDependsCount[n.id] = 0; });
+  function addNeighbor(a, b) { if (neighborMap[a].indexOf(b) === -1) neighborMap[a].push(b); }
+  containsEdges.concat(dependsEdges).forEach(function (e) {
+    addNeighbor(e.a.id, e.b.id);
+    addNeighbor(e.b.id, e.a.id);
+  });
+  dependsEdges.forEach(function (e) { outDependsCount[e.a.id]++; inDependsCount[e.b.id]++; });
+
+  var edgesTouching = {}; // nodeId -> [edge,...] across both types, for hover pulse spawn
+  allNodes.forEach(function (n) { edgesTouching[n.id] = []; });
+  containsEdges.concat(dependsEdges).forEach(function (e) {
+    edgesTouching[e.a.id].push(e);
+    edgesTouching[e.b.id].push(e);
+  });
+
+  // ---------------------------------------------------------------------
+  // 6b. Magnitude — "importance = brightness" (B1 constellation DNA). Top
+  //     few get a crisp 4-point diffraction spike once the far-field
+  //     expression takes over. Shape-by-kind is untouched; the spike is a
+  //     farT-gated overlay only.
+  // ---------------------------------------------------------------------
+  var STAR_COUNT = 4;
+  (function computeMagnitude() {
+    allNodes.forEach(function (n) {
+      var degree = (outDependsCount[n.id] || 0) + (inDependsCount[n.id] || 0);
+      n.magnitude = (n.count || 0) + degree * 18;
+    });
+    var ranked = allNodes.slice().sort(function (a, b) { return b.magnitude - a.magnitude; });
+    ranked.slice(0, STAR_COUNT).forEach(function (n) { n.isBrightStar = true; });
+  })();
+
+  // ---------------------------------------------------------------------
+  // 6c. Convex hull per domain — the faint constellation boundary, drawn
+  //     only in far field while that specific domain is hovered/focused.
+  // ---------------------------------------------------------------------
+  function convexHull(points) {
+    var pts = points.slice().sort(function (a, b) { return a.x === b.x ? a.y - b.y : a.x - b.x; });
+    if (pts.length < 3) return pts;
+    function cross(o, a, b) { return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x); }
+    var lower = [];
+    for (var i = 0; i < pts.length; i++) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], pts[i]) <= 0) lower.pop();
+      lower.push(pts[i]);
+    }
+    var upper = [];
+    for (var j = pts.length - 1; j >= 0; j--) {
+      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], pts[j]) <= 0) upper.pop();
+      upper.push(pts[j]);
+    }
+    lower.pop(); upper.pop();
+    return lower.concat(upper);
+  }
+
+  domains.forEach(function (dSrc) {
+    var d = nodeById[dSrc.id];
+    var caps = capabilities.filter(function (c) { return c.domain === d.id; }).map(function (c) { return nodeById[c.id]; });
+    var elems = [];
+    caps.forEach(function (c) { elements.filter(function (e) { return e.capability === c.id; }).forEach(function (e) { elems.push(nodeById[e.id]); }); });
+    var members = [d].concat(caps, elems);
+    if (members.length < 3) { d.hull = null; return; }
+    var hull = convexHull(members.map(function (n) { return { x: n.x, y: n.y }; }));
+    var cx = 0, cy = 0;
+    hull.forEach(function (p) { cx += p.x; cy += p.y; });
+    cx /= hull.length; cy /= hull.length;
+    var pad = 26;
+    d.hull = hull.map(function (p) {
+      var dx = p.x - cx, dy = p.y - cy;
+      var len = Math.sqrt(dx * dx + dy * dy) || 1;
+      return { x: p.x + (dx / len) * pad, y: p.y + (dy / len) * pad };
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // 7. Colors — neutrals + single indigo, amber hub-only. No alpha "dim"
+  //    for ego-focus contrast (opaque tokens only). Altitude crossfade is
+  //    the one place globalAlpha is used, and only for whole atmospheric
+  //    layers or decorative overlays — never for the ego-focus dim state.
+  // ---------------------------------------------------------------------
+  var COL = {
+    fillTier: { project: "#1c1c22", domain: "#191920", capability: "#17171d", element: "#15151a" },
+    strokeTier: { project: "#57575f", domain: "#48484f", capability: "#3c3c44", element: "#34343b" },
+    indigo: "#5e6ad2",
+    indigoBright: "#8890e0",
+    amber: "#d4b478",
+    staleFill: "#141418",
+    staleStroke: "#454549",
+    edgeContains: "#28282e",
+    edgeDepends: "#39394a",
+    dimFill: "#1a1a1e",
+    dimStroke: "#2b2b2f",
+    dimEdge: "#1e1e22",
+    holeFill: "#0c0c10",
+    numeralShadow: "#08080a",
+    numeralFace: "#8c8c94",
+    hull: "#3a3a42",
+    labelDomain: "#b8b8c1",
+    labelCap: "#84848c",
+    labelEl: "#57575f"
+  };
+
+  function hexToRgb(hex) {
+    var v = parseInt(hex.slice(1), 16);
+    return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+  }
+  function lerpColor(hexA, hexB, t) {
+    if (t <= 0) return hexA;
+    if (t >= 1) return hexB;
+    var a = hexToRgb(hexA), b = hexToRgb(hexB);
+    var r = Math.round(a[0] + (b[0] - a[0]) * t);
+    var g = Math.round(a[1] + (b[1] - a[1]) * t);
+    var bl = Math.round(a[2] + (b[2] - a[2]) * t);
+    return "rgb(" + r + "," + g + "," + bl + ")";
+  }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function smoothstep(edge0, edge1, v) {
+    if (edge0 === edge1) return v < edge0 ? 0 : 1;
+    var t = Math.min(1, Math.max(0, (v - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+  }
+
+  // ---------------------------------------------------------------------
+  // 8. Canvas + camera
+  // ---------------------------------------------------------------------
+  var canvas = document.getElementById("stage");
+  var ctx = canvas.getContext("2d");
+  var viewW = 0, viewH = 0, DPR = 1;
+
+  // fine static blueprint grid, tiled once into an offscreen pattern —
+  // circuit-only detail, faded out entirely toward far field.
+  var gridPattern = null;
+  function buildGrid() {
+    var minor = 24, cellsPerMajor = 5;
+    var size = minor * cellsPerMajor;
+    var tile = document.createElement("canvas");
+    tile.width = size; tile.height = size;
+    var g = tile.getContext("2d");
+    g.fillStyle = "#0a0a0d";
+    g.fillRect(0, 0, size, size);
+    g.strokeStyle = "#0e0e13";
+    g.lineWidth = 1;
+    for (var x = minor; x < size; x += minor) {
+      g.beginPath(); g.moveTo(x + 0.5, 0); g.lineTo(x + 0.5, size); g.stroke();
+    }
+    for (var y = minor; y < size; y += minor) {
+      g.beginPath(); g.moveTo(0, y + 0.5); g.lineTo(size, y + 0.5); g.stroke();
+    }
+    g.strokeStyle = "#121218";
+    g.beginPath(); g.moveTo(0.5, 0); g.lineTo(0.5, size); g.stroke();
+    g.beginPath(); g.moveTo(0, 0.5); g.lineTo(size, 0.5); g.stroke();
+    gridPattern = ctx.createPattern(tile, "repeat");
+  }
+
+  // static star-dust — far-field-only texture, near-invisible, never
+  // re-seeded per frame so it never reads as noise.
+  var dustPoints = [];
+  function buildStarDust() {
+    var dustRng = mulberry32(7);
+    var area = viewW * viewH;
+    var count = Math.round(area / 5200);
+    dustPoints = [];
+    for (var i = 0; i < count; i++) {
+      dustPoints.push({
+        x: dustRng() * viewW,
+        y: dustRng() * viewH,
+        r: 0.4 + dustRng() * 0.7,
+        a: 0.02 + dustRng() * 0.04
+      });
+    }
+  }
+
+  function resize() {
+    viewW = window.innerWidth;
+    viewH = window.innerHeight;
+    DPR = window.devicePixelRatio || 1;
+    canvas.width = Math.round(viewW * DPR);
+    canvas.height = Math.round(viewH * DPR);
+    buildStarDust();
+  }
+  window.addEventListener("resize", resize);
+  resize();
+  buildGrid();
+
+  var MIN_SCALE = 0.24, MAX_SCALE = 2.6;
+
+  var camera = {
+    x: 0, y: 0, scale: 1,
+    tx: 0, ty: 0, tscale: 1,
+    vx: 0, vy: 0, vscale: 0,
+    damping: 1.0
+  };
+
+  function bbox(nodes, margin) {
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nodes.forEach(function (n) {
+      minX = Math.min(minX, n.x - n.r);
+      maxX = Math.max(maxX, n.x + n.r);
+      minY = Math.min(minY, n.y - n.r);
+      maxY = Math.max(maxY, n.y + n.r);
+    });
+    return { minX: minX - margin, minY: minY - margin, maxX: maxX + margin, maxY: maxY + margin };
+  }
+  function fitTarget(bb, maxScale) {
+    var w = Math.max(1, bb.maxX - bb.minX), h = Math.max(1, bb.maxY - bb.minY);
+    var scale = Math.min(viewW / w, viewH / h);
+    scale = Math.min(scale, maxScale || MAX_SCALE);
+    scale = Math.max(scale, MIN_SCALE);
+    return { x: (bb.minX + bb.maxX) / 2, y: (bb.minY + bb.maxY) / 2, scale: scale };
+  }
+
+  var overviewBounds = bbox(allNodes, 40);
+  var panBounds = bbox(allNodes, 320);
+
+  function setCameraTarget(t, damping) {
+    camera.tx = t.x; camera.ty = t.y; camera.tscale = t.scale;
+    camera.damping = damping == null ? 1.0 : damping;
+  }
+
+  // initial view = full overview, applied instantly (no fly-in on load)
+  var OVERVIEW_SCALE = 1;
+  (function initCamera() {
+    var t = fitTarget(overviewBounds, MAX_SCALE);
+    camera.x = t.x; camera.y = t.y; camera.scale = t.scale;
+    setCameraTarget(t, 1.0);
+    OVERVIEW_SCALE = t.scale;
+  })();
+
+  // ---------------------------------------------------------------------
+  // 8b. Altitude — the single continuous variable driving the merger.
+  //     farT = 0 at "current B2 zoom and closer" (working/circuit range),
+  //     farT = 1 at "beyond overview fit ~0.6x and further" (far field).
+  //     smoothstep, no discrete flip. Band is intentionally narrow so the
+  //     mid-zoom crossfade doesn't linger and read muddy.
+  // ---------------------------------------------------------------------
+  var FAR_HIGH = OVERVIEW_SCALE * 0.92;  // at/above this: pure circuit
+  var FAR_LOW  = OVERVIEW_SCALE * 0.62;  // at/below this: pure constellation
+  var farT = 0;
+
+  function worldToScreen(wx, wy) {
+    return {
+      x: (wx - camera.x) * camera.scale + viewW / 2,
+      y: (wy - camera.y) * camera.scale + viewH / 2
+    };
+  }
+  function screenToWorld(sx, sy) {
+    return {
+      x: (sx - viewW / 2) / camera.scale + camera.x,
+      y: (sy - viewH / 2) / camera.scale + camera.y
+    };
+  }
+
+  // semi-implicit spring integrator (critically damped by default;
+  // slightly underdamped only right after a user-thrown pan flick)
+  function stepSpring(value, velocity, target, dt, angFreq, damping) {
+    var f = -angFreq * angFreq * (value - target) - 2 * damping * angFreq * velocity;
+    var nv = velocity + f * dt;
+    var nx = value + nv * dt;
+    return [nx, nv];
+  }
+
+  // ---------------------------------------------------------------------
+  // 9. Interaction state
+  // ---------------------------------------------------------------------
+  var pointer = { down: false, dragging: false, id: null, downX: 0, downY: 0, x: 0, y: 0 };
+  var history = []; // {x,y,t} last few samples for release velocity
+  var camStartAtDown = { x: 0, y: 0 };
+  var pressedNode = null;
+  var hoveredNode = null;
+  var focusedNode = null;
+
+  var rippleStart = {};   // nodeId -> ms timestamp when this node's ramp may begin
+  var emphasis = {};      // nodeId -> current 0..1
+  allNodes.forEach(function (n) { emphasis[n.id] = 0; });
+
+  var pulses = []; // {edge, dir, t0} — one-shot signal pulses fired by hover
+
+  var HYSTERESIS = 7; // px
+
+  function hitTest(sx, sy) {
+    var best = null, bestD = Infinity;
+    for (var i = 0; i < allNodes.length; i++) {
+      var n = allNodes[i];
+      var p = worldToScreen(n.x, n.y);
+      var effR = n.r * camera.scale + 5;
+      var dx = sx - p.x, dy = sy - p.y;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d <= effR && d < bestD) { best = n; bestD = d; }
+    }
+    return best;
+  }
+
+  function startRipple(nodeId) {
+    var now = performance.now();
+    rippleStart[nodeId] = now;
+    var neigh = neighborMap[nodeId] || [];
+    neigh.forEach(function (id, i) {
+      rippleStart[id] = now + 55 + i * 12;
+    });
+    if (!reduced) {
+      var touching = edgesTouching[nodeId] || [];
+      touching.forEach(function (e) {
+        pulses.push({ edge: e, dir: e.a.id === nodeId ? 1 : -1, t0: now });
+      });
+    }
+  }
+
+  canvas.addEventListener("pointerdown", function (e) {
+    canvas.setPointerCapture(e.pointerId);
+    pointer.down = true;
+    pointer.dragging = false;
+    pointer.id = e.pointerId;
+    pointer.downX = pointer.x = e.clientX;
+    pointer.downY = pointer.y = e.clientY;
+    camStartAtDown.x = camera.x;
+    camStartAtDown.y = camera.y;
+    history = [{ x: e.clientX, y: e.clientY, t: performance.now() }];
+    pressedNode = hitTest(e.clientX, e.clientY);
+  });
+
+  canvas.addEventListener("pointermove", function (e) {
+    var sx = e.clientX, sy = e.clientY;
+
+    if (pointer.down) {
+      var ddx = sx - pointer.downX, ddy = sy - pointer.downY;
+      if (!pointer.dragging && Math.sqrt(ddx * ddx + ddy * ddy) > HYSTERESIS) {
+        pointer.dragging = true;
+        pressedNode = null; // drag cancels press-commit, per click-safety contract
+        canvas.classList.add("dragging");
+      }
+      if (pointer.dragging) {
+        // 1:1 tracking in world units, camera follows pointer directly (no lag)
+        var worldDX = (sx - pointer.downX) / camera.scale;
+        var worldDY = (sy - pointer.downY) / camera.scale;
+        camera.x = camStartAtDown.x - worldDX;
+        camera.y = camStartAtDown.y - worldDY;
+        camera.tx = camera.x; camera.ty = camera.y;
+        history.push({ x: sx, y: sy, t: performance.now() });
+        if (history.length > 6) history.shift();
+      }
+      pointer.x = sx; pointer.y = sy;
+      return;
+    }
+
+    pointer.x = sx; pointer.y = sy;
+    if (focusedNode) return; // ripple suspended while ego-focus owns emphasis
+    var hit = hitTest(sx, sy);
+    var hitId = hit ? hit.id : null;
+    if (hitId !== (hoveredNode ? hoveredNode.id : null)) {
+      hoveredNode = hit;
+      if (hit) startRipple(hit.id);
+      canvas.style.cursor = hit ? "pointer" : "grab";
+    }
+  });
+
+  function releaseDrag(e) {
+    if (!pointer.down) return;
+    pointer.down = false;
+    canvas.classList.remove("dragging");
+
+    if (pointer.dragging) {
+      pointer.dragging = false;
+      var last = history[history.length - 1];
+      var first = history[0];
+      var dt = last && first ? Math.max(1, last.t - first.t) : 16;
+      var vx = last && first ? (last.x - first.x) / dt : 0; // px/ms, screen space
+      var vy = last && first ? (last.y - first.y) / dt : 0;
+
+      if (reduced) {
+        camera.tx = camera.x; camera.ty = camera.y; camera.vx = 0; camera.vy = 0;
+        return;
+      }
+      // momentum projection: distance = (v/1000) * d / (1-d), d ~= 0.998, in ms units
+      var d = 0.998;
+      var projMsX = (vx * 1000) * d / (1 - d) / 1000;
+      var projMsY = (vy * 1000) * d / (1 - d) / 1000;
+      var worldVX = -vx / camera.scale * 1000;
+      var worldVY = -vy / camera.scale * 1000;
+      var landingX = camera.x + (-projMsX * 60) / camera.scale;
+      var landingY = camera.y + (-projMsY * 60) / camera.scale;
+      camera.tx = landingX;
+      camera.ty = landingY;
+      camera.vx = worldVX;
+      camera.vy = worldVY;
+      camera.damping = 0.82; // slight settle-bounce, only because this is a thrown flick
+      return;
+    }
+
+    // it was a click (no meaningful movement)
+    if (pressedNode) {
+      if (focusedNode && focusedNode.id === pressedNode.id) {
+        clearFocus();
+      } else {
+        setFocus(pressedNode);
+      }
+    } else if (focusedNode) {
+      clearFocus();
+    }
+    pressedNode = null;
+  }
+  canvas.addEventListener("pointerup", releaseDrag);
+  canvas.addEventListener("pointercancel", releaseDrag);
+
+  canvas.addEventListener("pointerleave", function () {
+    if (!pointer.down) { hoveredNode = null; }
+  });
+
+  canvas.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    var before = screenToWorld(e.clientX, e.clientY);
+    var factor = Math.exp(-e.deltaY * 0.0016);
+    var newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, camera.scale * factor));
+    var afterOffsetX = before.x - (e.clientX - viewW / 2) / newScale;
+    var afterOffsetY = before.y - (e.clientY - viewH / 2) / newScale;
+    camera.tscale = newScale;
+    camera.tx = afterOffsetX;
+    camera.ty = afterOffsetY;
+    camera.damping = 1.0;
+    if (reduced) { camera.scale = newScale; camera.x = afterOffsetX; camera.y = afterOffsetY; }
+  }, { passive: false });
+
+  window.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") clearFocus();
+  });
+
+  // Click focus from far field spring-dives to working range on the
+  // clicked domain (same fitTarget mechanic as B2 — the higher maxScale
+  // here always lands within circuit expression regardless of the
+  // altitude the click was made from).
+  function setFocus(node) {
+    focusedNode = node;
+    hoveredNode = null;
+    var neigh = (neighborMap[node.id] || []).map(function (id) { return nodeById[id]; });
+    var set = [node].concat(neigh);
+    var bb = bbox(set, 70);
+    var t = fitTarget(bb, 1.9);
+    setCameraTarget(t, 1.0);
+  }
+  function clearFocus() {
+    if (!focusedNode) return;
+    focusedNode = null;
+    var t = fitTarget(overviewBounds, MAX_SCALE);
+    setCameraTarget(t, 1.0);
+  }
+
+  // ---------------------------------------------------------------------
+  // 10. Tooltip (DOM overlay, transient — shown on hover/focus only)
+  // ---------------------------------------------------------------------
+  var tipEl = document.getElementById("tip");
+  var KIND_LABEL = { project: "프로젝트", domain: "도메인", capability: "역량", element: "요소" };
+
+  function renderTip(node) {
+    if (!node) { tipEl.classList.remove("show"); return; }
+    var badges = "";
+    if (node.hub) badges += '<span class="badge hub">허브</span> ';
+    if (node.fresh) badges += '<span class="badge fresh">최근 갱신</span> ';
+    if (node.stale) badges += '<span class="badge stale">정체됨</span> ';
+    var facts = "";
+    var outC = outDependsCount[node.id], inC = inDependsCount[node.id];
+    if (outC > 0) facts += "<div>이 노드가 기대는 곳 " + outC + "</div>";
+    if (inC > 0) facts += "<div>이 노드를 쓰는 곳 " + inC + "</div>";
+    if (node.count) facts += "<div>" + node.count + "개 노드</div>";
+    tipEl.innerHTML =
+      '<div class="t-title">' + node.title + '</div>' +
+      '<div class="t-row"><span class="t-kind">' + KIND_LABEL[node.kind] + '</span></div>' +
+      (badges ? '<div class="t-row">' + badges + '</div>' : '') +
+      (facts ? '<div class="fact">' + facts + '</div>' : '');
+    tipEl.classList.add("show");
+
+    var p = worldToScreen(node.x, node.y);
+    var effR = node.r * camera.scale;
+    var left = p.x + effR + 12;
+    var top = p.y - 10;
+    if (left + 240 > viewW) left = p.x - effR - 12 - 240;
+    if (top < 8) top = 8;
+    if (top + 140 > viewH) top = viewH - 140;
+    tipEl.style.left = left + "px";
+    tipEl.style.top = top + "px";
+  }
+
+  // ---------------------------------------------------------------------
+  // 10b. Altitude readout chip (DOM overlay, decorative — states the
+  //      merger thesis out loud so the transition reads as intentional)
+  // ---------------------------------------------------------------------
+  var altLabelEl = document.getElementById("altitude-label");
+  var altFillEl = document.getElementById("altitude-fill");
+  var lastAltLabel = "";
+  function renderAltitude() {
+    var label = farT > 0.85 ? "constellation" : farT < 0.15 ? "circuit" : "transitioning";
+    if (label !== lastAltLabel) {
+      altLabelEl.textContent = label;
+      lastAltLabel = label;
+    }
+    altFillEl.style.width = Math.round((1 - farT) * 100) + "%";
+  }
+
+  // ---------------------------------------------------------------------
+  // 11. Update loop
+  // ---------------------------------------------------------------------
+  var lastT = performance.now();
+
+  function updateCamera(dt) {
+    if (pointer.dragging) return;
+    if (reduced) {
+      camera.x = camera.tx; camera.y = camera.ty; camera.scale = camera.tscale;
+      camera.vx = 0; camera.vy = 0; camera.vscale = 0;
+      return;
+    }
+    var angFreq = 1 / 0.34;
+    var rx = stepSpring(camera.x, camera.vx, camera.tx, dt, angFreq, camera.damping);
+    var ry = stepSpring(camera.y, camera.vy, camera.ty, dt, angFreq, camera.damping);
+    var rs = stepSpring(camera.scale, camera.vscale, camera.tscale, dt, angFreq, 1.0);
+    camera.x = rx[0]; camera.vx = rx[1];
+    camera.y = ry[0]; camera.vy = ry[1];
+    camera.scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, rs[0])); camera.vscale = rs[1];
+
+    if (camera.x < panBounds.minX || camera.x > panBounds.maxX) {
+      var cx = Math.min(panBounds.maxX, Math.max(panBounds.minX, camera.x));
+      camera.x += (cx - camera.x) * 0.14;
+      camera.vx *= 0.85;
+    }
+    if (camera.y < panBounds.minY || camera.y > panBounds.maxY) {
+      var cy = Math.min(panBounds.maxY, Math.max(panBounds.minY, camera.y));
+      camera.y += (cy - camera.y) * 0.14;
+      camera.vy *= 0.85;
+    }
+  }
+
+  function updateAltitude() {
+    // farT: 1 = far field / constellation, 0 = working range / circuit.
+    // Derived straight from the actual rendered scale (already spring-
+    // smoothed), so the crossfade itself never needs its own easing.
+    farT = 1 - smoothstep(FAR_LOW, FAR_HIGH, camera.scale);
+  }
+
+  function updateEmphasis(dt, now) {
+    var activeId = focusedNode ? null : (hoveredNode ? hoveredNode.id : null);
+    allNodes.forEach(function (n) {
+      var isActive = activeId && (n.id === activeId || (neighborMap[activeId] || []).indexOf(n.id) !== -1);
+      if (reduced) {
+        emphasis[n.id] = isActive ? 1 : 0;
+        return;
+      }
+      if (isActive) {
+        var start = rippleStart[n.id] || 0;
+        if (now >= start) {
+          emphasis[n.id] += (1 - emphasis[n.id]) * (1 - Math.exp(-dt / 0.09));
+        }
+      } else {
+        emphasis[n.id] += (0 - emphasis[n.id]) * (1 - Math.exp(-dt / 0.15));
+      }
+    });
+  }
+
+  function updateParticles(dt) {
+    if (reduced) return;
+    dependsEdges.forEach(function (e) {
+      e.t = (e.t + dt * 0.075) % 1;
+    });
+  }
+
+  var PULSE_DUR = 420;
+  function updatePulses(now) {
+    if (!pulses.length) return;
+    pulses = pulses.filter(function (p) { return now - p.t0 < PULSE_DUR; });
+  }
+
+  // ---------------------------------------------------------------------
+  // 12. Shape primitives — machined-component geometry (circuit), plus
+  //     the constellation point/spike overlay (far field).
+  // ---------------------------------------------------------------------
+  function roundedPolygonPath(pts, rad) {
+    var n = pts.length;
+    ctx.beginPath();
+    for (var i = 0; i < n; i++) {
+      var p0 = pts[(i - 1 + n) % n];
+      var p1 = pts[i];
+      var p2 = pts[(i + 1) % n];
+      var v1x = p1.x - p0.x, v1y = p1.y - p0.y;
+      var len1 = Math.hypot(v1x, v1y) || 1;
+      var v2x = p2.x - p1.x, v2y = p2.y - p1.y;
+      var len2 = Math.hypot(v2x, v2y) || 1;
+      var r = Math.min(rad, len1 * 0.45, len2 * 0.45);
+      var sx = p1.x - (v1x / len1) * r, sy = p1.y - (v1y / len1) * r;
+      var ex = p1.x + (v2x / len2) * r, ey = p1.y + (v2y / len2) * r;
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      ctx.quadraticCurveTo(p1.x, p1.y, ex, ey);
+    }
+    ctx.closePath();
+  }
+  function hexPoints(cx, cy, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+    }
+    return pts;
+  }
+  function squarePoints(cx, cy, s) {
+    return [
+      { x: cx - s, y: cy - s }, { x: cx + s, y: cy - s },
+      { x: cx + s, y: cy + s }, { x: cx - s, y: cy + s }
+    ];
+  }
+
+  function drawEngraved(text, x, y, size, alpha) {
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "600 " + size + "px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = COL.numeralShadow;
+    ctx.fillText(text, x, y + 1);
+    ctx.fillStyle = COL.numeralFace;
+    ctx.fillText(text, x, y);
+    ctx.globalAlpha = 1;
+  }
+
+  // crisp 4-point diffraction spike (B1 DNA) — solid tapering slivers, no
+  // gradient/blur, so it reads as sharp starlight rather than glow/bloom.
+  function drawSpike(cx, cy, r, color, alpha) {
+    if (alpha <= 0.01) return;
+    var long = r * 2.6, short = r * 1.5, baseW = Math.max(0.6, r * 0.09);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - long); ctx.lineTo(cx + baseW, cy); ctx.lineTo(cx, cy + long); ctx.lineTo(cx - baseW, cy); ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx - short, cy); ctx.lineTo(cx, cy - baseW); ctx.lineTo(cx + short, cy); ctx.lineTo(cx, cy + baseW); ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ---------------------------------------------------------------------
+  // 13. Render
+  // ---------------------------------------------------------------------
+  function nodeEgoState(n) {
+    if (!focusedNode) return "normal";
+    if (n.id === focusedNode.id) return "center";
+    if ((neighborMap[focusedNode.id] || []).indexOf(n.id) !== -1) return "neighbor";
+    return "dim";
+  }
+  function edgeEgoState(e) {
+    if (!focusedNode) return "normal";
+    var touches = e.a.id === focusedNode.id || e.b.id === focusedNode.id;
+    return touches ? "ego" : "dim";
+  }
+
+  function drawEdge(e, isDepends) {
+    var state = edgeEgoState(e);
+    var p0 = { x: e.a.x, y: e.a.y }, p2 = { x: e.b.x, y: e.b.y }, p1 = { x: e.cx, y: e.cy };
+
+    var stroke, width, dash;
+    if (state === "dim") {
+      stroke = COL.dimEdge; width = 1; dash = isDepends ? [3, 4] : [];
+    } else if (state === "ego") {
+      stroke = isDepends ? COL.indigoBright : COL.indigo;
+      width = (isDepends ? 1.8 : 1.5) - farT * 0.5;
+      dash = isDepends ? [3, 4] : [];
+    } else {
+      var farEmph = 0;
+      if (hoveredNode && !focusedNode) {
+        if (e.a.id === hoveredNode.id) farEmph = emphasis[e.b.id] || 0;
+        else if (e.b.id === hoveredNode.id) farEmph = emphasis[e.a.id] || 0;
+      }
+      var base = isDepends ? COL.edgeDepends : COL.edgeContains;
+      stroke = farEmph > 0.02 ? lerpColor(base, COL.indigo, farEmph) : base;
+      // traces thin toward hairlines as altitude rises (farT -> 1)
+      width = lerp((isDepends ? 1.3 : 1) + farEmph * 0.6, isDepends ? 0.6 : 0.45, farT);
+      dash = isDepends ? [3, 4] : [];
+    }
+
+    ctx.beginPath();
+    ctx.setLineDash(dash);
+    var s0 = worldToScreen(p0.x, p0.y);
+    var sc = worldToScreen(p1.x, p1.y);
+    var s2 = worldToScreen(p2.x, p2.y);
+    ctx.moveTo(s0.x, s0.y);
+    ctx.quadraticCurveTo(sc.x, sc.y, s2.x, s2.y);
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = Math.max(0.35, width);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (isDepends && state !== "dim") {
+      var pos = bezierPoint(p0, p1, p2, e.t);
+      // comet tail — decreasing radii, all solid fills (no alpha), shrinks
+      // toward hairline dust as altitude rises rather than disappearing
+      var tailSteps = [0, 0.028, 0.056];
+      var baseSizes = state === "ego" ? [2.9, 2.1, 1.3] : [2.1, 1.5, 0.9];
+      var farSizes = [1.3, 0.9, 0.6];
+      for (var k = 0; k < tailSteps.length; k++) {
+        var tt = e.t - tailSteps[k];
+        if (tt < 0) tt += 1;
+        var tp = bezierPoint(p0, p1, p2, tt);
+        var tsp = worldToScreen(tp.x, tp.y);
+        ctx.beginPath();
+        ctx.fillStyle = state === "ego" ? COL.indigoBright : COL.indigo;
+        ctx.arc(tsp.x, tsp.y, lerp(baseSizes[k], farSizes[k], farT), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  function drawPulses() {
+    if (!pulses.length) return;
+    var now = performance.now();
+    for (var i = 0; i < pulses.length; i++) {
+      var pu = pulses[i];
+      var e = pu.edge;
+      var raw = (now - pu.t0) / PULSE_DUR;
+      if (raw < 0 || raw > 1) continue;
+      var t = pu.dir === 1 ? raw : 1 - raw;
+      var p0 = { x: e.a.x, y: e.a.y }, p2 = { x: e.b.x, y: e.b.y }, p1 = { x: e.cx, y: e.cy };
+      var pos = bezierPoint(p0, p1, p2, t);
+      var sp = worldToScreen(pos.x, pos.y);
+      var fade = 1 - raw; // shrinks toward the end rather than fading via alpha
+      ctx.beginPath();
+      ctx.fillStyle = COL.indigoBright;
+      ctx.arc(sp.x, sp.y, 2.6 * Math.max(0.35, fade), 0, Math.PI * 2);
+      ctx.fill();
+      var trailT = pu.dir === 1 ? t - 0.05 : t + 0.05;
+      if (trailT >= 0 && trailT <= 1) {
+        var trailPos = bezierPoint(p0, p1, p2, trailT);
+        var tsp = worldToScreen(trailPos.x, trailPos.y);
+        ctx.beginPath();
+        ctx.fillStyle = COL.indigo;
+        ctx.arc(tsp.x, tsp.y, 1.4 * Math.max(0.35, fade), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  function drawNode(n, now) {
+    var egoState = nodeEgoState(n);
+    var emph = emphasis[n.id] || 0;
+
+    var breathe = 1;
+    if (n.fresh && !reduced) {
+      breathe = 1 + 0.04 * Math.sin(now / 1000 * 1.15 + n.phase);
+    }
+
+    var effR = n.r * breathe;
+    if (egoState === "center") effR *= 1.12;
+    if (!focusedNode) effR += emph * (n.id === (hoveredNode && hoveredNode.id) ? n.r * 0.16 : n.r * 0.08);
+
+    var fill, stroke, lineWidth = n.kind === "project" ? 2 : n.kind === "domain" ? 1.6 : n.kind === "capability" ? 1.3 : 1;
+    var dash = [];
+
+    if (egoState === "dim") {
+      fill = COL.dimFill; stroke = COL.dimStroke;
+    } else if (n.stale) {
+      fill = COL.staleFill; stroke = COL.staleStroke; dash = [3, 3];
+    } else {
+      fill = COL.fillTier[n.kind];
+      stroke = COL.strokeTier[n.kind];
+      if (n.fresh) stroke = lerpColor(stroke, COL.indigo, 0.85);
+      if (!focusedNode && emph > 0.02) stroke = lerpColor(stroke, COL.indigo, Math.min(1, emph));
+      if (egoState === "neighbor") stroke = lerpColor(stroke, COL.indigo, 0.5);
+      if (egoState === "center") stroke = COL.indigoBright;
+    }
+
+    var p = worldToScreen(n.x, n.y);
+    var r = effR * camera.scale;
+
+    ctx.setLineDash(dash);
+
+    // subtle metallic sheen: a whisper of vertical gradient, still
+    // monochrome, and it dissolves out toward far field (constellation
+    // points read flat/luminous, not machined)
+    var sheen = fill;
+    if (r > 3 && farT < 0.98) {
+      var grad = ctx.createLinearGradient(p.x, p.y - r, p.x, p.y + r);
+      grad.addColorStop(0, lerpColor(fill, "#232329", 0.6));
+      grad.addColorStop(1, fill);
+      sheen = grad;
+    }
+
+    // Body geometry: as farT rises, corner rounding grows toward the full
+    // radius so hex/chip/via-pad shapes simplify into a near-circular
+    // point — the same silhouette progression a machined part would take
+    // if you kept stepping back from it. At farT===1 we draw a plain
+    // circle (the constellation star) directly; the shapes converge
+    // rather than cross-dissolving two unrelated draws.
+    if (egoState !== "dim" && n.stale === false) { /* no-op: keeps dash reset symmetry below */ }
+
+    if (n.kind === "project") {
+      var hexRad = lerp(Math.min(4, r * 0.14), r, farT);
+      if (farT > 0.985) {
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      } else {
+        roundedPolygonPath(hexPoints(p.x, p.y, r), hexRad);
+      }
+      ctx.fillStyle = sheen; ctx.fill();
+      ctx.strokeStyle = stroke; ctx.lineWidth = lineWidth; ctx.stroke();
+    } else if (n.kind === "domain") {
+      var s = r * 0.86;
+      var domRad = lerp(Math.min(5, s * 0.22), s, farT);
+      if (farT > 0.985) {
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      } else {
+        roundedPolygonPath(squarePoints(p.x, p.y, s), domRad);
+      }
+      ctx.fillStyle = sheen; ctx.fill();
+      ctx.strokeStyle = stroke; ctx.lineWidth = lineWidth; ctx.stroke();
+      // chip-leg pin ticks — circuit-only detail, fades out with altitude
+      if (egoState !== "dim" && s > 6 && farT < 0.9) {
+        ctx.setLineDash([]);
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 1 - smoothstep(0.55, 0.9, farT);
+        var tick = s * 0.34;
+        [-0.45, 0.45].forEach(function (f) {
+          ctx.beginPath(); ctx.moveTo(p.x + s * f, p.y - s); ctx.lineTo(p.x + s * f, p.y - s - tick); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(p.x + s * f, p.y + s); ctx.lineTo(p.x + s * f, p.y + s + tick); ctx.stroke();
+        });
+        ctx.globalAlpha = 1;
+      }
+    } else if (n.kind === "capability") {
+      // already a circle in circuit expression — no shape morph needed,
+      // only the sheen/detail treatment above changes with altitude
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = sheen; ctx.fill();
+      ctx.strokeStyle = stroke; ctx.lineWidth = lineWidth; ctx.stroke();
+    } else {
+      // element: copper pad + drilled via, rounding toward a point/star
+      var half = r * 0.92;
+      var elRad = lerp(Math.min(1.6, half * 0.3), half, farT);
+      if (farT > 0.985) {
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      } else {
+        roundedPolygonPath(squarePoints(p.x, p.y, half), elRad);
+      }
+      ctx.fillStyle = sheen; ctx.fill();
+      ctx.strokeStyle = stroke; ctx.lineWidth = lineWidth; ctx.stroke();
+      if (half > 3 && farT < 0.9) {
+        ctx.globalAlpha = 1 - smoothstep(0.55, 0.9, farT);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, half * 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = COL.holeFill;
+        ctx.fill();
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
+    ctx.setLineDash([]);
+
+    if (n.hub && egoState !== "dim") {
+      if (n.kind === "project") roundedPolygonPath(hexPoints(p.x, p.y, r + 4), lerp(Math.min(4, (r + 4) * 0.14), r + 4, farT));
+      else if (n.kind === "domain") roundedPolygonPath(squarePoints(p.x, p.y, r * 0.86 + 4), lerp(5, r * 0.86 + 4, farT));
+      else { ctx.beginPath(); ctx.arc(p.x, p.y, r + 4, 0, Math.PI * 2); }
+      ctx.strokeStyle = COL.amber;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    }
+
+    // engraved node-count numerals — circuit-only, fades with altitude
+    if (n.count && (n.kind === "project" || n.kind === "domain") && r > 15 && egoState !== "dim" && farT < 0.9) {
+      drawEngraved(String(n.count), p.x, p.y + r * 0.52, Math.max(8, Math.min(11, r * 0.4)), 1 - smoothstep(0.5, 0.9, farT));
+    }
+
+    // diffraction spike — far-field-only overlay on the top-magnitude
+    // nodes, fades in with altitude (never present in circuit expression)
+    if (n.isBrightStar && farT > 0.02) {
+      drawSpike(p.x, p.y, r, egoState === "dim" ? COL.dimStroke : stroke, farT);
+    }
+  }
+
+  // manual letter-tracking for canvas text (no native letter-spacing) —
+  // used for the sky-chart-annotation domain labels
+  function drawTracked(text, cx, cy, font, color, tracking, alpha) {
+    ctx.font = font;
+    var widths = [], total = 0;
+    for (var i = 0; i < text.length; i++) {
+      var w = ctx.measureText(text[i]).width;
+      widths.push(w);
+      total += w + (i < text.length - 1 ? tracking : 0);
+    }
+    var x = cx - total / 2;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = color;
+    ctx.globalAlpha = alpha;
+    for (var j = 0; j < text.length; j++) {
+      ctx.fillText(text[j], x, cy);
+      x += widths[j] + tracking;
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawHull(d) {
+    if (!d.hull || d.hull.length < 3 || farT < 0.05) return;
+    var pts = d.hull.map(function (p) { return worldToScreen(p.x, p.y); });
+    ctx.beginPath();
+    ctx.setLineDash([1.5, 6]);
+    ctx.strokeStyle = COL.hull;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = farT;
+    var n = pts.length;
+    var start = { x: (pts[n - 1].x + pts[0].x) / 2, y: (pts[n - 1].y + pts[0].y) / 2 };
+    ctx.moveTo(start.x, start.y);
+    for (var i = 0; i < n; i++) {
+      var cur = pts[i], next = pts[(i + 1) % n];
+      var mid = { x: (cur.x + next.x) / 2, y: (cur.y + next.y) / 2 };
+      ctx.quadraticCurveTo(cur.x, cur.y, mid.x, mid.y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+  }
+
+  // Domain names appear as tracked small-caps sky-chart labels once
+  // altitude rises past the crossfade band (same smoothstep band that
+  // drives farT, so label arrival and shape simplification read as one
+  // continuous event). Capability/element ("member") labels only ever
+  // appear deep in working range and fade back out on the way there —
+  // they never survive into far field.
+  function drawLabel(n) {
+    var egoState = nodeEgoState(n);
+    if (egoState === "dim") return;
+
+    var p = worldToScreen(n.x, n.y);
+    var r = n.r * camera.scale;
+    var alpha = 0;
+    var font, color, tracking, mode;
+
+    if (n.kind === "project") {
+      alpha = 1; font = "600 13px -apple-system, 'SF Pro Text', sans-serif";
+      color = "#ececf0"; tracking = 0.4; mode = "plain";
+    } else if (n.kind === "domain") {
+      alpha = farT;
+      font = "600 10px -apple-system, 'SF Pro Text', sans-serif";
+      color = COL.labelDomain; tracking = 1.6; mode = "tracked";
+    } else if (n.kind === "capability") {
+      alpha = (1 - farT) * smoothstep(0.75, 1.02, camera.scale);
+      font = "500 10.5px -apple-system, 'SF Pro Text', sans-serif";
+      color = COL.labelCap; tracking = 0; mode = "plain";
+    } else {
+      alpha = (1 - farT) * smoothstep(1.55, 1.95, camera.scale);
+      font = "400 9.5px -apple-system, 'SF Pro Text', sans-serif";
+      color = COL.labelEl; tracking = 0; mode = "plain";
+    }
+
+    if (focusedNode && (n.id === focusedNode.id || (neighborMap[focusedNode.id] || []).indexOf(n.id) !== -1)) {
+      if (n.kind !== "capability" && n.kind !== "element") alpha = Math.max(alpha, farT > 0.5 ? 1 : alpha);
+    }
+    if (alpha <= 0.02) return;
+
+    var text = mode === "tracked" ? n.title.toUpperCase() : n.title;
+    var ty = p.y + r + (n.kind === "project" ? 20 : n.kind === "domain" ? 17 : 13);
+
+    if (mode === "tracked") {
+      drawTracked(text, p.x, ty, font, color, tracking, alpha);
+    } else {
+      ctx.font = font;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = color;
+      ctx.globalAlpha = alpha;
+      ctx.fillText(text, p.x, ty);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function render(now) {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, viewW, viewH);
+
+    // background base — grades from B2's warm near-black toward B1's pure
+    // near-black as altitude rises (the "night sky" the circuit descends
+    // from/into)
+    var bgBase = lerpColor("#0a0a0d", "#050507", farT);
+    ctx.fillStyle = bgBase;
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    // blueprint grid — circuit-only, fades out entirely toward far field
+    if (farT < 0.98) {
+      ctx.globalAlpha = 1 - farT;
+      ctx.fillStyle = gridPattern || bgBase;
+      ctx.fillRect(0, 0, viewW, viewH);
+      ctx.globalAlpha = 1;
+    }
+
+    // static star-dust — far-field-only texture, fades in with altitude
+    if (farT > 0.02) {
+      for (var i = 0; i < dustPoints.length; i++) {
+        var dp = dustPoints[i];
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(236,236,240," + (dp.a * farT) + ")";
+        ctx.arc(dp.x * DPR, dp.y * DPR, dp.r * DPR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // faint vignette for depth, drawn as a transparent-center gradient so
+    // it darkens the corners without overwriting the grid/star-dust layers
+    // underneath (an opaque full-canvas vignette would erase them — that
+    // was a latent bug in the B2 source this file is based on).
+    var vign = ctx.createRadialGradient(viewW / 2, viewH / 2, Math.max(viewW, viewH) * 0.22, viewW / 2, viewH / 2, Math.max(viewW, viewH) * 0.72);
+    vign.addColorStop(0, "rgba(3,3,4,0)");
+    vign.addColorStop(1, "rgba(3,3,4," + (0.32 + farT * 0.18) + ")");
+    ctx.fillStyle = vign;
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    // domain constellation boundary — only the attended domain's hull,
+    // only once far field has taken hold
+    var activeDomain = null;
+    if (focusedNode && focusedNode.kind === "domain") activeDomain = focusedNode;
+    else if (!focusedNode && hoveredNode && hoveredNode.kind === "domain") activeDomain = hoveredNode;
+    if (activeDomain) drawHull(activeDomain);
+
+    containsEdges.forEach(function (e) { drawEdge(e, false); });
+    dependsEdges.forEach(function (e) { drawEdge(e, true); });
+    drawPulses();
+    allNodes.forEach(function (n) { drawNode(n, now); });
+    allNodes.forEach(function (n) { drawLabel(n); });
+
+    var tipNode = focusedNode || hoveredNode;
+    renderTip(tipNode);
+    renderAltitude();
+  }
+
+  // ---------------------------------------------------------------------
+  // 14. Main loop
+  // ---------------------------------------------------------------------
+  function frame(now) {
+    var dt = Math.min((now - lastT) / 1000, 0.05);
+    lastT = now;
+
+    updateCamera(dt);
+    updateAltitude();
+    updateEmphasis(dt, now);
+    updateParticles(dt);
+    updatePulses(now);
+    render(now);
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
