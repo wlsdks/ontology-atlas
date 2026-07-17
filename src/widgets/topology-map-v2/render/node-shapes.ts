@@ -96,6 +96,17 @@ const FULL_CIRCLE_FAR_T = 0.985;
 const SHEEN_MAX_FAR_T = 0.98;
 const SHEEN_MIN_RADIUS = 3;
 
+/**
+ * Engraved node-count numeral shows only above this screen radius (project/
+ * domain). Ported prototype literal was 15; lowered to 13 because with the
+ * decoupled circuit-entry camera the domain chip (worldRadius 17 × entry scale
+ * ≈ 0.86) lands at ~14.7px on load — just under the old gate, so domain counts
+ * never appeared at the overview even though `farT = 0` (circuit). 13 clears the
+ * ±4% breathe trough with margin so counts stay stable, and still hides counts
+ * once nodes shrink toward the far-field/constellation size on zoom-out.
+ */
+const ENGRAVED_COUNT_MIN_RADIUS = 13;
+
 /** Domain chip-leg pin ticks — geometry ratios ported from the prototype's `[-0.45,0.45]` offsets + `tick = s*0.34` leg length, gated `s > 6 && farT < 0.9`. */
 const DOMAIN_PIN_MIN_HALF_EXTENT = 6;
 const DOMAIN_PIN_MAX_FAR_T = 0.9;
@@ -282,7 +293,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     ctx.stroke();
   }
 
-  if (countLabel !== null && r > 15 && egoState !== "dim" && farT < 0.9) {
+  if (countLabel !== null && r > ENGRAVED_COUNT_MIN_RADIUS && egoState !== "dim" && farT < 0.9) {
     drawEngraved(ctx, countLabel, x, y + r * 0.52, Math.max(8, Math.min(11, r * 0.4)), 1 - smoothstep(0.5, 0.9, farT), tokens);
   }
 }
