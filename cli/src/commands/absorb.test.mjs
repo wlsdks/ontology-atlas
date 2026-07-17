@@ -14,6 +14,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { runAbsorb } from './absorb.mjs';
+import { readTelemetry, TELEMETRY_RELATIVE_PATH } from '../lib/telemetry.mjs';
 
 // `ontology-atlas absorb` — dry-run default, --write lands the plan,
 // backup + slim-pointer rewrite, injection-suspect exclusion. See
@@ -93,6 +94,11 @@ describe('runAbsorb — dry-run (default)', () => {
     assert.match(out, /Git workflow/);
     assert.match(out, /Folder map/);
     assert.match(out, /dry-run/);
+    assert.equal(
+      existsSync(join(vault, TELEMETRY_RELATIVE_PATH)),
+      false,
+      'dry-run must not stamp Slice 0 moment telemetry',
+    );
   });
 
   it('reports confidence and action per section', () => {
@@ -136,6 +142,14 @@ describe('runAbsorb --write', () => {
     assert.match(nodeContent, /kind: document/);
     assert.match(nodeContent, /role: policy/);
     assert.match(nodeContent, /Commit messages must follow conventional prefixes\./);
+  });
+
+  it('stamps the Slice 0 magic-moment telemetry baseline (absorbWriteCompletedAt)', () => {
+    const file = writeSource('AGENTS.md', SAMPLE);
+    const code = runAbsorb([file, '--vault', vault, '--write']);
+    assert.equal(code, 0);
+    const telemetry = readTelemetry(vault);
+    assert.ok(typeof telemetry.absorbWriteCompletedAt === 'string' && telemetry.absorbWriteCompletedAt.length > 0);
   });
 
   it('never writes a node for a suggested (architecture) section', () => {
