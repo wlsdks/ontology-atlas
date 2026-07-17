@@ -82,6 +82,41 @@ export function hitTestWorld(
 }
 
 /**
+ * FIX (QA first-light pass, blocker 2 — "real-data density breakdown"): the
+ * tight bounding-box fit (`fitWorldTarget`) is also what `overviewScaleRef`
+ * feeds into `model/altitude.ts`'s `farHigh`/`farLow` as the "100%" scale —
+ * `farHigh = overviewScale * 0.92`. Starting the camera exactly AT that same
+ * scale means `cameraScale` is always ~8% above `farHigh`, so `farT` (and
+ * therefore every zoom-gated label/shape) reads as "circuit"/near-field on
+ * every load, for every dataset — verified against the dogfood vault (290
+ * renderable nodes): capability labels all fired at once ("label soup") since
+ * their absolute zoom-in threshold (`labels.ts`: `smoothstep(0.75, 1.02, …)`)
+ * was already satisfied by the initial fit scale (~0.918).
+ *
+ * `.claude/rules/design.md`'s overview-first charter ("level 0 = project +
+ * domain + hub 만") wants the *opposite* default. Rather than inventing a new
+ * tuning constant, this reuses the already-existing
+ * `--topology-v2-altitude-far-low-ratio` token — the same ratio that defines
+ * "pure constellation" — as the initial/rest camera scale, so the passive
+ * default naturally lands in the simplified end of the already-built
+ * continuous farT/label-alpha system. The tight fit itself is unchanged and
+ * still used for `overviewScaleRef` (the altitude band's own 100% anchor).
+ */
+export function computeOverviewCameraTarget(
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+  viewportWidth: number,
+  viewportHeight: number,
+  tokens: Pick<TopologyV2Tokens, "cameraScaleMax" | "cameraScaleMin" | "altitudeFarLowRatio">,
+): CameraTarget {
+  const fit = fitWorldTarget(bounds, viewportWidth, viewportHeight, tokens.cameraScaleMax, tokens.cameraScaleMin);
+  return {
+    tx: fit.tx,
+    ty: fit.ty,
+    tscale: Math.max(tokens.cameraScaleMin, fit.tscale * tokens.altitudeFarLowRatio),
+  };
+}
+
+/**
  * Camera target for the current focus state — the full-graph overview fit
  * when `focusedSlug` is `null`, or the clicked node + its 1-hop ego bbox
  * (`--topology-v2-focus-bbox-margin`/`-focus-fit-max-scale`) otherwise
@@ -96,7 +131,7 @@ export function computeFocusCameraTarget(
   focusedSlug: string | null,
 ): CameraTarget | null {
   if (focusedSlug === null) {
-    return fitWorldTarget(world.bounds, viewportWidth, viewportHeight, tokens.cameraScaleMax, tokens.cameraScaleMin);
+    return computeOverviewCameraTarget(world.bounds, viewportWidth, viewportHeight, tokens);
   }
   const focusNode = world.nodeById.get(focusedSlug);
   if (!focusNode) return null;

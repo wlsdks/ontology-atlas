@@ -15,7 +15,7 @@ import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
 import { buildGridPattern } from "../render/grid";
 import { buildDustPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
-import { computeFocusCameraTarget, fitWorldTarget } from "./topology-camera-math";
+import { computeFocusCameraTarget, computeOverviewCameraTarget, fitWorldTarget } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./topology-pointer-handlers";
 import { stepTopologyPhysics } from "./topology-physics-step";
@@ -63,6 +63,20 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const overviewScaleRef = useRef(1);
   const hasInitializedRef = useRef(false);
   const lastFrameTimeRef = useRef(0);
+  // FIX (QA first-light pass, blocker 2 continued): `useEffect(fn, [relayoutToken,
+  // fitViewToken])` also fires once on mount (standard React behavior, not just
+  // on token changes) — it used to be harmless because it recomputed the exact
+  // same tight-bounding-fit target `trySnapInitialCamera` had just set. Now that
+  // the initial camera intentionally starts at the *simplified* overview scale
+  // (`computeOverviewCameraTarget`), that same mount-time fire was immediately
+  // overwriting it back to the full/tight fit — the reduced-density fix never
+  // visibly took effect. Captured once (lazy initializer runs exactly once,
+  // even under React StrictMode's dev-only double-invoke of effects — a plain
+  // "have I run before" boolean ref does NOT survive that double-invoke
+  // safely, since the mount/cleanup/remount cycle flips it back and forth).
+  // The effect below skips whenever both tokens still equal their captured
+  // mount-time values — i.e. no real "fit view"/relayout click happened yet.
+  const initialFitTokensRef = useRef({ relayout: relayoutToken, fitView: fitViewToken });
 
   const pointerMachineRef = useRef<PointerMachineState>(INITIAL_POINTER_MACHINE_STATE);
   const dragHistoryRef = useRef<{ x: number; y: number; t: number }[]>([]);
@@ -95,14 +109,19 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!world || width <= 0 || height <= 0) return;
-    const target = fitWorldTarget(world.bounds, width, height, tokens.cameraScaleMax, tokens.cameraScaleMin);
+    // Passive default = the simplified overview scale (blocker 2 fix,
+    // `computeOverviewCameraTarget`'s own JSDoc), not the tight bounding fit
+    // — `overviewScaleRef` still anchors on the tight fit itself, since that's
+    // the altitude band's "100%" reference regardless of where the camera starts.
+    const fit = fitWorldTarget(world.bounds, width, height, tokens.cameraScaleMax, tokens.cameraScaleMin);
+    const target = computeOverviewCameraTarget(world.bounds, width, height, tokens);
     cameraRef.current = {
       x: { value: target.tx, velocity: 0 },
       y: { value: target.ty, velocity: 0 },
       scale: { value: target.tscale, velocity: 0 },
     };
     cameraTargetRef.current = target;
-    overviewScaleRef.current = target.tscale;
+    overviewScaleRef.current = fit.tscale;
     hasInitializedRef.current = true;
   };
 
@@ -160,6 +179,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
   // --- relayoutToken / fitViewToken — both mean "spring back to the full overview fit" ---
   useEffect(() => {
+    // Skip while both tokens still equal their captured mount-time values —
+    // this effect's own mount-time fire (see `initialFitTokensRef` above).
+    // `trySnapInitialCamera` already set the correct initial camera; this
+    // effect should only react to an actual "fit view"/relayout click after.
+    const initial = initialFitTokensRef.current;
+    if (relayoutToken === initial.relayout && fitViewToken === initial.fitView) return;
     const tokens = readTopologyV2TokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
