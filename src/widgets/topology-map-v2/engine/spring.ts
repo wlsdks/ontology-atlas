@@ -53,14 +53,16 @@ export type SpringStepResult = SpringAxisState;
  * @param damping ζ — 1.0 default (critically damped), 0.82 after a flick release
  */
 export function stepSpring(
-  _state: SpringAxisState,
-  _target: number,
-  _dt: number,
-  _angularFrequency: number,
-  _damping: number,
+  state: SpringAxisState,
+  target: number,
+  dt: number,
+  angularFrequency: number,
+  damping: number,
 ): SpringStepResult {
-  throw new Error(
-    "TODO(lead): implement stepSpring per docs/TOPOLOGY-V2-DESIGN.md §2.4 " +
-      "and the prototype's stepSpring() — engine/spring.test.ts pins the exact expected values.",
-  );
+  const force =
+    -angularFrequency * angularFrequency * (state.value - target) -
+    2 * damping * angularFrequency * state.velocity;
+  const velocity = state.velocity + force * dt;
+  const value = state.value + velocity * dt;
+  return { value, velocity };
 }

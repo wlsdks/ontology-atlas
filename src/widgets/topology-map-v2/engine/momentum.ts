@@ -55,9 +55,15 @@ export interface FlickReleaseResult {
  * Call once per axis (x, y) with that axis's release velocity and current
  * position — `cameraScale` is shared.
  */
-export function projectFlickLanding(_input: FlickReleaseInput): FlickReleaseResult {
-  throw new Error(
-    "TODO(lead): implement projectFlickLanding per docs/TOPOLOGY-V2-DESIGN.md §2.4 " +
-      "and the prototype's releaseDrag() — engine/momentum.test.ts pins the exact expected values.",
-  );
+export function projectFlickLanding(input: FlickReleaseInput): FlickReleaseResult {
+  const { velocityPxPerMs, cameraPosition, cameraScale, decay } = input;
+  const projMs = ((velocityPxPerMs * 1000) * decay) / (1 - decay) / 1000;
+  const worldVelocity = (-velocityPxPerMs / cameraScale) * 1000;
+  const landingTarget = cameraPosition + (-projMs * 60) / cameraScale;
+  // -0 normalization: a zero-velocity release must yield +0, not IEEE -0
+  // (spring seeding and Object.is-based equality both treat them differently).
+  return {
+    landingTarget,
+    worldVelocity: worldVelocity === 0 ? 0 : worldVelocity,
+  };
 }

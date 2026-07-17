@@ -52,7 +52,13 @@ describe("stepSpring", () => {
     }
 
     expect(everOvershot).toBe(false);
-    expect(state.value).toBeCloseTo(target, 2);
+    // Analytic residual of a critically-damped spring from rest after t=3s:
+    // |x - target| = target·(1 + ωt)·e^(-ωt) with ω=1/0.34, t=3
+    //              = 10·(1 + 8.8235)·e^(-8.8235) ≈ 0.0146 (discrete Euler ≈ 0.0195).
+    // The formula this suite pins cannot mathematically reach 0.005 by 3s, so
+    // the convergence tolerance is 0.05 — visually sub-pixel, consistent with
+    // the velocity bound below.
+    expect(state.value).toBeCloseTo(target, 1);
     expect(Math.abs(state.velocity)).toBeLessThan(0.05);
   });
 

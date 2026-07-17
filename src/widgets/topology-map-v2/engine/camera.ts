@@ -12,22 +12,16 @@
  * top* of that geometry: `fitBounds` computes a target `{tx, ty, k}`; this
  * module springs the live camera toward that target frame-by-frame.
  *
- * KNOWN AMBIGUITY (flag for the lead / design doc author, not silently
- * resolved here): `topology-map-canvas/lib/camera.ts`'s own `clampScale`
- * hardcodes `MAP_SCALE_MIN = 0.25` / `MAP_SCALE_MAX = 3`, but this widget's
- * own tokens (`--topology-v2-camera-scale-min` = 0.24, `--topology-v2-camera-scale-max`
- * = 2.6, taken from the prototype's `MIN_SCALE`/`MAX_SCALE`) disagree. Calling
- * the reused `clampScale` as-is would silently clamp v2's camera to the wrong
- * bounds. The lead needs to either (a) pass v2's bounds into a local clamp
- * instead of the reused one, or (b) reconcile the two token sets in a
- * follow-up design doc note. This file threads `scaleMin`/`scaleMax` as
- * explicit parameters (not reused from `topology-map-canvas`) so either path
- * stays open.
- *
- * STUB: the lead implements the body. See `camera.test.ts`.
+ * DECISION (lead, 2026-07-18): v2 is self-contained on scale bounds — the
+ * approved prototype's `0.24–2.6` (its own `--topology-v2-camera-scale-*`
+ * tokens) win over `topology-map-canvas/lib/camera.ts`'s `0.25–3`. Reusing the
+ * old `clampScale` would silently clamp v2 to the un-approved bounds, and the
+ * module contract forbids cross-widget engine imports anyway. Bounds are
+ * threaded as explicit parameters; the old widget keeps its own values until
+ * P6 deletes it.
  */
 
-import type { SpringAxisState } from "./spring";
+import { stepSpring, type SpringAxisState } from "./spring";
 
 export interface CameraAxes {
   x: SpringAxisState;
@@ -64,9 +58,22 @@ export interface CameraStepInput {
  * 1.0)` is hardcoded even during a flick). The result's `scale` is clamped to
  * `[scaleMin, scaleMax]` after the spring step.
  */
-export function stepCamera(_input: CameraStepInput): CameraAxes {
-  throw new Error(
-    "TODO(lead): implement stepCamera per docs/TOPOLOGY-V2-DESIGN.md §1.3/§2.4 " +
-      "and the prototype's updateCamera() — camera.test.ts pins the expected contract.",
+const SCALE_CRITICAL_DAMPING = 1.0;
+
+export function stepCamera(input: CameraStepInput): CameraAxes {
+  const { camera, target, dt, damping, angularFrequency, scaleMin, scaleMax } = input;
+  const x = stepSpring(camera.x, target.tx, dt, angularFrequency, damping);
+  const y = stepSpring(camera.y, target.ty, dt, angularFrequency, damping);
+  const steppedScale = stepSpring(
+    camera.scale,
+    target.tscale,
+    dt,
+    angularFrequency,
+    SCALE_CRITICAL_DAMPING,
   );
+  const scale: SpringAxisState = {
+    value: Math.min(scaleMax, Math.max(scaleMin, steppedScale.value)),
+    velocity: steppedScale.velocity,
+  };
+  return { x, y, scale };
 }

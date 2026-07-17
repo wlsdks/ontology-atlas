@@ -41,12 +41,11 @@ export interface Point {
  * @param thresholdPx `--topology-v2-hysteresis-px` = 7
  */
 export function exceedsHysteresisThreshold(
-  _downPoint: Point,
-  _currentPoint: Point,
-  _thresholdPx: number,
+  downPoint: Point,
+  currentPoint: Point,
+  thresholdPx: number,
 ): boolean {
-  throw new Error(
-    "TODO(lead): implement exceedsHysteresisThreshold per docs/TOPOLOGY-V2-DESIGN.md §2.4 " +
-      "and the prototype's pointermove handler — engine/hysteresis.test.ts pins the exact expected values.",
-  );
+  const dx = currentPoint.x - downPoint.x;
+  const dy = currentPoint.y - downPoint.y;
+  return Math.sqrt(dx * dx + dy * dy) > thresholdPx;
 }
