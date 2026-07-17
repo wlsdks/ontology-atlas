@@ -78,7 +78,7 @@ describe("absorb contract — cli & mcp agree", () => {
           for (const [heading, action] of Object.entries(c.expectedActions)) {
             const section = plan.sections.find((s) => s.heading === heading);
             expect(section, `section "${heading}" should exist`).toBeTruthy();
-            expect(section.action, `section "${heading}" action`).toBe(action);
+            expect(section?.action, `section "${heading}" action`).toBe(action);
           }
           if (c.expectedInjectionSuspectHeadings) {
             const flagged = plan.sections
@@ -89,7 +89,7 @@ describe("absorb contract — cli & mcp agree", () => {
           if (c.expectedTargetSlug) {
             for (const [heading, slug] of Object.entries(c.expectedTargetSlug)) {
               const section = plan.sections.find((s) => s.heading === heading);
-              expect(section.targetSlug).toBe(slug);
+              expect(section?.targetSlug).toBe(slug);
             }
           }
         });
