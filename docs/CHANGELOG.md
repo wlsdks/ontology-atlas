@@ -6,6 +6,13 @@
 
 ---
 
+## 2026-07-17 — ONTOLOGY-ATLAS-SPEC v1.0-rc 공개 (N0)
+
+제품 계획 v9 (`docs/PRODUCT-PLAN-2026-07.md`) 네트워크 트랙 N0 실행 — 이미
+구현·검증된 vault frontmatter 스키마를 `docs/ONTOLOGY-ATLAS-SPEC.md` 공개
+명세로 승격했다. 새 필드/규칙 없음, 문서 전용. 5 kind · 관계 타입 ·
+untrusted-content 원칙 · 준수 테스트로 기존 contract test 스위트를 인용한다.
+8주 RFC 피드백 창 (kill criteria) 동안 GitHub Issues 로 코멘트 받는다.
 ## 2026-07-17 — 제품 계획 v9: 2층 정체성 (Layer 1 로컬 코어 + Layer 2 Atlas Network)
 
 하루 집중 재기획의 확정 (조사 17건 · 페르소나 7인 · CPO 심사 · 사상가 렌즈
