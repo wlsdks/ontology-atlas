@@ -71,8 +71,11 @@ export interface TopologyV2Tokens {
   cameraDampingDefault: number;
   cameraDampingFlick: number;
   cameraMomentumDecay: number;
+  cameraReleaseVelocityWindowMs: number;
+  cameraFlickMinSpeed: number;
   cameraScaleMin: number;
   cameraScaleMax: number;
+  cameraFocusPanMargin: number;
   altitudeFarHighRatio: number;
   altitudeFarLowRatio: number;
   overviewEntryRatio: number;
@@ -159,8 +162,11 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "cameraDampingDefault", cssVar: "--topology-v2-camera-damping-default", kind: "number" },
   { key: "cameraDampingFlick", cssVar: "--topology-v2-camera-damping-flick", kind: "number" },
   { key: "cameraMomentumDecay", cssVar: "--topology-v2-camera-momentum-decay", kind: "number" },
+  { key: "cameraReleaseVelocityWindowMs", cssVar: "--topology-v2-camera-release-velocity-window-ms", kind: "number" },
+  { key: "cameraFlickMinSpeed", cssVar: "--topology-v2-camera-flick-min-speed", kind: "number" },
   { key: "cameraScaleMin", cssVar: "--topology-v2-camera-scale-min", kind: "number" },
   { key: "cameraScaleMax", cssVar: "--topology-v2-camera-scale-max", kind: "number" },
+  { key: "cameraFocusPanMargin", cssVar: "--topology-v2-camera-focus-pan-margin", kind: "number" },
   { key: "altitudeFarHighRatio", cssVar: "--topology-v2-altitude-far-high-ratio", kind: "number" },
   { key: "altitudeFarLowRatio", cssVar: "--topology-v2-altitude-far-low-ratio", kind: "number" },
   { key: "overviewEntryRatio", cssVar: "--topology-v2-overview-entry-ratio", kind: "number" },

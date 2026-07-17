@@ -6,23 +6,24 @@
  * files under the 300-line budget — `Ref<T>` here is any mutable box the
  * hook owns (`useRef`'s `.current`), not necessarily React's own ref type.
  *
- * FIX (QA first-light pass, blocker 1 — "drag makes everything vanish"):
- * `projectFlickLanding`'s landing target grows unboundedly with flick speed
- * (its own test pins -14870 world units for a routine 0.5px/ms flick at
- * scale=1) — `handlePointerUp` now clamps that target into the world's own
- * pan bounds (`engine/camera.ts#computePanBounds`) before handing it to the
- * spring, so a fast flick still glides but can never strand the camera
- * outside the graph's content. `stepCamera`'s own per-frame elastic clamp
- * (`clampAxisToPanBounds`) alone was not enough — the spring's restoring
- * force toward a fixed, far-away target outpaces a flat 14%/frame pull-back
- * (verified manually via chrome-devtools: the camera was still lost 5+
- * seconds after release without this).
+ * FIX (owner + QA — flick proportionality): `projectFlickLanding` now projects
+ * a landing PROPORTIONAL to release velocity (iOS deceleration, ~−249 world
+ * units for a 0.5px/ms flick at scale 1), so a small flick glides a small
+ * distance and a big flick a big distance. `handlePointerUp` still clamps the
+ * projected target into the world's pan bounds
+ * (`engine/camera.ts#computePanBounds`) — but now that only engages when the
+ * projection genuinely EXCEEDS the bounds, so within-bounds flicks glide freely
+ * and only edge-exceeding flicks rubber-band (the seeded velocity overshoots the
+ * clamped bound, then `stepCamera`'s per-frame `clampAxisToPanBounds` elastically
+ * returns it — INTERACTION-DESIGN §1 "경계는 러버밴드"). The old port inflated
+ * the projection ~60× so EVERY flick slammed to the same edge (the reported
+ * snap); see `engine/momentum.ts`.
  */
 
 import type { PointerEvent as ReactPointerEvent } from "react";
 
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
-import { projectFlickLanding } from "../engine/momentum";
+import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
 import { scheduleRipple } from "../model/focus-state";
 import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, nodeTierAlpha } from "../model/tier-visibility";
@@ -240,7 +241,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       cameraRef.current = { ...cameraRef.current, x: { value: nextX, velocity: 0 }, y: { value: nextY, velocity: 0 } };
       cameraTargetRef.current = { ...cameraTargetRef.current, tx: nextX, ty: nextY };
       dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
-      if (dragHistoryRef.current.length > 6) dragHistoryRef.current.shift();
+      // Keep ~10 samples (~160ms at 60fps) so the release-velocity window
+      // (`--topology-v2-camera-release-velocity-window-ms`) is always covered,
+      // even on lower-frame-rate devices. The sampler filters by timestamp, so
+      // extra old samples are harmless.
+      if (dragHistoryRef.current.length > 10) dragHistoryRef.current.shift();
       return;
     }
 
@@ -274,17 +279,31 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
 
     if (wasDragging) {
-      const history = dragHistoryRef.current;
-      const first = history[0];
-      const last = history[history.length - 1];
-      const dtMs = first && last ? Math.max(1, last.t - first.t) : 16;
-      const vx = first && last ? (last.x - first.x) / dtMs : 0;
-      const vy = first && last ? (last.y - first.y) / dtMs : 0;
+      // 정지 릴리스 게이트 (owner spec: "드래그 후 멈추면 그 자리에 정지") — sample
+      // the last ~80ms of pointer motion; a stationary release yields isFlick=false
+      // and the camera holds exactly here (no momentum glide). Only a release WITH
+      // motion (a flick) projects a landing target.
+      const release = sampleReleaseVelocity({
+        history: dragHistoryRef.current,
+        releaseTime: performance.now(),
+        windowMs: tokens.cameraReleaseVelocityWindowMs,
+        minSpeedPxPerMs: tokens.cameraFlickMinSpeed,
+      });
 
-      if (reducedMotionRef.current) {
+      if (reducedMotionRef.current || !release.isFlick) {
+        // Hold in place: pin the spring target to the current camera position and
+        // clear any residual velocity so it comes to rest exactly here.
         cameraTargetRef.current = { tx: cameraRef.current.x.value, ty: cameraRef.current.y.value, tscale: cameraTargetRef.current.tscale };
+        cameraRef.current = {
+          ...cameraRef.current,
+          x: { value: cameraRef.current.x.value, velocity: 0 },
+          y: { value: cameraRef.current.y.value, velocity: 0 },
+        };
+        dampingRef.current = tokens.cameraDampingDefault;
         return;
       }
+      const vx = release.vx;
+      const vy = release.vy;
       const px = projectFlickLanding({
         velocityPxPerMs: vx,
         cameraPosition: cameraRef.current.x.value,
@@ -297,10 +316,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         cameraScale: cameraRef.current.scale.value,
         decay: tokens.cameraMomentumDecay,
       });
-      // The raw landing target can be thousands of world units past the
-      // graph's own content (see file header) — clamp it into the world's
-      // pan bounds before handing it to the spring so a fast flick still
-      // glides but never strands the camera in blank canvas.
+      // The projected landing is proportional to velocity (see file header) and
+      // usually within the graph's pan bounds — clamp it only so a landing that
+      // WOULD exceed the bounds rubber-bands at the edge instead of overshooting
+      // into blank canvas. Within-bounds flicks are unaffected by this clamp.
       const world = worldRef.current;
       const clampedLanding = world
         ? clampPointToPanBounds(px.landingTarget, py.landingTarget, computePanBounds(world.bounds))

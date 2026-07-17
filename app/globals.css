@@ -964,8 +964,20 @@
     --topology-v2-camera-damping-default: 1.0;
     --topology-v2-camera-damping-flick: 0.82;
     --topology-v2-camera-momentum-decay: 0.998;
+    /* 정지 릴리스 게이트 (iOS scroll rule) — 릴리스 직전 이 창(ms)에서 포인터
+       속도를 샘플한다. 이 창 안에 움직임이 없으면(=멈춘 뒤 릴리스) 모멘텀 0. */
+    --topology-v2-camera-release-velocity-window-ms: 80;
+    /* 이 임계(px/ms) 미만 속도는 정지로 간주 — 관성 글라이드 없이 제자리 정지.
+       실제 플릭(≈0.3~0.5px/ms)의 약 10% 지점. */
+    --topology-v2-camera-flick-min-speed: 0.05;
     --topology-v2-camera-scale-min: 0.24;
     --topology-v2-camera-scale-max: 2.6;
+    /* 포커스(ego) 상태에서 빈 공간 팬 시 카메라 중심이 포커스 노드로부터 이
+       world-unit 이상 벗어나지 못한다 — "둘러볼 순 있어도 대상을 놓치진 않는다"
+       (옵시디언 촉각). 넘어서면 러버밴드로 복귀. 최대 포커스 스케일(1.9)에서도
+       180×1.9≈342px < 안전영역 반높이(354px) 라 대상이 화면 밖으로 안 나간다.
+       줌인 상태에서만 적용(fit view/포커스 해제 시엔 전체 bounds). */
+    --topology-v2-camera-focus-pan-margin: 180;
     --topology-v2-altitude-far-high-ratio: 0.92;
     --topology-v2-altitude-far-low-ratio: 0.62;
     /* Overview entry scale = tight-fit × this ratio. Kept above the far-high
