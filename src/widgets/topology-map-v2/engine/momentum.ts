@@ -32,6 +32,65 @@
  * `momentum.test.ts` (hand-derived from the formula above).
  */
 
+/** One recorded pointer position while dragging (screen px + `performance.now()`). */
+export interface DragSample {
+  x: number;
+  y: number;
+  t: number;
+}
+
+export interface ReleaseVelocityInput {
+  /** Recent drag samples (`dragHistoryRef`), oldest → newest. */
+  history: readonly DragSample[];
+  /** `performance.now()` at pointerup. */
+  releaseTime: number;
+  /** Trailing window sampled for release velocity, ms — `--topology-v2-camera-release-velocity-window-ms`. */
+  windowMs: number;
+  /** |velocity| below this (px/ms) counts as stationary → hold, no glide — `--topology-v2-camera-flick-min-speed`. */
+  minSpeedPxPerMs: number;
+}
+
+export interface ReleaseVelocity {
+  /** Screen-space release velocity, px/ms. Zeroed when the release was stationary. */
+  vx: number;
+  vy: number;
+  /** True only for a release WITH motion above the threshold — the sole momentum trigger. */
+  isFlick: boolean;
+}
+
+/**
+ * 정지 릴리스 게이트 (owner spec: "드래그 후 멈추면 그 자리에 정지") — the iOS
+ * scroll rule. Samples pointer velocity over the last `windowMs` before release
+ * and returns `isFlick: false` (zero velocity) when the pointer was stationary
+ * at release, so the caller holds the camera exactly where it is. Only a release
+ * WITH motion (a genuine flick) returns `isFlick: true` to trigger the momentum
+ * glide (`projectFlickLanding`).
+ *
+ * Why a trailing window and not first→last over the whole gesture: when the user
+ * pans, stops, and holds before lifting, the recent samples cluster at the rest
+ * position (or stop arriving entirely). Anchoring the measurement window at the
+ * release time means a held release has no fast samples in-window — a flat
+ * first→last over the entire history would keep reading the initial fling speed
+ * and glide anyway (the QA/owner-reported bug).
+ *
+ * Pure — no DOM/token knowledge; the caller passes the resolved token values.
+ */
+export function sampleReleaseVelocity(input: ReleaseVelocityInput): ReleaseVelocity {
+  const { history, releaseTime, windowMs, minSpeedPxPerMs } = input;
+  const windowStart = releaseTime - windowMs;
+  const inWindow = history.filter((sample) => sample.t >= windowStart);
+  if (inWindow.length < 2) return { vx: 0, vy: 0, isFlick: false };
+
+  const first = inWindow[0];
+  const last = inWindow[inWindow.length - 1];
+  const dtMs = Math.max(1, last.t - first.t);
+  const vx = (last.x - first.x) / dtMs;
+  const vy = (last.y - first.y) / dtMs;
+
+  if (Math.hypot(vx, vy) < minSpeedPxPerMs) return { vx: 0, vy: 0, isFlick: false };
+  return { vx, vy, isFlick: true };
+}
+
 export interface FlickReleaseInput {
   /** Screen-space release velocity, px/ms, one axis. */
   velocityPxPerMs: number;

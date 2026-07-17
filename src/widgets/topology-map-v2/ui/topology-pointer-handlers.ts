@@ -22,7 +22,7 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
 
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
-import { projectFlickLanding } from "../engine/momentum";
+import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
 import { scheduleRipple } from "../model/focus-state";
 import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, nodeTierAlpha } from "../model/tier-visibility";
@@ -240,7 +240,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       cameraRef.current = { ...cameraRef.current, x: { value: nextX, velocity: 0 }, y: { value: nextY, velocity: 0 } };
       cameraTargetRef.current = { ...cameraTargetRef.current, tx: nextX, ty: nextY };
       dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
-      if (dragHistoryRef.current.length > 6) dragHistoryRef.current.shift();
+      // Keep ~10 samples (~160ms at 60fps) so the release-velocity window
+      // (`--topology-v2-camera-release-velocity-window-ms`) is always covered,
+      // even on lower-frame-rate devices. The sampler filters by timestamp, so
+      // extra old samples are harmless.
+      if (dragHistoryRef.current.length > 10) dragHistoryRef.current.shift();
       return;
     }
 
@@ -274,17 +278,31 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
 
     if (wasDragging) {
-      const history = dragHistoryRef.current;
-      const first = history[0];
-      const last = history[history.length - 1];
-      const dtMs = first && last ? Math.max(1, last.t - first.t) : 16;
-      const vx = first && last ? (last.x - first.x) / dtMs : 0;
-      const vy = first && last ? (last.y - first.y) / dtMs : 0;
+      // 정지 릴리스 게이트 (owner spec: "드래그 후 멈추면 그 자리에 정지") — sample
+      // the last ~80ms of pointer motion; a stationary release yields isFlick=false
+      // and the camera holds exactly here (no momentum glide). Only a release WITH
+      // motion (a flick) projects a landing target.
+      const release = sampleReleaseVelocity({
+        history: dragHistoryRef.current,
+        releaseTime: performance.now(),
+        windowMs: tokens.cameraReleaseVelocityWindowMs,
+        minSpeedPxPerMs: tokens.cameraFlickMinSpeed,
+      });
 
-      if (reducedMotionRef.current) {
+      if (reducedMotionRef.current || !release.isFlick) {
+        // Hold in place: pin the spring target to the current camera position and
+        // clear any residual velocity so it comes to rest exactly here.
         cameraTargetRef.current = { tx: cameraRef.current.x.value, ty: cameraRef.current.y.value, tscale: cameraTargetRef.current.tscale };
+        cameraRef.current = {
+          ...cameraRef.current,
+          x: { value: cameraRef.current.x.value, velocity: 0 },
+          y: { value: cameraRef.current.y.value, velocity: 0 },
+        };
+        dampingRef.current = tokens.cameraDampingDefault;
         return;
       }
+      const vx = release.vx;
+      const vy = release.vy;
       const px = projectFlickLanding({
         velocityPxPerMs: vx,
         cameraPosition: cameraRef.current.x.value,

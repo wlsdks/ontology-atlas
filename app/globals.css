@@ -964,6 +964,12 @@
     --topology-v2-camera-damping-default: 1.0;
     --topology-v2-camera-damping-flick: 0.82;
     --topology-v2-camera-momentum-decay: 0.998;
+    /* 정지 릴리스 게이트 (iOS scroll rule) — 릴리스 직전 이 창(ms)에서 포인터
+       속도를 샘플한다. 이 창 안에 움직임이 없으면(=멈춘 뒤 릴리스) 모멘텀 0. */
+    --topology-v2-camera-release-velocity-window-ms: 80;
+    /* 이 임계(px/ms) 미만 속도는 정지로 간주 — 관성 글라이드 없이 제자리 정지.
+       실제 플릭(≈0.3~0.5px/ms)의 약 10% 지점. */
+    --topology-v2-camera-flick-min-speed: 0.05;
     --topology-v2-camera-scale-min: 0.24;
     --topology-v2-camera-scale-max: 2.6;
     --topology-v2-altitude-far-high-ratio: 0.92;
