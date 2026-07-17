@@ -6,17 +6,18 @@
  * files under the 300-line budget — `Ref<T>` here is any mutable box the
  * hook owns (`useRef`'s `.current`), not necessarily React's own ref type.
  *
- * FIX (QA first-light pass, blocker 1 — "drag makes everything vanish"):
- * `projectFlickLanding`'s landing target grows unboundedly with flick speed
- * (its own test pins -14870 world units for a routine 0.5px/ms flick at
- * scale=1) — `handlePointerUp` now clamps that target into the world's own
- * pan bounds (`engine/camera.ts#computePanBounds`) before handing it to the
- * spring, so a fast flick still glides but can never strand the camera
- * outside the graph's content. `stepCamera`'s own per-frame elastic clamp
- * (`clampAxisToPanBounds`) alone was not enough — the spring's restoring
- * force toward a fixed, far-away target outpaces a flat 14%/frame pull-back
- * (verified manually via chrome-devtools: the camera was still lost 5+
- * seconds after release without this).
+ * FIX (owner + QA — flick proportionality): `projectFlickLanding` now projects
+ * a landing PROPORTIONAL to release velocity (iOS deceleration, ~−249 world
+ * units for a 0.5px/ms flick at scale 1), so a small flick glides a small
+ * distance and a big flick a big distance. `handlePointerUp` still clamps the
+ * projected target into the world's pan bounds
+ * (`engine/camera.ts#computePanBounds`) — but now that only engages when the
+ * projection genuinely EXCEEDS the bounds, so within-bounds flicks glide freely
+ * and only edge-exceeding flicks rubber-band (the seeded velocity overshoots the
+ * clamped bound, then `stepCamera`'s per-frame `clampAxisToPanBounds` elastically
+ * returns it — INTERACTION-DESIGN §1 "경계는 러버밴드"). The old port inflated
+ * the projection ~60× so EVERY flick slammed to the same edge (the reported
+ * snap); see `engine/momentum.ts`.
  */
 
 import type { PointerEvent as ReactPointerEvent } from "react";
@@ -315,10 +316,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         cameraScale: cameraRef.current.scale.value,
         decay: tokens.cameraMomentumDecay,
       });
-      // The raw landing target can be thousands of world units past the
-      // graph's own content (see file header) — clamp it into the world's
-      // pan bounds before handing it to the spring so a fast flick still
-      // glides but never strands the camera in blank canvas.
+      // The projected landing is proportional to velocity (see file header) and
+      // usually within the graph's pan bounds — clamp it only so a landing that
+      // WOULD exceed the bounds rubber-bands at the edge instead of overshooting
+      // into blank canvas. Within-bounds flicks are unaffected by this clamp.
       const world = worldRef.current;
       const clampedLanding = world
         ? clampPointToPanBounds(px.landingTarget, py.landingTarget, computePanBounds(world.bounds))

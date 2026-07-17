@@ -10,11 +10,11 @@ import { projectFlickLanding, sampleReleaseVelocity } from "./momentum";
 const DECAY = 0.998; // --topology-v2-camera-momentum-decay
 
 describe("projectFlickLanding", () => {
-  it("matches the exact prototype formula for a rightward flick (vx=0.5px/ms, scale=1)", () => {
-    // d = 0.998; projMsX = (0.5*1000)*0.998/(1-0.998)/1000 = (500*0.998/0.002)/1000
-    //          = (500*499)/1000 = 249.5
-    // worldVX  = -0.5/1*1000 = -500
-    // landingX = 100 + (-249.5*60)/1 = 100 - 14970 = -14870
+  it("projects a proportional landing for a rightward flick (vx=0.5px/ms, scale=1)", () => {
+    // iOS UIScrollView deceleration projection — distance ∝ release velocity:
+    //   worldVelocity = -0.5/1 * 1000 = -500 (world units/sec)
+    //   landingOffset = -0.5/1 * decay/(1-decay) = -0.5 * (0.998/0.002) = -0.5*499 = -249.5
+    //   landingTarget = 100 - 249.5 = -149.5
     const result = projectFlickLanding({
       velocityPxPerMs: 0.5,
       cameraPosition: 100,
@@ -23,13 +23,13 @@ describe("projectFlickLanding", () => {
     });
 
     expect(result.worldVelocity).toBeCloseTo(-500, 6);
-    expect(result.landingTarget).toBeCloseTo(-14870, 3);
+    expect(result.landingTarget).toBeCloseTo(-149.5, 6);
   });
 
-  it("matches the exact prototype formula for a leftward flick (vy=-0.2px/ms, scale=1)", () => {
-    // projMsY = (-0.2*1000)*0.998/0.002/1000 = (-200*499)/1000 = -99.8
-    // worldVY = -(-0.2)/1*1000 = 200
-    // landingY = 50 + (-(-99.8)*60)/1 = 50 + 5988 = 6038
+  it("projects a proportional landing for a leftward flick (vy=-0.2px/ms, scale=1)", () => {
+    //   worldVelocity = -(-0.2)/1 * 1000 = 200
+    //   landingOffset = -(-0.2)/1 * 499 = +99.8
+    //   landingTarget = 50 + 99.8 = 149.8
     const result = projectFlickLanding({
       velocityPxPerMs: -0.2,
       cameraPosition: 50,
@@ -38,7 +38,16 @@ describe("projectFlickLanding", () => {
     });
 
     expect(result.worldVelocity).toBeCloseTo(200, 6);
-    expect(result.landingTarget).toBeCloseTo(6038, 2);
+    expect(result.landingTarget).toBeCloseTo(149.8, 6);
+  });
+
+  it("glides proportionally to velocity — half the flick, half the landing offset", () => {
+    // The headline of the QA fix: a small flick lands proportionally close, not
+    // slammed to the same pan-bounds edge as a big flick.
+    const small = projectFlickLanding({ velocityPxPerMs: 0.25, cameraPosition: 0, cameraScale: 1, decay: DECAY });
+    const big = projectFlickLanding({ velocityPxPerMs: 0.5, cameraPosition: 0, cameraScale: 1, decay: DECAY });
+    expect(small.landingTarget).toBeCloseTo(big.landingTarget / 2, 6);
+    expect(small.landingTarget).toBeCloseTo(-124.75, 6);
   });
 
   it("scales the landing projection inversely with camera scale", () => {
