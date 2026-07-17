@@ -73,6 +73,7 @@ export interface TopologyV2Tokens {
   cameraScaleMax: number;
   altitudeFarHighRatio: number;
   altitudeFarLowRatio: number;
+  overviewEntryRatio: number;
   focusFitMaxScale: number;
   focusBboxMargin: number;
   hysteresisPx: number;
@@ -152,6 +153,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "cameraScaleMax", cssVar: "--topology-v2-camera-scale-max", kind: "number" },
   { key: "altitudeFarHighRatio", cssVar: "--topology-v2-altitude-far-high-ratio", kind: "number" },
   { key: "altitudeFarLowRatio", cssVar: "--topology-v2-altitude-far-low-ratio", kind: "number" },
+  { key: "overviewEntryRatio", cssVar: "--topology-v2-overview-entry-ratio", kind: "number" },
   { key: "focusFitMaxScale", cssVar: "--topology-v2-focus-fit-max-scale", kind: "number" },
   { key: "focusBboxMargin", cssVar: "--topology-v2-focus-bbox-margin", kind: "number" },
   { key: "hysteresisPx", cssVar: "--topology-v2-hysteresis-px", kind: "number" },

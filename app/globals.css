@@ -963,6 +963,10 @@
     --topology-v2-camera-scale-max: 2.6;
     --topology-v2-altitude-far-high-ratio: 0.92;
     --topology-v2-altitude-far-low-ratio: 0.62;
+    /* Overview entry scale = tight-fit × this ratio. Kept above the far-high
+       ratio (0.92) so the DEFAULT overview reads as CIRCUIT (farT ≈ 0), while
+       tier visibility rides a separate zoom-ratio signal (model/tier-visibility). */
+    --topology-v2-overview-entry-ratio: 0.95;
     --topology-v2-focus-fit-max-scale: 1.9;
     --topology-v2-focus-bbox-margin: 70;
     --topology-v2-hysteresis-px: 7;

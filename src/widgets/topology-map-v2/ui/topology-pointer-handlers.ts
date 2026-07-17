@@ -23,10 +23,9 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { projectFlickLanding } from "../engine/momentum";
-import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { scheduleRipple } from "../model/focus-state";
 import type { ForceSimulation } from "../model/force-layout";
-import { DEFAULT_TIER_REVEAL, nodeTierAlpha } from "../model/tier-visibility";
+import { computeZoomRatio, DEFAULT_TIER_REVEAL, nodeTierAlpha } from "../model/tier-visibility";
 import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
 import {
   INITIAL_POINTER_MACHINE_STATE,
@@ -146,8 +145,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     py: number,
   ): string | null => {
     if (!tokens) return null;
-    const band = computeAltitudeBand(overviewScaleRef.current, tokens.altitudeFarHighRatio, tokens.altitudeFarLowRatio);
-    const farT = computeFarT(camera.scale.value, band.farLow, band.farHigh);
+    // Tier hittability rides the same zoom-ratio signal as the draw pass
+    // (`model/tier-visibility.ts`), NOT `farT` — so the pointer never grabs a
+    // semantic-zoom-hidden capability/element even at the circuit default entry.
+    const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+    const zoomRatio = computeZoomRatio(camera.scale.value, overviewEntryScale);
     return hitTestWorld(
       world,
       camera,
@@ -156,7 +158,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       tokens,
       px,
       py,
-      (node) => nodeTierAlpha(node.kind, node.isHub, farT, DEFAULT_TIER_REVEAL) >= HITTABLE_MIN_TIER_ALPHA,
+      (node) => nodeTierAlpha(node.kind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL) >= HITTABLE_MIN_TIER_ALPHA,
     );
   };
 

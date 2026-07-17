@@ -85,37 +85,36 @@ export function hitTestWorld(
 }
 
 /**
- * FIX (QA first-light pass, blocker 2 — "real-data density breakdown"): the
- * tight bounding-box fit (`fitWorldTarget`) is also what `overviewScaleRef`
- * feeds into `model/altitude.ts`'s `farHigh`/`farLow` as the "100%" scale —
- * `farHigh = overviewScale * 0.92`. Starting the camera exactly AT that same
- * scale means `cameraScale` is always ~8% above `farHigh`, so `farT` (and
- * therefore every zoom-gated label/shape) reads as "circuit"/near-field on
- * every load, for every dataset — verified against the dogfood vault (290
- * renderable nodes): capability labels all fired at once ("label soup") since
- * their absolute zoom-in threshold (`labels.ts`: `smoothstep(0.75, 1.02, …)`)
- * was already satisfied by the initial fit scale (~0.918).
+ * DECOUPLING (topology-map-v2 axis split): `farT` (visual expression) and tier
+ * visibility used to ride the same camera scale. `overviewScaleRef` feeds
+ * `model/altitude.ts`'s `farHigh`/`farLow` as the "100%" anchor —
+ * `farHigh = overviewScale * 0.92`, `farLow = overviewScale * 0.62`.
  *
- * `.claude/rules/design.md`'s overview-first charter ("level 0 = project +
- * domain + hub 만") wants the *opposite* default. Rather than inventing a new
- * tuning constant, this reuses the already-existing
- * `--topology-v2-altitude-far-low-ratio` token — the same ratio that defines
- * "pure constellation" — as the initial/rest camera scale, so the passive
- * default naturally lands in the simplified end of the already-built
- * continuous farT/label-alpha system. The tight fit itself is unchanged and
- * still used for `overviewScaleRef` (the altitude band's own 100% anchor).
+ * The redesign wants the DEFAULT overview to read as CIRCUIT (`farT ≈ 0`) — a
+ * machined, engraved-numeral look, not the flat constellation — while still
+ * showing only the project/domain/hub spine (no fan-arc soup). Circuit needs
+ * the camera at/above `farHigh`; the anti-soup behavior now comes from a
+ * SEPARATE zoom-ratio gate (`model/tier-visibility.ts`), not from `farT`.
+ *
+ * So the entry scale is the tight fit × `--topology-v2-overview-entry-ratio`
+ * (0.95), kept ABOVE the far-high ratio (0.92) so `farT` lands at 0 on load by
+ * construction, for every dataset. The tight fit itself is unchanged and still
+ * anchors `overviewScaleRef` (the altitude band's 100% reference) AND the
+ * zoom-ratio's `overviewEntryScale = fit.tscale × overviewEntryRatio`. Zooming
+ * OUT from here still crosses `farHigh`→`farLow`, so the far-field
+ * constellation/diffraction expression still appears when the user pulls back.
  */
 export function computeOverviewCameraTarget(
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
   viewportWidth: number,
   viewportHeight: number,
-  tokens: Pick<TopologyV2Tokens, "cameraScaleMax" | "cameraScaleMin" | "altitudeFarLowRatio">,
+  tokens: Pick<TopologyV2Tokens, "cameraScaleMax" | "cameraScaleMin" | "overviewEntryRatio">,
 ): CameraTarget {
   const fit = fitWorldTarget(bounds, viewportWidth, viewportHeight, tokens.cameraScaleMax, tokens.cameraScaleMin);
   return {
     tx: fit.tx,
     ty: fit.ty,
-    tscale: Math.max(tokens.cameraScaleMin, fit.tscale * tokens.altitudeFarLowRatio),
+    tscale: Math.min(tokens.cameraScaleMax, Math.max(tokens.cameraScaleMin, fit.tscale * tokens.overviewEntryRatio)),
   };
 }
 

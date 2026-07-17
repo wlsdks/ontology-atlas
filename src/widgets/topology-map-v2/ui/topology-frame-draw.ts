@@ -86,7 +86,10 @@ export interface FrameDrawParams {
   ctx: CanvasRenderingContext2D;
   world: TopologyWorld;
   camera: CameraAxes;
+  /** Visual-expression axis (constellation ↔ circuit) — node/edge/label morph, diffraction, vignette. */
   farT: number;
+  /** Semantic-zoom axis (`cameraScale / overviewEntryScale`) — drives tier visibility only. */
+  zoomRatio: number;
   now: number;
   viewportWidth: number;
   viewportHeight: number;
@@ -106,6 +109,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     world,
     camera,
     farT,
+    zoomRatio,
     now,
     viewportWidth,
     viewportHeight,
@@ -136,13 +140,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
   const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
 
-  // Semantic-zoom tier gating (`model/tier-visibility.ts`): at overview
-  // altitude only project + domain + hub draw; capabilities/elements (and any
-  // edge touching a hidden one) fade in as you zoom in. This is the fan-arc/
-  // soup fix — precomputed once per frame so nodes/edges/labels agree.
+  // Semantic-zoom tier gating (`model/tier-visibility.ts`): at the overview
+  // entry only project + domain + hub draw; capabilities/elements (and any edge
+  // touching a hidden one) fade in as you zoom IN. Driven by `zoomRatio`, NOT
+  // `farT`, so the default circuit expression (farT ≈ 0) still shows only the
+  // spine. Precomputed once per frame so nodes/edges/labels agree.
   const tierAlphaById = new Map<string, number>();
   for (const node of world.nodes) {
-    tierAlphaById.set(node.id, nodeTierAlpha(node.kind, node.isHub, farT, DEFAULT_TIER_REVEAL));
+    tierAlphaById.set(node.id, nodeTierAlpha(node.kind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL));
   }
 
   for (const kind of ["contains", "depends"] as const) {

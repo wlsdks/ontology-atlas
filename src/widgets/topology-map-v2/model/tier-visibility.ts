@@ -7,25 +7,34 @@
  * the overview drawing *every* node — capabilities and elements fanned into
  * tight concentric arcs (the owner's "반달 겹침" / fan-arc pileup) with label
  * and trace soup on top. The lead's decision is to gate the NODES (and their
- * traces), not just the labels: at overview altitude only project + domain +
- * the single hub node draw; capabilities appear as you zoom into the
- * transition band, elements deeper still.
+ * traces), not just the labels: at the overview entry only project + domain +
+ * the single hub node draw; capabilities appear as you zoom into a transition
+ * band, elements deeper still.
  *
- * The gate is a continuous `alpha ∈ [0,1]` driven by the same single `farT`
- * value that drives every other visual axis — so the "no discrete mode flip"
- * invariant (`model/altitude.ts`) is preserved: nodes fade in/out, they never
- * pop. `farT = 1` is constellation/overview (zoomed OUT); `farT = 0` is
- * circuit (zoomed IN). Pure math — no camera/DOM/token knowledge.
+ * DECOUPLING (this pass): tier visibility no longer rides `farT`. `farT` is the
+ * *visual-expression* axis (constellation ↔ circuit) and the redesign wants the
+ * default overview to read as CIRCUIT (`farT ≈ 0`) — but circuit-at-entry with a
+ * farT-based gate would un-hide every capability/element and recreate the soup.
+ * So tier visibility is now driven by a separate **zoom ratio** signal
+ * (`computeZoomRatio`) = `cameraScale / overviewEntryScale`: `1.0` at the
+ * overview entry, `>1` zoomed IN, `<1` zoomed OUT. At ratio ≈ 1 only the
+ * project/domain/hub spine shows; capabilities cross-fade in past a zoom-in
+ * threshold, elements deeper. Zooming OUT (ratio < 1) keeps only the spine —
+ * never soup — regardless of what the far-field expression is doing.
+ *
+ * The gate stays a continuous `alpha ∈ [0,1]` (smoothstep bands) so the "no
+ * discrete mode flip" invariant is preserved: nodes fade in/out, they never
+ * pop. Pure math — no camera/DOM/token knowledge beyond the numbers passed in.
  */
 
 import { smoothstep } from "./altitude";
 import type { LayoutNodeKind } from "./layout";
 
 export interface TierRevealBand {
-  /** farT at/above which the tier is fully hidden (deep overview). */
-  hideAboveFarT: number;
-  /** farT at/below which the tier is fully shown (zoomed in). */
-  showBelowFarT: number;
+  /** zoomRatio at/below which the tier is fully hidden (overview / zoomed out). */
+  enterRatio: number;
+  /** zoomRatio at/above which the tier is fully shown (zoomed in). */
+  fullRatio: number;
 }
 
 export interface TierRevealConfig {
@@ -34,34 +43,49 @@ export interface TierRevealConfig {
 }
 
 /**
- * Default reveal bands. Capabilities cross-fade in across the upper transition
- * band; elements only in the lower/circuit band — so zooming in reveals the
- * hierarchy one level at a time (domain → capability → element).
+ * Default reveal bands, in **zoom-ratio** units (`cameraScale / overviewEntryScale`).
+ * At entry (ratio = 1) both tiers are hidden. Capabilities cross-fade in across
+ * the first zoom-in band; elements only in a deeper band — so zooming in reveals
+ * the hierarchy one level at a time (domain → capability → element) while the
+ * 8-node spine stays put. Tuned live against the dogfood vault (295 nodes) so
+ * both tiers finish revealing within the camera's zoom-in headroom
+ * (`--topology-v2-camera-scale-max`).
  */
 export const DEFAULT_TIER_REVEAL: TierRevealConfig = {
-  capability: { hideAboveFarT: 0.72, showBelowFarT: 0.42 },
-  element: { hideAboveFarT: 0.4, showBelowFarT: 0.12 },
+  capability: { enterRatio: 1.5, fullRatio: 2.0 },
+  element: { enterRatio: 2.3, fullRatio: 2.85 },
 };
 
-/** `1 - smoothstep(showBelow, hideAbove, farT)` — 1 when zoomed in past `showBelow`, 0 at/above `hideAbove`. */
-function revealAlpha(farT: number, band: TierRevealBand): number {
-  return 1 - smoothstep(band.showBelowFarT, band.hideAboveFarT, farT);
+/**
+ * Zoom ratio = `cameraScale / overviewEntryScale`. `1.0` exactly at the overview
+ * entry (where `cameraScale === overviewEntryScale`), `>1` zoomed in, `<1`
+ * zoomed out. Guards a non-positive entry scale (returns 1 so nothing gates
+ * unexpectedly before the camera has initialized).
+ */
+export function computeZoomRatio(cameraScale: number, overviewEntryScale: number): number {
+  if (overviewEntryScale <= 0) return 1;
+  return cameraScale / overviewEntryScale;
+}
+
+/** `smoothstep(enter, full, ratio)` — 0 at/below `enter` (overview), 1 at/above `full` (zoomed in). */
+function revealAlpha(zoomRatio: number, band: TierRevealBand): number {
+  return smoothstep(band.enterRatio, band.fullRatio, zoomRatio);
 }
 
 /**
- * Alpha for a node at the current altitude. Project/domain and the single hub
- * node are always fully visible (the level-0 spine); capabilities/elements
- * fade in per their reveal band.
+ * Alpha for a node at the current zoom ratio. Project/domain and the single hub
+ * node are always fully visible (the level-0 spine); capabilities/elements fade
+ * in per their reveal band as the camera zooms in.
  */
 export function nodeTierAlpha(
   kind: LayoutNodeKind,
   isHub: boolean,
-  farT: number,
+  zoomRatio: number,
   config: TierRevealConfig,
 ): number {
   if (isHub || kind === "project" || kind === "domain") return 1;
-  if (kind === "capability") return revealAlpha(farT, config.capability);
-  return revealAlpha(farT, config.element);
+  if (kind === "capability") return revealAlpha(zoomRatio, config.capability);
+  return revealAlpha(zoomRatio, config.element);
 }
 
 /** An edge is only as visible as its least-visible endpoint (both ends must be present for the relation to read). */

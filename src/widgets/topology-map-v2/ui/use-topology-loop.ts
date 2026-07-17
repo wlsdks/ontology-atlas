@@ -283,7 +283,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       const focusedNodeId = focusedSlugRef.current;
       const hoveredNodeId = focusedNodeId ? null : hoveredNodeIdRef.current;
 
-      const { camera, farT } = stepTopologyPhysics({
+      const { camera, farT, zoomRatio } = stepTopologyPhysics({
         world,
         camera: cameraRef.current,
         target: cameraTargetRef.current,
@@ -307,6 +307,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         world,
         camera,
         farT,
+        zoomRatio,
         now,
         viewportWidth: width,
         viewportHeight: height,
