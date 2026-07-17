@@ -6,6 +6,27 @@
 
 ---
 
+## 2026-07-03 — 지도 뷰 재구성: 단일 컨테이너 변환 엔진 (TopologyMapCanvas)
+
+소유자 결정("지도가 부드럽지도 않고 버벅거림 — 전체 재구성")의 실행.
+docs/TOPOLOGY-MAP-REBUILD.md 설계대로 per-frame DOM 동기화 구조를 제거했다.
+
+- **새 엔진** `src/widgets/topology-map-canvas/` — 카드/커넥터 좌표는 배치 시
+  1회만 기록, 팬/줌 = 컨테이너 하나의 CSS transform (카메라 수학은 순수 함수
+  + 단위 테스트 6건: 커서 앵커 줌·fit 코너 보장). 카드 시각 크기는 CSS 변수
+  역스케일로 줌 무관 px 고정, 커넥터는 non-scaling-stroke.
+- **FLIP 전환** — 펼침/접기 시 카드가 이전 위치에서 미끄러져 온다 (CSS
+  `translate` 속성, reduced-motion 존중). 등장 카드는 fade-rise.
+- **스왑 범위** — overview/focus/path/health (지도 계열 전체). 그래프 뷰와
+  local-graph ego 는 기존 Sigma 경로 유지. 클릭=선택·배지=펼치기·닫기=접기
+  계약과 `mode=`/`p=` 딥링크 전부 보존 (focus 딥링크 복원 실측).
+- **verify 이관** — `topologyMapEngine`/`topologyMapCanvasCardCount` 마커 신설,
+  검증기는 canvas 계약(카드 ≥8, 팬 임계 12px, fixed-surface 오버랩 0)으로
+  검증. Sigma/skeleton 전용 검사는 canvas 게이트. 드래그 클러스터 증명은
+  deploy 에서 opt-in (--topology-drag) 으로 강등.
+- 잔여(설계 문서 S6): 미니맵/선 범례 canvas 재공급, 관계 커넥터 클릭 →
+  관계 카드, 카드 드래그 재배치.
+
 ## 2026-07-03 — 지도 인터랙션 계약: 클릭=선택 · 배지=펼치기 · 닫기=접기
 
 소유자 피드백: "클릭하면 그냥 바뀌고 헷갈린다 — 바로 확장돼서 그런가?" —
