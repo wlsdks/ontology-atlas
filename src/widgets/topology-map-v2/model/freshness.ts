@@ -24,8 +24,6 @@
  * pattern / stroke-lerp amount / ring presence; the sine itself (needing
  * `now`/`phase`) stays in the render layer since it's a per-frame animation
  * value, not a static classification.
- *
- * STUB: the lead implements the body. See `freshness.test.ts`.
  */
 
 export interface FreshnessFlags {
@@ -56,11 +54,17 @@ export interface FreshnessVisual {
  * dim reads as "definitely not fresh" — see `freshness.test.ts`).
  */
 export function resolveFreshnessVisual(
-  _flags: FreshnessFlags,
-  _reducedMotion: boolean,
+  flags: FreshnessFlags,
+  reducedMotion: boolean,
 ): FreshnessVisual {
-  throw new Error(
-    "TODO(lead): implement resolveFreshnessVisual per docs/TOPOLOGY-V2-DESIGN.md §3.4 " +
-      "and the prototype's drawNode()/updateEmphasis() freshness branches — freshness.test.ts pins the contract.",
-  );
+  // stale wins over fresh when a node's frontmatter somehow marks both —
+  // "definitely not fresh" is the safer read of a contradictory node.
+  const isFresh = flags.fresh && !flags.stale;
+  return {
+    breatheEnabled: isFresh && !reducedMotion,
+    strokeIndigoLerp: isFresh ? 0.85 : 0,
+    dash: flags.stale ? [3, 3] : [],
+    hubRingEnabled: flags.hub,
+    useStaleFillStroke: flags.stale,
+  };
 }
