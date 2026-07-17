@@ -29,21 +29,21 @@ export type AltitudeTier = "circuit" | "transitioning" | "constellation";
  * Canonical smoothstep, `t*t*(3-2t)` after clamping `(v-edge0)/(edge1-edge0)`
  * to `[0,1]`. Ported from the prototype's `smoothstep()`.
  */
-export function smoothstep(_edge0: number, _edge1: number, _value: number): number {
-  throw new Error(
-    "TODO(lead): implement smoothstep per the prototype's smoothstep() — altitude.test.ts pins exact values.",
-  );
+export function smoothstep(edge0: number, edge1: number, value: number): number {
+  const t = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
 }
 
 /** `FAR_HIGH = overviewScale * farHighRatio`, `FAR_LOW = overviewScale * farLowRatio`. */
 export function computeAltitudeBand(
-  _overviewScale: number,
-  _farHighRatio: number,
-  _farLowRatio: number,
+  overviewScale: number,
+  farHighRatio: number,
+  farLowRatio: number,
 ): { farHigh: number; farLow: number } {
-  throw new Error(
-    "TODO(lead): implement computeAltitudeBand per docs/TOPOLOGY-V2-DESIGN.md §3.1 — altitude.test.ts pins exact values.",
-  );
+  return {
+    farHigh: overviewScale * farHighRatio,
+    farLow: overviewScale * farLowRatio,
+  };
 }
 
 /**
@@ -51,15 +51,13 @@ export function computeAltitudeBand(
  * value every P3 draw function (`render/*.ts`) reads to interpolate its
  * visual expression — never a discrete mode flag.
  */
-export function computeFarT(_cameraScale: number, _farLow: number, _farHigh: number): number {
-  throw new Error(
-    "TODO(lead): implement computeFarT per docs/TOPOLOGY-V2-DESIGN.md §3.1 — altitude.test.ts pins exact values.",
-  );
+export function computeFarT(cameraScale: number, farLow: number, farHigh: number): number {
+  return 1 - smoothstep(farLow, farHigh, cameraScale);
 }
 
 /** Altitude chip label — `circuit` / `transitioning` / `constellation`. */
-export function classifyAltitudeTier(_farT: number): AltitudeTier {
-  throw new Error(
-    "TODO(lead): implement classifyAltitudeTier per the prototype's renderAltitude() — altitude.test.ts pins exact boundaries.",
-  );
+export function classifyAltitudeTier(farT: number): AltitudeTier {
+  if (farT < 0.15) return "circuit";
+  if (farT > 0.85) return "constellation";
+  return "transitioning";
 }
