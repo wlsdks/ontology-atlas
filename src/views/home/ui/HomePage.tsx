@@ -196,6 +196,9 @@ import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
 import { TopologyNodePopover } from "./TopologyNodePopover";
 import { TopologyMapCanvas } from "@/widgets/topology-map-canvas";
+import { TopologyMapV2 } from "@/widgets/topology-map-v2";
+import { useTopologyMapV2Enabled } from "@/shared/lib/use-topology-map-v2-enabled";
+import { selectTopologyEngine } from "../lib/topology-engine-select";
 import {
   buildTopologyOntologyDrawerModel,
   classifyTopologyRelationProvenance,
@@ -227,6 +230,12 @@ export function HomePage() {
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   const localGraphRoot =
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
+  // topology-map-v2 (docs/TOPOLOGY-V2-DESIGN.md §4 P2) — useSyncExternalStore
+  // keeps the server snapshot `false` (matching the static-export prerender,
+  // which has no window/localStorage) so the first client render never
+  // mismatches, and the pre-v2 map/graph engines stay the default path
+  // unless a developer explicitly opts in via query param/localStorage.
+  const topologyMapV2Enabled = useTopologyMapV2Enabled();
   const [fitViewToken, setFitViewToken] = useState(0);
   const [sigmaVisibleCount, setSigmaVisibleCount] = useState<number | null>(null);
   const [topologyCardVisibility, setTopologyCardVisibility] = useState<{
@@ -761,6 +770,18 @@ export function HomePage() {
       }),
     };
   }, [analysisMode, localGraphRoot, ontologyInsight, pathTargetSlug, topologyRevealFocusSlug]);
+
+  // topology-map-v2 (docs/TOPOLOGY-V2-DESIGN.md §4 P2) — which render engine
+  // to mount below. `selectTopologyEngine` reduces to exactly today's
+  // map-canvas/sigma split when the flag is off (see
+  // topology-engine-select.test.ts's parity assertions).
+  const topologyEngineChoice = selectTopologyEngine({
+    v2Enabled: topologyMapV2Enabled,
+    analysisMode,
+    isAtLocalGraphRoot: localGraphRoot === null,
+    hasTopologySkeleton: topologySkeleton != null,
+    hasOntologyInsight: ontologyInsight != null,
+  });
 
   useEffect(() => {
     if (!localGraphRoot) return;
@@ -2321,6 +2342,7 @@ export function HomePage() {
                 ) : null}
                 {topologyRenderState.renderCanvas &&
                 !currentSigmaGraphStats &&
+                topologyEngineChoice !== "map-v2" &&
                 !(
                   analysisMode !== "graph" &&
                   localGraphRoot === null &&
@@ -2332,11 +2354,40 @@ export function HomePage() {
                     mode={analysisMode}
                   />
                 ) : null}
-                {topologyRenderState.renderCanvas &&
-                analysisMode !== "graph" &&
-                localGraphRoot === null &&
-                topologySkeleton &&
-                ontologyInsight ? (
+                {topologyRenderState.renderCanvas && topologyEngineChoice === "map-v2" ? (
+                  // topology-map-v2 (docs/TOPOLOGY-V2-DESIGN.md §4 P2) —
+                  // scaffold-only placeholder behind the `topology-map-v2`
+                  // flag. Unifies the map tab, graph tab, and project-detail
+                  // neighbor map into one engine (§1.2); this call site is
+                  // wired once for all three, per §5.3's unchanged adapter
+                  // contract. `nodes`/`edges` adapter mapping from
+                  // `ontologyInsight` is intentionally left empty here — that
+                  // derivation is P3+ work, not part of this scaffold.
+                  <TopologyMapV2
+                    nodes={[]}
+                    edges={[]}
+                    focus={{
+                      selectedSlug: canvasSelectedSlug,
+                      depthLimit: sigmaControls.depthLimit,
+                      searchQuery: sigmaControls.searchQuery,
+                      activeCategory,
+                      hubsOnly: sigmaControls.hubsOnly,
+                    }}
+                    overlays={sigmaControls.overlays}
+                    changedSlugs={changedSlugs}
+                    livePhysics={analysisMode === "graph"}
+                    fitViewToken={combinedFitToken}
+                    relayoutToken={topologyRelayoutToken}
+                    onSelect={(slug) => handleSelect(slug)}
+                    onOpen={handleExpandRequest}
+                    onPaneClick={handleClose}
+                    onVisibleCountChange={setSigmaVisibleCount}
+                    minimal={localGraphRoot !== null}
+                  />
+                ) : topologyRenderState.renderCanvas &&
+                  topologyEngineChoice === "map-canvas" &&
+                  topologySkeleton &&
+                  ontologyInsight ? (
                   // 지도(Relief) 재구성 엔진 — 단일 컨테이너 변환
                   // (docs/TOPOLOGY-MAP-REBUILD.md). 그래프 뷰와 local-graph
                   // ego 는 기존 Sigma 경로 유지.

@@ -868,6 +868,92 @@
        프로퍼티를 떨구는 동작이 있어 여기 선언하지 않는다. */
   }
 
+  /*
+   * topology-map-v2 (docs/TOPOLOGY-V2-DESIGN.md §2) — B2+ "Circuit ×
+   * Constellation" 프로토타입(docs/prototypes/topology-b2plus.html)의 값을
+   * 1:1 추출한 신규 토큰 패밀리. 기존 657개 --topology-* 토큰과 의도적으로
+   * 분리(접두어 --topology-v2-) — feature flag `topology-map-v2` 뒤에서만
+   * 소비되고, P6 에서 구엔진을 삭제할 때 `--topology-v2-` 만 grep 하면 신구
+   * 교체 범위가 명확해진다. Canvas 2D 는 CSS 변수를 직접 못 읽으므로
+   * `src/widgets/topology-map-v2/tokens/read-topology-v2-tokens.ts` 가
+   * `getComputedStyle` 로 1회 해석해 캐싱한다 — 값의 진실원은 이 블록 하나.
+   *
+   * 라이트 모드 값은 의도적으로 아직 없다 — design doc §2.2 가 "P3 구현 시
+   * Design Guardian 리뷰로 확정" 이라 명시(프로토타입은 다크 전용). 그 전까지
+   * 라이트 테마에서도 이 다크 값 그대로 상속된다.
+   */
+  :root {
+    /* 2.1 노드 표면 (kind별 fill/stroke tier) */
+    --topology-v2-node-fill-project: #1c1c22;
+    --topology-v2-node-fill-domain: #191920;
+    --topology-v2-node-fill-capability: #17171d;
+    --topology-v2-node-fill-element: #15151a;
+    --topology-v2-node-stroke-project: #57575f;
+    --topology-v2-node-stroke-domain: #48484f;
+    --topology-v2-node-stroke-capability: #3c3c44;
+    --topology-v2-node-stroke-element: #34343b;
+    --topology-v2-node-fill-dim: #1a1a1e;
+    --topology-v2-node-stroke-dim: #2b2b2f;
+    --topology-v2-node-fill-stale: #141418;
+    --topology-v2-node-stroke-stale: #454549;
+    --topology-v2-node-hole-fill: #0c0c10;
+    --topology-v2-indigo: var(--color-indigo-brand);
+    --topology-v2-indigo-bright: #8890e0;
+    --topology-v2-amber-hub: #d4b478;
+    --topology-v2-numeral-shadow: #08080a;
+    --topology-v2-numeral-face: #8c8c94;
+
+    /* 2.2 엣지 · 라벨 · 배경 */
+    --topology-v2-edge-contains: #28282e;
+    --topology-v2-edge-depends: #39394a;
+    --topology-v2-edge-dim: #1e1e22;
+    --topology-v2-hull-stroke: #3a3a42;
+    --topology-v2-label-domain: #b8b8c1;
+    --topology-v2-label-capability: #84848c;
+    --topology-v2-label-element: #57575f;
+    --topology-v2-canvas-bg-near: #0a0a0d;
+    --topology-v2-canvas-bg-far: #050507;
+    --topology-v2-grid-minor: #0e0e13;
+    --topology-v2-grid-major: #121218;
+    --topology-v2-vignette-base-alpha: 0.32;
+    --topology-v2-vignette-far-alpha: 0.18;
+
+    /* 2.3 지오메트리 (world unit — canvas 2D 가 getComputedStyle 로 소비) */
+    --topology-v2-radius-project: 25;
+    --topology-v2-radius-domain: 17;
+    --topology-v2-radius-capability: 11;
+    --topology-v2-radius-element: 7;
+    --topology-v2-layout-ring-domain: 250;
+    --topology-v2-layout-ring-capability: 145;
+    --topology-v2-layout-ring-element: 90;
+    --topology-v2-edge-bow-contains: 70;
+    --topology-v2-edge-bow-depends: 92;
+    --topology-v2-edge-blend-contains: 0.46;
+    --topology-v2-edge-blend-depends: 0.62;
+    --topology-v2-star-count: 4;
+    --topology-v2-dust-area-per-point: 5200;
+
+    /* 2.4 모션 · 카메라 */
+    --topology-v2-camera-spring-angfreq: 2.941;
+    --topology-v2-camera-damping-default: 1.0;
+    --topology-v2-camera-damping-flick: 0.82;
+    --topology-v2-camera-momentum-decay: 0.998;
+    --topology-v2-camera-scale-min: 0.24;
+    --topology-v2-camera-scale-max: 2.6;
+    --topology-v2-altitude-far-high-ratio: 0.92;
+    --topology-v2-altitude-far-low-ratio: 0.62;
+    --topology-v2-focus-fit-max-scale: 1.9;
+    --topology-v2-focus-bbox-margin: 70;
+    --topology-v2-hysteresis-px: 7;
+    --topology-v2-emphasis-rise-tau: 0.09;
+    --topology-v2-emphasis-decay-tau: 0.15;
+    --topology-v2-ripple-stagger-ms: 55;
+    --topology-v2-breathe-amplitude: 0.04;
+    --topology-v2-breathe-freq-rad: 1.15;
+    --topology-v2-pulse-duration-ms: 420;
+    --topology-v2-tip-fade-ms: 120;
+  }
+
   html {
     background-color: var(--color-canvas);
     color: var(--color-text-primary);
