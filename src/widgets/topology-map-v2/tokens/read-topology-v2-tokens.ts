@@ -6,7 +6,7 @@
  * `skeletonInkRef` 해석-캐시 패턴 재사용). 값의 진실원은 여전히
  * `app/globals.css` 하나 — 이 파일은 읽기 전용 어댑터다.
  *
- * 토큰 drift 가드: §2 표에 있는 62개 토큰 중 하나라도 빈 문자열로 해석되면
+ * 토큰 drift 가드: §2 표에 있는 64개 토큰 중 하나라도 빈 문자열로 해석되면
  * (= `app/globals.css` 에서 삭제/오타) 조용히 기본값으로 폴백하지 않고
  * `TopologyV2TokenError` 를 던진다 — 누락을 "감"으로 흡수하지 않기 위해.
  */
@@ -31,6 +31,8 @@ export interface TopologyV2Tokens {
   amberHub: string;
   numeralShadow: string;
   numeralFace: string;
+  nodeSheenTint: string;
+  nodeSheenBlend: number;
 
   // 2.2 엣지 · 라벨 · 배경
   edgeContains: string;
@@ -111,6 +113,8 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "amberHub", cssVar: "--topology-v2-amber-hub", kind: "color" },
   { key: "numeralShadow", cssVar: "--topology-v2-numeral-shadow", kind: "color" },
   { key: "numeralFace", cssVar: "--topology-v2-numeral-face", kind: "color" },
+  { key: "nodeSheenTint", cssVar: "--topology-v2-node-sheen-tint", kind: "color" },
+  { key: "nodeSheenBlend", cssVar: "--topology-v2-node-sheen-blend", kind: "number" },
 
   { key: "edgeContains", cssVar: "--topology-v2-edge-contains", kind: "color" },
   { key: "edgeDepends", cssVar: "--topology-v2-edge-depends", kind: "color" },
@@ -172,7 +176,7 @@ export class TopologyV2TokenError extends Error {
 }
 
 /**
- * `getComputedStyle` 결과(또는 테스트용 대체 함수)에서 62개 토큰 전부를
+ * `getComputedStyle` 결과(또는 테스트용 대체 함수)에서 64개 토큰 전부를
  * 해석한다. 하나라도 빈 문자열이면 `TopologyV2TokenError` 를 던진다 — 이게
  * §2.3 "누락 시 명시적 실패" 계약.
  */

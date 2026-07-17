@@ -29,6 +29,8 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-amber-hub": "#d4b478",
   "--topology-v2-numeral-shadow": "#08080a",
   "--topology-v2-numeral-face": "#8c8c94",
+  "--topology-v2-node-sheen-tint": "#232329",
+  "--topology-v2-node-sheen-blend": "0.6",
 
   "--topology-v2-edge-contains": "#28282e",
   "--topology-v2-edge-depends": "#39394a",
@@ -84,11 +86,13 @@ function fixtureReader(overrides: Record<string, string> = {}) {
 }
 
 describe("resolveTopologyV2Tokens", () => {
-  it("resolves all 62 §2 tokens to the exact prototype-sourced values", () => {
+  it("resolves all 64 §2 tokens to the exact prototype-sourced values", () => {
     const tokens = resolveTopologyV2Tokens(fixtureReader());
 
     expect(tokens.nodeFillProject).toBe("#1c1c22");
     expect(tokens.indigo).toBe("#5e6ad2");
+    expect(tokens.nodeSheenTint).toBe("#232329");
+    expect(tokens.nodeSheenBlend).toBeCloseTo(0.6, 3);
     expect(tokens.radiusProject).toBe(25);
     expect(tokens.radiusElement).toBe(7);
     expect(tokens.cameraSpringAngFreq).toBeCloseTo(2.941, 3);

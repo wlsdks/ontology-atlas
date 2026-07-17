@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { hexPoints, interpolateCornerRadius, squarePoints } from "./node-shapes";
+import { domainPinTicks, hexPoints, interpolateCornerRadius, squarePoints } from "./node-shapes";
 
 describe("hexPoints", () => {
   it("returns exactly 6 points", () => {
@@ -39,6 +39,36 @@ describe("squarePoints", () => {
     const ys = points.map((p) => p.y).sort((a, b) => a - b);
     expect(xs).toEqual([-10, -10, 10, 10]);
     expect(ys).toEqual([-10, -10, 10, 10]);
+  });
+});
+
+describe("domainPinTicks", () => {
+  it("returns exactly 4 ticks — two above, two below the chip", () => {
+    const ticks = domainPinTicks(0, 0, 20);
+    expect(ticks).toHaveLength(4);
+    const above = ticks.filter((t) => t.y1 < 0);
+    const below = ticks.filter((t) => t.y1 > 0);
+    expect(above).toHaveLength(2);
+    expect(below).toHaveLength(2);
+  });
+
+  it("every tick is vertical (x1 === x2) and sits at the ±0.45·s offsets", () => {
+    const s = 20;
+    const ticks = domainPinTicks(100, 50, s);
+    for (const t of ticks) expect(t.x1).toBeCloseTo(t.x2, 9);
+    const xs = [...new Set(ticks.map((t) => Math.round((t.x1 - 100) * 100) / 100))].sort((a, b) => a - b);
+    expect(xs).toEqual([-0.45 * s, 0.45 * s]);
+  });
+
+  it("each leg is s·0.34 long and starts exactly at the square edge (±s)", () => {
+    const s = 20;
+    const cy = 50;
+    const tick = s * 0.34;
+    const ticks = domainPinTicks(0, cy, s);
+    const top = ticks.find((t) => t.y1 === cy - s);
+    const bottom = ticks.find((t) => t.y1 === cy + s);
+    expect(top?.y2).toBeCloseTo(cy - s - tick, 9);
+    expect(bottom?.y2).toBeCloseTo(cy + s + tick, 9);
   });
 });
 

@@ -197,6 +197,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const screenRadius = effRadius * camera.scale.value;
 
     ctx.globalAlpha = tierAlpha;
+    // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)
+    // so `render/node-shapes.ts` stays token-free and pure.
+    const sheenTop = lerpColorHex(visual.fill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
+    // Engraved numeral: project/domain only, and only when there's a count to
+    // show (prototype `if (n.count && (project||domain) ...)`).
+    const showCount = (node.kind === "project" || node.kind === "domain") && node.count > 0;
     nodeShapesDraw(
       ctx,
       {
@@ -211,7 +217,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         lineWidth: visual.lineWidth,
         dash: visual.dash,
         hub: node.isHub,
-        countLabel: null, // adapter contract has no descendant-count signal yet (follow-up)
+        sheenTop,
+        countLabel: showCount ? String(node.count) : null,
       },
       {
         amberHub: tokens.amberHub,

@@ -918,6 +918,11 @@
     --topology-v2-amber-hub: #d4b478;
     --topology-v2-numeral-shadow: #08080a;
     --topology-v2-numeral-face: #8c8c94;
+    /* 노드 금속 광택(sheen): 세로 그라디언트 상단 틴트 + 혼합비.
+       drawNode 가 lerp(fill, tint, blend) 을 상단 stop 으로 써서 machined
+       금속 표면을 만든다. far-field(farT>=0.98)/소형(r<=3) 에서는 dissolve. */
+    --topology-v2-node-sheen-tint: #232329;
+    --topology-v2-node-sheen-blend: 0.6;
 
     /* 2.2 엣지 · 라벨 · 배경 */
     --topology-v2-edge-contains: #28282e;

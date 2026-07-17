@@ -71,6 +71,13 @@ export interface NodeShapeDrawState {
   lineWidth: number;
   dash: readonly number[];
   hub: boolean;
+  /**
+   * Top stop of the vertical metallic-sheen gradient (prototype `drawNode`:
+   * `lerpColor(fill, "#232329", 0.6)`). Resolved by the caller from the
+   * `--topology-v2-node-sheen-*` tokens so this pure module stays token-free;
+   * the bottom stop is always `fill`.
+   */
+  sheenTop: string;
   /** Engraved node-count numeral, or null to skip (project/domain only, per prototype). */
   countLabel: string | null;
 }
@@ -84,6 +91,63 @@ export interface NodeShapeTokens {
 
 /** Full convergence to a plain circle above this farT — avoids float-precision polygon/circle seams (prototype: `farT > 0.985`). */
 const FULL_CIRCLE_FAR_T = 0.985;
+
+/** Sheen dissolves out toward far field — above this farT (or below `SHEEN_MIN_RADIUS`) the body fills flat so constellation points read luminous, not machined (prototype: `r > 3 && farT < 0.98`). */
+const SHEEN_MAX_FAR_T = 0.98;
+const SHEEN_MIN_RADIUS = 3;
+
+/** Domain chip-leg pin ticks — geometry ratios ported from the prototype's `[-0.45,0.45]` offsets + `tick = s*0.34` leg length, gated `s > 6 && farT < 0.9`. */
+const DOMAIN_PIN_MIN_HALF_EXTENT = 6;
+const DOMAIN_PIN_MAX_FAR_T = 0.9;
+const DOMAIN_PIN_TICK_RATIO = 0.34;
+const DOMAIN_PIN_OFFSET_FACTORS = [-0.45, 0.45] as const;
+
+/** Half-extent factor of the domain square relative to its draw radius (prototype `s = r * 0.86`). */
+const DOMAIN_HALF_EXTENT_RATIO = 0.86;
+
+export interface PinTick {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+/**
+ * The four chip-leg pin ticks of a domain square — two above, two below, one
+ * pair per `[-0.45, 0.45]` x-offset. Pure screen-space geometry (ported from
+ * the prototype's domain branch), unit-tested in `node-shapes.test.ts`.
+ */
+export function domainPinTicks(cx: number, cy: number, s: number): PinTick[] {
+  const tick = s * DOMAIN_PIN_TICK_RATIO;
+  const ticks: PinTick[] = [];
+  for (const f of DOMAIN_PIN_OFFSET_FACTORS) {
+    const x = cx + s * f;
+    ticks.push({ x1: x, y1: cy - s, x2: x, y2: cy - s - tick });
+    ticks.push({ x1: x, y1: cy + s, x2: x, y2: cy + s + tick });
+  }
+  return ticks;
+}
+
+/**
+ * The body fill for one node: a vertical `sheenTop → fill` gradient when the
+ * node is big + near enough (prototype `r > 3 && farT < 0.98`), otherwise the
+ * flat `fill`. Ported from `drawNode`'s sheen block (§13).
+ */
+function resolveBodyFill(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  farT: number,
+  fill: string,
+  sheenTop: string,
+): string | CanvasGradient {
+  if (r <= SHEEN_MIN_RADIUS || farT >= SHEEN_MAX_FAR_T) return fill;
+  const grad = ctx.createLinearGradient(x, y - r, x, y + r);
+  grad.addColorStop(0, sheenTop);
+  grad.addColorStop(1, fill);
+  return grad;
+}
 
 /** Ported from the prototype's `roundedPolygonPath()` — traces a closed polygon path with each corner rounded to `min(rad, adjacentEdgeLen*0.45)`. */
 function roundedPolygonPath(ctx: CanvasRenderingContext2D, points: readonly Point[], rad: number): void {
@@ -135,7 +199,7 @@ function drawEngraved(
 /** This kind's polygon points at draw radius `r` — `null` for capability, which is already a plain circle. */
 function bodyPoints(kind: NodeShapeDrawState["kind"], x: number, y: number, r: number): readonly Point[] | null {
   if (kind === "project") return hexPoints(x, y, r);
-  if (kind === "domain") return squarePoints(x, y, r * 0.86);
+  if (kind === "domain") return squarePoints(x, y, r * DOMAIN_HALF_EXTENT_RATIO);
   if (kind === "element") return squarePoints(x, y, r * 0.92);
   return null;
 }
@@ -155,7 +219,7 @@ function minCornerRadius(kind: NodeShapeDrawState["kind"], r: number): number {
  * shape-by-kind) or the label (`render/labels.ts`).
  */
 export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, tokens: NodeShapeTokens): void {
-  const { kind, screenX: x, screenY: y, screenRadius: r, farT, egoState, fill, stroke, lineWidth, dash, hub, countLabel } = state;
+  const { kind, screenX: x, screenY: y, screenRadius: r, farT, egoState, fill, stroke, lineWidth, dash, hub, sheenTop, countLabel } = state;
 
   ctx.setLineDash([...dash]);
   const points = bodyPoints(kind, x, y, r);
@@ -165,12 +229,30 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   } else {
     roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, r), r, farT));
   }
-  ctx.fillStyle = fill;
+  ctx.fillStyle = resolveBodyFill(ctx, x, y, r, farT, fill, sheenTop);
   ctx.fill();
   ctx.strokeStyle = stroke;
   ctx.lineWidth = lineWidth;
   ctx.stroke();
   ctx.setLineDash([]);
+
+  // Domain chip-leg pin ticks — circuit-only detail, fades out with altitude
+  // (prototype: `s > 6 && farT < 0.9`, alpha `1 - smoothstep(0.55,0.9,farT)`).
+  if (kind === "domain" && egoState !== "dim") {
+    const s = r * DOMAIN_HALF_EXTENT_RATIO;
+    if (s > DOMAIN_PIN_MIN_HALF_EXTENT && farT < DOMAIN_PIN_MAX_FAR_T) {
+      ctx.globalAlpha = 1 - smoothstep(0.55, 0.9, farT);
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1;
+      for (const t of domainPinTicks(x, y, s)) {
+        ctx.beginPath();
+        ctx.moveTo(t.x1, t.y1);
+        ctx.lineTo(t.x2, t.y2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
 
   if (kind === "element") {
     const half = r * 0.92;
