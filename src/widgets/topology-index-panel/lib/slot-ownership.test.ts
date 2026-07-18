@@ -10,8 +10,12 @@ describe("resolveLeftSlotOwner", () => {
     expect(resolveLeftSlotOwner({ analysisMode: "focus" })).toBe("index");
   });
 
-  it("gives the analysis rail the slot for path/health/graph", () => {
-    for (const mode of ["graph", "path", "health"] as const) {
+  it("gives INDEX the slot in path mode too (분석 패널 완전 소멸 2단계 §b — path moved to a top-center chip, not the left slot)", () => {
+    expect(resolveLeftSlotOwner({ analysisMode: "path" })).toBe("index");
+  });
+
+  it("gives the analysis rail the slot for health/graph", () => {
+    for (const mode of ["graph", "health"] as const) {
       expect(resolveLeftSlotOwner({ analysisMode: mode })).toBe("analysis-rail");
     }
   });

@@ -92,8 +92,10 @@ import {
   buildTopologyAnalysisSummary,
   buildTopologyHealthActionTarget,
   classifyTopologyRelationQuality,
+  computeTopologyPathHopCount,
   formatOntologyReanalysisAgentCommand,
   formatTopologyOverviewBrief,
+  formatTopologyPathAgentPacket,
 } from "../lib/topology-analysis";
 import { filterOntologyConnectedOrphans } from "../lib/topology-health";
 import {
@@ -137,6 +139,7 @@ import {
   normalizeKindLabelKey,
 } from "../lib/topology-node-significance";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
+import { TopologyPathChip } from "./TopologyPathChip";
 import { TopologyRelationLegend } from "./TopologyRelationLegend";
 import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
@@ -1157,6 +1160,76 @@ export function HomePage() {
       }),
     [pathTargetSlug, projectBySlug, ontologyInsight?.nodes],
   );
+  // 경로 칩(TopologyPathChip)의 "N홉" — 분석 패널 완전 소멸 2단계 §b. 예전
+  // path 패널엔 실제 hop 수 표시가 없었다(후보 가시성 문구만 있었다) — 칩의
+  // "성립" 상태를 의미 있게 만들려면 실제 최단 거리가 필요해 새로 계산한다.
+  const pathHopCount = useMemo(() => {
+    if (!pathSourceSlug || !pathTargetSlug || !ontologyInsight) return null;
+    return computeTopologyPathHopCount(
+      pathSourceSlug,
+      pathTargetSlug,
+      ontologyInsight.nodes,
+      ontologyInsight.edges,
+    );
+  }, [pathSourceSlug, pathTargetSlug, ontologyInsight]);
+  // 경로 칩의 상단 중앙 상태 라인 — "경로: X → 대상 선택" / "X → Y · N홉" /
+  // 경로 없음. 예전 path 패널이 좌측 슬롯에서 하던 걸 상단 칩 1개로 압축
+  // (분석 패널 완전 소멸 2단계 §b).
+  const pathChipLabel = useMemo(() => {
+    if (!pathSourceSlug || !pathSourceTitle) return null;
+    if (!pathTargetSlug || !pathTargetTitle) {
+      return t("analysis.pathChipUnresolved", { source: pathSourceTitle });
+    }
+    if (pathHopCount === null) {
+      return t("analysis.pathChipNoPath", {
+        source: pathSourceTitle,
+        target: pathTargetTitle,
+      });
+    }
+    return t("analysis.pathChipResolved", {
+      source: pathSourceTitle,
+      target: pathTargetTitle,
+      hops: pathHopCount,
+    });
+  }, [pathSourceSlug, pathSourceTitle, pathTargetSlug, pathTargetTitle, pathHopCount, t]);
+  const [pathPacketCopied, setPathPacketCopied] = useState(false);
+  const copyPathPacket = useCallback(async () => {
+    if (!pathSourceSlug || !pathTargetSlug || !pathSourceTitle || !pathTargetTitle) return;
+    const ok = await copyText(
+      formatTopologyPathAgentPacket({
+        sourceSlug: pathSourceSlug,
+        targetSlug: pathTargetSlug,
+        sourceTitle: pathSourceTitle,
+        targetTitle: pathTargetTitle,
+        hopCount: pathHopCount,
+        labels: {
+          title: t("analysis.pathChipPacketTitle"),
+          source: t("analysis.pathChipPacketSource"),
+          target: t("analysis.pathChipPacketTarget"),
+          hops: t("analysis.pathChipPacketHops"),
+          hopsUnknown: t("analysis.pathChipPacketHopsUnknown"),
+          sourceOntologyUrl: t("analysis.pathChipPacketSourceOntologyUrl"),
+          targetOntologyUrl: t("analysis.pathChipPacketTargetOntologyUrl"),
+          sourceBuilderUrl: t("analysis.pathChipPacketSourceBuilderUrl"),
+          targetBuilderUrl: t("analysis.pathChipPacketTargetBuilderUrl"),
+          mcpCheck: t("analysis.pathChipPacketMcpCheck"),
+        },
+      }),
+    );
+    if (!ok) return;
+    setPathPacketCopied(true);
+    window.setTimeout(() => setPathPacketCopied(false), 1600);
+  }, [pathSourceSlug, pathTargetSlug, pathSourceTitle, pathTargetTitle, pathHopCount, t]);
+  // 칩의 ✕ — 경로 상태를 완전히 지우고 지도로 복귀. 예전엔 path 모드가 좌측
+  // 슬롯을 차지해 "지도" 탭을 다시 눌러야 나갈 수 있었다.
+  const handleClearPath = useCallback(() => {
+    setRouteState((current) => ({
+      ...current,
+      analysisMode: "overview",
+      pathSourceSlug: null,
+      pathTargetSlug: null,
+    }));
+  }, [setRouteState]);
   const topologyHealthSummary = useMemo(() => {
     const now = new Date(mountNowMs);
     const stale = detectStaleProjects(renderProjects, {
@@ -1246,13 +1319,6 @@ export function HomePage() {
     topologyControls.searchQuery.trim().length > 0 ||
     topologyControls.depthLimit !== null ||
     topologyControls.hubsOnly;
-  const pathCandidateVisibility =
-    analysisMode === "path"
-      ? {
-          visible: topologyVisibleCount ?? topologyTotalNodes,
-          total: topologyVisibleCount ?? topologyTotalNodes,
-        }
-      : null;
   const topologyOverlayState = resolveTopologyOverlayState({
     dataReady: projectsQuery.loaded,
     totalNodes: currentTopologyGraphStats?.nodes ?? visibleTopologyNodeCount,
@@ -1723,6 +1789,23 @@ export function HomePage() {
                       setTopologyRelayoutToken((current) => current + 1);
                       toast.show(t('controls.relayoutToast'), "info");
                     }}
+                    pathChip={
+                      analysisMode === "path" && pathChipLabel ? (
+                        <TopologyPathChip
+                          label={pathChipLabel}
+                          resolved={Boolean(pathSourceSlug && pathTargetSlug)}
+                          copyPacketLabel={t("analysis.pathChipCopyPacket")}
+                          copyPacketCopied={pathPacketCopied}
+                          copyPacketAriaLabel={t("analysis.pathChipCopyPacketAriaLabel")}
+                          copyPacketCopiedAriaLabel={t(
+                            "analysis.pathChipCopyPacketCopiedAriaLabel",
+                          )}
+                          onCopyPacket={copyPathPacket}
+                          clearAriaLabel={t("analysis.pathChipClear")}
+                          onClear={handleClearPath}
+                        />
+                      ) : undefined
+                    }
                   />
                   {selectedNodeOwnsRightRail ? null : (
                     <div
@@ -2025,11 +2108,6 @@ export function HomePage() {
                 mode={analysisMode}
                 summary={analysisSummary}
                 healthAction={topologyHealthSummary.actionTarget}
-                pathSourceSlug={pathSourceSlug}
-                pathTargetSlug={pathTargetSlug}
-                pathSourceTitle={pathSourceTitle}
-                pathTargetTitle={pathTargetTitle}
-                pathCandidateVisibility={pathCandidateVisibility}
                 rightPanelReserved={drawerOpen}
                 leftPanelExpanded={false}
                 createPanelReserved={createNodeOpen}
@@ -2040,7 +2118,6 @@ export function HomePage() {
                 overview: t("analysis.overview"),
                 graph: t("analysis.graph"),
                 graphPrompt: t("analysis.graphPrompt"),
-                path: t("analysis.path"),
                 health: t("analysis.health"),
                 metricNodes: t("analysis.metricNodes"),
                 metricRelations: t("analysis.metricRelations"),
@@ -2122,130 +2199,6 @@ export function HomePage() {
                 ),
                 healthEvidenceNone: t("analysis.healthEvidenceNone"),
                 healthEvidenceUrl: t("analysis.healthEvidenceUrl"),
-                pathPrompt: t("analysis.pathPrompt"),
-                pathSelected: t("analysis.pathSelected", {
-                  title: pathSourceTitle ?? analysisSelectedTitle ?? "",
-                }),
-                pathResolved: t("analysis.pathResolved", {
-                  source: pathSourceTitle ?? "",
-                  target: pathTargetTitle ?? "",
-                }),
-                pathCandidateVisibility: t.raw("analysis.pathCandidateVisibility") as string,
-                pathHandoffLabel: t("analysis.pathHandoffLabel"),
-                pathHandoffMcpAction: t("analysis.pathHandoffMcpAction"),
-                pathHandoffCliFallback: t("analysis.pathHandoffCliFallback"),
-                pathEvidenceCopy: t("analysis.pathEvidenceCopy"),
-                pathEvidenceCopied: t("analysis.pathEvidenceCopied"),
-                pathEvidenceCopyAriaLabel: t(
-                  "analysis.pathEvidenceCopyAriaLabel",
-                ),
-                pathEvidenceCopiedAriaLabel: t(
-                  "analysis.pathEvidenceCopiedAriaLabel",
-                ),
-                pathMcpCopy: t("analysis.pathMcpCopy"),
-                pathMcpCopied: t("analysis.pathMcpCopied"),
-                pathMcpCopyAriaLabel: t("analysis.pathMcpCopyAriaLabel"),
-                pathMcpCopiedAriaLabel: t("analysis.pathMcpCopiedAriaLabel"),
-                pathRelationPreflightCopy: t(
-                  "analysis.pathRelationPreflightCopy",
-                ),
-                pathRelationPreflightCopied: t(
-                  "analysis.pathRelationPreflightCopied",
-                ),
-                pathRelationPreflightCopyAriaLabel: t(
-                  "analysis.pathRelationPreflightCopyAriaLabel",
-                ),
-                pathRelationPreflightCopiedAriaLabel: t(
-                  "analysis.pathRelationPreflightCopiedAriaLabel",
-                ),
-                pathExplainRelationCopy: t("analysis.pathExplainRelationCopy"),
-                pathExplainRelationCopied: t(
-                  "analysis.pathExplainRelationCopied",
-                ),
-                pathExplainRelationCopyAriaLabel: t(
-                  "analysis.pathExplainRelationCopyAriaLabel",
-                ),
-                pathExplainRelationCopiedAriaLabel: t(
-                  "analysis.pathExplainRelationCopiedAriaLabel",
-                ),
-                pathAllPathsPlanCopy: t("analysis.pathAllPathsPlanCopy"),
-                pathAllPathsPlanCopied: t("analysis.pathAllPathsPlanCopied"),
-                pathAllPathsPlanCopyAriaLabel: t(
-                  "analysis.pathAllPathsPlanCopyAriaLabel",
-                ),
-                pathAllPathsPlanCopiedAriaLabel: t(
-                  "analysis.pathAllPathsPlanCopiedAriaLabel",
-                ),
-                pathAllPathsCopy: t("analysis.pathAllPathsCopy"),
-                pathAllPathsCopied: t("analysis.pathAllPathsCopied"),
-                pathAllPathsCopyAriaLabel: t(
-                  "analysis.pathAllPathsCopyAriaLabel",
-                ),
-                pathAllPathsCopiedAriaLabel: t(
-                  "analysis.pathAllPathsCopiedAriaLabel",
-                ),
-                pathHandoffSummary: t("analysis.pathHandoffSummary"),
-                pathCopyTools: t("analysis.pathCopyTools"),
-                pathProofOrderTitle: t("analysis.pathProofOrderTitle"),
-                pathProofOrderDesc: t("analysis.pathProofOrderDesc"),
-                pathProofChecklist: t("analysis.pathProofChecklist"),
-                pathProofVisiblePath: t("analysis.pathProofVisiblePath"),
-                pathProofRelationPreflight: t(
-                  "analysis.pathProofRelationPreflight",
-                ),
-                pathProofExplainRelation: t(
-                  "analysis.pathProofExplainRelation",
-                ),
-                pathProofBoundedTraversal: t(
-                  "analysis.pathProofBoundedTraversal",
-                ),
-                pathProofPostWriteSync: t("analysis.pathProofPostWriteSync"),
-                pathProofStatusReady: t("analysis.pathProofStatusReady"),
-                pathProofStatusRequired: t("analysis.pathProofStatusRequired"),
-                pathProofStatusAfterWrite: t("analysis.pathProofStatusAfterWrite"),
-                pathEvidenceTitle: t("analysis.pathEvidenceTitle"),
-                pathEvidenceSource: t("analysis.pathEvidenceSource"),
-                pathEvidenceTarget: t("analysis.pathEvidenceTarget"),
-                pathEvidenceUrl: t("analysis.pathEvidenceUrl"),
-                pathEvidenceSourceOntologyUrl: t(
-                  "analysis.pathEvidenceSourceOntologyUrl",
-                ),
-                pathEvidenceTargetOntologyUrl: t(
-                  "analysis.pathEvidenceTargetOntologyUrl",
-                ),
-                pathEvidenceSourceBuilderUrl: t(
-                  "analysis.pathEvidenceSourceBuilderUrl",
-                ),
-                pathEvidenceTargetBuilderUrl: t(
-                  "analysis.pathEvidenceTargetBuilderUrl",
-                ),
-                pathEvidenceCliCheck: t("analysis.pathEvidenceCliCheck"),
-                pathEvidenceMcpCheck: t("analysis.pathEvidenceMcpCheck"),
-                pathEvidenceRelationPreflightReason: t(
-                  "analysis.pathEvidenceRelationPreflightReason",
-                ),
-                pathEvidenceRelationPreflightMcpCheck: t(
-                  "analysis.pathEvidenceRelationPreflightMcpCheck",
-                ),
-                pathEvidenceExplainRelationMcpCheck: t(
-                  "analysis.pathEvidenceExplainRelationMcpCheck",
-                ),
-                pathEvidenceAllPathsPlanMcpCheck: t(
-                  "analysis.pathEvidenceAllPathsPlanMcpCheck",
-                ),
-                pathEvidenceAllPathsMcpCheck: t(
-                  "analysis.pathEvidenceAllPathsMcpCheck",
-                ),
-                pathEvidenceAllPathsCopyInstruction: t(
-                  "analysis.pathEvidenceAllPathsCopyInstruction",
-                ),
-                pathEvidencePostWriteSyncGate: t(
-                  "analysis.pathEvidencePostWriteSyncGate",
-                ),
-                pathSourceOntology: t("analysis.pathSourceOntology"),
-                pathTargetOntology: t("analysis.pathTargetOntology"),
-                pathSourceBuilder: t("analysis.pathSourceBuilder"),
-                pathTargetBuilder: t("analysis.pathTargetBuilder"),
                 healthPrompt: t("analysis.healthPrompt", {
                   count: analysisSummary.primaryMetric,
                 }),

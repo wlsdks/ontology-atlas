@@ -14,12 +14,10 @@ export type LeftSlotAnalysisMode = "overview" | "graph" | "focus" | "path" | "he
  *
  * INDEX and the analysis rail (`TopologyAnalysisBar`, née "reader lens
  * panel") are exclusive occupants of the topology's left slot. INDEX is the
- * default; the analysis rail only reclaims the slot for path/health — those
- * are the only remaining modes with rail-specific controls INDEX doesn't
- * have (R+ 분석 패널 완전 소멸 2단계: path moves to a top-center chip and
- * health moves to `/ontology/insights` in the SAME round this file changed,
- * so by the time that lands neither reclaims the slot either — see that
- * round's PR for the follow-up).
+ * default; the analysis rail only reclaims the slot for health — the only
+ * remaining mode with rail-specific controls INDEX doesn't have (분석 패널
+ * 완전 소멸 2단계 §c 가 health 마저 `/ontology/insights` 관계 탭 수리 큐로
+ * 옮기면 이 예외도 사라진다).
  *
  * overview mode never reclaims the slot any more (W3 분석 보기 은퇴 —
  * `TopologyAnalysisBar`'s overview-mode content retired to the relation
@@ -34,6 +32,12 @@ export type LeftSlotAnalysisMode = "overview" | "graph" | "focus" | "path" | "he
  * already cover, so it was removed rather than migrated. INDEX keeps the
  * slot through node selection/expand now — no more auto-collapse on focus.
  *
+ * path mode ALSO never reclaims the slot any more (분석 패널 완전 소멸
+ * 2단계 §b) — the left-slot path panel (route card + MCP/CLI chips + proof
+ * disclosure) moved to a top-center "chrome grammar" status chip
+ * (`TopologyPathChip`, mounted next to `SearchHint`), which isn't part of
+ * the left-slot contest at all.
+ *
  * Pure decision — no React, no DOM. `resolveLeftSlotOwner` + `resolveRenderedIndexPanelState`
  * together are the whole contract HomePage wires against.
  */
@@ -45,7 +49,9 @@ export interface LeftSlotInputs {
 }
 
 export function resolveLeftSlotOwner(inputs: LeftSlotInputs): LeftSlotOwner {
-  return inputs.analysisMode === "overview" || inputs.analysisMode === "focus"
+  return inputs.analysisMode === "overview" ||
+    inputs.analysisMode === "focus" ||
+    inputs.analysisMode === "path"
     ? "index"
     : "analysis-rail";
 }

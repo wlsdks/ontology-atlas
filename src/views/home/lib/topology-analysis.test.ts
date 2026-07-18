@@ -3,17 +3,13 @@ import {
   buildTopologyAnalysisSummary,
   buildTopologyHealthActionTarget,
   buildTopologyHealthRepairHref,
-  formatTopologyFocusBrief,
+  computeTopologyPathHopCount,
   formatTopologyHealthBrief,
   formatTopologyHealthMcpCheck,
   formatTopologyHealthOwnerRelationMcpCheck,
   formatTopologyOverviewBrief,
-  formatTopologyPathAllPathsMcpCheck,
-  formatTopologyPathAllPathsPlanMcpCheck,
-  formatTopologyPathEvidenceBrief,
-  formatTopologyPathExplainRelationMcpCheck,
+  formatTopologyPathAgentPacket,
   formatTopologyPathMcpCheck,
-  formatTopologyPathRelationPreflightMcpCheck,
 } from "./topology-analysis";
 
 describe("buildTopologyAnalysisSummary", () => {
@@ -369,163 +365,101 @@ describe("formatTopologyHealthBrief", () => {
   });
 });
 
-describe("formatTopologyFocusBrief", () => {
-  it("formats a selected node review brief with topology, ontology, builder, and agent checks", () => {
-    expect(
-      formatTopologyFocusBrief({
-        slug: "capability:topology-analysis-modes",
-        title: "Topology Analysis Modes",
-        labels: {
-          title: "Topology focus review",
-          node: "Node",
-          url: "URL",
-          ontologyUrl: "Ontology URL",
-          builderUrl: "Builder URL",
-          reviewFocus: "Review URL",
-          agentCheck: "Agent check",
-          mcpCheck: "MCP check",
-          impactCheck: "Impact check",
-          mcpImpactCheck: "MCP impact check",
-          syncGate: "Post-change sync gate",
-        },
-        url: "http://localhost:3000/en/topology?mode=focus",
-        focusUrl:
-          "http://localhost:3000/en/topology?mode=focus&p=capability%3Atopology-analysis-modes",
-        ontologyUrl: "/ontology/?node=capability%3Atopology-analysis-modes",
-        builderUrl: "/ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
-        syncGatePacket: "# Post-change ontology sync gate\n\n## MCP\n1. query_ontology",
-      }),
-    ).toBe(
-      [
-        "# Topology focus review",
-        "- Node: Topology Analysis Modes (capability:topology-analysis-modes)",
-        "- URL: http://localhost:3000/en/topology?mode=focus",
-        "- Review URL: http://localhost:3000/en/topology?mode=focus&p=capability%3Atopology-analysis-modes",
-        "- Ontology URL: /ontology/?node=capability%3Atopology-analysis-modes",
-        "- Builder URL: /ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
-        "- Agent check: ontology-atlas node capability:topology-analysis-modes [vault] --limit 12",
-        '- MCP check: query_ontology({"operation":"node_profile","slug":"capability:topology-analysis-modes","depth":2,"limit":12})',
-        "- Impact check: ontology-atlas blast-radius capability:topology-analysis-modes [vault] --depth 2 --direction incoming",
-        '- MCP impact check: query_ontology({"operation":"blast_radius","slug":"capability:topology-analysis-modes","depth":2,"direction":"incoming"})',
-        "- Post-change sync gate:",
-        "  # Post-change ontology sync gate",
-        "",
-        "  ## MCP",
-        "  1. query_ontology",
-      ].join("\n"),
-    );
-  });
-});
-
-describe("formatTopologyPathEvidenceBrief", () => {
-  it("formats restored Path mode endpoints with agent path and all_paths checks", () => {
-    expect(
-      formatTopologyPathEvidenceBrief({
-        sourceSlug: "domains/views",
-        targetSlug: "capability:topology-analysis-modes",
-        sourceTitle: "Views",
-        targetTitle: "Topology Analysis Modes",
-        labels: {
-          title: "Topology path evidence",
-          source: "Source",
-          target: "Target",
-          url: "URL",
-          sourceOntologyUrl: "Source ontology URL",
-          targetOntologyUrl: "Target ontology URL",
-          sourceBuilderUrl: "Source builder URL",
-          targetBuilderUrl: "Target builder URL",
-          cliCheck: "CLI check",
-          mcpCheck: "MCP check",
-          relationPreflightReason: "Relation preflight reason",
-          relationPreflightMcpCheck: "Relation preflight MCP check",
-          explainRelationMcpCheck: "explain_relation MCP check",
-          allPathsPlanMcpCheck: "all_paths query plan MCP check",
-          allPathsMcpCheck: "all_paths MCP check",
-          allPathsEvidenceContract: "all_paths evidence contract",
-          proofChecklist: "Proof checklist",
-          proofVisiblePath: "Visible path clue",
-          proofRelationPreflight: "relation_check preflight",
-          proofExplainRelation: "explain_relation context",
-          proofBoundedTraversal: "bounded all_paths plan",
-          proofPostWriteSync: "post-write sync gate",
-          proofStatusReady: "ready",
-          proofStatusRequired: "required",
-          proofStatusAfterWrite: "after write",
-          syncGate: "Post-write sync gate",
-        },
-        url: "http://localhost:3000/en/topology?mode=path",
-        syncGatePacket: "# Post-change ontology sync gate\n\n## MCP\n1. query_ontology",
-      }),
-    ).toBe(
-      [
-        "# Topology path evidence",
-        "- Source: Views (domains/views)",
-        "- Target: Topology Analysis Modes (capability:topology-analysis-modes)",
-        "- URL: http://localhost:3000/en/topology?mode=path",
-        "- Source ontology URL: /ontology/?node=domains%2Fviews",
-        "- Target ontology URL: /ontology/?node=capability%3Atopology-analysis-modes",
-        "- Source builder URL: /ontology/edit/?node=domains%2Fviews",
-        "- Target builder URL: /ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
-        "- CLI check: ontology-atlas path domains/views capability:topology-analysis-modes [vault] --max-hops 5",
-        '- MCP check: query_ontology({"operation":"path","from":"domains/views","to":"capability:topology-analysis-modes","maxHops":5})',
-        "- Relation preflight reason: domain -> capability maps to capabilities because domains own capabilities.",
-        '- Relation preflight MCP check: query_ontology({"operation":"relation_check","from":"domains/views","to":"capability:topology-analysis-modes","type":"capabilities"})',
-        '- explain_relation MCP check: query_ontology({"operation":"explain_relation","from":"domains/views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
-        '- all_paths query plan MCP check: query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"domains/views","to":"capability:topology-analysis-modes","maxHops":5,"limit":10,"searchBudget":1000})',
-        '- all_paths MCP check: query_ontology({"operation":"all_paths","from":"domains/views","to":"capability:topology-analysis-modes","maxHops":5,"limit":10,"searchBudget":1000})',
-        "- all_paths evidence contract: report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete before using paths as write evidence",
-        "- Proof checklist:",
-        "  - Visible path clue: ready",
-        "  - relation_check preflight: required",
-        "  - explain_relation context: required",
-        "  - bounded all_paths plan: required",
-        "  - post-write sync gate: after write",
-        "- Post-write sync gate:",
-        "  # Post-change ontology sync gate",
-        "",
-        "  ## MCP",
-        "  1. query_ontology",
-      ].join("\n"),
-    );
-  });
-
-  it("formats Path mode MCP checks for direct copy actions", () => {
+describe("formatTopologyPathMcpCheck", () => {
+  it("formats the single agent-facing path MCP check the path chip copies", () => {
     expect(
       formatTopologyPathMcpCheck("domains/views", "capability:topology-analysis-modes"),
     ).toBe(
       'query_ontology({"operation":"path","from":"domains/views","to":"capability:topology-analysis-modes","maxHops":5})',
     );
+  });
+});
+
+describe("computeTopologyPathHopCount", () => {
+  const nodes = [
+    { id: "a", title: "A", kind: "domain" },
+    { id: "b", title: "B", kind: "capability" },
+    { id: "c", title: "C", kind: "element" },
+    { id: "isolated", title: "Isolated", kind: "element" },
+  ] as unknown as Parameters<typeof computeTopologyPathHopCount>[2];
+  const edges = [
+    { id: "e1", from: "a", to: "b", type: "contains" },
+    { id: "e2", from: "b", to: "c", type: "depends_on" },
+  ] as unknown as Parameters<typeof computeTopologyPathHopCount>[3];
+
+  it("returns 0 for the same node", () => {
+    expect(computeTopologyPathHopCount("a", "a", nodes, edges)).toBe(0);
+  });
+
+  it("counts the shortest undirected hop distance", () => {
+    expect(computeTopologyPathHopCount("a", "b", nodes, edges)).toBe(1);
+    expect(computeTopologyPathHopCount("a", "c", nodes, edges)).toBe(2);
+    // undirected — reachable against the edge's own direction too.
+    expect(computeTopologyPathHopCount("c", "a", nodes, edges)).toBe(2);
+  });
+
+  it("returns null when no path connects the two nodes", () => {
+    expect(computeTopologyPathHopCount("a", "isolated", nodes, edges)).toBeNull();
+  });
+});
+
+describe("formatTopologyPathAgentPacket", () => {
+  it("formats a single agent-facing path packet — one MCP check, no CLI/proof-checklist ceremony", () => {
     expect(
-      formatTopologyPathRelationPreflightMcpCheck(
-        "domains/views",
-        "capability:topology-analysis-modes",
-      ),
+      formatTopologyPathAgentPacket({
+        sourceSlug: "domains/views",
+        targetSlug: "capability:topology-analysis-modes",
+        sourceTitle: "Views",
+        targetTitle: "Topology Analysis Modes",
+        hopCount: 2,
+        labels: {
+          title: "Topology path",
+          source: "Source",
+          target: "Target",
+          hops: "Hops",
+          hopsUnknown: "no path found",
+          sourceOntologyUrl: "Source ontology URL",
+          targetOntologyUrl: "Target ontology URL",
+          sourceBuilderUrl: "Source builder URL",
+          targetBuilderUrl: "Target builder URL",
+          mcpCheck: "MCP check",
+        },
+      }),
     ).toBe(
-      'query_ontology({"operation":"relation_check","from":"domains/views","to":"capability:topology-analysis-modes","type":"capabilities"})',
+      [
+        "# Topology path",
+        "- Source: Views (domains/views)",
+        "- Target: Topology Analysis Modes (capability:topology-analysis-modes)",
+        "- Hops: 2",
+        "- Source ontology URL: /ontology/?node=domains%2Fviews",
+        "- Target ontology URL: /ontology/?node=capability%3Atopology-analysis-modes",
+        "- Source builder URL: /ontology/edit/?node=domains%2Fviews",
+        "- Target builder URL: /ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
+        '- MCP check: query_ontology({"operation":"path","from":"domains/views","to":"capability:topology-analysis-modes","maxHops":5})',
+      ].join("\n"),
     );
-    expect(
-      formatTopologyPathExplainRelationMcpCheck(
-        "domains/views",
-        "capability:topology-analysis-modes",
-      ),
-    ).toBe(
-      'query_ontology({"operation":"explain_relation","from":"domains/views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
-    );
-    expect(
-      formatTopologyPathAllPathsPlanMcpCheck(
-        "domains/views",
-        "capability:topology-analysis-modes",
-      ),
-    ).toBe(
-      'query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"domains/views","to":"capability:topology-analysis-modes","maxHops":5,"limit":10,"searchBudget":1000})',
-    );
-    expect(
-      formatTopologyPathAllPathsMcpCheck(
-        "domains/views",
-        "capability:topology-analysis-modes",
-      ),
-    ).toBe(
-      'query_ontology({"operation":"all_paths","from":"domains/views","to":"capability:topology-analysis-modes","maxHops":5,"limit":10,"searchBudget":1000})',
-    );
+  });
+
+  it("falls back to the hopsUnknown label when no path was found", () => {
+    const packet = formatTopologyPathAgentPacket({
+      sourceSlug: "a",
+      targetSlug: "isolated",
+      sourceTitle: "A",
+      targetTitle: "Isolated",
+      hopCount: null,
+      labels: {
+        title: "Topology path",
+        source: "Source",
+        target: "Target",
+        hops: "Hops",
+        hopsUnknown: "no path found",
+        sourceOntologyUrl: "Source ontology URL",
+        targetOntologyUrl: "Target ontology URL",
+        sourceBuilderUrl: "Source builder URL",
+        targetBuilderUrl: "Target builder URL",
+        mcpCheck: "MCP check",
+      },
+    });
+    expect(packet).toContain("- Hops: no path found");
   });
 });
