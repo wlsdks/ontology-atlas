@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link2, X } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import ReactMarkdown from "react-markdown";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
@@ -291,13 +292,20 @@ export function FullDetailA1({
           {t("handoff.copy")}
         </button>
         {documentHref ? (
-          <a
+          <Link
             href={documentHref}
             className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
           >
             {t("handoff.openDocument")}
-          </a>
+          </Link>
         ) : null}
+        <Link
+          href={`/ontology/edit?node=${encodeURIComponent(node.slug)}`}
+          data-testid="full-detail-a1-open-builder"
+          className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+        >
+          {t("handoff.openBuilder")}
+        </Link>
       </section>
 
       <section data-fulldetail-body className="mt-6.5">
