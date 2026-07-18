@@ -41,13 +41,6 @@ import { CopyProjectLinkButton } from "@/features/project-share";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useTaxonomy } from "@/features/taxonomy";
 import { ProjectOntologyOverview } from "@/widgets/project-ontology-overview";
-
-// Sigma 기반 로컬 토폴로지 — detail 페이지에서 1-hop 이웃 네트워크 를 역동적
-// 으로 보여준다. dynamic import + ssr:false 로 WebGL SSR 문제 회피.
-const SigmaTopology = dynamic(
-  () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaTopology),
-  { ssr: false },
-);
 import { ProjectQuickEditPanel } from "@/features/project-quick-edit";
 
 const SearchPalette = dynamic(
@@ -407,10 +400,6 @@ export function ProjectDetailPage({
     }
     return out;
   })();
-  // 로컬 토폴로지용 프로젝트 집합 — 현재 프로젝트 + 1-hop 이웃. Sigma 가 받는
-  // projects 배열은 dep 관계 그래프로 해석되므로 의존/참조 양방향 이웃을 모두
-  // 포함해야 중앙 노드 주변에 선이 이어짐.
-  const neighborsTopologyProjects = [project, ...nextProjectCandidates];
   const canManageProject = projectMutations.canEdit;
   // 모든 인라인 편집은 useProjectMutations 한 진입점으로. local (vault
   // patch) 만 mutate 가능하고 static 은 read-only 라 mutation 시도 자체가
@@ -660,65 +649,6 @@ export function ProjectDetailPage({
 
       <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.12fr)_312px]">
         <div className="flex flex-col gap-6">
-          {/* 연결 지도 — 이 프로젝트 + 1-hop 이웃 만 담은 미니 Sigma 토폴로지.
-              메인 워크스페이스 지도와 동일한 physics · 드래그 · hover · 라벨
-              동작. minimal=true 로 minimap · aurora · stats pill · URL sync ·
-              키보드 nav 는 끈다. 이웃 0 개여도 카드 자체는 렌더해 좌측 하단
-              레이아웃 공백 (우측 "Linked projects" 와 비대칭) 방지. */}
-          <article className="overflow-hidden rounded-[28px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)]">
-            <header className="border-b border-[color:var(--color-divider)] px-6 py-5 md:px-8">
-              <p className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
-                {t("neighborMapEyebrow")}
-              </p>
-              <h2 className="mt-2 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                {t("neighborMapTitle", {
-                  name: project.name,
-                  count: Math.max(0, neighborsTopologyProjects.length - 1),
-                })}
-              </h2>
-              <p className="mt-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-                {t("neighborMapDescription")}
-              </p>
-            </header>
-            {neighborsTopologyProjects.length > 1 ? (
-              <div className="h-[520px] w-full">
-                <SigmaTopology
-                  projects={neighborsTopologyProjects}
-                  categories={categories}
-                  selectedSlug={project.slug}
-                  minimal
-                  // 이웃 노드 클릭 시 해당 프로젝트 상세로 이동. 현재 페이지
-                  // 자신(slug) 클릭은 무시.
-                  onSelectProject={(slug) => {
-                    if (slug === project.slug) return;
-                    router.push(getProjectDetailHref(slug));
-                  }}
-                  // 50 내외의 이웃이 작은 영역에 몰리지 않도록 repel 과
-                  // linkDistance 를 메인 홈보다 크게. 라벨 충돌도 완화.
-                  forces={{
-                    repel: -560,
-                    linkDistance: 120,
-                    collideMultiplier: 1.4,
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="flex h-[260px] flex-col items-center justify-center gap-3 px-6 py-10 text-center md:px-10">
-                <div
-                  aria-hidden
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)]"
-                >
-                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                    0
-                  </span>
-                </div>
-                <p className="max-w-md text-[12.5px] leading-6 text-[color:var(--color-text-tertiary)]">
-                  {t("neighborMapEmpty")}
-                </p>
-              </div>
-            )}
-          </article>
-
           {/* "프로젝트 정보" 카드는 project.detail 마크다운이 있을 때만 렌더.
               예전엔 detail 없을 때 fallback으로 이름/설명을 다시 노출해서 Hero와
               중복됐고 "왜 또 있지?" 혼란이 있었음. 기본 정보(상태/담당 등) 칩은
