@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T10:29:16.506Z",
+  "generatedAt": "2026-07-18T11:43:01.747Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -203,8 +203,8 @@
         }
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
-      "wordCount": 1215,
-      "updatedAt": "2026-06-14T07:43:26.249Z",
+      "wordCount": 1237,
+      "updatedAt": "2026-07-18T10:43:25.330Z",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -4340,8 +4340,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 9361,
-      "updatedAt": "2026-07-18T10:29:14.886Z",
+      "wordCount": 9417,
+      "updatedAt": "2026-07-18T10:43:25.330Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -4594,38 +4594,8 @@
         },
         {
           "depth": 3,
-          "text": "`/ontology` — Browse (tree + ego + detail)",
-          "slug": "ontology-browse-tree-ego-detail"
-        },
-        {
-          "depth": 4,
-          "text": "Sub-nav (R3 cut F — always visible, no toggle)",
-          "slug": "sub-nav-r3-cut-f-always-visible-no-toggle"
-        },
-        {
-          "depth": 4,
-          "text": "Page header",
-          "slug": "page-header"
-        },
-        {
-          "depth": 4,
-          "text": "Left: tree view (`OntologyTreeView`)",
-          "slug": "left-tree-view-ontologytreeview"
-        },
-        {
-          "depth": 4,
-          "text": "Right: detail panel (`NodeDetailPanel`)",
-          "slug": "right-detail-panel-nodedetailpanel"
-        },
-        {
-          "depth": 4,
-          "text": "Empty state (no nodes)",
-          "slug": "empty-state-no-nodes"
-        },
-        {
-          "depth": 4,
-          "text": "Keyboard",
-          "slug": "keyboard"
+          "text": "`/ontology` — retired tree/ego hub → thin redirect (B3 허브가 곧 지도)",
+          "slug": "ontology-retired-treeego-hub-thin-redirect-b3-허브가-곧-지도"
         },
         {
           "depth": 3,
@@ -4844,8 +4814,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-05-31 (real-time adaptive vault polling, /docs editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, findevidence relevance ranking, validatevault vault→code pathDrift, inferimports edge reconciliation). Earlier ",
-      "wordCount": 9139,
-      "updatedAt": "2026-07-18T07:58:37.765Z",
+      "wordCount": 8754,
+      "updatedAt": "2026-07-18T10:43:25.331Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5443,9 +5413,9 @@
           "elements/ontology-node-detail-modal",
           "mcp/src/ontology-engine.mjs",
           "src/shared/lib/ontology-tree/agent-briefing-packet.ts",
+          "src/views/home/ui/HomePage.tsx",
           "src/views/ontology-insights/lib/collaborator-insights-brief.ts",
-          "src/views/ontology-insights/ui/parts/InsightsCollaboratorBriefPanel.tsx",
-          "src/views/ontology-view/ui/OntologyViewPage.tsx"
+          "src/views/ontology-insights/ui/parts/InsightsCollaboratorBriefPanel.tsx"
         ],
         "relates": [
           "capabilities/agent-graph-readiness",
@@ -5459,7 +5429,7 @@
       "headings": [],
       "excerpt": "Agent onboarding brief composer. 그동안 /ontology/insights 전반에 흩어져 있던 개별 \"Copy …\" 패킷(run order · graph-DB pack · readiness · write guardrails · CLI fallback)을 단일 1-paste 브리핑으로 통합하는 순수 패킷 빌더다. buildAgentBriefingPacket(nodes, edges, tree) 가 기존 certified composer (buildAgentHandoffPrompt · buildAgentReadinessSummary · entryp",
       "wordCount": 598,
-      "updatedAt": "2026-06-07T02:12:47.337Z",
+      "updatedAt": "2026-07-18T10:43:25.333Z",
       "linksOut": []
     },
     {
@@ -6125,7 +6095,7 @@
           "src/features/vault-ontology/model/use-ontology-insight.ts",
           "src/shared/lib/ontology-tree/reachability.test.ts",
           "src/shared/lib/ontology-tree/reachability.ts",
-          "src/views/ontology-view/ui/OntologyViewPage.tsx"
+          "src/views/home/ui/HomePage.tsx"
         ],
         "relates": [
           "capabilities/frontmatter-to-ontology",
@@ -6142,7 +6112,7 @@
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (module-load 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), l",
       "wordCount": 632,
-      "updatedAt": "2026-06-06T03:44:41.259Z",
+      "updatedAt": "2026-07-18T10:43:25.334Z",
       "linksOut": []
     },
     {
@@ -6942,6 +6912,7 @@
         ],
         "elements": [
           "cli/src/commands/agent-activity.mjs",
+          "elements/first-run-page",
           "elements/landing-first-impression",
           "elements/locale-switch",
           "elements/operations-nav",
@@ -6966,7 +6937,7 @@
       ],
       "excerpt": "cross-cutting. 라이트/다크 토글 (html[data-theme=\"light\"]), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curs",
       "wordCount": 345,
-      "updatedAt": "2026-06-13T16:35:18.366Z",
+      "updatedAt": "2026-07-18T11:42:54.451Z",
       "linksOut": []
     },
     {
@@ -7120,9 +7091,9 @@
           "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
           "src/views/home",
           "src/views/ontology-edit",
-          "src/views/ontology-view",
+          "src/views/ontology-redirect",
+          "src/views/project-detail",
           "src/widgets/global-search",
-          "src/widgets/project-ontology-overview",
           "src/widgets/topology-map-sigma",
           "src/widgets/workspace-ontology-strip",
           "topology-analysis-bar",
@@ -7147,7 +7118,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-07-17T14:18:41.075Z",
+      "updatedAt": "2026-07-18T11:42:40.130Z",
       "linksOut": []
     },
     {
@@ -7757,15 +7728,15 @@
           "elements/ontology-tree-view"
         ],
         "elements": [
-          "src/views/ontology-view/ui/NodeDetailPanel.layout.test.tsx",
-          "src/views/ontology-view/ui/OntologyViewPage.tsx",
+          "src/widgets/full-detail-a1/ui/FullDetailA1.tsx",
+          "src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx",
           "tests/e2e/ontology-ui.spec.ts"
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The user-visible purpose is not \"show every graph fact in a tiny side panel.\" The modal answers four questions with separate LNB sections: what thi",
-      "wordCount": 446,
-      "updatedAt": "2026-06-06T09:27:58.261Z",
+      "excerpt": "Superseded (B3 허브가 곧 지도, 2026-07). /ontology's tree hub (OntologyViewPage, this element's original subject) is retired — the selected-node detail experience now lives on /topology as the compact TopologyV2DetailPanel datasheet with an opt-in \"전체 상세 →\" link into FullDetailA1 (src/widgets/full-detail-a1/), replacing the ",
+      "wordCount": 537,
+      "updatedAt": "2026-07-18T10:43:25.334Z",
       "linksOut": []
     },
     {
@@ -8447,6 +8418,23 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/src/views/project-detail",
+      "path": "docs/ontology/src/views/project-detail.md",
+      "title": "Project Detail (3-zone)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/views/project-detail",
+        "kind": "element",
+        "title": "Project Detail (3-zone)",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/project-detail renders the /project/[slug] public detail page as three vertical zones: a hero metric strip (domain/capability/element/document/relation counts derived from projectIds-stamped ontology insight nodes), a domain composition grid with an honest sqrt-scaled MiniDomainMap SVG, and the body column wi",
+      "wordCount": 70,
+      "updatedAt": "2026-07-18T11:42:46.562Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/src/widgets/bottom-tab-bar",
       "path": "docs/ontology/src/widgets/bottom-tab-bar.md",
       "title": "Mobile Bottom Tab Bar",
@@ -8495,23 +8483,6 @@
       "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and stores unsaved edits as a browser-local temporary draft before final disk save. The editor exposes that contract in the UI as separate Auto backup and F",
       "wordCount": 179,
       "updatedAt": "2026-06-05T18:48:32.373Z",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/src/widgets/project-ontology-overview",
-      "path": "docs/ontology/src/widgets/project-ontology-overview.md",
-      "title": "Project Ontology Overview",
-      "tags": [],
-      "frontmatter": {
-        "slug": "src/widgets/project-ontology-overview",
-        "kind": "element",
-        "title": "Project Ontology Overview",
-        "domain": "views"
-      },
-      "headings": [],
-      "excerpt": "src/widgets/project-ontology-overview renders the project-detail ontology summary that links a project back to its ontology nodes. It now uses the shared ontology kind tone palette for project/domain/capability/element chips, so the project detail surface reinforces the same categorical color contract as the ontology t",
-      "wordCount": 99,
-      "updatedAt": "2026-06-06T01:37:01.470Z",
       "linksOut": []
     },
     {
@@ -9201,6 +9172,49 @@
       "excerpt": "이 문서는 2026-07-17 하루 동안의 집중 재기획의 확정 산출물이다. 검증 이력: 시장·기술 조사 17건 (haiku) · 사용자 페르소나 패널 7인 · CPO 심사 (PO rubric 22/24, Chief PO Level 4) · 사상가 렌즈 패널 10인 × 3라운드 (최종 평균 7.60 — 기획 단계 캘리브레이션 기준 Obsidian/dbt의 7.3을 상회) · 도입 심사 10인 · 충분성 분석 2건. 상세 근거는 세션 기록과 메모리 참조. 결론: 기획 단계 완료. 남은 점수는 구현과 시장 증거에서 나온다. Layer 1 (로컬 코어 — 불변의 신뢰 계약)",
       "wordCount": 2205,
       "updatedAt": "2026-07-17T13:37:41.840Z",
+      "linksOut": []
+    },
+    {
+      "slug": "prototypes/RATIO-SYSTEM",
+      "path": "docs/prototypes/RATIO-SYSTEM.md",
+      "title": "RATIO-SYSTEM — 화면 비율 규범 (final mockup round, 2026-07)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "RATIO-SYSTEM — 화면 비율 규범 (final mockup round, 2026-07)",
+          "slug": "ratio-system-화면-비율-규범-final-mockup-round-2026-07"
+        },
+        {
+          "depth": 2,
+          "text": "1. 가로 — 단일 거터 시스템 (앱 전체 통일)",
+          "slug": "1-가로-단일-거터-시스템-앱-전체-통일"
+        },
+        {
+          "depth": 2,
+          "text": "2. 세로 — 945 프레임 리듬",
+          "slug": "2-세로-945-프레임-리듬"
+        },
+        {
+          "depth": 2,
+          "text": "3. 탭 바 — 단일 패턴 (machined)",
+          "slug": "3-탭-바-단일-패턴-machined"
+        },
+        {
+          "depth": 2,
+          "text": "4. 데이터시트 스케일업 (토폴로지 우측 패널)",
+          "slug": "4-데이터시트-스케일업-토폴로지-우측-패널"
+        },
+        {
+          "depth": 2,
+          "text": "5. 승격 예정 토큰 (DESIGN-SYSTEM v2)",
+          "slug": "5-승격-예정-토큰-design-system-v2"
+        }
+      ],
+      "excerpt": "지상 원칙: 비율이 생명. 1920×1080 프레임 전체에서 세로·가로 여백이 아름다운 비율로 균형을 이룬다. 상단에 콘텐츠가 몰리고 하단 1/3 이 죽는 구조 금지. 이 문서는 규범(normative)이며 구현 시 DESIGN-SYSTEM v2 에 토큰으로 승격된다. 모든 -final.html 목업이 이 시스템을 따른다. 페이지 컨테이너 1600px 중앙 정렬 → 1920 에서 좌우 거터 160px (콘텐츠 83.3%). 이전 라운드의 1240/1440/1640 혼재를 폐기한다. 내부 좁은 컬럼은 컨테이너 안에서 중앙: 리딩 컬럼 1200 · 유틸리티 페이지 960",
+      "wordCount": 485,
+      "updatedAt": "2026-07-18T11:03:22.206Z",
       "linksOut": []
     },
     {
@@ -11423,6 +11437,13 @@
                         ]
                       }
                     ]
+                  },
+                  {
+                    "name": "project-detail",
+                    "path": "ontology/src/views/project-detail",
+                    "type": "doc",
+                    "slug": "ontology/src/views/project-detail",
+                    "title": "Project Detail (3-zone)"
                   }
                 ]
               },
@@ -11460,13 +11481,6 @@
                     "title": "Mobile Bottom Tab Bar"
                   },
                   {
-                    "name": "project-ontology-overview",
-                    "path": "ontology/src/widgets/project-ontology-overview",
-                    "type": "doc",
-                    "slug": "ontology/src/widgets/project-ontology-overview",
-                    "title": "Project Ontology Overview"
-                  },
-                  {
                     "name": "workspace-ontology-strip",
                     "path": "ontology/src/widgets/workspace-ontology-strip",
                     "type": "doc",
@@ -11498,6 +11512,13 @@
         "path": "prototypes",
         "type": "dir",
         "children": [
+          {
+            "name": "RATIO-SYSTEM",
+            "path": "prototypes/RATIO-SYSTEM",
+            "type": "doc",
+            "slug": "prototypes/RATIO-SYSTEM",
+            "title": "RATIO-SYSTEM — 화면 비율 규범 (final mockup round, 2026-07)"
+          },
           {
             "name": "visual-richness-review",
             "path": "prototypes/visual-richness-review",
