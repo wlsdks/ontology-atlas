@@ -14,6 +14,7 @@ import {
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
+import { useProjects } from "@/features/project-data-source";
 import { FullDetailA1, buildFullDetailGroups, buildFullDetailReachModel } from "@/widgets/full-detail-a1";
 import {
   acknowledgeChangeNode,
@@ -65,6 +66,8 @@ import {
 export function OntologyViewPage() {
   const t = useTranslations('ontologyView');
   const searchParams = useSearchParams();
+  // census 통일: topology 크롬(projects+nodes)과 같은 총계 (Guardian A1 follow-up P4)
+  const { projects: censusProjects } = useProjects();
   const router = useRouter();
   const dataSourceMode = useDataSourceMode();
   const isDesktopRuntime = isTauriVaultRuntime();
@@ -266,7 +269,7 @@ export function OntologyViewPage() {
       reach,
       breadcrumb: {
         projectTitle,
-        totalConcepts: insight.nodes.length,
+        totalConcepts: censusProjects.length + insight.nodes.length,
         totalRelations: insight.edges.length,
       },
       bodyMarkdown: selectedNode.summary ?? null,
@@ -274,7 +277,7 @@ export function OntologyViewPage() {
         ? buildDocsVaultHref({ slug: selectedNode.evidenceIds[0] })
         : null,
     };
-  }, [insight, selectedNode, ontologyChangeset]);
+  }, [insight, selectedNode, ontologyChangeset, censusProjects]);
   const builderHref = selectedNode
     ? buildOntologyBuilderNodeHref(selectedNode)
     : "/ontology/edit/";

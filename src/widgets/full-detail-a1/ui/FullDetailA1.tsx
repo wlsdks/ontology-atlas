@@ -145,7 +145,7 @@ export function FullDetailA1({
     <div
       data-testid="full-detail-a1"
       data-fulldetail-node={node.id}
-      className={["mx-auto flex max-w-[1240px] flex-col px-6 py-7", className ?? ""].join(" ")}
+      className={["full-detail-a1 mx-auto flex max-w-[1240px] flex-col px-6 py-7", className ?? ""].join(" ")}
     >
       <nav className="mb-6 flex items-center gap-2.5 text-[12px] text-[color:var(--topology-v2-panel-text-tertiary)]">
         {onBackToMap ? (
@@ -286,7 +286,7 @@ export function FullDetailA1({
           type="button"
           onClick={handleCopyHandoff}
           data-testid="full-detail-a1-handoff-copy"
-          className="shrink-0 rounded-[6px] border border-[color:rgba(94,106,210,0.5)] bg-[color:var(--topology-v2-panel-action-surface)] px-3 py-1.5 text-[12px] font-medium text-[color:var(--topology-v2-indigo-bright)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:border-[color:var(--topology-v2-indigo)]"
+          className="shrink-0 rounded-[6px] border border-[color:var(--topology-v2-indigo-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-3 py-1.5 text-[12px] font-medium text-[color:var(--topology-v2-indigo-bright)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:border-[color:var(--topology-v2-indigo)]"
         >
           {t("handoff.copy")}
         </button>

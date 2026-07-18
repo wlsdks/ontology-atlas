@@ -658,7 +658,7 @@ export function HomePage() {
       reach,
       breadcrumb: {
         projectTitle,
-        totalConcepts: ontologyInsight.nodes.length,
+        totalConcepts: renderProjects.length + ontologyInsight.nodes.length,
         totalRelations: ontologyInsight.edges.length,
       },
       bodyMarkdown,
@@ -669,6 +669,7 @@ export function HomePage() {
     nodeFocus,
     selectedOntologyNode,
     ontologyInsight,
+    renderProjects,
     changedSlugs,
     nodeBody,
     nodeEditTarget,

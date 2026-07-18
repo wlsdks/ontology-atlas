@@ -83,7 +83,7 @@ export function FullDetailA1ReachPanel({
               className={[
                 "rounded-[4px] border px-1 py-0.5 transition-colors",
                 candidate === step
-                  ? "border-[color:rgba(94,106,210,0.5)] text-[color:var(--topology-v2-indigo-bright)]"
+                  ? "border-[color:var(--topology-v2-indigo-border)] text-[color:var(--topology-v2-indigo-bright)]"
                   : "border-transparent hover:border-[color:var(--topology-v2-panel-text-quaternary)]",
               ].join(" ")}
             >

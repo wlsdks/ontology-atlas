@@ -338,7 +338,7 @@ export function GlobalSearch({
             >
               {/* R10 후 vault 가 유일 모드 — node.evidenceCount 가 영구
                   undefined 이라 'Evidence N' chip 도 cycle 16 의
-                  NodeDetailPanel 정리와 같은 정책으로 제거. 같은 정보가
+                  구 상세 패널 정리와 같은 정책으로 제거(현행 FullDetailA1). 같은 정보가
                   필요해지면 cycle 6 의 ontology→docs 점프 chip 이 더
                   풍부하게 보여 줌. */}
               {ontologyResults.map(({ node }) => (

@@ -136,7 +136,12 @@ export function FullDetailA1GroupsPanel({
   className?: string;
 }) {
   return (
-    <div className={["grid gap-[22px] md:grid-cols-[1.35fr_1fr]", className ?? ""].join(" ")}>
+    <div
+      className={[
+        "grid gap-[22px] md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]",
+        className ?? "",
+      ].join(" ")}
+    >
       <GroupCard
         dataGroup="contains"
         title={labels.containsTitle}

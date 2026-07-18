@@ -558,7 +558,7 @@ export function ProjectDrawer({
                           openTopology 가 self-link no-op 이었다. 1원칙:
                           ontology / topology / docs 셋 다 같은 vault doc
                           의 다른 투영 → 여기서 missing 한 cross-link 은
-                          ontology 트리. project:<slug> deeplink 로 NodeDetailPanel
+                          ontology 트리. project:<slug> deeplink 로 전체 상세(FullDetailA1)
                           이 자동 열린다 (fm.slug 가 filename 과 다른 경우엔
                           매칭 실패해도 페이지는 graceful 로드). */}
                       <Link
