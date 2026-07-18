@@ -70,6 +70,8 @@ references/
 !public/og-image.png
 !src-tauri/icons/
 !src-tauri/icons/**
+!docs/prototypes/shots/
+!docs/prototypes/shots/**
 
 # Testing
 coverage/

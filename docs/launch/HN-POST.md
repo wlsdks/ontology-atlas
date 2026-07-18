@@ -33,7 +33,7 @@ get, validate_vault, compile_ontology, query_ontology,
 analyze_repo_structure, infer_imports, add_concept, add_concepts,
 patch_concept, rename_concept, ...).
 
-Three views over the same vault: Sigma WebGL topology, hierarchical
+Three views over the same vault: canvas topology, hierarchical
 tree, and an xyflow ERD builder. Local-first by default — the static
 build does not load Firebase JS into a single user-facing route's first
 paint chunk (verified by a CI script).

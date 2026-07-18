@@ -48,7 +48,12 @@
 
 ## 하지 않기로 한 것 (반려 기록)
 
-- Biome/oxlint 전환 (FSD boundary 가드 상실) · Electron 전환 (비용 > 이득, 원인 오진) · Astro/React Router 재플랫폼 · CLI 프레임워크 도입 · TS 전환(cli/mcp) · Bun 채택 (로드맵 미공표) · D3/Cosmograph/G6 시각화 교체 (기판정 유지 — Sigma v3).
+- Biome/oxlint 전환 (FSD boundary 가드 상실) · Electron 전환 (비용 > 이득, 원인 오진) · Astro/React Router 재플랫폼 · CLI 프레임워크 도입 · TS 전환(cli/mcp) · Bun 채택 (로드맵 미공표) · D3/Cosmograph/G6 시각화 교체.
+- **[갱신, 2026-07-18]** 위 시각화 판정 시점 이후 `refactor/retire-sigma-topology`
+  (#344) 가 머지되어 `/topology` 의 주 렌더러는 Sigma 가 아니라 커스텀
+  canvas-2D 엔진(`topology-map-v2`, Graphology ForceAtlas2 물리만 재사용)이다.
+  Sigma.js 는 `/docs` 폴더 토폴로지 미니맵에만 남아 있다 — "갈림길 (Q4 2026)"
+  행의 "Sigma 테스트 통과" 는 여전히 WebGL 뷰포트 viability 대리 지표로 유효.
 
 ## 즉시 액션 (이번 사이클)
 

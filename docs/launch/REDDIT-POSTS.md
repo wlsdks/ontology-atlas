@@ -70,7 +70,7 @@ The agent now has `list_concepts`, `get_concept`, `find_path` (BFS),
 `find_orphans`, `add_concept`, `patch_concept`, `delete_concept`, etc.
 
 There's also a macOS desktop app that wraps the same Next.js static
-workbench and visualizes the vault three ways: Sigma WebGL topology,
+workbench and visualizes the vault three ways: canvas topology,
 hierarchical tree, xyflow ERD builder. The installed app reads/writes the
 same `.md` files through a local native vault bridge; the hosted website is only the product intro and download entry point.
 
@@ -181,7 +181,7 @@ depends_on: [capabilities/signup]
 ---
 ```
 
-Three views: Sigma topology, tree, xyflow ERD. All optional — you can
+Three views: canvas topology, tree, xyflow ERD. All optional — you can
 skip the UI entirely and just use the MCP server with your local agent.
 
 ```

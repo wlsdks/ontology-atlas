@@ -6,6 +6,42 @@
 
 ---
 
+## 2026-07-18 — Project detail Connection map 제거 + SigmaTopology 렌더러 물리 삭제
+
+`/project/[slug]` 상세 페이지의 "Connection map" 미니 지도(`SigmaTopology`
+520px 임베드)를 제거 (소유자 지시: "안쓰게 된 페이지나 소스코드는 깔끔하게
+지워주고"; 디자인 리뷰 판정 — 이 임베드는 데모로 도달 불가능했다. dogfood
+vault 가 프로젝트 1개뿐이라 "이웃 > 1" 게이트가 항상 empty state 만 보여줬고,
+같은 typed fact(연결 개수)가 바로 옆 "Linked projects" 카드에 이미 있었다.
+"Linked projects" 카드는 그대로 유지 — 그 카드가 이 typed fact 의 단일 표현.
+남는 empty-state 안내문 중복도 카드 삭제로 자연히 1개로 정리됐고, 남은
+`neighborsMoreNote` i18n 카피는 사라진 지도 섹션을 더 이상 가리키지 않도록
+재작성.
+
+같은 패스에서 지난 항목(위 2026-07-18 "구엔진 물리 삭제")이 남겨둔 조건 —
+"`topology-map-sigma` 위젯은 `/project/[slug]` 이웃 지도와 홈 화면 공용
+컨트롤 칩이 그 위에서 동작해 남는다" — 가 이제 앞쪽 절반만 해당하므로,
+`SigmaTopology.tsx`(3,780줄)와 그 렌더 전용 lib/model/ui 82개 파일(약
+15,400줄, reducer 10개·physics/layout/worker 6개·SigmaContextMenu 등
+UI 8개·이미 고아였던 `relation-label-geometry.ts` 포함)을 물리 삭제.
+홈 화면이 쓰는 `SigmaControls` / `SigmaHubRail` / `TopologyEmptyState` +
+`model/controls-state` 4개 파일만 위젯에 남는다 — 홈의 지도 렌더링 자체는
+이미 `topology-map-v2` 엔진이 담당하고, 이 4개는 그 위에 얹히는 공용 컨트롤
+칩일 뿐이었다. `docs/DocsVaultFolderTopology` 는 `sigma`/`graphology`를 직접
+쓰는 별도 위젯이라 무관 — 두 패키지 의존성은 그대로 유지.
+
+`topology-map-v2` 가 기본 엔진이 된 뒤 (#330) 남아있던 옛 캔버스 코드를
+물리 삭제 (소유자 지시: "예전 캔버스 코드는 싹 다 지워줘"): 레거시 Sigma
+전체화면 엔진 렌더 분기 · `topology-map-canvas` (skeleton-card DOM 지도) ·
+`?mapEngine=` 탈출구 · `topology-map-v2` feature flag/hook 자체 · 관련 골격
+계산 lib 6개 · `TopologyNodePopover` (datasheet 전용 전환). `topology-map-sigma`
+위젯은 물리적으로 남는다 — `/project/[slug]` 이웃 지도와 홈 화면의 공용 컨트롤
+칩(SigmaControls/SigmaHubRail/TopologyEmptyState)이 여전히 그 위에서 동작.
+같은 패스에서 Esc 가 "드로어·오버레이 단계적 닫기" 약속(단축키 시트)을
+실제로 지키도록 staged-close 사다리 구현 — 이전엔 선택된 노드의
+datasheet/relation lens 에 Esc 바인딩 자체가 없었고, local-graph ego 되돌리기만
+다른 오버레이 상태와 무관하게 무조건 발동했다.
+
 ## 2026-07-18 — 설치형 앱 first-run 온보딩 (진입 표면 2원화)
 
 설치형 앱(Tauri)에서 볼트 미선택 시 마케팅 랜딩(자기 자신 다운로드 CTA 모순)
@@ -68,7 +104,7 @@ Obsidian/dbt 의 기획 단계 소급 점수(7.3)를 상회 — 문서 단계 �
 ## 2026-07-03 — 지도 뷰 재구성: 단일 컨테이너 변환 엔진 (TopologyMapCanvas)
 
 소유자 결정("지도가 부드럽지도 않고 버벅거림 — 전체 재구성")의 실행.
-docs/TOPOLOGY-MAP-REBUILD.md 설계대로 per-frame DOM 동기화 구조를 제거했다.
+docs/archive/TOPOLOGY-MAP-REBUILD.md 설계대로 per-frame DOM 동기화 구조를 제거했다.
 
 - **새 엔진** `src/widgets/topology-map-canvas/` — 카드/커넥터 좌표는 배치 시
   1회만 기록, 팬/줌 = 컨테이너 하나의 CSS transform (카메라 수학은 순수 함수

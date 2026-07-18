@@ -16,8 +16,9 @@
 > Shneiderman 의 *overview first, zoom and filter, details-on-demand* (1996).
 
 - **노드 클릭 = ego 포커스 + 컴팩트 팝오버.** 클릭 노드와 직접 이웃(ego)만
-  full opacity, 나머지는 dim(`opacity 0.15`)/hide (Sigma `nodeReducer` /
-  `edgeReducer`, 그래프 인스턴스는 미변경). 팝오버는 노드 옆에 앵커, 내용
+  full opacity, 나머지는 dim(`opacity 0.15`)/hide — 렌더러별 메커니즘 (캔버스
+  엔진: per-frame alpha 재계산, SVG 엔진: ego state prop), 원본 그래프
+  데이터는 미변경. 팝오버는 노드 옆에 앵커, 내용
   크기로만. **풀스크린/풀블리드 상세 모달은 클릭 default 로 쓰지 않는다** —
   기존 `NodeDetailPanel` 전체 상세는 팝오버의 `전체 상세 →` opt-in 으로만.
 - **기본 뷰 = overview-first.** 전체 2~3k 노드를 한 번에 쏟지 않는다. level 0 =

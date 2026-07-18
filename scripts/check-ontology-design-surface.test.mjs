@@ -108,17 +108,6 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(
     root,
-    "src/widgets/topology-map-sigma/ui/SigmaTopology.tsx",
-    [
-      "kindLegendProjectRole",
-      "kindLegendDomainRole",
-      "kindLegendCapabilityRole",
-      "kindLegendElementRole",
-      "kindLegendUnknownRole",
-    ].join("\n"),
-  );
-  writeFixture(
-    root,
     "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
     [
       "Design Council",
@@ -220,9 +209,9 @@ test("ontology design surface passes when visual and workbench contracts are pre
   });
 
   assert.equal(report.ok, true);
-  assert.equal(report.requiredSurfaceMarkerCount, 9);
+  assert.equal(report.requiredSurfaceMarkerCount, 8);
   assert.equal(report.violations.length, 0);
-  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 9 workbench structure contracts/);
+  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 8 workbench structure contracts/);
 });
 
 test("ontology design surface ignores test fixtures when scanning forbidden visuals", () => {
@@ -373,38 +362,6 @@ test("ontology design surface reports missing workspace execution cells", () => 
   );
 });
 
-test("ontology design surface reports missing topology kind role descriptions", () => {
-  const root = makeFixture();
-  writeCleanWorkbenchFixtures(root);
-  writeFixture(
-    root,
-    "src/widgets/topology-map-sigma/ui/SigmaTopology.tsx",
-    [
-      "kindLegendProjectRole",
-      "kindLegendDomainRole",
-      "kindLegendCapabilityRole",
-    ].join("\n"),
-  );
-
-  const report = evaluateOntologyDesignSurface({
-    root,
-    targetDirs: ["src/widgets/topology-map-sigma"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
-    ["topology-kind-legend-role-copy"],
-  );
-  assert.deepEqual(
-    report.violations.map((violation) => violation.source),
-    [
-      "missing marker: kindLegendElementRole",
-      "missing marker: kindLegendUnknownRole",
-    ],
-  );
-});
-
 test("ontology design surface requires the PO-linked product design operating system", () => {
   const root = makeFixture();
   writeCleanWorkbenchFixtures(root);
@@ -422,7 +379,7 @@ test("ontology design surface requires the PO-linked product design operating sy
 
   const report = evaluateOntologyDesignSurface({
     root,
-    targetDirs: ["src/widgets/topology-map-sigma"],
+    targetDirs: ["src/widgets/docs-vault"],
   });
 
   assert.equal(report.ok, false);

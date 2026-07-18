@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T04:37:07.318Z",
+  "generatedAt": "2026-07-18T08:31:01.565Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1635,8 +1635,174 @@
         }
       ],
       "excerpt": "이 폴더는 과거 세션에서 만든 long-form 분석 문서 의 보관소다. 현재 mission / contributor 룰의 진실원은 다음 4 개: docs/PRODUCT-DIRECTION.md — mission v2 spec docs/FEATURES.md — 사용자 가시 기능 전수 docs/ARCHITECTURE.md / docs/DATA-MODEL.md / docs/DESIGN-SYSTEM.md / docs/DEPLOYMENT.md — 영역별 룰 docs/CHANGELOG.md — 시간순 변화 archive 안 문서는 역사적 맥락 으로 남겨둘 뿐 contributo",
-      "wordCount": 229,
-      "updatedAt": "2026-05-31T09:10:08.821Z",
+      "wordCount": 276,
+      "updatedAt": "2026-07-18T08:19:18.097Z",
+      "linksOut": []
+    },
+    {
+      "slug": "archive/SIGMA-PLAYBOOK",
+      "path": "docs/archive/SIGMA-PLAYBOOK.md",
+      "title": "Sigma.js v3 — \"내장 기능 우선\" 플레이북 (topology-map-v2 / Slice 2)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Sigma.js v3 — \"내장 기능 우선\" 플레이북 (topology-map-v2 / Slice 2)",
+          "slug": "sigmajs-v3-내장-기능-우선-플레이북-topology-map-v2-slice-2"
+        },
+        {
+          "depth": 2,
+          "text": "1. 내장 기능 카탈로그 — 커스텀 코드 대신 이걸 쓴다",
+          "slug": "1-내장-기능-카탈로그-커스텀-코드-대신-이걸-쓴다"
+        },
+        {
+          "depth": 3,
+          "text": "1.1 nodeReducer / edgeReducer — ego-focus dim 메커니즘의 정답",
+          "slug": "11-nodereducer-edgereducer-ego-focus-dim-메커니즘의-정답"
+        },
+        {
+          "depth": 3,
+          "text": "1.2 Camera API — 애니메이션 pan/zoom/fit을 직접 구현하지 않는다",
+          "slug": "12-camera-api-애니메이션-panzoomfit을-직접-구현하지-않는다"
+        },
+        {
+          "depth": 3,
+          "text": "1.3 이벤트 시스템 — 커스텀 hit-testing 금지",
+          "slug": "13-이벤트-시스템-커스텀-hit-testing-금지"
+        },
+        {
+          "depth": 3,
+          "text": "1.4 hideEdgesOnMove / hideLabelsOnMove / label 임계값 — 자체 LOD 로직 금지",
+          "slug": "14-hideedgesonmove-hidelabelsonmove-label-임계값-자체-lod-로직-금지"
+        },
+        {
+          "depth": 3,
+          "text": "1.5 노드/엣지 프로그램 — state를 색이 아니라 프로그램으로 표현",
+          "slug": "15-노드엣지-프로그램-state를-색이-아니라-프로그램으로-표현"
+        },
+        {
+          "depth": 3,
+          "text": "1.6 레이어 시스템 — DOM 오버레이의 올바른 위치",
+          "slug": "16-레이어-시스템-dom-오버레이의-올바른-위치"
+        },
+        {
+          "depth": 3,
+          "text": "1.7 getNodeDisplayData / 좌표 변환 API — 팝오버 앵커링의 정답",
+          "slug": "17-getnodedisplaydata-좌표-변환-api-팝오버-앵커링의-정답"
+        },
+        {
+          "depth": 3,
+          "text": "1.8 refresh / scheduleRefresh / scheduleRender — 수동 재렌더 시맨틱",
+          "slug": "18-refresh-schedulerefresh-schedulerender-수동-재렌더-시맨틱"
+        },
+        {
+          "depth": 2,
+          "text": "2. 공식 예제 매핑",
+          "slug": "2-공식-예제-매핑"
+        },
+        {
+          "depth": 2,
+          "text": "3. 성능 계약",
+          "slug": "3-성능-계약"
+        },
+        {
+          "depth": 3,
+          "text": "무엇이 느려지는가 (소스 근거)",
+          "slug": "무엇이-느려지는가-소스-근거"
+        },
+        {
+          "depth": 3,
+          "text": "올바른 React 통합 패턴",
+          "slug": "올바른-react-통합-패턴"
+        },
+        {
+          "depth": 3,
+          "text": "레이아웃 사전 계산/캐시",
+          "slug": "레이아웃-사전-계산캐시"
+        },
+        {
+          "depth": 2,
+          "text": "4. 우리 커스텀 최소 목록",
+          "slug": "4-우리-커스텀-최소-목록"
+        },
+        {
+          "depth": 2,
+          "text": "5. 저알파 불변식 적용 — reducer 레벨 계약",
+          "slug": "5-저알파-불변식-적용-reducer-레벨-계약"
+        },
+        {
+          "depth": 2,
+          "text": "6. 함정 목록",
+          "slug": "6-함정-목록"
+        },
+        {
+          "depth": 2,
+          "text": "참고 소스 (전부 이번 조사에서 직접 확인)",
+          "slug": "참고-소스-전부-이번-조사에서-직접-확인"
+        }
+      ],
+      "excerpt": "[archived, 2026-07-18] topology-map-v2 는 결국 Sigma 를 채택하지 않고 커스텀 canvas-2D 엔진으로 출하됐다(344 retire-sigma-topology). 이 플레이북은 검토됐다가 채택되지 않은 접근의 조사 기록으로만 보관 — Sigma.js 는 현재 /docs 폴더 토폴로지 미니맵에만 남아 있다. 모든 API 이름은 jacomyal/sigma.js main 브랜치 소스(packages/sigma/src/.ts)와 공식 스토리북 예제(packages/storybook/stories/), packages/website/doc",
+      "wordCount": 3036,
+      "updatedAt": "2026-07-18T08:19:09.636Z",
+      "linksOut": []
+    },
+    {
+      "slug": "archive/TOPOLOGY-MAP-REBUILD",
+      "path": "docs/archive/TOPOLOGY-MAP-REBUILD.md",
+      "title": "지도(Relief) 뷰 재구성 설계 — 단일 컨테이너 변환 아키텍처",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "지도(Relief) 뷰 재구성 설계 — 단일 컨테이너 변환 아키텍처",
+          "slug": "지도relief-뷰-재구성-설계-단일-컨테이너-변환-아키텍처"
+        },
+        {
+          "depth": 2,
+          "text": "1. 증상과 실측 근거",
+          "slug": "1-증상과-실측-근거"
+        },
+        {
+          "depth": 2,
+          "text": "2. 현 구조 (문제의 원천)",
+          "slug": "2-현-구조-문제의-원천"
+        },
+        {
+          "depth": 2,
+          "text": "3. 목표 아키텍처 — 단일 컨테이너 변환 + FLIP",
+          "slug": "3-목표-아키텍처-단일-컨테이너-변환-flip"
+        },
+        {
+          "depth": 2,
+          "text": "4. 보존해야 할 계약 (깨지면 안 되는 것)",
+          "slug": "4-보존해야-할-계약-깨지면-안-되는-것"
+        },
+        {
+          "depth": 2,
+          "text": "5. 마이그레이션 순서 (슬라이스)",
+          "slug": "5-마이그레이션-순서-슬라이스"
+        },
+        {
+          "depth": 2,
+          "text": "6. 검증 계획",
+          "slug": "6-검증-계획"
+        },
+        {
+          "depth": 2,
+          "text": "7. 조사 티켓 (재구성과 별도)",
+          "slug": "7-조사-티켓-재구성과-별도"
+        },
+        {
+          "depth": 2,
+          "text": "8. 참고 파일",
+          "slug": "8-참고-파일"
+        }
+      ],
+      "excerpt": "[archived, 2026-07-18] 이 문서가 설계한 topology-map-canvas 자체가 topology-map-v2 로 대체되며 삭제됐다(현재 src/widgets/ 에 해당 디렉터리 없음). 역사적 맥락으로만 보관 — 현재 지도/그래프 엔진 설계는 docs/TOPOLOGY-V2-DESIGN.md 참조. 2026-07-03. 소유자 결정: \"지도쪽이 부드럽지도 않고 버벅거림 — 전체 재구성\". 상태: S1~S5 구현·출하됨 (src/widgets/topology-map-canvas/) — 잔여는 §5 의 S6 후보(미니맵/범례 재공급, 관계 커넥터 클릭",
+      "wordCount": 831,
+      "updatedAt": "2026-07-18T08:18:58.479Z",
       "linksOut": []
     },
     {
@@ -2573,6 +2739,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-18 — Project detail Connection map 제거 + SigmaTopology 렌더러 물리 삭제",
+          "slug": "2026-07-18-project-detail-connection-map-제거-sigmatopology-렌더러-물리-삭제"
         },
         {
           "depth": 2,
@@ -3700,9 +3871,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 설치형 앱(Tauri)에서 볼트 미선택 시 마케팅 랜딩(자기 자신 다운로드 CTA 모순) 또는 /docs 리다이렉트 인터스티셜 대신 옵시디언식 FirstR",
-      "wordCount": 19977,
-      "updatedAt": "2026-07-18T02:43:05.509Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. /project/[slug] 상세 페이지의 \"Connection map\" 미니 지도(SigmaTopology 520px 임베드)를 제거 (소유자 지시: \"",
+      "wordCount": 20275,
+      "updatedAt": "2026-07-18T07:31:43.605Z",
       "linksOut": [
         "slug"
       ]
@@ -4169,8 +4340,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 9286,
-      "updatedAt": "2026-07-18T04:37:05.533Z",
+      "wordCount": 9316,
+      "updatedAt": "2026-07-18T08:18:32.249Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -4323,8 +4494,8 @@
         },
         {
           "depth": 3,
-          "text": "`/` and `/topology` — Sigma WebGL hub",
-          "slug": "and-topology-sigma-webgl-hub"
+          "text": "`/` and `/topology` — canvas-2D topology hub",
+          "slug": "and-topology-canvas-2d-topology-hub"
         },
         {
           "depth": 4,
@@ -4333,8 +4504,8 @@
         },
         {
           "depth": 4,
-          "text": "Canvas (Sigma + Graphology + ForceAtlas2)",
-          "slug": "canvas-sigma-graphology-forceatlas2"
+          "text": "Canvas (`topology-map-v2` — custom canvas-2D engine + Graphology ForceAtlas2 physics)",
+          "slug": "canvas-topology-map-v2-custom-canvas-2d-engine-graphology-forceatlas2-physics"
         },
         {
           "depth": 4,
@@ -4673,8 +4844,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-05-31 (real-time adaptive vault polling, /docs editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, findevidence relevance ranking, validatevault vault→code pathDrift, inferimports edge reconciliation). Earlier ",
-      "wordCount": 9107,
-      "updatedAt": "2026-07-18T02:43:05.542Z",
+      "wordCount": 9139,
+      "updatedAt": "2026-07-18T07:58:37.765Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4783,8 +4954,8 @@
         }
       ],
       "excerpt": "Apple Designing Fluid Interfaces (WWDC18) 계열의 공개 원칙을 이 프로젝트의 디자인 헌장 (DESIGN-SYSTEM.md · .claude/rules/design.md) 위에 적용한 결정 기록. 헌장과 충돌하면 헌장이 이긴다 — 아래 \"충돌 재정\" 참조. topology-map-v2 (Slice 2)의 설계 게이트 입력 문서이며, design-guardian 검증은 구현 시점에 스크린샷 증거로 수행한다. 앱을 두 영역으로 나누고 모션 규율을 다르게 적용한다: · 영역 · 규율 · 근거 · 크롬 (패널·버튼·팝오버·리스트) · 기존 헌장",
-      "wordCount": 752,
-      "updatedAt": "2026-07-17T13:45:18.007Z",
+      "wordCount": 756,
+      "updatedAt": "2026-07-18T08:19:34.450Z",
       "linksOut": []
     },
     {
@@ -6234,7 +6405,7 @@
         "domain": "views",
         "elements": [
           "src/views/home/lib/topology-node-significance.ts",
-          "src/views/home/ui/TopologyNodePopover.tsx"
+          "src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx"
         ]
       },
       "headings": [
@@ -6250,8 +6421,8 @@
         }
       ],
       "excerpt": "기획자·C-level 등 비개발자가 토폴로지에서 노드를 클릭했을 때, 그래프 jargon(숫자·dependson)이 아니라 평문 business 문장으로 \"so what\"을 읽게 한다. 결핍 정의: 노드를 봐도 왜 중요한지·무엇에 기대는지·바뀌면 어디 영향인지가 안 읽혔다. 이미 있는 그래프 데이터에서 결정론적으로 파생 — 새 authoring 0: 무엇인가 — kind + owner domain → \"Views 영역에 속한 역량\" 왜 중요한가 — fan-in 기반 core/supporting/leaf 판정. core 임계값은 health-signal 의 PROMOT",
-      "wordCount": 164,
-      "updatedAt": "2026-06-09T11:42:09.941Z",
+      "wordCount": 165,
+      "updatedAt": "2026-07-18T08:22:31.867Z",
       "linksOut": [
         "capabilities/topology-ontology-inspection"
       ]
@@ -6352,9 +6523,7 @@
           "src/features/docs-vault-local/lib/diff-manifest.ts",
           "src/features/docs-vault-local/model/use-local-vault.ts",
           "src/features/docs-vault-local/model/VaultDiffToaster.tsx",
-          "src/widgets/topology-map-sigma/lib/coord-preservation.ts",
-          "src/widgets/topology-map-sigma/lib/graph-build.ts",
-          "src/widgets/topology-map-sigma/lib/reducer-entrance.ts"
+          "src/widgets/topology-map-v2"
         ],
         "relates": [
           "capabilities/builder-vault-write",
@@ -6391,8 +6560,8 @@
         }
       ],
       "excerpt": "R14 (155-158, 2026-05-04 ~ 2026-05-05) 에 도입된 web 즉시 반영 능력. 사용자 명시 \"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때\" 의 4 단계 답. IDE / AI agent / CLI 어느 surface 가 vault .md 만지면 웹 탭이 focus 안 해도 ~5s 안에 반영. · Step · What · Where 인지 · 155 polling · 5s 간격 fingerprint check + visible-only 자동 reload · 백그라운드 · 156 graph diff pulse · 새 노드 amber sin",
-      "wordCount": 569,
-      "updatedAt": "2026-06-05T13:35:10.565Z",
+      "wordCount": 554,
+      "updatedAt": "2026-07-18T07:33:54.473Z",
       "linksOut": []
     },
     {
@@ -9183,114 +9352,6 @@
       ]
     },
     {
-      "slug": "SIGMA-PLAYBOOK",
-      "path": "docs/SIGMA-PLAYBOOK.md",
-      "title": "Sigma.js v3 — \"내장 기능 우선\" 플레이북 (topology-map-v2 / Slice 2)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Sigma.js v3 — \"내장 기능 우선\" 플레이북 (topology-map-v2 / Slice 2)",
-          "slug": "sigmajs-v3-내장-기능-우선-플레이북-topology-map-v2-slice-2"
-        },
-        {
-          "depth": 2,
-          "text": "1. 내장 기능 카탈로그 — 커스텀 코드 대신 이걸 쓴다",
-          "slug": "1-내장-기능-카탈로그-커스텀-코드-대신-이걸-쓴다"
-        },
-        {
-          "depth": 3,
-          "text": "1.1 nodeReducer / edgeReducer — ego-focus dim 메커니즘의 정답",
-          "slug": "11-nodereducer-edgereducer-ego-focus-dim-메커니즘의-정답"
-        },
-        {
-          "depth": 3,
-          "text": "1.2 Camera API — 애니메이션 pan/zoom/fit을 직접 구현하지 않는다",
-          "slug": "12-camera-api-애니메이션-panzoomfit을-직접-구현하지-않는다"
-        },
-        {
-          "depth": 3,
-          "text": "1.3 이벤트 시스템 — 커스텀 hit-testing 금지",
-          "slug": "13-이벤트-시스템-커스텀-hit-testing-금지"
-        },
-        {
-          "depth": 3,
-          "text": "1.4 hideEdgesOnMove / hideLabelsOnMove / label 임계값 — 자체 LOD 로직 금지",
-          "slug": "14-hideedgesonmove-hidelabelsonmove-label-임계값-자체-lod-로직-금지"
-        },
-        {
-          "depth": 3,
-          "text": "1.5 노드/엣지 프로그램 — state를 색이 아니라 프로그램으로 표현",
-          "slug": "15-노드엣지-프로그램-state를-색이-아니라-프로그램으로-표현"
-        },
-        {
-          "depth": 3,
-          "text": "1.6 레이어 시스템 — DOM 오버레이의 올바른 위치",
-          "slug": "16-레이어-시스템-dom-오버레이의-올바른-위치"
-        },
-        {
-          "depth": 3,
-          "text": "1.7 getNodeDisplayData / 좌표 변환 API — 팝오버 앵커링의 정답",
-          "slug": "17-getnodedisplaydata-좌표-변환-api-팝오버-앵커링의-정답"
-        },
-        {
-          "depth": 3,
-          "text": "1.8 refresh / scheduleRefresh / scheduleRender — 수동 재렌더 시맨틱",
-          "slug": "18-refresh-schedulerefresh-schedulerender-수동-재렌더-시맨틱"
-        },
-        {
-          "depth": 2,
-          "text": "2. 공식 예제 매핑",
-          "slug": "2-공식-예제-매핑"
-        },
-        {
-          "depth": 2,
-          "text": "3. 성능 계약",
-          "slug": "3-성능-계약"
-        },
-        {
-          "depth": 3,
-          "text": "무엇이 느려지는가 (소스 근거)",
-          "slug": "무엇이-느려지는가-소스-근거"
-        },
-        {
-          "depth": 3,
-          "text": "올바른 React 통합 패턴",
-          "slug": "올바른-react-통합-패턴"
-        },
-        {
-          "depth": 3,
-          "text": "레이아웃 사전 계산/캐시",
-          "slug": "레이아웃-사전-계산캐시"
-        },
-        {
-          "depth": 2,
-          "text": "4. 우리 커스텀 최소 목록",
-          "slug": "4-우리-커스텀-최소-목록"
-        },
-        {
-          "depth": 2,
-          "text": "5. 저알파 불변식 적용 — reducer 레벨 계약",
-          "slug": "5-저알파-불변식-적용-reducer-레벨-계약"
-        },
-        {
-          "depth": 2,
-          "text": "6. 함정 목록",
-          "slug": "6-함정-목록"
-        },
-        {
-          "depth": 2,
-          "text": "참고 소스 (전부 이번 조사에서 직접 확인)",
-          "slug": "참고-소스-전부-이번-조사에서-직접-확인"
-        }
-      ],
-      "excerpt": "모든 API 이름은 jacomyal/sigma.js main 브랜치 소스(packages/sigma/src/.ts)와 공식 스토리북 예제(packages/storybook/stories/), packages/website/docs/advanced/.md, sim51/react-sigma 문서에서 직접 확인했다. 버전 드리프트가 의심되는 곳(예: edge 이벤트 플래그)은 소스 코드를 최종 근거로 명시했다. 그래프를 mutate 하지 않고 렌더 직전에 노드/엣지 표시 속성을 통째로 다시 계산한다. data.ts 문서: \"developers want to highligh",
-      "wordCount": 2999,
-      "updatedAt": "2026-07-17T13:49:19.029Z",
-      "linksOut": []
-    },
-    {
       "slug": "TECH-STACK",
       "path": "docs/TECH-STACK.md",
       "title": "TECH STACK — 기술 스택 결정 기록 (2026-07-17)",
@@ -9334,8 +9395,8 @@
         }
       ],
       "excerpt": "2026-07-17 기준 전 레이어 조사(웹 프론트·데스크톱·CLI/MCP·LLM/Layer 2 인프라 4건) 후 확정한 판정. 판정 원칙: 검증된 스택은 유지가 기본값 (전면 재작성 반려 판정과 동일 논리 — 교체는 측정된 이득이 마이그레이션 비용을 명확히 넘을 때만). 다음 전면 재검토: 2027-01 또는 갈림길 조건 발화 시. 일부 조사는 세션 검색 예산 소진으로 학습 데이터+공식 문서 fetch 기반 — ⚠ 표기 항목은 실행 전 재검증. · 레이어 · 현재 · 판정 · 근거 · Next.js · 16.2.x static export · KEEP · stati",
-      "wordCount": 839,
-      "updatedAt": "2026-07-17T13:50:48.521Z",
+      "wordCount": 884,
+      "updatedAt": "2026-07-18T07:58:58.799Z",
       "linksOut": []
     },
     {
@@ -9431,64 +9492,6 @@
       "excerpt": "Design spec for how the topology view (/, /topology) reveals a node on click and how it stays readable + fast as the vault grows past 2–3k nodes. This is the canonical decision; .claude/rules/design.md and DESIGN-SYSTEM.md carry the short rule, this doc carries the reasoning + cited references. Status: approved directi",
       "wordCount": 1053,
       "updatedAt": "2026-06-08T13:07:38.857Z",
-      "linksOut": []
-    },
-    {
-      "slug": "TOPOLOGY-MAP-REBUILD",
-      "path": "docs/TOPOLOGY-MAP-REBUILD.md",
-      "title": "지도(Relief) 뷰 재구성 설계 — 단일 컨테이너 변환 아키텍처",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "지도(Relief) 뷰 재구성 설계 — 단일 컨테이너 변환 아키텍처",
-          "slug": "지도relief-뷰-재구성-설계-단일-컨테이너-변환-아키텍처"
-        },
-        {
-          "depth": 2,
-          "text": "1. 증상과 실측 근거",
-          "slug": "1-증상과-실측-근거"
-        },
-        {
-          "depth": 2,
-          "text": "2. 현 구조 (문제의 원천)",
-          "slug": "2-현-구조-문제의-원천"
-        },
-        {
-          "depth": 2,
-          "text": "3. 목표 아키텍처 — 단일 컨테이너 변환 + FLIP",
-          "slug": "3-목표-아키텍처-단일-컨테이너-변환-flip"
-        },
-        {
-          "depth": 2,
-          "text": "4. 보존해야 할 계약 (깨지면 안 되는 것)",
-          "slug": "4-보존해야-할-계약-깨지면-안-되는-것"
-        },
-        {
-          "depth": 2,
-          "text": "5. 마이그레이션 순서 (슬라이스)",
-          "slug": "5-마이그레이션-순서-슬라이스"
-        },
-        {
-          "depth": 2,
-          "text": "6. 검증 계획",
-          "slug": "6-검증-계획"
-        },
-        {
-          "depth": 2,
-          "text": "7. 조사 티켓 (재구성과 별도)",
-          "slug": "7-조사-티켓-재구성과-별도"
-        },
-        {
-          "depth": 2,
-          "text": "8. 참고 파일",
-          "slug": "8-참고-파일"
-        }
-      ],
-      "excerpt": "2026-07-03. 소유자 결정: \"지도쪽이 부드럽지도 않고 버벅거림 — 전체 재구성\". 상태: S1~S5 구현·출하됨 (src/widgets/topology-map-canvas/) — 잔여는 §5 의 S6 후보(미니맵/범례 재공급, 관계 커넥터 클릭, 카드 드래그 재배치)와 §7 조사 티켓. 브랜치: feat/topology-map-rebuild (main = PR 305 이후). 실측 프레임은 문제없다: 설치 앱 frame-profile 프로브 (pnpm desktop:verify-topology-frame-profile:ko) 기준 지도 뷰 팬/호버/줌 전부 ",
-      "wordCount": 801,
-      "updatedAt": "2026-07-17T14:18:41.065Z",
       "linksOut": []
     },
     {
@@ -9644,9 +9647,9 @@
           "slug": "6-열린-질문"
         }
       ],
-      "excerpt": "입력: docs/prototypes/topology-b2plus.html(승인된 B2+ \"Circuit × Constellation\" 프로토타입) · docs/TOPOLOGY-V2-PHASE0.md(실측 병목 + 어댑터 계약 초안) · docs/SIGMA-PLAYBOOK.md(Sigma v3 내장 기능 계약) · docs/INTERACTION-DESIGN.md (유체 인터페이스 원칙) · .claude/rules/design.md · docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md (Design Gate · Graph Engine Fit Gat",
-      "wordCount": 3673,
-      "updatedAt": "2026-07-17T16:09:43.455Z",
+      "excerpt": "입력: docs/prototypes/topology-b2plus.html(승인된 B2+ \"Circuit × Constellation\" 프로토타입) · docs/TOPOLOGY-V2-PHASE0.md(실측 병목 + 어댑터 계약 초안) · docs/archive/SIGMA-PLAYBOOK.md(Sigma v3 내장 기능 계약 — 조사됐으나 v2는 Sigma 미채택, archived) · docs/INTERACTION-DESIGN.md (유체 인터페이스 원칙) · .claude/rules/design.md · docs/PRODUCT-DESIGN-OPERATING-SYSTE",
+      "wordCount": 3680,
+      "updatedAt": "2026-07-18T08:19:41.732Z",
       "linksOut": [
         "owner-topology-taste"
       ]
@@ -10349,6 +10352,20 @@
             "type": "doc",
             "slug": "archive/README",
             "title": "Archived analysis docs"
+          },
+          {
+            "name": "SIGMA-PLAYBOOK",
+            "path": "archive/SIGMA-PLAYBOOK",
+            "type": "doc",
+            "slug": "archive/SIGMA-PLAYBOOK",
+            "title": "Sigma.js v3 — \"내장 기능 우선\" 플레이북 (topology-map-v2 / Slice 2)"
+          },
+          {
+            "name": "TOPOLOGY-MAP-REBUILD",
+            "path": "archive/TOPOLOGY-MAP-REBUILD",
+            "type": "doc",
+            "slug": "archive/TOPOLOGY-MAP-REBUILD",
+            "title": "지도(Relief) 뷰 재구성 설계 — 단일 컨테이너 변환 아키텍처"
           },
           {
             "name": "UX-FIRST-PRINCIPLES",
@@ -11522,13 +11539,6 @@
         "title": "Documentation Guide"
       },
       {
-        "name": "SIGMA-PLAYBOOK",
-        "path": "SIGMA-PLAYBOOK",
-        "type": "doc",
-        "slug": "SIGMA-PLAYBOOK",
-        "title": "Sigma.js v3 — \"내장 기능 우선\" 플레이북 (topology-map-v2 / Slice 2)"
-      },
-      {
         "name": "TECH-STACK",
         "path": "TECH-STACK",
         "type": "doc",
@@ -11541,13 +11551,6 @@
         "type": "doc",
         "slug": "TOPOLOGY-FOCUS-AND-SCALE",
         "title": "Topology — Node Focus & Scale"
-      },
-      {
-        "name": "TOPOLOGY-MAP-REBUILD",
-        "path": "TOPOLOGY-MAP-REBUILD",
-        "type": "doc",
-        "slug": "TOPOLOGY-MAP-REBUILD",
-        "title": "지도(Relief) 뷰 재구성 설계 — 단일 컨테이너 변환 아키텍처"
       },
       {
         "name": "TOPOLOGY-V2-DESIGN",
