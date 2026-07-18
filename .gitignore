@@ -93,3 +93,4 @@ output/
 
 # 세션 검증용 스크린샷 (커밋 안 함)
 .screenshots/
+.qa-scratch/

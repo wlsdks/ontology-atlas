@@ -6,6 +6,65 @@
 
 ---
 
+## 2026-07-18 — 설치형 앱 first-run 온보딩 (진입 표면 2원화)
+
+설치형 앱(Tauri)에서 볼트 미선택 시 마케팅 랜딩(자기 자신 다운로드 CTA 모순)
+또는 `/docs` 리다이렉트 인터스티셜 대신 **옵시디언식 FirstRunPage** 를 제자리
+렌더: 볼트 폴더 열기 · 새 볼트 만들기(빈 폴더면 기존 scaffold — 마크다운 시드
+5개 + 에이전트 설정) · 데모 볼트 둘러보기 + local-first 신뢰 라인. 감지는
+`isDesktopShell()`(Tauri 런타임 1:1, dev 전용 시뮬 시임). 웹 `/` 랜딩은
+바이트-동일 유지. 릴리스 프리플라이트(check-desktop-readiness)도 새 계약으로
+갱신. 다음 DMG 전 `desktop:verify-app` 실기기 증명 필수.
+
+## 2026-07-18 — 정체성 공식 문서화 (v10): agent-native, human-sovereign
+
+"에이전트를 *위한* 시스템"이 아니라 "에이전트가 1급 사용자인, 사람과
+에이전트의 공유 의미 계층"으로 정체성을 명문화. README(Identity 절) ·
+AGENTS.md(개요) · PRODUCT-DIRECTION(v10 배너) · dogfood project 노드에 동일
+공식 반영, GitHub repo 설명 갱신. 프로젝트명은 유지(브랜드 Ontology Atlas /
+저장소·CLI·MCP `ontology-atlas` 이원 체계, v6 결정 재확인).
+
+## 2026-07-18 — 랜딩 B2+ 리디자인 (페이지 롤아웃 #1)
+
+`/` 랜딩을 v2 "Circuit × Constellation" (B2+) 기계가공 언어로 전면 재구성.
+장식이던 히어로 그래프(가짜 14노드 + entrance 애니메이션)를 **정직한
+topology 미니어처**로 교체 — 실제 dogfood vault(docs/ontology) frontmatter
+에서 빌드타임에 유도한 project hex + domain 칩 6 + 허브 capability 원을
+정적 SVG 로 그리고, 음각 mono 숫자로 실측 census (106 CONCEPTS · 500
+RELATIONS) 를 각인한다. 목업 데이터 0.
+
+- **census 파이프라인** — `scripts/lib/vault-census.mjs` 에
+  `dogfoodVaultGraphSummary` 추가, `scripts/build-docs-vault.mjs` 가
+  `src/views/landing/model/dogfood-census.generated.ts` (작은 상수 모듈,
+  deterministic) 를 생성. 400KB manifest 를 랜딩 번들에 싣지 않는다.
+- **전역 승격 토큰** — `--engraved-numeral-*` · `--kind-glyph-*` 12종을
+  `app/globals.css` 에 승격 (다크 = v2 값 복사, 라이트 = 신규 정의).
+  `--topology-v2-*` 직접 참조 0 유지.
+- 01/02/03 카드 · OSS 스펙 테이블 · CTA 를 machined 스타일(1px border-soft
+  + 컴팩트 radius + 음각 index)로 통일. 다크/라이트 · en/ko 모두 지원.
+
+제품 계획 v9 (`docs/PRODUCT-PLAN-2026-07.md`) 네트워크 트랙 N0 실행 — 이미
+구현·검증된 vault frontmatter 스키마를 `docs/ONTOLOGY-ATLAS-SPEC.md` 공개
+명세로 승격했다. 새 필드/규칙 없음, 문서 전용. 5 kind · 관계 타입 ·
+untrusted-content 원칙 · 준수 테스트로 기존 contract test 스위트를 인용한다.
+8주 RFC 피드백 창 (kill criteria) 동안 GitHub Issues 로 코멘트 받는다.
+## 2026-07-17 — 제품 계획 v9: 2층 정체성 (Layer 1 로컬 코어 + Layer 2 Atlas Network)
+
+하루 집중 재기획의 확정 (조사 17건 · 페르소나 7인 · CPO 심사 · 사상가 렌즈
+10인 × 3라운드 · 도입 심사 10인). 캘리브레이션 결과 기획 단계 평가 7.6은
+Obsidian/dbt 의 기획 단계 소급 점수(7.3)를 상회 — 문서 단계 종료 판정.
+
+- **`docs/PRODUCT-PLAN-2026-07.md` 신설** — canonical 제품 계획. 1차 타겟을
+  "2~10인 팀 테크리드" 단일로 정밀화, 매직 모먼트·kill criteria 13행·해자
+  5층·승인 3계층·인젝션 방어 Tier 1~3 정의.
+- **정체성 개정** — R10 "클라우드 영구 제거"를 2층 구조로 개정 (AGENTS.md 의
+  cloud collab 재설계 예약 조항의 조기 개시). Layer 1 은 불변 (영원히
+  무료·오프라인·백엔드 0), Layer 2 (Spec/Hub/Team Sync) 는 신뢰 헌장 6조
+  준수 시에만. `.claude/rules/forbidden.md` · `local-first.md` 개정.
+- **다중 이해관계자 문구 정정** — v8 의 "기획자·마케터·C-level" 을 증거
+  기반("비개발자는 유지하지 않는다, 질문한다")으로 "질문자 (게이트 뒤)"
+  모델로 교체.
+
 ## 2026-07-03 — 지도 뷰 재구성: 단일 컨테이너 변환 엔진 (TopologyMapCanvas)
 
 소유자 결정("지도가 부드럽지도 않고 버벅거림 — 전체 재구성")의 실행.

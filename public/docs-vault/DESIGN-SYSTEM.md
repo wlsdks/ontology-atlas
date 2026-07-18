@@ -1,11 +1,17 @@
 ---
 title: Design System
-tags: [design, ux, linear, overview]
+tags: [design, ux, linear, circuit-constellation, overview]
 ---
 
 # Design System
 
 > This document is maintained based on Section 3 of the design spec. For the original Linear specification, see [`design-references/DESIGN-linear.md`](design-references/DESIGN-linear.md).
+>
+> **v2 (2026-07)**: topology-map-v2 에서 출하된 B2+ "Circuit × Constellation"
+> 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights →
+> download)의 규범이 되었다 — 아래 *v2 — "Circuit × Constellation" (B2+) 시각
+> 언어* 절 참조. v2 는 v1 헌장(무채색 + 단일 인디고 + 금지 패턴)을 **확장**하며
+> 대체하지 않는다.
 
 ## Why this direction
 
@@ -23,6 +29,215 @@ over the same local markdown graph:
 The tree is therefore a browse mode, not the whole product identity. Headers,
 cards, and navigation should point users from tree inspection into Builder and
 Insights whenever the next action is writing or graph-level verification.
+
+## v2 — "Circuit × Constellation" (B2+) 시각 언어
+
+> 충실도 기준: `docs/prototypes/topology-b2plus.html` (owner 승인, 유일한
+> fidelity source). 구현 기준: `src/widgets/topology-map-v2/` +
+> `app/globals.css` 의 `--topology-v2-*` / `--topology-chrome-*` 토큰.
+> 표현 아키텍처 전체는 [`TOPOLOGY-V2-DESIGN.md`](./TOPOLOGY-V2-DESIGN.md).
+> 이 절은 그 언어를 topology 밖 페이지로 확장할 때의 **작업 규칙서**다 —
+> 마케팅 산문이 아니다.
+
+### v2 언어 정의 — 6개 축
+
+1. **Machined surface (기계 가공 표면).** 모든 도형·카드는 1px 스트로크 +
+   중립 fill tier 로 "깎아 만든 부품"처럼 읽힌다. 캔버스 노드는 monochrome
+   세로 sheen(`--topology-v2-node-sheen-tint` + blend `0.6`) 하나만 허용 —
+   far-field 에서 dissolve 되고, DOM 카드에는 sheen 을 흉내내지 않는다
+   (장식 그라디언트 금지는 v1 그대로).
+2. **Engraved mono numerals (음각 숫자).** 카운트·집계는 mono 서체로, 1px
+   다크 그림자(`--topology-v2-numeral-shadow`) 위 밝은 면
+   (`--topology-v2-numeral-face`) — 인쇄가 아니라 각인. 숫자는 항상 실제
+   데이터(노드 수 · 관계 수 · census)를 가리킨다. 장식용 숫자 금지.
+3. **Kind = shape, not color.** project=hex 플레이트 · domain=사각 칩
+   (pin-tick) · capability=원 · element=pad+via(드릴 홀). kind 구분의 1차
+   채널은 **형태**이고, 색은 fill/stroke 의 밝기 tier 차이만 미세하게 진다.
+   panel/card 의 kind 미니어처는 캔버스와 같은 `--topology-v2-node-*` 토큰을
+   재사용한다. 색으로 kind 를 구분하는 UI 로 되돌아가지 않는다.
+4. **신호 = 상태 (전원/펄스).** 인디고는 "전원이 들어와 있음" — fresh 노드
+   스트로크, powered dot(`--topology-v2-panel-power-on`), 활성 강조. comet
+   pulse 는 "전류가 흐름" — `depends` 관계의 살아있는 traversal (ego 에서
+   가속, `--topology-v2-edge-pulse-speed[-ego]`). stale 은 dashed 보더 +
+   저채도 표면. 신호색이 상태를 설명하지 않으면 쓰지 않는다.
+5. **Calm chrome / fluid canvas 경계.** 캔버스는 유체적 — 스프링 카메라,
+   altitude crossfade(circuit ↔ constellation smoothstep), breathe. chrome
+   (패널·레인·pill)은 정적 정밀 계기 — `--topology-chrome-*` 밀도(컨트롤
+   32~36px, 아이콘 11~12px, 타이틀 12px, eyebrow 9px)로 1920 데스크톱에서
+   터치 표면이 아니라 계측기로 읽힌다. 유체 모션은 캔버스 밖으로 새어나가지
+   않는다.
+6. **단일 인디고 + 단일 amber-hub 예외.** v1 헌장 그대로. amber
+   (`--topology-v2-amber-hub`)는 허브 링 하나에만. cyan 등 제2 채색 도입은
+   Guardian 반려 전례(cyan 제2채색 결함, TOPOLOGY-V2-DESIGN verdict a5)가
+   있다 — 재시도 금지.
+
+### v2 토큰 카탈로그 — tier 별
+
+값의 진실원은 `app/globals.css` 하나. Canvas 2D 는 CSS 변수를 직접 못 읽으므로
+`src/widgets/topology-map-v2/tokens/read-topology-v2-tokens.ts` 가
+`getComputedStyle` 로 1회 해석·캐싱한다.
+
+| Tier | 토큰 | 언제 쓰나 |
+|---|---|---|
+| **Surface (표면)** | `--topology-v2-canvas-bg-near/-far` · `--topology-v2-grid-minor/-major` · `--topology-v2-vignette-*-alpha` · `--topology-v2-node-fill-{project,domain,capability,element,dim,stale}` · `--topology-v2-node-hole-fill` · `--topology-v2-node-sheen-tint/-blend` · `--topology-v2-panel-surface/-border/-divider/-shadow/-row-hover/-metric-surface/-action-surface` | 배경·도형 몸통·패널 바탕. 새 표면이 필요하면 이 tier 에 토큰 추가 — JSX/캔버스에 hex 직접 금지 |
+| **Stroke (스트로크)** | `--topology-v2-node-stroke-{project,domain,capability,element,dim,stale}` · `--topology-v2-edge-contains/-depends/-dim` · `--topology-v2-hull-stroke` · `--topology-v2-edge-contains-mark/-depends-mark` · `--topology-v2-panel-action-border` | 1px 기계 가공 윤곽 + 관계 trace 잉크. contains=실선, depends=점선 — 이 구분은 페이지 divider 에도 이식 가능 |
+| **Text ladder (텍스트 사다리)** | `--topology-v2-label-{project,domain,capability,element}` · `--topology-v2-numeral-shadow/-face` · `--topology-v2-panel-text-{primary,secondary,tertiary,quaternary}` · `--topology-v2-panel-metric-text` | kind 가 낮을수록 어두워지는 4단 사다리. panel tertiary 는 10px AA 대비를 위해 `#868690` 로 넛지됨(Guardian follow-up #2) — 캔버스 값과 다른 이유가 있으니 임의 통일 금지 |
+| **Signal (신호)** | `--topology-v2-indigo`(=`--color-indigo-brand`) · `--topology-v2-indigo-bright` · `--topology-v2-amber-hub` · `--topology-v2-panel-power-on/-off` | 전원/펄스/포커스/허브. 상태 설명 없는 신호색 금지 |
+| **Density · geometry (밀도)** | `--topology-v2-radius-*` · `--topology-v2-layout-ring-*` · `--topology-v2-edge-bow/-blend-*` · `--topology-v2-star-count` · `--topology-v2-dust-area-per-point` · `--topology-v2-safe-inset-*` · `--topology-v2-panel-width/-pad/-gap/-radius/-row-radius` · `--topology-v2-label-max-width` | world-unit 숫자(단위 없음, canvas 소비)와 px(DOM 소비)가 섞여 있다 — 주석의 소비처 표기를 지켜라 |
+| **Motion** | `--topology-v2-camera-*`(spring/damping/momentum/flick) · `--topology-v2-altitude-*-ratio` · `--topology-v2-overview-entry-ratio` · `--topology-v2-focus-*` · `--topology-v2-emphasis-*-tau` · `--topology-v2-ripple-stagger-ms` · `--topology-v2-breathe-*` · `--topology-v2-pulse-duration-ms` · `--topology-v2-tip-fade-ms` · `--topology-v2-edge-pulse-speed[-ego]` | 캔버스 유체성 전용. DOM chrome 은 기존 `--topology-motion-*` (180/420/720ms) 사용 |
+| **Chrome density (전역)** | `--topology-chrome-control-height[-compact]` · `--topology-chrome-badge-size[-compact]` · `--topology-chrome-icon-size[-sm]` · `--topology-chrome-gap/-radius/-title-size/-eyebrow-size/-shadow` (+ `--topology-utility-lane-*` alias) | 계기 밀도의 단일 기준. 새 페이지의 데스크톱 컨트롤 클러스터는 이 값을 상속 — 터치 크기 인플레이션 재도입 금지 |
+
+**스코프 주의**:
+
+- `--topology-v2-*` 는 **feature flag `topology-map-v2` 뒤에서만 소비**되는
+  패밀리다. P6 구엔진 삭제 시 `--topology-v2-` grep 한 번으로 신구 교체
+  범위가 나오도록 유지한다 — 다른 페이지가 이 패밀리를 직접 참조하면 그
+  계약이 깨진다. 페이지 롤아웃에서 같은 값이 필요하면 **전역 토큰으로 승격**
+  (이름 재부여 + 이 문서 갱신)이 먼저다.
+- `--topology-chrome-*` 는 이미 전역이다(HomePage 가 렌더 엔진 밖에서 그려
+  map-v2/map-canvas/sigma 가 동일 상속). 페이지 롤아웃의 chrome 밀도는 이
+  패밀리를 바로 쓴다.
+- 라이트 모드 값은 **의도적으로 아직 없다** — 라이트 테마도 다크 값을 그대로
+  상속한다. "v2 canvas light-mode" 패스는 Design Guardian 리뷰로 확정 전까지
+  보류 상태다 (아래 가드 참조).
+
+### 페이지 롤아웃 적용 규칙
+
+롤아웃 순서: 랜딩 → docs(`/docs` Source Vault)/ontology 허브(`/ontology`) →
+projects(`/projects`, `/project/[slug]`)/insights(`/ontology/insights`) →
+download(`/download`).
+
+**페이지로 가져가는 것** (전역 언어):
+
+- 계기 밀도 — `--topology-chrome-*` 컨트롤 클러스터 밀도.
+- 음각 mono 숫자 — census/카운트/집계 표기 (`numeral` 각인 패턴, mono +
+  1px 그림자).
+- machined 카드 — `--color-panel` 표면 + 1px `border-soft` 윤곽 + 컴팩트
+  radius. 두꺼운 보더·이중 보더·글로우 링 금지.
+- trace divider — hairline 1px 구분선. 관계 의미가 있을 때만 실선(contains
+  계열)/점선(depends·stale 계열) 구분을 이식.
+- kind 미니어처 — hex/사각 칩/원/pad 글리프를 범례·리스트 마커로 재사용
+  (형태가 kind, 색은 밝기 tier).
+- powered dot — 인디고 상태 점(fresh/활성). 상태 없는 장식 점 금지.
+
+**topology 캔버스에만 남는 것** (페이지로 이식 금지):
+
+- 실물 크기 캔버스 노드 도형(모핑 포함), comet signal pulse, 4-point
+  diffraction spike, star dust, blueprint grid, vignette, altitude
+  crossfade, breathe, amber hub 링, domain hull.
+- 이것들을 DOM/CSS 로 흉내내는 순간 "AI 데모 배경"이 된다 — 랜딩 히어로에
+  constellation 배경을 깔고 싶다는 충동이 대표적 반례다.
+
+**전역 승격 완료 토큰** (랜딩 롤아웃, 2026-07-18 — `app/globals.css`):
+
+- `--engraved-numeral-face` / `--engraved-numeral-text-shadow` — 음각 mono
+  숫자. 다크 값은 v2 numeral 값 복사, 라이트 값은 레터프레스(어두운 면 +
+  밝은 아래 그림자)로 신규 정의.
+- `--kind-glyph-stroke-{project,domain,capability,element}` /
+  `--kind-glyph-fill-{project,domain,capability,element}` /
+  `--kind-glyph-edge-contains` / `--kind-glyph-edge-relates` — kind 글리프
+  미니어처(hex/칩/원/pad)와 trace 잉크. 다크 값은 v2 node/edge-mark 값
+  **복사** (var() 참조 아님 — P6 `--topology-v2-` grep 계약 유지), 라이트
+  값 신규. 소비처: `src/views/landing/ui/LandingPage.tsx`
+  (마커 `data-token="engraved-numeral"` / `data-token="kind-glyph"`).
+- 랜딩 히어로 census 숫자의 진실원:
+  `src/views/landing/model/dogfood-census.generated.ts` —
+  `scripts/build-docs-vault.mjs` 가 dogfood vault frontmatter 에서 생성.
+
+**Surface class 별 do / don't**:
+
+| Surface | Do | Don't |
+|---|---|---|
+| Hero (랜딩) | 실제 dogfood vault 를 그리는 topology 미니어처 1개를 증거로 배치 (live 또는 정적 캡처). 카피는 Korean h1 + 영문 caption 패턴 | 장식용 constellation/grid 배경, 오로라, 움직이는 배경, 스크롤 연동 캔버스 애니메이션 |
+| Card grid (projects/허브) | machined 카드 + kind 글리프 + 음각 mono 카운트. hover 는 보더 밝기 상승만 | kind 별 채색 카드 배경, full-height colored rail, scale hover, 카드 내 그라디언트 |
+| Data table (insights) | hairline divider, mono 숫자 우측 정렬, 관계 의미가 있는 실선/점선 구분, 신호는 인디고 dot/bar 하나 | zebra 줄무늬 틴트, 셀 배경 채색, 상태별 다색 뱃지 시스템 |
+| Nav / chrome | `--topology-chrome-*` 밀도 상속. 데스크톱은 정밀 계기(32~36px 컨트롤), 터치 브레이크포인트에서만 확대 | 데스크톱에 터치 밀도(48px+) chrome, 페이지마다 다른 컨트롤 높이/radius 임의 정의 |
+| Download | 설치 산출물(DMG 크기·버전·체크섬)을 음각 mono 로 — 계기판처럼 사실 나열 | 마케팅 배지 그라디언트, 스토어 스타일 별점/글로우 CTA |
+
+### 금지 재확인 (v2)
+
+v1 의 [Absolute rules](#absolute-rules-donts) 전부 그대로 유효하다. 페이지
+롤아웃에서 추가로 반려되는 v2 특정 패턴 (Guardian verdict 전례 기반):
+
+- ❌ detail card 안 full-height colored rail (AI SaaS callout 클리셰 — v1
+  Anti-AI 절에도 명시, 재확인)
+- ❌ white-slab-on-dark-canvas — 다크 캔버스 위에 라이트 톤 패널 슬랩을 띄워
+  두 세계가 충돌하는 배치. 캔버스 위 chrome 은 반드시 다크 패널 토큰
+- ❌ JSX 안 tokenless `clamp(...)` / shadow / easing — 토큰 + 마커 없이 시각
+  값 추가 금지 (v1 Tokenization Contract 의 페이지 확장)
+- ❌ 데스크톱에 touch-density chrome — 48px+ 컨트롤, 터치용 여백 인플레이션
+- ❌ ego-focus dim 을 저알파로 — dim 은 불투명 토큰
+  (`--topology-v2-node-fill/stroke-dim`)만. 알파는 전체 대기층 crossfade
+  (grid/dust/vignette/힌트류)에만 허용 (WebGL 저알파 불투명 합성 결함 전례)
+- ❌ `--topology-v2-*` 를 topology 밖 페이지에서 직접 참조 (전역 승격 먼저)
+- ❌ 제2 채색(cyan 등) — data mark 명분이라도 Guardian 전례상 반려
+
+### 가드 (페이지 롤아웃 프로세스)
+
+- **페이지 PR 마다 Design Guardian verdict 필수.** 최소 verdict 는 attention
+  winner · typed fact · token contract · motion state · 스크린샷/WebView
+  증거 · installed-app proof 필요 여부를 포함한다 (`.claude/rules/design.md`).
+- **before/after 스크린샷은 다크+라이트 양쪽** 첨부 (git.md PR 규칙).
+- **라이트 모드 작업은 한 사이클에 한 번에** — 부분 마이그레이션이 alpha 토큰
+  회귀를 만들어왔다. 특히 **"v2 canvas light-mode" 패스는 아직 미실행**
+  (v2 토큰은 다크 전용, 라이트가 다크 값 상속 중) — 페이지 롤아웃 중 라이트
+  변주가 필요해지면 부분 수정하지 말고 해당 패스를 통째로 계획하라.
+- 새 토큰은 v1 Tokenization Contract 그대로: product reason · state/layer ·
+  responsive fallback · WebView/test marker 4종 명시.
+- v2 위젯 회귀 게이트: `pnpm exec vitest run src/widgets/topology-map-v2`.
+
+### 부채 — 토큰 drift 감사 (2026-07-18)
+
+토큰 패밀리를 우회하는 hardcode 목록. **이 패스에서는 기록만 하고 고치지
+않는다** — 각 항목은 후속 사이클에서 토큰 승격 또는 의도 문서화로 해소한다.
+
+`src/widgets/topology-map-v2/`:
+
+- `render/starfield.ts:75` — star-dust 잉크 `rgba(236,236,240,…)` 리터럴
+  (알파만 farT 연동, 잉크색 미토큰).
+- `render/grid.ts:147-148` — vignette 잉크 `rgba(3,3,4,…)` 리터럴 (alpha 는
+  `--topology-v2-vignette-*-alpha` 토큰, 색 자체는 미토큰).
+- `render/labels.ts:50-53` — kind 별 라벨 폰트 스택/크기 hardcode
+  (`"600 13px -apple-system, 'SF Pro Text', …"` 등 4종). 프로토타입 충실
+  복사이지만 앱 본문 서체(Inter Variable)와 불일치 — 의도인지 drift 인지
+  후속 결정 필요.
+- `render/node-shapes.ts:201` — 음각 숫자 폰트 `600 ${size}px ui-monospace…`
+  패밀리/웨이트 hardcode.
+- `ui/TopologyV2DetailPanel.tsx` — 색은 전부 `--topology-v2-panel-*` 토큰
+  기반이나 **타입 사다리가 미토큰**: `text-[10px]`~`text-[13.5px]` ·
+  `tracking-[0.12em]` · `pl-[30px]` · `h-[6px]` 등 arbitrary 값 다수. 구
+  node-popover 패밀리는 compact 타입 토큰이 있었으므로 v2 패널도 승격 대상.
+
+`src/views/home/ui/HomePage.tsx` (topology chrome, 페이지 롤아웃 시 공유될
+표면):
+
+- `:63,68` — 로딩 status 카드: `rgba(139,151,255,0.24)` 보더 ·
+  `rgba(13,15,21,0.92)` 표면 · `shadow-[0_16px_36px_rgba(0,0,0,0.34)]` ·
+  `rgba(199,205,255,0.92)` 텍스트.
+- `:1949,1961` — drawer 액션: focus ring `rgba(94,106,210,0.46)` · accent
+  surface `rgba(94,106,210,0.16/0.24)` (기존 `--topology-utility-lane-*`
+  토큰과 같은 값이나 직접 리터럴).
+- `:2647` — 단축키 버튼 hover 보더 `rgba(139,151,255,0.35)`.
+- `:2664` — 상태 pill: 보더 `rgba(139,151,255,0.32)` +
+  `shadow-[0_8px_24px_rgba(0,0,0,0.35)]` + `top-[96px]` 위치.
+- `:2708` — 필터 컨텍스트 칩: `rgba(139,151,255,0.28/0.9)` +
+  `left-[220px]` 계단식 위치값.
+- `:2723,2725` — 에러 토스트: `rgba(236,116,116,*)` — **헌장의 에러 red
+  `rgba(229,72,77,*)` 와도 불일치**하는 미등록 적색 + `rgba(18,20,26,0.98)`
+  표면 + `shadow-[0_12px_28px_rgba(0,0,0,0.45)]` + `top-[52px]`.
+
+프로토타입 ↔ 출하 코드의 **의도된** 편차 (drift 아님, 참고):
+
+- 기본 overview 가 프로토타입은 tight-fit(성도 쪽), 출하는
+  `--topology-v2-overview-entry-ratio: 0.95` 로 circuit 쪽에서 진입.
+- `--topology-v2-edge-pulse-speed-ego`(0.2) 는 프로토타입에 없던 lead spec
+  추가분 ("선택 노드엔 전류가 더 흐른다").
+- `--topology-v2-safe-inset-*` 는 패널 없는 프로토타입엔 없던 개념 — 출하
+  환경의 분석 패널/팝오버 레일이 캔버스를 덮는 폭 보정.
+- 데이터시트 패널(`TopologyV2DetailPanel`) 자체가 프로토타입(tip 만 존재)
+  이후 추가된 표면 — instrument 밀도 계약은 §2.6 토큰 블록이 진실원.
+- panel tertiary 텍스트 `#868690` 는 프로토타입 `#77777f` 의 AA 대비 넛지
+  (Guardian follow-up #2).
 
 ## Cited lineage — where these rules come from
 
@@ -148,6 +363,18 @@ names in component data markers and tests whenever a surface depends on
   폭을 물려받지 않는다.
 - `--topology-panel-compact-reserved-width`: compact fallback with reserved
   right-side inspector space.
+- `--topology-chrome-control-height` (+ `-compact`) / `--topology-chrome-badge-size`
+  (+ `-compact`) / `--topology-chrome-icon-size` (+ `-sm`) / `--topology-chrome-gap` /
+  `--topology-chrome-radius` / `--topology-chrome-title-size` /
+  `--topology-chrome-eyebrow-size` / `--topology-chrome-shadow`: 지도 chrome 밀도
+  토큰. 브랜드 pill(HeroCollapsed) · 상단 검색/정렬 HUD lane · 우측 액션 lane 이
+  하나의 machined 컨트롤 클러스터로 이 값을 공유한다. 1920 데스크톱에서 chrome 이
+  터치 크기가 아니라 정밀 도구로 읽히도록 컨트롤 높이/아이콘/타입을 한 단계
+  좁혔다(높이 48→36, 아이콘 15→12/14→11, 타이틀 13→12, census 는 legible 9px 유지).
+  chrome 클러스터는 render 엔진 밖 HomePage 에서 그려지므로 map-v2 / map-canvas /
+  sigma 가 동일하게 물려받고, 캔버스는 별도 `--topology-ui-scale-factor` 를 써서
+  이 토큰에 영향받지 않는다. `--topology-utility-lane-height/-gap/-radius/-compact-width`
+  는 이 chrome 토큰을 참조해 HUD/액션 lane 밀도를 단일 기준으로 맞춘다.
 - `--topology-card-selected-focus-max-width`: selected focus map card width;
   keeps the current node title readable before secondary subtree count metadata
   while the direct relation facts chip stays visible.
@@ -998,6 +1225,7 @@ The public surfaces `/`, `/topology`, `/docs`, `/projects`, `/project/[slug]` us
 
 ## Changelog
 
+- 2026-07-18: v2 — B2+ "Circuit × Constellation" 언어를 페이지 롤아웃 규범으로 승격 (언어 6축 · 토큰 tier 카탈로그 · surface class 별 do/don't · v2 금지 추가 · 롤아웃 가드 · 토큰 drift 부채 감사); see [`TOPOLOGY-V2-DESIGN.md`](./TOPOLOGY-V2-DESIGN.md)
 - 2026-06-08: Added topology node-focus & scale pattern (ego popover, overview-first, plain-language counts, LOD perf path); see [`TOPOLOGY-FOCUS-AND-SCALE.md`](./TOPOLOGY-FOCUS-AND-SCALE.md)
 - 2026-04-13: Removed the consulting category
 - 2026-04-12: Initial draft (Phase 0)

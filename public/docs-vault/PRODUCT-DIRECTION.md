@@ -1,5 +1,20 @@
 # PRODUCT DIRECTION — Ontology workbench (humans + AI agents co-author)
 
+> **[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign.**
+> "에이전트를 *위한* 시스템"이 아니라 "**에이전트가 1급 사용자인, 사람과
+> 에이전트의 공유 의미 계층**"이다. 에이전트는 신선도를 유지하는 엔진이자
+> 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff ·
+> 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 —
+> 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와
+> 구분되는 위치. **마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계층으로
+> 지킨다.** 모든 표면은 이중 기준을 통과해야 한다: 에이전트가 소비 가능한가
+> (typed fact · 핸드오프) + 사람이 읽고 판단 가능한가(평문 · 시각 위계).
+> 진입 표면도 2원화: 공개 웹 = 랜딩(획득), 설치형 앱 = 옵시디언식 first-run
+> (볼트 열기, 마케팅 0).
+
+> **[v9, 2026-07-17] 현행 방향은 `docs/PRODUCT-PLAN-2026-07.md` 가 canonical 이다.**
+> v9 요지: 2층 정체성 (Layer 1 로컬 코어 불변 + Layer 2 Atlas Network — Spec 표준 · Hub · 수요 게이트 뒤 Team Sync) · 1차 타겟을 "2~10인 팀 테크리드" 단일로 정밀화 · v8 의 다중 이해관계자 문구는 "질문자 (게이트 뒤)" 모델로 정정 · 신선도 증명 (drift 감지 + 승인 3계층 + 인젝션 방어) 이 핵심 차별화. 이 파일의 v2~v8 본문은 역사 기록으로 보존한다.
+
 > Written (v2): 2026-05-01
 > Decisions captured: the user confirmed **Direction A** (ontology-first) and added **dogfooding + AI-agent partnership** as a new direction.
 > This file overlays v2 on top of v1's strategic diagnosis (left in place); **the decisions and the new direction** below are what's current.
