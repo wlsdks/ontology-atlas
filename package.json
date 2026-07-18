@@ -134,6 +134,7 @@
     "test:mcp:verify:first-contact": "node scripts/run-focused-node-test.mjs --test-name-pattern \"initialize instructions|strict unknown-tool|node-dependent first-contact|first-contact response labels|bootstrap and import-analysis|first-contact verify|destructive writer dry-run|patch_concept conflict guard|list_concepts reports vault warnings|validate_vault reports problem files|malformed validate_vault|first-contact diagnosis|health summary|health check advisories|failing health checks|workspace_brief growth count drift|workspace_brief next action sample drift|fail next actions\" mcp/src/verify-script.test.mjs",
     "test:mcp:verify:timeout": "node scripts/run-focused-node-test.mjs --test-name-pattern \"verify timeout|timeout failures|startup failures|direct verify usage|direct verify timeout|direct verify CLI args|empty verify vault\" mcp/src/verify-script.test.mjs",
     "lint": "eslint",
+    "knip": "knip",
     "bundle:check": "node scripts/check-bundle.mjs",
     "test": "vitest",
     "test:run": "vitest run",
@@ -188,6 +189,7 @@
     "eslint-config-next": "16.2.4",
     "eslint-plugin-boundaries": "^6.0.2",
     "jsdom": "^29.0.2",
+    "knip": "^6.27.0",
     "tailwindcss": "^4.2.4",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^4.1.5"
