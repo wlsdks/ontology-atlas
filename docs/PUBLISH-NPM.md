@@ -183,7 +183,7 @@ In `~/.config/claude-code/mcp.json` (or wherever your agent reads MCP config):
 }
 ```
 
-Restart Claude Code. The tool list should show the `ontology-atlas` namespace with 24 tools.
+Restart Claude Code. The tool list should show the `ontology-atlas` namespace with 25 tools.
 
 ### B) Start a user vault (CLI path)
 

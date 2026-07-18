@@ -8,12 +8,20 @@ describe("useTopologyMapV2Enabled", () => {
     window.localStorage.clear();
   });
 
-  it("is false by default (no query param, no localStorage)", () => {
+  it("is TRUE by default (P6 default-on flip — no query param, no localStorage)", () => {
     const { result } = renderHook(() => useTopologyMapV2Enabled());
+    expect(result.current).toBe(true);
+  });
+
+  it("turns off via the localStorage escape hatch 'false'", () => {
+    window.localStorage.setItem("atlas:feature:topology-map-v2", "false");
+
+    const { result } = renderHook(() => useTopologyMapV2Enabled());
+
     expect(result.current).toBe(false);
   });
 
-  it("is true once localStorage['atlas:feature:topology-map-v2'] is 'true'", () => {
+  it("stays on for legacy 'true' opt-ins", () => {
     window.localStorage.setItem("atlas:feature:topology-map-v2", "true");
 
     const { result } = renderHook(() => useTopologyMapV2Enabled());
