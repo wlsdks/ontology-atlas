@@ -50,7 +50,7 @@ export function FirstRunStarterModule({
       <BezelTick position="bottom-[7px] left-[7px] border-b border-l" />
       <BezelTick position="bottom-[7px] right-[7px] border-b border-r" />
 
-      <p className="mb-2.5 flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.22em] text-[color:var(--topology-v2-panel-text-secondary)]">
+      <p className="mb-3 flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.22em] text-[color:var(--topology-v2-panel-text-secondary)]">
         <span className="relative h-2 w-2 shrink-0" aria-hidden>
           <span className="absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
           <span className="absolute -inset-[3px] rounded-full border border-[color:rgba(212,180,120,0.42)]" />
@@ -61,14 +61,14 @@ export function FirstRunStarterModule({
         </span>
       </p>
 
-      <p className="mb-3 text-[12px] leading-[1.6] text-[color:var(--topology-v2-panel-text-tertiary)]">
+      <p className="mb-4 text-[12px] leading-[1.65] text-[color:var(--topology-v2-panel-text-tertiary)]">
         <b className="font-semibold text-[color:var(--topology-v2-panel-text-primary)]">
           {t("contextBold")}
         </b>{" "}
         {t("contextRest")}
       </p>
 
-      <div className="mb-3.5 grid grid-cols-3 divide-x divide-[color:var(--topology-v2-panel-divider)] rounded-[9px] border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.55)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]">
+      <div className="mb-4 grid grid-cols-3 divide-x divide-[color:var(--topology-v2-panel-divider)] rounded-[9px] border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.55)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]">
         <MeterCell value={concepts} label={t("meterConcepts")} />
         <MeterCell value={relations} label={t("meterRelations")} />
         <MeterCell value={domains} label={t("meterDomains")} />
@@ -79,7 +79,7 @@ export function FirstRunStarterModule({
         onClick={() => void openFolder()}
         disabled={busy}
         data-testid="first-run-starter-open"
-        className="relative flex w-full items-center justify-center gap-2 rounded-[9px] border border-[color:rgba(139,151,255,0.45)] bg-[color:var(--color-indigo-brand)] py-2.5 text-[13.5px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.35)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
+        className="relative flex w-full items-center justify-center gap-2 rounded-[9px] border border-[color:rgba(139,151,255,0.45)] bg-[color:var(--color-indigo-brand)] py-3 text-[13.5px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.35)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
       >
         <FolderOpen size={14} aria-hidden />
         {busy && !scaffolding ? t("openBusy") : t("openLabel")}
@@ -88,7 +88,7 @@ export function FirstRunStarterModule({
         </span>
       </button>
 
-      <p className="mt-2.5 flex items-center justify-between text-[11.5px]">
+      <p className="mb-1 mt-3 flex items-center justify-between text-[11.5px]">
         <button
           type="button"
           onClick={() => void createVault()}
@@ -131,11 +131,11 @@ function BezelTick({ position }: { position: string }) {
 
 function MeterCell({ value, label }: { value: number; label: string }) {
   return (
-    <div className="py-2 text-center font-mono">
+    <div className="py-2.5 text-center font-mono">
       <span className="block text-[19px] font-semibold leading-none text-[color:var(--topology-v2-panel-text-primary)]">
         {value}
       </span>
-      <span className="mt-1 block text-[8px] uppercase tracking-[0.18em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+      <span className="mt-1.5 block text-[8px] uppercase tracking-[0.18em] text-[color:var(--topology-v2-panel-text-quaternary)]">
         {label}
       </span>
     </div>
