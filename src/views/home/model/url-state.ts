@@ -1,5 +1,9 @@
 import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
+import {
+  parseIndexPanelStateParam,
+  type IndexPanelState,
+} from "@/widgets/topology-index-panel";
 
 export type HomePulseMode = "all" | "7d" | "30d";
 export type TopologyAnalysisMode =
@@ -19,6 +23,16 @@ export interface HomeRouteState {
   pathSourceSlug: string | null;
   pathTargetSlug: string | null;
   createNodeIntent: boolean;
+  /**
+   * INDEX panel expand/collapse deep-link intent (B3 허브가 곧 지도,
+   * `?index=expanded|collapsed`). `null` = not specified in THIS url — the
+   * caller (HomePage) falls back to the localStorage preference, then the
+   * "expanded" default (`resolveIndexPanelState`,
+   * `@/widgets/topology-index-panel`). Kept nullable rather than defaulting
+   * here so a URL round-trip never clobbers a preference the URL didn't ask
+   * to change.
+   */
+  indexState: IndexPanelState | null;
 }
 
 const HOME_QUERY_KEYS = {
@@ -33,6 +47,7 @@ const HOME_QUERY_KEYS = {
   pathSourceAlias: "from",
   pathTargetAlias: "to",
   create: "create",
+  index: "index",
 } as const;
 
 const VALID_IMPACT: ProjectImpactMode[] = [
@@ -60,6 +75,7 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   pathSourceSlug: null,
   pathTargetSlug: null,
   createNodeIntent: false,
+  indexState: null,
 };
 
 export function parseHomeRouteState(
@@ -109,6 +125,7 @@ export function parseHomeRouteState(
     pathSourceSlug,
     pathTargetSlug,
     createNodeIntent: searchParams.get(HOME_QUERY_KEYS.create) === "concept",
+    indexState: parseIndexPanelStateParam(searchParams.get(HOME_QUERY_KEYS.index)),
   };
 }
 
@@ -189,6 +206,7 @@ export function applyHomeRouteState(
     HOME_QUERY_KEYS.create,
     state.createNodeIntent ? "concept" : null,
   );
+  setOrDelete(next, HOME_QUERY_KEYS.index, state.indexState);
 
   return next;
 }

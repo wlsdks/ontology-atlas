@@ -3076,7 +3076,24 @@
       "importance": "{level, select, core {{count}곳이 직접 의존하는 핵심 축이에요} leaf {아직 연결이 적은 말단 조각이에요} other {몇몇 곳이 의존하는 보조 노드예요}}",
       "dependsOn": "{count, plural, =0 {직접 기대는 곳이 없어요} other {{count}곳에 기댑니다: {names}}}",
       "impact": "{count, plural, =0 {의존 관계 기준으로는 바꿔도 영향받는 곳이 없어요} other {의존 관계를 따라가면 최대 {count}곳까지 영향이 번질 수 있어요}}"
-    }
+    },
+    "index": {
+      "label": "INDEX",
+      "fold": "접기",
+      "foldAria": "INDEX 접기",
+      "expandAria": "INDEX 펼치기",
+      "searchPlaceholder": "개념 검색",
+      "censusConcepts": "개념",
+      "censusRelations": "관계",
+      "censusDomains": "도메인",
+      "agentSync": "에이전트 동기화",
+      "capabilitiesShort": "역량",
+      "elementsShort": "요소",
+      "freshTitle": "최근 갱신",
+      "emptyHint": "일치하는 개념이 없습니다",
+      "revealAnalysis": "분석 보기"
+    },
+    "deeplinkNotFound": "노드를 찾을 수 없습니다: {query}"
   },
   "fullDetailA1": {
     "backToMap": "← 지도",

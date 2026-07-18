@@ -1,0 +1,165 @@
+"use client";
+
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import type { OntologyTreeNode } from "@/shared/lib/ontology-tree";
+import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import {
+  computeCapacityRatio,
+  computeDomainSubcounts,
+} from "../lib/domain-subcounts";
+
+export interface TopologyIndexTreeRowLabels {
+  capabilitiesShort: string;
+  elementsShort: string;
+  freshTitle: string;
+}
+
+export interface TopologyIndexTreeRowProps {
+  entry: OntologyTreeNode;
+  depth: number;
+  isOpen: (nodeId: string) => boolean;
+  onToggleOpen: (nodeId: string) => void;
+  onSelect: (nodeId: string) => void;
+  selectedId: string | null;
+  changedSlugs: ReadonlySet<string>;
+  maxDomainDescendantCount: number;
+  labels: TopologyIndexTreeRowLabels;
+}
+
+/**
+ * One INDEX tree row + its (conditionally rendered) children — recursive,
+ * so a capability's element children are just this component called again
+ * one depth deeper. Kept as its own file (vs. inlined in the panel) per the
+ * repo's 300-line module budget and because the recursion is easier to
+ * reason about in isolation.
+ *
+ * Row click = select (the `?p=` camera-fly + datasheet mechanic via
+ * `onSelect`); the caret is a separate click target so selecting a node
+ * never accidentally collapses/expands it (`docs/prototypes/hub-b3-immersive.html`
+ * IMPLEMENTATION NOTES — "Row click = handleSelect(node.id)").
+ */
+export function TopologyIndexTreeRow({
+  entry,
+  depth,
+  isOpen,
+  onToggleOpen,
+  onSelect,
+  selectedId,
+  changedSlugs,
+  maxDomainDescendantCount,
+  labels,
+}: TopologyIndexTreeRowProps) {
+  const { node, children } = entry;
+  const hasChildren = children.length > 0;
+  const open = isOpen(node.id);
+  const selected = selectedId === node.id;
+  const fresh = changedSlugs.has(node.id);
+  const isDomain = node.kind === "domain";
+  const subcounts = isDomain ? computeDomainSubcounts(entry) : null;
+  const capacityRatio = subcounts
+    ? computeCapacityRatio(subcounts.descendantCount, maxDomainDescendantCount)
+    : 0;
+
+  const handleRowKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onSelect(node.id);
+      return;
+    }
+    if (event.key === "ArrowRight" && hasChildren && !open) {
+      event.preventDefault();
+      onToggleOpen(node.id);
+      return;
+    }
+    if (event.key === "ArrowLeft" && hasChildren && open) {
+      event.preventDefault();
+      onToggleOpen(node.id);
+    }
+  };
+
+  return (
+    <div>
+      <div
+        role="treeitem"
+        aria-selected={selected}
+        aria-expanded={hasChildren ? open : undefined}
+        tabIndex={0}
+        data-index-row={node.id}
+        data-testid="topology-index-row"
+        onClick={() => onSelect(node.id)}
+        onKeyDown={handleRowKeyDown}
+        style={{ marginLeft: depth * 16 }}
+        className={`flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md border px-2 py-1 text-[12.5px] transition-colors ${
+          selected
+            ? "border-[color:rgba(94,106,210,0.55)] bg-[color:var(--topology-v2-panel-metric-surface)] text-[color:var(--topology-v2-panel-text-primary)]"
+            : "border-transparent text-[color:var(--topology-v2-panel-text-secondary)] hover:border-[color:var(--topology-v2-panel-action-border)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+        }`}
+      >
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            if (hasChildren) onToggleOpen(node.id);
+          }}
+          aria-hidden={!hasChildren}
+          tabIndex={-1}
+          className={`flex w-3 shrink-0 justify-center text-[8.5px] text-[color:var(--topology-v2-panel-text-quaternary)] transition-transform ${
+            hasChildren ? "" : "invisible"
+          } ${open ? "rotate-90" : ""}`}
+        >
+          ▶
+        </button>
+        <TopologyV2KindGlyph kind={node.kind} size={13} />
+        <span className="min-w-0 flex-1 truncate">{node.title}</span>
+        {fresh ? (
+          <span
+            title={labels.freshTitle}
+            className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
+          />
+        ) : null}
+        {isDomain && subcounts ? (
+          <span className="font-mono text-[11px] text-[color:var(--topology-v2-numeral-face)]">
+            {subcounts.descendantCount}
+          </span>
+        ) : hasChildren ? (
+          <span className="font-mono text-[11px] text-[color:var(--topology-v2-numeral-face)]">
+            {children.length}
+          </span>
+        ) : null}
+        {isDomain && subcounts ? (
+          <span className="flex basis-full items-center gap-2 pl-5">
+            <span className="shrink-0 font-mono text-[9.5px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+              {labels.capabilitiesShort} {subcounts.capabilityCount} · {labels.elementsShort}{" "}
+              {subcounts.elementCount}
+            </span>
+            <span className="ml-auto h-[3px] max-w-[76px] flex-1 overflow-hidden rounded-full bg-[color:var(--topology-v2-panel-border)]">
+              <span
+                className="block h-full rounded-full bg-[color:var(--topology-v2-panel-power-off)] data-[selected=true]:bg-[color:var(--topology-v2-indigo)]"
+                data-selected={selected}
+                style={{ width: `${Math.round(capacityRatio * 100)}%` }}
+              />
+            </span>
+          </span>
+        ) : null}
+      </div>
+      {hasChildren && open ? (
+        <div>
+          {children.map((child) => (
+            <TopologyIndexTreeRow
+              key={child.node.id}
+              entry={child}
+              depth={depth + 1}
+              isOpen={isOpen}
+              onToggleOpen={onToggleOpen}
+              onSelect={onSelect}
+              selectedId={selectedId}
+              changedSlugs={changedSlugs}
+              maxDomainDescendantCount={maxDomainDescendantCount}
+              labels={labels}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}

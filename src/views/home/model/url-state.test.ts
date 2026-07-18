@@ -23,6 +23,7 @@ describe("parseHomeRouteState", () => {
       pathSourceSlug: "domain:views",
       pathTargetSlug: "capability:topology-analysis-modes",
       createNodeIntent: true,
+      indexState: null,
     });
   });
 
@@ -134,6 +135,21 @@ describe("parseHomeRouteState", () => {
     });
   });
 
+  it("reads ?index= as the INDEX panel deep-link intent (B3)", () => {
+    expect(parseHomeRouteState(new URLSearchParams("index=collapsed"))).toMatchObject({
+      indexState: "collapsed",
+    });
+    expect(parseHomeRouteState(new URLSearchParams("index=expanded"))).toMatchObject({
+      indexState: "expanded",
+    });
+    expect(parseHomeRouteState(new URLSearchParams(""))).toMatchObject({
+      indexState: null,
+    });
+    expect(parseHomeRouteState(new URLSearchParams("index=bogus"))).toMatchObject({
+      indexState: null,
+    });
+  });
+
   it("keeps canonical pathFrom/pathTo ahead of short Path aliases", () => {
     const params = new URLSearchParams(
       "mode=path&pathFrom=domain:canonical&from=domain:alias&pathTo=capability:canonical&to=capability:alias",
@@ -159,6 +175,7 @@ describe("applyHomeRouteState", () => {
       pathSourceSlug: null,
       pathTargetSlug: null,
       createNodeIntent: true,
+      indexState: null,
     });
 
     expect(params.toString()).toBe(
@@ -177,6 +194,7 @@ describe("applyHomeRouteState", () => {
       pathSourceSlug: "domain:views",
       pathTargetSlug: "capability:topology-analysis-modes",
       createNodeIntent: false,
+      indexState: null,
     });
 
     expect(params.toString()).toBe(
@@ -193,6 +211,7 @@ describe("applyHomeRouteState", () => {
       pathSourceSlug: "domain:views",
       pathTargetSlug: "capability:topology-analysis-modes",
       createNodeIntent: false,
+      indexState: null,
     });
 
     expect(hidden.toString()).toBe("");
@@ -211,12 +230,27 @@ describe("applyHomeRouteState", () => {
         pathSourceSlug: "domain:views",
         pathTargetSlug: "capability:topology-analysis-modes",
         createNodeIntent: false,
+        indexState: null,
       },
     );
 
     expect(params.toString()).toBe(
       "mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
     );
+  });
+
+  it("serializes indexState when set, omits it when null", () => {
+    const withIndex = applyHomeRouteState(new URLSearchParams(), {
+      ...DEFAULT_HOME_ROUTE_STATE,
+      indexState: "collapsed",
+    });
+    expect(withIndex.toString()).toBe("index=collapsed");
+
+    const withoutIndex = applyHomeRouteState(new URLSearchParams("index=collapsed"), {
+      ...DEFAULT_HOME_ROUTE_STATE,
+      indexState: null,
+    });
+    expect(withoutIndex.toString()).toBe("");
   });
 
   it("drops params when values match defaults", () => {

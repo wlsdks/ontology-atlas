@@ -36,3 +36,10 @@ export {
   isTopologyV2RenderableKind,
 } from '@/shared/ui/topology-v2-kind-glyph';
 export type { TopologyV2RenderableKind } from '@/shared/ui/topology-v2-kind-glyph';
+/**
+ * INDEX panel's expand/collapse toggles the DOM `data-topology-index`
+ * attribute that drives `--topology-v2-safe-inset-left` (`app/globals.css`),
+ * so the map's camera fit must be forced to re-read the token instead of
+ * trusting its mount-time cache (B3 허브가 곧 지도 — HomePage wiring).
+ */
+export { clearTopologyV2TokensCache } from './tokens/read-topology-v2-tokens';
