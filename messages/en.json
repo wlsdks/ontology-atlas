@@ -258,6 +258,21 @@
       "caption": "This project's own ontology, rendered from real markdown frontmatter at build time. No mockup data."
     }
   },
+  "firstRun": {
+    "eyebrow": "Local-first workbench",
+    "title": "Open a vault to start working",
+    "subtitle": "Point Ontology Atlas at a markdown folder on this Mac. The files are the graph — nothing leaves your disk.",
+    "openTitle": "Open vault folder",
+    "openBody": "Pick an existing markdown folder and enter the workspace.",
+    "createTitle": "Create a new vault",
+    "createBody": "Pick an empty folder and the starter structure is scaffolded for you — 5 markdown seeds plus agent configs.",
+    "demoTitle": "Browse the demo vault",
+    "demoBody": "Explore the built-in Ontology Atlas vault before opening your own.",
+    "busy": "Opening folder…",
+    "scaffolding": "Writing starter structure…",
+    "errorFallback": "Could not open the folder. Try again.",
+    "trustLine": "Local-first · markdown is the source of truth · 0 backend"
+  },
   "rootEntry": {
     "openingLocalVaultPicker": "Opening the local ontology store setup",
     "redirectEyebrow": "Local-first workspace",

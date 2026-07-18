@@ -1,28 +1,30 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { Bot, HardDrive, Network } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/features/docs-vault-local";
-import { useRouter } from "@/i18n/navigation";
-import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { OntologyViewPage } from "@/views/ontology-view";
+import { FirstRunPage } from "@/views/first-run";
 import { LandingPage } from "@/views/landing";
 
 /**
  * 루트 `/` 진입 분기 — vault 선택 여부에 따라 두 surface 로 갈림:
  *
  * - web vault 미선택 → LandingPage (첫 인상 — "이게 뭔지" 5초 설명 + "내 폴더 열기" CTA)
- * - desktop vault 미선택 → `/docs/?intent=local` (앱은 홍보가 아니라 로컬 작업 진입)
+ * - desktop vault 미선택 → FirstRunPage (Obsidian 계열 first-run — 열기/새로
+ *   만들기/데모. 설치 앱은 홍보가 아니라 로컬 작업 진입)
  * - vault 선택됨 → OntologyViewPage (실제 hub — 트리 + ego graph + stub)
  *
  * vault picker 자체는 별도 `/docs` 라우트. LandingPage 의 "내 마크다운 폴더
  * 열기" 버튼이 그 곳으로 보낸다.
  *
- * 데스크톱 런타임에서는 restoreAttempted 이후 로드된 manifest 가 없을 때
- * LandingPage 를 렌더하지 않는다. 설치 앱의 `/` 는 홍보가 아니라 로컬 vault
- * picker 로 가는 작업 진입점이어야 한다. 저장된 handle 이 stale path 로
- * 복원되어 manifest build 가 실패한 경우도 여기서 picker 로 돌린다.
+ * 데스크톱 셸에서는 restoreAttempted 이후 로드된 manifest 가 없을 때
+ * LandingPage 를 렌더하지 않는다. 설치 앱의 `/` 는 자기 자신을 다운로드하라는
+ * 마케팅이 아니라 첫 실행 진입점이어야 한다. 저장된 handle 이 stale path 로
+ * 복원되어 manifest build 가 실패한 경우도 FirstRun 으로 떨어진다 (이전엔
+ * `/docs/?intent=local` redirect — R+ 에서 in-place FirstRun 으로 교체).
  *
  * **`/` vs `/ontology` 의도적 dual-surface (R3 결정)** — vault 선택 시
  * 둘 다 `OntologyViewPage` 를 렌더하지만 *역할이 다름*:
@@ -36,24 +38,19 @@ import { LandingPage } from "@/views/landing";
  */
 export function RootEntryPage() {
   const vault = useLocalVault();
-  const router = useRouter();
   const clientReady = useSyncExternalStore(
     () => () => undefined,
     () => true,
     () => false,
   );
-  const isDesktopRuntime = isTauriVaultRuntime();
-
-  useEffect(() => {
-    if (!vault.restoreAttempted) return;
-    if (vault.manifest) return;
-    if (!isDesktopRuntime) return;
-    router.replace('/docs/?intent=local');
-  }, [isDesktopRuntime, router, vault.manifest, vault.restoreAttempted]);
 
   if (!clientReady) return <DesktopVaultRedirect />;
   if (vault.manifest) return <OntologyViewPage />;
-  if (isDesktopRuntime) return <DesktopVaultRedirect />;
+  if (isDesktopShell()) {
+    // restore 시도 전엔 중립 부트 프레임 유지 — 복원될 vault 가 있으면
+    // FirstRun 이 한 프레임 스치는 것을 막는다.
+    return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />;
+  }
   return <LandingPage />;
 }
 
