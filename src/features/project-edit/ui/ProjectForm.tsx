@@ -700,18 +700,11 @@ export function ProjectForm({
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:justify-end">
-              {mode === "edit" && onDelete && (
-                <Button
-                  data-testid="project-delete-top"
-                  type="button"
-                  variant="outline"
-                  onClick={handleDelete}
-                  disabled={deleting || submitting}
-                  className="justify-center"
-                >
-                  {deleting ? t("actions.deleting") : t("actions.delete")}
-                </Button>
-              )}
+              {/* Delete is intentionally absent from this save-cluster — the
+                  destructive action lives isolated in the dashed danger row at
+                  the form's foot (design charter + Apple HIG: keep destructive
+                  actions away from frequently-tapped buttons; approved spec
+                  docs/prototypes/project-forms-final.html carries one delete). */}
               <Button
                 data-testid="project-save-top"
                 type="submit"
@@ -720,10 +713,7 @@ export function ProjectForm({
                   submitBehaviorRef.current = "stay";
                 }}
                 disabled={submitting || deleting}
-                className={cn(
-                  "order-last col-span-2 justify-center md:order-none md:col-span-1",
-                  mode === "edit" && onDelete ? "" : "md:min-w-[88px]",
-                )}
+                className="order-last col-span-2 justify-center md:order-none md:col-span-1 md:min-w-[88px]"
               >
                 {submitting
                   ? t("actions.saving")
@@ -1244,11 +1234,11 @@ export function ProjectForm({
 
         {/* Edit-only danger row — dashed border is the category signal
             (design charter: category distinction is a border style, not a
-            color), matching docs/prototypes/project-forms-final.html. This
-            replaces the old inline delete button that used to sit at the
-            bottom-left of the action bar — deletion is still reachable from
-            the sticky top bar (`project-delete-top`); this row adds the
-            consequence caption the compact top button has no room for. */}
+            color), matching docs/prototypes/project-forms-final.html. This is
+            the single, isolated home for deletion: the destructive action is
+            deliberately kept out of the sticky save-cluster (Apple HIG — keep
+            destructive actions away from frequently-tapped buttons) and given
+            the consequence caption a compact bar has no room for. */}
         {mode === "edit" && onDelete && (
           <div
             data-testid="project-danger-row"
