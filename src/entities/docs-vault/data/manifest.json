@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T15:12:45.022Z",
+  "generatedAt": "2026-07-18T15:21:50.017Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-19 — 토폴로지 캔버스 강조 위계 (canvas-emphasis)",
+          "slug": "2026-07-19-토폴로지-캔버스-강조-위계-canvas-emphasis"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-18 — 전 페이지 시안-우선 재구성 웨이브 (PR #355~#366)",
           "slug": "2026-07-18-전-페이지-시안-우선-재구성-웨이브-pr-355366"
         },
@@ -3876,9 +3881,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. \"화면에 보여지는 모든 페이지는 시안 만들고 그 기반으로 작업\" 워크플로우의 완주. docs/prototypes/ 의 승인 시안(1920×1080 표준 +",
-      "wordCount": 20591,
-      "updatedAt": "2026-07-18T12:10:13.882Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. \"중앙(프로젝트 노드)이 뭔가 다르게 빛나야, 클릭한 노드는 특별한 색/이펙트 필요\" — 발광(glow/halo) 대신 재질(材質)과 1회성 모션 피드백으",
+      "wordCount": 20757,
+      "updatedAt": "2026-07-18T15:21:39.023Z",
       "linksOut": [
         "slug"
       ]

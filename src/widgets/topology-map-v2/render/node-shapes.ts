@@ -80,6 +80,23 @@ export interface NodeShapeDrawState {
   sheenTop: string;
   /** Engraved node-count numeral, or null to skip (project/domain only, per prototype). */
   countLabel: string | null;
+  /**
+   * The currently-hovered node (no focus active — hover is suppressed under
+   * focus, `topology-frame-draw.ts` nulls `hoveredNodeId` there). Draws a
+   * static 1px indigo hairline preview ring ("잡을 수 있다" affordance,
+   * canvas-emphasis slice §C) — never for the already-`"center"` node, which
+   * has its own stronger selection ring below.
+   */
+  isHovered: boolean;
+  /**
+   * One-shot commit-pulse visual for the just-selected (`egoState ===
+   * "center"`) node, or `null` outside its brief window (already played out,
+   * `prefers-reduced-motion`, or this isn't the node that was just clicked).
+   * `model/selection-pulse.ts#computeSelectionPulse` is the pure source;
+   * never loops — once elapsed exceeds the duration it's permanently null
+   * until the NEXT click resets the timestamp.
+   */
+  selectionPulse: { scaleFactor: number; alpha: number } | null;
 }
 
 export interface NodeShapeTokens {
@@ -87,6 +104,22 @@ export interface NodeShapeTokens {
   numeralShadow: string;
   numeralFace: string;
   holeFill: string;
+  /**
+   * Canvas-emphasis slice — Layer-0 container identity (design.md: "Hub 노드와
+   * Layer 0 컨테이너에만 보조 톤(앰버) 허용"). Inner offset hairline for the
+   * project hexagon's double-hairline "machined bezel" (spec §A1's second
+   * stroke — the outer stroke itself is `amberHub`, applied to the BODY
+   * stroke by `topology-frame-draw.ts#resolveNodeVisual`, not here).
+   */
+  projectHairlineInner: string;
+  /** Canvas-emphasis slice — project hexagon's 4-direction chassis-leg pin ticks (spec §A2). */
+  projectPinTick: string;
+  /** Canvas-emphasis slice — the static 2px selection ring's color (`tokens.indigoBright`, spec §B1). */
+  selectionIndigo: string;
+  /** Canvas-emphasis slice — the outer 6px hairline ring's color, a lower-alpha indigo (spec §B1's second ring). */
+  selectionHairline: string;
+  /** Canvas-emphasis slice — the hover preview ring's color (spec §C), a static 1px indigo hairline distinct from the brighter selection ring. */
+  hoverRing: string;
 }
 
 /** Full convergence to a plain circle above this farT — avoids float-precision polygon/circle seams (prototype: `farT > 0.985`). */
@@ -116,6 +149,18 @@ const DOMAIN_PIN_OFFSET_FACTORS = [-0.45, 0.45] as const;
 /** Half-extent factor of the domain square relative to its draw radius (prototype `s = r * 0.86`). */
 const DOMAIN_HALF_EXTENT_RATIO = 0.86;
 
+/** Canvas-emphasis slice — project hexagon decor (double hairline + pin ticks) fades out toward far field, mirroring the domain pin-tick gate. */
+const PROJECT_DECOR_MIN_RADIUS = 8;
+const PROJECT_DECOR_MAX_FAR_T = 0.9;
+/** Inner hairline sits inset at this fraction of the outer body radius (ported ratio from the flagship prototype's double-hex, `docs/prototypes/first-run-v3-flagship.html` — outer circumradius 41, inner 31 ≈ 0.756). */
+const PROJECT_HAIRLINE_INNER_RATIO = 0.75;
+/** Selection ring offsets — the inner ring sits exactly on the body outline (spec §B1's "노드 외곽"), the outer hairline 6px beyond it. */
+const SELECTION_RING_OUTER_OFFSET = 6;
+/** The one-shot commit-pulse ring sits between the two static rings so its brief expansion reads as coming FROM the node, not replacing either static ring. */
+const SELECTION_PULSE_RING_OFFSET = 3;
+/** Hover preview ring sits just outside the body, inside the (mutually-exclusive, hover never fires under focus) selection ring's radius. */
+const HOVER_RING_OFFSET = 3;
+
 export interface PinTick {
   x1: number;
   y1: number;
@@ -137,6 +182,27 @@ export function domainPinTicks(cx: number, cy: number, s: number): PinTick[] {
     ticks.push({ x1: x, y1: cy + s, x2: x, y2: cy + s + tick });
   }
   return ticks;
+}
+
+/** Fixed 6px leg length for the project hexagon's 4-direction pin ticks (owner spec, canvas-emphasis slice — "핀 틱 4방향(상하좌우 6px 선)"), unlike domain's radius-proportional ticks. */
+const PROJECT_PIN_TICK_LENGTH = 6;
+
+/**
+ * The four "chassis leg" pin ticks on the project hexagon — one per cardinal
+ * direction (up/down/left/right), each a fixed 6px line starting at the
+ * node's own edge (`r`) and pointing outward. "가공 부품 문법" (machined-part
+ * vocabulary) — reinforces the project node's Layer-0-container identity
+ * without any glow, mirroring `domainPinTicks`' geometry-as-decoration
+ * approach but with fixed (not radius-proportional) leg length per spec.
+ */
+export function projectPinTicks(cx: number, cy: number, r: number): PinTick[] {
+  const t = PROJECT_PIN_TICK_LENGTH;
+  return [
+    { x1: cx, y1: cy - r, x2: cx, y2: cy - r - t },
+    { x1: cx, y1: cy + r, x2: cx, y2: cy + r + t },
+    { x1: cx - r, y1: cy, x2: cx - r - t, y2: cy },
+    { x1: cx + r, y1: cy, x2: cx + r + t, y2: cy },
+  ];
 }
 
 /**
@@ -223,6 +289,41 @@ function minCornerRadius(kind: NodeShapeDrawState["kind"], r: number): number {
 }
 
 /**
+ * Strokes ONE ring at `radius`, following the node's own kind-shape (hex/
+ * square/rounded-square, converging to a circle past `FULL_CIRCLE_FAR_T` —
+ * same convergence rule as the body itself) — a "material ring" overlay
+ * (`.claude/rules/design.md` "발광 대신 재질"), never a glow/shadow. Shared by
+ * the hub ring, the project double-hairline, the selection double-ring, its
+ * one-shot commit pulse, and the hover preview ring — all five are the same
+ * primitive at a different radius/color/width/alpha.
+ */
+function strokeKindOutline(
+  ctx: CanvasRenderingContext2D,
+  kind: NodeShapeDrawState["kind"],
+  x: number,
+  y: number,
+  radius: number,
+  farT: number,
+  color: string,
+  lineWidth: number,
+  alpha: number,
+): void {
+  if (alpha <= 0.01 || radius <= 0) return;
+  const points = bodyPoints(kind, x, y, radius);
+  if (points === null || farT > FULL_CIRCLE_FAR_T) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+  } else {
+    roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, radius), radius, farT));
+  }
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+/**
  * Draws one node body (fill/stroke/dash + kind-specific shape morph + hub
  * ring + engraved numeral + via-hole for elements). Does NOT draw the
  * diffraction spike overlay (`render/starfield.ts#drawDiffractionSpike`
@@ -230,7 +331,23 @@ function minCornerRadius(kind: NodeShapeDrawState["kind"], r: number): number {
  * shape-by-kind) or the label (`render/labels.ts`).
  */
 export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, tokens: NodeShapeTokens): void {
-  const { kind, screenX: x, screenY: y, screenRadius: r, farT, egoState, fill, stroke, lineWidth, dash, hub, sheenTop, countLabel } = state;
+  const {
+    kind,
+    screenX: x,
+    screenY: y,
+    screenRadius: r,
+    farT,
+    egoState,
+    fill,
+    stroke,
+    lineWidth,
+    dash,
+    hub,
+    sheenTop,
+    countLabel,
+    isHovered,
+    selectionPulse,
+  } = state;
 
   ctx.setLineDash([...dash]);
   const points = bodyPoints(kind, x, y, r);
@@ -281,19 +398,60 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   }
 
   if (hub && egoState !== "dim") {
-    const ringPoints = bodyPoints(kind, x, y, r + 4);
-    if (ringPoints === null) {
-      ctx.beginPath();
-      ctx.arc(x, y, r + 4, 0, Math.PI * 2);
-    } else {
-      roundedPolygonPath(ctx, ringPoints, interpolateCornerRadius(minCornerRadius(kind, r + 4), r + 4, farT));
+    strokeKindOutline(ctx, kind, x, y, r + 4, farT, tokens.amberHub, 1.4, 1);
+  }
+
+  // Canvas-emphasis slice §A — project hexagon's own decorative identity
+  // (design.md: "Hub 노드와 Layer 0 컨테이너에만 보조 톤(앰버) 허용"). The
+  // OUTER amber stroke is the body's own `stroke` (set by
+  // `topology-frame-draw.ts#resolveNodeVisual` for kind==="project", not
+  // here) — this block only adds the inner offset hairline + the 4-direction
+  // chassis pin ticks, both fading out toward far field like domain's pins.
+  if (kind === "project" && egoState !== "dim") {
+    if (r > PROJECT_DECOR_MIN_RADIUS && farT < PROJECT_DECOR_MAX_FAR_T) {
+      const decorAlpha = 1 - smoothstep(0.55, 0.9, farT);
+      strokeKindOutline(ctx, "project", x, y, r * PROJECT_HAIRLINE_INNER_RATIO, farT, tokens.projectHairlineInner, 1, decorAlpha);
+      ctx.globalAlpha = decorAlpha;
+      ctx.strokeStyle = tokens.projectPinTick;
+      ctx.lineWidth = 1;
+      for (const t of projectPinTicks(x, y, r)) {
+        ctx.beginPath();
+        ctx.moveTo(t.x1, t.y1);
+        ctx.lineTo(t.x2, t.y2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
     }
-    ctx.strokeStyle = tokens.amberHub;
-    ctx.lineWidth = 1.4;
-    ctx.stroke();
+  }
+
+  // Canvas-emphasis slice §C — hover preview: a static 1px indigo hairline
+  // ring, "잡을 수 있다" (can grab this) affordance. `isHovered` is only ever
+  // true while no focus is active (`topology-frame-draw.ts` nulls
+  // `hoveredNodeId` under focus), so this never collides with the selection
+  // ring below — but the `egoState` guards stay as defense in depth.
+  if (isHovered && egoState !== "dim" && egoState !== "center") {
+    strokeKindOutline(ctx, kind, x, y, r + HOVER_RING_OFFSET, farT, tokens.hoverRing, 1, 1);
+  }
+
+  // Canvas-emphasis slice §B — the selected node's STATIC double ring (2px on
+  // the outline + a 6px-out 1px hairline), plus its brief one-shot commit
+  // pulse (`model/selection-pulse.ts`). The double ring is unconditional
+  // while `egoState === "center"` — it never animates itself, so it reads as
+  // a fixed "this is selected" fact even after the pulse (if any) finishes.
+  if (egoState === "center") {
+    strokeKindOutline(ctx, kind, x, y, r, farT, tokens.selectionIndigo, 2, 1);
+    strokeKindOutline(ctx, kind, x, y, r + SELECTION_RING_OUTER_OFFSET, farT, tokens.selectionHairline, 1, 1);
+    if (selectionPulse) {
+      const pulseRadius = (r + SELECTION_PULSE_RING_OFFSET) * selectionPulse.scaleFactor;
+      strokeKindOutline(ctx, kind, x, y, pulseRadius, farT, tokens.selectionIndigo, 1.5, selectionPulse.alpha);
+    }
   }
 
   if (countLabel !== null && r > ENGRAVED_COUNT_MIN_RADIUS && egoState !== "dim" && farT < 0.9) {
-    drawEngraved(ctx, countLabel, x, y + r * 0.52, Math.max(8, Math.min(11, r * 0.4)), 1 - smoothstep(0.5, 0.9, farT), tokens);
+    // Project's engraved count reads amber, not neutral gray — the same
+    // Layer-0-container tint as its body stroke (design.md), so the numeral
+    // doesn't look like a leftover from the generic domain/capability treatment.
+    const numeralTokens = kind === "project" ? { ...tokens, numeralFace: tokens.amberHub } : tokens;
+    drawEngraved(ctx, countLabel, x, y + r * 0.52, Math.max(8, Math.min(11, r * 0.4)), 1 - smoothstep(0.5, 0.9, farT), numeralTokens);
   }
 }

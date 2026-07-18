@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { domainPinTicks, hexPoints, interpolateCornerRadius, squarePoints } from "./node-shapes";
+import { domainPinTicks, hexPoints, interpolateCornerRadius, projectPinTicks, squarePoints } from "./node-shapes";
 
 describe("hexPoints", () => {
   it("returns exactly 6 points", () => {
@@ -69,6 +69,43 @@ describe("domainPinTicks", () => {
     const bottom = ticks.find((t) => t.y1 === cy + s);
     expect(top?.y2).toBeCloseTo(cy - s - tick, 9);
     expect(bottom?.y2).toBeCloseTo(cy + s + tick, 9);
+  });
+});
+
+describe("projectPinTicks", () => {
+  it("returns exactly 4 ticks — one per cardinal direction (up/down/left/right)", () => {
+    const ticks = projectPinTicks(0, 0, 25);
+    expect(ticks).toHaveLength(4);
+  });
+
+  it("each tick is a straight 6px line starting exactly at the node edge (r)", () => {
+    const r = 25;
+    const cx = 100;
+    const cy = 50;
+    const ticks = projectPinTicks(cx, cy, r);
+    for (const t of ticks) {
+      const len = Math.hypot(t.x2 - t.x1, t.y2 - t.y1);
+      expect(len).toBeCloseTo(6, 6);
+      const startDist = Math.hypot(t.x1 - cx, t.y1 - cy);
+      expect(startDist).toBeCloseTo(r, 6);
+    }
+  });
+
+  it("covers all four cardinal directions, none diagonal", () => {
+    const r = 25;
+    const ticks = projectPinTicks(0, 0, r);
+    const top = ticks.find((t) => t.y1 < 0 && t.x1 === 0);
+    const bottom = ticks.find((t) => t.y1 > 0 && t.x1 === 0);
+    const left = ticks.find((t) => t.x1 < 0 && t.y1 === 0);
+    const right = ticks.find((t) => t.x1 > 0 && t.y1 === 0);
+    expect(top).toBeDefined();
+    expect(bottom).toBeDefined();
+    expect(left).toBeDefined();
+    expect(right).toBeDefined();
+    expect(top?.y2).toBeCloseTo(-r - 6, 6);
+    expect(bottom?.y2).toBeCloseTo(r + 6, 6);
+    expect(left?.x2).toBeCloseTo(-r - 6, 6);
+    expect(right?.x2).toBeCloseTo(r + 6, 6);
   });
 });
 

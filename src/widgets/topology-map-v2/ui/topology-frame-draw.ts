@@ -8,6 +8,7 @@
 import type { CameraAxes } from "../engine/camera";
 import { resolveEdgeEgoState, resolveNodeEgoState, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
+import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
 import { DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha } from "../model/tier-visibility";
 import { draw as gridDraw, lerpColorHex } from "../render/grid";
 import {
@@ -35,8 +36,12 @@ import { worldToScreen } from "./topology-camera-math";
 import { radiusForKind, type TopologyWorld, type WorldNode } from "./topology-world";
 
 const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
+// Project bumped 2 → 1.5 (canvas-emphasis slice §A1) to match the owner spec's
+// "외곽 스트로크 1.5px 앰버" exactly — the outer stroke itself now hardcodes
+// amber for project (see `resolveNodeVisual` below), so its width is spec'd
+// independently of the other kinds' tier-neutral outlines.
 const LINE_WIDTH_BY_KIND: Record<WorldNode["kind"], number> = {
-  project: 2,
+  project: 1.5,
   domain: 1.6,
   capability: 1.3,
   element: 1,
@@ -90,6 +95,18 @@ function resolveNodeVisual(
     return { fill: tokens.nodeFillStale, stroke: tokens.nodeStrokeStale, dash: freshness.dash, lineWidth, breatheEnabled: false };
   }
 
+  // Canvas-emphasis slice §A1 — the project (Layer-0 container) hexagon's own
+  // outer stroke is hardcoded amber, NOT tier-neutral-then-ego-tinted like
+  // every other kind (design.md explicitly reserves amber for "Hub 노드와
+  // Layer 0 컨테이너"). Selection/hover/neighbor emphasis is still fully
+  // visible for project — it just moves to the dedicated ring overlays
+  // (`render/node-shapes.ts`'s `strokeKindOutline` calls under
+  // `egoState === "center"` / `isHovered`) instead of recoloring the body, so
+  // the amber identity never gets muddied by an indigo lerp.
+  if (node.kind === "project") {
+    return { fill: tierFill(node.kind, tokens), stroke: tokens.amberHub, dash: freshness.dash, lineWidth, breatheEnabled: freshness.breatheEnabled };
+  }
+
   let stroke = tierStroke(node.kind, tokens);
   if (freshness.strokeIndigoLerp > 0) stroke = lerpColorHex(stroke, tokens.indigo, freshness.strokeIndigoLerp);
   if (!focusedNodeId && emphasis > 0.02) stroke = lerpColorHex(stroke, tokens.indigo, Math.min(1, emphasis));
@@ -129,6 +146,17 @@ export interface FrameDrawParams {
   /** C1 A2 — ego tier-reveal ramp (`topology-physics-step.ts` steps it), consumed by `effectiveNodeAlpha`. */
   egoRevealById: ReadonlyMap<string, number>;
   reducedMotion: boolean;
+  /**
+   * Canvas-emphasis slice §B2 — the just-committed selection's one-shot
+   * commit-pulse anchor: which node was just clicked and when
+   * (`performance.now()`-compatible timestamp), captured once by
+   * `ui/use-topology-loop.ts` on every `focusedSlug` change. `null` when
+   * nothing has ever been selected. This frame's elapsed-since-commit is
+   * derived here (`now - startAtMs`) and fed through
+   * `model/selection-pulse.ts#computeSelectionPulse` — `null`/expired pulses
+   * draw nothing extra, leaving only the permanent static selection ring.
+   */
+  selectionPulse: { nodeId: string; startAtMs: number } | null;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -151,6 +179,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     emphasisById,
     egoRevealById,
     reducedMotion,
+    selectionPulse,
   } = params;
 
   gridDraw(
@@ -259,6 +288,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // Engraved numeral: project/domain only, and only when there's a count to
     // show (prototype `if (n.count && (project||domain) ...)`).
     const showCount = (node.kind === "project" || node.kind === "domain") && node.count > 0;
+    // Canvas-emphasis slice §C — hover ring eligibility. `hoveredNodeId` is
+    // already nulled by the caller (`use-topology-loop.ts`) whenever a focus
+    // is active, so this is never true at the same time as `egoState ===
+    // "center"` in practice.
+    const isHovered = node.id === hoveredNodeId;
+    // Canvas-emphasis slice §B2 — this node's one-shot commit-pulse visual,
+    // or null outside its brief window / when reduced-motion is on (the
+    // pulse IS the one animated element this slice adds — the permanent
+    // double ring itself never animates, so skipping just the pulse still
+    // leaves the selection fact visible).
+    let selectionPulseVisual: SelectionPulseVisual | null = null;
+    if (!reducedMotion && selectionPulse !== null && selectionPulse.nodeId === node.id) {
+      selectionPulseVisual = computeSelectionPulse(now - selectionPulse.startAtMs, tokens.selectPulseDurationMs);
+    }
     nodeShapesDraw(
       ctx,
       {
@@ -275,16 +318,29 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         hub: node.isHub,
         sheenTop,
         countLabel: showCount ? String(node.count) : null,
+        isHovered,
+        selectionPulse: selectionPulseVisual,
       },
       {
         amberHub: tokens.amberHub,
         numeralShadow: tokens.numeralShadow,
         numeralFace: tokens.numeralFace,
         holeFill: tokens.nodeHoleFill,
+        projectHairlineInner: tokens.projectHairlineInner,
+        projectPinTick: tokens.projectPinTick,
+        selectionIndigo: tokens.selectionRingIndigo,
+        selectionHairline: tokens.selectionRingHairline,
+        hoverRing: tokens.hoverRing,
       },
     );
 
-    if (world.brightStarIds.has(node.id) && farT > 0.02) {
+    // Diffraction spike: the ranked "bright star" set PLUS the project node
+    // unconditionally (canvas-emphasis slice §A3, "허브 노드에 이미 쓰는 패턴
+    // 재사용") — reuses the exact same far-field-only overlay hub/magnitude
+    // stars already get, just widening eligibility so the Layer-0 anchor
+    // reads as luminous too. Color still derives from `visual.stroke`, which
+    // is now hardcoded amber for project, so the spike is amber for free.
+    if ((world.brightStarIds.has(node.id) || node.kind === "project") && farT > 0.02) {
       drawDiffractionSpike(ctx, {
         screenX: screen.x,
         screenY: screen.y,

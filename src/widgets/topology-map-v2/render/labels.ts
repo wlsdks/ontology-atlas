@@ -61,9 +61,16 @@ export interface LabelTokens {
   labelElement: string;
 }
 
-/** Font string per kind — single source shared by `draw` and `measureLabelWidth` so measured bboxes match painted glyphs. */
+/**
+ * Font string per kind — single source shared by `draw` and
+ * `measureLabelWidth` so measured bboxes match painted glyphs.
+ *
+ * Project bumped 13→15px (canvas-emphasis slice §A4, "라벨 폰트 1단계 업") —
+ * the project name is the Layer-0 anchor's own label and should read a full
+ * step above domain/capability/element, not just barely above domain's 10px.
+ */
 export const LABEL_FONT: Record<LabelDrawState["kind"], string> = {
-  project: "600 13px -apple-system, 'SF Pro Text', sans-serif",
+  project: "600 15px -apple-system, 'SF Pro Text', sans-serif",
   domain: "600 10px -apple-system, 'SF Pro Text', sans-serif",
   capability: "500 10.5px -apple-system, 'SF Pro Text', sans-serif",
   element: "400 9.5px -apple-system, 'SF Pro Text', sans-serif",
@@ -71,7 +78,7 @@ export const LABEL_FONT: Record<LabelDrawState["kind"], string> = {
 
 /** Approximate glyph height per kind (px) — used to build the label bbox for greedy suppression. */
 export const LABEL_FONT_SIZE: Record<LabelDrawState["kind"], number> = {
-  project: 13,
+  project: 15,
   domain: 10,
   capability: 10.5,
   element: 9.5,
