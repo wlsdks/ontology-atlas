@@ -6,6 +6,14 @@
 
 ---
 
+## 2026-07-18 — 정체성 공식 문서화 (v10): agent-native, human-sovereign
+
+"에이전트를 *위한* 시스템"이 아니라 "에이전트가 1급 사용자인, 사람과
+에이전트의 공유 의미 계층"으로 정체성을 명문화. README(Identity 절) ·
+AGENTS.md(개요) · PRODUCT-DIRECTION(v10 배너) · dogfood project 노드에 동일
+공식 반영, GitHub repo 설명 갱신. 프로젝트명은 유지(브랜드 Ontology Atlas /
+저장소·CLI·MCP `ontology-atlas` 이원 체계, v6 결정 재확인).
+
 ## 2026-07-18 — 랜딩 B2+ 리디자인 (페이지 롤아웃 #1)
 
 `/` 랜딩을 v2 "Circuit × Constellation" (B2+) 기계가공 언어로 전면 재구성.
