@@ -164,7 +164,7 @@ export function TopologyIndexPanel({
         role="tree"
         aria-label={labels.label}
         data-testid="topology-index-tree"
-        className="min-h-0 flex-1 space-y-0.5 overflow-y-auto"
+        className="min-h-0 flex-1 space-y-px overflow-y-auto"
       >
         {visibleRoots.length === 0 ? (
           <p className="px-1 py-2 text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">

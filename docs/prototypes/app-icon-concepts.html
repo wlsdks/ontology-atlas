@@ -1,0 +1,153 @@
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  app-icon-concepts — 서비스 마크 리디자인 후보 4종 (소유자: "지금거 안예뻐").
+  용처: ① 내비 레일 로고(20px) ② 브랜드 필 pip(15px) ③ macOS 앱 아이콘(스쿼클)
+  ④ 파비콘. 각 후보를 대/중/소 + 실제 용처 컨텍스트로 제시.
+  공통 언어: 헥사곤(프로젝트 노드) × 별자리(그래프) × 회로(신호), 인디고+앰버.
+-->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>앱 아이콘 후보 4종</title>
+<style>
+  :root{
+    --canvas:#060609; --panel:#101118; --elevated:#16171d;
+    --divider:rgba(255,255,255,.08); --border-soft:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.17);
+    --t1:#ececf0; --t2:#b8bac2; --t3:#84868f; --t4:#63656e;
+    --indigo:#5e6ad2; --indigo-line:rgba(139,151,255,.9); --amber:#d4b478;
+  }
+  *{margin:0;box-sizing:border-box}
+  body{background:var(--canvas);color:var(--t1);font:14px/1.5 -apple-system,"Pretendard",sans-serif;padding:44px 0 60px}
+  .wrap{max-width:1600px;margin:0 auto;padding:0 24px}
+  h1{font-size:20px;font-weight:650;margin-bottom:6px}
+  .lede{font-size:12.5px;color:var(--t3);margin-bottom:30px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+  .card{border:1px solid var(--border-soft);border-radius:12px;background:var(--panel);padding:20px;display:flex;flex-direction:column;gap:16px}
+  .card h2{font-size:13.5px;font-weight:650}
+  .card h2 .tag{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.16em;color:var(--t4);margin-right:8px;text-transform:uppercase}
+  .card p{font-size:11.5px;color:var(--t3);line-height:1.55;word-break:keep-all;min-height:52px}
+  .hero{display:grid;place-items:center;padding:22px 0;border:1px solid var(--divider);border-radius:10px;
+    background:radial-gradient(circle at 50% 42%, rgba(94,106,210,.06), transparent 70%), var(--elevated)}
+  .sizes{display:flex;align-items:flex-end;justify-content:center;gap:26px;padding:14px 0;border:1px solid var(--divider);border-radius:10px;background:var(--elevated)}
+  .sizes .s{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .sizes .s em{font-style:normal;font-family:ui-monospace,monospace;font-size:8.5px;color:var(--t4)}
+  .ctx{display:flex;gap:12px;align-items:center;justify-content:center;padding:14px 0;border:1px solid var(--divider);border-radius:10px;background:var(--elevated)}
+  .railctx{width:64px;height:110px;background:#0a0b0f;border:1px solid var(--divider);border-radius:8px;display:flex;flex-direction:column;align-items:center;padding-top:10px;gap:8px}
+  .railctx .below{width:38px;height:32px;border-radius:8px;background:rgba(94,106,210,.14);box-shadow:inset 0 0 0 1px rgba(139,151,255,.22)}
+  .squircle{width:96px;height:96px;border-radius:22px;background:linear-gradient(165deg,#14151c,#0a0b10);border:1px solid rgba(255,255,255,.14);display:grid;place-items:center;box-shadow:0 10px 24px rgba(0,0,0,.5)}
+  svg{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>앱 아이콘 후보 4종</h1>
+  <p class="lede">공통 언어: 헥사곤(프로젝트) × 별자리(그래프) × 회로(신호). 각 후보 = 대형 / 사이즈 스케일(48·32·20px) / 실제 용처(레일 로고·macOS 스쿼클).</p>
+
+  <div class="grid">
+
+    <!-- A. 헥사 별자리 -->
+    <div class="card">
+      <h2><span class="tag">A</span>헥사 별자리</h2>
+      <p>꼭짓점 6개가 노드, 중심이 앰버 허브. 도형이자 그래프 — 제품 그 자체. 소형에서는 헥사곤으로, 대형에서는 별자리로 읽힘.</p>
+      <div class="hero">
+        <svg width="160" height="160" viewBox="0 0 48 48">
+          <g stroke="rgba(139,151,255,.55)" stroke-width="1.1">
+            <path d="M24 7 L38.7 15.5 L38.7 32.5 L24 41 L9.3 32.5 L9.3 15.5 Z" fill="none"/>
+            <line x1="24" y1="7" x2="24" y2="24"/><line x1="38.7" y1="15.5" x2="24" y2="24"/>
+            <line x1="38.7" y1="32.5" x2="24" y2="24"/><line x1="24" y1="41" x2="24" y2="24"/>
+            <line x1="9.3" y1="32.5" x2="24" y2="24"/><line x1="9.3" y1="15.5" x2="24" y2="24"/>
+          </g>
+          <g fill="#ececf0"><circle cx="24" cy="7" r="2"/><circle cx="38.7" cy="15.5" r="2"/><circle cx="38.7" cy="32.5" r="2"/><circle cx="24" cy="41" r="2"/><circle cx="9.3" cy="32.5" r="2"/><circle cx="9.3" cy="15.5" r="2"/></g>
+          <circle cx="24" cy="24" r="3.2" fill="#d4b478"/>
+        </svg>
+      </div>
+      <div class="sizes">
+        <span class="s"><svg width="48" height="48" viewBox="0 0 48 48"><g stroke="rgba(139,151,255,.6)" stroke-width="1.4"><path d="M24 7 L38.7 15.5 L38.7 32.5 L24 41 L9.3 32.5 L9.3 15.5 Z" fill="none"/><line x1="24" y1="7" x2="24" y2="24"/><line x1="38.7" y1="15.5" x2="24" y2="24"/><line x1="38.7" y1="32.5" x2="24" y2="24"/><line x1="24" y1="41" x2="24" y2="24"/><line x1="9.3" y1="32.5" x2="24" y2="24"/><line x1="9.3" y1="15.5" x2="24" y2="24"/></g><g fill="#ececf0"><circle cx="24" cy="7" r="2.4"/><circle cx="38.7" cy="15.5" r="2.4"/><circle cx="38.7" cy="32.5" r="2.4"/><circle cx="24" cy="41" r="2.4"/><circle cx="9.3" cy="32.5" r="2.4"/><circle cx="9.3" cy="15.5" r="2.4"/></g><circle cx="24" cy="24" r="3.6" fill="#d4b478"/></svg><em>48</em></span>
+        <span class="s"><svg width="32" height="32" viewBox="0 0 48 48"><g stroke="rgba(139,151,255,.65)" stroke-width="1.8"><path d="M24 7 L38.7 15.5 L38.7 32.5 L24 41 L9.3 32.5 L9.3 15.5 Z" fill="none"/><line x1="24" y1="7" x2="24" y2="24"/><line x1="38.7" y1="15.5" x2="24" y2="24"/><line x1="38.7" y1="32.5" x2="24" y2="24"/><line x1="24" y1="41" x2="24" y2="24"/><line x1="9.3" y1="32.5" x2="24" y2="24"/><line x1="9.3" y1="15.5" x2="24" y2="24"/></g><g fill="#ececf0"><circle cx="24" cy="7" r="2.8"/><circle cx="38.7" cy="15.5" r="2.8"/><circle cx="38.7" cy="32.5" r="2.8"/><circle cx="24" cy="41" r="2.8"/><circle cx="9.3" cy="32.5" r="2.8"/><circle cx="9.3" cy="15.5" r="2.8"/></g><circle cx="24" cy="24" r="4" fill="#d4b478"/></svg><em>32</em></span>
+        <span class="s"><svg width="20" height="20" viewBox="0 0 48 48"><g stroke="rgba(139,151,255,.75)" stroke-width="2.6"><path d="M24 7 L38.7 15.5 L38.7 32.5 L24 41 L9.3 32.5 L9.3 15.5 Z" fill="none"/></g><circle cx="24" cy="24" r="5.5" fill="#d4b478"/></svg><em>20</em></span>
+      </div>
+      <div class="ctx">
+        <span class="railctx"><svg width="20" height="20" viewBox="0 0 48 48"><g stroke="rgba(139,151,255,.75)" stroke-width="2.6"><path d="M24 7 L38.7 15.5 L38.7 32.5 L24 41 L9.3 32.5 L9.3 15.5 Z" fill="none"/></g><circle cx="24" cy="24" r="5.5" fill="#d4b478"/></svg><span class="below"></span></span>
+        <span class="squircle"><svg width="60" height="60" viewBox="0 0 48 48"><g stroke="rgba(139,151,255,.6)" stroke-width="1.3"><path d="M24 7 L38.7 15.5 L38.7 32.5 L24 41 L9.3 32.5 L9.3 15.5 Z" fill="none"/><line x1="24" y1="7" x2="24" y2="24"/><line x1="38.7" y1="15.5" x2="24" y2="24"/><line x1="38.7" y1="32.5" x2="24" y2="24"/><line x1="24" y1="41" x2="24" y2="24"/><line x1="9.3" y1="32.5" x2="24" y2="24"/><line x1="9.3" y1="15.5" x2="24" y2="24"/></g><g fill="#ececf0"><circle cx="24" cy="7" r="2.2"/><circle cx="38.7" cy="15.5" r="2.2"/><circle cx="38.7" cy="32.5" r="2.2"/><circle cx="24" cy="41" r="2.2"/><circle cx="9.3" cy="32.5" r="2.2"/><circle cx="9.3" cy="15.5" r="2.2"/></g><circle cx="24" cy="24" r="3.4" fill="#d4b478"/></svg></span>
+      </div>
+    </div>
+
+    <!-- B. 궤도 헥사 -->
+    <div class="card">
+      <h2><span class="tag">B</span>궤도 헥사</h2>
+      <p>이중 헤어라인 헥사곤(가공 부품) + 한 변을 타고 도는 신호 펄스. 절제된 기계식 — 현재 마크의 정통 진화형.</p>
+      <div class="hero">
+        <svg width="160" height="160" viewBox="0 0 48 48">
+          <path d="M24 6 L39.6 15 L39.6 33 L24 42 L8.4 33 L8.4 15 Z" fill="none" stroke="rgba(236,236,240,.85)" stroke-width="1.4"/>
+          <path d="M24 11 L35.3 17.5 L35.3 30.5 L24 37 L12.7 30.5 L12.7 17.5 Z" fill="none" stroke="rgba(139,151,255,.35)" stroke-width="1"/>
+          <path d="M24 6 L39.6 15" stroke="#d4b478" stroke-width="1.6"/>
+          <circle cx="39.6" cy="15" r="2.6" fill="#d4b478"/>
+          <circle cx="24" cy="24" r="2" fill="rgba(139,151,255,.9)"/>
+        </svg>
+      </div>
+      <div class="sizes">
+        <span class="s"><svg width="48" height="48" viewBox="0 0 48 48"><path d="M24 6 L39.6 15 L39.6 33 L24 42 L8.4 33 L8.4 15 Z" fill="none" stroke="rgba(236,236,240,.85)" stroke-width="1.7"/><path d="M24 11 L35.3 17.5 L35.3 30.5 L24 37 L12.7 30.5 L12.7 17.5 Z" fill="none" stroke="rgba(139,151,255,.35)" stroke-width="1.2"/><path d="M24 6 L39.6 15" stroke="#d4b478" stroke-width="2"/><circle cx="39.6" cy="15" r="3" fill="#d4b478"/><circle cx="24" cy="24" r="2.3" fill="rgba(139,151,255,.9)"/></svg><em>48</em></span>
+        <span class="s"><svg width="32" height="32" viewBox="0 0 48 48"><path d="M24 6 L39.6 15 L39.6 33 L24 42 L8.4 33 L8.4 15 Z" fill="none" stroke="rgba(236,236,240,.9)" stroke-width="2.2"/><path d="M24 6 L39.6 15" stroke="#d4b478" stroke-width="2.6"/><circle cx="39.6" cy="15" r="3.6" fill="#d4b478"/><circle cx="24" cy="24" r="2.8" fill="rgba(139,151,255,.9)"/></svg><em>32</em></span>
+        <span class="s"><svg width="20" height="20" viewBox="0 0 48 48"><path d="M24 6 L39.6 15 L39.6 33 L24 42 L8.4 33 L8.4 15 Z" fill="none" stroke="rgba(236,236,240,.95)" stroke-width="3"/><path d="M24 6 L39.6 15" stroke="#d4b478" stroke-width="3.6"/><circle cx="39.6" cy="15" r="4.6" fill="#d4b478"/></svg><em>20</em></span>
+      </div>
+      <div class="ctx">
+        <span class="railctx"><svg width="20" height="20" viewBox="0 0 48 48"><path d="M24 6 L39.6 15 L39.6 33 L24 42 L8.4 33 L8.4 15 Z" fill="none" stroke="rgba(236,236,240,.95)" stroke-width="3"/><path d="M24 6 L39.6 15" stroke="#d4b478" stroke-width="3.6"/><circle cx="39.6" cy="15" r="4.6" fill="#d4b478"/></svg><span class="below"></span></span>
+        <span class="squircle"><svg width="60" height="60" viewBox="0 0 48 48"><path d="M24 6 L39.6 15 L39.6 33 L24 42 L8.4 33 L8.4 15 Z" fill="none" stroke="rgba(236,236,240,.85)" stroke-width="1.5"/><path d="M24 11 L35.3 17.5 L35.3 30.5 L24 37 L12.7 30.5 L12.7 17.5 Z" fill="none" stroke="rgba(139,151,255,.35)" stroke-width="1"/><path d="M24 6 L39.6 15" stroke="#d4b478" stroke-width="1.8"/><circle cx="39.6" cy="15" r="2.8" fill="#d4b478"/><circle cx="24" cy="24" r="2.1" fill="rgba(139,151,255,.9)"/></svg></span>
+      </div>
+    </div>
+
+    <!-- C. 아틀라스 A -->
+    <div class="card">
+      <h2><span class="tag">C</span>아틀라스 A</h2>
+      <p>헥사곤 안에 트레이스로 그린 "A" — 두 갈래 경로가 정점(허브)에서 만나는 모노그램. 브랜드 문자성이 가장 강함.</p>
+      <div class="hero">
+        <svg width="160" height="160" viewBox="0 0 48 48">
+          <path d="M24 6 L39.6 15 L39.6 33 L24 42 L8.4 33 L8.4 15 Z" fill="none" stroke="rgba(139,151,255,.5)" stroke-width="1.2"/>
+          <g stroke="rgba(236,236,240,.9)" stroke-width="1.6" fill="none">
+            <path d="M15 34 L24 13 L33 34"/><line x1="18.4" y1="26" x2="29.6" y2="26"/>
+          </g>
+          <circle cx="24" cy="13" r="2.6" fill="#d4b478"/>
+          <g fill="rgba(139,151,255,.9)"><circle cx="15" cy="34" r="2"/><circle cx="33" cy="34" r="2"/></g>
+        </svg>
+      </div>
+      <div class="sizes">
+        <span class="s"><svg width="48" height="48" viewBox="0 0 48 48"><path d="M24 6 L39.6 15 L39.6 33 L24 42 L8.4 33 L8.4 15 Z" fill="none" stroke="rgba(139,151,255,.5)" stroke-width="1.4"/><g stroke="rgba(236,236,240,.9)" stroke-width="2" fill="none"><path d="M15 34 L24 13 L33 34"/><line x1="18.4" y1="26" x2="29.6" y2="26"/></g><circle cx="24" cy="13" r="3" fill="#d4b478"/><g fill="rgba(139,151,255,.9)"><circle cx="15" cy="34" r="2.3"/><circle cx="33" cy="34" r="2.3"/></g></svg><em>48</em></span>
+        <span class="s"><svg width="32" height="32" viewBox="0 0 48 48"><path d="M24 6 L39.6 15 L39.6 33 L24 42 L8.4 33 L8.4 15 Z" fill="none" stroke="rgba(139,151,255,.45)" stroke-width="1.8"/><g stroke="rgba(236,236,240,.95)" stroke-width="2.6" fill="none"><path d="M15 34 L24 13 L33 34"/><line x1="18.4" y1="26" x2="29.6" y2="26"/></g><circle cx="24" cy="13" r="3.4" fill="#d4b478"/></svg><em>32</em></span>
+        <span class="s"><svg width="20" height="20" viewBox="0 0 48 48"><g stroke="rgba(236,236,240,1)" stroke-width="3.4" fill="none"><path d="M15 34 L24 13 L33 34"/><line x1="18.4" y1="26" x2="29.6" y2="26"/></g><circle cx="24" cy="13" r="4.4" fill="#d4b478"/></svg><em>20</em></span>
+      </div>
+      <div class="ctx">
+        <span class="railctx"><svg width="20" height="20" viewBox="0 0 48 48"><g stroke="rgba(236,236,240,1)" stroke-width="3.4" fill="none"><path d="M15 34 L24 13 L33 34"/><line x1="18.4" y1="26" x2="29.6" y2="26"/></g><circle cx="24" cy="13" r="4.4" fill="#d4b478"/></svg><span class="below"></span></span>
+        <span class="squircle"><svg width="60" height="60" viewBox="0 0 48 48"><path d="M24 6 L39.6 15 L39.6 33 L24 42 L8.4 33 L8.4 15 Z" fill="none" stroke="rgba(139,151,255,.5)" stroke-width="1.3"/><g stroke="rgba(236,236,240,.9)" stroke-width="1.8" fill="none"><path d="M15 34 L24 13 L33 34"/><line x1="18.4" y1="26" x2="29.6" y2="26"/></g><circle cx="24" cy="13" r="2.8" fill="#d4b478"/><g fill="rgba(139,151,255,.9)"><circle cx="15" cy="34" r="2.1"/><circle cx="33" cy="34" r="2.1"/></g></svg></span>
+      </div>
+    </div>
+
+    <!-- D. 분기 노드 -->
+    <div class="card">
+      <h2><span class="tag">D</span>분기 노드</h2>
+      <p>헥사곤을 버리고 그래프만 — 허브에서 세 갈래로 뻗는 최소 별자리. 가장 가볍고 현대적, 단 소형에서 정체성이 약해질 수 있음.</p>
+      <div class="hero">
+        <svg width="160" height="160" viewBox="0 0 48 48">
+          <g stroke="rgba(139,151,255,.6)" stroke-width="1.4" fill="none">
+            <path d="M24 26 Q24 16 31 10"/><path d="M24 26 Q16 26 10 33"/><path d="M24 26 Q32 30 38 28"/>
+          </g>
+          <circle cx="24" cy="26" r="4.2" fill="none" stroke="#d4b478" stroke-width="1.6"/>
+          <circle cx="24" cy="26" r="1.6" fill="#d4b478"/>
+          <g fill="#ececf0"><circle cx="31" cy="10" r="2.4"/><circle cx="10" cy="33" r="2.4"/><circle cx="38" cy="28" r="2.4"/></g>
+        </svg>
+      </div>
+      <div class="sizes">
+        <span class="s"><svg width="48" height="48" viewBox="0 0 48 48"><g stroke="rgba(139,151,255,.65)" stroke-width="1.7" fill="none"><path d="M24 26 Q24 16 31 10"/><path d="M24 26 Q16 26 10 33"/><path d="M24 26 Q32 30 38 28"/></g><circle cx="24" cy="26" r="4.6" fill="none" stroke="#d4b478" stroke-width="1.9"/><circle cx="24" cy="26" r="1.8" fill="#d4b478"/><g fill="#ececf0"><circle cx="31" cy="10" r="2.7"/><circle cx="10" cy="33" r="2.7"/><circle cx="38" cy="28" r="2.7"/></g></svg><em>48</em></span>
+        <span class="s"><svg width="32" height="32" viewBox="0 0 48 48"><g stroke="rgba(139,151,255,.7)" stroke-width="2.2" fill="none"><path d="M24 26 Q24 16 31 10"/><path d="M24 26 Q16 26 10 33"/><path d="M24 26 Q32 30 38 28"/></g><circle cx="24" cy="26" r="5" fill="none" stroke="#d4b478" stroke-width="2.3"/><g fill="#ececf0"><circle cx="31" cy="10" r="3.1"/><circle cx="10" cy="33" r="3.1"/><circle cx="38" cy="28" r="3.1"/></g></svg><em>32</em></span>
+        <span class="s"><svg width="20" height="20" viewBox="0 0 48 48"><g stroke="rgba(139,151,255,.8)" stroke-width="3" fill="none"><path d="M24 26 Q24 16 31 10"/><path d="M24 26 Q16 26 10 33"/><path d="M24 26 Q32 30 38 28"/></g><circle cx="24" cy="26" r="6" fill="none" stroke="#d4b478" stroke-width="3"/><g fill="#ececf0"><circle cx="31" cy="10" r="4"/><circle cx="10" cy="33" r="4"/><circle cx="38" cy="28" r="4"/></g></svg><em>20</em></span>
+      </div>
+      <div class="ctx">
+        <span class="railctx"><svg width="20" height="20" viewBox="0 0 48 48"><g stroke="rgba(139,151,255,.8)" stroke-width="3" fill="none"><path d="M24 26 Q24 16 31 10"/><path d="M24 26 Q16 26 10 33"/><path d="M24 26 Q32 30 38 28"/></g><circle cx="24" cy="26" r="6" fill="none" stroke="#d4b478" stroke-width="3"/><g fill="#ececf0"><circle cx="31" cy="10" r="4"/><circle cx="10" cy="33" r="4"/><circle cx="38" cy="28" r="4"/></g></svg><span class="below"></span></span>
+        <span class="squircle"><svg width="60" height="60" viewBox="0 0 48 48"><g stroke="rgba(139,151,255,.62)" stroke-width="1.5" fill="none"><path d="M24 26 Q24 16 31 10"/><path d="M24 26 Q16 26 10 33"/><path d="M24 26 Q32 30 38 28"/></g><circle cx="24" cy="26" r="4.4" fill="none" stroke="#d4b478" stroke-width="1.7"/><circle cx="24" cy="26" r="1.7" fill="#d4b478"/><g fill="#ececf0"><circle cx="31" cy="10" r="2.5"/><circle cx="10" cy="33" r="2.5"/><circle cx="38" cy="28" r="2.5"/></g></svg></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

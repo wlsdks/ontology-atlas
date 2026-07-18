@@ -52,10 +52,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  icons: {
-    icon: [{ url: '/logo.png', type: 'image/png' }],
-    apple: '/logo.png',
-  },
+  // 파비콘/애플 터치 아이콘은 Next.js 파일 컨벤션(app/icon.svg,
+  // app/apple-icon.png)이 자동으로 잡는다 — 여기서 다시 선언하면 <link
+  // rel="icon"> 중복이 생겨 제거. 새 브랜드 마크(헥사 별자리, 후보 A)로 교체.
 };
 
 export const viewport: Viewport = {

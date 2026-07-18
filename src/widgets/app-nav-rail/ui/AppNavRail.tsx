@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { cn } from "@/shared/lib/cn";
-import { BrandMarkFallback } from "@/shared/ui";
+import { BrandMark } from "@/shared/ui";
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
 
 export interface AppNavRailProps {
@@ -90,9 +90,9 @@ export function AppNavRail({ settingsSlot, className }: AppNavRailProps) {
         title="Ontology Atlas"
         aria-label="Ontology Atlas"
         translate="no"
-        className="mb-3.5 flex h-[34px] w-[34px] shrink-0 items-center justify-center text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        className="mb-3.5 flex h-[34px] w-[34px] shrink-0 items-center justify-center text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-indigo-hover)]"
       >
-        <BrandMarkFallback size={20} />
+        <BrandMark size={20} detail="compact" />
       </Link>
 
       <nav aria-label={t("ariaLabel")} className="flex w-full flex-1 flex-col gap-0.5">

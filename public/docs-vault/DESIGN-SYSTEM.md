@@ -241,6 +241,57 @@ v1 의 [Absolute rules](#absolute-rules-donts) 전부 그대로 유효하다. �
 - panel tertiary 텍스트 `#868690` 는 프로토타입 `#77777f` 의 AA 대비 넛지
   (Guardian follow-up #2).
 
+## Brand mark — "헥사 별자리" (candidate A, confirmed 2026-07-18)
+
+> 소스: `docs/prototypes/app-icon-concepts.html` (후보 A, 48px 마스터 + 20px
+> 축소판). 구현: `src/shared/ui/brand-mark.tsx` (`BrandMark`).
+
+The mark reuses the same shape vocabulary as the v2 kind glyph above instead of
+inventing a new one: a **hexagon** (= project shape, §2.3 "kind = shape, not
+color") with **six vertex nodes** (graph nodes) and **spokes** converging on a
+**center hub** — the hub is stroked amber, the same single-exception amber
+tone as the v2 hub ring (§2.3.6, `--color-status-warning` family /
+`#d4b478`). Large it reads as a constellation graph; small it collapses to
+the hexagon — the mark is never a separate pictogram bolted onto the product,
+it's the same shape language shrunk to a badge.
+
+**Two detail levels** (`BrandMarkProps.detail`):
+
+- `"full"` (default) — spokes + six vertices + hexagon + amber hub. Use at
+  ≥32px — nav rail avatars, in-app headers, marketing surfaces.
+- `"compact"` — hexagon outline + amber hub only, spokes/vertices dropped.
+  Use at ≤24px (favicon, macOS Dock at small sizes, dense chrome) where thin
+  spokes would just be noise.
+
+**Color contract**: lines and vertices use `currentColor` so a caller can tone
+the mark via CSS `color` (e.g. dim it inside a disabled state) — this is the
+one shared-UI SVG allowed to do that, because it is a monochrome brand glyph,
+not a data mark. The amber hub is a fixed constant
+(`BRAND_MARK_AMBER = '#d4b478'`) exported alongside the component, because it
+carries fixed brand meaning (hub node) independent of surrounding text color.
+Static, non-React SVG/PNG exports (`app/icon.svg`, macOS `.icns`/`.ico`) can't
+inherit CSS `currentColor`, so those bake the same indigo (`#8b97ff`) +
+`#d4b478` amber as literal fixed values — this is the one place hardcoded hex
+is correct instead of a token reference, because the file has no DOM to read
+tokens from.
+
+**Where it ships**:
+
+| Surface | Asset | Detail |
+|---|---|---|
+| In-app avatars/headers | `<BrandMark />` (`src/shared/ui/brand-mark.tsx`) | full/compact via prop |
+| Browser favicon | `app/icon.svg` | compact, transparent background |
+| iOS/PWA home-screen icon | `app/apple-icon.png` (180×180) | full, dark squircle ground |
+| PWA manifest icon | `public/brand-icon-512.png` | full, dark squircle ground |
+| macOS `.app` bundle icon | `src-tauri/icons/{32x32,64x64,128x128,128x128@2x,icon}.png` + `icon.icns` + `icon.ico` | compact ≤64px, full ≥128px — same dark squircle ground as the PWA/apple icon (app-icon special case, §"Absolute rules" 예외: 앱 아이콘은 vertical gradient 배경 허용) |
+
+Generation pipeline for the raster/macOS set: render the HTML composition
+(squircle + inline mark SVG) at each exact pixel size with a headless
+browser, then `iconutil`/hand-rolled ICO packer assemble `.icns`/`.ico` from
+the renders — no separate rasterizer script; the browser is the renderer of
+record so every size stays crisp instead of being scaled down from one master
+raster.
+
 ## Cited lineage — where these rules come from
 
 These rules are an applied reading of public, citable design thinking, not arbitrary taste.
@@ -1266,10 +1317,12 @@ Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌
 문서함·빌더·인사이트·프로젝트) + 하단 에이전트 상태·설정을 전담해, 브랜드
 필의 book/network 유틸 타일과 우측 세로 레일의 설정 기어를 흡수한다.
 
-- 로고(20px, `BrandMark` 배선 전까지 헥사 별자리 compact 형 인라인 SVG) +
-  5 목적지(아이콘 18px + 한글 라벨 9.5px) + 하단 에이전트 상태(Activity 아이콘
-  + 활동 중 앰버 점) + 설정(기어, 트리거만 이관 — 팝오버는 앵커 방향만
-  `popoverAlign="left"` 로 반전).
+- 로고(`<BrandMark size={20} detail="compact" />`, 위 "Brand mark" 섹션 — 브랜드
+  필 pip 도 같은 컴포넌트를 15px 로 씀, 두 표면이 같은 마크) + 5 목적지(아이콘
+  18px + 한글 라벨 9.5px) + 하단 에이전트 상태(Activity 아이콘 + 활동 중 앰버
+  점) + 설정(기어, 트리거만 이관 — 팝오버는 앵커 방향만 `popoverAlign="left"`
+  + `popoverSide="top"` 로 반전 — 레일 하단 트리거는 아래로 열면 화면 밖으로
+  넘친다, 1920 라이브에서 발견).
 - 활성 항목 = 인디고 틴트 타일 + 1px 인셋 링 + 좌측 2px 바 + `aria-current`.
   탭/칩과 달리 좌측 바가 추가되는 이유: 세로 스택에서 "지금 여기" 신호가
   타일 색만으로는 스캔하기 약해서(가로 탭의 밑줄 관례를 세로로 옮김).
@@ -1316,6 +1369,7 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 ## Changelog
 
 - 2026-07-18: 크롬 시스템(feat/chrome-system) — `--chrome-*` 토큰 + ChromeTile/ChromeChip 컴포넌트 신설, 24px 정렬 레일로 브랜드 필/INDEX 패널/분석 패널 좌측 인셋 수렴, INDEX 패널 v2.1(헤더 "INDEX · N" + 접기, 트리 행 grid + Lucide chevron + 인셋 capacity meter, 푸터로 에이전트 동기화 이관); see `docs/prototypes/index-panel-v2-full.html`
+- 2026-07-18: Brand mark replaced — "헥사 별자리" (candidate A) across favicon, macOS app icon, and `BrandMark` shared component; see "Brand mark" section above
 - 2026-07-18: v2 — B2+ "Circuit × Constellation" 언어를 페이지 롤아웃 규범으로 승격 (언어 6축 · 토큰 tier 카탈로그 · surface class 별 do/don't · v2 금지 추가 · 롤아웃 가드 · 토큰 drift 부채 감사); see [`TOPOLOGY-V2-DESIGN.md`](./TOPOLOGY-V2-DESIGN.md)
 - 2026-06-08: Added topology node-focus & scale pattern (ego popover, overview-first, plain-language counts, LOD perf path); see [`TOPOLOGY-FOCUS-AND-SCALE.md`](./TOPOLOGY-FOCUS-AND-SCALE.md)
 - 2026-04-13: Removed the consulting category

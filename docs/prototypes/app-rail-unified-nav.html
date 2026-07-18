@@ -1,0 +1,132 @@
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  app-rail-unified-nav v3 — 합성 시안: 좌측 레일(목업) + 실제 지형도 화면 캡처.\n  보여주는 페이지 = / (지도 허브, /topology 동일). 캔버스·INDEX·크롬은 실화면 그대로.
+  변경: ① 이모지 폐기 → Lucide(프로젝트 표준 오픈소스 아이콘셋) 실SVG 인라인
+  ② 크롬을 실제 앱 렌더 기반으로 재현(브랜드 필 census 포맷·INDEX 구조·
+  데이터시트) ③ 레일 리듬 재설계 — 아이템 타일 40px + 라벨, 활성=인디고
+  타일+좌측 2px 바, 비활성 라벨 대비 상향.
+  구현 계약: 아이콘 = lucide-react { Map, BookOpen, GitBranch, ChartColumn,
+  FolderKanban, Bot, Settings, Search, Plus, CircleHelp }. 레일 64px 고정,
+  전 화면 공통, 하단 = LiveActivity(Bot+앰버 점) · 설정.
+-->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합 내비 레일 v2 — 실적용 형태</title>
+<style>
+  :root{
+    --canvas:#060609; --rail:#0a0b0f; --panel:#101118; --elevated:#16171d;
+    --divider:rgba(255,255,255,.08); --border-soft:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.17);
+    --t1:#ececf0; --t2:#b8bac2; --t3:#84868f; --t4:#63656e;
+    --indigo:#5e6ad2; --indigo-soft:rgba(94,106,210,.14); --indigo-line:rgba(139,151,255,.85);
+    --amber:#d4b478;
+  }
+  *{margin:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:var(--canvas);color:var(--t1);font:14px/1.5 -apple-system,"Pretendard",sans-serif;overflow:hidden}
+  .frame{width:100%;height:100vh;display:flex;overflow:hidden}
+  svg.lucide{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+  /* ══ 통합 레일 ══ */
+  .rail{width:64px;flex:none;display:flex;flex-direction:column;align-items:center;padding:12px 0 14px;
+    background:var(--rail);border-right:1px solid var(--divider);z-index:10}
+  .rail .logo{width:34px;height:34px;display:grid;place-items:center;color:var(--t2);margin-bottom:14px}
+  .rail .logo svg{width:20px;height:20px}
+  .rail nav{display:flex;flex-direction:column;gap:2px;width:100%}
+  .rail .it{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 0 8px;cursor:pointer;color:var(--t3)}
+  .rail .it .tile{width:38px;height:32px;border-radius:8px;display:grid;place-items:center;transition:background .15s,color .15s}
+  .rail .it span{font-size:9.5px;letter-spacing:.01em;color:var(--t4)}
+  .rail .it:hover .tile{background:rgba(255,255,255,.05);color:var(--t1)}
+  .rail .it:hover span{color:var(--t2)}
+  .rail .it.on{color:var(--indigo-line)}
+  .rail .it.on .tile{background:var(--indigo-soft);box-shadow:inset 0 0 0 1px rgba(139,151,255,.22)}
+  .rail .it.on span{color:var(--t1);font-weight:600}
+  .rail .it.on::before{content:"";position:absolute;left:0;top:9px;height:30px;width:2px;background:var(--indigo);border-radius:0 2px 2px 0}
+  .rail .foot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:4px;width:100%}
+  .rail .foot .it{padding:6px 0}
+  .rail .agentdot{position:absolute;top:8px;right:14px;width:6px;height:6px;border-radius:50%;background:var(--amber);outline:2px solid var(--rail)}
+  /* ══ 본문 ══ */
+  .stage{position:relative;flex:1;min-width:0}
+  svg.map{position:absolute;inset:0;width:100%;height:100%}
+  text{font-family:ui-monospace,monospace}
+  .wm{fill:rgba(255,255,255,.045);font-size:44px;letter-spacing:.34em}
+  /* 상단 크롬 — 실제 브랜드 필 포맷 재현 */
+  .chrome{position:absolute;top:0;left:0;right:0;display:flex;align-items:flex-start;justify-content:space-between;padding:14px 24px;z-index:5}
+  .pill{display:flex;align-items:center;gap:12px;border:1px solid var(--border-soft);background:rgba(16,17,24,.95);border-radius:10px;padding:9px 14px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  .pill .pip{width:24px;height:24px;border:1px solid var(--border-strong);border-radius:7px;display:grid;place-items:center;color:var(--indigo-line)}
+  .pill .pip svg{width:13px;height:13px}
+  .pill .tx b{display:block;font-size:13px;font-weight:650;line-height:1.2}
+  .pill .tx span{font-family:ui-monospace,monospace;font-size:10px;color:var(--t4)}
+  .pill .tx span b{display:inline;font-size:10.5px;color:var(--t2);font-weight:600;text-shadow:0 1px 0 rgba(0,0,0,.6)}
+  .util{display:flex;gap:8px}
+  .util .btn{width:32px;height:32px;border:1px solid var(--border-soft);background:rgba(16,17,24,.95);border-radius:8px;display:grid;place-items:center;color:var(--t3);cursor:pointer}
+  .util .btn:hover{color:var(--t1);border-color:var(--border-strong)}
+  .util .btn svg{width:15px;height:15px}
+  /* INDEX — 실제 구조 재현 (역량·요소 서브카운트 + 미터) */
+  .index{position:absolute;top:78px;left:24px;bottom:24px;width:302px;border:1px solid var(--border-soft);background:rgba(16,17,24,.96);border-radius:12px;z-index:4;padding:15px;display:flex;flex-direction:column;gap:11px;box-shadow:0 18px 48px rgba(0,0,0,.4)}
+  .index .cap{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.2em;color:var(--t3);text-transform:uppercase;display:flex;align-items:center;gap:7px}
+  .index .cap .dot{width:5px;height:5px;border-radius:50%;background:var(--indigo)}
+  .index .cap .fold{margin-left:auto;color:var(--t4);letter-spacing:.1em;font-size:9px;border:1px solid var(--divider);border-radius:5px;padding:2px 7px}
+  .index .search{display:flex;align-items:center;gap:8px;border:1px solid var(--divider);border-radius:8px;background:var(--elevated);color:var(--t4);font-size:12px;padding:8px 11px;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)}
+  .index .search svg{width:13px;height:13px}
+  .row{display:grid;grid-template-columns:16px 1fr auto;align-items:center;column-gap:9px;padding:7px 9px;border-radius:7px;cursor:pointer}
+  .row:hover{background:rgba(255,255,255,.035)}
+  .row .g{width:10px;height:10px;justify-self:center}
+  .row .g.hex{border:1.2px solid var(--amber);clip-path:polygon(50% 0,100% 27%,100% 73%,50% 100%,0 73%,0 27%)}
+  .row .g.sq{width:9px;height:9px;border:1.2px solid rgba(139,151,255,.7);border-radius:2px}
+  .row .lbl{font-size:12.5px;color:var(--t2);min-width:0}
+  .row.proj .lbl{color:var(--amber);font-weight:600}
+  .row .lbl .sub{display:block;font-family:ui-monospace,monospace;font-size:9.5px;color:var(--t4);margin-top:1px}
+  .row .lbl .meter{display:block;height:1px;margin-top:4px;background:rgba(255,255,255,.06)}
+  .row .lbl .meter i{display:block;height:100%;background:rgba(139,151,255,.42)}
+  .row .n{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--t3);text-shadow:0 1px 0 rgba(0,0,0,.6);align-self:start;margin-top:2px}
+  .index .foot{margin-top:auto;border-top:1px solid var(--divider);padding-top:10px;font-size:11px;color:var(--t4);display:flex;align-items:center;gap:7px}
+  .index .foot .dot{width:5px;height:5px;border-radius:50%;background:var(--amber)}
+  /* 데이터시트 (선택 상태) + 행동 행 */
+  .sheet{position:absolute;top:78px;right:24px;width:352px;border:1px solid var(--border-soft);background:rgba(16,17,24,.97);border-radius:12px;z-index:4;padding:16px;box-shadow:0 18px 48px rgba(0,0,0,.4)}
+  .sheet .hd{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .sheet .hd .g{width:13px;height:13px;border:1.4px solid rgba(236,236,240,.85);border-radius:50%;flex:none}
+  .sheet .hd b{font-size:15px;font-weight:650}
+  .sheet .hd .k{margin-left:auto;font-family:ui-monospace,monospace;font-size:8.5px;letter-spacing:.14em;color:var(--t4);text-transform:uppercase;border:1px solid var(--divider);border-radius:5px;padding:2px 7px}
+  .sheet .metric{font-family:ui-monospace,monospace;font-size:11px;color:var(--t3);padding-bottom:11px;border-bottom:1px solid var(--divider)}
+  .sheet .metric b{font-size:12.5px;color:var(--t1);text-shadow:0 1px 0 rgba(0,0,0,.6)}
+  .sheet .acts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:11px 0;border-bottom:1px solid var(--divider)}
+  .sheet .acts .a{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 0 8px;border:1px solid var(--divider);border-radius:8px;color:var(--t3);font-size:10.5px;cursor:pointer;transition:border-color .15s,color .15s}
+  .sheet .acts .a:hover{border-color:rgba(139,151,255,.4);color:var(--t1)}
+  .sheet .acts .a svg{width:15px;height:15px}
+  .sheet .grp{padding:11px 0 4px;font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.16em;color:var(--t4);text-transform:uppercase}
+  .sheet .rowc{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--t2);padding:5px 2px}
+  .sheet .rowc .tm{width:14px;border-top:1.5px solid rgba(184,186,194,.6);flex:none}
+  .sheet .rowc .tm.dash{border-top-style:dashed}
+  .sheet .rowc span:last-child{margin-left:auto;color:var(--t4);font-family:ui-monospace,monospace;font-size:9.5px}
+  .sheet .more{font-size:11.5px;color:var(--t4);padding:4px 2px}
+</style>
+</head>
+<body>
+<div class="frame">
+  <aside class="rail">
+    <div class="logo" title="Ontology Atlas">
+      <svg class="lucide" viewBox="0 0 24 24"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg>
+    </div>
+    <nav>
+      <div class="it on"><span class="tile"><svg class="lucide" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></span><span>지도</span></div>
+      <div class="it"><span class="tile"><svg class="lucide" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span><span>문서함</span></div>
+      <div class="it"><span class="tile"><svg class="lucide" viewBox="0 0 24 24"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></span><span>빌더</span></div>
+      <div class="it"><span class="tile"><svg class="lucide" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span><span>인사이트</span></div>
+      <div class="it"><span class="tile"><svg class="lucide" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M8 10v4"/><path d="M12 10v2"/><path d="M16 10v6"/></svg></span><span>프로젝트</span></div>
+    </nav>
+    <div class="foot">
+      <div class="it" title="에이전트 활동 — 방금 mcp-server 갱신" style="position:relative">
+        <span class="tile"><svg class="lucide" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg><span class="agentdot"></span></span>
+      </div>
+      <div class="it"><span class="tile"><svg class="lucide" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <img src="shots/rail-real-topology.png" alt="실제 지형도 화면 (localhost:3107/ko/topology 캡처)"
+         style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:left top"/>
+  </main>
+</div>
+</body>
+</html>

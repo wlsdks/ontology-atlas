@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { ArrowLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { MOTION } from "@/shared/motion";
-import { BrandMarkFallback } from "@/shared/ui";
+import { BrandMark } from "@/shared/ui";
 
 interface Props {
   className?: string;
@@ -90,10 +90,13 @@ export function HeroCollapsed({
         // 브랜드 필 — feat/chrome-system §5, rounded-full(원형) → --chrome-radius
         // (10px, 정사각) 전환. 표면/보더/그림자도 --chrome-* 로 이관해 우측
         // 액션 lane(여전히 원형 pill, --topology-chrome-*)과 형태를 분리한다.
+        // 소유자 라이브 피드백 — 2줄(타이틀+census) 리듬이 고정 height 에서
+        // 갑갑해 보임. min-h + 소폭 py 로 전환해 내용이 눌리지 않게(내용이
+        // 더 필요하면 자연히 커짐 — 매직 px 추측 대신 콘텐츠 기준 안전).
         "group inline-flex items-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
         compact
-          ? "h-[var(--topology-chrome-control-height-compact)] gap-1.5 pl-1.5 pr-2.5 opacity-80"
-          : "h-[var(--topology-chrome-control-height)] gap-[var(--topology-chrome-gap)] pl-1.5 pr-3",
+          ? "min-h-[var(--topology-chrome-control-height-compact)] gap-1.5 py-0.5 pl-1.5 pr-2.5 opacity-80"
+          : "min-h-[var(--topology-chrome-control-height)] gap-[var(--topology-chrome-gap)] py-1 pl-1.5 pr-3",
         className,
       )}
     >
@@ -110,25 +113,23 @@ export function HeroCollapsed({
           {icon}
         </span>
       ) : (
-        // pip — 브랜드 마크. 후보 A "헥사 별자리" compact 형(헥사곤 스트로크 +
-        // 중심 앰버 도트, `docs/prototypes/app-icon-concepts.html` 소유자
-        // 최종 승인) — 좌측 내비 레일 로고(`AppNavRail`의 `BrandMarkFallback`)
-        // 와 같은 recipe 를 15px 로 축소해 쓴다. `@/shared/ui/brand-mark` 가
-        // 배선되면 둘 다 그걸로 교체(리드 follow-up) — 구 단순 헥사곤
-        // 윤곽만(중심 도트 없음)은 후보 탈락이라 쓰지 않는다.
+        // pip — 브랜드 마크(`BrandMark`, 후보 A "헥사 별자리" 확정,
+        // `docs/prototypes/app-icon-concepts.html` 소유자 최종 승인). 좌측
+        // 내비 레일 로고(`AppNavRail`)와 같은 컴포넌트를 15px·compact 로 쓴다
+        // — 두 표면이 같은 브랜드 마크를 보여준다.
         <span
           aria-hidden="true"
           className={cn(
-            "inline-flex shrink-0 items-center justify-center rounded-[8px] border border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.14)]",
+            "inline-flex shrink-0 items-center justify-center rounded-[8px] border border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-indigo-accent)]",
             compact
               ? "size-[var(--topology-chrome-badge-size-compact)]"
               : "size-[var(--topology-chrome-badge-size)]",
           )}
         >
-          <BrandMarkFallback size={15} />
+          <BrandMark size={15} detail="compact" />
         </span>
       )}
-      <span className="flex min-w-0 flex-col items-start">
+      <span className="flex min-w-0 flex-col items-start gap-0.5">
         <span
           translate="no"
           className={cn(

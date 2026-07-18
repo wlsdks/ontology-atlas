@@ -32,4 +32,4 @@ export {
 export { TabBar, type TabBarItem } from './tab-bar';
 export { ChromeTile, type ChromeTileProps } from './chrome-tile';
 export { ChromeChip, type ChromeChipProps } from './chrome-chip';
-export { BrandMarkFallback } from './brand-mark-fallback';
+export { BrandMark, BRAND_MARK_AMBER, type BrandMarkProps } from './brand-mark';

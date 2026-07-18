@@ -1,0 +1,270 @@
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  first-run v3 FLAGSHIP — "관제탑 첫 기동" (소유자 "더 멋지고 예쁘게" 라운드)
+  베이스 = v2b INDEX 통합(플로팅 표면 0) + B2+ 렌더 언어 풀 밀도:
+  · 캔버스: 결정론 도트 격자 · 곡선 회로 트레이스(PCB 곡률) · 별먼지 ·
+    회절 스파이크(밝은 별) · 신호 펄스(hex→mcp-server 전원 인가) ·
+    가공 헥사곤(이중 헤어라인+핀틱) · 도메인 칩(IC 핀틱) · 정적 비네트
+  · 시작하기 모듈: 가공 베젤 코너 틱 · 각인 census 계기 3구 · sheen 버튼
+    (inset 1px 하이라이트 — glow 아님) · 키캡 ⌘O
+  · INDEX 트리: kind 글리프 + 도메인별 1px capacity meter(실카운트 비례)
+  동작 계약(불변): 재방문·복원 vault 시 이 모듈/SAMPLE 배지 미렌더, 본인
+  vault 직행. "그냥 둘러볼게요" = sessionStorage 닫힘.
+-->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>첫 기동 v3 — 관제탑</title>
+<style>
+  :root{
+    --canvas:#060609; --panel:#101118; --elevated:#16171d; --divider:rgba(255,255,255,.08);
+    --border-soft:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.17);
+    --t1:#ececf0; --t2:#b8bac2; --t3:#84868f; --t4:#5c5e66;
+    --indigo:#5e6ad2; --indigo-soft:rgba(94,106,210,.16); --indigo-line:rgba(139,151,255,.6);
+    --amber:#d4b478; --amber-soft:rgba(212,180,120,.42);
+  }
+  *{margin:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:var(--canvas);color:var(--t1);font:14px/1.5 -apple-system,"Pretendard",sans-serif;overflow:hidden}
+  .frame{width:100%;height:100vh;position:relative;overflow:hidden;background:var(--canvas)}
+  svg.map{position:absolute;inset:0;width:100%;height:100%}
+  text{font-family:ui-monospace,monospace}
+  /* ── 상단 크롬 ── */
+  .chrome{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:14px 24px;z-index:5}
+  .pill{display:flex;align-items:center;gap:11px;border:1px solid var(--border-soft);background:rgba(16,17,24,.94);border-radius:10px;padding:9px 14px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  .pill .pip{width:22px;height:22px;border:1px solid var(--border-strong);border-radius:6px;display:grid;place-items:center;color:var(--indigo-line);font-size:10px}
+  .pill b.nm{font-size:12.5px;font-weight:600;letter-spacing:.01em}
+  .pill .census{display:flex;align-items:baseline;gap:5px;font-family:ui-monospace,monospace;border-left:1px solid var(--divider);padding-left:11px}
+  .pill .census b{font-size:12px;color:var(--t1);font-weight:600;text-shadow:0 1px 0 rgba(0,0,0,.65)}
+  .pill .census span{font-size:8.5px;letter-spacing:.14em;color:var(--t4);text-transform:uppercase}
+  .pill .census i{font-style:normal;color:var(--t4);font-size:10px;margin:0 2px}
+  .pill .sample{font-family:ui-monospace,monospace;font-size:8.5px;letter-spacing:.16em;color:var(--amber);border:1px solid var(--amber-soft);border-radius:5px;padding:2.5px 8px;text-transform:uppercase}
+  .util{display:flex;gap:8px}
+  .util .btn{width:31px;height:31px;border:1px solid var(--border-soft);background:rgba(16,17,24,.94);border-radius:8px;display:grid;place-items:center;color:var(--t3);font-size:12px}
+  /* ── INDEX 패널 ── */
+  .index{position:absolute;top:78px;left:24px;bottom:24px;width:326px;border:1px solid var(--border-soft);background:rgba(16,17,24,.96);border-radius:12px;z-index:4;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,.45)}
+  /* 시작하기 모듈 — 가공 베젤 */
+  .starter{position:relative;padding:18px 18px 16px;border-bottom:1px solid var(--divider);background:linear-gradient(180deg,rgba(94,106,210,.08),rgba(94,106,210,.015) 70%,transparent)}
+  .starter .tick{position:absolute;width:9px;height:9px;border-color:rgba(139,151,255,.5);border-style:solid;border-width:0}
+  .starter .tick.tl{top:7px;left:7px;border-top-width:1px;border-left-width:1px}
+  .starter .tick.tr{top:7px;right:7px;border-top-width:1px;border-right-width:1px}
+  .starter .tick.bl{bottom:7px;left:7px;border-bottom-width:1px;border-left-width:1px}
+  .starter .tick.br{bottom:7px;right:7px;border-bottom-width:1px;border-right-width:1px}
+  .starter .cap{display:flex;align-items:center;gap:9px;font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.22em;color:var(--t2);text-transform:uppercase;margin-bottom:11px}
+  .starter .cap .pw{position:relative;width:8px;height:8px;flex:none}
+  .starter .cap .pw::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--amber)}
+  .starter .cap .pw::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1px solid var(--amber-soft)}
+  .starter .cap .s{color:var(--amber);margin-left:auto;letter-spacing:.16em;font-size:8.5px}
+  .starter p.ctx{font-size:12px;line-height:1.6;color:var(--t3);word-break:keep-all;margin-bottom:13px}
+  .starter p.ctx b{color:var(--t1);font-weight:600}
+  /* census 계기 3구 */
+  .meterrow{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--divider);border-radius:9px;background:rgba(6,6,9,.55);box-shadow:inset 0 1px 2px rgba(0,0,0,.4);margin-bottom:14px;overflow:hidden}
+  .meterrow .m{padding:9px 0 8px;text-align:center;font-family:ui-monospace,monospace}
+  .meterrow .m+.m{border-left:1px solid var(--divider)}
+  .meterrow .m b{display:block;font-size:19px;font-weight:600;color:var(--t1);text-shadow:0 1px 0 rgba(0,0,0,.7);letter-spacing:.02em}
+  .meterrow .m span{font-size:8px;letter-spacing:.18em;color:var(--t4);text-transform:uppercase}
+  .starter .open{position:relative;display:flex;width:100%;align-items:center;justify-content:center;gap:9px;border:1px solid rgba(139,151,255,.45);border-radius:9px;background:var(--indigo);color:#fff;font-size:13.5px;font-weight:600;padding:11px 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 8px 20px rgba(0,0,0,.35);cursor:pointer}
+  .starter .open .kbd{font-family:ui-monospace,monospace;font-size:9.5px;font-weight:500;opacity:.8;border:1px solid rgba(255,255,255,.35);border-bottom-width:2px;border-radius:4px;padding:1px 6px}
+  .starter .sub{display:flex;justify-content:space-between;margin-top:11px;font-size:11.5px}
+  .starter .sub a{color:var(--t3);text-decoration:none;border-bottom:1px solid var(--divider);padding-bottom:1px;cursor:pointer}
+  .starter .sub a:hover{color:var(--t2)}
+  /* INDEX 본문 */
+  .body{padding:15px 18px;display:flex;flex-direction:column;gap:11px;flex:1;min-height:0}
+  .cap2{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.2em;color:var(--t4);text-transform:uppercase;display:flex;justify-content:space-between}
+  .search{display:flex;align-items:center;gap:8px;border:1px solid var(--divider);border-radius:8px;background:var(--elevated);color:var(--t4);font-size:12px;padding:8px 11px;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)}
+  .tree{display:grid;gap:1px}
+  .row{display:grid;grid-template-columns:16px 1fr auto;align-items:center;gap:9px;padding:7px 9px;border-radius:7px}
+  .row:hover{background:rgba(255,255,255,.035)}
+  .row .g{width:9px;height:9px;justify-self:center}
+  .row .g.hex{background:none;border:1.2px solid var(--amber);width:10px;height:10px;clip-path:polygon(50% 0,100% 27%,100% 73%,50% 100%,0 73%,0 27%)}
+  .row .g.sq{border:1.2px solid var(--indigo-line);border-radius:2px}
+  .row .lbl{font-size:12.5px;color:var(--t2);min-width:0}
+  .row.proj .lbl{color:var(--amber);font-weight:600}
+  .row .lbl .meter{display:block;height:1px;margin-top:4px;background:rgba(255,255,255,.06);border-radius:1px;overflow:hidden}
+  .row .lbl .meter i{display:block;height:100%;background:rgba(139,151,255,.4)}
+  .row .n{font-family:ui-monospace,monospace;font-size:10px;color:var(--t4);text-shadow:0 1px 0 rgba(0,0,0,.6)}
+  .foot{margin-top:auto;border-top:1px solid var(--divider);padding-top:11px;font-size:11px;line-height:1.55;color:var(--t4);word-break:keep-all}
+  .foot b{color:var(--t3);font-weight:500}
+  /* 우하단 계기 판독 */
+  .readout{position:absolute;right:24px;bottom:24px;z-index:5;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.2em;color:var(--t4);text-transform:uppercase;display:flex;gap:14px;align-items:center}
+  .readout .k{color:var(--t3)}
+  .readout .d{width:3px;height:3px;border-radius:50%;background:var(--t4)}
+</style>
+</head>
+<body>
+<div class="frame">
+  <svg class="map" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+        <circle cx="1" cy="1" r="0.8" fill="rgba(255,255,255,.03)"/>
+      </pattern>
+      <radialGradient id="vig" cx="56%" cy="50%" r="72%">
+        <stop offset="58%" stop-color="rgba(6,6,9,0)"/>
+        <stop offset="100%" stop-color="rgba(6,6,9,.75)"/>
+      </radialGradient>
+      <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="rgba(94,106,210,.06)"/>
+        <stop offset="100%" stop-color="rgba(94,106,210,0)"/>
+      </radialGradient>
+    </defs>
+    <rect width="1920" height="1080" fill="url(#grid)"/>
+    <circle cx="1080" cy="565" r="520" fill="url(#halo)"/>
+
+    <text x="1330" y="330" fill="rgba(255,255,255,.042)" font-size="46" letter-spacing=".34em">VIEWS</text>
+    <text x="600" y="880" fill="rgba(255,255,255,.042)" font-size="46" letter-spacing=".34em">CORE</text>
+    <text x="1490" y="640" fill="rgba(255,255,255,.032)" font-size="30" letter-spacing=".3em">AGENT</text>
+
+    <!-- 별먼지 -->
+    <g fill="rgba(236,236,240,.16)">
+      <circle cx="520" cy="200" r="1.1"/><circle cx="640" cy="150" r="1.4"/><circle cx="880" cy="180" r="1"/>
+      <circle cx="1240" cy="140" r="1.3"/><circle cx="1560" cy="210" r="1.1"/><circle cx="1720" cy="330" r="1.4"/>
+      <circle cx="1800" cy="540" r="1"/><circle cx="1760" cy="820" r="1.3"/><circle cx="1560" cy="950" r="1.1"/>
+      <circle cx="1240" cy="990" r="1.4"/><circle cx="900" cy="960" r="1"/><circle cx="640" cy="990" r="1.2"/>
+      <circle cx="470" cy="620" r="1.2"/><circle cx="560" cy="450" r="1"/><circle cx="1660" cy="470" r="1.2"/>
+      <circle cx="1350" cy="870" r="1"/><circle cx="760" cy="250" r="1.1"/><circle cx="1450" cy="180" r="1"/>
+      <circle cx="1840" cy="700" r="1.1"/><circle cx="420" cy="820" r="1.3"/>
+    </g>
+
+    <!-- 곡선 회로 트레이스 (hex→domain) -->
+    <g fill="none" stroke="rgba(255,255,255,.10)" stroke-width="1.1">
+      <path d="M1080,530 Q1070,420 1080,362"/>
+      <path d="M1112,548 Q1280,470 1388,442"/>
+      <path d="M1112,585 Q1310,650 1442,706"/>
+      <path d="M1080,606 Q1088,720 1080,800"/>
+      <path d="M1048,588 Q900,680 800,738"/>
+      <path d="M1048,548 Q880,470 762,404"/>
+    </g>
+    <!-- 도메인 상호 관계 (점선) -->
+    <g fill="none" stroke="rgba(139,151,255,.28)" stroke-width="1" stroke-dasharray="2.5 5">
+      <path d="M1400,458 Q1450,580 1448,692"/>
+      <path d="M776,418 Q920,360 1062,352"/>
+      <path d="M812,742 Q950,800 1064,812"/>
+    </g>
+    <!-- 전원 인가 트레이스: hex→mcp-server + 신호 펄스 3점 -->
+    <path d="M1080,530 Q1070,420 1080,362" fill="none" stroke="rgba(139,151,255,.55)" stroke-width="1.3"/>
+    <g>
+      <circle cx="1076" cy="484" r="2.6" fill="rgba(139,151,255,.9)"/>
+      <circle cx="1074" cy="452" r="2" fill="rgba(139,151,255,.55)"/>
+      <circle cx="1075" cy="424" r="1.5" fill="rgba(139,151,255,.3)"/>
+    </g>
+
+    <!-- element pads (도메인 주변 위성) -->
+    <g stroke="rgba(255,255,255,.05)" stroke-width="1">
+      <line x1="1400" y1="432" x2="1520" y2="368"/><line x1="1400" y1="432" x2="1540" y2="452"/>
+      <line x1="1456" y1="716" x2="1590" y2="690"/><line x1="1456" y1="716" x2="1570" y2="800"/>
+      <line x1="1080" y1="814" x2="1210" y2="880"/><line x1="1080" y1="814" x2="960" y2="892"/>
+      <line x1="786" y1="748" x2="670" y2="700"/><line x1="750" y1="392" x2="640" y2="320"/>
+      <line x1="1080" y1="348" x2="1190" y2="272"/><line x1="1080" y1="348" x2="964" y2="264"/>
+    </g>
+    <g fill="rgba(184,186,194,.85)">
+      <circle cx="1520" cy="368" r="3.2"/><circle cx="1540" cy="452" r="3.2"/><circle cx="1590" cy="690" r="3.2"/>
+      <circle cx="1570" cy="800" r="3.2"/><circle cx="1210" cy="880" r="3.2"/><circle cx="960" cy="892" r="3.2"/>
+      <circle cx="670" cy="700" r="3.2"/><circle cx="640" cy="320" r="3.2"/>
+    </g>
+    <g fill="none" stroke="rgba(184,186,194,.3)" stroke-width="1">
+      <circle cx="1520" cy="368" r="6"/><circle cx="1590" cy="690" r="6"/><circle cx="960" cy="892" r="6"/><circle cx="640" cy="320" r="6"/>
+    </g>
+
+    <!-- 회절 스파이크: mcp-server(허브 별) + 외곽 밝은 별 2 -->
+    <g stroke="rgba(236,236,240,.35)" stroke-width="1">
+      <line x1="1080" y1="322" x2="1080" y2="298"/><line x1="1080" y1="374" x2="1080" y2="398"/>
+      <line x1="1054" y1="348" x2="1030" y2="348"/><line x1="1106" y1="348" x2="1130" y2="348"/>
+    </g>
+    <g stroke="rgba(236,236,240,.22)" stroke-width="1">
+      <line x1="1190" y1="258" x2="1190" y2="286"/><line x1="1176" y1="272" x2="1204" y2="272"/>
+      <line x1="670" y1="686" x2="670" y2="714"/><line x1="656" y1="700" x2="684" y2="700"/>
+    </g>
+
+    <!-- mcp-server 허브 노드 (밝은 별 + 링) -->
+    <circle cx="1080" cy="348" r="7" fill="#101118" stroke="rgba(236,236,240,.8)" stroke-width="1.3"/>
+    <circle cx="1080" cy="348" r="12" fill="none" stroke="rgba(212,180,120,.4)" stroke-width="1"/>
+    <text x="1080" y="286" text-anchor="middle" fill="#b8bac2" font-size="11.5">mcp-server</text>
+
+    <!-- 도메인 칩 (IC 핀틱) -->
+    <g>
+      <g fill="#101118" stroke="rgba(139,151,255,.8)" stroke-width="1.1">
+        <rect x="1388" y="420" width="24" height="24" rx="3"/><rect x="1444" y="704" width="24" height="24" rx="3"/>
+        <rect x="1068" y="802" width="24" height="24" rx="3"/><rect x="774" y="736" width="24" height="24" rx="3"/>
+        <rect x="738" y="380" width="24" height="24" rx="3"/>
+      </g>
+      <g stroke="rgba(139,151,255,.35)" stroke-width="1">
+        <line x1="1394" y1="416" x2="1394" y2="410"/><line x1="1400" y1="416" x2="1400" y2="410"/><line x1="1406" y1="416" x2="1406" y2="410"/>
+        <line x1="1450" y1="700" x2="1450" y2="694"/><line x1="1456" y1="700" x2="1456" y2="694"/><line x1="1462" y1="700" x2="1462" y2="694"/>
+        <line x1="1074" y1="798" x2="1074" y2="792"/><line x1="1080" y1="798" x2="1080" y2="792"/><line x1="1086" y1="798" x2="1086" y2="792"/>
+        <line x1="780" y1="732" x2="780" y2="726"/><line x1="786" y1="732" x2="786" y2="726"/><line x1="792" y1="732" x2="792" y2="726"/>
+        <line x1="744" y1="376" x2="744" y2="370"/><line x1="750" y1="376" x2="750" y2="370"/><line x1="756" y1="376" x2="756" y2="370"/>
+      </g>
+      <g fill="rgba(139,151,255,.55)" font-size="8">
+        <text x="1400" y="437" text-anchor="middle">17</text><text x="1456" y="721" text-anchor="middle">9</text>
+        <text x="1080" y="819" text-anchor="middle">24</text><text x="786" y="753" text-anchor="middle">14</text>
+        <text x="750" y="397" text-anchor="middle">31</text>
+      </g>
+    </g>
+    <g fill="#84868f" font-size="11.5">
+      <text x="1432" y="428">ai-agent-partner</text>
+      <text x="1488" y="740">mode-aware-adapters</text>
+      <text x="1080" y="856" text-anchor="middle">ontology-core</text>
+      <text x="786" y="782" text-anchor="middle">vault-local-first</text>
+      <text x="750" y="366" text-anchor="middle">views</text>
+    </g>
+
+    <!-- 프로젝트 헥사곤 (이중 헤어라인 + 핀틱 + 각인) -->
+    <polygon points="1080,522 1116,542 1116,584 1080,604 1044,584 1044,542" fill="#101118" stroke="#d4b478" stroke-width="1.5"/>
+    <polygon points="1080,532 1107,547 1107,579 1080,594 1053,579 1053,547" fill="none" stroke="rgba(212,180,120,.35)" stroke-width="1"/>
+    <g stroke="rgba(212,180,120,.5)" stroke-width="1">
+      <line x1="1080" y1="516" x2="1080" y2="510"/><line x1="1080" y1="610" x2="1080" y2="616"/>
+      <line x1="1038" y1="563" x2="1032" y2="563"/><line x1="1122" y1="563" x2="1128" y2="563"/>
+    </g>
+    <text x="1080" y="568" text-anchor="middle" fill="rgba(212,180,120,.9)" font-size="8" letter-spacing=".2em">PRJ</text>
+    <text x="1080" y="640" text-anchor="middle" fill="#d4b478" font-size="12">ontology-atlas</text>
+
+    <rect width="1920" height="1080" fill="url(#vig)" pointer-events="none"/>
+  </svg>
+
+  <div class="chrome">
+    <div class="pill">
+      <span class="pip">◈</span><b class="nm">Ontology Atlas</b>
+      <span class="census"><b>102</b><span>concepts</span><i>·</i><b>478</b><span>relations</span></span>
+      <span class="sample">Sample</span>
+    </div>
+    <div class="util"><span class="btn">🔍</span><span class="btn">?</span><span class="btn">⚙</span></div>
+  </div>
+
+  <aside class="index">
+    <div class="starter">
+      <i class="tick tl"></i><i class="tick tr"></i><i class="tick bl"></i><i class="tick br"></i>
+      <p class="cap"><span class="pw"></span>First Run<span class="s">지금은 샘플</span></p>
+      <p class="ctx"><b>마크다운 frontmatter 가 곧 그래프입니다.</b> 지금 지도는 이 프로젝트 자신의 온톨로지(읽기 전용) — 폴더를 고르면 같은 지도가 내 데이터로 켜집니다.</p>
+      <div class="meterrow">
+        <div class="m"><b>102</b><span>concepts</span></div>
+        <div class="m"><b>478</b><span>relations</span></div>
+        <div class="m"><b>6</b><span>domains</span></div>
+      </div>
+      <button class="open">내 마크다운 폴더 열기 <span class="kbd">⌘O</span></button>
+      <p class="sub"><a>✚ 새 vault 만들기</a><a>그냥 둘러볼게요 →</a></p>
+    </div>
+    <div class="body">
+      <p class="cap2">INDEX <span>⌘K 검색</span></p>
+      <div class="search">⌕ 노드 검색…</div>
+      <div class="tree">
+        <div class="row proj"><span class="g hex"></span><span class="lbl">ontology-atlas</span><span class="n">102</span></div>
+        <div class="row"><span class="g sq"></span><span class="lbl">views<span class="meter"><i style="width:100%"></i></span></span><span class="n">31</span></div>
+        <div class="row"><span class="g sq"></span><span class="lbl">ontology-core<span class="meter"><i style="width:77%"></i></span></span><span class="n">24</span></div>
+        <div class="row"><span class="g sq"></span><span class="lbl">ai-agent-partner<span class="meter"><i style="width:55%"></i></span></span><span class="n">17</span></div>
+        <div class="row"><span class="g sq"></span><span class="lbl">vault-local-first<span class="meter"><i style="width:45%"></i></span></span><span class="n">14</span></div>
+        <div class="row"><span class="g sq"></span><span class="lbl">mode-aware-adapters<span class="meter"><i style="width:29%"></i></span></span><span class="n">9</span></div>
+        <div class="row"><span class="g sq"></span><span class="lbl">onboarding-ux<span class="meter"><i style="width:19%"></i></span></span><span class="n">6</span></div>
+      </div>
+      <p class="foot"><b>샘플 vault</b> — 이 프로젝트 자신의 frontmatter 를 빌드 시점 그대로. 목업 데이터 없음.</p>
+    </div>
+  </aside>
+
+  <div class="readout">
+    <span><span class="k">1</span> project</span><span class="d"></span>
+    <span><span class="k">6</span> domains</span><span class="d"></span>
+    <span>Spine view · 줌인하면 요소가 나타납니다</span>
+  </div>
+</div>
+</body>
+</html>

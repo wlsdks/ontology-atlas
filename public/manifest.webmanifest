@@ -14,8 +14,8 @@
   "categories": ["productivity", "utilities"],
   "icons": [
     {
-      "src": "/logo.png",
-      "sizes": "any",
+      "src": "/brand-icon-512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }
