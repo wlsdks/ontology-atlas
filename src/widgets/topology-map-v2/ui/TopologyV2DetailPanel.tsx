@@ -10,6 +10,7 @@ import {
   type V2DatasheetConnection,
   type V2MetricValues,
 } from "./topology-v2-datasheet";
+import { TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui/topology-v2-kind-glyph";
 
 /**
  * topology-map-v2 "component datasheet" node panel
@@ -45,6 +46,10 @@ export interface TopologyV2DetailPanelLabels {
   noConnections: string;
   handoff: string;
   close: string;
+  /** "전체 상세 →" opt-in link to the A1 full-detail datasheet
+   * (`full-detail-a1` widget) — the design gate's details-on-demand step
+   * beyond this compact ego popover. */
+  openFullDetail: string;
 }
 
 export interface TopologyV2DetailPanelProps {
@@ -64,100 +69,11 @@ export interface TopologyV2DetailPanelProps {
   onSelectConnection: (id: string) => void;
   onCopyHandoff: (text: string) => void;
   onClose: () => void;
+  /** Opens the A1 full-detail datasheet for this node — details-on-demand
+   * opt-in (`.claude/rules/design.md` "풀스크린 드로어는 opt-in"). Omitted
+   * hides the link (e.g. read-only embeds). */
+  onOpenFullDetail?: () => void;
   className?: string;
-}
-
-type RenderableKind = "project" | "domain" | "capability" | "element";
-
-function isRenderableKind(kind: string): kind is RenderableKind {
-  return (
-    kind === "project" ||
-    kind === "domain" ||
-    kind === "capability" ||
-    kind === "element"
-  );
-}
-
-/**
- * The kind-shape miniature — the same silhouette family the v2 canvas draws
- * (hex = project, chip = domain, circle = capability, via-pad = element),
- * stroked/filled with the shared `--topology-v2-node-*` kind tokens so the
- * header reads as a shrunk copy of the node on the map.
- */
-function KindGlyph({ kind }: { kind: string }) {
-  const resolved: RenderableKind = isRenderableKind(kind) ? kind : "element";
-  const fill = `var(--topology-v2-node-fill-${resolved})`;
-  const stroke = `var(--topology-v2-node-stroke-${resolved})`;
-  const s = 15;
-  const c = s / 2;
-  const common = {
-    fill,
-    stroke,
-    strokeWidth: 1.25,
-    vectorEffect: "non-scaling-stroke" as const,
-  };
-  return (
-    <svg
-      width={s}
-      height={s}
-      viewBox={`0 0 ${s} ${s}`}
-      aria-hidden="true"
-      data-kind-glyph={resolved}
-      className="shrink-0"
-    >
-      {resolved === "project" ? (
-        // hexagon (flat-top-ish, matching canvas hexPoints)
-        <polygon points={hexPoints(c, c, c - 1.2)} {...common} />
-      ) : resolved === "domain" ? (
-        // chip — wider rounded rectangle
-        <rect x={1} y={3.4} width={s - 2} height={s - 6.8} rx={1.6} {...common} />
-      ) : resolved === "capability" ? (
-        <circle cx={c} cy={c} r={c - 1.6} {...common} />
-      ) : (
-        // via-pad — square with a drilled hole
-        <g>
-          <rect x={2.4} y={2.4} width={s - 4.8} height={s - 4.8} rx={1.4} {...common} />
-          <circle cx={c} cy={c} r={1.5} fill="var(--topology-v2-node-hole-fill)" stroke="none" />
-        </g>
-      )}
-    </svg>
-  );
-}
-
-function hexPoints(cx: number, cy: number, r: number): string {
-  const pts: string[] = [];
-  for (let i = 0; i < 6; i += 1) {
-    const a = ((i * 60 - 90) * Math.PI) / 180;
-    pts.push(`${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`);
-  }
-  return pts.join(" ");
-}
-
-/**
- * Trace mini-line matching the canvas edge style: contains = solid hairline,
- * depends = dashed. R+ moved this from the group header (one per group) to
- * each row's leading position (one per row) — connection groups are now
- * DIRECTION-based, so relation TYPE (containment vs depends) is no longer
- * the grouping axis and needs a per-row marker to stay visible at all.
- */
-function TraceMark({ containment }: { containment: boolean }) {
-  const stroke = containment
-    ? "var(--topology-v2-edge-contains-mark)"
-    : "var(--topology-v2-edge-depends-mark)";
-  return (
-    <svg width={14} height={6} viewBox="0 0 14 6" aria-hidden="true" className="shrink-0">
-      <line
-        x1={1}
-        y1={3}
-        x2={13}
-        y2={3}
-        stroke={stroke}
-        strokeWidth={1.4}
-        strokeDasharray={containment ? undefined : "3 3"}
-        strokeLinecap="round"
-      />
-    </svg>
-  );
 }
 
 export function TopologyV2DetailPanel({
@@ -172,6 +88,7 @@ export function TopologyV2DetailPanel({
   onSelectConnection,
   onCopyHandoff,
   onClose,
+  onOpenFullDetail,
   className,
 }: TopologyV2DetailPanelProps) {
   const metricLine = formatV2MetricLine(metric, {
@@ -229,7 +146,7 @@ export function TopologyV2DetailPanel({
                 data-datasheet-connection={row.id}
                 className="flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-1 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
               >
-                <TraceMark containment={isContainmentRelation(row.relationType)} />
+                <TopologyV2TraceMark containment={isContainmentRelation(row.relationType)} />
                 <span className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--topology-v2-panel-text-secondary)]">
                   {row.title}
                 </span>
@@ -267,7 +184,7 @@ export function TopologyV2DetailPanel({
       {/* Header — kind miniature + name + power dot + close */}
       <div className="flex items-start gap-2">
         <div className="mt-[1px]">
-          <KindGlyph kind={kind} />
+          <TopologyV2KindGlyph kind={kind} />
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex items-center gap-1.5">
@@ -343,6 +260,16 @@ export function TopologyV2DetailPanel({
         <span className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]">
           {slug}
         </span>
+        {onOpenFullDetail ? (
+          <button
+            type="button"
+            onClick={onOpenFullDetail}
+            data-testid="topology-v2-detail-panel-open-full-detail"
+            className="shrink-0 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          >
+            {labels.openFullDetail}
+          </button>
+        ) : null}
       </div>
     </div>
   );

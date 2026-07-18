@@ -30,3 +30,9 @@ export type {
   V2HandoffInput,
   V2MetricValues,
 } from './ui/topology-v2-datasheet';
+export {
+  TopologyV2KindGlyph,
+  TopologyV2TraceMark,
+  isTopologyV2RenderableKind,
+} from '@/shared/ui/topology-v2-kind-glyph';
+export type { TopologyV2RenderableKind } from '@/shared/ui/topology-v2-kind-glyph';

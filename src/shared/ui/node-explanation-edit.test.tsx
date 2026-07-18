@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { NodeExplanationEdit, type NodeExplanationEditLabels } from "./NodeExplanationEdit";
+import { NodeExplanationEdit, type NodeExplanationEditLabels } from "./node-explanation-edit";
 
 const labels: NodeExplanationEditLabels = {
   heading: "설명",

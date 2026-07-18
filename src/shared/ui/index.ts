@@ -19,3 +19,13 @@ export { Tooltip, TooltipProvider, TooltipContent } from './tooltip';
 export { StaggeredFadeIn } from './staggered-fade-in';
 export { HighlightedText } from './highlighted-text';
 export { ErrorBoundary } from './error-boundary';
+export {
+  TopologyV2KindGlyph,
+  TopologyV2TraceMark,
+  isTopologyV2RenderableKind,
+  type TopologyV2RenderableKind,
+} from './topology-v2-kind-glyph';
+export {
+  NodeExplanationEdit,
+  type NodeExplanationEditLabels,
+} from './node-explanation-edit';

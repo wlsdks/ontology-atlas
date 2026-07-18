@@ -231,7 +231,14 @@ export function computeDomainCouplingMatrix(
   };
 }
 
-function buildContainmentParents(
+/**
+ * Nearest containment PARENT per node — `contains`/`belongs_to` edges walked
+ * to a single `childId -> parentId` map (first parent wins if duplicates).
+ * Exported (R+ full-detail A1) so the reach-instrument's per-domain
+ * breakdown can resolve an ARBITRARY reachable node's owning domain via
+ * {@link nearestDomainId} without re-deriving this walk a second time.
+ */
+export function buildContainmentParents(
   edges: readonly KnowledgeGraphEdge[],
   nodeById: ReadonlyMap<string, KnowledgeGraphNode>,
 ): Map<string, string> {
@@ -254,7 +261,12 @@ function buildContainmentParents(
   return parentOf;
 }
 
-function nearestDomainId(
+/**
+ * Walk containment PARENTS up from `node` until a `kind: domain` ancestor is
+ * found (a domain node resolves to itself). Returns `null` for nodes with no
+ * domain ancestor (project/document) or a broken/cyclic containment chain.
+ */
+export function nearestDomainId(
   node: KnowledgeGraphNode,
   parentOf: ReadonlyMap<string, string>,
   nodeById: ReadonlyMap<string, KnowledgeGraphNode>,
