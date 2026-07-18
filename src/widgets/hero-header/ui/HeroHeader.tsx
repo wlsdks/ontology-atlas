@@ -1,11 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, BookOpen, ChevronsLeft, List, Network, Search } from "lucide-react";
-import { Tooltip } from "@/shared/ui";
+import { BrandMark, Tooltip } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import { MOTION } from "@/shared/motion";
 
@@ -76,15 +75,12 @@ export function HeroHeader({
                 {icon}
               </span>
             ) : (
-              <Image
-                src="/logo.png"
-                alt=""
+              <span
                 aria-hidden="true"
-                width={40}
-                height={40}
-                priority
-                className="h-10 w-10 shrink-0 rounded-[9px] border border-[color:var(--color-border-soft)] object-cover"
-              />
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-indigo-accent)]"
+              >
+                <BrandMark size={22} />
+              </span>
             )}
             {onCollapse && (
               <Tooltip content={t("collapseLeft")} side="bottom" withProvider={false}>

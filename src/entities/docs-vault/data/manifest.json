@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T13:24:24.171Z",
+  "generatedAt": "2026-07-18T14:46:44.254Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4225,6 +4225,11 @@
         },
         {
           "depth": 2,
+          "text": "Brand mark — \"헥사 별자리\" (candidate A, confirmed 2026-07-18)",
+          "slug": "brand-mark-헥사-별자리-candidate-a-confirmed-2026-07-18"
+        },
+        {
+          "depth": 2,
           "text": "Cited lineage — where these rules come from",
           "slug": "cited-lineage-where-these-rules-come-from"
         },
@@ -4345,8 +4350,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 9430,
-      "updatedAt": "2026-07-18T13:19:23.475Z",
+      "wordCount": 9911,
+      "updatedAt": "2026-07-18T14:46:05.499Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

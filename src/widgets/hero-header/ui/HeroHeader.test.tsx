@@ -19,13 +19,6 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-vi.mock("next/image", () => ({
-  default: ({ alt, priority, ...props }: { alt: string; priority?: boolean; [key: string]: unknown }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img alt={alt} data-priority={priority ? "true" : undefined} {...props} />
-  ),
-}));
-
 vi.mock("next-intl", () => ({
   useTranslations: () => {
     const messages: Record<string, string> = {
@@ -47,6 +40,7 @@ vi.mock("next-intl", () => ({
 
 vi.mock("@/shared/ui", () => ({
   Tooltip: ({ children }: { children: ReactNode }) => <>{children}</>,
+  BrandMark: () => <svg role="img" aria-label="ontology-atlas" />,
 }));
 
 describe("HeroHeader", () => {

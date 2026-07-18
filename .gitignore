@@ -68,6 +68,8 @@ references/
 *.png
 !public/logo.png
 !public/og-image.png
+!public/brand-icon-512.png
+!app/apple-icon.png
 !src-tauri/icons/
 !src-tauri/icons/**
 !docs/prototypes/shots/

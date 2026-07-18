@@ -30,3 +30,4 @@ export {
   type NodeExplanationEditLabels,
 } from './node-explanation-edit';
 export { TabBar, type TabBarItem } from './tab-bar';
+export { BrandMark, BRAND_MARK_AMBER, type BrandMarkProps } from './brand-mark';
