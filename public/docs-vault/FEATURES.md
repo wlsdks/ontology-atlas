@@ -70,7 +70,7 @@ local-first trust line. No download CTA inside the installed app. On the web,
 - **Hosted web, no vault** → `LandingPage`
 - **macOS app, no restored vault** → local redirect state, then `/docs/?intent=local` shows a vault setup welcome with Files / Graph / Agent contract cells, the same 14-check graph DB proof gate, and open/create/sample/recent choices; the installed app does not render the hosted marketing page on first run
 - **Recent desktop vaults** → the picker stores recently opened Tauri vault paths, can reopen them without another Finder selection, and can remove stale paths from the list
-- **Vault loaded** → `OntologyViewPage` (tree + ego graph hub)
+- **Vault loaded** → `HomePage` — the topology hub (map + INDEX concept panel + node datasheet), same component `/topology` renders (B3 허브가 곧 지도 — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded)
 
 ### `/` — Landing (no vault)
 
@@ -208,47 +208,26 @@ view-doc · view-folder-topology · pin · unpin · copy URL · print · edit ·
 
 ---
 
-### `/ontology` — Browse (tree + ego + detail)
+### `/ontology` — retired tree/ego hub → thin redirect (B3 허브가 곧 지도)
 
-#### Sub-nav (R3 cut F — always visible, no toggle)
-- **Browse** (`/ontology/`) — exact-match `''` and `/ontology`
-- **Builder** (`/ontology/edit/`)
-- **Insights** (`/ontology/insights/`)
-- Caption: "ONTOLOGY · {N} nodes · {E} relations" (visual cue same data)
+The tree + ego graph Browse surface this section used to describe
+(`OntologyViewPage`, `OntologyTreeView`, the old `NodeDetailPanel`/ego SVG) is
+retired. `/ontology` is now a thin client redirect
+(`src/views/ontology-redirect/`) to `/topology/?index=expanded`, translating
+its `?node=<id>` deep-link contract into `/topology`'s `?p=<id>` so every
+existing agent-handoff / search / docs-viewer link built via
+`buildOntologyNodeHref` keeps resolving instead of 404ing.
 
-#### Page header
-- Title + info tooltip · counts
-- **Search button** (`⌘K`) — node-only `OntologyGlobalSearchAdapter`
-- **All / 전체 button** (R4 cut H, `⇧⌘K`) — `MountedGlobalSearch`, nodes + projects unified
-- **Builder CTA** (indigo solid) → `/ontology/edit/`
-- Browse / Write / Query summary: active Browse card selects the concept slug, the selected canonical slug is repeated as the active concept handle, Builder keeps that slug focused for frontmatter writes, and Insights closes with graph DB-style proof
-- Status strip: one-line hierarchy index · graph refs · evidence docs · projection notes, shown before the proof rail so the hierarchy reads as a browse index instead of the whole ontology without adding another card row
-- Graph proof strip: compact MCP/CLI query pack counts, one sample `MATCH` intent, operation chips, and copy buttons for the full graph DB MCP pack, CLI fallback pack, runtime gate, and shared post-change sync gate
-- Local frontmatter compile proof is below the tree, not above it, so the browse page starts from concept selection rather than a source inventory
+The hub itself — project → domain → capability → element browsing, node
+selection, agent handoff copy — now lives inside `/topology` (see "INDEX
+panel" under the `/topology` section below): a left instrument panel
+(`TopologyIndexPanel`/`TopologyIndexTab`, `src/widgets/topology-index-panel/`)
+that floats over the map, reusing the same `buildOntologyTree` /
+`filterTreeByQuery` the old tree page used, so row search/select behavior is
+unchanged even though the surface is.
 
-#### Left: tree view (`OntologyTreeView`)
-- Hierarchical project → domain → capability → element (document kind excluded as evidence)
-- Click row → select the node graph handle (button labels include the canonical slug and Browse / Write / Query handoff), highlight the same handle in-row, and update URL `?node=…`
-- Orphan rows are also selectable graph handles, so nodes outside the hierarchy projection still enter the same Browse / Write / Query handoff instead of becoming a read-only warning list.
-
-#### Right: detail panel (`NodeDetailPanel`)
-- Kind badge + title · `ManualSourceChip` (currently no-op — all sources `manual`)
-- Copy node link button
-- Agent context copy actions: canonical frontmatter nodes expose copyable MCP `node_profile`, CLI `ontology-atlas node`, and a combined selected-node proof bundle with `node_profile`, incoming `blast_radius`, planned incoming/outgoing `match_edges`, planned public `depends_on` relation parity scans, reachability, `query_plan(all_paths)`, bounded `all_paths`, `relation_check`, `health`, evidence checklist, CLI fallbacks, and the shared post-change sync gate. The bundle checklist names the runtime graph DB check count before the embedded sync packet and requires `relationType` / `via` evidence for public relation scans, and the Query handoff opens `/ontology/insights?node=<vault-slug>`; Insights resolves both graph ids and canonical vault slugs so tree and builder handoffs focus the same concept.
-- Stats: linked projects, evidence count
-- Reachability summary: outgoing / incoming / both direction controls, 1-3 hop depth controls, layer counts, terminal count, top relation distribution, clickable reachable-node previews by BFS layer, copyable MCP/CLI reachability commands for canonical frontmatter nodes, and empty-state feedback when the current traversal has no reachable nodes
-- Ego graph (1-hop default, 2-hop toggle radio), circular SVG
-- Neighbors list (6 preview, expandable; missing stubs amber)
-- Related docs list (6 preview, expandable)
-- CTAs: link to `/project/<slug>` if project, amber stub warning if unknown kind
-
-#### Empty state (no nodes)
-- Mode-aware copy (local 2-step / static 3-step)
-- Local: copyable frontmatter YAML snippet
-- Buttons: Open Vault / Go to Builder
-
-#### Keyboard
-- `⌘K` toggle node search · `⇧⌘K` toggle global search · `Esc` close detail · `?` shortcut sheet
+`/ontology/edit` (Builder) and `/ontology/insights` (Query) are unaffected —
+only the Browse leg of the old Browse/Write/Query loop moved.
 
 ---
 

@@ -3,7 +3,7 @@ slug: capabilities/agent-onboarding-brief
 kind: capability
 title: Agent Onboarding Brief (1-paste prime)
 domain: views
-elements: [cli/src/lib/query-result-contract.mjs, elements/business-ontology-lens, elements/ontology-node-detail-modal, mcp/src/ontology-engine.mjs, src/shared/lib/ontology-tree/agent-briefing-packet.ts, src/views/ontology-insights/lib/collaborator-insights-brief.ts, src/views/ontology-insights/ui/parts/InsightsCollaboratorBriefPanel.tsx, src/views/ontology-view/ui/OntologyViewPage.tsx]
+elements: [cli/src/lib/query-result-contract.mjs, elements/business-ontology-lens, elements/ontology-node-detail-modal, mcp/src/ontology-engine.mjs, src/shared/lib/ontology-tree/agent-briefing-packet.ts, src/views/home/ui/HomePage.tsx, src/views/ontology-insights/lib/collaborator-insights-brief.ts, src/views/ontology-insights/ui/parts/InsightsCollaboratorBriefPanel.tsx]
 relates: [capabilities/agent-graph-readiness, capabilities/mcp-server, domains/ai-agent-partner]
 dependencies: [capabilities/ontology-hub-mode-aware]
 ---

@@ -4,8 +4,18 @@ kind: element
 title: Ontology Node Detail Modal
 domain: views
 relates: [capabilities/agent-graph-readiness, elements/ontology-review-brief, elements/ontology-tree-view]
-elements: [src/views/ontology-view/ui/NodeDetailPanel.layout.test.tsx, src/views/ontology-view/ui/OntologyViewPage.tsx, tests/e2e/ontology-ui.spec.ts]
+elements: [src/widgets/full-detail-a1/ui/FullDetailA1.tsx, src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx, tests/e2e/ontology-ui.spec.ts]
 ---
+
+> **Superseded (B3 허브가 곧 지도, 2026-07).** `/ontology`'s tree hub
+> (`OntologyViewPage`, this element's original subject) is retired — the
+> selected-node detail experience now lives on `/topology` as the compact
+> `TopologyV2DetailPanel` datasheet with an opt-in "전체 상세 →" link into
+> `FullDetailA1` (`src/widgets/full-detail-a1/`), replacing the centered
+> modal workbench this doc originally described. The body below is kept as
+> historical design rationale (the LNB-section split, the anti-AI-callout
+> kind-tone treatment) — most of it still applies conceptually to
+> `FullDetailA1`, but the concrete component names below are stale.
 
 `src/views/ontology-view/ui/OntologyViewPage.tsx` renders the selected-node detail experience on `/ontology` as a centered modal workbench instead of a narrow fixed right rail.
 
