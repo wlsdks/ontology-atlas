@@ -16,9 +16,13 @@ export type LeftSlotAnalysisMode = "overview" | "graph" | "focus" | "path" | "he
  * panel") are exclusive occupants of the topology's left slot. INDEX is the
  * default; the analysis rail only reclaims the slot when the user is in a
  * non-overview analysis mode (focus/path/health — those panels carry mode-
- * specific controls INDEX doesn't have, e.g. the path source/target picker)
- * or when the user explicitly reveals the overview analysis chrome (the
- * "View analysis" chip demoted from always-on per the B3 spec).
+ * specific controls INDEX doesn't have, e.g. the path source/target picker).
+ *
+ * overview mode never reclaims the slot any more (W3 분석 보기 은퇴 —
+ * `TopologyAnalysisBar`'s overview-mode content retired to the relation
+ * legend, the INDEX footer's agent-handoff menu, and the insights relations
+ * tab; the "View analysis" reveal chip that used to opt into overview chrome
+ * is gone with it, since there's no overview chrome left to reveal).
  *
  * Pure decision — no React, no DOM. `resolveLeftSlotOwner` + `resolveRenderedIndexPanelState`
  * together are the whole contract HomePage wires against.
@@ -28,14 +32,10 @@ export type LeftSlotOwner = "index" | "analysis-rail";
 
 export interface LeftSlotInputs {
   analysisMode: LeftSlotAnalysisMode;
-  /** User-initiated opt-in to see the overview analysis rail content even
-   * though INDEX would otherwise own the slot (only meaningful in "overview"). */
-  overviewChromeRevealed: boolean;
 }
 
 export function resolveLeftSlotOwner(inputs: LeftSlotInputs): LeftSlotOwner {
-  if (inputs.analysisMode !== "overview") return "analysis-rail";
-  return inputs.overviewChromeRevealed ? "analysis-rail" : "index";
+  return inputs.analysisMode === "overview" ? "index" : "analysis-rail";
 }
 
 /**

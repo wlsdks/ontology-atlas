@@ -7,6 +7,7 @@ import {
 import {
   buildOntologyBuilderNodeHrefFromGraphId,
   buildOntologyNodeHref,
+  classifyRelationQuality,
   type KnowledgeGraphEdge,
 } from "@/entities/knowledge-graph";
 
@@ -412,20 +413,14 @@ export function formatTopologyRelationProvenanceSummary(
   ].join(" · ");
 }
 
+/** Re-exports the entities-level classifier under this file's historical
+ *  name — `entities/knowledge-graph/lib/relation-quality.ts` is the single
+ *  source of truth (shared with `views/ontology-insights`' RelationsTab agent
+ *  readiness gauge, W3 분석 보기 은퇴). */
 export function classifyTopologyRelationQuality(
   edge: Pick<KnowledgeGraphEdge, "type" | "evidenceIds" | "lastApprovedBy">,
 ): keyof TopologyRelationQualityBreakdown {
-  if (edge.evidenceIds.length === 0 && edge.lastApprovedBy.trim().length === 0) {
-    return "review";
-  }
-  if (edge.type === "related_to") return "weak";
-  if (
-    edge.evidenceIds.length > 0 &&
-    ["contains", "belongs_to", "depends_on", "implements", "uses"].includes(edge.type)
-  ) {
-    return "strong";
-  }
-  return "supported";
+  return classifyRelationQuality(edge);
 }
 
 export function formatTopologyRelationQualitySummary(
@@ -708,6 +703,18 @@ export function formatTopologyPathAllPathsMcpCheck(from: string, to: string): st
 }
 
 
+/** Sets `?mode=<mode>` on `currentUrl` — used by the INDEX footer's "brief"
+ *  copy action to link straight to the health mode from wherever the map
+ *  currently is (W3 분석 보기 은퇴 — moved out of `TopologyAnalysisBar`). */
+export function buildOverviewModeUrl(
+  currentUrl: string,
+  mode: TopologyAnalysisMode,
+): string {
+  const url = new URL(currentUrl);
+  url.searchParams.set("mode", mode);
+  return url.toString();
+}
+
 export function buildTopologyHealthRepairHref(slug: string): string {
   return buildOntologyBuilderNodeHrefFromGraphId(slug);
 }
@@ -726,6 +733,33 @@ export function getTopologyHealthNextAction(
     return labels.actionOrphan;
   }
   return labels.actionPromotion;
+}
+
+/**
+ * INDEX 패널 하단 "인계" 메뉴의 "재분석 지시" 항목이 복사하는 agent 프롬프트
+ * (W3 분석 보기 은퇴 — 이전엔 `TopologyAnalysisBar` overview 모드 안의 접힌
+ * 보조 액션이었다). 입력 없는 고정 텍스트라 view 상태에 의존하지 않는다.
+ */
+export function formatOntologyReanalysisAgentCommand(): string {
+  return [
+    "Ontology Atlas agent task: reanalyze and strengthen this codebase ontology.",
+    "",
+    "If Atlas MCP is connected, run these read-first calls:",
+    '1. list_kinds({})',
+    '2. analyze_repo_structure({ "rootPath": "[repo-root]", "maxDepth": 3 })',
+    '3. query_ontology({ "operation": "growth_plan", "limit": 20 })',
+    '4. query_ontology({ "operation": "maintenance_plan", "limit": 20 })',
+    '5. validate_vault({ "repoRoot": "[repo-root]" })',
+    "",
+    "Then propose only confirmed domain/capability/element/relation updates.",
+    "Before writing, compare against existing nodes with find_evidence/similar_nodes and avoid duplicates.",
+    "",
+    "CLI fallback:",
+    "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
+    "node cli/src/index.mjs growth docs/ontology --limit 20",
+    "node cli/src/index.mjs maintenance docs/ontology --limit 20",
+    "node cli/src/index.mjs validate docs/ontology",
+  ].join("\n");
 }
 
 function getTopologyHealthActionKindLabel(

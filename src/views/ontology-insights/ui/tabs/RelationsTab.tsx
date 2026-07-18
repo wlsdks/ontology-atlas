@@ -20,6 +20,16 @@ export interface RelationsTabLabels {
   connectionsUnit: string;
   hubTruncated: (shown: number, total: number) => string;
   hubThumbnailCaption: string;
+  agentReadinessTitle: string;
+  agentReadinessReady: string;
+  agentReadinessPreflight: string;
+  agentReadinessReview: string;
+}
+
+export interface RelationsTabAgentReadiness {
+  ready: number;
+  preflight: number;
+  review: number;
 }
 
 export interface RelationsTabProps {
@@ -30,13 +40,20 @@ export interface RelationsTabProps {
   hubs: RelationHubRow[];
   hubTotalCount: number;
   kindLabel: (kind: string) => string;
+  /** relation evidence quality rolled up into a handoff-readiness read — ready
+   *  (strong ∪ supported evidence) / preflight (weak, `related_to`) / review
+   *  (no evidence yet). Derivation: `classifyRelationQuality` +
+   *  `summarizeAgentReadiness` (`@/entities/knowledge-graph`) — moved here
+   *  from the topology map's overview mode (W3 분석 보기 은퇴), which is now
+   *  the single place this reads before an agent starts writing relations. */
+  agentReadiness: RelationsTabAgentReadiness;
   labels: RelationsTabLabels;
 }
 
 /**
- * 탭2 관계 — insights-final.html frame 2. 관계 타입 mega row(trace-mark
- * 범례 그대로) + 상위 depends_on + 허브(52px 미니 ego 썸네일, 실제 이웃
- * 수/타입에서 유도).
+ * 탭2 관계 — insights-final.html frame 2. Agent readiness 계기(3구 요약 +
+ * 분포 바) + 관계 타입 mega row(trace-mark 범례 그대로) + 상위 depends_on +
+ * 허브(52px 미니 ego 썸네일, 실제 이웃 수/타입에서 유도).
  */
 export function RelationsTab({
   edgeTypeRows,
@@ -46,9 +63,11 @@ export function RelationsTab({
   hubs,
   hubTotalCount,
   kindLabel,
+  agentReadiness,
   labels,
 }: RelationsTabProps) {
   const edgeMax = edgeTypeRows.reduce((m, r) => Math.max(m, r.count), 0);
+  const readinessTotal = agentReadiness.ready + agentReadiness.preflight + agentReadiness.review;
 
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[1.2fr_1fr]">
@@ -56,6 +75,48 @@ export function RelationsTab({
         aria-label={labels.relationTypesTitle}
         className="flex min-h-0 min-w-0 flex-col rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
+        <div
+          aria-label={`${labels.agentReadinessTitle}: ${agentReadiness.ready} ${labels.agentReadinessReady} · ${agentReadiness.preflight} ${labels.agentReadinessPreflight} · ${agentReadiness.review} ${labels.agentReadinessReview}`}
+          data-testid="insights-agent-readiness"
+          className="mb-3.5 border-b border-[color:var(--color-divider)] pb-3.5"
+        >
+          <div className="flex items-baseline gap-2">
+            <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+              {labels.agentReadinessTitle}
+            </span>
+            <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-[11.5px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+              <span>
+                {agentReadiness.ready} <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">{labels.agentReadinessReady}</span>
+              </span>
+              <span>
+                {agentReadiness.preflight} <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">{labels.agentReadinessPreflight}</span>
+              </span>
+              <span>
+                {agentReadiness.review} <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">{labels.agentReadinessReview}</span>
+              </span>
+            </span>
+          </div>
+          <div
+            data-testid="insights-agent-readiness-meter"
+            className="mt-2 flex h-1.5 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)]"
+          >
+            <span
+              aria-hidden
+              className="bg-[color:var(--topology-overview-readiness-ready-meter,var(--color-overlay-3))]"
+              style={{ flexGrow: readinessTotal > 0 ? agentReadiness.ready : 1 }}
+            />
+            <span
+              aria-hidden
+              className="bg-[color:var(--topology-overview-readiness-preflight-meter,var(--color-status-warning))]"
+              style={{ flexGrow: readinessTotal > 0 ? agentReadiness.preflight : 0 }}
+            />
+            <span
+              aria-hidden
+              className="bg-[color:var(--topology-overview-readiness-review-meter,var(--color-status-danger))]"
+              style={{ flexGrow: readinessTotal > 0 ? agentReadiness.review : 0 }}
+            />
+          </div>
+        </div>
         <CardHead label={labels.relationTypesTitle} gcap="relation breakdown" count={totalEdges} />
         <div className="mt-1 flex flex-col">
           {edgeTypeRows.map((row) => {
