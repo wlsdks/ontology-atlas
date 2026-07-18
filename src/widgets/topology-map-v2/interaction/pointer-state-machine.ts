@@ -111,3 +111,38 @@ export function transitionPointerState(
       return { next: INITIAL_POINTER_MACHINE_STATE, commitClick: null };
   }
 }
+
+/** The one user-visible effect a `commitClick` outcome should trigger. */
+export type ClickAction =
+  | { type: "select"; nodeId: string }
+  | { type: "deselect" }
+  | { type: "none" };
+
+/**
+ * Routes a `commitClick` outcome (this module's `pointerup` result) into
+ * exactly one `ClickAction` — pure extraction of
+ * `ui/topology-pointer-handlers.ts#handlePointerUp`'s commitClick routing so
+ * the "click a revealed child = select it, click empty canvas = deselect"
+ * contract has its own regression test, independent of canvas/pointer-event
+ * plumbing (label-clarity persona eval — "child click ejects to overview
+ * instead of selecting").
+ *
+ * - No commit at all → `"none"`.
+ * - Empty-canvas click (`nodeId: null`) → `"deselect"` if something was
+ *   focused, `"none"` otherwise (nothing to clear).
+ * - Clicking the ALREADY-focused node → `"deselect"` (toggle off).
+ * - Clicking any OTHER node id → `"select"` that node. This is the branch
+ *   that must fire for an ego-revealed child — it never falls through to
+ *   deselect just because a DIFFERENT node was focused a moment ago.
+ */
+export function resolveClickAction(
+  commitClick: { nodeId: string | null } | null,
+  focusedNodeId: string | null,
+): ClickAction {
+  if (!commitClick) return { type: "none" };
+  if (commitClick.nodeId === null) {
+    return focusedNodeId !== null ? { type: "deselect" } : { type: "none" };
+  }
+  if (commitClick.nodeId === focusedNodeId) return { type: "deselect" };
+  return { type: "select", nodeId: commitClick.nodeId };
+}

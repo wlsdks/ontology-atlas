@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   INITIAL_POINTER_MACHINE_STATE,
+  resolveClickAction,
   transitionPointerState,
   type PointerMachineState,
 } from "./pointer-state-machine";
@@ -139,5 +140,42 @@ describe("transitionPointerState — click-safe contract", () => {
 
     expect(next.phase).toBe("dragging");
     expect(next.pressedNodeId).toBeNull();
+  });
+});
+
+/**
+ * persona eval (label-clarity, 2026-07) — "child click ejects to overview
+ * instead of selecting". `resolveClickAction` is the pure extraction of
+ * `ui/topology-pointer-handlers.ts#handlePointerUp`'s commitClick routing, so
+ * the "empty canvas deselects, any other node selects" contract has its own
+ * regression test independent of canvas/pointer-event plumbing.
+ */
+describe("resolveClickAction — commitClick routing", () => {
+  it("does nothing when there was no commit at all", () => {
+    expect(resolveClickAction(null, null)).toEqual({ type: "none" });
+    expect(resolveClickAction(null, "domain:x")).toEqual({ type: "none" });
+  });
+
+  it("does nothing for an empty-canvas click while nothing was focused", () => {
+    expect(resolveClickAction({ nodeId: null }, null)).toEqual({ type: "none" });
+  });
+
+  it("deselects for an empty-canvas click while a node WAS focused", () => {
+    expect(resolveClickAction({ nodeId: null }, "domain:x")).toEqual({ type: "deselect" });
+  });
+
+  it("deselects (toggles off) when the clicked node IS the already-focused node", () => {
+    expect(resolveClickAction({ nodeId: "domain:x" }, "domain:x")).toEqual({ type: "deselect" });
+  });
+
+  it("selects any other node id, focused or not — the revealed-child click must select, never eject", () => {
+    expect(resolveClickAction({ nodeId: "capability:child" }, "domain:x")).toEqual({
+      type: "select",
+      nodeId: "capability:child",
+    });
+    expect(resolveClickAction({ nodeId: "capability:child" }, null)).toEqual({
+      type: "select",
+      nodeId: "capability:child",
+    });
   });
 });

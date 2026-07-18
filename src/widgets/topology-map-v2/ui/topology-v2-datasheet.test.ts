@@ -34,6 +34,30 @@ describe("groupV2Connections", () => {
   it("preserves input order within each group and handles an empty list", () => {
     expect(groupV2Connections([])).toEqual({ contains: [], depends: [] });
   });
+
+  it("collapses the SAME neighbor+direction within a group even when relationType differs (mcp-server live bug: depends_on AND related_to to the same neighbor)", () => {
+    // The datasheet panel keys rows by (group, id) and shows only the title —
+    // it has no separate UI for "this is depends_on vs related_to" — so two
+    // rows for the SAME neighbor in the SAME direction read as one duplicated
+    // row and collide on the React list key. `buildV2Connections`'s own
+    // (id, relationType, direction) dedup can't catch this because the
+    // relationType genuinely differs; this is a SEPARATE, group-level collapse.
+    const grouped = groupV2Connections([
+      conn({ id: "frontmatter-to-ontology", relationType: "depends_on", direction: "outgoing" }),
+      conn({ id: "frontmatter-to-ontology", relationType: "related_to", direction: "outgoing" }),
+    ]);
+    expect(grouped.depends).toHaveLength(1);
+    expect(grouped.depends[0]).toMatchObject({ id: "frontmatter-to-ontology", relationType: "depends_on" });
+  });
+
+  it("keeps the SAME neighbor id as two rows when it appears in OPPOSITE directions (a real mutual-dependency fact, not a duplicate)", () => {
+    const grouped = groupV2Connections([
+      conn({ id: "vault-local-first", relationType: "depends_on", direction: "outgoing" }),
+      conn({ id: "vault-local-first", relationType: "depends_on", direction: "incoming" }),
+    ]);
+    expect(grouped.depends).toHaveLength(2);
+    expect(grouped.depends.map((c) => c.direction)).toEqual(["outgoing", "incoming"]);
+  });
 });
 
 describe("buildV2Connections", () => {
@@ -69,6 +93,40 @@ describe("buildV2Connections", () => {
       { from: "hub", to: "not-in-nodes", type: "contains" },
     ]);
     expect(dangling).toEqual([]);
+  });
+
+  it("dedupes parallel edges (same neighbor, same relation type + direction), keeping the first occurrence (React duplicate-key regression)", () => {
+    // Reproduces the live dogfood bug: `capability:mcp-server` had TWO
+    // `depends_on` edges to `capability:frontmatter-to-ontology` (one direct,
+    // one re-derived) — the datasheet rendered both as a React list keyed by
+    // neighbor id, producing "Encountered two children with the same key"
+    // and a visibly duplicated DEPENDS row.
+    const parallelNodes = [
+      { id: "mcp-server", title: "MCP Server", kind: "capability" },
+      { id: "frontmatter-to-ontology", title: "Frontmatter → Ontology Stub", kind: "capability" },
+    ];
+    const parallelEdges = [
+      { from: "mcp-server", to: "frontmatter-to-ontology", type: "depends_on" },
+      { from: "mcp-server", to: "frontmatter-to-ontology", type: "depends_on" },
+      { from: "mcp-server", to: "frontmatter-to-ontology", type: "depends_on" },
+    ];
+    const connections = buildV2Connections("mcp-server", parallelNodes, parallelEdges);
+    expect(connections).toHaveLength(1);
+    expect(connections[0]).toMatchObject({ id: "frontmatter-to-ontology", relationType: "depends_on", direction: "outgoing" });
+  });
+
+  it("keeps distinct rows for the SAME neighbor when the relation type or direction differs", () => {
+    const nodes2 = [
+      { id: "a", title: "A", kind: "capability" },
+      { id: "b", title: "B", kind: "capability" },
+    ];
+    const edges2 = [
+      { from: "a", to: "b", type: "depends_on" },
+      { from: "a", to: "b", type: "uses" }, // same pair, different relation type
+      { from: "b", to: "a", type: "depends_on" }, // same pair+type, opposite direction
+    ];
+    const connections = buildV2Connections("a", nodes2, edges2);
+    expect(connections).toHaveLength(3);
   });
 });
 

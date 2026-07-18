@@ -791,7 +791,7 @@
     --topology-v2-label-project: #ececf0;
     --topology-v2-label-domain: #b8b8c1;
     --topology-v2-label-capability: #84848c;
-    --topology-v2-label-element: #57575f;
+    --topology-v2-label-element: #6a6a73; /* Guardian follow-up B: 2.76:1 → 3.16:1 (AA-large) — element 라벨은 최심 줌에서만 뜨지만 대비 하한은 지킨다 */
     /* Max on-screen label width (px) before word-boundary ellipsis — keeps a
        long element title (file path) from clipping the right edge / colliding
        with its horizontal neighbor (Design Guardian 가독성 반려). */

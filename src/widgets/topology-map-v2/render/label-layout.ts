@@ -38,18 +38,65 @@ export function isWithinSafeRect(x: number, y: number, rect: SafeRect): boolean 
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
 
+/**
+ * Clamp a label anchor INTO the safe rect instead of dropping it — for
+ * ego-protected labels (selected/hovered/ego member) whose node sits under a
+ * chrome inset. Guardian follow-up A (label-clarity): the safe-rect cull ran
+ * BEFORE the selected/hovered alpha floor, so a focused domain's fan children
+ * under the left panel lost their labels — recreating the "이름 없는 도형"
+ * symptom the slice existed to fix. A clamped label sits at the inset edge
+ * nearest its node ("이 패널 밑에 이 노드가 있다"), which beats silence.
+ * `marginX`/`marginY` keep the text box itself inside the rect (width/2, font).
+ */
+export function clampAnchorIntoSafeRect(
+  x: number,
+  y: number,
+  rect: SafeRect,
+  marginX: number,
+  marginY: number,
+): { x: number; y: number } {
+  const lo = Math.min(rect.left + marginX, rect.right - marginX);
+  const hi = Math.max(rect.left + marginX, rect.right - marginX);
+  const top = Math.min(rect.top + marginY, rect.bottom - marginY);
+  const bottom = Math.max(rect.top + marginY, rect.bottom - marginY);
+  return { x: Math.min(hi, Math.max(lo, x)), y: Math.min(bottom, Math.max(top, y)) };
+}
+
 /** Standard AABB overlap (touching edges do NOT count as overlap). */
 export function bboxesOverlap(a: LabelBBox, b: LabelBBox): boolean {
   return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
 }
 
 export interface LabelCandidate<T> {
-  /** Lower = higher priority. project 0 · domain 1 · capability 2 · element 3. */
+  /** Lower = higher priority. See `resolveLabelPriority` for the ladder. */
   priority: number;
   /** Stable tie-break within a priority — pass the node's draw index for determinism. */
   order: number;
   bbox: LabelBBox;
   payload: T;
+}
+
+export interface LabelPriorityInput {
+  kind: "project" | "domain" | "capability" | "element";
+  isSelected: boolean;
+  isHovered: boolean;
+  isHub: boolean;
+}
+
+/**
+ * Collision-culling priority ladder (label-clarity, 2026-07): selected >
+ * hovered > project/hub > domain > capability > element. Lower number wins
+ * `greedyPlaceLabels` — a domain name must survive over a capability's when
+ * both compete for the same screen area, and the node the user is actively
+ * attending to (selected or hovered) must never lose to a passive one.
+ */
+export function resolveLabelPriority(input: LabelPriorityInput): number {
+  if (input.isSelected) return 0;
+  if (input.isHovered) return 1;
+  if (input.kind === "project" || input.isHub) return 2;
+  if (input.kind === "domain") return 3;
+  if (input.kind === "capability") return 4;
+  return 5;
 }
 
 /**

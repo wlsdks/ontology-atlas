@@ -205,7 +205,11 @@ export function TopologyV2DetailPanel({
         </div>
         <ul className="flex flex-col">
           {view.rows.map((row) => (
-            <li key={`${group}:${row.id}`}>
+            // Direction is part of the key too — `groupV2Connections` only
+            // collapses same-direction duplicates; the same neighbor id can
+            // legitimately appear once outgoing and once incoming (a mutual
+            // dependency), which would otherwise collide on `group:id` alone.
+            <li key={`${group}:${row.direction}:${row.id}`}>
               <button
                 type="button"
                 onClick={() => onSelectConnection(row.id)}
