@@ -1,52 +1,28 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectSelectorPage } from "./ProjectSelectorPage";
 
-const mocks = vi.hoisted(() => ({
-  replace: vi.fn(),
-  searchParams: new URLSearchParams(),
-}));
-
 vi.mock("@/i18n/navigation", () => ({
   Link: ({
     href,
     children,
+    prefetch,
     ...props
   }: {
     href: string;
     children: ReactNode;
+    prefetch?: boolean;
   }) => (
-    <a href={href} {...props}>
+    <a href={href} data-prefetch={prefetch} {...props}>
       {children}
     </a>
   ),
-  usePathname: () => "/en/projects/",
-  useRouter: () => ({ replace: mocks.replace, push: vi.fn() }),
-}));
-
-vi.mock("next/navigation", () => ({
-  useSearchParams: () => mocks.searchParams,
-}));
-
-vi.mock("@/features/taxonomy", () => ({
-  useTaxonomy: () => ({
-    categoryLabel: () => "—",
-    statusLabel: () => "—",
-    categories: [],
-    statuses: [],
-  }),
 }));
 
 vi.mock("@/features/project-data-source", () => ({
-  useProjectMutations: () => ({
-    canCreate: false,
-    canEdit: false,
-    canDelete: false,
-    mode: "static",
-  }),
   useProjects: () => ({
     projects: [
       {
@@ -59,7 +35,7 @@ vi.mock("@/features/project-data-source", () => ({
         dependencies: [],
         screenshots: [],
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
-        updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+        updatedAt: new Date("2026-07-17T00:00:00.000Z"),
       },
     ],
     loaded: true,
@@ -73,32 +49,54 @@ vi.mock("@/features/vault-ontology", () => ({
     insight: {
       nodes: [
         node("project:ontology-atlas", "project", []),
-        node("domain:views", "domain", ["ontology-atlas"]),
-        node("capability:agent-graph-readiness", "capability", ["ontology-atlas"]),
-        node("element:insights-query-cockpit", "element", ["ontology-atlas"]),
+        node("domain:domains/views", "domain", ["ontology-atlas"], "Views"),
+        node("capability:capabilities/mcp-server", "capability", ["ontology-atlas"], "MCP Server"),
+        node("element:elements/cli", "element", ["ontology-atlas"], "CLI"),
+      ],
+      edges: [
+        edge("e1", "domain:domains/views", "capability:capabilities/mcp-server"),
+        edge("e2", "capability:capabilities/mcp-server", "element:elements/cli"),
       ],
     },
   }),
+}));
+
+vi.mock("../lib/use-vault-docs", () => ({
+  useVaultDocs: () => [
+    {
+      slug: "capabilities/mcp-server",
+      path: "docs/ontology/capabilities/mcp-server.md",
+      title: "MCP Server",
+      tags: [],
+      frontmatter: { kind: "capability" },
+      headings: [],
+      excerpt: "",
+      description: "write 도구로 확장",
+      wordCount: 0,
+      updatedAt: "2026-07-18T09:00:00.000Z",
+      linksOut: [],
+    },
+  ],
 }));
 
 vi.mock("@/widgets/operations-nav", () => ({
   OperationsNav: () => <nav aria-label="Operations menu" />,
 }));
 
-vi.mock("@/widgets/workspace-ontology-strip", () => ({
-  WorkspaceOntologyStrip: () => <div data-testid="workspace-ontology-strip" />,
-}));
-
-function node(id: string, kind: string, projectIds: string[]) {
+function node(id: string, kind: string, projectIds: string[], title?: string) {
   return {
     id,
-    title: id,
+    title: title ?? id,
     kind,
     projectIds,
     evidenceIds: [],
     lastApprovedAt: new Date(0),
     lastApprovedBy: "test",
   };
+}
+
+function edge(id: string, from: string, to: string, type = "contains") {
+  return { id, from, to, type, projectIds: [], evidenceIds: [] };
 }
 
 function renderPage() {
@@ -110,28 +108,53 @@ function renderPage() {
 }
 
 describe("ProjectSelectorPage", () => {
-  it("links project ontology counts to the focused graph DB query pack", () => {
+  it("renders the workspace census (concepts/relations) from the unified formula", () => {
     renderPage();
+    // domain+capability+element = 3 concepts, 2 edges.
+    expect(screen.getByText(/3 CONCEPTS/)).toBeInTheDocument();
+    expect(screen.getByText(/2 RELATIONS/)).toBeInTheDocument();
+  });
 
-    const focusedProofHref = `/ontology/insights/?node=${encodeURIComponent(
-      "ontology-atlas",
-    )}`;
+  it("renders a recent-activity row sourced from real vault doc mtime", () => {
+    renderPage();
+    expect(screen.getByTestId("project-selector-activity-row")).toBeInTheDocument();
+    expect(screen.getByText("capabilities/mcp-server")).toBeInTheDocument();
+    expect(screen.getByText("write 도구로 확장")).toBeInTheDocument();
+  });
 
+  it("renders a full-width project card with fact strip and domain composition row", () => {
+    renderPage();
+    const card = screen.getByTestId("project-selector-card");
+    expect(card).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "ontology-atlas" })).toBeInTheDocument();
+    // fact strip: 1 domain / 1 capability / 1 element / 0 documents / 2 relations
+    expect(within(card).getByText("Domains")).toBeInTheDocument();
+    expect(within(card).getByText("Views")).toBeInTheDocument();
+  });
+
+  it("links the card footer to the project detail and topology pages", () => {
+    renderPage();
+    const card = screen.getByTestId("project-selector-card");
     expect(
-      screen.getByRole("link", {
-        name: "Open focused graph proof for ontology-atlas, 3 ontology nodes",
-      }),
-    ).toHaveAttribute("href", focusedProofHref);
-    expect(
-      screen.getByRole("link", {
-        name: "Open focused graph proof for ontology-atlas, 3 ontology nodes",
-      }).className,
-    ).toContain("h-8");
-    expect(screen.getByText("Proof · 3")).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", {
-        name: "Open graph DB query pack for ontology-atlas",
-      }),
-    ).toHaveAttribute("href", focusedProofHref);
+      within(card).getByRole("link", { name: "Open ontology-atlas details" }),
+    ).toHaveAttribute("href", "/project/ontology-atlas/");
+    expect(within(card).getByRole("link", { name: "View in topology →" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("ontology-atlas"),
+    );
+  });
+
+  it("shows the always-on next-project dashed slot with CLI and agent handoff rows", () => {
+    renderPage();
+    expect(screen.getByText("ontology-atlas add --kind project")).toBeInTheDocument();
+    expect(screen.getByText('add_concept(slug, kind: "project", title)')).toBeInTheDocument();
+  });
+
+  it("points the new-project CTA at /project/new with a returnTo back to /projects/", () => {
+    renderPage();
+    expect(screen.getByTestId("project-selector-new-cta")).toHaveAttribute(
+      "href",
+      `/project/new/?returnTo=${encodeURIComponent("/projects/")}`,
+    );
   });
 });

@@ -1468,37 +1468,40 @@ test.describe("ontology view UI", () => {
     await expect(settings.getByRole("tab", { name: "MCP/Agents" })).toBeInViewport();
   });
 
-  test("mobile: projects page exposes ontology shortcut", async ({ page }) => {
+  // R+ /projects redesign — the census/activity/card-zone layout
+  // (`docs/prototypes/projects-list-final.html`) dropped the old
+  // WorkspaceOntologyStrip shortcut and per-card "Proof · N" query-pack link.
+  // Ontology navigation is already covered globally by the bottom tab bar
+  // ("mobile: bottom tab ontology link is active" above) — these two tests
+  // now guard the *replacement* affordances instead: the new-project CTA and
+  // the card's "View in topology" link.
+  test("mobile: new-project CTA is tappable and opens the create form", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/projects/");
 
-    const ontologyCardCta = page.getByRole("link", {
-      name: /Open ontology tree/,
-    });
-    await expect(ontologyCardCta).toBeVisible();
-    await expect(ontologyCardCta).toContainText("Open ontology map");
-    await expect(ontologyCardCta).toContainText("ontology nodes");
-    const ctaBox = await ontologyCardCta.boundingBox();
+    const newProjectCta = page.getByTestId("project-selector-new-cta");
+    await expect(newProjectCta).toBeVisible();
+    const ctaBox = await newProjectCta.boundingBox();
     expect(ctaBox).not.toBeNull();
     expect(ctaBox?.height).toBeGreaterThanOrEqual(32);
-    await ontologyCardCta.click();
-    await expect(page).toHaveURL(/\/en\/ontology\/?(\?|$)/);
+    await newProjectCta.click();
+    await expect(page).toHaveURL(/\/en\/project\/new\/?(\?|$)/);
   });
 
-  test("mobile: project cards expose a tappable focused graph proof action", async ({ page }) => {
+  test("mobile: project cards expose a tappable topology link", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/projects/");
 
-    const projectProof = page.getByRole("link", {
-      name: /Open focused graph proof for ontology-atlas/,
-    });
-    await expect(projectProof).toBeVisible();
-    await expect(projectProof).toContainText("Proof");
-    const proofBox = await projectProof.boundingBox();
-    expect(proofBox).not.toBeNull();
-    expect(proofBox?.height).toBeGreaterThanOrEqual(32);
-    await projectProof.click();
-    await expect(page).toHaveURL(/\/en\/ontology\/insights\/\?node=ontology-atlas/);
+    const topologyLink = page
+      .getByTestId("project-selector-card")
+      .filter({ hasText: "ontology-atlas" })
+      .getByRole("link", { name: "View in topology →" });
+    await expect(topologyLink).toBeVisible();
+    const linkBox = await topologyLink.boundingBox();
+    expect(linkBox).not.toBeNull();
+    expect(linkBox?.height).toBeGreaterThanOrEqual(32);
+    await topologyLink.click();
+    await expect(page).toHaveURL(/\/en\/topology\/\?p=ontology-atlas/);
   });
 
   test("desktop: 데이터가 없으면 detail 패널은 노출되지 않음 (빈 상태 회귀 방지)", async ({ page }) => {
