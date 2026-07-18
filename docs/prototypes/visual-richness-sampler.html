@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>시각 리치니스 샘플러 — /ontology/insights 처방 적용안</title>
+<!--
+  VISUAL RICHNESS SAMPLER (visual-richness round, item A / P1):
+  the owner-reported "전체 페이지가 시각적으로 표현되는 것들이 없다" —
+  /ontology/insights 를 리뷰 문서의 처방대로 보강한 단일 프레임.
+
+  적용 장치 (visual-richness-review.md §A):
+    ① kind census → 글리프 미니어처 + 비례 미터 행
+    ② relation 분포 → trace 모티프(실선/파선 마크) + 바 행
+    ③ 도메인 신선도 heatstrip (vault mtime 유도 — 중립 명도 램프 + 인디고 신선)
+    ④ 허브 목록 → 실그래프 유도 미니 ego 썸네일 (honest SVG instrument)
+    ⑤ 갱신 활동 스파크라인 (mtime 이력)
+    ⑥ 섹션 구분자 = trace hairline (범례의 반복, 장식 아님)
+
+  헌장 유지: 중립 + 단일 인디고, 그라디언트/글로우/글래스 없음, 모든 잉크는
+  데이터(Tufte). 수치는 dogfood vault census 기반의 대표값.
+-->
+<style>
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --machined-edge: rgba(255, 255, 255, 0.05);
+    --mark-contains: #4a4a54;
+    --mark-depends: #5c5c72;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+    min-width: 1512px;
+  }
+  .framecap {
+    width: 1512px; padding: 14px 20px 9px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .framecap b { color: var(--text-tertiary); font-weight: 600; }
+  .frame {
+    position: relative; width: 1512px; overflow: hidden;
+    border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
+    padding: 26px 32px 34px;
+  }
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pagehead { display: flex; align-items: baseline; gap: 18px; margin-bottom: 22px; }
+  .pagehead h1 {
+    margin: 0; font-family: var(--mono); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-secondary);
+  }
+  .pagehead .census {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .pagehead .census .sep { color: var(--text-quaternary); margin: 0 5px; }
+  .pagehead .sync {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-tertiary);
+  }
+  .power { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--indigo); flex: none; }
+
+  .grid { display: grid; grid-template-columns: 472px 472px 472px; gap: 16px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: 11px;
+    box-shadow: inset 0 1px 0 var(--machined-edge), 0 14px 34px rgba(0, 0, 0, 0.4);
+    padding: 14px;
+  }
+  .card .chead { display: flex; align-items: baseline; gap: 8px; margin-bottom: 11px; }
+  .card .chead .clabel {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-tertiary);
+  }
+  .card .chead .csub { font-size: 10.5px; color: var(--text-quaternary); margin-left: auto; }
+
+  /* trace hairline divider — the legend repeated as structure, not decoration */
+  .tdiv { display: flex; align-items: center; gap: 0; height: 1px; margin: 11px 0; }
+  .tdiv .solid { flex: 1; border-top: 1px solid var(--divider); }
+  .tdiv .dashed { flex: 1; border-top: 1px dashed var(--divider); }
+
+  /* ① kind census — glyph miniature + engraved numeral + proportional meter */
+  .kindrow { display: flex; align-items: center; gap: 9px; padding: 5px 2px; }
+  .kindrow .klabel { width: 74px; flex: none; font-size: 12px; color: var(--text-secondary); }
+  .kindrow .num { width: 30px; flex: none; text-align: right; font-size: 12px; }
+  .kindrow .meter {
+    flex: 1; height: 4px; border-radius: 2px;
+    background: var(--metric-surface); overflow: hidden; position: relative;
+  }
+  .kindrow .meter i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: #4a4a54; }
+  .kindrow.hot .meter i { background: var(--indigo); }
+
+  /* ② relation breakdown — trace mark + bar */
+  .relrow { display: flex; align-items: center; gap: 9px; padding: 5px 2px; }
+  .relrow .rlabel { width: 92px; flex: none; font-family: var(--mono); font-size: 11px; color: var(--text-secondary); }
+  .relrow .num { width: 34px; flex: none; text-align: right; font-size: 12px; }
+  .relrow .meter {
+    flex: 1; height: 4px; border-radius: 2px;
+    background: var(--metric-surface); overflow: hidden; position: relative;
+  }
+  .relrow .meter i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: #55555d; }
+
+  /* ③ freshness heatstrip — neutral luminance ramp, indigo = this week */
+  .heat { display: flex; flex-direction: column; gap: 6px; }
+  .heatrow { display: flex; align-items: center; gap: 8px; }
+  .heatrow .hlabel {
+    width: 132px; flex: none; font-size: 11.5px; color: var(--text-secondary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .heatrow .cells { display: flex; gap: 3px; flex: 1; }
+  .heatrow .cells i { width: 14px; height: 14px; border-radius: 3px; background: #131318; flex: none; }
+  .heatrow .cells i.l1 { background: #1b1b21; }
+  .heatrow .cells i.l2 { background: #26262e; }
+  .heatrow .cells i.l3 { background: #34343e; }
+  .heatrow .cells i.now { background: var(--indigo); }
+  .heatrow .ago { width: 52px; flex: none; text-align: right; font-family: var(--mono); font-size: 9.5px; color: var(--text-quaternary); }
+  .heatrow.stale .hlabel { color: var(--text-quaternary); }
+  .heatrow.stale .stale-mark {
+    font-size: 9px; color: var(--text-quaternary);
+    border: 1px dashed var(--border-strong); border-radius: 4px; padding: 0 4px; flex: none;
+  }
+  .heatlegend {
+    display: flex; align-items: center; gap: 6px; margin-top: 9px;
+    font-size: 9.5px; color: var(--text-quaternary); justify-content: flex-end;
+  }
+  .heatlegend i { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+
+  /* ④ hub list — honest mini ego thumbnail + degree */
+  .hubrow {
+    display: flex; align-items: center; gap: 11px; padding: 6px 2px;
+    border-radius: 6px;
+  }
+  .hubrow + .hubrow { border-top: 1px solid var(--divider); }
+  .hubrow .thumb { flex: none; }
+  .hubrow .hmain { min-width: 0; flex: 1; }
+  .hubrow .hname { font-size: 12.5px; color: var(--text-primary); font-weight: 560; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hubrow .hkind { font-size: 10.5px; color: var(--text-quaternary); }
+  .hubrow .hdeg { flex: none; text-align: right; }
+  .hubrow .hdeg .num { font-size: 13px; }
+  .hubrow .hdeg .dlabel { font-size: 9.5px; color: var(--text-quaternary); }
+
+  /* ⑤ activity sparkline */
+  .spark { position: relative; }
+  .spark svg { display: block; width: 100%; }
+  .sparkfoot {
+    display: flex; align-items: center; gap: 10px; margin-top: 8px;
+    font-size: 10px; color: var(--text-quaternary); font-family: var(--mono);
+  }
+  .sparkfoot b { color: var(--numeral-face); font-weight: 600; }
+  .sparkfoot .right { margin-left: auto; }
+
+  /* readiness — the one text-forward panel that stays (numbers get ticks) */
+  .ready { display: flex; flex-direction: column; gap: 7px; }
+  .readyrow { display: flex; align-items: center; gap: 9px; font-size: 12px; color: var(--text-secondary); }
+  .readyrow .num { margin-left: auto; font-size: 12px; }
+  .readyrow .tick { width: 44px; flex: none; height: 4px; border-radius: 2px; background: var(--metric-surface); position: relative; overflow: hidden; }
+  .readyrow .tick i { position: absolute; inset: 0 auto 0 0; background: #4a4a54; border-radius: 2px; }
+  .readyrow.ok .tick i { background: var(--indigo); }
+</style>
+</head>
+<body>
+
+<div class="framecap"><b>/ontology/insights 처방 적용안</b> — 글리프 미니어처 · 비례 미터 · trace 모티프 · 신선도 heatstrip · 미니 ego 썸네일 · 스파크라인 · 1512</div>
+<section class="frame">
+  <div class="pagehead">
+    <h1>Insights</h1>
+    <span class="census">296 CONCEPTS<span class="sep">·</span>508 RELATIONS<span class="sep">·</span>6 DOMAINS</span>
+    <span class="sync"><span class="power"></span>에이전트 동기화 12분 전</span>
+  </div>
+
+  <div class="grid">
+    <!-- ─── column 1: census + relations ──────────────────────────────── -->
+    <div class="col">
+      <div class="card">
+        <div class="chead"><span class="clabel">Kind Census</span><span class="csub">노드 296</span></div>
+        <div id="kind-census"></div>
+        <div class="tdiv"><span class="solid"></span></div>
+        <div class="chead" style="margin-bottom:8px"><span class="clabel">Relations</span><span class="csub">관계 508 · 마크 = 지도 범례</span></div>
+        <div id="rel-rows"></div>
+      </div>
+
+      <div class="card">
+        <div class="chead"><span class="clabel">Agent Readiness</span><span class="csub">에이전트가 읽을 준비</span></div>
+        <div class="ready">
+          <div class="readyrow ok"><span>도메인 소속 명시</span><span class="tick"><i style="width:92%"></i></span><span class="num">92%</span></div>
+          <div class="readyrow ok"><span>근거(evidence) 연결</span><span class="tick"><i style="width:71%"></i></span><span class="num">71%</span></div>
+          <div class="readyrow"><span>본문 요약 보유</span><span class="tick"><i style="width:46%"></i></span><span class="num">46%</span></div>
+          <div class="readyrow"><span>고아 노드 없음</span><span class="tick"><i style="width:88%"></i></span><span class="num">12 남음</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── column 2: freshness heatstrip + activity ───────────────────── -->
+    <div class="col">
+      <div class="card">
+        <div class="chead"><span class="clabel">도메인 신선도</span><span class="csub">최근 12주 · vault mtime</span></div>
+        <div class="heat" id="heat"></div>
+        <div class="heatlegend">
+          <span>오래됨</span>
+          <i style="background:#131318"></i><i style="background:#1b1b21"></i><i style="background:#26262e"></i><i style="background:#34343e"></i>
+          <span>·</span>
+          <i style="background:var(--indigo)"></i><span>이번 주</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="chead"><span class="clabel">갱신 활동</span><span class="csub">최근 30일 · 노드 갱신 수</span></div>
+        <div class="spark" id="spark"></div>
+        <div class="sparkfoot">
+          <span>합계 <b>184</b></span>
+          <span>피크 <b>21</b>/일</span>
+          <span class="right">에이전트 <b>117</b> · 사람 <b>67</b></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── column 3: hubs with mini ego thumbnails ────────────────────── -->
+    <div class="col">
+      <div class="card">
+        <div class="chead"><span class="clabel">Hubs</span><span class="csub">연결 상위 6 · 썸네일 = 실이웃</span></div>
+        <div id="hubs"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  "use strict";
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" },
+    document:   { fill: "#15151a", stroke: "#3c3c44" }
+  };
+  function hexPts(c, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push((c + r * Math.cos(a)).toFixed(2) + "," + (c + r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(" ");
+  }
+  function glyphSVG(kind, s) {
+    s = s || 14;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var c = s / 2;
+    var common = 'fill="' + col.fill + '" stroke="' + col.stroke + '" stroke-width="1.25"';
+    var body;
+    if (kind === "project") body = '<polygon points="' + hexPts(c, c - 1.2) + '" ' + common + '/>';
+    else if (kind === "domain") body = '<rect x="' + (s * 0.067) + '" y="' + (s * 0.227) + '" width="' + (s * 0.867) + '" height="' + (s * 0.547) + '" rx="1.6" ' + common + '/>';
+    else if (kind === "capability") body = '<circle cx="' + c + '" cy="' + c + '" r="' + (c - 1.6) + '" ' + common + '/>';
+    else if (kind === "document") body = '<rect x="' + (s * 0.18) + '" y="' + (s * 0.1) + '" width="' + (s * 0.64) + '" height="' + (s * 0.8) + '" rx="1.4" ' + common + '/><line x1="' + (s * 0.32) + '" y1="' + (s * 0.38) + '" x2="' + (s * 0.68) + '" y2="' + (s * 0.38) + '" stroke="' + col.stroke + '" stroke-width="1"/><line x1="' + (s * 0.32) + '" y1="' + (s * 0.58) + '" x2="' + (s * 0.68) + '" y2="' + (s * 0.58) + '" stroke="' + col.stroke + '" stroke-width="1"/>';
+    else body = '<rect x="' + (s * 0.16) + '" y="' + (s * 0.16) + '" width="' + (s * 0.68) + '" height="' + (s * 0.68) + '" rx="1.4" ' + common + '/><circle cx="' + c + '" cy="' + c + '" r="' + (s * 0.1) + '" fill="#0c0c10"/>';
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
+  }
+  function traceSVG(containment) {
+    var stroke = containment ? "var(--mark-contains)" : "var(--mark-depends)";
+    var dash = containment ? "" : ' stroke-dasharray="3 3"';
+    return '<svg width="16" height="6" viewBox="0 0 16 6" aria-hidden="true" style="flex:none">' +
+      '<line x1="1" y1="3" x2="15" y2="3" stroke="' + stroke + '" stroke-width="1.4"' + dash + ' stroke-linecap="round"/></svg>';
+  }
+
+  // ① kind census — glyph + engraved numeral + proportional meter
+  var KINDS = [
+    { kind: "element",    label: "요소",   n: 190 },
+    { kind: "capability", label: "역량",   n: 62, hot: true },
+    { kind: "domain",     label: "도메인", n: 6 },
+    { kind: "document",   label: "문서",   n: 37 },
+    { kind: "project",    label: "프로젝트", n: 1 }
+  ];
+  var maxK = Math.max.apply(null, KINDS.map(function (k) { return k.n; }));
+  document.getElementById("kind-census").innerHTML = KINDS.map(function (k) {
+    var w = Math.max(2, Math.round((k.n / maxK) * 100));
+    return '<div class="kindrow' + (k.hot ? " hot" : "") + '">' + glyphSVG(k.kind, 14) +
+      '<span class="klabel">' + k.label + '</span>' +
+      '<span class="meter"><i style="width:' + w + '%"></i></span>' +
+      '<span class="num">' + k.n + "</span></div>";
+  }).join("");
+
+  // ② relations — trace mark + bar (marks identical to the map legend)
+  var RELS = [
+    { t: "contains",   n: 289, c: true },
+    { t: "depends_on", n: 143, c: false },
+    { t: "realizes",   n: 41,  c: false },
+    { t: "evidences",  n: 35,  c: false }
+  ];
+  var maxR = Math.max.apply(null, RELS.map(function (r) { return r.n; }));
+  document.getElementById("rel-rows").innerHTML = RELS.map(function (r) {
+    var w = Math.max(2, Math.round((r.n / maxR) * 100));
+    return '<div class="relrow">' + traceSVG(r.c) +
+      '<span class="rlabel">' + r.t + '</span>' +
+      '<span class="meter"><i style="width:' + w + '%"></i></span>' +
+      '<span class="num">' + r.n + "</span></div>";
+  }).join("");
+
+  // ③ freshness heatstrip — 12 weeks per domain, neutral ramp + indigo now
+  var HEAT = [
+    { t: "Onboarding & UX",     ago: "2일",  cells: [0,1,0,1,2,1,2,3,2,3,3,9] },
+    { t: "Views",               ago: "5일",  cells: [1,2,1,2,1,3,2,2,3,2,3,9] },
+    { t: "AI Agent Partner",    ago: "1주",  cells: [2,1,3,2,3,2,1,2,2,3,3,3] },
+    { t: "Vault — Local-First", ago: "3주",  cells: [3,2,2,3,1,2,1,1,2,1,0,0] },
+    { t: "Ontology Core",       ago: "5주",  cells: [2,3,2,1,2,1,1,0,1,0,0,0] },
+    { t: "Mode-Aware Adapters", ago: "11주", cells: [3,1,1,0,0,0,0,0,0,0,0,0], stale: true }
+  ];
+  document.getElementById("heat").innerHTML = HEAT.map(function (h) {
+    var cells = h.cells.map(function (v) {
+      if (v === 9) return '<i class="now" title="이번 주"></i>';
+      return '<i class="l' + v + '"></i>';
+    }).join("");
+    return '<div class="heatrow' + (h.stale ? " stale" : "") + '">' +
+      '<span class="hlabel">' + glyphSVG("domain", 12) + h.t +
+      (h.stale ? '<span class="stale-mark">정체</span>' : "") + '</span>' +
+      '<span class="cells">' + cells + '</span>' +
+      '<span class="ago">' + h.ago + " 전</span></div>";
+  }).join("");
+
+  // ⑤ activity sparkline — 30 days, single indigo line + neutral area
+  var DAYS = [3,5,2,7,4,6,9,5,3,8,11,6,4,9,7,12,8,5,10,14,9,6,11,8,13,21,15,9,12,17];
+  (function spark() {
+    var w = 440, h = 92, pad = 4;
+    var maxV = Math.max.apply(null, DAYS);
+    var stepX = (w - pad * 2) / (DAYS.length - 1);
+    var pts = DAYS.map(function (v, i) {
+      var x = pad + i * stepX;
+      var y = h - pad - (v / maxV) * (h - pad * 2);
+      return [x.toFixed(1), y.toFixed(1)];
+    });
+    var line = pts.map(function (p, i) { return (i ? "L" : "M") + p[0] + " " + p[1]; }).join(" ");
+    var area = line + " L" + pts[pts.length - 1][0] + " " + (h - pad) + " L" + pts[0][0] + " " + (h - pad) + " Z";
+    // baseline ticks every 7 days (weeks) — quiet mono axis
+    var ticks = "";
+    for (var i = 0; i < DAYS.length; i += 7) {
+      var x = pad + i * stepX;
+      ticks += '<line x1="' + x + '" y1="' + (h - pad) + '" x2="' + x + '" y2="' + (h - pad - 4) + '" stroke="#2a2a30" stroke-width="1"/>';
+    }
+    document.getElementById("spark").innerHTML =
+      '<svg viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="최근 30일 갱신 활동">' +
+      '<path d="' + area + '" fill="rgba(94,106,210,0.07)"/>' +
+      '<path d="' + line + '" fill="none" stroke="#5e6ad2" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<circle cx="' + pts[25][0] + '" cy="' + pts[25][1] + '" r="2.4" fill="#8890e0"/>' +
+      '<line x1="' + pad + '" y1="' + (h - pad) + '" x2="' + (w - pad) + '" y2="' + (h - pad) + '" stroke="#23232a" stroke-width="1"/>' +
+      ticks + "</svg>";
+  })();
+
+  // ④ hubs — honest mini ego thumbnail: center glyph + real-degree spokes
+  function thumbSVG(kind, deg, s) {
+    s = s || 44;
+    var c = s / 2, R = c - 4;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var spokes = "";
+    var shown = Math.min(deg, 10);
+    for (var i = 0; i < shown; i++) {
+      var a = (i / shown) * Math.PI * 2 - Math.PI / 2;
+      var x2 = c + Math.cos(a) * R, y2 = c + Math.sin(a) * R;
+      var dashed = i % 3 === 2; // depends 비중 표현 — 마크 문법 재사용
+      spokes += '<line x1="' + c + '" y1="' + c + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) +
+        '" stroke="' + (dashed ? "#3c3c4a" : "#33333c") + '" stroke-width="1"' +
+        (dashed ? ' stroke-dasharray="2 2.4"' : "") + "/>" +
+        '<circle cx="' + x2.toFixed(1) + '" cy="' + y2.toFixed(1) + '" r="1.6" fill="#26262e" stroke="#3c3c44" stroke-width="0.8"/>';
+    }
+    var center;
+    if (kind === "capability") center = '<circle cx="' + c + '" cy="' + c + '" r="5" fill="' + col.fill + '" stroke="#5e6ad2" stroke-width="1.3"/>';
+    else if (kind === "domain") center = '<rect x="' + (c - 5.5) + '" y="' + (c - 3.8) + '" width="11" height="7.6" rx="1.6" fill="' + col.fill + '" stroke="#5e6ad2" stroke-width="1.3"/>';
+    else center = '<rect x="' + (c - 4.4) + '" y="' + (c - 4.4) + '" width="8.8" height="8.8" rx="1.4" fill="' + col.fill + '" stroke="#5e6ad2" stroke-width="1.2"/>';
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true">' +
+      '<circle cx="' + c + '" cy="' + c + '" r="' + R + '" fill="none" stroke="#1e1e24" stroke-width="1"/>' +
+      spokes + center + "</svg>";
+  }
+  var HUBS = [
+    { t: "MCP Server",            k: "capability", kl: "역량 · AI Agent Partner", deg: 31 },
+    { t: "Frontmatter Schema",    k: "capability", kl: "역량 · Ontology Core",    deg: 24 },
+    { t: "Topology Map",          k: "capability", kl: "역량 · Views",            deg: 19 },
+    { t: "Vault Adapter",         k: "capability", kl: "역량 · Vault",            deg: 16 },
+    { t: "Onboarding & UX",       k: "domain",     kl: "도메인",                  deg: 14 },
+    { t: "Agent Brief",           k: "capability", kl: "역량 · AI Agent Partner", deg: 11 }
+  ];
+  document.getElementById("hubs").innerHTML = HUBS.map(function (hb) {
+    return '<div class="hubrow"><span class="thumb">' + thumbSVG(hb.k, hb.deg) + '</span>' +
+      '<span class="hmain"><span class="hname">' + hb.t + '</span><br/><span class="hkind">' + hb.kl + '</span></span>' +
+      '<span class="hdeg"><span class="num">' + hb.deg + '</span><br/><span class="dlabel">연결</span></span></div>';
+  }).join("");
+})();
+</script>
+</body>
+</html>
