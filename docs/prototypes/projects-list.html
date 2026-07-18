@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>/projects — machined 프로젝트 카드 (B2+ 롤아웃)</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
 <!--
   B2+ page rollout batch #2 — /projects redesign mock.
   Single-project vault is the norm: the one card breathes (full-width,
@@ -41,7 +42,7 @@
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
   }
-  .page { max-width: 1240px; margin: 0 auto; padding: 28px 40px 56px; }
+  .page { max-width: 1640px; margin: 0 auto; padding: 30px 48px 56px; }
 
   .num {
     font-family: var(--mono); font-weight: 600;
@@ -85,7 +86,7 @@
   .phead .cta:hover { background: var(--row-hover); border-color: var(--indigo); }
   .lede {
     margin: 0 0 24px; font-size: 12.5px; color: var(--text-tertiary);
-    max-width: 640px; line-height: 1.6;
+    max-width: 720px; line-height: 1.6;
   }
 
   /* ---- machined project card ------------------------------------------- */
@@ -135,7 +136,7 @@
   /* single-project breathing room: per-domain composition inside the card */
   .domrows {
     margin-top: 16px;
-    display: grid; grid-template-columns: 240px 1fr 110px; column-gap: 16px; row-gap: 7px;
+    display: grid; grid-template-columns: 290px 1fr 130px; column-gap: 20px; row-gap: 7px;
     align-items: center;
   }
   .domrows .dn {

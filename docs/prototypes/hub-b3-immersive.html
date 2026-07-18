@@ -4,13 +4,14 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>/ontology 허브 B3 최종 — 지도 위 INDEX 계기판 (승인안)</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
 <!--
   B3 FINAL (approved): the hub and /topology converge into ONE surface — the
   real v2 map is the page, INDEX (left instrument) + component datasheet
   (right) float over it. This file is the implementation spec mock:
 
     frame 1 "기본 상태"  — INDEX(≤300px) + datasheet(288px, shipped anatomy)
-                           coexist over the ego-focused map. 1512×945.
+                           coexist over the ego-focused map. 1920×945 primary.
     frame 2 "접힌 상태"  — INDEX folds to a slim vertical edge tab; the map
                            widens; the datasheet stays. Same selection.
 
@@ -52,7 +53,7 @@
     background: var(--canvas-bg);
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
-    min-width: 1512px;
+    min-width: 1440px;
   }
   .num {
     font-family: var(--mono); font-weight: 600;
@@ -60,15 +61,16 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* ---- two stacked viewport frames (1512 = 14" fullscreen width) -------- */
+  /* ---- two stacked viewport frames (1920×1080 primary · 1440 fluid) ----- */
   .framecap {
-    width: 1512px; padding: 14px 20px 9px;
+    width: 100%; max-width: 1920px; margin: 0 auto; padding: 14px 20px 9px;
     font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--text-quaternary);
   }
   .framecap b { color: var(--text-tertiary); font-weight: 600; }
   .frame {
-    position: relative; width: 1512px; height: 945px; overflow: hidden;
+    position: relative; width: 100%; max-width: 1920px; margin: 0 auto;
+    height: 945px; overflow: hidden;
     border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
   }
   .frame canvas.stage { position: absolute; inset: 0; }
@@ -295,7 +297,7 @@
 </head>
 <body>
 
-<div class="framecap"><b>기본 상태</b> — INDEX(좌 300px) + 데이터시트(우 288px)가 지도 위에 동시 존재 · 1512×945</div>
+<div class="framecap"><b>기본 상태</b> — INDEX(좌 300px) + 데이터시트(우 288px)가 지도 위에 동시 존재 · 1920×945</div>
 <section class="frame" data-state="expanded">
   <canvas class="stage" id="stage-main"></canvas>
 
@@ -414,7 +416,9 @@
 <script>
 (function () {
   "use strict";
-  var FRAME_W = 1512, FRAME_H = 945;
+  var frameEl = document.querySelector(".frame");
+  var FRAME_W = Math.round(frameEl ? frameEl.getBoundingClientRect().width : 1920) || 1920;
+  var FRAME_H = 945;
   var GLYPH_COLORS = {
     project:    { fill: "#1c1c22", stroke: "#57575f" },
     domain:     { fill: "#191920", stroke: "#48484f" },

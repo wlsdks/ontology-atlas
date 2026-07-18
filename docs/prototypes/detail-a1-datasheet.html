@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>전체 상세 뷰 A1 — 데이터시트 확장판</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
 <style>
   /* Values copied from app/globals.css token families (standalone prototype —
      the shipped page would consume the promoted global tokens instead). */
@@ -34,7 +35,7 @@
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
   }
-  .page { max-width: 1240px; margin: 0 auto; padding: 28px 40px 56px; }
+  .page { max-width: 1640px; margin: 0 auto; padding: 30px 48px 56px; }
 
   /* ---- top chrome ------------------------------------------------------ */
   .crumbs {
@@ -95,7 +96,7 @@
 
   /* ---- direction groups ------------------------------------------------ */
   .groups {
-    display: grid; grid-template-columns: 1.35fr 1fr; gap: 22px;
+    display: grid; grid-template-columns: 1.5fr 1fr; gap: 28px;
     margin-top: 22px; align-items: start;
   }
   .card {
@@ -117,7 +118,7 @@
   }
   .ghead .num { margin-left: auto; font-size: 12px; }
   .rows { display: flex; flex-direction: column; }
-  .rows.two-col { display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; }
+  .rows.two-col { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
   .row {
     display: flex; align-items: center; gap: 9px;
     padding: 5px 7px; border-radius: 5px;
@@ -137,7 +138,7 @@
   .reach { margin-top: 22px; }
   .reach .sentence {
     font-size: 14.5px; line-height: 1.65; color: var(--text-secondary);
-    letter-spacing: -0.005em; max-width: 760px;
+    letter-spacing: -0.005em; max-width: 940px;
   }
   .reach .sentence b { color: var(--text-primary); font-weight: 600; }
   .reach .sentence .num { font-size: 13.5px; }
@@ -151,8 +152,8 @@
   .steps .on { color: var(--indigo-bright); border-color: rgba(94, 106, 210, 0.5); }
   .domain-bars {
     margin-top: 14px; display: grid;
-    grid-template-columns: 170px 1fr 44px; row-gap: 7px; column-gap: 14px;
-    max-width: 640px; align-items: center;
+    grid-template-columns: 200px 1fr 44px; row-gap: 7px; column-gap: 16px;
+    max-width: 860px; align-items: center;
   }
   .domain-bars .dn { font-size: 12px; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .domain-bars .dn.self { color: var(--text-secondary); }

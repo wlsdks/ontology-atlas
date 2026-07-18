@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>시각 리치니스 샘플러 — /ontology/insights 처방 적용안</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
 <!--
   VISUAL RICHNESS SAMPLER (visual-richness round, item A / P1):
   the owner-reported "전체 페이지가 시각적으로 표현되는 것들이 없다" —
@@ -47,18 +48,18 @@
     background: var(--canvas-bg);
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
-    min-width: 1512px;
+    min-width: 1440px;
   }
   .framecap {
-    width: 1512px; padding: 14px 20px 9px;
+    width: 100%; max-width: 1920px; margin: 0 auto; padding: 14px 20px 9px;
     font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--text-quaternary);
   }
   .framecap b { color: var(--text-tertiary); font-weight: 600; }
   .frame {
-    position: relative; width: 1512px; overflow: hidden;
+    position: relative; width: 100%; max-width: 1920px; margin: 0 auto; overflow: hidden;
     border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
-    padding: 26px 32px 34px;
+    padding: 26px 36px 34px;
   }
   .num {
     font-family: var(--mono); font-weight: 600;
@@ -82,7 +83,7 @@
   }
   .power { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--indigo); flex: none; }
 
-  .grid { display: grid; grid-template-columns: 472px 472px 472px; gap: 16px; align-items: start; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: start; }
   .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
   .card {
@@ -133,7 +134,7 @@
     display: flex; align-items: center; gap: 6px;
   }
   .heatrow .cells { display: flex; gap: 3px; flex: 1; }
-  .heatrow .cells i { width: 14px; height: 14px; border-radius: 3px; background: #131318; flex: none; }
+  .heatrow .cells i { flex: 1; max-width: 24px; height: 14px; border-radius: 3px; background: #131318; }
   .heatrow .cells i.l1 { background: #1b1b21; }
   .heatrow .cells i.l2 { background: #26262e; }
   .heatrow .cells i.l3 { background: #34343e; }
@@ -185,7 +186,7 @@
 </head>
 <body>
 
-<div class="framecap"><b>/ontology/insights 처방 적용안</b> — 글리프 미니어처 · 비례 미터 · trace 모티프 · 신선도 heatstrip · 미니 ego 썸네일 · 스파크라인 · 1512</div>
+<div class="framecap"><b>/ontology/insights 처방 적용안</b> — 글리프 미니어처 · 비례 미터 · trace 모티프 · 신선도 heatstrip · 미니 ego 썸네일 · 스파크라인 · 1920</div>
 <section class="frame">
   <div class="pagehead">
     <h1>Insights</h1>

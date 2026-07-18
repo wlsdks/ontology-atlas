@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>/project/[slug] v2b — 단일 컬럼 데이터시트</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
 <!--
   B2+ batch #2 — project detail variant B.
   Drops the 2-col grid entirely (the flagged defect: empty left column when a
@@ -44,7 +45,7 @@
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
   }
-  .page { max-width: 1080px; margin: 0 auto; padding: 28px 40px 56px; }
+  .page { max-width: 1440px; margin: 0 auto; padding: 30px 48px 56px; }
 
   .num {
     font-family: var(--mono); font-weight: 600;
@@ -117,7 +118,7 @@
   .shead .num { margin-left: auto; font-size: 12px; }
 
   /* 도메인 구성 — 2-col grid of machined domain cards */
-  .domgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .domgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
   .dcard {
     background: var(--panel);
     border: 1px solid var(--border-soft);
