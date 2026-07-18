@@ -94,6 +94,19 @@ export function edgeTierAlpha(sourceAlpha: number, targetAlpha: number): number 
 }
 
 /**
+ * C1 A2 — focus ego tier exemption ("클릭 시 expand"). A node that's semantic-
+ * zoom-gated (e.g. a capability at overview zoom, tierAlpha ≈ 0) must still
+ * become visible + clickable once it's the focused node or one of its 1-hop
+ * neighbors — that's the entire point of clicking a domain to "expand" it.
+ * `egoRamp` is the smooth 0..1 reveal ramp (`stepEmphasis`-driven, physics-step
+ * owns stepping it) so the ego set FADES in over its rise tau, never pops.
+ * Non-ego-members are untouched — the tier gate still governs them normally.
+ */
+export function effectiveNodeAlpha(tierAlpha: number, isEgoMember: boolean, egoRamp: number): number {
+  return isEgoMember ? Math.max(tierAlpha, egoRamp) : tierAlpha;
+}
+
+/**
  * True while the semantic zoom still shows ONLY the project/domain/hub spine
  * (the capability tier has not begun to reveal). Pan/flick clamps must then use
  * the SPINE bounds, not the full-graph bounds: the de-pileup layout spreads all

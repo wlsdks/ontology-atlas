@@ -20,6 +20,14 @@ export interface WorldNode {
   label: string;
   x: number;
   y: number;
+  /**
+   * C1 B3 — the deterministic layout coordinate from THIS build pass, cached
+   * once and never mutated by drag/force-sim writes to `x`/`y`. Auto-arrange
+   * springs every node back to its own `homeX`/`homeY` (`use-topology-loop.ts`'s
+   * `relayoutToken` effect) — the "canonical layout" contract.
+   */
+  homeX: number;
+  homeY: number;
   isHub: boolean;
   fresh: boolean;
   /** Adapter contract (`TopologyV2Node`) has no staleness signal yet — always false until a follow-up adds one. */
@@ -197,12 +205,16 @@ export function buildTopologyWorld(
 
   const worldNodes: WorldNode[] = nodes.map((n) => {
     const point = pointById.get(n.id);
+    const x = point?.x ?? 0;
+    const y = point?.y ?? 0;
     return {
       id: n.id,
       kind: n.kind,
       label: n.label,
-      x: point?.x ?? 0,
-      y: point?.y ?? 0,
+      x,
+      y,
+      homeX: x,
+      homeY: y,
       isHub: n.isHub,
       fresh: n.recentlyUpdated,
       stale: false,

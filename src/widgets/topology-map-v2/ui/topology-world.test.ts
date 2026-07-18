@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
-import { computeEgoBounds, computeSpineBounds, isSpineNode, type WorldNode } from "./topology-world";
+import {
+  buildTopologyWorld,
+  computeEgoBounds,
+  computeSpineBounds,
+  isSpineNode,
+  type WorldNode,
+} from "./topology-world";
+import type { TopologyV2Edge, TopologyV2Node } from "./TopologyMapV2";
 
 /**
  * Spine bounds (fit-fix): the overview camera must fit to the level-0 spine
@@ -25,9 +32,76 @@ function node(partial: Partial<WorldNode> & Pick<WorldNode, "id" | "kind" | "x" 
     fresh: false,
     stale: false,
     count: 0,
+    homeX: partial.x,
+    homeY: partial.y,
     ...partial,
   };
 }
+
+/**
+ * C1 B3 — auto-arrange restores canonical layout. `homeX`/`homeY` are the
+ * world builder's own deterministic layout coordinate, cached once at build
+ * time and never mutated by drag/force-sim position writes — the "canonical"
+ * position auto-arrange springs nodes back to.
+ */
+describe("buildTopologyWorld — homeX/homeY", () => {
+  const fullTokens = {
+    radiusProject: 20,
+    radiusDomain: 14,
+    radiusCapability: 8,
+    radiusElement: 5,
+    layoutRingDomain: 250,
+    layoutRingCapability: 145,
+    layoutRingElement: 90,
+    edgeBowContains: 70,
+    edgeBowDepends: 92,
+    edgeBlendContains: 0.46,
+    edgeBlendDepends: 0.62,
+    starCount: 2,
+  } as unknown as TopologyV2Tokens;
+
+  function inputNode(partial: Partial<TopologyV2Node> & Pick<TopologyV2Node, "id" | "kind">): TopologyV2Node {
+    return {
+      label: partial.id,
+      size: 1,
+      x: 0,
+      y: 0,
+      isHub: false,
+      ownerKey: null,
+      recentlyUpdated: false,
+      fullDegree: 0,
+      descendantCount: 0,
+      ...partial,
+    };
+  }
+
+  it("seeds homeX/homeY equal to the initial deterministic layout position", () => {
+    const nodes: TopologyV2Node[] = [
+      inputNode({ id: "p", kind: "project" }),
+      inputNode({ id: "d", kind: "domain" }),
+    ];
+    const edges: TopologyV2Edge[] = [{ source: "p", target: "d", relationType: "contains", relationQuality: null, evidenceCount: 0, kind: "contains" }];
+    const world = buildTopologyWorld(nodes, edges, fullTokens);
+    for (const node of world.nodes) {
+      expect(node.homeX).toBe(node.x);
+      expect(node.homeY).toBe(node.y);
+    }
+  });
+
+  it("keeps homeX/homeY unchanged when x/y are mutated afterward (e.g. by a drag/sim write)", () => {
+    const nodes: TopologyV2Node[] = [inputNode({ id: "p", kind: "project" }), inputNode({ id: "d", kind: "domain" })];
+    const edges: TopologyV2Edge[] = [];
+    const world = buildTopologyWorld(nodes, edges, fullTokens);
+    const domainNode = world.nodeById.get("d")!;
+    const originalHomeX = domainNode.homeX;
+    const originalHomeY = domainNode.homeY;
+    domainNode.x = 9999;
+    domainNode.y = -9999;
+    expect(domainNode.homeX).toBe(originalHomeX);
+    expect(domainNode.homeY).toBe(originalHomeY);
+    expect(domainNode.x).not.toBe(domainNode.homeX);
+  });
+});
 
 describe("isSpineNode", () => {
   it("is true for project, domain, and any hub node", () => {

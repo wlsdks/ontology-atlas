@@ -27,6 +27,7 @@ import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
 import { scheduleRipple } from "../model/focus-state";
 import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom, nodeTierAlpha } from "../model/tier-visibility";
+import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
 import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
 import {
   INITIAL_POINTER_MACHINE_STATE,
@@ -34,7 +35,7 @@ import {
   type PointerMachineState,
 } from "../interaction/pointer-state-machine";
 import { normalizeWheelDeltaY } from "../interaction/wheel";
-import { hitTestWorld, screenToWorld } from "./topology-camera-math";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, hitTestWorld, screenToWorld } from "./topology-camera-math";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyWorld } from "./topology-world";
 
@@ -84,6 +85,18 @@ export interface PointerHandlerRefs {
   heatRef: Ref<number>;
   /** Active node pin-drag, or null when the drag is a camera pan / no drag. */
   nodeDragRef: Ref<NodeDragState | null>;
+  /**
+   * C1 B1/B2 — the dragged node's own 1-hop/2-hop neighbor sets, captured
+   * once at grab time (`interaction/drag-tug.ts#computeDragTugSets`). Consumed
+   * both to propagate the explicit neighbor tug (B1) and to restrict the
+   * release-settle FA2 tick to this local cluster (B2, `model/force-layout.ts`
+   * `tick`'s `restrictToIds`). Persists through the post-release settle burst —
+   * only cleared once that burst's heat reaches 0 (`use-topology-loop.ts`) or a
+   * NEW drag starts.
+   */
+  dragAffectedSetRef: Ref<{ draggedId: string; oneHop: DragTugSets["oneHop"]; twoHop: DragTugSets["twoHop"] } | null>;
+  /** C1 B1 — the dragged node's world position at grab time, for computing this drag's total displacement (Δ). Null once the drag ends (post-release tug decays toward 0, no more Δ to track). */
+  dragStartPosRef: Ref<{ x: number; y: number } | null>;
   /** The altitude band's "100%" fit scale — used to derive farT for tier-aware (visible-only) hit-testing. */
   overviewScaleRef: Ref<number>;
   onSelect?: (slug: string) => void;
@@ -128,6 +141,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     simRef,
     heatRef,
     nodeDragRef,
+    dragAffectedSetRef,
+    dragStartPosRef,
     overviewScaleRef,
     onSelect,
     onPaneClick,
@@ -151,6 +166,13 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // semantic-zoom-hidden capability/element even at the circuit default entry.
     const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
     const zoomRatio = computeZoomRatio(camera.scale.value, overviewEntryScale);
+    // C1 A2 — focus ego tier exemption: the focused node + its 1-hop neighbors
+    // are hittable even below the tier's own alpha threshold, matching the
+    // draw pass's `effectiveNodeAlpha` exemption (`topology-frame-draw.ts`) —
+    // otherwise a capability that's now VISIBLE (ego-revealed) would still be
+    // unclickable, defeating the entire "click a domain to expand it" flow.
+    const focusedNodeId = focusedSlugRef.current;
+    const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
     return hitTestWorld(
       world,
       camera,
@@ -159,7 +181,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       tokens,
       px,
       py,
-      (node) => nodeTierAlpha(node.kind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL) >= HITTABLE_MIN_TIER_ALPHA,
+      (node) => {
+        if (nodeTierAlpha(node.kind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL) >= HITTABLE_MIN_TIER_ALPHA) return true;
+        return focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused?.has(node.id) === true);
+      },
     );
   };
 
@@ -238,6 +263,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           sim.pin(pressedNodeId, grabNode.x, grabNode.y);
           nodeDragRef.current = { nodeId: pressedNodeId, offset };
           heatRef.current = NODE_DRAG_HEAT_FRAMES;
+          // C1 B1/B2 — capture the tug/settle-restriction set + start position
+          // once, at grab time (not recomputed per frame).
+          const tugSets = computeDragTugSets(world.neighborMap, pressedNodeId);
+          dragAffectedSetRef.current = { draggedId: pressedNodeId, oneHop: tugSets.oneHop, twoHop: tugSets.twoHop };
+          dragStartPosRef.current = { x: grabNode.x, y: grabNode.y };
         }
       }
 
@@ -297,6 +327,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       simRef.current?.clearPin();
       nodeDragRef.current = null;
       heatRef.current = Math.max(heatRef.current, NODE_RELEASE_HEAT_FRAMES);
+      // C1 B1: stop tracking Δ (drag ended) — `dragAffectedSetRef` stays set
+      // through the settle burst above (B2), cleared once heat reaches 0
+      // (`use-topology-loop.ts`'s rAF loop).
+      dragStartPosRef.current = null;
       return;
     }
 
@@ -381,6 +415,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       simRef.current?.clearPin();
       nodeDragRef.current = null;
       heatRef.current = Math.max(heatRef.current, NODE_RELEASE_HEAT_FRAMES);
+      dragStartPosRef.current = null;
     }
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) {
@@ -400,15 +435,37 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
 
-    const camera = cameraRef.current;
-    const beforeX = (sx - width / 2) / camera.scale.value + camera.x.value;
-    const beforeY = (sy - height / 2) / camera.scale.value + camera.y.value;
+    // C1 A1 follow-up (owner feedback — rapid wheel notches felt "dead" even
+    // after the ceiling fix): compound off the camera's TARGET
+    // (`cameraTargetRef`), not its live/spring-animated value (`cameraRef`).
+    // A burst of wheel events arrives faster than the critically-damped
+    // spring can visually catch up (~0.34s time constant) — basing each new
+    // target on the live (still-lagging) scale meant a rapid flurry of
+    // notches barely compounded past the FIRST one's effect, since each
+    // subsequent notch's "current scale" was nearly identical to the one
+    // before it (measured live: 10 real notches at 30-80ms spacing only
+    // reached zoomRatio ~1.05-1.2, nowhere near the capability/element
+    // bands). Basing it on the TARGET instead lets intent compound correctly
+    // regardless of how fast the events arrive; the spring still smoothly
+    // interpolates the VISIBLE camera toward wherever that target ends up. In
+    // the steady state (no animation in flight) `cameraTargetRef` already
+    // equals `cameraRef`, so a single isolated wheel tick is unaffected.
+    const target = cameraTargetRef.current;
+    const beforeX = (sx - width / 2) / target.tscale + target.tx;
+    const beforeY = (sy - height / 2) / target.tscale + target.ty;
     // Normalize deltaMode first — a line/page-mode wheel reports a tiny raw
     // deltaY that the old `exp(-deltaY*0.0016)` turned into ~0% zoom (the
     // owner's "휠 확대 안 됨" bug). See `interaction/wheel.ts`.
     const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, height);
     const factor = Math.exp(-pixelDeltaY * 0.0016);
-    const newScale = Math.min(tokens.cameraScaleMax, Math.max(tokens.cameraScaleMin, camera.scale.value * factor));
+    // C1 A1 — wheel/pinch zoom-in must reach the ratio-based effective max
+    // (`topology-camera-math.ts#computeEffectiveCameraScaleMax`), not the
+    // absolute `cameraScaleMax` token — same fix as the spring clamp in
+    // `topology-physics-step.ts`.
+    const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+    const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+    const effectiveScaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
+    const newScale = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, target.tscale * factor));
     const afterX = beforeX - (sx - width / 2) / newScale;
     const afterY = beforeY - (sy - height / 2) / newScale;
 

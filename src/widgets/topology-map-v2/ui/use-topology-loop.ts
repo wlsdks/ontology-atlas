@@ -12,8 +12,10 @@
 import { useEffect, useRef, type RefObject } from "react";
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
+import { stepTugAxis, tugFactorForHop } from "../interaction/drag-tug";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
+import { initHomeSpring, isHomeSpringConverged, stepHomeSpring, type HomeSpringState } from "../model/relayout-home";
 import type { NodeDragState } from "./topology-pointer-handlers";
 import { buildGridPattern } from "../render/grid";
 import { buildDustPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
@@ -25,6 +27,24 @@ import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyMapV2Props } from "./TopologyMapV2";
 import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
+
+/**
+ * C1 B1 — no `--topology-v2-*` token assigned yet (same "no token" precedent
+ * as `engine/camera.ts`'s `DEFAULT_PAN_BOUNDS_MARGIN` / `topology-pointer-
+ * handlers.ts`'s `RIPPLE_PER_NEIGHBOR_DELAY_MS`): how fast a neighbor's tug
+ * offset eases toward its target (or back to 0 on release) — NOT how far it
+ * moves (that's the token-backed `dragTug1Hop`/`dragTug2Hop` factors).
+ *
+ * Research pass (haiku feel-tuning, C1 mid-implementation): a "connected"
+ * drag reads as neighbors following with a slight lag — ~100-300ms catch-up,
+ * not rigidly synced to the pointer and not so slow it feels disconnected.
+ * 150ms sits in the middle of that band (vs. the initial 80ms, which was
+ * closer to the hover-ripple rise tau and read as too instantaneous/rigid for
+ * a physically-following neighbor).
+ */
+const DRAG_TUG_EASE_TAU = 0.15;
+/** World-unit epsilon below which a homing node is considered "arrived" (`relayout-home.ts#isHomeSpringConverged`). */
+const HOME_CONVERGE_EPSILON = 0.5;
 
 /**
  * FA2 iterations to run per warm frame — a bounded synchronous tick budget
@@ -77,6 +97,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const simRef = useRef<ForceSimulation | null>(null);
   const heatRef = useRef(0);
   const nodeDragRef = useRef<NodeDragState | null>(null);
+  /** C1 B1/B2 — the active (or just-released, through its settle burst) drag's tug/settle-restriction set. */
+  const dragAffectedSetRef = useRef<{ draggedId: string; oneHop: ReadonlySet<string>; twoHop: ReadonlySet<string> } | null>(null);
+  /** C1 B1 — the dragged node's world position at grab time (for computing this drag's total displacement Δ). */
+  const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  /** C1 B1 — each tug-affected neighbor's current eased offset (world units), added on top of its natural position. */
+  const dragTugOffsetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  /** C1 B3 — active auto-arrange homing springs, keyed by node id; empty/absent when no relayout is in flight. */
+  const homeSpringsRef = useRef<Map<string, HomeSpringState>>(new Map());
+  const homingActiveRef = useRef(false);
 
   const cameraRef = useRef<CameraAxes>({
     x: { value: 0, velocity: 0 },
@@ -102,6 +131,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   // The effect below skips whenever both tokens still equal their captured
   // mount-time values — i.e. no real "fit view"/relayout click happened yet.
   const initialFitTokensRef = useRef({ relayout: relayoutToken, fitView: fitViewToken });
+  // C1 B3 — same mount-skip pattern, but for the DEDICATED relayout-only
+  // effect below (node-position homing), which must not fire on mount either.
+  const initialRelayoutTokenRef = useRef(relayoutToken);
 
   const pointerMachineRef = useRef<PointerMachineState>(INITIAL_POINTER_MACHINE_STATE);
   const dragHistoryRef = useRef<{ x: number; y: number; t: number }[]>([]);
@@ -113,6 +145,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const panelEmphasisNodeIdRef = useRef<string | null>(emphasizedNeighborSlug);
   const hoveredNodeIdRef = useRef<string | null>(null);
   const emphasisRef = useRef<Map<string, number>>(new Map());
+  /** C1 A2 — ego tier-reveal ramp, stepped in `stepTopologyPhysics`, consumed by `drawTopologyFrame`. */
+  const egoRevealRef = useRef<Map<string, number>>(new Map());
   const rippleStartRef = useRef<Map<string, number>>(new Map());
   const reducedMotionRef = useRef(false);
 
@@ -178,6 +212,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // No load-time settle: the sim stays cold until a node is pin-dragged. The
     // static default is the deterministic de-piled grid from `topology-world`.
     heatRef.current = 0;
+    // A graph rebuild invalidates any in-flight drag/tug/homing state — those
+    // ids/refs point at the OLD world's nodes.
+    dragAffectedSetRef.current = null;
+    dragStartPosRef.current = null;
+    dragTugOffsetsRef.current.clear();
+    homeSpringsRef.current.clear();
+    homingActiveRef.current = false;
     onVisibleCountChange?.(nodes.length);
     onGraphStatsChange?.({ nodes: nodes.length, relations: edges.length });
     trySnapInitialCamera(tokens);
@@ -250,6 +291,41 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dampingRef.current = tokens.cameraDampingDefault;
   }, [relayoutToken, fitViewToken]);
 
+  // --- relayoutToken ONLY (not fitViewToken) — also restores every node's
+  // position to its canonical (`homeX`/`homeY`) layout coordinate over a
+  // short critically-damped spring transition (C1 B3). "지도 전체 맞추기"/
+  // fit-view intentionally does NOT do this — it only recenters the camera,
+  // it's a different user action ("재배치"/auto-arrange is the button that
+  // implies "put the nodes back", per `HomePage.tsx`'s `onRelayout`). ---
+  useEffect(() => {
+    if (relayoutToken === initialRelayoutTokenRef.current) return;
+    const world = worldRef.current;
+    if (!world) return;
+
+    // Relayout is a clean slate: drop any in-flight drag/tug/settle state so
+    // the homing transition below isn't fighting stale sim pins or tug offsets,
+    // and reseed the sim's OWN internal graph at the home coordinates too — it
+    // doesn't automatically track `world.nodes` mutations, so without this a
+    // drag right after a relayout would start from the sim's stale pre-relayout
+    // positions and jump.
+    nodeDragRef.current = null;
+    heatRef.current = 0;
+    dragAffectedSetRef.current = null;
+    dragStartPosRef.current = null;
+    dragTugOffsetsRef.current.clear();
+    simRef.current = createForceSimulation(
+      world.nodes.map((n) => ({ id: n.id, x: n.homeX, y: n.homeY })),
+      world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
+    );
+
+    const springs = new Map<string, HomeSpringState>();
+    for (const node of world.nodes) {
+      springs.set(node.id, initHomeSpring(node.x, node.y));
+    }
+    homeSpringsRef.current = springs;
+    homingActiveRef.current = true;
+  }, [relayoutToken]);
+
   // --- focused slug change — spring-dive to the ego bbox, or back to overview when cleared ---
   useEffect(() => {
     if (lastFocusedSlugRef.current === focusedSlug) return;
@@ -260,7 +336,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const { width, height } = viewportRef.current;
     if (!tokens || !world || width <= 0 || height <= 0) return;
 
-    const target = computeFocusCameraTarget(world, tokens, width, height, focusedSlug);
+    const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+    const target = computeFocusCameraTarget(world, tokens, width, height, focusedSlug, overviewEntryScale);
     if (!target) return;
     dampingRef.current = tokens.cameraDampingDefault;
     cameraTargetRef.current = target;
@@ -295,11 +372,88 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // reframing only existed to chase the removed load settle). ---
       const sim = simRef.current;
       const pinned = nodeDragRef.current !== null;
+      // C1 B3: a user grab interrupts any in-flight auto-arrange homing —
+      // the drag wins, rather than the two fighting over the node's position.
+      if (pinned && homingActiveRef.current) {
+        homingActiveRef.current = false;
+        homeSpringsRef.current.clear();
+      }
       if (sim && (heatRef.current > 0 || pinned)) {
-        sim.tick(FORCE_ITERATIONS_PER_FRAME);
+        // C1 B2 — radius-limited release settle: restrict BOTH the live-drag
+        // tick and the post-release settle burst to the dragged node's own
+        // cluster (itself + 1-hop + 2-hop), so far nodes never drift via FA2
+        // either (matching the explicit tug's own falloff below).
+        const affected = dragAffectedSetRef.current;
+        const restrictToIds = affected
+          ? new Set<string>([affected.draggedId, ...affected.oneHop, ...affected.twoHop])
+          : null;
+        sim.tick(FORCE_ITERATIONS_PER_FRAME, restrictToIds);
         applyForcePositions(world, sim.positions());
+
+        // C1 B1 — explicit neighbor tug: the dragged node's own per-frame
+        // world-space displacement (Δ since grab) propagates to 1-hop/2-hop
+        // neighbors, falling off by hop distance, eased in/out so the motion
+        // reads as springy lag-then-catch-up rather than a rigid rod. Also
+        // runs (easing back toward 0) during the post-release settle so the
+        // offset doesn't pop away the instant the pointer lifts.
+        if (affected) {
+          const draggedNode = world.nodeById.get(affected.draggedId);
+          const dragStart = dragStartPosRef.current;
+          const factors = { oneHop: tokens.dragTug1Hop, twoHop: tokens.dragTug2Hop };
+          const tugIds = new Set<string>([...affected.oneHop, ...affected.twoHop]);
+          for (const id of tugIds) {
+            const hop = affected.oneHop.has(id) ? 1 : 2;
+            const factor = tugFactorForHop(hop, factors);
+            let targetX = 0;
+            let targetY = 0;
+            if (pinned && draggedNode && dragStart) {
+              targetX = (draggedNode.x - dragStart.x) * factor;
+              targetY = (draggedNode.y - dragStart.y) * factor;
+            }
+            const prevOffset = dragTugOffsetsRef.current.get(id) ?? { x: 0, y: 0 };
+            const nextOffset = {
+              x: stepTugAxis(prevOffset.x, targetX, dt, DRAG_TUG_EASE_TAU),
+              y: stepTugAxis(prevOffset.y, targetY, dt, DRAG_TUG_EASE_TAU),
+            };
+            dragTugOffsetsRef.current.set(id, nextOffset);
+            const node = world.nodeById.get(id);
+            if (node) {
+              node.x += nextOffset.x;
+              node.y += nextOffset.y;
+            }
+          }
+        }
+
         recomputeWorldGeometry(world, tokens);
         if (!pinned && heatRef.current > 0) heatRef.current -= 1;
+        if (!pinned && heatRef.current === 0) {
+          // Settle burst finished — release the affected-set restriction and
+          // drop any residual (by-now-decayed-near-0) tug offsets.
+          dragAffectedSetRef.current = null;
+          dragTugOffsetsRef.current.clear();
+        }
+      }
+
+      // C1 B3 — auto-arrange homing: springs every node back to its own
+      // `homeX`/`homeY` over a short critically-damped transition, independent
+      // of the FA2/tug block above (relayout resets heat/pin, so the two never
+      // run in the same frame in practice).
+      if (homingActiveRef.current) {
+        let allConverged = true;
+        for (const node of world.nodes) {
+          const spring = homeSpringsRef.current.get(node.id);
+          if (!spring) continue;
+          const nextSpring = stepHomeSpring(spring, node.homeX, node.homeY, dt, tokens.cameraSpringAngFreq, tokens.cameraDampingDefault);
+          homeSpringsRef.current.set(node.id, nextSpring);
+          node.x = nextSpring.x.value;
+          node.y = nextSpring.y.value;
+          if (!isHomeSpringConverged(nextSpring, node.homeX, node.homeY, HOME_CONVERGE_EPSILON)) allConverged = false;
+        }
+        recomputeWorldGeometry(world, tokens);
+        if (allConverged) {
+          homingActiveRef.current = false;
+          homeSpringsRef.current.clear();
+        }
       }
 
       const focusedNodeId = focusedSlugRef.current;
@@ -323,6 +477,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         isDragging: pointerMachineRef.current.phase === "dragging",
         emphasisById: emphasisRef.current,
         rippleStartById: rippleStartRef.current,
+        egoRevealById: egoRevealRef.current,
       });
       cameraRef.current = camera;
 
@@ -344,6 +499,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         hoveredNodeId,
         emphasizedNeighborId: panelEmphasisNodeId,
         emphasisById: emphasisRef.current,
+        egoRevealById: egoRevealRef.current,
         reducedMotion: reducedMotionRef.current,
       });
 
@@ -379,6 +535,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     simRef,
     heatRef,
     nodeDragRef,
+    dragAffectedSetRef,
+    dragStartPosRef,
     overviewScaleRef,
     onSelect,
     onPaneClick,

@@ -46,8 +46,19 @@ export interface ForcePosition {
 }
 
 export interface ForceSimulation {
-  /** Runs `iterations` FA2 steps, then re-stamps the pinned node (if any). No-op for `iterations <= 0`. */
-  tick(iterations: number): void;
+  /**
+   * Runs `iterations` FA2 steps, then re-stamps the pinned node (if any).
+   * No-op for `iterations <= 0`.
+   *
+   * C1 B2 (radius-limited release settle): when `restrictToIds` is given, any
+   * node NOT in that set is restored to its PRE-tick position after `assign()`
+   * runs — i.e. it still participates in FA2's force computation (so the
+   * physics stay coherent) but ends the tick with zero net displacement. This
+   * is what keeps the post-drag settle burst local to the dragged node's own
+   * cluster instead of visibly relaxing the whole graph. Omit (or pass
+   * `undefined`/`null`) for the unrestricted default (every node free to move).
+   */
+  tick(iterations: number, restrictToIds?: ReadonlySet<string> | null): void;
   /** Current `{x, y}` per node id — a fresh Map each call (cheap at the semantic-zoom-capped node counts). */
   positions(): Map<string, ForcePosition>;
   /** Pins a node to a world coordinate (grabbed for drag) — held fixed across ticks until `clearPin`. */
@@ -128,9 +139,25 @@ export function createForceSimulation(
   };
 
   return {
-    tick(iterations: number) {
+    tick(iterations: number, restrictToIds?: ReadonlySet<string> | null) {
       if (iterations <= 0 || graph.order === 0) return;
-      forceAtlas2.assign(graph, { iterations, settings });
+      if (restrictToIds) {
+        // Snapshot every OUTSIDE node's pre-tick position so it can be
+        // restored after — the tick still runs FA2 over the whole graph (so
+        // in-set nodes feel a coherent force field), just discards the result
+        // for anything outside the affected set.
+        const frozen = new Map<string, { x: number; y: number }>();
+        graph.forEachNode((id, attrs) => {
+          if (!restrictToIds.has(id)) frozen.set(id, { x: attrs.x as number, y: attrs.y as number });
+        });
+        forceAtlas2.assign(graph, { iterations, settings });
+        for (const [id, pos] of frozen) {
+          graph.setNodeAttribute(id, "x", pos.x);
+          graph.setNodeAttribute(id, "y", pos.y);
+        }
+      } else {
+        forceAtlas2.assign(graph, { iterations, settings });
+      }
       restamp();
     },
     positions() {

@@ -14,6 +14,7 @@
  */
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
+import { DEFAULT_TIER_REVEAL } from "../model/tier-visibility";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { computeEgoBounds, radiusForKind, type TopologyWorld } from "./topology-world";
 import type { WorldNode } from "./topology-world";
@@ -176,11 +177,70 @@ export function computeOverviewCameraTarget(
 }
 
 /**
+ * C1 A1 — the camera's REAL (interactive) zoom-in ceiling, viewport-relative.
+ *
+ * Audit finding: the overview entry scale is viewport-proportional (≈1.5 at
+ * 1512×917), while `--topology-v2-camera-scale-max` is an ABSOLUTE number
+ * (2.6). Binding the camera's zoom-in clamp to that absolute value caps
+ * `zoomRatio` at ≈1.8 regardless of what the tier-reveal bands need — the
+ * capability band (1.5→2.0) never finishes revealing (max ~40% alpha, below
+ * the 0.5 hit threshold, so it's unclickable) and the element band
+ * (2.3→2.85) is never reachable at all. Worse on larger viewports, where the
+ * entry scale is smaller still.
+ *
+ * The fix: the effective max is `overviewEntryScale × maxZoomRatio` — constant
+ * in RATIO terms across every viewport/dataset, not in absolute scale terms.
+ * `--topology-v2-camera-scale-max` is RETIRED as the binding constraint and
+ * kept only as a safety fallback for the degenerate case where
+ * `overviewEntryScale` is somehow non-positive (camera not yet initialized).
+ */
+export function computeEffectiveCameraScaleMax(
+  overviewEntryScale: number,
+  maxZoomRatio: number,
+  absoluteFallback: number,
+): number {
+  if (!(overviewEntryScale > 0)) return absoluteFallback;
+  return overviewEntryScale * maxZoomRatio;
+}
+
+/**
+ * C1 A1 follow-up (owner feedback — wheel zoom-OUT floor) — the symmetric
+ * fix for `computeEffectiveCameraScaleMax`, in the other direction. The same
+ * absolute-vs-ratio mismatch applies to the zoom-OUT floor
+ * (`--topology-v2-camera-scale-min`, 0.24): on a large viewport the
+ * interactive zoom-out range is squeezed to almost nothing, and on a small
+ * viewport it can shrink the spine to a speck before the far-field
+ * constellation crossfade even engages. `--topology-v2-camera-min-zoom-ratio`
+ * (0.5, i.e. half the overview entry scale) replaces the absolute floor as
+ * the binding constraint for the same three call sites (spring clamp, wheel
+ * clamp) — the fit-scale computations keep the absolute floor as their own
+ * sanity bound, same reasoning as `computeEffectiveCameraScaleMax`.
+ */
+export function computeEffectiveCameraScaleMin(
+  overviewEntryScale: number,
+  minZoomRatio: number,
+  absoluteFallback: number,
+): number {
+  if (!(overviewEntryScale > 0)) return absoluteFallback;
+  return overviewEntryScale * minZoomRatio;
+}
+
+/**
  * Camera target for the current focus state — the full-graph overview fit
  * when `focusedSlug` is `null`, or the clicked node + its 1-hop ego bbox
- * (`--topology-v2-focus-bbox-margin`/`-focus-fit-max-scale`) otherwise
- * (`docs/TOPOLOGY-V2-DESIGN.md` §3.2 "카메라가 노드+1-hop 이웃 bbox 로 스프링
- * 다이브"). `null` only if `focusedSlug` doesn't resolve to a known node.
+ * (`--topology-v2-focus-bbox-margin`) otherwise (`docs/TOPOLOGY-V2-DESIGN.md`
+ * §3.2 "카메라가 노드+1-hop 이웃 bbox 로 스프링 다이브"). `null` only if
+ * `focusedSlug` doesn't resolve to a known node.
+ *
+ * C1 A3 (ratio-based focus dive): the old absolute `focusFitMaxScale` (1.9)
+ * capped the dive below even the capability tier's `enterRatio` at typical
+ * viewports — clicking a node could never reveal its own capabilities, the
+ * entire point of focusing it. The dive scale is now the LARGER of (a) the
+ * tight fit-to-ego-bbox scale (so a big cluster still fits on screen) and (b)
+ * `overviewEntryScale × capability.fullRatio` (a floor that GUARANTEES
+ * capabilities finish revealing, even if that means zooming past the natural
+ * bbox fit for a small cluster) — clamped to `[cameraScaleMin,
+ * effectiveCameraScaleMax]` so it never exceeds the new ratio-based ceiling.
  */
 export function computeFocusCameraTarget(
   world: TopologyWorld,
@@ -188,6 +248,8 @@ export function computeFocusCameraTarget(
   viewportWidth: number,
   viewportHeight: number,
   focusedSlug: string | null,
+  /** `overviewScale × overviewEntryRatio` at the current viewport — the zoom-ratio's "1.0" anchor (`model/tier-visibility.ts#computeZoomRatio`). */
+  overviewEntryScale: number,
 ): CameraTarget | null {
   if (focusedSlug === null) {
     // Overview fits the SPINE bbox (project+domain+hub — the only tier drawn at
@@ -198,16 +260,22 @@ export function computeFocusCameraTarget(
   if (!egoBounds) return null;
 
   const margin = tokens.focusBboxMargin;
-  return fitWorldTarget(
-    {
-      minX: egoBounds.minX - margin,
-      minY: egoBounds.minY - margin,
-      maxX: egoBounds.maxX + margin,
-      maxY: egoBounds.maxY + margin,
-    },
-    viewportWidth,
-    viewportHeight,
-    tokens.focusFitMaxScale,
-    tokens.cameraScaleMin,
-  );
+  const bounds = {
+    minX: egoBounds.minX - margin,
+    minY: egoBounds.minY - margin,
+    maxX: egoBounds.maxX + margin,
+    maxY: egoBounds.maxY + margin,
+  };
+  const w = Math.max(1, bounds.maxX - bounds.minX);
+  const h = Math.max(1, bounds.maxY - bounds.minY);
+  const fitScale = Math.min(viewportWidth / w, viewportHeight / h);
+  const revealFloor = overviewEntryScale * DEFAULT_TIER_REVEAL.capability.fullRatio;
+  const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+  const scale = Math.min(effectiveMax, Math.max(tokens.cameraScaleMin, fitScale, revealFloor));
+
+  return {
+    tx: (bounds.minX + bounds.maxX) / 2,
+    ty: (bounds.minY + bounds.maxY) / 2,
+    tscale: scale,
+  };
 }

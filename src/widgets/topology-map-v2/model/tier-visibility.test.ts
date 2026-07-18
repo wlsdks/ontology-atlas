@@ -4,6 +4,7 @@ import {
   computeZoomRatio,
   DEFAULT_TIER_REVEAL,
   edgeTierAlpha,
+  effectiveNodeAlpha,
   isSpineOnlyZoom,
   nodeTierAlpha,
 } from "./tier-visibility";
@@ -82,6 +83,29 @@ describe("edgeTierAlpha", () => {
     expect(edgeTierAlpha(1, 0)).toBe(0);
     expect(edgeTierAlpha(0.8, 0.4)).toBe(0.4);
     expect(edgeTierAlpha(1, 1)).toBe(1);
+  });
+});
+
+/**
+ * C1 A2 — focus ego tier exemption. A capability/element with a near-zero
+ * tierAlpha (semantic-zoom-hidden at overview) must still become visible when
+ * it's in the focused node's ego set, ramping smoothly via `egoRamp` — never
+ * a hard pop, and never affecting non-ego-members.
+ */
+describe("effectiveNodeAlpha", () => {
+  it("is unchanged for a non-ego-member regardless of egoRamp", () => {
+    expect(effectiveNodeAlpha(0, false, 1)).toBe(0);
+    expect(effectiveNodeAlpha(0.3, false, 1)).toBe(0.3);
+  });
+
+  it("is the max of tierAlpha and egoRamp for an ego member", () => {
+    expect(effectiveNodeAlpha(0, true, 0.7)).toBe(0.7);
+    expect(effectiveNodeAlpha(0.9, true, 0.2)).toBe(0.9);
+    expect(effectiveNodeAlpha(0, true, 0)).toBe(0);
+  });
+
+  it("reaches full opacity for an ego member once its ramp completes", () => {
+    expect(effectiveNodeAlpha(0, true, 1)).toBe(1);
   });
 });
 

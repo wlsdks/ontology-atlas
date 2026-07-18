@@ -6,7 +6,8 @@
  * `skeletonInkRef` 해석-캐시 패턴 재사용). 값의 진실원은 여전히
  * `app/globals.css` 하나 — 이 파일은 읽기 전용 어댑터다.
  *
- * 토큰 drift 가드: §2 표에 있는 77개 토큰 중 하나라도 빈 문자열로 해석되면
+ * 토큰 drift 가드: §2 표에 있는 81개 토큰(C1 — camera-max/min-zoom-ratio +
+ * drag-tug-1hop/2hop 4종 추가) 중 하나라도 빈 문자열로 해석되면
  * (= `app/globals.css` 에서 삭제/오타) 조용히 기본값으로 폴백하지 않고
  * `TopologyV2TokenError` 를 던진다 — 누락을 "감"으로 흡수하지 않기 위해.
  */
@@ -75,6 +76,10 @@ export interface TopologyV2Tokens {
   cameraFlickMinSpeed: number;
   cameraScaleMin: number;
   cameraScaleMax: number;
+  /** `--topology-v2-camera-max-zoom-ratio` — the viewport-relative ceiling `computeEffectiveCameraScaleMax` derives the real zoom-in bound from (see that function's JSDoc for the audit finding this fixes). */
+  cameraMaxZoomRatio: number;
+  /** `--topology-v2-camera-min-zoom-ratio` — the viewport-relative floor `computeEffectiveCameraScaleMin` derives the real zoom-out bound from. */
+  cameraMinZoomRatio: number;
   cameraFocusPanMargin: number;
   altitudeFarHighRatio: number;
   altitudeFarLowRatio: number;
@@ -91,6 +96,10 @@ export interface TopologyV2Tokens {
   tipFadeMs: number;
   edgePulseSpeed: number;
   edgePulseSpeedEgo: number;
+  /** `--topology-v2-drag-tug-1hop` — 1-hop neighbor displacement factor during node drag (`interaction/drag-tug.ts`). */
+  dragTug1Hop: number;
+  /** `--topology-v2-drag-tug-2hop` — 2-hop neighbor displacement factor during node drag (`interaction/drag-tug.ts`). */
+  dragTug2Hop: number;
 
   // 2.5 안전 영역 (fixed chrome inset, px — 라벨 컬링 + 카메라 fit)
   safeInsetLeft: number;
@@ -168,6 +177,8 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "cameraFlickMinSpeed", cssVar: "--topology-v2-camera-flick-min-speed", kind: "number" },
   { key: "cameraScaleMin", cssVar: "--topology-v2-camera-scale-min", kind: "number" },
   { key: "cameraScaleMax", cssVar: "--topology-v2-camera-scale-max", kind: "number" },
+  { key: "cameraMaxZoomRatio", cssVar: "--topology-v2-camera-max-zoom-ratio", kind: "number" },
+  { key: "cameraMinZoomRatio", cssVar: "--topology-v2-camera-min-zoom-ratio", kind: "number" },
   { key: "cameraFocusPanMargin", cssVar: "--topology-v2-camera-focus-pan-margin", kind: "number" },
   { key: "altitudeFarHighRatio", cssVar: "--topology-v2-altitude-far-high-ratio", kind: "number" },
   { key: "altitudeFarLowRatio", cssVar: "--topology-v2-altitude-far-low-ratio", kind: "number" },
@@ -184,6 +195,8 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "tipFadeMs", cssVar: "--topology-v2-tip-fade-ms", kind: "number" },
   { key: "edgePulseSpeed", cssVar: "--topology-v2-edge-pulse-speed", kind: "number" },
   { key: "edgePulseSpeedEgo", cssVar: "--topology-v2-edge-pulse-speed-ego", kind: "number" },
+  { key: "dragTug1Hop", cssVar: "--topology-v2-drag-tug-1hop", kind: "number" },
+  { key: "dragTug2Hop", cssVar: "--topology-v2-drag-tug-2hop", kind: "number" },
 
   { key: "safeInsetLeft", cssVar: "--topology-v2-safe-inset-left", kind: "number" },
   { key: "safeInsetRight", cssVar: "--topology-v2-safe-inset-right", kind: "number" },

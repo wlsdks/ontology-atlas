@@ -71,6 +71,42 @@ describe("createForceSimulation", () => {
     expect(pos.get("a")).not.toEqual({ x: 500, y: 500 });
   });
 
+  /**
+   * C1 B2 — radius-limited release settle. Audit: the post-drag settle burst
+   * (`NODE_RELEASE_HEAT_FRAMES`) used to relax the WHOLE graph via FA2, so
+   * every node (not just the dragged node's local cluster) could drift. The
+   * fix restricts each `tick()` to an explicit id set — any node NOT in that
+   * set is restored to its pre-tick position afterward (zero net displacement),
+   * matching the "only the affected set settles, far nodes stay put" contract.
+   */
+  it("restricts a tick to an explicit id set — nodes outside it are unchanged", () => {
+    const sim = createForceSimulation(seeds, edges);
+    const before = sim.positions();
+    // Only "a" and "root" (its neighbor) may move this tick; b/c/d must freeze.
+    sim.tick(15, new Set(["root", "a"]));
+    const after = sim.positions();
+    expect(after.get("b")).toEqual(before.get("b"));
+    expect(after.get("c")).toEqual(before.get("c"));
+    expect(after.get("d")).toEqual(before.get("d"));
+  });
+
+  it("still lets the restricted set itself move", () => {
+    const sim = createForceSimulation(seeds, edges);
+    sim.pin("a", 500, 500);
+    sim.tick(15, new Set(["root", "a"]));
+    const pos = sim.positions();
+    expect(pos.get("a")).toEqual({ x: 500, y: 500 });
+    expect(pos.get("root")).not.toEqual({ x: 0, y: 0 });
+  });
+
+  it("with no restriction (undefined/null), every node is free to move as before", () => {
+    const sim = createForceSimulation(seeds, edges);
+    sim.tick(30);
+    const pos = sim.positions();
+    const moved = Math.hypot(pos.get("a")!.x - 100, pos.get("a")!.y - 0);
+    expect(moved).toBeGreaterThan(0.01);
+  });
+
   it("survives coincident seed positions without emitting NaN", () => {
     const stacked: ForceSeedNode[] = [
       { id: "x", x: 0, y: 0 },
