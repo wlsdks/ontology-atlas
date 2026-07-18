@@ -3,41 +3,56 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>/ontology 허브 B3 — 허브가 곧 지도 (몰입형)</title>
+<title>/ontology 허브 B3 최종 — 지도 위 INDEX 계기판 (승인안)</title>
 <!--
-  B3 rationale note (honest implication): this variant makes the hub page and
-  /topology converge into one surface — the map IS the hub, the tree and the
-  datasheet are floating instruments over it. If B3 ships, /topology stops
-  being a separate destination and becomes this page's fullscreen state.
+  B3 FINAL (approved): the hub and /topology converge into ONE surface — the
+  real v2 map is the page, INDEX (left instrument) + component datasheet
+  (right) float over it. This file is the implementation spec mock:
+
+    frame 1 "기본 상태"  — INDEX(≤300px) + datasheet(288px, shipped anatomy)
+                           coexist over the ego-focused map. 1512×945.
+    frame 2 "접힌 상태"  — INDEX folds to a slim vertical edge tab; the map
+                           widens; the datasheet stays. Same selection.
+
+  Datasheet matches the SHIPPED TopologyV2DetailPanel (main f3d673b18):
+  direction groups 쓰는 곳/기대는 곳, per-row solid/dashed trace marks,
+  one engraved metric line, 다음 액션 복사 + slug footer — plus the approved
+  "전체 상세 →" opt-in link to the A1 full-detail view.
 -->
 <style>
-  /* Values copied from app/globals.css token families (standalone prototype). */
+  /* Values copied from app/globals.css token families (standalone prototype).
+     Sheet surfaces mirror --topology-v2-panel-*; marks mirror
+     --topology-v2-edge-contains-mark / --topology-v2-edge-depends-mark. */
   :root {
     --canvas-bg: #0a0a0d;
-    --panel: #17171c;
-    --border-soft: #2a2a30;
+    --panel: #17171c;                                /* --topology-v2-panel-surface */
+    --border-soft: #2a2a30;                          /* --topology-v2-panel-border */
     --border-strong: #45454d;
-    --divider: #23232a;
+    --divider: #23232a;                              /* --topology-v2-panel-divider */
     --text-primary: #ececf0;
     --text-secondary: #a3a3ac;
     --text-tertiary: #868690;
     --text-quaternary: #55555d;
     --indigo: #5e6ad2;
     --indigo-bright: #8890e0;
-    --numeral-face: #8c8c94;
-    --numeral-shadow: #08080a;
-    --metric-surface: rgba(255, 255, 255, 0.028);
-    --row-hover: rgba(255, 255, 255, 0.045);
-    --action-surface: rgba(255, 255, 255, 0.03);
+    --numeral-face: #8c8c94;                         /* --topology-v2-numeral-face */
+    --numeral-shadow: #08080a;                       /* --topology-v2-numeral-shadow */
+    --metric-surface: rgba(255, 255, 255, 0.028);    /* --topology-v2-panel-metric-surface */
+    --row-hover: rgba(255, 255, 255, 0.045);         /* --topology-v2-panel-row-hover */
+    --action-surface: rgba(255, 255, 255, 0.03);     /* --topology-v2-panel-action-surface */
     --machined-edge: rgba(255, 255, 255, 0.05);
+    --mark-contains: #4a4a54;                        /* --topology-v2-edge-contains-mark */
+    --mark-depends: #5c5c72;                         /* --topology-v2-edge-depends-mark */
+    --sheet-shadow: 0 16px 40px rgba(0, 0, 0, 0.42); /* --topology-v2-panel-shadow */
     --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   * { box-sizing: border-box; }
   html, body {
-    margin: 0; height: 100%; overflow: hidden;
+    margin: 0;
     background: var(--canvas-bg);
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+    min-width: 1512px;
   }
   .num {
     font-family: var(--mono); font-weight: 600;
@@ -45,30 +60,42 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* ---- the page IS the map --------------------------------------------- */
-  #stage { position: fixed; inset: 0; width: 100%; height: 100%; cursor: pointer; }
+  /* ---- two stacked viewport frames (1512 = 14" fullscreen width) -------- */
+  .framecap {
+    width: 1512px; padding: 14px 20px 9px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .framecap b { color: var(--text-tertiary); font-weight: 600; }
+  .frame {
+    position: relative; width: 1512px; height: 945px; overflow: hidden;
+    border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
+  }
+  .frame canvas.stage { position: absolute; inset: 0; }
 
   /* engraved census — carved straight into the canvas, top center */
   .census {
-    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
     font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.14em; font-weight: 600;
     color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
     white-space: nowrap; pointer-events: none;
   }
   .census .sep { color: var(--text-quaternary); margin: 0 5px; }
 
-  /* bottom-right legend — plain contract line, no chrome */
+  /* bottom-right micro legend — plain contract line, no chrome */
   .legend {
-    position: fixed; right: 20px; bottom: 16px;
+    position: absolute; right: 20px; bottom: 16px;
     display: flex; align-items: center; gap: 14px;
     font-size: 11px; color: var(--text-quaternary);
   }
   .legend b { color: var(--text-tertiary); font-weight: 560; }
   .legend .mono { font-family: var(--mono); }
 
-  /* ---- left floating instrument panel: the machined tree ---------------- */
+  .power { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--indigo); flex: none; }
+
+  /* ---- INDEX: the left machined instrument ------------------------------ */
   .instrument {
-    position: fixed; left: 18px; top: 18px; bottom: 18px; width: 316px;
+    position: absolute; left: 18px; top: 18px; bottom: 18px; width: 300px;
     background: var(--panel);
     border: 1px solid var(--border-soft);
     border-radius: 11px;
@@ -78,14 +105,40 @@
   }
   .instrument .phead {
     display: flex; align-items: center; gap: 8px;
-    padding: 0 2px 10px;
+    padding: 0 2px 8px;
   }
   .instrument .phead .plabel {
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em;
     text-transform: uppercase; color: var(--text-tertiary);
   }
-  .instrument .phead .power { margin-left: auto; }
-  .power { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--indigo); flex: none; }
+  .instrument .phead .fold {
+    margin-left: auto; appearance: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+    font: 500 9.5px/1 var(--mono); letter-spacing: 0.08em;
+    color: var(--text-quaternary);
+    background: transparent; border: 1px solid var(--border-soft);
+    border-radius: 5px; padding: 3px 7px;
+    transition: border-color 150ms ease, color 150ms ease;
+  }
+  .instrument .phead .fold:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+  /* header census row — engraved numerals + agent-sync dot, hairline below */
+  .instrument .pcensus {
+    display: flex; align-items: baseline; gap: 4px;
+    padding: 0 2px 10px; margin-bottom: 10px;
+    border-bottom: 1px solid var(--divider);
+    white-space: nowrap;
+  }
+  .instrument .pcensus .cnum {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+  .instrument .pcensus .clabel { font-size: 9.5px; color: var(--text-quaternary); }
+  .instrument .pcensus .csep { color: var(--text-quaternary); font-size: 10px; margin: 0 3px; }
+  .instrument .pcensus .sync {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; color: var(--text-tertiary); align-self: center;
+  }
   .search { position: relative; margin-bottom: 8px; }
   .search input {
     width: 100%; appearance: none;
@@ -106,7 +159,7 @@
   .tree::-webkit-scrollbar { width: 8px; }
   .tree::-webkit-scrollbar-thumb { background: var(--border-soft); border-radius: 4px; }
   .trow {
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 0 8px;
     padding: 5px 8px; border-radius: 5px;
     border: 1px solid transparent;
     font-size: 12.5px; color: var(--text-secondary);
@@ -131,66 +184,88 @@
     flex: none; font-size: 9.5px; color: var(--text-quaternary);
     border: 1px dashed var(--border-strong); border-radius: 4px; padding: 0 4px;
   }
+  /* domain sub-line: 역량/요소 subcount + proportional capacity meter */
+  .trow .sub {
+    flex-basis: 100%; display: flex; align-items: center; gap: 8px;
+    padding: 2px 0 1px 32px;
+  }
+  .trow .sub .kids {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.02em;
+    color: var(--text-quaternary); flex: none;
+  }
+  .trow .sub .meter {
+    flex: 1; max-width: 76px; height: 3px; border-radius: 2px;
+    background: var(--border-soft); overflow: hidden; position: relative;
+    margin-left: auto;
+  }
+  .trow .sub .meter i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: #55555d; }
+  .trow.focus-domain .sub .meter i, .trow.sel .sub .meter i { background: var(--indigo); }
   .depth-1 { margin-left: 18px; }
   .depth-2 { margin-left: 36px; }
   .group-kids.closed { display: none; }
-  .instrument .pfoot {
-    border-top: 1px solid var(--divider); padding-top: 9px; margin-top: 8px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .instrument .pfoot .payload {
-    min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font-family: var(--mono); font-size: 10px; color: var(--text-quaternary);
-  }
-  .instrument .pfoot button {
-    appearance: none; cursor: pointer; flex: none;
-    font: 500 10.5px/1 inherit; font-family: inherit;
-    color: var(--indigo-bright);
-    background: var(--action-surface);
-    border: 1px solid rgba(94, 106, 210, 0.5);
-    border-radius: 5px; padding: 5px 8px;
-    transition: background-color 150ms ease, border-color 150ms ease;
-  }
-  .instrument .pfoot button:hover { background: var(--row-hover); border-color: var(--indigo); }
 
-  /* ---- right floating compact datasheet (on selection) ------------------ */
+  /* collapsed-state INDEX edge tab (frame 2) */
+  .index-tab {
+    position: absolute; left: 0; top: 18px; width: 26px;
+    display: flex; flex-direction: column; align-items: center; gap: 9px;
+    padding: 10px 0 9px;
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-left: none;
+    border-radius: 0 7px 7px 0;
+    box-shadow: inset 0 1px 0 var(--machined-edge), 0 10px 26px rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+  }
+  .index-tab .vlabel {
+    writing-mode: vertical-rl;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--text-tertiary);
+  }
+  .index-tab .chev { color: var(--text-quaternary); font-size: 9px; }
+
+  /* ---- right datasheet — the SHIPPED TopologyV2DetailPanel anatomy ------ */
   .sheet {
-    position: fixed; right: 18px; top: 18px; width: 296px;
+    position: absolute; right: 18px; top: 18px; width: 288px; /* --topology-v2-panel-width */
     background: var(--panel);
     border: 1px solid var(--border-soft);
-    border-radius: 11px;
-    box-shadow: inset 0 1px 0 var(--machined-edge), 0 22px 54px rgba(0, 0, 0, 0.55);
-    padding: 12px;
-    display: flex; flex-direction: column; gap: 10px;
+    border-radius: 9px;                                        /* --topology-v2-panel-radius */
+    box-shadow: var(--sheet-shadow);
+    padding: 11px;                                             /* --topology-v2-panel-pad */
+    display: flex; flex-direction: column; gap: 10px;          /* --topology-v2-panel-gap */
   }
   .sheet .head { display: flex; align-items: flex-start; gap: 8px; }
   .sheet .head .titleblock { min-width: 0; flex: 1; }
   .sheet .head .titlerow { display: flex; align-items: center; gap: 6px; }
   .sheet h2 {
-    margin: 0; font-size: 13px; font-weight: 600; letter-spacing: -0.01em;
+    margin: 0; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .sheet .kindline { padding-left: 12px; margin-top: 2px; font-size: 10.5px; color: var(--text-tertiary); }
+  .sheet .kindline { padding-left: 12px; margin-top: 2px; font-size: 11px; color: var(--text-tertiary); }
   .sheet .kindline .q { color: var(--text-quaternary); }
+  .sheet .head .x {
+    appearance: none; cursor: pointer; flex: none;
+    margin: -2px -2px 0 0; padding: 3px;
+    background: transparent; border: 0; border-radius: 5px;
+    color: var(--text-tertiary); line-height: 0;
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+  .sheet .head .x:hover { background: var(--row-hover); color: var(--text-secondary); }
   .sheet .metric {
     border-radius: 5px; background: var(--metric-surface);
-    border: 1px solid var(--divider);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
     padding: 6px 8px;
-    font-family: var(--mono); font-size: 11px; color: #b6b6c0;
+    font-family: var(--mono); font-size: 11.5px; color: #b6b6c0; /* --topology-v2-panel-metric-text */
   }
   .sheet .metric b { font-weight: 600; color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow); }
   .sheet .group { display: flex; flex-direction: column; gap: 3px; }
   .sheet .ghead { display: flex; align-items: center; gap: 8px; }
   .sheet .ghead .glabel {
-    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--text-tertiary);
   }
   .sheet .ghead .num { font-size: 10px; }
   .sheet .row {
     display: flex; align-items: center; gap: 8px;
     padding: 4px 6px; border-radius: 5px;
-    font-size: 11.5px; color: var(--text-secondary); cursor: pointer;
+    font-size: 12px; color: var(--text-secondary); cursor: pointer;
   }
   .sheet .row:hover { background: var(--row-hover); }
   .sheet .row .t { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -200,7 +275,7 @@
   }
   .sheet .foot button {
     appearance: none; cursor: pointer; flex: none;
-    font: 500 10.5px/1 inherit; font-family: inherit;
+    font: 500 11px/1 inherit; font-family: inherit;
     color: var(--indigo-bright);
     background: var(--action-surface);
     border: 1px solid rgba(94, 106, 210, 0.5);
@@ -208,9 +283,11 @@
     transition: background-color 150ms ease, border-color 150ms ease;
   }
   .sheet .foot button:hover { background: var(--row-hover); border-color: var(--indigo); }
-  .sheet .foot a {
-    font-size: 11px; color: var(--text-tertiary); text-decoration: none; margin-left: auto;
+  .sheet .foot .slug {
+    min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-family: var(--mono); font-size: 10px; color: var(--text-quaternary);
   }
+  .sheet .foot a { flex: none; font-size: 11px; color: var(--text-tertiary); text-decoration: none; }
   .sheet .foot a:hover { color: var(--text-secondary); }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -218,69 +295,126 @@
 </head>
 <body>
 
-<canvas id="stage"></canvas>
+<div class="framecap"><b>기본 상태</b> — INDEX(좌 300px) + 데이터시트(우 288px)가 지도 위에 동시 존재 · 1512×945</div>
+<section class="frame" data-state="expanded">
+  <canvas class="stage" id="stage-main"></canvas>
 
-<div class="census">296 CONCEPTS<span class="sep">·</span>508 RELATIONS<span class="sep">·</span>6 DOMAINS</div>
+  <div class="census">296 CONCEPTS<span class="sep">·</span>508 RELATIONS<span class="sep">·</span>6 DOMAINS</div>
 
-<div class="legend">
-  <span><b>클릭</b> 포커스</span>
-  <span><b>Esc</b> 개요</span>
-  <span class="mono">contains ─ · depends ╌</span>
-</div>
-
-<!-- left floating instrument: the machined tree over the map -->
-<aside class="instrument" aria-label="개념 목차">
-  <div class="phead">
-    <span class="plabel">Index</span>
-    <span class="power" title="에이전트 동기화 12분 전"></span>
+  <div class="legend">
+    <span><b>클릭</b> 포커스</span>
+    <span><b>Esc</b> 개요</span>
+    <span class="mono">contains ─ · depends ╌</span>
   </div>
-  <div class="search">
-    <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><circle cx="5" cy="5" r="3.6" fill="none" stroke="#55555d" stroke-width="1.3"/><line x1="7.8" y1="7.8" x2="11" y2="11" stroke="#55555d" stroke-width="1.3" stroke-linecap="round"/></svg>
-    <input id="q" type="text" placeholder="개념 검색" autocomplete="off" />
-  </div>
-  <nav class="tree" id="tree"></nav>
-  <div class="pfoot">
-    <span class="payload">get_concept("capabilities/product-owner-operating-system")</span>
-    <button type="button">다음 액션 복사</button>
-  </div>
-</aside>
 
-<!-- right floating compact datasheet — appears on selection -->
-<aside class="sheet">
-  <div class="head">
-    <span class="glyph" data-glyph="capability" style="margin-top:1px"></span>
-    <div class="titleblock">
-      <div class="titlerow">
-        <span class="power"></span>
-        <h2>Product Owner Operating System</h2>
+  <!-- INDEX — the left machined instrument over the map -->
+  <aside class="instrument" aria-label="개념 목차">
+    <div class="phead">
+      <span class="plabel">Index</span>
+      <button class="fold" type="button" title="INDEX 접기">접기 <span aria-hidden="true">⌃</span></button>
+    </div>
+    <div class="pcensus">
+      <span class="cnum">296</span><span class="clabel">개념</span>
+      <span class="csep">·</span>
+      <span class="cnum">508</span><span class="clabel">관계</span>
+      <span class="csep">·</span>
+      <span class="cnum">6</span><span class="clabel">도메인</span>
+      <span class="sync"><span class="power" title="12분 전"></span>에이전트 동기화</span>
+    </div>
+    <div class="search">
+      <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><circle cx="5" cy="5" r="3.6" fill="none" stroke="#55555d" stroke-width="1.3"/><line x1="7.8" y1="7.8" x2="11" y2="11" stroke="#55555d" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <input id="q" type="text" placeholder="개념 검색" autocomplete="off" />
+    </div>
+    <nav class="tree" id="tree"></nav>
+  </aside>
+
+  <!-- datasheet — shipped TopologyV2DetailPanel + 전체 상세 opt-in -->
+  <aside class="sheet" aria-label="선택한 개념">
+    <div class="head">
+      <span class="glyph" data-glyph="capability" style="margin-top:1px"></span>
+      <div class="titleblock">
+        <div class="titlerow">
+          <span class="power"></span>
+          <h2>Product Owner Operating System</h2>
+        </div>
+        <div class="kindline">역량 <span class="q">· 최근 갱신</span></div>
       </div>
-      <div class="kindline">역량 <span class="q">· 전원 켜짐 · Onboarding &amp; UX</span></div>
+      <button class="x" type="button" aria-label="닫기">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><line x1="3.5" y1="3.5" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="10.5" y1="3.5" x2="3.5" y2="10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      </button>
     </div>
-  </div>
-  <div class="metric">쓰는 곳 <b>2</b> · 기대는 곳 <b>2</b> · 근거 <b>1</b></div>
-  <div class="group">
-    <div class="ghead">
-      <svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#4a4a54" stroke-width="1.4" stroke-linecap="round"/></svg>
-      <span class="glabel">담는 것</span><span class="num">1</span>
+    <div class="metric">쓰는 곳 <b>2</b> · 기대는 곳 <b>2</b> · 근거 <b>1</b></div>
+    <div class="group">
+      <div class="ghead"><span class="glabel">쓰는 곳</span><span class="num">2</span></div>
+      <div class="sheet-usedby"></div>
     </div>
-    <div id="sheet-contains"></div>
-  </div>
-  <div class="group">
-    <div class="ghead">
-      <svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#5c5c72" stroke-width="1.4" stroke-dasharray="3 3" stroke-linecap="round"/></svg>
-      <span class="glabel">서로 잇닿음</span><span class="num">2</span>
+    <div class="group">
+      <div class="ghead"><span class="glabel">기대는 곳</span><span class="num">2</span></div>
+      <div class="sheet-depends"></div>
     </div>
-    <div id="sheet-relates"></div>
+    <div class="foot">
+      <button type="button">다음 액션 복사</button>
+      <span class="slug">capabilities/product-owner-operating-system</span>
+      <a href="#">전체 상세 →</a>
+    </div>
+  </aside>
+</section>
+
+<div class="framecap"><b>접힌 상태</b> — 「접기 ⌃」로 INDEX 는 좌측 엣지의 세로 탭이 되고 지도가 넓어진다 · 데이터시트는 유지</div>
+<section class="frame" data-state="collapsed">
+  <canvas class="stage" id="stage-collapsed"></canvas>
+
+  <div class="census">296 CONCEPTS<span class="sep">·</span>508 RELATIONS<span class="sep">·</span>6 DOMAINS</div>
+
+  <div class="legend">
+    <span><b>클릭</b> 포커스</span>
+    <span><b>Esc</b> 개요</span>
+    <span class="mono">contains ─ · depends ╌</span>
   </div>
-  <div class="foot">
-    <button type="button">다음 액션 복사</button>
-    <a href="#">전체 상세 →</a>
+
+  <!-- collapsed INDEX: slim machined tab on the left edge -->
+  <div class="index-tab" role="button" aria-label="INDEX 펼치기" title="INDEX 펼치기">
+    <span class="power" title="에이전트 동기화 12분 전"></span>
+    <span class="vlabel">Index</span>
+    <span class="chev" aria-hidden="true">›</span>
   </div>
-</aside>
+
+  <!-- same datasheet, same selection — panel choreography keeps it -->
+  <aside class="sheet" aria-label="선택한 개념">
+    <div class="head">
+      <span class="glyph" data-glyph="capability" style="margin-top:1px"></span>
+      <div class="titleblock">
+        <div class="titlerow">
+          <span class="power"></span>
+          <h2>Product Owner Operating System</h2>
+        </div>
+        <div class="kindline">역량 <span class="q">· 최근 갱신</span></div>
+      </div>
+      <button class="x" type="button" aria-label="닫기">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><line x1="3.5" y1="3.5" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="10.5" y1="3.5" x2="3.5" y2="10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="metric">쓰는 곳 <b>2</b> · 기대는 곳 <b>2</b> · 근거 <b>1</b></div>
+    <div class="group">
+      <div class="ghead"><span class="glabel">쓰는 곳</span><span class="num">2</span></div>
+      <div class="sheet-usedby"></div>
+    </div>
+    <div class="group">
+      <div class="ghead"><span class="glabel">기대는 곳</span><span class="num">2</span></div>
+      <div class="sheet-depends"></div>
+    </div>
+    <div class="foot">
+      <button type="button">다음 액션 복사</button>
+      <span class="slug">capabilities/product-owner-operating-system</span>
+      <a href="#">전체 상세 →</a>
+    </div>
+  </aside>
+</section>
 
 <script>
 (function () {
   "use strict";
+  var FRAME_W = 1512, FRAME_H = 945;
   var GLYPH_COLORS = {
     project:    { fill: "#1c1c22", stroke: "#57575f" },
     domain:     { fill: "#191920", stroke: "#48484f" },
@@ -314,15 +448,16 @@
     el.innerHTML = glyphSVG(el.getAttribute("data-glyph"), parseInt(el.getAttribute("data-size") || "15", 10));
   });
 
-  // ---- tree (left instrument) ------------------------------------------
+  // ---- INDEX tree — domain rows carry 역량/요소 subcounts + capacity meter
+  var MAXN = 101;
   var TREE = {
     kind: "project", title: "ontology-atlas", n: 296, open: true,
     kids: [
-      { kind: "domain", title: "AI Agent Partner", n: 39, dimmed: true },
-      { kind: "domain", title: "Views", n: 85, dimmed: true },
-      { kind: "domain", title: "Vault — Local-First", n: 35, dimmed: true },
+      { kind: "domain", title: "AI Agent Partner", n: 39, caps: 6, els: 32, dimmed: true, fresh: true },
+      { kind: "domain", title: "Views", n: 85, caps: 9, els: 75, dimmed: true, fresh: true },
+      { kind: "domain", title: "Vault — Local-First", n: 35, caps: 5, els: 29, dimmed: true },
       {
-        kind: "domain", title: "Onboarding & UX", n: 101, open: true, fresh: true,
+        kind: "domain", title: "Onboarding & UX", n: 101, caps: 3, els: 15, open: true, fresh: true, focus: true,
         kids: [
           { kind: "capability", title: "Agent Config Onboarding", n: 4, fresh: true },
           { kind: "capability", title: "CLI Developer Entry", n: 6 },
@@ -336,8 +471,8 @@
           { kind: "element", title: "Gesture Hint" }
         ]
       },
-      { kind: "domain", title: "Ontology Core", n: 29, dimmed: true },
-      { kind: "domain", title: "Mode-Aware Adapters", n: 11, stale: true, dimmed: true }
+      { kind: "domain", title: "Ontology Core", n: 29, caps: 7, els: 21, dimmed: true },
+      { kind: "domain", title: "Mode-Aware Adapters", n: 11, caps: 2, els: 9, stale: true, dimmed: true }
     ]
   };
   var treeEl = document.getElementById("tree");
@@ -346,7 +481,14 @@
     var cls = "trow depth-" + depth +
       (node.open ? " open" : "") +
       (node.sel ? " sel" : "") +
+      (node.focus ? " focus-domain" : "") +
       (node.dimmed ? " dimmed" : "");
+    var sub = "";
+    if (node.kind === "domain") {
+      var w = Math.max(4, Math.round((node.n / MAXN) * 100));
+      sub = '<span class="sub"><span class="kids">역량 ' + node.caps + ' · 요소 ' + node.els + "</span>" +
+        '<span class="meter"><i style="width:' + w + '%"></i></span></span>';
+    }
     var html = '<div class="' + cls + '" data-title="' + node.title.toLowerCase() + '">' +
       '<span class="caret' + (hasKids ? "" : " leaf") + '">▶</span>' +
       glyphSVG(node.kind, 13) +
@@ -354,6 +496,7 @@
       (node.fresh ? '<span class="fresh-dot" title="최근 갱신"></span>' : "") +
       (node.stale ? '<span class="stale-mark">정체</span>' : "") +
       (node.n != null ? '<span class="num">' + node.n + "</span>" : "") +
+      sub +
       "</div>";
     if (node.kids && node.kids.length) {
       html += '<div class="group-kids' + (node.open ? "" : " closed") + '">' +
@@ -382,17 +525,26 @@
     if (v) treeEl.querySelectorAll(".group-kids").forEach(function (g) { g.classList.remove("closed"); });
   });
 
-  // datasheet rows
-  function sheetRow(item) {
-    return '<div class="row">' + glyphSVG(item.k, 12) + '<span class="t">' + item.t + "</span></div>";
+  // ---- datasheet rows — direction groups, per-row trace mark (shipped) ---
+  function traceSVG(containment) {
+    var stroke = containment ? "var(--mark-contains)" : "var(--mark-depends)";
+    var dash = containment ? "" : ' stroke-dasharray="3 3"';
+    return '<svg width="14" height="6" viewBox="0 0 14 6" aria-hidden="true" style="flex:none">' +
+      '<line x1="1" y1="3" x2="13" y2="3" stroke="' + stroke + '" stroke-width="1.4"' + dash + ' stroke-linecap="round"/></svg>';
   }
-  document.getElementById("sheet-contains").innerHTML = [
-    { k: "element", t: "Product Owner Operating System Doc" }
-  ].map(sheetRow).join("");
-  document.getElementById("sheet-relates").innerHTML = [
-    { k: "capability", t: "Agent Onboarding Brief" },
-    { k: "capability", t: "Topology Ontology Inspection" }
-  ].map(sheetRow).join("");
+  function sheetRow(item) {
+    return '<div class="row">' + traceSVG(item.c) + '<span class="t">' + item.t + "</span></div>";
+  }
+  var USED_BY = [
+    { t: "Onboarding & UX", c: true },
+    { t: "Topology Map", c: false }
+  ];
+  var DEPENDS_ON = [
+    { t: "Product Owner Operating System Doc", c: true },
+    { t: "Agent Brief", c: false }
+  ];
+  document.querySelectorAll(".sheet-usedby").forEach(function (el) { el.innerHTML = USED_BY.map(sheetRow).join(""); });
+  document.querySelectorAll(".sheet-depends").forEach(function (el) { el.innerHTML = DEPENDS_ON.map(sheetRow).join(""); });
 
   // ---------------------------------------------------------------------
   // full-bleed map — the v2 topology aesthetic as the page itself.
@@ -433,12 +585,14 @@
     { id: "e7", capability: "agent-config-onboarding" },
     { id: "e8", capability: "agent-config-onboarding" },
     { id: "e9", capability: "cli-developer-entry" },
-    { id: "e10", capability: "po-operating-system" },
+    { id: "e10", capability: "po-operating-system", title: "PO OS Doc" },
     { id: "e11", capability: "mode-detection" }
   ];
+  // datasheet ↔ map honesty: every datasheet row exists as a drawn edge.
   var DEPENDS = [
     ["agent-brief", "mcp-server"],
     ["topology-map-canvas", "mcp-server"],
+    ["topology-map-canvas", "po-operating-system"],
     ["agent-config-onboarding", "mcp-server"],
     ["cli-developer-entry", "frontmatter-schema"],
     ["po-operating-system", "agent-brief"],
@@ -456,7 +610,7 @@
   addNode("root", "project", { title: "ontology-atlas", r: 26 });
   domains.forEach(function (d) { addNode(d.id, "domain", { title: d.title, count: d.count, focus: d.focus, stale: d.stale, r: 17 }); });
   capabilities.forEach(function (c) { addNode(c.id, "capability", { title: c.title, domain: c.domain, r: 9.5 }); });
-  elements.forEach(function (e) { addNode(e.id, "element", { capability: e.capability, r: 5.5 }); });
+  elements.forEach(function (e) { addNode(e.id, "element", { capability: e.capability, title: e.title, r: 5.5 }); });
 
   (function layout() {
     var TAU = Math.PI * 2;
@@ -496,9 +650,10 @@
       elements.forEach(function (e) { if (e.capability === c.id) FOCUS[e.id] = 1; });
     }
   });
-
-  var canvas = document.getElementById("stage");
-  var ctx = canvas.getContext("2d");
+  // ego neighbors of the SELECTED node outside the focus domain — their labels
+  // stay protected (shipped center/neighbor label guard), so the bright
+  // depends edges always have named endpoints.
+  var NEIGHBOR_LABELS = ["agent-brief", "topology-map-canvas"];
 
   function hexToRgb(hex) {
     var v = parseInt(hex.slice(1), 16);
@@ -511,33 +666,43 @@
       Math.round(a[1] + (b[1] - a[1]) * t) + "," +
       Math.round(a[2] + (b[2] - a[2]) * t) + ")";
   }
-  function roundedPolygon(pts, rad) {
-    var n = pts.length;
-    ctx.beginPath();
-    for (var i = 0; i < n; i++) {
-      var p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n];
-      var v1x = p1.x - p0.x, v1y = p1.y - p0.y, l1 = Math.hypot(v1x, v1y) || 1;
-      var v2x = p2.x - p1.x, v2y = p2.y - p1.y, l2 = Math.hypot(v2x, v2y) || 1;
-      var r = Math.min(rad, l1 * 0.45, l2 * 0.45);
-      var sx = p1.x - (v1x / l1) * r, sy = p1.y - (v1y / l1) * r;
-      var ex = p1.x + (v2x / l2) * r, ey = p1.y + (v2y / l2) * r;
-      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
-      ctx.quadraticCurveTo(p1.x, p1.y, ex, ey);
-    }
-    ctx.closePath();
-  }
-  function hexShape(cx, cy, r) {
-    var pts = [];
-    for (var i = 0; i < 6; i++) {
-      var a = (i * 60 - 90) * Math.PI / 180;
-      pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
-    }
-    return pts;
-  }
 
-  // fine blueprint grid, tiled once — same recipe as the approved b2plus canvas
-  var gridPattern = null;
-  function buildGrid() {
+  function renderMap(canvasId, leftPad, rightPad) {
+    var canvas = document.getElementById(canvasId);
+    var ctx = canvas.getContext("2d");
+    var W = FRAME_W, H = FRAME_H;
+    var DPR = window.devicePixelRatio || 1;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    function roundedPolygon(pts, rad) {
+      var n = pts.length;
+      ctx.beginPath();
+      for (var i = 0; i < n; i++) {
+        var p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n];
+        var v1x = p1.x - p0.x, v1y = p1.y - p0.y, l1 = Math.hypot(v1x, v1y) || 1;
+        var v2x = p2.x - p1.x, v2y = p2.y - p1.y, l2 = Math.hypot(v2x, v2y) || 1;
+        var r = Math.min(rad, l1 * 0.45, l2 * 0.45);
+        var sx = p1.x - (v1x / l1) * r, sy = p1.y - (v1y / l1) * r;
+        var ex = p1.x + (v2x / l2) * r, ey = p1.y + (v2y / l2) * r;
+        if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+        ctx.quadraticCurveTo(p1.x, p1.y, ex, ey);
+      }
+      ctx.closePath();
+    }
+    function hexShape(cx, cy, r) {
+      var pts = [];
+      for (var i = 0; i < 6; i++) {
+        var a = (i * 60 - 90) * Math.PI / 180;
+        pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+      }
+      return pts;
+    }
+
+    // fine blueprint grid — same recipe as the approved b2plus canvas
     var minor = 24, size = minor * 5;
     var tile = document.createElement("canvas");
     tile.width = size; tile.height = size;
@@ -546,22 +711,12 @@
     g.fillRect(0, 0, size, size);
     g.strokeStyle = "#0e0e13";
     g.lineWidth = 1;
-    for (var x = minor; x < size; x += minor) { g.beginPath(); g.moveTo(x + 0.5, 0); g.lineTo(x + 0.5, size); g.stroke(); }
-    for (var y = minor; y < size; y += minor) { g.beginPath(); g.moveTo(0, y + 0.5); g.lineTo(size, y + 0.5); g.stroke(); }
+    for (var gx = minor; gx < size; gx += minor) { g.beginPath(); g.moveTo(gx + 0.5, 0); g.lineTo(gx + 0.5, size); g.stroke(); }
+    for (var gy = minor; gy < size; gy += minor) { g.beginPath(); g.moveTo(0, gy + 0.5); g.lineTo(size, gy + 0.5); g.stroke(); }
     g.strokeStyle = "#121218";
     g.beginPath(); g.moveTo(0.5, 0); g.lineTo(0.5, size); g.stroke();
     g.beginPath(); g.moveTo(0, 0.5); g.lineTo(size, 0.5); g.stroke();
-    gridPattern = ctx.createPattern(tile, "repeat");
-  }
-
-  function render() {
-    var W = window.innerWidth, H = window.innerHeight;
-    var DPR = window.devicePixelRatio || 1;
-    canvas.width = Math.round(W * DPR);
-    canvas.height = Math.round(H * DPR);
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    if (!gridPattern) buildGrid();
-    ctx.fillStyle = gridPattern || "#0a0a0d";
+    ctx.fillStyle = ctx.createPattern(tile, "repeat");
     ctx.fillRect(0, 0, W, H);
 
     // static corner vignette — darkens edges, never animated (b2plus recipe)
@@ -571,10 +726,9 @@
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, W, H);
 
-    // world→screen: keep clear of the left instrument (334px) + right sheet (314px)
-    var leftPad = 334 + 30, rightPad = 314 + 30;
+    // world→screen: keep clear of the floating instruments
     var availW = W - leftPad - rightPad;
-    var scale = Math.min(availW / 760, (H - 110) / 760);
+    var scale = Math.min(availW / 800, (H - 120) / 800);
     var cx = leftPad + availW / 2, cy = H / 2 + 8;
     function S(n) { return { x: cx + n.x * scale, y: cy + n.y * scale }; }
 
@@ -644,9 +798,9 @@
 
       // engraved count numerals on domains — data marks, dim face outside ego
       if (n.kind === "domain" && n.count != null) {
-        var size = Math.max(9, 11 * scale * 1.3);
+        var fsize = Math.max(9, 11 * scale * 1.3);
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.font = "600 " + size + "px ui-monospace, SFMono-Regular, Menlo, monospace";
+        ctx.font = "600 " + fsize + "px ui-monospace, SFMono-Regular, Menlo, monospace";
         ctx.fillStyle = "#08080a";
         ctx.fillText(String(n.count), p.x, p.y + 1);
         ctx.fillStyle = focused ? "#8c8c94" : "#42424a";
@@ -654,11 +808,12 @@
       }
     });
 
-    // labels — all domains + root + focused-domain capabilities
-    function label(n, text, colr, size, dy, weight) {
+    // labels — shipped contract: domains + root + focused-domain children +
+    // the selected node's ego neighbors (bright-edge endpoints stay named)
+    function label(n, text, colr, fsize, dy, weight) {
       var p = S(n);
       ctx.textAlign = "center"; ctx.textBaseline = "top";
-      ctx.font = (weight || 600) + " " + size + "px -apple-system, 'SF Pro Text', sans-serif";
+      ctx.font = (weight || 600) + " " + fsize + "px -apple-system, 'SF Pro Text', sans-serif";
       ctx.fillStyle = colr;
       ctx.fillText(text, p.x, p.y + dy);
     }
@@ -671,17 +826,34 @@
         n.r * scale * 1.55 + 8);
     });
     capabilities.forEach(function (cSrc) {
-      if (cSrc.domain !== FOCUS_DOMAIN) return;
       var n = nodes[cSrc.id];
-      label(n, cSrc.title,
-        cSrc.id === SELECTED ? "#b8b8c1" : "#84848e",
-        10.5, n.r * scale * 1.55 + 6, 500);
+      if (cSrc.domain === FOCUS_DOMAIN) {
+        label(n, cSrc.title,
+          cSrc.id === SELECTED ? "#b8b8c1" : "#84848c",
+          10.5, n.r * scale * 1.55 + 6, 500);
+      } else if (NEIGHBOR_LABELS.indexOf(cSrc.id) !== -1) {
+        label(n, cSrc.title, "#6a6a73", 10, n.r * scale * 1.55 + 6, 500);
+      }
+    });
+    elements.forEach(function (eSrc) {
+      var n = nodes[eSrc.id];
+      if (n.title && eSrc.capability === SELECTED) {
+        // above the node — the sibling capability label already owns the
+        // space below, so the two never collide at 14" scale
+        var p = S(n);
+        ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+        ctx.font = "500 9.5px -apple-system, 'SF Pro Text', sans-serif";
+        ctx.fillStyle = "#6a6a73";
+        ctx.fillText(n.title, p.x, p.y - n.r * scale * 1.55 - 5);
+      }
     });
     label(nodes.root, "ontology-atlas", "#77777f", 11.5, nodes.root.r * scale * 1.55 + 7);
   }
 
-  render();
-  window.addEventListener("resize", render);
+  // frame 1: INDEX 18+300 + gap 28 | sheet 18+288 + gap 28
+  renderMap("stage-main", 346, 334);
+  // frame 2: collapsed tab 26 + gap 46 | same sheet side
+  renderMap("stage-collapsed", 72, 334);
 })();
 </script>
 </body>
