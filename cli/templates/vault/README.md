@@ -142,7 +142,7 @@ tools to read/write this vault:
   find_backlinks / find_neighbors / find_path / list_kinds / find_orphans /
   query_concepts / compile_ontology / query_ontology / validate_vault /
   analyze_repo_structure / infer_imports / index_project
-- **write 8**: add_concept / add_concepts / add_relation / add_relations /
+- **write 9**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
   patch_concept / delete_concept / rename_concept / merge_concepts
 
 Details: https://github.com/wlsdks/ontology-atlas/tree/main/mcp
