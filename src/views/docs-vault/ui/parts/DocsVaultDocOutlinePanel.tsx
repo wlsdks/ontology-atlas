@@ -1,14 +1,18 @@
 import { Check, ChevronDown, Link2, Pencil, Printer, Star, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { VaultBacklinkEntry, VaultDoc } from "@/entities/docs-vault";
-import { DocsVaultBacklinks } from "@/widgets/docs-vault/ui/DocsVaultBacklinks";
+import type { VaultDoc } from "@/entities/docs-vault";
 import { Tooltip } from "@/shared/ui";
 
 /**
- * DocsVaultPage 의 우측 outline + 공유 + 파일 관리 + backlinks 패널.
+ * DocsVaultPage 의 우측 outline + 공유 + 파일 관리 패널.
  *
  * 편집 중 (`editing=true`) 일 때는 caller 가 마운트 안 함 — Editor 가 자체 툴바
  * 사용. 따라서 본 컴포넌트는 view-only mode 전제.
+ *
+ * docs-vault-final 스킨부터 backlinks 는 이 패널이 아니라 pane 하단의 항상
+ * 보이는 backlinks 스트립이 단일 진실원 (DocsVaultPage 의 backlinks strip).
+ * 이 패널에 중복 렌더하지 않는다 — "frontmatter 가 곧 그래프" 를 한 곳에서만
+ * 증명해야 스킨이 두 소스로 갈라지지 않는다.
  */
 
 export interface OutlineHeading {
@@ -27,14 +31,11 @@ export interface DocsVaultDocOutlinePanelProps {
   outlineHeadings: OutlineHeading[];
   activeOutlineHeading: OutlineHeading | undefined;
   activeHeadingSlug: string | null;
-  backlinksDetail: VaultBacklinkEntry[];
-  docsBySlug: Map<string, VaultDoc>;
   onTogglePin: (slug: string) => void;
   onStartEditing: () => void;
   onClose: () => void;
   onCopyUrl: (slug: string) => void;
   onDeleteCurrent: () => void | Promise<void>;
-  onNavigate: (slug: string) => void;
   onHeadingClick: (slug: string) => void;
 }
 
@@ -46,14 +47,11 @@ export function DocsVaultDocOutlinePanel({
   outlineHeadings,
   activeOutlineHeading,
   activeHeadingSlug,
-  backlinksDetail,
-  docsBySlug,
   onTogglePin,
   onStartEditing,
   onClose,
   onCopyUrl,
   onDeleteCurrent,
-  onNavigate,
   onHeadingClick,
 }: DocsVaultDocOutlinePanelProps) {
   const t = useTranslations("vaultWidgets.parts.outline");
@@ -248,28 +246,6 @@ export function DocsVaultDocOutlinePanel({
                 {t("deleteAction")}
               </button>
             </Tooltip>
-          </div>
-        </details>
-      ) : null}
-      {backlinksDetail.length > 0 ? (
-        <details className="group py-3">
-          <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em]">
-              {t("referencesHeader", { count: backlinksDetail.length })}
-            </span>
-            <ChevronDown
-              size={12}
-              aria-hidden
-              className="transition-transform group-open:rotate-180"
-            />
-          </summary>
-          <div className="mt-3">
-            <DocsVaultBacklinks
-              entries={backlinksDetail}
-              docsBySlug={docsBySlug}
-              onNavigate={onNavigate}
-              hideHeading
-            />
           </div>
         </details>
       ) : null}

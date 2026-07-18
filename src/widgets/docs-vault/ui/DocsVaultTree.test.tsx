@@ -119,4 +119,44 @@ describe('DocsVaultTree', () => {
     expect(screen.queryByRole('button', { name: /archive/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Old Note' })).not.toBeInTheDocument();
   });
+
+  it('engraves the descendant doc count on directory rows', () => {
+    renderTree({ selectedSlug: 'README' });
+
+    // "archive/" contains exactly one doc (old-note).
+    expect(screen.getByRole('button', { name: /archive/i })).toHaveTextContent('1');
+  });
+
+  it('renders a kind glyph for docs with an ontology frontmatter kind', () => {
+    const docsBySlug = new Map([
+      [
+        'README',
+        {
+          slug: 'README',
+          path: 'README.md',
+          title: 'README',
+          tags: [],
+          frontmatter: { kind: 'capability' },
+          headings: [],
+          excerpt: '',
+          wordCount: 0,
+          updatedAt: '',
+          linksOut: [],
+        },
+      ],
+    ]);
+    rtlRender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocsVaultTree
+          tree={tree}
+          selectedSlug="README"
+          onSelect={vi.fn()}
+          docsBySlug={docsBySlug as never}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    const readmeButton = screen.getByRole('button', { name: 'README' });
+    expect(readmeButton.querySelector('[data-kind-glyph="capability"]')).not.toBeNull();
+  });
 });

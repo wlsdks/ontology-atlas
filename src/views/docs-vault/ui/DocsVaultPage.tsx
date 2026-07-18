@@ -15,7 +15,6 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft,
   Bot,
   Check,
   ChevronDown,
@@ -78,6 +77,7 @@ import {
   vaultManifest,
   type VaultManifest,
 } from '@/entities/docs-vault';
+import { DocsVaultBacklinks } from '@/widgets/docs-vault/ui/DocsVaultBacklinks';
 import { DocsVaultEditor } from '@/widgets/docs-vault/ui/DocsVaultEditor';
 import { DocsVaultProjectDepsBar } from '@/widgets/docs-vault/ui/DocsVaultProjectDepsBar';
 import { DocsVaultUnifiedPalette } from '@/widgets/docs-vault/ui/DocsVaultUnifiedPalette';
@@ -109,10 +109,19 @@ const subscribeDesktopRuntime = () => () => undefined;
 const readDesktopRuntime = () => isTauriVaultRuntime();
 const readServerDesktopRuntime = () => false;
 
+/** slug "capabilities/foo" → { dir: "capabilities/", name: "foo" }. 루트
+ *  slug 는 dir "". ehead 의 mono 파일명 렌더 전용 pure helper. */
+function splitVaultSlugPath(slug: string): { dir: string; name: string } {
+  const parts = slug.split('/');
+  const name = parts.pop() ?? slug;
+  return { dir: parts.length > 0 ? `${parts.join('/')}/` : '', name };
+}
+
 // view 파싱 / persistence helpers — 다른 도메인의 view 와 collision 회피용
 // `DocsVault*` 네임스페이스. 본 파일 안에선 짧은 별칭으로 alias.
 import { DocMetaBar } from "./parts/DocMetaBar";
 import { DesktopVaultWelcome } from "./parts/DesktopVaultWelcome";
+import { DocFrontmatterBlock } from "./parts/DocFrontmatterBlock";
 import { DocsSidebarBody } from "./parts/DocsSidebarBody";
 import { DocsVaultDocOutlinePanel } from "./parts/DocsVaultDocOutlinePanel";
 import { EmptyState } from "./parts/EmptyState";
@@ -1603,35 +1612,91 @@ function DocsVaultContent() {
     />
   );
 
+  // docs-vault-final skin — engraved vault census pill (crumbs row + phead).
+  // path: local 이면 실제 root path, 아니면 dogfood 경로 (샘플 문서가 사실
+  // 이 repo 의 docs/ontology 이므로 정직한 표시).
+  const vaultPillPath =
+    isLocalSourceLoaded && localVaultRootPath
+      ? localVaultRootPath
+      : isLocalSourceLoaded && localVault.handle
+        ? localVault.handle.name
+        : DOGFOOD_VAULT_PATH;
+  const vaultTopLevelFolderCount = manifest.tree.children?.filter(
+    (child) => child.type === 'dir',
+  ).length ?? 0;
+  const handleVaultPillSwap = useCallback(() => {
+    if (source === 'local') {
+      setAdvancedOpen((open) => !open);
+    } else if (isDesktopRuntime) {
+      handleSourceChange('local');
+    } else {
+      setAdvancedOpen((open) => !open);
+    }
+  }, [source, isDesktopRuntime, handleSourceChange, setAdvancedOpen]);
+
   return (
     <div className="topology-ui-scale relative flex h-screen flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+      {/* Crumbs row — engraved vault census (docs-vault-final spec §상단 헤더). */}
+      <nav
+        aria-label={t('header.breadcrumbAriaLabel')}
+        className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-text-tertiary)] md:px-4"
+      >
+        <Link
+          href={workspaceHref}
+          aria-label={t('header.backToWorkspaceAriaLabel')}
+          className="transition-colors hover:text-[color:var(--color-text-primary)]"
+        >
+          {t('header.crumbBack')}
+        </Link>
+        <span className="text-[color:var(--color-text-quaternary)]" aria-hidden>
+          /
+        </span>
+        <span className="truncate text-[color:var(--color-text-secondary)]">{t('header.title')}</span>
+        <span
+          data-token="engraved-numeral"
+          className="ml-auto hidden flex-none font-mono text-[11px] tracking-[0.06em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] sm:inline"
+        >
+          {t('header.censusSummary', {
+            concepts: ontologyDerivation.nodes.length,
+            relations: ontologyDerivation.edges.length,
+          })}
+        </span>
+      </nav>
       {/* 상단 바 — workspace 복귀 + 타이틀 + 소스 토글 + 모드 토글 */}
       <header className="flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 md:px-4">
-        <div className="flex w-full min-w-0 flex-none flex-nowrap items-center gap-2 md:gap-3 lg:flex-1">
+        <div className="flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:gap-3 lg:flex-1">
           <button
             type="button"
             onClick={() => setSourceTreeOpen(true)}
-            className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
             aria-label={t('header.openTreeAriaLabel')}
             title={t('header.openTreeTitle')}
           >
             <Menu size={14} aria-hidden />
             <span className="hidden sm:inline">{t('header.openTreeTitle')}</span>
           </button>
-          <Link
-            href={workspaceHref}
-            aria-label={t('header.backToWorkspaceAriaLabel')}
-            className="inline-flex h-8 w-8 flex-none items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-divider)] text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] sm:w-auto sm:px-3"
-          >
-            <ArrowLeft size={12} aria-hidden />
-            <span className="hidden sm:inline">{t('header.back')}</span>
-          </Link>
           <div className="flex min-w-0 flex-none items-baseline gap-2">
             <h1 className="whitespace-nowrap text-[14px] font-semibold">{t('header.title')}</h1>
-            <span className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] min-[420px]:inline">
+          </div>
+          <span className="inline-flex min-w-0 flex-none items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.028)] px-2.5 py-1 font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+            <span className="hidden max-w-[220px] truncate text-[color:var(--color-text-tertiary)] md:inline">
+              {vaultPillPath}
+            </span>
+            <span className="text-[color:var(--color-text-secondary)]">
               {t('header.docCount', { count: manifest.docs.length })}
             </span>
-          </div>
+            <span className="hidden text-[color:var(--color-text-secondary)] sm:inline">
+              {t('header.vaultPillFolders', { count: vaultTopLevelFolderCount })}
+            </span>
+            <button
+              type="button"
+              onClick={handleVaultPillSwap}
+              aria-label={t('header.vaultPillSwapAriaLabel')}
+              className="text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            >
+              {t('header.vaultPillSwap')}
+            </button>
+          </span>
           {isLocalSourceLoaded ? (
             <span className="hidden items-center gap-1 rounded-sm border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(200,210,255,0.86)] min-[460px]:inline-flex">
               <HardDrive size={10} aria-hidden />
@@ -1917,6 +1982,16 @@ function DocsVaultContent() {
           </div>
         ) : null}
 
+        {/* Persistent left pane — 280px machined 파일 트리 (docs-vault-final
+            2-pane spec). lg+ 에서 항상 보임; 그 아래 폭에서는 위 drawer 로
+            대체 (menu 버튼이 lg:hidden). */}
+        <aside
+          aria-label={t('mobileDrawer.title')}
+          className="hidden w-[280px] flex-none flex-col overflow-hidden border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] lg:flex"
+        >
+          {sidebarBody}
+        </aside>
+
         {/* 본문 + 우측 사이드 */}
         <main id="main" className="flex min-w-0 flex-1 flex-col overflow-hidden">
           {view === 'folder-topology' ? (
@@ -1988,110 +2063,182 @@ function DocsVaultContent() {
               )}
             </div>
           ) : selectedDoc ? (
-            <div className="flex min-h-0 flex-1">
-              <div
-                ref={articleScrollRef}
-                className="min-w-0 flex-1 overflow-auto"
-              >
-                {editing && canEditCurrent && editResolver ? (
-                  <DocsVaultEditor
-                    key={`edit:${source}:${selectedDoc.slug}`}
-                    doc={selectedDoc}
-                    getDocContent={editResolver}
-                    onSave={(slug, content) =>
-                      // conflict 를 swallow 하지 않고 re-throw — 그래야 에디터가
-                      // 버퍼를 dirty 로 유지해 다음 poll 의 clobber 를 막는다.
-                      // (구버전은 여기서 return 으로 삼켜 phantom-clean → 데이터 손실)
-                      persistEditorSave(
-                        localVault.saveDoc,
-                        { slug, content, expectedMtime: selectedDoc.mtime },
-                        () => toast.show(t('dialog.vaultConflict'), 'error'),
-                      )
-                    }
-                    onClose={() => setEditing(false)}
-                    allDocs={manifest.docs}
-                  />
-                ) : (
-                  <>
-                    <DocMetaBar doc={selectedDoc} />
-                    {selectedDoc.slug.startsWith('projects/') &&
-                    source === 'local' ? (
-                      <DocsVaultProjectDepsBar
-                        currentSlug={selectedDoc.slug.replace(
-                          /^projects\//,
-                          '',
-                        )}
-                        build={folderTopo}
-                        canEdit={canEditCurrent}
-                        onChange={async (next) => {
-                          try {
-                            await localVault.updateFrontmatter(
-                              selectedDoc.slug,
-                              { dependencies: next },
-                              { expectedMtime: selectedDoc.mtime },
-                            );
-                          } catch (err) {
-                            if (err instanceof VaultConflictError) {
-                              toast.show(t('dialog.vaultConflict'), 'error');
-                              return;
-                            }
-                            throw err;
-                          }
-                          // manifest refresh 후 folderTopo 도 갱신
-                          await buildFolderTopology();
-                        }}
-                        onNavigateProject={(slug) =>
-                          handleSelect(`projects/${slug}`)
-                        }
-                      />
-                    ) : null}
-                    <DocsVaultViewer
-                      key={`${source}:${selectedDoc.slug}`}
-                      doc={selectedDoc}
-                      vaultSlugs={vaultSlugs}
-                      onNavigate={handleSelect}
-                      getDocContent={getDocContent}
-                      getDocHref={getDocHref}
-                      getProjectHref={getProjectHref}
-                      highlightQuery={highlightQuery}
-                      resolveImage={resolveImage}
-                    />
-                  </>
-                )}
+            <div className="flex min-h-0 flex-1 flex-col">
+              {/* ehead — dir/file mono + preview/edit seg + sync status
+                  (docs-vault-final spec §우 에디터/프리뷰 헤더). */}
+              <div className="flex flex-none items-center gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-2.5">
+                <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-[color:var(--color-text-secondary)]">
+                  <span className="text-[color:var(--color-text-quaternary)]">
+                    {splitVaultSlugPath(selectedDoc.slug).dir}
+                  </span>
+                  {splitVaultSlugPath(selectedDoc.slug).name}.md
+                </span>
+                {canEditCurrent ? (
+                  <div
+                    role="tablist"
+                    aria-label={`${t('editorHeader.previewTab')} / ${t('editorHeader.editTab')}`}
+                    className="inline-flex flex-none items-stretch gap-0.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-0.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]"
+                  >
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={!editing}
+                      onClick={() => setEditing(false)}
+                      className={`rounded-sm px-2.5 py-1 font-mono text-[10.5px] transition-colors ${
+                        !editing
+                          ? 'border border-[color:rgba(94,106,210,0.55)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]'
+                          : 'border border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]'
+                      }`}
+                    >
+                      {t('editorHeader.previewTab')}
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={editing}
+                      onClick={() => setEditing(true)}
+                      className={`rounded-sm px-2.5 py-1 font-mono text-[10.5px] transition-colors ${
+                        editing
+                          ? 'border border-[color:rgba(94,106,210,0.55)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]'
+                          : 'border border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]'
+                      }`}
+                    >
+                      {t('editorHeader.editTab')}
+                    </button>
+                  </div>
+                ) : null}
+                <span className="flex-none font-mono text-[10.5px] text-[color:var(--color-text-quaternary)]">
+                  <span className="power mr-1.5 inline-block h-[5px] w-[5px] rounded-full bg-[color:var(--color-indigo-accent)] align-middle" aria-hidden />
+                  {isLocalSourceLoaded ? t('editorHeader.localSynced') : t('editorHeader.readOnlySample')}
+                </span>
               </div>
-              {/* 우측 사이드: heading outline + backlinks. 기본은 닫아 본문을
-                  우선하고, 필요할 때만 헤더의 인스펙터 버튼으로 연다. */}
-              {!editing && docInspectorOpen ? (
-                <DocsVaultDocOutlinePanel
-                  selectedDoc={selectedDoc}
-                  pinnedSet={pinnedSet}
-                  copiedSlug={copiedSlug}
-                  canEditCurrent={canEditCurrent}
-                  outlineHeadings={outlineHeadings}
-                  activeOutlineHeading={activeOutlineHeading}
-                  activeHeadingSlug={activeHeadingSlug}
-                  backlinksDetail={backlinksDetail}
-                  docsBySlug={docsBySlug}
-                  onTogglePin={handleTogglePin}
-                  onStartEditing={() => setEditing(true)}
-                  onClose={() => setDocInspectorOpen(false)}
-                  onCopyUrl={handleCopyUrl}
-                  onDeleteCurrent={handleDeleteCurrent}
-                  onNavigate={handleSelect}
-                  onHeadingClick={(slug) => {
-                    document
-                      .getElementById(slug)
-                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    setActiveHeadingSlug(slug);
-                    if (typeof window !== "undefined") {
-                      window.history.replaceState(
-                        {},
-                        "",
-                        `${window.location.pathname}${window.location.search}#${slug}`,
-                      );
-                    }
-                  }}
-                />
+
+              <div className="flex min-h-0 flex-1">
+                <div
+                  ref={articleScrollRef}
+                  className="min-w-0 flex-1 overflow-auto"
+                >
+                  {editing && canEditCurrent && editResolver ? (
+                    <DocsVaultEditor
+                      key={`edit:${source}:${selectedDoc.slug}`}
+                      doc={selectedDoc}
+                      getDocContent={editResolver}
+                      onSave={(slug, content) =>
+                        // conflict 를 swallow 하지 않고 re-throw — 그래야 에디터가
+                        // 버퍼를 dirty 로 유지해 다음 poll 의 clobber 를 막는다.
+                        // (구버전은 여기서 return 으로 삼켜 phantom-clean → 데이터 손실)
+                        persistEditorSave(
+                          localVault.saveDoc,
+                          { slug, content, expectedMtime: selectedDoc.mtime },
+                          () => toast.show(t('dialog.vaultConflict'), 'error'),
+                        )
+                      }
+                      onClose={() => setEditing(false)}
+                      allDocs={manifest.docs}
+                    />
+                  ) : (
+                    <>
+                      {typeof selectedDoc.frontmatter?.kind === 'string' &&
+                      selectedDoc.frontmatter.kind ? (
+                        <DocFrontmatterBlock doc={selectedDoc} />
+                      ) : null}
+                      <DocMetaBar doc={selectedDoc} />
+                      {selectedDoc.slug.startsWith('projects/') &&
+                      source === 'local' ? (
+                        <DocsVaultProjectDepsBar
+                          currentSlug={selectedDoc.slug.replace(
+                            /^projects\//,
+                            '',
+                          )}
+                          build={folderTopo}
+                          canEdit={canEditCurrent}
+                          onChange={async (next) => {
+                            try {
+                              await localVault.updateFrontmatter(
+                                selectedDoc.slug,
+                                { dependencies: next },
+                                { expectedMtime: selectedDoc.mtime },
+                              );
+                            } catch (err) {
+                              if (err instanceof VaultConflictError) {
+                                toast.show(t('dialog.vaultConflict'), 'error');
+                                return;
+                              }
+                              throw err;
+                            }
+                            // manifest refresh 후 folderTopo 도 갱신
+                            await buildFolderTopology();
+                          }}
+                          onNavigateProject={(slug) =>
+                            handleSelect(`projects/${slug}`)
+                          }
+                        />
+                      ) : null}
+                      <DocsVaultViewer
+                        key={`${source}:${selectedDoc.slug}`}
+                        doc={selectedDoc}
+                        vaultSlugs={vaultSlugs}
+                        onNavigate={handleSelect}
+                        getDocContent={getDocContent}
+                        getDocHref={getDocHref}
+                        getProjectHref={getProjectHref}
+                        highlightQuery={highlightQuery}
+                        resolveImage={resolveImage}
+                      />
+                    </>
+                  )}
+                </div>
+                {/* 우측 사이드: heading outline + 공유 + 파일 관리. 기본은 닫아
+                    본문을 우선하고, 필요할 때만 헤더의 인스펙터 버튼으로 연다.
+                    backlinks 는 여기 없음 — pane 하단 스트립이 단일 소스. */}
+                {!editing && docInspectorOpen ? (
+                  <DocsVaultDocOutlinePanel
+                    selectedDoc={selectedDoc}
+                    pinnedSet={pinnedSet}
+                    copiedSlug={copiedSlug}
+                    canEditCurrent={canEditCurrent}
+                    outlineHeadings={outlineHeadings}
+                    activeOutlineHeading={activeOutlineHeading}
+                    activeHeadingSlug={activeHeadingSlug}
+                    onTogglePin={handleTogglePin}
+                    onStartEditing={() => setEditing(true)}
+                    onClose={() => setDocInspectorOpen(false)}
+                    onCopyUrl={handleCopyUrl}
+                    onDeleteCurrent={handleDeleteCurrent}
+                    onHeadingClick={(slug) => {
+                      document
+                        .getElementById(slug)
+                        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      setActiveHeadingSlug(slug);
+                      if (typeof window !== "undefined") {
+                        window.history.replaceState(
+                          {},
+                          "",
+                          `${window.location.pathname}${window.location.search}#${slug}`,
+                        );
+                      }
+                    }}
+                  />
+                ) : null}
+              </div>
+
+              {/* 하단 backlinks 스트립 — pane 전체 폭에 앵커, 항상 보임
+                  (docs-vault-final spec §하단 백링크 스트립). */}
+              {!editing && backlinksDetail.length > 0 ? (
+                <div className="flex flex-none items-center gap-2 border-t border-[color:var(--color-border-soft)] px-4 py-2.5">
+                  <DocsVaultBacklinks
+                    entries={backlinksDetail}
+                    docsBySlug={docsBySlug}
+                    onNavigate={handleSelect}
+                    layout="strip"
+                  />
+                  <Link
+                    href={buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/'}
+                    className="flex-none text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  >
+                    {t('backlinksStrip.openInOntology')}
+                  </Link>
+                </div>
               ) : null}
             </div>
           ) : source === 'local' &&

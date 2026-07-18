@@ -2381,7 +2381,26 @@
       "vaultToolsAriaLabel": "문서함 도구 메뉴 열기",
       "contractToggleLabel": "문서함 점검",
       "contractToggleHide": "문서함 점검 닫기",
-      "contractToggleShow": "문서함 점검 보기"
+      "contractToggleShow": "문서함 점검 보기",
+      "breadcrumbAriaLabel": "탐색 경로",
+      "crumbBack": "워크스페이스",
+      "vaultPillFolders": "{count}개 폴더",
+      "vaultPillSwap": "vault 바꾸기",
+      "vaultPillSwapAriaLabel": "vault 소스 전환",
+      "censusSummary": "개념 {concepts}개 · 관계 {relations}개"
+    },
+    "editorHeader": {
+      "previewTab": "미리보기",
+      "editTab": "편집",
+      "localSynced": "동기화됨 · 로컬",
+      "readOnlySample": "읽기 전용 샘플"
+    },
+    "frontmatterBlock": {
+      "note": "frontmatter 가 곧 그래프 — 이 블록이 topology 의 노드와 엣지가 됩니다.",
+      "ariaLabel": "프론트매터 그래프 필드"
+    },
+    "backlinksStrip": {
+      "openInOntology": "온톨로지에서 열기 →"
     },
     "vaultStatus": {
       "localTooltip": "내 디스크의 폴더를 vault 로 선택",
