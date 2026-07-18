@@ -2,13 +2,10 @@
 slug: documents/business-to-code-dogfood-audit
 kind: document
 title: Business-to-Code Dogfood Audit
-relates:
-  - capabilities/collaborator-reader-brief
-  - capabilities/project-ontology-indexing
-  - documents/views-domain-boundary-audit
-  - elements/ontology-reader-intent-contract
-  - elements/ontology-workbench-summary
+relates: [capabilities/collaborator-reader-brief, capabilities/project-ontology-indexing, documents/views-domain-boundary-audit, elements/ontology-reader-intent-contract]
 ---
+
+> **역사적 기록.** 이 감사는 2026-07 지도 재구성(topology-map-v2, `/ontology/insights` 3탭, `/ontology` → `/topology` 리다이렉트) 이전 구조 기준이다. 아래의 노드/엣지 수치와 일부 element 참조는 그 시점의 스냅샷이며, 현재 vault 구조와 다를 수 있다.
 
 # Business-to-Code Dogfood Audit
 

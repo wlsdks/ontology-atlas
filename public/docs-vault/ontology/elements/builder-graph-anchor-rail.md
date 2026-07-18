@@ -3,7 +3,6 @@ slug: elements/builder-graph-anchor-rail
 kind: element
 title: Builder Graph Anchor Rail
 domain: views
-relates: [elements/insights-query-cockpit]
 ---
 
 `src/views/ontology-edit/lib/builder-entry-anchors.ts` derives the saved node entrypoints shown at the top-left of `/ontology/edit`.

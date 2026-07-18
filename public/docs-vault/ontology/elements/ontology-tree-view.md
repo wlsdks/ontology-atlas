@@ -3,7 +3,6 @@ slug: elements/ontology-tree-view
 kind: element
 title: Ontology Tree View
 domain: views
-relates: [elements/ontology-tree-projection-summary, elements/ontology-workbench-summary]
 ---
 
 # Ontology Tree View

@@ -3,36 +3,45 @@ slug: capabilities/collaborator-reader-brief
 kind: capability
 title: Collaborator Reader Brief
 domain: views
-elements: [elements/ontology-node-detail-modal, elements/ontology-reader-intent-contract, elements/ontology-review-brief, elements/ontology-workbench-summary, insights-collaborator-brief, insights-orphan-repair-packet, topology-ontology-drawer-model]
+elements: [elements/ontology-node-detail-modal, elements/ontology-reader-intent-contract, topology-ontology-drawer-model]
 relates: [documents/business-to-code-dogfood-audit]
 ---
 
-`/topology`, `/ontology`, and `/ontology/insights` expose the shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents. This lane is not a separate lightweight add-on; it is where the graph turns business/product meaning, ownership, dependency, evidence, and impact into something the whole decision loop can read.
+Shared stakeholder reader lane for planners, marketers, C-level decision-makers,
+developers, and AI agents — the idea that the same graph should turn
+business/product meaning, ownership, dependency, evidence, and impact into
+something the whole decision loop can read, not just developers.
 
-`/ontology` now makes that lane explicit before a user opens a node: the reading-order strip frames the graph as business language -> product capability -> implementation proof. This answers the product-direction question "what are we ontology-izing?" on screen: business/product meaning is primary, source code structure is evidence and traceability, and the developer + AI-agent workflow is the maintenance wedge rather than the only audience.
+**2026-07 status note.** Most of this capability's original description was
+about two surfaces that the map-rebuild round deleted outright:
 
-The same strip exports a compact business-to-code brief. The copied packet names the stakeholder audience, the current domain / capability / implementation-proof counts, and three next actions: review shared vocabulary before plans or campaigns, trace capabilities to implementation proof before scope or messaging changes, and ask Claude Code / Codex to verify the same ontology slug before code changes. This gives planners, marketers, C-level reviewers, developers, and agents one portable handoff instead of separate summaries.
+- The old `/ontology` semantic map (`src/views/ontology-view/`,
+  `OntologyViewPage.tsx`) — the reading-order strip, business-to-code brief
+  copy button, and node detail collaborator card it described are gone.
+  `/ontology` is now a thin redirect to `/topology?index=expanded`.
+- The old `/ontology/insights` workspace-level collaborator brief
+  (`collaborator-insights-brief.ts`, `InsightsCollaboratorBriefPanel.tsx`) —
+  also deleted. `/ontology/insights` is now a fixed 3-tab dashboard (Overview /
+  Relations / Freshness) with a single bottom handoff row per tab instead of a
+  dedicated collaborator lane.
 
-The copied packet includes reader lanes for planning, marketing, leadership, developer, and agent review, while the visible first screen stays flatter and action-led. The point is not to make Atlas a developer-only plugin surface: every role gets a concrete first graph move, while the developer + AI-agent loop remains the wedge that keeps the ontology fresh enough for those readers to trust. The copied packet includes the route handoffs so meeting notes and agent prompts can preserve where each role should continue. Those handoffs now carry `reader=` intent in the URL, and `/ontology/insights` plus `/ontology/edit` consume that intent as a quiet first-action strip. That keeps planning, marketing, leadership, developer, and agent review flows distinct after navigation instead of making each destination behave like the same developer browse action.
+What survives and is still accurate:
 
-`/ontology/insights` also exposes the graph operation pair behind each reader preset. Planning sees `facets + domain_matrix`, marketing sees `match_nodes + lineage`, leadership sees `blast_radius + impact`, developers see `node_profile + reachability`, and agents see `agent_brief + health`. This keeps the role lane business-readable while still proving that each question is backed by executable graph DB-style checks rather than a static dashboard label.
+- `elements/ontology-node-detail-modal` — node click on `/topology` opens
+  `TopologyV2DetailPanel.tsx` (plus the legacy `FullDetailA1.tsx`), which still
+  carries a plain-language kind/relation/evidence summary for a selected node.
+- `elements/ontology-reader-intent-contract` — the `reader=` URL intent
+  (`planning` / `marketing` / `leadership` / `developer` / `agent`) still
+  exists, but its only current consumer is the builder
+  (`/ontology/edit`, `BuilderReaderIntentStrip`), not `/ontology/insights`
+  tab selection as originally described.
+- `topology-ontology-drawer-model` — `src/views/home/lib/topology-ontology-drawer.ts`
+  is unaffected by this round.
 
-The visible gate and copied packet now include core domain lanes sorted by capability count. This lets a first-time reader see where the graph's behavior is concentrated before opening an individual node, and gives planning / marketing / leadership notes the same domain emphasis that developers and agents use when tracing implementation evidence. The visible lanes are also direct graph handoffs to the selected domain node, so stakeholder review can move from "what is core?" to "open the exact vocabulary boundary" in one click.
-
-The lane translates a selected ontology node into a plain-language lens, source-backed relation summary, and review prompt. Planners, marketers, and domain collaborators can inspect concept vocabulary, dependency impact, and ownership questions while developers and AI agents keep using the same vault graph.
-
-Topology drawer briefs are now copyable as compact markdown with kind, node id, review lens, source, relation counts, relation-type counts, review prompt, review questions, and direct relation previews, so collaborator review can leave the graph surface and move into planning notes or handoff discussions without inventing a second vocabulary. The copied brief's change-impact section also carries the transitive blast radius (how many nodes are affected if this one changes, and how many it depends on) so an AI agent reading the handoff judges change risk on the true reachable set, not the under-counted 1-hop degree. `/ontology` node detail now surfaces the direct relation preview and graph-proof chips before the collaborator card, then uses the same relation-type count vocabulary inside the copied brief, includes the same prompt-specific review questions, adds a change-impact summary, includes topology / builder handoff URLs, and exposes the same post-change sync gate copy action used by agent setup and builder writes. Tree browsing therefore starts with source-backed graph inspection before becoming collaborator review or source-of-truth editing. Both `/topology` and `/ontology` now also expose a smaller review-vocabulary packet for planning / marketing notes that only need the term, meaning to keep, reuse context, review questions, and relation anchors.
-
-`/ontology/insights` adds a workspace-level collaborator brief for people who are not inspecting one node yet. It now pairs the current review focus with concrete review questions: align vocabulary around hubs, trace cross-domain impact, or resolve ownership for unconnected concepts. Its top hub rows keep exact node identity and direct Ontology / Topology / Builder handoff links, so a planning or marketing note can return to the same graph node instead of becoming a detached vocabulary list. The same brief and the visible domain coupling matrix now include the strongest domain-to-domain impact handoffs with sample relations, direct Topology Path-mode links, domain-matrix replay commands, and row-level `all_paths` check packets with `query_plan` first for CLI/MCP, so cross-domain impact can be checked from the UI, Claude Code, Codex, or a terminal. That keeps stakeholder review practical while preserving one source-of-truth graph instead of splitting business readers and developer/agent operators into different products.
-
-The insights brief now also names a decision lane for the current review focus. Instead of asking collaborators to infer next steps from graph metrics, the visible card and copied markdown say who should decide, what decision is expected, and which graph surface to open next: hub handoffs for vocabulary alignment, Topology Path plus domain-matrix checks for impact review, or Builder / Topology health handoffs for ownership cleanup. The lane includes one direct graph handoff link, so a review note can move from decision wording into the exact node, path, or repair surface without searching again.
-
-The same visible card and copied markdown now include a `Decision record`
-checkpoint. It restates the expected decision, owner, graph evidence, and
-follow-up step in a meeting-note shape, so planning / marketing / domain
-review can leave a concrete record instead of only copying prompts and links.
-When a workspace handoff is available, the copied decision record also carries
-the replayable CLI and MCP proof rows for the selected focus, so the note can
-move directly into Claude Code, Codex, or a terminal verification loop.
-
-Insights briefs add the overview lane: planners and domain reviewers can copy a compact markdown snapshot of node / relation / domain counts, cross-domain impact, open ownership questions, top vocabulary hubs, strongest domain impact pairs, and the same actionable review focus shown on screen. When open ownership questions exist, the copied overview now names the first concrete concepts and includes direct ontology, topology health, and builder handoff links instead of leaving collaborators with only an aggregate count. Orphan rows still add a smaller ownership repair packet with direct ontology, topology health, builder, relation-check, and health-verification handoff details.
+There is currently no dedicated "collaborator brief" copy/markdown export
+feature on any live route — that stakeholder-handoff idea would need a new UI
+home (most likely `/project/[slug]`'s 3-zone view or a future insights tab) if
+still wanted. This capability is being kept rather than deleted because the
+underlying product need (a shared reader lane across roles) is still named in
+`AGENTS.md` / `PRODUCT-DIRECTION.md`; only its 2026-07-era implementation
+description was stale.
