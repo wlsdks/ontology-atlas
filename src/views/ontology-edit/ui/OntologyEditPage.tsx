@@ -72,6 +72,12 @@ import {
 } from "../lib/builder-entry-anchors";
 import { formatBuilderGuardPacket, formatBuilderProofPacket } from "../lib/builder-proof-packet";
 import { getBuilderSourceStatus } from "../lib/builder-source-status";
+import {
+  buildBuilderSessionDiffLines,
+  resolveBuilderWriteConfirmAction,
+  resolveBuilderWriteConfirmStatus,
+  type BuilderWriteConfirmStatus,
+} from "../lib/builder-write-confirm-bar";
 
 /**
  * 빌더 ephemeral 노드 → `${kind}s/${slug}.md` 로 vault 직접 작성.
@@ -358,6 +364,75 @@ export function BuilderCommandStrip({
             <span>{secondaryLabel}</span>
           </button>
         )}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * 하단 앵커 쓰기-확인 바 — `docs/prototypes/builder-final.html` 스펙의
+ * "쓰기 확인" 바. 여기서 새로 쓰기 로직을 만들지 않는다 — dry-run 버튼은
+ * 기존 저장 상태 팝오버(BuilderWriteSummary)를 열고, "vault 에 쓰기" 는
+ * `resolveBuilderWriteConfirmAction` 이 고른 기존 핸들러
+ * (confirmPendingRelation / saveEphemeral / 상세 열기) 를 그대로 호출한다.
+ */
+export function BuilderWriteConfirmBar({
+  status,
+  draftNodes,
+  draftEdges,
+  pendingRelationSummary,
+  writeAriaLabel,
+  writeDisabled,
+  onDryRun,
+  onWrite,
+}: {
+  status: BuilderWriteConfirmStatus;
+  draftNodes: number;
+  draftEdges: number;
+  pendingRelationSummary?: { source: string; target: string; key: string } | null;
+  writeAriaLabel: string;
+  writeDisabled: boolean;
+  onDryRun: () => void;
+  onWrite: () => void;
+}) {
+  const t = useTranslations("ontologyPages.edit.page.writeConfirmBar");
+  const payload =
+    status === "relationPending" && pendingRelationSummary
+      ? t("relationPending", pendingRelationSummary)
+      : status === "draftReady"
+        ? t("draftReady", { nodes: draftNodes, edges: draftEdges })
+        : status === "draftNeedsName"
+          ? t("draftNeedsName", { nodes: draftNodes, edges: draftEdges })
+          : t("clean");
+  return (
+    <section
+      aria-label={t("ariaLabel")}
+      className="mt-2 hidden shrink-0 flex-wrap items-center gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2.5 md:flex"
+    >
+      <span className="shrink-0 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+        {t("label")}
+      </span>
+      <p className="min-w-0 flex-1 truncate font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+        {payload}
+      </p>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onDryRun}
+          aria-label={t("dryRunAriaLabel")}
+          className="inline-flex h-8 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)]"
+        >
+          {t("dryRunButton")}
+        </button>
+        <button
+          type="button"
+          onClick={onWrite}
+          disabled={writeDisabled}
+          aria-label={writeAriaLabel}
+          className="inline-flex h-8 items-center rounded-md border border-[color:rgba(94,106,210,0.42)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.6)] hover:bg-[color:rgba(94,106,210,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {t("writeButton")}
+        </button>
       </div>
     </section>
   );
@@ -1457,6 +1532,46 @@ export function OntologyEditPage() {
     label: t("writeSummaryCollapsedLabel"),
     hint: t("writeSummaryCollapsedHint"),
   });
+
+  // 하단 쓰기-확인 바 — 표피 레이어. 아래 계산은 어떤 *기존* 핸들러를
+  // 가리킬지만 고르고, 실제 쓰기는 그 핸들러(confirmPendingRelation /
+  // saveEphemeral)가 그대로 수행한다.
+  const readyDraftNode = ephemeralNodes.find(
+    (node) => !isUntitledTitle(node.title, t("untitledPlaceholder")),
+  );
+  const writeConfirmStatus = resolveBuilderWriteConfirmStatus({
+    hasPendingRelation: Boolean(pendingRelation),
+    draftNodes: ephemeralNodes.length,
+    draftEdges: ephemeralEdges.length,
+    hasUnnamedDraft: ephemeralNodes.some((node) =>
+      isUntitledTitle(node.title, t("untitledPlaceholder")),
+    ),
+  });
+  const writeConfirmAction = resolveBuilderWriteConfirmAction({
+    hasPendingRelation: Boolean(pendingRelation),
+    readyDraftNodeId: readyDraftNode?.id ?? null,
+    firstDraftNodeId: ephemeralNodes[0]?.id ?? null,
+  });
+  const sessionDiffLines = useMemo(
+    () => buildBuilderSessionDiffLines({ draftPreviews, pendingRelation }),
+    [draftPreviews, pendingRelation],
+  );
+  const writeConfirmAriaLabel =
+    writeConfirmAction.type === "confirmRelation" && pendingRelation
+      ? t("writeConfirmBar.writeAriaLabelRelation", {
+          source: pendingRelation.sourceSlug,
+          target: pendingRelation.targetSlug,
+        })
+      : writeConfirmAction.type === "saveDraft"
+        ? t("writeConfirmBar.writeAriaLabelDraft", {
+            title: findById(writeConfirmAction.nodeId)?.title || t("untitledPlaceholder"),
+          })
+        : writeConfirmAction.type === "openDraft"
+          ? t("writeConfirmBar.writeAriaLabelOpen", {
+              title: findById(writeConfirmAction.nodeId)?.title || t("untitledPlaceholder"),
+            })
+          : t("writeConfirmBar.writeAriaLabelNone");
+
   const runCommandStripPrimary = useCallback(() => {
     switch (commandStripState) {
       case "empty": {
@@ -1834,6 +1949,25 @@ export function OntologyEditPage() {
     }
   }, [pendingRelation, pendingRelationKey, writeVaultRelation]);
 
+  // 하단 쓰기-확인 바의 "vault 에 쓰기" 클릭 orchestrator — 새 쓰기 로직
+  // 없이 resolveBuilderWriteConfirmAction 이 고른 기존 핸들러를 그대로 호출.
+  const runWriteConfirmAction = useCallback(() => {
+    switch (writeConfirmAction.type) {
+      case "confirmRelation":
+        void confirmPendingRelation();
+        return;
+      case "saveDraft":
+        void saveEphemeral(writeConfirmAction.nodeId);
+        return;
+      case "openDraft":
+        setSelectedId(writeConfirmAction.nodeId);
+        setDetailsOpen(true);
+        return;
+      case "none":
+        return;
+    }
+  }, [writeConfirmAction, confirmPendingRelation, saveEphemeral]);
+
   // Modal 의 confirm 버튼이 눌린 후 실제 delete 수행.
   const confirmPendingDelete = useCallback(async () => {
     if (!pendingDelete) return;
@@ -2078,7 +2212,7 @@ export function OntologyEditPage() {
                 aria-label={t("openDetailsAriaLabel", {
                   title: ephemeralSelected?.title ?? vaultSelected?.title ?? "",
                 })}
-                className="hidden h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.16)] md:inline-flex"
+                className="hidden h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.16)] md:inline-flex xl:hidden"
               >
                 <Info size={12} />
                 {t("openDetailsButton")}
@@ -2508,16 +2642,62 @@ export function OntologyEditPage() {
               />
             ) : null}
           </div>
+          {/* 우측 340px 고정 인스펙터 — builder-final 스펙의 3-pane 본체.
+              넓은 데스크톱(xl+)에서만 상시 노출, 좁은 화면은 기존 상세
+              시트(모달)를 그대로 쓴다 (기능 동일, 표피만 분기). */}
+          <div className="hidden xl:flex">
+            <OntologyInspector
+              ephemeralSelected={ephemeralSelected}
+              vaultSelected={vaultSelected}
+              vaultBacklinks={vaultBacklinks}
+              onSelectBacklink={openNodeDetails}
+              vaultReadOnly={!hasLiveVault}
+              isDesktopRuntime={isDesktopRuntime}
+              untitledPlaceholder={t('untitledPlaceholder')}
+              onRenameEphemeral={(id, title) => updateNode(id, { title })}
+              onSaveEphemeral={saveEphemeral}
+              isEphemeralSaveConflict={hasDraftPathConflict}
+              getEphemeralSaveSuggestion={getDraftPathSuggestion}
+              onSaveVaultRename={renameVaultDoc}
+              onEditVaultArrayKey={editVaultArrayKey}
+              onEditVaultLiteral={editVaultLiteral}
+              onDeleteVault={deleteVaultDoc}
+              saving={savingId !== null || renamingId !== null}
+              onClearSelection={() => setSelectedId(null)}
+              surface="sidebar"
+              sessionDiffLines={sessionDiffLines}
+            />
+          </div>
         </section>
+        <BuilderWriteConfirmBar
+          status={writeConfirmStatus}
+          draftNodes={ephemeralNodes.length}
+          draftEdges={ephemeralEdges.length}
+          pendingRelationSummary={
+            pendingRelation
+              ? {
+                  source: pendingRelation.sourceSlug,
+                  target: pendingRelation.targetSlug,
+                  key: pendingRelationKey,
+                }
+              : null
+          }
+          writeAriaLabel={writeConfirmAriaLabel}
+          writeDisabled={writeConfirmAction.type === "none"}
+          onDryRun={() => setWriteSummaryOpen(true)}
+          onWrite={runWriteConfirmAction}
+        />
         {detailsOpen && (ephemeralSelected || vaultSelected) ? (
           <div
             role="dialog"
             aria-modal="true"
             aria-label={t("detailsSheetAriaLabel")}
             className={
+              // xl+ 는 우측 고정 인스펙터가 상시 선택 상세를 보여주므로 이
+              // 모달은 그 아래 화면 폭에서만 뜬다 (동일 데이터, 중복 표면 방지).
               ephemeralSelected
-                ? "fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.56)] px-4 py-6"
-                : "fixed inset-0 z-50 hidden items-center justify-center bg-[color:rgba(0,0,0,0.56)] px-4 py-6 md:flex"
+                ? "fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.56)] px-4 py-6 xl:hidden"
+                : "fixed inset-0 z-50 hidden items-center justify-center bg-[color:rgba(0,0,0,0.56)] px-4 py-6 md:flex xl:hidden"
             }
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) setDetailsOpen(false);

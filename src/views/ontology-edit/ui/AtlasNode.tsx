@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { resolveDomainTint } from "@/shared/lib/domain-color";
+import { getOntologyKindIcon } from "@/entities/ontology-class";
 
 /**
  * Atlas custom node — kind 별 디자인 폴리시.
@@ -64,6 +65,21 @@ function portStyle(
     opacity: side === "primary" ? 1 : 0,
     pointerEvents: side === "primary" ? "auto" : "none",
   };
+}
+
+/**
+ * kind 글리프 — machined 카드의 좌측 아이콘. 색은 새 hue 를 안 만들고 호출부가
+ * (indigo 계열 또는 ephemeral amber) currentColor 로 물려준다 — "둘 이상의
+ * 채색 시스템 금지" 헌장 §11 준수.
+ *
+ * 소문자 헬퍼 함수로 둔 이유: 컴포넌트(대문자) 렌더 본문 안에서
+ * `getOntologyKindIcon(...)` 결과를 변수에 담아 바로 JSX 태그로 쓰면 "렌더 중
+ * 컴포넌트 생성" 린트 경고가 뜬다 (참조 자체는 안정적 lookup 이라 실제 버그는
+ * 아니지만, `OntologyKindPalette` 의 palette 카드 렌더와 같은 방식으로 피한다).
+ */
+function renderAtlasNodeKindGlyph(kind: AtlasNodeData["kind"]) {
+  const Icon = getOntologyKindIcon(kind === "ephemeral" ? "element" : kind);
+  return <Icon size={12} />;
 }
 
 export function AtlasNode({ data, selected }: NodeProps) {
@@ -161,6 +177,25 @@ export function AtlasNode({ data, selected }: NodeProps) {
           gap: 8,
         }}
       >
+        <span
+          aria-hidden
+          style={{
+            display: "flex",
+            flex: "none",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 20,
+            height: 20,
+            borderRadius: 5,
+            border: `1px solid ${isEphemeral ? "rgba(255, 179, 71, 0.38)" : "rgba(255, 255, 255, 0.08)"}`,
+            background: isEphemeral
+              ? "rgba(255, 179, 71, 0.08)"
+              : "rgba(255, 255, 255, 0.03)",
+            color: isEphemeral ? ephemeralBadgeColor : tone.accent,
+          }}
+        >
+          {renderAtlasNodeKindGlyph(nodeData.kind)}
+        </span>
         {isEphemeral ? (
           <span
             aria-hidden
