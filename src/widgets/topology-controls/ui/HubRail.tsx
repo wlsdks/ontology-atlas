@@ -11,7 +11,7 @@ import type { Project } from '@/entities/project';
 // 시선이 가지 못한다. 사용자가 한 번 직접 펼치면 그 선택을 기억한다.
 const RAIL_OPEN_KEY = 'demo:sigma-hub-rail-open:v1';
 
-interface SigmaHubRailProps {
+interface HubRailProps {
   projects: Project[];
   selectedSlug?: string | null;
   onSelect: (slug: string) => void;
@@ -32,13 +32,13 @@ interface SigmaHubRailProps {
  * 클릭 한 번에 해당 허브로 이동시킨다. 지도의 "주요 정거장" 역할. 접힘 시
  * 얇은 탭만 남겨 지도 공간 확보.
  */
-export function SigmaHubRail({
+export function HubRail({
   projects,
   selectedSlug,
   onSelect,
   suppressed = false,
   stripNamePrefix,
-}: SigmaHubRailProps) {
+}: HubRailProps) {
   const t = useTranslations('topologyWidgets.hubRail');
   const [open, setOpen] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;

@@ -3,7 +3,7 @@ import { cleanup, render as rtlRender, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import koMessages from '../../../../messages/ko.json';
 import { TooltipProvider } from '@/shared/ui';
-import { SigmaHubRail } from './SigmaHubRail';
+import { HubRail } from './HubRail';
 import type { Project } from '@/entities/project';
 
 const RAIL_OPEN_KEY = 'demo:sigma-hub-rail-open:v1';
@@ -62,11 +62,11 @@ const HUBS = [
 ];
 
 /**
- * SigmaHubRail roving tabindex — listbox(role=listbox) 는 tab stop 1개만 가져야
+ * HubRail roving tabindex — listbox(role=listbox) 는 tab stop 1개만 가져야
  * 한다. 이전엔 모든 option(native button) 이 기본 tabIndex 0 이라 Tab 이 허브마다
  * 멈췄다(roving 패턴 위반). 활성 옵션(없으면 첫 옵션)만 0, 나머지 -1.
  */
-describe('SigmaHubRail — roving tabindex a11y', () => {
+describe('HubRail — roving tabindex a11y', () => {
   beforeEach(() => {
     window.localStorage.setItem(RAIL_OPEN_KEY, '1'); // rail 펼친 상태로 렌더
   });
@@ -76,7 +76,7 @@ describe('SigmaHubRail — roving tabindex a11y', () => {
   });
 
   it('선택이 없으면 첫 option 만 tab stop(0), 나머지 -1', () => {
-    render(<SigmaHubRail projects={HUBS} onSelect={() => {}} />);
+    render(<HubRail projects={HUBS} onSelect={() => {}} />);
     const options = screen.getAllByRole('option');
     expect(options).toHaveLength(2); // hub-a, hub-b (leaf 제외)
     const tabbable = options.filter((o) => o.getAttribute('tabindex') === '0');
@@ -87,7 +87,7 @@ describe('SigmaHubRail — roving tabindex a11y', () => {
 
   it('선택된 hub 이 유일한 tab stop', () => {
     render(
-      <SigmaHubRail projects={HUBS} selectedSlug="hub-b" onSelect={() => {}} />,
+      <HubRail projects={HUBS} selectedSlug="hub-b" onSelect={() => {}} />,
     );
     const options = screen.getAllByRole('option');
     const tabbable = options.filter((o) => o.getAttribute('tabindex') === '0');

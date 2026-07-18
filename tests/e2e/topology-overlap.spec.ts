@@ -3727,7 +3727,7 @@ for (const viewport of VIEWPORTS) {
       "selected-node-inspector-owns-right-rail",
     );
     await expect(page.getByTestId("topology-utility-action-lane")).toHaveCount(0);
-    await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
+    await expect(page.getByTestId("topology-controls-stack")).toHaveCount(0);
     await expect(page.getByTestId("topology-shortcuts-help-button")).toHaveCount(0);
     await expect(page.getByTestId("topology-relation-legend")).toHaveCount(0);
 
@@ -4270,7 +4270,7 @@ for (const viewport of VIEWPORTS) {
       `expanded selected inspector should keep a readable viewport edge inset at ${viewport.label}`,
     ).toBeGreaterThanOrEqual(20);
     await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
-    await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
+    await expect(page.getByTestId("topology-controls-stack")).toHaveCount(0);
     await expect(page.getByTestId("topology-shortcuts-help-button")).toHaveCount(0);
     await expect(page.getByTestId("topology-relation-legend")).toHaveCount(0);
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
@@ -5783,7 +5783,7 @@ test("Relief path result keeps phone viewport panel-owned", async ({ page }) => 
   );
   await expect(helpButton).not.toBeVisible();
   const panelRect = await rectOf(panel);
-  const controlsRect = await rectOf(page.getByTestId("topology-sigma-controls-stack"));
+  const controlsRect = await rectOf(page.getByTestId("topology-controls-stack"));
   expect(
     controlsRect.left - panelRect.right,
     "phone path analysis rail should reserve space before the right utility rail",
@@ -6191,7 +6191,7 @@ test("Relief selected node focus keeps compact viewport clear", async ({ page })
     viewport.width - 8,
   );
 
-  const controlsStack = page.getByTestId("topology-sigma-controls-stack");
+  const controlsStack = page.getByTestId("topology-controls-stack");
   const helpButton = page.getByTestId("topology-shortcuts-help-button");
   await expect(controlsStack).toHaveCount(0);
   await expect(helpButton).toHaveCount(0);
@@ -6427,7 +6427,7 @@ test("Relief selected node focus keeps phone viewport map primary", async ({ pag
     viewport.width - 8,
   );
   const helpButton = page.getByTestId("topology-shortcuts-help-button").first();
-  const controlsStack = page.getByTestId("topology-sigma-controls-stack");
+  const controlsStack = page.getByTestId("topology-controls-stack");
   await expect(controlsStack).toHaveCount(0);
   await expect(helpButton).toHaveCount(0);
   const searchLane = page.getByTestId("topology-search-action-lane");
@@ -7114,7 +7114,7 @@ test("Relief global search uses a phone sheet instead of a floating card", async
     "demoted-under-blocking-overlay",
   );
   await expect(page.getByTestId("topology-shortcuts-help-button")).toHaveCount(0);
-  await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
+  await expect(page.getByTestId("topology-controls-stack")).toHaveCount(0);
   await expect(content).toHaveAttribute(
     "data-global-search-floating-width-token",
     "--topology-search-sheet-floating-width",
@@ -7269,7 +7269,7 @@ test("Relief Create intent keeps a blocking pending state until a writable works
     "--topology-blocking-map-opacity",
   );
   await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
-  await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
+  await expect(page.getByTestId("topology-controls-stack")).toHaveCount(0);
   expect(page.url()).toContain("create=concept");
 
   await page.getByTestId("topology-create-node-pending-backdrop").click();
@@ -7378,7 +7378,7 @@ test("Relief shortcut sheet uses a phone sheet instead of an inset help card", a
     "demoted-under-blocking-overlay",
   );
   await expect(page.getByTestId("topology-shortcuts-help-button")).toHaveCount(0);
-  await expect(page.getByTestId("topology-sigma-controls-stack")).toHaveCount(0);
+  await expect(page.getByTestId("topology-controls-stack")).toHaveCount(0);
   await expect(overlay).toHaveAttribute(
     "data-shortcut-sheet-floating-width-token",
     "--topology-shortcut-sheet-floating-width",

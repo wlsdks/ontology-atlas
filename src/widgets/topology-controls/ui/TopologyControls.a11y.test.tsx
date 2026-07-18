@@ -3,8 +3,8 @@ import { fireEvent, render as rtlRender, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import koMessages from '../../../../messages/ko.json';
 import { TooltipProvider } from '@/shared/ui';
-import { SigmaControls } from './SigmaControls';
-import { DEFAULT_SIGMA_CONTROLS } from '../model/controls-state';
+import { TopologyControls } from './TopologyControls';
+import { DEFAULT_TOPOLOGY_CONTROLS } from '../model/controls-state';
 
 function render(ui: React.ReactElement) {
   return rtlRender(
@@ -15,13 +15,13 @@ function render(ui: React.ReactElement) {
 }
 
 /**
- * SigmaControls 슬라이더 a11y — range 입력은 보이는 라벨 span 과 미연결이라
+ * TopologyControls 슬라이더 a11y — range 입력은 보이는 라벨 span 과 미연결이라
  * 스크린리더가 이름 없이("slider") 읽었다. aria-label 로 접근명을 부여한다.
  */
-describe('SigmaControls — range slider 접근명', () => {
+describe('TopologyControls — range slider 접근명', () => {
   it('depth / forces 슬라이더가 aria-label 로 접근명을 가진다', () => {
     render(
-      <SigmaControls value={DEFAULT_SIGMA_CONTROLS} onChange={() => {}} />,
+      <TopologyControls value={DEFAULT_TOPOLOGY_CONTROLS} onChange={() => {}} />,
     );
 
     // 패널 펼치기 → 고급 설정 열기 → depth 슬라이더 노출.
@@ -35,7 +35,7 @@ describe('SigmaControls — range slider 접근명', () => {
   });
 
   it('검색 입력 컨테이너가 키보드 focus 표시(focus-within)를 가진다 (WCAG 2.4.7)', () => {
-    render(<SigmaControls value={DEFAULT_SIGMA_CONTROLS} onChange={() => {}} />);
+    render(<TopologyControls value={DEFAULT_TOPOLOGY_CONTROLS} onChange={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: '지도 조절 열기' }));
     const search = screen.getByRole('searchbox');
     // input 의 outline-none 을 컨테이너 focus-within 보더가 대체.
@@ -61,17 +61,17 @@ function expectAllButtonsHaveFocusRing(container: HTMLElement) {
  * 없는 상태에서 키보드 사용자가 현재 컨트롤을 못 봤다. 접힘/펼침/고급/도움말
  * 각 단계의 모든 버튼이 링을 갖는지 단언.
  */
-describe('SigmaControls — 키보드 focus 가시성 (a11y, WCAG 2.4.7)', () => {
+describe('TopologyControls — 키보드 focus 가시성 (a11y, WCAG 2.4.7)', () => {
   it('접힘 상태 버튼이 모두 focus 링을 가진다', () => {
     const { container } = render(
-      <SigmaControls value={DEFAULT_SIGMA_CONTROLS} onChange={() => {}} onFitView={() => {}} />,
+      <TopologyControls value={DEFAULT_TOPOLOGY_CONTROLS} onChange={() => {}} onFitView={() => {}} />,
     );
     expectAllButtonsHaveFocusRing(container);
   });
 
   it('모바일 접힘 토글은 분석 모드 탭을 가리지 않도록 하단에 고정된다', () => {
     render(
-      <SigmaControls value={DEFAULT_SIGMA_CONTROLS} onChange={() => {}} onFitView={() => {}} />,
+      <TopologyControls value={DEFAULT_TOPOLOGY_CONTROLS} onChange={() => {}} onFitView={() => {}} />,
     );
 
     const controlsButton = screen.getByRole('button', { name: '지도 조절 열기' });
@@ -99,13 +99,13 @@ describe('SigmaControls — 키보드 focus 가시성 (a11y, WCAG 2.4.7)', () =>
     const firstOnChange = vi.fn();
     const secondOnChange = vi.fn();
     const latestValue = {
-      ...DEFAULT_SIGMA_CONTROLS,
+      ...DEFAULT_TOPOLOGY_CONTROLS,
       query: 'domain',
       depthLimit: 4,
     };
 
     const { rerender, unmount } = render(
-      <SigmaControls value={DEFAULT_SIGMA_CONTROLS} onChange={firstOnChange} onFitView={() => {}} />,
+      <TopologyControls value={DEFAULT_TOPOLOGY_CONTROLS} onChange={firstOnChange} onFitView={() => {}} />,
     );
     const addedKeydownCount = () =>
       addEventListenerSpy.mock.calls.filter(([type]) => type === 'keydown').length;
@@ -117,7 +117,7 @@ describe('SigmaControls — 키보드 focus 가시성 (a11y, WCAG 2.4.7)', () =>
     rerender(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         <TooltipProvider>
-          <SigmaControls value={latestValue} onChange={secondOnChange} onFitView={() => {}} />
+          <TopologyControls value={latestValue} onChange={secondOnChange} onFitView={() => {}} />
         </TooltipProvider>
       </NextIntlClientProvider>,
     );
@@ -140,8 +140,8 @@ describe('SigmaControls — 키보드 focus 가시성 (a11y, WCAG 2.4.7)', () =>
 
   it('펼침 + 고급 설정 + 단축키 도움말 단계의 모든 버튼이 focus 링을 가진다', () => {
     const { container } = render(
-      <SigmaControls
-        value={DEFAULT_SIGMA_CONTROLS}
+      <TopologyControls
+        value={DEFAULT_TOPOLOGY_CONTROLS}
         onChange={() => {}}
         onFitView={() => {}}
         visibleCount={5}
@@ -158,8 +158,8 @@ describe('SigmaControls — 키보드 focus 가시성 (a11y, WCAG 2.4.7)', () =>
 
   it('고급 설정과 단축키 도움말을 동시에 열어 겹치지 않는다', () => {
     render(
-      <SigmaControls
-        value={DEFAULT_SIGMA_CONTROLS}
+      <TopologyControls
+        value={DEFAULT_TOPOLOGY_CONTROLS}
         onChange={() => {}}
         onFitView={() => {}}
       />,

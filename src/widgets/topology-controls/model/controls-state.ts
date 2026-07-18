@@ -1,8 +1,8 @@
 /**
- * SigmaControls 상태 타입 + 기본값. HomePage가 SSR/RSC 경로에서 import해도
- * Sigma(WebGL) 모듈이 딸려오지 않도록 UI 파일과 분리한다.
+ * TopologyControls 상태 타입 + 기본값. HomePage가 SSR/RSC 경로에서 import해도
+ * 지도 렌더러(캔버스) 모듈이 딸려오지 않도록 UI 파일과 분리한다.
  */
-export interface SigmaForces {
+export interface TopologyForces {
   repel?: number;
   linkDistance?: number;
   collideMultiplier?: number;
@@ -17,23 +17,23 @@ export interface SigmaForces {
  *   /diagnostics/insights 의 리스트 뷰와 직교하는 "맵 위의 같은 정보" 로,
  *   문제가 지도상 어디에 몰려 있는지 파악용.
  */
-export interface SigmaOverlays {
+export interface TopologyOverlays {
   recentPulse: boolean;
   ownerTint: boolean;
   backrefHighlight: boolean;
   auditHighlight: boolean;
 }
 
-export interface SigmaControlsState {
+export interface TopologyControlsState {
   depthLimit: number | null;
   searchQuery: string;
-  forces: SigmaForces;
+  forces: TopologyForces;
   /** true면 비허브 노드·엣지 모두 hidden. 허브 11개만 노출해 "정거장 지도" 역할. */
   hubsOnly: boolean;
-  overlays: SigmaOverlays;
+  overlays: TopologyOverlays;
 }
 
-export const DEFAULT_SIGMA_CONTROLS: SigmaControlsState = {
+export const DEFAULT_TOPOLOGY_CONTROLS: TopologyControlsState = {
   depthLimit: null,
   searchQuery: '',
   forces: {
