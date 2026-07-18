@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T12:06:33.976Z",
+  "generatedAt": "2026-07-18T12:10:33.847Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-18 — 전 페이지 시안-우선 재구성 웨이브 (PR #355~#366)",
+          "slug": "2026-07-18-전-페이지-시안-우선-재구성-웨이브-pr-355366"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-18 — Project detail Connection map 제거 + SigmaTopology 렌더러 물리 삭제",
           "slug": "2026-07-18-project-detail-connection-map-제거-sigmatopology-렌더러-물리-삭제"
         },
@@ -3871,9 +3876,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. /project/[slug] 상세 페이지의 \"Connection map\" 미니 지도(SigmaTopology 520px 임베드)를 제거 (소유자 지시: \"",
-      "wordCount": 20275,
-      "updatedAt": "2026-07-18T07:31:43.605Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. \"화면에 보여지는 모든 페이지는 시안 만들고 그 기반으로 작업\" 워크플로우의 완주. docs/prototypes/ 의 승인 시안(1920×1080 표준 +",
+      "wordCount": 20591,
+      "updatedAt": "2026-07-18T12:10:13.882Z",
       "linksOut": [
         "slug"
       ]

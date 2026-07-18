@@ -6,6 +6,44 @@
 
 ---
 
+## 2026-07-18 — 전 페이지 시안-우선 재구성 웨이브 (PR #355~#366)
+
+"화면에 보여지는 모든 페이지는 시안 만들고 그 기반으로 작업" 워크플로우의
+완주. `docs/prototypes/` 의 승인 시안(1920×1080 표준 + RATIO-SYSTEM 비율
+계약)을 계약으로 모든 가시 라우트를 재구성했다. 슬라이스마다 Design Guardian
+verdict 를 거쳤고, 검증 과정에서 실결함 9건이 머지 전에 잡혔다.
+
+- **`/` · `/topology`** — 데이터시트 352px 스케일업(타이포 1단계 업 + 근거
+  그룹 신설) + 우측 레일 설정 기어(언어·테마·INDEX 기본값 팝오버). 선택
+  노드의 glow-like ring 제거(금지 패턴 잔재).
+- **`/project/[slug]`** — 3-zone 재구축(히어로 메트릭 스트립 · 도메인 구성
+  3×2 그리드 + 실데이터 미니 도메인 지도 SVG · 본문+요약 레일). document
+  노드가 containment BFS 에서 `projectIds` 를 못 받아 문서 카운트가 항상 0
+  으로 읽히던 결함을 relates 엣지 fallback 으로 수정. RATIO 토큰
+  (`--page-max` 등 5종)을 `app/globals.css` 로 승격.
+- **`/ontology/edit`** — 3-pane 빌더(팔레트 240 · 캔버스 · Inspector 340
+  상주, xl+ 에서 구 상세 모달 은퇴) + 하단 vault 쓰기 확인바(기존 저장
+  핸들러 재사용) + 관계 trace-mark(solid=contains · dashed=depends ·
+  dotted=evidence — 데이터시트 규약과 정합).
+- **`/ontology/insights`** — 3탭(개요/관계/신선도) 전면 재구축. 구 4탭
+  reader-persona 시스템 ~6,200줄 삭제. 신선도는 epoch-0 sentinel
+  (`lastApprovedAt`) 대신 vault manifest `updatedAt` 을 조인해 표시하고,
+  갱신일 미상 노드는 stale 집계에서 제외("모른다"≠"오래됐다"). 공유
+  `TabBar` 컴포넌트(RATIO §3 탭 패턴) 신설.
+- **`/docs`** — lg+ 상주 사이드바 · engraved census crumbs · frontmatter
+  블록(kind/slug/domain/depends_on/evidence 를 화면에 노출 — "frontmatter 가
+  곧 그래프"의 증명) · 하단 backlinks strip(중복 출처 제거).
+- **`/projects` · `/download` · project 폼** — engraved census 헤더 +
+  실데이터 최근 활동 스트립, 정직한 릴리스 fact strip(SHA-256/사이즈는 가짜
+  수치 대신 "게시 시 기록" placeholder, version 은 드리프트 가드 테스트로
+  실값 고정), 폼 640px 컬럼 + 삭제 버튼을 하단 danger row 하나로 격리.
+- **부수 정리** — 대량 삭제가 남긴 스테일 i18n 카피 테스트 562줄 제거,
+  dogfood vault 정합 패스(삭제 노드 5 · patch 12, `validate_vault` issue 0),
+  `design:ontology` 게이트를 새 3탭 insights 계약으로 교체(삭제된 파일
+  참조로 크래시하던 회귀 수정), 머지 완료 원격 브랜치 15개 삭제.
+
+---
+
 ## 2026-07-18 — Project detail Connection map 제거 + SigmaTopology 렌더러 물리 삭제
 
 `/project/[slug]` 상세 페이지의 "Connection map" 미니 지도(`SigmaTopology`
