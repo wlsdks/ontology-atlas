@@ -96,9 +96,19 @@ export function TopologyIndexPanel({
       className={`flex h-full flex-col rounded-[11px] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-3 shadow-[var(--topology-v2-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-width)" }}
     >
-      <div className="mb-2 flex items-center gap-2 px-0.5">
+      {/* Owner chrome-recomposition spec — the top chrome lane's engraved
+          census is the single source; this header keeps only the label,
+          agent-sync dot, and fold (no duplicate concepts/relations/domains
+          row). The totals still reach screen readers via the sr-only
+          summary below, and the tree rows below keep their own per-domain
+          subcounts (unaffected — those aren't a page-level duplicate). */}
+      <div className="mb-2.5 flex items-center gap-2 border-b border-[color:var(--topology-v2-panel-divider)] px-0.5 pb-2.5">
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
           {labels.label}
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-[10px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--topology-v2-panel-power-on)]" />
+          {labels.agentSync}
         </span>
         <button
           type="button"
@@ -110,30 +120,10 @@ export function TopologyIndexPanel({
           {labels.fold} <span aria-hidden="true">⌃</span>
         </button>
       </div>
-
-      <div
-        data-testid="topology-index-census"
-        className="mb-2.5 flex items-baseline gap-1 border-b border-[color:var(--topology-v2-panel-divider)] pb-2.5 text-[9.5px] text-[color:var(--topology-v2-panel-text-quaternary)]"
-      >
-        <span className="font-mono text-[13px] font-semibold text-[color:var(--topology-v2-numeral-face)]">
-          {totalConcepts}
-        </span>
-        <span>{labels.censusConcepts}</span>
-        <span>·</span>
-        <span className="font-mono text-[13px] font-semibold text-[color:var(--topology-v2-numeral-face)]">
-          {totalRelations}
-        </span>
-        <span>{labels.censusRelations}</span>
-        <span>·</span>
-        <span className="font-mono text-[13px] font-semibold text-[color:var(--topology-v2-numeral-face)]">
-          {domainCount}
-        </span>
-        <span>{labels.censusDomains}</span>
-        <span className="ml-auto inline-flex items-center gap-1 text-[color:var(--topology-v2-panel-text-tertiary)]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--topology-v2-panel-power-on)]" />
-          {labels.agentSync}
-        </span>
-      </div>
+      <p data-testid="topology-index-census" className="sr-only">
+        {totalConcepts} {labels.censusConcepts} · {totalRelations} {labels.censusRelations} ·{" "}
+        {domainCount} {labels.censusDomains}
+      </p>
 
       <div className="relative mb-2 shrink-0">
         <Search

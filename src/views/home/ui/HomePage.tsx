@@ -1737,12 +1737,14 @@ export function HomePage() {
                 coexisting over the map (`docs/prototypes/hub-b3-immersive.html`). */}
             {!selectedRelationActive && !topologyCreateNodeBlockingActive ? (
               <div
-                className="absolute z-20"
+                // `topology-ui-scale` — top-left-chrome-group(브랜드 pill)도
+                // 같은 클래스로 ≥1920px/≥2400px 에서 zoom 배율이 걸린다. 이
+                // wrapper 가 이 클래스 없이 고정 px 로만 있으면 그 zoom 배율
+                // 아래에서 pill 이 이 wrapper 보다 비례적으로 더 커져 다시
+                // 겹친다 — `--topology-index-top` 주석 참조.
+                className="topology-ui-scale absolute z-20"
                 style={{
                   left: renderedIndexState === "expanded" ? "var(--topology-index-inset)" : 0,
-                  // 88px — Relief 브랜드 pill(`topology-top-left-chrome-group`)
-                  // clearance. 18px 이면 그 pill 뒤로 패널/탭 텍스트가 삐져나온다
-                  // (owner live-QA 결함, `--topology-index-top` 주석 참조).
                   top: "var(--topology-index-top)",
                   bottom: renderedIndexState === "expanded" ? "var(--topology-index-inset)" : undefined,
                 }}
@@ -2497,7 +2499,11 @@ export function HomePage() {
             data-selected-inspector-gutter-contract="no-phantom-utility-rail"
             data-position-top-token="--topology-node-popover-top"
             data-position-right-inset-token="--topology-node-popover-right-inset"
-            className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
+            // `topology-ui-scale` 은 Tailwind variant 대상이 아닌 plain CSS
+            // 클래스라 항상 붙인다(zoom:1 기본, ≥1920px/≥2400px 에서만
+            // 실제 zoom) — 브랜드 pill 과 같은 비율로 커져야 --topology-
+            // index-top 과의 겹침 회피 gap 이 그 폭에서도 유지된다.
+            className="topology-ui-scale fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
             {v2DatasheetModel ? (
               <TopologyV2DetailPanel
