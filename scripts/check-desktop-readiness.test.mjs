@@ -216,7 +216,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ static ontology and topology empty states route hosted users to the app download while preserving desktop vault picking/,
+    /✓ the topology empty state routes hosted users to the app download while preserving desktop vault picking/,
   );
   assert.match(
     result.stdout,

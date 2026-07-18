@@ -19,8 +19,8 @@ export function isOntologySubItemActive(
  * 현재 pathname 이 ontology surface 인지 — OperationsNav 가 SubNav 행
  * 노출 여부 결정에 사용.
  *
- * - '' (정규화된 /) — RootEntry → OntologyViewPage (vault 선택 시)
- * - '/ontology' / '/ontology/edit' / '/ontology/insights'
+ * - '' (정규화된 /) — RootEntry → HomePage (vault 선택 시, B3 허브가 곧 지도)
+ * - '/ontology' (지도로 수렴 redirect) / '/ontology/edit' / '/ontology/insights'
  */
 export function shouldShowOntologySubNav(pathname: string): boolean {
   const normalized = pathname.replace(/\/$/, '');

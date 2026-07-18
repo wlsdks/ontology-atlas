@@ -42,10 +42,11 @@ const NAV_ITEMS: ReadonlyArray<NavItem> = [
     id: 'ontology',
     labelKey: 'ontology',
     tooltipKey: 'tooltipOntology',
-    // `/` 와 `/ontology` 둘 다 OntologyViewPage 를 렌더하지만, 명시 탭은
-    // `/ontology/` 로 보내 루트 랜딩/복원 분기 플래시를 피한다. 활성
-    // 매칭에는 `/` exact-match 를 남겨 사용자가 `/` 에 있을 때도 ontology
-    // 탭이 highlight 된다.
+    // `/` 와 `/topology` 둘 다 같은 HomePage(지도 + INDEX)를 렌더하지만
+    // (B3 허브가 곧 지도), 명시 탭은 `/ontology/` 로 보낸다 — 그 라우트가
+    // `?index=expanded` 로 얇게 redirect 해 루트 랜딩/복원 분기 플래시를
+    // 피한다. 활성 매칭에는 `/` exact-match 를 남겨 사용자가 `/` 에 있을
+    // 때도 ontology 탭이 highlight 된다.
     basePath: '/ontology/',
     prefixes: ['/', '/ontology'],
   },

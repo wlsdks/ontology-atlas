@@ -38,8 +38,9 @@ interface SubItem {
   tooltipKey: 'treeTooltip' | 'builderTooltip' | 'insightsTooltip';
   icon: typeof Network;
   /** pathname 정규화 (끝 / 제거) 후 정확히 일치하는 경로들. tree 는
-   *  '' (루트) + '/ontology' 모두 — vault 선택 시 RootEntryPage 가 같은
-   *  OntologyViewPage 를 / 와 /ontology 두 곳에서 렌더하므로. */
+   *  '' (루트) + '/ontology' 모두 — vault 선택 시 RootEntryPage 가 렌더하는
+   *  HomePage(B3 허브가 곧 지도)와 `/ontology` 의 redirect 도착지가 결국
+   *  같은 지도-hub 이므로. */
   exactMatches: ReadonlyArray<string>;
   /** 정규화 pathname 이 이 prefix 들 중 하나로 시작하면 active. */
   prefixMatches: ReadonlyArray<string>;

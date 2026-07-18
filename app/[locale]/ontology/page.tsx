@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { OntologyViewPage } from "@/views/ontology-view";
+import { OntologyRedirectPage } from "@/views/ontology-redirect";
 
 export async function generateMetadata({
   params,
@@ -14,14 +14,16 @@ export async function generateMetadata({
 }
 
 /**
- * /ontology — ontology v0 view.
- * project → domain → capability → element 트리로 승인된 ontology 그래프
- * 를 펼쳐서 본다. 문서 노드는 근거라 트리에 매달지 않음.
+ * `/ontology` — B3 허브가 곧 지도 convergence entry. The former tree/ego hub
+ * (`OntologyViewPage`) is retired; this route now redirects to `/topology`
+ * with INDEX expanded, translating the `?node=<id>` deep-link contract into
+ * `?p=<id>` so every existing agent-handoff / search / docs-viewer link
+ * built via `buildOntologyNodeHref` keeps resolving.
  */
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <OntologyViewPage />
+      <OntologyRedirectPage />
     </Suspense>
   );
 }

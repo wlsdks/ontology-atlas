@@ -5,11 +5,11 @@ import { extname, join, relative } from "node:path";
 export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
   "src/views/docs-vault",
   "src/widgets/docs-vault",
-  "src/views/ontology-view",
   "src/views/ontology-edit",
   "src/views/ontology-insights",
   "src/widgets/ontology-sub-nav",
   "src/widgets/operations-nav",
+  "src/widgets/topology-index-panel",
   "src/shared/ui",
 ];
 
@@ -56,35 +56,12 @@ export const ONTOLOGY_DESIGN_FORBIDDEN_CHECKS = [
 ];
 
 export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
-  {
-    id: "browse-workbench-loop",
-    files: ["src/views/ontology-view/ui/OntologyViewPage.tsx"],
-    markers: [
-      "function OntologyMeaningGateStrip",
-      "<OntologyMeaningGateStrip",
-      "function GraphWorkbenchSummary",
-      "<GraphWorkbenchSummary",
-      "activeSlugLabel",
-      "activeSlugBody",
-      "treeProof",
-      "graphDbProof",
-      "formatAgentPostChangeSyncPacket",
-    ],
-    reason:
-      "/ontology must keep the Browse / Write / Query loop and graph DB proof rail without forcing numbered guide cards back into the first-use flow.",
-  },
-  {
-    id: "browse-tree-row-graph-handle",
-    files: ["src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx"],
-    markers: [
-      "selectAriaLabel",
-      "selectedHandleLabel",
-      "selectedHandleTitle",
-      "data-orphan-select-button",
-    ],
-    reason:
-      "/ontology tree rows must name the selected graph handle so Browse / Write / Query keep the same slug.",
-  },
+  // [삭제, 2026-07-18] "browse-workbench-loop" / "browse-tree-row-graph-handle"
+  // 체크 — B3 "허브가 곧 지도" 로 `/ontology` 의 트리/ego 허브
+  // (`OntologyViewPage.tsx` + `ontology-tree-view` widget) 가 통째로
+  // retire 되고 `/topology` (지도 + INDEX 패널 + 데이터시트) 로 수렴했다.
+  // Browse/Write/Query 루프 자체는 없어지지 않았다 — INDEX 패널의 트리 +
+  // `?p=` 선택 + 데이터시트 "전체 상세 →" 가 같은 역할을 지도 위에서 한다.
   {
     id: "source-vault-execution-contract",
     files: ["src/views/docs-vault/ui/DocsVaultPage.tsx"],
