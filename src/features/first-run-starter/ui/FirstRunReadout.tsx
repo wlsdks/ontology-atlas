@@ -29,7 +29,7 @@ export function FirstRunReadout({ projectCount, domainCount }: FirstRunReadoutPr
   return (
     <div
       data-testid="first-run-readout"
-      className="pointer-events-none absolute bottom-6 right-6 z-20 hidden items-center gap-3.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[color:var(--color-text-quaternary)] md:flex"
+      className="pointer-events-none hidden items-center gap-3.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[color:var(--color-text-quaternary)] md:flex"
     >
       <span>
         <span className="text-[color:var(--color-text-tertiary)]">{projectCount}</span>{" "}

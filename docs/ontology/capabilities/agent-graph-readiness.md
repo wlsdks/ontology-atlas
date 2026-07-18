@@ -4,7 +4,7 @@ kind: capability
 title: Agent Graph Readiness
 domain: views
 dependencies: [capabilities/ontology-hub-mode-aware]
-elements: [elements/app-settings-menu, src/features/vault-ontology/ui/LiveActivityIndicator.tsx, src/shared/lib/ontology-tree/agent-query-recipes.ts, src/shared/lib/ontology-tree/agent-readiness.ts, src/views/home/ui/TopologyAnalysisBar.tsx, src/views/ontology-edit/ui/RelationWriteConfirm.tsx, src/views/ontology-insights/ui/OntologyInsightsPage.tsx]
+elements: [elements/app-settings-menu, src/entities/knowledge-graph/lib/relation-quality.ts, src/features/vault-ontology/ui/LiveActivityIndicator.tsx, src/shared/lib/ontology-tree/agent-query-recipes.ts, src/shared/lib/ontology-tree/agent-readiness.ts, src/views/home/ui/TopologyAnalysisBar.tsx, src/views/ontology-edit/ui/RelationWriteConfirm.tsx, src/views/ontology-insights/ui/OntologyInsightsPage.tsx, src/views/ontology-insights/ui/tabs/RelationsTab.tsx]
 relates: [capabilities/mcp-server, capabilities/ontology-hub-mode-aware, domains/ai-agent-partner, domains/views]
 ---
 
@@ -21,12 +21,19 @@ them from new nodes.
 
 The underlying readiness/graph-DB apparatus did not fully disappear — it split:
 
-- **Readiness surfaced on the topology hub, not insights.** `AgentReadinessGate`
-  in `src/views/home/ui/TopologyAnalysisBar.tsx` now shows the agent-readiness
-  chip strip (ready / preflight / review counts) on `/` and `/topology`'s
-  overview panel, using its own `formatTopologyAgentReadinessSummary`
-  (`src/views/home/lib/topology-analysis.ts`) — a separate, simpler
-  implementation from the original `agent-readiness.ts` scorer.
+- **Readiness moved back to insights (W3 분석 보기 은퇴, 2026-07).** It briefly
+  lived as `AgentReadinessGate` inside `TopologyAnalysisBar.tsx`'s overview
+  panel; that panel body was retired (reader lens, handoff copy, and this
+  readiness gate all duplicated what the map/INDEX/insights already showed).
+  Readiness now surfaces as a compact gauge (ready / preflight / review counts
+  + a distribution bar) at the top of `/ontology/insights`' relations tab
+  (`RelationsTab`, `src/views/ontology-insights/ui/tabs/RelationsTab.tsx`). The
+  classifier itself moved down to `classifyRelationQuality` +
+  `summarizeAgentReadiness` in `src/entities/knowledge-graph/lib/relation-quality.ts`
+  — the single source both `RelationsTab` and the topology map's
+  `formatTopologyOverviewBrief` copy text (`views/home/lib/topology-analysis.ts`,
+  now a thin re-export) read from, so the map's INDEX-footer handoff brief and
+  the insights gauge cannot drift into two different readiness formulas.
 - **Post-change sync gate survives widely.** `agent-readiness.ts`'s
   `buildAgentPostChangeSyncCliCommands` / `formatAgentPostChangeSyncPacket`
   are still the shared "run health/cycles/growth/maintenance/validate after a

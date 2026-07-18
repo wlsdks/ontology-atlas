@@ -78,6 +78,7 @@ import { copyText } from "@/shared/lib/copy-text";
 import {
   buildOntologyTree,
   computeOntologyChangeset,
+  formatAgentPostChangeSyncPacket,
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
@@ -87,9 +88,12 @@ import {
   type TopologyAnalysisMode,
 } from "../model/url-state";
 import {
+  buildOverviewModeUrl,
   buildTopologyAnalysisSummary,
   buildTopologyHealthActionTarget,
   classifyTopologyRelationQuality,
+  formatOntologyReanalysisAgentCommand,
+  formatTopologyOverviewBrief,
 } from "../lib/topology-analysis";
 import { filterOntologyConnectedOrphans } from "../lib/topology-health";
 import {
@@ -133,6 +137,7 @@ import {
   normalizeKindLabelKey,
 } from "../lib/topology-node-significance";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
+import { TopologyRelationLegend } from "./TopologyRelationLegend";
 import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";
@@ -263,22 +268,7 @@ export function HomePage() {
     indexState,
     indexPanelCollapsedStored ? "collapsed" : "expanded",
   );
-  const [overviewChromeRevealed, setOverviewChromeRevealed] = useState(false);
-  useEffect(() => {
-    if (analysisMode === "overview") return;
-    let cancelled = false;
-    // 동기 setState 회피(cascading-render 경고) — microtask 로 defer.
-    window.queueMicrotask(() => {
-      if (!cancelled) setOverviewChromeRevealed(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [analysisMode]);
-  const leftSlotOwner = resolveLeftSlotOwner({
-    analysisMode,
-    overviewChromeRevealed,
-  });
+  const leftSlotOwner = resolveLeftSlotOwner({ analysisMode });
   const renderedIndexState = resolveRenderedIndexPanelState(
     leftSlotOwner,
     indexPreference,
@@ -310,15 +300,14 @@ export function HomePage() {
     [setIndexPreference],
   );
   // Clicking the collapsed edge tab always means "give the slot back to
-  // INDEX" — whether the analysis rail owns the slot because of a non-
-  // overview mode or because the user revealed the overview analysis chrome.
+  // INDEX" — the analysis rail owns the slot only because of a non-overview
+  // mode (focus/path/health), so returning to overview is always enough.
   const handleIndexTabExpand = useCallback(() => {
-    setOverviewChromeRevealed(false);
     setIndexPreference("expanded");
     if (analysisMode !== "overview") {
       setRouteState((current) => ({ ...current, analysisMode: "overview" }));
     }
-  }, [analysisMode, setIndexPreference, setRouteState, setOverviewChromeRevealed]);
+  }, [analysisMode, setIndexPreference, setRouteState]);
   // The map's safe-inset-left assumes INDEX's width by default
   // (`--topology-v2-safe-inset-left: 344` = 18 inset + 300 width + 26 gap).
   // Collapsing INDEX narrows that reserved space — flip the DOM attribute
@@ -1257,13 +1246,6 @@ export function HomePage() {
     topologyControls.searchQuery.trim().length > 0 ||
     topologyControls.depthLimit !== null ||
     topologyControls.hubsOnly;
-  // The overview relation-visibility pill's only producer was the legacy
-  // Sigma-as-engine's `onRelationVisibilityChange` callback — deleted along
-  // with that branch. TopologyMapV2 doesn't wire an equivalent yet, so this
-  // has been `null` (pill hidden) since v2 went default-on in PR #330; kept
-  // as an explicit `null` here rather than removing the prop, so wiring a
-  // v2 producer later is a one-line change instead of a rediscovery.
-  const overviewRelationVisibility = null;
   const pathCandidateVisibility =
     analysisMode === "path"
       ? {
@@ -1328,6 +1310,51 @@ export function HomePage() {
     relationQuality: topologyRelationQuality,
     ...topologyHealthSummary,
   });
+  // INDEX 푸터 "인계" 메뉴 3종 텍스트 — W3 분석 보기 은퇴로
+  // `TopologyAnalysisBar` overview 모드에서 이관. 포맷터는
+  // `views/home/lib/topology-analysis.ts` 단일 출처, 여기서는 조립만 한다.
+  const indexAgentHandoffBriefText = formatTopologyOverviewBrief({
+    summary: analysisSummary,
+    labels: {
+      title: t("analysis.overviewBriefTitle"),
+      totalNodes: t("analysis.overviewBriefTotalNodes"),
+      totalRelations: t("analysis.overviewBriefTotalRelations"),
+      relationReading: t("analysis.overviewBriefRelationReading"),
+      relationProvenance: t("analysis.overviewBriefRelationProvenance"),
+      relationSourceBacked: t("analysis.overviewBriefRelationSourceBacked"),
+      relationAuthored: t("analysis.overviewBriefRelationAuthored"),
+      relationNeedsReview: t("analysis.overviewBriefRelationNeedsReview"),
+      relationQuality: t("analysis.overviewBriefRelationQuality"),
+      relationQualityStrong: t("analysis.overviewBriefRelationQualityStrong"),
+      relationQualitySupported: t("analysis.overviewBriefRelationQualitySupported"),
+      relationQualityWeak: t("analysis.overviewBriefRelationQualityWeak"),
+      relationQualityReview: t("analysis.overviewBriefRelationQualityReview"),
+      agentReadiness: t("analysis.overviewAgentReadiness"),
+      agentReadinessReady: t("analysis.overviewAgentReadinessReady"),
+      agentReadinessPreflight: t("analysis.overviewAgentReadinessPreflight"),
+      agentReadinessReview: t("analysis.overviewAgentReadinessReview"),
+      healthSignals: t("analysis.overviewBriefHealthSignals"),
+      stale: t("analysis.healthStale"),
+      orphan: t("analysis.healthOrphan"),
+      promotion: t("analysis.healthPromotion"),
+      url: t("analysis.healthEvidenceUrl"),
+      healthUrl: t("analysis.overviewBriefHealthUrl"),
+      insightsUrl: t("analysis.overviewBriefInsightsUrl"),
+      agentCheck: t("analysis.overviewBriefAgentCheck"),
+      mcpCheck: t("analysis.overviewBriefMcpCheck"),
+      mcpQueryPlan: t("analysis.overviewBriefMcpQueryPlan"),
+      workspaceCheck: t("analysis.overviewBriefWorkspaceCheck"),
+      mcpWorkspaceCheck: t("analysis.overviewBriefMcpWorkspaceCheck"),
+    },
+    url: typeof window === "undefined" ? null : window.location.href,
+    healthUrl:
+      typeof window === "undefined"
+        ? "/topology/?mode=health"
+        : buildOverviewModeUrl(window.location.href, "health"),
+    insightsUrl: "/ontology/insights/",
+  });
+  const indexAgentHandoffReanalyzeText = formatOntologyReanalysisAgentCommand();
+  const indexAgentHandoffSyncText = formatAgentPostChangeSyncPacket();
   useEffect(() => {
     if (analysisModeRef.current === analysisMode) return;
     analysisModeRef.current = analysisMode;
@@ -1943,6 +1970,27 @@ export function HomePage() {
                         ? t('workspace.growthThisWeek', { count: recentlyUpdatedCount })
                         : undefined
                     }
+                    agentHandoff={{
+                      briefText: indexAgentHandoffBriefText,
+                      reanalyzeText: indexAgentHandoffReanalyzeText,
+                      syncText: indexAgentHandoffSyncText,
+                      labels: {
+                        menuLabel: t("index.agentHandoff"),
+                        menuAria: t("index.agentHandoffAria"),
+                        briefCopy: t("analysis.overviewBriefCopy"),
+                        briefCopied: t("analysis.overviewBriefCopied"),
+                        briefCopyAriaLabel: t("analysis.overviewBriefCopyAriaLabel"),
+                        briefCopiedAriaLabel: t("analysis.overviewBriefCopiedAriaLabel"),
+                        reanalyzeCopy: t("analysis.overviewReanalyzeCopy"),
+                        reanalyzeCopied: t("analysis.overviewReanalyzeCopied"),
+                        reanalyzeCopyAriaLabel: t("analysis.overviewReanalyzeCopyAriaLabel"),
+                        reanalyzeCopiedAriaLabel: t("analysis.overviewReanalyzeCopiedAriaLabel"),
+                        syncCopy: t("analysis.overviewSyncCopy"),
+                        syncCopied: t("analysis.overviewSyncCopied"),
+                        syncCopyAriaLabel: t("analysis.overviewSyncCopyAriaLabel"),
+                        syncCopiedAriaLabel: t("analysis.overviewSyncCopiedAriaLabel"),
+                      },
+                    }}
                     labels={{
                       label: t("index.label"),
                       fold: t("index.fold"),
@@ -1983,7 +2031,6 @@ export function HomePage() {
                 pathTargetSlug={pathTargetSlug}
                 pathSourceTitle={pathSourceTitle}
                 pathTargetTitle={pathTargetTitle}
-                overviewRelationVisibility={overviewRelationVisibility}
                 pathCandidateVisibility={pathCandidateVisibility}
                 rightPanelReserved={drawerOpen}
                 leftPanelExpanded={false}
@@ -2024,134 +2071,6 @@ export function HomePage() {
                 healthRepairOrderRepair: t("analysis.healthRepairOrderRepair"),
                 healthRepairOrderSync: t("analysis.healthRepairOrderSync"),
                 healthRepairTargetLabel: t("analysis.healthRepairTargetLabel"),
-                overviewBriefCopy: t("analysis.overviewBriefCopy"),
-                overviewBriefCopied: t("analysis.overviewBriefCopied"),
-                overviewHandoffSummary: t("analysis.overviewHandoffSummary"),
-                overviewCopyTools: t("analysis.overviewCopyTools"),
-                overviewWorkOrderTitle: t("analysis.overviewWorkOrderTitle"),
-                overviewWorkOrderRead: t("analysis.overviewWorkOrderRead"),
-                overviewWorkOrderFocus: t("analysis.overviewWorkOrderFocus"),
-                overviewWorkOrderPath: t("analysis.overviewWorkOrderPath"),
-                overviewWorkOrderHealth: t("analysis.overviewWorkOrderHealth"),
-                overviewReaderLensTitle: t("analysis.overviewReaderLensTitle"),
-                overviewReaderLensDomains: t("analysis.overviewReaderLensDomains"),
-                overviewReaderLensCapabilities: t(
-                  "analysis.overviewReaderLensCapabilities",
-                ),
-                overviewReaderLensChangePaths: t(
-                  "analysis.overviewReaderLensChangePaths",
-                ),
-                overviewTierLegendTitle: t("analysis.overviewTierLegendTitle"),
-                overviewTierLegendProject: t("analysis.overviewTierLegendProject"),
-                overviewTierLegendDomain: t("analysis.overviewTierLegendDomain"),
-                overviewTierLegendCapability: t(
-                  "analysis.overviewTierLegendCapability",
-                ),
-                overviewTierLegendElement: t("analysis.overviewTierLegendElement"),
-                overviewRelationLegendTitle: t(
-                  "analysis.overviewRelationLegendTitle",
-                ),
-                overviewRelationLegendSpine: t(
-                  "analysis.overviewRelationLegendSpine",
-                ),
-                overviewRelationLegendQuality: t(
-                  "analysis.overviewRelationLegendQuality",
-                ),
-                overviewBriefCopyAriaLabel: t(
-                  "analysis.overviewBriefCopyAriaLabel",
-                ),
-                overviewBriefCopiedAriaLabel: t(
-                  "analysis.overviewBriefCopiedAriaLabel",
-                ),
-                overviewBriefTitle: t("analysis.overviewBriefTitle"),
-                overviewBriefTotalNodes: t("analysis.overviewBriefTotalNodes"),
-                overviewBriefTotalRelations: t(
-                  "analysis.overviewBriefTotalRelations",
-                ),
-                overviewBriefRelationReading: t(
-                  "analysis.overviewBriefRelationReading",
-                ),
-                overviewBriefRelationProvenance: t(
-                  "analysis.overviewBriefRelationProvenance",
-                ),
-                overviewBriefRelationSourceBacked: t(
-                  "analysis.overviewBriefRelationSourceBacked",
-                ),
-                overviewBriefRelationAuthored: t(
-                  "analysis.overviewBriefRelationAuthored",
-                ),
-                overviewBriefRelationNeedsReview: t(
-                  "analysis.overviewBriefRelationNeedsReview",
-                ),
-                overviewBriefRelationQuality: t(
-                  "analysis.overviewBriefRelationQuality",
-                ),
-                overviewBriefRelationQualityStrong: t(
-                  "analysis.overviewBriefRelationQualityStrong",
-                ),
-                overviewBriefRelationQualitySupported: t(
-                  "analysis.overviewBriefRelationQualitySupported",
-                ),
-                overviewBriefRelationQualityWeak: t(
-                  "analysis.overviewBriefRelationQualityWeak",
-                ),
-                overviewBriefRelationQualityReview: t(
-                  "analysis.overviewBriefRelationQualityReview",
-                ),
-                overviewAgentReadiness: t("analysis.overviewAgentReadiness"),
-                overviewAgentReadinessReady: t(
-                  "analysis.overviewAgentReadinessReady",
-                ),
-                overviewAgentReadinessPreflight: t(
-                  "analysis.overviewAgentReadinessPreflight",
-                ),
-                overviewAgentReadinessReview: t(
-                  "analysis.overviewAgentReadinessReview",
-                ),
-                overviewBriefHealthSignals: t(
-                  "analysis.overviewBriefHealthSignals",
-                ),
-                overviewBriefHealthUrl: t("analysis.overviewBriefHealthUrl"),
-                overviewBriefInsightsUrl: t("analysis.overviewBriefInsightsUrl"),
-                overviewBriefAgentCheck: t("analysis.overviewBriefAgentCheck"),
-                overviewBriefMcpCheck: t("analysis.overviewBriefMcpCheck"),
-                overviewBriefMcpQueryPlan: t(
-                  "analysis.overviewBriefMcpQueryPlan",
-                ),
-                overviewBriefWorkspaceCheck: t(
-                  "analysis.overviewBriefWorkspaceCheck",
-                ),
-                overviewBriefMcpWorkspaceCheck: t(
-                  "analysis.overviewBriefMcpWorkspaceCheck",
-                ),
-                overviewRelationVisibleCountSuffix: t(
-                  "analysis.overviewRelationVisibleCountSuffix",
-                ),
-                overviewSkeletonCardCountSuffix: t(
-                  "analysis.overviewSkeletonCardCountSuffix",
-                ),
-                overviewSkeletonCardHiddenSuffix: t(
-                  "analysis.overviewSkeletonCardHiddenSuffix",
-                ),
-                overviewRelationLodNotice: t("analysis.overviewRelationLodNotice"),
-                overviewRelationPreparingNotice: t(
-                  "analysis.overviewRelationPreparingNotice",
-                ),
-                overviewSkeletonNotice: t("analysis.overviewSkeletonNotice"),
-                overviewReanalyzeCopy: t("analysis.overviewReanalyzeCopy"),
-                overviewReanalyzeCopied: t("analysis.overviewReanalyzeCopied"),
-                overviewSyncCopy: t("analysis.overviewSyncCopy"),
-                overviewSyncCopied: t("analysis.overviewSyncCopied"),
-                overviewReanalyzeCopyAriaLabel: t(
-                  "analysis.overviewReanalyzeCopyAriaLabel",
-                ),
-                overviewReanalyzeCopiedAriaLabel: t(
-                  "analysis.overviewReanalyzeCopiedAriaLabel",
-                ),
-                overviewSyncCopyAriaLabel: t("analysis.overviewSyncCopyAriaLabel"),
-                overviewSyncCopiedAriaLabel: t(
-                  "analysis.overviewSyncCopiedAriaLabel",
-                ),
                 focusBriefCopy: t("analysis.focusBriefCopy"),
                 focusBriefCopySummary: t("analysis.focusBriefCopySummary"),
                 focusBriefCopied: t("analysis.focusBriefCopied"),
@@ -2396,22 +2315,11 @@ export function HomePage() {
                 }}
               />
             ) : null}
-            {/* Overview analysis chrome demotes to a chip while INDEX owns
-                the left slot (B3 spec — "chrome chip or the analysis rail's
-                existing collapse"). Only meaningful in overview mode, since
-                every other mode already gives the rail the slot outright. */}
-            {leftSlotOwner === "index" &&
-            !selectedRelationActive &&
-            !topologyCreateNodeBlockingActive ? (
-              <button
-                type="button"
-                onClick={() => setOverviewChromeRevealed(true)}
-                data-testid="topology-index-reveal-analysis-chip"
-                className="topology-ui-scale pointer-events-auto absolute bottom-4 left-[calc(var(--topology-index-inset)*2+var(--topology-index-width))] z-20 inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-3 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)] shadow-[var(--topology-v2-panel-shadow)] transition-colors hover:border-[color:var(--topology-v2-panel-action-border)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
-              >
-                {t("index.revealAnalysis")}
-              </button>
-            ) : null}
+            {/* The overview "View analysis" reveal chip is gone (W3 분석 보기
+                은퇴) — overview mode's analysis-rail content was retired to
+                the relation legend, the INDEX footer's agent-handoff menu,
+                and the insights relations tab, so there's no overview chrome
+                left to opt into. */}
           </>
         <div
           data-testid="topology-map-surface"
@@ -2635,13 +2543,17 @@ export function HomePage() {
                 <TopologyNoMatchesState onClearFilters={clearTopologyFilters} />
               ) : null}
 
-              {/* root-first-open v3 우하단 계기 판독 — 정적 모드일 때만
-                  자체 렌더(FirstRunReadout 내부 판정), dismiss 와 무관하게
-                  정적 샘플을 둘러보는 동안 계속 남아있는다. */}
-              <FirstRunReadout
-                projectCount={firstRunProjectCount}
-                domainCount={indexDomainCount}
-              />
+              {/* 우하단 계기 스택 — 관계선 범례(상시, W3 분석 보기 은퇴로
+                  TopologyAnalysisBar overview 모드에서 이관)가 위, root-first-open
+                  v3 계기 판독(FirstRunReadout, 정적 모드일 때만 자체 렌더)이 아래.
+                  같은 계기 판독 문법을 공유하되 가시성 조건은 서로 다르다. */}
+              <div className="pointer-events-none absolute bottom-6 right-6 z-20 flex flex-col items-end gap-2">
+                <TopologyRelationLegend />
+                <FirstRunReadout
+                  projectCount={firstRunProjectCount}
+                  domainCount={indexDomainCount}
+                />
+              </div>
 
             </>
         </div>

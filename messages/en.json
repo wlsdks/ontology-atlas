@@ -1723,6 +1723,10 @@
       "connectionsUnit": "links",
       "hubTruncated": "Top {shown} / {total} total",
       "hubThumbnailCaption": "Thumbnails are mini ego maps derived from real neighbors. Degree = in + out. Dashed spokes = depends_on share.",
+      "agentReadinessTitle": "Agent readiness",
+      "agentReadinessReady": "ready",
+      "agentReadinessPreflight": "preflight",
+      "agentReadinessReview": "review",
       "domainFreshnessTitle": "Domain freshness",
       "windowCaption": "Last {weeks}w · document updated date",
       "stale": "stale",
@@ -2647,7 +2651,8 @@
       "elementsShort": "elems",
       "freshTitle": "Recently updated",
       "emptyHint": "No concepts match",
-      "revealAnalysis": "View analysis"
+      "agentHandoff": "Handoff",
+      "agentHandoffAria": "Copy agent handoff text (brief, reanalysis prompt, sync gate)"
     },
     "deeplinkNotFound": "Node not found: {query}"
   },

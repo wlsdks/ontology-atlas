@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T17:41:23.937Z",
+  "generatedAt": "2026-07-18T17:49:56.708Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-19 — \"분석 보기\" 은퇴 — overview 패널 내용 3곳으로 이관 (analysis-retire)",
+          "slug": "2026-07-19-분석-보기-은퇴-overview-패널-내용-3곳으로-이관-analysis-retire"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-19 — 내비 3체계 → 1체계 통합 (rail-rollout)",
           "slug": "2026-07-19-내비-3체계-1체계-통합-rail-rollout"
         },
@@ -3886,9 +3891,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. AppNavRail(375 지형도 전용 구현·376 대형화면 스케일)을 지형도 외 전 페이지(/docs, /ontology/edit, /ontology/i",
-      "wordCount": 20879,
-      "updatedAt": "2026-07-18T16:35:15.465Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. TopologyAnalysisBar(3049줄) 의 overview 모드 전용 콘텐츠 — 색 원형 리더 렌즈, 관계선 범례, 핸드오프 복사 3종(brief",
+      "wordCount": 21077,
+      "updatedAt": "2026-07-18T17:31:15.697Z",
       "linksOut": [
         "slug"
       ]
@@ -5489,12 +5494,14 @@
         ],
         "elements": [
           "elements/app-settings-menu",
+          "src/entities/knowledge-graph/lib/relation-quality.ts",
           "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
           "src/shared/lib/ontology-tree/agent-query-recipes.ts",
           "src/shared/lib/ontology-tree/agent-readiness.ts",
           "src/views/home/ui/TopologyAnalysisBar.tsx",
           "src/views/ontology-edit/ui/RelationWriteConfirm.tsx",
-          "src/views/ontology-insights/ui/OntologyInsightsPage.tsx"
+          "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+          "src/views/ontology-insights/ui/tabs/RelationsTab.tsx"
         ],
         "relates": [
           "capabilities/mcp-server",
@@ -5505,8 +5512,8 @@
       },
       "headings": [],
       "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Overview / Relations / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Ins",
-      "wordCount": 331,
-      "updatedAt": "2026-07-18T16:38:48.931Z",
+      "wordCount": 400,
+      "updatedAt": "2026-07-18T17:25:47.865Z",
       "linksOut": []
     },
     {
@@ -6578,7 +6585,7 @@
       ],
       "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1-hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · 짧은 description 을 띄운다. ontology 노드는 kind(capability / domain / el",
       "wordCount": 726,
-      "updatedAt": "2026-07-18T17:37:35.718Z",
+      "updatedAt": "2026-07-18T17:49:20.075Z",
       "linksOut": []
     },
     {
@@ -6601,8 +6608,8 @@
         }
       ],
       "excerpt": "/topology 진입을 ForceAtlas2 scatter 대신 결정론적 중앙-방사형 구조 골격으로 렌더한다. project 정중앙(tier 0) → 도메인 ring(tier 1, 12시 기준 slug 순) → 도메인별 대표 역량(tier 2, governed subtree weight 상위 N) + contains spine 엣지. 좌표는 순수 함수가 precompute 해 replay-identical — 물리/난수 0, 진입 시 idle 모션 0. 클릭-레벨 확장(semantic zoom, 누적 드릴다운): 도메인 클릭 → 그 도메인의 모든 역량이 wedge ",
-      "wordCount": 593,
-      "updatedAt": "2026-06-18T15:51:19.117Z",
+      "wordCount": 685,
+      "updatedAt": "2026-07-18T17:24:25.529Z",
       "linksOut": []
     },
     {
@@ -7241,7 +7248,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-07-18T17:37:31.877Z",
+      "updatedAt": "2026-07-18T17:49:20.077Z",
       "linksOut": []
     },
     {
@@ -7991,9 +7998,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/home/ui/TopologyAnalysisBar.tsx is the compact mode switcher shown over /topology. It owns the visible Overview / Focus / Path / Health controls, the small metrics line, the Overview graph handoff brief, the Health stale/orphan/promotion chips, and the first actionable Health inspect target. The bar is reacha",
-      "wordCount": 1405,
-      "updatedAt": "2026-06-18T15:15:06.817Z",
+      "excerpt": "src/views/home/ui/TopologyAnalysisBar.tsx is the compact mode switcher shown over /topology. It owns the visible Overview / Focus / Path / Health controls, the small metrics line, the Health stale/orphan/promotion chips, and the first actionable Health inspect target. The bar is reachable on mobile as a stacked control",
+      "wordCount": 1243,
+      "updatedAt": "2026-07-18T17:25:01.884Z",
       "linksOut": []
     },
     {
