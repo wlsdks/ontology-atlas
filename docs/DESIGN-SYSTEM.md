@@ -128,6 +128,22 @@ download(`/download`).
 - 이것들을 DOM/CSS 로 흉내내는 순간 "AI 데모 배경"이 된다 — 랜딩 히어로에
   constellation 배경을 깔고 싶다는 충동이 대표적 반례다.
 
+**전역 승격 완료 토큰** (랜딩 롤아웃, 2026-07-18 — `app/globals.css`):
+
+- `--engraved-numeral-face` / `--engraved-numeral-text-shadow` — 음각 mono
+  숫자. 다크 값은 v2 numeral 값 복사, 라이트 값은 레터프레스(어두운 면 +
+  밝은 아래 그림자)로 신규 정의.
+- `--kind-glyph-stroke-{project,domain,capability,element}` /
+  `--kind-glyph-fill-{project,domain,capability,element}` /
+  `--kind-glyph-edge-contains` / `--kind-glyph-edge-relates` — kind 글리프
+  미니어처(hex/칩/원/pad)와 trace 잉크. 다크 값은 v2 node/edge-mark 값
+  **복사** (var() 참조 아님 — P6 `--topology-v2-` grep 계약 유지), 라이트
+  값 신규. 소비처: `src/views/landing/ui/LandingPage.tsx`
+  (마커 `data-token="engraved-numeral"` / `data-token="kind-glyph"`).
+- 랜딩 히어로 census 숫자의 진실원:
+  `src/views/landing/model/dogfood-census.generated.ts` —
+  `scripts/build-docs-vault.mjs` 가 dogfood vault frontmatter 에서 생성.
+
 **Surface class 별 do / don't**:
 
 | Surface | Do | Don't |

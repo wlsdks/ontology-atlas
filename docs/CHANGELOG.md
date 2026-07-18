@@ -6,7 +6,24 @@
 
 ---
 
-## 2026-07-17 — ONTOLOGY-ATLAS-SPEC v1.0-rc 공개 (N0)
+## 2026-07-18 — 랜딩 B2+ 리디자인 (페이지 롤아웃 #1)
+
+`/` 랜딩을 v2 "Circuit × Constellation" (B2+) 기계가공 언어로 전면 재구성.
+장식이던 히어로 그래프(가짜 14노드 + entrance 애니메이션)를 **정직한
+topology 미니어처**로 교체 — 실제 dogfood vault(docs/ontology) frontmatter
+에서 빌드타임에 유도한 project hex + domain 칩 6 + 허브 capability 원을
+정적 SVG 로 그리고, 음각 mono 숫자로 실측 census (106 CONCEPTS · 500
+RELATIONS) 를 각인한다. 목업 데이터 0.
+
+- **census 파이프라인** — `scripts/lib/vault-census.mjs` 에
+  `dogfoodVaultGraphSummary` 추가, `scripts/build-docs-vault.mjs` 가
+  `src/views/landing/model/dogfood-census.generated.ts` (작은 상수 모듈,
+  deterministic) 를 생성. 400KB manifest 를 랜딩 번들에 싣지 않는다.
+- **전역 승격 토큰** — `--engraved-numeral-*` · `--kind-glyph-*` 12종을
+  `app/globals.css` 에 승격 (다크 = v2 값 복사, 라이트 = 신규 정의).
+  `--topology-v2-*` 직접 참조 0 유지.
+- 01/02/03 카드 · OSS 스펙 테이블 · CTA 를 machined 스타일(1px border-soft
+  + 컴팩트 radius + 음각 index)로 통일. 다크/라이트 · en/ko 모두 지원.
 
 제품 계획 v9 (`docs/PRODUCT-PLAN-2026-07.md`) 네트워크 트랙 N0 실행 — 이미
 구현·검증된 vault frontmatter 스키마를 `docs/ONTOLOGY-ATLAS-SPEC.md` 공개

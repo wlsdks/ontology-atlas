@@ -672,6 +672,32 @@
     --topology-utility-lane-focus-ring: rgba(94, 106, 210, 0.46);
     --topology-utility-lane-count-surface: rgba(94, 106, 210, 0.28);
     --topology-utility-lane-count-text: var(--color-indigo-accent);
+
+    /*
+     * B2+ 페이지 롤아웃 전역 승격 토큰 (feat/landing-b2plus).
+     * `--topology-v2-*` 는 feature flag scope 라 topology 밖 페이지에서 직접
+     * 참조 금지 (DESIGN-SYSTEM v2 §스코프 주의) — 랜딩이 필요로 하는 값만
+     * 전역 승격. product reason: 랜딩 히어로의 "정직한 topology 미니어처"
+     * (kind = shape 글리프)와 음각 mono 숫자(census = 실데이터)가 페이지
+     * DOM 에서 canvas 와 같은 기계가공 언어로 읽혀야 한다.
+     * 다크 값 출처: topology-map-v2 노드/음각 팔레트와 동일 값 복사
+     * (var() 참조가 아닌 값 복사 — flag 제거 시 grep 계약 유지).
+     * 라이트 값은 v2 canvas light-mode 패스와 무관한 DOM 전용 신규 정의 —
+     * 페이지는 라이트 테마 완전 지원이 계약이라 여기서 함께 정의한다.
+     * 마커: LandingPage data-token="engraved-numeral" / data-token="kind-glyph".
+     */
+    --engraved-numeral-face: #8c8c94;
+    --engraved-numeral-text-shadow: 0 1px 0 #08080a;
+    --kind-glyph-stroke-project: #57575f;
+    --kind-glyph-stroke-domain: #48484f;
+    --kind-glyph-stroke-capability: #3c3c44;
+    --kind-glyph-stroke-element: #34343b;
+    --kind-glyph-fill-project: #1c1c22;
+    --kind-glyph-fill-domain: #191920;
+    --kind-glyph-fill-capability: #17171d;
+    --kind-glyph-fill-element: #15151a;
+    --kind-glyph-edge-contains: #4a4a54;
+    --kind-glyph-edge-relates: #5c5c72;
     --topology-blocking-backdrop-surface: rgba(0, 0, 0, 0.72);
     --topology-blocking-map-opacity: 0.24;
     --topology-blocking-map-filter: saturate(0.58);
@@ -1247,6 +1273,24 @@
     --color-overlay-3: rgba(0, 0, 0, 0.10);
     --color-divider: rgba(0, 0, 0, 0.16);
     --color-tap-highlight: rgba(0, 0, 0, 0.05);
+
+    /* B2+ 승격 토큰 라이트 값 — 음각은 밝은 표면에선 어두운 면 + 밝은 아래
+       그림자(레터프레스). 글리프 잉크는 "종이 위 청사진" — slate 잉크
+       사다리로 1px 스트로크 전부 ≥3:1 (Guardian 라이트 재조율, owner
+       washed-out 피드백 반영). fill 은 instrument face 보다 한 단 깊게
+       도형에 몸통을 준다. trace 는 스트로크 아래 서열의 sub-stroke. */
+    --engraved-numeral-face: #454b58;
+    --engraved-numeral-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+    --kind-glyph-stroke-project: #3e4759;
+    --kind-glyph-stroke-domain: #545e73;
+    --kind-glyph-stroke-capability: #6b7488;
+    --kind-glyph-stroke-element: #7f8799;
+    --kind-glyph-fill-project: #dde2eb;
+    --kind-glyph-fill-domain: #e5e9f0;
+    --kind-glyph-fill-capability: #ebeef3;
+    --kind-glyph-fill-element: #eff1f6;
+    --kind-glyph-edge-contains: #8b93a7;
+    --kind-glyph-edge-relates: #7d86a2;
 
     /* 토폴로지 골격 잉크 — 라이트는 어두운 회색 알파(시야 적응 보정으로
        다크보다 1단계 진하게). 인디고/선택 토큰은 양 모드 동일. */
