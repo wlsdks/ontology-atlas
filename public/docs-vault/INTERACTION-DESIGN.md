@@ -64,4 +64,4 @@
 ## 6. 구현 참고
 
 - 스프링: Motion(구 Framer Motion) 계열 `type: 'spring', bounce: 0, duration: 0.4` = damping 1.0 근사. 새 의존성 도입 여부는 Slice 2에서 판단 — 기존 TopologyMapCanvas의 순수 함수 카메라 + CSS `translate` FLIP으로 충분하면 라이브러리 없이 velocity 인계만 자체 구현 (의존성 최소 원칙).
-- Sigma 캔버스와의 결합은 `docs/SIGMA-PLAYBOOK.md` (작성 중) 의 reducer·카메라 API 패턴을 따른다 — DOM 오버레이는 팝오버 1개로 제한.
+- Sigma 캔버스와의 결합은 `docs/archive/SIGMA-PLAYBOOK.md` (조사됐으나 v2는 Sigma 미채택 — archived) 의 reducer·카메라 API 패턴을 따른다 — DOM 오버레이는 팝오버 1개로 제한.

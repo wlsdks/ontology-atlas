@@ -31,7 +31,7 @@ input (humans + AI agents)     parse           store              output
         │                       │                │                │
         ▼                       ▼                ▼                ▼
   .md in vault  →          frontmatter   →  user disk      →  Browse (/, /ontology) tree+ego
-  (frontmatter)                              (vault)           Topology (/, /topology) Sigma WebGL
+  (frontmatter)                              (vault)           Topology (/, /topology) canvas-2D map/graph
   + AI agent (MCP)                                            Builder (/ontology/edit) xyflow ERD
                                                               App views (/ontology, /topology, /docs)
                                                               Insights (/ontology/insights) census
@@ -84,7 +84,7 @@ local-first trust line. No download CTA inside the installed app. On the web,
 - **Privacy note**: the installed app and vault data use local disk as the source of truth; the hosted site is product introduction + download entry
 - **Footer**: license · GitHub · stack chips · `LocaleSwitch`
 
-### `/` and `/topology` — Sigma WebGL hub
+### `/` and `/topology` — canvas-2D topology hub
 
 Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-link target, `/topology` = explicit deep-link namespace).
 
@@ -96,7 +96,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
   - **경로 (path)** — enters via shift-click of 2 nodes or `mode=path` deep links
   - **상태 (health)** — enters via the 정리 queue count chip on the view rail; `mode=health` deep links preserved
 
-#### Canvas (Sigma + Graphology + ForceAtlas2)
+#### Canvas (`topology-map-v2` — custom canvas-2D engine + Graphology ForceAtlas2 physics)
 - **Click node** → right-side `ProjectDrawer` opens
 - **Drag node** → reposition (releases back to physics)
 - **Double-click node** → "local graph" mode (2-hop neighbors only, breadcrumb: `Local · Root · slugA · slugB`, click to backtrack, Esc to exit)

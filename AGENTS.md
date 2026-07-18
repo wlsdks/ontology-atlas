@@ -86,7 +86,7 @@ No `.env`, no auth provider, no backend setup needed. Round 10 (2026-05) permane
 - **Language** TypeScript 5
 - **Style** Tailwind CSS 4 (`@theme` CSS-based tokens)
 - **i18n** next-intl 4.11 with `/[locale]/` URL prefix (en / ko)
-- **Visualization** Sigma.js (WebGL) · Graphology · ForceAtlas2 · xyflow
+- **Visualization** Custom canvas-2D engine (`topology-map-v2`) for `/`, `/topology` · Graphology ForceAtlas2 (physics, shared by the canvas engine and the ERD builder) · Sigma.js (WebGL, `/docs` folder-topology mini map only) · xyflow (`/ontology/edit` ERD builder)
 - **Local-first** File System Access API + IndexedDB (vault handle persistence)
 - **AI agent** `@modelcontextprotocol/sdk` (stdin/stdout JSON-RPC server, `mcp/` package)
 - **State** in-memory + IndexedDB (vault handle) · React local state · URL state
@@ -132,7 +132,7 @@ scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood w
 
 ```
 /                          ontology hub when vault is selected; landing page when not
-/topology                  topology view (Sigma WebGL)
+/topology                  topology view (canvas-2D map/graph engine)
 /projects                  project list (vault frontmatter `kind: project` docs)
 /project/[slug]            project detail (inline edit when vault is loaded)
 /project/[slug]/edit       full project editor

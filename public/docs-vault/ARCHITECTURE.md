@@ -18,7 +18,7 @@ tags: [architecture, infra, overview]
 │ User                                                    │
 │ ├─ /                       ontology hub (when vault    │
 │ │                          loaded) / landing (else)    │
-│ ├─ /topology               Sigma WebGL spatial map     │
+│ ├─ /topology               canvas-2D spatial map       │
 │ ├─ /docs                   vault picker + editor       │
 │ ├─ /ontology               tree + ego graph            │
 │ ├─ /ontology/edit          xyflow ERD builder          │
@@ -92,7 +92,7 @@ write tools persist changes back to markdown.
 src/
 ├── app/        providers, init code
 ├── views/      page-level components (1 view per route or group)
-├── widgets/    composite UI blocks (sigma, drawer, palette, …)
+├── widgets/    composite UI blocks (topology-map-v2, drawer, palette, …)
 ├── features/   single interaction units (form, picker, search, …)
 ├── entities/   business entities (project, ontology-class, …)
 └── shared/     UI primitives, lib helpers, config, types
@@ -148,7 +148,7 @@ This is the "first impression" state — visitors see a real ontology
 
 ```
 /                          ontology hub when vault loaded; landing when not
-/topology                  topology view (Sigma WebGL)
+/topology                  topology view (canvas-2D map/graph engine)
 /docs                      vault picker / editor / unified palette
 /ontology                  tree + ego graph
 /ontology/edit             ERD canvas builder (xyflow)

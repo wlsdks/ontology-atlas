@@ -2,7 +2,8 @@
 
 > 입력: `docs/prototypes/topology-b2plus.html`(승인된 B2+ "Circuit × Constellation"
 > 프로토타입) · `docs/TOPOLOGY-V2-PHASE0.md`(실측 병목 + 어댑터 계약 초안) ·
-> `docs/SIGMA-PLAYBOOK.md`(Sigma v3 내장 기능 계약) · `docs/INTERACTION-DESIGN.md`
+> `docs/archive/SIGMA-PLAYBOOK.md`(Sigma v3 내장 기능 계약 — 조사됐으나 v2는
+> Sigma 미채택, archived) · `docs/INTERACTION-DESIGN.md`
 > (유체 인터페이스 원칙) · `.claude/rules/design.md` · `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`
 > (Design Gate · Graph Engine Fit Gate · Attention Layer Model · State Contract ·
 > 14인치 규칙) · design-guardian 지형도 verdict(layer (b) 항목).
