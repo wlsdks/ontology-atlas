@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>빌더 v2 — 03 노드 선택</title>
+<!-- 시안 표준: 1920×1080 primary · 100vh 유동 (고정 px 프레임 없음, 스크롤 0)
+
+  builder-v2-03-selected — 빌더 재구성 v2 · A0 소유자 승인용 3상태 중 [노드 선택].
+  계약 요약 (기획서 §1):
+    · 원칙: 빌더 = 지형도 캔버스의 편집 가능한 형제. 새 언어 발명 금지.
+      캔버스 안 = 지형도 v2 언어(kind 글리프 · trace 엣지 · 블루프린트 그리드 · 음각 numeral).
+      캔버스 밖 = 크롬 시스템(44px 타일/칩 · radius 10/12 · --chrome 문법 · engraved).
+    · 이 상태: 기존 vault 노드 선택(인디고 보더) + 인스펙터에 실 프론트매터 속성 ·
+      기존 관계(trace-mark 읽기 행) · 코드 근거 · 세션 diff 채워짐 +
+      쓰기바 dirty("속성 1", patch_concept).
+    · 노드 카드: selected=인디고 보더만 / 도메인 컬러 레일 금지 / glow 금지.
+    · 실데이터(dogfood): Onboarding & UX 도메인 · Agent Config Onboarding 역량.
+-->
+<style>
+  :root{
+    --canvas:#060609; --panel:#101118; --elevated:#16171d;
+    --divider:rgba(255,255,255,.08); --border-soft:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.17);
+    --t1:#ececf0; --t2:#b8bac2; --t3:#84868f; --t4:#63656e;
+    --indigo:#5e6ad2; --indigo-soft:rgba(94,106,210,.14); --indigo-line:rgba(139,151,255,.8);
+    --indigo-ink:rgba(139,151,255,.45);
+    --amber:#d4b478;
+    --engrave:0 1px 0 rgba(0,0,0,.65);
+    --machined:inset 0 1px 0 rgba(255,255,255,.05);
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --numeral:#8c8c94;
+  }
+  *{margin:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:var(--canvas);color:var(--t1);font:14px/1.5 -apple-system,"Pretendard",sans-serif;overflow:hidden}
+  svg.lucide{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+  .frame{width:100%;height:100vh;display:flex;overflow:hidden}
+
+  /* ══ 좌측 내비 레일 ══ */
+  .navrail{width:64px;flex:none;display:flex;flex-direction:column;align-items:center;padding:12px 0 14px;
+    background:#0a0b0f;border-right:1px solid var(--divider);z-index:10}
+  .navrail .logo{width:34px;height:34px;display:grid;place-items:center;color:var(--t2);margin-bottom:14px}
+  .navrail .logo svg{width:20px;height:20px}
+  .navrail nav{display:flex;flex-direction:column;gap:2px;width:100%}
+  .navrail .it{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 0 8px;cursor:pointer;color:var(--t3)}
+  .navrail .it .ntile{width:38px;height:32px;border-radius:8px;display:grid;place-items:center}
+  .navrail .it .ntile svg{width:18px;height:18px}
+  .navrail .it span{font-size:9.5px;color:var(--t4)}
+  .navrail .it:hover .ntile{background:rgba(255,255,255,.05);color:var(--t1)}
+  .navrail .it.on{color:var(--indigo-line)}
+  .navrail .it.on .ntile{background:var(--indigo-soft);box-shadow:inset 0 0 0 1px rgba(139,151,255,.22)}
+  .navrail .it.on span{color:var(--t1);font-weight:600}
+  .navrail .it.on::before{content:"";position:absolute;left:0;top:9px;height:30px;width:2px;background:var(--indigo);border-radius:0 2px 2px 0}
+  .navrail .foot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:4px;width:100%}
+  .navrail .agentdot{position:absolute;top:4px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--amber);outline:2px solid #0a0b0f}
+
+  .work{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+
+  /* ══ 헤더 1행 ══ */
+  .topbar{flex:none;height:58px;display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--divider)}
+  .crumbs{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--t3)}
+  .crumbs a{color:var(--t2);text-decoration:none}
+  .crumbs a:hover{color:var(--t1)}
+  .crumbs .cur{color:var(--t1)}
+  .crumbs .sep{color:var(--t4)}
+  .crumbs .census{margin-left:12px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--numeral);text-shadow:var(--engrave)}
+  .dirty{margin:0 auto;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--t3)}
+  .dirty .power{width:6px;height:6px;border-radius:50%;background:var(--indigo);flex:none}
+  .dirty.clean .power{background:var(--t4)}
+  .dirty b{color:var(--numeral);font-weight:600;text-shadow:var(--engrave)}
+  .util{display:flex;align-items:center;gap:8px}
+  .tile{width:38px;height:38px;border:1px solid var(--border-soft);background:rgba(16,17,24,.96);border-radius:10px;
+    display:grid;place-items:center;color:var(--t3);cursor:pointer;position:relative}
+  .tile:hover{color:var(--t1);border-color:var(--border-strong)}
+  .tile svg{width:16px;height:16px}
+  .tile .agentdot{position:absolute;top:6px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--amber);outline:2px solid var(--canvas)}
+  .exportbtn{display:flex;align-items:center;gap:7px;height:38px;padding:0 13px;border:1px solid var(--border-soft);
+    background:rgba(16,17,24,.96);border-radius:10px;color:var(--t2);font-size:12.5px;cursor:pointer}
+  .exportbtn:hover{color:var(--t1);border-color:var(--border-strong)}
+  .exportbtn svg{width:14px;height:14px;color:var(--t3)}
+
+  /* ══ 3-pane 본체 ══ */
+  .panes{flex:1;min-height:0;display:grid;grid-template-columns:240px minmax(0,1fr) 320px;gap:14px;padding:14px}
+  .pane{background:var(--panel);border:1px solid var(--border-soft);border-radius:12px;
+    box-shadow:var(--machined),0 14px 34px rgba(0,0,0,.35);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .plabel{flex:none;display:flex;align-items:center;gap:8px;padding:12px 14px 11px;border-bottom:1px solid var(--divider);
+    font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--t3)}
+  .plabel .n{margin-left:auto;font-size:10px;color:var(--t4)}
+  .pbody{flex:1;min-height:0;overflow-y:auto;padding:12px}
+
+  /* 팔레트 */
+  .kcard{display:flex;align-items:center;gap:11px;border:1px solid var(--border-soft);background:rgba(255,255,255,.02);
+    border-radius:10px;padding:11px 12px;margin-bottom:9px;cursor:grab}
+  .kcard:hover{border-color:var(--border-strong)}
+  .kcard .kt{min-width:0;flex:1}
+  .kcard .kname{font-size:13px;font-weight:560;color:var(--t1)}
+  .kcard .kdesc{font-family:var(--mono);font-size:9.5px;letter-spacing:.01em;color:var(--t4);margin-top:3px}
+  .kcard .kbd{font-family:var(--mono);font-size:9px;border:1px solid var(--divider);border-radius:4px;padding:1px 5px;color:var(--t4)}
+  .khint{margin-top:6px;padding-top:11px;border-top:1px solid var(--divider);font-size:11px;line-height:1.65;color:var(--t4)}
+
+  /* 블루프린트 캔버스 */
+  .canvas{position:relative;padding:0;overflow:hidden;
+    background:
+      repeating-linear-gradient(0deg,transparent 0 23px,rgba(255,255,255,.035) 23px 24px),
+      repeating-linear-gradient(90deg,transparent 0 23px,rgba(255,255,255,.035) 23px 24px),
+      var(--canvas)}
+  .canvas .edges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .cnode{position:absolute;width:196px;display:flex;align-items:center;gap:10px;background:var(--panel);
+    border:1px solid var(--border-soft);border-radius:8px;box-shadow:var(--machined),0 10px 26px rgba(0,0,0,.45);
+    padding:10px 12px;cursor:pointer}
+  .cnode:hover{border-color:var(--border-strong)}
+  .cnode.sel{border-color:rgba(94,106,210,.75)}
+  .cnode.ghost{border-style:dashed;opacity:.85}
+  .cnode .ct{min-width:0;flex:1}
+  .cnode .cname{display:block;font-size:13px;font-weight:560;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cnode .ckind{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--t4);margin-top:3px}
+  .cnode .port{position:absolute;right:-5px;top:50%;margin-top:-5px;width:10px;height:10px;border-radius:50%;
+    background:var(--canvas);border:1.5px solid var(--border-strong)}
+  .cnode.sel .port{border-color:var(--indigo)}
+  .zoombar{position:absolute;left:14px;bottom:14px;display:flex;gap:6px}
+  .zoombar button{appearance:none;cursor:pointer;width:26px;height:26px;padding:0;display:inline-flex;align-items:center;justify-content:center;
+    background:var(--panel);color:var(--t3);border:1px solid var(--border-soft);border-radius:6px;box-shadow:var(--machined);font:500 13px/1 var(--mono)}
+  .zoombar button:hover{color:var(--t1);border-color:var(--border-strong)}
+  .legend{position:absolute;right:14px;bottom:12px;font-family:var(--mono);font-size:10.5px;color:var(--t4);display:flex;gap:13px;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+
+  /* 인스펙터 */
+  .ihead{display:flex;align-items:center;gap:9px}
+  .ihead .iname{min-width:0;flex:1;font-size:14.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--t1)}
+  .ikind{padding-left:25px;font-family:var(--mono);font-size:10.5px;color:var(--t4);margin-top:5px;letter-spacing:.02em}
+  .ilabel{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t4);margin:16px 0 8px}
+  /* 프론트매터 속성 필드 */
+  .field{display:flex;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid var(--divider)}
+  .field:last-child{border-bottom:none}
+  .field .fk{flex:none;width:74px;font-family:var(--mono);font-size:10.5px;color:var(--t4);letter-spacing:.02em}
+  .field .fv{min-width:0;flex:1;font-size:12.5px;color:var(--t2)}
+  .field .fv.mono{font-family:var(--mono);font-size:11.5px;color:var(--t3)}
+  .field .fv.edited{color:var(--indigo-line);border-bottom:1px dashed rgba(139,151,255,.5);padding-bottom:1px}
+  /* 기존 관계 읽기 행 */
+  .reledge{display:flex;align-items:center;gap:10px;border:1px solid var(--border-soft);border-radius:8px;padding:8px 11px;margin-bottom:6px;font-size:12px;color:var(--t2)}
+  .reledge .rtype{font-family:var(--mono);font-size:10.5px;color:var(--t3);flex:none;width:78px}
+  .reledge .rto{min-width:0;flex:1;display:flex;align-items:center;gap:7px;justify-content:flex-end;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .reledge .rto span{color:var(--t2)}
+  .difflist{font-family:var(--mono);font-size:11px;line-height:1.95;color:var(--t3)}
+  .difflist .add{color:var(--indigo-line)}
+  .difflist .mod{color:var(--t2)}
+  .difflist .path{color:var(--t4)}
+  .guard{margin-top:auto;padding-top:12px;border-top:1px solid var(--divider);font-size:10.5px;line-height:1.6;color:var(--t4)}
+
+  /* 쓰기 확인 바 */
+  .writebar{flex:none;height:58px;display:flex;align-items:center;gap:14px;padding:0 16px;border-top:1px solid var(--divider)}
+  .writebar .wlabel{font-size:13px;font-weight:560;color:var(--t1);flex:none}
+  .writebar .payload{min-width:0;flex:1;font-family:var(--mono);font-size:12px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .writebar .payload b{color:var(--numeral);font-weight:600;text-shadow:var(--engrave)}
+  .writebar button{flex:none;appearance:none;cursor:pointer;font:560 12.5px/1 inherit;border-radius:8px;padding:9px 15px}
+  .writebar .dry{color:var(--t2);background:transparent;border:1px solid var(--border-soft)}
+  .writebar .dry:hover{border-color:var(--border-strong);color:var(--t1)}
+  .writebar .commit{color:var(--indigo-line);background:rgba(94,106,210,.1);border:1px solid rgba(94,106,210,.5)}
+  .writebar .commit:hover{background:rgba(94,106,210,.16);border-color:var(--indigo)}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="frame">
+  <!-- 좌측 내비 레일 -->
+  <aside class="navrail">
+    <div class="logo" title="Ontology Atlas"><svg class="lucide" viewBox="0 0 24 24"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg></div>
+    <nav>
+      <div class="it"><span class="ntile"><svg class="lucide" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></span><span>지도</span></div>
+      <div class="it"><span class="ntile"><svg class="lucide" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span><span>문서함</span></div>
+      <div class="it on"><span class="ntile"><svg class="lucide" viewBox="0 0 24 24"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></span><span>빌더</span></div>
+      <div class="it"><span class="ntile"><svg class="lucide" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span><span>인사이트</span></div>
+      <div class="it"><span class="ntile"><svg class="lucide" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M8 10v4"/><path d="M12 10v2"/><path d="M16 10v6"/></svg></span><span>프로젝트</span></div>
+    </nav>
+    <div class="foot">
+      <div class="it" title="에이전트 활동"><span class="ntile" style="position:relative"><svg class="lucide" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg><span class="agentdot"></span></span></div>
+      <div class="it" title="설정"><span class="ntile"><svg class="lucide" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+    </div>
+  </aside>
+
+  <div class="work">
+    <!-- 헤더 1행 -->
+    <header class="topbar">
+      <nav class="crumbs">
+        <a href="#">← 온톨로지</a><span class="sep">/</span><span class="cur">빌더</span>
+        <span class="census">108 개념 · 174 관계 · 이번 주 +2</span>
+      </nav>
+      <span class="dirty"><span class="power"></span>미저장 변경 · 속성 <b>1</b></span>
+      <div class="util">
+        <span class="tile" title="에이전트 활동 — 방금 mcp-server 갱신"><svg class="lucide" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg><span class="agentdot"></span></span>
+        <span class="tile" title="설정"><svg class="lucide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44"/></svg></span>
+        <span class="tile" title="더보기"><svg class="lucide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span>
+        <button class="exportbtn" type="button"><svg class="lucide" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>내보내기</button>
+      </div>
+    </header>
+
+    <!-- 3-pane -->
+    <div class="panes">
+      <!-- 좌: kind 팔레트 -->
+      <aside class="pane" aria-label="노드 팔레트">
+        <div class="plabel">Node Kinds<span class="n">4</span></div>
+        <div class="pbody" style="display:flex;flex-direction:column">
+          <div id="kinds"></div>
+          <p class="khint">글리프를 캔버스로 드래그하면 새 노드 초안이 생깁니다. 노드 포트를 끌어 다른 노드에 놓으면 관계 초안 — 쓰기 확인 전에는 vault 를 건드리지 않습니다.</p>
+        </div>
+      </aside>
+
+      <!-- 중: 블루프린트 캔버스 (기존 노드 선택) -->
+      <section class="pane canvas" aria-label="캔버스">
+        <svg class="edges" aria-hidden="true">
+          <!-- contains (실선, 중립) -->
+          <line x1="360" y1="112" x2="248" y2="252" stroke="#33333c" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="440" y1="112" x2="560" y2="252" stroke="#33333c" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="248" y1="298" x2="248" y2="436" stroke="#33333c" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="568" y1="298" x2="568" y2="436" stroke="#33333c" stroke-width="1.3" stroke-linecap="round"/>
+          <!-- depends_on (파선, 중립 — 확정 관계) -->
+          <line x1="346" y1="273" x2="470" y2="273" stroke="#4a4a58" stroke-width="1.3" stroke-dasharray="3.2 3.2" stroke-linecap="round"/>
+          <!-- evidences (점선, 중립) -->
+          <line x1="248" y1="482" x2="568" y2="482" stroke="#454550" stroke-width="1.3" stroke-dasharray="1.4 3.2" stroke-linecap="round"/>
+        </svg>
+
+        <div class="cnode" style="left:300px;top:64px" data-glyph="domain" data-size="16">
+          <span class="ct"><span class="cname">Onboarding &amp; UX</span><span class="ckind">domain</span></span>
+          <span class="port"></span>
+        </div>
+        <div class="cnode sel" style="left:150px;top:250px" data-glyph="capability" data-size="16">
+          <span class="ct"><span class="cname">Agent Config Onboarding</span><span class="ckind">capability · 선택</span></span>
+          <span class="port"></span>
+        </div>
+        <div class="cnode" style="left:470px;top:250px" data-glyph="capability" data-size="16">
+          <span class="ct"><span class="cname">MCP Server</span><span class="ckind">capability</span></span>
+          <span class="port"></span>
+        </div>
+        <div class="cnode" style="left:150px;top:436px" data-glyph="element" data-size="16">
+          <span class="ct"><span class="cname">agent-setup 명령</span><span class="ckind">element</span></span>
+          <span class="port"></span>
+        </div>
+        <div class="cnode" style="left:470px;top:436px" data-glyph="element" data-size="16">
+          <span class="ct"><span class="cname">cli/agent-setup.mjs</span><span class="ckind">element</span></span>
+          <span class="port"></span>
+        </div>
+
+        <div class="zoombar">
+          <button type="button" aria-label="확대">+</button>
+          <button type="button" aria-label="축소">−</button>
+          <button type="button" aria-label="맞춤" style="font-size:10px">fit</button>
+        </div>
+        <span class="legend">
+          <span data-mark="contains"></span>contains
+          <span data-mark="depends"></span>depends
+          <span data-mark="evidence"></span>evidence
+        </span>
+      </section>
+
+      <!-- 우: 인스펙터 (선택 노드 데이터 채워짐) -->
+      <aside class="pane" aria-label="인스펙터">
+        <div class="plabel">Inspector</div>
+        <div class="pbody" style="display:flex;flex-direction:column">
+          <div class="ihead">
+            <span data-glyph="capability" data-size="16"></span>
+            <span class="iname">Agent Config Onboarding</span>
+          </div>
+          <div class="ikind">역량 · onboarding-ux · capabilities/agent-config-onboarding.md</div>
+
+          <div class="ilabel">속성 · frontmatter</div>
+          <div class="field"><span class="fk">kind</span><span class="fv mono">capability</span></div>
+          <div class="field"><span class="fk">domain</span><span class="fv mono">onboarding-ux</span></div>
+          <div class="field"><span class="fk">status</span><span class="fv edited">active</span></div>
+          <div class="field"><span class="fk">title</span><span class="fv">Agent Config Onboarding</span></div>
+
+          <div class="ilabel">관계 · 3</div>
+          <div class="reledge"><span class="rtype">contains</span><span class="rto"><span>agent-setup 명령</span><span data-glyph="element" data-size="13"></span></span></div>
+          <div class="reledge"><span class="rtype">depends_on</span><span class="rto"><span>MCP Server</span><span data-glyph="capability" data-size="13"></span></span></div>
+          <div class="reledge"><span class="rtype">evidences</span><span class="rto"><span>cli/agent-setup.mjs</span><span data-glyph="element" data-size="13"></span></span></div>
+
+          <div class="ilabel">이 세션의 파일 변경</div>
+          <div class="difflist">
+            <div><span class="mod">~ 수정</span> <span class="path">capabilities/</span>agent-config-onboarding.md <span class="path">(status: draft → active)</span></div>
+          </div>
+
+          <p class="guard">쓰기 확인 전에는 어떤 파일도 변경되지 않습니다. patch_concept 는 expected_mtime 을 검사해 동시 편집 충돌을 막습니다.</p>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 쓰기 확인 바 (dirty · patch) -->
+    <section class="writebar">
+      <span class="wlabel">쓰기 확인</span>
+      <span class="payload">속성 <b>~1</b> · 파일 <b>1</b> — patch_concept("agent-config-onboarding", { status: "active" })</span>
+      <button class="dry" type="button">dry-run 미리보기</button>
+      <button class="commit" type="button">vault 에 쓰기</button>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var GLYPH={project:{s:"#d4b478"},domain:{s:"rgba(139,151,255,.85)"},capability:{s:"#9a9ca6"},element:{s:"#70727c"}};
+  var FILL="#181923";
+  function hexPts(c,r){var p=[];for(var i=0;i<6;i++){var a=(i*60-90)*Math.PI/180;p.push((c+r*Math.cos(a)).toFixed(2)+","+(c+r*Math.sin(a)).toFixed(2));}return p.join(" ");}
+  function glyphSVG(kind,s){
+    s=s||16;var col=GLYPH[kind]||GLYPH.element;var c=s/2;
+    var common='fill="'+FILL+'" stroke="'+col.s+'" stroke-width="1.3"';var body;
+    if(kind==="project")body='<polygon points="'+hexPts(c,c-1.1)+'" '+common+'/>';
+    else if(kind==="domain")body='<rect x="'+(s*.09)+'" y="'+(s*.2)+'" width="'+(s*.82)+'" height="'+(s*.6)+'" rx="1.8" '+common+'/>';
+    else if(kind==="capability")body='<circle cx="'+c+'" cy="'+c+'" r="'+(c-1.6)+'" '+common+'/>';
+    else body='<rect x="'+(s*.14)+'" y="'+(s*.14)+'" width="'+(s*.72)+'" height="'+(s*.72)+'" rx="2" '+common+'/><circle cx="'+c+'" cy="'+c+'" r="'+(s*.11)+'" fill="#0a0b0f" stroke="'+col.s+'" stroke-width="1"/>';
+    return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 '+s+' '+s+'" aria-hidden="true" style="flex:none">'+body+'</svg>';
+  }
+  function markSVG(style,w){
+    w=w||22;var stroke=style==="contains"?"#4a4a54":"rgba(139,151,255,.7)";
+    var dash=style==="contains"?"":style==="evidence"?' stroke-dasharray="1.4 3"':' stroke-dasharray="3.2 3.2"';
+    return '<svg width="'+w+'" height="6" viewBox="0 0 '+w+' 6" aria-hidden="true" style="flex:none"><line x1="1" y1="3" x2="'+(w-1)+'" y2="3" stroke="'+stroke+'" stroke-width="1.5"'+dash+' stroke-linecap="round"/></svg>';
+  }
+  document.querySelectorAll("[data-glyph]").forEach(function(el){el.innerHTML=glyphSVG(el.getAttribute("data-glyph"),parseInt(el.getAttribute("data-size")||"16",10));});
+  document.querySelectorAll("[data-mark]").forEach(function(el){el.innerHTML=markSVG(el.getAttribute("data-mark"));});
+
+  var KINDS=[
+    {k:"project",n:"프로젝트",d:"최상위 산출물",key:"1"},
+    {k:"domain",n:"도메인",d:"기능 그룹 · 역량의 부모",key:"2"},
+    {k:"capability",n:"역량",d:"행동의 단위 · 요소가 실현",key:"3"},
+    {k:"element",n:"요소",d:"구체 조각 · 파일·API·스키마",key:"4"}
+  ];
+  document.getElementById("kinds").innerHTML=KINDS.map(function(x){
+    return '<div class="kcard" draggable="true">'+glyphSVG(x.k,18)+
+      '<span class="kt"><span class="kname">'+x.n+'</span><div class="kdesc">'+x.d+'</div></span>'+
+      '<span class="kbd">'+x.key+'</span></div>';
+  }).join("");
+})();
+</script>
+</body>
+</html>
