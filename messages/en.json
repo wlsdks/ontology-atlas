@@ -621,7 +621,7 @@
     "globalSearch": {
       "dialogAriaLabel": "Global search",
       "dialogTitle": "Global search",
-      "dialogDescription": "Search concepts (ontology nodes), documents, and projects in one place. Use up/down arrows to move, Enter to select, ESC to close.",
+      "dialogDescription": "Search ontology concepts and projects in one place. Use up/down arrows to move, Enter to select, ESC to close.",
       "commandLabel": "Global search",
       "closeAriaLabel": "Close global search",
       "placeholderWithProjects": "Search concepts and projects — KR/EN mix OK",
@@ -2818,10 +2818,8 @@
       "poweredOn": "fresh",
       "poweredOff": "idle",
       "metricUsedBy": "used by",
-      "metricDependsOn": "depends on",
+      "metricDependsOn": "leans on",
       "metricEvidence": "evidence",
-      "groupContains": "contains",
-      "groupDepends": "depends",
       "noConnections": "no direct connections",
       "handoff": "Copy next action",
       "handoffCopied": "Agent handoff copied"

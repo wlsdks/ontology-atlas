@@ -621,7 +621,7 @@
     "globalSearch": {
       "dialogAriaLabel": "글로벌 검색",
       "dialogTitle": "글로벌 검색",
-      "dialogDescription": "개념 (ontology 노드) · 글 (문서) · 프로젝트를 한 번에 검색합니다. 위·아래 화살표로 이동, Enter 로 선택, ESC 로 닫기.",
+      "dialogDescription": "온톨로지 개념과 프로젝트를 한 번에 검색합니다. 위·아래 화살표로 이동, Enter 로 선택, ESC 로 닫기.",
       "commandLabel": "글로벌 검색",
       "closeAriaLabel": "글로벌 검색 닫기",
       "placeholderWithProjects": "개념 · 프로젝트 검색 — 한·영 혼합 OK",
@@ -2820,8 +2820,6 @@
       "metricUsedBy": "쓰는 곳",
       "metricDependsOn": "기대는 곳",
       "metricEvidence": "근거",
-      "groupContains": "포함",
-      "groupDepends": "의존",
       "noConnections": "직접 연결 없음",
       "handoff": "다음 액션 복사",
       "handoffCopied": "에이전트 인계를 복사했어요"

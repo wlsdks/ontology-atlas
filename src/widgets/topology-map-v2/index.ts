@@ -17,7 +17,7 @@ export {
   buildV2ConnectionGroups,
   formatV2HandoffText,
   formatV2MetricLine,
-  groupV2Connections,
+  groupV2ConnectionsByDirection,
   V2_CONNECTION_ROW_CAP,
 } from './ui/topology-v2-datasheet';
 export type {

@@ -6,6 +6,7 @@ import {
 
 const BASE: TopologyEscLadderInput = {
   createNodeOpen: false,
+  searchOpen: false,
   fullDetailOpen: false,
   selectedRelationActive: false,
   hasSelection: false,
@@ -28,6 +29,53 @@ describe("resolveTopologyEscLadderAction", () => {
         hasLocalGraphRoot: true,
       }),
     ).toBe("close-create-node");
+  });
+
+  it("returns none when the search/ontology palette is open, even with a selection and every other tier open — the palette's own Escape handler (Radix Dialog) owns this keypress, not the window ladder", () => {
+    // Regression: the palette is a Radix Dialog that already closes itself on
+    // Escape. Before this input existed, the window-level ladder had no idea
+    // the palette was open, so it ALSO deselected the node on the same
+    // keypress — one Escape closed both the palette AND the selection.
+    expect(
+      resolveTopologyEscLadderAction({
+        ...BASE,
+        searchOpen: true,
+        fullDetailOpen: true,
+        selectedRelationActive: true,
+        hasSelection: true,
+        hasLocalGraphRoot: true,
+      }),
+    ).toBe("none");
+  });
+
+  it("the create-node composer still wins over an open search palette", () => {
+    expect(
+      resolveTopologyEscLadderAction({
+        ...BASE,
+        createNodeOpen: true,
+        searchOpen: true,
+      }),
+    ).toBe("close-create-node");
+  });
+
+  it("a second Escape, after the palette has closed, deselects the surviving selection", () => {
+    // Step 1: palette open + node selected — ladder does nothing, palette's
+    // own handler closes it.
+    const step1 = resolveTopologyEscLadderAction({
+      ...BASE,
+      searchOpen: true,
+      hasSelection: true,
+    });
+    expect(step1).toBe("none");
+
+    // Step 2: palette is now closed — the SAME selection survived step 1 and
+    // deselects on this next keypress.
+    const step2 = resolveTopologyEscLadderAction({
+      ...BASE,
+      searchOpen: false,
+      hasSelection: true,
+    });
+    expect(step2).toBe("deselect");
   });
 
   it("closes the full-detail drawer before the relation lens or deselecting", () => {

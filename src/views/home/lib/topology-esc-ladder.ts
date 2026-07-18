@@ -25,6 +25,14 @@ export interface TopologyEscLadderInput {
    *  closes itself on Escape while it holds focus; this covers the case
    *  where focus has moved outside it while it's still blocking the page). */
   createNodeOpen: boolean;
+  /** Global search / ontology palette open (`MountedGlobalSearch` → Radix
+   *  `Dialog`, which already closes itself on Escape). If this is true the
+   *  ladder must return "none" and let the palette's own handler own the
+   *  keypress — otherwise the window-level ladder ALSO acts on the same
+   *  Escape (e.g. deselecting the node underneath), so one keypress closes
+   *  two things at once. Regression: persona hit palette-open + node-selected
+   *  → Escape closed the palette AND cleared the selection in one press. */
+  searchOpen: boolean;
   /** "전체 상세" drawer — the popover/datasheet's opt-in full-detail overlay. */
   fullDetailOpen: boolean;
   /** Relation lens active — replaces the popover with a relation-focused view. */
@@ -45,16 +53,21 @@ export type TopologyEscLadderAction =
 
 /**
  * Resolves what a single Escape keypress should do, in priority order:
- * create-node composer → full-detail drawer → relation lens → deselect the
- * current node → pop one level of the local-graph breadcrumb → nothing.
- * Each tier closes exactly one thing; the caller re-evaluates on the next
- * keypress, which is what makes this "one step at a time" rather than
- * "close everything".
+ * create-node composer → search palette (deferred to its own handler) →
+ * full-detail drawer → relation lens → deselect the current node → pop one
+ * level of the local-graph breadcrumb → nothing. Each tier closes exactly
+ * one thing; the caller re-evaluates on the next keypress, which is what
+ * makes this "one step at a time" rather than "close everything".
  */
 export function resolveTopologyEscLadderAction(
   input: TopologyEscLadderInput,
 ): TopologyEscLadderAction {
   if (input.createNodeOpen) return "close-create-node";
+  // The palette (Radix Dialog) already closes itself on Escape — returning
+  // "none" here means the window ladder does nothing this keypress, so only
+  // the palette closes. Without this tier, the ladder would fall through to
+  // "deselect"/etc. on the SAME keypress the palette handles internally.
+  if (input.searchOpen) return "none";
   if (input.fullDetailOpen) return "close-full-detail";
   if (input.selectedRelationActive) return "close-relation-lens";
   if (input.hasSelection) return "deselect";

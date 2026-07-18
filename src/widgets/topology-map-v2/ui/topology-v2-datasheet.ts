@@ -7,12 +7,18 @@
  * The datasheet re-presents the SAME selection facts the shared popover already
  * derives (`TopologyNodeFocusModel`); the view maps that model into these
  * inputs. This module only groups + formats — it never recomputes counts.
+ *
+ * R+ 카운트 시맨틱 통일: groups used to split by relation TYPE (containment vs
+ * depends) while the metric line above counted by DIRECTION (incoming vs
+ * outgoing) — same words ("포함"/"의존" near "쓰는 곳"/"기대는 곳"), two
+ * different axes, so the numbers never reconciled (persona finding: header
+ * "used by 10 · depends on 73" vs groups "포함 71 / 의존 12"). Groups are now
+ * DIRECTION-based too, computed from the exact same connection set the metric
+ * line counts — the header count and the group total are the SAME number by
+ * construction, not just by convention. Relation TYPE (containment vs depends)
+ * demotes to a per-row trace mark (`TopologyV2DetailPanel.tsx`'s `TraceMark`),
+ * still visible, just no longer the grouping axis.
  */
-
-import { isContainmentRelation } from "@/shared/lib/ontology-tree";
-
-/** contains = structural containment (contains/belongs_to); depends = everything else. */
-export type V2ConnectionGroupKey = "contains" | "depends";
 
 export interface V2DatasheetConnection {
   id: string;
@@ -22,47 +28,49 @@ export interface V2DatasheetConnection {
   direction: "incoming" | "outgoing";
 }
 
+/** usedBy = incoming (places that use this node); dependsOn = outgoing
+ * (places this node leans on). The SAME axis the metric line counts. */
 export interface V2GroupedConnections {
-  contains: V2DatasheetConnection[];
-  depends: V2DatasheetConnection[];
+  usedBy: V2DatasheetConnection[];
+  dependsOn: V2DatasheetConnection[];
 }
 
 /**
- * Split direct connections into the two relation-type groups the datasheet
- * renders (one compact marker per group, not a per-row badge pile). Input
- * order is preserved inside each group so the panel stays deterministic.
+ * Split direct connections into the two DIRECTION groups the datasheet
+ * renders and the metric line counts — one axis, everywhere. Input order is
+ * preserved inside each group so the panel stays deterministic.
  *
- * Also collapses each group to one row per `(neighbor id, direction)` — the
- * live dogfood bug (`capability:mcp-server` had BOTH a `depends_on` AND a
- * `related_to` edge to the SAME neighbor, `capability:frontmatter-to-
- * ontology`) isn't caught by `buildV2Connections`'s own dedup (the
- * relationType genuinely differs there), but the panel shows only the
- * neighbor's title with no per-row relationType badge, so two rows for the
- * same neighbor in the same direction read as one duplicated row AND collide
- * on the React list key (`TopologyV2DetailPanel.tsx`'s `key={group:id}`).
+ * Also collapses each group to one row per neighbor `id` — the live dogfood
+ * bug (`capability:mcp-server` had BOTH a `depends_on` AND a `related_to`
+ * edge to the SAME neighbor, `capability:frontmatter-to-ontology`) isn't
+ * caught by `buildV2Connections`'s own dedup (the relationType genuinely
+ * differs there), but the panel shows only the neighbor's title with a
+ * per-row type mark, not a relationType-keyed row, so two rows for the same
+ * neighbor in the same direction read as one duplicated row AND collide on
+ * the React list key (`TopologyV2DetailPanel.tsx`'s `key={group:direction:id}`).
  * The SAME neighbor in the OPPOSITE direction (a real mutual-dependency fact)
- * is a different `(id, direction)` pair and stays as two rows.
+ * lands in the OTHER group and stays as two rows total — that's correct,
+ * not a duplicate (item 5 — no cross-group dedup).
  */
-export function groupV2Connections(
+export function groupV2ConnectionsByDirection(
   connections: readonly V2DatasheetConnection[],
 ): V2GroupedConnections {
-  const contains: V2DatasheetConnection[] = [];
-  const depends: V2DatasheetConnection[] = [];
-  const seenContains = new Set<string>();
-  const seenDepends = new Set<string>();
+  const usedBy: V2DatasheetConnection[] = [];
+  const dependsOn: V2DatasheetConnection[] = [];
+  const seenUsedBy = new Set<string>();
+  const seenDependsOn = new Set<string>();
   for (const connection of connections) {
-    const key = `${connection.id}|${connection.direction}`;
-    if (isContainmentRelation(connection.relationType)) {
-      if (seenContains.has(key)) continue;
-      seenContains.add(key);
-      contains.push(connection);
+    if (connection.direction === "incoming") {
+      if (seenUsedBy.has(connection.id)) continue;
+      seenUsedBy.add(connection.id);
+      usedBy.push(connection);
     } else {
-      if (seenDepends.has(key)) continue;
-      seenDepends.add(key);
-      depends.push(connection);
+      if (seenDependsOn.has(connection.id)) continue;
+      seenDependsOn.add(connection.id);
+      dependsOn.push(connection);
     }
   }
-  return { contains, depends };
+  return { usedBy, dependsOn };
 }
 
 /** Minimal structural shapes — keeps this module pure + testable without
@@ -135,40 +143,44 @@ export function buildV2Connections(
   return [...outgoing, ...incoming];
 }
 
-/** One relation-type group as the panel renders it: a capped preview of rows +
- * the group's TRUE total (so the header can say "DEPENDS 23" while showing 6). */
+/** One direction group as the panel renders it: a capped preview of rows +
+ * the group's TRUE total (so the header can say "쓰는 곳 23" while showing 6). */
 export interface V2ConnectionGroupView {
   rows: V2DatasheetConnection[];
   total: number;
 }
 export interface V2ConnectionGroupsView {
-  contains: V2ConnectionGroupView;
-  depends: V2ConnectionGroupView;
+  usedBy: V2ConnectionGroupView;
+  dependsOn: V2ConnectionGroupView;
 }
 
 /** Default rows shown per group before the typed "+N" overflow. */
 export const V2_CONNECTION_ROW_CAP = 6;
 
 /**
- * Group the full connection set by relation type and cap each group to
+ * Group the full connection set by DIRECTION and cap each group to
  * `perGroupCap` rows, keeping the true total. This guarantees BOTH groups can
- * render their real count independently — the contains-hub bug was that a single
- * outgoing-first 5-item slice starved the depends group to empty.
+ * render their real count independently — a hub node with many outgoing
+ * containment edges must not starve the (usually smaller) incoming group to
+ * empty. Because direction is the SAME axis the metric line counts, callers
+ * should source `metric.usedBy`/`metric.dependsOn` from `.usedBy.total`/
+ * `.dependsOn.total` here, not recompute them separately — that's what
+ * guarantees the metric line and the group headers can never diverge.
  */
 export function buildV2ConnectionGroups(
   connections: readonly V2DatasheetConnection[],
   perGroupCap: number = V2_CONNECTION_ROW_CAP,
 ): V2ConnectionGroupsView {
-  const grouped = groupV2Connections(connections);
+  const grouped = groupV2ConnectionsByDirection(connections);
   const cap = Math.max(0, perGroupCap);
   return {
-    contains: {
-      rows: grouped.contains.slice(0, cap),
-      total: grouped.contains.length,
+    usedBy: {
+      rows: grouped.usedBy.slice(0, cap),
+      total: grouped.usedBy.length,
     },
-    depends: {
-      rows: grouped.depends.slice(0, cap),
-      total: grouped.depends.length,
+    dependsOn: {
+      rows: grouped.dependsOn.slice(0, cap),
+      total: grouped.dependsOn.length,
     },
   };
 }
@@ -211,7 +223,10 @@ export interface V2HandoffInput {
   usedBy: number;
   dependsOn: number;
   evidence: number;
-  containsNames: readonly string[];
+  /** Names of the direct-incoming (usedBy) group's rows — same direction axis
+   * as `usedBy`, so the count and the list can never contradict. */
+  usedByNames: readonly string[];
+  /** Names of the direct-outgoing (dependsOn) group's rows. */
   dependsNames: readonly string[];
 }
 
@@ -220,6 +235,11 @@ export interface V2HandoffInput {
  * 액션 복사" differentiation. Stable English field keys + a suggested MCP call
  * so it pastes cleanly into a coding agent regardless of UI locale; the button
  * label is localized, this payload is intentionally not. Deterministic.
+ *
+ * R+ payload shape change: `contains`/`depends` name-list fields (relation
+ * TYPE axis) renamed to `used_by_names`/`depends_names` (relation DIRECTION
+ * axis) — matching the datasheet's groups now that direction is the single
+ * grouping axis everywhere. Agents parsing the old field names must update.
  */
 export function formatV2HandoffText(input: V2HandoffInput): string {
   const list = (names: readonly string[]) =>
@@ -231,8 +251,8 @@ export function formatV2HandoffText(input: V2HandoffInput): string {
     `used_by: ${input.usedBy}`,
     `depends_on: ${input.dependsOn}`,
     `evidence: ${input.evidence}`,
-    `contains: ${list(input.containsNames)}`,
-    `depends: ${list(input.dependsNames)}`,
+    `used_by_names: ${list(input.usedByNames)}`,
+    `depends_names: ${list(input.dependsNames)}`,
     `next: get_concept("${input.slug}") → review context, then patch_concept / add_relation as needed`,
   ].join("\n");
 }
