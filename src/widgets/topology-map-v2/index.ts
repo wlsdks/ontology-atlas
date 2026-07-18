@@ -12,9 +12,15 @@ export type {
   TopologyV2DetailPanelProps,
   TopologyV2DetailPanelLabels,
 } from './ui/TopologyV2DetailPanel';
+export { TopologyV2SettingsGear } from './ui/TopologyV2SettingsGear';
+export type {
+  TopologyV2SettingsGearProps,
+  TopologyV2SettingsGearLabels,
+} from './ui/TopologyV2SettingsGear';
 export {
   buildV2Connections,
   buildV2ConnectionGroups,
+  buildV2EvidenceRows,
   formatV2HandoffText,
   formatV2MetricLine,
   groupV2ConnectionsByDirection,
@@ -26,6 +32,7 @@ export type {
   V2ConnectionSourceEdge,
   V2ConnectionSourceNode,
   V2DatasheetConnection,
+  V2EvidenceRow,
   V2GroupedConnections,
   V2HandoffInput,
   V2MetricValues,

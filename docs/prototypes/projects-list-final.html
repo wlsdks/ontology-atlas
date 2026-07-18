@@ -3,15 +3,18 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>/projects FINAL — 비율 재조판 (미터 캡 640 · 카운트 인접)</title>
+<title>/projects FINAL — 콘텐츠 밀도 배분 (최근 활동 · 다음 프로젝트 슬롯)</title>
 <!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
 <!--
-  FINAL ROUND — "비율이 생명". docs/prototypes/RATIO-SYSTEM.md 적용.
-  이전 라운드 flag 반영: ① 도메인 미터 트랙 폭 캡 640px (1600 전폭으로
-  퍼지던 트랙이 수치 대비 과장) ② 카운트(역량 n · 요소 m)를 바 바로 옆에
-  인접 배치 — 시선이 바→숫자로 끊기지 않는다.
-  세로: 단일 카드 페이지의 하단 공백을 없애기 위해 카드 존을 세로 중앙
-  부근(55/45)에 배치, 힌트 행은 하단 앵커. 좌우 1600 중앙 (공통 거터).
+  FINAL ROUND — "비율이 생명" + fill-not-stretch. docs/prototypes/RATIO-SYSTEM.md 적용.
+  이전 라운드 flag 반영: ① 도메인 미터 트랙 폭 캡 640px ② 카운트(역량 n ·
+  요소 m)를 바 바로 옆에 인접 배치.
+  세로: 카드를 flex-center 로 띄우던 빈 밴드 폐기 — 섹션 갭 28px 고정,
+  남는 세로는 실데이터 섹션으로 채운다:
+    ① 헤더 아래 "최근 활동" 각인 스트립 (최근 갱신 노드 4행 — insights
+       신선도 문법 재사용: kind 글리프 + slug + 도메인 + 각인 mtime)
+    ② 카드 아래 "다음 프로젝트 추가" machined 미니카드 (dashed 슬롯 —
+       CLI 행 + MCP agent handoff 행). 좌우 1600 중앙 (공통 거터).
 -->
 <style>
   /* Values copied from app/globals.css token families (standalone prototype). */
@@ -106,8 +109,42 @@
     max-width: 720px; line-height: 1.6;
   }
 
-  /* vertically balanced card zone — slight upward bias */
-  .cardzone { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; padding-bottom: 36px; }
+  /* fill-not-stretch: sections flow on the 28px rhythm — no flex-center void */
+  .shead { display: flex; align-items: center; gap: 9px; margin: 28px 0 12px; }
+  .shead .glabel { font-size: 13.5px; font-weight: 560; color: var(--text-primary); letter-spacing: -0.01em; }
+  .shead .gcap {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+
+  /* recent activity — engraved strip (insights freshness grammar) */
+  .activity {
+    border: 1px solid var(--border-soft); border-radius: 9px;
+    background: var(--panel);
+    box-shadow: inset 0 1px 0 var(--machined-edge);
+    padding: 8px 15px;
+  }
+  .activity .arow {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 2px; font-size: 12.5px; color: var(--text-secondary);
+  }
+  .activity .arow + .arow { border-top: 1px solid var(--divider); }
+  .activity .arow .slug {
+    font-family: var(--mono); font-size: 11.5px; color: var(--text-secondary);
+  }
+  .activity .arow .what { color: var(--text-tertiary); font-size: 12px; }
+  .activity .arow .dom {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .activity .arow .ago {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    white-space: nowrap;
+  }
+
+  .cardzone { margin-top: 28px; }
 
   .card {
     background: var(--panel);
@@ -191,23 +228,39 @@
     color: var(--text-quaternary); letter-spacing: 0.04em;
   }
 
-  /* bottom-anchored quiet hint */
-  .hint {
-    margin-top: auto;
-    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em;
-    color: var(--text-quaternary); line-height: 1.7;
+  /* next-project slot — machined mini-card (dashed = 예정 슬롯, 헌장의 보더 문법) */
+  .nextslot {
+    margin-top: 28px;
+    border: 1px dashed var(--border-strong); border-radius: 11px;
+    background: var(--metric-surface);
+    padding: 16px 20px 14px;
   }
-  .hint code {
-    font-family: inherit; color: var(--text-tertiary);
-    border: 1px solid var(--border-soft); border-radius: 4px; padding: 1px 5px;
+  .nextslot .nhead { display: flex; align-items: center; gap: 12px; }
+  .nextslot h3 { margin: 0; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; color: var(--text-primary); }
+  .nextslot .nsub { font-size: 12px; color: var(--text-tertiary); }
+  .nextslot .nrow {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 11px; padding: 8px 12px;
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    background: var(--canvas-bg);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+    font-size: 12px; color: var(--text-tertiary);
   }
+  .nextslot .nrow .k {
+    flex: none; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-quaternary); width: 108px;
+  }
+  .nextslot .nrow code {
+    font-family: var(--mono); font-size: 11.5px; color: var(--text-secondary);
+  }
+  .nextslot .nrow .r { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--text-quaternary); white-space: nowrap; }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
 
-<div class="framecap"><b>/projects FINAL</b> — 카드 세로 중앙(55/45) · 미터 트랙 캡 640 · 카운트 바 인접 · 1920×945</div>
+<div class="framecap"><b>/projects FINAL</b> — 콘텐츠 밀도 배분 (최근 활동 + 다음 프로젝트 슬롯 · 섹션 갭 28 고정) · 1920×945</div>
 <section class="frame">
   <div class="page">
     <nav class="crumbs">
@@ -226,6 +279,41 @@
       vault 의 <span style="font-family:var(--mono)">kind: project</span> 문서가 여기 나타납니다.
       도메인·역량·요소 카운트는 containment 그래프에서 자동 유도됩니다.
     </p>
+
+    <div class="shead">
+      <span class="glabel">최근 활동</span>
+      <span class="gcap">Last 7 days · mtime</span>
+    </div>
+    <div class="activity">
+      <div class="arow">
+        <span data-glyph="element" data-size="14"></span>
+        <span class="slug">topology-map-canvas</span>
+        <span class="what">지도 뷰 단일 컨테이너 변환 엔진 — 캔버스 요소 동기화</span>
+        <span class="dom">Views</span>
+        <span class="ago">오늘</span>
+      </div>
+      <div class="arow">
+        <span data-glyph="capability" data-size="14"></span>
+        <span class="slug">mcp-server</span>
+        <span class="what">write 도구 9종으로 확장 (add_concepts 배치)</span>
+        <span class="dom">AI Agent Partner</span>
+        <span class="ago">어제</span>
+      </div>
+      <div class="arow">
+        <span data-glyph="capability" data-size="14"></span>
+        <span class="slug">workspace-brief</span>
+        <span class="what">agent handoff 브리프에 growth queue 요약 연결</span>
+        <span class="dom">AI Agent Partner</span>
+        <span class="ago">3일 전</span>
+      </div>
+      <div class="arow">
+        <span data-glyph="element" data-size="14"></span>
+        <span class="slug">vault-validator</span>
+        <span class="what">missing-expected-field 경고를 advisory 로 완화</span>
+        <span class="dom">Vault — Local-First</span>
+        <span class="ago">5일 전</span>
+      </div>
+    </div>
 
     <div class="cardzone">
       <article class="card">
@@ -261,10 +349,23 @@
       </article>
     </div>
 
-    <p class="hint">
-      두 번째 프로젝트는 vault 에 <code>kind: project</code> 문서를 추가하면 같은 카드로 나타납니다 —
-      <code>ontology-atlas add --kind project</code> 또는 MCP <code>add_concept</code>.
-    </p>
+    <section class="nextslot">
+      <div class="nhead">
+        <span data-glyph="project" data-size="18"></span>
+        <h3>다음 프로젝트 추가</h3>
+        <span class="nsub">vault 에 <code style="font-family:var(--mono);font-size:11.5px">kind: project</code> 문서가 생기면 같은 카드로 즉시 나타납니다.</span>
+      </div>
+      <div class="nrow">
+        <span class="k">CLI</span>
+        <code>ontology-atlas add --kind project</code>
+        <span class="r">터미널에서 · frontmatter 자동 정규화</span>
+      </div>
+      <div class="nrow">
+        <span class="k">Agent handoff</span>
+        <code>add_concept(slug, kind: "project", title)</code>
+        <span class="r">MCP · Claude Code / Codex 가 직접 생성</span>
+      </div>
+    </section>
   </div>
 </section>
 

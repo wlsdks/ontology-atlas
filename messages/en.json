@@ -3014,7 +3014,15 @@
       "reviewAria": "{count} changes since baseline — review in the ontology changes panel",
       "close": "Close",
       "shortcutsTooltip": "Keyboard shortcuts (?)",
-      "shortcutsAriaLabel": "View keyboard shortcuts"
+      "shortcutsAriaLabel": "View keyboard shortcuts",
+      "settingsGearTooltip": "Map settings",
+      "settingsGearAriaLabel": "Open map settings",
+      "settingsGearHeading": "Map settings",
+      "settingsGearLocale": "Language",
+      "settingsGearTheme": "Theme",
+      "settingsGearIndexDefault": "INDEX default state",
+      "settingsGearIndexDefaultExpanded": "Expanded",
+      "settingsGearIndexDefaultCollapsed": "Collapsed"
     },
     "empty": {
       "noMatchesTitle": "No matching items",
