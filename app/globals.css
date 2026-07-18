@@ -616,7 +616,12 @@
       100dvh - var(--topology-floating-panel-phone-bottom) - 64px
     );
     --topology-floating-control-desktop-top: 140px;
-    --topology-floating-panel-desktop-top: 184px;
+    /* Fit 타일(--chrome-tile-size 44px) 바닥 + 8px gap — SigmaControls
+       크롬 재스킨(feat/chrome-finish) 이후 값. 이전엔 h-9(36px) 버튼 기준
+       184px 였다 — 타일이 44px 로 커져 8px gap 을 유지하려면 192px. */
+    --topology-floating-panel-desktop-top: calc(
+      var(--topology-floating-control-desktop-top) + var(--chrome-tile-size) + 8px
+    );
     --topology-floating-panel-desktop-max-height: calc(100vh - 260px);
     /*
      * Relief/Topology chrome DENSITY tokens (feat/topology-chrome-density).
@@ -738,7 +743,12 @@
     --topology-analysis-panel-path-collapsed-scroll-end-reserve: 12px;
     --topology-shortcuts-help-phone-top: 188px;
     --topology-shortcuts-help-focus-phone-top: 208px;
-    --topology-shortcuts-help-desktop-top: 228px;
+    /* 우측 세로 레일 3타일(전체보기/조절/단축키, chrome-rail-combined.html)
+       리듬 — Fit + Controls 트리거 타일(각 44px) + 그 사이 8px gap + 단축키
+       타일 앞 8px gap = control-desktop-top + 2×타일 + 2×8px gap. */
+    --topology-shortcuts-help-desktop-top: calc(
+      var(--topology-floating-control-desktop-top) + (var(--chrome-tile-size) * 2) + 16px
+    );
     /* 설정 기어 (`TopologyV2SettingsGear`, chrome-datasheet-final.html 시안) —
        우측 유틸리티 레일의 "?" 버튼 바로 아래 한 칸. fit/필터 스택과 같은
        hide 조건(createNodeOpen/selectedRelationActive/blocking-overlay/

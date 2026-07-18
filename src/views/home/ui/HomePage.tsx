@@ -1544,10 +1544,23 @@ export function HomePage() {
               // growth 는 별도 prop(censusGrowthText)으로 넘겨 HeroCollapsed 가
               // 인디고로 강조 표시(feat/chrome-system §5 census 각인)할 수
               // 있게 한다 — 여기서 한 문자열로 합치면 세그먼트별 스타일이 안 됨.
-              const workspaceSubtitle = t('workspace.subtitle', {
+              // 개념/관계 숫자 두 세그먼트는 t.rich 의 <b> 태그(messages/*.json
+              // — feat/chrome-finish 세그먼트 각인)로 감싸 engraved-numeral
+              // 토큰(다른 census 표면 — ProjectDetailPage/DocsVaultPage — 와
+              // 동일 문법)으로 볼드 처리한다. subtitle prop 이 문자열이 아니라
+              // ReactNode 를 받아야 해서 HeroCollapsed 타입도 함께 넓혔다.
+              const workspaceSubtitle = t.rich('workspace.subtitle', {
                 concepts: topologyTotalNodes,
                 relations: topologyTotalRelations,
                 growth: '',
+                b: (chunks) => (
+                  <b
+                    data-token="engraved-numeral"
+                    className="font-semibold not-italic text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+                  >
+                    {chunks}
+                  </b>
+                ),
               });
               const workspaceEyebrow = t('workspace.eyebrow', {
                 concepts: topologyTotalNodes,
@@ -1756,9 +1769,13 @@ export function HomePage() {
                           data-utility-action-border-token="--topology-utility-lane-accent-border"
                           data-utility-action-shadow-token="--topology-utility-lane-shadow"
                           data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
-                          className={`inline-flex h-[var(--topology-utility-lane-height)] items-center justify-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none ${
+                          // 높이/radius/compact 폭은 ChromeChip 기준(44px·10px)으로
+                          // 수렴 — 같은 열의 "작업공간" 칩과 나란히 있어
+                          // --topology-utility-lane-height(32~36px clamp) 를
+                          // 쓰면 과도기 높이 불일치가 났다(feat/chrome-finish).
+                          className={`inline-flex h-[var(--chrome-tile-size)] items-center justify-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none ${
                             topologyUtilityChromeCompact
-                              ? "w-[var(--topology-utility-lane-compact-width)] px-0"
+                              ? "w-[var(--chrome-tile-size)] px-0"
                               : "px-3.5"
                           }`}
                         >

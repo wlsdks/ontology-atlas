@@ -2253,7 +2253,7 @@
     },
     "workspace": {
       "growthThisWeek": " · 이번 주 +{count}",
-      "subtitle": "개념 {concepts}개 · 관계 {relations}개{growth}",
+      "subtitle": "개념 <b>{concepts}</b>개 · 관계 <b>{relations}</b>개{growth}",
       "eyebrow": "개념 {concepts}개",
       "fallbackTitle": "지형도",
       "selectedEyebrow": "선택한 개념",
