@@ -5,6 +5,8 @@ title: Views Domain Boundary Audit
 relates: [capabilities/agent-graph-readiness, capabilities/builder-canvas-polish, capabilities/collaborator-reader-brief, capabilities/topology-ontology-inspection, documents/business-to-code-dogfood-audit, domains/views]
 ---
 
+> **역사적 기록.** 이 감사는 2026-07 지도 재구성 이전 구조 기준이다. 예시로 든 `insights-query-cockpit` 등 일부 element 는 재구성 과정에서 삭제/대체되었다 — 아래 클러스터 목록은 그 시점의 스냅샷이며 도메인 분리 여부에 대한 판단(Current Decision 섹션)은 유효하다.
+
 # Views Domain Boundary Audit
 
 This note records the current evidence for whether `domains/views` should stay
@@ -45,14 +47,17 @@ The capability scan shows several distinct clusters inside the domain:
   `topology-kind-legibility`, `topology-ontology-inspection`,
   `topology-analysis-modes`, `topology-change-visualization`,
   `topology-direct-edit`.
-- **Cross-surface query / proof lane**: `agent-graph-readiness`,
-  `collaborator-reader-brief`, and `insights-query-cockpit` elements connect
-  Browse, Insights, MCP proof, and stakeholder handoff.
+- **Cross-surface query / proof lane**: `agent-graph-readiness` and
+  `collaborator-reader-brief` connect Browse, Insights, MCP proof, and
+  stakeholder handoff (the `insights-query-cockpit` element this originally
+  named was deleted in the 2026-07 rebuild — see those two capabilities'
+  current bodies for what replaced it).
 
-CodeGraph also sees separate implementation entrypoints for Browse
-(`OntologyViewPage`), Builder (`OntologyEditPage`), and Insights
-(`OntologyInsightsPage`). That supports treating these as distinct work
-surfaces, but not necessarily as separate ontology domains yet.
+CodeGraph also sees separate implementation entrypoints for Builder
+(`OntologyEditPage`) and Insights (`OntologyInsightsPage`); the old Browse
+entrypoint (`OntologyViewPage`) was retired and `/ontology` is now a redirect
+to `/topology`. That still supports treating these as distinct work surfaces,
+but not necessarily as separate ontology domains.
 
 ## Split Rule
 

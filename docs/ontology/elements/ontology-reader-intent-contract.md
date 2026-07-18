@@ -8,10 +8,10 @@ path: src/shared/lib/ontology-reader-intent.ts
 
 # Ontology Reader Intent Contract
 
-`src/shared/lib/ontology-reader-intent.ts` defines the shared URL intent contract for stakeholder handoffs across Browse, Query, and Write ontology surfaces.
+`src/shared/lib/ontology-reader-intent.ts` defines the shared URL intent contract (`ONTOLOGY_READER_INTENTS`: `planning`, `marketing`, `leadership`, `developer`, `agent`) for stakeholder handoffs. `parseOntologyReaderIntent` rejects unknown values so destination screens do not invent unsupported reader modes from arbitrary query strings.
 
-The contract accepts `planning`, `marketing`, `leadership`, `developer`, and `agent`, and rejects unknown values so destination screens do not invent unsupported reader modes from arbitrary query strings.
+**2026-07 update.** Before the map rebuild, `?reader=` was consumed on `/ontology/insights` to pick the first-opened tab (planning/marketing/leadership → collaborator lane, agent → agent lane, developer → graph proof). That insights page was rebuilt into a fixed 3-tab dashboard (Overview / Relations / Freshness) with no reader-driven tab selection — `insights-tab-state.ts` now says explicitly that the "4-tab reader-persona system" is gone.
 
-On `/ontology/insights`, the contract also selects the first useful tab: `planning`, `marketing`, and `leadership` open the collaborator evidence lane, `agent` opens the agent proof lane, and `developer` stays on graph proof before continuing to Save/edit. The tab can still be changed by the user; the URL intent only sets the arrival focus.
+The contract's only current consumer is the builder: `src/views/ontology-edit/ui/OntologyEditPage.tsx` reads `searchParams.get("reader")`, and when present renders a `BuilderReaderIntentStrip` — a small first-action strip naming the arriving role's title/body/action link (`buildBuilderReaderActionHref`) before canvas work starts. So the contract's shape is unchanged, but its home moved from Insights-tab-selection to a Builder-arrival strip.
 
-Dogfood note: this element was added while implementing reader-intent destination behavior. Atlas MCP identified the existing collaborator reader and workbench summary nodes first, then CodeGraph located the `/ontology/insights` and `/ontology/edit` entry points that already used `useSearchParams()`.
+Dogfood note: this element was added while implementing reader-intent destination behavior on the old insights page; codegraph_context now confirms the current sole caller is `OntologyEditPage.tsx`.
