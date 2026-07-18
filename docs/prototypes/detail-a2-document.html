@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>전체 상세 뷰 A2 — 2열 문서형</title>
+<style>
+  /* Values copied from app/globals.css token families (standalone prototype). */
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --action-surface: rgba(255, 255, 255, 0.03);
+    --action-border: #2f2f37;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+  }
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .page { max-width: 1280px; margin: 0 auto; padding: 24px 40px 0; }
+  .crumbs {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-tertiary); margin-bottom: 22px;
+  }
+  .crumbs a { color: var(--text-secondary); text-decoration: none; }
+  .crumbs a:hover { color: var(--text-primary); }
+  .crumbs .sep { color: var(--text-quaternary); }
+  .crumbs .census {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+
+  .cols { display: grid; grid-template-columns: 1fr 300px; gap: 36px; align-items: start; }
+
+  /* ---- left: the node IS a markdown doc ------------------------------- */
+  article.doc { min-width: 0; padding-bottom: 40px; }
+  article.doc h1 {
+    margin: 0 0 6px; font-size: 27px; font-weight: 650; letter-spacing: -0.018em;
+  }
+  .docmeta {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: var(--text-tertiary); margin-bottom: 20px;
+  }
+  .docmeta .sep { color: var(--text-quaternary); }
+  .frontmatter {
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    background: var(--metric-surface);
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.75;
+    color: var(--text-tertiary);
+    padding: 10px 14px; margin-bottom: 24px;
+    white-space: pre; overflow-x: auto;
+  }
+  .frontmatter .k { color: var(--text-quaternary); }
+  .frontmatter .v { color: var(--text-secondary); }
+  article.doc p {
+    margin: 0 0 14px; font-size: 14.5px; line-height: 1.75;
+    color: var(--text-secondary); letter-spacing: -0.003em; max-width: 72ch;
+  }
+  article.doc p code, article.doc li code {
+    font-family: var(--mono); font-size: 12.5px; color: var(--text-primary);
+    background: var(--metric-surface); border: 1px solid var(--divider);
+    border-radius: 4px; padding: 1px 5px;
+  }
+  article.doc h2 {
+    margin: 26px 0 10px; font-size: 16.5px; font-weight: 620; letter-spacing: -0.012em;
+    color: var(--text-primary);
+  }
+  article.doc ul { margin: 0 0 14px; padding-left: 20px; }
+  article.doc li { font-size: 14px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 4px; }
+  article.doc a { color: var(--indigo-bright); text-decoration: none; }
+  article.doc a:hover { text-decoration: underline; }
+
+  /* ---- right: sticky compact datasheet rail ---------------------------- */
+  aside.rail { position: sticky; top: 20px; }
+  .sheet {
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 9px;
+    padding: 11px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .sheet .head { display: flex; align-items: flex-start; gap: 8px; }
+  .sheet .head .titleblock { min-width: 0; flex: 1; }
+  .sheet .head .titlerow { display: flex; align-items: center; gap: 6px; }
+  .power {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--indigo); flex: none;
+  }
+  .sheet .head h2 {
+    margin: 0; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sheet .head .kindline {
+    padding-left: 12px; margin-top: 2px;
+    font-size: 11px; color: var(--text-tertiary);
+  }
+  .sheet .head .kindline .q { color: var(--text-quaternary); }
+  .sheet .metric {
+    border-radius: 5px; background: var(--metric-surface);
+    padding: 6px 8px;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.01em;
+    color: #b6b6c0;
+  }
+  .sheet .group { display: flex; flex-direction: column; gap: 3px; }
+  .sheet .ghead { display: flex; align-items: center; gap: 8px; }
+  .sheet .ghead .glabel {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-tertiary);
+  }
+  .sheet .ghead .num { font-size: 10px; }
+  .sheet .row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 6px; border-radius: 5px;
+    font-size: 12px; color: var(--text-secondary); cursor: pointer;
+  }
+  .sheet .row:hover { background: var(--row-hover); }
+  .sheet .row .t { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sheet .overflow {
+    padding-left: 30px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-quaternary);
+  }
+  .sheet .foot {
+    display: flex; align-items: center; gap: 8px;
+    border-top: 1px solid var(--divider); padding-top: 8px;
+  }
+  .sheet .foot button {
+    appearance: none; cursor: pointer; flex: none;
+    font: 500 11px/1 inherit; font-family: inherit;
+    color: var(--indigo-bright);
+    background: var(--action-surface);
+    border: 1px solid rgba(94, 106, 210, 0.5);
+    border-radius: 5px; padding: 5px 9px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .sheet .foot button:hover { background: var(--row-hover); border-color: var(--indigo); }
+  .sheet .foot .slug {
+    min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-quaternary);
+  }
+
+  /* ---- reach footer strip ---------------------------------------------- */
+  .reachstrip {
+    border-top: 1px solid var(--divider);
+    margin-top: 8px;
+    padding: 16px 40px 22px;
+    display: flex; align-items: center; gap: 26px;
+    max-width: 1280px; margin-left: auto; margin-right: auto;
+  }
+  .reachstrip .sentence { font-size: 13px; color: var(--text-tertiary); flex: none; }
+  .reachstrip .sentence b { color: var(--text-secondary); font-weight: 600; }
+  .reachstrip .bar {
+    flex: 1; max-width: 420px; height: 5px; border-radius: 3px;
+    display: flex; overflow: hidden; background: var(--border-soft);
+  }
+  .reachstrip .bar i { height: 100%; }
+  .reachstrip .legend {
+    display: flex; gap: 14px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-quaternary);
+  }
+  .reachstrip .legend b {
+    font-weight: 600; color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="crumbs">
+    <a href="#">← 지도</a>
+    <span class="sep">/</span>
+    <a href="#">ontology-atlas</a>
+    <span class="sep">/</span>
+    <span>도메인</span>
+    <span class="census">296 CONCEPTS · 508 RELATIONS</span>
+  </nav>
+
+  <div class="cols">
+    <!-- LEFT: markdown document (the node IS a doc) -->
+    <article class="doc">
+      <h1>Onboarding &amp; UX</h1>
+      <div class="docmeta">
+        <span class="glyph" data-glyph="domain"></span>
+        <span>도메인</span>
+        <span class="sep">·</span>
+        <span class="power"></span>
+        <span>최근 갱신 2026-07-17</span>
+        <span class="sep">·</span>
+        <span style="font-family:var(--mono);font-size:11px">domains/onboarding-ux.md</span>
+      </div>
+
+      <div class="frontmatter"><span class="k">kind:</span> <span class="v">domain</span>
+<span class="k">title:</span> <span class="v">Onboarding &amp; UX (theme · toast · a11y · mobile · CLI)</span>
+<span class="k">capabilities:</span> <span class="v">[agent-config-onboarding, cli-developer-entry, product-owner-operating-system]</span>
+<span class="k">elements:</span> <span class="v">[landing-first-impression, locale-switch, operations-nav, …11]</span>
+<span class="k">relates:</span> <span class="v">[domains/views]</span></div>
+
+      <p>
+        cross-cutting. 라이트/다크 토글 (<code>html[data-theme="light"]</code>),
+        Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar +
+        gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키,
+        <code>prefers-reduced-motion</code> 자동 존중. fresh vault onboarding 도
+        이 domain 의 일부: CLI <code>init</code> 과 설치된 macOS 앱의 starter 가
+        같은 5-node vault README/setup 내용을 제공하고, Claude Code/Cursor
+        <code>.mcp.json</code>, Codex <code>.codex/config.toml</code>, global
+        Codex <code>mcp add</code> 흐름을 동시에 안내한다.
+      </p>
+      <p>
+        starter CTA 와 CLI/app starter README 는 ontology 를
+        "project/domain/capability/element 와 typed relation 으로 코드베이스의
+        소유권, 의존성, 근거, 변경 영향을 설명하는 실행 가능한 의미 모델"로 먼저
+        정의한다. 그래서 첫 진입 사용자는 그래프 그림이나 파일 시드가 아니라 AI
+        agent 와 사람이 같이 유지할 의미 모델을 만든다는 점을 이해한 뒤 starter
+        를 생성한다.
+      </p>
+
+      <h2>첫 연결 검증 루프</h2>
+      <p>
+        agent 에게 <code>validate_vault</code> → <code>workspace_brief</code> →
+        <code>agent_brief</code> 를 실행해 읽기 가능성과 write tool 노출 여부를
+        보고하게 하고, CLI 가 설치된 사용자는 <code>validate</code>,
+        <code>workspace-brief</code>, <code>agent-brief --prompt</code>,
+        <code>mcp-verify --timeout-ms 15000</code> 로 같은 경로를 확인한다.
+      </p>
+
+      <h2>최근 결정</h2>
+      <ul>
+        <li>2026-05-23 — 빈 vault CTA 에 생성 전 agent 검증 체크리스트와 copyable agent prompt 노출.</li>
+        <li>2026-05-09 — <code>/docs</code> header 에 direct Topology link, 모바일 BottomTabBar 에 Topology 탭 추가.</li>
+        <li>자세한 디자인 룰: <a href="#">docs/DESIGN-SYSTEM.md</a>.</li>
+      </ul>
+    </article>
+
+    <!-- RIGHT: sticky compact datasheet (shipped v2 panel, extended) -->
+    <aside class="rail">
+      <div class="sheet">
+        <div class="head">
+          <span class="glyph" data-glyph="domain" style="margin-top:1px"></span>
+          <div class="titleblock">
+            <div class="titlerow">
+              <span class="power"></span>
+              <h2>Onboarding &amp; UX</h2>
+            </div>
+            <div class="kindline">도메인 <span class="q">· 전원 켜짐</span></div>
+          </div>
+        </div>
+
+        <div class="metric">담는 것 18 · 쓰는 곳 2 · 기대는 곳 1</div>
+
+        <div class="group">
+          <div class="ghead">
+            <svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#4a4a54" stroke-width="1.4" stroke-linecap="round"/></svg>
+            <span class="glabel">담는 것</span>
+            <span class="num">18</span>
+          </div>
+          <div id="sheet-contains"></div>
+          <span class="overflow">+12</span>
+        </div>
+
+        <div class="group">
+          <div class="ghead">
+            <svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#5c5c72" stroke-width="1.4" stroke-dasharray="3 3" stroke-linecap="round"/></svg>
+            <span class="glabel">쓰는 곳</span>
+            <span class="num">2</span>
+          </div>
+          <div id="sheet-usedby"></div>
+        </div>
+
+        <div class="group">
+          <div class="ghead">
+            <svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#5c5c72" stroke-width="1.4" stroke-dasharray="3 3" stroke-linecap="round"/></svg>
+            <span class="glabel">기대는 곳</span>
+            <span class="num">1</span>
+          </div>
+          <div id="sheet-depends"></div>
+        </div>
+
+        <div class="foot">
+          <button type="button">다음 액션 복사</button>
+          <span class="slug">domains/onboarding-ux</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- reach as a quiet footer strip -->
+<footer class="reachstrip">
+  <span class="sentence">3단계 안에 닿는 개념 <b>279 / 296</b> — 대부분 도메인 내부(101) · Views(85)</span>
+  <div class="bar" aria-hidden="true">
+    <i style="width:36%;background:#5e6ad2"></i><i style="width:31%;background:#45454d"></i><i style="width:14%;background:#3a3a42"></i><i style="width:13%;background:#31313a"></i><i style="width:6%;background:#2a2a30"></i>
+  </div>
+  <div class="legend">
+    <span>내부 <b>101</b></span><span>Views <b>85</b></span><span>Agent <b>39</b></span><span>Vault <b>35</b></span><span>기타 <b>19</b></span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" }
+  };
+  function hexPts(c, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push((c + r * Math.cos(a)).toFixed(2) + "," + (c + r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(" ");
+  }
+  function glyphSVG(kind, s) {
+    s = s || 15;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var c = s / 2;
+    var common = 'fill="' + col.fill + '" stroke="' + col.stroke + '" stroke-width="1.25"';
+    var body;
+    if (kind === "project") body = '<polygon points="' + hexPts(c, c - 1.2) + '" ' + common + '/>';
+    else if (kind === "domain") body = '<rect x="' + (s * 0.067) + '" y="' + (s * 0.227) + '" width="' + (s * 0.867) + '" height="' + (s * 0.547) + '" rx="1.6" ' + common + '/>';
+    else if (kind === "capability") body = '<circle cx="' + c + '" cy="' + c + '" r="' + (c - 1.6) + '" ' + common + '/>';
+    else body = '<rect x="' + (s * 0.16) + '" y="' + (s * 0.16) + '" width="' + (s * 0.68) + '" height="' + (s * 0.68) + '" rx="1.4" ' + common + '/><circle cx="' + c + '" cy="' + c + '" r="' + (s * 0.1) + '" fill="#0c0c10"/>';
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
+  }
+  document.querySelectorAll("[data-glyph]").forEach(function (el) {
+    el.innerHTML = glyphSVG(el.getAttribute("data-glyph"), parseInt(el.getAttribute("data-size") || "15", 10));
+  });
+
+  function rowHTML(item) {
+    return '<div class="row">' + glyphSVG(item.k, 13) + '<span class="t">' + item.t + "</span></div>";
+  }
+  document.getElementById("sheet-contains").innerHTML = [
+    { k: "capability", t: "Agent Config Onboarding" },
+    { k: "capability", t: "CLI Developer Entry" },
+    { k: "capability", t: "Product Owner Operating System" },
+    { k: "element", t: "Landing First Impression" },
+    { k: "element", t: "Locale Switch" },
+    { k: "element", t: "Operations Nav" }
+  ].map(rowHTML).join("");
+  document.getElementById("sheet-usedby").innerHTML = [
+    { k: "domain", t: "Views" },
+    { k: "capability", t: "MCP 서버" }
+  ].map(rowHTML).join("");
+  document.getElementById("sheet-depends").innerHTML = [
+    { k: "element", t: "Design System 문서" }
+  ].map(rowHTML).join("");
+})();
+</script>
+</body>
+</html>
