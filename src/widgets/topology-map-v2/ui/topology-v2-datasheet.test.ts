@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildV2Connections,
   buildV2ConnectionGroups,
+  buildV2EvidenceRows,
   formatV2HandoffText,
   formatV2MetricLine,
   groupV2ConnectionsByDirection,
@@ -230,5 +231,39 @@ describe("formatV2HandoffText", () => {
     expect(text).toContain("domain: -");
     expect(text).toContain("used_by_names: -");
     expect(text).toContain("depends_names: -");
+  });
+});
+
+describe("buildV2EvidenceRows — 근거(evidence) group promotion (RATIO-SYSTEM §4)", () => {
+  it("splits a folder/slug evidenceId into a readable title + path, mirroring the mockup's doc-link row", () => {
+    expect(buildV2EvidenceRows(["capabilities/product-owner-operating-system"])).toEqual([
+      {
+        id: "capabilities/product-owner-operating-system",
+        title: "product-owner-operating-system",
+        path: "capabilities/",
+      },
+    ]);
+  });
+
+  it("uses the whole slug as the title with a null path when there is no folder segment", () => {
+    expect(buildV2EvidenceRows(["standalone-doc"])).toEqual([
+      { id: "standalone-doc", title: "standalone-doc", path: null },
+    ]);
+  });
+
+  it("returns one row per evidenceId, preserving input order", () => {
+    expect(
+      buildV2EvidenceRows(["elements/a", "elements/b"]).map((row) => row.id),
+    ).toEqual(["elements/a", "elements/b"]);
+  });
+
+  it("returns an empty array for an empty evidenceIds list", () => {
+    expect(buildV2EvidenceRows([])).toEqual([]);
+  });
+
+  it("skips blank entries defensively", () => {
+    expect(buildV2EvidenceRows(["", "  ", "capabilities/x"])).toEqual([
+      { id: "capabilities/x", title: "x", path: "capabilities/" },
+    ]);
   });
 });

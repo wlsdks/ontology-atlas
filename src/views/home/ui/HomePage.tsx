@@ -103,8 +103,10 @@ import { FullDetailA1, buildFullDetailGroups, buildFullDetailReachModel } from "
 import {
   TopologyMapV2,
   TopologyV2DetailPanel,
+  TopologyV2SettingsGear,
   buildV2Connections,
   buildV2ConnectionGroups,
+  buildV2EvidenceRows,
   formatV2HandoffText,
   clearTopologyV2TokensCache,
 } from "@/widgets/topology-map-v2";
@@ -286,6 +288,14 @@ export function HomePage() {
   );
   const handleIndexCollapse = useCallback(
     () => setIndexPreference("collapsed"),
+    [setIndexPreference],
+  );
+  // Settings gear's "INDEX 기본 상태" row — writes through the SAME
+  // `setIndexPreference` the INDEX panel's own fold/expand controls use, so
+  // it persists to `INDEX_PANEL_COLLAPSED_KEY` AND applies immediately
+  // (not just "on next reload") for consistent one-source-of-truth behavior.
+  const handleChangeIndexDefaultCollapsed = useCallback(
+    (next: boolean) => setIndexPreference(next ? "collapsed" : "expanded"),
     [setIndexPreference],
   );
   // Clicking the collapsed edge tab always means "give the slot back to
@@ -709,10 +719,11 @@ export function HomePage() {
       ontologyInsight.edges,
     );
     const groups = buildV2ConnectionGroups(connections);
+    const evidenceRows = buildV2EvidenceRows(selectedOntologyNode.evidenceIds);
     const metric = {
       usedBy: groups.usedBy.total,
       dependsOn: groups.dependsOn.total,
-      evidence: selectedOntologyNode.evidenceIds.length,
+      evidence: evidenceRows.length,
     };
     const handoffText = formatV2HandoffText({
       slug,
@@ -731,6 +742,7 @@ export function HomePage() {
       powered: changedSlugs.has(selectedOntologyNode.id),
       metric,
       groups,
+      evidence: { rows: evidenceRows, total: evidenceRows.length },
       handoffText,
     };
   }, [nodeFocus, selectedOntologyNode, ontologyInsight, nodeFocusData, changedSlugs]);
@@ -2392,6 +2404,32 @@ export function HomePage() {
                 </button>
                 </Tooltip>
               )}
+              {/* 설정 기어 — 우측 유틸리티 레일, "?" 바로 아래 (chrome-datasheet-
+                  final.html 시안). 언어/테마/INDEX 기본 상태를 지도를 떠나지
+                  않고 바꾼다. fit/필터/? 와 같은 hide 조건 공유 — 데이터시트가
+                  뜨는 동안은 우측 레일 전체가 데이터시트로 교체된다(기존 관례).
+                  1차 스코프는 데스크톱만(`hidden md:flex`, 1512/1920 라이브 검증). */}
+              {createNodeOpen ||
+              selectedRelationActive ||
+              topologyBlockingOverlayActive ||
+              selectedNodeFocusActive ? null : (
+                <Tooltip content={t('controls.settingsGearTooltip')} side="left" withProvider={false}>
+                  <TopologyV2SettingsGear
+                    indexDefaultCollapsed={indexPanelCollapsedStored}
+                    onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
+                    labels={{
+                      trigger: t('controls.settingsGearAriaLabel'),
+                      heading: t('controls.settingsGearHeading'),
+                      locale: t('controls.settingsGearLocale'),
+                      theme: t('controls.settingsGearTheme'),
+                      indexDefault: t('controls.settingsGearIndexDefault'),
+                      indexDefaultExpanded: t('controls.settingsGearIndexDefaultExpanded'),
+                      indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
+                    }}
+                    className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-6 md:top-[var(--topology-settings-gear-desktop-top)] md:block xl:right-8"
+                  />
+                </Tooltip>
+              )}
               <SigmaHubRail
                 projects={renderProjects}
                 selectedSlug={canvasSelectedSlug}
@@ -2521,6 +2559,7 @@ export function HomePage() {
                 powered={v2DatasheetModel.powered}
                 metric={v2DatasheetModel.metric}
                 groups={v2DatasheetModel.groups}
+                evidence={v2DatasheetModel.evidence}
                 handoffText={v2DatasheetModel.handoffText}
                 labels={{
                   kindLabel: tKinds(normalizeKindLabelKey(v2DatasheetModel.kind)),

@@ -3033,7 +3033,15 @@
       "reviewAria": "기준 이후 변경점 {count}개 — 온톨로지 변경점 패널에서 리뷰",
       "close": "닫기",
       "shortcutsTooltip": "키보드 단축키 (?)",
-      "shortcutsAriaLabel": "키보드 단축키 보기"
+      "shortcutsAriaLabel": "키보드 단축키 보기",
+      "settingsGearTooltip": "지도 설정",
+      "settingsGearAriaLabel": "지도 설정 열기",
+      "settingsGearHeading": "지도 설정",
+      "settingsGearLocale": "언어",
+      "settingsGearTheme": "테마",
+      "settingsGearIndexDefault": "INDEX 기본 상태",
+      "settingsGearIndexDefaultExpanded": "펼침",
+      "settingsGearIndexDefaultCollapsed": "접힘"
     },
     "empty": {
       "noMatchesTitle": "필터에 맞는 항목 없음",

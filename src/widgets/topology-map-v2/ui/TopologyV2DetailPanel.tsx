@@ -8,6 +8,7 @@ import {
   type V2ConnectionGroupsView,
   type V2ConnectionGroupView,
   type V2DatasheetConnection,
+  type V2EvidenceRow,
   type V2MetricValues,
 } from "./topology-v2-datasheet";
 import { TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui/topology-v2-kind-glyph";
@@ -34,6 +35,16 @@ import { TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui/topology-v
  * separate group-label strings) so the words match too. Relation TYPE
  * (containment vs depends) demotes to a per-row `TraceMark`, one per
  * connection row instead of one per group header.
+ *
+ * RATIO-SYSTEM §4 scale-up (`docs/prototypes/chrome-datasheet-final.html`,
+ * owner: "정보는 좋은데 너무 작고 그래") promotes a THIRD group — 근거
+ * (evidence) — built from the node's own `evidenceIds` (its backing vault
+ * doc; see `topology-v2-datasheet.ts#buildV2EvidenceRows`). It reuses
+ * `labels.metricEvidence` as its header, same construction as the usedBy/
+ * dependsOn groups, so the metric line's "근거 N" and this group's count
+ * never drift. Rows are read-only (no `onSelectConnection` — evidenceIds are
+ * vault slugs, a different id namespace than the canvas graph, see that
+ * module's doc for why).
  */
 
 export interface TopologyV2DetailPanelLabels {
@@ -63,6 +74,11 @@ export interface TopologyV2DetailPanelProps {
    * group's true total — so a contains-hub's depends group renders its real
    * count instead of collapsing into a generic overflow. */
   groups: V2ConnectionGroupsView;
+  /** 근거(evidence) group — the node's own backing vault doc(s), RATIO-SYSTEM
+   * §4 promotion. Rows built by `buildV2EvidenceRows`; empty when the node
+   * has no `evidenceIds` (hides the group entirely, same convention as
+   * usedBy/dependsOn). */
+  evidence: { rows: readonly V2EvidenceRow[]; total: number };
   /** Pre-built agent handoff payload; the view owns clipboard + toast. */
   handoffText: string;
   labels: TopologyV2DetailPanelLabels;
@@ -83,6 +99,7 @@ export function TopologyV2DetailPanel({
   powered,
   metric,
   groups,
+  evidence,
   handoffText,
   labels,
   onSelectConnection,
@@ -96,7 +113,8 @@ export function TopologyV2DetailPanel({
     dependsOn: labels.metricDependsOn,
     evidence: labels.metricEvidence,
   });
-  const hasConnections = groups.usedBy.total > 0 || groups.dependsOn.total > 0;
+  const hasConnections =
+    groups.usedBy.total > 0 || groups.dependsOn.total > 0 || evidence.total > 0;
 
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -144,10 +162,10 @@ export function TopologyV2DetailPanel({
                 type="button"
                 onClick={() => onSelectConnection(row.id)}
                 data-datasheet-connection={row.id}
-                className="flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-1 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+                className="flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-1.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
               >
                 <TopologyV2TraceMark containment={isContainmentRelation(row.relationType)} />
-                <span className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--topology-v2-panel-text-secondary)]">
+                <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--topology-v2-panel-text-secondary)]">
                   {row.title}
                 </span>
               </button>
@@ -162,6 +180,43 @@ export function TopologyV2DetailPanel({
             +{overflow}
           </span>
         ) : null}
+      </div>
+    );
+  };
+
+  // 근거(evidence) group — read-only doc-link rows (no TraceMark: these
+  // aren't canvas edges), same header/list shape as usedBy/dependsOn.
+  const renderEvidenceGroup = () => {
+    if (evidence.total === 0) return null;
+    return (
+      <div className="flex flex-col gap-1" data-datasheet-group="evidence">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-tertiary)]">
+            {labels.metricEvidence}
+          </span>
+          <span
+            data-datasheet-group-total="evidence"
+            className="font-mono text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+          >
+            {evidence.total}
+          </span>
+        </div>
+        <ul className="flex flex-col">
+          {evidence.rows.map((row) => (
+            <li key={`evidence:${row.id}`}>
+              <div className="flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-1.5">
+                <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--topology-v2-panel-text-secondary)]">
+                  {row.title}
+                </span>
+                {row.path ? (
+                  <span className="shrink-0 font-mono text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+                    {row.path}
+                  </span>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     );
   };
@@ -198,7 +253,7 @@ export function TopologyV2DetailPanel({
                   : "var(--topology-v2-panel-power-off)",
               }}
             />
-            <h2 className="min-w-0 flex-1 truncate text-[13.5px] font-semibold tracking-[-0.01em] text-[color:var(--topology-v2-panel-text-primary)]">
+            <h2 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-[-0.01em] text-[color:var(--topology-v2-panel-text-primary)]">
               {title}
             </h2>
           </div>
@@ -228,7 +283,7 @@ export function TopologyV2DetailPanel({
         data-datasheet-metric="engraved"
         className="rounded-[var(--topology-v2-panel-row-radius)] bg-[color:var(--topology-v2-panel-metric-surface)] px-2 py-1.5"
       >
-        <span className="font-mono text-[11.5px] tracking-[0.01em] text-[color:var(--topology-v2-panel-metric-text)]">
+        <span className="font-mono text-[12.5px] tracking-[0.01em] text-[color:var(--topology-v2-panel-metric-text)]">
           {metricLine}
         </span>
       </div>
@@ -239,6 +294,7 @@ export function TopologyV2DetailPanel({
           <>
             {renderGroup("usedBy", labels.metricUsedBy, groups.usedBy)}
             {renderGroup("dependsOn", labels.metricDependsOn, groups.dependsOn)}
+            {renderEvidenceGroup()}
           </>
         ) : (
           <span className="text-[11.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">
