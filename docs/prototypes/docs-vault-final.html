@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>/docs FINAL — machined 2-pane vault 에디터</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  FINAL ROUND — "비율이 생명". docs/prototypes/RATIO-SYSTEM.md 적용.
+  /docs (vault picker · 에디터 · 통합 팔레트) 의 첫 B2+ 목업.
+
+  실제 IA (src/views/docs-vault · src/widgets/docs-vault) 반영:
+    파일 트리(DocsVaultTree) + md 에디터/프리뷰(DocsVaultEditor/Viewer) +
+    통합 팔레트 진입(DocsVaultUnifiedPalette, ⌘K) + 백링크(DocsVaultBacklinks).
+
+  945 구도: 상단 헤더 존(크럼스 + 타이틀 + 음각 vault census + 팔레트 진입)
+  ≤130px → 2-pane 본체(flex:1) — 좌 파일 목록 280px + 우 에디터/프리뷰 —
+  → 하단 백링크 스트립 앵커. 좌우 1600 중앙 (앱 공통 거터).
+  frontmatter 블록은 음각 mono — "frontmatter 가 곧 그래프" 를 에디터에서 증명.
+-->
+<style>
+  /* Values copied from app/globals.css token families (standalone prototype). */
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --action-surface: rgba(255, 255, 255, 0.03);
+    --machined-edge: rgba(255, 255, 255, 0.05);
+    --mark-contains: #4a4a54;
+    --mark-depends: #5c5c72;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+    min-width: 1440px;
+  }
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+  .framecap {
+    width: 100%; max-width: 1920px; margin: 0 auto; padding: 14px 20px 9px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .framecap b { color: var(--text-tertiary); font-weight: 600; }
+  .frame {
+    position: relative; width: 100%; max-width: 1920px; margin: 0 auto;
+    height: 945px; overflow: hidden;
+    border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
+    display: flex; flex-direction: column;
+  }
+  .page {
+    width: 100%; max-width: 1600px; margin: 0 auto;
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column;
+    padding: 32px 0 40px;
+  }
+
+  .crumbs {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-tertiary); margin-bottom: 20px;
+  }
+  .crumbs a { color: var(--text-secondary); text-decoration: none; }
+  .crumbs a:hover { color: var(--text-primary); }
+  .crumbs .sep { color: var(--text-quaternary); }
+  .crumbs .census {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .power { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--indigo); flex: none; }
+
+  /* header — engraved vault census + palette entry */
+  .phead { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+  .phead h1 { margin: 0; font-size: 23px; font-weight: 650; letter-spacing: -0.015em; }
+  .vaultpill {
+    display: inline-flex; align-items: center; gap: 9px;
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    background: var(--metric-surface);
+    padding: 8px 13px;
+    font-family: var(--mono); font-size: 11.5px; color: #b6b6c0;
+  }
+  .vaultpill b { font-weight: 600; color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow); }
+  .vaultpill .path { color: var(--text-tertiary); }
+  .vaultpill .swap { color: var(--text-quaternary); cursor: pointer; }
+  .vaultpill .swap:hover { color: var(--text-secondary); }
+  .palettebtn {
+    margin-left: auto; appearance: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 9px;
+    font: 500 12.5px/1 inherit; font-family: inherit;
+    color: var(--text-secondary);
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    padding: 9px 13px;
+    box-shadow: inset 0 1px 0 var(--machined-edge);
+    transition: border-color 150ms ease, color 150ms ease;
+  }
+  .palettebtn:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .palettebtn kbd {
+    font-family: var(--mono); font-size: 10px; color: var(--text-quaternary);
+    border: 1px solid var(--border-soft); border-radius: 4px; padding: 2px 5px;
+  }
+
+  /* ---- 2-pane body ------------------------------------------------------ */
+  .panes { flex: 1; min-height: 0; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; }
+  .pane {
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: 11px;
+    box-shadow: inset 0 1px 0 var(--machined-edge), 0 14px 34px rgba(0, 0, 0, 0.35);
+    display: flex; flex-direction: column;
+    min-height: 0;
+  }
+
+  /* left — file tree */
+  .treehead {
+    display: flex; align-items: center; gap: 8px;
+    padding: 13px 14px 10px; border-bottom: 1px solid var(--divider);
+  }
+  .treehead .plabel {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--text-tertiary);
+  }
+  .treehead .num { margin-left: auto; font-size: 11px; }
+  .search { position: relative; margin: 10px 12px 8px; }
+  .search input {
+    width: 100%; appearance: none;
+    background: var(--canvas-bg);
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+    color: var(--text-primary);
+    font: 400 12px/1 inherit; font-family: inherit;
+    padding: 7px 10px 7px 28px; outline: none;
+  }
+  .search input::placeholder { color: var(--text-quaternary); }
+  .search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); }
+  .tree { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 10px; display: flex; flex-direction: column; }
+  .slabel {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--text-quaternary);
+    padding: 10px 8px 5px;
+  }
+  .frow {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px; border-radius: 5px;
+    border: 1px solid transparent;
+    font-size: 12.5px; color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color 120ms ease, color 120ms ease;
+  }
+  .frow:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .frow.sel { border-color: rgba(94, 106, 210, 0.55); color: var(--text-primary); background: var(--metric-surface); }
+  .frow .caret { width: 11px; flex: none; text-align: center; color: var(--text-quaternary); font-size: 8.5px; }
+  .frow.open .caret { transform: rotate(90deg); }
+  .frow .caret.leaf { visibility: hidden; }
+  .frow .t { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .frow .t .ext { color: var(--text-quaternary); }
+  .frow .num { font-size: 10.5px; }
+  .frow .fresh-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); flex: none; }
+  .indent-1 { margin-left: 16px; }
+
+  /* right — editor/preview */
+  .ehead {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 18px; border-bottom: 1px solid var(--divider);
+  }
+  .ehead .fname { font-family: var(--mono); font-size: 12.5px; color: var(--text-secondary); }
+  .ehead .fname .dir { color: var(--text-quaternary); }
+  .seg {
+    display: inline-flex; align-items: stretch;
+    background: var(--canvas-bg);
+    border: 1px solid var(--border-soft); border-radius: 6px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+    padding: 2px; gap: 2px;
+  }
+  .seg span {
+    font: 500 10.5px/1 var(--mono);
+    color: var(--text-quaternary);
+    padding: 4px 9px; border-radius: 4px; cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .seg span.on {
+    color: var(--text-primary);
+    background: var(--metric-surface);
+    border-color: rgba(94, 106, 210, 0.55);
+  }
+  .ehead .save {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-quaternary);
+    letter-spacing: 0.06em;
+  }
+  .ebody { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding: 18px 22px 0; }
+  /* frontmatter — the graph, engraved */
+  .fm {
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    background: var(--canvas-bg);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+    padding: 12px 15px;
+    font-family: var(--mono); font-size: 12px; line-height: 1.9;
+    color: var(--text-tertiary);
+  }
+  .fm .k { color: var(--text-quaternary); }
+  .fm .v { color: var(--text-secondary); }
+  .fm .vq { color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow); font-weight: 600; }
+  .fm .fence { color: #3c3c44; }
+  .fmnote {
+    display: flex; align-items: center; gap: 7px;
+    margin-top: 8px; font-size: 11px; color: var(--text-quaternary);
+  }
+  .doc { flex: 1; min-height: 0; overflow: hidden; padding: 20px 2px 0; max-width: 860px; }
+  .doc h1 { margin: 0 0 12px; font-size: 21px; font-weight: 650; letter-spacing: -0.015em; }
+  .doc p { margin: 0 0 11px; font-size: 13.5px; line-height: 1.75; color: var(--text-secondary); }
+  .doc ul { margin: 0 0 11px; padding-left: 18px; }
+  .doc li { margin-bottom: 5px; font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); }
+  .doc b { color: var(--text-primary); font-weight: 600; }
+  .doc code {
+    font-family: var(--mono); font-size: 12px; color: var(--text-tertiary);
+    border: 1px solid var(--border-soft); border-radius: 4px; padding: 1px 5px;
+  }
+  /* backlinks strip — anchored at the pane bottom */
+  .backlinks {
+    border-top: 1px solid var(--divider);
+    padding: 12px 18px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .backlinks .blabel {
+    flex: none; font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .backlinks .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 12px; color: var(--text-secondary);
+    border: 1px solid var(--border-soft); border-radius: 6px;
+    background: var(--action-surface);
+    padding: 5px 10px; cursor: pointer;
+    transition: border-color 150ms ease, color 150ms ease;
+  }
+  .backlinks .chip:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .backlinks .open-node {
+    margin-left: auto; flex: none; font-size: 12px; color: var(--text-tertiary); text-decoration: none;
+  }
+  .backlinks .open-node:hover { color: var(--text-secondary); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="framecap"><b>/docs FINAL</b> — 좌 파일 목록 280 + 우 에디터/프리뷰 · 음각 vault census · ⌘K 팔레트 진입 · 1920×945</div>
+<section class="frame">
+  <div class="page">
+    <nav class="crumbs">
+      <a href="#">← 워크스페이스</a>
+      <span class="sep">/</span>
+      <span>문서</span>
+      <span class="census">296 CONCEPTS · 508 RELATIONS</span>
+    </nav>
+
+    <header class="phead">
+      <h1>문서</h1>
+      <span class="vaultpill">
+        <span class="path">~/dev/ontology-atlas/docs/ontology</span>
+        <span><b>296</b> 파일</span>
+        <span><b>6</b> 폴더</span>
+        <span class="swap">vault 바꾸기</span>
+      </span>
+      <button class="palettebtn" type="button">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="5" cy="5" r="3.6" fill="none" stroke="#868690" stroke-width="1.3"/><line x1="7.8" y1="7.8" x2="11" y2="11" stroke="#868690" stroke-width="1.3" stroke-linecap="round"/></svg>
+        통합 팔레트 — 파일 · 개념 · 명령
+        <kbd>⌘K</kbd>
+      </button>
+    </header>
+
+    <div class="panes">
+      <!-- left: file tree -->
+      <aside class="pane" aria-label="vault 파일">
+        <div class="treehead">
+          <span class="plabel">Files</span>
+          <span class="power" title="에이전트 동기화 12분 전"></span>
+          <span class="num">296</span>
+        </div>
+        <div class="search">
+          <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><circle cx="5" cy="5" r="3.6" fill="none" stroke="#55555d" stroke-width="1.3"/><line x1="7.8" y1="7.8" x2="11" y2="11" stroke="#55555d" stroke-width="1.3" stroke-linecap="round"/></svg>
+          <input type="text" placeholder="파일 검색" autocomplete="off" />
+        </div>
+        <nav class="tree" id="tree"></nav>
+      </aside>
+
+      <!-- right: editor / preview -->
+      <section class="pane" aria-label="에디터">
+        <div class="ehead">
+          <span class="fname"><span class="dir">capabilities/</span>product-owner-operating-system.md</span>
+          <span class="seg"><span class="on">미리보기</span><span>편집</span></span>
+          <span class="save"><span class="power"></span>저장됨 · 2분 전 · 에이전트</span>
+        </div>
+        <div class="ebody">
+          <div class="fm">
+            <div class="fence">---</div>
+            <div><span class="k">kind:</span> <span class="vq">capability</span></div>
+            <div><span class="k">slug:</span> <span class="v">product-owner-operating-system</span></div>
+            <div><span class="k">title:</span> <span class="v">Product Owner Operating System</span></div>
+            <div><span class="k">domain:</span> <span class="v">onboarding-ux</span></div>
+            <div><span class="k">depends_on:</span> <span class="v">[agent-brief]</span></div>
+            <div><span class="k">evidence:</span> <span class="v">[docs/PRODUCT-OWNER-OPERATING-SYSTEM.md]</span></div>
+            <div class="fence">---</div>
+          </div>
+          <div class="fmnote">
+            <svg width="16" height="6" viewBox="0 0 16 6" aria-hidden="true"><line x1="1" y1="3" x2="15" y2="3" stroke="var(--mark-contains)" stroke-width="1.5" stroke-linecap="round"/></svg>
+            frontmatter 가 곧 그래프 — 이 블록이 topology 의 노드와 엣지가 됩니다.
+          </div>
+          <article class="doc">
+            <h1>Product Owner Operating System</h1>
+            <p>기능·UX·그래프·MCP·CLI·워크플로 변경 전에 적용하는 <b>필수 PO 게이트</b>.
+            관찰된 현상과 사용자 문제에서 출발해, 온톨로지 가치·에이전트 가치·단순화·검증
+            계획을 명명한 뒤에만 구현에 들어간다.</p>
+            <ul>
+              <li><b>산출물이 아니라 결과</b> — shipped output 은 워크플로 개선일 때만 진전으로 친다</li>
+              <li><b>솔루션 요청 번역</b> — "X 추가해줘"는 관찰 가능한 문제로 먼저 환원</li>
+              <li><b>판정으로 끝맺기</b> — <code>Do not build</code> · <code>Investigate first</code> · <code>Shape a slice</code> · <code>Build and verify</code></li>
+            </ul>
+            <p>이 문서 자체가 vault 의 capability 노드다 — 코드 근거는 evidence 관계로
+            <code>docs/PRODUCT-OWNER-OPERATING-SYSTEM.md</code> 에 연결되어 있다.</p>
+            <h2 style="margin:18px 0 10px; font-size:16px; font-weight:620; letter-spacing:-0.01em">에이전트가 이 노드를 쓰는 방법</h2>
+            <p>Claude Code 는 작업 시작 시 <code>get_concept("product-owner-operating-system")</code> 으로
+            이 노드와 이웃을 읽고, PO 패스를 쓴 뒤 <code>patch_concept</code> 으로 판정 결과를
+            본문에 되돌려 쓴다. 사람은 같은 파일을 git diff 로 검토한다 — 한 파일, 두 독자.</p>
+            <ul>
+              <li>읽기 — <code>find_backlinks</code> 로 이 게이트에 기대는 역량 확인</li>
+              <li>쓰기 — 판정(<code>Build and verify</code> 등)을 본문 말미에 기록</li>
+            </ul>
+          </article>
+        </div>
+        <div class="backlinks">
+          <span class="blabel">Backlinks 3</span>
+          <span class="chip" id="bl-1"></span>
+          <span class="chip" id="bl-2"></span>
+          <span class="chip" id="bl-3"></span>
+          <a class="open-node" href="#">온톨로지에서 열기 →</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  "use strict";
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" },
+    document:   { fill: "#15151a", stroke: "#3c3c44" }
+  };
+  function hexPts(c, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push((c + r * Math.cos(a)).toFixed(2) + "," + (c + r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(" ");
+  }
+  function glyphSVG(kind, s) {
+    s = s || 13;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var c = s / 2;
+    var common = 'fill="' + col.fill + '" stroke="' + col.stroke + '" stroke-width="1.25"';
+    var body;
+    if (kind === "project") body = '<polygon points="' + hexPts(c, c - 1.2) + '" ' + common + '/>';
+    else if (kind === "domain") body = '<rect x="' + (s * 0.067) + '" y="' + (s * 0.227) + '" width="' + (s * 0.867) + '" height="' + (s * 0.547) + '" rx="1.6" ' + common + '/>';
+    else if (kind === "capability") body = '<circle cx="' + c + '" cy="' + c + '" r="' + (c - 1.6) + '" ' + common + '/>';
+    else if (kind === "document") body = '<rect x="' + (s * 0.18) + '" y="' + (s * 0.1) + '" width="' + (s * 0.64) + '" height="' + (s * 0.8) + '" rx="1.4" ' + common + '/><line x1="' + (s * 0.32) + '" y1="' + (s * 0.38) + '" x2="' + (s * 0.68) + '" y2="' + (s * 0.38) + '" stroke="' + col.stroke + '" stroke-width="1"/><line x1="' + (s * 0.32) + '" y1="' + (s * 0.58) + '" x2="' + (s * 0.68) + '" y2="' + (s * 0.58) + '" stroke="' + col.stroke + '" stroke-width="1"/>';
+    else body = '<rect x="' + (s * 0.16) + '" y="' + (s * 0.16) + '" width="' + (s * 0.68) + '" height="' + (s * 0.68) + '" rx="1.4" ' + common + '/><circle cx="' + c + '" cy="' + c + '" r="' + (s * 0.1) + '" fill="#0c0c10"/>';
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
+  }
+  function folderRow(caret, glyph, name, ext, opts) {
+    opts = opts || {};
+    return '<div class="frow' + (opts.cls ? " " + opts.cls : "") + '">' +
+      '<span class="caret' + (caret === null ? " leaf" : "") + '">' + (caret === null ? "▶" : "▶") + "</span>" +
+      glyph +
+      '<span class="t">' + name + (ext ? '<span class="ext">' + ext + "</span>" : "") + "</span>" +
+      (opts.fresh ? '<span class="fresh-dot" title="최근 갱신"></span>' : "") +
+      (opts.n != null ? '<span class="num">' + opts.n + "</span>" : "") +
+      "</div>";
+  }
+  var t = "";
+  t += '<span class="slabel">Pinned</span>';
+  t += folderRow(null, glyphSVG("project"), "project", ".md", {});
+  t += folderRow(null, glyphSVG("document"), "README", ".md", {});
+  t += '<span class="slabel">Vault</span>';
+  t += folderRow(1, glyphSVG("domain"), "domains/", "", { n: 6, cls: "open" });
+  t += '<div class="indent-1">' +
+    folderRow(null, glyphSVG("domain"), "views", ".md", { fresh: true }) +
+    folderRow(null, glyphSVG("domain"), "onboarding-ux", ".md", { fresh: true }) +
+    "</div>";
+  t += folderRow(1, glyphSVG("capability"), "capabilities/", "", { n: 36, cls: "open" });
+  t += '<div class="indent-1">' +
+    folderRow(null, glyphSVG("capability"), "mcp-server", ".md", {}) +
+    folderRow(null, glyphSVG("capability"), "product-owner-operating-system", ".md", { cls: "sel", fresh: true }) +
+    folderRow(null, glyphSVG("capability"), "cli-developer-entry", ".md", {}) +
+    folderRow(null, glyphSVG("capability"), "topology-skeleton-entry", ".md", { fresh: true }) +
+    "</div>";
+  t += folderRow(0, glyphSVG("element"), "elements/", "", { n: 250 });
+  t += folderRow(0, glyphSVG("document"), "documents/", "", { n: 3 });
+  t += '<span class="slabel">Recent</span>';
+  t += folderRow(null, glyphSVG("element"), "topology-analysis-bar", ".md", { fresh: true });
+  t += folderRow(null, glyphSVG("capability"), "vault-live-updates", ".md", {});
+  t += folderRow(null, glyphSVG("document"), "agent-practice-research", ".md", {});
+  document.getElementById("tree").innerHTML = t;
+
+  function traceSVG(style) {
+    var stroke = style === "contains" ? "var(--mark-contains)" : "var(--mark-depends)";
+    var dash = style === "contains" ? "" : ' stroke-dasharray="3 3"';
+    return '<svg width="14" height="6" viewBox="0 0 14 6" aria-hidden="true" style="flex:none">' +
+      '<line x1="1" y1="3" x2="13" y2="3" stroke="' + stroke + '" stroke-width="1.4"' + dash + ' stroke-linecap="round"/></svg>';
+  }
+  document.getElementById("bl-1").innerHTML = traceSVG("contains") + glyphSVG("domain") + "Onboarding & UX";
+  document.getElementById("bl-2").innerHTML = traceSVG("relates") + glyphSVG("capability") + "Topology Map";
+  document.getElementById("bl-3").innerHTML = traceSVG("relates") + glyphSVG("capability") + "Agent Brief";
+})();
+</script>
+</body>
+</html>

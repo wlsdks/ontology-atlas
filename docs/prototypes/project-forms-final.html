@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>/project/new · /project/[slug]/edit FINAL — 중앙 640 machined 폼</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  FINAL ROUND — "비율이 생명". docs/prototypes/RATIO-SYSTEM.md 적용 (라이트 패스).
+  폼 컬럼 640px 컨테이너 중앙 — 세로도 중앙 부근(상단 몰림 금지, ~55/45 무게).
+  음각 section 라벨(tracking caps) + machined 필드(inset 음각 입력면).
+  frame 1 = /project/new · frame 2 = /project/[slug]/edit (동일 해부 + 프리필
+  + 파일 사실줄 + 위험 행은 dashed 보더 — 색이 아니라 보더 스타일이 구분).
+  저장 대상은 언제나 vault md — "frontmatter 로 저장됩니다" 를 폼이 명시.
+-->
+<style>
+  /* Values copied from app/globals.css token families (standalone prototype). */
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --action-surface: rgba(255, 255, 255, 0.03);
+    --machined-edge: rgba(255, 255, 255, 0.05);
+    --signal-red: rgba(229, 72, 77, 0.9);
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+    min-width: 1440px;
+  }
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+  .framecap {
+    width: 100%; max-width: 1920px; margin: 0 auto; padding: 14px 20px 9px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .framecap b { color: var(--text-tertiary); font-weight: 600; }
+  .frame {
+    position: relative; width: 100%; max-width: 1920px; margin: 0 auto;
+    height: 945px; overflow: hidden;
+    border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
+    display: flex; flex-direction: column;
+  }
+  .page {
+    width: 100%; max-width: 1600px; margin: 0 auto;
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column;
+    padding: 32px 0 40px;
+  }
+  .crumbs {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-tertiary);
+  }
+  .crumbs a { color: var(--text-secondary); text-decoration: none; }
+  .crumbs a:hover { color: var(--text-primary); }
+  .crumbs .sep { color: var(--text-quaternary); }
+  .crumbs .census {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .power { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--indigo); flex: none; }
+
+  /* vertically balanced form zone — slight upward bias (55/45) */
+  .formzone {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column; justify-content: center;
+    padding-bottom: 56px;
+  }
+  .formcol { width: 640px; margin: 0 auto; }
+  .fhead { display: flex; align-items: flex-end; gap: 14px; margin-bottom: 18px; }
+  .fhead h1 { margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -0.015em; }
+  .fhead .sub { font-size: 12px; color: var(--text-tertiary); padding-bottom: 3px; }
+  .fhead .meta {
+    margin-left: auto; padding-bottom: 3px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-quaternary);
+  }
+
+  .formcard {
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: 11px;
+    box-shadow: inset 0 1px 0 var(--machined-edge), 0 14px 34px rgba(0, 0, 0, 0.35);
+    padding: 22px 24px;
+  }
+  .slabel {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--text-tertiary);
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 0 14px;
+  }
+  .slabel::after { content: ""; flex: 1; border-top: 1px solid var(--divider); }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .field label .q { color: var(--text-quaternary); font-size: 11px; }
+  .field input, .field textarea {
+    width: 100%; appearance: none;
+    background: var(--canvas-bg);
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+    color: var(--text-primary);
+    font: 400 13px/1.4 inherit; font-family: inherit;
+    padding: 9px 12px; outline: none;
+    transition: border-color 150ms ease;
+  }
+  .field input::placeholder, .field textarea::placeholder { color: var(--text-quaternary); }
+  .field input:hover, .field textarea:hover { border-color: var(--border-strong); }
+  .field input:focus, .field textarea:focus { border-color: var(--indigo); }
+  .field input.mono { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); }
+  .field textarea { resize: none; height: 108px; line-height: 1.6; }
+  .fieldrow { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .gap { height: 10px; }
+
+  .factline {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    background: var(--metric-surface);
+    padding: 8px 12px; margin-bottom: 16px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-tertiary);
+  }
+  .factline b { color: var(--numeral-face); font-weight: 600; text-shadow: 0 1px 0 var(--numeral-shadow); }
+
+  .factions {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 6px; padding-top: 16px; border-top: 1px solid var(--divider);
+  }
+  .factions .primary {
+    appearance: none; cursor: pointer;
+    font: 560 13px/1 inherit; font-family: inherit;
+    color: var(--indigo-bright);
+    background: var(--action-surface);
+    border: 1px solid rgba(94, 106, 210, 0.5);
+    border-radius: 7px; padding: 10px 18px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .factions .primary:hover { background: var(--row-hover); border-color: var(--indigo); }
+  .factions .quiet-btn {
+    appearance: none; cursor: pointer;
+    font: 500 12.5px/1 inherit; font-family: inherit;
+    color: var(--text-tertiary);
+    background: transparent; border: 1px solid transparent;
+    border-radius: 7px; padding: 10px 12px;
+  }
+  .factions .quiet-btn:hover { color: var(--text-secondary); }
+  .factions .savenote {
+    margin-left: auto; font-size: 11px; color: var(--text-quaternary);
+    font-family: var(--mono);
+  }
+
+  /* edit-only: danger row — dashed border is the category signal */
+  .danger {
+    margin-top: 16px;
+    display: flex; align-items: center; gap: 12px;
+    border: 1px dashed var(--border-strong); border-radius: 9px;
+    padding: 12px 16px;
+  }
+  .danger .dt { font-size: 12.5px; color: var(--text-secondary); }
+  .danger .dq { font-size: 11px; color: var(--text-quaternary); margin-top: 2px; }
+  .danger button {
+    margin-left: auto; flex: none; appearance: none; cursor: pointer;
+    font: 500 12px/1 inherit; font-family: inherit;
+    color: var(--signal-red);
+    background: transparent;
+    border: 1px solid var(--border-soft); border-radius: 6px;
+    padding: 7px 12px;
+    transition: border-color 150ms ease;
+  }
+  .danger button:hover { border-color: var(--signal-red); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="framecap"><b>/project/new FINAL</b> — 중앙 640 폼 · 세로 중앙 부근(55/45) · 음각 section 라벨 · 1920×945</div>
+<section class="frame">
+  <div class="page">
+    <nav class="crumbs">
+      <a href="#">← 프로젝트</a>
+      <span class="sep">/</span>
+      <span>새 프로젝트</span>
+      <span class="census">296 CONCEPTS · 508 RELATIONS</span>
+    </nav>
+
+    <div class="formzone">
+      <div class="formcol">
+        <div class="fhead">
+          <h1>새 프로젝트</h1>
+          <span class="sub">vault 에 <span style="font-family:var(--mono)">kind: project</span> 문서를 만듭니다</span>
+        </div>
+        <form class="formcard" onsubmit="return false">
+          <p class="slabel">기본 정보</p>
+          <div class="fieldrow">
+            <div class="field">
+              <label for="n-title">제목</label>
+              <input id="n-title" type="text" placeholder="예: payments-platform" />
+            </div>
+            <div class="field">
+              <label for="n-slug">슬러그 <span class="q">— 제목에서 자동</span></label>
+              <input id="n-slug" class="mono" type="text" placeholder="payments-platform" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="n-sum">한 줄 요약</label>
+            <input id="n-sum" type="text" placeholder="이 프로젝트가 무엇인지 한 문장으로" />
+          </div>
+          <div class="gap"></div>
+          <p class="slabel">본문 <span style="letter-spacing:0.04em; text-transform:none">markdown</span></p>
+          <div class="field">
+            <textarea placeholder="## 무엇을&#10;&#10;## 왜"></textarea>
+          </div>
+          <div class="factions">
+            <button class="primary" type="submit">만들기</button>
+            <button class="quiet-btn" type="button">취소</button>
+            <span class="savenote">→ payments-platform.md · frontmatter 로 저장</span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="framecap"><b>/project/ontology-atlas/edit FINAL</b> — 동일 해부 + 프리필 + 파일 사실줄 + dashed 위험 행 · 1920×945</div>
+<section class="frame">
+  <div class="page">
+    <nav class="crumbs">
+      <a href="#">← 프로젝트</a>
+      <span class="sep">/</span>
+      <a href="#">ontology-atlas</a>
+      <span class="sep">/</span>
+      <span>편집</span>
+      <span class="census">296 CONCEPTS · 508 RELATIONS</span>
+    </nav>
+
+    <div class="formzone">
+      <div class="formcol">
+        <div class="fhead">
+          <h1>프로젝트 편집</h1>
+          <span class="meta"><span class="power" style="margin-right:5px"></span>최근 갱신 오늘 · 에이전트</span>
+        </div>
+        <form class="formcard" onsubmit="return false">
+          <div class="factline">
+            <b>ontology-atlas.md</b>
+            <span>· docs/ontology</span>
+            <span style="margin-left:auto">도메인 <b>6</b> · 역량 <b>36</b> · 요소 <b>250</b></span>
+          </div>
+          <p class="slabel">기본 정보</p>
+          <div class="fieldrow">
+            <div class="field">
+              <label for="e-title">제목</label>
+              <input id="e-title" type="text" value="ontology-atlas" />
+            </div>
+            <div class="field">
+              <label for="e-slug">슬러그 <span class="q">— 변경 시 백링크 전체 재작성</span></label>
+              <input id="e-slug" class="mono" type="text" value="ontology-atlas" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="e-sum">한 줄 요약</label>
+            <input id="e-sum" type="text" value="마크다운에서 자라는 오픈소스 온톨로지 워크벤치" />
+          </div>
+          <div class="gap"></div>
+          <p class="slabel">본문 <span style="letter-spacing:0.04em; text-transform:none">markdown</span></p>
+          <div class="field">
+            <textarea>마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다.
+
+- **md 가 진실원** — vault 의 frontmatter 가 ontology 그대로</textarea>
+          </div>
+          <div class="factions">
+            <button class="primary" type="submit">저장</button>
+            <button class="quiet-btn" type="button">취소</button>
+            <span class="savenote">git diff 로 검토 가능 · 진실원은 md</span>
+          </div>
+        </form>
+        <div class="danger">
+          <div>
+            <div class="dt">프로젝트 삭제</div>
+            <div class="dq">md 파일이 삭제되고 관계는 dangling 경고로 남습니다 — dry-run 이 먼저 보여줍니다.</div>
+          </div>
+          <button type="button">삭제…</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</body>
+</html>

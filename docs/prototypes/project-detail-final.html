@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>/project/[slug] FINAL — 히어로 밴드 + 미니 도메인 지도 + 3존 균형</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  FINAL ROUND — "비율이 생명". docs/prototypes/RATIO-SYSTEM.md 적용.
+  v2b("이게 최선이려나?")를 넘어서는 안: 리스트가 아니라 제품 페이지.
+
+  945 프레임을 3존으로 수직 배분 (상단 몰림/하단 공백 해소):
+    상 (~) 히어로 밴드 — 헥스 글리프 + 타이틀 + 음각 메트릭 + 우측 "정직한
+           미니 도메인 지도"(실카운트 비례 SVG — 랜딩 instrument 문법의 수출).
+    중 (~) 도메인 구성 3×2 — machined 도메인 카드 (미터 + 상위 역량).
+    하 (~) 본문(project.md) + 우측 요약 레일(연결 프로젝트 · 에이전트 핸드오프).
+  좌우: 페이지 1600 중앙 (거터 160) — 앱 공통 거터 시스템.
+  수치: exemplar world 296 · 508 + 실 dogfood 도메인/역량.
+-->
+<style>
+  /* Values copied from app/globals.css token families (standalone prototype). */
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --action-surface: rgba(255, 255, 255, 0.03);
+    --machined-edge: rgba(255, 255, 255, 0.05);
+    --mark-contains: #4a4a54;
+    --mark-depends: #5c5c72;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+    min-width: 1440px;
+  }
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+  .framecap {
+    width: 100%; max-width: 1920px; margin: 0 auto; padding: 14px 20px 9px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .framecap b { color: var(--text-tertiary); font-weight: 600; }
+  .frame {
+    position: relative; width: 100%; max-width: 1920px; margin: 0 auto;
+    height: 945px; overflow: hidden;
+    border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
+    display: flex; flex-direction: column;
+  }
+  .page {
+    width: 100%; max-width: 1600px; margin: 0 auto;
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column;
+    padding: 32px 0 40px;
+  }
+
+  .crumbs {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-tertiary); margin-bottom: 20px;
+  }
+  .crumbs a { color: var(--text-secondary); text-decoration: none; }
+  .crumbs a:hover { color: var(--text-primary); }
+  .crumbs .sep { color: var(--text-quaternary); }
+  .crumbs .census {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .power { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--indigo); flex: none; }
+
+  /* ---- zone 1: hero band ------------------------------------------------ */
+  .hero {
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: 11px;
+    box-shadow: inset 0 1px 0 var(--machined-edge), 0 14px 34px rgba(0, 0, 0, 0.35);
+    padding: 18px 26px;
+    display: flex; align-items: stretch; gap: 30px;
+  }
+  .hero .hmain { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .hero .trow { display: flex; align-items: flex-start; gap: 15px; }
+  .hero .glyph { margin-top: 5px; }
+  .hero h1 { margin: 0; font-size: 27px; font-weight: 650; letter-spacing: -0.015em; }
+  .hero .kindline {
+    display: flex; align-items: center; gap: 8px; margin-top: 6px;
+    font-size: 13px; color: var(--text-tertiary);
+  }
+  .hero .kindline .dot-sep { color: var(--text-quaternary); }
+  .hero .headactions { display: flex; gap: 8px; margin-left: auto; }
+  .hero .headactions a {
+    font-size: 12.5px; color: var(--text-secondary); text-decoration: none;
+    border: 1px solid var(--border-soft); border-radius: 6px; padding: 7px 13px;
+    background: var(--action-surface);
+    transition: border-color 150ms ease, color 150ms ease;
+  }
+  .hero .headactions a:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .metricline {
+    margin-top: auto; padding-top: 14px;
+    display: flex; gap: 30px; align-items: baseline;
+  }
+  .metricline .m { display: flex; flex-direction: column; gap: 3px; }
+  .metricline .m b {
+    font-family: var(--mono); font-weight: 600; font-size: 24px; line-height: 1;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+  .metricline .m .lbl {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .metricline .vaultpath {
+    margin-left: auto; align-self: flex-end;
+    font-family: var(--mono); font-size: 11px; color: var(--text-quaternary);
+  }
+  /* honest mini domain map — real counts drive the geometry */
+  .hero .minimap {
+    flex: none; width: 430px;
+    border-left: 1px solid var(--divider);
+    padding-left: 30px;
+    display: flex; flex-direction: column;
+  }
+  .hero .minimap .mlabel {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-quaternary);
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .hero .minimap .mlabel a { margin-left: auto; font-size: 10.5px; color: var(--text-tertiary); text-decoration: none; letter-spacing: 0.04em; text-transform: none; }
+  .hero .minimap .mlabel a:hover { color: var(--text-secondary); }
+  .hero .minimap svg { display: block; margin-top: 6px; width: 100%; height: 148px; }
+
+  /* ---- section head (shared anatomy) ------------------------------------ */
+  .shead { display: flex; align-items: center; gap: 9px; margin: 22px 0 12px; }
+  .shead .glabel { font-size: 14px; font-weight: 560; color: var(--text-primary); letter-spacing: -0.01em; }
+  .shead .gcap {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .shead .num { margin-left: auto; font-size: 12.5px; }
+
+  /* ---- zone 2: domain composition 3×2 ----------------------------------- */
+  .domgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 20px; }
+  .dcard {
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 9px;
+    box-shadow: inset 0 1px 0 var(--machined-edge);
+    padding: 12px 15px;
+    transition: border-color 150ms ease;
+    cursor: pointer;
+    display: flex; flex-direction: column;
+  }
+  .dcard:hover { border-color: var(--border-strong); }
+  .dcard .dhead { display: flex; align-items: center; gap: 8px; }
+  .dcard .dhead .t {
+    min-width: 0; flex: 1; font-size: 13.5px; font-weight: 560;
+    color: var(--text-primary); letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .dcard .fresh-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); flex: none; }
+  .dcard .meterrow { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .dcard .meter {
+    flex: 1; height: 4px; border-radius: 2px;
+    background: var(--border-soft); overflow: hidden; position: relative;
+  }
+  .dcard .meter i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: #55555d; }
+  .dcard.top .meter i { background: var(--indigo); }
+  .dcard .counts { flex: none; font-family: var(--mono); font-size: 10.5px; color: var(--text-quaternary); }
+  .dcard .counts b {
+    font-weight: 600; color: var(--numeral-face);
+    text-shadow: 0 1px 0 var(--numeral-shadow); font-size: 11.5px;
+  }
+  .dcard .caps { margin-top: 7px; display: flex; flex-direction: column; }
+  .dcard .caps .crow {
+    display: flex; align-items: center; gap: 7px;
+    padding: 2px 2px; font-size: 12.5px; color: var(--text-secondary);
+  }
+  .dcard .caps .crow .ct { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dcard .caps .more { font-size: 11px; color: var(--text-quaternary); padding: 4px 2px 0; margin-top: auto; }
+
+  /* ---- zone 3: body + summary rail -------------------------------------- */
+  .lower { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 20px; margin-top: 22px; align-items: start; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 9px;
+    box-shadow: inset 0 1px 0 var(--machined-edge);
+    padding: 16px 18px;
+  }
+  .card .chead { display: flex; align-items: baseline; gap: 9px; margin-bottom: 10px; }
+  .card .chead .glabel { font-size: 13px; font-weight: 560; color: var(--text-primary); }
+  .card .chead .gcap {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .body-md { font-size: 13.5px; line-height: 1.75; color: var(--text-secondary); }
+  .body-md p { margin: 0 0 10px; }
+  .body-md ul { margin: 0; padding-left: 18px; }
+  .body-md li { margin-bottom: 5px; }
+  .body-md b { color: var(--text-primary); font-weight: 600; }
+  .body-md code {
+    font-family: var(--mono); font-size: 12px; color: var(--text-tertiary);
+    border: 1px solid var(--border-soft); border-radius: 4px; padding: 1px 5px;
+  }
+  .rail { display: flex; flex-direction: column; gap: 20px; }
+  .emptyline { font-size: 12.5px; line-height: 1.65; color: var(--text-tertiary); margin: 0; }
+  .emptyline .quiet { display: block; margin-top: 5px; font-size: 11.5px; color: var(--text-quaternary); }
+  .handoff-payload {
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.7; color: var(--text-tertiary);
+    word-break: break-all; margin: 0 0 12px;
+  }
+  .handoff-btn {
+    appearance: none; cursor: pointer;
+    font: 560 12.5px/1 inherit; font-family: inherit;
+    color: var(--indigo-bright);
+    background: var(--action-surface);
+    border: 1px solid rgba(94, 106, 210, 0.5);
+    border-radius: 6px; padding: 8px 14px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .handoff-btn:hover { background: var(--row-hover); border-color: var(--indigo); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="framecap"><b>/project/ontology-atlas FINAL</b> — 히어로 밴드(미니 도메인 지도) + 도메인 3×2 + 본문·요약 레일 · 1920×945</div>
+<section class="frame">
+  <div class="page">
+    <nav class="crumbs">
+      <a href="#">← 워크스페이스</a>
+      <span class="sep">/</span>
+      <a href="#">프로젝트</a>
+      <span class="sep">/</span>
+      <span>ontology-atlas</span>
+      <span class="census">296 CONCEPTS · 508 RELATIONS</span>
+    </nav>
+
+    <!-- zone 1: hero band -->
+    <header class="hero">
+      <div class="hmain">
+        <div class="trow">
+          <span class="glyph" data-glyph="project" data-size="26"></span>
+          <div style="min-width:0">
+            <h1>ontology-atlas</h1>
+            <div class="kindline">
+              <span class="power"></span>
+              <span>프로젝트 · 최근 갱신 오늘</span>
+              <span class="dot-sep">·</span>
+              <span>마크다운에서 자라는 오픈소스 온톨로지 워크벤치</span>
+            </div>
+          </div>
+          <div class="headactions">
+            <a href="#">topology</a>
+            <a href="#">편집</a>
+          </div>
+        </div>
+        <div class="metricline">
+          <span class="m"><b>6</b><span class="lbl">도메인</span></span>
+          <span class="m"><b>36</b><span class="lbl">역량</span></span>
+          <span class="m"><b>250</b><span class="lbl">요소</span></span>
+          <span class="m"><b>3</b><span class="lbl">문서</span></span>
+          <span class="m"><b>508</b><span class="lbl">관계</span></span>
+          <span class="vaultpath">docs/ontology · ontology-atlas</span>
+        </div>
+      </div>
+      <div class="minimap">
+        <span class="mlabel">도메인 지도 <span style="letter-spacing:0.04em">실카운트 비례</span><a href="#">topology 에서 열기 →</a></span>
+        <svg id="minimap-svg" viewBox="0 0 430 168" role="img" aria-label="도메인 구성 미니 지도"></svg>
+      </div>
+    </header>
+
+    <!-- zone 2: domain composition 3×2 -->
+    <div class="shead">
+      <svg width="26" height="6" viewBox="0 0 26 6" aria-hidden="true"><line x1="1" y1="3" x2="25" y2="3" stroke="var(--mark-contains)" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span class="glabel">도메인 구성</span>
+      <span class="gcap">contains</span>
+      <span class="num">6</span>
+    </div>
+    <div class="domgrid" id="domgrid"></div>
+
+    <!-- zone 3: body + summary rail -->
+    <div class="lower">
+      <section class="card">
+        <div class="chead"><span class="glabel">본문</span><span class="gcap">project.md</span></div>
+        <div class="body-md">
+          <p>마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이
+          codebase 의 mental model 을 저작한다.</p>
+          <ul>
+            <li><b>md 가 진실원</b> — vault 의 frontmatter 가 ontology 그대로</li>
+            <li><b>local-first</b> — 사용자 디스크(vault)가 단일 진실원. 인증 / 백엔드 의존 0.</li>
+            <li><b>AI agent partner</b> — MCP 서버로 Claude Code 등이 ontology 를 read/write</li>
+            <li><b>3 view</b> — topology · tree (<code>/ontology</code>) · builder (ERD)</li>
+          </ul>
+        </div>
+      </section>
+      <aside class="rail">
+        <section class="card">
+          <div class="chead">
+            <svg width="26" height="6" viewBox="0 0 26 6" aria-hidden="true"><line x1="1" y1="3" x2="25" y2="3" stroke="var(--mark-depends)" stroke-width="1.5" stroke-dasharray="3.4 3.4" stroke-linecap="round"/></svg>
+            <span class="glabel">연결된 프로젝트</span>
+            <span class="gcap">relates</span>
+          </div>
+          <p class="emptyline">
+            아직 다른 프로젝트와 연결되지 않았습니다.
+            <span class="quiet">vault 에 두 번째 <span style="font-family:var(--mono)">kind: project</span> 문서를 만들고 relates 로 이으면 여기 나타납니다.</span>
+          </p>
+        </section>
+        <section class="card">
+          <div class="chead"><span class="glabel">에이전트 핸드오프</span><span class="gcap">agent handoff</span></div>
+          <p class="handoff-payload">get_concept("ontology-atlas")<br/>→ query_ontology({operation:"project_map"})<br/>→ containment_tree</p>
+          <button class="handoff-btn" type="button">다음 액션 복사</button>
+        </section>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  "use strict";
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" }
+  };
+  function hexPts(cx, cy, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push((cx + r * Math.cos(a)).toFixed(2) + "," + (cy + r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(" ");
+  }
+  function glyphSVG(kind, s) {
+    s = s || 15;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var c = s / 2;
+    var common = 'fill="' + col.fill + '" stroke="' + col.stroke + '" stroke-width="1.25"';
+    var body;
+    if (kind === "project") body = '<polygon points="' + hexPts(c, c, c - 1.2) + '" ' + common + '/>';
+    else if (kind === "domain") body = '<rect x="' + (s * 0.067) + '" y="' + (s * 0.227) + '" width="' + (s * 0.867) + '" height="' + (s * 0.547) + '" rx="1.6" ' + common + '/>';
+    else if (kind === "capability") body = '<circle cx="' + c + '" cy="' + c + '" r="' + (c - 1.6) + '" ' + common + '/>';
+    else body = '<rect x="' + (s * 0.16) + '" y="' + (s * 0.16) + '" width="' + (s * 0.68) + '" height="' + (s * 0.68) + '" rx="1.4" ' + common + '/><circle cx="' + c + '" cy="' + c + '" r="' + (s * 0.1) + '" fill="#0c0c10"/>';
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
+  }
+  document.querySelectorAll("[data-glyph]").forEach(function (el) {
+    el.innerHTML = glyphSVG(el.getAttribute("data-glyph"), parseInt(el.getAttribute("data-size") || "15", 10));
+  });
+
+  // real dogfood domains
+  var domains = [
+    { t: "Views (Topology · Browse · Builder)", short: "Views",        cap: 17, el: 101, fresh: true, caps: ["Topology Skeleton Entry", "Agent Graph Readiness", "Ontology Insights"] },
+    { t: "AI Agent Partner",                    short: "AI Agent",     cap: 10, el: 54,  fresh: true, caps: ["MCP Server (24 tools)", "Agent Config Onboarding", "Agent Onboarding Brief"] },
+    { t: "Vault — Local-First",                 short: "Vault",        cap: 4,  el: 34,  caps: ["Vault Live Updates", "Builder ↔ Vault md write"] },
+    { t: "Onboarding & UX",                     short: "Onboarding",   cap: 2,  el: 31,  caps: ["CLI Developer Entry (45 commands)", "Product Owner Operating System"] },
+    { t: "Ontology Core (TBox · ABox · Evidence)", short: "Core",      cap: 1,  el: 20,  caps: ["Frontmatter → Ontology Stub"] },
+    { t: "Mode-Aware Adapters",                 short: "Mode-Aware",   cap: 2,  el: 10,  stale: true, caps: ["Ontology Hub — Mode-Aware", "Changes-Only Review"] }
+  ];
+  var max = 118;
+
+  // zone 2 — domain cards
+  document.getElementById("domgrid").innerHTML = domains.map(function (d, i) {
+    var total = d.cap + d.el;
+    var caps = d.caps.slice(0, 2).map(function (t) {
+      return '<div class="crow">' + glyphSVG("capability", 13) + '<span class="ct">' + t + "</span></div>";
+    }).join("");
+    var restCaps = d.cap - Math.min(2, d.caps.length);
+    var more = "요소 " + d.el + "개" + (restCaps > 0 ? " · 역량 " + restCaps + "개 더" : "");
+    return '<article class="dcard' + (i === 0 ? " top" : "") + '">' +
+      '<div class="dhead">' + glyphSVG("domain", 16) +
+      '<span class="t">' + d.t + "</span>" +
+      (d.fresh ? '<span class="fresh-dot" title="최근 갱신"></span>' : "") +
+      '<span class="num" style="font-size:13px">' + total + "</span></div>" +
+      '<div class="meterrow"><span class="meter"><i style="width:' + Math.round(total / max * 100) + '%"></i></span>' +
+      '<span class="counts">역량 <b>' + d.cap + '</b> · 요소 <b>' + d.el + "</b></span></div>" +
+      '<div class="caps">' + caps + '<span class="more">' + more + "</span></div>" +
+      "</article>";
+  }).join("");
+
+  // zone 1 — honest mini domain map (counts drive rect area; stale = dashed)
+  (function minimap() {
+    var W = 430, H = 168, cx = 215, cy = 86;
+    var svg = "";
+    var pos = [
+      { x: 78,  y: 46 }, { x: 215, y: 30 }, { x: 352, y: 46 },
+      { x: 352, y: 126 }, { x: 215, y: 140 }, { x: 78, y: 126 }
+    ];
+    // contains edges first (under nodes)
+    domains.forEach(function (d, i) {
+      svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + pos[i].x + '" y2="' + pos[i].y +
+        '" stroke="#26262e" stroke-width="1"/>';
+    });
+    // project hexagon center
+    svg += '<polygon points="' + hexPts(cx, cy, 17) + '" fill="#1c1c22" stroke="#57575f" stroke-width="1.5"/>';
+    svg += '<text x="' + cx + '" y="' + (cy + 30) + '" text-anchor="middle" font-size="9.5" fill="#65656f" font-weight="600">ontology-atlas</text>';
+    // domain rects — width ∝ sqrt(count), engraved count inside
+    domains.forEach(function (d, i) {
+      var total = d.cap + d.el;
+      var w = Math.round(18 + Math.sqrt(total) * 3.4);
+      var h = Math.round(w * 0.56);
+      var p = pos[i];
+      var stroke = i === 0 ? "#8890e0" : d.stale ? "#33333a" : "#48484f";
+      var dash = d.stale ? ' stroke-dasharray="3 3"' : "";
+      svg += '<rect x="' + (p.x - w / 2) + '" y="' + (p.y - h / 2) + '" width="' + w + '" height="' + h +
+        '" rx="3" fill="#191920" stroke="' + stroke + '" stroke-width="1.3"' + dash + '/>';
+      svg += '<text x="' + p.x + '" y="' + (p.y + 3.5) + '" text-anchor="middle" font-size="10" font-weight="600" ' +
+        'font-family="ui-monospace,Menlo,monospace" fill="#08080a">' + total + "</text>";
+      svg += '<text x="' + p.x + '" y="' + (p.y + 2.5) + '" text-anchor="middle" font-size="10" font-weight="600" ' +
+        'font-family="ui-monospace,Menlo,monospace" fill="' + (i === 0 ? "#8c8c94" : "#6a6a73") + '">' + total + "</text>";
+      var ly = p.y < cy ? p.y - h / 2 - 6 : p.y + h / 2 + 12;
+      svg += '<text x="' + p.x + '" y="' + ly + '" text-anchor="middle" font-size="9" fill="' +
+        (d.stale ? "#42424a" : "#65656f") + '">' + d.short + "</text>";
+    });
+    document.getElementById("minimap-svg").innerHTML = svg;
+  })();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>/ontology/insights FINAL — 탭 분리 계기판 (개요 · 관계 · 신선도)</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  FINAL ROUND — "비율이 생명". docs/prototypes/RATIO-SYSTEM.md 적용:
+  페이지 1600 중앙(거터 160) · 프레임 945 완결 구도 · 하단 데드스페이스 ≤15%
+  · 단일 탭 바 패턴(인디고 underline active).
+
+  insights 를 탭 3장으로 분리 — 한 화면에 다 쏟지 않고 각 탭이 945 안에서
+  균형 잡힌 구도를 갖는다 (상단 몰림 해소):
+    탭1 개요   — census 히어로 계기(음각 46px) + 종류 분포 + 도메인 용량,
+                 전부 sampler 의 장치를 1920 판독 스케일로 확대 (미터 8px ·
+                 글리프 16px · 행 14px).
+    탭2 관계   — 타입 분해(trace 마크 문법) + 상위 의존 + 허브(미니 ego 썸네일 52px).
+    탭3 신선도 — 히트스트립 + 최근 갱신 + 90일 미갱신 (탭 바에만 표시).
+  frame 1 = 탭1 · frame 2 = 탭2. 수치는 batch #2 exemplar world (296 · 508)
+  + 실제 dogfood 도메인/역량 이름.
+-->
+<style>
+  /* Values copied from app/globals.css token families (standalone prototype). */
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --action-surface: rgba(255, 255, 255, 0.03);
+    --machined-edge: rgba(255, 255, 255, 0.05);
+    --mark-contains: #4a4a54;
+    --mark-depends: #5c5c72;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+    min-width: 1440px;
+  }
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+  .framecap {
+    width: 100%; max-width: 1920px; margin: 0 auto; padding: 14px 20px 9px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .framecap b { color: var(--text-tertiary); font-weight: 600; }
+  .frame {
+    position: relative; width: 100%; max-width: 1920px; margin: 0 auto;
+    height: 945px; overflow: hidden;
+    border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
+    display: flex; flex-direction: column;
+  }
+  /* RATIO-SYSTEM: 1600 centered page · 32 top offset · 40 bottom breath */
+  .page {
+    width: 100%; max-width: 1600px; margin: 0 auto;
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column;
+    padding: 32px 0 40px;
+  }
+
+  .crumbs {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-tertiary); margin-bottom: 14px;
+  }
+  .crumbs a { color: var(--text-secondary); text-decoration: none; }
+  .crumbs a:hover { color: var(--text-primary); }
+  .crumbs .sep { color: var(--text-quaternary); }
+  .crumbs .sync {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11.5px; color: var(--text-tertiary);
+  }
+  .power { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--indigo); flex: none; }
+
+  .phead { display: flex; align-items: flex-end; gap: 18px; }
+  .phead h1 { margin: 0; font-size: 23px; font-weight: 650; letter-spacing: -0.015em; }
+  .phead .sub { font-size: 12.5px; color: var(--text-tertiary); padding-bottom: 3px; }
+  .phead .census {
+    margin-left: auto; padding-bottom: 3px;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .phead .census .sep { color: var(--text-quaternary); margin: 0 5px; }
+
+  /* ---- RATIO-SYSTEM §3 — the ONE tab-bar pattern ------------------------ */
+  .tabbar { display: flex; gap: 28px; margin-top: 18px; border-bottom: 1px solid var(--divider); }
+  .tab {
+    display: inline-flex; align-items: baseline; gap: 8px;
+    padding: 0 2px 11px; margin-bottom: -1px;
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-quaternary); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 150ms ease, border-color 150ms ease;
+  }
+  .tab:hover { color: var(--text-secondary); }
+  .tab.on { color: var(--text-primary); border-bottom-color: var(--indigo); }
+  .tab .n {
+    font-weight: 600; color: var(--numeral-face);
+    text-shadow: 0 1px 0 var(--numeral-shadow); letter-spacing: 0.02em;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: 11px;
+    box-shadow: inset 0 1px 0 var(--machined-edge), 0 14px 34px rgba(0, 0, 0, 0.35);
+    padding: 16px 18px;
+  }
+  .chead { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+  .chead .clabel { font-size: 14px; font-weight: 560; color: var(--text-primary); letter-spacing: -0.01em; }
+  .chead .gcap {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .chead .num { margin-left: auto; font-size: 13px; }
+
+  /* ---- hero census instruments (tab 1) ---------------------------------- */
+  .hero { margin-top: 20px; display: flex; align-items: stretch; padding: 15px 8px; }
+  .hseg { flex: 1; min-width: 0; padding: 3px 26px; display: flex; flex-direction: column; gap: 10px; }
+  .hseg + .hseg { border-left: 1px solid var(--divider); }
+  .hseg .hlabel {
+    display: flex; align-items: baseline; gap: 9px;
+    font-size: 13px; font-weight: 560; color: var(--text-secondary);
+  }
+  .hseg .hlabel .gcap {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .bignum {
+    font-family: var(--mono); font-weight: 600; font-size: 40px; line-height: 1;
+    color: var(--numeral-face); text-shadow: 0 2px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+  }
+  .bignum .unit { font-size: 13px; color: var(--text-quaternary); text-shadow: none; letter-spacing: 0.06em; }
+  .hsub { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: auto; }
+  .hsub .it { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-tertiary); }
+  .hsub .it .num { font-size: 11.5px; }
+
+  /* ---- big census/capacity rows (tab 1) — sampler devices, scaled up ---- */
+  .mainrow { margin-top: 18px; flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch; }
+  .mainrow .card { display: flex; flex-direction: column; min-height: 0; }
+  .rows { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: space-evenly; }
+  .brow { display: flex; align-items: center; gap: 12px; padding: 3px 2px; }
+  .brow .lab {
+    width: 136px; flex: none; display: flex; align-items: center; gap: 9px;
+    font-size: 14px; color: var(--text-secondary); white-space: nowrap;
+  }
+  .brow .lab .quiet { font-size: 11px; color: var(--text-quaternary); }
+  .brow .meter {
+    flex: 1; height: 8px; border-radius: 4px;
+    background: var(--metric-surface); overflow: hidden; position: relative;
+  }
+  .brow .meter i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: #4a4a54; }
+  .brow.hot .meter i { background: var(--indigo); }
+  .brow .cnt { flex: none; text-align: right; }
+  .brow .cnt .num { font-size: 15px; }
+  .brow .cnt .sub { display: block; font-family: var(--mono); font-size: 9.5px; color: var(--text-quaternary); }
+  .brow .lab.wide { width: 240px; }
+  .cfoot {
+    margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--divider);
+    font-size: 11px; color: var(--text-quaternary);
+  }
+
+  /* ---- relation mega rows (tab 2) --------------------------------------- */
+  .relmega { display: flex; flex-direction: column; }
+  .rrow { display: flex; align-items: center; gap: 13px; padding: 17px 2px; }
+  .rrow + .rrow { border-top: 1px solid var(--divider); }
+  .rrow .rname { width: 128px; flex: none; font-family: var(--mono); font-size: 14px; color: var(--text-primary); }
+  .rrow .rdesc { width: 150px; flex: none; font-size: 11.5px; color: var(--text-quaternary); }
+  .rrow .meter {
+    flex: 1; height: 8px; border-radius: 4px;
+    background: var(--metric-surface); overflow: hidden; position: relative;
+  }
+  .rrow .meter i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: #55555d; }
+  .rrow .cnt { flex: none; min-width: 52px; text-align: right; }
+  .rrow .cnt .num { font-size: 16px; }
+  .rrow .cnt .pct { display: block; font-family: var(--mono); font-size: 9.5px; color: var(--text-quaternary); }
+
+  .deprow { display: flex; align-items: center; gap: 10px; padding: 11px 2px; font-size: 13px; color: var(--text-secondary); }
+  .deprow + .deprow { border-top: 1px solid var(--divider); }
+  .deprow .arrow { color: var(--text-quaternary); }
+  .deprow .num { margin-left: auto; font-size: 12.5px; }
+
+  /* hub rows (tab 2) — mini ego thumbnails at judged scale */
+  .hubrow { display: flex; align-items: center; gap: 14px; padding: 10px 2px; }
+  .hubrow + .hubrow { border-top: 1px solid var(--divider); }
+  .hubrow .thumb { flex: none; }
+  .hubrow .hmain { min-width: 0; flex: 1; }
+  .hubrow .hname { font-size: 14px; color: var(--text-primary); font-weight: 560; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hubrow .hkind { font-size: 11px; color: var(--text-quaternary); margin-top: 2px; }
+  .hubrow .hdeg { flex: none; text-align: right; }
+  .hubrow .hdeg .num { font-size: 18px; }
+  .hubrow .hdeg .dlabel { display: block; font-size: 9.5px; color: var(--text-quaternary); font-family: var(--mono); letter-spacing: 0.08em; }
+
+  /* ---- bottom-anchored agent handoff (RATIO-SYSTEM §2) ------------------ */
+  .handoff {
+    margin-top: 20px;
+    border: 1px solid var(--border-soft); border-radius: 9px;
+    background: var(--panel); padding: 12px 16px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .handoff .hlabel { font-size: 13px; font-weight: 560; color: var(--text-primary); flex: none; }
+  .handoff .payload {
+    min-width: 0; flex: 1;
+    font-family: var(--mono); font-size: 12px; color: var(--text-tertiary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .handoff button {
+    flex: none; appearance: none; cursor: pointer;
+    font: 560 12.5px/1 inherit; font-family: inherit;
+    color: var(--indigo-bright);
+    background: var(--action-surface);
+    border: 1px solid rgba(94, 106, 210, 0.5);
+    border-radius: 6px; padding: 8px 14px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .handoff button:hover { background: var(--row-hover); border-color: var(--indigo); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="framecap"><b>탭1 개요</b> — census 히어로 계기 + 종류 분포 + 도메인 용량 · 945 완결 구도 · 1920×945</div>
+<section class="frame">
+  <div class="page">
+    <nav class="crumbs">
+      <a href="#">← 온톨로지</a>
+      <span class="sep">/</span>
+      <span>인사이트</span>
+      <span class="sync"><span class="power"></span>에이전트 동기화 12분 전</span>
+    </nav>
+
+    <header class="phead">
+      <h1>그래프 인사이트</h1>
+      <span class="sub">vault 전체를 한 계기판에서 — 모든 숫자는 frontmatter 에서 유도</span>
+      <span class="census">296 CONCEPTS<span class="sep">·</span>508 RELATIONS<span class="sep">·</span>6 DOMAINS</span>
+    </header>
+
+    <nav class="tabbar">
+      <span class="tab on">개요 <span class="n">296</span></span>
+      <span class="tab">관계 <span class="n">508</span></span>
+      <span class="tab">신선도 <span class="n">12주</span></span>
+    </nav>
+
+    <!-- hero census instruments — engraved 46px numerals -->
+    <div class="card hero">
+      <div class="hseg">
+        <div class="hlabel">개념 <span class="gcap">concepts</span></div>
+        <div class="bignum">296</div>
+        <div class="hsub" id="hsub-kinds"></div>
+      </div>
+      <div class="hseg">
+        <div class="hlabel">관계 <span class="gcap">relations</span></div>
+        <div class="bignum">508</div>
+        <div class="hsub" id="hsub-rels"></div>
+      </div>
+      <div class="hseg">
+        <div class="hlabel">건강 <span class="gcap">health</span></div>
+        <div class="bignum">1.72<span class="unit"> edge/concept</span></div>
+        <div class="hsub">
+          <span class="it">고아 <span class="num">4</span></span>
+          <span class="it">사이클 <span class="num">0</span></span>
+          <span class="it">도메인 소속 <span class="num">92%</span></span>
+          <span class="it">근거 연결 <span class="num">71%</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mainrow">
+      <section class="card">
+        <div class="chead">
+          <span class="clabel">종류 분포</span>
+          <span class="gcap">kind census</span>
+          <span class="num">296</span>
+        </div>
+        <div class="rows" id="kind-rows"></div>
+        <p class="cfoot">글리프 = 지도의 노드 셰이프 그대로 — 패널과 캔버스는 같은 세계.</p>
+      </section>
+
+      <section class="card">
+        <div class="chead">
+          <span class="clabel">도메인 용량</span>
+          <span class="gcap">domain capacity</span>
+          <span class="num">6</span>
+        </div>
+        <div class="rows" id="dom-rows"></div>
+        <p class="cfoot">용량 = containment 그래프에서 유도한 역량 + 요소 수. 인디고 = 최대 도메인.</p>
+      </section>
+    </div>
+
+    <section class="handoff">
+      <span class="hlabel">에이전트 핸드오프</span>
+      <span class="payload">query_ontology({operation:"health"}) → centrality → growth_plan → maintenance_plan</span>
+      <button type="button">다음 액션 복사</button>
+    </section>
+  </div>
+</section>
+
+<div class="framecap"><b>탭2 관계</b> — 타입 분해(trace 마크) + 상위 의존 + 허브 미니 ego 썸네일 · 1920×945</div>
+<section class="frame">
+  <div class="page">
+    <nav class="crumbs">
+      <a href="#">← 온톨로지</a>
+      <span class="sep">/</span>
+      <span>인사이트</span>
+      <span class="sync"><span class="power"></span>에이전트 동기화 12분 전</span>
+    </nav>
+
+    <header class="phead">
+      <h1>그래프 인사이트</h1>
+      <span class="sub">관계 타입과 허브 — 마크는 지도 범례의 반복</span>
+      <span class="census">296 CONCEPTS<span class="sep">·</span>508 RELATIONS<span class="sep">·</span>6 DOMAINS</span>
+    </header>
+
+    <nav class="tabbar">
+      <span class="tab">개요 <span class="n">296</span></span>
+      <span class="tab on">관계 <span class="n">508</span></span>
+      <span class="tab">신선도 <span class="n">12주</span></span>
+    </nav>
+
+    <div class="mainrow" style="grid-template-columns: 1.2fr 1fr;">
+      <section class="card">
+        <div class="chead">
+          <span class="clabel">관계 타입</span>
+          <span class="gcap">relation breakdown</span>
+          <span class="num">508</span>
+        </div>
+        <div class="relmega" id="rel-rows"></div>
+        <div class="chead" style="margin: 18px 0 4px;">
+          <span class="clabel" style="font-size:13px">가장 많이 기대는 곳</span>
+          <span class="gcap">top depends_on</span>
+        </div>
+        <div id="dep-rows"></div>
+      </section>
+
+      <section class="card">
+        <div class="chead">
+          <span class="clabel">허브 — 연결 상위</span>
+          <span class="gcap">hubs by degree</span>
+        </div>
+        <div id="hub-rows"></div>
+        <p class="cfoot">썸네일 = 실이웃에서 유도한 미니 ego 지도. 연결수 = in + out. 파선 스포크 = depends 비중.</p>
+      </section>
+    </div>
+
+    <section class="handoff">
+      <span class="hlabel">에이전트 핸드오프</span>
+      <span class="payload">query_ontology({operation:"match_edges", type:"depends_on"}) → blast_radius("mcp-server")</span>
+      <button type="button">다음 액션 복사</button>
+    </section>
+  </div>
+</section>
+
+<script>
+(function () {
+  "use strict";
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" },
+    document:   { fill: "#15151a", stroke: "#3c3c44" }
+  };
+  function hexPts(c, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push((c + r * Math.cos(a)).toFixed(2) + "," + (c + r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(" ");
+  }
+  function glyphSVG(kind, s) {
+    s = s || 15;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var c = s / 2;
+    var common = 'fill="' + col.fill + '" stroke="' + col.stroke + '" stroke-width="1.25"';
+    var body;
+    if (kind === "project") body = '<polygon points="' + hexPts(c, c - 1.2) + '" ' + common + '/>';
+    else if (kind === "domain") body = '<rect x="' + (s * 0.067) + '" y="' + (s * 0.227) + '" width="' + (s * 0.867) + '" height="' + (s * 0.547) + '" rx="1.6" ' + common + '/>';
+    else if (kind === "capability") body = '<circle cx="' + c + '" cy="' + c + '" r="' + (c - 1.6) + '" ' + common + '/>';
+    else if (kind === "document") body = '<rect x="' + (s * 0.18) + '" y="' + (s * 0.1) + '" width="' + (s * 0.64) + '" height="' + (s * 0.8) + '" rx="1.4" ' + common + '/><line x1="' + (s * 0.32) + '" y1="' + (s * 0.38) + '" x2="' + (s * 0.68) + '" y2="' + (s * 0.38) + '" stroke="' + col.stroke + '" stroke-width="1"/><line x1="' + (s * 0.32) + '" y1="' + (s * 0.58) + '" x2="' + (s * 0.68) + '" y2="' + (s * 0.58) + '" stroke="' + col.stroke + '" stroke-width="1"/>';
+    else body = '<rect x="' + (s * 0.16) + '" y="' + (s * 0.16) + '" width="' + (s * 0.68) + '" height="' + (s * 0.68) + '" rx="1.4" ' + common + '/><circle cx="' + c + '" cy="' + c + '" r="' + (s * 0.1) + '" fill="#0c0c10"/>';
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
+  }
+  function markSVG(style, w) {
+    w = w || 26;
+    var stroke = style === "contains" ? "var(--mark-contains)" : "var(--mark-depends)";
+    var dash = style === "contains" ? "" : style === "evidence" ? ' stroke-dasharray="1.4 3.4"' : ' stroke-dasharray="3.4 3.4"';
+    return '<svg width="' + w + '" height="6" viewBox="0 0 ' + w + ' 6" aria-hidden="true" style="flex:none">' +
+      '<line x1="1" y1="3" x2="' + (w - 1) + '" y2="3" stroke="' + stroke + '" stroke-width="1.5"' + dash + ' stroke-linecap="round"/></svg>';
+  }
+
+  // hero sub-strips
+  document.getElementById("hsub-kinds").innerHTML = [
+    { k: "element", t: "요소", n: 250 },
+    { k: "capability", t: "역량", n: 36 },
+    { k: "domain", t: "도메인", n: 6 },
+    { k: "document", t: "문서", n: 3 },
+    { k: "project", t: "프로젝트", n: 1 }
+  ].map(function (x) {
+    return '<span class="it">' + glyphSVG(x.k, 13) + x.t + ' <span class="num">' + x.n + "</span></span>";
+  }).join("");
+  document.getElementById("hsub-rels").innerHTML = [
+    { s: "evidence", t: "evidence", n: 271 },
+    { s: "relates", t: "relates", n: 119 },
+    { s: "contains", t: "contains", n: 103 },
+    { s: "relates", t: "depends", n: 15 }
+  ].map(function (x) {
+    return '<span class="it">' + markSVG(x.s, 18) + x.t + ' <span class="num">' + x.n + "</span></span>";
+  }).join("");
+
+  // tab 1 — kind census, scaled-up rows
+  var KINDS = [
+    { k: "element",    t: "요소",     q: "element",    n: 250 },
+    { k: "capability", t: "역량",     q: "capability", n: 36, hot: true },
+    { k: "domain",     t: "도메인",   q: "domain",     n: 6 },
+    { k: "document",   t: "문서",     q: "document",   n: 3 },
+    { k: "project",    t: "프로젝트", q: "project",    n: 1 }
+  ];
+  var maxK = 250;
+  document.getElementById("kind-rows").innerHTML = KINDS.map(function (x) {
+    var w = Math.max(2, Math.round(x.n / maxK * 100));
+    return '<div class="brow' + (x.hot ? " hot" : "") + '">' +
+      '<span class="lab">' + glyphSVG(x.k, 16) + x.t + ' <span class="quiet">' + x.q + "</span></span>" +
+      '<span class="meter"><i style="width:' + w + '%"></i></span>' +
+      '<span class="cnt"><span class="num">' + x.n + "</span></span></div>";
+  }).join("");
+
+  // tab 1 — domain capacity, counts kept adjacent to the bar
+  var DOMS = [
+    { t: "Views (Topology · Browse · Builder)", cap: 17, el: 101, hot: true },
+    { t: "AI Agent Partner",                    cap: 10, el: 54 },
+    { t: "Vault — Local-First",                 cap: 4,  el: 34 },
+    { t: "Onboarding & UX",                     cap: 2,  el: 31 },
+    { t: "Ontology Core (TBox · ABox)",         cap: 1,  el: 20 },
+    { t: "Mode-Aware Adapters",                 cap: 2,  el: 10 }
+  ];
+  var maxD = 118;
+  document.getElementById("dom-rows").innerHTML = DOMS.map(function (d) {
+    var total = d.cap + d.el;
+    var w = Math.max(2, Math.round(total / maxD * 100));
+    return '<div class="brow' + (d.hot ? " hot" : "") + '">' +
+      '<span class="lab wide">' + glyphSVG("domain", 15) + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + d.t + "</span></span>" +
+      '<span class="meter"><i style="width:' + w + '%"></i></span>' +
+      '<span class="cnt"><span class="num">' + total + '</span><span class="sub">역량 ' + d.cap + " · 요소 " + d.el + "</span></span></div>";
+  }).join("");
+
+  // tab 2 — relation mega rows
+  var RELS = [
+    { t: "evidence",   d: "노드 → 코드 근거",   n: 271, s: "evidence" },
+    { t: "relates",    d: "느슨한 연관",        n: 119, s: "relates" },
+    { t: "contains",   d: "포함 계층",          n: 103, s: "contains" },
+    { t: "depends_on", d: "의존 — 영향 경로",   n: 15,  s: "relates" }
+  ];
+  document.getElementById("rel-rows").innerHTML = RELS.map(function (r) {
+    var w = Math.max(2, Math.round(r.n / 271 * 100));
+    var pct = Math.round(r.n / 508 * 100);
+    return '<div class="rrow">' + markSVG(r.s, 30) +
+      '<span class="rname">' + r.t + '</span>' +
+      '<span class="rdesc">' + r.d + '</span>' +
+      '<span class="meter"><i style="width:' + w + '%"></i></span>' +
+      '<span class="cnt"><span class="num">' + r.n + '</span><span class="pct">' + pct + "%</span></span></div>";
+  }).join("");
+
+  // tab 2 — top depends_on pairs (real dogfood shapes)
+  document.getElementById("dep-rows").innerHTML = [
+    { f: "Topology Map Canvas", t: "MCP Server (24 tools)", n: 4 },
+    { f: "Agent Onboarding Brief", t: "Frontmatter → Ontology Stub", n: 3 },
+    { f: "Ontology Insights", t: "Relation Graph", n: 2 },
+    { f: "Vault Live Updates", t: "Local Vault Adapter", n: 2 },
+    { f: "Mode Detection", t: "Local Vault Adapter", n: 1 }
+  ].map(function (p) {
+    return '<div class="deprow">' + markSVG("relates", 22) +
+      '<span>' + p.f + '</span><span class="arrow">→</span><span>' + p.t + '</span>' +
+      '<span class="num">' + p.n + "</span></div>";
+  }).join("");
+
+  // tab 2 — hubs with honest mini ego thumbnails (52px)
+  function thumbSVG(kind, deg, s) {
+    s = s || 52;
+    var c = s / 2, R = c - 5;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var spokes = "";
+    var shown = Math.min(deg, 12);
+    for (var i = 0; i < shown; i++) {
+      var a = (i / shown) * Math.PI * 2 - Math.PI / 2;
+      var x2 = c + Math.cos(a) * R, y2 = c + Math.sin(a) * R;
+      var dashed = i % 3 === 2;
+      spokes += '<line x1="' + c + '" y1="' + c + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) +
+        '" stroke="' + (dashed ? "#3c3c4a" : "#33333c") + '" stroke-width="1"' +
+        (dashed ? ' stroke-dasharray="2 2.4"' : "") + "/>" +
+        '<circle cx="' + x2.toFixed(1) + '" cy="' + y2.toFixed(1) + '" r="1.8" fill="#26262e" stroke="#3c3c44" stroke-width="0.8"/>';
+    }
+    var center;
+    if (kind === "capability") center = '<circle cx="' + c + '" cy="' + c + '" r="6" fill="' + col.fill + '" stroke="#5e6ad2" stroke-width="1.4"/>';
+    else if (kind === "domain") center = '<rect x="' + (c - 6.5) + '" y="' + (c - 4.4) + '" width="13" height="8.8" rx="1.8" fill="' + col.fill + '" stroke="#5e6ad2" stroke-width="1.4"/>';
+    else center = '<rect x="' + (c - 5) + '" y="' + (c - 5) + '" width="10" height="10" rx="1.6" fill="' + col.fill + '" stroke="#5e6ad2" stroke-width="1.3"/>';
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true">' +
+      '<circle cx="' + c + '" cy="' + c + '" r="' + R + '" fill="none" stroke="#1e1e24" stroke-width="1"/>' +
+      spokes + center + "</svg>";
+  }
+  var HUBS = [
+    { t: "MCP Server (24 tools)",       k: "capability", kl: "역량 · AI Agent Partner",    deg: 38 },
+    { t: "Frontmatter → Ontology Stub", k: "capability", kl: "역량 · Ontology Core",       deg: 29 },
+    { t: "Agent Graph Readiness",       k: "capability", kl: "역량 · Views",               deg: 24 },
+    { t: "Ontology Hub — Mode-Aware",   k: "capability", kl: "역량 · Mode-Aware Adapters", deg: 22 },
+    { t: "CLI Developer Entry",         k: "capability", kl: "역량 · Onboarding & UX",     deg: 21 },
+    { t: "Views Domain Boundary Audit", k: "document",   kl: "문서",                       deg: 14 }
+  ];
+  document.getElementById("hub-rows").innerHTML = HUBS.map(function (h) {
+    return '<div class="hubrow"><span class="thumb">' + thumbSVG(h.k, h.deg) + '</span>' +
+      '<span class="hmain"><span class="hname">' + h.t + '</span><div class="hkind">' + h.kl + '</div></span>' +
+      '<span class="hdeg"><span class="num">' + h.deg + '</span><span class="dlabel">연결</span></span></div>';
+  }).join("");
+})();
+</script>
+</body>
+</html>
