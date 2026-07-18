@@ -262,6 +262,23 @@
     );
     --topology-panel-overview-reserved-width: clamp(380px, calc(38vw - 170px), 420px);
     --topology-ui-scale-factor: 1;
+    /*
+     * App nav rail (`AppNavRail.tsx`, 좌측 64px 상시 chrome) 스케일 —
+     * feat/rail-scale. 레일은 캔버스와 나란한 full-height flex 형제라
+     * `.topology-ui-scale` 의 `zoom` 을 그대로 쓰면 100vh 컨테이너가
+     * 130vh 로 늘어나 세로 오버플로가 생긴다. 대신 같은
+     * `--topology-ui-scale-factor` (1 / 1.15 / 1.3) 를 레일 내부 치수에만
+     * calc() 곱셈으로 적용 — 폭은 커지고 높이는 flex 정렬 그대로라 오버플로
+     * 없음. ≥1920/2400px 에서 맵 크롬(zoom 기반)과 레일(calc 기반)이 같은
+     * 비율로 커져 좌측 레일만 상대적으로 작아 보이는 결함을 해소한다.
+     */
+    --app-nav-rail-width: calc(64px * var(--topology-ui-scale-factor));
+    --app-nav-rail-logo-size: calc(34px * var(--topology-ui-scale-factor));
+    --app-nav-rail-logo-icon-size: calc(20px * var(--topology-ui-scale-factor));
+    --app-nav-rail-icon-size: calc(18px * var(--topology-ui-scale-factor));
+    --app-nav-rail-label-size: calc(9.5px * var(--topology-ui-scale-factor));
+    --app-nav-rail-tile-width: calc(38px * var(--topology-ui-scale-factor));
+    --app-nav-rail-tile-height: calc(32px * var(--topology-ui-scale-factor));
     --topology-panel-path-rail-width: clamp(
       calc(320px / var(--topology-ui-scale-factor)),
       calc(23vw / var(--topology-ui-scale-factor)),
