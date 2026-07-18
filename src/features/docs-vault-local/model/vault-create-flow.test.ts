@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shouldClearCreateIntent, shouldScaffoldAfterOpen } from './first-run-create';
+import { shouldClearCreateIntent, shouldScaffoldAfterOpen } from './vault-create-flow';
 
 describe('shouldScaffoldAfterOpen', () => {
   it('scaffolds only when create intent opened an empty vault', () => {

@@ -346,14 +346,16 @@ architecture may appear only once, and that
 version must match the release tag. Any extra `ontology-atlas_*.dmg` asset with
 an unsupported architecture suffix fails the gate so the GitHub Release page
 cannot present stale or ambiguous downloads; draft releases intentionally fail
-unless `--allow-draft` is passed because the hosted landing page cannot serve
+unless `--allow-draft` is passed because the hosted root map cannot serve
 them to users. The draft path also falls back to the releases list when GitHub
 hides draft releases from tag lookup, then matches the requested `tag_name`
 before byte-checking assets.
 After deploying the static website, run `pnpm desktop:verify-hosted` to confirm
-the live `/ko/` landing page no longer exposes the browser vault picker CTA and
-the live `/ko/download/` installation route exists and points directly to the
-stable GitHub Releases page, not `/releases/latest`. This hosted-page check is separate from `pnpm desktop:release-status`
+the live `/ko/` root route renders the topology map directly (root-first-open,
+no marketing landing detour) and offers the local-folder open CTA, and that
+the live `/ko/download/` installation route exists, carries the absorbed
+intro section, and points directly to the stable GitHub Releases page, not
+`/releases/latest`. This hosted-page check is separate from `pnpm desktop:release-status`
 so a Firebase deployment problem cannot block the local-only macOS app release.
 When `/ko/download/` returns 404, the recovery path is to merge the desktop PR
 so `.github/workflows/deploy-hosting.yml` is available on the default branch,
@@ -451,7 +453,7 @@ committing or publishing changes.
 | Command | Use when |
 |---|---|
 | `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget |
-| `pnpm bundle:check` | Local-first static export bundle guard for the landing, download, docs, ontology, topology, and projects routes; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
+| `pnpm bundle:check` | Local-first static export bundle guard for the root/topology, download, docs, ontology, and projects routes; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
 | `pnpm design:ontology` | Ontology workbench design drift guard for forbidden visual patterns across Workspace, ontology operation surfaces, and shared UI primitives plus Workspace execution, Browse/Write/Query, Builder write/proof, Insights query cockpit, topology legend, Product Design OS designer-bench, public reference-permission contracts, and Relief/Topology token anti-pattern contracts |
 | `pnpm firebase:deploy-check` | Firebase Hosting deploy preflight for `.env.prod`, project-id alignment, static-only Hosting config, and deploy credential ignores |
 | `pnpm desktop:check` | macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files |

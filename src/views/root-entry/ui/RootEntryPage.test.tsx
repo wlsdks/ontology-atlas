@@ -33,10 +33,6 @@ vi.mock('@/shared/lib/desktop-shell', () => ({
   isDesktopShell: () => mocks.isDesktopShell,
 }));
 
-vi.mock('@/views/landing', () => ({
-  LandingPage: () => <div data-testid="landing">landing</div>,
-}));
-
 vi.mock('@/views/first-run', () => ({
   FirstRunPage: () => <div data-testid="first-run">first run</div>,
 }));
@@ -51,10 +47,10 @@ describe('RootEntryPage', () => {
     mocks.vaultState = { handle: null, manifest: null, restoreAttempted: true };
   });
 
-  it('keeps the hosted web root on the landing page when no vault is loaded', () => {
+  it('renders the topology hub directly on the hosted web root when no vault is loaded (B3 — map is the first screen, no landing detour)', () => {
     render(<RootEntryPage />);
 
-    expect(screen.getByTestId('landing')).toBeInTheDocument();
+    expect(screen.getByTestId('topology-hub')).toBeInTheDocument();
     expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
   });
 

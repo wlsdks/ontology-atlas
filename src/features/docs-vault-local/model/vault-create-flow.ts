@@ -1,9 +1,15 @@
 /**
- * FirstRun "새 볼트 만들기" 카드의 결정 로직 — 순수 함수로 분리해 테스트.
+ * "새 vault 만들기" 카드의 결정 로직 — 순수 함수로 분리해 테스트.
  *
  * 별도의 "create" 파이프라인을 만들지 않는다. 기존 open() (폴더 선택) 뒤에
  * 기존 scaffoldOntology() (starter 5 md + agent config 시드, `/docs` 의
  * OntologyStarterCta 와 동일 액션) 를 잇는 조합일 뿐 — 단일 진실원 유지.
+ *
+ * features 레이어에 있는 이유: `FirstRunPage`(데스크톱 first-run) 와
+ * `FirstRunChooser`(웹 vault-미선택 첫 화면) 둘 다 이 조합을 그대로 재사용한다
+ * — 두 view 가 서로를 import 하지 않도록(FSD 동일 레이어 cross-import 회피) 한
+ * 단계 아래인 features 로 끌어내렸다. 원래 `src/views/first-run/model/` 에
+ * 있던 걸 이관 (R+ root-first-open).
  */
 export function shouldScaffoldAfterOpen(args: {
   /** 사용자가 "새 볼트 만들기" 카드로 open 을 시작했는가. */

@@ -17,7 +17,7 @@
 
 > **Mission v3**: "One codebase, one ontology, that the developer and their AI agent grow together."
 > **Launch framing v4**: "A repo-native memory layer for Claude Code, Cursor, and Codex."
-> **Operating model**: single-user tool. Local-first vault. No login, no backend. **4 surfaces (macOS app · CLI · MCP · Website)** — real ontology work happens in the installed app / CLI / MCP; the hosted website is promo/download plus read-only demo.
+> **Operating model**: single-user tool. Local-first vault. No login, no backend. **4 surfaces (macOS app · CLI · MCP · Website)** — daily heavy-lift ontology work happens in the installed app / CLI / MCP; the hosted website's root map lets anyone open their own local vault folder directly too (root-first-open, 2026-07), while `/download` stays the product intro + release download path.
 > **Brand split**: **Ontology Atlas** is the user-facing macOS app / website brand and macOS release asset identity. `ontology-atlas` remains the repo, CLI binary, and MCP package name.
 
 The product should not feel like an ontology editor. The core user-visible loop
@@ -29,7 +29,7 @@ diff review -> better next agent task`.
 | **macOS app** (Ontology Atlas desktop distribution track) | signed DMG → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/edit`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
 | **CLI** (R12 / R14 / R15+ · 45 commands) | `init / agent-setup / agent-activity / add / import / list / find / validate / mcp-verify / query / compile` (vault basics + existing-vault Claude/Codex config repair + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile) · `index / analyze / infer-imports / bootstrap` (autonomous ingest and project ontology indexing) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 24 tools (16 read · 8 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — read for context · write back findings · bootstrap and index projects (R16 `analyze_repo_structure` · R17 `infer_imports` · R+ `index_project`) · compile/query/health/agent-brief/workspace-brief as graph-engine memory access |
-| **Website** | Firebase static hosting / `/download` | product introduction, release download path, and read-only demo. Hosted pages do not open or edit local vault folders. |
+| **Website** | Firebase static hosting / `/` + `/download` | `/` renders the topology map directly and lets you open your own local vault folder from the browser (File System Access API, no install); `/download` is the product intro + release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
 
 ```
 input (humans + AI agents)     parse           store              output
@@ -59,12 +59,28 @@ input (humans + AI agents)     parse           store              output
 
 **Desktop first-run (2026-07-18)**: in the installed app (Tauri — detected via
 `isDesktopShell()`, `src/shared/lib/desktop-shell.ts`), `/` with no vault
-renders an Obsidian-style **FirstRunPage** (`src/views/first-run/`) instead of
-the marketing landing: three machined cards — open vault folder / create new
-vault (existing `scaffoldOntology()` when the picked folder is empty — 5
-markdown seeds + agent configs) / browse the built-in demo vault — plus a
-local-first trust line. No download CTA inside the installed app. On the web,
-`/` with no vault keeps showing the landing (acquisition surface), unchanged.
+renders an Obsidian-style **FirstRunPage** (`src/views/first-run/`): three
+machined cards — open vault folder / create new vault (existing
+`scaffoldOntology()` when the picked folder is empty — 5 markdown seeds +
+agent configs) / browse the built-in demo vault — plus a local-first trust
+line. No download CTA inside the installed app.
+
+**Web root-first-open (2026-07-18)**: on hosted web, `/` no longer shows a
+marketing landing page at all — with no vault selected it renders `HomePage`
+(the same topology hub `/topology` uses) drawing this project's own dogfood
+sample, read-only, plus a **first-run starter module** integrated into the
+INDEX panel itself (no floating card/dock — `FirstRunStarterModule`,
+`src/features/first-run-starter/`): census meters (concepts/relations/
+domains, real data) + "open my markdown folder" (calls
+`useLocalVault().open()` directly, same File System Access API path as the
+desktop picker) + "create a new vault" + "just looking around" dismiss
+(sessionStorage — reappears next session, not on reload). A brand-pill
+`SAMPLE` badge and a bottom-right map readout ("N project · N domains ·
+Spine view · zoom in to reveal elements") stay visible for the whole static
+session regardless of whether the starter module was dismissed. The former
+`LandingPage` and its hero/value-chain/evidence-instrument content moved to
+`/download` (see below) — a returning user whose vault handle restores from
+IndexedDB goes straight to their own workspace, no starter surfaces at all.
 
 ---
 
@@ -72,21 +88,20 @@ local-first trust line. No download CTA inside the installed app. On the web,
 
 ### `/` — Smart entry
 
-- **Hosted web, no vault** → `LandingPage`
-- **macOS app, no restored vault** → local redirect state, then `/docs/?intent=local` shows a vault setup welcome with Files / Graph / Agent contract cells, the same 14-check graph DB proof gate, and open/create/sample/recent choices; the installed app does not render the hosted marketing page on first run
+- **Hosted web, no vault** → `HomePage` rendering the dogfood sample read-only, plus the INDEX-panel first-run starter (see above) — no separate marketing landing page since root-first-open (2026-07)
+- **macOS app, no restored vault** → `FirstRunPage` (open / create / browse demo), not the hosted intro
 - **Recent desktop vaults** → the picker stores recently opened Tauri vault paths, can reopen them without another Finder selection, and can remove stale paths from the list
-- **Vault loaded** → `HomePage` — the topology hub (map + INDEX concept panel + node datasheet), same component `/topology` renders (B3 허브가 곧 지도 — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded)
+- **Vault loaded (web or desktop)** → `HomePage` — the topology hub (map + INDEX concept panel + node datasheet), same component `/topology` renders (B3 허브가 곧 지도 — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded). Restoring a previously-opened vault handle from IndexedDB goes straight here — no starter surfaces, no re-clicking through first-run every visit
+- **Switch vault mid-session**: the topology settings gear (⚙, top-right utility rail) has a "switch vault" row → `/docs/?intent=local`, alongside the `/docs` vault pill's own "swap" control
 
-### `/` — Landing (no vault)
+### `/download` — Intro + download (absorbed the retired LandingPage, Slice 2 2026-07-18)
 
-- **Hero**: Ontology Atlas brand header + macOS-first title + subtitle + 3-step value chain rail (01 / 02 / 03)
-- **Mini topology** animation (14 nodes, 21 edges, SVG ForceAtlas2 — respects `prefers-reduced-motion`)
-- **Primary CTA**: "Download macOS app" → GitHub Releases
-- **Secondary CTA**: "Installation guide" → `/download/`
-- **No hosted workbench CTA**: public web pages do not route new users into `/docs/?intent=local`; local vault work starts inside the installed app
-- **First-release checklist**: `/download/` shows macOS app blockers (PR review, tag/package/Tauri/Cargo version alignment, Developer ID signing/notarization, v0.1.0 GitHub Release) separately from the Firebase Hosting `/ko/download/` website deploy gate; it also exposes a copyable `pnpm desktop:release-status -- --pr=<number> --include-hosted-surface` completion audit that writes owner-grouped blocker JSON and a reviewer checklist before anyone waits on CI. Rebuild with `NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0` after verified DMGs publish and the hosted download route is live to hide it.
-- **Live deploy verification**: `pnpm desktop:verify-hosted` checks the deployed `ontology-atlas.web.app` landing/download pages so a stale public site with the old browser-vault CTA, missing `/ko/download/` route, missing local release-status audit, missing AI-agent MCP/CLI access step, or unstable `/releases/latest` CTA cannot satisfy the desktop release goal.
-- **Privacy note**: the installed app and vault data use local disk as the source of truth; the hosted site is product introduction + download entry
+- **Intro section** (top of the page, above the release/trust content): Ontology Atlas brand header + macOS-first title + subtitle + 3-step value chain rail (01 / 02 / 03) + the dogfood evidence instrument (project hex + domain chips + hub capability circle, real `docs/ontology` census — `src/views/download/model/dogfood-census.generated.ts`, built by `scripts/build-docs-vault.mjs`)
+- **Primary CTA**: "Open macOS releases" → GitHub Releases
+- **Secondary CTA**: "View source code" → GitHub repo
+- **First-release checklist**: shows macOS app blockers (PR review, tag/package/Tauri/Cargo version alignment, Developer ID signing/notarization, v0.1.0 GitHub Release) separately from the Firebase Hosting `/ko/download/` website deploy gate; it also exposes a copyable `pnpm desktop:release-status -- --pr=<number> --include-hosted-surface` completion audit that writes owner-grouped blocker JSON and a reviewer checklist before anyone waits on CI. Rebuild with `NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0` after verified DMGs publish and the hosted download route is live to hide it.
+- **Live deploy verification**: `pnpm desktop:verify-hosted` checks the deployed `ontology-atlas.web.app` root/download pages — root-first-open changed this contract from "root stays promo-only" to "root offers the local-folder open CTA directly"; it now asserts `/ko/` includes the CTA and `/ko/download/` still points to the stable GitHub Releases page, not `/releases/latest`.
+- **Privacy note**: the installed app and vault data use local disk as the source of truth; `/docs`'s own local-source *browsing* tab stays desktop-only (unrelated to opening your primary vault from `/`)
 - **Footer**: license · GitHub · stack chips · `LocaleSwitch`
 
 ### `/` and `/topology` — canvas-2D topology hub

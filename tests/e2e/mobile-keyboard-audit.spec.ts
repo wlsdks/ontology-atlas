@@ -61,8 +61,9 @@ test("데스크탑 홈 키보드 단축키 응답", async ({ page }) => {
   const bucket: Bucket = { errors: [], warnings: [] };
   hook(page, bucket);
 
-  // 홈은 비로그인에 landing — 키보드 단축키는 HomePage에만 달려있어
-  // 로그인 없이는 반응 못 함. 일단 화면이 깨지지 않는지 + ESC 응답 여부만.
+  // 공개 상세 페이지는 HomePage 전용 단축키(⌘K/⇧⌘K/? 등)가 안 달려있다
+  // (root-first-open 이후 `/` 는 HomePage 라 그 단축키들을 받지만, 상세는
+  // 여전히 별도 표면). 일단 화면이 깨지지 않는지 + ESC 응답 여부만 확인.
   await page.goto("/en/project/ontology-atlas/");
   await page.waitForTimeout(1200);
 

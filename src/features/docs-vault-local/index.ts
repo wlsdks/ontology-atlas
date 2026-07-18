@@ -1,5 +1,10 @@
 export { LocalVaultProvider, useLocalVault } from './model/LocalVaultProvider';
 export { VaultConflictError } from './model/use-local-vault';
+export { shouldClearCreateIntent, shouldScaffoldAfterOpen } from './model/vault-create-flow';
+export {
+  useVaultCreateFlow,
+  type VaultCreateFlowVault,
+} from './model/use-vault-create-flow';
 export {
   buildAgentSetupCheckCliCommandTemplate,
   buildAgentSetupCliCommandTemplate,

@@ -7,25 +7,30 @@ import { useLocalVault } from "@/features/docs-vault-local";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { HomePage } from "@/views/home";
 import { FirstRunPage } from "@/views/first-run";
-import { LandingPage } from "@/views/landing";
 
 /**
- * 루트 `/` 진입 분기 — vault 선택 여부에 따라 두 surface 로 갈림:
+ * 루트 `/` 진입 분기 — vault 선택 여부에 따라 갈림:
  *
- * - web vault 미선택 → LandingPage (첫 인상 — "이게 뭔지" 5초 설명 + "내 폴더 열기" CTA)
+ * - **web vault 미선택 → HomePage 그대로 (정적 dogfood 샘플).** 판정
+ *   (2026-07-18, `docs/prototypes/root-first-open-final.html` 승인
+ *   docstring 근거, 시작하기 표면 형태는 v3 `first-run-v3-flagship.html`
+ *   승인으로 대체): 셀프호스트한 사용자에게 "macOS 다운로드" 마케팅 랜딩은
+ *   모순 — 지도가 곧 첫 화면이어야 한다(0-클릭 aha). `LandingPage`(구
+ *   마케팅 랜딩)는 제거됐다 — 그 소개 콘텐츠는 `/download` 로 이관
+ *   (Slice 2). "시작하기" 표면(폴더 열기/새 vault/SAMPLE 배지/우하단
+ *   판독)은 이 페이지가 아니라 `HomePage` 안의 `TopologyIndexPanel`
+ *   (INDEX 패널 맨 위, 플로팅 표면 0개)과 브랜드 pill 이 자체적으로
+ *   담당한다 — `useFirstRunSampleModeSettled`(`@/features/first-run-starter`)
+ *   가 vault 상태를 직접 읽어 스스로 켜고 끄므로, 이 페이지는 vault 유무만
+ *   보고 컴포넌트를 고르면 된다(추가 분기 불필요).
  * - desktop vault 미선택 → FirstRunPage (Obsidian 계열 first-run — 열기/새로
  *   만들기/데모. 설치 앱은 홍보가 아니라 로컬 작업 진입)
- * - vault 선택됨 → HomePage (실제 hub — 지도 + INDEX + 데이터시트, `/topology`
- *   와 동일 컴포넌트)
- *
- * vault picker 자체는 별도 `/docs` 라우트. LandingPage 의 "내 마크다운 폴더
- * 열기" 버튼이 그 곳으로 보낸다.
- *
- * 데스크톱 셸에서는 restoreAttempted 이후 로드된 manifest 가 없을 때
- * LandingPage 를 렌더하지 않는다. 설치 앱의 `/` 는 자기 자신을 다운로드하라는
- * 마케팅이 아니라 첫 실행 진입점이어야 한다. 저장된 handle 이 stale path 로
- * 복원되어 manifest build 가 실패한 경우도 FirstRun 으로 떨어진다 (이전엔
- * `/docs/?intent=local` redirect — R+ 에서 in-place FirstRun 으로 교체).
+ * - vault 선택됨(복원 포함) → HomePage. **재방문 계약**: 이미 쓰던 vault
+ *   핸들이 IndexedDB 에서 복원되면 시작하기 모듈·SAMPLE 배지·우하단 판독
+ *   전부 없이 곧장 본인 vault 허브로 — "맨날 들어와서 누르게 하지 않는다."
+ *   아래 `vault.manifest` 체크가 이 분기를 web/desktop 공통으로 가장 먼저
+ *   처리하고, INDEX 패널 쪽 게이트(`restoreAttempted && mode==='static'`)
+ *   가 복원 완료 전 한 프레임 깜빡이는 것도 별도로 막는다(모듈 쪽 책임).
  *
  * **B3 허브가 곧 지도 (2026-07) — R3 dual-surface 결정 대체.** R3 는 `/` 와
  * `/ontology` 가 둘 다 (당시의) 트리/ego 허브 `OntologyViewPage` 를 따로
@@ -51,7 +56,7 @@ export function RootEntryPage() {
     // FirstRun 이 한 프레임 스치는 것을 막는다.
     return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />;
   }
-  return <LandingPage />;
+  return <HomePage />;
 }
 
 function DesktopVaultRedirect() {

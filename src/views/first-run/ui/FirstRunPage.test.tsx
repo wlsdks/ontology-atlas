@@ -14,9 +14,14 @@ const mocks = vi.hoisted(() => ({
   vault: null as unknown as MockVault,
 }));
 
-vi.mock('@/features/docs-vault-local', () => ({
-  useLocalVault: () => mocks.vault,
-}));
+vi.mock('@/features/docs-vault-local', async () => {
+  const actual = await vi.importActual<typeof import('@/features/docs-vault-local')>(
+    '@/features/docs-vault-local',
+  );
+  // useVaultCreateFlow 는 vault 를 인자로만 받는 순수 hook 이라 실제 구현을
+  // 그대로 쓴다 — mocking 이 필요한 건 useLocalVault (전역 provider 접근) 뿐.
+  return { ...actual, useLocalVault: () => mocks.vault };
+});
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,

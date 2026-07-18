@@ -4,6 +4,21 @@ import { buildOntologyTree } from "@/shared/lib/ontology-tree";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { TopologyIndexPanel } from "./TopologyIndexPanel";
 
+// TopologyIndexPanel's own tests exercise the tree/search/census — the
+// root-first-open "시작하기" module it mounts at the top needs a
+// LocalVaultProvider + i18n context it doesn't stand up here, and its
+// visibility logic is unit-tested separately
+// (`@/features/first-run-starter/ui/FirstRunStarterModule.test.tsx`). Stub
+// it to a spy so this file can still assert it receives the right census
+// props without pulling in vault/i18n providers.
+const firstRunStarterProps = vi.hoisted(() => ({ current: null as unknown }));
+vi.mock("@/features/first-run-starter", () => ({
+  FirstRunStarterModule: (props: unknown) => {
+    firstRunStarterProps.current = props;
+    return null;
+  },
+}));
+
 function makeNode(id: string, kind: string, title?: string): KnowledgeGraphNode {
   return {
     id,
@@ -157,5 +172,28 @@ describe("TopologyIndexPanel", () => {
     expect(census).toHaveTextContent("296");
     expect(census).toHaveTextContent("508");
     expect(census).toHaveTextContent("6");
+  });
+
+  it("passes the same census totals through to the first-run starter module", () => {
+    const treeResult = buildFixtureTree();
+    render(
+      <TopologyIndexPanel
+        treeResult={treeResult}
+        totalConcepts={102}
+        totalRelations={478}
+        domainCount={6}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+
+    expect(firstRunStarterProps.current).toEqual({
+      concepts: 102,
+      relations: 478,
+      domains: 6,
+    });
   });
 });

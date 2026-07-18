@@ -16,9 +16,9 @@ tags: [architecture, infra, overview]
 ```
 ┌────────────────────────────────────────────────────────┐
 │ User                                                    │
-│ ├─ /                       topology hub (map + INDEX + │
-│ │                          datasheet, when vault       │
-│ │                          loaded) / landing (else)    │
+│ ├─ /                       topology hub always (map +  │
+│ │                          INDEX + datasheet); no vault│
+│ │                          → dogfood sample + first-run│
 │ ├─ /topology               same hub, explicit entry     │
 │ ├─ /docs                   vault picker + editor       │
 │ ├─ /ontology               thin redirect → /topology   │
@@ -119,16 +119,20 @@ The directory layout is enforced by `eslint-plugin-boundaries` in `eslint.config
    merge/delete calls. Analysis tools such as `analyze_repo_structure` and
    `infer_imports` are side-effect-free candidate generators.
 
-### Vault mode (user picked a markdown folder in the desktop app)
+### Vault mode (user picked a markdown folder)
 
 1. `useLocalVault()` returns `{ status: 'loaded', handle, manifest }`.
 2. `useDataSourceMode()` returns `'local'`.
 3. `useProjects()` derives projects from `manifest.docs` (filter `kind: project`).
 4. `useOntologyInsight()` derives ontology nodes/edges from vault frontmatter.
 5. Mutations (`useProjectMutations.updateProject`) write directly to `.md`
-   files via the Tauri native vault bridge. Source-browser development can use
-   the File System Access API fallback, but hosted web keeps local vault work
-   disabled.
+   files — the installed desktop app uses the Tauri native vault bridge,
+   hosted web uses the browser File System Access API directly (root-first-open,
+   2026-07: `FirstRunStarterModule` in the topology hub's INDEX panel calls
+   `useLocalVault().open()` on `/` itself, no install required). `/docs`'s own
+   separate local-source tab (browsing a second vault as a documentation
+   source inside that page) stays desktop-gated — that is a narrower, older
+   feature unrelated to opening your primary vault from the map.
 
 The MCP server is independent: it reads the same vault directory through the
 filesystem (Node.js `fs`), not the WebView bridge. AI agents and the installed app end up with the same view.
@@ -148,7 +152,7 @@ This is the "first impression" state — visitors see a real ontology
 ## Routes
 
 ```
-/                          topology hub when vault loaded (map + INDEX + datasheet); landing when not
+/                          topology hub always (map + INDEX + datasheet); no vault → dogfood sample + first-run starter
 /topology                  same hub, explicit entry point (canvas-2D map/graph engine)
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
@@ -173,7 +177,7 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 pnpm docs-vault:build      # docs/ontology/*.md → src/entities/docs-vault/data/manifest.json
 pnpm docs-vault:check      # verify committed docs-vault outputs are fresh
 pnpm build                 # next build → static export → out/
-pnpm bundle:check          # verifies firebase SDK chunk = 0 across landing/download/app routes
+pnpm bundle:check          # verifies firebase SDK chunk = 0 across root/topology, download, and app routes
 pnpm vault:validate        # R11+ — frontmatter integrity + graph array drift
 pnpm test:vault:validate   # focused validator CLI argument contract
 pnpm vault:audit           # dogfood ontology capability/element paths exist in repo

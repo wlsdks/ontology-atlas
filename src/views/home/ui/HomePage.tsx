@@ -16,6 +16,7 @@ import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { useLocalVault } from "@/features/docs-vault-local";
+import { FirstRunReadout, useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 // 타입/기본값은 Sigma(WebGL) 의존성 없는 별도 모듈에서 직접 import해서
 // SSR 평가 경로에 WebGL 참조가 끼지 않도록 한다.
 import {
@@ -176,6 +177,13 @@ export function HomePage() {
   const projectsQuery = useProjects();
   const projects = projectsQuery.projects;
   const projectsError = projectsQuery.error;
+  // root-first-open v3 — vault 미선택 + 정적 모드 + 복원 시도 완료를 하나로
+  // 묶은 판정. 브랜드 pill 의 SAMPLE 배지와 우하단 판독(FirstRunReadout)이
+  // 이 값을 공유해 drift 없이 같이 켜지고 꺼진다. INDEX 패널 안의 "시작하기"
+  // 모듈(FirstRunStarterModule)은 여기에 dismiss 상태까지 더한 자기 판정을
+  // 따로 쓴다(useFirstRunStarter) — 모듈을 닫아도 이 배지/판독은 정적 샘플을
+  // 계속 둘러보는 동안 남아있는 게 맞는 계약.
+  const sampleModeSettled = useFirstRunSampleModeSettled();
   const [routeState, setRouteState] = useHomeRouteState();
   // 헤더 "Concept search" 버튼 · ⌘K · ⇧⌘K 모두 이 팔레트(MountedGlobalSearch,
   // ontology 노드 + 프로젝트 통합 검색)를 연다 — persona-P1 fix: 예전에는
@@ -1116,6 +1124,12 @@ export function HomePage() {
     () => ontologyInsight?.nodes.filter((node) => node.kind === "domain").length ?? 0,
     [ontologyInsight],
   );
+  // root-first-open v3 우하단 판독(`FirstRunReadout`) 의 "N project" 숫자 —
+  // 실데이터, indexDomainCount 와 같은 ontologyInsight 파생이라 drift 불가.
+  const firstRunProjectCount = useMemo(
+    () => ontologyInsight?.nodes.filter((node) => node.kind === "project").length ?? 0,
+    [ontologyInsight],
+  );
   const visibleTopologyNodeCount =
     localGraphRoot === null ? topologyTotalNodes : localGraphProjects.length;
   const visibleTopologyRelationCount =
@@ -1493,6 +1507,7 @@ export function HomePage() {
                     docsVaultHref={selectedRelationActive ? undefined : "/docs/"}
                     ontologyHref={selectedRelationActive ? undefined : "/ontology/"}
                     compact={selectedRelationActive}
+                    sampleBadge={sampleModeSettled}
                   />
                   {/* WorkspaceOntologyStrip 제거(2026-06-11) — 분석 패널과
                       겹쳤고(사용자 보고), 카운트는 pill·범례가, 온톨로지
@@ -2437,6 +2452,7 @@ export function HomePage() {
                   <TopologyV2SettingsGear
                     indexDefaultCollapsed={indexPanelCollapsedStored}
                     onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
+                    changeVaultHref="/docs/?intent=local"
                     labels={{
                       trigger: t('controls.settingsGearAriaLabel'),
                       heading: t('controls.settingsGearHeading'),
@@ -2445,6 +2461,8 @@ export function HomePage() {
                       indexDefault: t('controls.settingsGearIndexDefault'),
                       indexDefaultExpanded: t('controls.settingsGearIndexDefaultExpanded'),
                       indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
+                      changeVault: t('controls.settingsGearChangeVault'),
+                      changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
                     }}
                     className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-6 md:top-[var(--topology-settings-gear-desktop-top)] md:block xl:right-8"
                   />
@@ -2512,6 +2530,14 @@ export function HomePage() {
               {topologyOverlayState.kind === "filter-empty" ? (
                 <TopologyNoMatchesState onClearFilters={clearTopologyFilters} />
               ) : null}
+
+              {/* root-first-open v3 우하단 계기 판독 — 정적 모드일 때만
+                  자체 렌더(FirstRunReadout 내부 판정), dismiss 와 무관하게
+                  정적 샘플을 둘러보는 동안 계속 남아있는다. */}
+              <FirstRunReadout
+                projectCount={firstRunProjectCount}
+                domainCount={indexDomainCount}
+              />
 
             </>
         </div>
