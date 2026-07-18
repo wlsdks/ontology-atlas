@@ -148,19 +148,10 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     reason:
       "/ontology/insights must lead with executable graph DB query pack, runtime gate, and result contracts.",
   },
-  {
-    id: "topology-kind-legend-role-copy",
-    files: ["src/widgets/topology-map-sigma/ui/SigmaTopology.tsx"],
-    markers: [
-      "kindLegendProjectRole",
-      "kindLegendDomainRole",
-      "kindLegendCapabilityRole",
-      "kindLegendElementRole",
-      "kindLegendUnknownRole",
-    ],
-    reason:
-      "/topology kind legend must explain what each ontology layer means, not only show color and tier.",
-  },
+  // [삭제, 2026-07-18] "topology-kind-legend-role-copy" 체크 — 대상 파일
+  // `SigmaTopology.tsx` 가 #344 (retire-sigma-topology) 로 삭제됐고, 검증하던
+  // i18n 키(kindLegend*Role)도 다른 어떤 컴포넌트도 소비하지 않아 함께 제거.
+  // 이 UI(노드 kind 역할 legend)는 topology-map-v2 에 재구현되지 않았다.
   {
     id: "product-design-operating-system",
     files: ["docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md"],

@@ -190,7 +190,6 @@ describe('i18n message catalog', () => {
       '그래프 검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다',
     );
     assert.equal(ko.topology.documentTitle, '지형도');
-    assert.equal(ko.topologyWidgets.sigma.kindLegendUnknownRole, '근거 부족, 에이전트 재검토');
     assert.equal(ko.topologyWidgets.controls.depthHop, '{count}단계');
     assert.equal(ko.topologyWidgets.controls.shortcutDepthAll, '연결 범위 전체');
     assert.equal(ko.topologyWidgets.controls.shortcutDoubleClick, '로컬 그래프 진입');
@@ -200,7 +199,6 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.analysis.overviewAgentReadinessPreflight, '사전 점검');
     assert.doesNotMatch(
       [
-        ko.topologyWidgets.sigma.kindLegendUnknownRole,
         ko.topologyWidgets.controls.depthHop,
         ko.topologyWidgets.controls.shortcutDepthAll,
         ko.topologyWidgets.controls.shortcutDoubleClick,
@@ -724,43 +722,22 @@ describe('i18n message catalog', () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const pathCopy = ko.topologyWidgets.sigma;
 
-    assert.equal(pathCopy.pathStartBadge, '경로');
-    assert.equal(pathCopy.pathStartTitle, '경로 모드');
-    assert.match(pathCopy.pathStartBody, /시작 노드/);
-    assert.doesNotMatch(pathCopy.pathStartBody, /Path mode|Shift/);
     assert.equal(pathCopy.pathCopy, '경로 근거');
     assert.equal(pathCopy.pathMcpCopy, 'MCP 경로');
     assert.equal(pathCopy.pathRelationPreflightCopy, '관계 사전 점검');
     assert.equal(pathCopy.pathExplainRelationCopy, '관계 설명');
     assert.equal(pathCopy.pathAllPathsPlanCopy, '전체 경로 계획');
     assert.equal(pathCopy.pathAllPathsCopy, '전체 경로 실행');
-    assert.equal(pathCopy.pathRelationPreflightReasonLabel, '관계 사전 점검 이유');
-    assert.equal(pathCopy.pathTraversalCompletenessLabel, '전체 경로 점검');
-    assert.equal(pathCopy.pathTraversalCompletenessBadge, '전체 경로');
-    assert.equal(
-      pathCopy.pathTraversalCompletenessBody,
-      '최단 경로를 완전한 그래프 근거로 쓰기 전에 범위를 제한한 전체 경로 점검을 실행하세요.',
-    );
-    assert.equal(pathCopy.pathCopyAriaLabel, '경로 근거 복사');
     assert.equal(pathCopy.pathRelationPreflightCopyAriaLabel, '경로 관계 사전 점검 복사');
     assert.equal(pathCopy.pathExplainRelationCopyAriaLabel, '경로 관계 설명 점검 복사');
     assert.equal(pathCopy.pathAllPathsPlanCopyAriaLabel, '전체 경로 계획 복사');
     assert.equal(pathCopy.pathAllPathsCopyAriaLabel, '전체 경로 실행 점검 복사');
     assert.equal(pathCopy.pathEvidenceTitle, '지형도 경로 근거');
-    assert.equal(pathCopy.pathEvidenceSlugs, '개념 ID');
     assert.equal(pathCopy.pathEvidenceSourceOntologyUrl, '시작점 개념 문서 URL');
     assert.equal(pathCopy.pathEvidenceTargetOntologyUrl, '대상 개념 문서 URL');
     assert.equal(pathCopy.pathEvidenceRelationPreflightReason, '관계 사전 점검 이유');
-    assert.equal(pathCopy.pathEvidenceRelationPreflightCliCheck, 'CLI 관계 사전 점검');
     assert.equal(pathCopy.pathEvidenceRelationPreflightMcpCheck, 'MCP 관계 사전 점검');
-    assert.equal(pathCopy.pathEvidenceExplainRelationCliCheck, 'CLI 관계 설명 점검');
     assert.equal(pathCopy.pathEvidenceExplainRelationMcpCheck, 'MCP 관계 설명 점검');
-    assert.equal(pathCopy.pathEvidenceTraversalCompleteness, '전체 경로 점검');
-    assert.equal(
-      pathCopy.pathEvidenceTraversalCompletenessPolicy,
-      '최단 경로를 완전한 그래프 근거로 쓰기 전에 범위를 제한한 전체 경로 점검을 실행하세요.',
-    );
-    assert.equal(pathCopy.pathEvidenceAllPathsCliCheck, 'CLI 전체 경로 점검');
     assert.equal(pathCopy.pathEvidenceAllPathsPlanMcpCheck, 'MCP 전체 경로 계획');
     assert.equal(pathCopy.pathEvidenceAllPathsMcpCheck, 'MCP 전체 경로 점검');
     assert.equal(pathCopy.pathEvidenceAllPathsCopyInstruction, '전체 경로 근거 계약');
@@ -768,36 +745,22 @@ describe('i18n message catalog', () => {
 
     assert.doesNotMatch(
       [
-        pathCopy.pathStartTitle,
-        pathCopy.pathStartBadge,
-        pathCopy.pathStartBody,
         pathCopy.pathCopy,
         pathCopy.pathMcpCopy,
         pathCopy.pathRelationPreflightCopy,
         pathCopy.pathExplainRelationCopy,
         pathCopy.pathAllPathsPlanCopy,
         pathCopy.pathAllPathsCopy,
-        pathCopy.pathRelationPreflightReasonLabel,
-        pathCopy.pathTraversalCompletenessLabel,
-        pathCopy.pathTraversalCompletenessBadge,
-        pathCopy.pathTraversalCompletenessBody,
-        pathCopy.pathCopyAriaLabel,
         pathCopy.pathRelationPreflightCopyAriaLabel,
         pathCopy.pathExplainRelationCopyAriaLabel,
         pathCopy.pathAllPathsPlanCopyAriaLabel,
         pathCopy.pathAllPathsCopyAriaLabel,
         pathCopy.pathEvidenceTitle,
-        pathCopy.pathEvidenceSlugs,
         pathCopy.pathEvidenceSourceOntologyUrl,
         pathCopy.pathEvidenceTargetOntologyUrl,
         pathCopy.pathEvidenceRelationPreflightReason,
-        pathCopy.pathEvidenceRelationPreflightCliCheck,
         pathCopy.pathEvidenceRelationPreflightMcpCheck,
-        pathCopy.pathEvidenceExplainRelationCliCheck,
         pathCopy.pathEvidenceExplainRelationMcpCheck,
-        pathCopy.pathEvidenceTraversalCompleteness,
-        pathCopy.pathEvidenceTraversalCompletenessPolicy,
-        pathCopy.pathEvidenceAllPathsCliCheck,
         pathCopy.pathEvidenceAllPathsPlanMcpCheck,
         pathCopy.pathEvidenceAllPathsMcpCheck,
         pathCopy.pathEvidenceAllPathsCopyInstruction,
