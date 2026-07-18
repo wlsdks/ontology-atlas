@@ -7,8 +7,12 @@ export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
   "src/widgets/docs-vault",
   "src/views/ontology-edit",
   "src/views/ontology-insights",
-  "src/widgets/ontology-sub-nav",
-  "src/widgets/operations-nav",
+  // feat/rail-rollout retired `operations-nav` (top tab bar) and
+  // `ontology-sub-nav` (their inline sub-tab) in favor of the persistent
+  // `app-nav-rail` + per-page `app-settings-menu` — those replace them here.
+  "src/widgets/app-nav-rail",
+  "src/widgets/app-settings-menu",
+  "src/widgets/bottom-tab-bar",
   "src/widgets/topology-index-panel",
   "src/shared/ui",
 ];

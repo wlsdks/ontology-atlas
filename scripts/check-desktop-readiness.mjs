@@ -412,12 +412,12 @@ if (
 
 if (
   pkg.scripts?.["test:desktop:runtime"] ===
-  "pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts src/views/root-entry/ui/RootEntryPage.test.tsx src/widgets/operations-nav/ui/OperationsNav.test.tsx"
+  "pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts src/views/root-entry/ui/RootEntryPage.test.tsx src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx"
 ) {
   pass("desktop runtime split tests cover local intent, first-run routing, and hosted download routing");
 } else {
   fail(
-    "package.json must expose test:desktop:runtime for the hosted-vs-installed runtime split: DocsVault persistence, RootEntryPage first-run routing, and OperationsNav hosted download routing",
+    "package.json must expose test:desktop:runtime for the hosted-vs-installed runtime split: DocsVault persistence, RootEntryPage first-run routing, and AppSettingsMenu hosted download routing",
   );
 }
 

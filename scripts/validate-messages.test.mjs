@@ -89,12 +89,11 @@ describe('i18n message catalog', () => {
     assert.match(ko.download.proofChecksum, /체크섬을 검증/);
     assert.match(ko.download.step1Body, /Apple Silicon Mac 은 aarch64 DMG/);
     assert.match(ko.download.step1Body, /Intel Mac 은 x64 DMG/);
-    assert.doesNotMatch(en.modeBadge.demoAriaLabelDownload, /open my markdown folder/i);
-    assert.doesNotMatch(en.modeBadge.demoTooltipDownload, /open my markdown folder/i);
-    assert.match(en.modeBadge.demoTooltipDownload, /install the macOS app/i);
-    assert.match(ko.modeBadge.demoTooltipDownload, /macOS 앱 설치/);
-    assert.match(en.modeBadge.demoAriaLabelPicker, /open a local vault folder/i);
-    assert.match(en.modeBadge.demoTooltipPicker, /saving changes/i);
+    // `modeBadge.*` retired with `OperationsNav`/`ModeBadge` (feat/rail-rollout
+    // — the vault/demo chip that lived in the old top nav's right cluster has
+    // no rail-era replacement; `AppSettingsMenu`'s vault tab + the builder/
+    // ontologyView demo-mode copy below cover the same "install the macOS
+    // app" / "pick a local vault folder" guidance).
     assert.doesNotMatch(en.ontologyPages.edit.page.toastDemoModeDownload, /\/docs|open a markdown folder/i);
     assert.doesNotMatch(en.ontologyPages.edit.page.toastVaultEdgeDemoDownload, /\/docs|open a vault folder/i);
     assert.match(en.ontologyPages.edit.page.toastDemoModeDownload, /install the macOS app/i);
@@ -124,46 +123,18 @@ describe('i18n message catalog', () => {
   it('keeps Korean primary navigation understandable without topology jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
-    assert.equal(ko.nav.topology, '지형도');
-    assert.equal(ko.nav.docs, '저장소');
-    assert.equal(ko.modeBadge.vaultLabel, '문서함');
-    assert.equal(ko.modeBadge.vaultDocs, '개념 문서 {count}개');
-    assert.equal(
-      ko.modeBadge.vaultTooltip,
-      '로컬 온톨로지 문서함 — {name} (개념 문서 {count}개). 모든 변경이 이 Mac의 폴더에 저장됩니다.',
-    );
+    // feat/rail-rollout retired `OperationsNav`/`OntologySubNav`/`ModeBadge`
+    // (their top-tab, sub-tab, and vault-chip copy below) — `navRail.*` (the
+    // AppNavRail rail + BottomTabBar's shared label source) is now the one
+    // primary-navigation copy surface for both desktop and mobile.
+    assert.equal(ko.navRail.map, '지도');
+    assert.equal(ko.navRail.docs, '문서함');
+    assert.equal(ko.navRail.builder, '빌더');
+    assert.equal(ko.navRail.insights, '인사이트');
+    assert.equal(ko.navRail.projects, '프로젝트');
     assert.doesNotMatch(
-      [
-        ko.metadata.pages.docs,
-        ko.nav.docs,
-        ko.nav.tooltipDocs,
-      ].join('\n'),
-      /문서함/,
-    );
-    assert.doesNotMatch(
-      [
-        ko.modeBadge.vaultLabel,
-        ko.modeBadge.vaultDocs,
-        ko.modeBadge.vaultTooltip,
-        ko.modeBadge.demoAriaLabelDownload,
-        ko.modeBadge.demoAriaLabelPicker,
-        ko.modeBadge.demoTooltip,
-        ko.modeBadge.demoTooltipDownload,
-        ko.modeBadge.demoTooltipPicker,
-      ].join('\n'),
-      /vault|Vault|온톨로지 노드|로컬 온톨로지 저장소/,
-    );
-    assert.equal(
-      ko.nav.tooltipOntology,
-      '온톨로지 — 개념·관계·변경점을 한 곳에서 확인합니다',
-    );
-    assert.equal(
-      ko.nav.tooltipTopology,
-      '지형도 — 개념 사이 연결을 공간에서 확인하고 선택 노드로 돌아갑니다',
-    );
-    assert.equal(
-      ko.nav.tooltipDocs,
-      '저장소 — 로컬 마크다운을 가이드와 온톨로지 개념으로 나눠 봅니다',
+      [ko.navRail.map, ko.navRail.docs, ko.navRail.builder, ko.navRail.insights, ko.navRail.projects].join('\n'),
+      /지형도|토폴로지|운영|Operations/,
     );
     assert.equal(
       ko.nav.settingsMenu.triggerTitle,
@@ -177,18 +148,6 @@ describe('i18n message catalog', () => {
       '현재 로컬 작업공간을 열어 파일과 온톨로지 개념을 확인합니다.',
     );
     assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '작업공간 열기');
-    assert.equal(
-      ko.ontologySubNav.treeTooltip,
-      '개념 지도 — 도메인, 역량, 요소를 고르고 의미와 근거를 봅니다',
-    );
-    assert.equal(
-      ko.ontologySubNav.builderTooltip,
-      '관계 편집 — 캔버스에서 개념과 관계를 고친 뒤 로컬 문서에 저장합니다',
-    );
-    assert.equal(
-      ko.ontologySubNav.insightsTooltip,
-      '그래프 검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다',
-    );
     assert.equal(ko.topology.documentTitle, '지형도');
     assert.equal(ko.topologyWidgets.controls.depthHop, '{count}단계');
     assert.equal(ko.topologyWidgets.controls.shortcutDepthAll, '연결 범위 전체');
@@ -209,10 +168,9 @@ describe('i18n message catalog', () => {
       ].join('\n'),
       /\b(Agent|agent|handoff|preflight|Depth|Local graph|HOP)\b/,
     );
-    assert.doesNotMatch(ko.nav.tooltipTopology, /토폴로지/);
     assert.doesNotMatch(
       [
-        ko.nav.tooltipDocs,
+        ko.navRail.docs,
         ko.nav.settingsMenu.triggerTitle,
         ko.nav.settingsMenu.subtitle,
         ko.nav.settingsMenu.tabGeneralDesc,
@@ -223,10 +181,6 @@ describe('i18n message catalog', () => {
         ko.nav.settingsMenu.vaultBodyStatic,
         ko.nav.settingsMenu.vaultCtaLocal,
         ko.nav.settingsMenu.vaultCtaStatic,
-        ko.ontologySubNav.builderTooltip,
-        ko.modeBadge.vaultLabel,
-        ko.modeBadge.vaultTooltip,
-        ko.modeBadge.demoTooltip,
         ko.rootEntry.openingLocalVaultPicker,
         ko.searchWidgets.hero.ontologyAriaLabel,
         ko.searchWidgets.workspaceStrip.ontologyTitle,
@@ -863,8 +817,7 @@ describe('i18n message catalog', () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const welcomeCopy = [
       en.metadata.pages.docs,
-      en.nav.docs,
-      en.nav.tooltipDocs,
+      en.navRail.docs,
       en.nav.settingsMenu.triggerTitle,
       en.nav.settingsMenu.subtitle,
       en.nav.settingsMenu.tabVaultDesc,
@@ -873,8 +826,6 @@ describe('i18n message catalog', () => {
       en.nav.settingsMenu.vaultBodyStatic,
       en.nav.settingsMenu.vaultCtaLocal,
       en.nav.settingsMenu.vaultCtaStatic,
-      en.modeBadge.vaultLabel,
-      en.modeBadge.vaultTooltip,
       en.searchWidgets.shortcuts.sections.docsPalette,
       en.searchWidgets.shortcuts.sections.docsGraph,
       en.searchWidgets.shortcuts.sections.docsSource,
@@ -915,16 +866,13 @@ describe('i18n message catalog', () => {
     ].join('\n');
 
     assert.equal(en.metadata.pages.docs, 'Ontology workspace');
-    assert.equal(en.nav.docs, 'Workspace');
-    assert.equal(en.nav.tooltipDocs, 'Workspace — separate guide docs from ontology concepts');
+    // `nav.docs`/`nav.tooltipDocs`/`modeBadge.*` retired with `OperationsNav`/
+    // `ModeBadge` (feat/rail-rollout) — `navRail.docs` (shared by AppNavRail +
+    // BottomTabBar) is the one surviving primary-nav label for this surface.
+    assert.equal(en.navRail.docs, 'Docs');
     assert.equal(en.nav.settingsMenu.vaultTitle, 'Ontology workspace');
     assert.equal(en.nav.settingsMenu.vaultCtaLocal, 'Open workspace');
     assert.equal(en.nav.settingsMenu.vaultCtaStatic, 'Start local workspace');
-    assert.equal(en.modeBadge.vaultLabel, 'Workspace');
-    assert.equal(
-      en.modeBadge.vaultTooltip,
-      'Workspace mode — {name} ({count} documents). Every change is saved to your local disk.',
-    );
     assert.equal(en.docsVault.desktopWelcome.title, 'Open or create a local ontology workspace');
     assert.equal(en.docsVault.desktopWelcome.contractAriaLabel, 'Ontology workspace contract');
     assert.equal(en.docsVault.desktopWelcome.contractFilesLabel, 'Workspace files');

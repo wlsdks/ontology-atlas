@@ -9,10 +9,13 @@ import {
   type Project,
 } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
-import { useOntologyInsight } from "@/features/vault-ontology";
+import { LiveActivityIndicator, useOntologyInsight } from "@/features/vault-ontology";
+import { useDataSourceMode } from "@/features/data-source-mode";
+import { useLocalVault } from "@/features/docs-vault-local";
 import { buildContainmentParents } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
-import { OperationsNav } from "@/widgets/operations-nav";
+import { AppNavRail } from "@/widgets/app-nav-rail";
+import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { computeWorkspaceCensus } from "../lib/workspace-census";
 import { buildProjectCardFacts } from "../lib/project-card-facts";
@@ -54,6 +57,8 @@ export function ProjectSelectorPage() {
   const { projects } = useProjects();
   const { insight } = useOntologyInsight();
   const docs = useVaultDocs();
+  const vault = useLocalVault();
+  const dataSourceMode = useDataSourceMode();
 
   const nodes = useMemo(() => insight?.nodes ?? [], [insight]);
   const edges = useMemo(() => insight?.edges ?? [], [insight]);
@@ -84,9 +89,14 @@ export function ProjectSelectorPage() {
   const newProjectHref = `/project/new/?returnTo=${encodeURIComponent("/projects/")}`;
 
   return (
-    <main id="main" className="min-h-screen bg-[color:var(--color-canvas)]">
-      <OperationsNav />
-      <div className="mx-auto px-5 py-6 md:px-10 md:py-10" style={{ maxWidth: PAGE_MAX_WIDTH }}>
+    <div className="flex min-h-screen w-full">
+      <AppNavRail />
+      <main id="main" className="min-w-0 flex-1 bg-[color:var(--color-canvas)]">
+        <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6">
+          <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
+          <AppSettingsMenu mode={dataSourceMode} />
+        </div>
+        <div className="mx-auto px-5 py-6 md:px-10 md:py-10" style={{ maxWidth: PAGE_MAX_WIDTH }}>
         <nav className="mb-5 flex flex-wrap items-center gap-2.5 text-[12px] text-[color:var(--color-text-tertiary)]">
           <Link
             href="/"
@@ -224,8 +234,9 @@ export function ProjectSelectorPage() {
             </span>
           </div>
         </section>
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }
 

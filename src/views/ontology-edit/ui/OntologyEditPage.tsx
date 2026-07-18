@@ -27,13 +27,16 @@ import {
   type VaultManifest,
 } from "@/entities/docs-vault";
 import { VaultConflictError, useLocalVault } from "@/features/docs-vault-local";
+import { useDataSourceMode } from "@/features/data-source-mode";
+import { LiveActivityIndicator } from "@/features/vault-ontology";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import {
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   formatAgentPostChangeSyncPacket,
 } from "@/shared/lib/ontology-tree";
 import { slugify } from "@/shared/lib/slugify";
-import { OperationsNav } from "@/widgets/operations-nav";
+import { AppNavRail } from "@/widgets/app-nav-rail";
+import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { copyText } from "@/shared/lib/copy-text";
 import { Tooltip, useToast } from "@/shared/ui";
@@ -1132,6 +1135,7 @@ export function OntologyEditPage() {
       }
     : null;
   const vault = useLocalVault();
+  const dataSourceMode = useDataSourceMode();
   const isDesktopRuntime = isTauriVaultRuntime();
   const demoSaveToastKey = isDesktopRuntime
     ? "toastDemoModePicker"
@@ -2060,26 +2064,37 @@ export function OntologyEditPage() {
   );
 
   return (
-    <div className="min-h-dvh bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
-      {/* OperationsNav 가 ontology surface (/, /ontology*) 에선 SubNav 행을
-          inline 으로 함께 렌더 — 한 nav block 으로 융합. */}
-      {fullscreen ? null : <OperationsNav />}
-      {/* ⇧⌘K — 큰 ontology 에서 노드 빠른 점프. 선택 시 인스펙터에서 즉시
-          편집 가능. fullscreen 모드에선 hotkey 도 작동 (캔버스에 mount). */}
-      <MountedGlobalSearch
-        hotkeyShift
-        onSelectNode={(node) => {
-          openNodeDetails(node.id);
-        }}
-      />
-      <main
-        id="main"
-        className={
-          fullscreen
-            ? "flex h-dvh w-full flex-col px-2 py-2"
-            : "mx-auto flex h-[calc(100dvh-5.75rem)] w-full max-w-[1800px] flex-col px-3 py-3 md:px-5 md:py-4"
-        }
-      >
+    <div className="flex h-dvh w-full overflow-hidden bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+      {/* 좌측 내비 레일 — fullscreen 모드에선 캔버스 공간을 최대화하려고
+          숨긴다(구 OperationsNav 가 fullscreen 에서 숨던 것과 동일 원칙).
+          레일은 desktop(lg+) 전용이라 모바일 영향 없음(BottomTabBar 담당). */}
+      {fullscreen ? null : <AppNavRail />}
+      <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+        {/* 구 OperationsNav 우측 클러스터(LiveActivityIndicator·AppSettingsMenu)
+            — 레일 폭(64~88px)에는 못 들어가 페이지 헤더에 그대로 보존
+            (기능 손실 0 원칙). fullscreen 에선 나머지 chrome 과 함께 숨김. */}
+        {fullscreen ? null : (
+          <div className="flex flex-none items-center justify-end gap-2 px-3 pt-2 md:px-4">
+            <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
+            <AppSettingsMenu mode={dataSourceMode} />
+          </div>
+        )}
+        {/* ⇧⌘K — 큰 ontology 에서 노드 빠른 점프. 선택 시 인스펙터에서 즉시
+            편집 가능. fullscreen 모드에선 hotkey 도 작동 (캔버스에 mount). */}
+        <MountedGlobalSearch
+          hotkeyShift
+          onSelectNode={(node) => {
+            openNodeDetails(node.id);
+          }}
+        />
+        <main
+          id="main"
+          className={
+            fullscreen
+              ? "flex h-full w-full flex-1 flex-col px-2 py-2"
+              : "mx-auto flex h-full min-h-0 w-full max-w-[1800px] flex-1 flex-col px-3 py-3 md:px-5 md:py-4"
+          }
+        >
         <header className="mb-1 flex flex-wrap items-center justify-between gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1.5">
           <div className="flex min-w-0 items-center gap-2">
             <h1 className="sr-only">{t("title")}</h1>
@@ -2864,15 +2879,16 @@ export function OntologyEditPage() {
             </Link>
           </div>
         </section>
-      </main>
-      <BlastRadiusConfirm
-        open={pendingDelete !== null}
-        slug={pendingDelete?.slug ?? ""}
-        title={pendingDelete?.title}
-        backlinks={pendingDelete?.backlinks ?? []}
-        onCancel={() => setPendingDelete(null)}
-        onConfirm={() => void confirmPendingDelete()}
-      />
+        </main>
+        <BlastRadiusConfirm
+          open={pendingDelete !== null}
+          slug={pendingDelete?.slug ?? ""}
+          title={pendingDelete?.title}
+          backlinks={pendingDelete?.backlinks ?? []}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => void confirmPendingDelete()}
+        />
+      </div>
     </div>
   );
 }

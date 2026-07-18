@@ -475,7 +475,7 @@ describe('focused check suggestions', () => {
       'src/views/root-entry/ui/RootEntryPage.test.tsx',
       'src/views/docs-vault/lib/persistence.ts',
       'src/views/docs-vault/ui/DocsVaultPage.tsx',
-      'src/widgets/operations-nav/ui/OperationsNav.tsx',
+      'src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx',
       'src-tauri/src/lib.rs',
       'src-tauri/tauri.conf.json',
     ]);
@@ -489,7 +489,7 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts',
       'pnpm exec vitest run src/views/root-entry/ui/RootEntryPage.test.tsx',
       'pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts',
-      'pnpm exec vitest run src/widgets/operations-nav/ui/OperationsNav.test.tsx',
+      'pnpm exec vitest run src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx',
       'pnpm docs-vault:check',
       'pnpm test:desktop:check',
       'pnpm test:desktop:runtime',

@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { ArrowLeft, ArrowUpRight, CopyPlus } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { AppNavRail } from "@/widgets/app-nav-rail";
 import { ProjectForm } from "@/features/project-edit";
 import { useProjects, useProjectMutations } from "@/features/project-data-source";
 import { VaultConflictError } from "@/features/docs-vault-local";
@@ -223,7 +224,9 @@ function EditorContent({
   }
 
   return (
-    <main id="main" className="min-h-screen bg-[color:var(--color-canvas)] px-4 py-8 md:px-12 md:py-10">
+    <div className="flex min-h-screen w-full">
+      <AppNavRail />
+      <main id="main" className="min-w-0 flex-1 bg-[color:var(--color-canvas)] px-4 py-8 md:px-12 md:py-10">
       {/* 960 — RATIO-SYSTEM.md 유틸리티 컬럼. ProjectForm 의 640 폼 컬럼 +
           260 미리보기 컬럼 + gap 이 여유 있게 들어간다. */}
       <div className="mx-auto max-w-[960px]">
@@ -384,7 +387,8 @@ function EditorContent({
           />
         </section>
       </div>
-    </main>
+      </main>
+    </div>
   );
 }
 
