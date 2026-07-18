@@ -16,11 +16,12 @@ tags: [architecture, infra, overview]
 ```
 ┌────────────────────────────────────────────────────────┐
 │ User                                                    │
-│ ├─ /                       ontology hub (when vault    │
+│ ├─ /                       topology hub (map + INDEX + │
+│ │                          datasheet, when vault       │
 │ │                          loaded) / landing (else)    │
-│ ├─ /topology               canvas-2D spatial map       │
+│ ├─ /topology               same hub, explicit entry     │
 │ ├─ /docs                   vault picker + editor       │
-│ ├─ /ontology               tree + ego graph            │
+│ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          xyflow ERD builder          │
 │ ├─ /ontology/insights      graph census + hubs + edges │
 │ ├─ /projects               project list                │
@@ -147,10 +148,10 @@ This is the "first impression" state — visitors see a real ontology
 ## Routes
 
 ```
-/                          ontology hub when vault loaded; landing when not
-/topology                  topology view (canvas-2D map/graph engine)
+/                          topology hub when vault loaded (map + INDEX + datasheet); landing when not
+/topology                  same hub, explicit entry point (canvas-2D map/graph engine)
 /docs                      vault picker / editor / unified palette
-/ontology                  tree + ego graph
+/ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             ERD canvas builder (xyflow)
 /ontology/insights         graph insights (kind dist · hubs · edge types)
 /projects                  project list (cards)

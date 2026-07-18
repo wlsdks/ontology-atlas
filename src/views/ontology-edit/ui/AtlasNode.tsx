@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { resolveDomainTint } from "@/shared/lib/domain-color";
+import { getOntologyKindIcon } from "@/entities/ontology-class";
 
 /**
  * Atlas custom node — kind 별 디자인 폴리시.
@@ -66,6 +67,21 @@ function portStyle(
   };
 }
 
+/**
+ * kind 글리프 — machined 카드의 좌측 아이콘. 색은 새 hue 를 안 만들고 호출부가
+ * (indigo 계열 또는 ephemeral amber) currentColor 로 물려준다 — "둘 이상의
+ * 채색 시스템 금지" 헌장 §11 준수.
+ *
+ * 소문자 헬퍼 함수로 둔 이유: 컴포넌트(대문자) 렌더 본문 안에서
+ * `getOntologyKindIcon(...)` 결과를 변수에 담아 바로 JSX 태그로 쓰면 "렌더 중
+ * 컴포넌트 생성" 린트 경고가 뜬다 (참조 자체는 안정적 lookup 이라 실제 버그는
+ * 아니지만, `OntologyKindPalette` 의 palette 카드 렌더와 같은 방식으로 피한다).
+ */
+function renderAtlasNodeKindGlyph(kind: AtlasNodeData["kind"]) {
+  const Icon = getOntologyKindIcon(kind === "ephemeral" ? "element" : kind);
+  return <Icon size={12} />;
+}
+
 export function AtlasNode({ data, selected }: NodeProps) {
   const t = useTranslations("ontologyPages.edit.atlasNode");
   const nodeData = data as AtlasNodeData;
@@ -101,11 +117,11 @@ export function AtlasNode({ data, selected }: NodeProps) {
   const showDomainTint = !isEphemeral && nodeData.domainSlug;
   // 선택 / hover / 기본 시각 위계 — interaction chrome 은 shadow elevation 으로만
   // 차별. scale / translate 금지.
-  //  - selected: indigo halo + ring (또는 ephemeral 의 amber halo)
+  //  - selected: 2px ring + elevation (glow 금지 — design.md의 glow-like boxShadow 목록)
   //  - hovered: 그림자 한 단계 강화 (rest 보다 또렷, selected 보단 약함)
   //  - rest: 살짝 떠있는 default shadow
   const selectedShadow = selected
-    ? `0 0 0 2px ${isEphemeral ? "rgba(255, 179, 71, 0.62)" : tone.accent}, 0 0 22px ${isEphemeral ? "rgba(255, 179, 71, 0.32)" : "rgba(139, 151, 255, 0.32)"}, 0 12px 28px rgba(0, 0, 0, 0.42)`
+    ? `0 0 0 2px ${isEphemeral ? "rgba(255, 179, 71, 0.62)" : tone.accent}, 0 12px 28px rgba(0, 0, 0, 0.42)`
     : null;
   const hoveredShadow = hovered
     ? "0 8px 22px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(139, 151, 255, 0.22)"
@@ -161,6 +177,25 @@ export function AtlasNode({ data, selected }: NodeProps) {
           gap: 8,
         }}
       >
+        <span
+          aria-hidden
+          style={{
+            display: "flex",
+            flex: "none",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 20,
+            height: 20,
+            borderRadius: 5,
+            border: `1px solid ${isEphemeral ? "rgba(255, 179, 71, 0.38)" : "rgba(255, 255, 255, 0.08)"}`,
+            background: isEphemeral
+              ? "rgba(255, 179, 71, 0.08)"
+              : "rgba(255, 255, 255, 0.03)",
+            color: isEphemeral ? ephemeralBadgeColor : tone.accent,
+          }}
+        >
+          {renderAtlasNodeKindGlyph(nodeData.kind)}
+        </span>
         {isEphemeral ? (
           <span
             aria-hidden

@@ -29,6 +29,7 @@ export {
 export {
   computeDomainCouplingMatrix,
   computeKindDistribution,
+  computeDegreeCentrality,
   rankAllByDegree,
   selectRecentNodes,
   buildContainmentParents,
