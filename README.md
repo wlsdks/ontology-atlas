@@ -311,7 +311,7 @@ config writing, packaging) stay in the installed macOS app.
 | **Vault integrity** | `pnpm vault:validate`, `test:vault:validate`, `vault:audit`, and `test:vault:audit` remain explicit local/release-preflight gates. |
 | **MCP/CLI contracts** | `pnpm test:cli:args`, `pnpm test:mcp:docs`, `pnpm package:check`, `pnpm test:contracts`, and focused `test:mcp:*` scripts cover the agent surface. |
 | **Graph hot paths** | `pnpm perf:graph:check` is part of `pnpm package:check`, so compile/query latency budgets run before release. |
-| **Dogfooding** | This repo's own vault has **108 nodes**: capabilities 36, document 3, domains 6, elements 61, project 1, vault-readme 1. |
+| **Dogfooding** | This repo's own vault has **103 nodes**: capabilities 36, document 3, domains 6, elements 56, project 1, vault-readme 1. |
 
 For the detailed maintainer command matrix, see
 [`docs/DEVELOPMENT-CHECKS.md`](docs/DEVELOPMENT-CHECKS.md).
