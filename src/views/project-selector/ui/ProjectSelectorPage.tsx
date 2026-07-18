@@ -278,7 +278,7 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
         <div className="mt-4 flex flex-col gap-2">
           {domainRows.map((row, index) => (
             <div key={row.domainId} className="flex items-center gap-4">
-              <span className="flex w-[220px] shrink-0 items-center gap-2 truncate text-[12.5px] text-[color:var(--color-text-secondary)]">
+              <span className="flex w-[280px] shrink-0 items-center gap-2 truncate text-[12.5px] text-[color:var(--color-text-secondary)]">
                 <TopologyV2KindGlyph kind="domain" size={14} />
                 {row.title}
               </span>
