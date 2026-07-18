@@ -309,7 +309,9 @@ function DocsVaultContent() {
   const queryView = parseView(searchParams?.get('view'));
   const queryDogfood = searchParams?.get('dogfood') ?? null;
   const projectsListHref = '/projects/';
-  const workspaceHref = '/';
+  // UX 감사 (2026-07): '/' 는 하드 내비게이션 시 vault 복원 전이라 랜딩으로
+  // 떨어지는 막다른 길이었다 — 크럼은 항상 지도 허브로 직행.
+  const workspaceHref = '/topology';
   const getDocHref = useCallback(
     (slug: string, hash?: string) => buildDocsVaultHref({ slug, hash }),
     [],

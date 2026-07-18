@@ -6,6 +6,14 @@ import { buildFullDetailReachModel } from "../lib/full-detail-reach";
 import { FullDetailA1 } from "./FullDetailA1";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),
