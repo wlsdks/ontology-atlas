@@ -31,12 +31,17 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-numeral-face": "#8c8c94",
   "--topology-v2-node-sheen-tint": "#232329",
   "--topology-v2-node-sheen-blend": "0.6",
+  "--topology-v2-project-hairline-inner": "rgba(212, 180, 120, .35)",
+  "--topology-v2-project-pin-tick": "rgba(212, 180, 120, .5)",
+  "--topology-v2-selection-ring-indigo": "#8890e0",
+  "--topology-v2-selection-ring-hairline": "rgba(94, 106, 210, .45)",
+  "--topology-v2-hover-ring": "rgba(94, 106, 210, .55)",
 
   "--topology-v2-edge-contains": "#28282e",
   "--topology-v2-edge-depends": "#39394a",
   "--topology-v2-edge-dim": "#1e1e22",
   "--topology-v2-hull-stroke": "#3a3a42",
-  "--topology-v2-label-project": "#ececf0",
+  "--topology-v2-label-project": "#d4b478",
   "--topology-v2-label-domain": "#b8b8c1",
   "--topology-v2-label-capability": "#84848c",
   "--topology-v2-label-element": "#6a6a73",
@@ -48,7 +53,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-vignette-base-alpha": "0.32",
   "--topology-v2-vignette-far-alpha": "0.18",
 
-  "--topology-v2-radius-project": "25",
+  "--topology-v2-radius-project": "30",
   "--topology-v2-radius-domain": "17",
   "--topology-v2-radius-capability": "11",
   "--topology-v2-radius-element": "7",
@@ -86,6 +91,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-breathe-amplitude": "0.04",
   "--topology-v2-breathe-freq-rad": "1.15",
   "--topology-v2-pulse-duration-ms": "420",
+  "--topology-v2-select-pulse-duration-ms": "180",
   "--topology-v2-tip-fade-ms": "120",
   "--topology-v2-edge-pulse-speed": "0.075",
   "--topology-v2-edge-pulse-speed-ego": "0.2",
@@ -104,7 +110,7 @@ function fixtureReader(overrides: Record<string, string> = {}) {
 }
 
 describe("resolveTopologyV2Tokens", () => {
-  it("resolves all 82 §2 tokens to the exact prototype-sourced values", () => {
+  it("resolves all 88 §2 tokens to the exact prototype-sourced values", () => {
     const tokens = resolveTopologyV2Tokens(fixtureReader());
 
     expect(tokens.nodeFillProject).toBe("#1c1c22");
@@ -113,13 +119,13 @@ describe("resolveTopologyV2Tokens", () => {
     expect(tokens.dragTug1Hop).toBeCloseTo(0.45, 3);
     expect(tokens.dragTug2Hop).toBeCloseTo(0.15, 3);
     expect(tokens.indigo).toBe("#5e6ad2");
-    expect(tokens.labelProject).toBe("#ececf0");
+    expect(tokens.labelProject).toBe("#d4b478");
     expect(tokens.labelMaxWidth).toBe(168);
     expect(tokens.safeInsetLeft).toBe(344);
     expect(tokens.safeInsetBottom).toBe(96);
     expect(tokens.nodeSheenTint).toBe("#232329");
     expect(tokens.nodeSheenBlend).toBeCloseTo(0.6, 3);
-    expect(tokens.radiusProject).toBe(25);
+    expect(tokens.radiusProject).toBe(30);
     expect(tokens.radiusElement).toBe(7);
     expect(tokens.cameraSpringAngFreqInteractive).toBeCloseTo(12, 3);
     expect(tokens.cameraSpringAngFreqTransition).toBeCloseTo(4.7, 3);
@@ -130,6 +136,12 @@ describe("resolveTopologyV2Tokens", () => {
     expect(tokens.tipFadeMs).toBe(120);
     expect(tokens.edgePulseSpeed).toBeCloseTo(0.075, 4);
     expect(tokens.edgePulseSpeedEgo).toBeCloseTo(0.2, 4);
+    expect(tokens.projectHairlineInner).toBe("rgba(212, 180, 120, .35)");
+    expect(tokens.projectPinTick).toBe("rgba(212, 180, 120, .5)");
+    expect(tokens.selectionRingIndigo).toBe("#8890e0");
+    expect(tokens.selectionRingHairline).toBe("rgba(94, 106, 210, .45)");
+    expect(tokens.hoverRing).toBe("rgba(94, 106, 210, .55)");
+    expect(tokens.selectPulseDurationMs).toBe(180);
   });
 
   it("parses declared numeric tokens as numbers, not strings", () => {

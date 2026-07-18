@@ -161,6 +161,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const egoRevealRef = useRef<Map<string, number>>(new Map());
   const rippleStartRef = useRef<Map<string, number>>(new Map());
   const reducedMotionRef = useRef(false);
+  /**
+   * Canvas-emphasis slice §B2 — the just-committed selection's one-shot
+   * commit-pulse anchor (which node, and when it was clicked). Set once per
+   * NEW selection by the "focused slug change" effect below, never mutated
+   * per-frame — `drawTopologyFrame` derives `now - startAtMs` itself every
+   * frame and lets `model/selection-pulse.ts#computeSelectionPulse` decide
+   * when the pulse has expired (no cleanup timer needed; an expired pulse
+   * just draws nothing).
+   */
+  const selectionPulseRef = useRef<{ nodeId: string; startAtMs: number } | null>(null);
 
   useEffect(() => {
     focusedSlugRef.current = focusedSlug;
@@ -348,6 +358,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (lastFocusedSlugRef.current === focusedSlug) return;
     lastFocusedSlugRef.current = focusedSlug;
 
+    // Canvas-emphasis slice §B2 — a NEW selection (never a deselect) starts
+    // the one-shot commit pulse. Captured unconditionally (before the
+    // tokens/world early-return below) so the pulse timestamp is never
+    // skipped even if the camera-target computation bails out for some
+    // reason.
+    selectionPulseRef.current = focusedSlug !== null ? { nodeId: focusedSlug, startAtMs: performance.now() } : null;
+
     const tokens = readTopologyV2TokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
@@ -523,6 +540,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         emphasisById: emphasisRef.current,
         egoRevealById: egoRevealRef.current,
         reducedMotion: reducedMotionRef.current,
+        selectionPulse: selectionPulseRef.current,
       });
 
       handle = requestAnimationFrame(frame);

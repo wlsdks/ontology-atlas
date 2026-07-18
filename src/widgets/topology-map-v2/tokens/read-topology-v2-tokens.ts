@@ -6,10 +6,12 @@
  * `skeletonInkRef` 해석-캐시 패턴 재사용). 값의 진실원은 여전히
  * `app/globals.css` 하나 — 이 파일은 읽기 전용 어댑터다.
  *
- * 토큰 drift 가드: §2 표에 있는 82개 토큰(C1 — camera-max/min-zoom-ratio +
+ * 토큰 drift 가드: §2 표에 있는 88개 토큰(C1 — camera-max/min-zoom-ratio +
  * drag-tug-1hop/2hop 4종 추가, dive-zoom fix — camera-spring-angfreq 를
- * -interactive/-transition 둘로 분리해 순증 1) 중 하나라도 빈 문자열로
- * 해석되면(= `app/globals.css` 에서 삭제/오타) 조용히 기본값으로 폴백하지 않고
+ * -interactive/-transition 둘로 분리해 순증 1; canvas-emphasis 슬라이스 — 프로젝트
+ * 헥사곤 이중 헤어라인/핀틱 2종 + 선택 링/선택 헤어라인/호버 링 3종 + 선택
+ * 펄스 duration 1종, 순증 6) 중 하나라도 빈 문자열로 해석되면(=
+ * `app/globals.css` 에서 삭제/오타) 조용히 기본값으로 폴백하지 않고
  * `TopologyV2TokenError` 를 던진다 — 누락을 "감"으로 흡수하지 않기 위해.
  */
 
@@ -35,6 +37,16 @@ export interface TopologyV2Tokens {
   numeralFace: string;
   nodeSheenTint: string;
   nodeSheenBlend: number;
+  /** Canvas-emphasis slice — project hexagon's inner offset hairline (double-hairline "machined bezel", spec §A1). */
+  projectHairlineInner: string;
+  /** Canvas-emphasis slice — project hexagon's 4-direction chassis-leg pin ticks (spec §A2). */
+  projectPinTick: string;
+  /** Canvas-emphasis slice — the selected node's static 2px ring color (spec §B1). */
+  selectionRingIndigo: string;
+  /** Canvas-emphasis slice — the selected node's outer 6px hairline ring color (spec §B1). */
+  selectionRingHairline: string;
+  /** Canvas-emphasis slice — the hovered node's static 1px preview ring color (spec §C). */
+  hoverRing: string;
 
   // 2.2 엣지 · 라벨 · 배경
   edgeContains: string;
@@ -109,6 +121,14 @@ export interface TopologyV2Tokens {
   breatheAmplitude: number;
   breatheFreqRad: number;
   pulseDurationMs: number;
+  /**
+   * Canvas-emphasis slice — the just-selected node's one-shot commit-pulse
+   * duration (`model/selection-pulse.ts#computeSelectionPulse`), separate
+   * from the unrelated (and much longer, 420ms) `pulseDurationMs` above —
+   * that token is reserved for a different future pulse and this slice
+   * doesn't touch it. Owner ceiling: ≤200ms; 180 leaves margin.
+   */
+  selectPulseDurationMs: number;
   tipFadeMs: number;
   edgePulseSpeed: number;
   edgePulseSpeedEgo: number;
@@ -154,6 +174,11 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "numeralFace", cssVar: "--topology-v2-numeral-face", kind: "color" },
   { key: "nodeSheenTint", cssVar: "--topology-v2-node-sheen-tint", kind: "color" },
   { key: "nodeSheenBlend", cssVar: "--topology-v2-node-sheen-blend", kind: "number" },
+  { key: "projectHairlineInner", cssVar: "--topology-v2-project-hairline-inner", kind: "color" },
+  { key: "projectPinTick", cssVar: "--topology-v2-project-pin-tick", kind: "color" },
+  { key: "selectionRingIndigo", cssVar: "--topology-v2-selection-ring-indigo", kind: "color" },
+  { key: "selectionRingHairline", cssVar: "--topology-v2-selection-ring-hairline", kind: "color" },
+  { key: "hoverRing", cssVar: "--topology-v2-hover-ring", kind: "color" },
 
   { key: "edgeContains", cssVar: "--topology-v2-edge-contains", kind: "color" },
   { key: "edgeDepends", cssVar: "--topology-v2-edge-depends", kind: "color" },
@@ -209,6 +234,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "breatheAmplitude", cssVar: "--topology-v2-breathe-amplitude", kind: "number" },
   { key: "breatheFreqRad", cssVar: "--topology-v2-breathe-freq-rad", kind: "number" },
   { key: "pulseDurationMs", cssVar: "--topology-v2-pulse-duration-ms", kind: "number" },
+  { key: "selectPulseDurationMs", cssVar: "--topology-v2-select-pulse-duration-ms", kind: "number" },
   { key: "tipFadeMs", cssVar: "--topology-v2-tip-fade-ms", kind: "number" },
   { key: "edgePulseSpeed", cssVar: "--topology-v2-edge-pulse-speed", kind: "number" },
   { key: "edgePulseSpeedEgo", cssVar: "--topology-v2-edge-pulse-speed-ego", kind: "number" },
@@ -233,7 +259,7 @@ export class TopologyV2TokenError extends Error {
 }
 
 /**
- * `getComputedStyle` 결과(또는 테스트용 대체 함수)에서 82개 토큰 전부를
+ * `getComputedStyle` 결과(또는 테스트용 대체 함수)에서 88개 토큰 전부를
  * 해석한다. 하나라도 빈 문자열이면 `TopologyV2TokenError` 를 던진다 — 이게
  * §2.3 "누락 시 명시적 실패" 계약.
  */
