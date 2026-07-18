@@ -270,43 +270,18 @@ describe('i18n message catalog', () => {
     );
   });
 
-  it('keeps topology overview framed as a product/system map for team inspection decisions', async () => {
+  it('keeps the topology overview agent handoff brief readable (분석 패널 완전 소멸 2단계 — TopologyAnalysisBar 삭제 후 INDEX 푸터 인계 메뉴가 유일한 소비처)', async () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
-    assert.equal(en.topology.analysis.overviewWorkOrderTitle, 'Proof order');
-    assert.equal(en.topology.analysis.overviewWorkOrderRead, 'Read evidence-backed map');
-    assert.equal(en.topology.analysis.overviewWorkOrderFocus, 'Focus graph handle');
-    assert.equal(en.topology.analysis.overviewWorkOrderPath, 'Prove path evidence');
-    assert.equal(en.topology.analysis.overviewWorkOrderHealth, 'Close health gate');
-    assert.equal(en.topology.analysis.overviewHandoffSummary, 'Next step');
-    assert.equal(en.topology.analysis.overviewCopyTools, 'Prepare agent handoff');
-    assert.equal(en.topology.analysis.overviewReaderLensTitle, 'Reader lens');
-    assert.match(en.topology.analysis.overviewReaderLensDomains, /domains/i);
-    assert.match(en.topology.analysis.overviewReaderLensCapabilities, /capabilities/i);
-    assert.match(en.topology.analysis.overviewReaderLensChangePaths, /agent/i);
     assert.equal(en.topology.controls.docsTooltip, 'Ontology workspace quick look (D)');
     assert.equal(
       en.topology.controls.docsAriaLabel,
       'Open ontology workspace quick look (D)',
     );
     assert.equal(en.topology.controls.docsLabel, 'Workspace');
-    assert.match(en.topology.analysis.overviewPrompt, /product\/system map/i);
-    assert.equal(ko.topology.analysis.overviewCopyTools, '에이전트 인계 준비');
-    assert.equal(ko.topology.analysis.overviewReaderLensTitle, '읽는 순서');
-    assert.match(ko.topology.analysis.overviewReaderLensDomains, /핵심 영역/);
-    assert.match(ko.topology.analysis.overviewReaderLensCapabilities, /기능/);
-    assert.match(ko.topology.analysis.overviewReaderLensChangePaths, /에이전트/);
-    assert.match(en.topology.analysis.overviewPrompt, /domains, capabilities, and change paths/i);
-    assert.match(en.topology.analysis.overviewPrompt, /team inspection and sharing/i);
-    assert.doesNotMatch(en.topology.analysis.overviewPrompt, /agent handoff/i);
     assert.doesNotMatch(
       [
-        en.topology.analysis.overviewWorkOrderTitle,
-        en.topology.analysis.overviewWorkOrderRead,
-        en.topology.analysis.overviewWorkOrderFocus,
-        en.topology.analysis.overviewWorkOrderPath,
-        en.topology.analysis.overviewWorkOrderHealth,
         en.topology.controls.docsTooltip,
         en.topology.controls.docsAriaLabel,
         en.topology.controls.docsLabel,
@@ -314,14 +289,6 @@ describe('i18n message catalog', () => {
       /Quick view|See all|Pick one|See links|Clean up health|Source vault|source vault|^Source$/m,
     );
 
-    assert.equal(ko.topology.analysis.overviewWorkOrderTitle, '검증 순서');
-    assert.equal(ko.topology.analysis.title, '지형도 분석 모드');
-    assert.equal(ko.topology.analysis.overviewWorkOrderRead, '근거 있는 지도 읽기');
-    assert.equal(ko.topology.analysis.overviewWorkOrderFocus, '그래프 기준점 선택');
-    assert.equal(ko.topology.analysis.overviewWorkOrderPath, '경로 근거 검증');
-    assert.equal(ko.topology.analysis.overviewWorkOrderHealth, '상태 신호 확인');
-    assert.equal(ko.topology.analysis.overviewHandoffSummary, '다음 단계');
-    assert.equal(ko.topology.analysis.overviewCopyTools, '에이전트 인계 준비');
     assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '지형도 지도 요약 복사');
     assert.equal(ko.topology.analysis.overviewBriefCopiedAriaLabel, '지형도 지도 요약 복사됨');
     assert.equal(ko.topology.analysis.overviewBriefTitle, '지형도 지도 요약');
@@ -339,19 +306,9 @@ describe('i18n message catalog', () => {
       '온톨로지 워크스페이스 빠른 보기 열기 (D)',
     );
     assert.equal(ko.topology.controls.docsLabel, '작업공간');
-    assert.match(ko.topology.analysis.overviewPrompt, /제품\/시스템 지도/);
-    assert.match(ko.topology.analysis.overviewPrompt, /영역, 기능, 변경 경로/);
-    assert.match(ko.topology.analysis.overviewPrompt, /점검과 공유/);
-    assert.doesNotMatch(ko.topology.analysis.overviewPrompt, /에이전트 인계/);
     assert.equal(ko.topology.controls.relayoutToast, '지형도를 다시 정렬합니다');
     assert.doesNotMatch(
       [
-        ko.topology.analysis.title,
-        ko.topology.analysis.overviewWorkOrderTitle,
-        ko.topology.analysis.overviewWorkOrderRead,
-        ko.topology.analysis.overviewWorkOrderFocus,
-        ko.topology.analysis.overviewWorkOrderPath,
-        ko.topology.analysis.overviewWorkOrderHealth,
         ko.topology.analysis.overviewBriefCopyAriaLabel,
         ko.topology.analysis.overviewBriefCopiedAriaLabel,
         ko.topology.analysis.overviewBriefTitle,
@@ -370,243 +327,43 @@ describe('i18n message catalog', () => {
     );
   });
 
-  it('keeps Korean topology focus handoff copy readable', async () => {
-    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
-    const focusCopy = ko.topology.analysis;
-
-    assert.equal(focusCopy.focusMcpCopy, '개념 점검 복사');
-    assert.equal(focusCopy.focusMcpCopied, '개념 점검 복사됨');
-    assert.equal(focusCopy.focusMcpImpactCopy, '영향 점검 복사');
-    assert.equal(focusCopy.focusMcpImpactCopied, '영향 점검 복사됨');
-    assert.equal(focusCopy.focusSyncGateCopy, '동기화 점검 복사');
-    assert.equal(focusCopy.focusSyncGateCopied, '동기화 점검 복사됨');
-    assert.equal(focusCopy.focusBriefCopy, '선택 브리프 복사');
-    assert.equal(focusCopy.focusBriefCopied, '선택 브리프 복사됨');
-    assert.equal(focusCopy.focusReviewOrderTitle, '선택 개념 검토 순서');
-    assert.equal(focusCopy.focusReviewOrderProfile, '개념 브리프 읽기');
-    assert.equal(focusCopy.focusReviewOrderImpact, '들어오는 영향 추적');
-    assert.equal(focusCopy.focusReviewOrderSync, '동기화 점검 실행');
-    assert.equal(focusCopy.focusMcpCopyAriaLabel, '지형도 선택 개념 점검 복사');
-    assert.equal(focusCopy.focusMcpImpactCopyAriaLabel, '지형도 선택 개념 영향 점검 복사');
-    assert.equal(focusCopy.focusSyncGateCopyAriaLabel, '지형도 선택 개념 수정 후 동기화 점검 복사');
-    assert.equal(focusCopy.focusBriefCopyAriaLabel, '지형도 선택 개념 검토 브리프 복사');
-    assert.equal(focusCopy.focusBriefCopiedAriaLabel, '지형도 선택 개념 검토 브리프 복사됨');
-    assert.equal(focusCopy.focusBriefTitle, '지형도 선택 개념 검토');
-    assert.equal(focusCopy.focusBriefOntologyUrl, '개념 문서 URL');
-    assert.equal(focusCopy.focusBriefReviewFocus, '검토 URL');
-    assert.equal(focusCopy.focusBriefAgentCheck, '에이전트 점검');
-    assert.equal(focusCopy.focusBriefImpactCheck, '영향 점검');
-    assert.equal(focusCopy.focusBriefMcpImpactCheck, 'MCP 영향 점검');
-    assert.equal(focusCopy.focusBriefSyncGate, '수정 후 동기화 점검');
-
-    assert.doesNotMatch(
-      [
-        focusCopy.focusMcpCopy,
-        focusCopy.focusMcpCopied,
-        focusCopy.focusMcpImpactCopy,
-        focusCopy.focusMcpImpactCopied,
-        focusCopy.focusSyncGateCopy,
-        focusCopy.focusSyncGateCopied,
-        focusCopy.focusBriefCopy,
-        focusCopy.focusBriefCopied,
-        focusCopy.focusReviewOrderTitle,
-        focusCopy.focusReviewOrderProfile,
-        focusCopy.focusReviewOrderImpact,
-        focusCopy.focusReviewOrderSync,
-        focusCopy.focusMcpCopyAriaLabel,
-        focusCopy.focusMcpImpactCopyAriaLabel,
-        focusCopy.focusSyncGateCopyAriaLabel,
-        focusCopy.focusBriefCopyAriaLabel,
-        focusCopy.focusBriefCopiedAriaLabel,
-        focusCopy.focusBriefTitle,
-        focusCopy.focusBriefOntologyUrl,
-        focusCopy.focusBriefReviewFocus,
-        focusCopy.focusBriefAgentCheck,
-        focusCopy.focusBriefImpactCheck,
-        focusCopy.focusBriefMcpImpactCheck,
-        focusCopy.focusBriefSyncGate,
-      ].join('\n'),
-      /토폴로지|Topology|focus|profile|impact|sync gate|Review URL|Ontology URL|Agent 점검|Impact 점검/,
-    );
-  });
-
-  it('keeps English topology focus and path copy labels mode-specific', async () => {
-    const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
-    const copy = en.topology.analysis;
-
-    assert.equal(copy.focusBriefCopy, 'Copy focus brief');
-    assert.equal(copy.focusBriefCopied, 'Focus brief copied');
-    assert.equal(copy.pathEvidenceCopy, 'Copy path evidence');
-    assert.equal(copy.pathEvidenceCopied, 'Path evidence copied');
-    assert.notEqual(copy.focusBriefCopy, copy.pathEvidenceCopy);
-    assert.notEqual(copy.focusBriefCopied, copy.pathEvidenceCopied);
-  });
-
-
-  it('keeps Korean topology health handoff copy readable', async () => {
+  it('keeps the topology path chip copy readable (분석 패널 완전 소멸 2단계 §b — replaces the retired path panel copy)', async () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
-    const enHealthCopy = en.topology.analysis;
-    const healthCopy = ko.topology.analysis;
+    const enCopy = en.topology.analysis;
+    const koCopy = ko.topology.analysis;
 
-    assert.equal(enHealthCopy.healthMcpCopy, 'Copy health check');
-    assert.equal(enHealthCopy.healthMcpImpactCopy, 'Copy health impact');
-    assert.equal(enHealthCopy.healthSyncGateCopy, 'Copy health sync');
-    assert.equal(healthCopy.healthCopy, '근거 복사');
-    assert.equal(healthCopy.healthOpenOntology, '개념 문서');
-    assert.equal(healthCopy.healthRepair, '관계 편집');
-    assert.equal(healthCopy.healthCopyTools, '점검 복사 도구');
-    assert.equal(healthCopy.healthMcpCopy, 'MCP 상태 점검 복사');
-    assert.equal(healthCopy.healthMcpCopied, 'MCP 상태 점검 복사됨');
-    assert.equal(healthCopy.healthMcpImpactCopy, 'MCP 영향 점검 복사');
-    assert.equal(healthCopy.healthMcpImpactCopied, 'MCP 영향 점검 복사됨');
-    assert.equal(healthCopy.healthSyncGateCopy, '동기화 점검 복사');
-    assert.equal(healthCopy.healthSyncGateCopied, '동기화 점검 복사됨');
-    assert.equal(healthCopy.healthRepairOrderSync, '동기화 점검 실행');
-    assert.equal(healthCopy.healthMcpCopyAriaLabel, '지형도 상태 MCP 점검 복사');
-    assert.equal(healthCopy.healthMcpImpactCopyAriaLabel, '지형도 상태 MCP 영향 점검 복사');
-    assert.equal(healthCopy.healthSyncGateCopyAriaLabel, '지형도 상태 수리 후 동기화 점검 복사');
-    assert.equal(healthCopy.healthCopyAriaLabel, '지형도 상태 점검 근거 복사');
-    assert.equal(healthCopy.healthEvidenceTitle, '지형도 상태 점검 근거');
-    assert.equal(healthCopy.healthEvidenceOntologyUrl, '개념 문서 URL');
-    assert.equal(healthCopy.healthStale, '오래된 근거');
-    assert.equal(healthCopy.healthOrphan, '소속 미정');
-    assert.equal(healthCopy.healthPromotion, '상위 개념 후보');
-    assert.equal(healthCopy.healthEvidenceActionKindStale, healthCopy.healthStale);
-    assert.equal(healthCopy.healthEvidenceActionKindOrphan, healthCopy.healthOrphan);
-    assert.equal(healthCopy.healthEvidenceActionKindPromotion, healthCopy.healthPromotion);
-    assert.equal(healthCopy.healthEvidenceAgentCheck, '에이전트 점검');
-    assert.equal(healthCopy.healthEvidenceRelationPreflight, '소유 관계 사전 점검');
-    assert.equal(healthCopy.healthEvidenceMcpRelationPreflight, 'MCP 소유 관계 사전 점검');
-    assert.equal(healthCopy.healthEvidenceImpactCheck, '영향 점검');
-    assert.equal(healthCopy.healthEvidenceMcpImpactCheck, 'MCP 영향 점검');
-    assert.equal(healthCopy.healthEvidenceSyncGate, '수리 후 동기화 점검');
+    assert.match(enCopy.pathChipUnresolved, /choose a target/i);
+    assert.match(enCopy.pathChipResolved, /hops/i);
+    assert.match(enCopy.pathChipNoPath, /no path/i);
+    assert.equal(enCopy.pathChipCopyPacket, 'Copy path packet');
+    assert.equal(enCopy.pathChipClear, 'Clear path');
+    assert.match(koCopy.pathChipUnresolved, /대상 선택/);
+    assert.match(koCopy.pathChipResolved, /홉/);
+    assert.match(koCopy.pathChipNoPath, /경로 없음/);
+    assert.equal(koCopy.pathChipCopyPacket, '경로 패킷 복사');
+    assert.equal(koCopy.pathChipClear, '경로 지우기');
 
     assert.doesNotMatch(
       [
-        healthCopy.healthCopy,
-        healthCopy.healthOpenOntology,
-        healthCopy.healthRepair,
-        healthCopy.healthCopyTools,
-        healthCopy.healthMcpCopy,
-        healthCopy.healthMcpCopied,
-        healthCopy.healthMcpImpactCopy,
-        healthCopy.healthMcpImpactCopied,
-        healthCopy.healthSyncGateCopy,
-        healthCopy.healthSyncGateCopied,
-        healthCopy.healthRepairOrderSync,
-        healthCopy.healthMcpCopyAriaLabel,
-        healthCopy.healthMcpImpactCopyAriaLabel,
-        healthCopy.healthSyncGateCopyAriaLabel,
-        healthCopy.healthCopyAriaLabel,
-        healthCopy.healthEvidenceTitle,
-        healthCopy.healthEvidenceOntologyUrl,
-        healthCopy.healthStale,
-        healthCopy.healthOrphan,
-        healthCopy.healthPromotion,
-        healthCopy.healthEvidenceAgentCheck,
-        healthCopy.healthEvidenceRelationPreflight,
-        healthCopy.healthEvidenceMcpRelationPreflight,
-        healthCopy.healthEvidenceImpactCheck,
-        healthCopy.healthEvidenceMcpImpactCheck,
-        healthCopy.healthEvidenceSyncGate,
+        enCopy.pathChipUnresolved,
+        enCopy.pathChipResolved,
+        enCopy.pathChipNoPath,
+        enCopy.pathChipCopyPacket,
+        enCopy.pathChipClear,
+        enCopy.pathChipPacketMcpCheck,
       ].join('\n'),
-      /토폴로지 health|Topology health|Ontology URL|impact|sync gate|Agent 점검|preflight|위치 없음|승격|^문서$|^수정$/m,
+      /Topology|topology|CLI|relation_check|explain_relation|all_paths|proof|checklist/,
     );
-  });
-
-  it('keeps Korean topology path handoff copy readable', async () => {
-    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
-    const pathCopy = ko.topology.analysis;
-
-    assert.equal(pathCopy.pathEvidenceCopy, '경로 근거 복사');
-    assert.equal(pathCopy.pathEvidenceCopied, '경로 근거 복사됨');
-    assert.equal(pathCopy.pathEvidenceCopyAriaLabel, '지형도 경로 근거 복사');
-    assert.equal(pathCopy.pathMcpCopy, 'MCP 경로 점검 복사');
-    assert.equal(pathCopy.pathMcpCopied, 'MCP 경로 점검 복사됨');
-    assert.equal(pathCopy.pathMcpCopyAriaLabel, '지형도 경로 MCP 점검 복사');
-    assert.equal(pathCopy.pathRelationPreflightCopy, '관계 사전 점검 복사');
-    assert.equal(pathCopy.pathRelationPreflightCopied, '관계 사전 점검 복사됨');
-    assert.equal(pathCopy.pathRelationPreflightCopyAriaLabel, '지형도 경로 관계 사전 점검 복사');
-    assert.equal(pathCopy.pathExplainRelationCopy, '관계 설명 복사');
-    assert.equal(pathCopy.pathExplainRelationCopied, '관계 설명 복사됨');
-    assert.equal(pathCopy.pathExplainRelationCopyAriaLabel, '지형도 경로 관계 설명 점검 복사');
-    assert.equal(pathCopy.pathAllPathsPlanCopy, '전체 경로 계획 복사');
-    assert.equal(pathCopy.pathAllPathsPlanCopied, '전체 경로 계획 복사됨');
-    assert.equal(pathCopy.pathAllPathsPlanCopyAriaLabel, '지형도 전체 경로 계획 복사');
-    assert.equal(pathCopy.pathAllPathsCopy, '전체 경로 실행 복사');
-    assert.equal(pathCopy.pathAllPathsCopied, '전체 경로 실행 복사됨');
-    assert.equal(pathCopy.pathAllPathsCopyAriaLabel, '지형도 전체 경로 실행 점검 복사');
-    assert.equal(pathCopy.pathProofOrderTitle, '경로 검증 순서');
-    assert.equal(
-      pathCopy.pathProofOrderDesc,
-      '두 노드 사이의 경로와 필요한 점검 순서를 함께 보여줍니다.',
-    );
-    assert.equal(pathCopy.pathProofChecklist, '검증 순서');
-    assert.equal(pathCopy.pathProofVisiblePath, '화면에 보이는 경로');
-    assert.equal(pathCopy.pathProofRelationPreflight, '관계 방향 확인');
-    assert.equal(pathCopy.pathProofExplainRelation, '연결 이유 설명');
-    assert.equal(pathCopy.pathProofBoundedTraversal, '다른 경로 비교');
-    assert.equal(pathCopy.pathProofPostWriteSync, '수정 후 동기화');
-    assert.equal(pathCopy.pathProofStatusReady, '준비됨');
-    assert.equal(pathCopy.pathProofStatusRequired, '필수');
-    assert.equal(pathCopy.pathProofStatusAfterWrite, '수정 후');
-    assert.equal(pathCopy.pathEvidenceTitle, '지형도 경로 근거');
-    assert.equal(pathCopy.pathEvidenceUrl, '경로 화면 URL');
-    assert.equal(pathCopy.pathEvidenceSourceOntologyUrl, '시작점 개념 문서 URL');
-    assert.equal(pathCopy.pathEvidenceTargetOntologyUrl, '대상 개념 문서 URL');
-    assert.equal(pathCopy.pathEvidenceRelationPreflightReason, '관계 사전 점검 이유');
-    assert.equal(pathCopy.pathEvidenceRelationPreflightMcpCheck, 'MCP 관계 사전 점검');
-    assert.equal(pathCopy.pathEvidenceExplainRelationMcpCheck, 'MCP 관계 설명 점검');
-    assert.equal(pathCopy.pathEvidenceAllPathsPlanMcpCheck, 'MCP 전체 경로 계획');
-    assert.equal(pathCopy.pathEvidenceAllPathsMcpCheck, 'MCP 전체 경로 점검');
-    assert.equal(pathCopy.pathEvidenceAllPathsCopyInstruction, '전체 경로 근거 계약');
-    assert.equal(pathCopy.pathEvidencePostWriteSyncGate, '수정 후 동기화 점검');
-
     assert.doesNotMatch(
       [
-        pathCopy.pathEvidenceCopy,
-        pathCopy.pathEvidenceCopied,
-        pathCopy.pathEvidenceCopyAriaLabel,
-        pathCopy.pathMcpCopy,
-        pathCopy.pathMcpCopied,
-        pathCopy.pathMcpCopyAriaLabel,
-        pathCopy.pathRelationPreflightCopy,
-        pathCopy.pathRelationPreflightCopied,
-        pathCopy.pathRelationPreflightCopyAriaLabel,
-        pathCopy.pathExplainRelationCopy,
-        pathCopy.pathExplainRelationCopied,
-        pathCopy.pathExplainRelationCopyAriaLabel,
-        pathCopy.pathAllPathsPlanCopy,
-        pathCopy.pathAllPathsPlanCopied,
-        pathCopy.pathAllPathsPlanCopyAriaLabel,
-        pathCopy.pathAllPathsCopy,
-        pathCopy.pathAllPathsCopied,
-        pathCopy.pathAllPathsCopyAriaLabel,
-        pathCopy.pathProofOrderTitle,
-        pathCopy.pathProofOrderDesc,
-        pathCopy.pathProofChecklist,
-        pathCopy.pathProofVisiblePath,
-        pathCopy.pathProofRelationPreflight,
-        pathCopy.pathProofExplainRelation,
-        pathCopy.pathProofBoundedTraversal,
-        pathCopy.pathProofPostWriteSync,
-        pathCopy.pathProofStatusReady,
-        pathCopy.pathProofStatusRequired,
-        pathCopy.pathProofStatusAfterWrite,
-        pathCopy.pathEvidenceTitle,
-        pathCopy.pathEvidenceUrl,
-        pathCopy.pathEvidenceSourceOntologyUrl,
-        pathCopy.pathEvidenceTargetOntologyUrl,
-        pathCopy.pathEvidenceRelationPreflightReason,
-        pathCopy.pathEvidenceRelationPreflightMcpCheck,
-        pathCopy.pathEvidenceExplainRelationMcpCheck,
-        pathCopy.pathEvidenceAllPathsPlanMcpCheck,
-        pathCopy.pathEvidenceAllPathsMcpCheck,
-        pathCopy.pathEvidenceAllPathsCopyInstruction,
-        pathCopy.pathEvidencePostWriteSyncGate,
+        koCopy.pathChipUnresolved,
+        koCopy.pathChipResolved,
+        koCopy.pathChipNoPath,
+        koCopy.pathChipCopyPacket,
+        koCopy.pathChipClear,
       ].join('\n'),
-      /토폴로지|Topology|path|Path|Relation|relation|ontology URL|Ontology URL|preflight|explain_relation|all_paths|sync gate|evidence|ready|required|after write|write 후/,
+      /토폴로지|검증 순서|사전 점검|설명 점검|전체 경로/,
     );
   });
 

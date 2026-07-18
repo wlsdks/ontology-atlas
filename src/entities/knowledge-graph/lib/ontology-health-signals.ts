@@ -103,3 +103,47 @@ function toSignalCandidate(node: KnowledgeGraphNode): OntologyHealthSignalCandid
     name: node.title,
   };
 }
+
+export interface OntologyHealthActionTarget {
+  slug: string;
+  title: string;
+  kind: "stale" | "orphan" | "promotion";
+}
+
+/**
+ * Picks ONE actionable repair target from the three health-signal buckets —
+ * stale first (evidence is aging), then orphan (no owner yet), then
+ * promotion (statistical suggestion, lowest urgency). Moved here from
+ * `views/home/lib/topology-analysis.ts` (still re-exported there under its
+ * old name for the topology map's health chip) so `/ontology/insights`'
+ * RelationsTab "수리 큐" section (분석 패널 완전 소멸 2단계 §c) can reuse the
+ * SAME picking rule without a cross-view import — both surfaces read this
+ * one entities-level function, so the two "next repair" targets can never
+ * drift.
+ */
+export function buildOntologyHealthActionTarget({
+  stale,
+  orphan,
+  promotion,
+}: {
+  stale: readonly OntologyHealthSignalCandidate[];
+  orphan: readonly OntologyHealthSignalCandidate[];
+  promotion: readonly OntologyHealthSignalCandidate[];
+}): OntologyHealthActionTarget | null {
+  const firstStale = stale[0];
+  if (firstStale) {
+    return { slug: firstStale.slug, title: firstStale.name, kind: "stale" };
+  }
+
+  const firstOrphan = orphan[0];
+  if (firstOrphan) {
+    return { slug: firstOrphan.slug, title: firstOrphan.name, kind: "orphan" };
+  }
+
+  const firstPromotion = promotion[0];
+  if (firstPromotion) {
+    return { slug: firstPromotion.slug, title: firstPromotion.name, kind: "promotion" };
+  }
+
+  return null;
+}

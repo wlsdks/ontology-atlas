@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -16,6 +16,14 @@ interface Props {
    * 검색/정렬 utility lane은 tablet 이상에서만 남겨 hit area 충돌을 피한다.
    */
   phoneFocusSuppressed?: boolean;
+  /**
+   * path 모드 상태 칩(`TopologyPathChip`, 분석 패널 완전 소멸 2단계 §b) —
+   * "상단 중앙 검색 옆"이라는 배치 요구를 이 컴포넌트의 기존 중앙 정렬
+   * 계산(`md:left-1/2 md:-translate-x-1/2`)에 얹어 새 절대 위치 계산 없이
+   * 만족한다. 이 슬롯이 있을 때만 렌더 — path 모드가 아니면 완전히 비어
+   * 기존 검색/정렬 2버튼 레이아웃과 동일하다.
+   */
+  pathChip?: ReactNode;
 }
 
 const subscribe = () => () => {};
@@ -38,6 +46,7 @@ export function SearchHint({
   onRelayout,
   density = 'default',
   phoneFocusSuppressed = false,
+  pathChip,
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
@@ -72,6 +81,7 @@ export function SearchHint({
       data-search-lane-shadow-token="--chrome-shadow"
     >
       <div className="flex items-center gap-2">
+        {pathChip}
         {/* 자동 정렬 — 데스크톱에서만 노출. 모바일에서는 자주 안 쓰는 액션이라
             우상단 floating 버튼이 시각적 무게를 잡아먹는 게 더 큰 손실. 필요하면
             그래프 컨트롤 패널 안에서 트리거. wrapper 의 hidden/md:block 이

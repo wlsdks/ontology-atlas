@@ -1,15 +1,16 @@
 import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import type { TopologyAnalysisMode } from "../model/url-state";
 import {
-  explainOntologyRelationKeyForGraphIds,
-  inferOntologyRelationKeyForGraphIds,
-} from "@/shared/lib/ontology-relation-key";
-import {
   buildOntologyBuilderNodeHrefFromGraphId,
+  buildOntologyHealthActionTarget,
   buildOntologyNodeHref,
   classifyRelationQuality,
   type KnowledgeGraphEdge,
+  type KnowledgeGraphNode,
+  type OntologyHealthActionTarget,
+  type OntologyHealthSignalCandidate,
 } from "@/entities/knowledge-graph";
+import { buildOntologyReachability } from "@/shared/lib/ontology-tree";
 
 export interface TopologyAnalysisSummaryInput {
   mode: TopologyAnalysisMode;
@@ -53,16 +54,17 @@ export interface TopologyAnalysisSummary {
   relationQuality?: TopologyRelationQualityBreakdown;
 }
 
-export interface TopologyHealthActionCandidate {
-  slug: string;
-  name: string;
-}
-
-export interface TopologyHealthActionTarget {
-  slug: string;
-  title: string;
-  kind: "stale" | "orphan" | "promotion";
-}
+/**
+ * Re-exported under this file's historical name — the picking rule itself
+ * now lives at `entities/knowledge-graph/lib/ontology-health-signals.ts` so
+ * `/ontology/insights`' RelationsTab "수리 큐" section (분석 패널 완전 소멸
+ * 2단계 §c) can reuse the SAME function without a cross-view import
+ * (`views/home` → `views/ontology-insights` would violate FSD's "avoid
+ * same-layer cross-import" guidance). Both surfaces' "next repair target"
+ * can't drift because they call the one entities-level function.
+ */
+export type TopologyHealthActionCandidate = OntologyHealthSignalCandidate;
+export type TopologyHealthActionTarget = OntologyHealthActionTarget;
 
 export interface TopologyHealthBriefLabels {
   title: string;
@@ -122,49 +124,6 @@ export interface TopologyOverviewBriefLabels {
   mcpQueryPlan: string;
   workspaceCheck: string;
   mcpWorkspaceCheck: string;
-}
-
-export interface TopologyFocusBriefLabels {
-  title: string;
-  node: string;
-  url: string;
-  ontologyUrl: string;
-  builderUrl: string;
-  reviewFocus: string;
-  agentCheck: string;
-  mcpCheck: string;
-  impactCheck: string;
-  mcpImpactCheck: string;
-  syncGate: string;
-}
-
-export interface TopologyPathEvidenceBriefLabels {
-  title: string;
-  source: string;
-  target: string;
-  url: string;
-  sourceOntologyUrl: string;
-  targetOntologyUrl: string;
-  sourceBuilderUrl: string;
-  targetBuilderUrl: string;
-  cliCheck: string;
-  mcpCheck: string;
-  relationPreflightReason: string;
-  relationPreflightMcpCheck: string;
-  explainRelationMcpCheck: string;
-  allPathsPlanMcpCheck: string;
-  allPathsMcpCheck: string;
-  allPathsEvidenceContract: string;
-  proofChecklist: string;
-  proofVisiblePath: string;
-  proofRelationPreflight: string;
-  proofExplainRelation: string;
-  proofBoundedTraversal: string;
-  proofPostWriteSync: string;
-  proofStatusReady: string;
-  proofStatusRequired: string;
-  proofStatusAfterWrite: string;
-  syncGate: string;
 }
 
 export function buildTopologyAnalysisSummary(
@@ -229,44 +188,7 @@ export function buildTopologyAnalysisSummary(
   };
 }
 
-export function buildTopologyHealthActionTarget({
-  stale,
-  orphan,
-  promotion,
-}: {
-  stale: readonly TopologyHealthActionCandidate[];
-  orphan: readonly TopologyHealthActionCandidate[];
-  promotion: readonly TopologyHealthActionCandidate[];
-}): TopologyHealthActionTarget | null {
-  const firstStale = stale[0];
-  if (firstStale) {
-    return {
-      slug: firstStale.slug,
-      title: firstStale.name,
-      kind: "stale",
-    };
-  }
-
-  const firstOrphan = orphan[0];
-  if (firstOrphan) {
-    return {
-      slug: firstOrphan.slug,
-      title: firstOrphan.name,
-      kind: "orphan",
-    };
-  }
-
-  const firstPromotion = promotion[0];
-  if (firstPromotion) {
-    return {
-      slug: firstPromotion.slug,
-      title: firstPromotion.name,
-      kind: "promotion",
-    };
-  }
-
-  return null;
-}
+export { buildOntologyHealthActionTarget as buildTopologyHealthActionTarget };
 
 export function formatTopologyHealthBrief({
   summary,
@@ -458,123 +380,6 @@ export function formatTopologyAgentReadinessSummary(
   ].join(" · ");
 }
 
-export function formatTopologyFocusBrief({
-  slug,
-  title,
-  labels,
-  url,
-  focusUrl,
-  ontologyUrl,
-  builderUrl,
-  syncGatePacket,
-}: {
-  slug: string;
-  title: string;
-  labels: TopologyFocusBriefLabels;
-  url?: string | null;
-  focusUrl?: string | null;
-  ontologyUrl: string;
-  builderUrl: string;
-  syncGatePacket?: string | null;
-}): string {
-  const lines = [
-    `# ${labels.title}`,
-    `- ${labels.node}: ${title} (${slug})`,
-  ];
-
-  if (url) {
-    lines.push(`- ${labels.url}: ${url}`);
-  }
-  if (focusUrl) {
-    lines.push(`- ${labels.reviewFocus}: ${focusUrl}`);
-  }
-
-  lines.push(
-    `- ${labels.ontologyUrl}: ${ontologyUrl}`,
-    `- ${labels.builderUrl}: ${builderUrl}`,
-    `- ${labels.agentCheck}: ontology-atlas node ${slug} [vault] --limit 12`,
-    `- ${labels.mcpCheck}: ${formatTopologyHealthMcpCheck(slug)}`,
-    `- ${labels.impactCheck}: ${formatTopologyHealthImpactCliCheck(slug)}`,
-    `- ${labels.mcpImpactCheck}: ${formatTopologyHealthImpactMcpCheck(slug)}`,
-    ...formatTopologyAnalysisSyncGate(
-      labels.syncGate,
-      syncGatePacket ?? "health -> cycles -> growth_plan -> maintenance_plan -> validate_vault",
-    ),
-  );
-
-  return lines.join("\n");
-}
-
-export function formatTopologyPathEvidenceBrief({
-  sourceSlug,
-  targetSlug,
-  sourceTitle,
-  targetTitle,
-  labels,
-  url,
-  syncGatePacket,
-}: {
-  sourceSlug: string;
-  targetSlug: string;
-  sourceTitle: string;
-  targetTitle: string;
-  labels: TopologyPathEvidenceBriefLabels;
-  url?: string | null;
-  syncGatePacket?: string | null;
-}): string {
-  const lines = [
-    `# ${labels.title}`,
-    `- ${labels.source}: ${sourceTitle} (${sourceSlug})`,
-    `- ${labels.target}: ${targetTitle} (${targetSlug})`,
-  ];
-
-  if (url) {
-    lines.push(`- ${labels.url}: ${url}`);
-  }
-
-  lines.push(
-    `- ${labels.sourceOntologyUrl}: /ontology/?node=${encodeURIComponent(sourceSlug)}`,
-    `- ${labels.targetOntologyUrl}: /ontology/?node=${encodeURIComponent(targetSlug)}`,
-    `- ${labels.sourceBuilderUrl}: ${buildTopologyHealthRepairHref(sourceSlug)}`,
-    `- ${labels.targetBuilderUrl}: ${buildTopologyHealthRepairHref(targetSlug)}`,
-    `- ${labels.cliCheck}: ${formatTopologyPathCliCheck(sourceSlug, targetSlug)}`,
-    `- ${labels.mcpCheck}: ${formatTopologyPathMcpCheck(sourceSlug, targetSlug)}`,
-    `- ${labels.relationPreflightReason}: ${explainOntologyRelationKeyForGraphIds(
-      sourceSlug,
-      targetSlug,
-    )}`,
-    `- ${labels.relationPreflightMcpCheck}: ${formatTopologyPathRelationPreflightMcpCheck(
-      sourceSlug,
-      targetSlug,
-    )}`,
-    `- ${labels.explainRelationMcpCheck}: ${formatTopologyPathExplainRelationMcpCheck(
-      sourceSlug,
-      targetSlug,
-    )}`,
-    `- ${labels.allPathsPlanMcpCheck}: ${formatTopologyPathAllPathsPlanMcpCheck(
-      sourceSlug,
-      targetSlug,
-    )}`,
-    `- ${labels.allPathsMcpCheck}: ${formatTopologyPathAllPathsMcpCheck(
-      sourceSlug,
-      targetSlug,
-    )}`,
-    `- ${labels.allPathsEvidenceContract}: report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete before using paths as write evidence`,
-    `- ${labels.proofChecklist}:`,
-    `  - ${labels.proofVisiblePath}: ${labels.proofStatusReady}`,
-    `  - ${labels.proofRelationPreflight}: ${labels.proofStatusRequired}`,
-    `  - ${labels.proofExplainRelation}: ${labels.proofStatusRequired}`,
-    `  - ${labels.proofBoundedTraversal}: ${labels.proofStatusRequired}`,
-    `  - ${labels.proofPostWriteSync}: ${labels.proofStatusAfterWrite}`,
-    ...formatTopologyAnalysisSyncGate(
-      labels.syncGate,
-      syncGatePacket ?? "health -> cycles -> growth_plan -> maintenance_plan -> validate_vault",
-    ),
-  );
-
-  return lines.join("\n");
-}
-
 function formatTopologyAnalysisSyncGate(label: string, syncGate: string): string[] {
   if (!syncGate.includes("\n")) {
     return [`- ${label}: ${syncGate}`];
@@ -637,10 +442,6 @@ export function formatTopologyHealthImpactMcpCheck(slug: string): string {
   });
 }
 
-export function formatTopologyPathCliCheck(from: string, to: string): string {
-  return `ontology-atlas path ${from} ${to} [vault] --max-hops 5`;
-}
-
 export function formatTopologyPathMcpCheck(from: string, to: string): string {
   return formatQueryOntologyCall({
     operation: "path",
@@ -650,69 +451,82 @@ export function formatTopologyPathMcpCheck(from: string, to: string): string {
   });
 }
 
-export function formatTopologyPathRelationPreflightMcpCheck(
-  from: string,
-  to: string,
-): string {
-  return formatQueryOntologyCall({
-    operation: "relation_check",
-    from,
-    to,
-    type: inferOntologyRelationKeyForGraphIds(from, to),
+/**
+ * 경로 칩(`TopologyPathChip`)의 "N홉" 숫자 — 두 노드 사이 최단 hop 수(undirected
+ * BFS, `direction: "both"`). 관계엔 방향이 있어도 "경로가 있다/몇 단계냐"는
+ * 사용자 질문 자체가 방향 무관이라 `explain_relation` MCP 오퍼레이션과 같은
+ * `direction: "undirected"` 관례를 따른다. depth/limit 을 노드 수만큼 열어
+ * 그래프 전체에서 실제 최단 거리를 찾는다(부분 BFS 로 놓치지 않음).
+ * 같은 노드를 고르면 0, 도달 불가면 null.
+ */
+export function computeTopologyPathHopCount(
+  sourceId: string,
+  targetId: string,
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+): number | null {
+  if (sourceId === targetId) return 0;
+  const bound = Math.max(nodes.length, 1);
+  const reachability = buildOntologyReachability(sourceId, nodes, edges, {
+    direction: "both",
+    depth: bound,
+    limit: bound,
   });
+  for (const layer of reachability.layers) {
+    if (layer.nodes.some((node) => node.id === targetId)) {
+      return layer.distance;
+    }
+  }
+  return null;
 }
 
-export function formatTopologyPathExplainRelationMcpCheck(
-  from: string,
-  to: string,
-): string {
-  return formatQueryOntologyCall({
-    operation: "explain_relation",
-    from,
-    to,
-    direction: "undirected",
-    maxHops: 5,
-    limit: 10,
-  });
+export interface TopologyPathAgentPacketLabels {
+  title: string;
+  source: string;
+  target: string;
+  hops: string;
+  hopsUnknown: string;
+  sourceOntologyUrl: string;
+  targetOntologyUrl: string;
+  sourceBuilderUrl: string;
+  targetBuilderUrl: string;
+  mcpCheck: string;
 }
 
-export function formatTopologyPathAllPathsPlanMcpCheck(
-  from: string,
-  to: string,
-): string {
-  return formatQueryOntologyCall({
-    operation: "query_plan",
-    targetOperation: "all_paths",
-    from,
-    to,
-    maxHops: 5,
-    limit: 10,
-    searchBudget: 1000,
-  });
-}
-
-export function formatTopologyPathAllPathsMcpCheck(from: string, to: string): string {
-  return formatQueryOntologyCall({
-    operation: "all_paths",
-    from,
-    to,
-    maxHops: 5,
-    limit: 10,
-    searchBudget: 1000,
-  });
-}
-
-
-/** Sets `?mode=<mode>` on `currentUrl` — used by the INDEX footer's "brief"
- *  copy action to link straight to the health mode from wherever the map
- *  currently is (W3 분석 보기 은퇴 — moved out of `TopologyAnalysisBar`). */
-export function buildOverviewModeUrl(
-  currentUrl: string,
-  mode: TopologyAnalysisMode,
-): string {
-  const url = new URL(currentUrl);
-  url.searchParams.set("mode", mode);
-  return url.toString();
+/**
+ * 경로 칩의 "경로 패킷 복사" 1버튼 — 예전 path 패널의 CLI/MCP 2버튼 분기 +
+ * relation-preflight/explain_relation/all_paths 5종 복사 버튼을 에이전트용
+ * `find_path` MCP 호출 1종으로 압축했다(분석 패널 완전 소멸 2단계 §b,
+ * "2버튼 분기 제거 — 에이전트용 1종만"). 필요하면 에이전트가 이 결과를 보고
+ * 스스로 relation_check/explain_relation 을 이어서 호출할 수 있다 — 매
+ * 클릭마다 5개 버튼을 미리 깔아둘 필요는 없다.
+ */
+export function formatTopologyPathAgentPacket({
+  sourceSlug,
+  targetSlug,
+  sourceTitle,
+  targetTitle,
+  hopCount,
+  labels,
+}: {
+  sourceSlug: string;
+  targetSlug: string;
+  sourceTitle: string;
+  targetTitle: string;
+  hopCount: number | null;
+  labels: TopologyPathAgentPacketLabels;
+}): string {
+  return [
+    `# ${labels.title}`,
+    `- ${labels.source}: ${sourceTitle} (${sourceSlug})`,
+    `- ${labels.target}: ${targetTitle} (${targetSlug})`,
+    `- ${labels.hops}: ${hopCount === null ? labels.hopsUnknown : hopCount}`,
+    `- ${labels.sourceOntologyUrl}: ${buildOntologyNodeHref(sourceSlug)}`,
+    `- ${labels.targetOntologyUrl}: ${buildOntologyNodeHref(targetSlug)}`,
+    `- ${labels.sourceBuilderUrl}: ${buildTopologyHealthRepairHref(sourceSlug)}`,
+    `- ${labels.targetBuilderUrl}: ${buildTopologyHealthRepairHref(targetSlug)}`,
+    `- ${labels.mcpCheck}: ${formatTopologyPathMcpCheck(sourceSlug, targetSlug)}`,
+  ].join("\n");
 }
 
 export function buildTopologyHealthRepairHref(slug: string): string {
