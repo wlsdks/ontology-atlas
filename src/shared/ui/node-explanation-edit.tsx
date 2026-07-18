@@ -6,9 +6,13 @@ import { Check, PencilLine, X } from "lucide-react";
 /**
  * S4.1a — 노드 "설명"(prose 본문) 읽기↔편집↔저장 primitive (multiline).
  *
- * ontology-first: 노드의 본문이 곧 그 노드의 설명. 토폴로지 drawer 에서 바로
- * 설명을 보충(사람/AI agent)한다. 저장은 부모(S4.1b)가 `replaceVaultBody` +
- * `saveDoc` 로 frontmatter 보존하며 본문만 교체. 라벨 prop 주입 → 순수 컴포넌트.
+ * ontology-first: 노드의 본문이 곧 그 노드의 설명. 토폴로지 전체 상세
+ * (`full-detail-a1` widget)에서 바로 설명을 보충(사람/AI agent)한다. 저장은
+ * 호출자(S4.1b)가 `replaceVaultBody` + `saveDoc` 로 frontmatter 보존하며
+ * 본문만 교체. 라벨 prop 주입 → 순수 컴포넌트. `shared/ui` 로 승격(R+
+ * full-detail A1) — FSD 가 widget→view import 를 금지해 이 컴포넌트를 쓰는
+ * `full-detail-a1` widget 이 원래 위치(`views/home/ui`)에서 직접 가져올 수
+ * 없었다.
  *
  * 디자인 헌장 준수: 무채색 + 단일 인디고, glow/scale 없음. Cmd/Ctrl+Enter 저장,
  * Esc 취소(textarea 라 Enter 는 줄바꿈).

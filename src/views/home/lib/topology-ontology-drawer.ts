@@ -1,4 +1,3 @@
-import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import {
   buildOntologyReachability,
   computeOntologyDependents,
@@ -12,6 +11,23 @@ import type {
   KnowledgeGraphEdge,
   KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
+
+/**
+ * The shared "node facts" model behind the compact canvas popover
+ * (`topology-node-focus.ts`) and the plain-language significance line
+ * (`topology-node-significance.ts`) — direct relations, transitive reach,
+ * owning domain. `buildTopologyNodeFocus`/`buildNodeSignificance` are
+ * PROJECTIONS of this model (zero recompute, so counts can't drift).
+ *
+ * R+ full-detail A1: this module used to ALSO back `TopologyOntologyDrawer`
+ * (the rejected badge-soup full-detail surface — rich "collaborator brief"
+ * markdown export, vocabulary review, MCP/CLI check-string formatters, an
+ * `impactSummary`/`collaborator` field pair feeding a Meaning/Connections/
+ * checks tab sidebar). That surface + its format* functions were deleted
+ * (`full-detail-a1` widget replaces it); this file kept only what the
+ * SURVIVING consumers (focus popover + significance line + HomePage's
+ * relation-provenance classification) still read.
+ */
 
 export interface TopologyOntologyDrawerRelation {
   edge: KnowledgeGraphEdge;
@@ -42,8 +58,8 @@ export interface TopologyOntologyDrawerModel {
   sourceSlug: string | null;
   /**
    * 이 노드를 소유한 domain 노드(있으면). 비즈니스 영역 context 를 read-only
-   * 로 노출 — vault writable 일 땐 domainEdit 인풋이 대신 보인다. incoming
-   * 엣지 중 source 가 kind:domain 인 첫 노드(보통 contains 관계).
+   * 로 노출. incoming 엣지 중 source 가 kind:domain 인 첫 노드(보통 contains
+   * 관계).
    */
   ownerDomain: { id: string; title: string } | null;
   incomingCount: number;
@@ -58,108 +74,6 @@ export interface TopologyOntologyDrawerModel {
    * "이거 바꾸면 N개 영향" 을 한눈에, 에이전트는 brief 로 같은 값을 받는다.
    */
   reach: TopologyOntologyDrawerReach;
-  impactSummary: TopologyOntologyDrawerImpactSummary;
-  collaborator: {
-    lens: "project" | "domain" | "capability" | "element" | "node";
-    review: "define_owner" | "explain_usage" | "confirm_dependents" | "trace_impact";
-    chips: Array<"source" | "impact" | "vocabulary">;
-  };
-}
-
-export type TopologyOntologyDrawerImpactLevel =
-  | "needs_owner"
-  | "usage_only"
-  | "dependent_only"
-  | "bidirectional";
-
-export interface TopologyOntologyDrawerImpactSummary {
-  level: TopologyOntologyDrawerImpactLevel;
-  firstIncoming: TopologyOntologyDrawerRelation | null;
-  firstOutgoing: TopologyOntologyDrawerRelation | null;
-}
-
-export interface TopologyCollaboratorBriefFormatLabels {
-  kind: string;
-  node: string;
-  reviewLens: string;
-  source: string;
-  relations: string;
-  reviewPrompt: string;
-  outgoingCount: string;
-  incomingCount: string;
-  relationQualityGate: string;
-  relationQualityInterpretation: string;
-  relationQualityPreflight: string;
-  relationQualityEvidence: string;
-  relationQualityNoAnchor: string;
-  relationQualityProvenance: string;
-  relationProvenanceLabels: Record<TopologyRelationProvenance, string>;
-  lens: string;
-  review: string;
-  reviewQuestions: string;
-  impactSummary: string;
-  impactSummaryText: string;
-  reachTitle: string;
-  reachDependents: string;
-  reachDependencies: string;
-  firstIncoming: string;
-  firstOutgoing: string;
-  noImpactRelation: string;
-  defineOwnerQuestions: readonly string[];
-  explainUsageQuestions: readonly string[];
-  confirmDependentsQuestions: readonly string[];
-  traceImpactQuestions: readonly string[];
-  sourceFallback: string;
-  relationTypes: string;
-  previewRelations: string;
-  noPreviewRelations: string;
-  handoff: string;
-  topology: string;
-  ontology: string;
-  builder: string;
-  agentCheck: string;
-  mcpCheck: string;
-  impactCheck: string;
-  mcpImpactCheck: string;
-  syncGate: string;
-  incoming: string;
-  outgoing: string;
-  relationTypeLabels: Record<string, string>;
-}
-
-export interface TopologyVocabularyReviewFormatLabels {
-  term: string;
-  slug: string;
-  kind: string;
-  source: string;
-  relationSummary: string;
-  outgoingCount: string;
-  incomingCount: string;
-  title: string;
-  meaningToKeep: string;
-  reuseContext: string;
-  reviewQuestions: string;
-  relationAnchors: string;
-  noPreviewRelations: string;
-  sourceFallback: string;
-  defineOwnerQuestions: readonly string[];
-  explainUsageQuestions: readonly string[];
-  confirmDependentsQuestions: readonly string[];
-  traceImpactQuestions: readonly string[];
-  incoming: string;
-  outgoing: string;
-  relationTypeLabels: Record<string, string>;
-}
-
-export interface TopologyCollaboratorHandoffLinks {
-  topology: string;
-  ontology: string;
-  builder: string;
-  agentCheck: string;
-  mcpCheck: string;
-  impactCheck: string;
-  mcpImpactCheck: string;
-  syncGate: string;
 }
 
 export function buildTopologyOntologyDrawerModel(
@@ -251,258 +165,7 @@ export function buildTopologyOntologyDrawerModel(
     relationQuality,
     previewRelations,
     reach,
-    impactSummary: {
-      level: buildImpactLevel(incoming.length, outgoing.length),
-      firstIncoming:
-        previewRelations.find((relation) => relation.direction === "incoming") ??
-        null,
-      firstOutgoing:
-        previewRelations.find((relation) => relation.direction === "outgoing") ??
-        null,
-    },
-    collaborator: buildCollaboratorBrief(node, incoming.length, outgoing.length),
   };
-}
-
-export function formatTopologyCollaboratorBrief({
-  node,
-  model,
-  labels,
-  handoff,
-}: {
-  node: KnowledgeGraphNode;
-  model: TopologyOntologyDrawerModel;
-  labels: TopologyCollaboratorBriefFormatLabels;
-  handoff?: TopologyCollaboratorHandoffLinks | null;
-}): string {
-  const formatRelationType = (type: string) =>
-    labels.relationTypeLabels[type] ?? type;
-  const relationTypes =
-    model.relationCounts.length > 0
-      ? model.relationCounts
-          .map((row) => `${formatRelationType(row.type)} ${row.count}`)
-          .join(", ")
-      : labels.noPreviewRelations;
-  const relationProvenance =
-    model.provenanceCounts.length > 0
-      ? model.provenanceCounts
-          .map(
-            (row) =>
-              `${labels.relationProvenanceLabels[row.provenance]} ${row.count}`,
-          )
-          .join(", ")
-      : labels.noPreviewRelations;
-  const previewRelations =
-    model.previewRelations.length > 0
-      ? model.previewRelations.map((relation) => {
-          const direction =
-            relation.direction === "outgoing" ? labels.outgoing : labels.incoming;
-          const connector = relation.direction === "outgoing" ? "->" : "<-";
-          const otherLabel = relation.other
-            ? `${relation.other.id} (${relation.other.title})`
-            : relation.edge.id;
-
-          return `- ${direction} ${formatRelationType(
-            relation.edge.type,
-          )} ${connector} ${otherLabel}`;
-        })
-      : [`- ${labels.noPreviewRelations}`];
-  const relationQualityAnchor = model.previewRelations[0] ?? null;
-
-  const lines = [
-    `# ${node.title}`,
-    "",
-    `- ${labels.kind}: ${node.kind}`,
-    `- ${labels.node}: ${node.id}`,
-    `- ${labels.reviewLens}: ${labels.lens}`,
-    `- ${labels.source}: ${model.sourceSlug ?? labels.sourceFallback}`,
-    `- ${labels.relations}: ${labels.outgoingCount} ${model.outgoingCount} / ${labels.incomingCount} ${model.incomingCount}`,
-    `- ${labels.relationTypes}: ${relationTypes}`,
-    `- ${labels.relationQualityProvenance}: ${relationProvenance}`,
-    `- ${labels.reviewPrompt}: ${labels.review}`,
-    "",
-    `## ${labels.relationQualityGate}`,
-    `- ${labels.relationQualityInterpretation}`,
-    relationQualityAnchor
-      ? `- ${labels.relationQualityPreflight}: ${formatTopologyRelationPreflightMcpCheck(
-          relationQualityAnchor.edge,
-        )}`
-      : `- ${labels.relationQualityPreflight}: ${labels.relationQualityNoAnchor}`,
-    relationQualityAnchor
-      ? `- ${labels.relationQualityEvidence}: ${formatTopologyRelationExplainMcpCheck(
-          relationQualityAnchor.edge,
-        )}`
-      : `- ${labels.relationQualityEvidence}: ${labels.relationQualityNoAnchor}`,
-    "",
-    `## ${labels.reviewQuestions}`,
-    ...topologyReviewQuestionsForReview(model.collaborator.review, labels).map(
-      (question) => `- ${question}`,
-    ),
-    "",
-    `## ${labels.impactSummary}`,
-    `- ${labels.impactSummaryText}`,
-    // 전이 blast radius — 에이전트가 "이거 바꿔도 안전한가" 판단할 때 1-hop
-    // degree 가 아닌 진짜 영향 범위를 보게. drawer(사람)와 같은 model.reach.
-    `- ${labels.reachTitle}: ${labels.reachDependents} ${model.reach.dependents}, ${labels.reachDependencies} ${model.reach.dependencies}`,
-    `- ${labels.firstIncoming}: ${formatTopologyImpactRelation(
-      model.impactSummary.firstIncoming,
-      labels.noImpactRelation,
-      labels.relationTypeLabels,
-    )}`,
-    `- ${labels.firstOutgoing}: ${formatTopologyImpactRelation(
-      model.impactSummary.firstOutgoing,
-      labels.noImpactRelation,
-      labels.relationTypeLabels,
-    )}`,
-    "",
-    `## ${labels.previewRelations}`,
-    ...previewRelations,
-  ];
-
-  if (handoff) {
-    lines.push(
-      "",
-      `## ${labels.handoff}`,
-      `- ${labels.topology}: ${handoff.topology}`,
-      `- ${labels.ontology}: ${handoff.ontology}`,
-      `- ${labels.builder}: ${handoff.builder}`,
-      `- ${labels.agentCheck}: ${handoff.agentCheck}`,
-      `- ${labels.mcpCheck}: ${handoff.mcpCheck}`,
-      `- ${labels.impactCheck}: ${handoff.impactCheck}`,
-      `- ${labels.mcpImpactCheck}: ${handoff.mcpImpactCheck}`,
-      ...formatTopologyHandoffSyncGate(labels.syncGate, handoff.syncGate),
-    );
-  }
-
-  return lines.join("\n");
-}
-
-function formatTopologyHandoffSyncGate(label: string, syncGate: string): string[] {
-  if (!syncGate.includes("\n")) {
-    return [`- ${label}: ${syncGate}`];
-  }
-
-  return [
-    `- ${label}:`,
-    ...syncGate.split("\n").map((line) => (line ? `  ${line}` : "")),
-  ];
-}
-
-export function formatTopologyVocabularyReview({
-  node,
-  model,
-  labels,
-}: {
-  node: KnowledgeGraphNode;
-  model: TopologyOntologyDrawerModel;
-  labels: TopologyVocabularyReviewFormatLabels;
-}): string {
-  const formatRelationType = (type: string) =>
-    labels.relationTypeLabels[type] ?? type;
-  const relationAnchors =
-    model.previewRelations.length > 0
-      ? model.previewRelations.map((relation) => {
-          const direction =
-            relation.direction === "outgoing" ? labels.outgoing : labels.incoming;
-          const otherLabel = relation.other
-            ? `${relation.other.id} (${relation.other.title})`
-            : relation.edge.id;
-
-          return `- ${direction} ${formatRelationType(
-            relation.edge.type,
-          )}: ${otherLabel}`;
-        })
-      : [`- ${labels.noPreviewRelations}`];
-
-  return [
-    `# ${labels.title}: ${node.title}`,
-    "",
-    `- ${labels.term}: ${node.title}`,
-    `- ${labels.slug}: ${node.id}`,
-    `- ${labels.kind}: ${node.kind}`,
-    `- ${labels.source}: ${model.sourceSlug ?? labels.sourceFallback}`,
-    "",
-    `## ${labels.meaningToKeep}`,
-    `- ${node.summary ?? node.title}`,
-    "",
-    `## ${labels.reuseContext}`,
-    `- ${labels.relationSummary}: ${labels.outgoingCount} ${model.outgoingCount} / ${labels.incomingCount} ${model.incomingCount}`,
-    `- ${
-      model.relationCounts
-        .map((row) => `${formatRelationType(row.type)} ${row.count}`)
-        .join(", ") || labels.noPreviewRelations
-    }`,
-    "",
-    `## ${labels.reviewQuestions}`,
-    ...topologyReviewQuestionsForReview(model.collaborator.review, labels).map(
-      (question) => `- ${question}`,
-    ),
-    "",
-    `## ${labels.relationAnchors}`,
-    ...relationAnchors,
-  ].join("\n");
-}
-
-export function formatTopologyImpactRelation(
-  relation: TopologyOntologyDrawerRelation | null,
-  fallback: string,
-  relationTypeLabels: Record<string, string> = {},
-): string {
-  if (!relation) return fallback;
-  const other = relation.other
-    ? `${relation.other.id} (${relation.other.title})`
-    : relation.edge.id;
-  return `${relationTypeLabels[relation.edge.type] ?? relation.edge.type} · ${other}`;
-}
-
-export function formatTopologyNodeMcpCheck(slug: string): string {
-  return formatQueryOntologyCall({
-    operation: "node_profile",
-    slug,
-    depth: 2,
-    limit: 12,
-  });
-}
-
-export function formatTopologyNodeCliCheck(slug: string): string {
-  return `ontology-atlas node ${slug} [vault] --limit 12`;
-}
-
-export function formatTopologyNodeImpactCliCheck(slug: string): string {
-  return `ontology-atlas blast-radius ${slug} [vault] --depth 2 --direction incoming`;
-}
-
-export function formatTopologyNodeImpactMcpCheck(slug: string): string {
-  return formatQueryOntologyCall({
-    operation: "blast_radius",
-    slug,
-    depth: 2,
-    direction: "incoming",
-  });
-}
-
-export function formatTopologyRelationPreflightMcpCheck(
-  edge: Pick<KnowledgeGraphEdge, "from" | "to" | "type">,
-): string {
-  return formatQueryOntologyCall({
-    operation: "relation_check",
-    from: edge.from,
-    to: edge.to,
-    type: edge.type,
-  });
-}
-
-export function formatTopologyRelationExplainMcpCheck(
-  edge: Pick<KnowledgeGraphEdge, "from" | "to">,
-): string {
-  return formatQueryOntologyCall({
-    operation: "explain_relation",
-    from: edge.from,
-    to: edge.to,
-    direction: "undirected",
-    maxHops: 5,
-    limit: 10,
-  });
 }
 
 export function classifyTopologyRelationProvenance(
@@ -517,64 +180,4 @@ function provenanceRank(provenance: TopologyRelationProvenance): number {
   if (provenance === "source_backed") return 0;
   if (provenance === "authored") return 1;
   return 2;
-}
-
-export function topologyReviewQuestionsForReview(
-  review: TopologyOntologyDrawerModel["collaborator"]["review"],
-  labels: Pick<
-    TopologyCollaboratorBriefFormatLabels,
-    | "defineOwnerQuestions"
-    | "explainUsageQuestions"
-    | "confirmDependentsQuestions"
-    | "traceImpactQuestions"
-  >,
-): readonly string[] {
-  if (review === "trace_impact") return labels.traceImpactQuestions;
-  if (review === "confirm_dependents") return labels.confirmDependentsQuestions;
-  if (review === "explain_usage") return labels.explainUsageQuestions;
-  return labels.defineOwnerQuestions;
-}
-
-function buildCollaboratorBrief(
-  node: KnowledgeGraphNode,
-  incomingCount: number,
-  outgoingCount: number,
-): TopologyOntologyDrawerModel["collaborator"] {
-  const lens =
-    node.kind === "project" ||
-    node.kind === "domain" ||
-    node.kind === "capability" ||
-    node.kind === "element"
-      ? node.kind
-      : "node";
-  const total = incomingCount + outgoingCount;
-  const review =
-    total === 0
-      ? "define_owner"
-      : incomingCount > 0 && outgoingCount > 0
-        ? "trace_impact"
-        : outgoingCount > 0
-          ? "explain_usage"
-          : "confirm_dependents";
-
-  return {
-    lens,
-    review,
-    chips: [
-      node.evidenceIds.length > 0 ? "source" : null,
-      total > 0 ? "impact" : null,
-      lens === "domain" || lens === "capability" ? "vocabulary" : null,
-    ].filter((chip): chip is "source" | "impact" | "vocabulary" => chip !== null),
-  };
-}
-
-function buildImpactLevel(
-  incomingCount: number,
-  outgoingCount: number,
-): TopologyOntologyDrawerImpactLevel {
-  const total = incomingCount + outgoingCount;
-  if (total === 0) return "needs_owner";
-  if (incomingCount > 0 && outgoingCount > 0) return "bidirectional";
-  if (outgoingCount > 0) return "usage_only";
-  return "dependent_only";
 }

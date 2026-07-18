@@ -94,19 +94,11 @@ import {
   resolveTopologyRenderState,
 } from "../lib/topology-render-state";
 import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-selected-node";
-import {
-  buildNodeFrontmatterEdit,
-  resolveTopologyNodeEditTarget,
-} from "../lib/topology-node-edit";
+import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
-import {
-  buildVaultRelationPatch,
-  VAULT_RELATION_KEYS,
-  type VaultRelationKey,
-} from "@/entities/docs-vault/lib/relation-proposal";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
-import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
+import { FullDetailA1, buildFullDetailGroups, buildFullDetailReachModel } from "@/widgets/full-detail-a1";
 import {
   TopologyMapV2,
   TopologyV2DetailPanel,
@@ -134,7 +126,6 @@ const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 export function HomePage() {
   const t = useTranslations('topology');
   const tKinds = useTranslations('kinds');
-  const tEdgeTypes = useTranslations('edgeTypes');
   const [sigmaControls, setSigmaControls] = useState<SigmaControlsState>(
     DEFAULT_SIGMA_CONTROLS,
   );
@@ -259,17 +250,8 @@ export function HomePage() {
     if (!ontologyInsight) return null;
     return resolveTopologySelectedOntologyNode(selectedSlug, ontologyInsight.nodes);
   }, [selectedSlug, selectedProject, ontologyInsight]);
-  // "지도에서 영향 보기" 토글 — 선택 노드의 전이 blast radius(영향받는 노드 set)
-  // 를 그래프에서 공간적으로 강조. drawer 의 숫자(iter 3)를 부분그래프로.
-  // *어느 노드에 대해* 켜졌는지를 state 로 둔다 — 선택이 바뀌면 derived active
-  // 가 자동으로 false (effect 로 reset 안 함 → cascading render 회피).
-  const [impactNodeSlug, setImpactNodeSlug] = useState<string | null>(null);
-  const impactHighlightActive = impactNodeSlug != null && impactNodeSlug === selectedSlug;
-  const toggleImpactHighlight = useCallback(() => {
-    setImpactNodeSlug((prev) => (prev === selectedSlug ? null : (selectedSlug ?? null)));
-  }, [selectedSlug]);
   // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
-  // 선택 노드를 자기 .md 문서로 해석해 drawer 에서 domain 인라인 편집을 허용.
+  // 선택 노드를 자기 .md 문서로 해석해 전체 상세(A1)의 본문 인라인 편집을 허용.
   const vault = useLocalVault();
   const nodeEditTarget = useMemo(
     () =>
@@ -277,24 +259,6 @@ export function HomePage() {
         ? resolveTopologyNodeEditTarget(selectedOntologyNode, vault.manifest?.docs ?? [])
         : null,
     [selectedOntologyNode, vault.manifest],
-  );
-  const saveNodeDomain = useCallback(
-    async (next: string) => {
-      if (!nodeEditTarget) return;
-      const { updates, changed } = buildNodeFrontmatterEdit(nodeEditTarget.frontmatter, {
-        domain: next,
-      });
-      if (!changed) return;
-      try {
-        await vault.updateFrontmatter(nodeEditTarget.vaultSlug, updates, {
-          expectedMtime: nodeEditTarget.mtime,
-        });
-        toast.show(t("ontologyDrawer.domainEdit.saved"), "success");
-      } catch {
-        toast.show(t("ontologyDrawer.domainEdit.error"), "error");
-      }
-    },
-    [nodeEditTarget, vault, toast, t],
   );
   // S2 — 토폴로지에서 새 노드를 직접 생성. writable 로컬 vault 일 때만.
   const [createNodeOpen, setCreateNodeOpen] = useState(false);
@@ -363,46 +327,6 @@ export function HomePage() {
       }
     },
     [closeCreateNode],
-  );
-  // S3 — 토폴로지에서 선택 노드(source)로부터 관계 생성. 후보 target = 자기 제외한
-  // vault 문서 노드. 빌더와 같은 buildVaultRelationPatch 경로 재사용(본문 보존 append).
-  const relationTargets = useMemo(() => {
-    if (!nodeEditTarget || !ontologyInsight) return [];
-    const seen = new Set<string>();
-    const out: { slug: string; title: string }[] = [];
-    for (const n of ontologyInsight.nodes) {
-      const slug = n.evidenceIds[0];
-      if (!slug || slug === nodeEditTarget.vaultSlug || seen.has(slug)) continue;
-      seen.add(slug);
-      out.push({ slug, title: n.title });
-    }
-    return out.sort((a, b) => a.title.localeCompare(b.title));
-  }, [nodeEditTarget, ontologyInsight]);
-  const createRelation = useCallback(
-    async (input: { targetSlug: string; relationKey: VaultRelationKey }) => {
-      if (!nodeEditTarget) return;
-      const { patch, alreadyExists } = buildVaultRelationPatch(
-        nodeEditTarget.frontmatter,
-        input.relationKey,
-        input.targetSlug,
-      );
-      if (alreadyExists) {
-        toast.show(t("relationCreate.toastExists"), "info");
-        return;
-      }
-      try {
-        await vault.updateFrontmatter(nodeEditTarget.vaultSlug, patch, {
-          expectedMtime: nodeEditTarget.mtime,
-        });
-        toast.show(
-          t("relationCreate.toastSaved", { key: input.relationKey, target: input.targetSlug }),
-          "success",
-        );
-      } catch {
-        toast.show(t("relationCreate.toastError"), "error");
-      }
-    },
-    [nodeEditTarget, vault, toast, t],
   );
   // S4 — 노드 "설명"(본문) 편집. manifest 의 excerpt 는 잘려 있어 편집 시
   // 손실 위험 → 편집 전 fileHandle 로 *raw 전체*를 읽어 본문을 시드한다.
@@ -689,6 +613,69 @@ export function HomePage() {
     },
     [t, toast],
   );
+  // A1 "데이터시트 확장판" 전체 상세 — TopologyOntologyDrawer(배지 수프 +
+  // reach 쿼리빌더 + collaborator brief)를 대체. groups/reach 는 compact
+  // datasheet 와 동일 소스(buildV2Connections 파생, buildOntologyReachability
+  // 재사용)라 두 표면의 숫자가 절대 drift 하지 않는다.
+  const fullDetailA1Model = useMemo(() => {
+    if (!nodeFocus || !selectedOntologyNode || !ontologyInsight) return null;
+    const slug = nodeFocus.sourceSlug ?? selectedOntologyNode.id;
+    const groups = buildFullDetailGroups(
+      selectedOntologyNode.id,
+      ontologyInsight.nodes,
+      ontologyInsight.edges,
+      changedSlugs,
+    );
+    const reach = buildFullDetailReachModel(
+      selectedOntologyNode.id,
+      ontologyInsight.nodes,
+      ontologyInsight.edges,
+    );
+    const projectTitle =
+      ontologyInsight.nodes.find((n) => n.kind === "project")?.title ?? null;
+    const loadedBody =
+      nodeBody && nodeBody.slug === slug ? nodeBody.body : null;
+    const bodyMarkdown = loadedBody ?? selectedOntologyNode.summary ?? null;
+    const documentHref = nodeFocus.sourceSlug
+      ? buildDocsVaultHref({ slug: nodeFocus.sourceSlug })
+      : null;
+    const explanationEdit =
+      nodeEditTarget &&
+      vault.manifest !== null &&
+      nodeBody &&
+      nodeBody.slug === nodeEditTarget.vaultSlug
+        ? { onSave: saveNodeExplanation }
+        : null;
+    return {
+      node: {
+        id: selectedOntologyNode.id,
+        title: nodeFocus.title,
+        kind: nodeFocus.kind,
+        slug,
+        fresh: changedSlugs.has(selectedOntologyNode.id),
+      },
+      groups,
+      reach,
+      breadcrumb: {
+        projectTitle,
+        totalConcepts: renderProjects.length + ontologyInsight.nodes.length,
+        totalRelations: ontologyInsight.edges.length,
+      },
+      bodyMarkdown,
+      explanationEdit,
+      documentHref,
+    };
+  }, [
+    nodeFocus,
+    selectedOntologyNode,
+    ontologyInsight,
+    renderProjects,
+    changedSlugs,
+    nodeBody,
+    nodeEditTarget,
+    vault.manifest,
+    saveNodeExplanation,
+  ]);
   const selectedNodeFocusActive =
     Boolean(
       selectedOntologyNode &&
@@ -2329,328 +2316,39 @@ export function HomePage() {
                   noConnections: t("nodeDatasheet.noConnections"),
                   handoff: t("nodeDatasheet.handoff"),
                   close: t("controls.close"),
+                  openFullDetail: t("nodeDatasheet.openFullDetail"),
                 }}
                 onSelectConnection={(id) => handleSelect(id)}
                 onCopyHandoff={copyV2NodeHandoff}
                 onClose={handleClose}
+                onOpenFullDetail={
+                  selectedOntologyNode
+                    ? () => setFullDetailSlug(selectedOntologyNode.id)
+                    : undefined
+                }
                 className="max-lg:w-[min(520px,calc(100vw-1.5rem))]"
               />
             ) : null}
           </div>
         ) : null}
-        {selectedOntologyNode && ontologyInsight && fullDetailOpen && !createNodeOpen ? (
-          <TopologyOntologyDrawer
-            node={selectedOntologyNode}
-            nodes={ontologyInsight.nodes}
-            edges={ontologyInsight.edges}
-            onClose={handleClose}
-            closeLabel={t("controls.close")}
-            impactActive={impactHighlightActive}
-            onToggleImpact={toggleImpactHighlight}
-            onSelectNode={(slug) => handleSelect(slug)}
-            labels={{
-              caption: t("ontologyDrawer.caption"),
-              source: t("ontologyDrawer.source"),
-              noSource: t("ontologyDrawer.noSource"),
-              description: t("ontologyDrawer.descriptionLabel"),
-              keyFacts: t("ontologyDrawer.keyFacts"),
-              fullNote: t("ontologyDrawer.fullNote"),
-              domainContext: t("ontologyDrawer.domainContext"),
-              relations: t("ontologyDrawer.relations"),
-              incoming: t("ontologyDrawer.incoming"),
-              outgoing: t("ontologyDrawer.outgoing"),
-              reachTitle: t("ontologyDrawer.reachTitle"),
-              reachDependents: t("ontologyDrawer.reachDependents"),
-              reachDependencies: t("ontologyDrawer.reachDependencies"),
-              reachShowOnMap: t("ontologyDrawer.reachShowOnMap"),
-              reachHideOnMap: t("ontologyDrawer.reachHideOnMap"),
-              noRelations: t("ontologyDrawer.noRelations"),
-              openTopologyFocus: t("ontologyDrawer.openTopologyFocus"),
-              openOntology: t("ontologyDrawer.openOntology"),
-              openBuilder: t("ontologyDrawer.openBuilder"),
-              openSource: t("ontologyDrawer.openSource"),
-              collaboratorTitle: t("ontologyDrawer.collaboratorTitle"),
-              collaboratorBody: t("ontologyDrawer.collaboratorBody"),
-              collaboratorCopy: t("ontologyDrawer.collaboratorCopy"),
-              collaboratorCopyVocabulary: t(
-                "ontologyDrawer.collaboratorCopyVocabulary",
-              ),
-              collaboratorCopyCliProfile: t(
-                "ontologyDrawer.collaboratorCopyCliProfile",
-              ),
-              collaboratorCopyMcpProfile: t(
-                "ontologyDrawer.collaboratorCopyMcpProfile",
-              ),
-              collaboratorCopyCliImpact: t(
-                "ontologyDrawer.collaboratorCopyCliImpact",
-              ),
-              collaboratorCopyMcpImpact: t(
-                "ontologyDrawer.collaboratorCopyMcpImpact",
-              ),
-              collaboratorCopySyncGate: t(
-                "ontologyDrawer.collaboratorCopySyncGate",
-              ),
-              collaboratorCopySuccess: t("ontologyDrawer.collaboratorCopySuccess"),
-              collaboratorCopyError: t("ontologyDrawer.collaboratorCopyError"),
-              collaboratorBriefKind: t("ontologyDrawer.collaboratorBriefKind"),
-              collaboratorBriefNode: t("ontologyDrawer.collaboratorBriefNode"),
-              collaboratorBriefReviewLens: t(
-                "ontologyDrawer.collaboratorBriefReviewLens",
-              ),
-              collaboratorBriefSource: t("ontologyDrawer.collaboratorBriefSource"),
-              collaboratorBriefRelations: t(
-                "ontologyDrawer.collaboratorBriefRelations",
-              ),
-              collaboratorBriefReviewPrompt: t(
-                "ontologyDrawer.collaboratorBriefReviewPrompt",
-              ),
-              collaboratorBriefOutgoingCount: t(
-                "ontologyDrawer.collaboratorBriefOutgoingCount",
-              ),
-              collaboratorBriefIncomingCount: t(
-                "ontologyDrawer.collaboratorBriefIncomingCount",
-              ),
-              collaboratorBriefRelationQualityGate: t(
-                "ontologyDrawer.collaboratorBriefRelationQualityGate",
-              ),
-              collaboratorBriefRelationQualityInterpretation: t(
-                "ontologyDrawer.collaboratorBriefRelationQualityInterpretation",
-              ),
-              collaboratorBriefRelationQualityPreflight: t(
-                "ontologyDrawer.collaboratorBriefRelationQualityPreflight",
-              ),
-              collaboratorBriefRelationQualityEvidence: t(
-                "ontologyDrawer.collaboratorBriefRelationQualityEvidence",
-              ),
-              collaboratorBriefRelationQualityNoAnchor: t(
-                "ontologyDrawer.collaboratorBriefRelationQualityNoAnchor",
-              ),
-              collaboratorBriefRelationQualityProvenance: t(
-                "ontologyDrawer.collaboratorBriefRelationQualityProvenance",
-              ),
-              collaboratorBriefRelationTypes: t(
-                "ontologyDrawer.collaboratorBriefRelationTypes",
-              ),
-              collaboratorVocabularyTerm: t(
-                "ontologyDrawer.collaboratorVocabularyTerm",
-              ),
-              collaboratorVocabularySlug: t(
-                "ontologyDrawer.collaboratorVocabularySlug",
-              ),
-              collaboratorVocabularyKind: t(
-                "ontologyDrawer.collaboratorVocabularyKind",
-              ),
-              collaboratorVocabularySource: t(
-                "ontologyDrawer.collaboratorVocabularySource",
-              ),
-              collaboratorVocabularyRelationSummary: t(
-                "ontologyDrawer.collaboratorVocabularyRelationSummary",
-              ),
-              collaboratorVocabularyTitle: t(
-                "ontologyDrawer.collaboratorVocabularyTitle",
-              ),
-              collaboratorVocabularyMeaning: t(
-                "ontologyDrawer.collaboratorVocabularyMeaning",
-              ),
-              collaboratorVocabularyReuse: t(
-                "ontologyDrawer.collaboratorVocabularyReuse",
-              ),
-              collaboratorVocabularyAnchors: t(
-                "ontologyDrawer.collaboratorVocabularyAnchors",
-              ),
-              collaboratorBriefReviewQuestions: t(
-                "ontologyDrawer.collaboratorBriefReviewQuestions",
-              ),
-              collaboratorBriefImpactSummary: t(
-                "ontologyDrawer.collaboratorBriefImpactSummary",
-              ),
-              collaboratorBriefFirstIncoming: t(
-                "ontologyDrawer.collaboratorBriefFirstIncoming",
-              ),
-              collaboratorBriefFirstOutgoing: t(
-                "ontologyDrawer.collaboratorBriefFirstOutgoing",
-              ),
-              collaboratorBriefNoImpactRelation: t(
-                "ontologyDrawer.collaboratorBriefNoImpactRelation",
-              ),
-              collaboratorBriefPreviewRelations: t(
-                "ontologyDrawer.collaboratorBriefPreviewRelations",
-              ),
-              collaboratorBriefNoPreviewRelations: t(
-                "ontologyDrawer.collaboratorBriefNoPreviewRelations",
-              ),
-              collaboratorBriefHandoff: t("ontologyDrawer.collaboratorBriefHandoff"),
-              collaboratorBriefTopology: t(
-                "ontologyDrawer.collaboratorBriefTopology",
-              ),
-              collaboratorBriefOntology: t(
-                "ontologyDrawer.collaboratorBriefOntology",
-              ),
-              collaboratorBriefBuilder: t("ontologyDrawer.collaboratorBriefBuilder"),
-              collaboratorBriefAgentCheck: t(
-                "ontologyDrawer.collaboratorBriefAgentCheck",
-              ),
-              collaboratorBriefMcpCheck: t(
-                "ontologyDrawer.collaboratorBriefMcpCheck",
-              ),
-              collaboratorBriefImpactCheck: t(
-                "ontologyDrawer.collaboratorBriefImpactCheck",
-              ),
-              collaboratorBriefMcpImpactCheck: t(
-                "ontologyDrawer.collaboratorBriefMcpImpactCheck",
-              ),
-              collaboratorBriefSyncGate: t(
-                "ontologyDrawer.collaboratorBriefSyncGate",
-              ),
-              collaboratorHandoffOrderTitle: t(
-                "ontologyDrawer.collaboratorHandoffOrderTitle",
-              ),
-              collaboratorHandoffProfileStep: t(
-                "ontologyDrawer.collaboratorHandoffProfileStep",
-              ),
-              collaboratorHandoffImpactStep: t(
-                "ontologyDrawer.collaboratorHandoffImpactStep",
-              ),
-              collaboratorHandoffSyncStep: t(
-                "ontologyDrawer.collaboratorHandoffSyncStep",
-              ),
-              collaboratorLensLabels: {
-                project: t("ontologyDrawer.collaboratorLens.project"),
-                domain: t("ontologyDrawer.collaboratorLens.domain"),
-                capability: t("ontologyDrawer.collaboratorLens.capability"),
-                element: t("ontologyDrawer.collaboratorLens.element"),
-                node: t("ontologyDrawer.collaboratorLens.node"),
-              },
-              collaboratorReviewLabels: {
-                define_owner: t("ontologyDrawer.collaboratorReview.defineOwner"),
-                explain_usage: t("ontologyDrawer.collaboratorReview.explainUsage"),
-                confirm_dependents: t("ontologyDrawer.collaboratorReview.confirmDependents"),
-                trace_impact: t("ontologyDrawer.collaboratorReview.traceImpact"),
-              },
-              collaboratorImpactLabels: {
-                needs_owner: t("ontologyDrawer.collaboratorImpact.needsOwner"),
-                usage_only: t("ontologyDrawer.collaboratorImpact.usageOnly"),
-                dependent_only: t(
-                  "ontologyDrawer.collaboratorImpact.dependentOnly",
-                ),
-                bidirectional: t(
-                  "ontologyDrawer.collaboratorImpact.bidirectional",
-                ),
-              },
-              collaboratorReviewQuestionLabels: {
-                define_owner: [
-                  t("ontologyDrawer.collaboratorReviewQuestions.defineOwnerOwner"),
-                  t("ontologyDrawer.collaboratorReviewQuestions.defineOwnerRelation"),
-                  t("ontologyDrawer.collaboratorReviewQuestions.defineOwnerMeaning"),
-                ],
-                explain_usage: [
-                  t("ontologyDrawer.collaboratorReviewQuestions.explainUsageDepends"),
-                  t("ontologyDrawer.collaboratorReviewQuestions.explainUsageWhy"),
-                  t("ontologyDrawer.collaboratorReviewQuestions.explainUsageAudience"),
-                ],
-                confirm_dependents: [
-                  t("ontologyDrawer.collaboratorReviewQuestions.confirmDependentsWho"),
-                  t("ontologyDrawer.collaboratorReviewQuestions.confirmDependentsChange"),
-                  t("ontologyDrawer.collaboratorReviewQuestions.confirmDependentsNotify"),
-                ],
-                trace_impact: [
-                  t("ontologyDrawer.collaboratorReviewQuestions.traceImpactIncoming"),
-                  t("ontologyDrawer.collaboratorReviewQuestions.traceImpactOutgoing"),
-                  t("ontologyDrawer.collaboratorReviewQuestions.traceImpactBoundary"),
-                ],
-              },
-              collaboratorChipLabels: {
-                source: t("ontologyDrawer.collaboratorChip.source"),
-                impact: t("ontologyDrawer.collaboratorChip.impact"),
-                vocabulary: t("ontologyDrawer.collaboratorChip.vocabulary"),
-              },
-              collaboratorRelationProvenanceLabels: {
-                source_backed: t(
-                  "ontologyDrawer.collaboratorRelationProvenance.sourceBacked",
-                ),
-                authored: t("ontologyDrawer.collaboratorRelationProvenance.authored"),
-                needs_review: t(
-                  "ontologyDrawer.collaboratorRelationProvenance.needsReview",
-                ),
-              },
-              relationTypeLabels: {
-                contains: tEdgeTypes("contains"),
-                belongs_to: tEdgeTypes("belongs_to"),
-                depends_on: tEdgeTypes("depends_on"),
-                implements: tEdgeTypes("implements"),
-                uses: tEdgeTypes("uses"),
-                describes: tEdgeTypes("describes"),
-                related_to: tEdgeTypes("related_to"),
-              },
-            }}
-            domainEdit={
-              nodeEditTarget && vault.manifest !== null
-                ? {
-                    value:
-                      typeof nodeEditTarget.frontmatter.domain === "string"
-                        ? nodeEditTarget.frontmatter.domain
-                        : "",
-                    onSave: saveNodeDomain,
-                    labels: {
-                      field: t("ontologyDrawer.domainEdit.field"),
-                      edit: t("ontologyDrawer.domainEdit.edit"),
-                      save: t("ontologyDrawer.domainEdit.save"),
-                      cancel: t("ontologyDrawer.domainEdit.cancel"),
-                      placeholder: t("ontologyDrawer.domainEdit.placeholder"),
-                      empty: t("ontologyDrawer.domainEdit.empty"),
-                      saving: t("ontologyDrawer.domainEdit.saving"),
-                    },
-                  }
-                : null
-            }
-            relationEdit={
-              nodeEditTarget && vault.manifest !== null
-                ? {
-                    targets: relationTargets,
-                    relationKeys: VAULT_RELATION_KEYS,
-                    defaultRelationKey: "relates",
-                    onCreate: createRelation,
-                    labels: {
-                      heading: t("relationCreate.heading"),
-                      target: t("relationCreate.target"),
-                      targetPlaceholder: t("relationCreate.targetPlaceholder"),
-                      relation: t("relationCreate.relation"),
-                      create: t("relationCreate.create"),
-                      cancel: t("relationCreate.cancel"),
-                      relationKeyLabels: {
-                        domains: t("relationCreate.keyDomains"),
-                        capabilities: t("relationCreate.keyCapabilities"),
-                        elements: t("relationCreate.keyElements"),
-                        dependencies: t("relationCreate.keyDependencies"),
-                        contains: t("relationCreate.keyContains"),
-                        describes: t("relationCreate.keyDescribes"),
-                        relates: t("relationCreate.keyRelates"),
-                      },
-                    },
-                  }
-                : null
-            }
-            explanationEdit={
-              nodeEditTarget &&
-              vault.manifest !== null &&
-              nodeBody &&
-              nodeBody.slug === nodeEditTarget.vaultSlug
-                ? {
-                    value: nodeBody.body,
-                    onSave: saveNodeExplanation,
-                    labels: {
-                      heading: t("explanationEdit.heading"),
-                      edit: t("explanationEdit.edit"),
-                      save: t("explanationEdit.save"),
-                      cancel: t("explanationEdit.cancel"),
-                      placeholder: t("explanationEdit.placeholder"),
-                      empty: t("explanationEdit.empty"),
-                      saving: t("explanationEdit.saving"),
-                    },
-                  }
-                : null
-            }
-          />
+        {fullDetailOpen && fullDetailA1Model ? (
+          <div
+            data-testid="topology-full-detail-a1-positioner"
+            className="fixed inset-0 z-50 overflow-y-auto bg-[color:var(--color-canvas)]"
+          >
+            <FullDetailA1
+              node={fullDetailA1Model.node}
+              groups={fullDetailA1Model.groups}
+              reach={fullDetailA1Model.reach}
+              breadcrumb={fullDetailA1Model.breadcrumb}
+              bodyMarkdown={fullDetailA1Model.bodyMarkdown}
+              explanationEdit={fullDetailA1Model.explanationEdit}
+              documentHref={fullDetailA1Model.documentHref}
+              onSelectNode={(id) => handleSelect(id)}
+              onClose={handleClose}
+              onBackToMap={handleClose}
+            />
+          </div>
         ) : null}
         {/* 헤더 "Concept search" 버튼 · ⌘K · ⇧⌘K 공용 단일 팔레트 —
             ontology 노드 + 프로젝트 통합 검색 (persona-P1). 노드 선택도

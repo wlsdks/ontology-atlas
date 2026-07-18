@@ -72,8 +72,6 @@ function model(
       outgoingRelation("elements/parser", "Parser"),
     ],
     reach: { dependents: 7, dependencies: 3 },
-    impactSummary: { level: "bidirectional", firstIncoming: null, firstOutgoing: null },
-    collaborator: { lens: "capability", review: "trace_impact", chips: [] },
     ...extra,
   };
 }

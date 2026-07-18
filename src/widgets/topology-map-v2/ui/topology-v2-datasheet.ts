@@ -18,130 +18,26 @@
  * construction, not just by convention. Relation TYPE (containment vs depends)
  * demotes to a per-row trace mark (`TopologyV2DetailPanel.tsx`'s `TraceMark`),
  * still visible, just no longer the grouping axis.
- */
-
-export interface V2DatasheetConnection {
-  id: string;
-  title: string;
-  kind: string;
-  relationType: string;
-  direction: "incoming" | "outgoing";
-}
-
-/** usedBy = incoming (places that use this node); dependsOn = outgoing
- * (places this node leans on). The SAME axis the metric line counts. */
-export interface V2GroupedConnections {
-  usedBy: V2DatasheetConnection[];
-  dependsOn: V2DatasheetConnection[];
-}
-
-/**
- * Split direct connections into the two DIRECTION groups the datasheet
- * renders and the metric line counts — one axis, everywhere. Input order is
- * preserved inside each group so the panel stays deterministic.
  *
- * Also collapses each group to one row per neighbor `id` — the live dogfood
- * bug (`capability:mcp-server` had BOTH a `depends_on` AND a `related_to`
- * edge to the SAME neighbor, `capability:frontmatter-to-ontology`) isn't
- * caught by `buildV2Connections`'s own dedup (the relationType genuinely
- * differs there), but the panel shows only the neighbor's title with a
- * per-row type mark, not a relationType-keyed row, so two rows for the same
- * neighbor in the same direction read as one duplicated row AND collide on
- * the React list key (`TopologyV2DetailPanel.tsx`'s `key={group:direction:id}`).
- * The SAME neighbor in the OPPOSITE direction (a real mutual-dependency fact)
- * lands in the OTHER group and stays as two rows total — that's correct,
- * not a duplicate (item 5 — no cross-group dedup).
+ * R+ full-detail A1: the base connection derivation (`buildConnections`/
+ * `groupConnectionsByDirection` + structural types) moved to
+ * `shared/lib/ontology-tree/connections.ts` so the NEW `full-detail-a1` widget
+ * (topology "전체 상세" / `/ontology` full-detail surface) can reuse it too —
+ * FSD forbids widget→widget imports, so shared derivation lives one layer
+ * down. Re-exported here under the SAME `V2`-prefixed names so this file's
+ * existing consumers (`HomePage.tsx`, `TopologyV2DetailPanel`, this module's
+ * own tests) needed zero changes.
  */
-export function groupV2ConnectionsByDirection(
-  connections: readonly V2DatasheetConnection[],
-): V2GroupedConnections {
-  const usedBy: V2DatasheetConnection[] = [];
-  const dependsOn: V2DatasheetConnection[] = [];
-  const seenUsedBy = new Set<string>();
-  const seenDependsOn = new Set<string>();
-  for (const connection of connections) {
-    if (connection.direction === "incoming") {
-      if (seenUsedBy.has(connection.id)) continue;
-      seenUsedBy.add(connection.id);
-      usedBy.push(connection);
-    } else {
-      if (seenDependsOn.has(connection.id)) continue;
-      seenDependsOn.add(connection.id);
-      dependsOn.push(connection);
-    }
-  }
-  return { usedBy, dependsOn };
-}
-
-/** Minimal structural shapes — keeps this module pure + testable without
- * importing the full KnowledgeGraph types (which are structurally compatible). */
-export interface V2ConnectionSourceNode {
-  id: string;
-  title: string;
-  kind: string;
-}
-export interface V2ConnectionSourceEdge {
-  from: string;
-  to: string;
-  type: string;
-}
-
-/**
- * The FULL direct-connection list for a node — every incoming + outgoing edge,
- * direction-tagged, resolved to the neighbor's title/kind. Outgoing first, then
- * incoming (same order the shared drawer preview uses). Unlike the shared 5-item
- * `previewRelations` slice, this is complete, so the datasheet can show each
- * relation-type group's TRUE total instead of folding depends edges into a
- * generic overflow on contains-dominated hubs.
- *
- * Deduped by `(neighbor id, relationType, direction)`, keeping the first
- * occurrence — a live dogfood bug (`capability:mcp-server` had TWO
- * `depends_on` edges to the same neighbor, one direct + one re-derived)
- * otherwise emits duplicate rows: a duplicate React list key
- * ("Encountered two children with the same key") and a visibly doubled
- * DEPENDS entry. Parallel edges of a DIFFERENT relation type, or the same
- * pair in the OPPOSITE direction, are still distinct facts and both kept.
- */
-export function buildV2Connections(
-  nodeId: string,
-  nodes: readonly V2ConnectionSourceNode[],
-  edges: readonly V2ConnectionSourceEdge[],
-): V2DatasheetConnection[] {
-  const nodeById = new Map(nodes.map((node) => [node.id, node]));
-  const outgoing: V2DatasheetConnection[] = [];
-  const incoming: V2DatasheetConnection[] = [];
-  const seen = new Set<string>();
-  for (const edge of edges) {
-    if (edge.from === nodeId) {
-      const other = nodeById.get(edge.to);
-      if (!other) continue;
-      const key = `${other.id}|${edge.type}|outgoing`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      outgoing.push({
-        id: other.id,
-        title: other.title,
-        kind: other.kind,
-        relationType: edge.type,
-        direction: "outgoing",
-      });
-    } else if (edge.to === nodeId) {
-      const other = nodeById.get(edge.from);
-      if (!other) continue;
-      const key = `${other.id}|${edge.type}|incoming`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      incoming.push({
-        id: other.id,
-        title: other.title,
-        kind: other.kind,
-        relationType: edge.type,
-        direction: "incoming",
-      });
-    }
-  }
-  return [...outgoing, ...incoming];
-}
+export {
+  buildConnections as buildV2Connections,
+  groupConnectionsByDirection as groupV2ConnectionsByDirection,
+  type ConnectionSourceEdge as V2ConnectionSourceEdge,
+  type ConnectionSourceNode as V2ConnectionSourceNode,
+  type DatasheetConnection as V2DatasheetConnection,
+  type GroupedConnections as V2GroupedConnections,
+} from "@/shared/lib/ontology-tree/connections";
+import { groupConnectionsByDirection } from "@/shared/lib/ontology-tree/connections";
+import type { DatasheetConnection as V2DatasheetConnection } from "@/shared/lib/ontology-tree/connections";
 
 /** One direction group as the panel renders it: a capped preview of rows +
  * the group's TRUE total (so the header can say "쓰는 곳 23" while showing 6). */
@@ -171,7 +67,7 @@ export function buildV2ConnectionGroups(
   connections: readonly V2DatasheetConnection[],
   perGroupCap: number = V2_CONNECTION_ROW_CAP,
 ): V2ConnectionGroupsView {
-  const grouped = groupV2ConnectionsByDirection(connections);
+  const grouped = groupConnectionsByDirection(connections);
   const cap = Math.max(0, perGroupCap);
   return {
     usedBy: {

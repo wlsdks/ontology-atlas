@@ -31,7 +31,19 @@ export {
   computeKindDistribution,
   rankAllByDegree,
   selectRecentNodes,
+  buildContainmentParents,
+  nearestDomainId,
 } from "./insights";
+export {
+  buildConnections,
+  groupConnectionsByDirection,
+} from "./connections";
+export type {
+  ConnectionSourceEdge,
+  ConnectionSourceNode,
+  DatasheetConnection,
+  GroupedConnections,
+} from "./connections";
 export type {
   AgentReadinessActionKey,
   AgentReadinessCliCommand,

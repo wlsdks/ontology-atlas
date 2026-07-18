@@ -880,6 +880,10 @@
     --topology-v2-panel-text-tertiary: #868690;
     --topology-v2-panel-text-quaternary: #55555d;
     /* 연결 그룹 trace 미니라인 — 캔버스 엣지와 같은 계열(contains 실선/depends 점선) */
+    /* A1 전체 상세 인디고 보더 — 기존 rgba(94,106,210,0.5) 리터럴 2곳의 토큰化
+       (Guardian A1 follow-up P2). 라이트 변형은 아래 .full-detail-a1 스코프. */
+    --topology-v2-indigo-border: rgba(94, 106, 210, 0.5);
+
     --topology-v2-edge-contains-mark: #4a4a54;
     --topology-v2-edge-depends-mark: #5c5c72;
   }
@@ -1645,4 +1649,31 @@ html[data-theme="light"] [data-testid="ontology-tree-row"][data-dim="true"] {
  */
 html[data-theme="light"] .font-mono[class*="uppercase"][class*="tracking"] {
   font-weight: 520;
+}
+
+/* A1 전체 상세(DOM 페이지) 라이트 모드 — Guardian A1 follow-up P1.
+   전역 [data-theme=light] 에 --topology-v2-panel-* 를 바인딩하면 다크 캔버스
+   위에 뜨는 컴팩트 데이터시트가 흰 슬랩이 되는 결함(이전 Guardian 판정 b)이
+   재발하므로, 라이트 값을 이 DOM 표면에만 스코프한다. 값은 caps 대비 검증
+   패스에서 실측 보관한 라이트 팔레트(primary 19.7:1 · metric 9.8:1 등). */
+html[data-theme="light"] .full-detail-a1 {
+  --topology-v2-panel-surface: #ffffff;
+  --topology-v2-panel-border: rgba(15, 23, 42, 0.12);
+  --topology-v2-panel-divider: rgba(15, 23, 42, 0.1);
+  --topology-v2-panel-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+  --topology-v2-panel-row-hover: rgba(15, 23, 42, 0.045);
+  --topology-v2-panel-metric-surface: rgba(15, 23, 42, 0.035);
+  --topology-v2-panel-metric-text: #3f444c;
+  --topology-v2-panel-action-surface: rgba(15, 23, 42, 0.035);
+  --topology-v2-panel-action-border: rgba(15, 23, 42, 0.14);
+  --topology-v2-panel-power-off: #b9bcc4;
+  --topology-v2-panel-text-primary: #0a0b0c;
+  --topology-v2-panel-text-secondary: #1f2329;
+  --topology-v2-panel-text-tertiary: #5b6068;
+  --topology-v2-panel-text-quaternary: #6f7480;
+  --topology-v2-edge-contains-mark: #9aa0aa;
+  --topology-v2-edge-depends-mark: #9498b4;
+  --topology-v2-indigo-border: rgba(77, 86, 200, 0.5);
+  --topology-v2-indigo: #4d56c8;
+  --topology-v2-indigo-bright: #4d56c8;
 }
