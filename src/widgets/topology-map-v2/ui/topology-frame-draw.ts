@@ -352,7 +352,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     let anchorX = screen.x;
     let clampedAnchorY = anchorY;
     if (!isWithinSafeRect(anchorX, anchorY, safeRect)) {
-      const isProtected = egoState !== "none" || isHovered;
+      // Protected = the focused node, its ego neighbors, or the hovered node —
+      // NOT "dim"/"normal" bystanders, or every off-rect label would clamp to
+      // the inset edge and pile up there.
+      const isProtected = egoState === "center" || egoState === "neighbor" || isHovered;
       if (!isProtected) return;
       const clamped = clampAnchorIntoSafeRect(anchorX, anchorY, safeRect, width / 2 + 4, fontSize + 4);
       anchorX = clamped.x;
