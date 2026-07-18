@@ -641,6 +641,26 @@
     --topology-utility-lane-count-text: var(--color-indigo-accent);
 
     /*
+     * 크롬 시스템 (feat/chrome-system, docs/prototypes/index-panel-v2-full.html
+     * 승인 시안). "machined tile" 문법 — 44px 정사각 타일/칩, 10px radius,
+     * 24px 정렬 레일 — 을 소비하는 모든 표면(ChromeTile · ChromeChip, 이후
+     * 좌측 내비 레일)의 단일 출처. 위 --topology-chrome-*(원형 pill 전용,
+     * 999px radius)와는 형태 문법이 달라 값을 공유하지 않는다 — 그림자/
+     * 인디고 계열만 같은 신경계(단일 채색 원칙). 새 정사각 표면을 만들 때
+     * 이 토큰만 참조하고 인라인 hex/px 재구현 금지(`design.md` "인라인
+     * 재구현 금지" 규범).
+     */
+    --chrome-tile-size: 44px;
+    --chrome-radius: 10px;
+    --chrome-radius-inner: 7px;
+    --chrome-icon: 16px;
+    --chrome-surface: rgba(16, 17, 24, 0.96);
+    --chrome-border: var(--color-border-soft);
+    --chrome-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    --chrome-inset: 24px;
+    --chrome-engrave: 0 1px 0 rgba(0, 0, 0, 0.65);
+
+    /*
      * B2+ 페이지 롤아웃 전역 승격 토큰 (feat/landing-b2plus).
      * `--topology-v2-*` 는 feature flag scope 라 topology 밖 페이지에서 직접
      * 참조 금지 (DESIGN-SYSTEM v2 §스코프 주의) — 랜딩이 필요로 하는 값만
@@ -907,7 +927,10 @@
        "보이지 않을 때의 안전 영역" 수치는 변할 이유가 없어 120 유지 —
        패널이 넓어졌다고 기계적으로 좌우 맞춰 키우지 않았다. 1512/1920
        라이브 검증(`.qa-scratch/datasheet-gear/`)으로 실제 충돌 없음 확인. */
-    --topology-v2-safe-inset-left: 344;
+    /* feat/chrome-system §4 — inset 18→24px 이후 300 + 24 + 26 = 350
+       (구 344 = 300 + 18 + 26). canvas 2D 는 이 숫자를 JS 상수로 소비해
+       CSS var 를 자동 추종하지 못하므로 인셋 변경 시 반드시 같이 갱신. */
+    --topology-v2-safe-inset-left: 350;
     --topology-v2-safe-inset-right: 120;
     --topology-v2-safe-inset-top: 96;
     --topology-v2-safe-inset-bottom: 96;
@@ -929,7 +952,10 @@
        12→13px, metric 11.5→12.5px 로 한 단계씩 올랐다 — 이 파일은 구조
        토큰만, 타입 크기는 컴포넌트가 소유. */
     --topology-v2-panel-width: 352px;
-    --topology-v2-panel-radius: 9px;
+    /* 9→12px (feat/chrome-system §9, INDEX 패널 v2.1) — 데이터시트와
+       INDEX 가 공유하는 패널 계층의 radius 를 크롬 시스템의 4계층 스텝
+       (키캡4·inner7·타일/칩/필10·패널12) 마지막 단으로 승격. */
+    --topology-v2-panel-radius: 12px;
     --topology-v2-panel-row-radius: 5px;
     --topology-v2-panel-pad: 14px;
     --topology-v2-panel-gap: 14px;
@@ -998,12 +1024,16 @@
        클래스를 같이 달아야 한다 — 그래야 pill 과 같은 비율로 커진다. */
     --topology-index-width: 300px;
     --topology-index-tab-width: 26px;
-    --topology-index-inset: 18px;
+    /* 18→24px (feat/chrome-system §4) — 크롬 시스템의 24px 정렬 레일에
+       수렴. --chrome-inset 참조로 단일 출처 유지. */
+    --topology-index-inset: var(--chrome-inset);
     --topology-index-top: 76px;
   }
 
   html[data-topology-index="collapsed"] {
-    --topology-v2-safe-inset-left: 72;
+    /* feat/chrome-system §4 — tab-width(26) + inset(24) + gap(28) = 78
+       (구 72 = 26 + 18 + 28). */
+    --topology-v2-safe-inset-left: 78;
   }
 
   html {
@@ -1422,6 +1452,9 @@
     --topology-utility-lane-focus-ring: rgba(77, 86, 200, 0.46);
     --topology-utility-lane-count-surface: rgba(77, 86, 200, 0.12);
     --topology-utility-lane-count-text: rgba(40, 50, 175, 0.96);
+    --chrome-surface: rgba(255, 255, 255, 0.94);
+    --chrome-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+    --chrome-engrave: 0 1px 0 rgba(255, 255, 255, 0.75);
     --topology-path-handoff-surface: rgba(77, 86, 200, 0.045);
     --topology-path-handoff-border: rgba(77, 86, 200, 0.16);
     --topology-path-handoff-text: rgba(51, 65, 85, 0.66);

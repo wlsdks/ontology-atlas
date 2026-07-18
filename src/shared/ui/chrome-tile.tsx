@@ -1,0 +1,79 @@
+import { forwardRef, type AnchorHTMLAttributes, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { Link } from '@/i18n/navigation';
+import { cn } from '@/shared/lib/cn';
+
+/**
+ * ChromeTile — 44px 정사각 아이콘 버튼. 크롬 시스템(feat/chrome-system,
+ * `docs/prototypes/index-panel-v2-full.html` 승인 시안)의 타일 계층. 순수
+ * 표현 컴포넌트 — 상태/네비게이션 로직은 호출부 책임이고, 이 컴포넌트는
+ * 시각 계약(44px · 10px radius · 16px 아이콘 · title/aria 필수)만 강제한다.
+ * `href` 를 주면 next-intl `Link` 로, 없으면 `button` 으로 렌더한다.
+ *
+ * 크롬 표면은 이 컴포넌트를 소비해야 한다 — 정사각 44px 버튼을 JSX 안에서
+ * 인라인으로 재구현하지 말 것 (`docs/DESIGN-SYSTEM.md` "크롬 문법" 챕터).
+ */
+interface ChromeTileBaseProps {
+  icon: ReactNode;
+  /** 툴팁 텍스트이자 접근성 이름의 기본값. */
+  title: string;
+  'aria-label'?: string;
+  /** 현재 목적지/토글 상태 — 인디고 보더로만 표시 (제2 채색 없음). */
+  active?: boolean;
+  className?: string;
+}
+
+export interface ChromeTileButtonProps
+  extends ChromeTileBaseProps,
+    Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'title' | 'className'> {
+  href?: undefined;
+}
+
+export interface ChromeTileLinkProps
+  extends ChromeTileBaseProps,
+    Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'title' | 'className' | 'href'> {
+  href: string;
+}
+
+export type ChromeTileProps = ChromeTileButtonProps | ChromeTileLinkProps;
+
+const TILE_CLASS =
+  'inline-flex size-[var(--chrome-tile-size)] shrink-0 items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] [&>svg]:size-[var(--chrome-icon)]';
+
+const ACTIVE_CLASS =
+  'border-[color:rgba(94,106,210,0.4)] text-[color:var(--color-text-primary)]';
+
+export const ChromeTile = forwardRef<HTMLButtonElement | HTMLAnchorElement, ChromeTileProps>(
+  ({ icon, title, active, className, href, 'aria-label': ariaLabelProp, ...rest }, ref) => {
+    const ariaLabel = ariaLabelProp ?? title;
+    const resolvedClassName = cn(TILE_CLASS, active && ACTIVE_CLASS, className);
+
+    if (href) {
+      return (
+        <Link
+          ref={ref as React.Ref<HTMLAnchorElement>}
+          href={href}
+          title={title}
+          aria-label={ariaLabel}
+          className={resolvedClassName}
+          {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}
+        >
+          {icon}
+        </Link>
+      );
+    }
+
+    return (
+      <button
+        ref={ref as React.Ref<HTMLButtonElement>}
+        type="button"
+        title={title}
+        aria-label={ariaLabel}
+        className={resolvedClassName}
+        {...(rest as ButtonHTMLAttributes<HTMLButtonElement>)}
+      >
+        {icon}
+      </button>
+    );
+  },
+);
+ChromeTile.displayName = 'ChromeTile';
