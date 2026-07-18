@@ -28,7 +28,7 @@ silo, or in nobody's.
 ontology-atlas takes the opposite path. The mental model is a folder of
 markdown files. Frontmatter is the graph: `kind: capability`, `domain:
 auth`, `depends_on: [...]`. Humans edit it in any markdown editor. AI
-agents read and write it via a tiny MCP server (24 tools — list,
+agents read and write it via a tiny MCP server (25 tools — list,
 get, validate_vault, compile_ontology, query_ontology,
 analyze_repo_structure, infer_imports, add_concept, add_concepts,
 patch_concept, rename_concept, ...).
@@ -43,7 +43,7 @@ paint chunk (verified by a CI script).
   npx ontology-atlas init my-vault
   # Claude Code/Cursor read .mcp.json; Codex reads .codex/config.toml
 
-Hosted demo (read-only, our own dogfood vault — 107 nodes):
+Hosted demo (read-only, our own dogfood vault — 108 nodes):
 https://ontology-atlas.web.app
 
 What I'd love feedback on:

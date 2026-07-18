@@ -7,7 +7,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
-[![MCP](https://img.shields.io/badge/MCP-24_tools-5e6ad2)](mcp/README.md)
+[![MCP](https://img.shields.io/badge/MCP-25_tools-5e6ad2)](mcp/README.md)
 
 | Open it | Link |
 |---|---|
@@ -238,7 +238,7 @@ The same frontmatter graph is rendered three ways and exposed to agents through 
 - **Topology** (`/topology`) - Sigma WebGL spatial network of projects and relations.
 - **Tree** (`/`, `/ontology`) - project to domain to capability to element drill-down.
 - **ERD builder** (`/ontology/edit`) - xyflow canvas for adding nodes and relations visually.
-- **MCP** (`mcp/`) - JSON-RPC stdio server with 24 tools for AI agents: 16 read + 8 write.
+- **MCP** (`mcp/`) - JSON-RPC stdio server with 25 tools for AI agents: 16 read + 9 write.
 
 All four read and write the same `.md` files. Pick the interface that matches
 the task; the vault stays the source of truth.
@@ -308,7 +308,7 @@ to access a local folder on your machine.
 | **Vault integrity** | `pnpm vault:validate`, `test:vault:validate`, `vault:audit`, and `test:vault:audit` remain explicit local/release-preflight gates. |
 | **MCP/CLI contracts** | `pnpm test:cli:args`, `pnpm test:mcp:docs`, `pnpm package:check`, `pnpm test:contracts`, and focused `test:mcp:*` scripts cover the agent surface. |
 | **Graph hot paths** | `pnpm perf:graph:check` is part of `pnpm package:check`, so compile/query latency budgets run before release. |
-| **Dogfooding** | This repo's own vault has **107 nodes**: capabilities 36, document 3, domains 6, elements 60, project 1, vault-readme 1. |
+| **Dogfooding** | This repo's own vault has **108 nodes**: capabilities 36, document 3, domains 6, elements 61, project 1, vault-readme 1. |
 
 For the detailed maintainer command matrix, see
 [`docs/DEVELOPMENT-CHECKS.md`](docs/DEVELOPMENT-CHECKS.md).
