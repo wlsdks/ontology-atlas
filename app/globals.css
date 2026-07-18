@@ -690,12 +690,12 @@
        (the brand pill) is measured at bottom=64px at 1x — the mockup's
        slimmed single-line pill (no census subtitle) would clear 56+8, but
        today's pill is still the two-line `HeroCollapsed` (title + census
-       subtitle) this pass didn't slim. 72px keeps a real 8px gap instead of
+       subtitle) this pass didn't slim. 76px keeps ≥6px clearance even at the ≥1920 zoom breakpoints (pill grows 32→36px there — Guardian B3 followup 1) instead of
        an exact flush touch. Both this token and the consumer element MUST
        carry the `topology-ui-scale` class so the gap holds at the ≥1920px/
        ≥2400px `zoom` breakpoints too (zoom scales the pill's rendered
        bottom edge — a flat px value alone would drift into it again). */
-    --topology-node-popover-top: 72px;
+    --topology-node-popover-top: 76px;
     --topology-node-popover-right-inset: clamp(24px, 2.1vw, 44px);
     --topology-motion-focus-duration: 180ms;
     --topology-motion-panel-duration: 180ms;
@@ -941,7 +941,7 @@
     --topology-index-width: 300px;
     --topology-index-tab-width: 26px;
     --topology-index-inset: 18px;
-    --topology-index-top: 72px;
+    --topology-index-top: 76px;
   }
 
   html[data-topology-index="collapsed"] {

@@ -357,8 +357,16 @@ export function HomePage() {
   // that surfaces the miss. Notifies once per distinct dangling slug.
   const deeplinkMissNotifiedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!selectedSlug || !projectsQuery.loaded || !ontologyInsight) return;
-    if (selectedProject || selectedOntologyNode) return;
+    if (!selectedSlug || !ontologyInsight) return;
+    if (selectedOntologyNode) return;
+    // 프로젝트 판정은 로드된 경우에만 신뢰. 미로드(fallback/dogfood) 상태에서는
+    // kind-접두 슬러그(온톨로지 형태)만 미스로 알린다 — bare 슬러그는 프로젝트일
+    // 수 있어 오탐 방지 (Guardian B3 followup 2: fallback 사용자도 알림 수신).
+    if (projectsQuery.loaded) {
+      if (selectedProject) return;
+    } else if (!selectedSlug.includes(":")) {
+      return;
+    }
     if (deeplinkMissNotifiedRef.current === selectedSlug) return;
     let cancelled = false;
     window.queueMicrotask(() => {
