@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>/ontology 허브 B2 — 지도+목차 하이브리드</title>
+<style>
+  /* Values copied from app/globals.css token families (standalone prototype). */
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+  }
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+  .frame { max-width: 1432px; margin: 0 auto; padding: 24px 40px 40px; }
+
+  .hub-head { display: flex; align-items: center; gap: 20px; margin-bottom: 18px; }
+  .census {
+    font-family: var(--mono); font-size: 13px; letter-spacing: 0.1em; font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    white-space: nowrap;
+  }
+  .census .sep { color: var(--text-quaternary); margin: 0 4px; }
+  .hub-head .sync {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 11.5px; color: var(--text-tertiary);
+  }
+  .hub-head .sync .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); }
+  .hub-head .maplink {
+    margin-left: auto; font-size: 12px; color: var(--text-secondary);
+    text-decoration: none; border: 1px solid var(--border-soft); border-radius: 6px;
+    padding: 7px 12px; background: var(--panel);
+    transition: border-color 150ms ease;
+  }
+  .hub-head .maplink:hover { border-color: var(--border-strong); color: var(--text-primary); }
+
+  .cols { display: grid; grid-template-columns: 40fr 60fr; gap: 26px; align-items: stretch; }
+
+  /* ---- left: live map miniature ---------------------------------------- */
+  .mapcard {
+    position: relative;
+    border: 1px solid var(--border-soft); border-radius: 9px;
+    background: var(--canvas-bg);
+    overflow: hidden;
+    height: 790px;
+    display: flex; flex-direction: column;
+  }
+  .mapcard .mapbody { position: relative; flex: 1; min-height: 0; }
+  .mapcard canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
+  .mapcard .mapfoot {
+    display: flex; align-items: center; gap: 10px;
+    border-top: 1px solid var(--divider);
+    padding: 8px 12px;
+    font-size: 11px; color: var(--text-quaternary);
+    background: var(--panel);
+  }
+  .mapcard .mapfoot b { color: var(--text-tertiary); font-weight: 560; }
+  .mapcard .focus-chip {
+    position: absolute; top: 10px; left: 10px;
+    display: flex; align-items: center; gap: 7px;
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11.5px; color: var(--text-secondary);
+  }
+  .mapcard .focus-chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); }
+
+  /* ---- right: machined tree synced to map ------------------------------- */
+  .indexcard {
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 9px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .search { position: relative; }
+  .search input {
+    width: 100%; appearance: none;
+    background: var(--canvas-bg);
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    color: var(--text-primary);
+    font: 400 12.5px/1 inherit; font-family: inherit;
+    padding: 8px 11px 8px 30px; outline: none;
+    transition: border-color 150ms ease;
+  }
+  .search input::placeholder { color: var(--text-quaternary); }
+  .search input:hover { border-color: var(--border-strong); }
+  .search input:focus { border-color: var(--indigo); }
+  .search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); }
+
+  .tree { display: flex; flex-direction: column; }
+  .trow {
+    display: flex; align-items: center; gap: 9px;
+    padding: 6px 9px; border-radius: 5px;
+    border: 1px solid transparent;
+    font-size: 13px; color: var(--text-secondary);
+    cursor: pointer; user-select: none;
+    transition: border-color 120ms ease, color 120ms ease;
+  }
+  .trow:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .trow.sel { border-color: rgba(94, 106, 210, 0.55); color: var(--text-primary); }
+  .trow.dimmed { color: var(--text-quaternary); }
+  .trow.dimmed:hover { color: var(--text-tertiary); }
+  .trow .caret {
+    width: 12px; flex: none; text-align: center;
+    color: var(--text-quaternary); font-size: 9px;
+    transition: transform 120ms ease;
+  }
+  .trow.open .caret { transform: rotate(90deg); }
+  .trow .caret.leaf { visibility: hidden; }
+  .trow .t { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trow .t small { color: var(--text-quaternary); font-size: 11px; margin-left: 7px; }
+  .trow .kids {
+    flex: none; font-family: var(--mono); font-size: 10.5px;
+    color: var(--text-quaternary);
+  }
+  .trow .num { font-size: 11.5px; min-width: 30px; text-align: right; }
+  .trow .fresh-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); flex: none; }
+  .trow .stale-mark {
+    flex: none; font-size: 10px; color: var(--text-quaternary);
+    border: 1px dashed var(--border-strong); border-radius: 4px; padding: 0 5px;
+  }
+  .depth-1 { margin-left: 22px; }
+  .depth-2 { margin-left: 44px; }
+  .group-kids.closed { display: none; }
+  .index-foot {
+    margin-top: auto;
+    border-top: 1px solid var(--divider); padding-top: 9px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px; color: var(--text-quaternary);
+  }
+  .index-foot .payload {
+    min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-family: var(--mono); font-size: 10.5px;
+  }
+  .index-foot button {
+    appearance: none; cursor: pointer; flex: none;
+    font: 500 11px/1 inherit; font-family: inherit;
+    color: var(--indigo-bright);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(94, 106, 210, 0.5);
+    border-radius: 5px; padding: 5px 9px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .index-foot button:hover { background: var(--row-hover); border-color: var(--indigo); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <div class="hub-head">
+    <span class="census">296 CONCEPTS<span class="sep">·</span>508 RELATIONS<span class="sep">·</span>6 DOMAINS</span>
+    <span class="sync"><span class="dot"></span>지도 포커스 = 목차 펼침 — 둘은 같은 선택을 본다</span>
+    <a class="maplink" href="#">지도 전체 화면 →</a>
+  </div>
+
+  <div class="cols">
+    <!-- LEFT 40%: the v2 topology miniature -->
+    <div class="mapcard">
+      <div class="focus-chip"><span class="dot"></span>Onboarding &amp; UX 포커스</div>
+      <div class="mapbody"><canvas id="mini"></canvas></div>
+      <div class="mapfoot">
+        <span><b>클릭</b> 포커스</span>
+        <span><b>더블클릭</b> 전체 지도</span>
+        <span><b>Esc</b> 개요</span>
+        <span style="margin-left:auto;font-family:var(--mono)">contains ─ · depends ╌</span>
+      </div>
+    </div>
+
+    <!-- RIGHT 60%: machined tree, synced to map selection -->
+    <div class="indexcard">
+      <div class="search">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="5" cy="5" r="3.6" fill="none" stroke="#55555d" stroke-width="1.3"/><line x1="7.8" y1="7.8" x2="11" y2="11" stroke="#55555d" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <input id="q" type="text" placeholder="개념 검색 — 목차와 지도가 함께 걸러진다" autocomplete="off" />
+      </div>
+      <nav class="tree" id="tree" aria-label="개념 목차"></nav>
+      <div class="index-foot">
+        <span class="payload">get_concept("domains/onboarding-ux") → find_backlinks → reachability --max-depth 3</span>
+        <button type="button">다음 액션 복사</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" }
+  };
+  var DIM = { fill: "#1a1a1e", stroke: "#2b2b2f", edge: "#1e1e22" };
+  var EDGE = { contains: "#28282e", depends: "#39394a" };
+  var INDIGO = "#5e6ad2", INDIGO_BRIGHT = "#8890e0";
+
+  // ---------------------------------------------------------------------
+  // tree (right 60%) — same machined rows as B1, synced to map focus:
+  // focused domain expanded + full tone, other domains present but dimmed.
+  // ---------------------------------------------------------------------
+  function hexPts(c, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push((c + r * Math.cos(a)).toFixed(2) + "," + (c + r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(" ");
+  }
+  function glyphSVG(kind, s) {
+    s = s || 15;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var c = s / 2;
+    var common = 'fill="' + col.fill + '" stroke="' + col.stroke + '" stroke-width="1.25"';
+    var body;
+    if (kind === "project") body = '<polygon points="' + hexPts(c, c - 1.2) + '" ' + common + '/>';
+    else if (kind === "domain") body = '<rect x="' + (s * 0.067) + '" y="' + (s * 0.227) + '" width="' + (s * 0.867) + '" height="' + (s * 0.547) + '" rx="1.6" ' + common + '/>';
+    else if (kind === "capability") body = '<circle cx="' + c + '" cy="' + c + '" r="' + (c - 1.6) + '" ' + common + '/>';
+    else body = '<rect x="' + (s * 0.16) + '" y="' + (s * 0.16) + '" width="' + (s * 0.68) + '" height="' + (s * 0.68) + '" rx="1.4" ' + common + '/><circle cx="' + c + '" cy="' + c + '" r="' + (s * 0.1) + '" fill="#0c0c10"/>';
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
+  }
+
+  var TREE = {
+    kind: "project", title: "ontology-atlas", n: 296, open: true,
+    kids: [
+      { kind: "domain", title: "AI Agent Partner", n: 39, kidsSummary: "역량 6 · 요소 32", dimmed: true },
+      { kind: "domain", title: "Views", sub: "Topology · Browse · Builder", n: 85, kidsSummary: "역량 9 · 요소 75", dimmed: true },
+      { kind: "domain", title: "Vault — Local-First", n: 35, kidsSummary: "역량 5 · 요소 29", dimmed: true },
+      {
+        kind: "domain", title: "Onboarding & UX", sub: "theme · toast · a11y · mobile · CLI",
+        n: 101, kidsSummary: "역량 3 · 요소 15", open: true, sel: true, fresh: true,
+        kids: [
+          { kind: "capability", title: "Agent Config Onboarding", n: 4, fresh: true },
+          { kind: "capability", title: "CLI Developer Entry", n: 6 },
+          { kind: "capability", title: "Product Owner Operating System", n: 1, fresh: true },
+          { kind: "element", title: "Landing First Impression" },
+          { kind: "element", title: "Locale Switch" },
+          { kind: "element", title: "Operations Nav" },
+          { kind: "element", title: "Mobile Bottom Tab Bar" },
+          { kind: "element", title: "Theme Toggle" },
+          { kind: "element", title: "Toast" },
+          { kind: "element", title: "Gesture Hint" }
+        ]
+      },
+      { kind: "domain", title: "Ontology Core", sub: "TBox · ABox · Evidence", n: 29, kidsSummary: "역량 7 · 요소 21", dimmed: true },
+      { kind: "domain", title: "Mode-Aware Adapters", n: 11, kidsSummary: "역량 2 · 요소 9", stale: true, dimmed: true }
+    ]
+  };
+
+  var treeEl = document.getElementById("tree");
+  function rowHTML(node, depth) {
+    var hasKids = !!(node.kids && node.kids.length) || !!node.kidsSummary;
+    var cls = "trow depth-" + depth +
+      (node.open ? " open" : "") +
+      (node.sel ? " sel" : "") +
+      (node.dimmed ? " dimmed" : "");
+    var html = '<div class="' + cls + '" data-title="' + node.title.toLowerCase() + '">' +
+      '<span class="caret' + (hasKids ? "" : " leaf") + '">▶</span>' +
+      glyphSVG(node.kind) +
+      '<span class="t">' + node.title + (node.sub ? "<small>" + node.sub + "</small>" : "") + "</span>" +
+      (node.fresh ? '<span class="fresh-dot" title="최근 갱신"></span>' : "") +
+      (node.stale ? '<span class="stale-mark">정체</span>' : "") +
+      (node.kidsSummary ? '<span class="kids">' + node.kidsSummary + "</span>" : "") +
+      (node.n != null ? '<span class="num">' + node.n + "</span>" : "") +
+      "</div>";
+    if (node.kids && node.kids.length) {
+      html += '<div class="group-kids' + (node.open ? "" : " closed") + '">' +
+        node.kids.map(function (k) { return rowHTML(k, depth + 1); }).join("") +
+        "</div>";
+    }
+    return html;
+  }
+  treeEl.innerHTML = rowHTML(TREE, 0);
+  treeEl.addEventListener("click", function (e) {
+    var row = e.target.closest(".trow");
+    if (!row) return;
+    var kids = row.nextElementSibling;
+    if (kids && kids.classList.contains("group-kids")) {
+      kids.classList.toggle("closed");
+      row.classList.toggle("open");
+    }
+    treeEl.querySelectorAll(".trow.sel").forEach(function (r) { r.classList.remove("sel"); });
+    row.classList.add("sel");
+  });
+  document.getElementById("q").addEventListener("input", function (e) {
+    var v = e.target.value.trim().toLowerCase();
+    treeEl.querySelectorAll(".trow").forEach(function (r) {
+      r.style.display = !v || r.getAttribute("data-title").indexOf(v) !== -1 ? "" : "none";
+    });
+    if (v) treeEl.querySelectorAll(".group-kids").forEach(function (g) { g.classList.remove("closed"); });
+  });
+
+  // ---------------------------------------------------------------------
+  // map miniature (left 40%) — same radial layout + machined shapes as the
+  // approved b2plus canvas, statically rendered with ego-focus on the
+  // Onboarding & UX domain. Dim uses OPAQUE tokens (no alpha dim).
+  // ---------------------------------------------------------------------
+  var domains = [
+    { id: "ai-agent-partner", title: "AI Agent Partner", count: 39 },
+    { id: "views", title: "Views", count: 85 },
+    { id: "vault-local-first", title: "Vault — Local-First", count: 35 },
+    { id: "ontology-core", title: "Ontology Core", count: 29 },
+    { id: "onboarding-ux", title: "Onboarding & UX", count: 101, focus: true },
+    { id: "mode-aware-adapters", title: "Mode-Aware", count: 11, stale: true }
+  ];
+  var capabilities = [
+    { id: "mcp-server", domain: "ai-agent-partner" },
+    { id: "agent-brief", domain: "ai-agent-partner" },
+    { id: "topology-map-canvas", domain: "views" },
+    { id: "ontology-insights", domain: "views" },
+    { id: "local-vault-adapter", domain: "vault-local-first" },
+    { id: "frontmatter-schema", domain: "ontology-core" },
+    { id: "relation-graph", domain: "ontology-core" },
+    { id: "agent-config-onboarding", domain: "onboarding-ux" },
+    { id: "cli-developer-entry", domain: "onboarding-ux" },
+    { id: "po-operating-system", domain: "onboarding-ux" },
+    { id: "mode-detection", domain: "mode-aware-adapters" }
+  ];
+  var elements = [
+    { id: "e1", capability: "mcp-server" },
+    { id: "e2", capability: "mcp-server" },
+    { id: "e3", capability: "topology-map-canvas" },
+    { id: "e4", capability: "topology-map-canvas" },
+    { id: "e5", capability: "local-vault-adapter" },
+    { id: "e6", capability: "relation-graph" },
+    { id: "e7", capability: "agent-config-onboarding" },
+    { id: "e8", capability: "agent-config-onboarding" },
+    { id: "e9", capability: "cli-developer-entry" },
+    { id: "e10", capability: "po-operating-system" },
+    { id: "e11", capability: "mode-detection" }
+  ];
+  var DEPENDS = [
+    ["agent-brief", "mcp-server"],
+    ["topology-map-canvas", "mcp-server"],
+    ["agent-config-onboarding", "mcp-server"],
+    ["cli-developer-entry", "frontmatter-schema"],
+    ["po-operating-system", "agent-brief"],
+    ["ontology-insights", "relation-graph"],
+    ["mode-detection", "local-vault-adapter"]
+  ];
+
+  var nodes = {}, all = [];
+  function addNode(id, kind, extra) {
+    var n = { id: id, kind: kind, x: 0, y: 0 };
+    for (var k in extra) n[k] = extra[k];
+    nodes[id] = n; all.push(n);
+    return n;
+  }
+  addNode("root", "project", { title: "ontology-atlas", r: 20 });
+  domains.forEach(function (d) { addNode(d.id, "domain", { title: d.title, count: d.count, focus: d.focus, stale: d.stale, r: 13 }); });
+  capabilities.forEach(function (c) { addNode(c.id, "capability", { domain: c.domain, r: 8 }); });
+  elements.forEach(function (e) { addNode(e.id, "element", { capability: e.capability, r: 5 }); });
+
+  (function layout() {
+    var TAU = Math.PI * 2;
+    var dNodes = domains.map(function (d) { return nodes[d.id]; });
+    dNodes.forEach(function (d, i) {
+      var a = (i / dNodes.length) * TAU - Math.PI / 2;
+      d.angle = a;
+      d.x = Math.cos(a) * 190; d.y = Math.sin(a) * 190;
+    });
+    dNodes.forEach(function (d) {
+      var caps = capabilities.filter(function (c) { return c.domain === d.id; }).map(function (c) { return nodes[c.id]; });
+      var spread = Math.min(0.95, 0.32 + caps.length * 0.24);
+      caps.forEach(function (c, i) {
+        var t = caps.length === 1 ? 0 : (i / (caps.length - 1) - 0.5);
+        var a = d.angle + t * spread;
+        c.angle = a;
+        c.x = d.x + Math.cos(a) * 105; c.y = d.y + Math.sin(a) * 105;
+      });
+    });
+    capabilities.forEach(function (cSrc) {
+      var c = nodes[cSrc.id];
+      var els = elements.filter(function (e) { return e.capability === c.id; }).map(function (e) { return nodes[e.id]; });
+      var spread = Math.min(1.0, 0.3 + els.length * 0.3);
+      els.forEach(function (e, i) {
+        var t = els.length === 1 ? 0 : (i / (els.length - 1) - 0.5);
+        var a = c.angle + t * spread;
+        e.x = c.x + Math.cos(a) * 62; e.y = c.y + Math.sin(a) * 62;
+      });
+    });
+  })();
+
+  // focus set: onboarding-ux ego (domain + its caps/elements + root)
+  var FOCUS = { "root": 1, "onboarding-ux": 1 };
+  capabilities.forEach(function (c) {
+    if (c.domain === "onboarding-ux") {
+      FOCUS[c.id] = 1;
+      elements.forEach(function (e) { if (e.capability === c.id) FOCUS[e.id] = 1; });
+    }
+  });
+
+  var canvas = document.getElementById("mini");
+  var ctx = canvas.getContext("2d");
+
+  function hexToRgb(hex) {
+    var v = parseInt(hex.slice(1), 16);
+    return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+  }
+  function mix(hexA, hexB, t) {
+    var a = hexToRgb(hexA), b = hexToRgb(hexB);
+    return "rgb(" +
+      Math.round(a[0] + (b[0] - a[0]) * t) + "," +
+      Math.round(a[1] + (b[1] - a[1]) * t) + "," +
+      Math.round(a[2] + (b[2] - a[2]) * t) + ")";
+  }
+
+  function roundedPolygon(pts, rad) {
+    var n = pts.length;
+    ctx.beginPath();
+    for (var i = 0; i < n; i++) {
+      var p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n];
+      var v1x = p1.x - p0.x, v1y = p1.y - p0.y, l1 = Math.hypot(v1x, v1y) || 1;
+      var v2x = p2.x - p1.x, v2y = p2.y - p1.y, l2 = Math.hypot(v2x, v2y) || 1;
+      var r = Math.min(rad, l1 * 0.45, l2 * 0.45);
+      var sx = p1.x - (v1x / l1) * r, sy = p1.y - (v1y / l1) * r;
+      var ex = p1.x + (v2x / l2) * r, ey = p1.y + (v2y / l2) * r;
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      ctx.quadraticCurveTo(p1.x, p1.y, ex, ey);
+    }
+    ctx.closePath();
+  }
+  function hexShape(cx, cy, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+    }
+    return pts;
+  }
+
+  function render() {
+    var rect = canvas.parentElement.getBoundingClientRect();
+    var DPR = window.devicePixelRatio || 1;
+    canvas.width = Math.round(rect.width * DPR);
+    canvas.height = Math.round(rect.height * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    var W = rect.width, H = rect.height;
+    ctx.fillStyle = "#0a0a0d";
+    ctx.fillRect(0, 0, W, H);
+
+    // fit world (roughly ±300) into view
+    var scale = Math.min(W / 660, H / 660);
+    function S(n) { return { x: W / 2 + 24 + n.x * scale, y: H / 2 + n.y * scale }; }
+
+    // edges — contains solid, depends dashed; non-focus edges use opaque dim
+    // ink, ego traces run one tier brighter (opaque tokens, no alpha dim)
+    function edgeColor(aId, bId, base) {
+      return FOCUS[aId] && FOCUS[bId] ? "#3f3f49" : DIM.edge;
+    }
+    ctx.lineWidth = 1;
+    // contains: root->domain, domain->cap, cap->el
+    ctx.setLineDash([]);
+    domains.forEach(function (d) {
+      var a = S(nodes.root), b = S(nodes[d.id]);
+      ctx.strokeStyle = edgeColor("root", d.id, EDGE.contains);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    });
+    capabilities.forEach(function (c) {
+      var a = S(nodes[c.domain]), b = S(nodes[c.id]);
+      ctx.strokeStyle = edgeColor(c.domain, c.id, EDGE.contains);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    });
+    elements.forEach(function (e) {
+      var a = S(nodes[e.capability]), b = S(nodes[e.id]);
+      ctx.strokeStyle = edgeColor(e.capability, e.id, EDGE.contains);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    });
+    // depends: dashed, slight bow
+    ctx.setLineDash([3, 4]);
+    DEPENDS.forEach(function (p) {
+      var a = S(nodes[p[0]]), b = S(nodes[p[1]]);
+      var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      var cx = mx + (W / 2 - mx) * 0.35, cy = my + (H / 2 - my) * 0.35;
+      var touches = FOCUS[p[0]] || FOCUS[p[1]];
+      ctx.strokeStyle = touches ? INDIGO : DIM.edge;
+      ctx.lineWidth = touches ? 1.3 : 1;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(cx, cy, b.x, b.y); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.lineWidth = 1;
+
+    // nodes — machined shapes, kind = shape; dim uses opaque tokens
+    all.forEach(function (n) {
+      var p = S(n);
+      var r = n.r * scale * 1.9;
+      var focused = !!FOCUS[n.id];
+      var col = GLYPH_COLORS[n.kind];
+      var fill = focused ? col.fill : DIM.fill;
+      // ego members lean toward indigo (signal = focus state), same mix the
+      // approved b2plus prototype used for ego neighbors
+      var stroke = focused ? mix(col.stroke, INDIGO, 0.45) : DIM.stroke;
+      if (n.stale && focused) stroke = "#454549";
+      if (n.id === "onboarding-ux") stroke = INDIGO_BRIGHT;
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = n.kind === "project" ? 1.8 : n.kind === "domain" ? 1.5 : 1.1;
+      if (n.stale) ctx.setLineDash([3, 3]);
+
+      if (n.kind === "project") {
+        roundedPolygon(hexShape(p.x, p.y, r), Math.min(3, r * 0.14));
+        ctx.fill(); ctx.stroke();
+      } else if (n.kind === "domain") {
+        var w = r * 1.55, h = r * 1.0;
+        ctx.beginPath();
+        ctx.roundRect(p.x - w, p.y - h, w * 2, h * 2, 3);
+        ctx.fill(); ctx.stroke();
+      } else if (n.kind === "capability") {
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.roundRect(p.x - r, p.y - r, r * 2, r * 2, 2);
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.fillStyle = "#0c0c10";
+        ctx.arc(p.x, p.y, Math.max(1.2, r * 0.3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.setLineDash([]);
+
+      // engraved count numerals on domains (real data marks — dim face when
+      // outside the ego focus, never hidden)
+      if (n.kind === "domain" && n.count != null) {
+        var size = Math.max(8, 9 * scale * 1.6);
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.font = "600 " + size + "px ui-monospace, SFMono-Regular, Menlo, monospace";
+        ctx.fillStyle = "#08080a";
+        ctx.fillText(String(n.count), p.x, p.y + 1);
+        ctx.fillStyle = focused ? "#8c8c94" : "#3a3a40";
+        ctx.fillText(String(n.count), p.x, p.y);
+      }
+    });
+
+    // labels — focused domain + project only (overview-first, no label soup)
+    function label(n, text, colr, size, dy) {
+      var p = S(n);
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.font = "600 " + size + "px -apple-system, 'SF Pro Text', sans-serif";
+      ctx.fillStyle = colr;
+      ctx.fillText(text, p.x, p.y + dy);
+    }
+    label(nodes["onboarding-ux"], "Onboarding & UX", "#b8b8c1", 12, 13 * scale * 1.9 + 6);
+    label(nodes.root, "ontology-atlas", "#77777f", 11, 20 * scale * 1.9 + 6);
+  }
+
+  render();
+  window.addEventListener("resize", render);
+})();
+</script>
+</body>
+</html>

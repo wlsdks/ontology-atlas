@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>전체 상세 뷰 A1 — 데이터시트 확장판</title>
+<style>
+  /* Values copied from app/globals.css token families (standalone prototype —
+     the shipped page would consume the promoted global tokens instead). */
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --action-surface: rgba(255, 255, 255, 0.03);
+    --action-border: #2f2f37;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+  }
+  .page { max-width: 1240px; margin: 0 auto; padding: 28px 40px 56px; }
+
+  /* ---- top chrome ------------------------------------------------------ */
+  .crumbs {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-tertiary); margin-bottom: 26px;
+  }
+  .crumbs a { color: var(--text-secondary); text-decoration: none; }
+  .crumbs a:hover { color: var(--text-primary); }
+  .crumbs .sep { color: var(--text-quaternary); }
+  .crumbs .census {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+
+  /* ---- engraved numerals ---------------------------------------------- */
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- header ---------------------------------------------------------- */
+  header.node { display: flex; align-items: flex-start; gap: 14px; }
+  header.node .glyph { margin-top: 5px; }
+  header.node h1 {
+    margin: 0; font-size: 24px; font-weight: 650; letter-spacing: -0.015em;
+  }
+  header.node .kindline {
+    display: flex; align-items: center; gap: 8px; margin-top: 5px;
+    font-size: 12.5px; color: var(--text-tertiary);
+  }
+  header.node .kindline .dot-sep { color: var(--text-quaternary); }
+  .power {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--indigo); flex: none;
+  }
+  header.node .slug {
+    margin-left: auto; align-self: flex-start; margin-top: 10px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-quaternary);
+  }
+
+  /* the ONE engraved metric line */
+  .metricline {
+    margin-top: 18px;
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    background: var(--metric-surface);
+    padding: 9px 14px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.01em;
+    color: #b6b6c0;
+    display: flex; gap: 18px; align-items: baseline;
+  }
+  .metricline b {
+    font-weight: 600; color: var(--numeral-face);
+    text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .metricline .lbl { color: var(--text-tertiary); font-family: inherit; }
+
+  /* ---- direction groups ------------------------------------------------ */
+  .groups {
+    display: grid; grid-template-columns: 1.35fr 1fr; gap: 22px;
+    margin-top: 22px; align-items: start;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 9px;
+    padding: 13px 14px;
+  }
+  .ghead {
+    display: flex; align-items: center; gap: 9px; margin-bottom: 8px;
+  }
+  .ghead .glabel {
+    font-size: 13px; font-weight: 560; color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+  .ghead .gcap {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .ghead .num { margin-left: auto; font-size: 12px; }
+  .rows { display: flex; flex-direction: column; }
+  .rows.two-col { display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; }
+  .row {
+    display: flex; align-items: center; gap: 9px;
+    padding: 5px 7px; border-radius: 5px;
+    border: 1px solid transparent;
+    font-size: 12.5px; color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .row:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .row .t { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .num { font-size: 11px; }
+  .row .fresh-dot {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); flex: none;
+  }
+  .stack { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ---- reach instrument ------------------------------------------------ */
+  .reach { margin-top: 22px; }
+  .reach .sentence {
+    font-size: 14.5px; line-height: 1.65; color: var(--text-secondary);
+    letter-spacing: -0.005em; max-width: 760px;
+  }
+  .reach .sentence b { color: var(--text-primary); font-weight: 600; }
+  .reach .sentence .num { font-size: 13.5px; }
+  .steps {
+    display: inline-flex; align-items: baseline; gap: 7px; margin-left: 14px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-quaternary);
+    vertical-align: baseline;
+  }
+  .steps span { padding: 1px 5px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; }
+  .steps span:hover { border-color: var(--border-strong); }
+  .steps .on { color: var(--indigo-bright); border-color: rgba(94, 106, 210, 0.5); }
+  .domain-bars {
+    margin-top: 14px; display: grid;
+    grid-template-columns: 170px 1fr 44px; row-gap: 7px; column-gap: 14px;
+    max-width: 640px; align-items: center;
+  }
+  .domain-bars .dn { font-size: 12px; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .domain-bars .dn.self { color: var(--text-secondary); }
+  .domain-bars .track {
+    height: 3px; border-radius: 2px; background: var(--border-soft);
+    overflow: hidden; position: relative;
+  }
+  .domain-bars .track i {
+    position: absolute; inset: 0 auto 0 0; border-radius: 2px;
+    background: #55555d;
+  }
+  .domain-bars .track.self i { background: var(--indigo); }
+  .domain-bars .num { font-size: 11.5px; text-align: right; }
+
+  /* ---- agent handoff --------------------------------------------------- */
+  .handoff {
+    margin-top: 26px;
+    border: 1px solid var(--border-soft); border-radius: 9px;
+    background: var(--panel); padding: 13px 14px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .handoff .hlabel { font-size: 12.5px; font-weight: 560; color: var(--text-primary); flex: none; }
+  .handoff .payload {
+    min-width: 0; flex: 1;
+    font-family: var(--mono); font-size: 11.5px; color: var(--text-tertiary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .handoff button {
+    flex: none; appearance: none; cursor: pointer;
+    font: 560 12px/1 inherit; font-family: inherit;
+    color: var(--indigo-bright);
+    background: var(--action-surface);
+    border: 1px solid rgba(94, 106, 210, 0.5);
+    border-radius: 6px; padding: 7px 13px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .handoff button:hover { background: var(--row-hover); border-color: var(--indigo); }
+  .handoff .full {
+    flex: none; font-size: 12px; color: var(--text-tertiary);
+    text-decoration: none;
+  }
+  .handoff .full:hover { color: var(--text-secondary); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="crumbs">
+    <a href="#">← 지도</a>
+    <span class="sep">/</span>
+    <a href="#">ontology-atlas</a>
+    <span class="sep">/</span>
+    <span>도메인</span>
+    <span class="census">296 CONCEPTS · 508 RELATIONS</span>
+  </nav>
+
+  <header class="node">
+    <span class="glyph" data-glyph="domain" data-size="22"></span>
+    <div>
+      <h1>Onboarding &amp; UX</h1>
+      <div class="kindline">
+        <span class="power"></span>
+        <span>도메인 · 최근 갱신</span>
+        <span class="dot-sep">·</span>
+        <span>theme · toast · a11y · mobile · CLI</span>
+      </div>
+    </div>
+    <span class="slug">domains/onboarding-ux</span>
+  </header>
+
+  <div class="metricline">
+    <span><span class="lbl">담는 것</span> <b>18</b></span>
+    <span><span class="lbl">이 노드를 쓰는 곳</span> <b>2</b></span>
+    <span><span class="lbl">이 노드가 기대는 곳</span> <b>1</b></span>
+    <span><span class="lbl">3단계 도달</span> <b>279</b></span>
+  </div>
+
+  <div class="groups">
+    <!-- contains — full list, no cap -->
+    <section class="card">
+      <div class="ghead">
+        <svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#4a4a54" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span class="glabel">이 도메인이 담는 것</span>
+        <span class="gcap">contains</span>
+        <span class="num">18</span>
+      </div>
+      <div class="rows two-col" id="contains-rows"></div>
+    </section>
+
+    <div class="stack">
+      <!-- used by -->
+      <section class="card">
+        <div class="ghead">
+          <svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#5c5c72" stroke-width="1.4" stroke-dasharray="3 3" stroke-linecap="round"/></svg>
+          <span class="glabel">이 노드를 쓰는 곳</span>
+          <span class="gcap">used by</span>
+          <span class="num">2</span>
+        </div>
+        <div class="rows" id="usedby-rows"></div>
+      </section>
+
+      <!-- depends on -->
+      <section class="card">
+        <div class="ghead">
+          <svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#5c5c72" stroke-width="1.4" stroke-dasharray="3 3" stroke-linecap="round"/></svg>
+          <span class="glabel">이 노드가 기대는 곳</span>
+          <span class="gcap">depends on</span>
+          <span class="num">1</span>
+        </div>
+        <div class="rows" id="depends-rows"></div>
+      </section>
+
+      <!-- belongs to -->
+      <section class="card">
+        <div class="ghead">
+          <svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#4a4a54" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="glabel">속한 곳</span>
+          <span class="gcap">belongs to</span>
+          <span class="num">1</span>
+        </div>
+        <div class="rows" id="belongs-rows"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- reach — a sentence instrument, not a query builder -->
+  <section class="reach">
+    <p class="sentence">
+      이 노드에서 <span class="steps"><span>1</span><span>2</span><span class="on">3</span><span style="border:none;padding:0;cursor:default">단계</span></span> 안에 닿는 개념
+      <b><span class="num">279</span> / 296</b> —
+      대부분 <b>도메인 내부(101)</b>와 <b>Views(85)</b>에 있다.
+    </p>
+    <div class="domain-bars">
+      <span class="dn self">Onboarding &amp; UX (내부)</span><span class="track self"><i style="width:100%"></i></span><span class="num">101</span>
+      <span class="dn">Views</span><span class="track"><i style="width:84%"></i></span><span class="num">85</span>
+      <span class="dn">AI Agent Partner</span><span class="track"><i style="width:39%"></i></span><span class="num">39</span>
+      <span class="dn">Vault — Local-First</span><span class="track"><i style="width:35%"></i></span><span class="num">35</span>
+      <span class="dn">Mode-Aware Adapters</span><span class="track"><i style="width:11%"></i></span><span class="num">11</span>
+      <span class="dn">Ontology Core</span><span class="track"><i style="width:7%"></i></span><span class="num">7</span>
+      <span class="dn">프로젝트 루트</span><span class="track"><i style="width:1%"></i></span><span class="num">1</span>
+    </div>
+  </section>
+
+  <!-- agent handoff — prominent, one row -->
+  <section class="handoff">
+    <span class="hlabel">에이전트 핸드오프</span>
+    <span class="payload">get_concept("domains/onboarding-ux") → find_backlinks → reachability --max-depth 3</span>
+    <button type="button">다음 액션 복사</button>
+    <a class="full" href="#">문서 열기 →</a>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  // kind glyph miniatures — same silhouette family as the v2 canvas
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" }
+  };
+  function hexPts(c, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push((c + r * Math.cos(a)).toFixed(2) + "," + (c + r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(" ");
+  }
+  function glyphSVG(kind, s) {
+    s = s || 15;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var c = s / 2;
+    var common = 'fill="' + col.fill + '" stroke="' + col.stroke + '" stroke-width="1.25"';
+    var body;
+    if (kind === "project") {
+      body = '<polygon points="' + hexPts(c, c - 1.2) + '" ' + common + '/>';
+    } else if (kind === "domain") {
+      body = '<rect x="' + (s * 0.067) + '" y="' + (s * 0.227) + '" width="' + (s * 0.867) + '" height="' + (s * 0.547) + '" rx="1.6" ' + common + '/>';
+    } else if (kind === "capability") {
+      body = '<circle cx="' + c + '" cy="' + c + '" r="' + (c - 1.6) + '" ' + common + '/>';
+    } else {
+      body = '<rect x="' + (s * 0.16) + '" y="' + (s * 0.16) + '" width="' + (s * 0.68) + '" height="' + (s * 0.68) + '" rx="1.4" ' + common + '/>' +
+             '<circle cx="' + c + '" cy="' + c + '" r="' + (s * 0.1) + '" fill="#0c0c10"/>';
+    }
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
+  }
+  document.querySelectorAll("[data-glyph]").forEach(function (el) {
+    el.innerHTML = glyphSVG(el.getAttribute("data-glyph"), parseInt(el.getAttribute("data-size") || "15", 10));
+  });
+
+  // real dogfood shapes — Onboarding & UX contains 18
+  var contains = [
+    { k: "capability", t: "Agent Config Onboarding", n: 4, fresh: true },
+    { k: "capability", t: "CLI Developer Entry", n: 6 },
+    { k: "capability", t: "Product Owner Operating System", n: 1, fresh: true },
+    { k: "element", t: "Agent Activity CLI Command" },
+    { k: "element", t: "Landing First Impression" },
+    { k: "element", t: "Locale Switch" },
+    { k: "element", t: "Operations Nav" },
+    { k: "element", t: "Product Owner Operating System Doc" },
+    { k: "element", t: "Root Locale Redirect Fallback" },
+    { k: "element", t: "Desktop First-Run Page" },
+    { k: "element", t: "Theme Toggle" },
+    { k: "element", t: "Live Announcer" },
+    { k: "element", t: "Toast" },
+    { k: "element", t: "Mobile Bottom Tab Bar" },
+    { k: "element", t: "Gesture Hint" },
+    { k: "element", t: "Agent Setup Menu" },
+    { k: "element", t: "Starter Vault README" },
+    { k: "element", t: "Docs Command Palette Prompt" }
+  ];
+  var usedby = [
+    { k: "domain", t: "Views" },
+    { k: "capability", t: "MCP 서버", fresh: true }
+  ];
+  var depends = [
+    { k: "element", t: "Design System 문서" }
+  ];
+  var belongs = [
+    { k: "project", t: "ontology-atlas", n: 296 }
+  ];
+
+  function rowHTML(item) {
+    return '<div class="row">' +
+      glyphSVG(item.k) +
+      '<span class="t">' + item.t + "</span>" +
+      (item.fresh ? '<span class="fresh-dot" title="최근 갱신"></span>' : "") +
+      (item.n != null ? '<span class="num">' + item.n + "</span>" : "") +
+      "</div>";
+  }
+  function fill(id, items) {
+    document.getElementById(id).innerHTML = items.map(rowHTML).join("");
+  }
+  fill("contains-rows", contains);
+  fill("usedby-rows", usedby);
+  fill("depends-rows", depends);
+  fill("belongs-rows", belongs);
+})();
+</script>
+</body>
+</html>
