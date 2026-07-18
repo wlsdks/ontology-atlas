@@ -134,6 +134,14 @@
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"
   },
+  "navRail": {
+    "ariaLabel": "주요 이동",
+    "map": "지도",
+    "docs": "문서함",
+    "builder": "빌더",
+    "insights": "인사이트",
+    "projects": "프로젝트"
+  },
   "ontologySubNav": {
     "ariaLabel": "온톨로지 서브메뉴",
     "caption": "온톨로지",

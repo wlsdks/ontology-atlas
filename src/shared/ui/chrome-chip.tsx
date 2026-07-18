@@ -10,10 +10,13 @@ import { cn } from '@/shared/lib/cn';
  *
  * `compact` 는 라벨을 sr-only 로 감추고 폭을 타일 크기로 좁힌 아이콘-only
  * 모드(좁은 뷰포트/집중 상태 용). `active` 는 인디고 틴트로만 상태 표시
- * (제2 채색 없음).
+ * (제2 채색 없음). `badge` 는 compact 여부와 무관하게 항상 보이는 소형
+ * 카운트 표시(예: 고정 문서 수) — label 과 달리 sr-only 로 감춰지지 않는다.
  */
 export interface ChromeChipProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className'> {
   icon?: ReactNode;
+  /** compact 에서도 계속 보이는 소형 카운트/상태 표시. */
+  badge?: ReactNode;
   kbd?: ReactNode;
   active?: boolean;
   compact?: boolean;
@@ -29,7 +32,7 @@ const ACTIVE_CLASS =
 const COMPACT_CLASS = 'w-[var(--chrome-tile-size)] px-0';
 
 export const ChromeChip = forwardRef<HTMLButtonElement, ChromeChipProps>(
-  ({ icon, kbd, active, compact, children, className, ...rest }, ref) => (
+  ({ icon, badge, kbd, active, compact, children, className, ...rest }, ref) => (
     <button
       ref={ref}
       type="button"
@@ -40,6 +43,7 @@ export const ChromeChip = forwardRef<HTMLButtonElement, ChromeChipProps>(
       {children ? (
         <span className={cn('truncate', compact && 'sr-only')}>{children}</span>
       ) : null}
+      {badge}
       {kbd ? (
         <span
           aria-hidden="true"

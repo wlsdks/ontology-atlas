@@ -3,7 +3,7 @@
 import { Link } from "@/i18n/navigation";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, BookOpen, ChevronsRight, Network } from "lucide-react";
+import { ArrowLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { MOTION } from "@/shared/motion";
 
@@ -29,10 +29,6 @@ interface Props {
    *  truthy 일 때 pill 왼쪽에 "← Workspace" 보조 버튼 노출. */
   workspaceMapHref?: string;
   onWorkspaceMapClick?: () => void;
-  /** Source Vault (/docs) 바로 가기. 접힌 상태에서도 주 기능 접근 유지. */
-  docsVaultHref?: string;
-  /** 온톨로지 (/ontology) 바로 가기. 접힌 상태에서도 트리 surface 접근 유지. */
-  ontologyHref?: string;
   /** Active inspector 상태에서는 위치 breadcrumb 역할만 하도록 밀도를 낮춘다. */
   compact?: boolean;
   /**
@@ -56,8 +52,6 @@ export function HeroCollapsed({
   titleText,
   workspaceMapHref,
   onWorkspaceMapClick,
-  docsVaultHref,
-  ontologyHref,
   compact = false,
   sampleBadge = false,
 }: Props) {
@@ -179,26 +173,8 @@ export function HeroCollapsed({
         />
       ) : null}
     </motion.button>
-    {docsVaultHref && !compact ? (
-      <Link
-        href={docsVaultHref}
-        aria-label={t("openDocsVault")}
-        title={t("docsVault")}
-        className="group inline-flex size-[var(--topology-chrome-control-height)] shrink-0 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-chrome-shadow)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
-      >
-        <BookOpen className="size-[var(--topology-chrome-icon-size)]" />
-      </Link>
-    ) : null}
-    {ontologyHref && !compact ? (
-      <Link
-        href={ontologyHref}
-        aria-label={t("openOntologyTree")}
-        title={t("ontology")}
-        className="group inline-flex size-[var(--topology-chrome-control-height)] shrink-0 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-chrome-shadow)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
-      >
-        <Network className="size-[var(--topology-chrome-icon-size)]" />
-      </Link>
-    ) : null}
+    {/* book/network 유틸 타일 제거(feat/chrome-system) — 좌측 내비 레일
+        (`AppNavRail`)이 문서함/빌더 목적지를 전담한다. */}
     </div>
   );
 }

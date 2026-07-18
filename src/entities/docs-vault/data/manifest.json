@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T14:32:07.357Z",
+  "generatedAt": "2026-07-18T14:51:19.602Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4355,6 +4355,11 @@
         },
         {
           "depth": 3,
+          "text": "좌측 내비 레일 (AppNavRail)",
+          "slug": "좌측-내비-레일-appnavrail"
+        },
+        {
+          "depth": 3,
           "text": "토큰",
           "slug": "토큰"
         },
@@ -4380,8 +4385,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 9904,
-      "updatedAt": "2026-07-18T14:30:56.908Z",
+      "wordCount": 10086,
+      "updatedAt": "2026-07-18T14:51:15.666Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

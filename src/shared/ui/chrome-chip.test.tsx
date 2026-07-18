@@ -35,6 +35,17 @@ describe('ChromeChip', () => {
     expect(label).toHaveTextContent('자동 정렬');
   });
 
+  it('badge stays visible in compact mode even though the label becomes sr-only', () => {
+    render(
+      <ChromeChip icon={<svg />} compact badge={<span data-testid="count-badge">3</span>}>
+        문서함
+      </ChromeChip>,
+    );
+    const badge = screen.getByTestId('count-badge');
+    expect(badge).toBeVisible();
+    expect(badge.closest('span.sr-only')).toBeNull();
+  });
+
   it('active state adds an indigo tint without a second color system', () => {
     render(<ChromeChip active>검색</ChromeChip>);
     const chip = screen.getByRole('button');

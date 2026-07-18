@@ -115,4 +115,47 @@ describe("TopologyV2SettingsGear — utility-rail settings popover", () => {
     fireEvent.mouseDown(document.body);
     expect(screen.queryByTestId("topology-v2-settings-gear-popover")).not.toBeInTheDocument();
   });
+
+  it("defaults to a right-anchored popover (opens leftward — right utility rail placement)", () => {
+    renderGear();
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    expect(screen.getByTestId("topology-v2-settings-gear-popover").className).toContain("right-0");
+  });
+
+  it("anchors left when popoverAlign='left' (feat/chrome-system nav-rail placement — opens rightward)", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <TopologyV2SettingsGear
+          indexDefaultCollapsed={false}
+          onChangeIndexDefaultCollapsed={() => {}}
+          changeVaultHref="/docs/?intent=local"
+          labels={labels}
+          popoverAlign="left"
+        />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    const popover = screen.getByTestId("topology-v2-settings-gear-popover");
+    expect(popover.className).toContain("left-0");
+    expect(popover.className).not.toContain("right-0");
+  });
+
+  it("opens upward when popoverSide='top' (nav-rail trigger sits at the screen bottom)", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <TopologyV2SettingsGear
+          indexDefaultCollapsed={false}
+          onChangeIndexDefaultCollapsed={() => {}}
+          changeVaultHref="/docs/?intent=local"
+          labels={labels}
+          popoverAlign="left"
+          popoverSide="top"
+        />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    const popover = screen.getByTestId("topology-v2-settings-gear-popover");
+    expect(popover.className).toContain("bottom-[calc(100%+8px)]");
+    expect(popover.className).not.toContain("top-[calc(100%+8px)]");
+  });
 });

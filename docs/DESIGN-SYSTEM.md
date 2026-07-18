@@ -1259,6 +1259,29 @@ Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌
 - **패널 (INDEX · 압축 데이터시트)** — 12px radius, 위 3계층보다 한 단 크고
   내부에 자체 헤더/바디/푸터 리듬을 가진 표면.
 
+### 좌측 내비 레일 (AppNavRail)
+
+`docs/prototypes/chrome-rail-combined.html` 소유자 최종 승인 — 지형도 좌측에
+상시 떠 있는 64px 세로 레일. `src/widgets/app-nav-rail`. 전역 목적지(지도·
+문서함·빌더·인사이트·프로젝트) + 하단 에이전트 상태·설정을 전담해, 브랜드
+필의 book/network 유틸 타일과 우측 세로 레일의 설정 기어를 흡수한다.
+
+- 로고(20px, `BrandMark` 배선 전까지 헥사 별자리 compact 형 인라인 SVG) +
+  5 목적지(아이콘 18px + 한글 라벨 9.5px) + 하단 에이전트 상태(Activity 아이콘
+  + 활동 중 앰버 점) + 설정(기어, 트리거만 이관 — 팝오버는 앵커 방향만
+  `popoverAlign="left"` 로 반전).
+- 활성 항목 = 인디고 틴트 타일 + 1px 인셋 링 + 좌측 2px 바 + `aria-current`.
+  탭/칩과 달리 좌측 바가 추가되는 이유: 세로 스택에서 "지금 여기" 신호가
+  타일 색만으로는 스캔하기 약해서(가로 탭의 밑줄 관례를 세로로 옮김).
+- 캔버스 밖 flex 형제로 마운트 — 지도/INDEX/브랜드 필 등 기존 `absolute
+  left-*` 좌표는 그대로 두어도 새 relative 컨테이너 기준으로 64px 밀린다
+  (좌표 재계산 불필요). 캔버스 2D 엔진의 safe-inset 토큰은 뷰포트가 아니라
+  이 relative 컨테이너를 기준으로 재측정하므로 별도 보정이 필요 없다 —
+  라이브 화면에서 겹침 없음을 실측 확인.
+- 이번 슬라이스 마운트 범위는 지형도(HomePage)뿐 — `/docs`, `/ontology/*`,
+  `/projects` 롤아웃(및 그 페이지들의 `OperationsNav` 와의 관계 정리)은
+  별도 슬라이스.
+
 ### 토큰
 
 - `--chrome-tile-size: 44px` · `--chrome-radius: 10px` · `--chrome-radius-inner: 7px`
