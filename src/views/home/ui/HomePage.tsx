@@ -762,6 +762,17 @@ export function HomePage() {
     });
     return {
       slug,
+      // W2-A "경로" action tile — `handleSetPathSource` feeds this straight
+      // into `pathSourceSlug` route state, which every OTHER consumer
+      // (`selectedOntologyNode`, `resolveTopologySelectedOntologyNode`,
+      // `handleSelect`) keys by the CANVAS GRAPH id, not the vault slug.
+      // Passing `.slug` (the vault-slug-preferring fallback used for
+      // documentHref/builderEditHref/handoffText below) here desynced
+      // `pathSourceSlug` from `selectedSlug` and silently dropped the path —
+      // caught live (QA screenshot showed the map reset to plain overview
+      // instead of "Starting from <node>. Choose a target."). `nodeId` is
+      // always the graph id.
+      nodeId: selectedOntologyNode.id,
       title: nodeFocus.title,
       kind: nodeFocus.kind,
       powered: changedSlugs.has(selectedOntologyNode.id),
@@ -2705,7 +2716,7 @@ export function HomePage() {
                 onSelectConnection={(id) => handleSelect(id)}
                 onCopyHandoff={copyV2NodeHandoff}
                 onClose={handleClose}
-                onSetPathSource={() => handleSetPathSource(v2DatasheetModel.slug)}
+                onSetPathSource={() => handleSetPathSource(v2DatasheetModel.nodeId)}
                 onOpenFullDetail={
                   selectedOntologyNode
                     ? () => setFullDetailSlug(selectedOntologyNode.id)
@@ -2733,7 +2744,7 @@ export function HomePage() {
               closeContextMenu();
             }}
             onSetPathSource={() => {
-              handleSetPathSource(contextMenuModel.slug);
+              handleSetPathSource(contextMenuModel.nodeId);
               closeContextMenu();
             }}
             onOpenFullDetail={() => {
