@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>/download FINAL — 960 유틸리티 컬럼 · 세로 재배분</title>
+<title>/download FINAL — 960 유틸리티 컬럼 · 콘텐츠 밀도 배분 (fill-not-stretch)</title>
 <!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
 <!--
-  FINAL ROUND — "비율이 생명". docs/prototypes/RATIO-SYSTEM.md 적용.
-  콘텐츠는 이전 승인분 그대로(계기판식 사실 나열 · 체크섬 · 3 스텝 ·
-  서명/공증 신뢰 라인 · GitHub Release) — 재조판만:
+  FINAL ROUND — "비율이 생명" + fill-not-stretch. docs/prototypes/RATIO-SYSTEM.md 적용.
     가로: 유틸리티 컬럼 960px, 공통 1600 컨테이너 안 중앙.
-    세로: 945 프레임에 완결 배분 — 히어로/사실/스텝/신뢰가 위-중간을 채우고
-    GitHub Release 행은 하단 앵커(margin-top:auto). 하단 데드스페이스 ≤15%.
+    세로: auto-마진 스트레칭(빈 밴드) 폐기 — 섹션 갭은 리듬 상수 28px 고정,
+    남는 세로는 실데이터 섹션으로 채운다:
+      ① "포함된 것" 3-item 스트립 (topology 워크벤치 · MCP 자동등록 · CLI 45 명령)
+      ② 릴리스 노트 미리보기 (v0.1.0 주요 3줄 — GitHub Release 노트 동기화)
   체크섬 자릿수는 v0.1.0 릴리스 게시 전 레이아웃 플레이스홀더.
 -->
 <style>
@@ -144,11 +144,8 @@
   }
   .checksum button:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 
-  .shead { display: flex; align-items: center; gap: 9px; margin: 26px 0 12px; }
-  /* distribute leftover vertical space across the three lower section seams */
-  .col > .shead { margin-top: auto; padding-top: 26px; margin-bottom: 12px; }
-  .col > .trust { margin-top: auto; }
-  .col > .handoff { margin-top: auto; }
+  /* fill-not-stretch: fixed 28px section rhythm — no auto-margin voids */
+  .shead { display: flex; align-items: center; gap: 9px; margin: 28px 0 12px; }
   .shead .glabel { font-size: 13.5px; font-weight: 560; color: var(--text-primary); letter-spacing: -0.01em; }
   .shead .gcap {
     font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em;
@@ -174,8 +171,61 @@
     border: 1px solid var(--border-soft); border-radius: 4px; padding: 0 4px;
   }
 
+  /* what's inside — 3-item machined strip (kind glyph + one line each) */
+  .includes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .inc {
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 9px;
+    box-shadow: inset 0 1px 0 var(--machined-edge);
+    padding: 12px 14px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .inc .g { flex: none; margin-top: 1px; }
+  .inc h3 { margin: 0; font-size: 12.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .inc h3 .cnt {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    margin-left: 5px;
+  }
+  .inc p { margin: 4px 0 0; font-size: 11.5px; line-height: 1.55; color: var(--text-tertiary); }
+
+  /* release-notes preview — engraved rows synced from the GitHub Release note */
+  .relnotes {
+    border: 1px solid var(--border-soft); border-radius: 9px;
+    background: var(--panel);
+    box-shadow: inset 0 1px 0 var(--machined-edge);
+    padding: 12px 16px 13px;
+  }
+  .relnotes .rhead {
+    display: flex; align-items: baseline; gap: 10px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--divider);
+  }
+  .relnotes .rhead .v {
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .relnotes .rhead .d { font-size: 11.5px; color: var(--text-tertiary); white-space: nowrap; }
+  .relnotes .rhead .src {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary); white-space: nowrap;
+  }
+  .relnotes .rrow {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 5px 2px 0; font-size: 12px; line-height: 1.55; color: var(--text-secondary);
+  }
+  .relnotes .rrow .m {
+    flex: none; font-family: var(--mono); font-size: 11px;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .relnotes .rrow .quiet { color: var(--text-quaternary); font-size: 11px; margin-left: auto; font-family: var(--mono); white-space: nowrap; }
+
+  /* trust + release notes side by side — two evidence panels, one 28px seam */
+  .duo { margin-top: 28px; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 16px; align-items: stretch; }
+
   .trust {
-    margin-top: 26px; width: 100%;
+    width: 100%;
     border: 1px solid var(--border-soft); border-radius: 9px;
     background: var(--panel);
     box-shadow: inset 0 1px 0 var(--machined-edge);
@@ -200,9 +250,9 @@
   }
   .trust .note { margin: 9px 0 0; font-size: 11.5px; line-height: 1.6; color: var(--text-quaternary); }
 
-  /* GitHub release — bottom-anchored */
+  /* GitHub release — last row in the 28px rhythm (no auto-margin anchor) */
   .handoff {
-    margin-top: auto;
+    margin-top: 28px;
     border: 1px solid var(--border-soft); border-radius: 9px;
     background: var(--panel); padding: 14px 16px;
     display: flex; align-items: center; gap: 14px;
@@ -227,7 +277,7 @@
 </head>
 <body>
 
-<div class="framecap"><b>/download FINAL</b> — 960 유틸리티 컬럼 · 945 완결 배분 · GitHub 행 하단 앵커 · 1920×945</div>
+<div class="framecap"><b>/download FINAL</b> — 960 유틸리티 컬럼 · 콘텐츠 밀도 배분 (섹션 갭 28 고정 · 빈 밴드 0) · 1920×945</div>
 <section class="frame">
   <div class="page">
     <div class="col">
@@ -264,6 +314,34 @@
       </div>
 
       <div class="shead">
+        <span class="glabel">포함된 것</span>
+        <span class="gcap">One app · local vault</span>
+      </div>
+      <div class="includes">
+        <article class="inc">
+          <span class="g" data-glyph="domain" data-size="16"></span>
+          <div>
+            <h3>topology 워크벤치</h3>
+            <p>vault 전체를 지도 + INDEX + 데이터시트로 탐색하는 결정 서피스.</p>
+          </div>
+        </article>
+        <article class="inc">
+          <span class="g" data-glyph="capability" data-size="16"></span>
+          <div>
+            <h3>MCP 서버 자동등록<span class="cnt">25 tools</span></h3>
+            <p>Claude Code · Codex 가 같은 vault 를 읽고 쓴다 — 설정 0.</p>
+          </div>
+        </article>
+        <article class="inc">
+          <span class="g" data-glyph="element" data-size="16"></span>
+          <div>
+            <h3>CLI<span class="cnt">45 명령</span></h3>
+            <p>graph compile · agent handoff · growth queue — 터미널이 일상 진입점.</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="shead">
         <span class="glabel">설치</span>
         <span class="gcap">3 steps</span>
       </div>
@@ -285,22 +363,44 @@
         </article>
       </div>
 
-      <div class="trust">
-        <div class="trow">
-          <span class="mark"></span>
-          <span>Developer ID 서명</span>
-          <span class="quiet">codesign --verify 통과</span>
+      <div class="duo">
+        <div class="trust">
+          <div class="trow">
+            <span class="mark"></span>
+            <span>Developer ID 서명</span>
+            <span class="quiet">codesign --verify 통과</span>
+          </div>
+          <div class="trow">
+            <span class="mark"></span>
+            <span>Apple 공증 (notarized) + stapled ticket</span>
+            <span class="quiet">stapler validate 통과</span>
+          </div>
+          <div class="verify">spctl --assess --type open --context context:primary-signature Ontology-Atlas_0.1.0_aarch64.dmg</div>
+          <p class="note">
+            서명·공증은 릴리스 CI 에서 수행되고, 검증 명령과 체크섬은 GitHub Release
+            노트에 그대로 공개됩니다. 보안 주장은 재검증 가능일 때만 합니다.
+          </p>
         </div>
-        <div class="trow">
-          <span class="mark"></span>
-          <span>Apple 공증 (notarized) + stapled ticket</span>
-          <span class="quiet">xcrun stapler validate 통과</span>
+
+        <div class="relnotes">
+          <div class="rhead">
+            <span class="v">v0.1.0</span>
+            <span class="d">첫 공개 릴리스</span>
+            <span class="src">Release 노트 동기화</span>
+          </div>
+          <div class="rrow">
+            <span class="m">+</span>
+            <span>topology 지도 뷰 — 단일 컨테이너 변환 엔진</span>
+          </div>
+          <div class="rrow">
+            <span class="m">+</span>
+            <span>MCP 서버 25 tools — read 16 · write 9</span>
+          </div>
+          <div class="rrow">
+            <span class="m">+</span>
+            <span>CLI 45 명령 — compile · handoff · growth queue</span>
+          </div>
         </div>
-        <div class="verify">spctl --assess --type open --context context:primary-signature Ontology-Atlas_0.1.0_aarch64.dmg</div>
-        <p class="note">
-          서명·공증은 릴리스 CI 에서 수행되고, 검증 명령과 체크섬은 GitHub Release 노트에 그대로 공개됩니다.
-          보안 주장은 구현 공개 + 재검증 가능일 때만 합니다.
-        </p>
       </div>
 
       <section class="handoff">
@@ -311,5 +411,40 @@
     </div>
   </div>
 </section>
+
+<script>
+(function () {
+  "use strict";
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" }
+  };
+  function hexPts(c, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push((c + r * Math.cos(a)).toFixed(2) + "," + (c + r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(" ");
+  }
+  function glyphSVG(kind, s) {
+    s = s || 15;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var c = s / 2;
+    var common = 'fill="' + col.fill + '" stroke="' + col.stroke + '" stroke-width="1.25"';
+    var body;
+    if (kind === "project") body = '<polygon points="' + hexPts(c, c - 1.2) + '" ' + common + '/>';
+    else if (kind === "domain") body = '<rect x="' + (s * 0.067) + '" y="' + (s * 0.227) + '" width="' + (s * 0.867) + '" height="' + (s * 0.547) + '" rx="1.6" ' + common + '/>';
+    else if (kind === "capability") body = '<circle cx="' + c + '" cy="' + c + '" r="' + (c - 1.6) + '" ' + common + '/>';
+    else body = '<rect x="' + (s * 0.16) + '" y="' + (s * 0.16) + '" width="' + (s * 0.68) + '" height="' + (s * 0.68) + '" rx="1.4" ' + common + '/><circle cx="' + c + '" cy="' + c + '" r="' + (s * 0.1) + '" fill="#0c0c10"/>';
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
+  }
+  document.querySelectorAll("[data-glyph]").forEach(function (el) {
+    el.innerHTML = glyphSVG(el.getAttribute("data-glyph"), parseInt(el.getAttribute("data-size") || "15", 10));
+  });
+})();
+</script>
 </body>
 </html>
