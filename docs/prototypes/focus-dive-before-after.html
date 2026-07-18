@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>포커스 다이브 before/after — ego bbox ×1.15 프레이밍 스펙</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
 <!--
   FOCUS DIVE BEFORE/AFTER (visual-richness round, item B):
   the owner-reported "다이브가 너무 깊게 착지한다" fix, as a stacked pair
@@ -48,10 +49,10 @@
     background: var(--canvas-bg);
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
-    min-width: 1512px;
+    min-width: 1440px;
   }
   .framecap {
-    width: 1512px; padding: 14px 20px 9px;
+    width: 100%; max-width: 1920px; margin: 0 auto; padding: 14px 20px 9px;
     font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--text-quaternary);
   }
@@ -59,13 +60,14 @@
   .framecap .bad { color: #a8635f; }
   .framecap .good { color: var(--indigo-bright); }
   .spec {
-    width: 1512px; padding: 0 20px 10px;
+    width: 100%; max-width: 1920px; margin: 0 auto; padding: 0 20px 10px;
     font-family: var(--mono); font-size: 10.5px; line-height: 1.7;
     color: var(--text-quaternary); white-space: pre;
   }
   .spec b { color: var(--numeral-face); font-weight: 600; }
   .frame {
-    position: relative; width: 1512px; height: 700px; overflow: hidden;
+    position: relative; width: 100%; max-width: 1920px; margin: 0 auto;
+    height: 700px; overflow: hidden;
     border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
   }
   .frame canvas.stage { position: absolute; inset: 0; }
@@ -96,7 +98,7 @@
 </head>
 <body>
 
-<div class="framecap"><b class="bad">BEFORE — 현행 다이브</b> — revealFloor(entry×2.0)가 ego fit 을 관통 → 과심도 착지 · 워터마크/라벨 충돌 · 이웃 잘림 · 1512×700</div>
+<div class="framecap"><b class="bad">BEFORE — 현행 다이브</b> — revealFloor(entry×2.0)가 ego fit 을 관통 → 과심도 착지 · 워터마크/라벨 충돌 · 이웃 잘림 · 1920×700</div>
 <div class="spec">scale = min(effMax, max(scaleMin, <b>fitScale</b>, <b>revealFloor = entry × 2.0</b>))   ← revealFloor 가 항상 이긴다 · sky-chart 워터마크가 다이브 줌에서도 잔존</div>
 <section class="frame">
   <canvas class="stage" id="stage-before"></canvas>
@@ -108,7 +110,7 @@
   <div class="legend"><span><b>Esc</b> 개요</span></div>
 </section>
 
-<div class="framecap"><b class="good">AFTER — 스펙 적용</b> — tscale = clamp( fit(egoBounds×1.15), entry, effMax ) · revealFloor 삭제 · 워터마크 alpha 0 · ego 전원 수납 · 1512×700</div>
+<div class="framecap"><b class="good">AFTER — 스펙 적용</b> — tscale = clamp( fit(egoBounds×1.15), entry, effMax ) · revealFloor 삭제 · 워터마크 alpha 0 · ego 전원 수납 · 1920×700</div>
 <div class="spec">양보 계층: 선택 라벨 &gt; ego 이웃 라벨 &gt; 컴팩트 도메인 라벨(3차 톤) &gt; <b>워터마크(포커스 시 0)</b> &gt; 비-ego 라벨(숨김)   · 점선 사각형 = ego bbox ×1.15 (스펙 주석)</div>
 <section class="frame">
   <canvas class="stage" id="stage-after"></canvas>
@@ -123,7 +125,9 @@
 <script>
 (function () {
   "use strict";
-  var W = 1512, H = 700;
+  var frameEl = document.querySelector(".frame");
+  var W = Math.round(frameEl ? frameEl.getBoundingClientRect().width : 1920) || 1920;
+  var H = 700;
   var GLYPH_COLORS = {
     project:    { fill: "#1c1c22", stroke: "#57575f" },
     domain:     { fill: "#191920", stroke: "#48484f" },

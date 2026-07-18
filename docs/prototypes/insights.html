@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>/ontology/insights — machined 계기판</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
 <!--
   B2+ batch #2 — /ontology/insights redesign mock. THE instrument page.
   Tufte discipline: data-ink only — engraved census header, kind census bars,
@@ -43,7 +44,7 @@
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
   }
-  .page { max-width: 1240px; margin: 0 auto; padding: 28px 40px 56px; }
+  .page { max-width: 1640px; margin: 0 auto; padding: 30px 48px 56px; }
 
   .num {
     font-family: var(--mono); font-weight: 600;
@@ -84,10 +85,10 @@
   }
   .metricline .lbl { color: var(--text-tertiary); }
 
-  /* dashboard grid */
+  /* dashboard grid — 3-col at the 1920 primary composition */
   .grid {
     margin-top: 22px;
-    display: grid; grid-template-columns: 1fr 1.18fr; gap: 20px;
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;
     align-items: start;
   }
   .stack { display: flex; flex-direction: column; gap: 20px; }
@@ -227,7 +228,7 @@
   </div>
 
   <div class="grid">
-    <!-- LEFT column -->
+    <!-- column 1: census + relations -->
     <div class="stack">
       <section class="card">
         <div class="ghead">
@@ -246,6 +247,18 @@
         </div>
         <div class="bars" id="rel-bars"></div>
       </section>
+    </div>
+
+    <!-- column 2: domain capacity + freshness -->
+    <div class="stack">
+      <section class="card">
+        <div class="ghead">
+          <span class="glabel">도메인 용량</span>
+          <span class="gcap">domain capacity</span>
+          <span class="num">6</span>
+        </div>
+        <div class="bars" id="dom-bars"></div>
+      </section>
 
       <section class="card">
         <div class="ghead">
@@ -257,17 +270,8 @@
       </section>
     </div>
 
-    <!-- RIGHT column -->
+    <!-- column 3: hubs -->
     <div class="stack">
-      <section class="card">
-        <div class="ghead">
-          <span class="glabel">도메인 용량</span>
-          <span class="gcap">domain capacity</span>
-          <span class="num">6</span>
-        </div>
-        <div class="bars" id="dom-bars"></div>
-      </section>
-
       <section class="card">
         <div class="ghead">
           <span class="glabel">허브 — 연결 상위</span>
