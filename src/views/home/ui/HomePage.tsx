@@ -199,9 +199,9 @@ import { TopologyMapCanvas } from "@/widgets/topology-map-canvas";
 import {
   TopologyMapV2,
   TopologyV2DetailPanel,
+  buildV2Connections,
+  buildV2ConnectionGroups,
   formatV2HandoffText,
-  groupV2Connections,
-  type V2DatasheetConnection,
 } from "@/widgets/topology-map-v2";
 import { useTopologyMapV2Enabled } from "@/shared/lib/use-topology-map-v2-enabled";
 import { selectTopologyEngine } from "../lib/topology-engine-select";
@@ -958,18 +958,18 @@ export function HomePage() {
   // editing the shared TopologyNodePopover, so the Sigma path stays byte-
   // identical when the flag is off. See widgets/topology-map-v2/TopologyV2DetailPanel.
   const v2DatasheetModel = useMemo(() => {
-    if (!nodeFocus || !selectedOntologyNode) return null;
+    if (!nodeFocus || !selectedOntologyNode || !ontologyInsight) return null;
     const slug = nodeFocus.sourceSlug ?? selectedOntologyNode.id;
-    const connections: V2DatasheetConnection[] = nodeFocus.connections.map(
-      (connection) => ({
-        id: connection.id,
-        title: connection.title,
-        kind: connection.kind,
-        relationType: connection.relationType,
-        direction: connection.direction,
-      }),
+    // Group from the FULL connection set (not the shared 5-item outgoing-first
+    // preview) so a contains-hub's depends group renders its real total instead
+    // of collapsing into a generic overflow — and the handoff names never
+    // contradict the depends_on count.
+    const connections = buildV2Connections(
+      selectedOntologyNode.id,
+      ontologyInsight.nodes,
+      ontologyInsight.edges,
     );
-    const grouped = groupV2Connections(connections);
+    const groups = buildV2ConnectionGroups(connections);
     const metric = {
       usedBy: nodeFocus.usedByCount,
       dependsOn: nodeFocus.dependsOnCount,
@@ -982,8 +982,8 @@ export function HomePage() {
       usedBy: metric.usedBy,
       dependsOn: metric.dependsOn,
       evidence: metric.evidence,
-      containsNames: grouped.contains.map((connection) => connection.title),
-      dependsNames: grouped.depends.map((connection) => connection.title),
+      containsNames: groups.contains.rows.map((connection) => connection.title),
+      dependsNames: groups.depends.rows.map((connection) => connection.title),
     });
     return {
       slug,
@@ -991,11 +991,10 @@ export function HomePage() {
       kind: nodeFocus.kind,
       powered: changedSlugs.has(selectedOntologyNode.id),
       metric,
-      connections,
-      hiddenConnectionCount: nodeFocus.hiddenConnectionCount,
+      groups,
       handoffText,
     };
-  }, [nodeFocus, selectedOntologyNode, nodeFocusData, changedSlugs]);
+  }, [nodeFocus, selectedOntologyNode, ontologyInsight, nodeFocusData, changedSlugs]);
   const copyV2NodeHandoff = useCallback(
     async (text: string) => {
       const ok = await copyText(text);
@@ -2777,8 +2776,7 @@ export function HomePage() {
                 kind={v2DatasheetModel.kind}
                 powered={v2DatasheetModel.powered}
                 metric={v2DatasheetModel.metric}
-                connections={v2DatasheetModel.connections}
-                hiddenConnectionCount={v2DatasheetModel.hiddenConnectionCount}
+                groups={v2DatasheetModel.groups}
                 handoffText={v2DatasheetModel.handoffText}
                 labels={{
                   kindLabel: tKinds(normalizeKindLabelKey(v2DatasheetModel.kind)),
