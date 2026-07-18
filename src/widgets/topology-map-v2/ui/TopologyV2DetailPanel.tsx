@@ -2,10 +2,12 @@
 
 import { type KeyboardEvent as ReactKeyboardEvent, useCallback } from "react";
 import { X } from "lucide-react";
+import { isContainmentRelation } from "@/shared/lib/ontology-tree";
 import {
   formatV2MetricLine,
   type V2ConnectionGroupsView,
   type V2ConnectionGroupView,
+  type V2DatasheetConnection,
   type V2MetricValues,
 } from "./topology-v2-datasheet";
 
@@ -23,6 +25,14 @@ import {
  * FSD: this widget owns its own prop shape — the view (`HomePage`) maps
  * `TopologyNodeFocusModel` into these props, so the import direction stays
  * view → widget. Colors/sizes come from `--topology-v2-panel-*` tokens.
+ *
+ * R+ 카운트 시맨틱 통일: connection groups are DIRECTION-based (usedBy /
+ * dependsOn) — the SAME axis the metric line counts — so the group header's
+ * number and the metric line's number are the same number by construction.
+ * Group headers reuse `labels.metricUsedBy`/`labels.metricDependsOn` (no
+ * separate group-label strings) so the words match too. Relation TYPE
+ * (containment vs depends) demotes to a per-row `TraceMark`, one per
+ * connection row instead of one per group header.
  */
 
 export interface TopologyV2DetailPanelLabels {
@@ -32,8 +42,6 @@ export interface TopologyV2DetailPanelLabels {
   metricUsedBy: string;
   metricDependsOn: string;
   metricEvidence: string;
-  groupContains: string;
-  groupDepends: string;
   noConnections: string;
   handoff: string;
   close: string;
@@ -127,24 +135,25 @@ function hexPoints(cx: number, cy: number, r: number): string {
 
 /**
  * Trace mini-line matching the canvas edge style: contains = solid hairline,
- * depends = dashed. One compact marker per group, drawn once in the group
- * header — never per row.
+ * depends = dashed. R+ moved this from the group header (one per group) to
+ * each row's leading position (one per row) — connection groups are now
+ * DIRECTION-based, so relation TYPE (containment vs depends) is no longer
+ * the grouping axis and needs a per-row marker to stay visible at all.
  */
-function TraceMark({ group }: { group: "contains" | "depends" }) {
-  const stroke =
-    group === "contains"
-      ? "var(--topology-v2-edge-contains-mark)"
-      : "var(--topology-v2-edge-depends-mark)";
+function TraceMark({ containment }: { containment: boolean }) {
+  const stroke = containment
+    ? "var(--topology-v2-edge-contains-mark)"
+    : "var(--topology-v2-edge-depends-mark)";
   return (
-    <svg width={22} height={6} viewBox="0 0 22 6" aria-hidden="true" className="shrink-0">
+    <svg width={14} height={6} viewBox="0 0 14 6" aria-hidden="true" className="shrink-0">
       <line
         x1={1}
         y1={3}
-        x2={21}
+        x2={13}
         y2={3}
         stroke={stroke}
         strokeWidth={1.4}
-        strokeDasharray={group === "depends" ? "3 3" : undefined}
+        strokeDasharray={containment ? undefined : "3 3"}
         strokeLinecap="round"
       />
     </svg>
@@ -170,7 +179,7 @@ export function TopologyV2DetailPanel({
     dependsOn: labels.metricDependsOn,
     evidence: labels.metricEvidence,
   });
-  const hasConnections = groups.contains.total > 0 || groups.depends.total > 0;
+  const hasConnections = groups.usedBy.total > 0 || groups.dependsOn.total > 0;
 
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -182,8 +191,13 @@ export function TopologyV2DetailPanel({
     [onClose],
   );
 
+  // Group headers reuse the SAME i18n stems as the metric line
+  // (`labels.metricUsedBy`/`labels.metricDependsOn`) — the header count and
+  // the metric count are the same number (§module doc), so the words must
+  // match too, or the reconciliation reads as a coincidence instead of a
+  // guarantee.
   const renderGroup = (
-    group: "contains" | "depends",
+    group: "usedBy" | "dependsOn",
     label: string,
     view: V2ConnectionGroupView,
   ) => {
@@ -192,7 +206,6 @@ export function TopologyV2DetailPanel({
     return (
       <div className="flex flex-col gap-1" data-datasheet-group={group}>
         <div className="flex items-center gap-2">
-          <TraceMark group={group} />
           <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-tertiary)]">
             {label}
           </span>
@@ -204,18 +217,19 @@ export function TopologyV2DetailPanel({
           </span>
         </div>
         <ul className="flex flex-col">
-          {view.rows.map((row) => (
-            // Direction is part of the key too — `groupV2Connections` only
-            // collapses same-direction duplicates; the same neighbor id can
-            // legitimately appear once outgoing and once incoming (a mutual
-            // dependency), which would otherwise collide on `group:id` alone.
-            <li key={`${group}:${row.direction}:${row.id}`}>
+          {view.rows.map((row: V2DatasheetConnection) => (
+            // Neighbor `id` is unique within a direction group post-dedup
+            // (`groupV2ConnectionsByDirection`) — the same neighbor can still
+            // appear once per group (mutual dependency, item 5 — no
+            // cross-group dedup), which is a different `group` prefix.
+            <li key={`${group}:${row.id}`}>
               <button
                 type="button"
                 onClick={() => onSelectConnection(row.id)}
                 data-datasheet-connection={row.id}
                 className="flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-1 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
               >
+                <TraceMark containment={isContainmentRelation(row.relationType)} />
                 <span className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--topology-v2-panel-text-secondary)]">
                   {row.title}
                 </span>
@@ -226,7 +240,7 @@ export function TopologyV2DetailPanel({
         {overflow > 0 ? (
           <span
             data-datasheet-group-overflow={group}
-            className="pl-[30px] font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+            className="pl-[28px] font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]"
           >
             +{overflow}
           </span>
@@ -306,8 +320,8 @@ export function TopologyV2DetailPanel({
       <div className="flex flex-col gap-2.5">
         {hasConnections ? (
           <>
-            {renderGroup("contains", labels.groupContains, groups.contains)}
-            {renderGroup("depends", labels.groupDepends, groups.depends)}
+            {renderGroup("usedBy", labels.metricUsedBy, groups.usedBy)}
+            {renderGroup("dependsOn", labels.metricDependsOn, groups.dependsOn)}
           </>
         ) : (
           <span className="text-[11.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">
