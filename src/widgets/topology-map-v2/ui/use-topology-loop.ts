@@ -114,6 +114,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   });
   const cameraTargetRef = useRef<CameraTarget>({ tx: 0, ty: 0, tscale: 1 });
   const dampingRef = useRef(1.0);
+  /**
+   * Dive-zoom fix (owner: "줌 인/아웃이 느림") — which spring angular frequency
+   * this frame's camera step uses. `null` until the first token read (the rAF
+   * loop falls back to `cameraSpringAngFreqTransition` for that first frame).
+   * Set to `cameraSpringAngFreqInteractive` on every live wheel tick
+   * (`topology-pointer-handlers.ts#handleWheel`); reset to
+   * `cameraSpringAngFreqTransition` by every PROGRAMMATIC camera move below
+   * (initial snap, fit/relayout, focus dive/deselect) so that move's whole
+   * settle plays out at the cinematic rate, not whatever the last wheel tick
+   * left behind.
+   */
+  const cameraAngularFreqRef = useRef<number | null>(null);
   const overviewScaleRef = useRef(1);
   const hasInitializedRef = useRef(false);
   const lastFrameTimeRef = useRef(0);
@@ -193,6 +205,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     };
     cameraTargetRef.current = target;
     overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
+    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     hasInitializedRef.current = true;
   };
 
@@ -289,6 +302,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     cameraTargetRef.current = computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
     overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
     dampingRef.current = tokens.cameraDampingDefault;
+    // Dive-zoom fix — "fit view"/relayout is a PROGRAMMATIC camera move, so it
+    // uses the cinematic transition spring, not whatever a preceding wheel
+    // gesture left in interactive mode.
+    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
   }, [relayoutToken, fitViewToken]);
 
   // --- relayoutToken ONLY (not fitViewToken) — also restores every node's
@@ -341,6 +358,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (!target) return;
     dampingRef.current = tokens.cameraDampingDefault;
     cameraTargetRef.current = target;
+    // Dive-zoom fix — focus dive AND deselect-return are both PROGRAMMATIC
+    // camera moves (this effect fires for both directions of `focusedSlug`
+    // changing), so both use the cinematic transition spring.
+    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
   }, [focusedSlug]);
 
   // --- single rAF loop: physics -> altitude -> emphasis -> particles -> draw ---
@@ -443,7 +464,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         for (const node of world.nodes) {
           const spring = homeSpringsRef.current.get(node.id);
           if (!spring) continue;
-          const nextSpring = stepHomeSpring(spring, node.homeX, node.homeY, dt, tokens.cameraSpringAngFreq, tokens.cameraDampingDefault);
+          const nextSpring = stepHomeSpring(spring, node.homeX, node.homeY, dt, tokens.cameraSpringAngFreqTransition, tokens.cameraDampingDefault);
           homeSpringsRef.current.set(node.id, nextSpring);
           node.x = nextSpring.x.value;
           node.y = nextSpring.y.value;
@@ -469,6 +490,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         damping: dampingRef.current,
         overviewScale: overviewScaleRef.current,
         tokens,
+        cameraAngularFrequency: cameraAngularFreqRef.current ?? tokens.cameraSpringAngFreqTransition,
         dt,
         now,
         focusedNodeId,
@@ -523,6 +545,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     cameraRef,
     cameraTargetRef,
     dampingRef,
+    cameraAngularFreqRef,
     viewportRef,
     pointerMachineRef,
     dragHistoryRef,

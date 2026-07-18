@@ -35,7 +35,7 @@ import {
   transitionPointerState,
   type PointerMachineState,
 } from "../interaction/pointer-state-machine";
-import { normalizeWheelDeltaY } from "../interaction/wheel";
+import { computeWheelZoomFactor, normalizeWheelDeltaY } from "../interaction/wheel";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, hitTestWorld, screenToWorld } from "./topology-camera-math";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyWorld } from "./topology-world";
@@ -63,6 +63,14 @@ export interface PointerHandlerRefs {
   cameraRef: Ref<CameraAxes>;
   cameraTargetRef: Ref<CameraTarget>;
   dampingRef: Ref<number>;
+  /**
+   * Dive-zoom fix (owner: "줌 인/아웃이 느림") — `handleWheel` sets this to
+   * `--topology-v2-camera-spring-angfreq-interactive` on every live wheel
+   * tick, so the scale axis (and pan while wheel-zooming) settles crisp
+   * instead of at the slower cinematic rate programmatic camera moves use.
+   * `null` is a valid "not yet set" state (the rAF loop's own fallback).
+   */
+  cameraAngularFreqRef: Ref<number | null>;
   viewportRef: Ref<{ width: number; height: number; dpr: number }>;
   pointerMachineRef: Ref<PointerMachineState>;
   dragHistoryRef: Ref<{ x: number; y: number; t: number }[]>;
@@ -128,6 +136,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     cameraRef,
     cameraTargetRef,
     dampingRef,
+    cameraAngularFreqRef,
     viewportRef,
     pointerMachineRef,
     dragHistoryRef,
@@ -448,7 +457,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // deltaY that the old `exp(-deltaY*0.0016)` turned into ~0% zoom (the
     // owner's "휠 확대 안 됨" bug). See `interaction/wheel.ts`.
     const pixelDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, height);
-    const factor = Math.exp(-pixelDeltaY * 0.0016);
+    // C1 owner feedback ("줌 인/아웃 느림") — sensitivity upped 0.0016 → 0.0020,
+    // see `interaction/wheel.ts#WHEEL_ZOOM_SENSITIVITY`'s JSDoc.
+    const factor = computeWheelZoomFactor(pixelDeltaY);
     // C1 A1 — wheel/pinch zoom-in must reach the ratio-based effective max
     // (`topology-camera-math.ts#computeEffectiveCameraScaleMax`), not the
     // absolute `cameraScaleMax` token — same fix as the spring clamp in
@@ -462,6 +473,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
 
     cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
     dampingRef.current = tokens.cameraDampingDefault;
+    // Dive-zoom fix — a live wheel gesture uses the crisp interactive spring
+    // for the scale axis (and pan, since point-to-zoom moves both together)
+    // until the NEXT programmatic camera move resets it back to transition.
+    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
     if (reducedMotionRef.current) {
       cameraRef.current = { x: { value: afterX, velocity: 0 }, y: { value: afterY, velocity: 0 }, scale: { value: newScale, velocity: 0 } };
     }

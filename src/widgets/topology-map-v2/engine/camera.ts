@@ -66,7 +66,13 @@ export interface CameraStepInput {
   dt: number;
   /** ζ for x/y this frame — 1.0 normally, 0.82 right after a flick release. */
   damping: number;
-  /** ω, rad/s — `--topology-v2-camera-spring-angfreq`. */
+  /**
+   * ω, rad/s. Dive-zoom fix split the one shared token into
+   * `--topology-v2-camera-spring-angfreq-interactive` (live wheel gesture —
+   * scale axis + pan while wheel-zooming) and `-transition` (programmatic
+   * camera moves — focus dive, deselect, Auto-arrange, fit-view); the caller
+   * (`ui/topology-physics-step.ts`) picks which one this frame passes in.
+   */
   angularFrequency: number;
   /** `--topology-v2-camera-scale-min` (0.24 in the prototype). */
   scaleMin: number;

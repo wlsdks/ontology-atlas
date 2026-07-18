@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>/project/[slug] v2a — 온톨로지 스트립 승격</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  B2+ batch #2 — project detail variant A.
+  Defect being fixed: after the Connection-map removal the LEFT column sat
+  empty when a project has no body/screenshots. v2a promotes the project's
+  ontology composition (domains → capabilities tree summary) to be the left
+  column's PRIMARY content — an INDEX-like machined tree with engraved
+  per-domain meters. Right column = linked projects + facts + actions.
+  Also fixes the "0 1-hop neighbors" numeral-collision wording: the empty
+  state is a sentence, not a dangling zero.
+-->
+<style>
+  /* Values copied from app/globals.css token families (standalone prototype). */
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --action-surface: rgba(255, 255, 255, 0.03);
+    --machined-edge: rgba(255, 255, 255, 0.05);
+    --mark-contains: #4a4a54;
+    --mark-depends: #5c5c72;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+  }
+  .page { max-width: 1640px; margin: 0 auto; padding: 30px 48px 56px; }
+
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .crumbs {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-tertiary); margin-bottom: 26px;
+  }
+  .crumbs a { color: var(--text-secondary); text-decoration: none; }
+  .crumbs a:hover { color: var(--text-primary); }
+  .crumbs .sep { color: var(--text-quaternary); }
+  .crumbs .census {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+
+  header.node { display: flex; align-items: flex-start; gap: 14px; }
+  header.node .glyph { margin-top: 5px; }
+  header.node h1 { margin: 0; font-size: 24px; font-weight: 650; letter-spacing: -0.015em; }
+  header.node .kindline {
+    display: flex; align-items: center; gap: 8px; margin-top: 5px;
+    font-size: 12.5px; color: var(--text-tertiary);
+  }
+  header.node .kindline .dot-sep { color: var(--text-quaternary); }
+  .power {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--indigo); flex: none;
+  }
+  header.node .slug {
+    margin-left: auto; align-self: flex-start; margin-top: 10px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-quaternary);
+  }
+
+  .metricline {
+    margin-top: 18px;
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    background: var(--metric-surface);
+    padding: 9px 14px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.01em;
+    color: #b6b6c0;
+    display: flex; gap: 18px; align-items: baseline;
+  }
+  .metricline b {
+    font-weight: 600; color: var(--numeral-face);
+    text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .metricline .lbl { color: var(--text-tertiary); }
+
+  .groups {
+    display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px;
+    margin-top: 22px; align-items: start;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 9px;
+    box-shadow: inset 0 1px 0 var(--machined-edge);
+    padding: 13px 14px;
+  }
+  .ghead { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+  .ghead .glabel {
+    font-size: 13px; font-weight: 560; color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+  .ghead .gcap {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .ghead .num { margin-left: auto; font-size: 12px; }
+  .stack { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ---- LEFT: promoted ontology strip — INDEX-like machined tree --------- */
+  .tree { display: flex; flex-direction: column; }
+  .trow {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 0 8px;
+    padding: 6px 8px; border-radius: 5px;
+    border: 1px solid transparent;
+    font-size: 12.5px; color: var(--text-secondary);
+    cursor: pointer; user-select: none;
+    transition: border-color 120ms ease, color 120ms ease;
+  }
+  .trow:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .trow.open-domain { color: var(--text-primary); }
+  .trow .caret {
+    width: 11px; flex: none; text-align: center;
+    color: var(--text-quaternary); font-size: 8.5px;
+  }
+  .trow.open .caret { transform: rotate(90deg); }
+  .trow .caret.leaf { visibility: hidden; }
+  .trow .t { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trow .num { font-size: 11px; flex: none; }
+  .trow .fresh-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); flex: none; }
+  .trow .sub {
+    flex-basis: 100%; display: flex; align-items: center; gap: 8px;
+    padding: 3px 0 1px 34px;
+  }
+  .trow .sub .kids {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.02em;
+    color: var(--text-quaternary); flex: none;
+  }
+  .trow .sub .meter {
+    flex: 1; max-width: 140px; height: 3px; border-radius: 2px;
+    background: var(--border-soft); overflow: hidden; position: relative;
+    margin-left: auto;
+  }
+  .trow .sub .meter i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: #55555d; }
+  .trow.open .sub .meter i { background: var(--indigo); }
+  .depth-1 { margin-left: 20px; }
+  .treefoot {
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider);
+    font-size: 11.5px; color: var(--text-quaternary);
+    display: flex; gap: 16px;
+  }
+  .treefoot a { color: var(--text-tertiary); text-decoration: none; }
+  .treefoot a:hover { color: var(--text-secondary); }
+
+  /* ---- RIGHT: linked projects / facts / actions ------------------------- */
+  .emptyline {
+    padding: 6px 7px 4px;
+    font-size: 12.5px; line-height: 1.6; color: var(--text-tertiary);
+  }
+  .emptyline .quiet {
+    display: block; margin-top: 4px;
+    font-size: 11.5px; color: var(--text-quaternary);
+  }
+  .facts { display: flex; flex-direction: column; }
+  .facts .frow {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 5px 7px; font-size: 12.5px;
+  }
+  .facts .frow .k { color: var(--text-tertiary); flex: none; width: 92px; }
+  .facts .frow .v { color: var(--text-secondary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .facts .frow .v.mono { font-family: var(--mono); font-size: 11.5px; }
+  .actions { display: flex; flex-direction: column; gap: 7px; }
+  .actions a {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: 6px;
+    border: 1px solid var(--border-soft);
+    background: var(--action-surface);
+    font-size: 12.5px; color: var(--text-secondary); text-decoration: none;
+    transition: border-color 150ms ease, color 150ms ease;
+  }
+  .actions a:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .actions a .arrow { margin-left: auto; color: var(--text-quaternary); }
+
+  .handoff {
+    margin-top: 26px;
+    border: 1px solid var(--border-soft); border-radius: 9px;
+    background: var(--panel); padding: 13px 14px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .handoff .hlabel { font-size: 12.5px; font-weight: 560; color: var(--text-primary); flex: none; }
+  .handoff .payload {
+    min-width: 0; flex: 1;
+    font-family: var(--mono); font-size: 11.5px; color: var(--text-tertiary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .handoff button {
+    flex: none; appearance: none; cursor: pointer;
+    font: 560 12px/1 inherit; font-family: inherit;
+    color: var(--indigo-bright);
+    background: var(--action-surface);
+    border: 1px solid rgba(94, 106, 210, 0.5);
+    border-radius: 6px; padding: 7px 13px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .handoff button:hover { background: var(--row-hover); border-color: var(--indigo); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="crumbs">
+    <a href="#">← 워크스페이스</a>
+    <span class="sep">/</span>
+    <a href="#">프로젝트</a>
+    <span class="sep">/</span>
+    <span>ontology-atlas</span>
+    <span class="census">296 CONCEPTS · 508 RELATIONS</span>
+  </nav>
+
+  <header class="node">
+    <span class="glyph" data-glyph="project" data-size="24"></span>
+    <div>
+      <h1>ontology-atlas</h1>
+      <div class="kindline">
+        <span class="power"></span>
+        <span>프로젝트 · 최근 갱신 오늘</span>
+        <span class="dot-sep">·</span>
+        <span>마크다운에서 자라는 오픈소스 온톨로지 워크벤치</span>
+      </div>
+    </div>
+    <span class="slug">ontology-atlas</span>
+  </header>
+
+  <div class="metricline">
+    <span><span class="lbl">도메인</span> <b>6</b></span>
+    <span><span class="lbl">역량</span> <b>36</b></span>
+    <span><span class="lbl">요소</span> <b>250</b></span>
+    <span><span class="lbl">문서</span> <b>3</b></span>
+    <span><span class="lbl">관계</span> <b>508</b></span>
+  </div>
+
+  <div class="groups">
+
+    <!-- LEFT column primary content: the promoted ontology strip -->
+    <section class="card">
+      <div class="ghead">
+        <svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="var(--mark-contains)" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span class="glabel">이 프로젝트가 담는 것</span>
+        <span class="gcap">contains</span>
+        <span class="num">295</span>
+      </div>
+      <div class="tree" id="tree"></div>
+      <div class="treefoot">
+        <a href="#">온톨로지 트리 전체 →</a>
+        <a href="#">topology 에서 보기 →</a>
+      </div>
+    </section>
+
+    <!-- RIGHT column -->
+    <div class="stack">
+      <section class="card">
+        <div class="ghead">
+          <svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="var(--mark-depends)" stroke-width="1.4" stroke-dasharray="3 3" stroke-linecap="round"/></svg>
+          <span class="glabel">연결된 프로젝트</span>
+          <span class="gcap">relates</span>
+        </div>
+        <!-- fixed wording: sentence empty-state, no dangling "0 1-hop" numeral collision -->
+        <p class="emptyline">
+          아직 다른 프로젝트와 연결되지 않았습니다.
+          <span class="quiet">vault 에 두 번째 <span style="font-family:var(--mono)">kind: project</span> 문서를 만들고 relates 로 이으면 여기 나타납니다.</span>
+        </p>
+      </section>
+
+      <section class="card">
+        <div class="ghead">
+          <span class="glabel">사실</span>
+          <span class="gcap">facts</span>
+        </div>
+        <div class="facts">
+          <div class="frow"><span class="k">종류</span><span class="v">프로젝트 (그래프 루트)</span></div>
+          <div class="frow"><span class="k">vault 경로</span><span class="v mono">docs/ontology/project.md</span></div>
+          <div class="frow"><span class="k">최근 갱신</span><span class="v mono">2026-07-18</span></div>
+          <div class="frow"><span class="k">문서</span><span class="v">Views Domain Boundary Audit 외 <span class="num" style="font-size:11.5px">2</span></span></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="ghead">
+          <span class="glabel">액션</span>
+        </div>
+        <div class="actions">
+          <a href="#">topology 에서 이 프로젝트 포커스 <span class="arrow">→</span></a>
+          <a href="#">project.md 편집 <span class="arrow">→</span></a>
+          <a href="#">그래프 인사이트 <span class="arrow">→</span></a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <section class="handoff">
+    <span class="hlabel">에이전트 핸드오프</span>
+    <span class="payload">get_concept("ontology-atlas") → query_ontology({operation:"project_map"}) → containment_tree</span>
+    <button type="button">다음 액션 복사</button>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" }
+  };
+  function hexPts(c, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push((c + r * Math.cos(a)).toFixed(2) + "," + (c + r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(" ");
+  }
+  function glyphSVG(kind, s) {
+    s = s || 15;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var c = s / 2;
+    var common = 'fill="' + col.fill + '" stroke="' + col.stroke + '" stroke-width="1.25"';
+    var body;
+    if (kind === "project") {
+      body = '<polygon points="' + hexPts(c, c - 1.2) + '" ' + common + '/>';
+    } else if (kind === "domain") {
+      body = '<rect x="' + (s * 0.067) + '" y="' + (s * 0.227) + '" width="' + (s * 0.867) + '" height="' + (s * 0.547) + '" rx="1.6" ' + common + '/>';
+    } else if (kind === "capability") {
+      body = '<circle cx="' + c + '" cy="' + c + '" r="' + (c - 1.6) + '" ' + common + '/>';
+    } else {
+      body = '<rect x="' + (s * 0.16) + '" y="' + (s * 0.16) + '" width="' + (s * 0.68) + '" height="' + (s * 0.68) + '" rx="1.4" ' + common + '/>' +
+             '<circle cx="' + c + '" cy="' + c + '" r="' + (s * 0.1) + '" fill="#0c0c10"/>';
+    }
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
+  }
+  document.querySelectorAll("[data-glyph]").forEach(function (el) {
+    el.innerHTML = glyphSVG(el.getAttribute("data-glyph"), parseInt(el.getAttribute("data-size") || "15", 10));
+  });
+
+  // real dogfood domains; Views expanded to show its capability summary
+  var domains = [
+    { t: "Views (Topology · Browse · Builder)", cap: 17, el: 101, open: true, kids: [
+      { k: "capability", t: "Topology Skeleton Entry", n: 8, fresh: true },
+      { k: "capability", t: "Agent Graph Readiness", n: 24 },
+      { k: "capability", t: "Ontology Insights", n: 6 },
+      { k: "element", t: "Topology Analysis Bar", fresh: true },
+      { k: "element", t: "Topology Map Canvas" }
+    ], more: 113 },
+    { t: "AI Agent Partner",            cap: 10, el: 54, fresh: true },
+    { t: "Vault — Local-First",         cap: 4,  el: 34 },
+    { t: "Onboarding & UX",             cap: 2,  el: 31 },
+    { t: "Ontology Core (TBox · ABox)", cap: 1,  el: 20 },
+    { t: "Mode-Aware Adapters",         cap: 2,  el: 10 }
+  ];
+  var max = Math.max.apply(null, domains.map(function (d) { return d.cap + d.el; }));
+  var html = "";
+  domains.forEach(function (d) {
+    var total = d.cap + d.el;
+    html += '<div class="trow' + (d.open ? " open open-domain" : "") + '">' +
+      '<span class="caret">▶</span>' + glyphSVG("domain", 14) +
+      '<span class="t">' + d.t + "</span>" +
+      (d.fresh ? '<span class="fresh-dot" title="최근 갱신"></span>' : "") +
+      '<span class="num">' + total + "</span>" +
+      '<span class="sub"><span class="kids">역량 ' + d.cap + " · 요소 " + d.el + "</span>" +
+      '<span class="meter"><i style="width:' + Math.round(total / max * 100) + '%"></i></span></span>' +
+      "</div>";
+    if (d.open && d.kids) {
+      d.kids.forEach(function (kid) {
+        html += '<div class="trow depth-1">' +
+          '<span class="caret leaf">▶</span>' + glyphSVG(kid.k, 13) +
+          '<span class="t">' + kid.t + "</span>" +
+          (kid.fresh ? '<span class="fresh-dot" title="최근 갱신"></span>' : "") +
+          (kid.n != null ? '<span class="num">' + kid.n + "</span>" : "") +
+          "</div>";
+      });
+      html += '<div class="trow depth-1" style="color:var(--text-quaternary);cursor:default">' +
+        '<span class="caret leaf">▶</span><span class="t">… ' + d.more + '개 더</span></div>';
+    }
+  });
+  document.getElementById("tree").innerHTML = html;
+})();
+</script>
+</body>
+</html>

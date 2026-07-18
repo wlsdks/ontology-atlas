@@ -3,48 +3,48 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>/ontology 허브 B3 최종 — 지도 위 INDEX 계기판 (승인안)</title>
+<title>토폴로지 크롬 재구성 — 크롬 로우 분리 + 우측 기어 (B3 폴리시 스펙)</title>
 <!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
 <!--
-  B3 FINAL (approved): the hub and /topology converge into ONE surface — the
-  real v2 map is the page, INDEX (left instrument) + component datasheet
-  (right) float over it. This file is the implementation spec mock:
+  CHROME RECOMPOSITION (visual-richness round, item E + D):
+  the B3 immersive hub, corrected for the owner-reported chrome collision.
 
-    frame 1 "기본 상태"  — INDEX(≤300px) + datasheet(288px, shipped anatomy)
-                           coexist over the ego-focused map. 1920×945 primary.
-    frame 2 "접힌 상태"  — INDEX folds to a slim vertical edge tab; the map
-                           widens; the datasheet stays. Same selection.
+    결정: 크롬 로우 분리 — 상단 56px 는 크롬 레인(브랜드 필 · 각인 census ·
+    우측 유틸리티 레일). INDEX/데이터시트/접힘 탭은 전부 top 64px 아래에서
+    시작한다. 브랜드 필은 상태 무관 불변(필→아이콘 모프 안은 반려 — 브랜드
+    앵커가 흔들린다). census 는 상단 중앙 각인이 단일 출처 — B3 의 INDEX
+    내부 pcensus 중복 행은 삭제, 동기화 도트만 INDEX 헤더에 남는다.
 
-  Datasheet matches the SHIPPED TopologyV2DetailPanel (main f3d673b18):
-  direction groups 쓰는 곳/기대는 곳, per-row solid/dashed trace marks,
-  one engraved metric line, 다음 액션 복사 + slug footer — plus the approved
-  "전체 상세 →" opt-in link to the A1 full-detail view.
+    frame 1 "기본 상태"   — 크롬 로우 + INDEX(펼침) + 데이터시트 + 우측 레일
+                            (fit-view + 기어). 1920×945 primary.
+    frame 2 "접힘 + 설정" — INDEX 는 크롬 로우 아래 세로 탭, 기어 팝오버 열림
+                            (언어 EN/KO · 테마 · INDEX 기본 상태). 1920×945 primary.
+
+  근거 문서: docs/prototypes/visual-richness-review.md §D §E.
 -->
 <style>
-  /* Values copied from app/globals.css token families (standalone prototype).
-     Sheet surfaces mirror --topology-v2-panel-*; marks mirror
-     --topology-v2-edge-contains-mark / --topology-v2-edge-depends-mark. */
+  /* Values copied from app/globals.css token families (standalone prototype). */
   :root {
     --canvas-bg: #0a0a0d;
-    --panel: #17171c;                                /* --topology-v2-panel-surface */
-    --border-soft: #2a2a30;                          /* --topology-v2-panel-border */
+    --panel: #17171c;
+    --border-soft: #2a2a30;
     --border-strong: #45454d;
-    --divider: #23232a;                              /* --topology-v2-panel-divider */
+    --divider: #23232a;
     --text-primary: #ececf0;
     --text-secondary: #a3a3ac;
     --text-tertiary: #868690;
     --text-quaternary: #55555d;
     --indigo: #5e6ad2;
     --indigo-bright: #8890e0;
-    --numeral-face: #8c8c94;                         /* --topology-v2-numeral-face */
-    --numeral-shadow: #08080a;                       /* --topology-v2-numeral-shadow */
-    --metric-surface: rgba(255, 255, 255, 0.028);    /* --topology-v2-panel-metric-surface */
-    --row-hover: rgba(255, 255, 255, 0.045);         /* --topology-v2-panel-row-hover */
-    --action-surface: rgba(255, 255, 255, 0.03);     /* --topology-v2-panel-action-surface */
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --action-surface: rgba(255, 255, 255, 0.03);
     --machined-edge: rgba(255, 255, 255, 0.05);
-    --mark-contains: #4a4a54;                        /* --topology-v2-edge-contains-mark */
-    --mark-depends: #5c5c72;                         /* --topology-v2-edge-depends-mark */
-    --sheet-shadow: 0 16px 40px rgba(0, 0, 0, 0.42); /* --topology-v2-panel-shadow */
+    --mark-contains: #4a4a54;
+    --mark-depends: #5c5c72;
+    --sheet-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
     --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   * { box-sizing: border-box; }
@@ -60,8 +60,6 @@
     color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
     font-variant-numeric: tabular-nums;
   }
-
-  /* ---- two stacked viewport frames (1920×1080 primary · 1440 fluid) ----- */
   .framecap {
     width: 100%; max-width: 1920px; margin: 0 auto; padding: 14px 20px 9px;
     font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
@@ -75,16 +73,85 @@
   }
   .frame canvas.stage { position: absolute; inset: 0; }
 
-  /* engraved census — carved straight into the canvas, top center */
+  /* ---- chrome row: the reserved 56px lane — nothing else may enter it ---- */
+  .chromerow { position: absolute; left: 0; right: 0; top: 0; height: 56px; pointer-events: none; }
+  .chromerow > * { pointer-events: auto; }
+
+  .brand {
+    position: absolute; left: 18px; top: 14px; height: 28px;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0 11px 0 8px;
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: 14px;
+    box-shadow: inset 0 1px 0 var(--machined-edge), 0 8px 22px rgba(0, 0, 0, 0.4);
+  }
+  .brand .word { font-size: 12px; font-weight: 600; letter-spacing: -0.01em; color: var(--text-secondary); }
+  .brand .vault { font-family: var(--mono); font-size: 10px; color: var(--text-quaternary); }
+
   .census {
-    position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+    position: absolute; top: 21px; left: 50%; transform: translateX(-50%);
     font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.14em; font-weight: 600;
     color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
     white-space: nowrap; pointer-events: none;
   }
   .census .sep { color: var(--text-quaternary); margin: 0 5px; }
 
-  /* bottom-right micro legend — plain contract line, no chrome */
+  /* right utility rail — machined square buttons, fit-view + NEW gear */
+  .rail {
+    position: absolute; right: 18px; top: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .rail button {
+    appearance: none; cursor: pointer;
+    width: 28px; height: 28px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--panel); color: var(--text-tertiary);
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    box-shadow: inset 0 1px 0 var(--machined-edge), 0 8px 22px rgba(0, 0, 0, 0.4);
+    transition: border-color 150ms ease, color 150ms ease;
+  }
+  .rail button:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+  .rail button.on { border-color: rgba(94, 106, 210, 0.55); color: var(--text-secondary); }
+
+  /* ---- settings popover (frame 2) — transient surface, right-aligned ---- */
+  .settings {
+    position: absolute; right: 18px; top: 50px; width: 232px;
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: 9px;
+    box-shadow: var(--sheet-shadow);
+    padding: 11px; display: flex; flex-direction: column; gap: 9px;
+    z-index: 3;
+  }
+  .settings .shead {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--text-tertiary);
+    padding: 0 2px 7px; border-bottom: 1px solid var(--divider);
+  }
+  .settings .srow { display: flex; align-items: center; gap: 8px; padding: 0 2px; }
+  .settings .srow .slabel { flex: 1; font-size: 12px; color: var(--text-secondary); }
+  .seg {
+    display: inline-flex; align-items: stretch;
+    background: var(--canvas-bg);
+    border: 1px solid var(--border-soft); border-radius: 6px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+    padding: 2px; gap: 2px;
+  }
+  .seg span {
+    font: 500 10.5px/1 var(--mono);
+    color: var(--text-quaternary);
+    padding: 4px 8px; border-radius: 4px; cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .seg span.on {
+    color: var(--text-primary);
+    background: var(--metric-surface);
+    border-color: rgba(94, 106, 210, 0.55);
+  }
+  .settings .sfoot {
+    font-size: 10px; color: var(--text-quaternary);
+    padding: 6px 2px 0; border-top: 1px solid var(--divider);
+  }
+
   .legend {
     position: absolute; right: 20px; bottom: 16px;
     display: flex; align-items: center; gap: 14px;
@@ -92,12 +159,11 @@
   }
   .legend b { color: var(--text-tertiary); font-weight: 560; }
   .legend .mono { font-family: var(--mono); }
-
   .power { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--indigo); flex: none; }
 
-  /* ---- INDEX: the left machined instrument ------------------------------ */
+  /* ---- INDEX instrument — starts BELOW the chrome row (top 64px) --------- */
   .instrument {
-    position: absolute; left: 18px; top: 18px; bottom: 18px; width: 300px;
+    position: absolute; left: 18px; top: 64px; bottom: 18px; width: 300px;
     background: var(--panel);
     border: 1px solid var(--border-soft);
     border-radius: 11px;
@@ -107,11 +173,18 @@
   }
   .instrument .phead {
     display: flex; align-items: center; gap: 8px;
-    padding: 0 2px 8px;
+    padding: 0 2px 9px; margin-bottom: 9px;
+    border-bottom: 1px solid var(--divider);
   }
   .instrument .phead .plabel {
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em;
     text-transform: uppercase; color: var(--text-tertiary);
+  }
+  /* census single-source: the engraved top-center line is THE census.
+     Only the agent-sync dot remains here. */
+  .instrument .phead .sync {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; color: var(--text-tertiary);
   }
   .instrument .phead .fold {
     margin-left: auto; appearance: none; cursor: pointer;
@@ -123,24 +196,6 @@
     transition: border-color 150ms ease, color 150ms ease;
   }
   .instrument .phead .fold:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-  /* header census row — engraved numerals + agent-sync dot, hairline below */
-  .instrument .pcensus {
-    display: flex; align-items: baseline; gap: 4px;
-    padding: 0 2px 10px; margin-bottom: 10px;
-    border-bottom: 1px solid var(--divider);
-    white-space: nowrap;
-  }
-  .instrument .pcensus .cnum {
-    font-family: var(--mono); font-size: 13px; font-weight: 600;
-    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
-    font-variant-numeric: tabular-nums;
-  }
-  .instrument .pcensus .clabel { font-size: 9.5px; color: var(--text-quaternary); }
-  .instrument .pcensus .csep { color: var(--text-quaternary); font-size: 10px; margin: 0 3px; }
-  .instrument .pcensus .sync {
-    margin-left: auto; display: inline-flex; align-items: center; gap: 5px;
-    font-size: 10px; color: var(--text-tertiary); align-self: center;
-  }
   .search { position: relative; margin-bottom: 8px; }
   .search input {
     width: 100%; appearance: none;
@@ -186,7 +241,6 @@
     flex: none; font-size: 9.5px; color: var(--text-quaternary);
     border: 1px dashed var(--border-strong); border-radius: 4px; padding: 0 4px;
   }
-  /* domain sub-line: 역량/요소 subcount + proportional capacity meter */
   .trow .sub {
     flex-basis: 100%; display: flex; align-items: center; gap: 8px;
     padding: 2px 0 1px 32px;
@@ -206,9 +260,9 @@
   .depth-2 { margin-left: 36px; }
   .group-kids.closed { display: none; }
 
-  /* collapsed-state INDEX edge tab (frame 2) */
+  /* collapsed-state INDEX edge tab — also below the chrome row */
   .index-tab {
-    position: absolute; left: 0; top: 18px; width: 26px;
+    position: absolute; left: 0; top: 64px; width: 26px;
     display: flex; flex-direction: column; align-items: center; gap: 9px;
     padding: 10px 0 9px;
     background: var(--panel);
@@ -224,15 +278,15 @@
   }
   .index-tab .chev { color: var(--text-quaternary); font-size: 9px; }
 
-  /* ---- right datasheet — the SHIPPED TopologyV2DetailPanel anatomy ------ */
+  /* ---- right datasheet — below the rail (top 64px) ---------------------- */
   .sheet {
-    position: absolute; right: 18px; top: 18px; width: 288px; /* --topology-v2-panel-width */
+    position: absolute; right: 18px; top: 64px; width: 288px;
     background: var(--panel);
     border: 1px solid var(--border-soft);
-    border-radius: 9px;                                        /* --topology-v2-panel-radius */
+    border-radius: 9px;
     box-shadow: var(--sheet-shadow);
-    padding: 11px;                                             /* --topology-v2-panel-pad */
-    display: flex; flex-direction: column; gap: 10px;          /* --topology-v2-panel-gap */
+    padding: 11px;
+    display: flex; flex-direction: column; gap: 10px;
   }
   .sheet .head { display: flex; align-items: flex-start; gap: 8px; }
   .sheet .head .titleblock { min-width: 0; flex: 1; }
@@ -254,7 +308,7 @@
   .sheet .metric {
     border-radius: 5px; background: var(--metric-surface);
     padding: 6px 8px;
-    font-family: var(--mono); font-size: 11.5px; color: #b6b6c0; /* --topology-v2-panel-metric-text */
+    font-family: var(--mono); font-size: 11.5px; color: #b6b6c0;
   }
   .sheet .metric b { font-weight: 600; color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow); }
   .sheet .group { display: flex; flex-direction: column; gap: 3px; }
@@ -297,11 +351,26 @@
 </head>
 <body>
 
-<div class="framecap"><b>기본 상태</b> — INDEX(좌 300px) + 데이터시트(우 288px)가 지도 위에 동시 존재 · 1920×945</div>
+<div class="framecap"><b>기본 상태</b> — 크롬 로우(브랜드 필 · 각인 CENSUS · 유틸리티 레일 + 기어) 아래 INDEX·데이터시트 · 1920×945</div>
 <section class="frame" data-state="expanded">
   <canvas class="stage" id="stage-main"></canvas>
 
-  <div class="census">296 CONCEPTS<span class="sep">·</span>508 RELATIONS<span class="sep">·</span>6 DOMAINS</div>
+  <div class="chromerow">
+    <div class="brand">
+      <span class="brand-mark" data-glyph="project" data-size="15"></span>
+      <span class="word">Ontology Atlas</span>
+      <span class="vault">docs/ontology</span>
+    </div>
+    <div class="census">296 CONCEPTS<span class="sep">·</span>508 RELATIONS<span class="sep">·</span>6 DOMAINS</div>
+    <div class="rail">
+      <button type="button" title="전체 보기 (fit)" aria-label="전체 보기">
+        <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M5 1.5H2.7A1.2 1.2 0 0 0 1.5 2.7V5M9 1.5h2.3a1.2 1.2 0 0 1 1.2 1.2V5M5 12.5H2.7a1.2 1.2 0 0 1-1.2-1.2V9M9 12.5h2.3a1.2 1.2 0 0 0 1.2-1.2V9"/></svg>
+      </button>
+      <button type="button" title="설정" aria-label="설정">
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.6v1.7M8 12.7v1.7M1.6 8h1.7M12.7 8h1.7M3.5 3.5l1.2 1.2M11.3 11.3l1.2 1.2M12.5 3.5l-1.2 1.2M4.7 11.3l-1.2 1.2"/></svg>
+      </button>
+    </div>
+  </div>
 
   <div class="legend">
     <span><b>클릭</b> 포커스</span>
@@ -309,19 +378,12 @@
     <span class="mono">contains ─ · depends ╌</span>
   </div>
 
-  <!-- INDEX — the left machined instrument over the map -->
+  <!-- INDEX — starts below the chrome row; census removed (single-sourced) -->
   <aside class="instrument" aria-label="개념 목차">
     <div class="phead">
       <span class="plabel">Index</span>
-      <button class="fold" type="button" title="INDEX 접기">접기 <span aria-hidden="true">⌃</span></button>
-    </div>
-    <div class="pcensus">
-      <span class="cnum">296</span><span class="clabel">개념</span>
-      <span class="csep">·</span>
-      <span class="cnum">508</span><span class="clabel">관계</span>
-      <span class="csep">·</span>
-      <span class="cnum">6</span><span class="clabel">도메인</span>
       <span class="sync"><span class="power" title="12분 전"></span>에이전트 동기화</span>
+      <button class="fold" type="button" title="INDEX 접기">접기 <span aria-hidden="true">⌃</span></button>
     </div>
     <div class="search">
       <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><circle cx="5" cy="5" r="3.6" fill="none" stroke="#55555d" stroke-width="1.3"/><line x1="7.8" y1="7.8" x2="11" y2="11" stroke="#55555d" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -330,7 +392,6 @@
     <nav class="tree" id="tree"></nav>
   </aside>
 
-  <!-- datasheet — shipped TopologyV2DetailPanel + 전체 상세 opt-in -->
   <aside class="sheet" aria-label="선택한 개념">
     <div class="head">
       <span class="glyph" data-glyph="capability" style="margin-top:1px"></span>
@@ -362,11 +423,45 @@
   </aside>
 </section>
 
-<div class="framecap"><b>접힌 상태</b> — 「접기 ⌃」로 INDEX 는 좌측 엣지의 세로 탭이 되고 지도가 넓어진다 · 데이터시트는 유지</div>
+<div class="framecap"><b>접힘 + 설정</b> — INDEX 세로 탭도 크롬 로우 아래 · 기어 팝오버(언어 EN/KO · 테마 · INDEX 기본 상태) 열림 · 1920×945</div>
 <section class="frame" data-state="collapsed">
   <canvas class="stage" id="stage-collapsed"></canvas>
 
-  <div class="census">296 CONCEPTS<span class="sep">·</span>508 RELATIONS<span class="sep">·</span>6 DOMAINS</div>
+  <div class="chromerow">
+    <div class="brand">
+      <span class="brand-mark" data-glyph="project" data-size="15"></span>
+      <span class="word">Ontology Atlas</span>
+      <span class="vault">docs/ontology</span>
+    </div>
+    <div class="census">296 CONCEPTS<span class="sep">·</span>508 RELATIONS<span class="sep">·</span>6 DOMAINS</div>
+    <div class="rail">
+      <button type="button" title="전체 보기 (fit)" aria-label="전체 보기">
+        <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M5 1.5H2.7A1.2 1.2 0 0 0 1.5 2.7V5M9 1.5h2.3a1.2 1.2 0 0 1 1.2 1.2V5M5 12.5H2.7a1.2 1.2 0 0 1-1.2-1.2V9M9 12.5h2.3a1.2 1.2 0 0 0 1.2-1.2V9"/></svg>
+      </button>
+      <button type="button" class="on" title="설정" aria-label="설정" aria-expanded="true">
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.6v1.7M8 12.7v1.7M1.6 8h1.7M12.7 8h1.7M3.5 3.5l1.2 1.2M11.3 11.3l1.2 1.2M12.5 3.5l-1.2 1.2M4.7 11.3l-1.2 1.2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- settings popover — a transient surface; opening it demoted the datasheet
+       (closed) per the "transient demotes unrelated transient" rule -->
+  <div class="settings" role="dialog" aria-label="설정">
+    <div class="shead">설정</div>
+    <div class="srow">
+      <span class="slabel">언어</span>
+      <span class="seg"><span class="on">EN</span><span>KO</span></span>
+    </div>
+    <div class="srow">
+      <span class="slabel">테마</span>
+      <span class="seg"><span class="on">다크</span><span>라이트</span></span>
+    </div>
+    <div class="srow">
+      <span class="slabel">INDEX 기본</span>
+      <span class="seg"><span class="on">펼침</span><span>접힘</span></span>
+    </div>
+    <div class="sfoot">Esc 또는 바깥 클릭으로 닫기 · 이 기기에만 저장</div>
+  </div>
 
   <div class="legend">
     <span><b>클릭</b> 포커스</span>
@@ -374,43 +469,11 @@
     <span class="mono">contains ─ · depends ╌</span>
   </div>
 
-  <!-- collapsed INDEX: slim machined tab on the left edge -->
   <div class="index-tab" role="button" aria-label="INDEX 펼치기" title="INDEX 펼치기">
     <span class="power" title="에이전트 동기화 12분 전"></span>
     <span class="vlabel">Index</span>
     <span class="chev" aria-hidden="true">›</span>
   </div>
-
-  <!-- same datasheet, same selection — panel choreography keeps it -->
-  <aside class="sheet" aria-label="선택한 개념">
-    <div class="head">
-      <span class="glyph" data-glyph="capability" style="margin-top:1px"></span>
-      <div class="titleblock">
-        <div class="titlerow">
-          <span class="power"></span>
-          <h2>Product Owner Operating System</h2>
-        </div>
-        <div class="kindline">역량 <span class="q">· 최근 갱신</span></div>
-      </div>
-      <button class="x" type="button" aria-label="닫기">
-        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><line x1="3.5" y1="3.5" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="10.5" y1="3.5" x2="3.5" y2="10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-      </button>
-    </div>
-    <div class="metric">쓰는 곳 <b>2</b> · 기대는 곳 <b>2</b> · 근거 <b>1</b></div>
-    <div class="group">
-      <div class="ghead"><span class="glabel">쓰는 곳</span><span class="num">2</span></div>
-      <div class="sheet-usedby"></div>
-    </div>
-    <div class="group">
-      <div class="ghead"><span class="glabel">기대는 곳</span><span class="num">2</span></div>
-      <div class="sheet-depends"></div>
-    </div>
-    <div class="foot">
-      <button type="button">다음 액션 복사</button>
-      <span class="slug">capabilities/product-owner-operating-system</span>
-      <a href="#">전체 상세 →</a>
-    </div>
-  </aside>
 </section>
 
 <script>
@@ -452,7 +515,6 @@
     el.innerHTML = glyphSVG(el.getAttribute("data-glyph"), parseInt(el.getAttribute("data-size") || "15", 10));
   });
 
-  // ---- INDEX tree — domain rows carry 역량/요소 subcounts + capacity meter
   var MAXN = 101;
   var TREE = {
     kind: "project", title: "ontology-atlas", n: 296, open: true,
@@ -509,27 +571,8 @@
     }
     return html;
   }
-  treeEl.innerHTML = rowHTML(TREE, 0);
-  treeEl.addEventListener("click", function (e) {
-    var row = e.target.closest(".trow");
-    if (!row) return;
-    var kids = row.nextElementSibling;
-    if (kids && kids.classList.contains("group-kids")) {
-      kids.classList.toggle("closed");
-      row.classList.toggle("open");
-    }
-    treeEl.querySelectorAll(".trow.sel").forEach(function (r) { r.classList.remove("sel"); });
-    row.classList.add("sel");
-  });
-  document.getElementById("q").addEventListener("input", function (e) {
-    var v = e.target.value.trim().toLowerCase();
-    treeEl.querySelectorAll(".trow").forEach(function (r) {
-      r.style.display = !v || r.getAttribute("data-title").indexOf(v) !== -1 ? "" : "none";
-    });
-    if (v) treeEl.querySelectorAll(".group-kids").forEach(function (g) { g.classList.remove("closed"); });
-  });
+  if (treeEl) treeEl.innerHTML = rowHTML(TREE, 0);
 
-  // ---- datasheet rows — direction groups, per-row trace mark (shipped) ---
   function traceSVG(containment) {
     var stroke = containment ? "var(--mark-contains)" : "var(--mark-depends)";
     var dash = containment ? "" : ' stroke-dasharray="3 3"';
@@ -550,12 +593,7 @@
   document.querySelectorAll(".sheet-usedby").forEach(function (el) { el.innerHTML = USED_BY.map(sheetRow).join(""); });
   document.querySelectorAll(".sheet-depends").forEach(function (el) { el.innerHTML = DEPENDS_ON.map(sheetRow).join(""); });
 
-  // ---------------------------------------------------------------------
-  // full-bleed map — the v2 topology aesthetic as the page itself.
-  // blueprint grid + static vignette + machined shapes + ego focus on the
-  // Onboarding & UX domain (selection: PO Operating System capability).
-  // Dim uses OPAQUE tokens. No glow, no animation.
-  // ---------------------------------------------------------------------
+  // ---- full-bleed map (B3 recipe, unchanged) ----------------------------
   var domains = [
     { id: "ai-agent-partner", title: "AI Agent Partner", count: 39 },
     { id: "views", title: "Views", count: 85 },
@@ -592,7 +630,6 @@
     { id: "e10", capability: "po-operating-system", title: "PO OS Doc" },
     { id: "e11", capability: "mode-detection" }
   ];
-  // datasheet ↔ map honesty: every datasheet row exists as a drawn edge.
   var DEPENDS = [
     ["agent-brief", "mcp-server"],
     ["topology-map-canvas", "mcp-server"],
@@ -654,9 +691,6 @@
       elements.forEach(function (e) { if (e.capability === c.id) FOCUS[e.id] = 1; });
     }
   });
-  // ego neighbors of the SELECTED node outside the focus domain — their labels
-  // stay protected (shipped center/neighbor label guard), so the bright
-  // depends edges always have named endpoints.
   var NEIGHBOR_LABELS = ["agent-brief", "topology-map-canvas"];
 
   function hexToRgb(hex) {
@@ -706,7 +740,6 @@
       return pts;
     }
 
-    // fine blueprint grid — same recipe as the approved b2plus canvas
     var minor = 24, size = minor * 5;
     var tile = document.createElement("canvas");
     tile.width = size; tile.height = size;
@@ -723,20 +756,18 @@
     ctx.fillStyle = ctx.createPattern(tile, "repeat");
     ctx.fillRect(0, 0, W, H);
 
-    // static corner vignette — darkens edges, never animated (b2plus recipe)
     var vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.34, W / 2, H / 2, Math.max(W, H) * 0.72);
     vg.addColorStop(0, "rgba(10, 10, 13, 0)");
     vg.addColorStop(1, "rgba(6, 6, 9, 0.5)");
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, W, H);
 
-    // world→screen: keep clear of the floating instruments
+    // world→screen: keep clear of the floating instruments AND the chrome row
     var availW = W - leftPad - rightPad;
-    var scale = Math.min(availW / 800, (H - 120) / 800);
-    var cx = leftPad + availW / 2, cy = H / 2 + 8;
+    var scale = Math.min(availW / 800, (H - 150) / 800);
+    var cx = leftPad + availW / 2, cy = H / 2 + 24;
     function S(n) { return { x: cx + n.x * scale, y: cy + n.y * scale }; }
 
-    // contains edges — solid, opaque dim outside the ego
     function containsEdge(aId, bId) {
       var a = S(nodes[aId]), b = S(nodes[bId]);
       var lit = FOCUS[aId] && FOCUS[bId];
@@ -749,7 +780,6 @@
     capabilities.forEach(function (c) { containsEdge(c.domain, c.id); });
     elements.forEach(function (e) { containsEdge(e.capability, e.id); });
 
-    // depends — dashed bow, indigo-bright when touching the ego
     ctx.setLineDash([4, 5]);
     DEPENDS.forEach(function (p) {
       var a = S(nodes[p[0]]), b = S(nodes[p[1]]);
@@ -763,7 +793,6 @@
     ctx.setLineDash([]);
     ctx.lineWidth = 1;
 
-    // nodes — machined shapes; dim uses opaque tokens
     all.forEach(function (n) {
       var p = S(n);
       var r = n.r * scale * 1.55;
@@ -800,7 +829,6 @@
       }
       ctx.setLineDash([]);
 
-      // engraved count numerals on domains — data marks, dim face outside ego
       if (n.kind === "domain" && n.count != null) {
         var fsize = Math.max(9, 11 * scale * 1.3);
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -812,8 +840,6 @@
       }
     });
 
-    // labels — shipped contract: domains + root + focused-domain children +
-    // the selected node's ego neighbors (bright-edge endpoints stay named)
     function label(n, text, colr, fsize, dy, weight) {
       var p = S(n);
       ctx.textAlign = "center"; ctx.textBaseline = "top";
@@ -842,8 +868,6 @@
     elements.forEach(function (eSrc) {
       var n = nodes[eSrc.id];
       if (n.title && eSrc.capability === SELECTED) {
-        // above the node — the sibling capability label already owns the
-        // space below, so the two never collide at 14" scale
         var p = S(n);
         ctx.textAlign = "center"; ctx.textBaseline = "bottom";
         ctx.font = "500 9.5px -apple-system, 'SF Pro Text', sans-serif";
@@ -856,8 +880,8 @@
 
   // frame 1: INDEX 18+300 + gap 28 | sheet 18+288 + gap 28
   renderMap("stage-main", 346, 334);
-  // frame 2: collapsed tab 26 + gap 46 | same sheet side
-  renderMap("stage-collapsed", 72, 334);
+  // frame 2: collapsed tab 26 + gap 46 | settings popover side 18+232 + gap 28
+  renderMap("stage-collapsed", 72, 278);
 })();
 </script>
 </body>

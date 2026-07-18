@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>포커스 다이브 before/after — ego bbox ×1.15 프레이밍 스펙</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  FOCUS DIVE BEFORE/AFTER (visual-richness round, item B):
+  the owner-reported "다이브가 너무 깊게 착지한다" fix, as a stacked pair
+  reproducing the live screenshots' composition.
+
+    frame 1 BEFORE — 현행: computeFocusCameraTarget 의
+                     revealFloor = overviewEntryScale × capability.fullRatio(2.0)
+                     가 ego bbox 자연 fit 을 뚫고 지나가 과심도 착지.
+                     라벨 밀집 + sky-chart 워터마크("V I E W S")와 컴팩트
+                     라벨의 동일 앵커 충돌 + 이웃이 화면 밖으로 잘림.
+    frame 2 AFTER  — 스펙: tscale = clamp( fit(egoBounds×1.15),
+                     overviewEntryScale, effectiveMax ) — revealFloor 항 삭제
+                     (C1 A2 ego tier 면제가 가시성을 이미 보장). 워터마크는
+                     포커스 활성 시 alpha 0. ego 전원이 여백 포함 수납.
+
+  근거 문서: docs/prototypes/visual-richness-review.md §B.
+-->
+<style>
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --machined-edge: rgba(255, 255, 255, 0.05);
+    --mark-contains: #4a4a54;
+    --mark-depends: #5c5c72;
+    --sheet-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+    min-width: 1440px;
+  }
+  .framecap {
+    width: 100%; max-width: 1920px; margin: 0 auto; padding: 14px 20px 9px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .framecap b { color: var(--text-tertiary); font-weight: 600; }
+  .framecap .bad { color: #a8635f; }
+  .framecap .good { color: var(--indigo-bright); }
+  .spec {
+    width: 100%; max-width: 1920px; margin: 0 auto; padding: 0 20px 10px;
+    font-family: var(--mono); font-size: 10.5px; line-height: 1.7;
+    color: var(--text-quaternary); white-space: pre;
+  }
+  .spec b { color: var(--numeral-face); font-weight: 600; }
+  .frame {
+    position: relative; width: 100%; max-width: 1920px; margin: 0 auto;
+    height: 700px; overflow: hidden;
+    border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
+  }
+  .frame canvas.stage { position: absolute; inset: 0; }
+
+  /* minimal datasheet stub — anchors the composition like the live app */
+  .sheet {
+    position: absolute; right: 18px; top: 18px; width: 288px;
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: 9px;
+    box-shadow: var(--sheet-shadow);
+    padding: 11px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .sheet h2 { margin: 0; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .sheet .kindline { font-size: 11px; color: var(--text-tertiary); }
+  .sheet .metric {
+    border-radius: 5px; background: var(--metric-surface);
+    padding: 6px 8px; font-family: var(--mono); font-size: 11.5px; color: #b6b6c0;
+  }
+  .sheet .metric b { font-weight: 600; color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow); }
+
+  .legend {
+    position: absolute; right: 20px; bottom: 16px;
+    display: flex; align-items: center; gap: 14px;
+    font-size: 11px; color: var(--text-quaternary);
+  }
+  .legend b { color: var(--text-tertiary); font-weight: 560; }
+</style>
+</head>
+<body>
+
+<div class="framecap"><b class="bad">BEFORE — 현행 다이브</b> — revealFloor(entry×2.0)가 ego fit 을 관통 → 과심도 착지 · 워터마크/라벨 충돌 · 이웃 잘림 · 1920×700</div>
+<div class="spec">scale = min(effMax, max(scaleMin, <b>fitScale</b>, <b>revealFloor = entry × 2.0</b>))   ← revealFloor 가 항상 이긴다 · sky-chart 워터마크가 다이브 줌에서도 잔존</div>
+<section class="frame">
+  <canvas class="stage" id="stage-before"></canvas>
+  <aside class="sheet">
+    <h2>PO Operating System</h2>
+    <div class="kindline">역량 · 최근 갱신</div>
+    <div class="metric">쓰는 곳 <b>2</b> · 기대는 곳 <b>2</b> · 근거 <b>1</b></div>
+  </aside>
+  <div class="legend"><span><b>Esc</b> 개요</span></div>
+</section>
+
+<div class="framecap"><b class="good">AFTER — 스펙 적용</b> — tscale = clamp( fit(egoBounds×1.15), entry, effMax ) · revealFloor 삭제 · 워터마크 alpha 0 · ego 전원 수납 · 1920×700</div>
+<div class="spec">양보 계층: 선택 라벨 &gt; ego 이웃 라벨 &gt; 컴팩트 도메인 라벨(3차 톤) &gt; <b>워터마크(포커스 시 0)</b> &gt; 비-ego 라벨(숨김)   · 점선 사각형 = ego bbox ×1.15 (스펙 주석)</div>
+<section class="frame">
+  <canvas class="stage" id="stage-after"></canvas>
+  <aside class="sheet">
+    <h2>PO Operating System</h2>
+    <div class="kindline">역량 · 최근 갱신</div>
+    <div class="metric">쓰는 곳 <b>2</b> · 기대는 곳 <b>2</b> · 근거 <b>1</b></div>
+  </aside>
+  <div class="legend"><span><b>Esc</b> 개요</span></div>
+</section>
+
+<script>
+(function () {
+  "use strict";
+  var frameEl = document.querySelector(".frame");
+  var W = Math.round(frameEl ? frameEl.getBoundingClientRect().width : 1920) || 1920;
+  var H = 700;
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" }
+  };
+  var DIM = { fill: "#1a1a1e", stroke: "#2e2e34", edge: "#1f1f25" };
+  var INDIGO = "#5e6ad2", INDIGO_BRIGHT = "#8890e0";
+
+  // ---- world (B3 layout recipe, same dataset) ---------------------------
+  var domains = [
+    { id: "ai-agent-partner", title: "AI Agent Partner", count: 39 },
+    { id: "views", title: "Views (Topology & Insights)", count: 85 },
+    { id: "vault-local-first", title: "Vault — Local-First", count: 35 },
+    { id: "ontology-core", title: "Ontology Core", count: 29 },
+    { id: "onboarding-ux", title: "Onboarding & UX", count: 101, focus: true },
+    { id: "mode-aware-adapters", title: "Mode-Aware", count: 11, stale: true }
+  ];
+  var SELECTED = "po-operating-system";
+  var capabilities = [
+    { id: "mcp-server", title: "MCP Server", domain: "ai-agent-partner" },
+    { id: "agent-brief", title: "Agent Brief", domain: "ai-agent-partner" },
+    { id: "topology-map-canvas", title: "Topology Map", domain: "views" },
+    { id: "ontology-insights", title: "Insights", domain: "views" },
+    { id: "local-vault-adapter", title: "Vault Adapter", domain: "vault-local-first" },
+    { id: "frontmatter-schema", title: "Frontmatter Schema", domain: "ontology-core" },
+    { id: "relation-graph", title: "Relation Graph", domain: "ontology-core" },
+    { id: "agent-config-onboarding", title: "Agent Config Onboarding", domain: "onboarding-ux" },
+    { id: "cli-developer-entry", title: "CLI Developer Entry", domain: "onboarding-ux" },
+    { id: "po-operating-system", title: "PO Operating System", domain: "onboarding-ux" },
+    { id: "mode-detection", title: "Mode Detection", domain: "mode-aware-adapters" }
+  ];
+  var elements = [
+    { id: "e1", capability: "mcp-server" },
+    { id: "e2", capability: "mcp-server" },
+    { id: "e3", capability: "topology-map-canvas" },
+    { id: "e4", capability: "topology-map-canvas" },
+    { id: "e5", capability: "local-vault-adapter" },
+    { id: "e6", capability: "relation-graph" },
+    { id: "e7", capability: "agent-config-onboarding" },
+    { id: "e8", capability: "agent-config-onboarding" },
+    { id: "e9", capability: "cli-developer-entry" },
+    { id: "e10", capability: "po-operating-system", title: "PO OS Doc" },
+    { id: "e11", capability: "mode-detection" }
+  ];
+  var DEPENDS = [
+    ["agent-brief", "mcp-server"],
+    ["topology-map-canvas", "mcp-server"],
+    ["topology-map-canvas", "po-operating-system"],
+    ["agent-config-onboarding", "mcp-server"],
+    ["cli-developer-entry", "frontmatter-schema"],
+    ["po-operating-system", "agent-brief"],
+    ["ontology-insights", "relation-graph"],
+    ["mode-detection", "local-vault-adapter"]
+  ];
+
+  var nodes = {}, all = [];
+  function addNode(id, kind, extra) {
+    var n = { id: id, kind: kind, x: 0, y: 0 };
+    for (var k in extra) n[k] = extra[k];
+    nodes[id] = n; all.push(n);
+    return n;
+  }
+  addNode("root", "project", { title: "ontology-atlas", r: 26 });
+  domains.forEach(function (d) { addNode(d.id, "domain", { title: d.title, count: d.count, stale: d.stale, r: 17 }); });
+  capabilities.forEach(function (c) { addNode(c.id, "capability", { title: c.title, domain: c.domain, r: 9.5 }); });
+  elements.forEach(function (e) { addNode(e.id, "element", { capability: e.capability, title: e.title, r: 5.5 }); });
+
+  (function layout() {
+    var TAU = Math.PI * 2;
+    var dNodes = domains.map(function (d) { return nodes[d.id]; });
+    dNodes.forEach(function (d, i) {
+      var a = (i / dNodes.length) * TAU - Math.PI / 2;
+      d.angle = a;
+      d.x = Math.cos(a) * 215; d.y = Math.sin(a) * 215;
+    });
+    dNodes.forEach(function (d) {
+      var caps = capabilities.filter(function (c) { return c.domain === d.id; }).map(function (c) { return nodes[c.id]; });
+      var spread = Math.min(1.0, 0.34 + caps.length * 0.26);
+      caps.forEach(function (c, i) {
+        var t = caps.length === 1 ? 0 : (i / (caps.length - 1) - 0.5);
+        var a = d.angle + t * spread;
+        c.angle = a;
+        c.x = d.x + Math.cos(a) * 118; c.y = d.y + Math.sin(a) * 118;
+      });
+    });
+    capabilities.forEach(function (cSrc) {
+      var c = nodes[cSrc.id];
+      var els = elements.filter(function (e) { return e.capability === c.id; }).map(function (e) { return nodes[e.id]; });
+      var spread = Math.min(1.05, 0.32 + els.length * 0.32);
+      els.forEach(function (e, i) {
+        var t = els.length === 1 ? 0 : (i / (els.length - 1) - 0.5);
+        var a = c.angle + t * spread;
+        e.x = c.x + Math.cos(a) * 66; e.y = c.y + Math.sin(a) * 66;
+      });
+    });
+  })();
+
+  // ---- ego set of SELECTED: 1-hop over contains + depends ---------------
+  // contains: onboarding-ux → po ; po → e10
+  // depends : po → agent-brief ; topology-map-canvas → po
+  var EGO = { "po-operating-system": 1, "onboarding-ux": 1, "e10": 1, "agent-brief": 1, "topology-map-canvas": 1 };
+  function egoBounds() {
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    all.forEach(function (n) {
+      if (!EGO[n.id]) return;
+      minX = Math.min(minX, n.x - n.r); maxX = Math.max(maxX, n.x + n.r);
+      minY = Math.min(minY, n.y - n.r); maxY = Math.max(maxY, n.y + n.r);
+    });
+    return { minX: minX, minY: minY, maxX: maxX, maxY: maxY };
+  }
+
+  function hexToRgb(hex) {
+    var v = parseInt(hex.slice(1), 16);
+    return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+  }
+  function mix(hexA, hexB, t) {
+    var a = hexToRgb(hexA), b = hexToRgb(hexB);
+    return "rgb(" +
+      Math.round(a[0] + (b[0] - a[0]) * t) + "," +
+      Math.round(a[1] + (b[1] - a[1]) * t) + "," +
+      Math.round(a[2] + (b[2] - a[2]) * t) + ")";
+  }
+
+  // opts: { camX, camY, k, watermark, declutter, bboxAnnotation }
+  function render(canvasId, opts) {
+    var canvas = document.getElementById(canvasId);
+    var ctx = canvas.getContext("2d");
+    var DPR = window.devicePixelRatio || 1;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    var k = opts.k;
+    function S(n) { return { x: (n.x - opts.camX) * k + W / 2, y: (n.y - opts.camY) * k + H / 2 }; }
+    function SP(x, y) { return { x: (x - opts.camX) * k + W / 2, y: (y - opts.camY) * k + H / 2 }; }
+
+    // blueprint grid — spacing follows zoom (world-locked, B2+ recipe)
+    var minorW = 24 * k;
+    ctx.fillStyle = "#0a0a0d";
+    ctx.fillRect(0, 0, W, H);
+    ctx.lineWidth = 1;
+    var offX = ((W / 2 - opts.camX * k) % minorW + minorW) % minorW;
+    var offY = ((H / 2 - opts.camY * k) % minorW + minorW) % minorW;
+    var i, count = 0;
+    ctx.strokeStyle = "#0e0e13";
+    for (i = offX; i < W; i += minorW) { ctx.beginPath(); ctx.moveTo(Math.round(i) + 0.5, 0); ctx.lineTo(Math.round(i) + 0.5, H); ctx.stroke(); }
+    for (i = offY; i < H; i += minorW) { ctx.beginPath(); ctx.moveTo(0, Math.round(i) + 0.5); ctx.lineTo(W, Math.round(i) + 0.5); ctx.stroke(); }
+    ctx.strokeStyle = "#121218";
+    var majorW = minorW * 5;
+    var moffX = ((W / 2 - opts.camX * k) % majorW + majorW) % majorW;
+    var moffY = ((H / 2 - opts.camY * k) % majorW + majorW) % majorW;
+    for (i = moffX; i < W; i += majorW) { ctx.beginPath(); ctx.moveTo(Math.round(i) + 0.5, 0); ctx.lineTo(Math.round(i) + 0.5, H); ctx.stroke(); }
+    for (i = moffY; i < H; i += majorW) { ctx.beginPath(); ctx.moveTo(0, Math.round(i) + 0.5); ctx.lineTo(W, Math.round(i) + 0.5); ctx.stroke(); }
+
+    var vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.34, W / 2, H / 2, Math.max(W, H) * 0.72);
+    vg.addColorStop(0, "rgba(10, 10, 13, 0)");
+    vg.addColorStop(1, "rgba(6, 6, 9, 0.5)");
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+
+    // edges — ego lit, rest opaque-dim
+    function containsEdge(aId, bId) {
+      var a = S(nodes[aId]), b = S(nodes[bId]);
+      var lit = EGO[aId] && EGO[bId];
+      ctx.strokeStyle = lit ? "#43434e" : DIM.edge;
+      ctx.lineWidth = lit ? 1.3 : 1;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    domains.forEach(function (d) { containsEdge("root", d.id); });
+    capabilities.forEach(function (c) { containsEdge(c.domain, c.id); });
+    elements.forEach(function (e) { containsEdge(e.capability, e.id); });
+
+    ctx.setLineDash([4, 5]);
+    DEPENDS.forEach(function (p) {
+      var a = S(nodes[p[0]]), b = S(nodes[p[1]]);
+      var touches = EGO[p[0]] && EGO[p[1]];
+      var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      var c0 = SP(0, 0);
+      var qx = mx + (c0.x - mx) * 0.33, qy = my + (c0.y - my) * 0.33;
+      ctx.strokeStyle = touches ? INDIGO_BRIGHT : DIM.edge;
+      ctx.lineWidth = touches ? 1.7 : 1;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(qx, qy, b.x, b.y); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.lineWidth = 1;
+
+    function roundedPolygon(pts, rad) {
+      var n = pts.length;
+      ctx.beginPath();
+      for (var j = 0; j < n; j++) {
+        var p0 = pts[(j - 1 + n) % n], p1 = pts[j], p2 = pts[(j + 1) % n];
+        var v1x = p1.x - p0.x, v1y = p1.y - p0.y, l1 = Math.hypot(v1x, v1y) || 1;
+        var v2x = p2.x - p1.x, v2y = p2.y - p1.y, l2 = Math.hypot(v2x, v2y) || 1;
+        var r = Math.min(rad, l1 * 0.45, l2 * 0.45);
+        var sx = p1.x - (v1x / l1) * r, sy = p1.y - (v1y / l1) * r;
+        var ex = p1.x + (v2x / l2) * r, ey = p1.y + (v2y / l2) * r;
+        if (j === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+        ctx.quadraticCurveTo(p1.x, p1.y, ex, ey);
+      }
+      ctx.closePath();
+    }
+    function hexShape(cx, cy, r) {
+      var pts = [];
+      for (var j = 0; j < 6; j++) {
+        var a = (j * 60 - 90) * Math.PI / 180;
+        pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+      }
+      return pts;
+    }
+
+    // nodes
+    all.forEach(function (n) {
+      var p = S(n);
+      var r = n.r * k;
+      if (p.x < -60 || p.x > W + 60 || p.y < -60 || p.y > H + 60) return;
+      var lit = !!EGO[n.id];
+      var col = GLYPH_COLORS[n.kind];
+      var fill = lit ? col.fill : DIM.fill;
+      var stroke = lit ? mix(col.stroke, INDIGO, 0.45) : DIM.stroke;
+      if (n.id === SELECTED) stroke = INDIGO_BRIGHT;
+      if (n.id === "onboarding-ux") stroke = INDIGO_BRIGHT;
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = n.kind === "project" ? 1.9 : n.kind === "domain" ? 1.5 : n.id === SELECTED ? 1.8 : 1.1;
+      if (n.stale) ctx.setLineDash([3, 3]);
+
+      if (n.kind === "project") {
+        roundedPolygon(hexShape(p.x, p.y, r), Math.min(4, r * 0.14));
+        ctx.fill(); ctx.stroke();
+      } else if (n.kind === "domain") {
+        var w2 = r * 1.5, h2 = r * 0.95;
+        ctx.beginPath();
+        ctx.roundRect(p.x - w2, p.y - h2, w2 * 2, h2 * 2, 4);
+        ctx.fill(); ctx.stroke();
+      } else if (n.kind === "capability") {
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.roundRect(p.x - r, p.y - r, r * 2, r * 2, 2);
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.fillStyle = "#0c0c10";
+        ctx.arc(p.x, p.y, Math.max(1.3, r * 0.3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.setLineDash([]);
+
+      if (n.kind === "domain" && n.count != null) {
+        var fsize = Math.max(9, 11 * k * 0.85);
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.font = "600 " + fsize + "px ui-monospace, SFMono-Regular, Menlo, monospace";
+        ctx.fillStyle = "#08080a";
+        ctx.fillText(String(n.count), p.x, p.y + 1);
+        ctx.fillStyle = lit ? "#8c8c94" : "#42424a";
+        ctx.fillText(String(n.count), p.x, p.y);
+      }
+    });
+
+    function label(n, text, colr, fsize, dy, weight, baseline) {
+      var p = S(n);
+      ctx.textAlign = "center"; ctx.textBaseline = baseline || "top";
+      ctx.font = (weight || 600) + " " + fsize + "px -apple-system, 'SF Pro Text', sans-serif";
+      ctx.fillStyle = colr;
+      ctx.fillText(text, p.x, p.y + dy);
+    }
+
+    if (!opts.declutter) {
+      // BEFORE — the live failure: every layer draws at once.
+      // 1) sky-chart tracked-caps watermark still visible at dive zoom —
+      //    collides with the compact domain label at the SAME anchor.
+      var vn = nodes["views"];
+      var vp = S(vn);
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = "600 " + (17 * k * 0.9) + "px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.fillStyle = "#3a3a44";
+      var tracked = "V I E W S";
+      ctx.fillText(tracked, vp.x, vp.y - 34 * k * 0.4);
+      // 2) compact domain label at the same anchor — the "V I E Views (Topo…" pile
+      label(vn, "Views (Topology & Insights)", "#8d8d97", 12.5, vn.r * k + 7);
+      // 3) neighbor capability label crashes into the same lane
+      label(nodes["topology-map-canvas"], "Topology Map", "#84848c", 11, -nodes["topology-map-canvas"].r * k - 6, 500, "bottom");
+      label(nodes["ontology-insights"], "Insights", "#84848c", 11, nodes["ontology-insights"].r * k + 6, 500);
+      // 4) every onboarding capability label draws too — dense pile at 2× zoom
+      capabilities.forEach(function (cSrc) {
+        if (cSrc.domain !== "onboarding-ux") return;
+        label(nodes[cSrc.id], cSrc.title, cSrc.id === SELECTED ? "#b8b8c1" : "#84848c", 11.5, nodes[cSrc.id].r * k + 6, 500);
+      });
+      label(nodes["onboarding-ux"], "Onboarding & UX", "#c6c6cf", 13.5, nodes["onboarding-ux"].r * k + 8);
+      label(nodes["agent-brief"], "Agent Brief", "#84848c", 11, nodes["agent-brief"].r * k + 6, 500);
+      elements.forEach(function (eSrc) {
+        var n = nodes[eSrc.id];
+        if (n.title) label(n, n.title, "#6a6a73", 10.5, -n.r * k - 5, 500, "bottom");
+      });
+    } else {
+      // AFTER — the yield hierarchy. Watermark: alpha 0 while focus active.
+      // 1 selected label  2 ego neighbor labels  3 ego domain compact (tertiary)
+      label(nodes[SELECTED], "PO Operating System", "#c6c6cf", 12.5, nodes[SELECTED].r * k + 7);
+      label(nodes["agent-brief"], "Agent Brief", "#84848c", 11, nodes["agent-brief"].r * k + 6, 500);
+      label(nodes["topology-map-canvas"], "Topology Map", "#84848c", 11, nodes["topology-map-canvas"].r * k + 6, 500);
+      label(nodes["e10"], "PO OS Doc", "#6a6a73", 10, -nodes["e10"].r * k - 5, 500, "bottom");
+      label(nodes["onboarding-ux"], "Onboarding & UX", "#868690", 11.5, nodes["onboarding-ux"].r * k + 8);
+      // non-ego: unlabeled (dimmed shapes carry the context)
+    }
+
+    // spec annotation — the framed ego bbox ×1.15 (AFTER only)
+    if (opts.bboxAnnotation) {
+      var b = egoBounds();
+      var cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
+      var hw = (b.maxX - b.minX) / 2 * 1.15, hh = (b.maxY - b.minY) / 2 * 1.15;
+      var p1 = SP(cx - hw, cy - hh), p2 = SP(cx + hw, cy + hh);
+      ctx.strokeStyle = "#3a3a44";
+      ctx.setLineDash([5, 6]);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+      ctx.setLineDash([]);
+      ctx.font = "600 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.fillStyle = "#55555d";
+      ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+      ctx.fillText("EGO BBOX × 1.15", p1.x + 2, p1.y - 5);
+    }
+  }
+
+  // ---- cameras -----------------------------------------------------------
+  var b = egoBounds();
+  var cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
+  var hw = (b.maxX - b.minX) / 2 * 1.15, hh = (b.maxY - b.minY) / 2 * 1.15;
+  // AFTER: fit ego bbox ×1.15 into the visible area (minus right datasheet lane)
+  var SAFE_R = 334, SAFE_L = 36, SAFE_T = 36, SAFE_B = 60;
+  var availW = W - SAFE_L - SAFE_R, availH = H - SAFE_T - SAFE_B;
+  var kAfter = Math.min(availW / (hw * 2), availH / (hh * 2));
+  // camera center shifted so the bbox centers in the VISIBLE area
+  var afterCamX = cx - (SAFE_L - SAFE_R) / (2 * kAfter);
+  var afterCamY = cy - (SAFE_T - SAFE_B) / (2 * kAfter);
+
+  // BEFORE: revealFloor wins — lands ~1.8× deeper than the ego fit. Camera
+  // reproduces the live screenshot's composition: the clicked cluster at the
+  // lower-left, the Views anchor in-frame so the sky-chart watermark visibly
+  // piles onto the compact label ("V I E Views (Topo…"), neighbors clipped.
+  var kBefore = kAfter * 1.8;
+  var sel = nodes[SELECTED];
+  var vw = nodes["views"];
+  render("stage-before", {
+    camX: (sel.x * 0.45 + vw.x * 0.55), camY: (sel.y * 0.45 + vw.y * 0.55), k: kBefore,
+    watermark: true, declutter: false, bboxAnnotation: false
+  });
+  render("stage-after", {
+    camX: afterCamX, camY: afterCamY, k: kAfter,
+    watermark: false, declutter: true, bboxAnnotation: true
+  });
+})();
+</script>
+</body>
+</html>

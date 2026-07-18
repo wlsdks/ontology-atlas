@@ -784,7 +784,15 @@
     --topology-v2-dust-area-per-point: 5200;
 
     /* 2.4 모션 · 카메라 */
-    --topology-v2-camera-spring-angfreq: 2.941;
+    /* Dive-zoom fix (owner feedback — "줌 인/아웃이 둔하게 느껴짐"): 기존
+       단일 스프링 각주파수(2.941, 95% settle 1.61s)가 휠 줌 · 다이브 · 오버뷰
+       복귀 · 재배치 등 모든 카메라 이동에 재사용되어, 인터랙티브해야 할 휠
+       줌도 영화적인 다이브만큼 느리게 settle 됐다. 인터랙티브(휠 줌의 스케일
+       축 + 휠 줌 중 팬)와 프로그램적 전환(포커스 다이브 · 포커스 해제 ·
+       재배치 · 지도 전체 맞추기)을 분리 — 전자는 crisp(0.40s), 후자는 여전히
+       cinematic(1.0s)하지만 예전보다 빠르다. */
+    --topology-v2-camera-spring-angfreq-interactive: 12;
+    --topology-v2-camera-spring-angfreq-transition: 4.7;
     --topology-v2-camera-damping-default: 1.0;
     --topology-v2-camera-damping-flick: 0.82;
     --topology-v2-camera-momentum-decay: 0.998;
@@ -832,7 +840,12 @@
        tier visibility rides a separate zoom-ratio signal (model/tier-visibility). */
     --topology-v2-overview-entry-ratio: 0.95;
     --topology-v2-focus-fit-max-scale: 1.9;
-    --topology-v2-focus-bbox-margin: 70;
+    /* Dive-framing fix (owner: "클릭하면 다이브가 너무 깊음 — 과확대·라벨
+       충돌") — 이제 MULTIPLICATIVE 마진(이전엔 고정 px 패딩 70)이다: ego bbox
+       의 폭/높이를 이 비율만큼 넓혀 fit-scale 을 계산 — 큰 클러스터일수록
+       패딩도 비례해서 커진다(고정 px 라면 큰 fan 엔 패딩이 상대적으로 작아
+       빡빡했을 것). `topology-camera-math.ts#computeFocusCameraTarget` 참고. */
+    --topology-v2-focus-bbox-margin: 1.15;
     --topology-v2-hysteresis-px: 7;
     --topology-v2-emphasis-rise-tau: 0.09;
     --topology-v2-emphasis-decay-tau: 0.15;
