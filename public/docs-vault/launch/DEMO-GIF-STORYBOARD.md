@@ -17,9 +17,9 @@ README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. **claim → pro
 
 ## Cut 3 (12–18s) — "토폴로지 view"
 
-- **screen**: `/topology` Sigma WebGL — current dogfood vault (108 노드) drag / hover.
+- **screen**: `/topology` canvas map/graph — current dogfood vault (108 노드) drag / hover.
 - **action**: 사용자가 한 노드 hover → 1-hop 이웃 강조 → 클릭 → ProjectDrawer.
-- **caption**: `Sigma topology · 1 click → context`
+- **caption**: `Topology · 1 click → context`
 
 ## Cut 4 (18–24s) — "AI agent 가 ontology 를 *읽고* 코드 제안"
 

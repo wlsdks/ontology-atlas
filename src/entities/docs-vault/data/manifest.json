@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T08:31:01.565Z",
+  "generatedAt": "2026-07-18T10:29:16.506Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4340,8 +4340,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 9316,
-      "updatedAt": "2026-07-18T08:18:32.249Z",
+      "wordCount": 9361,
+      "updatedAt": "2026-07-18T10:29:14.886Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -5012,8 +5012,8 @@
         }
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ontology-atlas 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성",
-      "wordCount": 420,
-      "updatedAt": "2026-06-05T17:11:07.680Z",
+      "wordCount": 419,
+      "updatedAt": "2026-07-18T08:39:34.722Z",
       "linksOut": []
     },
     {
@@ -5050,8 +5050,8 @@
         }
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~280. HN expects substantive Show HN posts, not one-liners.)",
-      "wordCount": 440,
-      "updatedAt": "2026-06-05T17:11:07.681Z",
+      "wordCount": 439,
+      "updatedAt": "2026-07-18T08:39:34.722Z",
       "linksOut": []
     },
     {
@@ -5156,8 +5156,8 @@
         }
       ],
       "excerpt": "Reddit responds best to honest, problem-first framing. Each subreddit has its own norms; copy below tuned per audience. Title: ontology-atlas — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows long-form better than HN): my-project/ ├── project.md ├── domains/ │ ├── auth.m",
-      "wordCount": 934,
-      "updatedAt": "2026-06-05T17:11:07.682Z",
+      "wordCount": 933,
+      "updatedAt": "2026-07-18T08:39:34.723Z",
       "linksOut": []
     },
     {
@@ -9204,6 +9204,94 @@
       "linksOut": []
     },
     {
+      "slug": "prototypes/visual-richness-review",
+      "path": "docs/prototypes/visual-richness-review.md",
+      "title": "시각 리치니스 라운드 — 디자인 리뷰 + 파라미터 스펙 (2026-07)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "시각 리치니스 라운드 — 디자인 리뷰 + 파라미터 스펙 (2026-07)",
+          "slug": "시각-리치니스-라운드-디자인-리뷰-파라미터-스펙-2026-07"
+        },
+        {
+          "depth": 2,
+          "text": "A. \"전체 페이지가 시각적으로 표현되는 것들이 없다\" — 서피스별 처방",
+          "slug": "a-전체-페이지가-시각적으로-표현되는-것들이-없다-서피스별-처방"
+        },
+        {
+          "depth": 3,
+          "text": "진단 (정직하게)",
+          "slug": "진단-정직하게"
+        },
+        {
+          "depth": 3,
+          "text": "처방 목록 (우선순위순)",
+          "slug": "처방-목록-우선순위순"
+        },
+        {
+          "depth": 3,
+          "text": "레퍼런스 (원칙 인용)",
+          "slug": "레퍼런스-원칙-인용"
+        },
+        {
+          "depth": 2,
+          "text": "B. 포커스 다이브 과심도 — 원인과 스펙",
+          "slug": "b-포커스-다이브-과심도-원인과-스펙"
+        },
+        {
+          "depth": 3,
+          "text": "근본 원인 (코드 확정)",
+          "slug": "근본-원인-코드-확정"
+        },
+        {
+          "depth": 3,
+          "text": "다이브 카메라 스펙",
+          "slug": "다이브-카메라-스펙"
+        },
+        {
+          "depth": 3,
+          "text": "다이브 줌 라벨 declutter — 양보 계층",
+          "slug": "다이브-줌-라벨-declutter-양보-계층"
+        },
+        {
+          "depth": 2,
+          "text": "C. 줌 필 \"느리고 사용성 안 좋음\" — 파라미터 스펙",
+          "slug": "c-줌-필-느리고-사용성-안-좋음-파라미터-스펙"
+        },
+        {
+          "depth": 3,
+          "text": "진단: 노치당 배율은 정상권, **스프링이 범인**",
+          "slug": "진단-노치당-배율은-정상권-스프링이-범인"
+        },
+        {
+          "depth": 3,
+          "text": "처방 (숫자)",
+          "slug": "처방-숫자"
+        },
+        {
+          "depth": 2,
+          "text": "D. 설정/언어 어포던스 — 기어 vs EN/KO 필",
+          "slug": "d-설정언어-어포던스-기어-vs-enko-필"
+        },
+        {
+          "depth": 2,
+          "text": "E. 크롬 재구성 — INDEX ↔ 브랜드 충돌 해소",
+          "slug": "e-크롬-재구성-index-브랜드-충돌-해소"
+        },
+        {
+          "depth": 2,
+          "text": "검증 계획",
+          "slug": "검증-계획"
+        }
+      ],
+      "excerpt": "소유자 피드백 5건(A 시각 빈곤 · B 다이브 과심도 · C 줌 둔감 · D 설정 어포던스 · E 크롬 충돌)에 대한 리뷰·레퍼런스 조사·처방. 목업: chrome-recomposition.html · focus-dive-before-after.html · visual-richness-sampler.html. 스샷: shots/. 헌장 유지: 무채색 + 단일 인디고, 그라디언트/글로우/글래스모피즘 금지, data-ink 원칙(Tufte). 레퍼런스는 원칙 인용만 — 자산 모방 없음. 기계가공-계기판 언어는 토폴로지 캔버스 위에서는 성립한다(각인 숫자·기계가공 셰이프",
+      "wordCount": 1454,
+      "updatedAt": "2026-07-18T10:01:35.514Z",
+      "linksOut": []
+    },
+    {
       "slug": "PUBLISH-NPM",
       "path": "docs/PUBLISH-NPM.md",
       "title": "npm publish — step-by-step guide",
@@ -11402,6 +11490,20 @@
             "type": "doc",
             "slug": "ontology/README",
             "title": "ontology-atlas — 자기 ontology vault"
+          }
+        ]
+      },
+      {
+        "name": "prototypes",
+        "path": "prototypes",
+        "type": "dir",
+        "children": [
+          {
+            "name": "visual-richness-review",
+            "path": "prototypes/visual-richness-review",
+            "type": "doc",
+            "slug": "prototypes/visual-richness-review",
+            "title": "시각 리치니스 라운드 — 디자인 리뷰 + 파라미터 스펙 (2026-07)"
           }
         ]
       },

@@ -60,7 +60,7 @@ and gives a real answer. the dependency graph is in the repo, not a silo.
 
 ```
 3 views over the same vault:
-- topology (Sigma WebGL)
+- topology (canvas map/graph)
 - tree (drill-down)
 - ERD builder (xyflow)
 
