@@ -31,16 +31,34 @@ export interface V2GroupedConnections {
  * Split direct connections into the two relation-type groups the datasheet
  * renders (one compact marker per group, not a per-row badge pile). Input
  * order is preserved inside each group so the panel stays deterministic.
+ *
+ * Also collapses each group to one row per `(neighbor id, direction)` — the
+ * live dogfood bug (`capability:mcp-server` had BOTH a `depends_on` AND a
+ * `related_to` edge to the SAME neighbor, `capability:frontmatter-to-
+ * ontology`) isn't caught by `buildV2Connections`'s own dedup (the
+ * relationType genuinely differs there), but the panel shows only the
+ * neighbor's title with no per-row relationType badge, so two rows for the
+ * same neighbor in the same direction read as one duplicated row AND collide
+ * on the React list key (`TopologyV2DetailPanel.tsx`'s `key={group:id}`).
+ * The SAME neighbor in the OPPOSITE direction (a real mutual-dependency fact)
+ * is a different `(id, direction)` pair and stays as two rows.
  */
 export function groupV2Connections(
   connections: readonly V2DatasheetConnection[],
 ): V2GroupedConnections {
   const contains: V2DatasheetConnection[] = [];
   const depends: V2DatasheetConnection[] = [];
+  const seenContains = new Set<string>();
+  const seenDepends = new Set<string>();
   for (const connection of connections) {
+    const key = `${connection.id}|${connection.direction}`;
     if (isContainmentRelation(connection.relationType)) {
+      if (seenContains.has(key)) continue;
+      seenContains.add(key);
       contains.push(connection);
     } else {
+      if (seenDepends.has(key)) continue;
+      seenDepends.add(key);
       depends.push(connection);
     }
   }
@@ -67,6 +85,14 @@ export interface V2ConnectionSourceEdge {
  * `previewRelations` slice, this is complete, so the datasheet can show each
  * relation-type group's TRUE total instead of folding depends edges into a
  * generic overflow on contains-dominated hubs.
+ *
+ * Deduped by `(neighbor id, relationType, direction)`, keeping the first
+ * occurrence — a live dogfood bug (`capability:mcp-server` had TWO
+ * `depends_on` edges to the same neighbor, one direct + one re-derived)
+ * otherwise emits duplicate rows: a duplicate React list key
+ * ("Encountered two children with the same key") and a visibly doubled
+ * DEPENDS entry. Parallel edges of a DIFFERENT relation type, or the same
+ * pair in the OPPOSITE direction, are still distinct facts and both kept.
  */
 export function buildV2Connections(
   nodeId: string,
@@ -76,29 +102,34 @@ export function buildV2Connections(
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
   const outgoing: V2DatasheetConnection[] = [];
   const incoming: V2DatasheetConnection[] = [];
+  const seen = new Set<string>();
   for (const edge of edges) {
     if (edge.from === nodeId) {
       const other = nodeById.get(edge.to);
-      if (other) {
-        outgoing.push({
-          id: other.id,
-          title: other.title,
-          kind: other.kind,
-          relationType: edge.type,
-          direction: "outgoing",
-        });
-      }
+      if (!other) continue;
+      const key = `${other.id}|${edge.type}|outgoing`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      outgoing.push({
+        id: other.id,
+        title: other.title,
+        kind: other.kind,
+        relationType: edge.type,
+        direction: "outgoing",
+      });
     } else if (edge.to === nodeId) {
       const other = nodeById.get(edge.from);
-      if (other) {
-        incoming.push({
-          id: other.id,
-          title: other.title,
-          kind: other.kind,
-          relationType: edge.type,
-          direction: "incoming",
-        });
-      }
+      if (!other) continue;
+      const key = `${other.id}|${edge.type}|incoming`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      incoming.push({
+        id: other.id,
+        title: other.title,
+        kind: other.kind,
+        relationType: edge.type,
+        direction: "incoming",
+      });
     }
   }
   return [...outgoing, ...incoming];

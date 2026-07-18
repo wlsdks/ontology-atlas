@@ -26,11 +26,12 @@ import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTa
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
 import { scheduleRipple } from "../model/focus-state";
 import type { ForceSimulation } from "../model/force-layout";
-import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom, nodeTierAlpha } from "../model/tier-visibility";
+import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom } from "../model/tier-visibility";
 import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
 import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
 import {
   INITIAL_POINTER_MACHINE_STATE,
+  resolveClickAction,
   transitionPointerState,
   type PointerMachineState,
 } from "../interaction/pointer-state-machine";
@@ -43,8 +44,6 @@ import type { TopologyWorld } from "./topology-world";
 export const NODE_DRAG_HEAT_FRAMES = 20;
 /** A settle burst after a node is released so the graph (and the dropped node) relaxes around the drop, Obsidian-style. */
 export const NODE_RELEASE_HEAT_FRAMES = 90;
-/** Minimum tier alpha for a node to be grabbable/hoverable — hidden (semantic-zoom-gated) nodes must not be hit. */
-const HITTABLE_MIN_TIER_ALPHA = 0.5;
 
 /** Active node-drag: which node is pinned + the world-space grab offset (respects where inside the node it was grabbed). */
 export interface NodeDragState {
@@ -181,10 +180,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       tokens,
       px,
       py,
-      (node) => {
-        if (nodeTierAlpha(node.kind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL) >= HITTABLE_MIN_TIER_ALPHA) return true;
-        return focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused?.has(node.id) === true);
-      },
+      (node) => isNodeHittable(node, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL),
     );
   };
 
@@ -399,14 +395,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       return;
     }
 
-    if (!commitClick) return;
-    if (commitClick.nodeId === null) {
-      if (focusedSlugRef.current) onPaneClick?.();
-    } else if (commitClick.nodeId === focusedSlugRef.current) {
-      onPaneClick?.();
-    } else {
-      onSelect?.(commitClick.nodeId);
-    }
+    const action = resolveClickAction(commitClick, focusedSlugRef.current);
+    if (action.type === "select") onSelect?.(action.nodeId);
+    else if (action.type === "deselect") onPaneClick?.();
   };
 
   const handlePointerCancel = () => {

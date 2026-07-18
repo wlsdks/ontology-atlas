@@ -44,12 +44,35 @@ export function bboxesOverlap(a: LabelBBox, b: LabelBBox): boolean {
 }
 
 export interface LabelCandidate<T> {
-  /** Lower = higher priority. project 0 · domain 1 · capability 2 · element 3. */
+  /** Lower = higher priority. See `resolveLabelPriority` for the ladder. */
   priority: number;
   /** Stable tie-break within a priority — pass the node's draw index for determinism. */
   order: number;
   bbox: LabelBBox;
   payload: T;
+}
+
+export interface LabelPriorityInput {
+  kind: "project" | "domain" | "capability" | "element";
+  isSelected: boolean;
+  isHovered: boolean;
+  isHub: boolean;
+}
+
+/**
+ * Collision-culling priority ladder (label-clarity, 2026-07): selected >
+ * hovered > project/hub > domain > capability > element. Lower number wins
+ * `greedyPlaceLabels` — a domain name must survive over a capability's when
+ * both compete for the same screen area, and the node the user is actively
+ * attending to (selected or hovered) must never lose to a passive one.
+ */
+export function resolveLabelPriority(input: LabelPriorityInput): number {
+  if (input.isSelected) return 0;
+  if (input.isHovered) return 1;
+  if (input.kind === "project" || input.isHub) return 2;
+  if (input.kind === "domain") return 3;
+  if (input.kind === "capability") return 4;
+  return 5;
 }
 
 /**

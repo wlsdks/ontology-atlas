@@ -11,6 +11,7 @@ import { resolveFreshnessVisual } from "../model/freshness";
 import { DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha } from "../model/tier-visibility";
 import { draw as gridDraw, lerpColorHex } from "../render/grid";
 import {
+  computeDomainWatermarkAlpha,
   computeLabelAlpha,
   draw as labelsDraw,
   LABEL_FONT_SIZE,
@@ -21,6 +22,7 @@ import {
   ellipsizeToWidth,
   greedyPlaceLabels,
   isWithinSafeRect,
+  resolveLabelPriority,
   type LabelCandidate,
   type SafeRect,
 } from "../render/label-layout";
@@ -305,7 +307,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     top: tokens.safeInsetTop,
     bottom: viewportHeight - tokens.safeInsetBottom,
   };
-  const KIND_PRIORITY: Record<WorldNode["kind"], number> = { project: 0, domain: 1, capability: 2, element: 3 };
   interface LabelPayload {
     kind: WorldNode["kind"];
     text: string;
@@ -313,15 +314,27 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     screenY: number;
     screenRadius: number;
     egoState: NodeEgoState;
+    isHovered: boolean;
+    revealAlpha: number;
   }
   const labelCandidates: LabelCandidate<LabelPayload>[] = [];
   world.nodes.forEach((node, index) => {
     // Uses the SAME effective alpha as the node draw pass (C1 A2) — an
     // ego-exempt capability that's now visible must also get a label, or it
-    // reads as an unlabeled ghost circle.
-    if ((effectiveAlphaById.get(node.id) ?? 1) <= 0.02) return;
+    // reads as an unlabeled ghost circle. Also the SAME signal capability/
+    // element label eligibility ramps with (label-clarity — "잡을 수 있으면
+    // 읽을 수 있다").
+    const revealAlpha = effectiveAlphaById.get(node.id) ?? 1;
+    if (revealAlpha <= 0.02) return;
     const egoState = resolveNodeEgoState(node.id, focusedNodeId, neighborsOfFocused);
-    if (computeLabelAlpha(node.kind, farT, camera.scale.value, egoState) <= 0.02) return;
+    const isHovered = hoveredNodeId !== null && node.id === hoveredNodeId;
+    const compactAlpha = computeLabelAlpha({ kind: node.kind, farT, egoState, isHovered, revealAlpha });
+    // Domain draws TWO effects at once (the always-readable compact label AND
+    // the separate far-field watermark) — a candidate must be built whenever
+    // EITHER is visible, or the watermark silently vanishes once the compact
+    // label alpha hits 0 at farT=1 (label-clarity fix, far-field regression).
+    const watermarkAlpha = node.kind === "domain" ? computeDomainWatermarkAlpha(farT, egoState) : 0;
+    if (Math.max(compactAlpha, watermarkAlpha) <= 0.02) return;
 
     const screen = project(node.x, node.y);
     const screenRadius = radiusForKind(node.kind, tokens) * camera.scale.value;
@@ -334,10 +347,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const width = measureLabelWidth(ctx, node.kind, text);
     const fontSize = LABEL_FONT_SIZE[node.kind];
     labelCandidates.push({
-      priority: KIND_PRIORITY[node.kind],
+      priority: resolveLabelPriority({
+        kind: node.kind,
+        isSelected: egoState === "center",
+        isHovered,
+        isHub: node.isHub,
+      }),
       order: index,
       bbox: { minX: screen.x - width / 2, maxX: screen.x + width / 2, minY: anchorY - fontSize, maxY: anchorY + 2 },
-      payload: { kind: node.kind, text, screenX: screen.x, screenY: screen.y, screenRadius, egoState },
+      payload: { kind: node.kind, text, screenX: screen.x, screenY: screen.y, screenRadius, egoState, isHovered, revealAlpha },
     });
   });
 
@@ -351,8 +369,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenY: payload.screenY,
         screenRadius: payload.screenRadius,
         farT,
-        cameraScale: camera.scale.value,
         egoState: payload.egoState,
+        isHovered: payload.isHovered,
+        revealAlpha: payload.revealAlpha,
       },
       {
         labelProject: tokens.labelProject,
