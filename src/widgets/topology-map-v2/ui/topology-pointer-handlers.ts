@@ -20,7 +20,7 @@
  * snap); see `engine/momentum.ts`.
  */
 
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
@@ -108,6 +108,14 @@ export interface PointerHandlerRefs {
   overviewScaleRef: Ref<number>;
   onSelect?: (slug: string) => void;
   onPaneClick?: () => void;
+  /**
+   * W2-B node right-click context menu. Called with the hit node's id and the
+   * event's viewport-space coordinates (`clientX`/`clientY`, matching the
+   * cursor-anchored menu position contract). Omitted keeps `handleContextMenu`
+   * a no-op over nodes too (browser default menu still suppressed off-node
+   * only — see that handler's own doc).
+   */
+  onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
 }
 
 export interface TopologyPointerHandlers {
@@ -127,6 +135,14 @@ export interface TopologyPointerHandlers {
    * `{ passive: false }` listener instead of the JSX prop.
    */
   handleWheel: (e: WheelEvent) => void;
+  /**
+   * W2-B — native browser context menu is suppressed ONLY when the
+   * right-click lands on a hittable node (design gate: "캔버스 기본 브라우저
+   * 컨텍스트 메뉴 억제는 노드 위에서만"). Off-node right-clicks fall through
+   * to the OS/browser menu unchanged — panning/empty-canvas right-click
+   * behavior is untouched.
+   */
+  handleContextMenu: (e: ReactMouseEvent<HTMLCanvasElement>) => void;
 }
 
 /** Builds the five pointer/wheel handlers, closing over the hook's refs (cheap — plain closures, no hook rules to satisfy). */
@@ -154,6 +170,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     overviewScaleRef,
     onSelect,
     onPaneClick,
+    onContextMenuNode,
   } = refs;
 
   /**
@@ -482,5 +499,23 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
   };
 
-  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleWheel };
+  // W2-B — right-click reuses the SAME tier-aware hit test as pointerdown
+  // (`hitVisibleNode`), so the menu only opens over nodes actually hittable
+  // at the current altitude/focus (never a semantic-zoom-hidden one). The
+  // browser's own context menu is prevented ONLY on that hit path — an
+  // off-node right-click (empty canvas) falls through untouched, so users can
+  // still reach the OS/browser menu there.
+  const handleContextMenu = (e: ReactMouseEvent<HTMLCanvasElement>) => {
+    const tokens = readTopologyV2TokensOrNull();
+    const world = worldRef.current;
+    if (!tokens || !world || !onContextMenuNode) return;
+    const rect = currentRect(e.currentTarget);
+    const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
+    if (!hitNodeId) return;
+    e.preventDefault();
+    onContextMenuNode(hitNodeId, { x: e.clientX, y: e.clientY });
+  };
+
+  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleWheel, handleContextMenu };
 }

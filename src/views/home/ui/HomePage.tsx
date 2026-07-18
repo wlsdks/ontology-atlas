@@ -105,6 +105,7 @@ import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { FullDetailA1, buildFullDetailGroups, buildFullDetailReachModel } from "@/widgets/full-detail-a1";
 import {
   TopologyMapV2,
+  TopologyV2ContextMenu,
   TopologyV2DetailPanel,
   TopologyV2SettingsGear,
   buildV2Connections,
@@ -635,6 +636,20 @@ export function HomePage() {
   // 어느 노드의 전체 상세가 열렸는지를 slug 로 들고, 현재 선택 노드와 일치할
   // 때만 드로어 — 다른 노드를 고르면 자동으로 팝오버부터(effect 불필요).
   const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
+  // W2-B — node right-click context menu. `slug` here is the CANVAS graph
+  // node id (`TopologyV2Node.id`, same id space `onSelect`/`handleSelect`
+  // use), reported by `use-topology-loop.ts`'s tier-aware hit test; `x`/`y`
+  // are viewport-space cursor coordinates the menu anchors to.
+  const [contextMenuNode, setContextMenuNode] = useState<
+    { slug: string; x: number; y: number } | null
+  >(null);
+  const closeContextMenu = useCallback(() => setContextMenuNode(null), []);
+  const handleContextMenuNode = useCallback(
+    (slug: string, position: { x: number; y: number }) => {
+      setContextMenuNode({ slug, x: position.x, y: position.y });
+    },
+    [],
+  );
   const [
     selectedInspectorSupportRailSlug,
     setSelectedInspectorSupportRailSlug,
@@ -792,6 +807,41 @@ export function HomePage() {
     },
     [setRouteState],
   );
+  // W2-B context menu quick-action model — same construction as
+  // `v2DatasheetModel` (documentHref/builderEditHref/handoffText), but keyed
+  // off whichever node was right-clicked rather than the current selection,
+  // since the context menu is reachable without selecting the node first.
+  // `domainTitle: null` in the handoff payload is a deliberate simplification
+  // (the owner-domain lookup lives in `buildNodeSignificance`, which needs the
+  // full drawer model this quick lookup intentionally skips) — the payload
+  // still degrades to `domain: -`, never throws or omits the field.
+  const contextMenuModel = useMemo(() => {
+    if (!contextMenuNode || !ontologyInsight) return null;
+    const node = ontologyInsight.nodes.find((n) => n.id === contextMenuNode.slug);
+    if (!node) return null;
+    const sourceSlug = node.evidenceIds[0] ?? null;
+    const slug = sourceSlug ?? node.id;
+    const connections = buildV2Connections(node.id, ontologyInsight.nodes, ontologyInsight.edges);
+    const groups = buildV2ConnectionGroups(connections);
+    const evidenceRows = buildV2EvidenceRows(node.evidenceIds);
+    const handoffText = formatV2HandoffText({
+      slug,
+      kind: node.kind,
+      domainTitle: null,
+      usedBy: groups.usedBy.total,
+      dependsOn: groups.dependsOn.total,
+      evidence: evidenceRows.length,
+      usedByNames: groups.usedBy.rows.map((connection) => connection.title),
+      dependsNames: groups.dependsOn.rows.map((connection) => connection.title),
+    });
+    return {
+      nodeId: node.id,
+      slug,
+      documentHref: sourceSlug ? buildDocsVaultHref({ slug: sourceSlug }) : null,
+      builderEditHref: `/ontology/edit/?node=${encodeURIComponent(slug)}`,
+      handoffText,
+    };
+  }, [contextMenuNode, ontologyInsight]);
   // A1 "데이터시트 확장판" 전체 상세 — TopologyOntologyDrawer(배지 수프 +
   // reach 쿼리빌더 + collaborator brief)를 대체. groups/reach 는 compact
   // datasheet 와 동일 소스(buildV2Connections 파생, buildOntologyReachability
@@ -966,6 +1016,7 @@ export function HomePage() {
       if (event.key !== "Escape") return;
       if (event.defaultPrevented) return;
       const action = resolveTopologyEscLadderAction({
+        contextMenuOpen: contextMenuNode !== null,
         createNodeOpen,
         searchOpen: ontologySearchOpen,
         fullDetailOpen,
@@ -974,6 +1025,9 @@ export function HomePage() {
         hasLocalGraphRoot: localGraphRoot !== null,
       });
       switch (action) {
+        case "close-context-menu":
+          closeContextMenu();
+          break;
         case "close-create-node":
           closeCreateNode();
           break;
@@ -996,12 +1050,14 @@ export function HomePage() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [
+    contextMenuNode,
     createNodeOpen,
     ontologySearchOpen,
     fullDetailOpen,
     selectedRelationActive,
     canvasSelectedSlug,
     localGraphRoot,
+    closeContextMenu,
     closeCreateNode,
     handleClose,
   ]);
@@ -2408,6 +2464,7 @@ export function HomePage() {
                     onPaneClick={handleClose}
                     onVisibleCountChange={setSigmaVisibleCount}
                     onGraphStatsChange={handleSigmaGraphStatsChange}
+                    onContextMenuNode={handleContextMenuNode}
                     minimal={localGraphRoot !== null}
                   />
                 ) : null}
@@ -2658,6 +2715,34 @@ export function HomePage() {
               />
             ) : null}
           </div>
+        ) : null}
+        {contextMenuNode && contextMenuModel ? (
+          <TopologyV2ContextMenu
+            position={{ x: contextMenuNode.x, y: contextMenuNode.y }}
+            documentHref={contextMenuModel.documentHref}
+            builderEditHref={contextMenuModel.builderEditHref}
+            labels={{
+              actionDocument: t("nodeDatasheet.actionDocument"),
+              actionEditRelations: t("nodeDatasheet.actionEditRelations"),
+              actionCopyHandoff: t("nodeDatasheet.actionCopyHandoff"),
+              actionPath: t("nodeDatasheet.actionPath"),
+              openFullDetail: t("nodeDatasheet.openFullDetail"),
+            }}
+            onCopyHandoff={() => {
+              copyV2NodeHandoff(contextMenuModel.handoffText);
+              closeContextMenu();
+            }}
+            onSetPathSource={() => {
+              handleSetPathSource(contextMenuModel.slug);
+              closeContextMenu();
+            }}
+            onOpenFullDetail={() => {
+              handleSelect(contextMenuModel.nodeId);
+              setFullDetailSlug(contextMenuModel.nodeId);
+              closeContextMenu();
+            }}
+            onClose={closeContextMenu}
+          />
         ) : null}
         {fullDetailOpen && fullDetailA1Model ? (
           <div
