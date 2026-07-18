@@ -1,0 +1,128 @@
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  root-first-open B — "지도가 곧 첫 화면" (제품이 곧 랜딩)
+  안 B: vault 미선택 `/` 가 곧바로 토폴로지 허브를 dogfood 샘플로 렌더
+  (정적 모드 fallback — 이미 코드가 지원). 상단에 얇은 first-run 배너 하나만
+  얹는다: "샘플을 보는 중 — 내 폴더 열기". 별도 첫 화면 surface 자체가 없음.
+  기존 허브 크롬(INDEX·데이터시트·기어)을 그대로 쓰므로 신규 UI = 배너 1개.
+-->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>첫 화면 B — 라이브 데모 지도</title>
+<style>
+  :root{
+    --canvas:#060609; --panel:#111217; --elevated:#16171d; --divider:rgba(255,255,255,.08);
+    --border-soft:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.16);
+    --t1:#ececf0; --t2:#b8bac2; --t3:#84868f; --t4:#5c5e66;
+    --indigo:#5e6ad2; --indigo-soft:rgba(94,106,210,.16); --indigo-line:rgba(139,151,255,.55);
+    --amber:#d4b478;
+  }
+  *{margin:0;box-sizing:border-box}
+  body{background:var(--canvas);color:var(--t1);font:14px/1.5 -apple-system,"Pretendard",sans-serif}
+  .frame{width:1920px;height:1080px;margin:0 auto;position:relative;overflow:hidden}
+  /* 상단 크롬 (기존 허브 그대로) */
+  .chrome{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:13px 22px;z-index:5}
+  .pill{display:flex;align-items:center;gap:10px;border:1px solid var(--border-soft);background:rgba(17,18,23,.92);border-radius:9px;padding:8px 13px}
+  .pill .pip{width:20px;height:20px;border:1px solid var(--border-strong);border-radius:6px;display:grid;place-items:center;color:var(--indigo-line);font-size:10px}
+  .pill b{font-size:12.5px;font-weight:600}
+  .pill .census{font-family:ui-monospace,monospace;font-size:10px;color:var(--t4);border-left:1px solid var(--divider);padding-left:10px}
+  .pill .census b{font-size:11px;color:var(--t2);font-weight:600}
+  .util{display:flex;gap:8px}
+  .util .btn{width:30px;height:30px;border:1px solid var(--border-soft);background:rgba(17,18,23,.92);border-radius:7px;display:grid;place-items:center;color:var(--t3);font-size:12px}
+  /* ★ first-run 배너 — 이 시안의 유일한 신규 surface */
+  .firstrun{position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:6;
+    display:flex;align-items:center;gap:14px;border:1px solid var(--indigo);border-radius:10px;
+    background:linear-gradient(0deg,var(--indigo-soft),var(--indigo-soft)),rgba(17,18,23,.96);padding:11px 16px;box-shadow:0 12px 32px rgba(0,0,0,.5)}
+  .firstrun .dot{width:6px;height:6px;border-radius:50%;background:var(--indigo);flex:none}
+  .firstrun .tx b{font-size:13px;font-weight:600;display:block}
+  .firstrun .tx span{font-size:11.5px;color:var(--t3)}
+  .firstrun .cta{display:flex;align-items:center;gap:8px;margin-left:8px}
+  .firstrun .cta .open{border:0;border-radius:7px;background:var(--indigo);color:#fff;font-size:12.5px;font-weight:600;padding:8px 14px}
+  .firstrun .cta .new{border:1px solid var(--border-strong);border-radius:7px;background:transparent;color:var(--t2);font-size:12.5px;padding:8px 12px}
+  .firstrun .close{color:var(--t4);font-size:12px;margin-left:2px}
+  /* INDEX 패널 (기존) */
+  .index{position:absolute;top:76px;left:22px;bottom:22px;width:300px;border:1px solid var(--border-soft);background:rgba(17,18,23,.94);border-radius:11px;z-index:4;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .index .cap{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.18em;color:var(--t4);text-transform:uppercase;display:flex;justify-content:space-between}
+  .index .search{border:1px solid var(--divider);border-radius:7px;background:var(--elevated);color:var(--t4);font-size:12px;padding:7px 10px}
+  .index .tree{font-size:12.5px;color:var(--t2);display:grid;gap:2px}
+  .index .tree .d{display:flex;justify-content:space-between;padding:6px 8px;border-radius:6px}
+  .index .tree .d:hover{background:rgba(255,255,255,.04)}
+  .index .tree .d .n{font-family:ui-monospace,monospace;font-size:10px;color:var(--t4)}
+  .index .tree .proj{color:var(--amber);font-weight:600}
+  .index .foot{margin-top:auto;border-top:1px solid var(--divider);padding-top:10px;font-size:11px;color:var(--t4);word-break:keep-all}
+  .index .foot b{color:var(--t3);font-weight:500}
+  /* 캔버스 별자리 */
+  svg.map{position:absolute;inset:0;width:100%;height:100%}
+  .wm{font-family:ui-monospace,monospace;fill:rgba(255,255,255,.045);font-size:44px;letter-spacing:.3em}
+  text{font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+<div class="frame">
+  <svg class="map" viewBox="0 0 1920 1080">
+    <text class="wm" x="1210" y="330">VIEWS</text>
+    <text class="wm" x="520" y="820">CORE</text>
+    <g stroke="rgba(255,255,255,.09)" stroke-width="1">
+      <line x1="1010" y1="560" x2="1010" y2="330"/><line x1="1010" y1="560" x2="1330" y2="420"/>
+      <line x1="1010" y1="560" x2="1370" y2="700"/><line x1="1010" y1="560" x2="1010" y2="810"/>
+      <line x1="1010" y1="560" x2="680" y2="740"/><line x1="1010" y1="560" x2="640" y2="400"/>
+    </g>
+    <g stroke="rgba(139,151,255,.32)" stroke-width="1" stroke-dasharray="3 4">
+      <line x1="1330" y1="420" x2="1370" y2="700"/><line x1="640" y1="400" x2="1010" y2="330"/>
+      <line x1="680" y1="740" x2="1010" y2="810"/>
+    </g>
+    <g stroke="rgba(255,255,255,.05)" stroke-width="1">
+      <line x1="1010" y1="330" x2="1120" y2="240"/><line x1="1010" y1="330" x2="905" y2="235"/>
+      <line x1="1330" y1="420" x2="1470" y2="350"/><line x1="1370" y1="700" x2="1520" y2="770"/>
+      <line x1="640" y1="400" x2="520" y2="320"/><line x1="680" y1="740" x2="560" y2="660"/>
+    </g>
+    <polygon points="1010,538 1030,549 1030,571 1010,582 990,571 990,549" fill="#101118" stroke="#d4b478" stroke-width="1.4"/>
+    <g fill="#101118" stroke="rgba(139,151,255,.75)" stroke-width="1.1">
+      <rect x="1001" y="321" width="18" height="18" rx="2.5"/><rect x="1321" y="411" width="18" height="18" rx="2.5"/>
+      <rect x="1361" y="691" width="18" height="18" rx="2.5"/><rect x="1001" y="801" width="18" height="18" rx="2.5"/>
+      <rect x="671" y="731" width="18" height="18" rx="2.5"/><rect x="631" y="391" width="18" height="18" rx="2.5"/>
+    </g>
+    <g fill="rgba(184,186,194,.8)">
+      <circle cx="1120" cy="240" r="3.4"/><circle cx="905" cy="235" r="3.4"/><circle cx="1470" cy="350" r="3.4"/>
+      <circle cx="1520" cy="770" r="3.4"/><circle cx="520" cy="320" r="3.4"/><circle cx="560" cy="660" r="3.4"/>
+    </g>
+    <g fill="#84868f" font-size="11">
+      <text x="1010" y="308" text-anchor="middle">mcp-server</text>
+      <text x="1348" y="404">ai-agent-partner</text><text x="1388" y="726">mode-aware-adapters</text>
+      <text x="1010" y="840" text-anchor="middle">ontology-core</text>
+      <text x="655" y="768" text-anchor="middle">vault-local-first</text><text x="622" y="384" text-anchor="middle">views</text>
+    </g>
+    <text x="1010" y="602" text-anchor="middle" fill="#d4b478" font-size="11">ontology-atlas</text>
+  </svg>
+
+  <div class="chrome">
+    <div class="pill"><span class="pip">◈</span><b>Ontology Atlas</b><span class="census"><b>102</b> concepts · <b>478</b> relations · 샘플</span></div>
+    <div class="util"><span class="btn">🔍</span><span class="btn">?</span><span class="btn">⚙</span></div>
+  </div>
+
+  <div class="firstrun">
+    <span class="dot"></span>
+    <span class="tx"><b>지금 보는 건 이 프로젝트 자신의 샘플 온톨로지예요</b><span>내 폴더를 고르면 같은 지도가 내 데이터로 그려집니다 · 읽기 전용</span></span>
+    <span class="cta"><button class="open">내 마크다운 폴더 열기</button><button class="new">새 vault 만들기</button></span>
+    <span class="close">✕</span>
+  </div>
+
+  <aside class="index">
+    <p class="cap">INDEX<span>⌘K 검색</span></p>
+    <div class="search">노드 검색…</div>
+    <div class="tree">
+      <div class="d proj"><span>◇ ontology-atlas</span><span class="n">102</span></div>
+      <div class="d"><span>▸ ontology-core</span><span class="n">24</span></div>
+      <div class="d"><span>▸ views</span><span class="n">31</span></div>
+      <div class="d"><span>▸ vault-local-first</span><span class="n">14</span></div>
+      <div class="d"><span>▸ ai-agent-partner</span><span class="n">17</span></div>
+      <div class="d"><span>▸ mode-aware-adapters</span><span class="n">9</span></div>
+      <div class="d"><span>▸ onboarding-ux</span><span class="n">6</span></div>
+    </div>
+    <p class="foot"><b>샘플 vault</b> — docs/ontology 의 실제 frontmatter. 목업 데이터 없음.</p>
+  </aside>
+</div>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min (이 파일은 좌측 컬럼 확대 시안 — 실척) -->
+<!--
+  index-panel-v2 — 지형도 좌측 컬럼(브랜드 필 + INDEX 패널) 리디자인.
+  소유자 반려("디자인 별로") + Guardian 실측 처방 반영:
+  · 단일 24px 좌측 레일 정렬 (필 32 / 패널 18px 어긋남 해소), radius 패밀리 10/12
+  · 필 = 직사각(999px 원형 폐기), 헥스 pip + 타이틀 + 각인 census 한 줄
+  · 원형 아이콘 버튼 2개 → 8px 정사각 타일 (Lucide)
+  · INDEX 헤더 평문화: "INDEX · 에이전트 동기화" → 패널 정체(트리)와 상태 분리
+    — 상태는 푸터로, 헤더는 INDEX + 접기 정사각 버튼
+  · 트리 행 = grid(캐럿+글리프 / 라벨+서브+미터 / 각인 카운트):
+    - kind 글리프: 프로젝트=앰버 헥스, 도메인=인디고 스퀘어, 문서=서클
+    - 역량·요소 서브카운트 mono
+    - capacity meter = 라벨 폭 안 1px 인라인, 상시 인디고 잉크 (회색 3px 별도 줄 폐기)
+    - 카운트 = 각인(letterpress) 적용 (--topology-v2-numeral-shadow 실적용)
+  · 실데이터 그대로 (스크린샷 기준): 289/483, 도메인 6 + 문서 1
+-->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>INDEX 패널 v2 — 좌측 컬럼 실척</title>
+<style>
+  :root{
+    --canvas:#060609; --panel:#101118; --elevated:#16171d;
+    --divider:rgba(255,255,255,.08); --border-soft:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.17);
+    --t1:#ececf0; --t2:#b8bac2; --t3:#84868f; --t4:#63656e;
+    --indigo:#5e6ad2; --indigo-soft:rgba(94,106,210,.14); --indigo-line:rgba(139,151,255,.8);
+    --indigo-ink:rgba(139,151,255,.45);
+    --amber:#d4b478;
+    --engrave:0 1px 0 rgba(0,0,0,.65);
+  }
+  *{margin:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:var(--canvas);color:var(--t1);font:14px/1.5 -apple-system,"Pretendard",sans-serif;overflow:hidden}
+  .stage{position:relative;width:100%;height:100vh;
+    background:
+      radial-gradient(ellipse 60% 50% at 70% 40%, rgba(94,106,210,.04), transparent 70%),
+      var(--canvas)}
+  .stage::before{content:"";position:absolute;inset:0;
+    background-image:radial-gradient(rgba(255,255,255,.025) .8px, transparent .8px);
+    background-size:30px 30px}
+  svg.lucide{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+  /* ── 상단: 브랜드 필 + 유틸 타일 — 24px 레일 정렬 ── */
+  .toprow{position:absolute;top:14px;left:24px;display:flex;align-items:stretch;gap:8px}
+  .pill{display:flex;align-items:center;gap:11px;border:1px solid var(--border-soft);background:rgba(16,17,24,.95);
+    border-radius:10px;padding:8px 14px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  .pill .pip{width:26px;height:26px;border:1px solid var(--border-strong);border-radius:7px;display:grid;place-items:center;color:var(--indigo-line);flex:none}
+  .pill .pip svg{width:14px;height:14px}
+  .pill .tx b{display:block;font-size:13px;font-weight:650;line-height:1.25;letter-spacing:-.005em}
+  .pill .tx .census{font-family:ui-monospace,monospace;font-size:10px;color:var(--t4);display:flex;gap:4px;align-items:baseline;margin-top:1px}
+  .pill .tx .census b{display:inline;font-size:11px;color:var(--t2);font-weight:600;text-shadow:var(--engrave)}
+  .pill .tx .census .up{color:var(--amber);font-size:10px}
+  .tile{width:42px;border:1px solid var(--border-soft);background:rgba(16,17,24,.95);border-radius:10px;
+    display:grid;place-items:center;color:var(--t3);cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  .tile:hover{color:var(--t1);border-color:var(--border-strong)}
+  /* ── INDEX 패널 — 같은 24px 레일, radius 12 ── */
+  .index{position:absolute;top:76px;left:24px;bottom:24px;width:302px;
+    border:1px solid var(--border-soft);background:rgba(16,17,24,.96);border-radius:12px;
+    display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,.45)}
+  .index .hd{display:flex;align-items:center;gap:8px;padding:13px 15px 11px;border-bottom:1px solid var(--divider)}
+  .index .hd .cap{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.22em;color:var(--t3);text-transform:uppercase}
+  .index .hd .n{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--t4);margin-left:2px}
+  .index .hd .fold{margin-left:auto;width:26px;height:26px;border:1px solid var(--divider);border-radius:7px;display:grid;place-items:center;color:var(--t4);cursor:pointer}
+  .index .hd .fold:hover{color:var(--t2);border-color:var(--border-strong)}
+  .index .hd .fold svg{width:13px;height:13px}
+  .index .bd{padding:12px 10px 10px;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
+  .search{display:flex;align-items:center;gap:8px;margin:0 5px;border:1px solid var(--divider);border-radius:8px;
+    background:var(--elevated);color:var(--t4);font-size:12px;padding:8px 11px;box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
+  .search svg{width:13px;height:13px;flex:none}
+  .search .kbd{margin-left:auto;font-family:ui-monospace,monospace;font-size:9px;border:1px solid var(--divider);border-radius:4px;padding:1px 5px;color:var(--t4)}
+  .tree{display:flex;flex-direction:column;gap:1px;overflow-y:auto}
+  .row{display:grid;grid-template-columns:14px 14px 1fr auto;align-items:center;column-gap:8px;padding:7px 9px 8px;border-radius:8px;cursor:pointer}
+  .row:hover{background:rgba(255,255,255,.035)}
+  .row.sel{background:var(--indigo-soft);box-shadow:inset 0 0 0 1px rgba(139,151,255,.18)}
+  .row .caret{color:var(--t4);font-size:8px;justify-self:center;transition:transform .12s}
+  .row .g{justify-self:center}
+  .row .g.hex{width:11px;height:11px;border:1.3px solid var(--amber);clip-path:polygon(50% 0,100% 27%,100% 73%,50% 100%,0 73%,0 27%)}
+  .row .g.sq{width:9px;height:9px;border:1.3px solid var(--indigo-line);border-radius:2.5px}
+  .row .g.doc{width:9px;height:9px;border:1.3px solid var(--t3);border-radius:50%}
+  .row .lbl{min-width:0;font-size:12.5px;color:var(--t2);line-height:1.35}
+  .row.proj .lbl{color:var(--amber);font-weight:600;font-size:13px}
+  .row .lbl .nm{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .lbl .sub{display:flex;align-items:center;gap:6px;margin-top:3px}
+  .row .lbl .sub em{font-style:normal;font-family:ui-monospace,monospace;font-size:9.5px;color:var(--t4);flex:none}
+  .row .lbl .meter{flex:1;height:1px;background:rgba(255,255,255,.06);border-radius:1px;overflow:hidden}
+  .row .lbl .meter i{display:block;height:100%;background:var(--indigo-ink)}
+  .row.sel .lbl .meter i{background:var(--indigo-line)}
+  .row .n{font-family:ui-monospace,monospace;font-size:11px;color:var(--t3);font-weight:600;text-shadow:var(--engrave);align-self:start;margin-top:1px}
+  .row.proj .n{color:var(--t2);font-size:11.5px}
+  .row.doc .lbl{color:var(--t3);font-size:12px}
+  .index .ft{border-top:1px solid var(--divider);padding:10px 15px;display:flex;align-items:center;gap:8px;
+    font-size:11px;color:var(--t4)}
+  .index .ft .dot{width:5px;height:5px;border-radius:50%;background:var(--amber);flex:none}
+  .index .ft b{color:var(--t3);font-weight:500}
+  .index .ft .kbd{margin-left:auto;font-family:ui-monospace,monospace;font-size:9px;border:1px solid var(--divider);border-radius:4px;padding:1px 5px}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="toprow">
+    <div class="pill">
+      <span class="pip"><svg class="lucide" viewBox="0 0 24 24"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg></span>
+      <span class="tx"><b>지형도</b>
+        <span class="census">개념 <b>289</b> · 관계 <b>483</b> · <span class="up">이번 주 +1</span></span></span>
+    </div>
+    <span class="tile" title="문서함"><svg class="lucide" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
+    <span class="tile" title="빌더"><svg class="lucide" viewBox="0 0 24 24"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></span>
+  </div>
+
+  <aside class="index">
+    <div class="hd">
+      <span class="cap">INDEX</span><span class="n">· 103</span>
+      <span class="fold" title="접기"><svg class="lucide" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg></span>
+    </div>
+    <div class="bd">
+      <div class="search">
+        <svg class="lucide" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        개념 검색<span class="kbd">⌘K</span>
+      </div>
+      <div class="tree">
+        <div class="row proj">
+          <span class="caret">▼</span><span class="g hex"></span>
+          <span class="lbl"><span class="nm">ontology-atlas</span></span>
+          <span class="n">6</span>
+        </div>
+        <div class="row sel">
+          <span class="caret">▶</span><span class="g sq"></span>
+          <span class="lbl"><span class="nm">AI Agent Partner</span>
+            <span class="sub"><em>역량 10 · 요소 32</em><span class="meter"><i style="width:44%"></i></span></span></span>
+          <span class="n">42</span>
+        </div>
+        <div class="row">
+          <span class="caret">▶</span><span class="g sq"></span>
+          <span class="lbl"><span class="nm">Mode-Aware Adapters</span>
+            <span class="sub"><em>역량 2 · 요소 8</em><span class="meter"><i style="width:10%"></i></span></span></span>
+          <span class="n">10</span>
+        </div>
+        <div class="row">
+          <span class="caret">▶</span><span class="g sq"></span>
+          <span class="lbl"><span class="nm">Onboarding &amp; UX</span>
+            <span class="sub"><em>역량 2 · 요소 94</em><span class="meter"><i style="width:100%"></i></span></span></span>
+          <span class="n">96</span>
+        </div>
+        <div class="row">
+          <span class="caret">▶</span><span class="g sq"></span>
+          <span class="lbl"><span class="nm">Ontology Core</span>
+            <span class="sub"><em>역량 1 · 요소 7</em><span class="meter"><i style="width:8%"></i></span></span></span>
+          <span class="n">8</span>
+        </div>
+        <div class="row">
+          <span class="caret">▶</span><span class="g sq"></span>
+          <span class="lbl"><span class="nm">Vault — Local-First</span>
+            <span class="sub"><em>역량 4 · 요소 27</em><span class="meter"><i style="width:32%"></i></span></span></span>
+          <span class="n">31</span>
+        </div>
+        <div class="row">
+          <span class="caret">▶</span><span class="g sq"></span>
+          <span class="lbl"><span class="nm">Views — Topology · Browse</span>
+            <span class="sub"><em>역량 17 · 요소 73</em><span class="meter"><i style="width:94%"></i></span></span></span>
+          <span class="n">90</span>
+        </div>
+        <div class="row doc">
+          <span class="caret"></span><span class="g doc"></span>
+          <span class="lbl"><span class="nm">자기 ontology vault 안내</span></span>
+          <span class="n"></span>
+        </div>
+      </div>
+    </div>
+    <div class="ft">
+      <span class="dot"></span><b>에이전트 동기화</b> · 이번 주 +1
+      <span class="kbd">⇧⌘K</span>
+    </div>
+  </aside>
+</div>
+</body>
+</html>
