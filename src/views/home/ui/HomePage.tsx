@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BookOpen, HelpCircle, Plus, X } from "lucide-react";
+import { BookOpen, HelpCircle, Plus, Waypoints, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
@@ -137,7 +137,6 @@ import {
   buildNodeSignificance,
   normalizeKindLabelKey,
 } from "../lib/topology-node-significance";
-import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 import { TopologyPathChip } from "./TopologyPathChip";
 import { TopologyRelationLegend } from "./TopologyRelationLegend";
 import { TopologyReviewLink } from "./TopologyReviewLink";
@@ -233,10 +232,9 @@ export function HomePage() {
   const [docsDrawerOpen, setDocsDrawerOpen] = useState(false);
   const [docsPinnedCount, setDocsPinnedCount] = useState(0);
   // SSR 과 첫 클라이언트 렌더가 같아야 한다 — useState 초기화에서
-  // localStorage 를 읽으면 hydration mismatch (TopologyAnalysisBar
-  // className 의 leftPanelExpanded 분기가 서버/클라 불일치). 저장된
-  // 선호는 useSyncExternalStore 의 server snapshot 으로 SSR 기본값을 유지한
-  // 뒤 클라이언트 snapshot 에서 반영한다.
+  // localStorage 를 읽으면 hydration mismatch (서버/클라 className 불일치).
+  // 저장된 선호는 useSyncExternalStore 의 server snapshot 으로 SSR 기본값을
+  // 유지한 뒤 클라이언트 snapshot 에서 반영한다.
   const leftPanelCollapsed = useLocalStorageBoolean(LEFT_PANEL_COLLAPSED_KEY, true);
   const [topologyRelayoutToken, setTopologyRelayoutToken] = useState(0);
   // useProjects 실패 시 UI 가 빈 채로 영구 고착되는 걸 막기 위한 에러
@@ -1826,6 +1824,35 @@ export function HomePage() {
                       label={(count) => t('controls.reviewLabel', { count })}
                       ariaLabel={(count) => t('controls.reviewAria', { count })}
                     />
+                    {/* 살아있는 그래프(physics on) 토글 — 분석 패널 완전 소멸
+                        2단계 §d 로 TopologyAnalysisBar 의 2-tab 모드 레일에서
+                        이관. 그 레일은 focus/path/health 가 모두 빠진 뒤
+                        overview 모드에서는 leftSlotOwner 가 INDEX 를 우선해
+                        전혀 렌더되지 않아(§a) 클릭으로 도달할 방법이 없었다
+                        — 이 유틸리티 레일 칩이 유일한 진입점이 된다. */}
+                    <Tooltip content={t('controls.graphToggleTooltip')} side="bottom" withProvider={false}>
+                      <ChromeChip
+                        onClick={() =>
+                          handleSelectAnalysisMode(analysisMode === "graph" ? "overview" : "graph")
+                        }
+                        aria-pressed={analysisMode === "graph"}
+                        aria-label={t('controls.graphToggleAriaLabel')}
+                        data-testid="topology-graph-toggle"
+                        data-utility-action-token-contract="support-surface-family"
+                        data-utility-action-surface-token="--chrome-surface"
+                        data-utility-action-border-token="--chrome-border"
+                        data-utility-action-hover-surface-token="--color-overlay-2"
+                        data-utility-action-active-surface-token="--chrome-active-surface"
+                        data-utility-action-active-border-token="--chrome-active-border"
+                        data-utility-action-shadow-token="--chrome-shadow"
+                        data-utility-action-focus-ring-token="--color-indigo-accent"
+                        compact={topologyUtilityChromeCompact}
+                        icon={<Waypoints />}
+                        active={analysisMode === "graph"}
+                      >
+                        {t('controls.graphToggleLabel')}
+                      </ChromeChip>
+                    </Tooltip>
                     <Tooltip content={t('controls.docsTooltip')} side="bottom" withProvider={false}>
                     <ChromeChip
                       onClick={() => setDocsDrawerOpen((v) => !v)}
@@ -2098,33 +2125,12 @@ export function HomePage() {
                 )}
               </div>
             ) : null}
-            {!selectedRelationActive &&
-            !topologyCreateNodeBlockingActive &&
-            (!selectedNodeFocusActive || selectedInspectorSupportRailVisible) &&
-            leftSlotOwner === "analysis-rail" ? (
-              <TopologyAnalysisBar
-                mode={analysisMode}
-                summary={analysisSummary}
-                rightPanelReserved={drawerOpen}
-                leftPanelExpanded={false}
-                createPanelReserved={createNodeOpen}
-                onModeChange={handleSelectAnalysisMode}
-                labels={{
-                  title: t("analysis.title"),
-                  overview: t("analysis.overview"),
-                  graph: t("analysis.graph"),
-                  graphPrompt: t("analysis.graphPrompt"),
-                  metricNodes: t("analysis.metricNodes"),
-                  metricRelations: t("analysis.metricRelations"),
-                  overviewPrompt: t("analysis.overviewPrompt"),
-                }}
-              />
-            ) : null}
-            {/* The overview "View analysis" reveal chip is gone (W3 분석 보기
-                은퇴) — overview mode's analysis-rail content was retired to
-                the relation legend, the INDEX footer's agent-handoff menu,
-                and the insights relations tab, so there's no overview chrome
-                left to opt into. */}
+            {/* TopologyAnalysisBar 완전 삭제(분석 패널 완전 소멸 2단계 §d) —
+                focus(§a)/path(§b)/health(§c) 가 모두 빠진 뒤 남은 지도/그래프
+                2-tab 레일은 우상단 유틸리티 레일의 그래프 토글 칩으로
+                이관했다. overview 모드의 예전 analysis-rail 콘텐츠는 이미
+                relation legend·INDEX 푸터 인계 메뉴·insights 관계 탭으로
+                은퇴했다(W3). */}
           </>
         <div
           data-testid="topology-map-surface"

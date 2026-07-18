@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T17:49:56.708Z",
+  "generatedAt": "2026-07-18T18:47:51.973Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6387,14 +6387,14 @@
         "title": "Topology Analysis Modes",
         "domain": "views",
         "elements": [
-          "topology-analysis-bar",
-          "topology-analysis-state"
+          "topology-analysis-state",
+          "topology-path-chip"
         ]
       },
       "headings": [],
-      "excerpt": "/topology exposes a two-view rail — Map (Relief) and Graph — instead of five peer mode tabs (2026-07 owner feedback: the four Relief-family modes looked like the same sparse card screen with different panels, so mode proliferation read as \"five confusing siblings\"). The mode switcher remains reachable on mobile, so sma",
-      "wordCount": 229,
-      "updatedAt": "2026-07-02T15:12:48.699Z",
+      "excerpt": "/topology exposes a two-view switch — Map (Relief) and Graph — instead of five peer mode tabs (2026-07 owner feedback: the four Relief-family modes looked like the same sparse card screen with different panels, so mode proliferation read as \"five confusing siblings\"). 분석 패널 완전 소멸 2단계 (2026-07) removed the dedicated Top",
+      "wordCount": 437,
+      "updatedAt": "2026-07-18T18:46:09.454Z",
       "linksOut": []
     },
     {
@@ -7215,6 +7215,7 @@
           "elements/topology-kind-color-tones",
           "elements/topology-map-canvas",
           "elements/topology-owner-tint-overlay",
+          "elements/topology-path-chip",
           "ontology-deeplink-node-resolver",
           "sigma-graphology",
           "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
@@ -7226,7 +7227,6 @@
           "src/widgets/global-search",
           "src/widgets/topology-controls",
           "src/widgets/topology-map-v2",
-          "topology-analysis-bar",
           "topology-analysis-state",
           "topology-ontology-drawer",
           "topology-ontology-drawer-model",
@@ -7248,7 +7248,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-07-18T17:49:20.077Z",
+      "updatedAt": "2026-07-18T18:46:09.451Z",
       "linksOut": []
     },
     {
@@ -7987,23 +7987,6 @@
       "linksOut": []
     },
     {
-      "slug": "ontology/elements/topology-analysis-bar",
-      "path": "docs/ontology/elements/topology-analysis-bar.md",
-      "title": "Topology Analysis Bar",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/topology-analysis-bar",
-        "kind": "element",
-        "title": "Topology Analysis Bar",
-        "domain": "views"
-      },
-      "headings": [],
-      "excerpt": "src/views/home/ui/TopologyAnalysisBar.tsx is the compact mode switcher shown over /topology. It owns the visible Overview / Focus / Path / Health controls, the small metrics line, the Health stale/orphan/promotion chips, and the first actionable Health inspect target. The bar is reachable on mobile as a stacked control",
-      "wordCount": 1243,
-      "updatedAt": "2026-07-18T17:25:01.884Z",
-      "linksOut": []
-    },
-    {
       "slug": "ontology/elements/topology-analysis-state",
       "path": "docs/ontology/elements/topology-analysis-state.md",
       "title": "Topology Analysis State",
@@ -8210,6 +8193,23 @@
       "excerpt": "src/widgets/topology-map-sigma/lib/reducer-owner-tint.ts defines the reducer guard for the topology owner tint overlay. Owner tint is a project-ownership overlay, not an ontology identity overlay. Plain project nodes can be recolored by owner, but hub nodes keep the hub color and ontology nodes keep their project, doma",
       "wordCount": 97,
       "updatedAt": "2026-06-05T21:18:16.293Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-path-chip",
+      "path": "docs/ontology/elements/topology-path-chip.md",
+      "title": "Topology Path Chip",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-path-chip",
+        "kind": "element",
+        "title": "Topology Path Chip",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/home/ui/TopologyPathChip.tsx — the top-center \"chrome grammar\" status chip for path mode (분석 패널 완전 소멸 2단계 §b), mounted next to SearchHint rather than in the left INDEX/analysis-rail slot. Shows \"경로: {source} → 대상 선택\" before a target is picked, or \"{source} → {target} · N hops\" once both endpoints resolve (hop",
+      "wordCount": 156,
+      "updatedAt": "2026-07-18T18:46:09.456Z",
       "linksOut": []
     },
     {
@@ -11214,13 +11214,6 @@
                 "title": "Sigma + Graphology + ForceAtlas2"
               },
               {
-                "name": "topology-analysis-bar",
-                "path": "ontology/elements/topology-analysis-bar",
-                "type": "doc",
-                "slug": "ontology/elements/topology-analysis-bar",
-                "title": "Topology Analysis Bar"
-              },
-              {
                 "name": "topology-analysis-state",
                 "path": "ontology/elements/topology-analysis-state",
                 "type": "doc",
@@ -11289,6 +11282,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/topology-owner-tint-overlay",
                 "title": "Topology Owner Tint Overlay"
+              },
+              {
+                "name": "topology-path-chip",
+                "path": "ontology/elements/topology-path-chip",
+                "type": "doc",
+                "slug": "ontology/elements/topology-path-chip",
+                "title": "Topology Path Chip"
               },
               {
                 "name": "topology-selected-node-resolver",
