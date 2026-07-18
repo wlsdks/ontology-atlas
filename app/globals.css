@@ -142,6 +142,10 @@
     --shadow-card: none;
     --shadow-card-elevated: none;
 
+    /* RATIO-SYSTEM §3 탭 패턴 — active 탭의 2px 인디고 underline 두께.
+       page-level ratio 토큰 본체(--page-max 등)는 위 :root 블록이 단일 출처. */
+    --tabbar-underline: 2px;
+
     /* [삭제, 2026-07-18] 구 SigmaTopology graph 모드 전용 잉크
        (--topology-edge-hairline/-spoke, --topology-graph-edge-hairline/-spoke,
        --topology-graph-node-dim, --topology-connector) 는 #344
