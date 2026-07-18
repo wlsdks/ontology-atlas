@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>/download — 계기판식 사실 나열</title>
+<!--
+  B2+ batch #2 — /download redesign mock, per the rulebook's surface-class
+  table: "설치 산출물(DMG 크기·버전·체크섬)을 음각 mono 로 — 계기판처럼 사실
+  나열. 마케팅 배지/그라디언트 금지." Facts strip + engraved checksum +
+  3 machined install steps + signing/notarization trust line + GitHub
+  Release link. Checksum digits are layout placeholders until the v0.1.0
+  release publishes real assets (release checklist is the current gate).
+-->
+<style>
+  /* Values copied from app/globals.css token families (standalone prototype). */
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --action-surface: rgba(255, 255, 255, 0.03);
+    --machined-edge: rgba(255, 255, 255, 0.05);
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+  }
+  .page { max-width: 980px; margin: 0 auto; padding: 28px 40px 56px; }
+
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .crumbs {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-tertiary); margin-bottom: 30px;
+  }
+  .crumbs a { color: var(--text-secondary); text-decoration: none; }
+  .crumbs a:hover { color: var(--text-primary); }
+  .crumbs .sep { color: var(--text-quaternary); }
+  .crumbs .census {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+
+  header.hero { display: flex; align-items: flex-start; gap: 16px; }
+  header.hero h1 { margin: 0; font-size: 24px; font-weight: 650; letter-spacing: -0.015em; }
+  header.hero .sub {
+    margin: 6px 0 0; font-size: 13px; line-height: 1.6; color: var(--text-secondary);
+    max-width: 560px;
+  }
+  header.hero .cta {
+    margin-left: auto; flex: none;
+    appearance: none; cursor: pointer;
+    font: 560 13px/1 inherit; font-family: inherit;
+    color: var(--indigo-bright);
+    background: var(--action-surface);
+    border: 1px solid rgba(94, 106, 210, 0.5);
+    border-radius: 7px; padding: 11px 18px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  header.hero .cta:hover { background: var(--row-hover); border-color: var(--indigo); }
+
+  /* engraved artifact facts — the instrument strip */
+  .metricline {
+    margin-top: 20px;
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    background: var(--metric-surface);
+    padding: 9px 14px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.01em;
+    color: #b6b6c0;
+    display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap;
+  }
+  .metricline b {
+    font-weight: 600; color: var(--numeral-face);
+    text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .metricline .lbl { color: var(--text-tertiary); }
+
+  /* checksum row — engraved mono, full width */
+  .checksum {
+    margin-top: 10px;
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    background: var(--canvas-bg);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+    padding: 9px 14px;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .checksum .k {
+    flex: none; font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .checksum .v {
+    min-width: 0; flex: 1;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.02em;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .checksum button {
+    flex: none; appearance: none; cursor: pointer;
+    font: 500 10px/1 var(--mono); letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    background: transparent; border: 1px solid var(--border-soft);
+    border-radius: 5px; padding: 4px 8px;
+    transition: border-color 150ms ease, color 150ms ease;
+  }
+  .checksum button:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+
+  /* 3 machined install steps */
+  .shead { display: flex; align-items: center; gap: 9px; margin: 28px 0 12px; }
+  .shead .glabel { font-size: 13px; font-weight: 560; color: var(--text-primary); letter-spacing: -0.01em; }
+  .shead .gcap {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .steps { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .step {
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 9px;
+    box-shadow: inset 0 1px 0 var(--machined-edge);
+    padding: 13px 14px;
+  }
+  .step .n {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    letter-spacing: 0.1em;
+  }
+  .step h3 { margin: 7px 0 5px; font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .step p { margin: 0; font-size: 12px; line-height: 1.6; color: var(--text-tertiary); }
+  .step p code {
+    font-family: var(--mono); font-size: 11px; color: var(--text-secondary);
+    border: 1px solid var(--border-soft); border-radius: 4px; padding: 0 4px;
+  }
+
+  /* trust line — signing / notarization facts, no badges */
+  .trust {
+    margin-top: 28px;
+    border: 1px solid var(--border-soft); border-radius: 9px;
+    background: var(--panel);
+    box-shadow: inset 0 1px 0 var(--machined-edge);
+    padding: 13px 14px;
+  }
+  .trust .trow {
+    display: flex; align-items: center; gap: 10px;
+    padding: 4px 2px; font-size: 12.5px; color: var(--text-secondary);
+  }
+  .trust .trow .mark {
+    flex: none; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--indigo);
+  }
+  .trust .trow .quiet { color: var(--text-quaternary); font-size: 11.5px; margin-left: auto; font-family: var(--mono); }
+  .trust .verify {
+    margin-top: 9px; padding: 8px 11px;
+    border: 1px solid var(--border-soft); border-radius: 6px;
+    background: var(--canvas-bg);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+    font-family: var(--mono); font-size: 11px; color: var(--text-tertiary);
+    overflow-x: auto; white-space: nowrap;
+  }
+  .trust .note { margin: 9px 0 0; font-size: 11.5px; line-height: 1.6; color: var(--text-quaternary); }
+
+  /* GitHub release link — handoff-row anatomy */
+  .handoff {
+    margin-top: 20px;
+    border: 1px solid var(--border-soft); border-radius: 9px;
+    background: var(--panel); padding: 13px 14px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .handoff .hlabel { font-size: 12.5px; font-weight: 560; color: var(--text-primary); flex: none; }
+  .handoff .payload {
+    min-width: 0; flex: 1;
+    font-family: var(--mono); font-size: 11.5px; color: var(--text-tertiary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .handoff a.go {
+    flex: none; font-size: 12px; color: var(--indigo-bright); text-decoration: none;
+    background: var(--action-surface);
+    border: 1px solid rgba(94, 106, 210, 0.5);
+    border-radius: 6px; padding: 7px 13px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .handoff a.go:hover { background: var(--row-hover); border-color: var(--indigo); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="crumbs">
+    <a href="#">← 홈</a>
+    <span class="sep">/</span>
+    <span>다운로드</span>
+    <span class="census">MACOS · DMG · GITHUB RELEASE</span>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <h1>macOS 앱</h1>
+      <p class="sub">
+        로컬 vault 폴더가 진실원인 데스크톱 워크벤치.
+        설치 후 첫 실행에서 마크다운 폴더를 선택하면 바로 시작합니다 — 계정도, 백엔드도 없습니다.
+      </p>
+    </div>
+    <button class="cta" type="button">DMG 다운로드</button>
+  </header>
+
+  <!-- artifact facts — engraved mono, instrument style -->
+  <div class="metricline">
+    <span><span class="lbl">버전</span> <b>v0.1.0</b></span>
+    <span><span class="lbl">형식</span> <b>DMG</b></span>
+    <span><span class="lbl">아키텍처</span> <b>arm64</b> <span class="lbl">(Apple&nbsp;Silicon)</span></span>
+    <span><span class="lbl">크기</span> <b>28.4&nbsp;MB</b></span>
+    <span><span class="lbl">최소</span> <b>macOS&nbsp;13</b></span>
+    <span><span class="lbl">채널</span> <b>GitHub&nbsp;Release</b></span>
+  </div>
+  <div class="checksum">
+    <span class="k">SHA-256</span>
+    <span class="v">0000000000000000000000000000000000000000000000000000000000000000 <span style="color:var(--text-quaternary);text-shadow:none">— v0.1.0 게시 시 기록</span></span>
+    <button type="button">복사</button>
+  </div>
+
+  <!-- install: 3 machined step cards -->
+  <div class="shead">
+    <span class="glabel">설치</span>
+    <span class="gcap">3 steps</span>
+  </div>
+  <div class="steps">
+    <article class="step">
+      <span class="n">01</span>
+      <h3>DMG 열기</h3>
+      <p>다운로드한 <code>Ontology-Atlas_0.1.0_aarch64.dmg</code> 를 더블클릭합니다.</p>
+    </article>
+    <article class="step">
+      <span class="n">02</span>
+      <h3>Applications 로 드래그</h3>
+      <p>서명·공증된 앱이라 Gatekeeper 경고 없이 바로 실행됩니다.</p>
+    </article>
+    <article class="step">
+      <span class="n">03</span>
+      <h3>vault 폴더 선택</h3>
+      <p>첫 실행이 로컬 마크다운 폴더를 묻습니다. 그 폴더가 곧 온톨로지입니다.</p>
+    </article>
+  </div>
+
+  <!-- signing / notarization trust facts -->
+  <div class="trust">
+    <div class="trow">
+      <span class="mark"></span>
+      <span>Developer ID 서명</span>
+      <span class="quiet">codesign --verify 통과</span>
+    </div>
+    <div class="trow">
+      <span class="mark"></span>
+      <span>Apple 공증 (notarized) + stapled ticket</span>
+      <span class="quiet">xcrun stapler validate 통과</span>
+    </div>
+    <div class="verify">spctl --assess --type open --context context:primary-signature Ontology-Atlas_0.1.0_aarch64.dmg</div>
+    <p class="note">
+      서명·공증은 릴리스 CI 에서 수행되고, 검증 명령과 체크섬은 GitHub Release 노트에 그대로 공개됩니다.
+      보안 주장은 구현 공개 + 재검증 가능일 때만 합니다.
+    </p>
+  </div>
+
+  <!-- GitHub release — all versions + checksums -->
+  <section class="handoff">
+    <span class="hlabel">GitHub Releases</span>
+    <span class="payload">github.com/wlsdks/ontology-atlas/releases — 모든 버전 · DMG · 체크섬 · 릴리스 노트</span>
+    <a class="go" href="#">열기 →</a>
+  </section>
+
+</div>
+</body>
+</html>

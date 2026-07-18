@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>/projects — machined 프로젝트 카드 (B2+ 롤아웃)</title>
+<!--
+  B2+ page rollout batch #2 — /projects redesign mock.
+  Single-project vault is the norm: the one card breathes (full-width,
+  richer facts) instead of looking like an empty grid. Census figures follow
+  the batch #1 exemplar world (296 concepts · 508 relations); domain/kind
+  breakdowns keep the real dogfood vault shapes.
+-->
+<style>
+  /* Values copied from app/globals.css token families (standalone prototype —
+     the shipped page would consume the promoted global tokens instead). */
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --action-surface: rgba(255, 255, 255, 0.03);
+    --machined-edge: rgba(255, 255, 255, 0.05);
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+  }
+  .page { max-width: 1240px; margin: 0 auto; padding: 28px 40px 56px; }
+
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .crumbs {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-tertiary); margin-bottom: 30px;
+  }
+  .crumbs a { color: var(--text-secondary); text-decoration: none; }
+  .crumbs a:hover { color: var(--text-primary); }
+  .crumbs .sep { color: var(--text-quaternary); }
+  .crumbs .census {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+
+  /* ---- page header: title + engraved census + machined CTA -------------- */
+  .phead { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 8px; }
+  .phead h1 { margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -0.015em; }
+  .phead .censusline {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em;
+    color: var(--text-tertiary); padding-bottom: 3px;
+  }
+  .phead .censusline b {
+    font-weight: 600; color: var(--numeral-face);
+    text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .phead .cta {
+    margin-left: auto; appearance: none; cursor: pointer;
+    font: 560 12px/1 inherit; font-family: inherit;
+    color: var(--indigo-bright);
+    background: var(--action-surface);
+    border: 1px solid rgba(94, 106, 210, 0.5);
+    border-radius: 6px; padding: 8px 14px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .phead .cta:hover { background: var(--row-hover); border-color: var(--indigo); }
+  .lede {
+    margin: 0 0 24px; font-size: 12.5px; color: var(--text-tertiary);
+    max-width: 640px; line-height: 1.6;
+  }
+
+  /* ---- machined project card ------------------------------------------- */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    box-shadow: inset 0 1px 0 var(--machined-edge);
+    padding: 20px 22px 18px;
+    transition: border-color 150ms ease;
+    cursor: pointer;
+  }
+  .card:hover { border-color: var(--border-strong); }
+  .card .head { display: flex; align-items: flex-start; gap: 13px; }
+  .card .head .glyph { margin-top: 4px; }
+  .card h2 { margin: 0; font-size: 18px; font-weight: 620; letter-spacing: -0.012em; }
+  .card .kindline {
+    display: flex; align-items: center; gap: 8px; margin-top: 4px;
+    font-size: 12px; color: var(--text-tertiary);
+  }
+  .card .kindline .dot-sep { color: var(--text-quaternary); }
+  .power {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--indigo); flex: none;
+  }
+  .card .slug {
+    margin-left: auto; align-self: flex-start; margin-top: 6px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-quaternary);
+  }
+
+  /* engraved fact strip */
+  .factstrip {
+    margin-top: 16px;
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    background: var(--metric-surface);
+    padding: 9px 14px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.01em;
+    color: #b6b6c0;
+    display: flex; gap: 18px; align-items: baseline;
+  }
+  .factstrip b {
+    font-weight: 600; color: var(--numeral-face);
+    text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .factstrip .lbl { color: var(--text-tertiary); }
+
+  /* single-project breathing room: per-domain composition inside the card */
+  .domrows {
+    margin-top: 16px;
+    display: grid; grid-template-columns: 240px 1fr 110px; column-gap: 16px; row-gap: 7px;
+    align-items: center;
+  }
+  .domrows .dn {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .domrows .track {
+    height: 3px; border-radius: 2px; background: var(--border-soft);
+    overflow: hidden; position: relative;
+  }
+  .domrows .track i {
+    position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: #55555d;
+  }
+  .domrows .track.top i { background: var(--indigo); }
+  .domrows .dc {
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-quaternary);
+    text-align: right; white-space: nowrap;
+  }
+  .domrows .dc b {
+    font-weight: 600; color: var(--numeral-face);
+    text-shadow: 0 1px 0 var(--numeral-shadow); font-size: 11px;
+  }
+
+  .card .foot {
+    margin-top: 16px; padding-top: 12px;
+    border-top: 1px solid var(--divider);
+    display: flex; align-items: center; gap: 16px;
+    font-size: 12px; color: var(--text-tertiary);
+  }
+  .card .foot a { color: var(--text-secondary); text-decoration: none; }
+  .card .foot a:hover { color: var(--text-primary); }
+  .card .foot .updated {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px;
+    color: var(--text-quaternary); letter-spacing: 0.04em;
+  }
+
+  /* quiet hint below — how a second card would appear (intentional single) */
+  .hint {
+    margin-top: 18px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em;
+    color: var(--text-quaternary); line-height: 1.7;
+  }
+  .hint code {
+    font-family: inherit; color: var(--text-tertiary);
+    border: 1px solid var(--border-soft); border-radius: 4px; padding: 1px 5px;
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="crumbs">
+    <a href="#">← 워크스페이스</a>
+    <span class="sep">/</span>
+    <span>프로젝트</span>
+    <span class="census">296 CONCEPTS · 508 RELATIONS</span>
+  </nav>
+
+  <header class="phead">
+    <h1>프로젝트</h1>
+    <span class="censusline"><b>1</b> project · <b>6</b> domains · <b>296</b> concepts</span>
+    <button class="cta" type="button">새 프로젝트</button>
+  </header>
+  <p class="lede">
+    vault 의 <span style="font-family:var(--mono)">kind: project</span> 문서가 여기 나타납니다.
+    도메인·역량·요소 카운트는 containment 그래프에서 자동 유도됩니다.
+  </p>
+
+  <!-- the ONE project — full width, richer facts, intentional -->
+  <article class="card">
+    <div class="head">
+      <span class="glyph" data-glyph="project" data-size="24"></span>
+      <div>
+        <h2>ontology-atlas</h2>
+        <div class="kindline">
+          <span class="power"></span>
+          <span>최근 갱신 오늘</span>
+          <span class="dot-sep">·</span>
+          <span>마크다운에서 자라는 오픈소스 온톨로지 워크벤치</span>
+        </div>
+      </div>
+      <span class="slug">ontology-atlas</span>
+    </div>
+
+    <div class="factstrip">
+      <span><span class="lbl">도메인</span> <b>6</b></span>
+      <span><span class="lbl">역량</span> <b>36</b></span>
+      <span><span class="lbl">요소</span> <b>250</b></span>
+      <span><span class="lbl">문서</span> <b>3</b></span>
+      <span><span class="lbl">관계</span> <b>508</b></span>
+    </div>
+
+    <div class="domrows" id="domrows"></div>
+
+    <div class="foot">
+      <a href="#">상세 →</a>
+      <a href="#">topology 에서 보기 →</a>
+      <span class="updated">UPDATED 2026-07-18 · docs/ontology</span>
+    </div>
+  </article>
+
+  <p class="hint">
+    두 번째 프로젝트는 vault 에 <code>kind: project</code> 문서를 추가하면 같은 카드로 나타납니다 —
+    <code>ontology-atlas add --kind project</code> 또는 MCP <code>add_concept</code>.
+  </p>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" }
+  };
+  function hexPts(c, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push((c + r * Math.cos(a)).toFixed(2) + "," + (c + r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(" ");
+  }
+  function glyphSVG(kind, s) {
+    s = s || 15;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var c = s / 2;
+    var common = 'fill="' + col.fill + '" stroke="' + col.stroke + '" stroke-width="1.25"';
+    var body;
+    if (kind === "project") {
+      body = '<polygon points="' + hexPts(c, c - 1.2) + '" ' + common + '/>';
+    } else if (kind === "domain") {
+      body = '<rect x="' + (s * 0.067) + '" y="' + (s * 0.227) + '" width="' + (s * 0.867) + '" height="' + (s * 0.547) + '" rx="1.6" ' + common + '/>';
+    } else if (kind === "capability") {
+      body = '<circle cx="' + c + '" cy="' + c + '" r="' + (c - 1.6) + '" ' + common + '/>';
+    } else {
+      body = '<rect x="' + (s * 0.16) + '" y="' + (s * 0.16) + '" width="' + (s * 0.68) + '" height="' + (s * 0.68) + '" rx="1.4" ' + common + '/>' +
+             '<circle cx="' + c + '" cy="' + c + '" r="' + (s * 0.1) + '" fill="#0c0c10"/>';
+    }
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
+  }
+  document.querySelectorAll("[data-glyph]").forEach(function (el) {
+    el.innerHTML = glyphSVG(el.getAttribute("data-glyph"), parseInt(el.getAttribute("data-size") || "15", 10));
+  });
+
+  // per-domain composition — real dogfood domains, counts in the 296-world
+  var domains = [
+    { t: "Views (Topology · Browse · Builder)", cap: 17, el: 101 },
+    { t: "AI Agent Partner",                    cap: 10, el: 54 },
+    { t: "Vault — Local-First",                 cap: 4,  el: 34 },
+    { t: "Onboarding & UX",                     cap: 2,  el: 31 },
+    { t: "Ontology Core (TBox · ABox)",         cap: 1,  el: 20 },
+    { t: "Mode-Aware Adapters",                 cap: 2,  el: 10 }
+  ];
+  var max = Math.max.apply(null, domains.map(function (d) { return d.cap + d.el; }));
+  document.getElementById("domrows").innerHTML = domains.map(function (d, i) {
+    var total = d.cap + d.el;
+    return '<span class="dn">' + glyphSVG("domain", 13) + d.t + "</span>" +
+      '<span class="track' + (i === 0 ? " top" : "") + '"><i style="width:' + Math.round(total / max * 100) + '%"></i></span>' +
+      '<span class="dc">역량 <b>' + d.cap + '</b> · 요소 <b>' + d.el + "</b></span>";
+  }).join("");
+})();
+</script>
+</body>
+</html>
