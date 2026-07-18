@@ -316,7 +316,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ Tauri vault bridge uses the supported JavaScript invoke API/);
   assert.match(
     result.stdout,
-    /✓ desktop root entry routes first launch and stale restored vaults into the local picker flow without rendering marketing/,
+    /✓ desktop root entry renders the first-run surface for first launch and stale restored vaults without rendering marketing/,
   );
   assert.match(
     result.stdout,
