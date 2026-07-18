@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, ChevronUp, Maximize2, Search, Sliders, SlidersHorizontal, X } from 'lucide-react';
-import { Tooltip } from '@/shared/ui';
+import { ChromeTile, Tooltip } from '@/shared/ui';
 import type {
   SigmaControlsState,
   SigmaForces,
@@ -111,17 +111,19 @@ export function SigmaControls({
     setHelpOpen(true);
   };
 
-  // 기본 접힘 상태 — Fit + Controls 아이콘을 한 pill에 수직 스택으로 합친다.
-  // 우측 상단 두 번째 행 (account menu 아래, Hub Rail과 수평)
+  // 기본 접힘 상태 — Fit + Controls 트리거를 ChromeTile 문법(44px 정사각 ·
+  // --chrome-* 토큰)으로 8px gap 스택. 우측 상단 두 번째 행 (account menu
+  // 아래, Hub Rail과 수평). 합본 시안(chrome-rail-combined.html)의 우측
+  // 세로 레일 3타일(전체보기/조절/단축키) 중 앞 2개 — 세 번째 "?" 타일은
+  // HomePage 가 별도 렌더(같은 --chrome-* 토큰, top 오프셋만 globals.css
+  // 에서 이 스택 높이 기준으로 8px gap 유지하도록 계산).
   if (!expanded) {
     return (
       <>
         <div
-          className="topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 flex flex-col overflow-hidden rounded-md border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] shadow-[var(--topology-floating-control-shadow)] md:bottom-auto md:right-6 md:top-[var(--topology-floating-control-desktop-top)] xl:right-8"
+          className="topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 flex flex-col gap-2 md:bottom-auto md:right-6 md:top-[var(--topology-floating-control-desktop-top)] xl:right-8"
           data-testid="topology-sigma-controls-stack"
           data-controls-density={density}
-          data-control-surface-token="--topology-floating-control-surface"
-          data-control-border-token="--topology-floating-control-border"
           data-control-phone-bottom-token="--topology-floating-control-phone-bottom"
           data-control-desktop-top-token="--topology-floating-control-desktop-top"
           data-controls-contract={
@@ -130,34 +132,31 @@ export function SigmaControls({
         >
           {/* Fit · 도움말은 데스크톱에서만 노출 — 모바일은 pinch-zoom 으로
               fit 가능하고 키보드 단축키도 의미 없음. sliders 만 모바일에 남겨
-              우측 floating 무게를 줄인다. */}
+              우측 floating 무게를 줄인다. wrapper 의 hidden/md:block 이 표시
+              여부를 맡아 ChromeTile 자체 display 유틸과 안 부딪힌다
+              (SearchHint 의 동일 패턴 — feat/chrome-system §6). */}
           {onFitView ? (
-            <>
+            <div className="hidden md:block">
               <Tooltip content={t('fitViewTooltip')} side="left" withProvider={false}>
-                <button
-                  type="button"
-                  onClick={onFitView}
+                <ChromeTile
+                  icon={<Maximize2 />}
+                  title={t('fitViewTooltip')}
                   aria-label={t('fitViewAriaLabel')}
-                  className="hidden h-9 w-9 items-center justify-center text-[color:var(--topology-floating-control-icon)] transition-colors hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--topology-floating-control-icon-hover)] active:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset md:flex"
-                >
-                  <Maximize2 className="h-4 w-4" />
-                </button>
+                  onClick={onFitView}
+                />
               </Tooltip>
-              <div className="hidden h-px bg-[color:var(--color-border-soft)] md:block" />
-            </>
+            </div>
           ) : null}
           <Tooltip content={t('openTooltip')} side="left" withProvider={false}>
-            <button
-              type="button"
+            <ChromeTile
+              icon={<SlidersHorizontal />}
+              title={t('openTooltip')}
+              aria-label={t('openAriaLabel')}
               onClick={() => {
                 setExpanded(true);
                 setHelpOpen(false);
               }}
-              aria-label={t('openAriaLabel')}
-              className="flex h-9 w-9 items-center justify-center text-[color:var(--topology-floating-control-icon)] transition-colors hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--topology-floating-control-icon-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-            </button>
+            />
           </Tooltip>
         </div>
         {helpOpen ? <HelpOverlay onClose={() => setHelpOpen(false)} /> : null}
@@ -177,23 +176,22 @@ export function SigmaControls({
 
   return (
     <>
-      {/* 펼친 상태에서도 Fit 버튼은 같은 우측 컬럼에 남겨둔다.
-          모바일은 분석 바를 가리지 않도록 하단 그래프 영역에 고정하고,
-          데스크톱 panel은 그 아래 top-[184px]부터. */}
+      {/* 펼친 상태에서도 Fit 버튼은 같은 우측 컬럼에 남겨둔다(ChromeTile
+          문법). 모바일은 분석 바를 가리지 않도록 하단 그래프 영역에
+          고정하고, 데스크톱 panel은 그 아래
+          --topology-floating-panel-desktop-top (Fit 타일 44px + 8px gap)
+          부터 이어진다. */}
       {onFitView ? (
         <Tooltip content={t('fitViewTooltip')} side="left" withProvider={false}>
-          <button
-            type="button"
-            onClick={onFitView}
+          <ChromeTile
+            icon={<Maximize2 />}
+            title={t('fitViewTooltip')}
             aria-label={t('fitViewAriaLabel')}
-            data-control-surface-token="--topology-floating-control-surface"
-            data-control-border-token="--topology-floating-control-border"
+            onClick={onFitView}
             data-control-phone-bottom-token="--topology-floating-control-phone-bottom"
             data-control-desktop-top-token="--topology-floating-control-desktop-top"
-            className="topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] text-[color:var(--topology-floating-control-icon)] shadow-[var(--topology-floating-control-shadow)] transition-colors hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--topology-floating-control-icon-hover)] active:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset md:bottom-auto md:right-6 md:top-[var(--topology-floating-control-desktop-top)] xl:right-8"
-          >
-            <Maximize2 className="h-4 w-4" />
-          </button>
+            className="topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 md:bottom-auto md:right-6 md:top-[var(--topology-floating-control-desktop-top)] xl:right-8"
+          />
         </Tooltip>
       ) : null}
       <div
