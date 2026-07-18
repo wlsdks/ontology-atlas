@@ -41,8 +41,8 @@ vi.mock('@/views/first-run', () => ({
   FirstRunPage: () => <div data-testid="first-run">first run</div>,
 }));
 
-vi.mock('@/views/ontology-view', () => ({
-  OntologyViewPage: () => <div data-testid="ontology">ontology</div>,
+vi.mock('@/views/home', () => ({
+  HomePage: () => <div data-testid="topology-hub">topology hub</div>,
 }));
 
 describe('RootEntryPage', () => {
@@ -86,7 +86,7 @@ describe('RootEntryPage', () => {
     expect(screen.getByText('Opening local vault picker')).toBeInTheDocument();
   });
 
-  it('opens the ontology workspace when a vault is already loaded', () => {
+  it('opens the topology hub when a vault is already loaded', () => {
     mocks.isDesktopShell = true;
     mocks.vaultState = {
       handle: { name: 'vault' },
@@ -96,7 +96,7 @@ describe('RootEntryPage', () => {
 
     render(<RootEntryPage />);
 
-    expect(screen.getByTestId('ontology')).toBeInTheDocument();
+    expect(screen.getByTestId('topology-hub')).toBeInTheDocument();
   });
 
   it('drops stale restored desktop handles into first-run instead of the workspace', () => {
@@ -109,7 +109,7 @@ describe('RootEntryPage', () => {
 
     render(<RootEntryPage />);
 
-    expect(screen.queryByTestId('ontology')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('topology-hub')).not.toBeInTheDocument();
     expect(screen.getByTestId('first-run')).toBeInTheDocument();
   });
 });

@@ -74,6 +74,7 @@ import {
 } from "@/entities/knowledge-graph";
 import { copyText } from "@/shared/lib/copy-text";
 import {
+  buildOntologyTree,
   computeOntologyChangeset,
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
@@ -105,8 +106,17 @@ import {
   buildV2Connections,
   buildV2ConnectionGroups,
   formatV2HandoffText,
+  clearTopologyV2TokensCache,
 } from "@/widgets/topology-map-v2";
 import { buildTopologyV2Graph } from "../lib/topology-v2-adapter";
+import {
+  TopologyIndexPanel,
+  TopologyIndexTab,
+  resolveIndexPanelState,
+  resolveLeftSlotOwner,
+  resolveRenderedIndexPanelState,
+  type IndexPanelState,
+} from "@/widgets/topology-index-panel";
 import {
   buildTopologyOntologyDrawerModel,
   classifyTopologyRelationProvenance,
@@ -122,6 +132,9 @@ import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
+/** INDEX panel preference (B3 허브가 곧 지도) — separate key from the legacy
+ * hero-rail `LEFT_PANEL_COLLAPSED_KEY` above, a different feature entirely. */
+const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
 
 export function HomePage() {
   const t = useTranslations('topology');
@@ -220,8 +233,92 @@ export function HomePage() {
     pathSourceSlug,
     pathTargetSlug,
     createNodeIntent,
+    indexState,
   } = routeState;
   const renderProjects = projects;
+  // INDEX panel (B3 허브가 곧 지도) — the new default left occupant. Preference
+  // persists in localStorage; `?index=` (parsed into `routeState.indexState`)
+  // wins for deep-linking (`resolveIndexPanelState` precedence). The analysis
+  // rail ("reader lens") and INDEX are exclusive left-slot occupants —
+  // `resolveLeftSlotOwner` decides which owns it, per analysis mode +
+  // whether the user opted to reveal the overview analysis chrome.
+  const indexPanelCollapsedStored = useLocalStorageBoolean(
+    INDEX_PANEL_COLLAPSED_KEY,
+    false,
+  );
+  const indexPreference: IndexPanelState = resolveIndexPanelState(
+    indexState,
+    indexPanelCollapsedStored ? "collapsed" : "expanded",
+  );
+  const [overviewChromeRevealed, setOverviewChromeRevealed] = useState(false);
+  useEffect(() => {
+    if (analysisMode === "overview") return;
+    let cancelled = false;
+    // 동기 setState 회피(cascading-render 경고) — microtask 로 defer.
+    window.queueMicrotask(() => {
+      if (!cancelled) setOverviewChromeRevealed(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [analysisMode]);
+  const leftSlotOwner = resolveLeftSlotOwner({
+    analysisMode,
+    overviewChromeRevealed,
+  });
+  const renderedIndexState = resolveRenderedIndexPanelState(
+    leftSlotOwner,
+    indexPreference,
+  );
+  const setIndexPreference = useCallback(
+    (next: IndexPanelState) => {
+      try {
+        window.localStorage.setItem(
+          INDEX_PANEL_COLLAPSED_KEY,
+          next === "collapsed" ? "1" : "0",
+        );
+      } catch {
+        /* private mode — URL param still carries the preference */
+      }
+      setRouteState((current) => ({ ...current, indexState: next }));
+    },
+    [setRouteState],
+  );
+  const handleIndexCollapse = useCallback(
+    () => setIndexPreference("collapsed"),
+    [setIndexPreference],
+  );
+  // Clicking the collapsed edge tab always means "give the slot back to
+  // INDEX" — whether the analysis rail owns the slot because of a non-
+  // overview mode or because the user revealed the overview analysis chrome.
+  const handleIndexTabExpand = useCallback(() => {
+    setOverviewChromeRevealed(false);
+    setIndexPreference("expanded");
+    if (analysisMode !== "overview") {
+      setRouteState((current) => ({ ...current, analysisMode: "overview" }));
+    }
+  }, [analysisMode, setIndexPreference, setRouteState, setOverviewChromeRevealed]);
+  // The map's safe-inset-left assumes INDEX's width by default
+  // (`--topology-v2-safe-inset-left: 344` = 18 inset + 300 width + 26 gap).
+  // Collapsing INDEX narrows that reserved space — flip the DOM attribute
+  // `app/globals.css` keys off of, invalidate the cached token read (canvas
+  // reads CSS vars once per `read-topology-v2-tokens.ts`'s own contract),
+  // then force a re-fit via the existing "지도 맞추기" token so the camera
+  // actually re-centers against the new width instead of just changing CSS.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.topologyIndex = renderedIndexState;
+    clearTopologyV2TokensCache();
+    let cancelled = false;
+    // 동기 setState 회피(cascading-render 경고) — microtask 로 defer.
+    window.queueMicrotask(() => {
+      if (!cancelled) setFitViewToken((count) => count + 1);
+    });
+    return () => {
+      cancelled = true;
+      delete root.dataset.topologyIndex;
+    };
+  }, [renderedIndexState]);
   const selectedProject = useMemo(
     () =>
       selectedSlug
@@ -250,6 +347,37 @@ export function HomePage() {
     if (!ontologyInsight) return null;
     return resolveTopologySelectedOntologyNode(selectedSlug, ontologyInsight.nodes);
   }, [selectedSlug, selectedProject, ontologyInsight]);
+  // A `?p=` deep link that resolves to neither a project nor an ontology
+  // node used to fail silently (the map just showed nothing highlighted) —
+  // the exact "silent no-op" failure mode the old `/ontology` page's
+  // deeplinkNotFound notice existed to fix. `/ontology`'s convergence
+  // redirect (`OntologyRedirectPage`) can't diagnose this itself (it
+  // translates + redirects synchronously, before ontology data loads) — this
+  // is the ONE place `?p=` actually gets resolved, so it's the one place
+  // that surfaces the miss. Notifies once per distinct dangling slug.
+  const deeplinkMissNotifiedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedSlug || !ontologyInsight) return;
+    if (selectedOntologyNode) return;
+    // 프로젝트 판정은 로드된 경우에만 신뢰. 미로드(fallback/dogfood) 상태에서는
+    // kind-접두 슬러그(온톨로지 형태)만 미스로 알린다 — bare 슬러그는 프로젝트일
+    // 수 있어 오탐 방지 (Guardian B3 followup 2: fallback 사용자도 알림 수신).
+    if (projectsQuery.loaded) {
+      if (selectedProject) return;
+    } else if (!selectedSlug.includes(":")) {
+      return;
+    }
+    if (deeplinkMissNotifiedRef.current === selectedSlug) return;
+    let cancelled = false;
+    window.queueMicrotask(() => {
+      if (cancelled) return;
+      deeplinkMissNotifiedRef.current = selectedSlug;
+      toast.show(t("deeplinkNotFound", { query: selectedSlug }), "error");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSlug, projectsQuery.loaded, ontologyInsight, selectedProject, selectedOntologyNode, toast, t]);
   // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
   // 선택 노드를 자기 .md 문서로 해석해 전체 상세(A1)의 본문 인라인 편집을 허용.
   const vault = useLocalVault();
@@ -964,6 +1092,18 @@ export function HomePage() {
   const topologyTotalRelations =
     renderProjects.reduce((sum, project) => sum + project.dependencies.length, 0) +
     (ontologyInsight?.edges.length ?? 0);
+  // INDEX tree data — the SAME `buildOntologyTree` the old `/ontology` tree
+  // page used (`@/shared/lib/ontology-tree`), so the census row above and the
+  // tree rows below can never drift from the chrome's own `topologyTotalNodes`
+  // / `topologyTotalRelations`.
+  const indexTreeResult = useMemo(
+    () => (ontologyInsight ? buildOntologyTree(ontologyInsight.nodes, ontologyInsight.edges) : null),
+    [ontologyInsight],
+  );
+  const indexDomainCount = useMemo(
+    () => ontologyInsight?.nodes.filter((node) => node.kind === "domain").length ?? 0,
+    [ontologyInsight],
+  );
   const visibleTopologyNodeCount =
     localGraphRoot === null ? topologyTotalNodes : localGraphProjects.length;
   const visibleTopologyRelationCount =
@@ -1598,9 +1738,65 @@ export function HomePage() {
                 </div>
               </>
             ) : null}
+            {/* INDEX (B3 허브가 곧 지도) — the left instrument replacing the
+                old `/ontology` tree page. Persists alongside the selected-
+                node datasheet (unlike the analysis rail below, which the
+                node-focus popover suppresses) — the approved spec shows both
+                coexisting over the map (`docs/prototypes/hub-b3-immersive.html`). */}
+            {!selectedRelationActive && !topologyCreateNodeBlockingActive ? (
+              <div
+                // `topology-ui-scale` — top-left-chrome-group(브랜드 pill)도
+                // 같은 클래스로 ≥1920px/≥2400px 에서 zoom 배율이 걸린다. 이
+                // wrapper 가 이 클래스 없이 고정 px 로만 있으면 그 zoom 배율
+                // 아래에서 pill 이 이 wrapper 보다 비례적으로 더 커져 다시
+                // 겹친다 — `--topology-index-top` 주석 참조.
+                className="topology-ui-scale absolute z-20"
+                style={{
+                  left: renderedIndexState === "expanded" ? "var(--topology-index-inset)" : 0,
+                  top: "var(--topology-index-top)",
+                  bottom: renderedIndexState === "expanded" ? "var(--topology-index-inset)" : undefined,
+                }}
+              >
+                {renderedIndexState === "expanded" && indexTreeResult ? (
+                  <TopologyIndexPanel
+                    treeResult={indexTreeResult}
+                    totalConcepts={topologyTotalNodes}
+                    totalRelations={topologyTotalRelations}
+                    domainCount={indexDomainCount}
+                    changedSlugs={changedSlugs}
+                    selectedId={canvasSelectedSlug}
+                    onSelect={(id) => handleSelect(id)}
+                    onCollapse={handleIndexCollapse}
+                    labels={{
+                      label: t("index.label"),
+                      fold: t("index.fold"),
+                      foldAria: t("index.foldAria"),
+                      searchPlaceholder: t("index.searchPlaceholder"),
+                      censusConcepts: t("index.censusConcepts"),
+                      censusRelations: t("index.censusRelations"),
+                      censusDomains: t("index.censusDomains"),
+                      agentSync: t("index.agentSync"),
+                      capabilitiesShort: t("index.capabilitiesShort"),
+                      elementsShort: t("index.elementsShort"),
+                      freshTitle: t("index.freshTitle"),
+                      emptyHint: t("index.emptyHint"),
+                    }}
+                  />
+                ) : (
+                  <TopologyIndexTab
+                    onExpand={handleIndexTabExpand}
+                    labels={{
+                      expandAria: t("index.expandAria"),
+                      agentSyncTitle: t("index.agentSync"),
+                    }}
+                  />
+                )}
+              </div>
+            ) : null}
             {!selectedRelationActive &&
             !topologyCreateNodeBlockingActive &&
-            (!selectedNodeFocusActive || selectedInspectorSupportRailVisible) ? (
+            (!selectedNodeFocusActive || selectedInspectorSupportRailVisible) &&
+            leftSlotOwner === "analysis-rail" ? (
               <TopologyAnalysisBar
                 mode={analysisMode}
                 summary={analysisSummary}
@@ -2024,6 +2220,22 @@ export function HomePage() {
                 }}
               />
             ) : null}
+            {/* Overview analysis chrome demotes to a chip while INDEX owns
+                the left slot (B3 spec — "chrome chip or the analysis rail's
+                existing collapse"). Only meaningful in overview mode, since
+                every other mode already gives the rail the slot outright. */}
+            {leftSlotOwner === "index" &&
+            !selectedRelationActive &&
+            !topologyCreateNodeBlockingActive ? (
+              <button
+                type="button"
+                onClick={() => setOverviewChromeRevealed(true)}
+                data-testid="topology-index-reveal-analysis-chip"
+                className="topology-ui-scale pointer-events-auto absolute bottom-4 left-[calc(var(--topology-index-inset)*2+var(--topology-index-width))] z-20 inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-3 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)] shadow-[var(--topology-v2-panel-shadow)] transition-colors hover:border-[color:var(--topology-v2-panel-action-border)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+              >
+                {t("index.revealAnalysis")}
+              </button>
+            ) : null}
           </>
         <div
           data-testid="topology-map-surface"
@@ -2295,7 +2507,11 @@ export function HomePage() {
             data-selected-inspector-gutter-contract="no-phantom-utility-rail"
             data-position-top-token="--topology-node-popover-top"
             data-position-right-inset-token="--topology-node-popover-right-inset"
-            className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
+            // `topology-ui-scale` 은 Tailwind variant 대상이 아닌 plain CSS
+            // 클래스라 항상 붙인다(zoom:1 기본, ≥1920px/≥2400px 에서만
+            // 실제 zoom) — 브랜드 pill 과 같은 비율로 커져야 --topology-
+            // index-top 과의 겹침 회피 gap 이 그 폭에서도 유지된다.
+            className="topology-ui-scale fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
             {v2DatasheetModel ? (
               <TopologyV2DetailPanel

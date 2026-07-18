@@ -281,13 +281,13 @@ agent-maintained memory after that.
 
 | Route | Purpose |
 |---|---|
-| `/` | Hosted landing page, or local ontology hub inside the installed app after a vault is selected |
+| `/` | Hosted landing page, or the topology hub (map + INDEX + datasheet) inside the installed app after a vault is selected |
 | `/download` | macOS release download and install guide |
 | `/docs` | Desktop local vault picker, markdown editor, command palette |
-| `/ontology` | Tree and ego graph hub |
+| `/ontology` | Thin redirect to `/topology?index=expanded` (the old tree/ego hub is retired) |
 | `/ontology/edit` | ERD canvas builder |
 | `/ontology/insights` | Kind census, hubs, relation breakdown |
-| `/topology` | Spatial graph view |
+| `/topology` | The topology hub — spatial graph view + INDEX concept panel + node datasheet |
 | `/projects` | Project list from `kind: project` docs |
 | `/project/[slug]` | Project detail (inline edit when a local vault is loaded) |
 | `/project/[slug]/edit` | Full project editor |

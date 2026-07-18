@@ -131,14 +131,14 @@ scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood w
 ## Routes
 
 ```
-/                          ontology hub when vault is selected; landing page when not
-/topology                  topology view (canvas-2D map/graph engine)
+/                          topology hub when vault is selected (map + INDEX + datasheet); landing page when not
+/topology                  same topology hub, explicit entry point (canvas-2D map/graph engine)
 /projects                  project list (vault frontmatter `kind: project` docs)
 /project/[slug]            project detail (inline edit when vault is loaded)
 /project/[slug]/edit       full project editor
 /project/new               new project form
 /docs                      vault picker / editor / unified palette
-/ontology                  tree + ego graph hub
+/ontology                  thin redirect → /topology?index=expanded (B3 허브가 곧 지도 — the old tree/ego hub is retired)
 /ontology/edit             ERD canvas builder (xyflow → vault md export)
 /ontology/insights         graph insights (kind census · hubs · relation breakdown)
 /download                  macOS desktop app download (DMG)

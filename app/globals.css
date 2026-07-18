@@ -680,7 +680,22 @@
     --topology-shortcuts-help-phone-top: 188px;
     --topology-shortcuts-help-focus-phone-top: 208px;
     --topology-shortcuts-help-desktop-top: 228px;
-    --topology-node-popover-top: clamp(104px, 4.5vw, 116px);
+    /* Owner chrome-recomposition spec (2026-07-18, docs/prototypes/
+       chrome-recomposition.html): the top chrome is a reserved lane
+       (brand pill · single engraved census · utility rail) — INDEX, this
+       datasheet, and the collapsed INDEX tab all start below it, matching
+       `--topology-index-top` below. Keep the two in sync.
+
+       72px, not the spec's literal 64px: `topology-top-left-chrome-group`
+       (the brand pill) is measured at bottom=64px at 1x — the mockup's
+       slimmed single-line pill (no census subtitle) would clear 56+8, but
+       today's pill is still the two-line `HeroCollapsed` (title + census
+       subtitle) this pass didn't slim. 76px keeps ≥6px clearance even at the ≥1920 zoom breakpoints (pill grows 32→36px there — Guardian B3 followup 1) instead of
+       an exact flush touch. Both this token and the consumer element MUST
+       carry the `topology-ui-scale` class so the gap holds at the ≥1920px/
+       ≥2400px `zoom` breakpoints too (zoom scales the pill's rendered
+       bottom edge — a flat px value alone would drift into it again). */
+    --topology-node-popover-top: 76px;
     --topology-node-popover-right-inset: clamp(24px, 2.1vw, 44px);
     --topology-motion-focus-duration: 180ms;
     --topology-motion-panel-duration: 180ms;
@@ -899,6 +914,51 @@
 
     --topology-v2-edge-contains-mark: #4a4a54;
     --topology-v2-edge-depends-mark: #5c5c72;
+
+    /* 2.7 INDEX 패널 (B3 허브가 곧 지도 — `TopologyIndexPanel`/`TopologyIndexTab`,
+       DOM 소비, `docs/prototypes/hub-b3-immersive.html`). 구 `/ontology`
+       트리 허브를 대체하는 좌측 계기판 — 지도 위에 항상 떠 있다. 표면/보더/
+       그림자/라운드/패딩은 새로 만들지 않고 위 2.6 데이터시트 토큰
+       (`--topology-v2-panel-*`) 을 그대로 재사용 — 지도 위의 두 계기판이
+       같은 재질(machined instrument)로 읽혀야 한다는 게 승인된 spec 의
+       요지라 폭/탭폭/인셋 3개만 새로 만든다.
+       expanded 폭(300) + inset(18) + gap(26) = 344 는 이미 위
+       `--topology-v2-safe-inset-left` 기본값과 일치 — INDEX 가 기본
+       펼침이라는 전제를 그 토큰이 이미 코드화하고 있었다. collapsed 시엔
+       아래 `html[data-topology-index="collapsed"]` 규칙이 안전 영역을
+       탭 폭(26) + inset(18) + gap(28) = 72 로 좁힌다. HomePage 가 INDEX
+       expand/collapse 시 `data-topology-index` 를 토글 + 캐시된 토큰을
+       무효화(`clearTopologyV2TokensCache`) + 카메라 재-fit 을 강제한다.
+
+       Owner live-QA 결함 (2026-07-18, v1): 18px top inset 은 브랜드
+       pill/chrome row 가 없다는 잘못된 가정이었다 — 실제로
+       `topology-top-left-chrome-group` (Relief pill + census + workspace
+       아이콘) 이 그 자리에 이미 있어 INDEX 폭(300px) 을 넘는 pill 텍스트가
+       패널 뒤로 삐져나왔다(펼침 · 접힘 tab 둘 다). 1차 수정은
+       `TopologyAnalysisBar` 가 쓰던 clearance(88px)를 재사용했다.
+
+       Owner chrome-recomposition 확정 스펙 (2026-07-18, v2,
+       docs/prototypes/chrome-recomposition.html): 상단을 56px 크롬 레인
+       (브랜드 필 · 각인 census 단일 출처 · 유틸리티 레일)으로 공식화하고
+       INDEX/데이터시트(`--topology-node-popover-top`)/접힘 탭 모두 그
+       레인 아래에서 시작 — 구조적으로 겹칠 수 없게. 두 토큰은 항상 같이
+       바뀌어야 한다.
+
+       72px (스펙의 64px 아님) — 실측 brand pill(`topology-top-left-chrome-
+       group`) bottom 이 1x 에서 이미 64px 다 (오늘의 pill 은 mockup 이
+       가정한 슬림 1줄 pill 이 아니라 title+census subtitle 2줄
+       `HeroCollapsed` 라 그대로 두면 8px gap 이 아니라 딱 맞닿기만 한다).
+       zoom breakpoint(1920/2400px, .topology-ui-scale) 에서도 gap 이
+       유지되려면 이 값을 쓰는 컴포넌트도 반드시 `topology-ui-scale`
+       클래스를 같이 달아야 한다 — 그래야 pill 과 같은 비율로 커진다. */
+    --topology-index-width: 300px;
+    --topology-index-tab-width: 26px;
+    --topology-index-inset: 18px;
+    --topology-index-top: 76px;
+  }
+
+  html[data-topology-index="collapsed"] {
+    --topology-v2-safe-inset-left: 72;
   }
 
   html {

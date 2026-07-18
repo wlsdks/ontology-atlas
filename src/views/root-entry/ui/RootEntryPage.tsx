@@ -5,7 +5,7 @@ import { Bot, HardDrive, Network } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
-import { OntologyViewPage } from "@/views/ontology-view";
+import { HomePage } from "@/views/home";
 import { FirstRunPage } from "@/views/first-run";
 import { LandingPage } from "@/views/landing";
 
@@ -15,7 +15,8 @@ import { LandingPage } from "@/views/landing";
  * - web vault 미선택 → LandingPage (첫 인상 — "이게 뭔지" 5초 설명 + "내 폴더 열기" CTA)
  * - desktop vault 미선택 → FirstRunPage (Obsidian 계열 first-run — 열기/새로
  *   만들기/데모. 설치 앱은 홍보가 아니라 로컬 작업 진입)
- * - vault 선택됨 → OntologyViewPage (실제 hub — 트리 + ego graph + stub)
+ * - vault 선택됨 → HomePage (실제 hub — 지도 + INDEX + 데이터시트, `/topology`
+ *   와 동일 컴포넌트)
  *
  * vault picker 자체는 별도 `/docs` 라우트. LandingPage 의 "내 마크다운 폴더
  * 열기" 버튼이 그 곳으로 보낸다.
@@ -26,15 +27,14 @@ import { LandingPage } from "@/views/landing";
  * 복원되어 manifest build 가 실패한 경우도 FirstRun 으로 떨어진다 (이전엔
  * `/docs/?intent=local` redirect — R+ 에서 in-place FirstRun 으로 교체).
  *
- * **`/` vs `/ontology` 의도적 dual-surface (R3 결정)** — vault 선택 시
- * 둘 다 `OntologyViewPage` 를 렌더하지만 *역할이 다름*:
- *   - `/` = home / back-link target / error fallback (10 inbound). 사용자
- *     머릿속 "기본 자리".
- *   - `/ontology` = explicit deep-link namespace (19 inbound — landing
- *     CTA / project overview / hub rails / global search / 노드 deep
- *     link `/ontology/?node=<id>`).
- * Round 3 에서 redirect 통합 검토했으나 codex 어드바이저 + inbound 매핑
- * 결과 한쪽으로 합치면 다른 쪽 inbound 가 깨짐 → keep both, 의도 명시.
+ * **B3 허브가 곧 지도 (2026-07) — R3 dual-surface 결정 대체.** R3 는 `/` 와
+ * `/ontology` 가 둘 다 (당시의) 트리/ego 허브 `OntologyViewPage` 를 따로
+ * 렌더하는 의도적 dual-surface 였다. B3 는 "허브 = 지도" 로 hub 자체를
+ * 재정의했으므로 — `/` 는 이제 `/topology` 와 같은 `HomePage` 를 그대로
+ * 렌더한다 (지도 + INDEX + 데이터시트). `/ontology` 는 별도 라우트로 남되
+ * 이제 얇은 redirect(`OntologyRedirectPage`) 로 같은 surface 에 수렴한다 —
+ * 두 URL 이 여전히 다른 명시적 진입점이라는 R3 의 요지는 유지, 다만 도착지가
+ * 하나의 지도-hub 로 합쳐졌다.
  */
 export function RootEntryPage() {
   const vault = useLocalVault();
@@ -45,7 +45,7 @@ export function RootEntryPage() {
   );
 
   if (!clientReady) return <DesktopVaultRedirect />;
-  if (vault.manifest) return <OntologyViewPage />;
+  if (vault.manifest) return <HomePage />;
   if (isDesktopShell()) {
     // restore 시도 전엔 중립 부트 프레임 유지 — 복원될 vault 가 있으면
     // FirstRun 이 한 프레임 스치는 것을 막는다.

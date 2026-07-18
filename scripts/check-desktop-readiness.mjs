@@ -94,7 +94,6 @@ const requiredAppleSecretNames = [
 const forbiddenFirebasePackages = ["firebase", "firebase-admin", "firebase-tools"];
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
 const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
-const ontologyViewPage = readText("src/views/ontology-view/ui/OntologyViewPage.tsx");
 const topologyEmptyState = readText("src/widgets/topology-map-sigma/ui/TopologyEmptyState.tsx");
 const vaultToolsMenu = readText("src/widgets/docs-vault/ui/VaultToolsMenu.tsx");
 const localVaultPicker = readText("src/features/docs-vault-local/ui/LocalVaultPicker.tsx");
@@ -815,20 +814,17 @@ if (
 }
 
 if (
-  ontologyViewPage.includes("isTauriVaultRuntime") &&
-  ontologyViewPage.includes('"/download/"') &&
-  ontologyViewPage.includes('"/docs/?intent=local"') &&
+  // B3 허브가 곧 지도: `/ontology` 의 트리 허브(OntologyViewPage)가 retire 되고
+  // `/` 와 `/ontology` 모두 이 empty state 로 수렴했다 — 검증 대상도 하나로.
   topologyEmptyState.includes("isTauriVaultRuntime") &&
   topologyEmptyState.includes('"/download/"') &&
   topologyEmptyState.includes('"/docs/?intent=local"') &&
-  /hosted browser is read-only/i.test(enMessages.ontologyView?.getStarted?.stepStaticVaultDescDownload ?? "") &&
-  /Install the macOS app/i.test(enMessages.topology?.empty?.bodyNoProjectsDownload ?? "") &&
-  /macOS 앱/.test(koMessages.ontologyView?.getStarted?.stepStaticVaultDescDownload ?? "")
+  /Install the macOS app/i.test(enMessages.topology?.empty?.bodyNoProjectsDownload ?? "")
 ) {
-  pass("static ontology and topology empty states route hosted users to the app download while preserving desktop vault picking");
+  pass("the topology empty state routes hosted users to the app download while preserving desktop vault picking");
 } else {
   fail(
-    "Hosted static ontology/topology empty states must route writable local work to /download/, while Tauri desktop keeps /docs/?intent=local",
+    "The hosted static topology empty state must route writable local work to /download/, while Tauri desktop keeps /docs/?intent=local",
   );
 }
 
