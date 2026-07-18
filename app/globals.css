@@ -1275,19 +1275,22 @@
     --color-tap-highlight: rgba(0, 0, 0, 0.05);
 
     /* B2+ 승격 토큰 라이트 값 — 음각은 밝은 표면에선 어두운 면 + 밝은 아래
-       그림자(레터프레스), 글리프 잉크는 시야 적응 보정으로 회색 사다리 반전. */
-    --engraved-numeral-face: #565a64;
-    --engraved-numeral-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
-    --kind-glyph-stroke-project: #6f7380;
-    --kind-glyph-stroke-domain: #858a96;
-    --kind-glyph-stroke-capability: #9a9ea9;
-    --kind-glyph-stroke-element: #adb1bb;
-    --kind-glyph-fill-project: #eef0f4;
-    --kind-glyph-fill-domain: #f1f3f6;
-    --kind-glyph-fill-capability: #f4f5f8;
-    --kind-glyph-fill-element: #f6f7f9;
-    --kind-glyph-edge-contains: #b6bac4;
-    --kind-glyph-edge-relates: #9fa4b4;
+       그림자(레터프레스). 글리프 잉크는 "종이 위 청사진" — slate 잉크
+       사다리로 1px 스트로크 전부 ≥3:1 (Guardian 라이트 재조율, owner
+       washed-out 피드백 반영). fill 은 instrument face 보다 한 단 깊게
+       도형에 몸통을 준다. trace 는 스트로크 아래 서열의 sub-stroke. */
+    --engraved-numeral-face: #454b58;
+    --engraved-numeral-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+    --kind-glyph-stroke-project: #3e4759;
+    --kind-glyph-stroke-domain: #545e73;
+    --kind-glyph-stroke-capability: #6b7488;
+    --kind-glyph-stroke-element: #7f8799;
+    --kind-glyph-fill-project: #dde2eb;
+    --kind-glyph-fill-domain: #e5e9f0;
+    --kind-glyph-fill-capability: #ebeef3;
+    --kind-glyph-fill-element: #eff1f6;
+    --kind-glyph-edge-contains: #8b93a7;
+    --kind-glyph-edge-relates: #7d86a2;
 
     /* 토폴로지 골격 잉크 — 라이트는 어두운 회색 알파(시야 적응 보정으로
        다크보다 1단계 진하게). 인디고/선택 토큰은 양 모드 동일. */

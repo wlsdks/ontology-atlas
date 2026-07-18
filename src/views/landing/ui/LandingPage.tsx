@@ -64,11 +64,11 @@ export function LandingPage() {
               {t("titleLine1")} <br />
               <span className="text-[color:var(--color-indigo-accent)]">{t("titleEmphasis")}</span>
             </h1>
-            <p className="max-w-xl text-base leading-7 text-[color:var(--color-text-secondary)]">
+            <p className="max-w-xl break-keep text-base leading-7 text-[color:var(--color-text-secondary)]">
               {t("subtitle")}
             </p>
             <LandingActions className="pt-3" />
-            <p className="max-w-xl text-[12px] text-[color:var(--color-text-quaternary)]">
+            <p className="max-w-xl break-keep text-[12px] text-[color:var(--color-text-quaternary)]">
               {t("privacyNote")}
             </p>
           </div>
@@ -152,7 +152,10 @@ function VaultInstrument() {
         </span>
       </div>
 
-      <div className="border-t border-[color:var(--color-border-soft)]">
+      {/* instrument face — 미니어처 드로잉 존은 패널보다 한 단 recessed
+          (계기 면). 기존 canvas 토큰 재사용: 다크 = 미세하게 깊고,
+          라이트 = 종이 틴트가 흰 카드에서 도면 영역을 분리한다. */}
+      <div className="border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)]">
         <svg
           viewBox={`0 0 ${layout.width} ${layout.height}`}
           className="h-auto w-full"
@@ -329,7 +332,7 @@ function VaultInstrument() {
         <KindLegendItem kind="element" count={census.kinds.element} />
       </div>
 
-      <figcaption className="border-t border-[color:var(--color-border-soft)] px-4 py-2.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+      <figcaption className="break-keep border-t border-[color:var(--color-border-soft)] px-4 py-2.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
         {t("caption")}
       </figcaption>
     </figure>
@@ -421,7 +424,7 @@ function LandingActions({ className }: { className?: string }) {
           <ArrowRight size={15} />
         </Link>
       </div>
-      <p className="max-w-xl text-[11px] leading-5 text-[color:var(--color-text-quaternary)]">
+      <p className="max-w-xl break-keep text-[11px] leading-5 text-[color:var(--color-text-quaternary)]">
         {t("downloadNote")}
       </p>
     </div>
@@ -453,7 +456,7 @@ function ValueChainRail({
           <p className="mt-3 text-[14px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {s.title}
           </p>
-          <p className="mt-1.5 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1.5 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
             {s.sub}
           </p>
         </li>
@@ -480,7 +483,7 @@ function OpenSourcePanel() {
         >
           {t("title")}
         </h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-[color:var(--color-text-secondary)]">
+        <p className="mt-3 max-w-2xl break-keep text-sm leading-6 text-[color:var(--color-text-secondary)]">
           {t("body")}
         </p>
       </div>
