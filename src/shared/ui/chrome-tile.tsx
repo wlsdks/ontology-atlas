@@ -37,10 +37,10 @@ export interface ChromeTileLinkProps
 export type ChromeTileProps = ChromeTileButtonProps | ChromeTileLinkProps;
 
 const TILE_CLASS =
-  'inline-flex size-[var(--chrome-tile-size)] shrink-0 items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] [&>svg]:size-[var(--chrome-icon)]';
+  'inline-flex size-[var(--chrome-tile-size)] shrink-0 items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] [&>svg]:size-[var(--chrome-icon)]';
 
 const ACTIVE_CLASS =
-  'border-[color:rgba(94,106,210,0.4)] text-[color:var(--color-text-primary)]';
+  'border-[color:var(--chrome-active-border)] text-[color:var(--color-text-primary)]';
 
 export const ChromeTile = forwardRef<HTMLButtonElement | HTMLAnchorElement, ChromeTileProps>(
   ({ icon, title, active, className, href, 'aria-label': ariaLabelProp, ...rest }, ref) => {

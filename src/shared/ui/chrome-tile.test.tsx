@@ -43,7 +43,7 @@ describe('ChromeTile', () => {
   it('active state adds an indigo-tinted border without introducing a second color', () => {
     render(<ChromeTile icon={<svg />} title="문서함" active />);
     const tile = screen.getByRole('button');
-    expect(tile.className).toContain('rgba(94,106,210,0.4)');
+    expect(tile.className).toContain('var(--chrome-active-border)');
   });
 
   it('forwards native button props (onClick, data-testid)', () => {

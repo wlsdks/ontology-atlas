@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -14,6 +13,15 @@ interface Props {
   onExpand?: () => void;
   title?: string;
   subtitle?: string;
+  /** subtitle 뒤에 붙는 "성장 신호" 조각(예: " · 이번 주 +1") — census 상태에서만
+   *  넘긴다. amber 는 허브 노드 전용(design.md)이라 여기선 인디고로 강조. */
+  censusGrowthText?: string;
+  /** 'eyebrow'(기본) = 대문자 변환 + 넓은 자간(breadcrumb 성격의 상태 문구).
+   *  'census' = 소문자 그대로 + mono(개념/관계 실측 통계 한 줄, 시안의
+   *  "타이틀+census 각인"). 상태에 따라 subtitle 의 의미가 달라서 분리했다 —
+   *  대문자 변환을 없애면 영문 로케일의 eyebrow 문구(SELECTED CONCEPT 등)가
+   *  같이 바뀌므로 census 상태에서만 켠다. */
+  subtitleVariant?: "eyebrow" | "census";
   icon?: string | null;
   ariaLabel?: string;
   titleText?: string;
@@ -34,6 +42,8 @@ export function HeroCollapsed({
   onExpand,
   title,
   subtitle,
+  censusGrowthText,
+  subtitleVariant = "eyebrow",
   icon,
   ariaLabel,
   titleText,
@@ -74,7 +84,10 @@ export function HeroCollapsed({
       animate={{ opacity: 1, x: 0 }}
       transition={MOTION.fast}
       className={cn(
-        "group inline-flex items-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--topology-chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
+        // 브랜드 필 — feat/chrome-system §5, rounded-full(원형) → --chrome-radius
+        // (10px, 정사각) 전환. 표면/보더/그림자도 --chrome-* 로 이관해 우측
+        // 액션 lane(여전히 원형 pill, --topology-chrome-*)과 형태를 분리한다.
+        "group inline-flex items-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
         compact
           ? "h-[var(--topology-chrome-control-height-compact)] gap-1.5 pl-1.5 pr-2.5 opacity-80"
           : "h-[var(--topology-chrome-control-height)] gap-[var(--topology-chrome-gap)] pl-1.5 pr-3",
@@ -94,20 +107,30 @@ export function HeroCollapsed({
           {icon}
         </span>
       ) : (
-        <Image
-          src="/logo.png"
-          alt=""
+        // pip — 브랜드 마크(시안의 hexagon path, Lucide 아님). 인디고 틴트
+        // 정사각(8px radius) 안에 헥사곤 윤곽만 — 로고 이미지 대신 크롬
+        // 문법 자체가 브랜드를 표현한다.
+        <span
           aria-hidden="true"
-          width={32}
-          height={32}
-          priority
           className={cn(
-            "shrink-0 rounded-full border border-[color:var(--color-border-soft)] object-cover",
+            "inline-flex shrink-0 items-center justify-center rounded-[8px] border border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-indigo-accent)]",
             compact
               ? "size-[var(--topology-chrome-badge-size-compact)]"
               : "size-[var(--topology-chrome-badge-size)]",
           )}
-        />
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.75}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="size-[15px]"
+          >
+            <path d="M12 2l8.66 5v10L12 22l-8.66-5V7z" />
+          </svg>
+        </span>
       )}
       <span className="flex min-w-0 flex-col items-start">
         <span
@@ -123,11 +146,15 @@ export function HeroCollapsed({
         </span>
         <span
           className={cn(
-            "font-mono uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]",
+            "font-mono text-[color:var(--color-text-quaternary)]",
+            subtitleVariant === "eyebrow" && "uppercase tracking-[0.08em]",
             compact ? "sr-only" : "text-[length:var(--topology-chrome-eyebrow-size)]",
           )}
         >
           {resolvedSubtitle}
+          {censusGrowthText ? (
+            <span className="text-[color:var(--color-indigo-accent)]">{censusGrowthText}</span>
+          ) : null}
         </span>
       </span>
       {onExpand && !compact ? (

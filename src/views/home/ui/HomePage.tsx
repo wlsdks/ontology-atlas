@@ -1401,10 +1401,13 @@ export function HomePage() {
               const growthLabel = recentlyUpdatedCount > 0
                 ? t('workspace.growthThisWeek', { count: recentlyUpdatedCount })
                 : "";
+              // growth 는 별도 prop(censusGrowthText)으로 넘겨 HeroCollapsed 가
+              // 인디고로 강조 표시(feat/chrome-system §5 census 각인)할 수
+              // 있게 한다 — 여기서 한 문자열로 합치면 세그먼트별 스타일이 안 됨.
               const workspaceSubtitle = t('workspace.subtitle', {
                 concepts: topologyTotalNodes,
                 relations: topologyTotalRelations,
-                growth: growthLabel,
+                growth: '',
               });
               const workspaceEyebrow = t('workspace.eyebrow', {
                 concepts: topologyTotalNodes,
@@ -1415,7 +1418,9 @@ export function HomePage() {
               void workspaceEyebrow;
               return (
                 <div
-                  className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8"
+                  // xl:left-8(32px) → xl:left-[var(--chrome-inset)](24px) —
+                  // feat/chrome-system §4, 24px 정렬 레일에 수렴(단일 출처).
+                  className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-[var(--chrome-inset)] xl:top-8"
                   data-testid="topology-top-left-chrome-group"
                   data-workspace-context-state={
                     selectedRelationActive
@@ -1457,6 +1462,14 @@ export function HomePage() {
                         : topologyTotalNodes > 0
                           ? workspaceSubtitle
                           : t('workspace.expandHint')
+                    }
+                    censusGrowthText={
+                      !selectedProject && topologyTotalNodes > 0
+                        ? growthLabel || undefined
+                        : undefined
+                    }
+                    subtitleVariant={
+                      !selectedProject && topologyTotalNodes > 0 ? 'census' : 'eyebrow'
                     }
                     icon={selectedProject?.icon ?? null}
                     ariaLabel={
@@ -1779,6 +1792,13 @@ export function HomePage() {
                     selectedId={canvasSelectedSlug}
                     onSelect={(id) => handleSelect(id)}
                     onCollapse={handleIndexCollapse}
+                    // 브랜드 필의 censusGrowthText 와 같은 출처(recentlyUpdatedCount)
+                    // — feat/chrome-system §9, 헤더→푸터 이관.
+                    footerGrowthText={
+                      recentlyUpdatedCount > 0
+                        ? t('workspace.growthThisWeek', { count: recentlyUpdatedCount })
+                        : undefined
+                    }
                     labels={{
                       label: t("index.label"),
                       fold: t("index.fold"),

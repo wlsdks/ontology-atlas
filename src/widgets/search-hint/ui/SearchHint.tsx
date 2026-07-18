@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { ChromeChip } from '@/shared/ui/chrome-chip';
 
 interface Props {
   onOpenSearch: () => void;
@@ -25,6 +26,11 @@ const ARRANGE_FEEDBACK_MS = 950;
 /**
  * 상단 중앙 툴바. 자동 정렬 · 검색 2버튼.
  * glassmorphism(backdrop-blur) 금지 룰 준수 — solid panel bg만 사용.
+ *
+ * feat/chrome-system §6 — ChromeChip(44px·10px radius) 재스킨. 우측 문서함
+ * 버튼은 이번 슬라이스 스코프 밖이라 여전히 `--topology-utility-lane-*`
+ * 문법 — 같은 상단 열에 두 표면 높이가 과도기적으로 공존한다(합본 시안
+ * 확정 후 다음 슬라이스에서 수렴).
  */
 export function SearchHint({
   onOpenSearch,
@@ -36,8 +42,6 @@ export function SearchHint({
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
   const [arranging, setArranging] = useState(false);
   const compact = density === 'compact-focus';
-  const pillClass =
-    'h-[var(--topology-utility-lane-height)] rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-border)] bg-[color:var(--topology-utility-lane-surface)] shadow-[var(--topology-utility-lane-shadow)]';
 
   useEffect(() => {
     if (!arranging) return;
@@ -62,86 +66,60 @@ export function SearchHint({
       data-search-lane-compact-width-token={
         compact ? '--topology-search-lane-compact-width' : undefined
       }
-      data-search-lane-surface-token="--topology-utility-lane-surface"
-      data-search-lane-border-token="--topology-utility-lane-border"
-      data-search-lane-shadow-token="--topology-utility-lane-shadow"
+      data-search-lane-surface-token="--chrome-surface"
+      data-search-lane-border-token="--chrome-border"
+      data-search-lane-shadow-token="--chrome-shadow"
     >
       <div className="flex items-center gap-2">
         {/* 자동 정렬 — 데스크톱에서만 노출. 모바일에서는 자주 안 쓰는 액션이라
             우상단 floating 버튼이 시각적 무게를 잡아먹는 게 더 큰 손실. 필요하면
-            그래프 컨트롤 패널 안에서 트리거. */}
-        <button
-          type="button"
-          onClick={() => {
-            setArranging(true);
-            onRelayout();
-          }}
-          data-testid="topology-auto-arrange"
-          data-arranging={arranging ? 'true' : 'false'}
-          data-utility-action-token-contract="support-surface-family"
-          data-utility-action-surface-token="--topology-utility-lane-surface"
-          data-utility-action-border-token="--topology-utility-lane-border"
-          data-utility-action-hover-surface-token="--topology-utility-lane-hover-surface"
-          data-utility-action-active-surface-token="--topology-utility-lane-accent-surface"
-          data-utility-action-active-border-token="--topology-utility-lane-accent-border"
-          data-utility-action-shadow-token="--topology-utility-lane-shadow"
-          data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
-          className={cn(
-            'hidden items-center justify-center gap-2 overflow-hidden text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--topology-utility-lane-hover-surface)] hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--topology-utility-lane-accent-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] data-[arranging=true]:border-[color:var(--topology-utility-lane-accent-border)] data-[arranging=true]:bg-[color:var(--topology-utility-lane-accent-surface)] data-[arranging=true]:text-[color:var(--color-text-primary)] md:flex',
-            compact ? 'w-[var(--topology-utility-lane-compact-width)] px-0' : 'px-4',
-            pillClass,
-          )}
-          aria-label={t('relayoutAriaLabel')}
-          title={t('relayoutTitle')}
-        >
-          <RefreshCcw
-            className={cn(
-              'size-[var(--topology-chrome-icon-size-sm)]',
-              arranging && 'motion-safe:animate-spin',
-            )}
-          />
-          <span className={compact ? 'sr-only' : 'hidden md:inline'}>
+            그래프 컨트롤 패널 안에서 트리거. wrapper 의 hidden/md:block 이
+            표시 여부를 맡아 ChromeChip 자체 display 유틸과 안 부딪힌다. */}
+        <div className="hidden md:block">
+          <ChromeChip
+            type="button"
+            onClick={() => {
+              setArranging(true);
+              onRelayout();
+            }}
+            data-testid="topology-auto-arrange"
+            data-arranging={arranging ? 'true' : 'false'}
+            data-utility-action-token-contract="support-surface-family"
+            data-utility-action-surface-token="--chrome-surface"
+            data-utility-action-border-token="--chrome-border"
+            data-utility-action-hover-surface-token="--color-overlay-2"
+            data-utility-action-active-surface-token="--chrome-active-surface"
+            data-utility-action-active-border-token="--chrome-active-border"
+            data-utility-action-shadow-token="--chrome-shadow"
+            data-utility-action-focus-ring-token="--color-indigo-accent"
+            icon={<RefreshCcw className={cn(arranging && 'motion-safe:animate-spin')} />}
+            active={arranging}
+            compact={compact}
+            aria-label={t('relayoutAriaLabel')}
+            title={t('relayoutTitle')}
+          >
             {arranging ? t('relayoutActiveLabel') : t('relayoutLabel')}
-          </span>
-        </button>
-        <button
+          </ChromeChip>
+        </div>
+        <ChromeChip
           type="button"
           onClick={onOpenSearch}
           data-testid="topology-concept-search"
           data-utility-action-token-contract="support-surface-family"
-          data-utility-action-surface-token="--topology-utility-lane-surface"
-          data-utility-action-border-token="--topology-utility-lane-border"
-          data-utility-action-hover-surface-token="--topology-utility-lane-hover-surface"
-          data-utility-action-active-surface-token="--topology-utility-lane-accent-surface"
-          data-utility-action-shadow-token="--topology-utility-lane-shadow"
-          data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
-          className={cn(
-            'group flex items-center justify-center gap-2 overflow-hidden text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors active:bg-[color:var(--topology-utility-lane-accent-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] md:gap-2.5 md:text-[color:var(--color-text-tertiary)] md:hover:bg-[color:var(--topology-utility-lane-hover-surface)] md:hover:text-[color:var(--color-text-primary)]',
-            compact
-              ? 'w-[var(--topology-utility-lane-compact-width)] px-0'
-              : 'px-3.5 md:min-w-[176px] md:pl-4 xl:min-w-[208px]',
-            pillClass,
-          )}
+          data-utility-action-surface-token="--chrome-surface"
+          data-utility-action-border-token="--chrome-border"
+          data-utility-action-hover-surface-token="--color-overlay-2"
+          data-utility-action-shadow-token="--chrome-shadow"
+          data-utility-action-focus-ring-token="--color-indigo-accent"
+          compact={compact}
+          icon={<Search />}
+          kbd={isMac ? '⌘K' : 'CtrlK'}
+          className={compact ? undefined : 'md:min-w-[176px] xl:min-w-[208px]'}
           aria-label={t('searchAriaLabel')}
           title={t('searchTitle')}
         >
-          <Search
-            className="size-[var(--topology-chrome-icon-size-sm)] text-[color:var(--color-text-secondary)] md:text-[color:var(--color-text-tertiary)] md:group-hover:text-[color:var(--color-text-secondary)]"
-          />
-          <span className={compact ? 'sr-only' : 'hidden md:inline md:group-hover:text-[color:var(--color-text-primary)]'}>
-            {t('searchLabel')}
-          </span>
-          <span
-            aria-hidden="true"
-            className={cn(
-              'hidden items-center gap-0.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]',
-              compact ? '' : 'md:flex',
-            )}
-          >
-            {isMac ? '⌘' : 'Ctrl'}
-            <span>K</span>
-          </span>
-        </button>
+          {t('searchLabel')}
+        </ChromeChip>
       </div>
     </div>
   );

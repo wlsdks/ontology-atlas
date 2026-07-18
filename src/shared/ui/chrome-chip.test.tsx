@@ -38,8 +38,8 @@ describe('ChromeChip', () => {
   it('active state adds an indigo tint without a second color system', () => {
     render(<ChromeChip active>검색</ChromeChip>);
     const chip = screen.getByRole('button');
-    expect(chip.className).toContain('rgba(94,106,210,0.4)');
-    expect(chip.className).toContain('rgba(94,106,210,0.12)');
+    expect(chip.className).toContain('var(--chrome-active-border)');
+    expect(chip.className).toContain('var(--chrome-active-surface)');
   });
 
   it('forwards native button props (onClick, data-testid, aria-label)', () => {

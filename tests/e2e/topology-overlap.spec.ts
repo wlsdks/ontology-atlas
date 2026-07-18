@@ -3796,15 +3796,15 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(searchLane).toHaveAttribute(
       "data-search-lane-surface-token",
-      "--topology-utility-lane-surface",
+      "--chrome-surface",
     );
     await expect(searchLane).toHaveAttribute(
       "data-search-lane-border-token",
-      "--topology-utility-lane-border",
+      "--chrome-border",
     );
     await expect(searchLane).toHaveAttribute(
       "data-search-lane-shadow-token",
-      "--topology-utility-lane-shadow",
+      "--chrome-shadow",
     );
     const searchActions = searchLane.locator("[data-utility-action-token-contract]");
     await expect(searchActions).toHaveCount(2);
@@ -3815,11 +3815,11 @@ for (const viewport of VIEWPORTS) {
       );
       await expect(searchActions.nth(index)).toHaveAttribute(
         "data-utility-action-focus-ring-token",
-        "--topology-utility-lane-focus-ring",
+        "--color-indigo-accent",
       );
       await expect(searchActions.nth(index)).toHaveAttribute(
         "data-utility-action-hover-surface-token",
-        "--topology-utility-lane-hover-surface",
+        "--color-overlay-2",
       );
     }
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(

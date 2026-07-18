@@ -659,6 +659,10 @@
     --chrome-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
     --chrome-inset: 24px;
     --chrome-engrave: 0 1px 0 rgba(0, 0, 0, 0.65);
+    /* ChromeTile/ChromeChip 의 `active`(선택/진행중) 표시 — 인디고 하나만
+       쓰는 단일 채색 원칙 그대로, 알파만 다르다. */
+    --chrome-active-surface: rgba(94, 106, 210, 0.12);
+    --chrome-active-border: rgba(94, 106, 210, 0.4);
 
     /*
      * B2+ 페이지 롤아웃 전역 승격 토큰 (feat/landing-b2plus).
