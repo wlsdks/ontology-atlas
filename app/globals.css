@@ -651,7 +651,8 @@
      * (var() 참조가 아닌 값 복사 — flag 제거 시 grep 계약 유지).
      * 라이트 값은 v2 canvas light-mode 패스와 무관한 DOM 전용 신규 정의 —
      * 페이지는 라이트 테마 완전 지원이 계약이라 여기서 함께 정의한다.
-     * 마커: LandingPage data-token="engraved-numeral" / data-token="kind-glyph".
+     * 마커: DownloadPage 소개 섹션(구 LandingPage, root-first-open Slice 2 로
+     * 이관) data-token="engraved-numeral" / data-token="kind-glyph".
      */
     --engraved-numeral-face: #8c8c94;
     --engraved-numeral-text-shadow: 0 1px 0 #08080a;

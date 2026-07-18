@@ -131,7 +131,9 @@ scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood w
 ## Routes
 
 ```
-/                          topology hub when vault is selected (map + INDEX + datasheet); landing page when not
+/                          topology hub always (map + INDEX + datasheet) — with no vault selected it renders
+                           this project's own dogfood sample plus a first-run starter in the INDEX panel
+                           (root-first-open 2026-07 — no separate marketing landing page)
 /topology                  same topology hub, explicit entry point (canvas-2D map/graph engine)
 /projects                  project list (vault frontmatter `kind: project` docs)
 /project/[slug]            project detail (inline edit when vault is loaded)

@@ -8,10 +8,12 @@ const DEFAULT_TIMEOUT_MS = 15000;
 function printHelp() {
   console.log(`Usage: pnpm desktop:verify-hosted [--base-url=${DEFAULT_BASE_URL}] [--timeout-ms=${DEFAULT_TIMEOUT_MS}]
 
-Verifies the deployed hosted website is the promo/download surface for the
-macOS-first product path:
-- /ko/ no longer presents the browser vault picker as the primary CTA
-- /ko/download/ exists and points users to the GitHub Releases download path
+Verifies the deployed hosted website matches the root-first-open (2026-07)
+product path:
+- /ko/ renders the topology map itself (no marketing landing detour) and
+  offers the local-folder open CTA directly — it does NOT stay promo-only
+- /ko/download/ exists, carries the absorbed intro section, and points users
+  to the GitHub Releases download path
 
 This command checks deployed HTML only. It does not deploy or publish anything.
 `);
@@ -155,30 +157,29 @@ function assertExcludes(text, label, needles) {
 }
 
 export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEOUT_MS }) {
-  const landingPath = "/ko/";
+  const rootPath = "/ko/";
   const downloadPath = "/ko/download/";
-  const [landing, download] = await Promise.all([
-    requestText(`${baseUrl}${landingPath}`, { timeoutMs }),
+  const [root, download] = await Promise.all([
+    requestText(`${baseUrl}${rootPath}`, { timeoutMs }),
     requestText(`${baseUrl}${downloadPath}`, { timeoutMs }),
   ]);
 
-  assertOkPage(landing, landingPath);
+  assertOkPage(root, rootPath);
   assertOkPage(download, downloadPath);
 
-  const landingText = renderedText(landing.body);
+  const rootText = renderedText(root.body);
   const downloadText = renderedText(download.body);
   const releasesUrl = "https://github.com/wlsdks/ontology-atlas/releases";
 
-  assertIncludes(landingText, landingPath, [
+  // root-first-open (2026-07) — `/` now renders the topology map itself
+  // (no vault-not-selected marketing landing) and offers the local-folder
+  // open CTA directly from the map's INDEX panel (FirstRunStarterModule).
+  // The OLD contract required the opposite (`내 마크다운 폴더 열기` was
+  // forbidden here, only reachable through the installed macOS app) — that
+  // policy moved: only `/docs`'s OWN local-source picking stays desktop-only.
+  assertIncludes(rootText, rootPath, [
     "Ontology Atlas",
-    "macOS-first ontology workbench",
-    "macOS 앱 다운로드",
-    "설치 안내 보기",
-    "웹 사이트는 제품 소개와 다운로드 진입점입니다",
-  ]);
-  assertExcludes(landingText, landingPath, [
     "내 마크다운 폴더 열기",
-    "데모 먼저 보기",
   ]);
 
   assertIncludes(downloadText, downloadPath, [
@@ -193,14 +194,13 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     "CLI fallback",
     "호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다",
   ]);
-  assertIncludes(landing.body, landingPath, [releasesUrl]);
   assertIncludes(download.body, downloadPath, [releasesUrl]);
-  assertExcludes(`${landing.body}\n${download.body}`, "hosted pages", [
+  assertExcludes(`${root.body}\n${download.body}`, "hosted pages", [
     "https://github.com/wlsdks/ontology-atlas/releases/latest",
   ]);
 
   return {
-    landingUrl: landing.url,
+    rootUrl: root.url,
     downloadUrl: download.url,
   };
 }
@@ -209,8 +209,8 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   try {
     const report = await evaluateHostedSurface(options);
-    console.log(`[hosted-download-surface] ${options.baseUrl} is promo/download aligned`);
-    console.log(`landing: ${report.landingUrl}`);
+    console.log(`[hosted-download-surface] ${options.baseUrl} matches the root-first-open contract`);
+    console.log(`root: ${report.rootUrl}`);
     console.log(`download: ${report.downloadUrl}`);
   } catch (error) {
     const next = deploymentNextAction(error);

@@ -91,6 +91,17 @@ describe('DownloadPage', () => {
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
   });
 
+  it('renders the intro section absorbed from the retired LandingPage (root-first-open Slice 2) with the real dogfood census', () => {
+    renderDownloadPage();
+
+    expect(screen.getByText('Codebase ontology')).toBeInTheDocument();
+    expect(screen.getByText('that grows with AI')).toBeInTheDocument();
+    expect(screen.getByText('Write a markdown file per piece')).toBeInTheDocument();
+    expect(screen.getByText('One folder, three views')).toBeInTheDocument();
+    // dogfood census is real data (build-time generated), not a placeholder.
+    expect(screen.getByRole('img', { name: /Topology miniature/i })).toBeInTheDocument();
+  });
+
   it('copies the local release completion audit command', async () => {
     renderDownloadPage();
 

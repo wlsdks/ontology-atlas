@@ -139,10 +139,11 @@ download(`/download`).
   `--kind-glyph-edge-contains` / `--kind-glyph-edge-relates` — kind 글리프
   미니어처(hex/칩/원/pad)와 trace 잉크. 다크 값은 v2 node/edge-mark 값
   **복사** (var() 참조 아님 — P6 `--topology-v2-` grep 계약 유지), 라이트
-  값 신규. 소비처: `src/views/landing/ui/LandingPage.tsx`
-  (마커 `data-token="engraved-numeral"` / `data-token="kind-glyph"`).
-- 랜딩 히어로 census 숫자의 진실원:
-  `src/views/landing/model/dogfood-census.generated.ts` —
+  값 신규. 소비처: `src/views/download/ui/DownloadPage.tsx` 의 소개 섹션
+  (구 LandingPage, root-first-open Slice 2 로 이관 — 마커
+  `data-token="engraved-numeral"` / `data-token="kind-glyph"`).
+- 소개 섹션 evidence 미니어처 census 숫자의 진실원:
+  `src/views/download/model/dogfood-census.generated.ts` —
   `scripts/build-docs-vault.mjs` 가 dogfood vault frontmatter 에서 생성.
 
 **Surface class 별 do / don't**:

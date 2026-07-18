@@ -221,43 +221,6 @@
     "github": "GitHub",
     "stack": "Local-first · Next.js · TypeScript · Sigma.js · MCP"
   },
-  "landing": {
-    "eyebrow": "ONTOLOGY WORKBENCH · 사람 + AI AGENT 협업",
-    "headerKicker": "macOS-first ontology workbench",
-    "titleLine1": "AI 와 함께 자라는",
-    "titleEmphasis": "codebase ontology",
-    "subtitle": "앱을 설치하고 로컬 문서함 폴더만 고르면 시작합니다. 프로젝트의 기능 · 모듈 · 의존 관계를 마크다운 파일로 정리하고, 트리와 그래프로 살피며, AI 에이전트에게 같은 파일을 맡길 수 있어요.",
-    "step1Title": "조각마다 마크다운 한 파일",
-    "step1Body": "프로젝트 / 기능 / 모듈 한 개당 .md 한 개. 이름과 연결 몇 개를 헤더에 적으면 그게 노드와 관계. AI 에이전트 (Claude Code 등) 도 같은 파일을 읽고 씁니다.",
-    "step2Title": "누가 무엇을 쓰는지 즉시 확인",
-    "step2Body": "\"이 기능 누가 의존하나?\" \"이거 바꾸면 뭐 깨지나?\" — 파일 전체 검색 대신 클릭 한 번이면 답이 나옵니다.",
-    "step3Title": "한 폴더, 세 가지 시각",
-    "step3Body": "트리로 둘러보고, 그래프로 탐색하고, 캔버스에서 편집. 분포 차트 · 의존 chain · 허브 노드 모두 한 폴더에서.",
-    "openSource": {
-      "eyebrow": "오픈소스 · local-first · MCP",
-      "title": "AI coding agent 를 쓰는 개발자를 위해 공개적으로 만드는 도구.",
-      "body": "Ontology Atlas 는 stark (최진안 / Jinan Choi) 가 만드는 MIT 라이선스 ontology-atlas 프로젝트의 사용자-facing 앱입니다. AI coding agent 가 코드베이스의 장기 구조를 계속 잊는 문제를 줄이기 위해 만들었습니다. 프로젝트의 mental model 을 repo 안 마크다운 문서로 남겨 Claude Code, Cursor, Codex 와 사람이 같은 기억을 공유하게 합니다.",
-      "madeByLabel": "만든 사람",
-      "madeByValue": "stark (최진안 / Jinan Choi)",
-      "licenseLabel": "라이선스",
-      "licenseValue": "MIT 오픈소스",
-      "stackLabel": "스택",
-      "stackValue": "Next.js · TypeScript · Sigma.js · MCP · static hosting",
-      "githubCta": "GitHub 저장소 열기"
-    },
-    "exploreCta": "설치 안내 보기",
-    "downloadMacCta": "macOS 앱 다운로드",
-    "downloadNote": "공개 빌드는 서명, notarization, 체크섬 검증, 다운로드 asset 검증을 통과한 뒤 최신 GitHub Release 로 배포됩니다.",
-    "openVaultCta": "앱에서 로컬 문서함 열기",
-    "privacyNote": "앱과 문서함 데이터는 로컬 디스크를 진실원으로 사용합니다. 웹 사이트는 제품 소개와 다운로드 진입점입니다.",
-    "instrument": {
-      "eyebrow": "Dogfood vault",
-      "svgLabel": "이 프로젝트 자신의 온톨로지 vault 의 topology 미니어처 — 개념 {concepts}개, 관계 {relations}개.",
-      "conceptsUnit": "concepts",
-      "relationsUnit": "relations",
-      "caption": "이 프로젝트 자신의 온톨로지 — 빌드 시점의 실제 마크다운 frontmatter 를 그대로 그립니다. 목업 데이터 없음."
-    }
-  },
   "firstRun": {
     "eyebrow": "Local-first workbench",
     "title": "볼트를 열고 바로 시작하세요",

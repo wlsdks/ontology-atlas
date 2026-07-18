@@ -221,43 +221,6 @@
     "github": "GitHub",
     "stack": "Local-first · Next.js · TypeScript · Sigma.js · MCP"
   },
-  "landing": {
-    "eyebrow": "Ontology workbench · humans + AI agents",
-    "headerKicker": "macOS-first ontology workbench",
-    "titleLine1": "Codebase ontology",
-    "titleEmphasis": "that grows with AI",
-    "subtitle": "Install the app, pick a local vault folder, and start. Map features, modules, and dependencies as markdown files; browse them as a tree or graph; let AI agents work on the same files.",
-    "step1Title": "Write a markdown file per piece",
-    "step1Body": "One file per project / feature / module. Add a name and a few links in the header — that's a node, those are relations. AI agents (Claude Code, etc.) read and edit the same files.",
-    "step2Title": "See who uses what, instantly",
-    "step2Body": "\"Who depends on this feature?\" \"What breaks if I change it?\" — the answer is one click away instead of a search across files.",
-    "step3Title": "One folder, three views",
-    "step3Body": "Browse as a tree, navigate as a graph, edit on a canvas. Distribution charts, dependency chains, hub nodes — all from the same folder.",
-    "openSource": {
-      "eyebrow": "open source · local-first · MCP",
-      "title": "Built in public for developers who use AI coding agents.",
-      "body": "Ontology Atlas is the user-facing app for the MIT-licensed ontology-atlas project by stark (Jinan Choi / 최진안). It exists because AI coding agents keep forgetting the long-term shape of a codebase. The project keeps that shape in markdown frontmatter, inside your repo, so Claude Code, Cursor, Codex, and humans can share one memory.",
-      "madeByLabel": "Made by",
-      "madeByValue": "stark (Jinan Choi / 최진안)",
-      "licenseLabel": "License",
-      "licenseValue": "MIT open source",
-      "stackLabel": "Stack",
-      "stackValue": "Next.js · TypeScript · Sigma.js · MCP · static hosting",
-      "githubCta": "Open the GitHub repo"
-    },
-    "exploreCta": "Installation guide",
-    "downloadMacCta": "Download macOS app",
-    "downloadNote": "Public builds ship through the latest GitHub Release after signing, notarization, checksum verification, and download-asset checks pass.",
-    "openVaultCta": "Open local vault in the app",
-    "privacyNote": "The app and vault data use your local disk as the source of truth. The website is the product introduction and download entry point.",
-    "instrument": {
-      "eyebrow": "Dogfood vault",
-      "svgLabel": "Topology miniature of this project's own ontology vault — {concepts} concepts and {relations} relations.",
-      "conceptsUnit": "concepts",
-      "relationsUnit": "relations",
-      "caption": "This project's own ontology, rendered from real markdown frontmatter at build time. No mockup data."
-    }
-  },
   "firstRun": {
     "eyebrow": "Local-first workbench",
     "title": "Open a vault to start working",
