@@ -1,0 +1,224 @@
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  index-panel-v2-full — 전체 실적용 합성 시안 (라운드 3, 다듬기).
+  실제 지형도 캡처(shots/rail-real-topology.png) 위에 구 좌측 컬럼을 덮고
+  새 브랜드 필 + INDEX 패널 v2.1 을 실척으로 합성. "분석 보기" 칩은 은퇴
+  예정이라 덮인 상태가 곧 실적용 모습.
+  v2 → v2.1 다듬기: 텍스트 캐럿(▶) 폐기 → Lucide chevron SVG · 행 세로 정렬
+  (카운트 센터) · 미터 트랙 인셋 · pip 인디고 틴트 · 유틸 타일 아이콘 16px ·
+  푸터/헤더 리듬 정리 · 캐럿 회전 상태.
+-->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>INDEX 패널 v2.1 — 전체 실적용 합성</title>
+<style>
+  :root{
+    --canvas:#060609; --panel:#101118; --elevated:#16171d;
+    --divider:rgba(255,255,255,.08); --border-soft:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.17);
+    --t1:#ececf0; --t2:#b8bac2; --t3:#84868f; --t4:#63656e;
+    --indigo:#5e6ad2; --indigo-soft:rgba(94,106,210,.14); --indigo-line:rgba(139,151,255,.8);
+    --indigo-ink:rgba(139,151,255,.45);
+    --amber:#d4b478;
+    --engrave:0 1px 0 rgba(0,0,0,.65);
+  }
+  *{margin:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:var(--canvas);color:var(--t1);font:14px/1.5 -apple-system,"Pretendard",sans-serif;overflow:hidden}
+  .stage{position:relative;width:100%;height:100vh;overflow:hidden}
+  .stage>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:left top}
+  /* 구 크롬 커버 — 좌측 컬럼 + 상단 스트립 + 우측 레일을 캔버스색으로 덮음 */
+  .cover{position:absolute;top:0;left:0;bottom:0;width:412px;
+    background:linear-gradient(90deg, var(--canvas) 0%, var(--canvas) 92%, rgba(6,6,9,0) 100%)}
+  .cover-top{position:absolute;top:0;left:0;right:0;height:82px;
+    background:linear-gradient(180deg, var(--canvas) 0%, var(--canvas) 86%, rgba(6,6,9,0) 100%)}
+  .cover-right{position:absolute;top:0;right:0;bottom:0;width:96px;
+    background:linear-gradient(270deg, var(--canvas) 0%, var(--canvas) 82%, rgba(6,6,9,0) 100%)}
+  svg.lucide{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+  /* ── 브랜드 필 + 유틸 타일 ── */
+  .toprow{position:absolute;top:14px;left:24px;display:flex;align-items:stretch;gap:8px;z-index:3}
+  .pill{display:flex;align-items:center;gap:11px;border:1px solid var(--border-soft);background:rgba(16,17,24,.96);
+    border-radius:10px;padding:8px 14px 8px 9px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  .pill .pip{width:28px;height:28px;border:1px solid rgba(139,151,255,.3);background:var(--indigo-soft);border-radius:8px;display:grid;place-items:center;color:var(--indigo-line);flex:none}
+  .pill .pip svg{width:15px;height:15px}
+  .pill .tx b{display:block;font-size:13px;font-weight:650;line-height:1.25;letter-spacing:-.005em}
+  .pill .tx .census{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--t4);display:flex;gap:4px;align-items:baseline;margin-top:1.5px}
+  .pill .tx .census b{display:inline;font-size:11px;color:var(--t2);font-weight:600;text-shadow:var(--engrave)}
+  .pill .tx .census .up{color:var(--amber)}
+  .tile{width:44px;border:1px solid var(--border-soft);background:rgba(16,17,24,.96);border-radius:10px;
+    display:grid;place-items:center;color:var(--t3);cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  .tile:hover{color:var(--t1);border-color:var(--border-strong)}
+  .tile svg{width:16px;height:16px}
+  /* ── 상단 중앙/우상단/우측 레일 — 동일 문법 ── */
+  .midrow{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;align-items:stretch;gap:8px;z-index:3}
+  .chip{display:flex;align-items:center;gap:8px;border:1px solid var(--border-soft);background:rgba(16,17,24,.96);
+    border-radius:10px;padding:0 14px;height:44px;font-size:12.5px;color:var(--t2);cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  .chip:hover{color:var(--t1);border-color:var(--border-strong)}
+  .chip svg{width:14px;height:14px;color:var(--t3)}
+  .chip .kbd{font-family:ui-monospace,monospace;font-size:9px;border:1px solid var(--divider);border-radius:4px;padding:1px 5px;color:var(--t4)}
+  .searchbar{display:flex;align-items:center;gap:8px;width:220px;border:1px solid var(--divider);border-radius:10px;
+    background:rgba(16,17,24,.96);color:var(--t4);font-size:12.5px;padding:0 12px;height:44px;
+    box-shadow:0 6px 20px rgba(0,0,0,.35), inset 0 1px 2px rgba(0,0,0,.35)}
+  .searchbar svg{width:14px;height:14px;flex:none}
+  .searchbar .kbd{margin-left:auto;font-family:ui-monospace,monospace;font-size:9px;border:1px solid var(--divider);border-radius:4px;padding:1px 5px}
+  .toprt{position:absolute;top:14px;right:24px;z-index:3}
+  .rightrail{position:absolute;right:24px;top:50%;transform:translateY(-60%);display:flex;flex-direction:column;gap:8px;z-index:3}
+  .rightrail .tile{height:44px}
+  /* ── INDEX 패널 v2.1 ── */
+  .index{position:absolute;top:76px;left:24px;bottom:24px;width:302px;z-index:3;
+    border:1px solid var(--border-soft);background:rgba(15,16,22,.97);border-radius:12px;
+    display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,.45)}
+  .index .hd{display:flex;align-items:center;gap:7px;padding:12px 12px 11px 16px;border-bottom:1px solid var(--divider)}
+  .index .hd .cap{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.2em;color:var(--t3);text-transform:uppercase}
+  .index .hd .n{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--t4)}
+  .index .hd .fold{margin-left:auto;width:26px;height:26px;border:1px solid var(--divider);border-radius:7px;display:grid;place-items:center;color:var(--t4);cursor:pointer}
+  .index .hd .fold:hover{color:var(--t2);border-color:var(--border-strong)}
+  .index .hd .fold svg{width:13px;height:13px}
+  .index .bd{padding:12px 10px 8px;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
+  .search{display:flex;align-items:center;gap:8px;margin:0 5px;border:1px solid var(--divider);border-radius:8px;
+    background:var(--elevated);color:var(--t4);font-size:12px;padding:8px 11px;box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
+  .search svg{width:13px;height:13px;flex:none}
+  .search .kbd{margin-left:auto;font-family:ui-monospace,monospace;font-size:9px;border:1px solid var(--divider);border-radius:4px;padding:1px 5px;color:var(--t4)}
+  .tree{display:flex;flex-direction:column;gap:1px;overflow-y:auto}
+  .row{display:grid;grid-template-columns:14px 15px 1fr auto;align-items:center;column-gap:8px;padding:7px 9px;border-radius:8px;cursor:pointer;min-height:34px}
+  .row:hover{background:rgba(255,255,255,.035)}
+  .row.sel{background:var(--indigo-soft);box-shadow:inset 0 0 0 1px rgba(139,151,255,.18)}
+  .row .caret{justify-self:center;color:var(--t4);display:grid;place-items:center}
+  .row .caret svg{width:11px;height:11px}
+  .row .caret.open svg{transform:rotate(90deg)}
+  .row .g{justify-self:center}
+  .row .g.hex{width:11px;height:11px;border:1.3px solid var(--amber);clip-path:polygon(50% 0,100% 27%,100% 73%,50% 100%,0 73%,0 27%)}
+  .row .g.sq{width:9px;height:9px;border:1.3px solid var(--indigo-line);border-radius:2.5px}
+  .row .g.doc{width:9px;height:9px;border:1.3px solid var(--t3);border-radius:50%}
+  .row .lbl{min-width:0;font-size:12.5px;color:var(--t2);line-height:1.35}
+  .row.proj .lbl{color:var(--amber);font-weight:600;font-size:13px}
+  .row .lbl .nm{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .lbl .sub{display:flex;align-items:center;gap:7px;margin-top:3.5px}
+  .row .lbl .sub em{font-style:normal;font-family:ui-monospace,monospace;font-size:9.5px;color:var(--t4);flex:none;letter-spacing:.01em}
+  .row .lbl .meter{flex:1;height:2px;border-radius:1px;background:rgba(0,0,0,.45);box-shadow:inset 0 1px 1px rgba(0,0,0,.5);overflow:hidden}
+  .row .lbl .meter i{display:block;height:100%;background:var(--indigo-ink)}
+  .row.sel .lbl .meter i{background:var(--indigo-line)}
+  .row .n{font-family:ui-monospace,monospace;font-size:11px;color:var(--t3);font-weight:600;text-shadow:var(--engrave)}
+  .row.proj .n{color:var(--t2);font-size:11.5px}
+  .row.doc .lbl{color:var(--t3);font-size:12px}
+  .index .ft{border-top:1px solid var(--divider);padding:10px 16px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t4)}
+  .index .ft .dot{width:5px;height:5px;border-radius:50%;background:var(--amber);flex:none}
+  .index .ft b{color:var(--t3);font-weight:500}
+  .index .ft .kbd{margin-left:auto;font-family:ui-monospace,monospace;font-size:9px;border:1px solid var(--divider);border-radius:4px;padding:1px 5px}
+</style>
+</head>
+<body>
+<div class="stage">
+  <img src="shots/rail-real-topology.png" alt="실제 지형도 화면"/>
+  <div class="cover-top"></div>
+  <div class="cover-right"></div>
+  <div class="cover"></div>
+
+  <!-- 상단 중앙 — 같은 문법의 정렬/검색 클러스터 -->
+  <div class="midrow">
+    <span class="chip"><svg class="lucide" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>자동 정렬</span>
+    <div class="searchbar">
+      <svg class="lucide" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      검색<span class="kbd">⌘K</span>
+    </div>
+  </div>
+
+  <!-- 우상단 — 작업공간 (같은 pill 문법) -->
+  <div class="toprt">
+    <span class="chip"><svg class="lucide" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>작업공간<span class="kbd">D</span></span>
+  </div>
+
+  <!-- 우측 세로 레일 — 좌측 유틸과 동일한 44px 타일 -->
+  <div class="rightrail">
+    <span class="tile" title="전체 보기"><svg class="lucide" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></span>
+    <span class="tile" title="지도 조절"><svg class="lucide" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg></span>
+    <span class="tile" title="단축키"><svg class="lucide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span>
+    <span class="tile" title="설정"><svg class="lucide" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+  </div>
+
+  <div class="toprow">
+    <div class="pill">
+      <span class="pip"><svg class="lucide" viewBox="0 0 24 24"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg></span>
+      <span class="tx"><b>지형도</b>
+        <span class="census">개념 <b>289</b> · 관계 <b>483</b> · <span class="up">이번 주 +1</span></span></span>
+    </div>
+    <span class="tile" title="문서함"><svg class="lucide" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
+    <span class="tile" title="빌더"><svg class="lucide" viewBox="0 0 24 24"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></span>
+  </div>
+
+  <aside class="index">
+    <div class="hd">
+      <span class="cap">INDEX</span><span class="n">· 103</span>
+      <span class="fold" title="접기"><svg class="lucide" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg></span>
+    </div>
+    <div class="bd">
+      <div class="search">
+        <svg class="lucide" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        개념 검색<span class="kbd">⌘K</span>
+      </div>
+      <div class="tree">
+        <div class="row proj">
+          <span class="caret open"><svg class="lucide" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+          <span class="g hex"></span>
+          <span class="lbl"><span class="nm">ontology-atlas</span></span>
+          <span class="n">6</span>
+        </div>
+        <div class="row sel">
+          <span class="caret"><svg class="lucide" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+          <span class="g sq"></span>
+          <span class="lbl"><span class="nm">AI Agent Partner</span>
+            <span class="sub"><em>역량 10 · 요소 32</em><span class="meter"><i style="width:44%"></i></span></span></span>
+          <span class="n">42</span>
+        </div>
+        <div class="row">
+          <span class="caret"><svg class="lucide" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+          <span class="g sq"></span>
+          <span class="lbl"><span class="nm">Mode-Aware Adapters</span>
+            <span class="sub"><em>역량 2 · 요소 8</em><span class="meter"><i style="width:10%"></i></span></span></span>
+          <span class="n">10</span>
+        </div>
+        <div class="row">
+          <span class="caret"><svg class="lucide" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+          <span class="g sq"></span>
+          <span class="lbl"><span class="nm">Onboarding &amp; UX</span>
+            <span class="sub"><em>역량 2 · 요소 94</em><span class="meter"><i style="width:100%"></i></span></span></span>
+          <span class="n">96</span>
+        </div>
+        <div class="row">
+          <span class="caret"><svg class="lucide" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+          <span class="g sq"></span>
+          <span class="lbl"><span class="nm">Ontology Core</span>
+            <span class="sub"><em>역량 1 · 요소 7</em><span class="meter"><i style="width:8%"></i></span></span></span>
+          <span class="n">8</span>
+        </div>
+        <div class="row">
+          <span class="caret"><svg class="lucide" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+          <span class="g sq"></span>
+          <span class="lbl"><span class="nm">Vault — Local-First</span>
+            <span class="sub"><em>역량 4 · 요소 27</em><span class="meter"><i style="width:32%"></i></span></span></span>
+          <span class="n">31</span>
+        </div>
+        <div class="row">
+          <span class="caret"><svg class="lucide" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+          <span class="g sq"></span>
+          <span class="lbl"><span class="nm">Views — Topology · Browse</span>
+            <span class="sub"><em>역량 17 · 요소 73</em><span class="meter"><i style="width:94%"></i></span></span></span>
+          <span class="n">90</span>
+        </div>
+        <div class="row doc">
+          <span class="caret"></span>
+          <span class="g doc"></span>
+          <span class="lbl"><span class="nm">자기 ontology vault 안내</span></span>
+          <span class="n"></span>
+        </div>
+      </div>
+    </div>
+    <div class="ft">
+      <span class="dot"></span><b>에이전트 동기화</b> · 이번 주 +1
+      <span class="kbd">⇧⌘K</span>
+    </div>
+  </aside>
+</div>
+</body>
+</html>

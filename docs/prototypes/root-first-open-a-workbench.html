@@ -1,0 +1,143 @@
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  root-first-open A — "워크벤치 첫 화면" (웹·데스크톱 진입 통일)
+  관찰 현상: OSS 셀프호스트 첫 오픈이 "macOS 다운로드" 마케팅 랜딩 — 모순.
+  안 A: 웹의 vault-미선택 `/` 를 데스크톱 FirstRun 과 같은 "작업 시작" 화면으로
+  통일. 열기/새로 만들기/샘플 3택 + 에이전트 셋업 행. 마케팅은 하단 한 줄로 강등.
+-->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>첫 화면 A — 워크벤치 진입</title>
+<style>
+  :root{
+    --canvas:#0a0b0e; --panel:#111217; --elevated:#16171d; --divider:rgba(255,255,255,.08);
+    --border-soft:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.16);
+    --t1:#ececf0; --t2:#b8bac2; --t3:#84868f; --t4:#5c5e66;
+    --indigo:#5e6ad2; --indigo-soft:rgba(94,106,210,.16); --indigo-line:rgba(139,151,255,.55);
+    --amber:#d4b478;
+    --page-max:1600px; --section-gap:28px; --card-gap:20px; --card-pad:16px;
+  }
+  *{margin:0;box-sizing:border-box}
+  body{background:var(--canvas);color:var(--t1);font:14px/1.55 -apple-system,"Pretendard",sans-serif;}
+  .frame{width:1920px;height:1080px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden}
+  .chrome{display:flex;align-items:center;justify-content:space-between;padding:14px 26px;border-bottom:1px solid var(--divider)}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand .pip{width:26px;height:26px;border:1px solid var(--border-strong);border-radius:7px;display:grid;place-items:center;color:var(--indigo-line);font-size:12px}
+  .brand b{font-size:13.5px;font-weight:600}
+  .brand .sub{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.18em;color:var(--t4);text-transform:uppercase;margin-left:6px}
+  .loc{font-family:ui-monospace,monospace;font-size:10px;color:var(--t4);border:1px solid var(--divider);border-radius:6px;padding:4px 8px}
+  .loc b{color:var(--t2)}
+  main{flex:1;display:grid;grid-template-columns:1fr 620px;gap:56px;max-width:var(--page-max);width:100%;margin:0 auto;padding:64px 26px 40px;align-content:start}
+  .eyebrow{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.2em;color:var(--t4);text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--indigo)}
+  h1{font-size:34px;line-height:1.25;font-weight:650;margin:14px 0 10px;letter-spacing:-.01em;word-break:keep-all}
+  h1 .accent{color:var(--indigo-line)}
+  .lede{font-size:14.5px;color:var(--t3);max-width:560px;word-break:keep-all}
+  .actions{display:grid;gap:var(--card-gap);margin-top:var(--section-gap)}
+  .act{display:flex;align-items:center;gap:16px;border:1px solid var(--border-soft);border-radius:10px;background:var(--panel);padding:18px var(--card-pad);cursor:pointer}
+  .act:hover{border-color:var(--border-strong)}
+  .act.primary{border-color:var(--indigo);background:linear-gradient(0deg,var(--indigo-soft),var(--indigo-soft)),var(--panel)}
+  .act .glyph{width:38px;height:38px;border:1px solid var(--border-strong);border-radius:9px;display:grid;place-items:center;font-size:15px;color:var(--t2);flex:none}
+  .act.primary .glyph{border-color:var(--indigo-line);color:var(--indigo-line)}
+  .act .tx b{display:block;font-size:14.5px;font-weight:600}
+  .act .tx span{font-size:12px;color:var(--t3)}
+  .act .kbd{margin-left:auto;font-family:ui-monospace,monospace;font-size:10px;color:var(--t4);border:1px solid var(--divider);border-radius:5px;padding:3px 7px;flex:none}
+  .agent{margin-top:var(--section-gap);border:1px dashed var(--border-soft);border-radius:10px;padding:14px var(--card-pad)}
+  .agent .cap{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.16em;color:var(--t4);text-transform:uppercase;margin-bottom:10px}
+  .row{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--divider);font-size:12px;color:var(--t3)}
+  .row:first-of-type{border-top:0}
+  .row code{font-family:ui-monospace,monospace;font-size:11px;color:var(--t2);background:var(--elevated);border:1px solid var(--divider);border-radius:5px;padding:2px 8px}
+  .row .who{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.12em;color:var(--t4);width:44px;flex:none;text-transform:uppercase}
+  /* 우측 — 샘플 지도 계기 */
+  .inst{border:1px solid var(--border-soft);border-radius:12px;background:var(--panel);overflow:hidden;align-self:start}
+  .inst .hd{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid var(--divider)}
+  .inst .hd .l{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.18em;color:var(--t3);text-transform:uppercase;display:flex;gap:8px;align-items:center}
+  .inst .hd .l .dot{width:5px;height:5px;border-radius:50%;background:var(--indigo)}
+  .inst .hd .r{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--t4)}
+  .inst svg{display:block;width:100%;height:400px;background:radial-gradient(ellipse at 50% 42%,rgba(94,106,210,.05),transparent 65%)}
+  .inst .census{display:flex;gap:22px;align-items:baseline;padding:13px 16px;border-top:1px solid var(--divider);font-family:ui-monospace,monospace}
+  .inst .census b{font-size:19px;font-weight:600;color:var(--t1);text-shadow:0 1px 0 rgba(0,0,0,.6)}
+  .inst .census span{font-size:9.5px;letter-spacing:.14em;color:var(--t4);text-transform:uppercase}
+  .inst .note{padding:11px 16px;border-top:1px solid var(--divider);font-size:11.5px;color:var(--t4);word-break:keep-all}
+  .inst .note b{color:var(--t3);font-weight:500}
+  footer{display:flex;justify-content:space-between;align-items:center;max-width:var(--page-max);width:100%;margin:0 auto;padding:16px 26px 22px;border-top:1px solid var(--divider)}
+  footer .l{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.18em;color:var(--t4);text-transform:uppercase}
+  footer .r{font-size:12px;color:var(--t3)}
+  footer .r a{color:var(--t2);text-decoration:none;border-bottom:1px solid var(--divider);margin-left:14px}
+  text{font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="chrome">
+    <div class="brand"><span class="pip">◈</span><b>Ontology Atlas</b><span class="sub">Local-first ontology workbench</span></div>
+    <span class="loc">EN <b>KO</b></span>
+  </div>
+
+  <main>
+    <section>
+      <p class="eyebrow"><span class="dot"></span>시작하기 · 설치 완료</p>
+      <h1>마크다운 폴더 하나가<br><span class="accent">살아있는 온톨로지</span>가 됩니다</h1>
+      <p class="lede">폴더를 고르면 그 안의 frontmatter 가 곧 그래프입니다. 로그인도 백엔드도 없습니다 — 데이터는 당신의 디스크에만 있습니다.</p>
+
+      <div class="actions">
+        <div class="act primary">
+          <span class="glyph">⬚</span>
+          <span class="tx"><b>내 마크다운 폴더 열기</b><span>기존 vault 나 문서 폴더를 선택해 바로 지도로</span></span>
+          <span class="kbd">⌘O</span>
+        </div>
+        <div class="act">
+          <span class="glyph">✚</span>
+          <span class="tx"><b>새 vault 만들기</b><span>빈 폴더에 스타터 노드 5개로 시작</span></span>
+        </div>
+        <div class="act">
+          <span class="glyph">◉</span>
+          <span class="tx"><b>샘플로 둘러보기</b><span>이 프로젝트 자신의 온톨로지 102개 노드를 읽기 전용으로</span></span>
+        </div>
+      </div>
+
+      <div class="agent">
+        <p class="cap">터미널·AI 에이전트로 시작할 수도 있어요</p>
+        <div class="row"><span class="who">CLI</span><code>npx ontology-atlas init</code><span>vault 스캐폴드 + 에이전트 설정</span></div>
+        <div class="row"><span class="who">MCP</span><code>.mcp.json 자동 등록</code><span>Claude Code · Codex · Cursor 가 같은 파일을 읽고 씁니다</span></div>
+      </div>
+    </section>
+
+    <aside class="inst">
+      <div class="hd"><span class="l"><span class="dot"></span>Sample · Dogfood vault</span><span class="r">docs/ontology</span></div>
+      <svg viewBox="0 0 620 400">
+        <g stroke="rgba(255,255,255,.10)" stroke-width="1">
+          <line x1="310" y1="200" x2="310" y2="86"/><line x1="310" y1="200" x2="452" y2="128"/>
+          <line x1="310" y1="200" x2="470" y2="252"/><line x1="310" y1="200" x2="310" y2="322"/>
+          <line x1="310" y1="200" x2="158" y2="262"/><line x1="310" y1="200" x2="150" y2="132"/>
+        </g>
+        <g stroke="rgba(139,151,255,.35)" stroke-width="1" stroke-dasharray="3 4">
+          <line x1="452" y1="128" x2="470" y2="252"/><line x1="150" y1="132" x2="310" y2="86"/>
+        </g>
+        <polygon points="310,182 326,191 326,209 310,218 294,209 294,191" fill="#101118" stroke="#d4b478" stroke-width="1.2"/>
+        <g fill="#101118" stroke="rgba(139,151,255,.7)" stroke-width="1">
+          <rect x="303" y="79" width="14" height="14" rx="2"/><rect x="445" y="121" width="14" height="14" rx="2"/>
+          <rect x="463" y="245" width="14" height="14" rx="2"/><rect x="303" y="315" width="14" height="14" rx="2"/>
+          <rect x="151" y="255" width="14" height="14" rx="2"/><rect x="143" y="125" width="14" height="14" rx="2"/>
+        </g>
+        <g fill="#84868f" font-size="9.5">
+          <text x="310" y="70" text-anchor="middle">mcp-server</text><text x="468" y="114">ai-agent-partner</text>
+          <text x="486" y="256">mode-aware-adapters</text><text x="310" y="344" text-anchor="middle">ontology-core</text>
+          <text x="120" y="282">vault-local-first</text><text x="118" y="118">views</text>
+        </g>
+        <text x="310" y="238" text-anchor="middle" fill="#d4b478" font-size="9.5">ontology-atlas</text>
+      </svg>
+      <div class="census"><span><b>102</b> <span>concepts</span></span><span><b>478</b> <span>relations</span></span><span><b>6</b> <span>domains</span></span></div>
+      <p class="note"><b>목업 데이터 없음</b> — 빌드 시점의 실제 frontmatter 를 그대로 그립니다. "샘플로 둘러보기"가 이 그래프를 엽니다.</p>
+    </aside>
+  </main>
+
+  <footer>
+    <span class="l">오픈소스 · Local-first · MCP</span>
+    <span class="r">처음이신가요? <a>제품 소개</a><a>macOS 앱</a><a>GitHub</a></span>
+  </footer>
+</div>
+</body>
+</html>

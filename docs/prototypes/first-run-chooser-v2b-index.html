@@ -1,0 +1,131 @@
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  first-run chooser 재설계 v2b — "INDEX 패널 통합" (플로팅 표면 0개)
+  소유자 반려(중앙 카드) 후 재설계. 신규 플로팅 surface 를 아예 만들지 않는다 —
+  첫 방문 상태의 INDEX 패널(B3 계기 패널, 첫 방문 기본 = 펼침) 맨 위가
+  "시작하기" 모듈로 시작한다: 폴더 열기 primary + 새 vault, 그 아래 hairline
+  건너 샘플 트리. 지도는 완전 무차폐. 시작하기 모듈은 vault 를 열면 사라지고
+  그 자리가 원래 INDEX 검색으로 돌아온다.
+  동작 계약: 재방문(복원된 vault)엔 이 모듈·SAMPLE 배지 없이 본인 vault 직행.
+-->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>시작하기 v2b — INDEX 통합</title>
+<style>
+  :root{
+    --canvas:#060609; --panel:#111217; --elevated:#16171d; --divider:rgba(255,255,255,.08);
+    --border-soft:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.16);
+    --t1:#ececf0; --t2:#b8bac2; --t3:#84868f; --t4:#5c5e66;
+    --indigo:#5e6ad2; --indigo-soft:rgba(94,106,210,.16); --indigo-line:rgba(139,151,255,.55);
+    --amber:#d4b478;
+  }
+  *{margin:0;box-sizing:border-box}
+  body{background:var(--canvas);color:var(--t1);font:14px/1.5 -apple-system,"Pretendard",sans-serif}
+  .frame{width:1920px;height:1080px;margin:0 auto;position:relative;overflow:hidden}
+  .chrome{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:13px 22px;z-index:5}
+  .pill{display:flex;align-items:center;gap:10px;border:1px solid var(--border-soft);background:rgba(17,18,23,.92);border-radius:9px;padding:8px 13px}
+  .pill .pip{width:20px;height:20px;border:1px solid var(--border-strong);border-radius:6px;display:grid;place-items:center;color:var(--indigo-line);font-size:10px}
+  .pill b{font-size:12.5px;font-weight:600}
+  .pill .census{font-family:ui-monospace,monospace;font-size:10px;color:var(--t4);border-left:1px solid var(--divider);padding-left:10px}
+  .pill .census b{font-size:11px;color:var(--t2);font-weight:600}
+  .pill .sample{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.14em;color:var(--amber);border:1px solid rgba(212,180,120,.4);border-radius:5px;padding:2px 7px;text-transform:uppercase}
+  .util{display:flex;gap:8px}
+  .util .btn{width:30px;height:30px;border:1px solid var(--border-soft);background:rgba(17,18,23,.92);border-radius:7px;display:grid;place-items:center;color:var(--t3);font-size:12px}
+  .index{position:absolute;top:76px;left:22px;bottom:22px;width:320px;border:1px solid var(--border-soft);background:rgba(17,18,23,.95);border-radius:11px;z-index:4;display:flex;flex-direction:column;overflow:hidden}
+  /* ★ 시작하기 모듈 — 패널 상단, 별도 플로팅 없음 */
+  .starter{padding:16px 16px 14px;border-bottom:1px solid var(--divider);background:linear-gradient(180deg,rgba(94,106,210,.07),transparent)}
+  .starter .cap{display:flex;align-items:center;gap:8px;font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.18em;color:var(--t3);text-transform:uppercase;margin-bottom:9px}
+  .starter .cap .dot{width:5px;height:5px;border-radius:50%;background:var(--amber)}
+  .starter .cap .s{color:var(--amber);margin-left:auto;letter-spacing:.14em}
+  .starter p{font-size:12px;line-height:1.55;color:var(--t3);word-break:keep-all;margin-bottom:12px}
+  .starter p b{color:var(--t2);font-weight:500}
+  .starter .open{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;border:0;border-radius:8px;background:var(--indigo);color:#fff;font-size:13px;font-weight:600;padding:10px 0}
+  .starter .open .kbd{font-family:ui-monospace,monospace;font-size:9.5px;opacity:.65;border:1px solid rgba(255,255,255,.3);border-radius:4px;padding:1px 5px}
+  .starter .sub{display:flex;justify-content:space-between;margin-top:9px;font-size:11.5px}
+  .starter .sub a{color:var(--t3);text-decoration:none;border-bottom:1px solid var(--divider);padding-bottom:1px}
+  .starter .sub a:hover{color:var(--t2)}
+  .body{padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
+  .index .cap2{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.18em;color:var(--t4);text-transform:uppercase;display:flex;justify-content:space-between}
+  .index .search{border:1px solid var(--divider);border-radius:7px;background:var(--elevated);color:var(--t4);font-size:12px;padding:7px 10px}
+  .index .tree{font-size:12.5px;color:var(--t2);display:grid;gap:2px}
+  .index .tree .d{display:flex;justify-content:space-between;padding:6px 8px;border-radius:6px}
+  .index .tree .d:hover{background:rgba(255,255,255,.04)}
+  .index .tree .d .n{font-family:ui-monospace,monospace;font-size:10px;color:var(--t4)}
+  .index .tree .proj{color:var(--amber);font-weight:600}
+  .index .foot{margin-top:auto;border-top:1px solid var(--divider);padding-top:10px;font-size:11px;color:var(--t4);word-break:keep-all}
+  .index .foot b{color:var(--t3);font-weight:500}
+  svg.map{position:absolute;inset:0;width:100%;height:100%}
+  .wm{font-family:ui-monospace,monospace;fill:rgba(255,255,255,.045);font-size:44px;letter-spacing:.3em}
+  text{font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+<div class="frame">
+  <svg class="map" viewBox="0 0 1920 1080">
+    <text class="wm" x="1210" y="330">VIEWS</text>
+    <text class="wm" x="560" y="840">CORE</text>
+    <g stroke="rgba(255,255,255,.09)" stroke-width="1">
+      <line x1="1060" y1="560" x2="1060" y2="330"/><line x1="1060" y1="560" x2="1390" y2="420"/>
+      <line x1="1060" y1="560" x2="1430" y2="700"/><line x1="1060" y1="560" x2="1060" y2="810"/>
+      <line x1="1060" y1="560" x2="730" y2="740"/><line x1="1060" y1="560" x2="690" y2="400"/>
+    </g>
+    <g stroke="rgba(139,151,255,.32)" stroke-width="1" stroke-dasharray="3 4">
+      <line x1="1390" y1="420" x2="1430" y2="700"/><line x1="690" y1="400" x2="1060" y2="330"/>
+      <line x1="730" y1="740" x2="1060" y2="810"/>
+    </g>
+    <g stroke="rgba(255,255,255,.05)" stroke-width="1">
+      <line x1="1060" y1="330" x2="1170" y2="240"/><line x1="1060" y1="330" x2="955" y2="235"/>
+      <line x1="1390" y1="420" x2="1530" y2="350"/><line x1="1430" y1="700" x2="1580" y2="770"/>
+      <line x1="690" y1="400" x2="570" y2="320"/><line x1="730" y1="740" x2="610" y2="660"/>
+    </g>
+    <polygon points="1060,538 1080,549 1080,571 1060,582 1040,571 1040,549" fill="#101118" stroke="#d4b478" stroke-width="1.4"/>
+    <g fill="#101118" stroke="rgba(139,151,255,.75)" stroke-width="1.1">
+      <rect x="1051" y="321" width="18" height="18" rx="2.5"/><rect x="1381" y="411" width="18" height="18" rx="2.5"/>
+      <rect x="1421" y="691" width="18" height="18" rx="2.5"/><rect x="1051" y="801" width="18" height="18" rx="2.5"/>
+      <rect x="721" y="731" width="18" height="18" rx="2.5"/><rect x="681" y="391" width="18" height="18" rx="2.5"/>
+    </g>
+    <g fill="rgba(184,186,194,.8)">
+      <circle cx="1170" cy="240" r="3.4"/><circle cx="955" cy="235" r="3.4"/><circle cx="1530" cy="350" r="3.4"/>
+      <circle cx="1580" cy="770" r="3.4"/><circle cx="570" cy="320" r="3.4"/><circle cx="610" cy="660" r="3.4"/>
+    </g>
+    <g fill="#84868f" font-size="11">
+      <text x="1060" y="308" text-anchor="middle">mcp-server</text>
+      <text x="1408" y="404">ai-agent-partner</text><text x="1448" y="726">mode-aware-adapters</text>
+      <text x="1060" y="840" text-anchor="middle">ontology-core</text>
+      <text x="705" y="768" text-anchor="middle">vault-local-first</text><text x="672" y="384" text-anchor="middle">views</text>
+    </g>
+    <text x="1060" y="602" text-anchor="middle" fill="#d4b478" font-size="11">ontology-atlas</text>
+  </svg>
+
+  <div class="chrome">
+    <div class="pill"><span class="pip">◈</span><b>Ontology Atlas</b><span class="census"><b>102</b> concepts · <b>478</b> relations</span><span class="sample">Sample</span></div>
+    <div class="util"><span class="btn">🔍</span><span class="btn">?</span><span class="btn">⚙</span></div>
+  </div>
+
+  <aside class="index">
+    <div class="starter">
+      <p class="cap"><span class="dot"></span>시작하기<span class="s">지금은 샘플</span></p>
+      <p><b>마크다운 frontmatter 가 곧 그래프입니다.</b> 지금 지도는 이 프로젝트 자신의 온톨로지(읽기 전용) — 폴더를 고르면 내 데이터로 그려집니다.</p>
+      <button class="open">내 마크다운 폴더 열기 <span class="kbd">⌘O</span></button>
+      <p class="sub"><a>새 vault 만들기</a><a>그냥 둘러볼게요</a></p>
+    </div>
+    <div class="body">
+      <p class="cap2">INDEX <span>⌘K 검색</span></p>
+      <div class="search">노드 검색…</div>
+      <div class="tree">
+        <div class="d proj"><span>◇ ontology-atlas</span><span class="n">102</span></div>
+        <div class="d"><span>▸ ontology-core</span><span class="n">24</span></div>
+        <div class="d"><span>▸ views</span><span class="n">31</span></div>
+        <div class="d"><span>▸ vault-local-first</span><span class="n">14</span></div>
+        <div class="d"><span>▸ ai-agent-partner</span><span class="n">17</span></div>
+        <div class="d"><span>▸ mode-aware-adapters</span><span class="n">9</span></div>
+        <div class="d"><span>▸ onboarding-ux</span><span class="n">6</span></div>
+      </div>
+      <p class="foot"><b>샘플 vault</b> — 이 프로젝트 자신의 frontmatter. 목업 데이터 없음.</p>
+    </div>
+  </aside>
+</div>
+</body>
+</html>
