@@ -2257,7 +2257,7 @@
     },
     "workspace": {
       "growthThisWeek": " · +{count} this week",
-      "subtitle": "{concepts} concepts · {relations} relations{growth}",
+      "subtitle": "<b>{concepts}</b> concepts · <b>{relations}</b> relations{growth}",
       "eyebrow": "{concepts} concepts",
       "fallbackTitle": "Relief",
       "selectedEyebrow": "Selected concept",

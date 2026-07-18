@@ -27,10 +27,11 @@ const ARRANGE_FEEDBACK_MS = 950;
  * 상단 중앙 툴바. 자동 정렬 · 검색 2버튼.
  * glassmorphism(backdrop-blur) 금지 룰 준수 — solid panel bg만 사용.
  *
- * feat/chrome-system §6 — ChromeChip(44px·10px radius) 재스킨. 우측 문서함
- * 버튼은 이번 슬라이스 스코프 밖이라 여전히 `--topology-utility-lane-*`
- * 문법 — 같은 상단 열에 두 표면 높이가 과도기적으로 공존한다(합본 시안
- * 확정 후 다음 슬라이스에서 수렴).
+ * feat/chrome-system §6 — ChromeChip(44px·10px radius) 재스킨. 우상단
+ * "작업공간" 칩(`HomePage`)도 이후 슬라이스에서 같은 ChromeChip 으로
+ * 이관되어 상단 열 전체가 44px 로 수렴했다(feat/chrome-finish — 남은
+ * TopologyReviewLink/Create-Node 버튼의 --topology-utility-lane-height
+ * 잔재도 같은 슬라이스에서 --chrome-tile-size 로 정리).
  */
 export function SearchHint({
   onOpenSearch,

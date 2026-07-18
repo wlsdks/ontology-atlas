@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -13,7 +14,10 @@ interface Props {
   /** 없으면 pill 이 클릭 불가(확장 상태가 없는 surface) — chevron 도 숨김. */
   onExpand?: () => void;
   title?: string;
-  subtitle?: string;
+  /** 'eyebrow' 상태는 보통 순문자열, 'census' 상태는 개념/관계 숫자
+   *  세그먼트가 <b> 각인(engraved-numeral 토큰)으로 볼드 처리된 ReactNode
+   *  (next-intl `t.rich` 결과) — feat/chrome-finish 세그먼트 각인. */
+  subtitle?: ReactNode;
   /** subtitle 뒤에 붙는 "성장 신호" 조각(예: " · 이번 주 +1") — census 상태에서만
    *  넘긴다. amber 는 허브 노드 전용(design.md)이라 여기선 인디고로 강조. */
   censusGrowthText?: string;
