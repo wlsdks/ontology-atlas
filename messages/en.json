@@ -697,14 +697,10 @@
         "toggleDocsDrawer": "Toggle the ontology workspace preview drawer (with edit access)",
         "showShortcuts": "Show or hide keyboard shortcuts",
         "stepCloseOverlays": "Close drawers and overlays one step at a time",
-        "dragNode": "Move node position (spring rebound)",
-        "doubleClickLocal": "Show only neighbors of the selected node (local graph)",
-        "rightClickContext": "Context menu (focus / local / copy URL)",
-        "shiftClickPath": "Highlight the shortest path between two nodes",
-        "tabNeighbor": "Move to a neighbor of the selected node",
-        "focusGraphSearch": "Focus the graph search input",
-        "depthClear": "Clear the depth filter",
-        "depthLimit": "Limit to N hops",
+        "clickSelect": "Select a node",
+        "dragPan": "Pan the map (empty space) or move a node (spring rebound)",
+        "wheelZoom": "Zoom in or out",
+        "rightClickContext": "Context menu — document, edit relations, copy handoff, path, full detail",
         "moveBetweenResults": "Move between results",
         "openSelectedProject": "Open the selected project",
         "close": "Close",
@@ -737,10 +733,8 @@
       },
       "keys": {
         "drag": "Drag",
-        "doubleClick": "Double-click",
         "rightClick": "Right-click",
         "click": "Click",
-        "shift": "Shift",
         "scroll": "Scroll",
         "hover": "hover",
         "fullNeighbor": "Full/Neighbor",
@@ -749,8 +743,7 @@
         "local": "Local",
         "focus": "focus",
         "modeToggle": "Planner/Dev",
-        "queryCommandPrefix": "> ",
-        "depthRange": "1–6"
+        "queryCommandPrefix": "> "
       }
     },
     "hero": {

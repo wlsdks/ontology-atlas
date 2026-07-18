@@ -697,14 +697,10 @@
         "toggleDocsDrawer": "문서함 빠른 보기 드로어 토글 (편집 권한 시)",
         "showShortcuts": "키보드 단축키 보기·닫기",
         "stepCloseOverlays": "드로어·오버레이 단계적 닫기",
-        "dragNode": "노드 위치 이동 (스프링 반사)",
-        "doubleClickLocal": "선택 노드 주변만 보기 (Local graph)",
-        "rightClickContext": "컨텍스트 메뉴 (포커스 / Local / URL 복사)",
-        "shiftClickPath": "두 노드 사이 최단 경로 하이라이트",
-        "tabNeighbor": "선택 노드의 이웃으로 이동",
-        "focusGraphSearch": "그래프 검색창 포커스",
-        "depthClear": "Depth 필터 해제",
-        "depthLimit": "Depth N hop 제한",
+        "clickSelect": "노드 선택",
+        "dragPan": "지도 이동(빈 공간) 또는 노드 위치 이동(스프링 반사)",
+        "wheelZoom": "확대·축소",
+        "rightClickContext": "컨텍스트 메뉴 — 문서 · 관계 편집 · 인계 복사 · 경로 · 전체 상세",
         "moveBetweenResults": "결과 간 이동",
         "openSelectedProject": "선택한 프로젝트 열기",
         "close": "닫기",
@@ -737,10 +733,8 @@
       },
       "keys": {
         "drag": "드래그",
-        "doubleClick": "더블클릭",
         "rightClick": "우클릭",
         "click": "클릭",
-        "shift": "Shift",
         "scroll": "스크롤",
         "hover": "hover",
         "fullNeighbor": "전체/이웃",
@@ -749,8 +743,7 @@
         "local": "로컬",
         "focus": "focus",
         "modeToggle": "기획자/개발자",
-        "queryCommandPrefix": "> ",
-        "depthRange": "1–6"
+        "queryCommandPrefix": "> "
       }
     },
     "hero": {
