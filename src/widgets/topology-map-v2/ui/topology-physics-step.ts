@@ -23,6 +23,17 @@ export interface PhysicsStepInput {
   damping: number;
   overviewScale: number;
   tokens: TopologyV2Tokens;
+  /**
+   * Dive-zoom fix (owner: "줌 인/아웃이 느림") — which of the two split spring
+   * tokens (`--topology-v2-camera-spring-angfreq-interactive/-transition`) this
+   * frame's camera step uses. The caller (`use-topology-loop.ts`) tracks the
+   * mode: interactive while a wheel gesture is live (crisp scale + pan), reset
+   * to transition on every programmatic camera move (focus dive, deselect
+   * return, Auto-arrange, fit-view — cinematic but snappier than the old
+   * shared value). Threaded in rather than read from `tokens` directly so this
+   * function stays a pure function of its inputs.
+   */
+  cameraAngularFrequency: number;
   dt: number;
   now: number;
   focusedNodeId: string | null;
@@ -73,6 +84,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     damping,
     overviewScale,
     tokens,
+    cameraAngularFrequency,
     dt,
     now,
     focusedNodeId,
@@ -132,7 +144,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     target,
     dt,
     damping,
-    angularFrequency: tokens.cameraSpringAngFreq,
+    angularFrequency: cameraAngularFrequency,
     scaleMin: effectiveScaleMin,
     scaleMax: effectiveScaleMax,
     panBounds,

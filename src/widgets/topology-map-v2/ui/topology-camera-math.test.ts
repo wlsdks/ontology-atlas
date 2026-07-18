@@ -11,7 +11,7 @@ import {
   worldToScreen,
 } from "./topology-camera-math";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
-import type { TopologyWorld } from "./topology-world";
+import { computeEgoBounds, type TopologyWorld } from "./topology-world";
 
 /**
  * DECOUPLING (topology-map-v2 axis split): the overview entry scale is the
@@ -170,20 +170,32 @@ describe("computeEffectiveCameraScaleMin", () => {
 });
 
 /**
- * C1 A3 — ratio-based focus dive. The old `--topology-v2-focus-fit-max-scale`
- * (absolute 1.9) capped the focus-dive scale below even the capability
- * enterRatio at typical viewports, so clicking a node could never reveal its
- * capabilities. The dive target must now guarantee zoomRatio ≥ capability
- * fullRatio (2.0) regardless of the ego bbox's own size.
+ * Dive-framing fix (owner symptom: "clicking a node dives TOO deep —
+ * over-zoomed, cluttered, labels colliding; pleasant view only after zooming
+ * way out"). The old C1 A3 `revealFloor = overviewEntryScale ×
+ * capability.fullRatio` forced every dive to zoomRatio ≥ 2.0 REGARDLESS of the
+ * ego cluster's own size — fine for a tight cluster, but a wide-fan domain
+ * (many spread-out neighbors) was zoomed in far past what fitting that fan
+ * actually needed, packing it into a sliver of the viewport. The floor is now
+ * redundant anyway: C1 A2's ego-tier exemption already keeps the focused node
+ * + its 1-hop neighbors visible/clickable at ANY zoom, so nothing needs a
+ * minimum zoom-in to "reveal" them.
+ *
+ * New target: `tscale = clamp(fitScale(egoBounds × marginRatio), overviewEntryScale, effectiveMax)`
+ * — fits the WHOLE ego set (padded by `--topology-v2-focus-bbox-margin`, now a
+ * multiplicative ratio ~1.15 rather than a fixed px pad, so the padding scales
+ * with cluster size), floored at the overview's own entry scale (a dive never
+ * zooms OUT past the overview itself) and capped at the ratio-based effective
+ * max (unreadable/degenerate tiny-ego case).
  */
-describe("computeFocusCameraTarget — ratio-based dive", () => {
+describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () => {
   const baseTokens = {
     cameraScaleMax: 2.6,
     cameraMaxZoomRatio: 3.2,
     cameraScaleMin: 0.24,
     overviewEntryRatio: 0.95,
     focusFitMaxScale: 1.9,
-    focusBboxMargin: 70,
+    focusBboxMargin: 1.15,
     radiusProject: 25,
     radiusDomain: 17,
     radiusCapability: 11,
@@ -209,7 +221,36 @@ describe("computeFocusCameraTarget — ratio-based dive", () => {
     } as TopologyWorld;
   }
 
-  it("yields zoomRatio >= capability fullRatio for a tiny ego bbox (small cluster)", () => {
+  it("fits the WHOLE ego set for a wide-fan domain — lands at the natural fit, never deeper than needed (owner: dive too deep)", () => {
+    const world = egoWorld(
+      {
+        f: { x: 0, y: 0, kind: "domain" },
+        n1: { x: 150, y: 0, kind: "capability" },
+        n2: { x: -150, y: 0, kind: "capability" },
+        n3: { x: 0, y: 150, kind: "capability" },
+        n4: { x: 0, y: -150, kind: "capability" },
+      },
+      { f: ["n1", "n2", "n3", "n4"], n1: ["f"], n2: ["f"], n3: ["f"], n4: ["f"] },
+    );
+    const overviewEntryScale = 1.5;
+    const viewportWidth = 1200;
+    const viewportHeight = 800;
+    const target = computeFocusCameraTarget(world, baseTokens, viewportWidth, viewportHeight, "f", overviewEntryScale);
+    expect(target).not.toBeNull();
+
+    const egoBounds = computeEgoBounds(world, baseTokens, "f")!;
+    const marginRatio = baseTokens.focusBboxMargin;
+    const w = (egoBounds.maxX - egoBounds.minX) * marginRatio;
+    const h = (egoBounds.maxY - egoBounds.minY) * marginRatio;
+    const expectedFit = Math.min(viewportWidth / w, viewportHeight / h);
+
+    expect(target!.tscale).toBeCloseTo(expectedFit, 6);
+    // The old revealFloor (overviewEntryScale × capability.fullRatio = 3.0) would
+    // have forced a much deeper dive than this wide fan's natural fit needs.
+    expect(target!.tscale).toBeLessThan(overviewEntryScale * DEFAULT_TIER_REVEAL.capability.fullRatio);
+  });
+
+  it("for a tiny ego (leaf with 1 neighbor), clamps by effectiveMax only — no floor drags it deeper than the fit needs", () => {
     const world = egoWorld(
       { f: { x: 0, y: 0, kind: "domain" }, n1: { x: 5, y: 0, kind: "capability" } },
       { f: ["n1"], n1: ["f"] },
@@ -217,25 +258,21 @@ describe("computeFocusCameraTarget — ratio-based dive", () => {
     const overviewEntryScale = 1.5;
     const target = computeFocusCameraTarget(world, baseTokens, 1200, 800, "f", overviewEntryScale);
     expect(target).not.toBeNull();
-    const zoomRatio = target!.tscale / overviewEntryScale;
-    expect(zoomRatio).toBeGreaterThanOrEqual(DEFAULT_TIER_REVEAL.capability.fullRatio - 1e-9);
+    const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, baseTokens.cameraMaxZoomRatio, baseTokens.cameraScaleMax);
+    // The tiny bbox's raw fit vastly exceeds effectiveMax — the cap is the only
+    // thing that engages (never a "sane readable cap" beyond it).
+    expect(target!.tscale).toBe(effectiveMax);
   });
 
-  it("yields zoomRatio >= capability fullRatio even for a large ego bbox (big cluster)", () => {
+  it("never dives OUT past the overview's own entry scale, even for an extremely wide ego fan", () => {
     const world = egoWorld(
-      {
-        f: { x: 0, y: 0, kind: "domain" },
-        n1: { x: 800, y: 0, kind: "capability" },
-        n2: { x: -800, y: 0, kind: "capability" },
-        n3: { x: 0, y: 800, kind: "capability" },
-      },
-      { f: ["n1", "n2", "n3"], n1: ["f"], n2: ["f"], n3: ["f"] },
+      { f: { x: 0, y: 0, kind: "domain" }, n1: { x: 5000, y: 0, kind: "capability" }, n2: { x: -5000, y: 0, kind: "capability" } },
+      { f: ["n1", "n2"], n1: ["f"], n2: ["f"] },
     );
     const overviewEntryScale = 1.5;
     const target = computeFocusCameraTarget(world, baseTokens, 1200, 800, "f", overviewEntryScale);
     expect(target).not.toBeNull();
-    const zoomRatio = target!.tscale / overviewEntryScale;
-    expect(zoomRatio).toBeGreaterThanOrEqual(DEFAULT_TIER_REVEAL.capability.fullRatio - 1e-9);
+    expect(target!.tscale).toBeCloseTo(overviewEntryScale, 6);
   });
 
   it("never exceeds the ratio-based effective max", () => {

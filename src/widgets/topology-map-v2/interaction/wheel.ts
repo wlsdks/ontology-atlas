@@ -36,3 +36,25 @@ export function normalizeWheelDeltaY(deltaY: number, deltaMode: number, viewport
   if (deltaMode === 2) return deltaY * viewportHeight;
   return deltaY;
 }
+
+/**
+ * Exponential zoom-factor sensitivity per pixel of (normalized) wheel delta —
+ * `factor = exp(-pixelDeltaY * sensitivity)`.
+ *
+ * FIX (owner feedback — "줌 인/아웃이 느리게 느껴짐", zoom in/out feels
+ * slow/sluggish): upped from `0.0016` (~1.21x per a standard 120px notch) to
+ * `0.0020` (~1.27x per notch) — sits between d3-zoom's own convention
+ * (~1.18x/notch) and Leaflet 2.0's, per the design round's spec. No
+ * `--topology-v2-*` token (same "device-input tuning has no design token"
+ * precedent as `WHEEL_LINE_HEIGHT_PX` above).
+ */
+export const WHEEL_ZOOM_SENSITIVITY = 0.002;
+
+/**
+ * Converts a normalized pixel-equivalent wheel delta into a multiplicative
+ * zoom factor. Negative `pixelDeltaY` (scroll up / zoom in) yields a factor >
+ * 1; positive (scroll down / zoom out) yields a factor < 1.
+ */
+export function computeWheelZoomFactor(pixelDeltaY: number, sensitivity: number = WHEEL_ZOOM_SENSITIVITY): number {
+  return Math.exp(-pixelDeltaY * sensitivity);
+}

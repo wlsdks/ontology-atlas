@@ -103,6 +103,24 @@ describe("computeDomainWatermarkAlpha", () => {
     expect(computeDomainWatermarkAlpha(1, "dim")).toBe(0);
   });
 
+  /**
+   * Dive-zoom fix (owner symptom: the tracked-caps far-field watermark
+   * overlapping the now-visible compact label — "V I E Views (Topo…" — during
+   * a focus dive). `egoState` is `"normal"` ONLY when no focus is active at
+   * all (`model/focus-state.ts#resolveNodeEgoState`); once ANY node is
+   * focused, every domain's egoState resolves to `"center"`, `"neighbor"`, or
+   * `"dim"` — never `"normal"` again. So gating the watermark to `egoState ===
+   * "normal"` is exactly "alpha 0 whenever focusedNodeId != null", restoring
+   * the instant focus clears (back to `"normal"`) — no separate focus param
+   * needed.
+   */
+  it("is 0 while centered (focused) or neighbor — any focus active — regardless of farT", () => {
+    expect(computeDomainWatermarkAlpha(1, "center")).toBe(0);
+    expect(computeDomainWatermarkAlpha(1, "neighbor")).toBe(0);
+    expect(computeDomainWatermarkAlpha(0.5, "center")).toBe(0);
+    expect(computeDomainWatermarkAlpha(0.5, "neighbor")).toBe(0);
+  });
+
   it("stays meaningful at farT=1 even though computeLabelAlpha's compact-label alpha is 0 there (the eligibility-gate regression)", () => {
     const compactAlpha = computeLabelAlpha({ kind: "domain", farT: 1, egoState: "normal", isHovered: false, revealAlpha: 1 });
     const watermarkAlpha = computeDomainWatermarkAlpha(1, "normal");

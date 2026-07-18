@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeWheelDeltaY, WHEEL_LINE_HEIGHT_PX } from "./wheel";
+import { computeWheelZoomFactor, normalizeWheelDeltaY, WHEEL_LINE_HEIGHT_PX, WHEEL_ZOOM_SENSITIVITY } from "./wheel";
 
 describe("normalizeWheelDeltaY", () => {
   it("passes pixel-mode (deltaMode 0) deltas through unchanged", () => {
@@ -26,5 +26,38 @@ describe("normalizeWheelDeltaY", () => {
     // both should land in the tens-to-low-hundreds of px, not 3 vs 120
     expect(line).toBeGreaterThan(pixel * 0.2);
     expect(line).toBeLessThan(pixel * 2);
+  });
+});
+
+/**
+ * Owner feedback — zoom in/out felt slow/sluggish. Sensitivity upped from
+ * 0.0016 (~1.21x per a 120px notch) to 0.0020 (~1.27x per notch) — sits
+ * between d3-zoom's convention (~1.18x/notch) and Leaflet 2.0's, per the
+ * design round's spec.
+ */
+describe("computeWheelZoomFactor", () => {
+  it("uses the 0.0020 sensitivity constant (up from the old 0.0016 — owner: zoom felt sluggish)", () => {
+    expect(WHEEL_ZOOM_SENSITIVITY).toBeCloseTo(0.002, 6);
+  });
+
+  it("yields ≈1.27x zoom-in for a standard 120px notch (scroll up = negative deltaY)", () => {
+    const factor = computeWheelZoomFactor(-120);
+    expect(factor).toBeCloseTo(Math.exp(0.24), 6);
+    expect(factor).toBeGreaterThan(1.18); // above d3-zoom's own per-notch ratio
+  });
+
+  it("zoom-out (positive deltaY) is the exact reciprocal of the same-magnitude zoom-in", () => {
+    const zoomIn = computeWheelZoomFactor(-120);
+    const zoomOut = computeWheelZoomFactor(120);
+    expect(zoomOut).toBeCloseTo(1 / zoomIn, 6);
+  });
+
+  it("defaults to WHEEL_ZOOM_SENSITIVITY when no sensitivity override is passed", () => {
+    expect(computeWheelZoomFactor(-100)).toBeCloseTo(Math.exp(100 * WHEEL_ZOOM_SENSITIVITY), 10);
+  });
+
+  it("is monotonically more extreme for a larger-magnitude delta", () => {
+    expect(computeWheelZoomFactor(-240)).toBeGreaterThan(computeWheelZoomFactor(-120));
+    expect(computeWheelZoomFactor(240)).toBeLessThan(computeWheelZoomFactor(120));
   });
 });

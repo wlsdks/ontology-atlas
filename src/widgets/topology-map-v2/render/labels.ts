@@ -132,9 +132,9 @@ export function computeLabelAlpha(input: LabelAlphaInput): number {
 /**
  * The domain far-field "sky-chart" watermark — a SEPARATE decorative
  * atmosphere layer (tracked-caps, low contrast by design at mid-altitude),
- * unchanged from the original formula: ramps 1:1 with `farT`, `0` while dim.
- * Deliberately independent of `computeLabelAlpha` above so this effect never
- * fights the always-readable compact label it complements (label-clarity).
+ * ramping 1:1 with `farT` while NO focus is active. Deliberately independent
+ * of `computeLabelAlpha` above so this effect never fights the always-readable
+ * compact label it complements (label-clarity).
  *
  * Exported so `ui/topology-frame-draw.ts`'s label-candidate ELIGIBILITY gate
  * can factor it in too — `computeLabelAlpha` alone hits 0 for domain at
@@ -142,9 +142,18 @@ export function computeLabelAlpha(input: LabelAlphaInput): number {
  * that alpha would skip building the candidate entirely, silently deleting
  * the watermark along with it (the far-field constellation would go BLANK,
  * not just lose the compact label — the opposite of "stays as-is").
+ *
+ * Dive-zoom fix (owner symptom: the watermark colliding with the now-visible
+ * compact label — "V I E Views (Topo…" — during a focus dive): a dive can land
+ * at a scale where farT hasn't fully reached 0 yet, but C1 A2's ego exemption
+ * already makes the compact label visible there — the two effects overlapped.
+ * The watermark now silences to 0 whenever ANY focus is active (`egoState !==
+ * "normal"` — that's `"center"`/`"neighbor"` for the ego set, `"dim"` for
+ * everyone else), restoring the instant focus clears. Only the truly
+ * unfocused far-field view (`"normal"`) still gets the flourish.
  */
 export function computeDomainWatermarkAlpha(farT: number, egoState: LabelDrawState["egoState"]): number {
-  return egoState === "dim" ? 0 : farT;
+  return egoState === "normal" ? farT : 0;
 }
 
 /** Screen-Y offset below the node's own radius, per kind (prototype `drawLabel()`). */
