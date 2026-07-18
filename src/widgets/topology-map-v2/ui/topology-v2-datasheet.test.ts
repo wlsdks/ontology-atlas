@@ -5,7 +5,7 @@ import {
   buildV2ConnectionGroups,
   formatV2HandoffText,
   formatV2MetricLine,
-  groupV2Connections,
+  groupV2ConnectionsByDirection,
   type V2DatasheetConnection,
 } from "./topology-v2-datasheet";
 
@@ -18,45 +18,43 @@ const conn = (
   ...partial,
 });
 
-describe("groupV2Connections", () => {
-  it("splits containment relations (contains/belongs_to) from dependency relations", () => {
-    const grouped = groupV2Connections([
-      conn({ id: "child-a", relationType: "contains" }),
-      conn({ id: "parent", relationType: "belongs_to" }),
-      conn({ id: "dep-x", relationType: "depends_on" }),
-      conn({ id: "impl-y", relationType: "implements" }),
-      conn({ id: "use-z", relationType: "uses" }),
+describe("groupV2ConnectionsByDirection — DIRECTION is the grouping axis, not relation type", () => {
+  it("splits incoming (usedBy) from outgoing (dependsOn) regardless of relation type", () => {
+    const grouped = groupV2ConnectionsByDirection([
+      conn({ id: "child-a", relationType: "contains", direction: "outgoing" }),
+      conn({ id: "parent", relationType: "belongs_to", direction: "incoming" }),
+      conn({ id: "dep-x", relationType: "depends_on", direction: "outgoing" }),
+      conn({ id: "impl-y", relationType: "implements", direction: "incoming" }),
+      conn({ id: "use-z", relationType: "uses", direction: "outgoing" }),
     ]);
-    expect(grouped.contains.map((c) => c.id)).toEqual(["child-a", "parent"]);
-    expect(grouped.depends.map((c) => c.id)).toEqual(["dep-x", "impl-y", "use-z"]);
+    expect(grouped.usedBy.map((c) => c.id)).toEqual(["parent", "impl-y"]);
+    expect(grouped.dependsOn.map((c) => c.id)).toEqual(["child-a", "dep-x", "use-z"]);
   });
 
   it("preserves input order within each group and handles an empty list", () => {
-    expect(groupV2Connections([])).toEqual({ contains: [], depends: [] });
+    expect(groupV2ConnectionsByDirection([])).toEqual({ usedBy: [], dependsOn: [] });
   });
 
-  it("collapses the SAME neighbor+direction within a group even when relationType differs (mcp-server live bug: depends_on AND related_to to the same neighbor)", () => {
-    // The datasheet panel keys rows by (group, id) and shows only the title —
-    // it has no separate UI for "this is depends_on vs related_to" — so two
-    // rows for the SAME neighbor in the SAME direction read as one duplicated
-    // row and collide on the React list key. `buildV2Connections`'s own
-    // (id, relationType, direction) dedup can't catch this because the
-    // relationType genuinely differs; this is a SEPARATE, group-level collapse.
-    const grouped = groupV2Connections([
+  it("collapses the SAME neighbor id within a direction even when relationType differs (mcp-server live bug: depends_on AND related_to to the same neighbor)", () => {
+    // The datasheet panel keys rows by (direction, id) and shows only the
+    // title + a per-row type mark — two rows for the SAME neighbor in the
+    // SAME direction would otherwise read as one duplicated row and collide
+    // on the React list key.
+    const grouped = groupV2ConnectionsByDirection([
       conn({ id: "frontmatter-to-ontology", relationType: "depends_on", direction: "outgoing" }),
       conn({ id: "frontmatter-to-ontology", relationType: "related_to", direction: "outgoing" }),
     ]);
-    expect(grouped.depends).toHaveLength(1);
-    expect(grouped.depends[0]).toMatchObject({ id: "frontmatter-to-ontology", relationType: "depends_on" });
+    expect(grouped.dependsOn).toHaveLength(1);
+    expect(grouped.dependsOn[0]).toMatchObject({ id: "frontmatter-to-ontology", relationType: "depends_on" });
   });
 
   it("keeps the SAME neighbor id as two rows when it appears in OPPOSITE directions (a real mutual-dependency fact, not a duplicate)", () => {
-    const grouped = groupV2Connections([
+    const grouped = groupV2ConnectionsByDirection([
       conn({ id: "vault-local-first", relationType: "depends_on", direction: "outgoing" }),
       conn({ id: "vault-local-first", relationType: "depends_on", direction: "incoming" }),
     ]);
-    expect(grouped.depends).toHaveLength(2);
-    expect(grouped.depends.map((c) => c.direction)).toEqual(["outgoing", "incoming"]);
+    expect(grouped.usedBy.map((c) => c.id)).toEqual(["vault-local-first"]);
+    expect(grouped.dependsOn.map((c) => c.id)).toEqual(["vault-local-first"]);
   });
 });
 
@@ -100,7 +98,7 @@ describe("buildV2Connections", () => {
     // `depends_on` edges to `capability:frontmatter-to-ontology` (one direct,
     // one re-derived) — the datasheet rendered both as a React list keyed by
     // neighbor id, producing "Encountered two children with the same key"
-    // and a visibly duplicated DEPENDS row.
+    // and a visibly duplicated row.
     const parallelNodes = [
       { id: "mcp-server", title: "MCP Server", kind: "capability" },
       { id: "frontmatter-to-ontology", title: "Frontmatter → Ontology Stub", kind: "capability" },
@@ -130,30 +128,48 @@ describe("buildV2Connections", () => {
   });
 });
 
-describe("buildV2ConnectionGroups", () => {
-  it("caps each group independently and keeps the TRUE total (contains-hub bug)", () => {
-    // 8 contains + 2 depends — the old 5-item outgoing-first slice starved
-    // depends to empty; per-group capping keeps both totals honest.
+describe("buildV2ConnectionGroups — direction axis, single source for metric + header parity", () => {
+  it("caps each group independently and keeps the TRUE total (contains-heavy node bug analog)", () => {
+    // 8 outgoing + 2 incoming — a naive outgoing-first slice would starve
+    // the incoming (usedBy) group to empty; per-group capping keeps both
+    // totals honest regardless of relation type mix.
     const connections: V2DatasheetConnection[] = [
       ...Array.from({ length: 8 }, (_, i) =>
-        conn({ id: `c${i}`, relationType: "contains" }),
+        conn({ id: `d${i}`, relationType: "contains", direction: "outgoing" }),
       ),
-      conn({ id: "d0", relationType: "depends_on" }),
-      conn({ id: "d1", relationType: "uses" }),
+      conn({ id: "u0", relationType: "depends_on", direction: "incoming" }),
+      conn({ id: "u1", relationType: "uses", direction: "incoming" }),
     ];
     const groups = buildV2ConnectionGroups(connections, 6);
-    expect(groups.contains.total).toBe(8);
-    expect(groups.contains.rows).toHaveLength(6); // capped
-    expect(groups.depends.total).toBe(2);
-    expect(groups.depends.rows.map((r) => r.id)).toEqual(["d0", "d1"]); // never starved
+    expect(groups.dependsOn.total).toBe(8);
+    expect(groups.dependsOn.rows).toHaveLength(6); // capped
+    expect(groups.usedBy.total).toBe(2);
+    expect(groups.usedBy.rows.map((r) => r.id)).toEqual(["u0", "u1"]); // never starved
   });
 
   it("handles an empty set with zero totals", () => {
     const groups = buildV2ConnectionGroups([]);
     expect(groups).toEqual({
-      contains: { rows: [], total: 0 },
-      depends: { rows: [], total: 0 },
+      usedBy: { rows: [], total: 0 },
+      dependsOn: { rows: [], total: 0 },
     });
+  });
+
+  it("the group totals are the SAME numbers the metric line reports for the same connection set (the reconciliation guarantee)", () => {
+    // This is the actual persona bug: header said "used by 10 / depends on
+    // 73" while the groups below said "포함 71 / 의존 12" — two different
+    // axes computed independently. With direction as the ONLY axis, the
+    // group totals ARE the metric numbers by construction.
+    const connections: V2DatasheetConnection[] = [
+      conn({ id: "in-1", relationType: "contains", direction: "incoming" }),
+      conn({ id: "in-2", relationType: "depends_on", direction: "incoming" }),
+      conn({ id: "out-1", relationType: "depends_on", direction: "outgoing" }),
+    ];
+    const groups = buildV2ConnectionGroups(connections);
+    const metricUsedBy = groups.usedBy.total;
+    const metricDependsOn = groups.dependsOn.total;
+    expect(metricUsedBy).toBe(2);
+    expect(metricDependsOn).toBe(1);
   });
 });
 
@@ -174,7 +190,7 @@ describe("formatV2MetricLine", () => {
 });
 
 describe("formatV2HandoffText", () => {
-  it("emits a deterministic MCP/CLI-style payload with slug, typed facts, and a next action", () => {
+  it("emits a deterministic MCP/CLI-style payload with slug, typed facts, and direction-grouped name lists", () => {
     const text = formatV2HandoffText({
       slug: "mcp-server",
       kind: "capability",
@@ -182,7 +198,7 @@ describe("formatV2HandoffText", () => {
       usedBy: 5,
       dependsOn: 2,
       evidence: 3,
-      containsNames: ["mcp-tool-registry", "stdio-transport"],
+      usedByNames: ["frontmatter-to-ontology"],
       dependsNames: ["relation-graph"],
     });
     expect(text).toBe(
@@ -193,14 +209,14 @@ describe("formatV2HandoffText", () => {
         "used_by: 5",
         "depends_on: 2",
         "evidence: 3",
-        "contains: mcp-tool-registry, stdio-transport",
-        "depends: relation-graph",
+        "used_by_names: frontmatter-to-ontology",
+        "depends_names: relation-graph",
         'next: get_concept("mcp-server") → review context, then patch_concept / add_relation as needed',
       ].join("\n"),
     );
   });
 
-  it("falls back to '-' for a missing domain and for empty connection groups", () => {
+  it("falls back to '-' for a missing domain and for empty name lists", () => {
     const text = formatV2HandoffText({
       slug: "orphan",
       kind: "element",
@@ -208,11 +224,11 @@ describe("formatV2HandoffText", () => {
       usedBy: 0,
       dependsOn: 0,
       evidence: 0,
-      containsNames: [],
+      usedByNames: [],
       dependsNames: [],
     });
     expect(text).toContain("domain: -");
-    expect(text).toContain("contains: -");
-    expect(text).toContain("depends: -");
+    expect(text).toContain("used_by_names: -");
+    expect(text).toContain("depends_names: -");
   });
 });

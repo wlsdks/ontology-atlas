@@ -635,12 +635,21 @@ export function HomePage() {
   // topology-map-v2 "component datasheet" panel. Re-presents the
   // nodeFocus/significance facts — grouped connections + one engraved metric
   // line + an agent handoff payload. See widgets/topology-map-v2/TopologyV2DetailPanel.
+  //
+  // R+ 카운트 시맨틱 통일: the metric's usedBy/dependsOn now come from the
+  // SAME `groups` object the panel renders headers from (`groups.usedBy.total`
+  // / `groups.dependsOn.total`), not from `nodeFocus.usedByCount`/
+  // `dependsOnCount` (raw incoming/outgoing edge counts, not deduped by
+  // neighbor). Previously these were two independently-computed numbers that
+  // could diverge whenever a neighbor had a parallel edge — the persona bug
+  // ("used by 10 · depends on 73" vs groups "포함 71 / 의존 12"). One
+  // construction, one number, everywhere.
   const v2DatasheetModel = useMemo(() => {
     if (!nodeFocus || !selectedOntologyNode || !ontologyInsight) return null;
     const slug = nodeFocus.sourceSlug ?? selectedOntologyNode.id;
     // Group from the FULL connection set (not the shared 5-item outgoing-first
-    // preview) so a contains-hub's depends group renders its real total instead
-    // of collapsing into a generic overflow — and the handoff names never
+    // preview) so a hub's dependsOn group renders its real total instead of
+    // collapsing into a generic overflow — and the handoff names never
     // contradict the depends_on count.
     const connections = buildV2Connections(
       selectedOntologyNode.id,
@@ -649,8 +658,8 @@ export function HomePage() {
     );
     const groups = buildV2ConnectionGroups(connections);
     const metric = {
-      usedBy: nodeFocus.usedByCount,
-      dependsOn: nodeFocus.dependsOnCount,
+      usedBy: groups.usedBy.total,
+      dependsOn: groups.dependsOn.total,
       evidence: selectedOntologyNode.evidenceIds.length,
     };
     const handoffText = formatV2HandoffText({
@@ -660,8 +669,8 @@ export function HomePage() {
       usedBy: metric.usedBy,
       dependsOn: metric.dependsOn,
       evidence: metric.evidence,
-      containsNames: groups.contains.rows.map((connection) => connection.title),
-      dependsNames: groups.depends.rows.map((connection) => connection.title),
+      usedByNames: groups.usedBy.rows.map((connection) => connection.title),
+      dependsNames: groups.dependsOn.rows.map((connection) => connection.title),
     });
     return {
       slug,
@@ -760,17 +769,39 @@ export function HomePage() {
 
   // P0#3 — Esc staged-close ladder (docs/FEATURES.md / shortcut sheet's
   // `stepCloseOverlays` promise: "Close drawers and overlays one step at a
-  // time"). The composer/search/shortcuts/docs-drawer overlays already close
-  // themselves on Escape (see topology-esc-ladder.ts's doc comment); this
-  // effect covers what previously had no Escape binding at all — the
-  // full-detail drawer, the relation lens, the selected node itself, and the
-  // local-graph ego-drill breadcrumb (which used to pop unconditionally on
-  // every Escape, racing with whatever else was open).
+  // time"). The composer/shortcuts/docs-drawer overlays already close
+  // themselves on Escape; this effect covers what previously had no Escape
+  // binding at all — the full-detail drawer, the relation lens, the selected
+  // node itself, and the local-graph ego-drill breadcrumb (which used to pop
+  // unconditionally on every Escape, racing with whatever else was open).
+  //
+  // `searchOpen: ontologySearchOpen` is passed so the ladder returns "none"
+  // while the palette (a Radix `Dialog`) is open — otherwise this
+  // window-level handler ALSO fired on the same keypress (e.g. deselecting
+  // the node underneath), so one Escape closed both the palette AND the
+  // selection.
+  //
+  // `event.defaultPrevented` is checked FIRST and is what actually closes the
+  // race in the browser: Radix's `DismissableLayer` registers its own Escape
+  // handler on `document` with `{ capture: true }` (`useEscapeKeydown`) and
+  // calls `event.preventDefault()` + synchronously flushes
+  // `onOpenChange(false)` — verified live, this had ALREADY happened
+  // (`ontologySearchOpen` read back `false`, `event.defaultPrevented` already
+  // `true`) by the time this bubble-phase `window` listener ran on the SAME
+  // keypress. `searchOpen` stays as an explicit, testable input for the
+  // decision table (see `topology-esc-ladder.test.ts`) and covers any future
+  // dismissable surface that does the same without calling
+  // `preventDefault()`; `defaultPrevented` covers Radix's actual (capture +
+  // synchronous-flush) behavior. Kept on the bubble phase (not capture) so
+  // this doesn't reorder relative to unrelated local Escape handlers (e.g.
+  // inline-field-edit cancel) elsewhere on the page.
   useEffect(() => {
     const handler = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (event.defaultPrevented) return;
       const action = resolveTopologyEscLadderAction({
         createNodeOpen,
+        searchOpen: ontologySearchOpen,
         fullDetailOpen,
         selectedRelationActive,
         hasSelection: canvasSelectedSlug != null,
@@ -800,6 +831,7 @@ export function HomePage() {
     return () => window.removeEventListener("keydown", handler);
   }, [
     createNodeOpen,
+    ontologySearchOpen,
     fullDetailOpen,
     selectedRelationActive,
     canvasSelectedSlug,
@@ -2294,8 +2326,6 @@ export function HomePage() {
                   metricUsedBy: t("nodeDatasheet.metricUsedBy"),
                   metricDependsOn: t("nodeDatasheet.metricDependsOn"),
                   metricEvidence: t("nodeDatasheet.metricEvidence"),
-                  groupContains: t("nodeDatasheet.groupContains"),
-                  groupDepends: t("nodeDatasheet.groupDepends"),
                   noConnections: t("nodeDatasheet.noConnections"),
                   handoff: t("nodeDatasheet.handoff"),
                   close: t("controls.close"),
