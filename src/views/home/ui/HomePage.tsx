@@ -22,88 +22,14 @@ import {
   DEFAULT_SIGMA_CONTROLS,
   type SigmaControlsState,
 } from "@/widgets/topology-map-sigma/model/controls-state";
-import type { TopologyRelationVisibilityStats } from "@/widgets/topology-map-sigma";
 import { HeroCollapsed } from "@/widgets/hero-header";
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
-import { useTaxonomy } from "@/features/taxonomy";
 
-// 첫 방문에 바로 필요 없는 오버레이들은 지연 로딩.
-// 초기 번들에서 분리되어 FCP/LCP 와 TTI 가 더 빨라진다.
-// SigmaTopology 는 sigma.js + edge-curve + node-border 등 무거운 deps 를
-// 끌고 와 chunk 가 큼. 첫 진입 / 캐시 비었을 때 chunk 다운로드 동안 빈
-// 화면이 그대로 보여 "멈춤" 느낌이라, 데이터 구독 skeleton 과 동일 톤
-// fallback 을 모듈 로드 단계에도 표시.
-function TopologyLoadingFallback({
-  concepts = 0,
-  mode = "overview",
-  relations = 0,
-}: {
-  concepts?: number;
-  mode?: TopologyAnalysisMode;
-  relations?: number;
-}) {
-  const t = useTranslations('topology');
-  return (
-    <div
-      className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-6"
-      data-testid="topology-engine-loading"
-      data-loading-contract="product-hierarchy-before-engine"
-      data-loading-flow="product-system>domain>capability>evidence>agent-handoff"
-      data-loading-motion-policy="quiet-no-pulse"
-      data-loading-mode={mode}
-      data-concept-count={concepts}
-      data-relation-count={relations}
-      role="status"
-      aria-live="polite"
-    >
-      <div className="flex w-[min(520px,calc(100vw-48px))] flex-col gap-3 rounded-lg border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(13,15,21,0.92)] px-4 py-3 shadow-[0_16px_36px_rgba(0,0,0,0.34)]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)]">
-          {t('loadingEngine')}
-          </span>
-          <span className="rounded-md border border-[color:rgba(139,151,255,0.22)] px-2 py-1 font-mono text-[10px] uppercase tracking-normal text-[color:rgba(199,205,255,0.92)]">
-            {mode}
-          </span>
-        </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[12px] font-medium text-[color:var(--color-text-primary)]">
-          <span>{t('loadingFlowProductSystem')}</span>
-          <span className="text-[color:var(--color-text-tertiary)]">-&gt;</span>
-          <span>{t('loadingFlowDomains')}</span>
-          <span className="text-[color:var(--color-text-tertiary)]">-&gt;</span>
-          <span>{t('loadingFlowCapabilities')}</span>
-          <span className="text-[color:var(--color-text-tertiary)]">-&gt;</span>
-          <span>{t('loadingFlowEvidence')}</span>
-          <span className="text-[color:var(--color-text-tertiary)]">-&gt;</span>
-          <span>{t('loadingFlowAgentHandoff')}</span>
-        </div>
-        <div className="flex items-center gap-2 font-mono text-[11px] text-[color:var(--color-text-secondary)]">
-          <span>{t('loadingConceptCount', { count: concepts })}</span>
-          <span className="text-[color:var(--color-text-tertiary)]">·</span>
-          <span>{t('loadingRelationCount', { count: relations })}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const SigmaTopology = dynamic(
-  () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaTopology),
-  { ssr: false, loading: () => null },
-);
-/** 안정 참조 빈 set — 영향 보기 비활성 시 매 render 새 Set 생성 회피. */
-const EMPTY_IMPACT_SET: ReadonlySet<string> = new Set();
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
-
-function buildFocusInspectUrl(currentUrl: string, slug: string): string {
-  const url = new URL(currentUrl);
-  url.searchParams.set("mode", "focus");
-  url.searchParams.set("p", slug);
-  return url.toString();
-}
 
 const SigmaControls = dynamic(
   () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaControls),
@@ -148,31 +74,22 @@ import {
 import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
 import {
   buildOntologyHealthSignals,
-  buildOntologyNodeHref,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
 import { copyText } from "@/shared/lib/copy-text";
 import {
-  buildOntologyReachability,
   computeOntologyChangeset,
-  formatAgentPostChangeSyncPacket,
-  IMPACT_EXCLUDED_RELATION_TYPES,
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
 import {
   selectTopologyNodeRouteState,
-  selectTopologyPathRouteState,
   type TopologyAnalysisMode,
 } from "../model/url-state";
 import {
   buildTopologyAnalysisSummary,
-  buildTopologyHealthRepairHref,
   buildTopologyHealthActionTarget,
   classifyTopologyRelationQuality,
-  formatTopologyFocusBrief,
-  formatTopologyHealthImpactMcpCheck,
-  formatTopologyHealthMcpCheck,
 } from "../lib/topology-analysis";
 import { filterOntologyConnectedOrphans } from "../lib/topology-health";
 import {
@@ -194,8 +111,6 @@ import {
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
-import { TopologyNodePopover } from "./TopologyNodePopover";
-import { TopologyMapCanvas } from "@/widgets/topology-map-canvas";
 import {
   TopologyMapV2,
   TopologyV2DetailPanel,
@@ -203,8 +118,6 @@ import {
   buildV2ConnectionGroups,
   formatV2HandoffText,
 } from "@/widgets/topology-map-v2";
-import { useTopologyMapV2Enabled } from "@/shared/lib/use-topology-map-v2-enabled";
-import { selectTopologyEngine } from "../lib/topology-engine-select";
 import { buildTopologyV2Graph } from "../lib/topology-v2-adapter";
 import {
   buildTopologyOntologyDrawerModel,
@@ -215,55 +128,30 @@ import {
   buildNodeSignificance,
   normalizeKindLabelKey,
 } from "../lib/topology-node-significance";
-import { buildOntologySkeleton } from "../lib/topology-ontology-skeleton";
-import { buildRevealRadialLayout } from "../lib/topology-skeleton-layout";
-import { buildSkeletonCardModels } from "../lib/topology-skeleton-cards";
-import { computeRevealState } from "../lib/topology-reveal-state";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
+import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
-// aspectX 는 렌더 엔진에 종속된 상수다 — 옛 Sigma 경로는 `autoRescale` 이
-// bounds 를 뷰포트에 재정규화해주므로 늘려도 다시 맞춰졌지만, 신 지도 엔진
-// (TopologyMapCanvas) 은 진짜 metric 카메라라 8배 늘림이 그대로 노출되어
-// radial ring 이 수평 띠로 붕괴한다(디자인 가디언 verdict a1). 캔버스 엔진은
-// 늘리지 않는다(1) — ring 위치가 kind 위계의 1차 인코딩이라는 계약
-// (topology-skeleton-layout.ts) 을 지키는 값.
-const TOPOLOGY_OVERVIEW_MAP_CANVAS_ASPECT_X = 1;
-const TOPOLOGY_OVERVIEW_LEGACY_SIGMA_ASPECT_X = 8;
 
 export function HomePage() {
   const t = useTranslations('topology');
   const tKinds = useTranslations('kinds');
   const tEdgeTypes = useTranslations('edgeTypes');
-  const { categories: taxonomyCategories } = useTaxonomy();
   const [sigmaControls, setSigmaControls] = useState<SigmaControlsState>(
     DEFAULT_SIGMA_CONTROLS,
   );
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   const localGraphRoot =
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
-  // topology-map-v2 (docs/TOPOLOGY-V2-DESIGN.md §4 P2) — useSyncExternalStore
-  // keeps the server snapshot `false` (matching the static-export prerender,
-  // which has no window/localStorage) so the first client render never
-  // mismatches, and the pre-v2 map/graph engines stay the default path
-  // unless a developer explicitly opts in via query param/localStorage.
-  const topologyMapV2Enabled = useTopologyMapV2Enabled();
   const [fitViewToken, setFitViewToken] = useState(0);
   const [sigmaVisibleCount, setSigmaVisibleCount] = useState<number | null>(null);
-  const [topologyCardVisibility, setTopologyCardVisibility] = useState<{
-    visible: number;
-    total: number;
-  } | null>(null);
   const [sigmaGraphStats, setSigmaGraphStats] = useState<{
     key: string;
     nodes: number;
     relations: number;
   } | null>(null);
-  const [sigmaRelationVisibility, setSigmaRelationVisibility] = useState<
-    (TopologyRelationVisibilityStats & { key: string }) | null
-  >(null);
   const [, setSigmaHintDismissed] = useState(() => {
     if (typeof window === 'undefined') return true;
     try {
@@ -382,27 +270,6 @@ export function HomePage() {
   const toggleImpactHighlight = useCallback(() => {
     setImpactNodeSlug((prev) => (prev === selectedSlug ? null : (selectedSlug ?? null)));
   }, [selectedSlug]);
-  const impactHighlightSet = useMemo<ReadonlySet<string>>(() => {
-    if (!impactHighlightActive || !selectedOntologyNode || !ontologyInsight) {
-      return EMPTY_IMPACT_SET;
-    }
-    // incoming = 이 노드를 (전이적으로) 의존하는 쪽 = 변경 시 영향받는 노드.
-    // limit 크게 → 전체 reachable 노드 id 수집(요약 카운트 아닌 set 필요).
-    // excludeTypes: soft association(related_to/describes) 제외 — drawer 의
-    // "Affected" 카운트와 같은 의존 blast-radius 의미로 맞춰, overlay 가 강조하는
-    // 노드 set 이 드로어 수치와 일치하게(related_to 웹 비-discriminating 제거). iter 27.
-    const reach = buildOntologyReachability(selectedOntologyNode.id, ontologyInsight.nodes, ontologyInsight.edges, {
-      direction: "incoming",
-      depth: Math.max(ontologyInsight.nodes.length, 1),
-      limit: ontologyInsight.nodes.length + 1,
-      excludeTypes: IMPACT_EXCLUDED_RELATION_TYPES,
-    });
-    const set = new Set<string>([selectedOntologyNode.id]);
-    for (const layer of reach.layers) {
-      for (const n of layer.nodes) set.add(n.id);
-    }
-    return set;
-  }, [impactHighlightActive, selectedOntologyNode, ontologyInsight]);
   // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
   // 선택 노드를 자기 .md 문서로 해석해 drawer 에서 domain 인라인 편집을 허용.
   const vault = useLocalVault();
@@ -674,149 +541,6 @@ export function HomePage() {
     return renderProjects.filter((p) => visited.has(p.slug));
   }, [renderProjects, localGraphRoot, projectBySlug, reverseDeps]);
 
-  const topologyRevealFocusSlug =
-    analysisMode === "path"
-      ? (pathSourceSlug ?? selectedOntologyNode?.id ?? null)
-      : analysisMode === "overview"
-        ? // 클릭 = 선택만 — overview 지형은 불변. 확장(전개)은 배지/더블클릭
-          // 으로 초점 모드에 명시적으로 진입했을 때만 (소유자 피드백:
-          // "클릭하면 바로 확장돼서 헷갈린다").
-          null
-        : (selectedOntologyNode?.id ?? null);
-
-  // 어떤 렌더 엔진이 골격을 그리는지(verdict a1) — 캔버스 엔진
-  // (TopologyMapCanvas) 은 이 조건이 참일 때만 마운트된다(아래 JSX,
-  // `analysisMode !== "graph" && localGraphRoot === null` 과 동일 조건).
-  // useMemo 콜백 안에서 매번 `analysisMode === "graph"` 를 다시 비교하면
-  // 이른 return 이후 TS 가 리터럴 타입을 좁혀 "unintentional comparison"
-  // 오류가 나므로, 바깥 스코프에서 한 번만 계산해 boolean 으로 넘긴다.
-  const isTopologyMapCanvasEngine = localGraphRoot === null && analysisMode !== "graph";
-
-  // 구조 골격 진입 — root /topology 에서만(local-graph ego 제외). ontology 노드를
-  // 결정론적 radial 골격으로 배치할 precomputed 좌표(slug→{x,y,size}) + 진입에
-  // 보일 slug 집합을 계산해 SigmaTopology 에 데이터로 넘긴다. 클릭-레벨 확장:
-  // 선택 노드(도메인→역량 전개, 역량→요소 전개)가 reveal 상태를 정해 같은
-  // props 채널로 흐른다 — 좌표는 항상 결정론, 모션은 entrance fade 만.
-  // FSD: widget 은 view 를 import 못 하므로 view(HomePage)가 계산해 props 로 전달.
-  const topologySkeleton = useMemo(() => {
-    if (localGraphRoot !== null || !ontologyInsight || ontologyInsight.nodes.length === 0) {
-      return null;
-    }
-    // Graph 모드(옵시디언식 살아있는 그래프)는 골격 카드 안무 없이 전체
-    // ontology 노드를 라이브 물리로 그린다 — skeleton 을 끄면 SigmaTopology
-    // 의 기존 free-graph 경로(드래그 pin/release, hover ego, 좌표 persist)가
-    // 그대로 살아난다.
-    if (analysisMode === "graph") {
-      return null;
-    }
-    const skel = buildOntologySkeleton(ontologyInsight.nodes, ontologyInsight.edges);
-    const reveal = computeRevealState({
-      skeleton: skel,
-      nodes: ontologyInsight.nodes,
-      edges: ontologyInsight.edges,
-      selectedSlug: topologyRevealFocusSlug,
-      pinnedSlugs:
-        analysisMode === "path" && pathTargetSlug ? [pathTargetSlug] : [],
-    });
-    const layout = buildRevealRadialLayout(skel, ontologyInsight.nodes, reveal, {
-      width: 1000,
-      height: 1000,
-      // 엔진별 분기(verdict a1) — 이 시점에선 위의 이른 return 때문에
-      // isTopologyMapCanvasEngine 이 항상 참이라 실질적으로 캔버스 엔진(1)만
-      // 쓰이지만, Sigma 의 옛 skeleton 경로가 나중에 다시 켜질 때를 대비해
-      // 어떤 상수가 어떤 엔진 것인지 분기로 명시해 둔다. Sigma 는
-      // `autoRescale` 이 bounds 를 재정규화해줘 늘려도 다시 맞춰졌지만, 캔버스
-      // 엔진은 진짜 metric 카메라라 늘리면 radial ring 이 수평 띠로 붕괴한다.
-      aspectX: isTopologyMapCanvasEngine
-        ? TOPOLOGY_OVERVIEW_MAP_CANVAS_ASPECT_X
-        : TOPOLOGY_OVERVIEW_LEGACY_SIGMA_ASPECT_X,
-    });
-    const map = new Map<string, { x: number; y: number; size: number }>();
-    const slugs = new Set<string>(reveal.visibleSlugs);
-    for (const pt of layout.points) {
-      if (!reveal.visibleSlugs.has(pt.id)) continue;
-      const weight = skel.subtreeWeightBySlug.get(pt.id) ?? 0;
-      const sizeBase =
-        pt.tier === 0 ? 13 : pt.tier === 1 ? 8.5 : pt.tier === 2 ? 5 : 3.4;
-      const sizeCap =
-        pt.tier === 0 ? 16 : pt.tier === 1 ? 12 : pt.tier === 2 ? 7 : 4.6;
-      // 토폴로지 좌표계는 원점(0,0) 중심(FA2 동일) — 레이아웃의 (500,500) 중심을
-      // 원점으로 offset. y 는 부호반전(레이아웃 +y-down → Sigma +y-up).
-      const coord = {
-        x: pt.x - 500,
-        y: 500 - pt.y,
-        size: Math.min(sizeCap, sizeBase + 1.6 * Math.sqrt(weight)),
-      };
-      map.set(pt.id, coord);
-      // id 정규화 — ontologyInsight 노드는 `project:`/`domain:`/`capability:`
-      // prefixed id 지만, 토폴로지 그래프의 project 노드는 bare slug
-      // (`ontology-atlas`) 다(renderProjects 출처). bare alias 를 같이 등록해
-      // stamp/skeleton 매칭 누락(→ FA2 좌표로 bbox 폭파)을 막는다.
-      const colon = pt.id.indexOf(':');
-      if (colon >= 0) {
-        const bare = pt.id.slice(colon + 1);
-        if (!map.has(bare)) map.set(bare, coord);
-        slugs.add(bare);
-      }
-    }
-    // 펼친 자식 카드의 플러시 정렬(MindNode) — 부모를 향한 모서리를 노드
-    // 좌표에 고정해, 폭이 제각각인 카드들이 지그재그로 보이지 않게.
-    const anchorBySlug = new Map<string, "left" | "right">();
-    const flushChildren = (parentSlug: string | null, children: readonly string[]) => {
-      if (!parentSlug) return;
-      const parent = layout.pointById.get(parentSlug);
-      if (!parent) return;
-      for (const child of children) {
-        const pt = layout.pointById.get(child);
-        if (!pt) continue;
-        anchorBySlug.set(child, pt.x >= parent.x ? "left" : "right");
-      }
-    };
-    flushChildren(reveal.scopeDomainSlug, reveal.domainCapabilitySlugs);
-    flushChildren(reveal.scopeCapabilitySlug, reveal.capabilityElementSlugs);
-    // 선택 노드의 자식 중 지도에 카드로 펼쳐진 집합 — 팝오버가 같은 노드를
-    // 두 번 나열하지 않게 (도킹 열과 중복 제거).
-    const expandedChildIds = new Set<string>(
-      topologyRevealFocusSlug === reveal.scopeDomainSlug
-        ? reveal.domainCapabilitySlugs
-        : topologyRevealFocusSlug === reveal.scopeCapabilitySlug
-          ? reveal.capabilityElementSlugs
-          : [],
-    );
-    return {
-      layout: map as ReadonlyMap<string, { x: number; y: number; size: number }>,
-      slugs: slugs as ReadonlySet<string>,
-      expandedChildIds: expandedChildIds as ReadonlySet<string>,
-      // 노드의 "상" — Sigma 점 대신 디자인된 DOM 카드 (위계 타이포 + kind
-      // data-mark + count). 골격이라 카드 수는 ~20-60 바운드.
-      cards: buildSkeletonCardModels(skel, reveal, ontologyInsight.nodes, {
-        anchorBySlug,
-        // 펼친 자식 열은 부모 카드 rect 기준 px 도킹 — 그래프 좌표 배치는
-        // 줌 배율에 따라 간격이 늘어나 "공백 과다"가 된다.
-        dock: true,
-      }),
-    };
-  }, [
-    analysisMode,
-    isTopologyMapCanvasEngine,
-    localGraphRoot,
-    ontologyInsight,
-    pathTargetSlug,
-    topologyRevealFocusSlug,
-  ]);
-
-  // topology-map-v2 (docs/TOPOLOGY-V2-DESIGN.md §4 P2) — which render engine
-  // to mount below. `selectTopologyEngine` reduces to exactly today's
-  // map-canvas/sigma split when the flag is off (see
-  // topology-engine-select.test.ts's parity assertions).
-  const topologyEngineChoice = selectTopologyEngine({
-    v2Enabled: topologyMapV2Enabled,
-    analysisMode,
-    isAtLocalGraphRoot: localGraphRoot === null,
-    hasTopologySkeleton: topologySkeleton != null,
-    hasOntologyInsight: ontologyInsight != null,
-  });
-
   // topology-map-v2 mount gap fix — the P2 scaffold (87edec961) wired
   // `<TopologyMapV2 nodes={[]} edges={[]} />` as a deliberate placeholder,
   // so flipping the flag mounted the v2 canvas but left it with nothing to
@@ -833,15 +557,6 @@ export function HomePage() {
     [ontologyInsight, changedSlugs],
   );
 
-  useEffect(() => {
-    if (!localGraphRoot) return;
-    const handler = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') setLocalGraphStack((stack) => stack.slice(0, -1));
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [localGraphRoot]);
-
   const canvasSelectedSlug = selectedProject?.slug ?? selectedOntologyNode?.id ?? selectedSlug;
   const drawerProject = selectedProject;
 
@@ -850,7 +565,6 @@ export function HomePage() {
   // 어느 노드의 전체 상세가 열렸는지를 slug 로 들고, 현재 선택 노드와 일치할
   // 때만 드로어 — 다른 노드를 고르면 자동으로 팝오버부터(effect 불필요).
   const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
-  const [nodePopoverCollapsed, setNodePopoverCollapsed] = useState(false);
   const [
     selectedInspectorSupportRailSlug,
     setSelectedInspectorSupportRailSlug,
@@ -881,7 +595,6 @@ export function HomePage() {
     setShortcutsOpen(false);
     setDocsDrawerOpen(false);
     setFullDetailSlug(null);
-    setNodePopoverCollapsed(false);
     setCreateNodeOpen(true);
     setRouteState((current) => ({
       ...current,
@@ -924,39 +637,9 @@ export function HomePage() {
     };
   }, [selectedOntologyNode, ontologyInsight, authoredSignificance]);
   const nodeFocus = nodeFocusData?.focus ?? null;
-  // 구조 모델 → i18n 문장(보간·select·plural 은 메시지가 담당) → 팝오버 prop.
-  const nodeSignificancePresentation = useMemo(() => {
-    const significance = nodeFocusData?.significance;
-    if (!significance) return null;
-    const kindLabel = tKinds(normalizeKindLabelKey(significance.kind));
-    return {
-      whatLine: significance.ownerDomainTitle
-        ? t("significance.whatWithDomain", {
-            kind: kindLabel,
-            domain: significance.ownerDomainTitle,
-          })
-        : t("significance.what", { kind: kindLabel }),
-      importanceLine:
-        significance.importance.authored ??
-        t("significance.importance", {
-          level: significance.importance.level,
-          count: significance.importance.usedByCount,
-        }),
-      dependsOnLine: t("significance.dependsOn", {
-        count: significance.dependsOn.count,
-        names: significance.dependsOn.names.join(", "),
-      }),
-      impactLine: t("significance.impact", {
-        count: significance.impact.reachCount,
-      }),
-      level: significance.importance.level,
-    };
-  }, [nodeFocusData, t, tKinds]);
-  // topology-map-v2 "component datasheet" panel (flag ON only). Re-presents the
-  // SAME nodeFocus/significance facts the shared popover consumes — grouped
-  // connections + one engraved metric line + an agent handoff payload — without
-  // editing the shared TopologyNodePopover, so the Sigma path stays byte-
-  // identical when the flag is off. See widgets/topology-map-v2/TopologyV2DetailPanel.
+  // topology-map-v2 "component datasheet" panel. Re-presents the
+  // nodeFocus/significance facts — grouped connections + one engraved metric
+  // line + an agent handoff payload. See widgets/topology-map-v2/TopologyV2DetailPanel.
   const v2DatasheetModel = useMemo(() => {
     if (!nodeFocus || !selectedOntologyNode || !ontologyInsight) return null;
     const slug = nodeFocus.sourceSlug ?? selectedOntologyNode.id;
@@ -1051,7 +734,6 @@ export function HomePage() {
       // 사용자가 지도만 크게 보고 싶을 때 "지도 보기"로 명시적으로 접는다.
       interactionSelectedSlugRef.current = slug;
       setFullDetailSlug(null);
-      setNodePopoverCollapsed(false);
       setSelectedRelationActive(false);
       const project = projectBySlug.get(slug);
       setRouteState((current) =>
@@ -1068,7 +750,6 @@ export function HomePage() {
   const handleClose = useCallback(() => {
     interactionSelectedSlugRef.current = null;
     setFullDetailSlug(null);
-    setNodePopoverCollapsed(false);
     setSelectedRelationActive(false);
     setRouteState((current) => ({
       ...current,
@@ -1082,14 +763,55 @@ export function HomePage() {
     }));
   }, [setRouteState]);
 
+  // P0#3 — Esc staged-close ladder (docs/FEATURES.md / shortcut sheet's
+  // `stepCloseOverlays` promise: "Close drawers and overlays one step at a
+  // time"). The composer/search/shortcuts/docs-drawer overlays already close
+  // themselves on Escape (see topology-esc-ladder.ts's doc comment); this
+  // effect covers what previously had no Escape binding at all — the
+  // full-detail drawer, the relation lens, the selected node itself, and the
+  // local-graph ego-drill breadcrumb (which used to pop unconditionally on
+  // every Escape, racing with whatever else was open).
   useEffect(() => {
-    if (!selectedOntologyNode || analysisMode !== "focus") return;
-    if (interactionSelectedSlugRef.current === selectedOntologyNode.id) return;
-    // Deep-linked Focus routes should open with the map as the attention winner.
-    // Direct node clicks still expand the inspector because the user asked for detail.
-    setNodePopoverCollapsed(true);
-  }, [analysisMode, selectedOntologyNode]);
-
+    const handler = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      const action = resolveTopologyEscLadderAction({
+        createNodeOpen,
+        fullDetailOpen,
+        selectedRelationActive,
+        hasSelection: canvasSelectedSlug != null,
+        hasLocalGraphRoot: localGraphRoot !== null,
+      });
+      switch (action) {
+        case "close-create-node":
+          closeCreateNode();
+          break;
+        case "close-full-detail":
+          setFullDetailSlug(null);
+          break;
+        case "close-relation-lens":
+          setSelectedRelationActive(false);
+          break;
+        case "deselect":
+          handleClose();
+          break;
+        case "pop-local-graph":
+          setLocalGraphStack((stack) => stack.slice(0, -1));
+          break;
+        case "none":
+          break;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [
+    createNodeOpen,
+    fullDetailOpen,
+    selectedRelationActive,
+    canvasSelectedSlug,
+    localGraphRoot,
+    closeCreateNode,
+    handleClose,
+  ]);
 
   const handleSelectImpactMode = useCallback(
     (nextMode: ProjectImpactMode) => {
@@ -1244,10 +966,6 @@ export function HomePage() {
   );
   const currentSigmaGraphStats =
     sigmaGraphStats?.key === visibleTopologyStatsKey ? sigmaGraphStats : null;
-  const currentSigmaRelationVisibility =
-    sigmaRelationVisibility?.key === visibleTopologyStatsKey
-      ? sigmaRelationVisibility
-      : null;
   const topologyRenderState = resolveTopologyRenderState({
     dataReady: projectsQuery.loaded,
     totalNodes: currentSigmaGraphStats?.nodes ?? visibleTopologyNodeCount,
@@ -1258,26 +976,19 @@ export function HomePage() {
     sigmaControls.searchQuery.trim().length > 0 ||
     sigmaControls.depthLimit !== null ||
     sigmaControls.hubsOnly;
-  const overviewRelationVisibility =
-    analysisMode === "overview" && !topologyFiltersActive && localGraphRoot === null
-      ? currentSigmaRelationVisibility
-        ? currentSigmaRelationVisibility.mode === "skeleton"
-          ? {
-              ...currentSigmaRelationVisibility,
-              visible: topologyCardVisibility?.visible ?? currentSigmaRelationVisibility.visible,
-              total: topologyCardVisibility?.total ?? currentSigmaRelationVisibility.total,
-            }
-          : { ...currentSigmaRelationVisibility, total: topologyTotalRelations }
-        : null
-      : null;
+  // The overview relation-visibility pill's only producer was the legacy
+  // Sigma-as-engine's `onRelationVisibilityChange` callback — deleted along
+  // with that branch. TopologyMapV2 doesn't wire an equivalent yet, so this
+  // has been `null` (pill hidden) since v2 went default-on in PR #330; kept
+  // as an explicit `null` here rather than removing the prop, so wiring a
+  // v2 producer later is a one-line change instead of a rediscovery.
+  const overviewRelationVisibility = null;
   const pathCandidateVisibility =
     analysisMode === "path"
-      ? topologyCardVisibility && topologyCardVisibility.total > 0
-        ? topologyCardVisibility
-        : {
-            visible: sigmaVisibleCount ?? topologyTotalNodes,
-            total: sigmaVisibleCount ?? topologyTotalNodes,
-          }
+      ? {
+          visible: sigmaVisibleCount ?? topologyTotalNodes,
+          total: sigmaVisibleCount ?? topologyTotalNodes,
+        }
       : null;
   const topologyOverlayState = resolveTopologyOverlayState({
     dataReady: projectsQuery.loaded,
@@ -1290,12 +1001,6 @@ export function HomePage() {
   const handleSigmaGraphStatsChange = useCallback(
     (stats: { nodes: number; relations: number }) => {
       setSigmaGraphStats({ key: visibleTopologyStatsKey, ...stats });
-    },
-    [visibleTopologyStatsKey],
-  );
-  const handleSigmaRelationVisibilityChange = useCallback(
-    (stats: TopologyRelationVisibilityStats) => {
-      setSigmaRelationVisibility({ key: visibleTopologyStatsKey, ...stats });
     },
     [visibleTopologyStatsKey],
   );
@@ -1342,88 +1047,6 @@ export function HomePage() {
     relationQuality: topologyRelationQuality,
     ...topologyHealthSummary,
   });
-  const postChangeSyncPacket = useMemo(() => formatAgentPostChangeSyncPacket(), []);
-
-  const copyCompactFocusBrief = useCallback(async () => {
-    if (!selectedSlug || !analysisSelectedTitle) return;
-    const currentUrl =
-      typeof window === "undefined" ? null : window.location.href;
-    const focusUrl =
-      typeof window === "undefined"
-        ? null
-        : buildFocusInspectUrl(window.location.href, selectedSlug);
-    const ok = await copyText(
-      formatTopologyFocusBrief({
-        slug: selectedSlug,
-        title: analysisSelectedTitle,
-        labels: {
-          title: t("analysis.focusBriefTitle"),
-          node: t("analysis.focusBriefNode"),
-          url: t("analysis.focusBriefUrl"),
-          ontologyUrl: t("analysis.focusBriefOntologyUrl"),
-          builderUrl: t("analysis.focusBriefBuilderUrl"),
-          reviewFocus: t("analysis.focusBriefReviewFocus"),
-          agentCheck: t("analysis.focusBriefAgentCheck"),
-          mcpCheck: t("analysis.focusBriefMcpCheck"),
-          impactCheck: t("analysis.focusBriefImpactCheck"),
-          mcpImpactCheck: t("analysis.focusBriefMcpImpactCheck"),
-          syncGate: t("analysis.focusBriefSyncGate"),
-        },
-        url: currentUrl,
-        focusUrl,
-        ontologyUrl: buildOntologyNodeHref(selectedSlug),
-        builderUrl: buildTopologyHealthRepairHref(selectedSlug),
-        syncGatePacket: postChangeSyncPacket,
-      }),
-    );
-    if (ok) toast.show(t("analysis.focusBriefCopied"), "success");
-  }, [analysisSelectedTitle, postChangeSyncPacket, selectedSlug, t, toast]);
-
-  const copyCompactFocusMcpProfile = useCallback(async () => {
-    if (!selectedSlug) return;
-    const ok = await copyText(formatTopologyHealthMcpCheck(selectedSlug));
-    if (ok) toast.show(t("analysis.focusMcpCopied"), "success");
-  }, [selectedSlug, t, toast]);
-
-  const copyCompactFocusMcpImpact = useCallback(async () => {
-    if (!selectedSlug) return;
-    const ok = await copyText(formatTopologyHealthImpactMcpCheck(selectedSlug));
-    if (ok) toast.show(t("analysis.focusMcpImpactCopied"), "success");
-  }, [selectedSlug, t, toast]);
-
-  const nodePopoverActions = useMemo(
-    () =>
-      selectedSlug
-        ? [
-            {
-              kind: "focus-brief" as const,
-              label: t("analysis.focusBriefCopy"),
-              ariaLabel: t("analysis.focusBriefCopyAriaLabel"),
-              onClick: copyCompactFocusBrief,
-            },
-            {
-              kind: "mcp-profile" as const,
-              label: t("analysis.focusMcpCopy"),
-              ariaLabel: t("analysis.focusMcpCopyAriaLabel"),
-              onClick: copyCompactFocusMcpProfile,
-            },
-            {
-              kind: "mcp-impact" as const,
-              label: t("analysis.focusMcpImpactCopy"),
-              ariaLabel: t("analysis.focusMcpImpactCopyAriaLabel"),
-              onClick: copyCompactFocusMcpImpact,
-            },
-          ]
-        : [],
-    [
-      copyCompactFocusBrief,
-      copyCompactFocusMcpImpact,
-      copyCompactFocusMcpProfile,
-      selectedSlug,
-      t,
-    ],
-  );
-
   useEffect(() => {
     if (analysisModeRef.current === analysisMode) return;
     analysisModeRef.current = analysisMode;
@@ -1480,7 +1103,6 @@ export function HomePage() {
     (slug: string) => {
       interactionSelectedSlugRef.current = slug;
       setFullDetailSlug(null);
-      setNodePopoverCollapsed(false);
       setSelectedRelationActive(false);
       setRouteState((current) => ({
         ...selectTopologyNodeRouteState(current, slug, {
@@ -1500,13 +1122,6 @@ export function HomePage() {
         pathSourceSlug: mode === "path" ? current.pathSourceSlug : null,
         pathTargetSlug: mode === "path" ? current.pathTargetSlug : null,
       }));
-    },
-    [setRouteState],
-  );
-
-  const handlePathSelectionChange = useCallback(
-    (selection: { sourceSlug: string | null; targetSlug: string | null }) => {
-      setRouteState((current) => selectTopologyPathRouteState(current, selection));
     },
     [setRouteState],
   );
@@ -2440,28 +2055,18 @@ export function HomePage() {
                     variant="sparse"
                   />
                 ) : null}
-                {topologyRenderState.renderCanvas &&
-                !currentSigmaGraphStats &&
-                topologyEngineChoice !== "map-v2" &&
-                !(
-                  analysisMode !== "graph" &&
-                  localGraphRoot === null &&
-                  topologySkeleton
-                ) ? (
-                  <TopologyLoadingFallback
-                    concepts={visibleTopologyNodeCount}
-                    relations={visibleTopologyRelationCount}
-                    mode={analysisMode}
-                  />
-                ) : null}
-                {topologyRenderState.renderCanvas && topologyEngineChoice === "map-v2" ? (
+                {topologyRenderState.renderCanvas ? (
                   // topology-map-v2 (docs/TOPOLOGY-V2-DESIGN.md §4 P2/P3) —
                   // unifies the map tab, graph tab, and project-detail
                   // neighbor map into one engine (§1.2); this call site is
                   // wired once for all three, per §5.3's unchanged adapter
                   // contract. `nodes`/`edges` come from `topologyV2Graph`
-                  // (topology-v2-adapter.ts), derived from the same
-                  // `ontologyInsight` the map-canvas/Sigma engines draw.
+                  // (topology-v2-adapter.ts), derived from `ontologyInsight`.
+                  // The map-canvas + legacy Sigma-as-engine branches this
+                  // ternary used to also hold were physically deleted once
+                  // v2 went default-on (owner directive: 예전 캔버스 코드는
+                  // 싹 다 지워줘) — see topology-map-v2's design docs for the
+                  // strangler history.
                   <TopologyMapV2
                     nodes={topologyV2Graph.nodes}
                     edges={topologyV2Graph.edges}
@@ -2483,100 +2088,6 @@ export function HomePage() {
                     onVisibleCountChange={setSigmaVisibleCount}
                     onGraphStatsChange={handleSigmaGraphStatsChange}
                     minimal={localGraphRoot !== null}
-                  />
-                ) : topologyRenderState.renderCanvas &&
-                  topologyEngineChoice === "map-canvas" &&
-                  topologySkeleton &&
-                  ontologyInsight ? (
-                  // 지도(Relief) 재구성 엔진 — 단일 컨테이너 변환
-                  // (docs/TOPOLOGY-MAP-REBUILD.md). 그래프 뷰와 local-graph
-                  // ego 는 기존 Sigma 경로 유지.
-                  <TopologyMapCanvas
-                    cards={topologySkeleton.cards}
-                    layout={topologySkeleton.layout}
-                    edges={ontologyInsight.edges}
-                    selectedSlug={canvasSelectedSlug}
-                    healthRepairTargetSlug={
-                      analysisMode === "health"
-                        ? (topologyHealthSummary.actionTarget?.slug ?? null)
-                        : null
-                    }
-                    pathWorkflowActive={analysisMode === "path"}
-                    pathSelection={{
-                      sourceSlug: pathSourceSlug,
-                      targetSlug: pathTargetSlug,
-                    }}
-                    onPathSelectionChange={handlePathSelectionChange}
-                    onSelect={(slug) => handleSelect(slug)}
-                    onExpandRequest={handleExpandRequest}
-                    onPaneClick={handleClose}
-                    fitViewToken={combinedFitToken}
-                  />
-                ) : topologyRenderState.renderCanvas ? (
-                  <SigmaTopology
-                    key={localGraphRoot ?? "__root__"}
-                    projects={localGraphProjects}
-                    categories={taxonomyCategories}
-                    selectedSlug={canvasSelectedSlug}
-                    onSelectProject={(slug) => handleSelect(slug)}
-                    onProjectOpen={(slug) => setLocalGraphStack((stack) => [...stack, slug])}
-                    fitViewToken={combinedFitToken}
-                    relayoutToken={topologyRelayoutToken}
-                    livePhysics={analysisMode === "graph"}
-                    onVisibleCountChange={setSigmaVisibleCount}
-                    onSkeletonCardVisibilityChange={setTopologyCardVisibility}
-                    onGraphStatsChange={handleSigmaGraphStatsChange}
-                    onRelationVisibilityChange={handleSigmaRelationVisibilityChange}
-                    onSelectedRelationChange={setSelectedRelationActive}
-                    onPaneClick={handleClose}
-                    onFirstInteraction={dismissSigmaHint}
-                    activeCategory={activeCategory}
-                    depthLimit={sigmaControls.depthLimit}
-                    searchQuery={sigmaControls.searchQuery}
-                    forces={sigmaControls.forces}
-                    hubsOnly={sigmaControls.hubsOnly}
-                    overlays={sigmaControls.overlays}
-                    changedSlugs={changedSlugs}
-                    // R14: /topology 는 vault ontology 의 도메인/역량/요소
-                    // 노드와 그 관계까지 같은 그래프에 그린다. project 1 개 +
-                    // dependencies 0 인 dogfood 상황에서 빈 화면이었던 회귀를
-                    // 메우면서, 사용자가 "ontology 와 topology 는 연계되어야"
-                    // 라고 약속한 본질을 살린다. local-graph (drawer 의 ego)
-                    // 에서는 project 의존만 보이게 끔 — 좁은 시야 위해.
-                    showOntologyNodes={localGraphRoot === null}
-                    skeletonLayout={topologySkeleton?.layout ?? null}
-                    skeletonSlugs={topologySkeleton?.slugs ?? null}
-                    skeletonCards={topologySkeleton?.cards ?? null}
-                    pathWorkflowActive={analysisMode === "path"}
-                    selectedFocusCenterActive={analysisMode === "focus"}
-                    suppressKindLegend={
-                      createNodeOpen ||
-                      selectedRelationActive ||
-                      selectedNodeFocusActive ||
-                      analysisMode === "path" ||
-                      (analysisMode === "overview" &&
-                        localGraphRoot === null &&
-                        !canvasSelectedSlug)
-                    }
-                    suppressRelationLegend={selectedNodeFocusActive}
-                    suppressMinimap={
-                      createNodeOpen ||
-                      selectedRelationActive ||
-                      selectedNodeFocusActive ||
-                      analysisMode === "path"
-                    }
-                    blockingSurfaceActive={topologyBlockingOverlayActive}
-                    pathSelection={{
-                      sourceSlug: pathSourceSlug,
-                      targetSlug: pathTargetSlug,
-                    }}
-                    healthRepairTarget={
-                      analysisMode === "health"
-                        ? topologyHealthSummary.actionTarget
-                        : null
-                    }
-                    onPathSelectionChange={handlePathSelectionChange}
-                    impactNodes={impactHighlightSet}
                   />
                 ) : null}
               </div>
@@ -2769,7 +2280,7 @@ export function HomePage() {
             data-position-right-inset-token="--topology-node-popover-right-inset"
             className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
-            {topologyMapV2Enabled && v2DatasheetModel ? (
+            {v2DatasheetModel ? (
               <TopologyV2DetailPanel
                 slug={v2DatasheetModel.slug}
                 title={v2DatasheetModel.title}
@@ -2796,98 +2307,7 @@ export function HomePage() {
                 onClose={handleClose}
                 className="max-lg:w-[min(520px,calc(100vw-1.5rem))]"
               />
-            ) : (
-            <TopologyNodePopover
-              focus={nodeFocus}
-              significance={nodeSignificancePresentation}
-              expandedChildIds={topologySkeleton?.expandedChildIds ?? null}
-              labels={{
-                connections: t("nodePopover.connections"),
-                usedBy: t("nodePopover.usedBy"),
-                dependsOn: t("nodePopover.dependsOn"),
-                noConnections: t("nodePopover.noConnections"),
-                openFullDetail: t("nodePopover.openFullDetail"),
-                collapse: t("nodePopover.collapse"),
-                expand: t("nodePopover.expand"),
-                close: t("controls.close"),
-                moreSuffix: t("nodePopover.moreSuffix"),
-                actionRailTitle: t("nodePopover.actionRailTitle"),
-                actionRailHint: t("nodePopover.actionRailHint"),
-                // 컴포넌트가 {count} 를 치환 — raw 템플릿 그대로 전달.
-                expandedNote: t.raw("nodePopover.expandedNote") as string,
-                relationLensTitle: t("nodePopover.relationLensTitle"),
-                relationLensDirectFactOne: t.raw(
-                  "nodePopover.relationLensDirectFactOne",
-                ) as string,
-                relationLensDirectFactOther: t.raw(
-                  "nodePopover.relationLensDirectFactOther",
-                ) as string,
-                relationLensTypeOne: t.raw("nodePopover.relationLensTypeOne") as string,
-                relationLensTypeOther: t.raw("nodePopover.relationLensTypeOther") as string,
-                relationLensCompactFacts: t("nodePopover.relationLensCompactFacts"),
-                relationLensCompactTypes: t("nodePopover.relationLensCompactTypes"),
-                relationLensNoScores: t("nodePopover.relationLensNoScores"),
-                relationQualityTitle: t("analysis.overviewBriefRelationQuality"),
-                relationQualityLabels: {
-                  strong: t("analysis.overviewBriefRelationQualityStrong"),
-                  supported: t("analysis.overviewBriefRelationQualitySupported"),
-                  weak: t("analysis.overviewBriefRelationQualityWeak"),
-                  review: t("analysis.overviewBriefRelationQualityReview"),
-                },
-                agentReadinessTitle: t("analysis.overviewAgentReadiness"),
-                agentReadinessLabels: {
-                  ready: t("analysis.overviewAgentReadinessReady"),
-                  preflight: t("analysis.overviewAgentReadinessPreflight"),
-                  review: t("analysis.overviewAgentReadinessReview"),
-                },
-                agentGateChipLabels: {
-                  "handoff-ready": t("nodePopover.agentGateHandoffReadyShort"),
-                  "preflight-first": t("nodePopover.agentGatePreflightFirstShort"),
-                  "review-first": t("nodePopover.agentGateReviewFirstShort"),
-                },
-                relationCopyActionChipLabels: {
-                  explain_relation: t("nodePopover.relationCopyExplainShort"),
-                  relation_check: t("nodePopover.relationCopyCheckShort"),
-                },
-                relationPayloadChipLabel: t("nodePopover.relationPayloadCopyShort"),
-                relationEvidenceChipLabel: t("nodePopover.relationEvidenceShort"),
-                kindLabels: {
-                  project: tKinds(normalizeKindLabelKey("project")),
-                  domain: tKinds(normalizeKindLabelKey("domain")),
-                  capability: tKinds(normalizeKindLabelKey("capability")),
-                  element: tKinds(normalizeKindLabelKey("element")),
-                  document: tKinds(normalizeKindLabelKey("document")),
-                  "vault-readme": tKinds(normalizeKindLabelKey("vault-readme")),
-                  unknown: tKinds(normalizeKindLabelKey("unknown")),
-                },
-                relationTypeLabels: {
-                  contains: tEdgeTypes("contains"),
-                  belongs_to: tEdgeTypes("belongs_to"),
-                  depends_on: tEdgeTypes("depends_on"),
-                  implements: tEdgeTypes("implements"),
-                  uses: tEdgeTypes("uses"),
-                  describes: tEdgeTypes("describes"),
-                  related_to: tEdgeTypes("related_to"),
-                },
-              }}
-              onSelectConnection={(id) => handleSelect(id)}
-              onOpenFullDetail={() => setFullDetailSlug(selectedOntologyNode.id)}
-              onClose={handleClose}
-              actions={nodePopoverActions}
-              collapsed={nodePopoverCollapsed}
-              onToggleCollapsed={() => {
-                if (nodePopoverCollapsed) {
-                  setSelectedInspectorSupportRailSlug(null);
-                }
-                setNodePopoverCollapsed((current) => !current);
-              }}
-              className={
-                nodePopoverCollapsed
-                  ? "max-lg:w-[min(560px,calc(100vw-1.5rem))]"
-                  : "max-lg:max-h-[var(--topology-node-popover-mobile-expanded-max-height)] max-lg:w-[min(520px,calc(100vw-1.5rem))]"
-              }
-            />
-            )}
+            ) : null}
           </div>
         ) : null}
         {selectedOntologyNode && ontologyInsight && fullDetailOpen && !createNodeOpen ? (
