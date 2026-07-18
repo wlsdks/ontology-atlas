@@ -1,5 +1,10 @@
 # Sigma.js v3 — "내장 기능 우선" 플레이북 (topology-map-v2 / Slice 2)
 
+> **[archived, 2026-07-18]** `topology-map-v2` 는 결국 Sigma 를 채택하지 않고
+> 커스텀 canvas-2D 엔진으로 출하됐다(#344 retire-sigma-topology). 이 플레이북은
+> 검토됐다가 채택되지 않은 접근의 조사 기록으로만 보관 — Sigma.js 는 현재
+> `/docs` 폴더 토폴로지 미니맵에만 남아 있다.
+
 > 모든 API 이름은 `jacomyal/sigma.js` main 브랜치 소스(`packages/sigma/src/*.ts`)와
 > 공식 스토리북 예제(`packages/storybook/stories/*`), `packages/website/docs/advanced/*.md`,
 > `sim51/react-sigma` 문서에서 직접 확인했다. 버전 드리프트가 의심되는 곳(예: edge 이벤트

@@ -95,8 +95,8 @@ Insights whenever the next action is writing or graph-level verification.
   계약이 깨진다. 페이지 롤아웃에서 같은 값이 필요하면 **전역 토큰으로 승격**
   (이름 재부여 + 이 문서 갱신)이 먼저다.
 - `--topology-chrome-*` 는 이미 전역이다(HomePage 가 렌더 엔진 밖에서 그려
-  map-v2/map-canvas/sigma 가 동일 상속). 페이지 롤아웃의 chrome 밀도는 이
-  패밀리를 바로 쓴다.
+  map-v2 가 상속; 구 map-canvas/sigma-graph 엔진은 #344 로 삭제됨). 페이지
+  롤아웃의 chrome 밀도는 이 패밀리를 바로 쓴다.
 - 라이트 모드 값은 **의도적으로 아직 없다** — 라이트 테마도 다크 값을 그대로
   상속한다. "v2 canvas light-mode" 패스는 Design Guardian 리뷰로 확정 전까지
   보류 상태다 (아래 가드 참조).
@@ -341,12 +341,10 @@ they are runtime workbench contracts, not Tailwind-only decoration. Use token
 names in component data markers and tests whenever a surface depends on
 14-inch fullscreen geometry.
 
-- `--topology-graph-edge-hairline` / `--topology-graph-edge-spoke`: Graph 모드
-  (살아있는 그래프) 전용 엣지 잉크. Sigma 의 WebGL edge 합성이 저알파 색을
-  사실상 불투명으로 그리는 결함(Design Guardian blocker, 2026-07) 때문에
-  알파 토큰(`--topology-edge-*`) 대신 캔버스 색에 미리 블렌드한 **불투명**
-  값을 쓴다. 시각 무게는 알파 토큰과 동일하게 유지 — 다크 `#191a1b`/`#343536`,
-  라이트 `#dcdfe4`/`#cacdd4`.
+- **[삭제, 2026-07-18]** `--topology-graph-edge-hairline` / `-spoke` (구
+  SigmaTopology graph 모드 전용 엣지 잉크, WebGL 저알파 합성 결함 우회용) 는
+  #344 (retire-sigma-topology) 이후 consumer 0 으로 `app/globals.css` 에서
+  제거됨. topology-map-v2 는 자체 `--topology-v2-edge-*` 패밀리를 쓴다.
 - `--topology-panel-selected-rail-width`: selected node support rail.
 - `--topology-panel-overview-rail-width`: overview left support rail.
 - `--topology-panel-overview-reserved-width`: overview rail when a right-side
@@ -371,9 +369,9 @@ names in component data markers and tests whenever a surface depends on
   하나의 machined 컨트롤 클러스터로 이 값을 공유한다. 1920 데스크톱에서 chrome 이
   터치 크기가 아니라 정밀 도구로 읽히도록 컨트롤 높이/아이콘/타입을 한 단계
   좁혔다(높이 48→36, 아이콘 15→12/14→11, 타이틀 13→12, census 는 legible 9px 유지).
-  chrome 클러스터는 render 엔진 밖 HomePage 에서 그려지므로 map-v2 / map-canvas /
-  sigma 가 동일하게 물려받고, 캔버스는 별도 `--topology-ui-scale-factor` 를 써서
-  이 토큰에 영향받지 않는다. `--topology-utility-lane-height/-gap/-radius/-compact-width`
+  chrome 클러스터는 render 엔진 밖 HomePage 에서 그려지므로 map-v2 가 그대로
+  물려받고, 캔버스는 별도 `--topology-ui-scale-factor` 를 써서 이 토큰에
+  영향받지 않는다. `--topology-utility-lane-height/-gap/-radius/-compact-width`
   는 이 chrome 토큰을 참조해 HUD/액션 lane 밀도를 단일 기준으로 맞춘다.
 - `--topology-card-selected-focus-max-width`: selected focus map card width;
   keeps the current node title readable before secondary subtree count metadata
@@ -796,16 +794,15 @@ names in component data markers and tests whenever a surface depends on
   `--topology-overview-readiness-review-meter`: readiness meter track and
   segment fills. These tokens keep the handoff-ready/preflight/review balance
   mode-aware without hard-coded gradient exceptions in the component.
-- `--topology-minimap-surface` / `--topology-minimap-border` /
-  `--topology-minimap-shadow`: right-side minimap support chrome. It is a
-  navigation aid, not a selected fact surface, so it stays quieter than node
-  inspectors and exposes
-  `data-minimap-camera-sync-contract="raf-coalesced-camera-updates"` to prove
-  high-frequency camera events are folded into frame-bounded renders.
-  Drag/click navigation must also expose
-  `data-minimap-pan-search-contract="precomputed-navigation-targets"` so pointer
-  interaction reads a stable target array instead of re-entering the graph
-  structure on every move.
+- **[stale, 2026-07-18]** `--topology-minimap-surface` is the sole survivor of
+  a larger minimap token family (`-border` / `-shadow` / `-active-*` /
+  `-grid-glow`) that backed a `topology-minimap` testid support chrome. No
+  component currently renders that testid or the `data-minimap-*` contracts
+  described below — the minimap UI appears to have been retired alongside
+  #344 (retire-sigma-topology) without a matching doc/test cleanup.
+  `tests/e2e/topology-overlap.spec.ts` still asserts on it and fails against
+  the current app; needs an owner decision (rebuild the minimap for
+  `topology-map-v2`, or delete the dead spec + token).
 - `--topology-floating-panel-surface` / `--topology-floating-panel-border` /
   `--topology-floating-panel-shadow`: expanded map-control sheet. It must read
   as one support surface with internal divider rows, not a stack of separate
@@ -1073,12 +1070,17 @@ details-on-demand* — not the inverse (everything-at-once + fullscreen-on-click
   ForceAtlas2 layout, level-of-detail labels (`hideLabelsOnMove` /
   `hideEdgesOnMove`), keep representative-edge culling, then domain clustering
   above ~5k.
-- **WebGL palette tokens.** Sigma graph marks do not consume CSS custom
-  properties directly; `src/widgets/topology-map-sigma/lib/topology-palette.ts`
-  is the map-layer token source. Dark overview edges must stay quiet enough for
-  dense vaults, but still visible as topology context before focus/path
-  reducers promote selected relations. Treat base / containment / dependency /
-  dim edges as semantic layers, not incidental RGBA literals.
+- **WebGL palette tokens.** **[stale, 2026-07-18]** This bullet described
+  `src/widgets/topology-map-sigma/lib/topology-palette.ts` as the map-layer
+  token source; that file no longer exists (deleted alongside #344
+  retire-sigma-topology — `topology-map-sigma/` now only holds
+  `SigmaControls`/`SigmaHubRail`/`TopologyEmptyState` chrome, no palette
+  module). `topology-map-v2` reads its palette via
+  `src/widgets/topology-map-v2/tokens/read-topology-v2-tokens.ts` instead. Dark
+  overview edges must stay quiet enough for dense vaults, but still visible as
+  topology context before focus/path highlighting promotes selected relations.
+  Treat base / containment / dependency / dim edges as semantic layers, not
+  incidental RGBA literals.
 
 This serves the new "topology" row in the cited-lineage table above.
 

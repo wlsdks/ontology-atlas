@@ -104,7 +104,7 @@ Obsidian/dbt 의 기획 단계 소급 점수(7.3)를 상회 — 문서 단계 �
 ## 2026-07-03 — 지도 뷰 재구성: 단일 컨테이너 변환 엔진 (TopologyMapCanvas)
 
 소유자 결정("지도가 부드럽지도 않고 버벅거림 — 전체 재구성")의 실행.
-docs/TOPOLOGY-MAP-REBUILD.md 설계대로 per-frame DOM 동기화 구조를 제거했다.
+docs/archive/TOPOLOGY-MAP-REBUILD.md 설계대로 per-frame DOM 동기화 구조를 제거했다.
 
 - **새 엔진** `src/widgets/topology-map-canvas/` — 카드/커넥터 좌표는 배치 시
   1회만 기록, 팬/줌 = 컨테이너 하나의 CSS transform (카메라 수학은 순수 함수

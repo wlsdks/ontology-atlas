@@ -103,8 +103,8 @@ Relevant capability: topology ontology inspection
 Meaning: relation labels must expose typed ontology facts without covering the
 graph or hiding the next action.
 Implementation evidence:
-- src/widgets/topology-map-sigma/ui/SigmaSkeletonCards.tsx
-- src/widgets/topology-map-sigma/ui/SigmaSkeletonCards.test.tsx
+- src/widgets/topology-map-v2/ui/topology-v2-datasheet.ts
+- src/widgets/topology-map-v2/ui/TopologyMapV2.tsx
 - scripts/verify-macos-app-launch.mjs
 Recommended code lookup:
 - Use the available source tool: built-in search, grep, language server,
@@ -235,7 +235,7 @@ pnpm desktop:dev
 
 The same frontmatter graph is rendered three ways and exposed to agents through MCP:
 
-- **Topology** (`/topology`) - Sigma WebGL spatial network of projects and relations.
+- **Topology** (`/topology`) - canvas-2D spatial network of projects and relations (Sigma WebGL is only used by the `/docs` folder-topology mini map).
 - **Tree** (`/`, `/ontology`) - project to domain to capability to element drill-down.
 - **ERD builder** (`/ontology/edit`) - xyflow canvas for adding nodes and relations visually.
 - **MCP** (`mcp/`) - JSON-RPC stdio server with 25 tools for AI agents: 16 read + 9 write.
@@ -372,7 +372,7 @@ CI runs `pnpm docs-vault:check`, `pnpm vault:validate`, `pnpm test:vault:validat
 |---|---|
 | App | Next.js 16, React 19, TypeScript 5, App Router, static export, Tauri macOS shell |
 | UI | Tailwind CSS 4, Radix primitives, lucide icons |
-| Graph | Sigma.js, Graphology, ForceAtlas2, xyflow |
+| Graph | Custom canvas-2D engine (topology-map-v2), Graphology + ForceAtlas2 physics, Sigma.js (docs-folder mini map only), xyflow (ERD builder) |
 | Local-first | Tauri native vault bridge, source-browser File System Access fallback, IndexedDB handle/path persistence |
 | Agent interface | `@modelcontextprotocol/sdk`, stdio JSON-RPC |
 | Tests | Vitest, Testing Library, jsdom, Playwright, Node test runner |

@@ -24,3 +24,5 @@ archive 안 문서는 *역사적 맥락* 으로 남겨둘 뿐 contributor 가이
 | `ONTOLOGY-MODEL-V2-DRAFT.md` | V1.x → V2 ontology 모델 진화 spec. mission v2 구현이 일부 채택, 일부 폐기. |
 | `dogfood-friction-2026-05-06.md` | 2026-05-06 외부 사용자 시뮬레이션 — F1/F2 critical friction 검증, 결과는 PR #165 로 반영됨. 일회성 세션 노트. |
 | `dogfood-paravel-2026-05-06.md` | 2026-05-06 실제 React Native codebase dogfood — PR #165 fix 검증 + F5(path 스타일 element nesting) 식별. 일회성 세션 노트. |
+| `TOPOLOGY-MAP-REBUILD.md` | 2026-07-03 `topology-map-canvas` 단일 컨테이너 변환 설계. 그 `topology-map-canvas` 자체가 이후 `topology-map-v2` 로 대체되며 삭제됨(deep-cleanup 스윕, 2026-07-18). |
+| `SIGMA-PLAYBOOK.md` | `topology-map-v2` 를 Sigma.js 위에 지을 때의 "내장 기능 우선" 조사 기록. 실제 v2 는 Sigma 를 채택하지 않고 커스텀 canvas-2D 엔진으로 출하됐다(#344 retire-sigma-topology). |
