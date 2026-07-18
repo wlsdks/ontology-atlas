@@ -23,7 +23,7 @@ describe("SearchHint", () => {
     expect(lane).toHaveAttribute("data-search-lane-density", "default");
     expect(lane).toHaveAttribute(
       "data-search-lane-surface-token",
-      "--topology-utility-lane-surface",
+      "--chrome-surface",
     );
 
     const arrange = screen.getByTestId("topology-auto-arrange");
@@ -35,32 +35,32 @@ describe("SearchHint", () => {
       );
       expect(action).toHaveAttribute(
         "data-utility-action-surface-token",
-        "--topology-utility-lane-surface",
+        "--chrome-surface",
       );
       expect(action).toHaveAttribute(
         "data-utility-action-border-token",
-        "--topology-utility-lane-border",
+        "--chrome-border",
       );
       expect(action).toHaveAttribute(
         "data-utility-action-hover-surface-token",
-        "--topology-utility-lane-hover-surface",
-      );
-      expect(action).toHaveAttribute(
-        "data-utility-action-active-surface-token",
-        "--topology-utility-lane-accent-surface",
+        "--color-overlay-2",
       );
       expect(action).toHaveAttribute(
         "data-utility-action-shadow-token",
-        "--topology-utility-lane-shadow",
+        "--chrome-shadow",
       );
       expect(action).toHaveAttribute(
         "data-utility-action-focus-ring-token",
-        "--topology-utility-lane-focus-ring",
+        "--color-indigo-accent",
       );
     }
     expect(arrange).toHaveAttribute(
+      "data-utility-action-active-surface-token",
+      "--chrome-active-surface",
+    );
+    expect(arrange).toHaveAttribute(
       "data-utility-action-active-border-token",
-      "--topology-utility-lane-accent-border",
+      "--chrome-active-border",
     );
 
     fireEvent.click(search);
@@ -80,11 +80,11 @@ describe("SearchHint", () => {
     );
     expect(screen.getByTestId("topology-auto-arrange")).toHaveAttribute(
       "data-utility-action-focus-ring-token",
-      "--topology-utility-lane-focus-ring",
+      "--color-indigo-accent",
     );
     expect(screen.getByTestId("topology-concept-search")).toHaveAttribute(
       "data-utility-action-focus-ring-token",
-      "--topology-utility-lane-focus-ring",
+      "--color-indigo-accent",
     );
   });
 

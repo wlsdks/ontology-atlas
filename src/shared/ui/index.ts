@@ -30,4 +30,6 @@ export {
   type NodeExplanationEditLabels,
 } from './node-explanation-edit';
 export { TabBar, type TabBarItem } from './tab-bar';
+export { ChromeTile, type ChromeTileProps } from './chrome-tile';
+export { ChromeChip, type ChromeChipProps } from './chrome-chip';
 export { BrandMark, BRAND_MARK_AMBER, type BrandMarkProps } from './brand-mark';

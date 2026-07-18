@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, BookOpen, ChevronsRight, Network } from "lucide-react";
+import { ArrowLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { MOTION } from "@/shared/motion";
+import { BrandMark } from "@/shared/ui";
 
 interface Props {
   className?: string;
@@ -14,6 +14,15 @@ interface Props {
   onExpand?: () => void;
   title?: string;
   subtitle?: string;
+  /** subtitle 뒤에 붙는 "성장 신호" 조각(예: " · 이번 주 +1") — census 상태에서만
+   *  넘긴다. amber 는 허브 노드 전용(design.md)이라 여기선 인디고로 강조. */
+  censusGrowthText?: string;
+  /** 'eyebrow'(기본) = 대문자 변환 + 넓은 자간(breadcrumb 성격의 상태 문구).
+   *  'census' = 소문자 그대로 + mono(개념/관계 실측 통계 한 줄, 시안의
+   *  "타이틀+census 각인"). 상태에 따라 subtitle 의 의미가 달라서 분리했다 —
+   *  대문자 변환을 없애면 영문 로케일의 eyebrow 문구(SELECTED CONCEPT 등)가
+   *  같이 바뀌므로 census 상태에서만 켠다. */
+  subtitleVariant?: "eyebrow" | "census";
   icon?: string | null;
   ariaLabel?: string;
   titleText?: string;
@@ -21,10 +30,6 @@ interface Props {
    *  truthy 일 때 pill 왼쪽에 "← Workspace" 보조 버튼 노출. */
   workspaceMapHref?: string;
   onWorkspaceMapClick?: () => void;
-  /** Source Vault (/docs) 바로 가기. 접힌 상태에서도 주 기능 접근 유지. */
-  docsVaultHref?: string;
-  /** 온톨로지 (/ontology) 바로 가기. 접힌 상태에서도 트리 surface 접근 유지. */
-  ontologyHref?: string;
   /** Active inspector 상태에서는 위치 breadcrumb 역할만 하도록 밀도를 낮춘다. */
   compact?: boolean;
   /**
@@ -41,13 +46,13 @@ export function HeroCollapsed({
   onExpand,
   title,
   subtitle,
+  censusGrowthText,
+  subtitleVariant = "eyebrow",
   icon,
   ariaLabel,
   titleText,
   workspaceMapHref,
   onWorkspaceMapClick,
-  docsVaultHref,
-  ontologyHref,
   compact = false,
   sampleBadge = false,
 }: Props) {
@@ -82,10 +87,16 @@ export function HeroCollapsed({
       animate={{ opacity: 1, x: 0 }}
       transition={MOTION.fast}
       className={cn(
-        "group inline-flex items-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--topology-chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
+        // 브랜드 필 — feat/chrome-system §5, rounded-full(원형) → --chrome-radius
+        // (10px, 정사각) 전환. 표면/보더/그림자도 --chrome-* 로 이관해 우측
+        // 액션 lane(여전히 원형 pill, --topology-chrome-*)과 형태를 분리한다.
+        // 소유자 라이브 피드백 — 2줄(타이틀+census) 리듬이 고정 height 에서
+        // 갑갑해 보임. min-h + 소폭 py 로 전환해 내용이 눌리지 않게(내용이
+        // 더 필요하면 자연히 커짐 — 매직 px 추측 대신 콘텐츠 기준 안전).
+        "group inline-flex items-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
         compact
-          ? "h-[var(--topology-chrome-control-height-compact)] gap-1.5 pl-1.5 pr-2.5 opacity-80"
-          : "h-[var(--topology-chrome-control-height)] gap-[var(--topology-chrome-gap)] pl-1.5 pr-3",
+          ? "min-h-[var(--topology-chrome-control-height-compact)] gap-1.5 py-0.5 pl-1.5 pr-2.5 opacity-80"
+          : "min-h-[var(--topology-chrome-control-height)] gap-[var(--topology-chrome-gap)] py-1 pl-1.5 pr-3",
         className,
       )}
     >
@@ -102,22 +113,23 @@ export function HeroCollapsed({
           {icon}
         </span>
       ) : (
-        <Image
-          src="/logo.png"
-          alt=""
+        // pip — 브랜드 마크(`BrandMark`, 후보 A "헥사 별자리" 확정,
+        // `docs/prototypes/app-icon-concepts.html` 소유자 최종 승인). 좌측
+        // 내비 레일 로고(`AppNavRail`)와 같은 컴포넌트를 15px·compact 로 쓴다
+        // — 두 표면이 같은 브랜드 마크를 보여준다.
+        <span
           aria-hidden="true"
-          width={32}
-          height={32}
-          priority
           className={cn(
-            "shrink-0 rounded-full border border-[color:var(--color-border-soft)] object-cover",
+            "inline-flex shrink-0 items-center justify-center rounded-[8px] border border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-indigo-accent)]",
             compact
               ? "size-[var(--topology-chrome-badge-size-compact)]"
               : "size-[var(--topology-chrome-badge-size)]",
           )}
-        />
+        >
+          <BrandMark size={15} detail="compact" />
+        </span>
       )}
-      <span className="flex min-w-0 flex-col items-start">
+      <span className="flex min-w-0 flex-col items-start gap-0.5">
         <span
           translate="no"
           className={cn(
@@ -131,11 +143,15 @@ export function HeroCollapsed({
         </span>
         <span
           className={cn(
-            "font-mono uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]",
+            "font-mono text-[color:var(--color-text-quaternary)]",
+            subtitleVariant === "eyebrow" && "uppercase tracking-[0.08em]",
             compact ? "sr-only" : "text-[length:var(--topology-chrome-eyebrow-size)]",
           )}
         >
           {resolvedSubtitle}
+          {censusGrowthText ? (
+            <span className="text-[color:var(--color-indigo-accent)]">{censusGrowthText}</span>
+          ) : null}
         </span>
       </span>
       {sampleBadge && !compact ? (
@@ -152,26 +168,8 @@ export function HeroCollapsed({
         />
       ) : null}
     </motion.button>
-    {docsVaultHref && !compact ? (
-      <Link
-        href={docsVaultHref}
-        aria-label={t("openDocsVault")}
-        title={t("docsVault")}
-        className="group inline-flex size-[var(--topology-chrome-control-height)] shrink-0 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-chrome-shadow)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
-      >
-        <BookOpen className="size-[var(--topology-chrome-icon-size)]" />
-      </Link>
-    ) : null}
-    {ontologyHref && !compact ? (
-      <Link
-        href={ontologyHref}
-        aria-label={t("openOntologyTree")}
-        title={t("ontology")}
-        className="group inline-flex size-[var(--topology-chrome-control-height)] shrink-0 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-chrome-shadow)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
-      >
-        <Network className="size-[var(--topology-chrome-icon-size)]" />
-      </Link>
-    ) : null}
+    {/* book/network 유틸 타일 제거(feat/chrome-system) — 좌측 내비 레일
+        (`AppNavRail`)이 문서함/빌더 목적지를 전담한다. */}
     </div>
   );
 }

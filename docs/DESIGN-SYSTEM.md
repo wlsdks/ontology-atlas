@@ -426,6 +426,10 @@ names in component data markers and tests whenever a surface depends on
   물려받고, 캔버스는 별도 `--topology-ui-scale-factor` 를 써서 이 토큰에
   영향받지 않는다. `--topology-utility-lane-height/-gap/-radius/-compact-width`
   는 이 chrome 토큰을 참조해 HUD/액션 lane 밀도를 단일 기준으로 맞춘다.
+  **[feat/chrome-system]** 브랜드 필의 모양(radius/그림자)은 이제 아래
+  "크롬 문법" 챕터의 `--chrome-*` 로 옮겼다 — 필이 원형에서 정사각으로
+  바뀌며 우측 액션 lane(여전히 원형 pill)과 형태가 갈렸기 때문. 높이/뱃지/
+  아이콘 크기 등 나머지 밀도 값은 이 클러스터가 계속 소유한다.
 - `--topology-card-selected-focus-max-width`: selected focus map card width;
   keeps the current node title readable before secondary subtree count metadata
   while the direct relation facts chip stays visible.
@@ -1278,8 +1282,93 @@ Example: `/ontology` page
 
 The public surfaces `/`, `/topology`, `/docs`, `/projects`, `/project/[slug]` use the standalone Korean h1 pattern (without an English eyebrow caption) — these are the browse surfaces, not the operations surfaces.
 
+## 크롬 문법 (feat/chrome-system)
+
+Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌측 내비 레일)이
+공유하는 "machined tile" 문법. 승인 시안: `docs/prototypes/index-panel-v2-full.html`
+(소유자 "좋다! 이대로 적용하자"). 토큰 소스: `app/globals.css` `--chrome-*`.
+컴포넌트: `src/shared/ui/chrome-tile.tsx` (ChromeTile) ·
+`src/shared/ui/chrome-chip.tsx` (ChromeChip).
+
+### Radius 스텝 (4계층)
+
+| 스텝 | 값 | 대상 |
+|---|---|---|
+| 키캡 | 4px | `<kbd>` 단축키 캡 |
+| inner | 7px (`--chrome-radius-inner`) | 접기 버튼처럼 타일 안에 중첩되는 소형 컨트롤 |
+| 타일 / 칩 / 필 | 10px (`--chrome-radius`) | ChromeTile · ChromeChip · 브랜드 필 |
+| 패널 | 12px (`--topology-v2-panel-radius`) | INDEX 패널 · 압축 데이터시트 |
+
+### 타일 / 칩 / 필 / 패널 4계층
+
+- **타일 (ChromeTile)** — 44px 정사각(`--chrome-tile-size`) 아이콘 버튼. 목적지
+  1개 = 타일 1개 (전체 보기, 문서함, 빌더 등). `href` 를 주면 링크, 없으면 버튼.
+- **칩 (ChromeChip)** — 44px 높이 라벨 버튼. 아이콘(14px) + 텍스트 + 선택적
+  `kbd` 캡. 자동 정렬 · 검색 · 작업공간처럼 라벨이 의미의 일부인 컨트롤.
+- **필 (브랜드 pill)** — 칩과 같은 표면(10px radius)이지만 내부에 pip(브랜드
+  마크) + 2줄 텍스트(타이틀 + census)를 담는 조합형 표면. `HeroCollapsed`.
+- **패널 (INDEX · 압축 데이터시트)** — 12px radius, 위 3계층보다 한 단 크고
+  내부에 자체 헤더/바디/푸터 리듬을 가진 표면.
+
+### 좌측 내비 레일 (AppNavRail)
+
+`docs/prototypes/chrome-rail-combined.html` 소유자 최종 승인 — 지형도 좌측에
+상시 떠 있는 64px 세로 레일. `src/widgets/app-nav-rail`. 전역 목적지(지도·
+문서함·빌더·인사이트·프로젝트) + 하단 에이전트 상태·설정을 전담해, 브랜드
+필의 book/network 유틸 타일과 우측 세로 레일의 설정 기어를 흡수한다.
+
+- 로고(`<BrandMark size={20} detail="compact" />`, 위 "Brand mark" 섹션 — 브랜드
+  필 pip 도 같은 컴포넌트를 15px 로 씀, 두 표면이 같은 마크) + 5 목적지(아이콘
+  18px + 한글 라벨 9.5px) + 하단 에이전트 상태(Activity 아이콘 + 활동 중 앰버
+  점) + 설정(기어, 트리거만 이관 — 팝오버는 앵커 방향만 `popoverAlign="left"`
+  + `popoverSide="top"` 로 반전 — 레일 하단 트리거는 아래로 열면 화면 밖으로
+  넘친다, 1920 라이브에서 발견).
+- 활성 항목 = 인디고 틴트 타일 + 1px 인셋 링 + 좌측 2px 바 + `aria-current`.
+  탭/칩과 달리 좌측 바가 추가되는 이유: 세로 스택에서 "지금 여기" 신호가
+  타일 색만으로는 스캔하기 약해서(가로 탭의 밑줄 관례를 세로로 옮김).
+- 캔버스 밖 flex 형제로 마운트 — 지도/INDEX/브랜드 필 등 기존 `absolute
+  left-*` 좌표는 그대로 두어도 새 relative 컨테이너 기준으로 64px 밀린다
+  (좌표 재계산 불필요). 캔버스 2D 엔진의 safe-inset 토큰은 뷰포트가 아니라
+  이 relative 컨테이너를 기준으로 재측정하므로 별도 보정이 필요 없다 —
+  라이브 화면에서 겹침 없음을 실측 확인.
+- 이번 슬라이스 마운트 범위는 지형도(HomePage)뿐 — `/docs`, `/ontology/*`,
+  `/projects` 롤아웃(및 그 페이지들의 `OperationsNav` 와의 관계 정리)은
+  별도 슬라이스.
+
+### 토큰
+
+- `--chrome-tile-size: 44px` · `--chrome-radius: 10px` · `--chrome-radius-inner: 7px`
+- `--chrome-icon: 16px` (ChromeTile 아이콘) — ChromeChip 아이콘은 14px(칩 자체
+  클래스가 강제, 별도 토큰 없음 — 칩은 타일보다 조밀한 밀도라 이 폭이 시안
+  실측값).
+- `--chrome-surface` · `--chrome-border`(=`--color-border-soft` 참조) ·
+  `--chrome-shadow` · `--chrome-engrave` — 다크/라이트 모드 양쪽 값 존재.
+- `--chrome-inset: 24px` — 좌우 정렬 기준선. `--topology-index-inset` 이 이
+  값을 참조(단일 출처) — 새 크롬 표면의 좌우 여백은 항상 이 토큰만 쓴다.
+- 기존 `--topology-chrome-*`(원형 pill 전용, 999px radius)와는 형태가 달라
+  값을 공유하지 않는다 — 그림자/인디고 계열만 같은 단일 채색 신경계.
+
+### Lucide 아이콘 규정
+
+- stroke-width **1.75px** (Lucide 기본값 그대로 — 굵게 override 하지 않는다).
+- 크기: ChromeTile 16px(`--chrome-icon`) · ChromeChip 14px.
+
+### 24px 정렬 레일
+
+Topology chrome 의 모든 좌/우 바깥 여백은 `--chrome-inset`(24px) 하나로
+수렴한다. 브랜드 필 wrapper, INDEX 패널, TopologyAnalysisBar 좌측 정렬이 모두
+같은 값을 참조 — 값 하나를 바꾸면 전 표면이 같이 움직인다.
+
+### 소비 규범
+
+크롬 표면(타일/칩)은 반드시 `ChromeTile` / `ChromeChip` 을 통해서만 만든다.
+JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 재구현하지 않는다 —
+드리프트가 생기면(예: 43px, 11px radius) 시각적으로 감지하기 어렵고, 컴포넌트
+경유가 아니면 다음 토큰 개정이 그 인스턴스를 놓친다.
+
 ## Changelog
 
+- 2026-07-18: 크롬 시스템(feat/chrome-system) — `--chrome-*` 토큰 + ChromeTile/ChromeChip 컴포넌트 신설, 24px 정렬 레일로 브랜드 필/INDEX 패널/분석 패널 좌측 인셋 수렴, INDEX 패널 v2.1(헤더 "INDEX · N" + 접기, 트리 행 grid + Lucide chevron + 인셋 capacity meter, 푸터로 에이전트 동기화 이관); see `docs/prototypes/index-panel-v2-full.html`
 - 2026-07-18: Brand mark replaced — "헥사 별자리" (candidate A) across favicon, macOS app icon, and `BrandMark` shared component; see "Brand mark" section above
 - 2026-07-18: v2 — B2+ "Circuit × Constellation" 언어를 페이지 롤아웃 규범으로 승격 (언어 6축 · 토큰 tier 카탈로그 · surface class 별 do/don't · v2 금지 추가 · 롤아웃 가드 · 토큰 drift 부채 감사); see [`TOPOLOGY-V2-DESIGN.md`](./TOPOLOGY-V2-DESIGN.md)
 - 2026-06-08: Added topology node-focus & scale pattern (ego popover, overview-first, plain-language counts, LOD perf path); see [`TOPOLOGY-FOCUS-AND-SCALE.md`](./TOPOLOGY-FOCUS-AND-SCALE.md)

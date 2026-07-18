@@ -5,6 +5,7 @@ import { FolderCog, Settings } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { LocaleSwitch } from "@/features/locale-switch";
 import { ThemeToggle } from "@/features/theme-toggle";
+import { cn } from "@/shared/lib/cn";
 
 /**
  * Topology utility-rail settings gear (`docs/prototypes/chrome-datasheet-final.html`
@@ -52,6 +53,25 @@ export interface TopologyV2SettingsGearProps {
   changeVaultHref: string;
   labels: TopologyV2SettingsGearLabels;
   className?: string;
+  /**
+   * Which edge the popover anchors to (default `"right"`, the original
+   * right-utility-rail placement — the popover's right edge aligns with the
+   * trigger's and it opens LEFTWARD into the canvas). feat/chrome-system
+   * relocates the trigger to the left nav rail, where opening leftward would
+   * push the popover off-screen — pass `"left"` there so it opens
+   * RIGHTWARD instead. Only the anchor edge changes; nothing else about the
+   * popover moves.
+   */
+  popoverAlign?: "left" | "right";
+  /**
+   * Which side of the trigger the popover opens toward (default `"bottom"`,
+   * the original placement — plenty of canvas below the right utility
+   * rail's top-anchored gear). feat/chrome-system's nav-rail placement sits
+   * the trigger at the very BOTTOM of the screen, so opening downward pushes
+   * the popover off-screen (caught in 1920 live QA) — pass `"top"` there to
+   * open upward instead.
+   */
+  popoverSide?: "top" | "bottom";
 }
 
 export function TopologyV2SettingsGear({
@@ -60,6 +80,8 @@ export function TopologyV2SettingsGear({
   changeVaultHref,
   labels,
   className,
+  popoverAlign = "right",
+  popoverSide = "bottom",
 }: TopologyV2SettingsGearProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -117,7 +139,11 @@ export function TopologyV2SettingsGear({
           role="group"
           aria-label={labels.heading}
           data-testid="topology-v2-settings-gear-popover"
-          className="absolute right-0 top-[calc(100%+8px)] z-30 w-[228px] rounded-md border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
+          className={cn(
+            "absolute z-30 w-[228px] rounded-md border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]",
+            popoverSide === "top" ? "bottom-[calc(100%+8px)]" : "top-[calc(100%+8px)]",
+            popoverAlign === "left" ? "left-0" : "right-0",
+          )}
         >
           <div className="border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {labels.heading}

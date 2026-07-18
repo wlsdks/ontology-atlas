@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T15:07:16.998Z",
+  "generatedAt": "2026-07-18T15:21:50.017Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3883,7 +3883,7 @@
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. \"중앙(프로젝트 노드)이 뭔가 다르게 빛나야, 클릭한 노드는 특별한 색/이펙트 필요\" — 발광(glow/halo) 대신 재질(材質)과 1회성 모션 피드백으",
       "wordCount": 20757,
-      "updatedAt": "2026-07-18T15:07:05.981Z",
+      "updatedAt": "2026-07-18T15:21:39.023Z",
       "linksOut": [
         "slug"
       ]
@@ -4350,13 +4350,53 @@
         },
         {
           "depth": 2,
+          "text": "크롬 문법 (feat/chrome-system)",
+          "slug": "크롬-문법-featchrome-system"
+        },
+        {
+          "depth": 3,
+          "text": "Radius 스텝 (4계층)",
+          "slug": "radius-스텝-4계층"
+        },
+        {
+          "depth": 3,
+          "text": "타일 / 칩 / 필 / 패널 4계층",
+          "slug": "타일-칩-필-패널-4계층"
+        },
+        {
+          "depth": 3,
+          "text": "좌측 내비 레일 (AppNavRail)",
+          "slug": "좌측-내비-레일-appnavrail"
+        },
+        {
+          "depth": 3,
+          "text": "토큰",
+          "slug": "토큰"
+        },
+        {
+          "depth": 3,
+          "text": "Lucide 아이콘 규정",
+          "slug": "lucide-아이콘-규정"
+        },
+        {
+          "depth": 3,
+          "text": "24px 정렬 레일",
+          "slug": "24px-정렬-레일"
+        },
+        {
+          "depth": 3,
+          "text": "소비 규범",
+          "slug": "소비-규범"
+        },
+        {
+          "depth": 2,
           "text": "Changelog",
           "slug": "changelog"
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 9911,
-      "updatedAt": "2026-07-18T14:46:05.499Z",
+      "wordCount": 10593,
+      "updatedAt": "2026-07-18T15:12:07.642Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

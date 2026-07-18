@@ -1016,7 +1016,9 @@ export function TopologyAnalysisBar({
           : // 헤더 pill 아래 16px — 9.5rem 은 ~90px 공백, 5rem 은 헤더에
             // 밀착이었다 (사용자 보고 2회). 헤더 bottom ≈ 72px 기준.
             "top-[5.5rem] max-h-[calc(100dvh-7rem)]"
-      } lg:left-6 xl:left-8 ${selectedFocusRailActive ? "max-md:hidden" : ""} ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
+      // xl:left-8(32px) → xl:left-[var(--chrome-inset)](24px) —
+      // feat/chrome-system §4, 브랜드 필/INDEX 패널과 같은 24px 정렬 레일.
+      } lg:left-6 xl:left-[var(--chrome-inset)] ${selectedFocusRailActive ? "max-md:hidden" : ""} ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
     >
       <div
         data-testid="topology-analysis-panel-body"

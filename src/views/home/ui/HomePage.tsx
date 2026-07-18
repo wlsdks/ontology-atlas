@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BookOpen, Plus, X } from "lucide-react";
+import { BookOpen, HelpCircle, Plus, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
@@ -24,6 +24,7 @@ import {
   type SigmaControlsState,
 } from "@/widgets/topology-map-sigma/model/controls-state";
 import { HeroCollapsed } from "@/widgets/hero-header";
+import { AppNavRail } from "@/widgets/app-nav-rail";
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
@@ -59,7 +60,7 @@ const MountedGlobalSearch = dynamic(
 );
 import { GestureHint } from "@/widgets/gesture-hint";
 import { PINNED_DOCS_STORAGE_PREFIX } from "@/widgets/docs-vault";
-import { LiveAnnouncer, Tooltip, useToast } from "@/shared/ui";
+import { ChromeChip, LiveAnnouncer, Tooltip, useToast } from "@/shared/ui";
 import {
   detectOrphanProjects,
   detectPromotionCandidates,
@@ -1358,7 +1359,35 @@ export function HomePage() {
   }, [hubs, preloadProjectAsset, selectedSlug]);
 
   return (
-    <main id="main" className="relative h-screen w-screen overflow-hidden bg-[color:var(--color-canvas)]">
+    <main id="main" className="relative flex h-screen w-screen overflow-hidden bg-[color:var(--color-canvas)]">
+      {/* 좌측 64px 내비 레일 (feat/chrome-system) — 전역 목적지 + 하단
+          에이전트 상태·설정. 캔버스 밖 flex 형제라 아래 wrapper 의
+          `absolute left-4/top-4 …` 류 값은 그대로 두어도 이 wrapper 의
+          로컬 (0,0) 기준으로 재계산돼 자동으로 64px 밀린다 — 개별 인셋 값을
+          손대지 않아도 되는 이유. 이번 슬라이스 마운트 범위는 지형도만. */}
+      <AppNavRail
+        settingsSlot={
+          <TopologyV2SettingsGear
+            indexDefaultCollapsed={indexPanelCollapsedStored}
+            onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
+            changeVaultHref="/docs/?intent=local"
+            popoverAlign="left"
+            popoverSide="top"
+            labels={{
+              trigger: t('controls.settingsGearAriaLabel'),
+              heading: t('controls.settingsGearHeading'),
+              locale: t('controls.settingsGearLocale'),
+              theme: t('controls.settingsGearTheme'),
+              indexDefault: t('controls.settingsGearIndexDefault'),
+              indexDefaultExpanded: t('controls.settingsGearIndexDefaultExpanded'),
+              indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
+              changeVault: t('controls.settingsGearChangeVault'),
+              changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
+            }}
+          />
+        }
+      />
+      <div className="relative h-full flex-1 overflow-hidden">
       {/*
         스크린리더 랜드마크 명시 + SEO h1. 시각 디자인은 canvas 중심이라
         visible h1 을 두기 어려워 sr-only 로 문서 구조 only 에 보이게 한다.
@@ -1415,10 +1444,13 @@ export function HomePage() {
               const growthLabel = recentlyUpdatedCount > 0
                 ? t('workspace.growthThisWeek', { count: recentlyUpdatedCount })
                 : "";
+              // growth 는 별도 prop(censusGrowthText)으로 넘겨 HeroCollapsed 가
+              // 인디고로 강조 표시(feat/chrome-system §5 census 각인)할 수
+              // 있게 한다 — 여기서 한 문자열로 합치면 세그먼트별 스타일이 안 됨.
               const workspaceSubtitle = t('workspace.subtitle', {
                 concepts: topologyTotalNodes,
                 relations: topologyTotalRelations,
-                growth: growthLabel,
+                growth: '',
               });
               const workspaceEyebrow = t('workspace.eyebrow', {
                 concepts: topologyTotalNodes,
@@ -1429,7 +1461,9 @@ export function HomePage() {
               void workspaceEyebrow;
               return (
                 <div
-                  className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8"
+                  // xl:left-8(32px) → xl:left-[var(--chrome-inset)](24px) —
+                  // feat/chrome-system §4, 24px 정렬 레일에 수렴(단일 출처).
+                  className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-[var(--chrome-inset)] xl:top-8"
                   data-testid="topology-top-left-chrome-group"
                   data-workspace-context-state={
                     selectedRelationActive
@@ -1472,6 +1506,14 @@ export function HomePage() {
                           ? workspaceSubtitle
                           : t('workspace.expandHint')
                     }
+                    censusGrowthText={
+                      !selectedProject && topologyTotalNodes > 0
+                        ? growthLabel || undefined
+                        : undefined
+                    }
+                    subtitleVariant={
+                      !selectedProject && topologyTotalNodes > 0 ? 'census' : 'eyebrow'
+                    }
                     icon={selectedProject?.icon ?? null}
                     ariaLabel={
                       selectedNodeFocusActive
@@ -1491,8 +1533,6 @@ export function HomePage() {
                           ? t('hero.closeSelected')
                           : t('hero.expandLeftPanel')
                     }
-                    docsVaultHref={selectedRelationActive ? undefined : "/docs/"}
-                    ontologyHref={selectedRelationActive ? undefined : "/ontology/"}
                     compact={selectedRelationActive}
                     sampleBadge={sampleModeSettled}
                   />
@@ -1569,47 +1609,35 @@ export function HomePage() {
                       ariaLabel={(count) => t('controls.reviewAria', { count })}
                     />
                     <Tooltip content={t('controls.docsTooltip')} side="bottom" withProvider={false}>
-                    <button
-                      type="button"
+                    <ChromeChip
                       onClick={() => setDocsDrawerOpen((v) => !v)}
                       aria-expanded={docsDrawerOpen}
                       aria-label={t('controls.docsAriaLabel')}
                       data-utility-action-token-contract="support-surface-family"
-                      data-utility-action-surface-token="--topology-utility-lane-surface"
-                      data-utility-action-border-token="--topology-utility-lane-border"
-                      data-utility-action-shadow-token="--topology-utility-lane-shadow"
-                      data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
-                      className={`inline-flex h-[var(--topology-utility-lane-height)] items-center justify-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-border)] bg-[color:var(--topology-utility-lane-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color,box-shadow,transform] duration-180 ease-out hover:border-[color:var(--topology-utility-lane-accent-border)] hover:bg-[color:var(--topology-utility-lane-hover-surface)] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none motion-reduce:transform-none ${
-                        topologyUtilityChromeCompact
-                          ? "w-[var(--topology-utility-lane-compact-width)] px-0"
-                          : "px-3.5"
-                      }`}
+                      data-utility-action-surface-token="--chrome-surface"
+                      data-utility-action-border-token="--chrome-border"
+                      data-utility-action-shadow-token="--chrome-shadow"
+                      data-utility-action-focus-ring-token="--color-indigo-accent"
+                      compact={topologyUtilityChromeCompact}
+                      icon={<BookOpen className="text-[color:var(--color-indigo-accent)]" />}
+                      kbd="D"
+                      badge={
+                        docsPinnedCount > 0 ? (
+                          <span
+                            data-utility-count-badge="pinned-docs"
+                            data-surface-token="--topology-utility-lane-count-surface"
+                            data-text-token="--topology-utility-lane-count-text"
+                            className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--topology-utility-lane-count-surface)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--topology-utility-lane-count-text)]"
+                            aria-label={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
+                            title={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
+                          >
+                            {docsPinnedCount}
+                          </span>
+                        ) : null
+                      }
                     >
-                      <BookOpen className="size-[var(--topology-chrome-icon-size)] text-[color:var(--color-indigo-accent)]" />
-                      <span className={topologyUtilityChromeCompact ? "sr-only" : undefined}>
-                        {t('controls.docsLabel')}
-                      </span>
-                      {docsPinnedCount > 0 ? (
-                        <span
-                          data-utility-count-badge="pinned-docs"
-                          data-surface-token="--topology-utility-lane-count-surface"
-                          data-text-token="--topology-utility-lane-count-text"
-                          className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--topology-utility-lane-count-surface)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--topology-utility-lane-count-text)]"
-                          aria-label={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
-                          title={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
-                        >
-                          {docsPinnedCount}
-                        </span>
-                      ) : null}
-                      <kbd
-                        aria-hidden="true"
-                        className={`hidden rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)] ${
-                          topologyUtilityChromeCompact ? "" : "sm:inline"
-                        }`}
-                      >
-                        D
-                      </kbd>
-                    </button>
+                      {t('controls.docsLabel')}
+                    </ChromeChip>
                     </Tooltip>
                     {canCreateNode ? (
                       <Tooltip content={t('createNode.toggleTooltip')} side="bottom" withProvider={false}>
@@ -1794,6 +1822,13 @@ export function HomePage() {
                     selectedId={canvasSelectedSlug}
                     onSelect={(id) => handleSelect(id)}
                     onCollapse={handleIndexCollapse}
+                    // 브랜드 필의 censusGrowthText 와 같은 출처(recentlyUpdatedCount)
+                    // — feat/chrome-system §9, 헤더→푸터 이관.
+                    footerGrowthText={
+                      recentlyUpdatedCount > 0
+                        ? t('workspace.growthThisWeek', { count: recentlyUpdatedCount })
+                        : undefined
+                    }
                     labels={{
                       label: t("index.label"),
                       fold: t("index.fold"),
@@ -2411,43 +2446,17 @@ export function HomePage() {
                     selectedNodeFocusActive
                       ? "top-[var(--topology-shortcuts-help-focus-phone-top)]"
                       : "top-[var(--topology-shortcuts-help-phone-top)]"
-                  } z-20 h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] font-mono text-[14px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:right-6 md:top-[var(--topology-shortcuts-help-desktop-top)] md:flex xl:right-8 ${
+                  } z-20 items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] md:right-6 md:top-[var(--topology-shortcuts-help-desktop-top)] md:flex xl:right-8 size-[var(--chrome-tile-size)] ${
                     topologyShortcutHelpPhoneVisible ? "flex" : "hidden"
                   }`}
                 >
-                  ?
+                  <HelpCircle className="size-[var(--chrome-icon)]" aria-hidden />
                 </button>
                 </Tooltip>
               )}
-              {/* 설정 기어 — 우측 유틸리티 레일, "?" 바로 아래 (chrome-datasheet-
-                  final.html 시안). 언어/테마/INDEX 기본 상태를 지도를 떠나지
-                  않고 바꾼다. fit/필터/? 와 같은 hide 조건 공유 — 데이터시트가
-                  뜨는 동안은 우측 레일 전체가 데이터시트로 교체된다(기존 관례).
-                  1차 스코프는 데스크톱만(`hidden md:flex`, 1512/1920 라이브 검증). */}
-              {createNodeOpen ||
-              selectedRelationActive ||
-              topologyBlockingOverlayActive ||
-              selectedNodeFocusActive ? null : (
-                <Tooltip content={t('controls.settingsGearTooltip')} side="left" withProvider={false}>
-                  <TopologyV2SettingsGear
-                    indexDefaultCollapsed={indexPanelCollapsedStored}
-                    onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
-                    changeVaultHref="/docs/?intent=local"
-                    labels={{
-                      trigger: t('controls.settingsGearAriaLabel'),
-                      heading: t('controls.settingsGearHeading'),
-                      locale: t('controls.settingsGearLocale'),
-                      theme: t('controls.settingsGearTheme'),
-                      indexDefault: t('controls.settingsGearIndexDefault'),
-                      indexDefaultExpanded: t('controls.settingsGearIndexDefaultExpanded'),
-                      indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
-                      changeVault: t('controls.settingsGearChangeVault'),
-                      changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
-                    }}
-                    className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-6 md:top-[var(--topology-settings-gear-desktop-top)] md:block xl:right-8"
-                  />
-                </Tooltip>
-              )}
+              {/* 설정 기어는 좌측 내비 레일 하단으로 이관됐다
+                  (feat/chrome-system — chrome-rail-combined.html). 우측
+                  세로 레일은 이제 지도 전용 3타일(전체보기/조절/단축키)만. */}
               <SigmaHubRail
                 projects={renderProjects}
                 selectedSlug={canvasSelectedSlug}
@@ -2663,6 +2672,7 @@ export function HomePage() {
               : null
           }
         />
+      </div>
     </main>
   );
 }

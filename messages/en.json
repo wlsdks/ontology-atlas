@@ -134,6 +134,14 @@
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"
   },
+  "navRail": {
+    "ariaLabel": "Primary navigation",
+    "map": "Map",
+    "docs": "Docs",
+    "builder": "Builder",
+    "insights": "Insights",
+    "projects": "Projects"
+  },
   "ontologySubNav": {
     "ariaLabel": "Ontology submenu",
     "caption": "Ontology",

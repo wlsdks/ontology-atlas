@@ -1545,9 +1545,10 @@ describe("TopologyAnalysisBar", () => {
       name: "Topology analysis mode",
     });
     // shares the same responsive left gutter as the topology header pill +
-    // legend (lg:left-6 → xl:left-8) so all left-anchored overlays align.
+    // legend (lg:left-6 → xl:left-[var(--chrome-inset)], 24px —
+    // feat/chrome-system §4) so all left-anchored overlays align.
     expect(bar.className).toContain("lg:left-6");
-    expect(bar.className).toContain("xl:left-8");
+    expect(bar.className).toContain("xl:left-[var(--chrome-inset)]");
     expect(bar).toHaveAttribute("data-right-panel-reserved", "true");
     expect(bar).toHaveAttribute("data-selected-focus-rail", "true");
     expect(bar).toHaveAttribute("data-panel-width-target", "selected-focus-rail");
