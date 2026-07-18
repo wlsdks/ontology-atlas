@@ -613,7 +613,9 @@
       "neighborTitleAria": "{title} ({kind}, {direction})",
       "directionOutgoing": "from this concept",
       "directionIncoming": "to this concept",
-      "centerAria": "Center: {title}"
+      "centerAria": "Center: {title}",
+      "overflowChip": "{kind} +{count}",
+      "overflowChipAria": "{count} more {kind} neighbors not drawn here — open the list below"
     },
     "manualSourceChipTitle": "Node authored directly by a person or AI agent (vault frontmatter / save/edit / MCP)"
   },
@@ -3298,6 +3300,7 @@
       "footer": "Document nodes act as reference evidence and are kept separate from the tree. <strong>Use Edit relations for writes and Verify graph for graph DB-style scans.</strong>"
     },
     "titleTooltipAria": "Explain what the ontology workbench is",
+    "deeplinkNotFound": "Node not found: {query}",
     "actions": {
       "workbenchOverview": "Work overview",
       "workbenchOverviewTooltip": "Show the Concept map · Edit relations · Verify graph flow",

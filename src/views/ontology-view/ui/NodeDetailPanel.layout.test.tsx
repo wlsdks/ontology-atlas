@@ -6,6 +6,7 @@ import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { OntologyEgoSubgraph, OntologyReachability } from "@/shared/lib/ontology-tree";
 import { TooltipProvider } from "@/shared/ui";
 import {
+  DeeplinkNotFoundNotice,
   NodeDetailPanel,
   OntologyCommandBarHeader,
   OntologyMetaFooter,
@@ -20,6 +21,12 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
   usePathname: () => "/ko/ontology/",
 }));
+
+// jsdom 은 scrollIntoView 를 구현하지 않는다 — overflow 칩 클릭 핸들러가
+// 이걸 호출하므로 없으면 throw. 다른 위젯 테스트와 같은 폴리필 패턴.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
@@ -623,7 +630,12 @@ describe("NodeDetailPanel layout", () => {
     expect(
       screen.getByRole("button", { name: "Views에서 ontology-atlas로 연관 관계 연결" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "ontology-atlas 의 관계 그래프 (2단계)" })).toBeInTheDocument();
+    const egoGraphImg = screen.getByRole("img", { name: "ontology-atlas 의 관계 그래프 (2단계)" });
+    expect(egoGraphImg).toBeInTheDocument();
+    // fable sigma-surfaces 리뷰 #1 — 컨테이너가 svg 를 제약 없이 늘리면
+    // (예: ~990px) 320×200 viewBox 기준 라벨/화살표가 실제 노드보다 커지는
+    // 3배 이상 과확대 회귀가 생긴다. max-width 캡으로 방지.
+    expect(egoGraphImg.closest('[style]')).toHaveStyle({ maxWidth: "384px" });
     expect(relationGraphSection).not.toHaveTextContent("Reachability");
     expect(relationGraphSection).not.toHaveTextContent("3-hop");
     expect(relationGraphSection).not.toHaveTextContent("1-hop");
@@ -854,6 +866,78 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.getByTestId("ontology-node-detail-section-relations")).not.toHaveAttribute(
       "hidden",
     );
+  });
+
+  it("caps a dense single-kind ego ring to a kind-grouped '+N' chip, and clicking it expands and scrolls the neighbor list below instead of dead-ending", () => {
+    const selected = node();
+    const neighbors = Array.from({ length: 14 }, (_, i) => {
+      const target = node({
+        id: `element:e-${i}`,
+        title: `Element ${i}`,
+        kind: "element",
+      });
+      return {
+        node: target,
+        neighborId: target.id,
+        edge: edge({
+          id: `edge:e-${i}`,
+          from: selected.id,
+          to: target.id,
+          type: "related_to",
+        }),
+        direction: "outgoing" as const,
+        hop: 1 as const,
+      };
+    });
+
+    renderPanel(selected, { ego: { centerId: selected.id, neighbors } });
+    fireEvent.click(screen.getByRole("tab", { name: "연결" }));
+
+    // dense (14 > 12 threshold): ego SVG draws a capped, kind-grouped subset
+    // (per-kind cap 8) and folds the rest into a "+N" chip instead of a
+    // 14-dot ring. "요소" = element's ko kind label.
+    const overflowChip = screen.getByRole("button", { name: "요소 +6" });
+    // preview-collapsed neighbor list below starts folded ("+8개 더").
+    expect(screen.getByRole("button", { name: "+8개 더" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+
+    fireEvent.click(overflowChip);
+
+    // clicking overflow expands the same list the review calls out as
+    // "already there" — it must not be a dead end.
+    expect(screen.getByRole("button", { name: "접기" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(
+      screen.getAllByRole("button", { name: /Element \d+로 연관 관계 연결/ }),
+    ).toHaveLength(14);
+  });
+});
+
+describe("DeeplinkNotFoundNotice", () => {
+  it("renders nothing when there is no unresolved deeplink query", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DeeplinkNotFoundNotice query={null} />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.queryByTestId("ontology-deeplink-not-found")).not.toBeInTheDocument();
+  });
+
+  it("shows a visible notice naming the unresolved query instead of a silent no-op", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DeeplinkNotFoundNotice query="nonexistent-xyz" />
+      </NextIntlClientProvider>,
+    );
+
+    const notice = screen.getByTestId("ontology-deeplink-not-found");
+    expect(notice).toHaveTextContent("노드를 찾을 수 없음: nonexistent-xyz");
+    expect(notice).toHaveAttribute("role", "status");
   });
 });
 

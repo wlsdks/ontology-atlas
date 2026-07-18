@@ -67,7 +67,10 @@ import {
   resolveReachabilityQuerySlug,
 } from "../lib/reachability-copy";
 import { formatQueryOntologyCall as mcpCall } from "@/shared/lib/ontology-query-call";
-import { resolveOntologyDeeplinkNode } from "../lib/resolve-deeplink-node";
+import {
+  computeDeeplinkNotFoundNotice,
+  resolveOntologyDeeplinkNode,
+} from "../lib/resolve-deeplink-node";
 import {
   buildOntologyReviewBrief,
   buildOntologyReviewTopologyHref,
@@ -160,27 +163,40 @@ export function OntologyViewPage() {
   // of truth: 외부 surface (검색 / 문서 / 직접 입력) 에서 URL 만 바뀌어도
   // 패널이 자동 열림. selectNode() 자체가 URL 도 갱신하므로 cycle 회피는
   // ID 비교로 (이미 같은 노드면 setState 호출 안 함).
+  //
+  // agent-handoff 딥링크가 안 풀리면 (bare slug 오타 / 삭제된 노드) 예전엔
+  // 아무 신호 없이 기본 empty state 만 보여 조용히 끊겼다 (silent no-op).
+  // deeplinkNotFoundId 가 그 실패를 눈에 보이는 notice 로 바꾼다.
   const deeplinkNodeId = searchParams.get("node");
+  const [deeplinkNotFoundId, setDeeplinkNotFoundId] = useState<string | null>(null);
   useEffect(() => {
     if (!insight) return;
     let cancelled = false;
     if (!deeplinkNodeId) {
-      if (selectedNode) {
-        window.queueMicrotask(() => {
-          if (!cancelled) setSelectedNode(null);
-        });
-      }
+      window.queueMicrotask(() => {
+        if (cancelled) return;
+        setDeeplinkNotFoundId(null);
+        if (selectedNode) setSelectedNode(null);
+      });
       return () => {
         cancelled = true;
       };
     }
-    if (selectedNode?.id === deeplinkNodeId) return;
-    const found = resolveOntologyDeeplinkNode(deeplinkNodeId, insight.nodes);
-    if (found) {
+    if (selectedNode?.id === deeplinkNodeId) {
       window.queueMicrotask(() => {
-        if (!cancelled) setSelectedNode(found);
+        if (!cancelled) setDeeplinkNotFoundId(null);
       });
+      return () => {
+        cancelled = true;
+      };
     }
+    const found = resolveOntologyDeeplinkNode(deeplinkNodeId, insight.nodes);
+    const notice = computeDeeplinkNotFoundNotice(deeplinkNodeId, selectedNode?.id ?? null, found);
+    window.queueMicrotask(() => {
+      if (cancelled) return;
+      setDeeplinkNotFoundId(notice);
+      if (found) setSelectedNode(found);
+    });
     return () => {
       cancelled = true;
     };
@@ -437,6 +453,8 @@ export function OntologyViewPage() {
           </div>
         </div>
       </section>
+
+      <DeeplinkNotFoundNotice query={deeplinkNotFoundId} />
 
       {showChangeReviewPanel ? (
         <div className="mb-3">
@@ -754,6 +772,26 @@ what this capability does.
       />
       </main>
     </>
+  );
+}
+
+/**
+ * `?node=<id>` 딥링크가 해석 안 됐을 때의 visible notice — 예전엔 이 경우
+ * 아무 신호 없이 기본 empty state 만 보여 agent-handoff 딥링크가 조용히
+ * 끊겼다 (fable sigma-surfaces 리뷰 #3). `query` 가 null 이면 아무것도
+ * 그리지 않는다 (정상 상태 — 딥링크 없음 / 이미 풀림).
+ */
+export function DeeplinkNotFoundNotice({ query }: { query: string | null }) {
+  const t = useTranslations('ontologyView');
+  if (!query) return null;
+  return (
+    <div
+      role="status"
+      data-testid="ontology-deeplink-not-found"
+      className="mb-3 rounded-md border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.06)] px-3 py-2 text-[12px] text-[color:var(--color-text-secondary)]"
+    >
+      {t('deeplinkNotFound', { query })}
+    </div>
   );
 }
 
@@ -1492,6 +1530,14 @@ export function NodeDetailPanel({
   };
   const NEIGHBOR_PREVIEW = 6;
   const EVIDENCE_PREVIEW = 6;
+  // ego SVG 의 dense-ring "+N" 칩 클릭 시 — 이미 렌더 중인 neighbor 목록을
+  // 펼치고 그쪽으로 스크롤. "숨긴 나머지"가 항상 도달 가능한 곳으로 이어진다
+  // (fable sigma-surfaces 리뷰 #2 — overflow 는 막다른 길이면 안 됨).
+  const neighborListRef = useRef<HTMLUListElement | null>(null);
+  const handleEgoOverflowClick = () => {
+    setShowAllNeighbors(() => true);
+    neighborListRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+  };
   const shouldClampSummary = (node.summary?.length ?? 0) > 180;
   const summaryText = node.summary && shouldClampSummary && !showFullSummary
     ? buildCollapsedSummaryPreview(node.summary)
@@ -2782,17 +2828,25 @@ export function NodeDetailPanel({
               </Tooltip>
             </div>
           </div>
-          {/* ego SVG — 데스크톱·모바일 모두 노출. 큰 ego (>12) 도 작동
-              하지만 라벨 겹침 가능 — 그 경우는 트리·검색 surface 가 보조.
-              2-hop 토글 시 동심원 (1-hop inner / 2-hop outer) 으로 분리. */}
-          <div className="mt-2 overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
+          {/* ego SVG — 데스크톱·모바일 모두 노출. dense ego (>12) 는 위젯이
+              kind 별로 그룹핑해 "+N" 칩으로 접는다 (194개 점 ring 방지).
+              2-hop 토글 시 동심원 (1-hop inner / 2-hop outer) 으로 분리.
+              max-width 는 svg 의 320×200 viewBox 디자인 의도(라벨 10px,
+              화살표 markerWidth 6)를 넘어 과확대되지 않게 캡 — 컨테이너
+              폭에 그대로 늘리면 라벨/화살표가 실제 노드보다 커지는 회귀
+              (fable sigma-surfaces 리뷰 #1). 캡 아래로는 그대로 반응형. */}
+          <div
+            className="mx-auto mt-2 w-full overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
+            style={{ maxWidth: 384 }}
+          >
             <OntologyEgoGraph
               ego={ego}
               centerNode={node}
               onSelectNeighbor={onSelectNeighbor}
+              onOverflowClick={handleEgoOverflowClick}
             />
           </div>
-          <ul className="mt-2 space-y-1">
+          <ul ref={neighborListRef} className="mt-2 space-y-1">
             {(showAllNeighbors ? ego.neighbors : ego.neighbors.slice(0, NEIGHBOR_PREVIEW)).map((neighbor) => {
               const isOutgoing = neighbor.direction === "outgoing";
               const directionLabel = isOutgoing
