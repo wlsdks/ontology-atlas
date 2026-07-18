@@ -10,7 +10,11 @@ import { initHomeSpring, isHomeSpringConverged, stepHomeSpring } from "./relayou
  * language stays consistent ("no pop", monotonic approach).
  */
 describe("stepHomeSpring / isHomeSpringConverged", () => {
-  const ANGULAR_FREQUENCY = 2.941; // --topology-v2-camera-spring-angfreq (reused)
+  // A representative critically-damped angular frequency — this pure-math
+  // test isn't tied to a specific `--topology-v2-*` token; the caller
+  // (`use-topology-loop.ts`'s auto-arrange homing) passes
+  // `--topology-v2-camera-spring-angfreq-transition` (dive-zoom fix's split).
+  const ANGULAR_FREQUENCY = 2.941;
   const DAMPING = 1.0; // critically damped
 
   it("converges to the home coordinate after enough steps", () => {

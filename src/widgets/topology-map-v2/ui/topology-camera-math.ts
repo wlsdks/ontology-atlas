@@ -14,7 +14,6 @@
  */
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
-import { DEFAULT_TIER_REVEAL } from "../model/tier-visibility";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { computeEgoBounds, radiusForKind, type TopologyWorld } from "./topology-world";
 import type { WorldNode } from "./topology-world";
@@ -232,15 +231,23 @@ export function computeEffectiveCameraScaleMin(
  * §3.2 "카메라가 노드+1-hop 이웃 bbox 로 스프링 다이브"). `null` only if
  * `focusedSlug` doesn't resolve to a known node.
  *
- * C1 A3 (ratio-based focus dive): the old absolute `focusFitMaxScale` (1.9)
- * capped the dive below even the capability tier's `enterRatio` at typical
- * viewports — clicking a node could never reveal its own capabilities, the
- * entire point of focusing it. The dive scale is now the LARGER of (a) the
- * tight fit-to-ego-bbox scale (so a big cluster still fits on screen) and (b)
- * `overviewEntryScale × capability.fullRatio` (a floor that GUARANTEES
- * capabilities finish revealing, even if that means zooming past the natural
- * bbox fit for a small cluster) — clamped to `[cameraScaleMin,
- * effectiveCameraScaleMax]` so it never exceeds the new ratio-based ceiling.
+ * Dive-framing fix (owner symptom: "clicking a node dives TOO deep —
+ * over-zoomed, cluttered, labels colliding; pleasant view only after zooming
+ * way out"). C1 A3's `revealFloor = overviewEntryScale × capability.fullRatio`
+ * forced EVERY dive to zoomRatio ≥ 2.0 regardless of the ego cluster's own
+ * size — a wide-fan domain (many spread-out neighbors) got zoomed in far past
+ * what fitting that fan actually needed. The floor is also redundant: C1 A2's
+ * ego-tier exemption (`model/tier-visibility.ts#effectiveNodeAlpha`) already
+ * keeps the focused node + its 1-hop neighbors visible/clickable at ANY zoom,
+ * so nothing needs a minimum zoom-in to "reveal" them anymore.
+ *
+ * The dive target is now simply `clamp(fitScale(egoBounds × marginRatio),
+ * overviewEntryScale, effectiveMax)`: fit the WHOLE ego set (padded by
+ * `--topology-v2-focus-bbox-margin`, a multiplicative ratio ~1.15 so the
+ * padding scales with cluster size instead of a fixed px pad), floored at the
+ * overview's OWN entry scale (a "dive" never zooms OUT past the overview
+ * itself), capped at the ratio-based effective max (the degenerate tiny-ego
+ * case, where the raw fit would zoom in far past readable).
  */
 export function computeFocusCameraTarget(
   world: TopologyWorld,
@@ -259,23 +266,21 @@ export function computeFocusCameraTarget(
   const egoBounds = computeEgoBounds(world, tokens, focusedSlug);
   if (!egoBounds) return null;
 
-  const margin = tokens.focusBboxMargin;
-  const bounds = {
-    minX: egoBounds.minX - margin,
-    minY: egoBounds.minY - margin,
-    maxX: egoBounds.maxX + margin,
-    maxY: egoBounds.maxY + margin,
-  };
-  const w = Math.max(1, bounds.maxX - bounds.minX);
-  const h = Math.max(1, bounds.maxY - bounds.minY);
+  // Multiplicative margin (not additive px) so a wide ego cluster gets
+  // proportionally more breathing room than a tiny one, uniformly scaled
+  // about the bbox's own center.
+  const marginRatio = tokens.focusBboxMargin;
+  const centerX = (egoBounds.minX + egoBounds.maxX) / 2;
+  const centerY = (egoBounds.minY + egoBounds.maxY) / 2;
+  const w = Math.max(1, (egoBounds.maxX - egoBounds.minX) * marginRatio);
+  const h = Math.max(1, (egoBounds.maxY - egoBounds.minY) * marginRatio);
   const fitScale = Math.min(viewportWidth / w, viewportHeight / h);
-  const revealFloor = overviewEntryScale * DEFAULT_TIER_REVEAL.capability.fullRatio;
   const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-  const scale = Math.min(effectiveMax, Math.max(tokens.cameraScaleMin, fitScale, revealFloor));
+  const scale = Math.min(effectiveMax, Math.max(overviewEntryScale, fitScale));
 
   return {
-    tx: (bounds.minX + bounds.maxX) / 2,
-    ty: (bounds.minY + bounds.maxY) / 2,
+    tx: centerX,
+    ty: centerY,
     tscale: scale,
   };
 }

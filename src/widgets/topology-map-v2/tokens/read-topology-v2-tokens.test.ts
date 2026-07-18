@@ -62,7 +62,8 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-star-count": "4",
   "--topology-v2-dust-area-per-point": "5200",
 
-  "--topology-v2-camera-spring-angfreq": "2.941",
+  "--topology-v2-camera-spring-angfreq-interactive": "12",
+  "--topology-v2-camera-spring-angfreq-transition": "4.7",
   "--topology-v2-camera-damping-default": "1.0",
   "--topology-v2-camera-damping-flick": "0.82",
   "--topology-v2-camera-momentum-decay": "0.998",
@@ -103,7 +104,7 @@ function fixtureReader(overrides: Record<string, string> = {}) {
 }
 
 describe("resolveTopologyV2Tokens", () => {
-  it("resolves all 81 §2 tokens to the exact prototype-sourced values", () => {
+  it("resolves all 82 §2 tokens to the exact prototype-sourced values", () => {
     const tokens = resolveTopologyV2Tokens(fixtureReader());
 
     expect(tokens.nodeFillProject).toBe("#1c1c22");
@@ -120,7 +121,8 @@ describe("resolveTopologyV2Tokens", () => {
     expect(tokens.nodeSheenBlend).toBeCloseTo(0.6, 3);
     expect(tokens.radiusProject).toBe(25);
     expect(tokens.radiusElement).toBe(7);
-    expect(tokens.cameraSpringAngFreq).toBeCloseTo(2.941, 3);
+    expect(tokens.cameraSpringAngFreqInteractive).toBeCloseTo(12, 3);
+    expect(tokens.cameraSpringAngFreqTransition).toBeCloseTo(4.7, 3);
     expect(tokens.cameraMomentumDecay).toBe(0.998);
     expect(tokens.hysteresisPx).toBe(7);
     expect(tokens.starCount).toBe(4);
