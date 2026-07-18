@@ -373,11 +373,14 @@ Empty state: blue link to `/docs` (open vault).
 - "uncategorized" / "active" fallback labels via taxonomy
 
 #### Featured sections
-- **Local topology** — Sigma 1-hop neighbors graph (520 px, minimal mode)
 - **Project info card** (when `project.detail` markdown exists)
 - **Integrity issues** card (yellow border, only when issues > 0)
 - **Screenshots** collapsible (only when count > 0)
-- **Linked projects** card (next-project + neighbors map, dedup'd)
+- **Linked projects** card (dependency + referenced-by, dedup'd) — the single
+  source for this project's connections; the connection-map mini-graph that
+  used to sit above it was retired (2026-07, demo-unreachable — dogfood's
+  single-project vault always showed the map's empty state, and the same
+  typed fact already lived in this card)
 - **Ontology overview** card (client-only fetch)
 
 #### "More info" collapsible
