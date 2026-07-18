@@ -59,7 +59,6 @@ function writeSource(name, content) {
   return p;
 }
 
-// eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 function stripAnsi(text) {
   return text.replace(ANSI_RE, '');

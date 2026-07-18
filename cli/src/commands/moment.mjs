@@ -15,7 +15,7 @@
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { MOMENT_TARGET_MS, momentSummary, stampMomentIfFirst } from '../lib/telemetry.mjs';
+import { momentSummary, stampMomentIfFirst } from '../lib/telemetry.mjs';
 import { formatUnknownFlagError, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--json', '--mark'];
