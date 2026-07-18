@@ -1010,6 +1010,37 @@
     --topology-v2-safe-inset-right: 120;
     --topology-v2-safe-inset-top: 96;
     --topology-v2-safe-inset-bottom: 96;
+
+    /* 2.6 컴포넌트 데이터시트 패널 (`TopologyV2DetailPanel`, DOM 소비)
+       노드 클릭 시 우측에 뜨는 계측기 밀도(instrument) 상세 패널 —
+       구 `TopologyNodePopover` 보다 촘촘하다(소유자 "아이콘 너무 큼" +
+       "정보가 세 번 나온다" 반려). 색은 중립 5단계 + 인디고 신호만,
+       kind 미니어처는 캔버스와 공유하는 `--topology-v2-node-*` 토큰 재사용.
+       P6 에서 구엔진 삭제 시 `--topology-v2-` grep 으로 함께 제거된다. */
+    --topology-v2-panel-width: 288px;
+    --topology-v2-panel-radius: 9px;
+    --topology-v2-panel-row-radius: 5px;
+    --topology-v2-panel-pad: 11px;
+    --topology-v2-panel-gap: 10px;
+    --topology-v2-panel-surface: #17171c;
+    --topology-v2-panel-border: #2a2a30;
+    --topology-v2-panel-divider: #23232a;
+    --topology-v2-panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+    --topology-v2-panel-row-hover: rgba(255, 255, 255, 0.045);
+    --topology-v2-panel-metric-surface: rgba(255, 255, 255, 0.028);
+    --topology-v2-panel-metric-text: #b6b6c0;
+    --topology-v2-panel-action-surface: rgba(255, 255, 255, 0.03);
+    --topology-v2-panel-action-border: #2f2f37;
+    /* "전원" 표시 — powered(최근 갱신)=인디고 신호, unpowered=중립 저채도 */
+    --topology-v2-panel-power-on: var(--color-indigo-brand);
+    --topology-v2-panel-power-off: #45454d;
+    --topology-v2-panel-text-primary: #ececf0;
+    --topology-v2-panel-text-secondary: #a3a3ac;
+    --topology-v2-panel-text-tertiary: #77777f;
+    --topology-v2-panel-text-quaternary: #55555d;
+    /* 연결 그룹 trace 미니라인 — 캔버스 엣지와 같은 계열(contains 실선/depends 점선) */
+    --topology-v2-edge-contains-mark: #4a4a54;
+    --topology-v2-edge-depends-mark: #5c5c72;
   }
 
   html {

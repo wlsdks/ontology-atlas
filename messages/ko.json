@@ -2788,6 +2788,18 @@
       "relationPayloadCopyShort": "복사",
       "relationEvidenceShort": "근거"
     },
+    "nodeDatasheet": {
+      "poweredOn": "최근 갱신",
+      "poweredOff": "정체",
+      "metricUsedBy": "쓰는 곳",
+      "metricDependsOn": "기대는 곳",
+      "metricEvidence": "근거",
+      "groupContains": "포함",
+      "groupDepends": "의존",
+      "noConnections": "직접 연결 없음",
+      "handoff": "다음 액션 복사",
+      "handoffCopied": "에이전트 인계를 복사했어요"
+    },
     "ontologyDrawer": {
       "caption": "개념 정보",
       "source": "문서",
