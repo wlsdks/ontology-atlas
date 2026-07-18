@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>/ontology/insights — machined 계기판</title>
+<!--
+  B2+ batch #2 — /ontology/insights redesign mock. THE instrument page.
+  Tufte discipline: data-ink only — engraved census header, kind census bars,
+  per-domain capacity, hub top-N, relation-type breakdown with solid/dashed
+  trace-mark legend, freshness strip. Counts follow the batch #1 exemplar
+  world (296 · 508); every breakdown keeps real dogfood vault shapes
+  (domain names, capability titles, relation-type ratios, recent git activity).
+-->
+<style>
+  /* Values copied from app/globals.css token families (standalone prototype). */
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --action-surface: rgba(255, 255, 255, 0.03);
+    --machined-edge: rgba(255, 255, 255, 0.05);
+    --mark-contains: #4a4a54;
+    --mark-depends: #5c5c72;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+  }
+  .page { max-width: 1240px; margin: 0 auto; padding: 28px 40px 56px; }
+
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .crumbs {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-tertiary); margin-bottom: 26px;
+  }
+  .crumbs a { color: var(--text-secondary); text-decoration: none; }
+  .crumbs a:hover { color: var(--text-primary); }
+  .crumbs .sep { color: var(--text-quaternary); }
+  .crumbs .census {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+
+  .phead { display: flex; align-items: flex-end; gap: 18px; }
+  .phead h1 { margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -0.015em; }
+  .phead .sub { font-size: 12.5px; color: var(--text-tertiary); padding-bottom: 3px; }
+
+  /* engraved census header strip */
+  .metricline {
+    margin-top: 16px;
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    background: var(--metric-surface);
+    padding: 9px 14px;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.01em;
+    color: #b6b6c0;
+    display: flex; gap: 18px; align-items: baseline;
+  }
+  .metricline b {
+    font-weight: 600; color: var(--numeral-face);
+    text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .metricline .lbl { color: var(--text-tertiary); }
+
+  /* dashboard grid */
+  .grid {
+    margin-top: 22px;
+    display: grid; grid-template-columns: 1fr 1.18fr; gap: 20px;
+    align-items: start;
+  }
+  .stack { display: flex; flex-direction: column; gap: 20px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 9px;
+    box-shadow: inset 0 1px 0 var(--machined-edge);
+    padding: 13px 14px;
+  }
+  .ghead { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+  .ghead .glabel { font-size: 13px; font-weight: 560; color: var(--text-primary); letter-spacing: -0.01em; }
+  .ghead .gcap {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .ghead .num { margin-left: auto; font-size: 12px; }
+
+  /* engraved bar rows (kind census / relation types / domain capacity) */
+  .bars { display: grid; grid-template-columns: max-content 1fr max-content; column-gap: 14px; row-gap: 8px; align-items: center; }
+  .bars .bn {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text-secondary); white-space: nowrap;
+  }
+  .bars .bn .quiet { color: var(--text-quaternary); font-size: 11px; }
+  .bars .track {
+    height: 3px; border-radius: 2px; background: var(--border-soft);
+    overflow: hidden; position: relative; min-width: 60px;
+  }
+  .bars .track i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: #55555d; }
+  .bars .bc {
+    font-family: var(--mono); font-size: 11.5px; text-align: right;
+    font-weight: 600; color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums; min-width: 34px;
+  }
+  .bars .sublbl {
+    font-family: var(--mono); font-size: 9.5px; color: var(--text-quaternary);
+    text-align: right; white-space: nowrap;
+  }
+
+  /* hubs list */
+  .hubrows { display: flex; flex-direction: column; }
+  .hubrow {
+    display: flex; align-items: center; gap: 9px;
+    padding: 5px 7px; border-radius: 5px;
+    border: 1px solid transparent;
+    font-size: 12.5px; color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color 120ms ease, color 120ms ease;
+  }
+  .hubrow:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .hubrow .t { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hubrow .dom { flex: none; font-size: 10.5px; color: var(--text-quaternary); }
+  .hubrow .fresh-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); flex: none; }
+  .hubrow .deg {
+    flex: none; min-width: 26px; text-align: right;
+    font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+  .hublegend {
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--divider);
+    font-size: 10.5px; color: var(--text-quaternary);
+  }
+
+  /* freshness strip */
+  .freshrows { display: flex; flex-direction: column; }
+  .freshrow {
+    display: flex; align-items: center; gap: 9px;
+    padding: 5px 7px; border-radius: 5px;
+    font-size: 12.5px; color: var(--text-secondary);
+  }
+  .freshrow .t { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .freshrow .dom { flex: none; font-size: 10.5px; color: var(--text-quaternary); }
+  .freshrow .d {
+    flex: none; font-family: var(--mono); font-size: 10.5px;
+    color: var(--text-quaternary); letter-spacing: 0.02em;
+  }
+  .freshrow .fresh-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); flex: none; }
+  .freshsummary {
+    margin-top: 8px; padding-top: 9px; border-top: 1px solid var(--divider);
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-quaternary);
+  }
+  .freshsummary b {
+    font-weight: 600; color: var(--numeral-face);
+    text-shadow: 0 1px 0 var(--numeral-shadow); font-size: 11px;
+  }
+
+  .handoff {
+    margin-top: 24px;
+    border: 1px solid var(--border-soft); border-radius: 9px;
+    background: var(--panel); padding: 13px 14px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .handoff .hlabel { font-size: 12.5px; font-weight: 560; color: var(--text-primary); flex: none; }
+  .handoff .payload {
+    min-width: 0; flex: 1;
+    font-family: var(--mono); font-size: 11.5px; color: var(--text-tertiary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .handoff button {
+    flex: none; appearance: none; cursor: pointer;
+    font: 560 12px/1 inherit; font-family: inherit;
+    color: var(--indigo-bright);
+    background: var(--action-surface);
+    border: 1px solid rgba(94, 106, 210, 0.5);
+    border-radius: 6px; padding: 7px 13px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .handoff button:hover { background: var(--row-hover); border-color: var(--indigo); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="crumbs">
+    <a href="#">← 온톨로지</a>
+    <span class="sep">/</span>
+    <span>인사이트</span>
+    <span class="census">296 CONCEPTS · 508 RELATIONS</span>
+  </nav>
+
+  <header class="phead">
+    <h1>그래프 인사이트</h1>
+    <span class="sub">vault 전체를 한 계기판에서 — 모든 숫자는 frontmatter 에서 유도</span>
+  </header>
+
+  <div class="metricline">
+    <span><span class="lbl">개념</span> <b>296</b></span>
+    <span><span class="lbl">관계</span> <b>508</b></span>
+    <span><span class="lbl">도메인</span> <b>6</b></span>
+    <span><span class="lbl">밀도</span> <b>1.72</b> <span class="lbl">edge/concept</span></span>
+    <span><span class="lbl">고아</span> <b>4</b></span>
+    <span><span class="lbl">사이클</span> <b>0</b></span>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT column -->
+    <div class="stack">
+      <section class="card">
+        <div class="ghead">
+          <span class="glabel">종류 분포</span>
+          <span class="gcap">kind census</span>
+          <span class="num">296</span>
+        </div>
+        <div class="bars" id="kind-bars"></div>
+      </section>
+
+      <section class="card">
+        <div class="ghead">
+          <span class="glabel">관계 타입</span>
+          <span class="gcap">relation breakdown</span>
+          <span class="num">508</span>
+        </div>
+        <div class="bars" id="rel-bars"></div>
+      </section>
+
+      <section class="card">
+        <div class="ghead">
+          <span class="glabel">신선도</span>
+          <span class="gcap">freshness</span>
+        </div>
+        <div class="freshrows" id="fresh-rows"></div>
+        <p class="freshsummary">최근 30일 갱신 <b>34</b> · 90일 이상 미갱신 <b>41</b></p>
+      </section>
+    </div>
+
+    <!-- RIGHT column -->
+    <div class="stack">
+      <section class="card">
+        <div class="ghead">
+          <span class="glabel">도메인 용량</span>
+          <span class="gcap">domain capacity</span>
+          <span class="num">6</span>
+        </div>
+        <div class="bars" id="dom-bars"></div>
+      </section>
+
+      <section class="card">
+        <div class="ghead">
+          <span class="glabel">허브 — 연결 상위</span>
+          <span class="gcap">hubs by degree</span>
+        </div>
+        <div class="hubrows" id="hub-rows"></div>
+        <p class="hublegend">연결수 = frontmatter 관계의 in + out. 점(●)은 최근 30일 갱신.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="handoff">
+    <span class="hlabel">에이전트 핸드오프</span>
+    <span class="payload">query_ontology({operation:"health"}) → centrality → growth_plan → maintenance_plan</span>
+    <button type="button">다음 액션 복사</button>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" },
+    document:   { fill: "#15151a", stroke: "#3c3c44" }
+  };
+  function hexPts(c, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push((c + r * Math.cos(a)).toFixed(2) + "," + (c + r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(" ");
+  }
+  function glyphSVG(kind, s) {
+    s = s || 15;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var c = s / 2;
+    var common = 'fill="' + col.fill + '" stroke="' + col.stroke + '" stroke-width="1.25"';
+    var body;
+    if (kind === "project") {
+      body = '<polygon points="' + hexPts(c, c - 1.2) + '" ' + common + '/>';
+    } else if (kind === "domain") {
+      body = '<rect x="' + (s * 0.067) + '" y="' + (s * 0.227) + '" width="' + (s * 0.867) + '" height="' + (s * 0.547) + '" rx="1.6" ' + common + '/>';
+    } else if (kind === "capability") {
+      body = '<circle cx="' + c + '" cy="' + c + '" r="' + (c - 1.6) + '" ' + common + '/>';
+    } else if (kind === "document") {
+      body = '<rect x="' + (s * 0.2) + '" y="' + (s * 0.1) + '" width="' + (s * 0.6) + '" height="' + (s * 0.8) + '" rx="1.2" ' + common + '/>';
+    } else {
+      body = '<rect x="' + (s * 0.16) + '" y="' + (s * 0.16) + '" width="' + (s * 0.68) + '" height="' + (s * 0.68) + '" rx="1.4" ' + common + '/>' +
+             '<circle cx="' + c + '" cy="' + c + '" r="' + (s * 0.1) + '" fill="#0c0c10"/>';
+    }
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
+  }
+
+  // trace-mark legend swatch: solid=contains 계열, dashed=depends/relates, dotted=evidence
+  function markSVG(style) {
+    var stroke = style === "contains" ? "var(--mark-contains)" : "var(--mark-depends)";
+    var dash = style === "contains" ? "" : style === "evidence" ? ' stroke-dasharray="1.2 3"' : ' stroke-dasharray="3 3"';
+    return '<svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true" style="flex:none">' +
+      '<line x1="1" y1="3" x2="21" y2="3" stroke="' + stroke + '" stroke-width="1.4"' + dash + ' stroke-linecap="round"/></svg>';
+  }
+
+  function barRows(items, opts) {
+    opts = opts || {};
+    var max = Math.max.apply(null, items.map(function (x) { return x.n; }));
+    return items.map(function (x) {
+      return '<span class="bn">' + (x.mark || "") + (x.glyph || "") + x.t +
+        (x.quiet ? ' <span class="quiet">' + x.quiet + "</span>" : "") + "</span>" +
+        '<span class="track"><i style="width:' + Math.max(2, Math.round(x.n / max * 100)) + '%"></i></span>' +
+        (opts.sub
+          ? '<span class="bc" style="min-width:110px"><span class="sublbl">' + x.sub + " </span>" + x.n + "</span>"
+          : '<span class="bc">' + x.n + "</span>");
+    }).join("");
+  }
+
+  // 종류 분포 — kind glyphs + engraved bars (296 world, real ratios)
+  document.getElementById("kind-bars").innerHTML = barRows([
+    { glyph: glyphSVG("element", 13),    t: "요소",     quiet: "element",    n: 250 },
+    { glyph: glyphSVG("capability", 13), t: "역량",     quiet: "capability", n: 36 },
+    { glyph: glyphSVG("domain", 13),     t: "도메인",   quiet: "domain",     n: 6 },
+    { glyph: glyphSVG("document", 13),   t: "문서",     quiet: "document",   n: 3 },
+    { glyph: glyphSVG("project", 13),    t: "프로젝트", quiet: "project",    n: 1 }
+  ]);
+
+  // 관계 타입 — trace-mark legend (solid contains / dashed depends·relates / dotted evidence)
+  document.getElementById("rel-bars").innerHTML = barRows([
+    { mark: markSVG("evidence"), t: "evidence",   quiet: "노드 → 코드 근거", n: 271 },
+    { mark: markSVG("relates"),  t: "relates",    quiet: "느슨한 연관",      n: 119 },
+    { mark: markSVG("contains"), t: "contains",   quiet: "포함 계층",        n: 103 },
+    { mark: markSVG("relates"),  t: "depends_on", quiet: "의존",             n: 15 }
+  ]);
+
+  // 도메인 용량 — real dogfood domains, cap/el subcounts
+  document.getElementById("dom-bars").innerHTML = barRows([
+    { glyph: glyphSVG("domain", 13), t: "Views",                n: 118, sub: "역량 17 · 요소 101" },
+    { glyph: glyphSVG("domain", 13), t: "AI Agent Partner",     n: 64,  sub: "역량 10 · 요소 54" },
+    { glyph: glyphSVG("domain", 13), t: "Vault — Local-First",  n: 38,  sub: "역량 4 · 요소 34" },
+    { glyph: glyphSVG("domain", 13), t: "Onboarding & UX",      n: 33,  sub: "역량 2 · 요소 31" },
+    { glyph: glyphSVG("domain", 13), t: "Ontology Core",        n: 21,  sub: "역량 1 · 요소 20" },
+    { glyph: glyphSVG("domain", 13), t: "Mode-Aware Adapters",  n: 12,  sub: "역량 2 · 요소 10" }
+  ], { sub: true });
+
+  // 허브 상위 — real dogfood hub nodes (fresh dot = 최근 30일 갱신)
+  var hubs = [
+    { k: "capability", t: "MCP Server (24 tools)",        dom: "ai-agent-partner",    deg: 38 },
+    { k: "capability", t: "Frontmatter → Ontology Stub",  dom: "ontology-core",       deg: 29 },
+    { k: "capability", t: "Agent Graph Readiness",        dom: "views",               deg: 24 },
+    { k: "capability", t: "Ontology Hub — Mode-Aware",    dom: "mode-aware-adapters", deg: 22 },
+    { k: "capability", t: "CLI Developer Entry",          dom: "onboarding-ux",       deg: 21 },
+    { k: "capability", t: "Agent Config Onboarding",      dom: "ai-agent-partner",    deg: 17 },
+    { k: "document",   t: "Views Domain Boundary Audit",  dom: "document",            deg: 14 },
+    { k: "capability", t: "Topology Skeleton Entry",      dom: "views",               deg: 12, fresh: true }
+  ];
+  document.getElementById("hub-rows").innerHTML = hubs.map(function (h) {
+    return '<div class="hubrow">' + glyphSVG(h.k, 13) +
+      '<span class="t">' + h.t + "</span>" +
+      (h.fresh ? '<span class="fresh-dot" title="최근 갱신"></span>' : "") +
+      '<span class="dom">' + h.dom + "</span>" +
+      '<span class="deg">' + h.deg + "</span></div>";
+  }).join("");
+
+  // 신선도 — real recent vault activity (git, 최근 30일)
+  var fresh = [
+    { k: "element",    t: "Topology Analysis Bar",   dom: "views",             d: "07-18" },
+    { k: "capability", t: "Topology Skeleton Entry", dom: "views",             d: "07-18" },
+    { k: "document",   t: "Agent Practice Research", dom: "document",          d: "07-16" },
+    { k: "capability", t: "Vault Live Updates",      dom: "vault-local-first", d: "07-15" },
+    { k: "element",    t: "First-Run Page",          dom: "onboarding-ux",     d: "07-14" },
+    { k: "domain",     t: "Views",                   dom: "domain",            d: "07-12" }
+  ];
+  document.getElementById("fresh-rows").innerHTML = fresh.map(function (f) {
+    return '<div class="freshrow"><span class="fresh-dot"></span>' + glyphSVG(f.k, 13) +
+      '<span class="t">' + f.t + "</span>" +
+      '<span class="dom">' + f.dom + "</span>" +
+      '<span class="d">' + f.d + "</span></div>";
+  }).join("");
+})();
+</script>
+</body>
+</html>
