@@ -3796,7 +3796,9 @@
         "cancel": "Cancel",
         "deleteConfirm": "Really delete the \"{name}\" project?",
         "createNoticeStay": "Project created — ready to keep editing.",
-        "editNoticeStay": "Saved the changes. You can verify on the right preview and the public link."
+        "editNoticeStay": "Saved the changes. You can verify on the right preview and the public link.",
+        "deleteRowTitle": "Delete project",
+        "deleteRowCaption": "The md file is deleted and relations remain as dangling warnings — a dry-run shows this first."
       },
       "tip": {
         "eyebrow": "1-minute tip",

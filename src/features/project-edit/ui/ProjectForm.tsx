@@ -654,11 +654,15 @@ export function ProjectForm({
     : t("preview.summaryClean", { score: completenessInsight.score });
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_260px]">
+    // 640px 중앙 폼 컬럼 (docs/prototypes/project-forms-final.html · RATIO-SYSTEM.md
+    // --page-col-form). 우측 260px 는 기존 라이브 미리보기 — 스펙 목업은 단일
+    // 컬럼이지만 완성도 점수·카드 프리뷰는 실제 사용자에게 이미 검증된 기능이라
+    // 제거하지 않고, 폭 640 은 그대로 지키면서 companion 컬럼으로 유지.
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[640px_260px]">
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div
           className={cn(
-            "rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-4 shadow-[0_18px_36px_rgba(0,0,0,0.22)]",
+            "rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_18px_36px_rgba(0,0,0,0.22)]",
             mode === "edit" && "sticky top-4 z-10",
           )}
         >
@@ -1199,59 +1203,77 @@ export function ProjectForm({
           </label>
         </FormSection>
 
-        <div className="flex items-center justify-between border-t border-[color:var(--color-overlay-2)] pt-6">
-          <div>
-            {mode === "edit" && onDelete && (
-              <Button
-                data-testid="project-delete"
-                type="button"
-                variant="outline"
-                onClick={handleDelete}
-                disabled={deleting || submitting}
-              >
-                {deleting ? t("actions.deleting") : t("actions.delete")}
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              data-testid="project-save-return"
-              type="submit"
-              data-submit-behavior="return"
-              variant="outline"
-              onClick={() => {
-                submitBehaviorRef.current = "return";
-              }}
-              disabled={submitting || deleting}
-            >
-              {mode === "create" ? t("actions.createAndReturn") : t("actions.saveAndReturn")}
-            </Button>
-            <Button
-              data-testid="project-cancel"
-              type="button"
-              variant="ghost"
-              onClick={onCancel}
-              disabled={submitting || deleting}
-            >
-              {t("actions.cancel")}
-            </Button>
-            <Button
-              data-testid="project-save"
-              type="submit"
-              data-submit-behavior="stay"
-              onClick={() => {
-                submitBehaviorRef.current = "stay";
-              }}
-              disabled={submitting || deleting}
-            >
-              {submitting
-                ? t("actions.saving")
-                : mode === "create"
-                  ? t("actions.createAndContinue")
-                  : t("actions.saveAndContinue")}
-            </Button>
-          </div>
+        <div className="flex items-center justify-end gap-2 border-t border-[color:var(--color-overlay-2)] pt-6">
+          <Button
+            data-testid="project-save-return"
+            type="submit"
+            data-submit-behavior="return"
+            variant="outline"
+            onClick={() => {
+              submitBehaviorRef.current = "return";
+            }}
+            disabled={submitting || deleting}
+          >
+            {mode === "create" ? t("actions.createAndReturn") : t("actions.saveAndReturn")}
+          </Button>
+          <Button
+            data-testid="project-cancel"
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            disabled={submitting || deleting}
+          >
+            {t("actions.cancel")}
+          </Button>
+          <Button
+            data-testid="project-save"
+            type="submit"
+            data-submit-behavior="stay"
+            onClick={() => {
+              submitBehaviorRef.current = "stay";
+            }}
+            disabled={submitting || deleting}
+          >
+            {submitting
+              ? t("actions.saving")
+              : mode === "create"
+                ? t("actions.createAndContinue")
+                : t("actions.saveAndContinue")}
+          </Button>
         </div>
+
+        {/* Edit-only danger row — dashed border is the category signal
+            (design charter: category distinction is a border style, not a
+            color), matching docs/prototypes/project-forms-final.html. This
+            replaces the old inline delete button that used to sit at the
+            bottom-left of the action bar — deletion is still reachable from
+            the sticky top bar (`project-delete-top`); this row adds the
+            consequence caption the compact top button has no room for. */}
+        {mode === "edit" && onDelete && (
+          <div
+            data-testid="project-danger-row"
+            className="mt-4 flex items-center gap-3 rounded-[9px] border border-dashed border-[color:var(--color-border-strong)] px-4 py-3"
+          >
+            <div className="min-w-0">
+              <p className="text-[12.5px] text-[color:var(--color-text-secondary)]">
+                {t("actions.deleteRowTitle")}
+              </p>
+              <p className="mt-0.5 text-[11px] text-[color:var(--color-text-quaternary)]">
+                {t("actions.deleteRowCaption")}
+              </p>
+            </div>
+            <Button
+              data-testid="project-delete"
+              type="button"
+              variant="outline"
+              onClick={handleDelete}
+              disabled={deleting || submitting}
+              className="ml-auto shrink-0 border-[color:var(--color-border-soft)] text-[color:var(--color-status-danger)] hover:border-[color:rgba(229,72,77,0.5)]"
+            >
+              {deleting ? t("actions.deleting") : t("actions.delete")}
+            </Button>
+          </div>
+        )}
       </form>
 
       {/* 모바일에서는 폼 입력을 먼저 보이게 하고, 데스크톱에서만 우측 보조 패널로 유지한다. */}
@@ -1430,18 +1452,23 @@ function FormSection({
   return (
     <section
       id={id}
-      className="scroll-mt-28 rounded-xl border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-4 py-5 md:px-5"
+      className="scroll-mt-28 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] md:px-5"
     >
-      <div className="mb-5 border-b border-[color:var(--color-overlay-2)] pb-4">
+      <div className="mb-5">
+        {/* engraved section label — mono uppercase caption + hairline
+            continuation (docs/prototypes/project-forms-final.html `.slabel`) */}
+        <div className="mb-3 flex items-center gap-2.5">
+          <p
+            id={headingId}
+            className="shrink-0 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-tertiary)]"
+          >
+            {label}
+          </p>
+          <span aria-hidden className="h-px flex-1 bg-[color:var(--color-divider)]" />
+        </div>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p
-              id={headingId}
-              className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]"
-            >
-              {label}
-            </p>
-            <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
+            <p className="text-sm text-[color:var(--color-text-secondary)]">
               {description}
             </p>
           </div>
@@ -1519,8 +1546,10 @@ function Input({
       placeholder={placeholder}
       disabled={disabled}
       className={cn(
-        "h-9 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-3 text-sm text-[color:var(--color-text-primary)]",
+        "h-9 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-sm text-[color:var(--color-text-primary)]",
+        "shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]",
         "placeholder:text-[color:var(--color-text-quaternary)]",
+        "hover:border-[color:var(--color-border-strong)]",
         "focus:border-[color:var(--color-indigo-accent)] focus:outline-none",
         "disabled:opacity-50",
         mono && "font-mono",
@@ -1554,8 +1583,10 @@ function Textarea({
       placeholder={placeholder}
       rows={rows}
       className={cn(
-        "rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-3 py-2 text-sm text-[color:var(--color-text-primary)]",
+        "rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-sm text-[color:var(--color-text-primary)]",
+        "shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]",
         "placeholder:text-[color:var(--color-text-quaternary)]",
+        "hover:border-[color:var(--color-border-strong)]",
         "focus:border-[color:var(--color-indigo-accent)] focus:outline-none",
         "resize-none",
         mono && "font-mono",
@@ -1580,7 +1611,9 @@ function Select<T extends string>({
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
       className={cn(
-        "h-9 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-3 text-sm text-[color:var(--color-text-primary)]",
+        "h-9 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-sm text-[color:var(--color-text-primary)]",
+        "shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]",
+        "hover:border-[color:var(--color-border-strong)]",
         "focus:border-[color:var(--color-indigo-accent)] focus:outline-none",
       )}
       {...props}
