@@ -43,10 +43,6 @@ const TopologyEmptyState = dynamic(
   () => import("@/widgets/topology-map-sigma").then((m) => m.TopologyEmptyState),
   { ssr: false },
 );
-const SearchPalette = dynamic(
-  () => import("@/widgets/search-palette").then((m) => m.SearchPalette),
-  { ssr: false },
-);
 const ShortcutSheet = dynamic(
   () => import("@/widgets/shortcut-sheet").then((m) => m.ShortcutSheet),
   { ssr: false },
@@ -175,12 +171,18 @@ export function HomePage() {
   const projects = projectsQuery.projects;
   const projectsError = projectsQuery.error;
   const [routeState, setRouteState] = useHomeRouteState();
-  // 상세 화면에서 Cmd+K를 누르면 홈으로 이동하며 sessionStorage 플래그를
-  // 남긴다. 여기서 그 플래그가 있으면 첫 렌더부터 검색 팔레트를 열어 hydration
-  // mismatch 없이 한 번에 보이게 한다. lazy initializer는 클라이언트에서만 실제
-  // 실행되므로 SSR은 항상 false, 클라이언트 hydration도 sessionStorage 없는
-  // 서버 프리렌더 기준 false → 불일치 없음.
-  const [searchOpen, setSearchOpen] = useState(() => {
+  // 헤더 "Concept search" 버튼 · ⌘K · ⇧⌘K 모두 이 팔레트(MountedGlobalSearch,
+  // ontology 노드 + 프로젝트 통합 검색)를 연다 — persona-P1 fix: 예전에는
+  // ⌘K 가 프로젝트 전용 SearchPalette 를 열어 ontology 노드가 검색 결과에
+  // 전혀 없었고(project/doc 만), 그 팔레트의 ALL/HUB/NODE 레이어 칩도 프로젝트
+  // 허브 여부만 가르는 축이라 "NODE" 를 눌러도 체감상 no-op 이었다. 세 진입점
+  // 모두 이미 kind 필터가 동작하는 단일 통합 팔레트로 합쳐 새 팔레트를 만들지
+  // 않는다. 상세 화면(ProjectDetailPage)에서 Cmd+K를 누르면 홈으로 이동하며
+  // sessionStorage 플래그를 남긴다 — 여기서 그 플래그가 있으면 첫 렌더부터
+  // 이 팔레트를 열어 hydration mismatch 없이 한 번에 보이게 한다. lazy
+  // initializer는 클라이언트에서만 실제 실행되므로 SSR은 항상 false, 클라이언트
+  // hydration도 sessionStorage 없는 서버 프리렌더 기준 false → 불일치 없음.
+  const [ontologySearchOpen, setOntologySearchOpen] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
       if (window.sessionStorage.getItem("demo:open-search") === "1") {
@@ -192,10 +194,6 @@ export function HomePage() {
     }
     return false;
   });
-  // ⇧⌘K — ontology / 문서 / 프로젝트 통합 검색 (project 전용
-  // SearchPalette 와 별 슬롯). MountedGlobalSearch 가 controlled mode 로
-  // 이 open state 를 받아 동작.
-  const [ontologySearchOpen, setOntologySearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -581,8 +579,6 @@ export function HomePage() {
     ? "create-node"
     : createNodePending
       ? "create-node-pending-vault"
-    : searchOpen
-      ? "project-search"
       : ontologySearchOpen
         ? "global-search"
         : shortcutsOpen
@@ -590,7 +586,6 @@ export function HomePage() {
           : "none";
   const topologyBlockingOverlayActive = topologyBlockingOverlayState !== "none";
   const openCreateNode = useCallback(() => {
-    setSearchOpen(false);
     setOntologySearchOpen(false);
     setShortcutsOpen(false);
     setDocsDrawerOpen(false);
@@ -846,9 +841,12 @@ export function HomePage() {
   }, [docsDrawerOpen]);
 
   // 공용 useTypingShortcuts로 글로벌 키 단축키 통합.
+  // ⌘K 와 ⇧⌘K 는 이제 동일한 팔레트(ontology 노드 + 프로젝트 통합 검색)를
+  // 연다 — persona-P1: 예전엔 ⌘K 만 프로젝트 전용 SearchPalette 를 열어
+  // ontology 노드를 절대 찾을 수 없었다. useTypingShortcuts 는 첫 일치 후
+  // return 하므로 순서 자체는 유지(둘 다 같은 setter 를 호출해 순서 무관하지만
+  // 관례상 shift 조합을 먼저 둔다).
   useTypingShortcuts([
-    // ⇧⌘K (ontology / 문서 통합 검색) — useTypingShortcuts 는 첫 일치 후
-    // return 하므로 ⌘K 보다 먼저 정의해야 한다.
     {
       combo: { key: "k", meta: true, shift: true },
       onFire: () => {
@@ -860,7 +858,7 @@ export function HomePage() {
       combo: { key: "k", meta: true },
       onFire: () => {
         if (createNodeOpen) return;
-        setSearchOpen((v) => !v);
+        setOntologySearchOpen((v) => !v);
       },
     },
     {
@@ -1356,7 +1354,7 @@ export function HomePage() {
                     density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
                     phoneFocusSuppressed={selectedNodeFocusActive}
                     onOpenSearch={() => {
-                      setSearchOpen(true);
+                      setOntologySearchOpen(true);
                     }}
                     onRelayout={() => {
                       setTopologyRelayoutToken((current) => current + 1);
@@ -2624,25 +2622,19 @@ export function HomePage() {
             }
           />
         ) : null}
-        <SearchPalette
-          open={!createNodeOpen && searchOpen}
-          onClose={() => setSearchOpen(false)}
-          projects={renderProjects}
-          onSelect={(slug) => {
-            handleSelect(slug);
-          }}
-          containerLabel={null}
-        />
-        {/* ⇧⌘K — ontology / 문서 통합 검색. project 전용 SearchPalette 와
-            별 슬롯이라 SearchPalette 의 layer filter / 최근 검색 같은 고유
-            기능 보존. controlled (open/onOpenChange) — hotkey 는 위
-            useTypingShortcuts 가 관리. */}
+        {/* 헤더 "Concept search" 버튼 · ⌘K · ⇧⌘K 공용 단일 팔레트 —
+            ontology 노드 + 프로젝트 통합 검색 (persona-P1). 노드 선택도
+            프로젝트 선택도 handleSelect 로 흘려 지도 위 선택 상태만 바꾼다 —
+            기본값(onSelectNode 미제공 시 `/ontology/?node=` 로 push)을 쓰면
+            지도를 벗어나므로 반드시 override. controlled (open/onOpenChange)
+            — hotkey 는 위 useTypingShortcuts 가 관리. */}
         <MountedGlobalSearch
           open={!createNodeOpen && ontologySearchOpen}
           onOpenChange={(next) => {
             if (createNodeOpen && next) return;
             setOntologySearchOpen(next);
           }}
+          onSelectNode={(node) => handleSelect(node.id)}
           onSelectProject={(project) => handleSelect(project.slug)}
         />
         <ShortcutSheet
