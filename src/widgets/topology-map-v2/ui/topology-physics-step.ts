@@ -11,7 +11,7 @@
 import { computePanBounds, stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis } from "../model/focus-state";
-import { computeZoomRatio } from "../model/tier-visibility";
+import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom } from "../model/tier-visibility";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import type { TopologyWorld } from "./topology-world";
 
@@ -87,12 +87,20 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   const focusNode = focusedNodeId !== null && camera.scale.value > overviewScale
     ? world.nodeById.get(focusedNodeId)
     : undefined;
+  // Unfocused clamp source = the VISIBLE tier's bounds. At spine-only zoom the
+  // full-graph bounds cover the vast legal-but-empty de-pileup fan (only the
+  // ~8-node spine draws), so the elastic clamp would happily leave the camera
+  // stranded over nothing (owner's "캔버스가 사라져버림", QA 소실 A). Uses the
+  // pre-step camera scale — one frame of lag is imperceptible at spring speeds.
+  const preStepZoomRatio = computeZoomRatio(camera.scale.value, overviewScale * tokens.overviewEntryRatio);
   const panBounds = focusNode
     ? computePanBounds(
         { minX: focusNode.x, minY: focusNode.y, maxX: focusNode.x, maxY: focusNode.y },
         tokens.cameraFocusPanMargin,
       )
-    : computePanBounds(world.bounds);
+    : computePanBounds(
+        isSpineOnlyZoom(preStepZoomRatio, DEFAULT_TIER_REVEAL) ? world.spineBounds : world.bounds,
+      );
 
   const nextCamera = stepCamera({
     camera,

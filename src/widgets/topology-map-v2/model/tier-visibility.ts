@@ -92,3 +92,18 @@ export function nodeTierAlpha(
 export function edgeTierAlpha(sourceAlpha: number, targetAlpha: number): number {
   return Math.min(sourceAlpha, targetAlpha);
 }
+
+/**
+ * True while the semantic zoom still shows ONLY the project/domain/hub spine
+ * (the capability tier has not begun to reveal). Pan/flick clamps must then use
+ * the SPINE bounds, not the full-graph bounds: the de-pileup layout spreads all
+ * 295 nodes over a far larger area than the ~8 spine nodes actually drawn at
+ * the overview, so clamping to the full bounds leaves a vast legal-but-EMPTY
+ * region the camera can strand in — the owner's "드래그하면 캔버스가
+ * 사라져버림" (QA 소실 A). One strong flick projected thousands of world units
+ * and landed inside the invisible fan; every pixel was "in bounds", nothing was
+ * drawn.
+ */
+export function isSpineOnlyZoom(zoomRatio: number, config: TierRevealConfig): boolean {
+  return zoomRatio < config.capability.enterRatio;
+}

@@ -26,7 +26,7 @@ import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTa
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
 import { scheduleRipple } from "../model/focus-state";
 import type { ForceSimulation } from "../model/force-layout";
-import { computeZoomRatio, DEFAULT_TIER_REVEAL, nodeTierAlpha } from "../model/tier-visibility";
+import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom, nodeTierAlpha } from "../model/tier-visibility";
 import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
 import {
   INITIAL_POINTER_MACHINE_STATE,
@@ -177,6 +177,18 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const tokens = readTopologyV2TokensOrNull();
     const world = worldRef.current;
     if (!tokens || !world) return;
+    // Capture the pointer for the whole gesture — without this, releasing over
+    // the analysis rail / outside the window never delivers `pointerup` to the
+    // canvas, the state machine sticks in `dragging`, and the camera then
+    // follows a button-less mouse until it strands off-graph (owner's
+    // "드래그하면 캔버스가 사라져버림", QA 소실 B). Implicit release on
+    // pointerup/cancel is per-spec automatic.
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // jsdom / test envs may not implement pointer capture — the buttons===0
+      // guard in `handlePointerMove` covers the fallback.
+    }
     // Snapshot the rect once per gesture (see `canvasRectRef` JSDoc).
     const domRect = e.currentTarget.getBoundingClientRect();
     canvasRectRef.current = { left: domRect.left, top: domRect.top };
@@ -195,6 +207,16 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     if (!tokens || !world) return;
     const rect = currentRect(e.currentTarget);
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+    // Stuck-drag guard (QA 소실 B fallback): a button-less move during an
+    // active gesture means we missed the real `pointerup` (capture unsupported
+    // or interrupted). Treat it as that pointerup — the stationary-release path
+    // holds the camera exactly where it is — and let the NEXT move resume as a
+    // plain hover on the now-idle machine.
+    if (pointerMachineRef.current.phase !== "idle" && e.buttons === 0) {
+      handlePointerUp();
+      return;
+    }
 
     // Capture the pressed node BEFORE the transition — the pressed→dragging
     // transition clears `pressedNodeId`, but we need it to know whether this
@@ -320,10 +342,19 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // usually within the graph's pan bounds — clamp it only so a landing that
       // WOULD exceed the bounds rubber-bands at the edge instead of overshooting
       // into blank canvas. Within-bounds flicks are unaffected by this clamp.
+      // The clamp source is the VISIBLE tier's bounds: at spine-only zoom the
+      // full 295-node bounds cover a huge legal-but-empty fan region (only ~8
+      // spine nodes draw), so a strong flick could land the camera on nothing
+      // (owner's "캔버스가 사라져버림", QA 소실 A). Once capabilities start
+      // revealing, the full bounds become honest again.
       const world = worldRef.current;
-      const clampedLanding = world
-        ? clampPointToPanBounds(px.landingTarget, py.landingTarget, computePanBounds(world.bounds))
-        : { x: px.landingTarget, y: py.landingTarget };
+      let clampedLanding = { x: px.landingTarget, y: py.landingTarget };
+      if (world) {
+        const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+        const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
+        const boundsSource = isSpineOnlyZoom(zoomRatio, DEFAULT_TIER_REVEAL) ? world.spineBounds : world.bounds;
+        clampedLanding = clampPointToPanBounds(px.landingTarget, py.landingTarget, computePanBounds(boundsSource));
+      }
       cameraTargetRef.current = { tx: clampedLanding.x, ty: clampedLanding.y, tscale: cameraTargetRef.current.tscale };
       cameraRef.current = {
         ...cameraRef.current,
