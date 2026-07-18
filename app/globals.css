@@ -1060,7 +1060,10 @@
     --topology-v2-panel-power-off: #45454d;
     --topology-v2-panel-text-primary: #ececf0;
     --topology-v2-panel-text-secondary: #a3a3ac;
-    --topology-v2-panel-text-tertiary: #77777f;
+    /* tertiary = CONTAINS/DEPENDS caps 라벨 + kind 서브라벨. #77777f 는 다크
+       패널(#17171c) 위 4.02:1 로 10px AA(4.5) 미달 → #868690 으로 넛지(≈4.9:1),
+       primary 대비 여전히 recede. Guardian follow-up #2. */
+    --topology-v2-panel-text-tertiary: #868690;
     --topology-v2-panel-text-quaternary: #55555d;
     /* 연결 그룹 trace 미니라인 — 캔버스 엣지와 같은 계열(contains 실선/depends 점선) */
     --topology-v2-edge-contains-mark: #4a4a54;
