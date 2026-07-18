@@ -101,29 +101,25 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     reason:
       "/ontology/edit must expose Source / Draft / Guard / Proof plus saved node entrypoints before canvas work.",
   },
+  // [교체, 2026-07-18] "query-cockpit-runtime-gate" 체크 — 대상이던 4탭
+  // reader-persona insights (InsightsQueryPackCockpit 등) 가 #363 (insights
+  // 3탭 재구축) 으로 삭제됐다. 새 계약: 3탭 구조(TabBar) + 실그래프 census
+  // 히어로 + 에이전트 핸드오프 행(복사 가능한 payload) 이 남아 있어야 한다.
   {
-    id: "query-cockpit-runtime-gate",
+    id: "insights-tabbed-handoff",
     files: [
       "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-      "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx",
-      "src/views/ontology-insights/ui/parts/InsightsFocusedNodeProofPanel.tsx",
+      "src/views/ontology-insights/ui/tabs/OverviewTab.tsx",
+      "src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx",
     ],
     markers: [
-      "function InsightsQueryPackCockpit",
-      "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
-      "AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND",
-      "queryCockpitCopyRuntimeGate",
-      "queryCockpitContractsAriaLabel",
-      "queryCockpitLiveProofAriaLabel",
-      "queryCockpitEvidenceAriaLabel",
-      "focused_blast_radius",
-      "relation_name_parity",
-      "pattern_walk/project_map",
-      "--type depends_on",
-      "relationType and via",
+      "TabBar",
+      "InsightsHeroCensus",
+      "InsightsHandoffRow",
+      "CopyAgentTextButton",
     ],
     reason:
-      "/ontology/insights must lead with executable graph DB query pack, runtime gate, and result contracts.",
+      "/ontology/insights must keep the 3-tab structure, the real-graph census hero, and a copyable agent handoff row.",
   },
   // [삭제, 2026-07-18] "topology-kind-legend-role-copy" 체크 — 대상 파일
   // `SigmaTopology.tsx` 가 #344 (retire-sigma-topology) 로 삭제됐고, 검증하던
