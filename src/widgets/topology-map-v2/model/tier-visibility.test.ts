@@ -5,6 +5,8 @@ import {
   DEFAULT_TIER_REVEAL,
   edgeTierAlpha,
   effectiveNodeAlpha,
+  HITTABLE_MIN_TIER_ALPHA,
+  isNodeHittable,
   isSpineOnlyZoom,
   nodeTierAlpha,
 } from "./tier-visibility";
@@ -129,5 +131,51 @@ describe("isSpineOnlyZoom (QA 소실 A — clamp-bounds source)", () => {
       if (spineOnly) expect(capAlpha).toBe(0);
       else expect(capAlpha).toBeGreaterThanOrEqual(0);
     }
+  });
+});
+
+/**
+ * persona eval (label-clarity, 2026-07) — "child click ejects to overview
+ * instead of selecting". `isNodeHittable` is the pure predicate extracted
+ * from `ui/topology-pointer-handlers.ts#hitVisibleNode`'s inline filter —
+ * mirrors the draw pass's `effectiveNodeAlpha` ego exemption exactly, so a
+ * capability revealed only because it's the focused domain's 1-hop neighbor
+ * is STILL hittable even though its own tier alpha is 0 at that zoom ratio.
+ */
+describe("isNodeHittable", () => {
+  const domain = { id: "domain:x", kind: "domain" as const, isHub: false };
+  const hiddenCapability = { id: "capability:hidden", kind: "capability" as const, isHub: false };
+  const otherCapability = { id: "capability:other", kind: "capability" as const, isHub: false };
+
+  it("is always hittable at/above the tier's own hittable threshold, focus or not", () => {
+    expect(isNodeHittable(domain, ENTRY, null, undefined)).toBe(true);
+    expect(isNodeHittable(domain, ENTRY, "domain:x", new Set())).toBe(true);
+  });
+
+  it("is NOT hittable below the tier threshold when no focus is active", () => {
+    expect(isNodeHittable(hiddenCapability, ENTRY, null, undefined)).toBe(false);
+  });
+
+  it("is hittable when it IS the focused node itself, even below its own tier threshold", () => {
+    expect(isNodeHittable(hiddenCapability, ENTRY, "capability:hidden", new Set())).toBe(true);
+  });
+
+  it("is hittable when it's a 1-hop neighbor of the focused node (the ego exemption) — the exact 'click a revealed child' case", () => {
+    const neighbors = new Set(["capability:hidden"]);
+    expect(isNodeHittable(hiddenCapability, ENTRY, "domain:x", neighbors)).toBe(true);
+  });
+
+  it("stays UNhittable below threshold when focused elsewhere and not a neighbor of that focus", () => {
+    const neighbors = new Set(["capability:hidden"]);
+    expect(isNodeHittable(otherCapability, ENTRY, "domain:x", neighbors)).toBe(false);
+  });
+
+  it("agrees with nodeTierAlpha at the HITTABLE_MIN_TIER_ALPHA boundary", () => {
+    expect(nodeTierAlpha("capability", false, DEFAULT_TIER_REVEAL.capability.fullRatio, DEFAULT_TIER_REVEAL)).toBeGreaterThanOrEqual(
+      HITTABLE_MIN_TIER_ALPHA,
+    );
+    expect(isNodeHittable({ id: "capability:full", kind: "capability", isHub: false }, DEFAULT_TIER_REVEAL.capability.fullRatio, null, undefined)).toBe(
+      true,
+    );
   });
 });

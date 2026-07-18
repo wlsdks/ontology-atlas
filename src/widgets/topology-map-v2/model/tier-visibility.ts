@@ -106,6 +106,43 @@ export function effectiveNodeAlpha(tierAlpha: number, isEgoMember: boolean, egoR
   return isEgoMember ? Math.max(tierAlpha, egoRamp) : tierAlpha;
 }
 
+/** Minimum tier/effective alpha for a node to be grabbable/hoverable/clickable
+ * — hidden (semantic-zoom-gated) nodes must not be hit. Shared by the pointer
+ * hit-test (`ui/topology-pointer-handlers.ts#hitVisibleNode` via
+ * `isNodeHittable` below) and the label-eligibility ramp
+ * (`render/labels.ts#computeLabelAlpha`) — "잡을 수 있으면 읽을 수 있다" (if
+ * you can click it, you can read it), the label-clarity persona fix. */
+export const HITTABLE_MIN_TIER_ALPHA = 0.5;
+
+/** Minimal node shape `isNodeHittable` needs — structurally compatible with `WorldNode`. */
+export interface HittableNodeInput {
+  id: string;
+  kind: LayoutNodeKind;
+  isHub: boolean;
+}
+
+/**
+ * Whether a node is currently hittable (grabbable/hoverable/clickable) —
+ * mirrors the draw pass's `effectiveNodeAlpha` ego exemption exactly: a node
+ * that's semantic-zoom-gated below `HITTABLE_MIN_TIER_ALPHA` is STILL
+ * hittable once it's the focused node or one of its 1-hop neighbors (C1 A2's
+ * "click a domain to expand it"). Pure predicate — extracted from
+ * `ui/topology-pointer-handlers.ts#hitVisibleNode`'s inline filter so the
+ * ego-exemption hit/commit contract has a unit test independent of canvas/
+ * pointer-event plumbing (label-clarity persona eval — "child click ejects
+ * to overview instead of selecting").
+ */
+export function isNodeHittable(
+  node: HittableNodeInput,
+  zoomRatio: number,
+  focusedNodeId: string | null,
+  neighborsOfFocused: ReadonlySet<string> | undefined,
+  config: TierRevealConfig = DEFAULT_TIER_REVEAL,
+): boolean {
+  if (nodeTierAlpha(node.kind, node.isHub, zoomRatio, config) >= HITTABLE_MIN_TIER_ALPHA) return true;
+  return focusedNodeId !== null && (node.id === focusedNodeId || (neighborsOfFocused?.has(node.id) ?? false));
+}
+
 /**
  * True while the semantic zoom still shows ONLY the project/domain/hub spine
  * (the capability tier has not begun to reveal). Pan/flick clamps must then use

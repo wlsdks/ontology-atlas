@@ -5,6 +5,7 @@ import {
   ellipsizeToWidth,
   greedyPlaceLabels,
   isWithinSafeRect,
+  resolveLabelPriority,
   type LabelCandidate,
 } from "./label-layout";
 
@@ -103,5 +104,44 @@ describe("ellipsizeToWidth", () => {
   it("falls back to a hard cut only for a single unbreakable token", () => {
     const out = ellipsizeToWidth("superlongtokenwithoutbreaks", 10, measureByLength);
     expect(out).toBe("superlong…"); // 9 chars + ellipsis = 10
+  });
+});
+
+/**
+ * (label-clarity, 2026-07) — collision-culling priority ladder: selected >
+ * hovered > project/hub > domain > capability > element. Lower number wins
+ * `greedyPlaceLabels`. Pure so the ladder itself (independent of kind, once
+ * selected/hovered) is unit-tested without a canvas.
+ */
+describe("resolveLabelPriority", () => {
+  const base = { kind: "element" as const, isSelected: false, isHovered: false, isHub: false };
+
+  it("the selected node always wins, regardless of kind", () => {
+    expect(resolveLabelPriority({ ...base, kind: "element", isSelected: true })).toBe(
+      resolveLabelPriority({ ...base, kind: "project", isSelected: true }),
+    );
+    expect(resolveLabelPriority({ ...base, isSelected: true })).toBeLessThan(
+      resolveLabelPriority({ ...base, kind: "project" }),
+    );
+  });
+
+  it("hovered beats every kind but loses to selected", () => {
+    const hovered = resolveLabelPriority({ ...base, isHovered: true });
+    const selected = resolveLabelPriority({ ...base, isSelected: true });
+    const project = resolveLabelPriority({ ...base, kind: "project" });
+    expect(selected).toBeLessThan(hovered);
+    expect(hovered).toBeLessThan(project);
+  });
+
+  it("orders plain (non-selected, non-hovered) kinds project/hub > domain > capability > element", () => {
+    const project = resolveLabelPriority({ ...base, kind: "project" });
+    const hub = resolveLabelPriority({ ...base, kind: "capability", isHub: true });
+    const domain = resolveLabelPriority({ ...base, kind: "domain" });
+    const capability = resolveLabelPriority({ ...base, kind: "capability" });
+    const element = resolveLabelPriority({ ...base, kind: "element" });
+    expect(project).toBe(hub); // a hub capability ranks with project, not with plain capability
+    expect(project).toBeLessThan(domain);
+    expect(domain).toBeLessThan(capability);
+    expect(capability).toBeLessThan(element);
   });
 });
