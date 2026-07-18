@@ -8,8 +8,6 @@ export interface BusinessOntologyLens {
   decisionAnswerCriteria: readonly string[];
 }
 
-export const BUSINESS_ONTOLOGY_READ_ORDER_PROOF = "outcome>domain>capability>element";
-
 export const DEFAULT_BUSINESS_ONTOLOGY_LENS: BusinessOntologyLens = {
   policy: "business-first",
   readOrder: ["outcome", "domain", "capability", "element"],

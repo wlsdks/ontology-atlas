@@ -17,12 +17,12 @@ import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { FirstRunReadout, useFirstRunSampleModeSettled } from "@/features/first-run-starter";
-// 타입/기본값은 Sigma(WebGL) 의존성 없는 별도 모듈에서 직접 import해서
-// SSR 평가 경로에 WebGL 참조가 끼지 않도록 한다.
+// 타입/기본값은 지도 렌더러(캔버스) 의존성 없는 별도 모듈에서 직접 import해서
+// SSR 평가 경로에 렌더러 참조가 끼지 않도록 한다.
 import {
-  DEFAULT_SIGMA_CONTROLS,
-  type SigmaControlsState,
-} from "@/widgets/topology-map-sigma/model/controls-state";
+  DEFAULT_TOPOLOGY_CONTROLS,
+  type TopologyControlsState,
+} from "@/widgets/topology-controls/model/controls-state";
 import { HeroCollapsed } from "@/widgets/hero-header";
 import { AppNavRail } from "@/widgets/app-nav-rail";
 import dynamic from "next/dynamic";
@@ -33,16 +33,16 @@ import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 
-const SigmaControls = dynamic(
-  () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaControls),
+const TopologyControls = dynamic(
+  () => import("@/widgets/topology-controls").then((m) => m.TopologyControls),
   { ssr: false },
 );
-const SigmaHubRail = dynamic(
-  () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaHubRail),
+const HubRail = dynamic(
+  () => import("@/widgets/topology-controls").then((m) => m.HubRail),
   { ssr: false },
 );
 const TopologyEmptyState = dynamic(
-  () => import("@/widgets/topology-map-sigma").then((m) => m.TopologyEmptyState),
+  () => import("@/widgets/topology-controls").then((m) => m.TopologyEmptyState),
   { ssr: false },
 );
 const ShortcutSheet = dynamic(
@@ -150,20 +150,20 @@ const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
 export function HomePage() {
   const t = useTranslations('topology');
   const tKinds = useTranslations('kinds');
-  const [sigmaControls, setSigmaControls] = useState<SigmaControlsState>(
-    DEFAULT_SIGMA_CONTROLS,
+  const [topologyControls, setTopologyControls] = useState<TopologyControlsState>(
+    DEFAULT_TOPOLOGY_CONTROLS,
   );
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   const localGraphRoot =
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
   const [fitViewToken, setFitViewToken] = useState(0);
-  const [sigmaVisibleCount, setSigmaVisibleCount] = useState<number | null>(null);
-  const [sigmaGraphStats, setSigmaGraphStats] = useState<{
+  const [topologyVisibleCount, setTopologyVisibleCount] = useState<number | null>(null);
+  const [topologyGraphStats, setTopologyGraphStats] = useState<{
     key: string;
     nodes: number;
     relations: number;
   } | null>(null);
-  const [, setSigmaHintDismissed] = useState(() => {
+  const [, setTopologyHintDismissed] = useState(() => {
     if (typeof window === 'undefined') return true;
     try {
       return window.localStorage.getItem('demo:sigma-hint-dismissed:v1') === '1';
@@ -171,8 +171,8 @@ export function HomePage() {
       return true;
     }
   });
-  const dismissSigmaHint = useCallback(() => {
-    setSigmaHintDismissed(true);
+  const dismissTopologyHint = useCallback(() => {
+    setTopologyHintDismissed(true);
     try {
       window.localStorage.setItem('demo:sigma-hint-dismissed:v1', '1');
     } catch {
@@ -962,9 +962,9 @@ export function HomePage() {
           preserveImpact: options?.preserveImpact,
         }),
       );
-      dismissSigmaHint();
+      dismissTopologyHint();
     },
-    [projectBySlug, setRouteState, dismissSigmaHint],
+    [projectBySlug, setRouteState, dismissTopologyHint],
   );
 
   const handleClose = useCallback(() => {
@@ -1234,41 +1234,41 @@ export function HomePage() {
       ].join("::"),
     [localGraphRoot, localGraphProjects, ontologyInsight],
   );
-  const currentSigmaGraphStats =
-    sigmaGraphStats?.key === visibleTopologyStatsKey ? sigmaGraphStats : null;
+  const currentTopologyGraphStats =
+    topologyGraphStats?.key === visibleTopologyStatsKey ? topologyGraphStats : null;
   const topologyRenderState = resolveTopologyRenderState({
     dataReady: projectsQuery.loaded,
-    totalNodes: currentSigmaGraphStats?.nodes ?? visibleTopologyNodeCount,
-    totalRelations: currentSigmaGraphStats?.relations ?? visibleTopologyRelationCount,
+    totalNodes: currentTopologyGraphStats?.nodes ?? visibleTopologyNodeCount,
+    totalRelations: currentTopologyGraphStats?.relations ?? visibleTopologyRelationCount,
   });
   const topologyFiltersActive =
     activeCategory !== null ||
-    sigmaControls.searchQuery.trim().length > 0 ||
-    sigmaControls.depthLimit !== null ||
-    sigmaControls.hubsOnly;
+    topologyControls.searchQuery.trim().length > 0 ||
+    topologyControls.depthLimit !== null ||
+    topologyControls.hubsOnly;
   const pathCandidateVisibility =
     analysisMode === "path"
       ? {
-          visible: sigmaVisibleCount ?? topologyTotalNodes,
-          total: sigmaVisibleCount ?? topologyTotalNodes,
+          visible: topologyVisibleCount ?? topologyTotalNodes,
+          total: topologyVisibleCount ?? topologyTotalNodes,
         }
       : null;
   const topologyOverlayState = resolveTopologyOverlayState({
     dataReady: projectsQuery.loaded,
-    totalNodes: currentSigmaGraphStats?.nodes ?? visibleTopologyNodeCount,
-    totalRelations: currentSigmaGraphStats?.relations ?? visibleTopologyRelationCount,
-    visibleNodes: sigmaVisibleCount,
+    totalNodes: currentTopologyGraphStats?.nodes ?? visibleTopologyNodeCount,
+    totalRelations: currentTopologyGraphStats?.relations ?? visibleTopologyRelationCount,
+    visibleNodes: topologyVisibleCount,
     filtersActive: topologyFiltersActive,
   });
-  const emptyTopologyNodeCount = currentSigmaGraphStats?.nodes ?? visibleTopologyNodeCount;
-  const handleSigmaGraphStatsChange = useCallback(
+  const emptyTopologyNodeCount = currentTopologyGraphStats?.nodes ?? visibleTopologyNodeCount;
+  const handleTopologyGraphStatsChange = useCallback(
     (stats: { nodes: number; relations: number }) => {
-      setSigmaGraphStats({ key: visibleTopologyStatsKey, ...stats });
+      setTopologyGraphStats({ key: visibleTopologyStatsKey, ...stats });
     },
     [visibleTopologyStatsKey],
   );
   const clearTopologyFilters = useCallback(() => {
-    setSigmaControls((current) => ({
+    setTopologyControls((current) => ({
       ...current,
       searchQuery: "",
       depthLimit: null,
@@ -1303,7 +1303,7 @@ export function HomePage() {
   const analysisSummary = buildTopologyAnalysisSummary({
     mode: analysisMode,
     selectedTitle: analysisSelectedTitle,
-    visibleCount: sigmaVisibleCount,
+    visibleCount: topologyVisibleCount,
     totalCount: topologyTotalNodes,
     relationCount: topologyTotalRelations,
     relationProvenance: topologyRelationProvenance,
@@ -1359,7 +1359,7 @@ export function HomePage() {
     if (analysisModeRef.current === analysisMode) return;
     analysisModeRef.current = analysisMode;
 
-    setSigmaControls((current) => {
+    setTopologyControls((current) => {
       if (analysisMode === "focus") {
         return {
           ...current,
@@ -2385,12 +2385,12 @@ export function HomePage() {
                     edges={topologyV2Graph.edges}
                     focus={{
                       selectedSlug: canvasSelectedSlug,
-                      depthLimit: sigmaControls.depthLimit,
-                      searchQuery: sigmaControls.searchQuery,
+                      depthLimit: topologyControls.depthLimit,
+                      searchQuery: topologyControls.searchQuery,
                       activeCategory,
-                      hubsOnly: sigmaControls.hubsOnly,
+                      hubsOnly: topologyControls.hubsOnly,
                     }}
-                    overlays={sigmaControls.overlays}
+                    overlays={topologyControls.overlays}
                     changedSlugs={changedSlugs}
                     livePhysics={analysisMode === "graph"}
                     fitViewToken={combinedFitToken}
@@ -2398,8 +2398,8 @@ export function HomePage() {
                     onSelect={(slug) => handleSelect(slug)}
                     onOpen={handleExpandRequest}
                     onPaneClick={handleClose}
-                    onVisibleCountChange={setSigmaVisibleCount}
-                    onGraphStatsChange={handleSigmaGraphStatsChange}
+                    onVisibleCountChange={setTopologyVisibleCount}
+                    onGraphStatsChange={handleTopologyGraphStatsChange}
                     onContextMenuNode={handleContextMenuNode}
                     minimal={localGraphRoot !== null}
                   />
@@ -2415,12 +2415,12 @@ export function HomePage() {
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
               selectedNodeFocusActive ? null : (
-                <SigmaControls
-                  value={sigmaControls}
-                  onChange={setSigmaControls}
+                <TopologyControls
+                  value={topologyControls}
+                  onChange={setTopologyControls}
                   density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
                   onFitView={() => setFitViewToken((t) => t + 1)}
-                  visibleCount={sigmaVisibleCount}
+                  visibleCount={topologyVisibleCount}
                   totalCount={
                     localGraphRoot === null
                       ? topologyTotalNodes
@@ -2428,7 +2428,7 @@ export function HomePage() {
                   }
                 />
               )}
-              {/* 단축키/제스처 도움말 진입점 — 우상단 SigmaControls 아래 36×36 아이콘.
+              {/* 단축키/제스처 도움말 진입점 — 우상단 TopologyControls 아래 36×36 아이콘.
                   phone 은 primary read rail(path/health) 과 충돌하지 않는 overview/focus 에서만 노출한다. */}
               {createNodeOpen ||
               selectedRelationActive ||
@@ -2480,7 +2480,7 @@ export function HomePage() {
               {/* 설정 기어는 좌측 내비 레일 하단으로 이관됐다
                   (feat/chrome-system — chrome-rail-combined.html). 우측
                   세로 레일은 이제 지도 전용 3타일(전체보기/조절/단축키)만. */}
-              <SigmaHubRail
+              <HubRail
                 projects={renderProjects}
                 selectedSlug={canvasSelectedSlug}
                 onSelect={(slug) => handleSelect(slug)}
@@ -2530,11 +2530,11 @@ export function HomePage() {
               ) : null}
 
               {/* 필터 컨텍스트 — 현재 visible 노드 수가 전체보다 적으면 표시.
-                  SigmaControls 검색창 배지와 중복이지만, controls가 접힌 상태에서도
+                  TopologyControls 검색창 배지와 중복이지만, controls가 접힌 상태에서도
                   필터 중임을 알려주는 컨텍스트 칩. */}
-              {sigmaVisibleCount !== null && sigmaVisibleCount < localGraphProjects.length ? (
+              {topologyVisibleCount !== null && topologyVisibleCount < localGraphProjects.length ? (
                 <div className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.9)] md:left-[228px] xl:left-[236px]">
-                  filter · {sigmaVisibleCount} / {localGraphProjects.length}
+                  filter · {topologyVisibleCount} / {localGraphProjects.length}
                 </div>
               ) : null}
 

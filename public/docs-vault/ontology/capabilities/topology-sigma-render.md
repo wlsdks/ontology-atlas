@@ -6,7 +6,7 @@ domain: views
 elements:
   - elements/ontology-description-helper
   - src/views/home
-  - src/widgets/topology-map-sigma
+  - src/widgets/topology-controls
 relates:
   - domains/views
   - elements/sigma-graphology

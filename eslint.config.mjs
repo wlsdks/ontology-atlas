@@ -246,6 +246,9 @@ const eslintConfig = defineConfig([
   },
   globalIgnores([
     '.next/**',
+    // 에이전트 병렬 작업용 임시 git worktree — 자기 lint는 각 워크트리에서
+    // 돈다. 메인 lint가 이 안까지 스캔하면 타 세션 진행 중 코드가 노이즈로 섞임.
+    '.claude/worktrees/**',
     'out/**',
     'build/**',
     'src-tauri/target/**',

@@ -5,14 +5,14 @@ import { useTranslations } from 'next-intl';
 import { ChevronDown, ChevronUp, Maximize2, Search, Sliders, SlidersHorizontal, X } from 'lucide-react';
 import { ChromeTile, Tooltip } from '@/shared/ui';
 import type {
-  SigmaControlsState,
-  SigmaForces,
-  SigmaOverlays,
+  TopologyControlsState,
+  TopologyForces,
+  TopologyOverlays,
 } from '../model/controls-state';
 
-interface SigmaControlsProps {
-  value: SigmaControlsState;
-  onChange: (next: SigmaControlsState) => void;
+interface TopologyControlsProps {
+  value: TopologyControlsState;
+  onChange: (next: TopologyControlsState) => void;
   density?: 'default' | 'compact-focus';
   /** "지도 전체 맞추기" 콜백. 설정되면 Controls 아이콘 위에 Fit 버튼이 같은
    *  pill 안에 합쳐져서 렌더된다. 없으면 Fit 버튼은 숨김. */
@@ -30,14 +30,14 @@ interface SigmaControlsProps {
  * 키보드: `/` 검색 포커스, `1`–`6` depth 설정, `0` depth 전체, `?` 단축키
  * 도움말. 모두 사용자가 입력 폼에 포커스 중이 아닐 때만 반응.
  */
-export function SigmaControls({
+export function TopologyControls({
   value,
   onChange,
   density = 'default',
   onFitView,
   visibleCount,
   totalCount,
-}: SigmaControlsProps) {
+}: TopologyControlsProps) {
   const t = useTranslations('topologyWidgets.controls');
   const [expanded, setExpanded] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -64,7 +64,7 @@ export function SigmaControls({
         event.preventDefault();
         setExpanded(true);
         queueMicrotask(() => {
-          document.getElementById('sigma-search-input')?.focus();
+          document.getElementById('topology-search-input')?.focus();
         });
         return;
       }
@@ -83,10 +83,10 @@ export function SigmaControls({
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  const updateForces = (key: keyof SigmaForces, next: number) => {
+  const updateForces = (key: keyof TopologyForces, next: number) => {
     onChange({ ...value, forces: { ...value.forces, [key]: next } });
   };
-  const updateOverlay = (key: keyof SigmaOverlays, next: boolean) => {
+  const updateOverlay = (key: keyof TopologyOverlays, next: boolean) => {
     onChange({ ...value, overlays: { ...value.overlays, [key]: next } });
   };
   const closeSecondaryPanels = () => {
@@ -122,7 +122,7 @@ export function SigmaControls({
       <>
         <div
           className="topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 flex flex-col gap-2 md:bottom-auto md:right-6 md:top-[var(--topology-floating-control-desktop-top)] xl:right-8"
-          data-testid="topology-sigma-controls-stack"
+          data-testid="topology-controls-stack"
           data-controls-density={density}
           data-control-phone-bottom-token="--topology-floating-control-phone-bottom"
           data-control-desktop-top-token="--topology-floating-control-desktop-top"
@@ -195,7 +195,7 @@ export function SigmaControls({
         </Tooltip>
       ) : null}
       <div
-        data-testid="topology-sigma-controls-panel"
+        data-testid="topology-controls-panel"
         data-panel-phone-bottom-token="--topology-floating-panel-phone-bottom"
         data-panel-phone-max-height-token="--topology-floating-panel-phone-max-height"
         data-panel-desktop-top-token="--topology-floating-panel-desktop-top"
@@ -209,7 +209,7 @@ export function SigmaControls({
         <div className="flex h-9 items-center gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-2.5 transition-colors focus-within:border-[color:var(--color-indigo-accent)] focus-within:bg-[color:var(--topology-floating-control-hover-surface)]">
           <Search className="h-3.5 w-3.5 text-[color:var(--color-text-quaternary)]" />
           <input
-            id="sigma-search-input"
+            id="topology-search-input"
             type="search"
             value={value.searchQuery}
             onChange={(e) =>
@@ -351,7 +351,7 @@ export function SigmaControls({
                       ? t('depthAll')
                       : t('depthHop', { count: value.depthLimit })
                   }
-                  className="sigma-range mt-2 w-full"
+                  className="topology-controls-range mt-2 w-full"
                 />
               </div>
 
@@ -445,7 +445,7 @@ export function SigmaControls({
       {helpOpen ? <HelpOverlay onClose={() => setHelpOpen(false)} /> : null}
 
       <style jsx>{`
-        .sigma-range {
+        .topology-controls-range {
           -webkit-appearance: none;
           appearance: none;
           height: 2px;
@@ -453,7 +453,7 @@ export function SigmaControls({
           border-radius: 2px;
           outline: none;
         }
-        .sigma-range::-webkit-slider-thumb {
+        .topology-controls-range::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
           width: 12px;
@@ -463,7 +463,7 @@ export function SigmaControls({
           border: 2px solid rgba(14, 16, 22, 1);
           cursor: pointer;
         }
-        .sigma-range::-moz-range-thumb {
+        .topology-controls-range::-moz-range-thumb {
           width: 12px;
           height: 12px;
           border-radius: 50%;
@@ -541,7 +541,7 @@ function SliderRow({
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label={label}
         aria-valuetext={display(value)}
-        className="sigma-range mt-1.5 w-full"
+        className="topology-controls-range mt-1.5 w-full"
       />
     </div>
   );

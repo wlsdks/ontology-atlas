@@ -63,8 +63,6 @@ export const KNOWN_VAULT_KINDS = [
   "vault-readme",
 ] as const;
 
-export type KnownVaultKind = (typeof KNOWN_VAULT_KINDS)[number];
-
 const GRAPH_ARRAY_KEYS = [
   "domains",
   "capabilities",

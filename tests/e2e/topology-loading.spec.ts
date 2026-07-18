@@ -5,7 +5,7 @@ test.use({ viewport: { width: 1920, height: 1080 } });
 test("Relief engine loading fallback exposes product hierarchy and graph scale", async ({
   page,
 }) => {
-  await page.route(/topology-map-sigma|SigmaTopology/, async (route) => {
+  await page.route(/topology-controls|SigmaTopology/, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 900));
     await route.continue();
   });
@@ -37,7 +37,7 @@ test("Relief engine loading fallback exposes product hierarchy and graph scale",
 test("Relief engine loading fallback honors an explicit Focus deep link", async ({
   page,
 }) => {
-  await page.route(/topology-map-sigma|SigmaTopology/, async (route) => {
+  await page.route(/topology-controls|SigmaTopology/, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 900));
     await route.continue();
   });

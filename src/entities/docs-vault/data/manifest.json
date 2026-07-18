@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T17:31:49.458Z",
+  "generatedAt": "2026-07-18T17:49:56.708Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6569,7 +6569,7 @@
         "elements": [
           "elements/ontology-description-helper",
           "src/views/home",
-          "src/widgets/topology-map-sigma"
+          "src/widgets/topology-controls"
         ],
         "relates": [
           "domains/views",
@@ -6585,7 +6585,7 @@
       ],
       "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1-hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · 짧은 description 을 띄운다. ontology 노드는 kind(capability / domain / el",
       "wordCount": 726,
-      "updatedAt": "2026-06-17T05:55:17.012Z",
+      "updatedAt": "2026-07-18T17:49:20.075Z",
       "linksOut": []
     },
     {
@@ -7224,9 +7224,8 @@
           "src/views/ontology-redirect",
           "src/views/project-detail",
           "src/widgets/global-search",
-          "src/widgets/topology-map-sigma",
+          "src/widgets/topology-controls",
           "src/widgets/topology-map-v2",
-          "src/widgets/workspace-ontology-strip",
           "topology-analysis-bar",
           "topology-analysis-state",
           "topology-ontology-drawer",
@@ -7249,7 +7248,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-07-18T16:39:21.830Z",
+      "updatedAt": "2026-07-18T17:49:20.077Z",
       "linksOut": []
     },
     {
