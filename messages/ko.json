@@ -702,7 +702,7 @@
         "docsActions": "문서함 · 문서 액션"
       },
       "rows": {
-        "openProjectPalette": "프로젝트 검색 팔레트 열기",
+        "openProjectPalette": "검색 팔레트 열기",
         "openGlobalPalette": "ontology / 문서 / 프로젝트 통합 검색",
         "toggleDocsDrawer": "문서함 빠른 보기 드로어 토글 (편집 권한 시)",
         "showShortcuts": "키보드 단축키 보기·닫기",
