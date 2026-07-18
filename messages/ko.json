@@ -1015,6 +1015,11 @@
       "expand": "컨텍스트 보기",
       "collapse": "컨텍스트 숨기기"
     },
+    "folderTopology": {
+      "hudCount": "프로젝트 지형도 · {count}개",
+      "danglingHeading": "깨진 의존 · {count}",
+      "danglingMore": "… 외 {count}"
+    },
     "parts": {
       "meta": {
         "recordProofAria": "온톨로지 근거",
