@@ -20,8 +20,10 @@ export {
   resolveOntologyBuilderNodeSlugFromGraphId,
 } from "./lib/ontology-node-href";
 export {
+  buildOntologyHealthActionTarget,
   buildOntologyHealthSignals,
   PROMOTION_MIN_FAN_IN,
+  type OntologyHealthActionTarget,
   type OntologyHealthSignalCandidate,
   type OntologyHealthSignals,
 } from "./lib/ontology-health-signals";

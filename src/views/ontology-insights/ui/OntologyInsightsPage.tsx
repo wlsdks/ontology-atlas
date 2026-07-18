@@ -6,6 +6,10 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
   buildEdgeTypeRows,
+  buildOntologyBuilderNodeHrefFromGraphId,
+  buildOntologyHealthActionTarget,
+  buildOntologyHealthSignals,
+  buildOntologyNodeHref,
   classifyRelationQuality,
   summarizeAgentReadiness,
   useEdgeTypeLabel,
@@ -115,6 +119,25 @@ export function OntologyInsightsPage() {
     () => edgeTypeRows.slice(0, 4).map((r) => ({ key: r.type, label: edgeTypeLabel(r.type), count: r.count })),
     [edgeTypeRows, edgeTypeLabel],
   );
+  // 수리 큐 — 분석 패널 완전 소멸 2단계 §c 로 지도 좌측 레일의 health 모드에서
+  // 이관. 지도의 health 칩과 같은 entities 레벨 함수(buildOntologyHealthSignals
+  // / buildOntologyHealthActionTarget) 를 재사용 — 이 페이지가 이미 쓰던
+  // `nodes`/`edges`(useOntologyInsight) 만으로 계산되는 온톨로지 그래프 레벨
+  // 신호만 다룬다(`/projects` 카드의 project-레벨 stale/orphan 탐지는 범위 밖 —
+  // 그건 project 엔티티 전용 렌즈라 이 페이지의 온톨로지 그래프 데이터와는
+  // 다른 소스다).
+  const healthSignals = useMemo(() => buildOntologyHealthSignals(nodes, edges), [nodes, edges]);
+  const healthQueue = useMemo(
+    () => ({
+      staleCount: healthSignals.stale.length,
+      orphanCount: healthSignals.orphan.length,
+      promotionCount: healthSignals.promotion.length,
+      actionTarget: buildOntologyHealthActionTarget(healthSignals),
+      builderHref: buildOntologyBuilderNodeHrefFromGraphId,
+      ontologyHref: buildOntologyNodeHref,
+    }),
+    [healthSignals],
+  );
 
   const dependsOnRows = useMemo(
     () => buildDependsOnRows(nodes, edges, DEPENDS_ON_DISPLAY_LIMIT),
@@ -175,6 +198,17 @@ export function OntologyInsightsPage() {
     agentReadinessReady: t("agentReadinessReady"),
     agentReadinessPreflight: t("agentReadinessPreflight"),
     agentReadinessReview: t("agentReadinessReview"),
+    repairQueueTitle: t("repairQueueTitle"),
+    repairQueueStale: t("repairQueueStale"),
+    repairQueueOrphan: t("repairQueueOrphan"),
+    repairQueuePromotion: t("repairQueuePromotion"),
+    repairQueueEmpty: t("repairQueueEmpty"),
+    repairQueueTargetLabel: t("repairQueueTargetLabel"),
+    repairQueueActionKindStale: t("repairQueueActionKindStale"),
+    repairQueueActionKindOrphan: t("repairQueueActionKindOrphan"),
+    repairQueueActionKindPromotion: t("repairQueueActionKindPromotion"),
+    repairQueueOpenBuilder: t("repairQueueOpenBuilder"),
+    repairQueueOpenOntology: t("repairQueueOpenOntology"),
   };
   const formatDaysAgo = (days: number) => {
     if (days <= 0) return t("daysAgoToday");
@@ -298,6 +332,7 @@ export function OntologyInsightsPage() {
                 hubTotalCount={hubRanking.length}
                 kindLabel={kindLabel}
                 agentReadiness={agentReadiness}
+                healthQueue={healthQueue}
                 labels={relationsLabels}
               />
             ) : null}

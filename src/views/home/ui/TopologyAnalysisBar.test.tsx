@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
@@ -218,10 +218,8 @@ describe("TopologyAnalysisBar", () => {
             promotion: 0,
           },
         }}
-        healthAction={null}
         labels={labels}
         onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
       />,
     );
 
@@ -261,10 +259,8 @@ describe("TopologyAnalysisBar", () => {
             promotion: 0,
           },
         }}
-        healthAction={null}
         labels={labels}
         onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
       />,
     );
 
@@ -280,7 +276,7 @@ describe("TopologyAnalysisBar", () => {
     const modeRail = screen.getByTestId("topology-analysis-mode-rail");
     expect(modeRail).toHaveAttribute(
       "data-mode-rail-contract",
-      "two-view-tabs-health-queue-chip",
+      "two-view-tabs",
     );
     expect(modeRail).toHaveAttribute(
       "data-surface-token",
@@ -360,10 +356,8 @@ describe("TopologyAnalysisBar", () => {
             promotion: 0,
           },
         }}
-        healthAction={null}
         labels={labels}
         onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
       />,
     );
 
@@ -391,83 +385,13 @@ describe("TopologyAnalysisBar", () => {
           needsSelection: false,
           healthBreakdown: { stale: 0, orphan: 0, promotion: 0 },
         }}
-        healthAction={null}
         labels={labels}
         onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
       />,
     );
     const panel = screen.getByTestId("topology-analysis-panel");
     expect(panel).toHaveAttribute("data-panel-width-target", "graph-compact-rail");
     expect(panel.style.width).toBe("var(--topology-panel-graph-width)");
-  });
-
-  it("surfaces the health queue as a count chip and routes clicks to health mode", () => {
-    const onModeChange = vi.fn();
-    render(
-      <TopologyAnalysisBar
-        mode="overview"
-        summary={{
-          mode: "overview",
-          primaryMetric: 22,
-          secondaryMetric: 504,
-          needsSelection: false,
-          healthBreakdown: { stale: 0, orphan: 1, promotion: 22 },
-        }}
-        healthAction={null}
-        labels={labels}
-        onModeChange={onModeChange}
-        onHealthAction={vi.fn()}
-      />,
-    );
-    const chip = screen.getByRole("button", { name: "Health" });
-    expect(chip).toHaveAttribute("data-analysis-health-chip");
-    // 칩 숫자 = 진짜 결함(오래된 근거 + 소속 미정)만. 허브 후보 22건은
-    // 통계적 제안이라 카운트에서 제외 (감사 ⑦-b: alert fatigue 방지).
-    expect(chip).toHaveAttribute("data-health-queue-count", "1");
-    expect(chip.textContent).toBe("1");
-    fireEvent.click(chip);
-    expect(onModeChange).toHaveBeenCalledWith("health");
-  });
-
-  it("hides the health chip when only statistical suggestions remain", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="overview"
-        summary={{
-          mode: "overview",
-          primaryMetric: 22,
-          secondaryMetric: 504,
-          needsSelection: false,
-          healthBreakdown: { stale: 0, orphan: 0, promotion: 22 },
-        }}
-        healthAction={null}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-    expect(screen.queryByRole("button", { name: "Health" })).toBeNull();
-  });
-
-  it("hides the health queue chip when the maintenance queue is empty", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="overview"
-        summary={{
-          mode: "overview",
-          primaryMetric: 22,
-          secondaryMetric: 504,
-          needsSelection: false,
-          healthBreakdown: { stale: 0, orphan: 0, promotion: 0 },
-        }}
-        healthAction={null}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-    expect(screen.queryByRole("button", { name: "Health" })).toBeNull();
   });
 
   it("keeps the overview guidance to a single line and defers concept/relation census to the workspace HUD (design guardian verdict a6)", () => {
@@ -485,14 +409,12 @@ describe("TopologyAnalysisBar", () => {
             promotion: 0,
           },
         }}
-        healthAction={null}
         labels={{
           ...labels,
           overviewPrompt:
             "Start with the product/system map: domains, capabilities, and change paths stay visible for team inspection and sharing.",
         }}
         onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
       />,
     );
 
@@ -538,11 +460,9 @@ describe("TopologyAnalysisBar", () => {
             promotion: 0,
           },
         }}
-        healthAction={null}
         leftPanelExpanded
         labels={labels}
         onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
       />,
     );
 
@@ -578,10 +498,8 @@ describe("TopologyAnalysisBar", () => {
             promotion: 0,
           },
         }}
-        healthAction={null}
         labels={labels}
         onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
       />,
     );
 
@@ -659,11 +577,9 @@ describe("TopologyAnalysisBar", () => {
             promotion: 0,
           },
         }}
-        healthAction={null}
         createPanelReserved
         labels={labels}
         onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
       />,
     );
 
@@ -672,532 +588,6 @@ describe("TopologyAnalysisBar", () => {
     });
     expect(bar.className).toContain("top-[31.5rem]");
     expect(bar.className).toContain("max-h-[calc(100dvh-33.5rem)]");
-  });
-
-  it("uses a phone-safe primary rail width for Health mode", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="health"
-        summary={{
-          mode: "health",
-          primaryMetric: 23,
-          secondaryMetric: 504,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 1,
-            promotion: 22,
-          },
-        }}
-        healthAction={{
-          slug: "ontology-atlas",
-          title: "ontology-atlas",
-          kind: "promotion",
-        }}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    const bar = screen.getByRole("region", {
-      name: "Topology analysis mode",
-    });
-    expect(bar).toHaveAttribute("data-analysis-mode", "health");
-    expect(bar).toHaveAttribute("data-attention-role", "primary");
-    expect(bar).toHaveAttribute("data-panel-width-target", "health-phone-primary-rail");
-    expect(bar).toHaveAttribute(
-      "data-panel-width-contract",
-      "health-primary-max-360-phone-full-width",
-    );
-    expect(bar).toHaveAttribute(
-      "data-panel-width-token",
-      "--topology-panel-overview-responsive-width",
-    );
-    expect(bar).toHaveAttribute(
-      "data-panel-phone-utility-reserve-token",
-      "--topology-panel-phone-utility-rail-reserve",
-    );
-    expect(bar).toHaveAttribute(
-      "data-health-repair-lane-contract",
-      "target-to-builder-to-sync",
-    );
-  });
-
-  it("opens the first actionable health target from Health mode", () => {
-    const onHealthAction = vi.fn();
-
-    render(
-      <TopologyAnalysisBar
-        mode="health"
-        summary={{
-          mode: "health",
-          primaryMetric: 3,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 1,
-            orphan: 1,
-            promotion: 1,
-          },
-        }}
-        healthAction={{
-          slug: "legacy-project",
-          title: "Legacy Project",
-          kind: "stale",
-        }}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={onHealthAction}
-      />,
-    );
-
-    expect(screen.getAllByText("stale evidence")).toHaveLength(2);
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "stale evidence Legacy Project" }),
-    );
-
-    expect(onHealthAction).toHaveBeenCalledWith("legacy-project");
-  });
-
-  it("links the first actionable health target to builder repair", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="health"
-        summary={{
-          mode: "health",
-          primaryMetric: 1,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 1,
-          },
-        }}
-        healthAction={{
-          slug: "capability:topology-analysis-modes",
-          title: "Topology Analysis Modes",
-          kind: "promotion",
-        }}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByRole("link", { name: "Open ontology" })).toHaveAttribute(
-      "href",
-      "/ontology/?node=capability%3Atopology-analysis-modes",
-    );
-    expect(screen.getByRole("link", { name: "Repair in builder" })).toHaveAttribute(
-      "href",
-      "/ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
-    );
-  });
-
-  it("shows the kind-specific next action beside the Health inspect target", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="health"
-        summary={{
-          mode: "health",
-          primaryMetric: 1,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 1,
-            promotion: 0,
-          },
-        }}
-        healthAction={{
-          slug: "domain:views",
-          title: "Views",
-          kind: "orphan",
-        }}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText("Current repair target")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Connect this node to its owner/domain or document why it should stay standalone.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId("topology-health-repair-order")).toBeInTheDocument();
-    expect(screen.getByText("Repair order")).toBeInTheDocument();
-    expect(screen.getByText("Inspect target")).toBeInTheDocument();
-    expect(screen.getByText("Repair ownership or evidence")).toBeInTheDocument();
-    expect(screen.getByText("Run sync gate")).toBeInTheDocument();
-    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
-      "data-health-repair-lane-contract",
-      "target-to-builder-to-sync",
-    );
-    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
-      "data-health-repair-target-slug",
-      "domain:views",
-    );
-    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
-      "data-health-repair-target-kind",
-      "orphan",
-    );
-    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
-      "data-health-panel-phone-max-height-token",
-      "--topology-health-panel-phone-max-height",
-    );
-    expect(screen.getByTestId("topology-analysis-panel")).toHaveAttribute(
-      "data-panel-compact-scroll-end-reserve-token",
-      "--topology-health-panel-scroll-end-reserve",
-    );
-    expect(screen.getByTestId("topology-analysis-panel").className).toContain(
-      "data-[analysis-mode=health]:max-md:max-h-[var(--topology-health-panel-phone-max-height)]",
-    );
-    expect(screen.getByTestId("topology-analysis-panel-body").className).toContain(
-      "data-[analysis-body-mode=health]:max-md:pb-[var(--topology-health-panel-scroll-end-reserve)]",
-    );
-    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
-      "data-health-repair-order-contract",
-      "inspect-repair-sync",
-    );
-    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
-      "data-health-repair-action-order",
-      "builder-mcp-ontology",
-    );
-    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
-      "data-health-repair-visual-contract",
-      "builder-primary-full-secondary-row",
-    );
-    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
-      "data-health-repair-primary-action",
-      "builder",
-    );
-    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
-      "data-health-repair-sync-gate",
-      "post-change",
-    );
-    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
-      "data-primary-surface-token",
-      "--topology-health-repair-primary-surface",
-    );
-    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
-      "data-primary-border-token",
-      "--topology-health-repair-primary-border",
-    );
-    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
-      "data-secondary-surface-token",
-      "--topology-health-repair-secondary-surface",
-    );
-    expect(screen.getByTestId("topology-health-repair-order")).toHaveAttribute(
-      "data-secondary-border-token",
-      "--topology-health-repair-secondary-border",
-    );
-    expect(
-      screen.getByRole("button", { name: "open question Views" }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Inspect" })).not.toBeInTheDocument();
-    const actionRail = screen.getByTestId("topology-health-repair-order");
-    const primaryRepair = within(actionRail).getByRole("link", {
-      name: "Repair in builder",
-    });
-    expect(primaryRepair).toHaveAttribute(
-      "data-health-repair-primary-action",
-      "builder",
-    );
-    expect(primaryRepair).toHaveAttribute(
-      "data-health-repair-action-tier",
-      "primary",
-    );
-    expect(primaryRepair).toHaveAttribute(
-      "data-surface-token",
-      "--topology-health-repair-primary-surface",
-    );
-    expect(primaryRepair).toHaveAttribute(
-      "data-border-token",
-      "--topology-health-repair-primary-border",
-    );
-    expect(primaryRepair.className).toContain("min-h-9");
-    expect(primaryRepair.className).toContain("justify-center");
-    expect(primaryRepair.className).toContain("col-span-2");
-    expect(primaryRepair.querySelector("span")?.className).toContain("whitespace-nowrap");
-    expect(actionRail.className).toContain("grid-cols-2");
-    expect(within(actionRail).getAllByRole("link")[0]).toBe(primaryRepair);
-    const mcpCopy = within(actionRail).getByRole("button", {
-      name: "Copy health MCP check",
-    });
-    expect(mcpCopy).toHaveAttribute("data-health-repair-secondary-action", "mcp");
-    expect(mcpCopy).toHaveAttribute("data-health-repair-action-tier", "secondary");
-    expect(mcpCopy).toHaveAttribute(
-      "data-surface-token",
-      "--topology-health-repair-secondary-surface",
-    );
-    expect(mcpCopy).toHaveAttribute(
-      "data-border-token",
-      "--topology-health-repair-secondary-border",
-    );
-    const ontologyLink = within(actionRail).getByRole("link", {
-      name: "Open ontology",
-    });
-    expect(ontologyLink).toHaveAttribute(
-      "data-health-repair-secondary-action",
-      "ontology",
-    );
-    expect(ontologyLink).toHaveAttribute(
-      "data-border-token",
-      "--topology-health-repair-secondary-border",
-    );
-  });
-
-  it("names the health repair disclosure as repair proof instead of generic actions", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="health"
-        summary={{
-          mode: "health",
-          primaryMetric: 1,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 1,
-            promotion: 0,
-          },
-        }}
-        healthAction={{
-          slug: "domain:views",
-          title: "Views",
-          kind: "orphan",
-        }}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    const summary = screen.getByTestId("topology-health-repair-proof-summary");
-    expect(summary).toHaveTextContent("Repair proof");
-    expect(summary.closest("details")).not.toHaveAttribute("open");
-    expect(screen.getByTestId("topology-health-repair-proof-chevron")).toHaveClass(
-      "group-open:rotate-180",
-    );
-    expect(screen.queryByText("Actions")).not.toBeInTheDocument();
-  });
-
-  it("copies the current health evidence brief", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText },
-    });
-
-    render(
-      <TopologyAnalysisBar
-        mode="health"
-        summary={{
-          mode: "health",
-          primaryMetric: 2,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 1,
-            promotion: 1,
-          },
-        }}
-        healthAction={{
-          slug: "domain:views",
-          title: "Views",
-          kind: "orphan",
-        }}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByRole("button", { name: "Copy health evidence" })).toHaveTextContent(
-      "Copy health",
-    );
-    expect(screen.getByRole("button", { name: "Copy health evidence" }).className).toContain(
-      "min-h-8",
-    );
-    expect(screen.getByRole("button", { name: "Copy health evidence" }).className).not.toContain(
-      "w-8",
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Copy health evidence" }));
-
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("- Inspect: Open question · Views (domain:views)"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("p=domain%3Aviews"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("- Ontology URL: /ontology/?node=domain%3Aviews"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("- Repair URL: /ontology/edit/?node=domains%2Fviews"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "- Next action: Connect this node to its owner/domain or document why it should stay standalone.",
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "- Agent check: ontology-atlas node domain:views [vault] --limit 12",
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        '- MCP check: query_ontology({"operation":"node_profile","slug":"domain:views","depth":2,"limit":12})',
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "- Owner relation preflight: ontology-atlas relation-check <owner-slug> domain:views contains [vault]",
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        '- MCP owner relation preflight: query_ontology({"operation":"relation_check","from":"<owner-slug>","to":"domain:views","type":"contains"})',
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "- Impact check: ontology-atlas blast-radius domain:views [vault] --depth 2 --direction incoming",
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        '- MCP impact check: query_ontology({"operation":"blast_radius","slug":"domain:views","depth":2,"direction":"incoming"})',
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("- Post-repair sync gate:"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("  # Post-change ontology sync gate"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining('"operation": "maintenance_plan"'),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("ontology-atlas validate [vault]"),
-    );
-  });
-
-  it("keeps the health evidence copy label stable after copy feedback", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText },
-    });
-
-    render(
-      <TopologyAnalysisBar
-        mode="health"
-        summary={{
-          mode: "health",
-          primaryMetric: 2,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 1,
-            promotion: 1,
-          },
-        }}
-        healthAction={{
-          slug: "domain:views",
-          title: "Views",
-          kind: "orphan",
-        }}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    const copyButton = screen.getByRole("button", {
-      name: "Copy health evidence",
-    });
-
-    fireEvent.click(copyButton);
-
-    const copiedButton = await screen.findByRole("button", {
-      name: "Health evidence copied",
-    });
-    expect(copiedButton).toHaveTextContent("Copy health");
-    expect(copiedButton).not.toHaveTextContent("Copied");
-    expect(copiedButton.className).toContain("min-h-8");
-    expect(copiedButton.className).toContain("active:translate-y-[1px]");
-    expect(copiedButton.className).toContain("motion-reduce:transition-none");
-  });
-
-  it("copies health MCP impact and sync checks from the repair actions", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText },
-    });
-
-    render(
-      <TopologyAnalysisBar
-        mode="health"
-        summary={{
-          mode: "health",
-          primaryMetric: 2,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 1,
-            promotion: 1,
-          },
-        }}
-        healthAction={{
-          slug: "domain:views",
-          title: "Views",
-          kind: "orphan",
-        }}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    const directMcpCheck = screen.getByRole("button", {
-      name: "Copy health MCP check",
-    });
-    expect(directMcpCheck).toBeVisible();
-
-    fireEvent.click(directMcpCheck);
-    expect(writeText).toHaveBeenCalledWith(
-      'query_ontology({"operation":"node_profile","slug":"domain:views","depth":2,"limit":12})',
-    );
-
-    const repairProofSummary = screen.getByTestId(
-      "topology-health-repair-proof-summary",
-    );
-    expect(repairProofSummary).toHaveTextContent("Repair proof");
-    fireEvent.click(repairProofSummary);
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Copy health impact MCP check" }),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      'query_ontology({"operation":"blast_radius","slug":"domain:views","depth":2,"direction":"incoming"})',
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Copy health post-repair sync gate" }),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("# Post-change ontology sync gate"),
-    );
   });
 
 });

@@ -88,7 +88,6 @@ import {
   type TopologyAnalysisMode,
 } from "../model/url-state";
 import {
-  buildOverviewModeUrl,
   buildTopologyAnalysisSummary,
   buildTopologyHealthActionTarget,
   classifyTopologyRelationQuality,
@@ -1413,10 +1412,9 @@ export function HomePage() {
       mcpWorkspaceCheck: t("analysis.overviewBriefMcpWorkspaceCheck"),
     },
     url: typeof window === "undefined" ? null : window.location.href,
-    healthUrl:
-      typeof window === "undefined"
-        ? "/topology/?mode=health"
-        : buildOverviewModeUrl(window.location.href, "health"),
+    // 분석 패널 완전 소멸 2단계 §c — health 는 지도에 진입점이 없다. 수리 큐는
+    // insights 관계 탭으로 이동했으니 이 딥링크도 거기를 직접 가리킨다.
+    healthUrl: "/ontology/insights/?tab=relations",
     insightsUrl: "/ontology/insights/",
   });
   const indexAgentHandoffReanalyzeText = formatOntologyReanalysisAgentCommand();
@@ -2107,102 +2105,18 @@ export function HomePage() {
               <TopologyAnalysisBar
                 mode={analysisMode}
                 summary={analysisSummary}
-                healthAction={topologyHealthSummary.actionTarget}
                 rightPanelReserved={drawerOpen}
                 leftPanelExpanded={false}
                 createPanelReserved={createNodeOpen}
                 onModeChange={handleSelectAnalysisMode}
-                onHealthAction={(slug) => handleSelect(slug)}
                 labels={{
-                title: t("analysis.title"),
-                overview: t("analysis.overview"),
-                graph: t("analysis.graph"),
-                graphPrompt: t("analysis.graphPrompt"),
-                health: t("analysis.health"),
-                metricNodes: t("analysis.metricNodes"),
-                metricRelations: t("analysis.metricRelations"),
-                metricIssues: t("analysis.metricIssues"),
-                healthStale: t("analysis.healthStale"),
-                healthOrphan: t("analysis.healthOrphan"),
-                healthPromotion: t("analysis.healthPromotion"),
-                healthInspect: t("analysis.healthInspect"),
-                healthCopy: t("analysis.healthCopy"),
-                healthOpenOntology: t("analysis.healthOpenOntology"),
-                healthRepair: t("analysis.healthRepair"),
-                healthCopied: t("analysis.healthCopied"),
-                actions: t("analysis.actions"),
-                healthCopyTools: t("analysis.healthCopyTools"),
-                healthMcpCopy: t("analysis.healthMcpCopy"),
-                healthMcpCopied: t("analysis.healthMcpCopied"),
-                healthMcpImpactCopy: t("analysis.healthMcpImpactCopy"),
-                healthMcpImpactCopied: t("analysis.healthMcpImpactCopied"),
-                healthSyncGateCopy: t("analysis.healthSyncGateCopy"),
-                healthSyncGateCopied: t("analysis.healthSyncGateCopied"),
-                healthHandoffSummary: t("analysis.healthHandoffSummary"),
-                healthRepairOrderTitle: t("analysis.healthRepairOrderTitle"),
-                healthRepairOrderInspect: t("analysis.healthRepairOrderInspect"),
-                healthRepairOrderRepair: t("analysis.healthRepairOrderRepair"),
-                healthRepairOrderSync: t("analysis.healthRepairOrderSync"),
-                healthRepairTargetLabel: t("analysis.healthRepairTargetLabel"),
-                healthMcpCopyAriaLabel: t("analysis.healthMcpCopyAriaLabel"),
-                healthMcpCopiedAriaLabel: t(
-                  "analysis.healthMcpCopiedAriaLabel",
-                ),
-                healthMcpImpactCopyAriaLabel: t(
-                  "analysis.healthMcpImpactCopyAriaLabel",
-                ),
-                healthMcpImpactCopiedAriaLabel: t(
-                  "analysis.healthMcpImpactCopiedAriaLabel",
-                ),
-                healthSyncGateCopyAriaLabel: t(
-                  "analysis.healthSyncGateCopyAriaLabel",
-                ),
-                healthSyncGateCopiedAriaLabel: t(
-                  "analysis.healthSyncGateCopiedAriaLabel",
-                ),
-                healthCopyAriaLabel: t("analysis.healthCopyAriaLabel"),
-                healthCopiedAriaLabel: t("analysis.healthCopiedAriaLabel"),
-                healthEvidenceTitle: t("analysis.healthEvidenceTitle"),
-                healthEvidenceTotal: t("analysis.healthEvidenceTotal"),
-                healthEvidenceInspectUrl: t("analysis.healthEvidenceInspectUrl"),
-                healthEvidenceOntologyUrl: t(
-                  "analysis.healthEvidenceOntologyUrl",
-                ),
-                healthEvidenceRepairUrl: t("analysis.healthEvidenceRepairUrl"),
-                healthEvidenceNextAction: t("analysis.healthEvidenceNextAction"),
-                healthEvidenceAgentCheck: t("analysis.healthEvidenceAgentCheck"),
-                healthEvidenceMcpCheck: t("analysis.healthEvidenceMcpCheck"),
-                healthEvidenceRelationPreflight: t(
-                  "analysis.healthEvidenceRelationPreflight",
-                ),
-                healthEvidenceMcpRelationPreflight: t(
-                  "analysis.healthEvidenceMcpRelationPreflight",
-                ),
-                healthEvidenceImpactCheck: t("analysis.healthEvidenceImpactCheck"),
-                healthEvidenceMcpImpactCheck: t(
-                  "analysis.healthEvidenceMcpImpactCheck",
-                ),
-                healthEvidenceSyncGate: t("analysis.healthEvidenceSyncGate"),
-                healthEvidenceActionKindStale: t(
-                  "analysis.healthEvidenceActionKindStale",
-                ),
-                healthEvidenceActionKindOrphan: t(
-                  "analysis.healthEvidenceActionKindOrphan",
-                ),
-                healthEvidenceActionKindPromotion: t(
-                  "analysis.healthEvidenceActionKindPromotion",
-                ),
-                healthEvidenceActionStale: t("analysis.healthEvidenceActionStale"),
-                healthEvidenceActionOrphan: t("analysis.healthEvidenceActionOrphan"),
-                healthEvidenceActionPromotion: t(
-                  "analysis.healthEvidenceActionPromotion",
-                ),
-                healthEvidenceNone: t("analysis.healthEvidenceNone"),
-                healthEvidenceUrl: t("analysis.healthEvidenceUrl"),
-                healthPrompt: t("analysis.healthPrompt", {
-                  count: analysisSummary.primaryMetric,
-                }),
-                overviewPrompt: t("analysis.overviewPrompt"),
+                  title: t("analysis.title"),
+                  overview: t("analysis.overview"),
+                  graph: t("analysis.graph"),
+                  graphPrompt: t("analysis.graphPrompt"),
+                  metricNodes: t("analysis.metricNodes"),
+                  metricRelations: t("analysis.metricRelations"),
+                  overviewPrompt: t("analysis.overviewPrompt"),
                 }}
               />
             ) : null}

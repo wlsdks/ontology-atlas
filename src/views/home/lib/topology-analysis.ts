@@ -2,10 +2,13 @@ import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import type { TopologyAnalysisMode } from "../model/url-state";
 import {
   buildOntologyBuilderNodeHrefFromGraphId,
+  buildOntologyHealthActionTarget,
   buildOntologyNodeHref,
   classifyRelationQuality,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
+  type OntologyHealthActionTarget,
+  type OntologyHealthSignalCandidate,
 } from "@/entities/knowledge-graph";
 import { buildOntologyReachability } from "@/shared/lib/ontology-tree";
 
@@ -51,16 +54,17 @@ export interface TopologyAnalysisSummary {
   relationQuality?: TopologyRelationQualityBreakdown;
 }
 
-export interface TopologyHealthActionCandidate {
-  slug: string;
-  name: string;
-}
-
-export interface TopologyHealthActionTarget {
-  slug: string;
-  title: string;
-  kind: "stale" | "orphan" | "promotion";
-}
+/**
+ * Re-exported under this file's historical name — the picking rule itself
+ * now lives at `entities/knowledge-graph/lib/ontology-health-signals.ts` so
+ * `/ontology/insights`' RelationsTab "수리 큐" section (분석 패널 완전 소멸
+ * 2단계 §c) can reuse the SAME function without a cross-view import
+ * (`views/home` → `views/ontology-insights` would violate FSD's "avoid
+ * same-layer cross-import" guidance). Both surfaces' "next repair target"
+ * can't drift because they call the one entities-level function.
+ */
+export type TopologyHealthActionCandidate = OntologyHealthSignalCandidate;
+export type TopologyHealthActionTarget = OntologyHealthActionTarget;
 
 export interface TopologyHealthBriefLabels {
   title: string;
@@ -184,44 +188,7 @@ export function buildTopologyAnalysisSummary(
   };
 }
 
-export function buildTopologyHealthActionTarget({
-  stale,
-  orphan,
-  promotion,
-}: {
-  stale: readonly TopologyHealthActionCandidate[];
-  orphan: readonly TopologyHealthActionCandidate[];
-  promotion: readonly TopologyHealthActionCandidate[];
-}): TopologyHealthActionTarget | null {
-  const firstStale = stale[0];
-  if (firstStale) {
-    return {
-      slug: firstStale.slug,
-      title: firstStale.name,
-      kind: "stale",
-    };
-  }
-
-  const firstOrphan = orphan[0];
-  if (firstOrphan) {
-    return {
-      slug: firstOrphan.slug,
-      title: firstOrphan.name,
-      kind: "orphan",
-    };
-  }
-
-  const firstPromotion = promotion[0];
-  if (firstPromotion) {
-    return {
-      slug: firstPromotion.slug,
-      title: firstPromotion.name,
-      kind: "promotion",
-    };
-  }
-
-  return null;
-}
+export { buildOntologyHealthActionTarget as buildTopologyHealthActionTarget };
 
 export function formatTopologyHealthBrief({
   summary,
@@ -560,18 +527,6 @@ export function formatTopologyPathAgentPacket({
     `- ${labels.targetBuilderUrl}: ${buildTopologyHealthRepairHref(targetSlug)}`,
     `- ${labels.mcpCheck}: ${formatTopologyPathMcpCheck(sourceSlug, targetSlug)}`,
   ].join("\n");
-}
-
-/** Sets `?mode=<mode>` on `currentUrl` — used by the INDEX footer's "brief"
- *  copy action to link straight to the health mode from wherever the map
- *  currently is (W3 분석 보기 은퇴 — moved out of `TopologyAnalysisBar`). */
-export function buildOverviewModeUrl(
-  currentUrl: string,
-  mode: TopologyAnalysisMode,
-): string {
-  const url = new URL(currentUrl);
-  url.searchParams.set("mode", mode);
-  return url.toString();
 }
 
 export function buildTopologyHealthRepairHref(slug: string): string {
