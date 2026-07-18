@@ -50,7 +50,6 @@ const redditPostsDoc = readText("docs/launch/REDDIT-POSTS.md");
 const desktopOntologyDoc = readText("docs/ontology/capabilities/desktop-app-distribution.md");
 const onboardingOntologyDoc = readText("docs/ontology/domains/onboarding-ux.md");
 const firebaseDeployOntologyDoc = readText("docs/ontology/capabilities/firebase-deploy-skill.md");
-const landingPage = readText("src/views/landing/ui/LandingPage.tsx");
 const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
 const downloadRoute = readText("app/[locale]/download/page.tsx");
 const macosDownloadLink = readText("src/features/macos-download-link/ui/MacosDownloadLink.tsx");
@@ -672,7 +671,6 @@ if (
 }
 
 if (
-  landingPage.includes("MacosDownloadLink") &&
   downloadPage.includes("MacosDownloadLink") &&
   downloadPage.includes("GITHUB_REPOSITORY_URL") &&
   downloadPage.includes("sourceCta") &&
@@ -683,29 +681,28 @@ if (
   pass("hosted download CTAs separate the GitHub Releases download path from the source-code link without a broken latest-release dependency");
 } else {
   fail(
-    "hosted landing/download CTAs must avoid a broken latest-release URL before a public macOS DMG release exists and the download page must not duplicate the release CTA as its secondary action",
+    "hosted download CTAs must avoid a broken latest-release URL before a public macOS DMG release exists and the download page must not duplicate the release CTA as its secondary action",
   );
 }
 
-if (landingPage.includes('href="/download/"')) {
-  pass("hosted landing secondary CTA points to the app installation guide, not the web workbench");
-} else {
-  fail(
-    "src/views/landing/ui/LandingPage.tsx must send the secondary hosted CTA to /download/ so the web surface stays promo/download-first",
-  );
-}
-
+// root-first-open (2026-07) retired the marketing `src/views/landing`
+// surface — `/` now renders the topology map directly (no vault-not-selected
+// promo/download-only landing), and its hero copy moved into `/download`'s
+// intro section. Local vault work on the web root (FirstRunStarterModule,
+// inside HomePage's INDEX panel) calls `useLocalVault().open()` directly and
+// deliberately bypasses `/docs` — so this check only still asserts that
+// `/docs` itself keeps its OWN local-source tab desktop-gated, which this
+// change did not touch.
 if (
-  !landingPage.includes('/docs/?intent=local') &&
   !downloadPage.includes('/docs/?intent=local') &&
   docsVaultPage.includes("shouldHonorLocalIntent(intent, isDesktopRuntime)") &&
   docsVaultPage.includes("isDocsVaultLocalSourceDisabled") &&
   docsVaultPage.includes("desktopOnlyTooltip")
 ) {
-  pass("hosted pages do not route users into the browser workbench, and /docs local vault work is desktop-only");
+  pass("the hosted download page does not route into the browser workbench, and /docs's own local-source tab stays desktop-only");
 } else {
   fail(
-    "hosted landing/download pages must stay promo/download-first, and src/views/docs-vault/ui/DocsVaultPage.tsx must only honor ?intent=local / local vault work in the Tauri desktop runtime",
+    "the hosted download page must stay promo/download-first, and src/views/docs-vault/ui/DocsVaultPage.tsx must only honor ?intent=local / local vault work in the Tauri desktop runtime",
   );
 }
 
@@ -739,25 +736,26 @@ if (
   rootReadme.includes("| **macOS app** | Install once, pick a local vault folder") &&
   rootReadme.includes("Ontology Atlas") &&
   rootReadme.includes("release-artifact identity") &&
-  rootReadme.includes("| **Website** | Explain the product, show a read-only demo") &&
-  rootReadme.includes("The public website is a static promo/download site with a read-only demo.") &&
+  rootReadme.includes("| **Website** | The root map opens straight into a real, read-only dogfood sample") &&
+  rootReadme.includes("lets you open your own local vault folder from the browser (no install)") &&
+  rootReadme.includes("root-first-open, 2026-07") &&
   rootReadme.includes("Tauri macOS shell") &&
   rootReadme.includes("Tauri native vault bridge") &&
   !rootReadme.includes("| **Web workbench** |") &&
   !rootReadme.includes("Open `http://localhost:3000`, go to `/docs`")
 ) {
-  pass("root README presents the hosted site as promo/download and the macOS app as the local workbench");
+  pass("root README presents the hosted root map's direct local-folder open path alongside the macOS app as the daily heavy-lift workbench");
 } else {
   fail(
-    "README.md must not present the hosted Firebase site as the writable web workbench; it should route real local visual work to the installed macOS app",
+    "README.md must present the hosted root map's own local-folder open path (root-first-open) while still routing daily heavy-lift local visual work to the installed macOS app",
   );
 }
 
 if (
   featuresDoc.includes("4 surfaces (macOS app · CLI · MCP · Website)") &&
   featuresDoc.includes("**Ontology Atlas** is the user-facing macOS app / website brand") &&
-  featuresDoc.includes("real ontology work happens in the installed app / CLI / MCP") &&
-  featuresDoc.includes("Hosted pages do not open or edit local vault folders.") &&
+  featuresDoc.includes("daily heavy-lift ontology work happens in the installed app / CLI / MCP") &&
+  featuresDoc.includes("lets you open your own local vault folder from the browser") &&
   productDirectionDoc.includes("Ontology Atlas") &&
   productDirectionDoc.includes("The Tauri bundle product name") &&
   productDirectionDoc.includes("CLI · installed macOS app") &&
@@ -773,10 +771,10 @@ if (
   architectureDoc.includes("Tauri native bridge → user disk") &&
   architectureDoc.includes("AI agents and the installed app end up with the same view")
 ) {
-  pass("product and architecture docs frame the installed app as the writable local workbench");
+  pass("product and architecture docs frame the installed app as the daily heavy-lift local workbench while the hosted root map offers its own direct local-folder open path");
 } else {
   fail(
-    "FEATURES, PRODUCT-DIRECTION, and ARCHITECTURE must describe macOS app / CLI / MCP as the writable local surfaces and hosted web as promo/download/read-only",
+    "FEATURES, PRODUCT-DIRECTION, and ARCHITECTURE must describe macOS app / CLI / MCP as the daily heavy-lift local surfaces while still describing the hosted root map's direct local-folder open path (root-first-open)",
   );
 }
 
@@ -1593,12 +1591,12 @@ if (
   webManifest.short_name === "Ontology Atlas" &&
   enMessages.metadata.siteName === "Ontology Atlas" &&
   koMessages.metadata.siteName === "Ontology Atlas" &&
-  landingPage.includes("Ontology Atlas")
+  downloadPage.includes("Ontology Atlas")
 ) {
   pass("user-facing web and app metadata use Ontology Atlas while preserving ontology-atlas as the project alias");
 } else {
   fail(
-    "Root metadata, PWA manifest, localized metadata, and landing header must expose Ontology Atlas as the user-facing brand while keeping ontology-atlas as the project alias",
+    "Root metadata, PWA manifest, localized metadata, and the hosted download page must expose Ontology Atlas as the user-facing brand while keeping ontology-atlas as the project alias",
   );
 }
 

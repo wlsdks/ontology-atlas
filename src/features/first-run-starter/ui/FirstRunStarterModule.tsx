@@ -1,0 +1,143 @@
+"use client";
+
+import { FolderOpen } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useFirstRunStarter } from "../model/use-first-run-starter";
+
+export interface FirstRunStarterModuleProps {
+  /** 실데이터 census — TopologyIndexPanel 이 이미 받는 값 그대로 전달. */
+  concepts: number;
+  relations: number;
+  domains: number;
+}
+
+/**
+ * INDEX 패널(TopologyIndexPanel) 맨 위에 통합되는 "시작하기" 모듈 —
+ * 승인 계약: `docs/prototypes/first-run-v3-flagship.html` (2026-07-18,
+ * "관제탑 첫 기동" v3). 플로팅 표면 0개 — 중앙 카드(반려)와 하단 커맨드독
+ * (중간 반려) 둘 다 폐기하고 기존 INDEX 패널 안에 자리를 잡는다.
+ *
+ * vault 미선택 + 정적 모드 + 세션 내 미dismiss 일 때만 렌더(`visible`,
+ * `useFirstRunStarter`). 그 외엔 null — INDEX 는 원래 모습(검색 + 트리)
+ * 그대로.
+ */
+export function FirstRunStarterModule({
+  concepts,
+  relations,
+  domains,
+}: FirstRunStarterModuleProps) {
+  const t = useTranslations("firstRunStarter");
+  const {
+    visible,
+    dismiss,
+    openFolder,
+    createVault,
+    busy,
+    scaffolding,
+    errorText,
+  } = useFirstRunStarter();
+
+  if (!visible) return null;
+
+  return (
+    <div
+      data-testid="first-run-starter"
+      className="relative border-b border-[color:var(--topology-v2-panel-divider)] bg-gradient-to-b from-[color:rgba(94,106,210,0.08)] via-[color:rgba(94,106,210,0.015)] to-transparent px-4 pb-3.5 pt-4"
+    >
+      {/* 가공 베젤 코너 틱 4개 — 장식이 아니라 "계기 패널" 재질 신호(시안 §모듈 구성). */}
+      <BezelTick position="top-[7px] left-[7px] border-l border-t" />
+      <BezelTick position="top-[7px] right-[7px] border-r border-t" />
+      <BezelTick position="bottom-[7px] left-[7px] border-b border-l" />
+      <BezelTick position="bottom-[7px] right-[7px] border-b border-r" />
+
+      <p className="mb-2.5 flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.22em] text-[color:var(--topology-v2-panel-text-secondary)]">
+        <span className="relative h-2 w-2 shrink-0" aria-hidden>
+          <span className="absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
+          <span className="absolute -inset-[3px] rounded-full border border-[color:rgba(212,180,120,0.42)]" />
+        </span>
+        {t("caption")}
+        <span className="ml-auto text-[8.5px] tracking-[0.16em] text-[color:var(--color-status-warning)]">
+          {t("sampleLabel")}
+        </span>
+      </p>
+
+      <p className="mb-3 text-[12px] leading-[1.6] text-[color:var(--topology-v2-panel-text-tertiary)]">
+        <b className="font-semibold text-[color:var(--topology-v2-panel-text-primary)]">
+          {t("contextBold")}
+        </b>{" "}
+        {t("contextRest")}
+      </p>
+
+      <div className="mb-3.5 grid grid-cols-3 divide-x divide-[color:var(--topology-v2-panel-divider)] rounded-[9px] border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.55)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]">
+        <MeterCell value={concepts} label={t("meterConcepts")} />
+        <MeterCell value={relations} label={t("meterRelations")} />
+        <MeterCell value={domains} label={t("meterDomains")} />
+      </div>
+
+      <button
+        type="button"
+        onClick={() => void openFolder()}
+        disabled={busy}
+        data-testid="first-run-starter-open"
+        className="relative flex w-full items-center justify-center gap-2 rounded-[9px] border border-[color:rgba(139,151,255,0.45)] bg-[color:var(--color-indigo-brand)] py-2.5 text-[13.5px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.35)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
+      >
+        <FolderOpen size={14} aria-hidden />
+        {busy && !scaffolding ? t("openBusy") : t("openLabel")}
+        <span className="rounded border border-b-2 border-white/35 px-1.5 py-px font-mono text-[9.5px] font-medium opacity-80">
+          ⌘O
+        </span>
+      </button>
+
+      <p className="mt-2.5 flex items-center justify-between text-[11.5px]">
+        <button
+          type="button"
+          onClick={() => void createVault()}
+          disabled={busy}
+          data-testid="first-run-starter-create"
+          className="border-b border-[color:var(--topology-v2-panel-divider)] pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+        >
+          {scaffolding ? t("createBusy") : t("createLabel")}
+        </button>
+        <button
+          type="button"
+          onClick={dismiss}
+          data-testid="first-run-starter-dismiss"
+          className="border-b border-[color:var(--topology-v2-panel-divider)] pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+        >
+          {t("dismissLabel")}
+        </button>
+      </p>
+
+      {errorText !== null ? (
+        <p
+          role="alert"
+          className="mt-2 text-[11px] text-[color:var(--color-status-danger)]"
+        >
+          {errorText || t("errorFallback")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function BezelTick({ position }: { position: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`pointer-events-none absolute h-[9px] w-[9px] border-[color:rgba(139,151,255,0.5)] ${position}`}
+    />
+  );
+}
+
+function MeterCell({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="py-2 text-center font-mono">
+      <span className="block text-[19px] font-semibold leading-none text-[color:var(--topology-v2-panel-text-primary)]">
+        {value}
+      </span>
+      <span className="mt-1 block text-[8px] uppercase tracking-[0.18em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+        {label}
+      </span>
+    </div>
+  );
+}

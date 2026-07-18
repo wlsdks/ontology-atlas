@@ -4,8 +4,10 @@ import path from "node:path";
 
 /**
  * 공개 상세(`/project/[slug]/`)가 비로그인에게도 실제 내용을 노출하는지 검증한다.
- * 스크린샷 캡처 타이밍에 따라 landing과 혼동될 수 있어 DOM 레벨에서 식별 가능한
- * 신호(heading, description 문구 등)를 확인한다.
+ * 스크린샷 캡처 타이밍에 따라 루트 지도(HomePage)로 잘못 떨어진 것과 혼동될 수
+ * 있어 DOM 레벨에서 식별 가능한 신호(heading, description 문구 등)를 확인한다.
+ * (root-first-open 이전엔 이 혼동 대상이 LandingPage 였다 — 이제 루트도 지도라
+ * 신호를 INDEX 패널 부재로 바꿨다.)
  */
 
 const OUT = path.resolve("output/ui-audit/detail");
@@ -38,18 +40,18 @@ test("비로그인 /project/ontology-atlas/ 상세가 실제 콘텐츠를 렌더
   const headings = await page.locator("h1, h2").allTextContents();
   console.log("[detail-access] headings:", headings.slice(0, 8));
 
-  // URL이 유지되는지(landing으로 redirect되지 않는지) 확인.
+  // URL이 유지되는지(루트 지도로 redirect되지 않는지) 확인.
   expect(page.url()).toMatch(/\/en\/project\/ontology-atlas\/?$/);
 
-  // landing 전용 문구가 본문에 없어야 한다 (만약 있다면 landing으로 떨어진 것).
-  const landingSignature = "문서가 프로젝트 구조가 됩니다";
-  const landingAppears = await page
-    .getByText(landingSignature, { exact: false })
+  // 루트 지도 전용 마커(INDEX 패널)가 본문에 없어야 한다 (있다면 상세가 아니라
+  // 루트 HomePage 로 떨어진 것).
+  const rootMapAppears = await page
+    .getByTestId("topology-index-panel")
     .first()
     .isVisible()
     .catch(() => false);
 
-  console.log(`[detail-access] landing-redirect? ${landingAppears}`);
+  console.log(`[detail-access] fell back to root map? ${rootMapAppears}`);
 
   if (errors.length > 0) {
     console.log("[detail-access] errors:", errors);

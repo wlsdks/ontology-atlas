@@ -18,19 +18,29 @@ async function openMcpAgentsSettings(page: import("@playwright/test").Page) {
  * browse surface rather than the removed knowledge/review queue surfaces.
  */
 test.describe("ontology view UI", () => {
-  test("desktop: landing CTA exposes app download path", async ({ page }) => {
+  test("desktop: root renders the topology map directly (no marketing landing detour)", async ({ page }) => {
+    // root-first-open (2026-07) — `/` used to render a marketing LandingPage
+    // when no vault was selected; it now renders the map (HomePage) itself,
+    // same as `/topology`. The LandingPage hero copy moved to `/download`.
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/");
+    await expect(page.getByTestId("topology-index-panel")).toBeVisible();
+    await expect(page.getByText("Codebase ontology that grows with AI")).toHaveCount(0);
+  });
+
+  test("desktop: /download exposes the app CTA and the absorbed intro section", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/en/download/");
     await expect(
       page.getByRole("heading", { name: "Codebase ontology that grows with AI" }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Download macOS app" })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "Open macOS releases" })).toHaveAttribute(
       "href",
       "https://github.com/wlsdks/ontology-atlas/releases",
     );
-    await expect(page.getByRole("link", { name: "Installation guide" })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "View source code" })).toHaveAttribute(
       "href",
-      "/en/download/",
+      "https://github.com/wlsdks/ontology-atlas",
     );
   });
 

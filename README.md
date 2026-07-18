@@ -132,7 +132,7 @@ when the durable repo memory should change.
 | **macOS app** | Install once, pick a local vault folder, and use the visual tree, topology, docs, projects, and ERD builder without returning to the website. |
 | **CLI** | Init a vault, bootstrap from a repo, validate frontmatter, compile graphs, inspect paths, find backlinks, rename/merge/delete nodes safely. |
 | **MCP server** | Give Claude Code, Cursor, Codex, and other agents 24 local read/write tools over stdio JSON-RPC. |
-| **Website** | Explain the product, show a read-only demo, and route users to the signed macOS release download. |
+| **Website** | The root map opens straight into a real, read-only dogfood sample and lets you open your own local vault folder from the browser (no install); `/download` explains the product and routes to the signed macOS release download. |
 | **Compiler + query engine** | Turn markdown files into a deterministic graph artifact with `graphHash`, issues, indexes, health checks, impact, lineage, cycles, and maintenance actions. |
 
 ## How The Memory Works
@@ -281,7 +281,7 @@ agent-maintained memory after that.
 
 | Route | Purpose |
 |---|---|
-| `/` | Hosted landing page, or the topology hub (map + INDEX + datasheet) inside the installed app after a vault is selected |
+| `/` | The topology hub (map + INDEX + datasheet) everywhere — hosted web included. With no vault selected it renders this project's own dogfood sample plus a "first run" starter in the INDEX panel (open my folder / create a new vault); no separate marketing landing |
 | `/download` | macOS release download and install guide |
 | `/docs` | Desktop local vault picker, markdown editor, command palette |
 | `/ontology` | Thin redirect to `/topology?index=expanded` (the old tree/ego hub is retired) |
@@ -294,15 +294,18 @@ agent-maintained memory after that.
 | `/project/new` | New project form |
 | `/project/fallback` | Static-export fallback for unknown project slugs |
 
-The public website is a static promo/download site with a read-only demo. Real
-vault editing happens in the installed macOS app after it receives permission
-to access a local folder on your machine.
+The public website's root map opens straight into a read-only dogfood sample
+and lets you open and edit your own local vault folder directly in the
+browser (File System Access API, no install) — root-first-open, 2026-07.
+`/download` stays the static promo/download page. Only `/docs`'s own separate
+local-source *browsing* tab and heavier daily workflows (recent vaults, agent
+config writing, packaging) stay in the installed macOS app.
 
 ## Verifiable promises
 
 | Promise | How this repo checks it |
 |---|---|
-| **No backend** | `pnpm bundle:check` keeps Firebase/server chunks out of landing, download, and local-first app routes. |
+| **No backend** | `pnpm bundle:check` keeps Firebase/server chunks out of the root/topology, download, and local-first app routes. |
 | **Static deploy** | `pnpm build` exports to `out/`; Firebase Hosting serves only static files. |
 | **Static dogfood manifest** | `pnpm docs-vault:check` keeps committed `src/entities/docs-vault/data/manifest.json` and `public/docs-vault/` in sync with `docs/`. |
 | **Vault integrity** | `pnpm vault:validate`, `test:vault:validate`, `vault:audit`, and `test:vault:audit` remain explicit local/release-preflight gates. |

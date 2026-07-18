@@ -26,13 +26,13 @@ function startServer(routes) {
   });
 }
 
+// root-first-open (2026-07) — `/` renders the topology map itself; this
+// fixture stands in for the map's brand pill + INDEX panel "시작하기" module.
 const alignedLanding = `<!doctype html>
+<title>Ontology Atlas</title>
 <main>
   <p>Ontology Atlas</p>
-  <p>macOS-first ontology workbench</p>
-  <a href="https://github.com/wlsdks/ontology-atlas/releases">macOS 앱 다운로드</a>
-  <a href="/ko/download/">설치 안내 보기</a>
-  <p>웹 사이트는 제품 소개와 다운로드 진입점입니다.</p>
+  <a>내 마크다운 폴더 열기</a>
 </main>`;
 
 const alignedDownload = `<!doctype html>
@@ -59,17 +59,17 @@ test("hosted download surface check passes for promo/download-aligned pages", as
       timeoutMs: 5000,
     });
 
-    assert.equal(result.landingUrl, `${server.baseUrl}/ko/`);
+    assert.equal(result.rootUrl, `${server.baseUrl}/ko/`);
     assert.equal(result.downloadUrl, `${server.baseUrl}/ko/download/`);
   } finally {
     await server.close();
   }
 });
 
-test("hosted download surface check rejects the stale browser vault CTA", async () => {
+test("hosted download surface check rejects a root page missing the local-folder open CTA (root-first-open regression)", async () => {
   const server = await startServer({
     "/ko/": {
-      body: alignedLanding.replace("</main>", "<a>내 마크다운 폴더 열기</a></main>"),
+      body: alignedLanding.replace("<a>내 마크다운 폴더 열기</a>", ""),
     },
     "/ko/download/": { body: alignedDownload },
   });
@@ -152,13 +152,13 @@ test("hosted download surface check rejects a download page without agent access
 
 test("hosted download surface check rejects unstable latest-release URLs", async () => {
   const server = await startServer({
-    "/ko/": {
-      body: alignedLanding.replace(
+    "/ko/": { body: alignedLanding },
+    "/ko/download/": {
+      body: alignedDownload.replace(
         "https://github.com/wlsdks/ontology-atlas/releases",
         "https://github.com/wlsdks/ontology-atlas/releases/latest",
       ),
     },
-    "/ko/download/": { body: alignedDownload },
   });
   try {
     await assert.rejects(

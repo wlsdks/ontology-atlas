@@ -188,11 +188,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ hosted landing secondary CTA points to the app installation guide, not the web workbench/,
-  );
-  assert.match(
-    result.stdout,
-    /✓ hosted pages do not route users into the browser workbench, and \/docs local vault work is desktop-only/,
+    /✓ the hosted download page does not route into the browser workbench, and \/docs's own local-source tab stays desktop-only/,
   );
   assert.match(
     result.stdout,
@@ -200,11 +196,11 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ root README presents the hosted site as promo\/download and the macOS app as the local workbench/,
+    /✓ root README presents the hosted root map's direct local-folder open path alongside the macOS app as the daily heavy-lift workbench/,
   );
   assert.match(
     result.stdout,
-    /✓ product and architecture docs frame the installed app as the writable local workbench/,
+    /✓ product and architecture docs frame the installed app as the daily heavy-lift local workbench while the hosted root map offers its own direct local-folder open path/,
   );
   assert.match(
     result.stdout,

@@ -7,7 +7,8 @@ import { expect, test } from "@playwright/test";
  *
  * 다루는 구간:
  *   A1. 공유 링크(`/en/project/ontology-atlas/`)로 진입 → 상세가 즉시 읽힘
- *   A2. 루트(`/en/`) 진입 → landing이 제품 성격을 10초 안에 설명
+ *   A2. 루트(`/en/`) 진입 → 지도(HomePage)가 곧 첫 화면 — 별도 마케팅 랜딩
+ *       경유 없이 10초 안에 INDEX/브랜드 pill 이 뜬다 (root-first-open B3).
  *   A5. 상세에서 Cmd+K 검색 팔레트가 열림·닫힘
  *
  * A3/A4 topology interaction is covered by topology-drag.
@@ -54,22 +55,25 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
     );
   }
 
-  // ── A2. 루트 landing ────────────────────────────────────────────────────
+  // ── A2. 루트 = 지도 (root-first-open B3, 별도 마케팅 랜딩 없음) ──────────
   const landingStart = Date.now();
   await page.goto("/en/", { waitUntil: "domcontentloaded" });
   const productName = page.getByText("Ontology Atlas", { exact: true }).first();
   await expect(productName).toBeVisible({ timeout: 10_000 });
   const landingTtfb = Date.now() - landingStart;
   if (landingTtfb > 5_000) {
-    findings.push(`A2 landing product mark까지 ${landingTtfb}ms (5s 초과)`);
+    findings.push(`A2 root map product mark까지 ${landingTtfb}ms (5s 초과)`);
   }
-  const landingSub = page.getByText("Install the app, pick a local vault folder, and start.");
-  if ((await landingSub.count()) === 0) {
-    findings.push("A2 landing subtitle missing");
-  }
-  const landingH1 = page.getByRole("heading", { name: /Codebase ontology/ });
-  if ((await landingH1.count()) === 0) {
-    findings.push("A2 landing h1 missing");
+  // 마케팅 랜딩 경유 없이 지도 chrome(브랜드 pill + INDEX)이 곧바로 뜨는지 —
+  // "0-클릭 aha" 계약의 e2e 증거.
+  const indexPanel = page.getByTestId("topology-index-panel");
+  const indexVisible = await indexPanel
+    .first()
+    .waitFor({ state: "visible", timeout: 5_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!indexVisible) {
+    findings.push("A2 root map INDEX panel missing — landing detour regression?");
   }
 
   // ── A5. 상세 Cmd+K → 같은 페이지에서 검색 팔레트 ───────────────────────
@@ -102,7 +106,7 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
 
   // ── 리포트 ──────────────────────────────────────────────────────────────
   console.log(`[JOURNEY-A] A1 detail heading ${detailTtfb}ms`);
-  console.log(`[JOURNEY-A] A2 landing product mark ${landingTtfb}ms`);
+  console.log(`[JOURNEY-A] A2 root map product mark ${landingTtfb}ms`);
   console.log(`[JOURNEY-A] findings=${findings.length} pageerror=${pageErrors.length} console.error=${consoleErrors.length}`);
   for (const f of findings.slice(0, FINDING_LIMIT)) console.log(`[JOURNEY-A]   • ${f}`);
   for (const e of pageErrors.slice(0, FINDING_LIMIT)) console.log(`[JOURNEY-A]   ! pageerror: ${e}`);

@@ -27,6 +27,13 @@ interface Props {
   ontologyHref?: string;
   /** Active inspector 상태에서는 위치 breadcrumb 역할만 하도록 밀도를 낮춘다. */
   compact?: boolean;
+  /**
+   * vault 미선택 정적(static) 모드 — 지도가 이 프로젝트 자신의 dogfood
+   * 샘플을 그리고 있음을 브랜드 pill 에서도 명시한다(root-first-open 판정
+   * §3 — 필 + INDEX 캡션 두 곳에서 SAMPLE 명시). 앰버는 신호톤 재사용,
+   * 새 채색 시스템 아님.
+   */
+  sampleBadge?: boolean;
 }
 
 export function HeroCollapsed({
@@ -42,6 +49,7 @@ export function HeroCollapsed({
   docsVaultHref,
   ontologyHref,
   compact = false,
+  sampleBadge = false,
 }: Props) {
   const t = useTranslations("searchWidgets.hero");
   const resolvedTitle = title ?? t("defaultTitleTopology");
@@ -130,6 +138,14 @@ export function HeroCollapsed({
           {resolvedSubtitle}
         </span>
       </span>
+      {sampleBadge && !compact ? (
+        <span
+          data-testid="hero-sample-badge"
+          className="shrink-0 rounded-[4px] border border-[color:rgba(212,180,120,0.4)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-status-warning)]"
+        >
+          {t("sampleBadge")}
+        </span>
+      ) : null}
       {onExpand && !compact ? (
         <ChevronsRight
           className="size-[var(--topology-chrome-icon-size-sm)] text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-secondary)]"

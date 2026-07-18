@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T12:22:05.650Z",
+  "generatedAt": "2026-07-18T13:24:24.171Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -168,8 +168,8 @@
         },
         {
           "depth": 3,
-          "text": "Vault mode (user picked a markdown folder in the desktop app)",
-          "slug": "vault-mode-user-picked-a-markdown-folder-in-the-desktop-app"
+          "text": "Vault mode (user picked a markdown folder)",
+          "slug": "vault-mode-user-picked-a-markdown-folder"
         },
         {
           "depth": 3,
@@ -203,8 +203,8 @@
         }
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
-      "wordCount": 1237,
-      "updatedAt": "2026-07-18T10:43:25.330Z",
+      "wordCount": 1287,
+      "updatedAt": "2026-07-18T13:18:59.873Z",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -4345,8 +4345,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 9417,
-      "updatedAt": "2026-07-18T10:43:25.330Z",
+      "wordCount": 9430,
+      "updatedAt": "2026-07-18T13:19:23.475Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -4456,8 +4456,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7271,
-      "updatedAt": "2026-06-16T13:12:41.541Z",
+      "wordCount": 7284,
+      "updatedAt": "2026-07-18T13:16:47.393Z",
       "linksOut": []
     },
     {
@@ -4494,8 +4494,8 @@
         },
         {
           "depth": 3,
-          "text": "`/` — Landing (no vault)",
-          "slug": "landing-no-vault"
+          "text": "`/download` — Intro + download (absorbed the retired LandingPage, Slice 2 2026-07-18)",
+          "slug": "download-intro-download-absorbed-the-retired-landingpage-slice-2-2026-07-18"
         },
         {
           "depth": 3,
@@ -4894,8 +4894,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 9581,
-      "updatedAt": "2026-07-18T12:21:38.126Z",
+      "wordCount": 9829,
+      "updatedAt": "2026-07-18T13:20:50.905Z",
       "linksOut": [
         "slug",
         "project:slug",
