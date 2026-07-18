@@ -83,6 +83,7 @@ import {
 import { useHomeRouteState } from "../model/use-home-route-state";
 import {
   selectTopologyNodeRouteState,
+  selectTopologyPathRouteState,
   type TopologyAnalysisMode,
 } from "../model/url-state";
 import {
@@ -753,6 +754,17 @@ export function HomePage() {
       groups,
       evidence: { rows: evidenceRows, total: evidenceRows.length },
       handoffText,
+      // W2-A "문서" action tile — same construction as fullDetailA1Model's
+      // own `documentHref` (null when the node has no backing vault doc, so
+      // the tile renders disabled instead of linking to a guessed URL).
+      documentHref: nodeFocus.sourceSlug
+        ? buildDocsVaultHref({ slug: nodeFocus.sourceSlug })
+        : null,
+      // W2-A "관계 편집" action tile — existing `/ontology/edit/?node=` deep
+      // link, same pattern as `RelationWriteConfirm.tsx`'s (private)
+      // `buildRelationBuilderHref` and received by `OntologyEditPage` via
+      // `resolveBuilderQueryNodeSlug`.
+      builderEditHref: `/ontology/edit/?node=${encodeURIComponent(slug)}`,
     };
   }, [nodeFocus, selectedOntologyNode, ontologyInsight, nodeFocusData, changedSlugs]);
   const copyV2NodeHandoff = useCallback(
@@ -761,6 +773,24 @@ export function HomePage() {
       if (ok) toast.show(t("nodeDatasheet.handoffCopied"), "success");
     },
     [t, toast],
+  );
+  // W2-A "경로" action tile — sets this node as the path-analysis source and
+  // enters path mode. Reuses `selectTopologyPathRouteState` (already defined
+  // in `model/url-state.ts` for the URL-driven path deep link, but never
+  // wired to an in-app interaction until now) — no new path-mode entry logic.
+  const handleSetPathSource = useCallback(
+    (slug: string) => {
+      interactionSelectedSlugRef.current = null;
+      setFullDetailSlug(null);
+      setSelectedRelationActive(false);
+      setRouteState((current) =>
+        selectTopologyPathRouteState(current, {
+          sourceSlug: slug,
+          targetSlug: null,
+        }),
+      );
+    },
+    [setRouteState],
   );
   // A1 "데이터시트 확장판" 전체 상세 — TopologyOntologyDrawer(배지 수프 +
   // reach 쿼리빌더 + collaborator brief)를 대체. groups/reach 는 compact
@@ -2596,6 +2626,8 @@ export function HomePage() {
                 groups={v2DatasheetModel.groups}
                 evidence={v2DatasheetModel.evidence}
                 handoffText={v2DatasheetModel.handoffText}
+                documentHref={v2DatasheetModel.documentHref}
+                builderEditHref={v2DatasheetModel.builderEditHref}
                 labels={{
                   kindLabel: tKinds(normalizeKindLabelKey(v2DatasheetModel.kind)),
                   poweredOn: t("nodeDatasheet.poweredOn"),
@@ -2607,10 +2639,16 @@ export function HomePage() {
                   handoff: t("nodeDatasheet.handoff"),
                   close: t("controls.close"),
                   openFullDetail: t("nodeDatasheet.openFullDetail"),
+                  actionsGroupLabel: t("nodeDatasheet.actionsGroupLabel"),
+                  actionDocument: t("nodeDatasheet.actionDocument"),
+                  actionEditRelations: t("nodeDatasheet.actionEditRelations"),
+                  actionCopyHandoff: t("nodeDatasheet.actionCopyHandoff"),
+                  actionPath: t("nodeDatasheet.actionPath"),
                 }}
                 onSelectConnection={(id) => handleSelect(id)}
                 onCopyHandoff={copyV2NodeHandoff}
                 onClose={handleClose}
+                onSetPathSource={() => handleSetPathSource(v2DatasheetModel.slug)}
                 onOpenFullDetail={
                   selectedOntologyNode
                     ? () => setFullDetailSlug(selectedOntologyNode.id)

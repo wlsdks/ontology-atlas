@@ -2343,7 +2343,12 @@
       "noConnections": "no direct connections",
       "handoff": "Copy next action",
       "handoffCopied": "Agent handoff copied",
-      "openFullDetail": "Full detail →"
+      "openFullDetail": "Full detail →",
+      "actionsGroupLabel": "Node actions",
+      "actionDocument": "Document",
+      "actionEditRelations": "Edit relations",
+      "actionCopyHandoff": "Copy handoff",
+      "actionPath": "Path"
     },
     "createNode": {
       "toggleLabel": "Concept",

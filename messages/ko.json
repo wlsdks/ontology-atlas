@@ -2343,7 +2343,12 @@
       "noConnections": "직접 연결 없음",
       "handoff": "다음 액션 복사",
       "handoffCopied": "에이전트 인계를 복사했어요",
-      "openFullDetail": "전체 상세 →"
+      "openFullDetail": "전체 상세 →",
+      "actionsGroupLabel": "노드 행동",
+      "actionDocument": "문서",
+      "actionEditRelations": "관계 편집",
+      "actionCopyHandoff": "인계 복사",
+      "actionPath": "경로"
     },
     "createNode": {
       "toggleLabel": "개념",
