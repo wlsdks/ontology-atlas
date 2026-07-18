@@ -84,7 +84,7 @@ export function FirstRunPage() {
     (vault.status === "error" ? vault.errorMessage ?? t("errorFallback") : null);
 
   const cardBase =
-    "grid w-full grid-cols-[32px_1fr] items-start gap-3 rounded-md border bg-[color:var(--color-panel)] px-4 py-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset disabled:opacity-60";
+    "grid w-full grid-cols-[32px_1fr] items-start gap-3 rounded-md border bg-[color:var(--color-panel)] px-4 py-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset disabled:opacity-60";
   const iconChip =
     "flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)]";
 
