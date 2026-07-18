@@ -1015,6 +1015,11 @@
       "expand": "Show context",
       "collapse": "Hide context"
     },
+    "folderTopology": {
+      "hudCount": "folder topology · {count} projects",
+      "danglingHeading": "Dangling dependencies · {count}",
+      "danglingMore": "… {count} more"
+    },
     "parts": {
       "meta": {
         "recordProofAria": "Ontology evidence",
