@@ -97,6 +97,19 @@
   --tracking-display: -0.022em;
   --tracking-section: -0.020em;
   --tracking-card: -0.015em;
+
+  /*
+   * RATIO-SYSTEM (docs/prototypes/RATIO-SYSTEM.md) — "비율이 생명" 목업
+   * 라운드에서 승격된 페이지 레이아웃 리듬 토큰. 1920 기준 페이지 컨테이너
+   * 1600px 중앙 정렬(좌우 거터 160) + 섹션/카드 간격 리듬. 처음 소비자는
+   * project-detail 리빌드(zone 1 히어로 · zone 2 도메인 3×2 · zone 3
+   * 본문+레일) — 다른 페이지도 점진 채택.
+   */
+  --page-max: 1600px;
+  --section-gap: 28px;
+  --card-gap: 20px;
+  --card-pad: 16px;
+  --page-bottom-breath: 40px;
 }
 
 @layer base {
