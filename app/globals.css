@@ -1022,6 +1022,29 @@
     --topology-v2-camera-flick-min-speed: 0.05;
     --topology-v2-camera-scale-min: 0.24;
     --topology-v2-camera-scale-max: 2.6;
+    /* C1 A1 (semantic-zoom 감사): 오버뷰 진입 스케일이 뷰포트 비례라(1512×917
+       에서 ≈1.5) 절대값 2.6 을 그대로 "실효 최대"로 쓰면 zoomRatio 가 최대
+       ≈1.8 에서 막혀 capability reveal 대역(1.5~2.0)이 못 끝나고(최대 알파
+       ~40%, hit 임계 0.5 미만이라 클릭 불가) element 대역(2.3~2.85)은 아예
+       도달 불가 — 더 큰 뷰포트일수록 악화. 실효 최대는 이제
+       `overviewEntryScale × 이 비율`(뷰포트에 상대적)이고, 위 절대값은
+       overviewEntryScale 이 0/무효일 때만 쓰는 안전 폴백이다
+       (`topology-camera-math.ts#computeEffectiveCameraScaleMax`). 3.2 는
+       element fullRatio(2.85) 보다 여유 있게 커서 모든 뷰포트에서 캡+엘리먼트
+       티어에 도달 가능하다. */
+    --topology-v2-camera-max-zoom-ratio: 3.2;
+    /* C1 A1 follow-up (owner feedback — "휠 줌 in/out" first-try acceptance
+       test): the zoom-OUT floor has the same absolute-vs-ratio problem in
+       reverse — `cameraScaleMin` (0.24) is an absolute floor, so on a large
+       viewport (small overviewEntryScale) the interactive zoom-out range is
+       tiny, while on a small viewport it can shrink the spine to a speck
+       before farLow's constellation view even kicks in. Ratio-based (half the
+       overview entry) keeps "how far can I zoom out interactively" consistent
+       in FEEL across viewports, same as the max-ratio fix above. Deliberately
+       BELOW the constellation threshold's own zoom-ratio (~0.65 at default
+       tokens) so zooming out still crosses into the far-field constellation
+       view instead of stopping short of it. */
+    --topology-v2-camera-min-zoom-ratio: 0.5;
     /* 포커스(ego) 상태에서 빈 공간 팬 시 카메라 중심이 포커스 노드로부터 이
        world-unit 이상 벗어나지 못한다 — "둘러볼 순 있어도 대상을 놓치진 않는다"
        (옵시디언 촉각). 넘어서면 러버밴드로 복귀. 최대 포커스 스케일(1.9)에서도
@@ -1049,6 +1072,12 @@
        가속 — B2+ 연결 하이라이트(lead spec §2). */
     --topology-v2-edge-pulse-speed: 0.075;
     --topology-v2-edge-pulse-speed-ego: 0.2;
+    /* C1 B1 (드래그 tug 감사): 노드 드래그 시 FA2 글로벌 relax(1 iter/frame,
+       slowDown 20)만으로는 이웃이 눈에 띄게 안 움직인다 — 드래그된 노드의
+       프레임당 world-space 변위(Δ)를 1-hop/2-hop 이웃에 이 비율로 직접
+       전파해 스프링처럼 뒤따라오게 한다(`interaction/drag-tug.ts`). */
+    --topology-v2-drag-tug-1hop: 0.45;
+    --topology-v2-drag-tug-2hop: 0.15;
 
     /* 2.5 안전 영역 (fixed chrome inset — px, canvas 2D 가 숫자로 소비)
        좌측 ReaderLens 분석 패널 + 우측 팝오버 레일 + 상단 유틸리티 레인 +

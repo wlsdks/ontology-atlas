@@ -13,6 +13,7 @@ import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis } from "../model/focus-state";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom } from "../model/tier-visibility";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "./topology-camera-math";
 import type { TopologyWorld } from "./topology-world";
 
 export interface PhysicsStepInput {
@@ -39,6 +40,16 @@ export interface PhysicsStepInput {
   /** Mutated in place — the hook owns this map's lifetime across frames. */
   emphasisById: Map<string, number>;
   rippleStartById: ReadonlyMap<string, number>;
+  /**
+   * C1 A2 (focus ego tier exemption) — mutated in place, like `emphasisById`.
+   * Ramps toward 1 for the focused node + its 1-hop neighbors while a focus is
+   * active (so semantic-zoom-gated tiers still fade IN under focus instead of
+   * staying invisible/unclickable), toward 0 otherwise. Kept separate from
+   * `emphasisById` (the hover-ripple map) because that map's "active" condition
+   * under focus is narrowly the panel-hover row, not the whole ego set — reusing
+   * it here would either break that contract or require loosening it.
+   */
+  egoRevealById: Map<string, number>;
 }
 
 export interface PhysicsStepResult {
@@ -70,7 +81,15 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     isDragging,
     emphasisById,
     rippleStartById,
+    egoRevealById,
   } = input;
+
+  // Tier visibility rides a SEPARATE zoom-ratio signal (not farT): entry scale
+  // is `overviewScale × overviewEntryRatio`, so ratio = 1 at the overview
+  // entry. Computed up-front (not just after the camera step) because the
+  // camera's own effective zoom-in ceiling (C1 A1) is now DERIVED from this
+  // same entry scale.
+  const overviewEntryScale = overviewScale * tokens.overviewEntryRatio;
 
   // Focus-aware pan clamp (drag-while-focused must not lose the subject): while
   // a node is ego-focused AND the camera is zoomed IN past the overview scale,
@@ -102,14 +121,20 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
         isSpineOnlyZoom(preStepZoomRatio, DEFAULT_TIER_REVEAL) ? world.spineBounds : world.bounds,
       );
 
+  // C1 A1: the camera's real zoom-in ceiling is now ratio-based (viewport-
+  // relative), not the absolute `cameraScaleMax` token — see
+  // `topology-camera-math.ts#computeEffectiveCameraScaleMax`'s JSDoc for the
+  // audit finding this fixes (capability/element tiers were unreachable).
+  const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+  const effectiveScaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
   const nextCamera = stepCamera({
     camera,
     target,
     dt,
     damping,
     angularFrequency: tokens.cameraSpringAngFreq,
-    scaleMin: tokens.cameraScaleMin,
-    scaleMax: tokens.cameraScaleMax,
+    scaleMin: effectiveScaleMin,
+    scaleMax: effectiveScaleMax,
     panBounds,
     isDragging,
   });
@@ -117,12 +142,10 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   const band = computeAltitudeBand(overviewScale, tokens.altitudeFarHighRatio, tokens.altitudeFarLowRatio);
   const farT = computeFarT(nextCamera.scale.value, band.farLow, band.farHigh);
 
-  // Tier visibility rides a SEPARATE zoom-ratio signal (not farT): entry scale
-  // is `overviewScale × overviewEntryRatio`, so ratio = 1 at the overview entry.
-  const overviewEntryScale = overviewScale * tokens.overviewEntryRatio;
   const zoomRatio = computeZoomRatio(nextCamera.scale.value, overviewEntryScale);
 
   const activeEgoId = focusedNodeId ? null : hoveredNodeId;
+  const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
   for (const node of world.nodes) {
     const isHoverEgoMember =
       !!activeEgoId && (node.id === activeEgoId || world.neighborMap.get(activeEgoId)?.has(node.id) === true);
@@ -132,6 +155,18 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     emphasisById.set(
       node.id,
       stepEmphasis(previous, isInActiveEgoSet, rippleHasStarted, dt, tokens.emphasisRiseTau, tokens.emphasisDecayTau),
+    );
+
+    // C1 A2 — ego tier-reveal ramp: while a node is focused, it + its 1-hop
+    // neighbors ramp toward full reveal (consumed by
+    // `model/tier-visibility.ts#effectiveNodeAlpha` in the draw pass) even if
+    // the semantic-zoom tier gate itself hasn't opened yet at this zoomRatio.
+    const isEgoMember =
+      focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused?.has(node.id) === true);
+    const previousReveal = egoRevealById.get(node.id) ?? 0;
+    egoRevealById.set(
+      node.id,
+      stepEmphasis(previousReveal, isEgoMember, true, dt, tokens.emphasisRiseTau, tokens.emphasisDecayTau),
     );
   }
 

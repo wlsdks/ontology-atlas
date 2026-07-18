@@ -8,7 +8,7 @@
 import type { CameraAxes } from "../engine/camera";
 import { resolveEdgeEgoState, resolveNodeEgoState, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
-import { DEFAULT_TIER_REVEAL, edgeTierAlpha, nodeTierAlpha } from "../model/tier-visibility";
+import { DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha } from "../model/tier-visibility";
 import { draw as gridDraw, lerpColorHex } from "../render/grid";
 import {
   computeLabelAlpha,
@@ -123,6 +123,8 @@ export interface FrameDrawParams {
    */
   emphasizedNeighborId: string | null;
   emphasisById: ReadonlyMap<string, number>;
+  /** C1 A2 — ego tier-reveal ramp (`topology-physics-step.ts` steps it), consumed by `effectiveNodeAlpha`. */
+  egoRevealById: ReadonlyMap<string, number>;
   reducedMotion: boolean;
 }
 
@@ -144,6 +146,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     hoveredNodeId,
     emphasizedNeighborId,
     emphasisById,
+    egoRevealById,
     reducedMotion,
   } = params;
 
@@ -170,15 +173,27 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // touching a hidden one) fade in as you zoom IN. Driven by `zoomRatio`, NOT
   // `farT`, so the default circuit expression (farT ≈ 0) still shows only the
   // spine. Precomputed once per frame so nodes/edges/labels agree.
+  //
+  // C1 A2 — focus ego tier exemption: a node the tier gate would otherwise hide
+  // (e.g. a capability at overview zoom) still becomes visible once it's the
+  // focused node or a 1-hop neighbor, via `effectiveNodeAlpha` (max of the
+  // gate's own alpha and the ego-reveal ramp). `effectiveAlphaById` is what
+  // edges/nodes/labels actually draw with; `tierAlphaById` stays the raw gate
+  // value (still needed as `effectiveNodeAlpha`'s first argument).
   const tierAlphaById = new Map<string, number>();
+  const effectiveAlphaById = new Map<string, number>();
   for (const node of world.nodes) {
-    tierAlphaById.set(node.id, nodeTierAlpha(node.kind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL));
+    const tierAlpha = nodeTierAlpha(node.kind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL);
+    tierAlphaById.set(node.id, tierAlpha);
+    const isEgoMember =
+      focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused.has(node.id));
+    effectiveAlphaById.set(node.id, effectiveNodeAlpha(tierAlpha, isEgoMember, egoRevealById.get(node.id) ?? 0));
   }
 
   for (const kind of ["contains", "depends"] as const) {
     for (const edge of world.edges) {
       if (edge.kind !== kind) continue;
-      const edgeAlpha = edgeTierAlpha(tierAlphaById.get(edge.sourceId) ?? 1, tierAlphaById.get(edge.targetId) ?? 1);
+      const edgeAlpha = edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1);
       if (edgeAlpha <= 0.02) continue;
       const touches = focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
       const emphasized =
@@ -211,7 +226,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
 
   for (const node of world.nodes) {
-    const tierAlpha = tierAlphaById.get(node.id) ?? 1;
+    const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (tierAlpha <= 0.02) continue;
     const egoState = resolveNodeEgoState(node.id, focusedNodeId, neighborsOfFocused);
     const emphasis = emphasisById.get(node.id) ?? 0;
@@ -301,7 +316,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
   const labelCandidates: LabelCandidate<LabelPayload>[] = [];
   world.nodes.forEach((node, index) => {
-    if ((tierAlphaById.get(node.id) ?? 1) <= 0.02) return;
+    // Uses the SAME effective alpha as the node draw pass (C1 A2) — an
+    // ego-exempt capability that's now visible must also get a label, or it
+    // reads as an unlabeled ghost circle.
+    if ((effectiveAlphaById.get(node.id) ?? 1) <= 0.02) return;
     const egoState = resolveNodeEgoState(node.id, focusedNodeId, neighborsOfFocused);
     if (computeLabelAlpha(node.kind, farT, camera.scale.value, egoState) <= 0.02) return;
 

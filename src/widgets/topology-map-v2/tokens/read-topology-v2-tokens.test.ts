@@ -70,6 +70,8 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-camera-flick-min-speed": "0.05",
   "--topology-v2-camera-scale-min": "0.24",
   "--topology-v2-camera-scale-max": "2.6",
+  "--topology-v2-camera-max-zoom-ratio": "3.2",
+  "--topology-v2-camera-min-zoom-ratio": "0.5",
   "--topology-v2-camera-focus-pan-margin": "180",
   "--topology-v2-altitude-far-high-ratio": "0.92",
   "--topology-v2-altitude-far-low-ratio": "0.62",
@@ -86,6 +88,8 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-tip-fade-ms": "120",
   "--topology-v2-edge-pulse-speed": "0.075",
   "--topology-v2-edge-pulse-speed-ego": "0.2",
+  "--topology-v2-drag-tug-1hop": "0.45",
+  "--topology-v2-drag-tug-2hop": "0.15",
 
   "--topology-v2-safe-inset-left": "344",
   "--topology-v2-safe-inset-right": "120",
@@ -99,10 +103,14 @@ function fixtureReader(overrides: Record<string, string> = {}) {
 }
 
 describe("resolveTopologyV2Tokens", () => {
-  it("resolves all 77 §2 tokens to the exact prototype-sourced values", () => {
+  it("resolves all 81 §2 tokens to the exact prototype-sourced values", () => {
     const tokens = resolveTopologyV2Tokens(fixtureReader());
 
     expect(tokens.nodeFillProject).toBe("#1c1c22");
+    expect(tokens.cameraMaxZoomRatio).toBeCloseTo(3.2, 3);
+    expect(tokens.cameraMinZoomRatio).toBeCloseTo(0.5, 3);
+    expect(tokens.dragTug1Hop).toBeCloseTo(0.45, 3);
+    expect(tokens.dragTug2Hop).toBeCloseTo(0.15, 3);
     expect(tokens.indigo).toBe("#5e6ad2");
     expect(tokens.labelProject).toBe("#ececf0");
     expect(tokens.labelMaxWidth).toBe(168);
