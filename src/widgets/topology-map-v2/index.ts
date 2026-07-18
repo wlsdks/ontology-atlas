@@ -13,11 +13,18 @@ export type {
   TopologyV2DetailPanelLabels,
 } from './ui/TopologyV2DetailPanel';
 export {
+  buildV2Connections,
+  buildV2ConnectionGroups,
   formatV2HandoffText,
   formatV2MetricLine,
   groupV2Connections,
+  V2_CONNECTION_ROW_CAP,
 } from './ui/topology-v2-datasheet';
 export type {
+  V2ConnectionGroupsView,
+  V2ConnectionGroupView,
+  V2ConnectionSourceEdge,
+  V2ConnectionSourceNode,
   V2DatasheetConnection,
   V2GroupedConnections,
   V2HandoffInput,

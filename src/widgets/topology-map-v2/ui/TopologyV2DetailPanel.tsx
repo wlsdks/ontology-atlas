@@ -4,8 +4,8 @@ import { type KeyboardEvent as ReactKeyboardEvent, useCallback } from "react";
 import { X } from "lucide-react";
 import {
   formatV2MetricLine,
-  groupV2Connections,
-  type V2DatasheetConnection,
+  type V2ConnectionGroupsView,
+  type V2ConnectionGroupView,
   type V2MetricValues,
 } from "./topology-v2-datasheet";
 
@@ -46,8 +46,10 @@ export interface TopologyV2DetailPanelProps {
   /** "전원" — powered (recently updated / fresh) vs unpowered (quiet). */
   powered: boolean;
   metric: V2MetricValues;
-  connections: readonly V2DatasheetConnection[];
-  hiddenConnectionCount: number;
+  /** Connections grouped by relation type, each with a capped row preview + the
+   * group's true total — so a contains-hub's depends group renders its real
+   * count instead of collapsing into a generic overflow. */
+  groups: V2ConnectionGroupsView;
   /** Pre-built agent handoff payload; the view owns clipboard + toast. */
   handoffText: string;
   labels: TopologyV2DetailPanelLabels;
@@ -155,8 +157,7 @@ export function TopologyV2DetailPanel({
   kind,
   powered,
   metric,
-  connections,
-  hiddenConnectionCount,
+  groups,
   handoffText,
   labels,
   onSelectConnection,
@@ -164,13 +165,12 @@ export function TopologyV2DetailPanel({
   onClose,
   className,
 }: TopologyV2DetailPanelProps) {
-  const grouped = groupV2Connections(connections);
   const metricLine = formatV2MetricLine(metric, {
     usedBy: labels.metricUsedBy,
     dependsOn: labels.metricDependsOn,
     evidence: labels.metricEvidence,
   });
-  const hasConnections = grouped.contains.length > 0 || grouped.depends.length > 0;
+  const hasConnections = groups.contains.total > 0 || groups.depends.total > 0;
 
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -185,9 +185,10 @@ export function TopologyV2DetailPanel({
   const renderGroup = (
     group: "contains" | "depends",
     label: string,
-    rows: V2DatasheetConnection[],
+    view: V2ConnectionGroupView,
   ) => {
-    if (rows.length === 0) return null;
+    if (view.total === 0) return null;
+    const overflow = view.total - view.rows.length;
     return (
       <div className="flex flex-col gap-1" data-datasheet-group={group}>
         <div className="flex items-center gap-2">
@@ -195,12 +196,15 @@ export function TopologyV2DetailPanel({
           <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-tertiary)]">
             {label}
           </span>
-          <span className="font-mono text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">
-            {rows.length}
+          <span
+            data-datasheet-group-total={group}
+            className="font-mono text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+          >
+            {view.total}
           </span>
         </div>
         <ul className="flex flex-col">
-          {rows.map((row) => (
+          {view.rows.map((row) => (
             <li key={`${group}:${row.id}`}>
               <button
                 type="button"
@@ -215,6 +219,14 @@ export function TopologyV2DetailPanel({
             </li>
           ))}
         </ul>
+        {overflow > 0 ? (
+          <span
+            data-datasheet-group-overflow={group}
+            className="pl-[30px] font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+          >
+            +{overflow}
+          </span>
+        ) : null}
       </div>
     );
   };
@@ -290,13 +302,8 @@ export function TopologyV2DetailPanel({
       <div className="flex flex-col gap-2.5">
         {hasConnections ? (
           <>
-            {renderGroup("contains", labels.groupContains, grouped.contains)}
-            {renderGroup("depends", labels.groupDepends, grouped.depends)}
-            {hiddenConnectionCount > 0 ? (
-              <span className="pl-1.5 font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]">
-                +{hiddenConnectionCount}
-              </span>
-            ) : null}
+            {renderGroup("contains", labels.groupContains, groups.contains)}
+            {renderGroup("depends", labels.groupDepends, groups.depends)}
           </>
         ) : (
           <span className="text-[11.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">

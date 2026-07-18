@@ -47,6 +47,101 @@ export function groupV2Connections(
   return { contains, depends };
 }
 
+/** Minimal structural shapes — keeps this module pure + testable without
+ * importing the full KnowledgeGraph types (which are structurally compatible). */
+export interface V2ConnectionSourceNode {
+  id: string;
+  title: string;
+  kind: string;
+}
+export interface V2ConnectionSourceEdge {
+  from: string;
+  to: string;
+  type: string;
+}
+
+/**
+ * The FULL direct-connection list for a node — every incoming + outgoing edge,
+ * direction-tagged, resolved to the neighbor's title/kind. Outgoing first, then
+ * incoming (same order the shared drawer preview uses). Unlike the shared 5-item
+ * `previewRelations` slice, this is complete, so the datasheet can show each
+ * relation-type group's TRUE total instead of folding depends edges into a
+ * generic overflow on contains-dominated hubs.
+ */
+export function buildV2Connections(
+  nodeId: string,
+  nodes: readonly V2ConnectionSourceNode[],
+  edges: readonly V2ConnectionSourceEdge[],
+): V2DatasheetConnection[] {
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const outgoing: V2DatasheetConnection[] = [];
+  const incoming: V2DatasheetConnection[] = [];
+  for (const edge of edges) {
+    if (edge.from === nodeId) {
+      const other = nodeById.get(edge.to);
+      if (other) {
+        outgoing.push({
+          id: other.id,
+          title: other.title,
+          kind: other.kind,
+          relationType: edge.type,
+          direction: "outgoing",
+        });
+      }
+    } else if (edge.to === nodeId) {
+      const other = nodeById.get(edge.from);
+      if (other) {
+        incoming.push({
+          id: other.id,
+          title: other.title,
+          kind: other.kind,
+          relationType: edge.type,
+          direction: "incoming",
+        });
+      }
+    }
+  }
+  return [...outgoing, ...incoming];
+}
+
+/** One relation-type group as the panel renders it: a capped preview of rows +
+ * the group's TRUE total (so the header can say "DEPENDS 23" while showing 6). */
+export interface V2ConnectionGroupView {
+  rows: V2DatasheetConnection[];
+  total: number;
+}
+export interface V2ConnectionGroupsView {
+  contains: V2ConnectionGroupView;
+  depends: V2ConnectionGroupView;
+}
+
+/** Default rows shown per group before the typed "+N" overflow. */
+export const V2_CONNECTION_ROW_CAP = 6;
+
+/**
+ * Group the full connection set by relation type and cap each group to
+ * `perGroupCap` rows, keeping the true total. This guarantees BOTH groups can
+ * render their real count independently — the contains-hub bug was that a single
+ * outgoing-first 5-item slice starved the depends group to empty.
+ */
+export function buildV2ConnectionGroups(
+  connections: readonly V2DatasheetConnection[],
+  perGroupCap: number = V2_CONNECTION_ROW_CAP,
+): V2ConnectionGroupsView {
+  const grouped = groupV2Connections(connections);
+  const cap = Math.max(0, perGroupCap);
+  return {
+    contains: {
+      rows: grouped.contains.slice(0, cap),
+      total: grouped.contains.length,
+    },
+    depends: {
+      rows: grouped.depends.slice(0, cap),
+      total: grouped.depends.length,
+    },
+  };
+}
+
 export interface V2MetricValues {
   /** Direct incoming — plain "쓰는 곳" (places that use this). */
   usedBy: number;

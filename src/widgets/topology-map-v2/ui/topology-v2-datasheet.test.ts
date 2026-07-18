@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildV2Connections,
+  buildV2ConnectionGroups,
   formatV2HandoffText,
   formatV2MetricLine,
   groupV2Connections,
@@ -31,6 +33,69 @@ describe("groupV2Connections", () => {
 
   it("preserves input order within each group and handles an empty list", () => {
     expect(groupV2Connections([])).toEqual({ contains: [], depends: [] });
+  });
+});
+
+describe("buildV2Connections", () => {
+  const nodes = [
+    { id: "hub", title: "MCP Server", kind: "capability" },
+    { id: "file-a", title: "index.mjs", kind: "element" },
+    { id: "file-b", title: "verify.mjs", kind: "element" },
+    { id: "domain", title: "AI Agent Partner", kind: "domain" },
+    { id: "dep", title: "Relation Graph", kind: "capability" },
+  ];
+  const edges = [
+    { from: "hub", to: "file-a", type: "contains" },
+    { from: "hub", to: "file-b", type: "contains" },
+    { from: "hub", to: "dep", type: "depends_on" },
+    { from: "domain", to: "hub", type: "contains" },
+  ];
+
+  it("returns the FULL direct-connection set, outgoing first then incoming, neighbor-resolved", () => {
+    const connections = buildV2Connections("hub", nodes, edges);
+    expect(connections.map((c) => [c.id, c.direction, c.relationType])).toEqual([
+      ["file-a", "outgoing", "contains"],
+      ["file-b", "outgoing", "contains"],
+      ["dep", "outgoing", "depends_on"],
+      ["domain", "incoming", "contains"],
+    ]);
+    // carries the neighbor's own title/kind (not the source node's)
+    expect(connections[0]).toMatchObject({ title: "index.mjs", kind: "element" });
+  });
+
+  it("drops edges whose neighbor is missing and returns [] for an unconnected node", () => {
+    expect(buildV2Connections("ghost", nodes, edges)).toEqual([]);
+    const dangling = buildV2Connections("hub", nodes, [
+      { from: "hub", to: "not-in-nodes", type: "contains" },
+    ]);
+    expect(dangling).toEqual([]);
+  });
+});
+
+describe("buildV2ConnectionGroups", () => {
+  it("caps each group independently and keeps the TRUE total (contains-hub bug)", () => {
+    // 8 contains + 2 depends — the old 5-item outgoing-first slice starved
+    // depends to empty; per-group capping keeps both totals honest.
+    const connections: V2DatasheetConnection[] = [
+      ...Array.from({ length: 8 }, (_, i) =>
+        conn({ id: `c${i}`, relationType: "contains" }),
+      ),
+      conn({ id: "d0", relationType: "depends_on" }),
+      conn({ id: "d1", relationType: "uses" }),
+    ];
+    const groups = buildV2ConnectionGroups(connections, 6);
+    expect(groups.contains.total).toBe(8);
+    expect(groups.contains.rows).toHaveLength(6); // capped
+    expect(groups.depends.total).toBe(2);
+    expect(groups.depends.rows.map((r) => r.id)).toEqual(["d0", "d1"]); // never starved
+  });
+
+  it("handles an empty set with zero totals", () => {
+    const groups = buildV2ConnectionGroups([]);
+    expect(groups).toEqual({
+      contains: { rows: [], total: 0 },
+      depends: { rows: [], total: 0 },
+    });
   });
 });
 
