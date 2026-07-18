@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>/ontology/edit FINAL — machined ERD 빌더 (팔레트 · 캔버스 · 쓰기 확인)</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
+<!--
+  FINAL ROUND — "비율이 생명". docs/prototypes/RATIO-SYSTEM.md 적용.
+  /ontology/edit (xyflow ERD 빌더) 의 첫 B2+ 목업.
+
+  실제 IA (src/views/ontology-edit) 반영:
+    OntologyKindPalette(좌 노드 팔레트) + OntologyEditCanvas(중앙 캔버스,
+    kind-글리프 노드 카드 + VaultEdge/EphemeralEdge) + OntologyInspector
+    (우 인스펙터 — 관계 타입 피커) + RelationWriteConfirm(하단 쓰기 확인 —
+    dry-run → vault md diff).
+
+  945 구도: 헤더 존 ≤110px → 3-pane 본체(flex:1) — 팔레트 240 + 캔버스 +
+  인스펙터 340 → 하단 쓰기-확인 바 앵커(변경 요약 + dry-run + 쓰기).
+  관계 타입 피커는 trace-마크 문법(실선 contains · 파선 depends/relates ·
+  점선 evidence) — 지도 범례가 빌더에서도 같은 언어로 반복된다.
+-->
+<style>
+  /* Values copied from app/globals.css token families (standalone prototype). */
+  :root {
+    --canvas-bg: #0a0a0d;
+    --panel: #17171c;
+    --border-soft: #2a2a30;
+    --border-strong: #45454d;
+    --divider: #23232a;
+    --text-primary: #ececf0;
+    --text-secondary: #a3a3ac;
+    --text-tertiary: #868690;
+    --text-quaternary: #55555d;
+    --indigo: #5e6ad2;
+    --indigo-bright: #8890e0;
+    --numeral-face: #8c8c94;
+    --numeral-shadow: #08080a;
+    --metric-surface: rgba(255, 255, 255, 0.028);
+    --row-hover: rgba(255, 255, 255, 0.045);
+    --action-surface: rgba(255, 255, 255, 0.03);
+    --machined-edge: rgba(255, 255, 255, 0.05);
+    --mark-contains: #4a4a54;
+    --mark-depends: #5c5c72;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--canvas-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
+    min-width: 1440px;
+  }
+  .num {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+    font-variant-numeric: tabular-nums;
+  }
+  .framecap {
+    width: 100%; max-width: 1920px; margin: 0 auto; padding: 14px 20px 9px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-quaternary);
+  }
+  .framecap b { color: var(--text-tertiary); font-weight: 600; }
+  .frame {
+    position: relative; width: 100%; max-width: 1920px; margin: 0 auto;
+    height: 945px; overflow: hidden;
+    border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
+    display: flex; flex-direction: column;
+  }
+  .page {
+    width: 100%; max-width: 1600px; margin: 0 auto;
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column;
+    padding: 32px 0 40px;
+  }
+
+  .crumbs {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--text-tertiary); margin-bottom: 20px;
+  }
+  .crumbs a { color: var(--text-secondary); text-decoration: none; }
+  .crumbs a:hover { color: var(--text-primary); }
+  .crumbs .sep { color: var(--text-quaternary); }
+  .crumbs .census {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    color: var(--numeral-face); text-shadow: 0 1px 0 var(--numeral-shadow);
+  }
+  .power { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--indigo); flex: none; }
+
+  .phead { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 22px; }
+  .phead h1 { margin: 0; font-size: 23px; font-weight: 650; letter-spacing: -0.015em; }
+  .phead .sub { font-size: 12.5px; color: var(--text-tertiary); padding-bottom: 3px; }
+  .phead .dirty {
+    margin-left: auto; padding-bottom: 2px;
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+  }
+  .phead .dirty b { color: var(--numeral-face); font-weight: 600; text-shadow: 0 1px 0 var(--numeral-shadow); }
+
+  /* ---- 3-pane body ------------------------------------------------------ */
+  .panes { flex: 1; min-height: 0; display: grid; grid-template-columns: 240px minmax(0, 1fr) 340px; gap: 20px; }
+  .pane {
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: 11px;
+    box-shadow: inset 0 1px 0 var(--machined-edge), 0 14px 34px rgba(0, 0, 0, 0.35);
+    display: flex; flex-direction: column; min-height: 0;
+    padding: 14px;
+  }
+  .plabel {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--text-tertiary);
+    padding: 0 2px 10px; margin-bottom: 10px;
+    border-bottom: 1px solid var(--divider);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .plabel .num { margin-left: auto; font-size: 10.5px; }
+
+  /* left — kind palette */
+  .kcard {
+    display: flex; align-items: center; gap: 11px;
+    border: 1px solid var(--border-soft); border-radius: 8px;
+    background: var(--action-surface);
+    padding: 11px 12px; margin-bottom: 10px;
+    cursor: grab;
+    transition: border-color 150ms ease;
+  }
+  .kcard:hover { border-color: var(--border-strong); }
+  .kcard .kt { min-width: 0; flex: 1; }
+  .kcard .kname { font-size: 13px; font-weight: 560; color: var(--text-primary); }
+  .kcard .kdesc { font-size: 10.5px; color: var(--text-quaternary); margin-top: 2px; }
+  .kcard .grip { flex: none; color: var(--text-quaternary); font-size: 10px; letter-spacing: 0.1em; }
+  .khint {
+    margin-top: auto; padding-top: 10px; border-top: 1px solid var(--divider);
+    font-size: 11px; line-height: 1.6; color: var(--text-quaternary);
+  }
+
+  /* center — canvas */
+  .canvas {
+    position: relative; padding: 0; overflow: hidden;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 23px, #0e0e13 23px, #0e0e13 24px),
+      repeating-linear-gradient(90deg, transparent, transparent 23px, #0e0e13 23px, #0e0e13 24px),
+      var(--canvas-bg);
+  }
+  .canvas svg.edges { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .cnode {
+    position: absolute; width: 196px;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: 8px;
+    box-shadow: inset 0 1px 0 var(--machined-edge), 0 10px 26px rgba(0, 0, 0, 0.45);
+    padding: 10px 12px; cursor: pointer;
+    transition: border-color 150ms ease;
+  }
+  .cnode:hover { border-color: var(--border-strong); }
+  .cnode.sel { border-color: rgba(94, 106, 210, 0.75); }
+  .cnode.ghost { border-style: dashed; opacity: 0.85; }
+  .cnode .ct { min-width: 0; flex: 1; }
+  .cnode .cname { display: block; font-size: 12.5px; font-weight: 560; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cnode .ckind { display: block; font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-quaternary); margin-top: 3px; }
+  .cnode .port {
+    position: absolute; right: -5px; top: 50%; margin-top: -5px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--canvas-bg); border: 1.5px solid var(--border-strong);
+  }
+  .cnode.sel .port { border-color: var(--indigo); }
+  .canvas .edgetip {
+    position: absolute; font-family: var(--mono); font-size: 10px;
+    color: var(--indigo-bright); letter-spacing: 0.04em;
+    background: var(--panel); border: 1px solid rgba(94, 106, 210, 0.5);
+    border-radius: 5px; padding: 3px 8px;
+  }
+  .canvas .zoombar {
+    position: absolute; left: 14px; bottom: 14px;
+    display: flex; gap: 6px;
+  }
+  .canvas .zoombar button {
+    appearance: none; cursor: pointer;
+    width: 26px; height: 26px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--panel); color: var(--text-tertiary);
+    border: 1px solid var(--border-soft); border-radius: 6px;
+    box-shadow: inset 0 1px 0 var(--machined-edge);
+    font: 500 13px/1 var(--mono);
+  }
+  .canvas .legend {
+    position: absolute; right: 14px; bottom: 14px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-quaternary);
+  }
+
+  /* right — inspector */
+  .ihead { display: flex; align-items: center; gap: 9px; margin-bottom: 4px; }
+  .ihead .iname { min-width: 0; flex: 1; font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ikind { padding-left: 25px; font-size: 11.5px; color: var(--text-tertiary); margin-bottom: 12px; }
+  .ilabel {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-quaternary);
+    margin: 12px 0 7px;
+  }
+  .relrow {
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    padding: 8px 11px; margin-bottom: 6px;
+    font-size: 12.5px; color: var(--text-secondary); cursor: pointer;
+    transition: border-color 150ms ease, color 150ms ease;
+  }
+  .relrow:hover { border-color: var(--border-strong); }
+  .relrow.on { border-color: rgba(94, 106, 210, 0.65); color: var(--text-primary); background: var(--metric-surface); }
+  .relrow .rname { font-family: var(--mono); font-size: 12px; flex: none; width: 84px; }
+  .relrow .rdesc { min-width: 0; flex: 1; font-size: 10.5px; color: var(--text-quaternary); text-align: right; }
+  .target {
+    display: flex; align-items: center; gap: 9px;
+    border: 1px solid var(--border-soft); border-radius: 7px;
+    background: var(--canvas-bg);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+    padding: 9px 11px;
+    font-size: 12.5px; color: var(--text-secondary);
+  }
+  .target .q { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--text-quaternary); }
+  .difflist {
+    font-family: var(--mono); font-size: 11px; line-height: 1.9;
+    color: var(--text-tertiary);
+  }
+  .difflist .add { color: var(--indigo-bright); }
+  .difflist .mod { color: var(--text-secondary); }
+  .difflist .path { color: var(--text-quaternary); }
+  .inspector .spacer { flex: 1; }
+  .guard {
+    padding-top: 10px; border-top: 1px solid var(--divider);
+    font-size: 10.5px; line-height: 1.6; color: var(--text-quaternary);
+  }
+
+  /* bottom — write-confirm bar (anchored) */
+  .writebar {
+    margin-top: 20px;
+    border: 1px solid var(--border-soft); border-radius: 9px;
+    background: var(--panel); padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .writebar .wlabel { font-size: 13px; font-weight: 560; color: var(--text-primary); flex: none; }
+  .writebar .payload {
+    min-width: 0; flex: 1;
+    font-family: var(--mono); font-size: 12px; color: var(--text-tertiary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .writebar .payload b { color: var(--numeral-face); font-weight: 600; text-shadow: 0 1px 0 var(--numeral-shadow); }
+  .writebar button {
+    flex: none; appearance: none; cursor: pointer;
+    font: 560 12.5px/1 inherit; font-family: inherit;
+    border-radius: 6px; padding: 8px 14px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .writebar .dry {
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border-soft);
+  }
+  .writebar .dry:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .writebar .commit {
+    color: var(--indigo-bright);
+    background: var(--action-surface);
+    border: 1px solid rgba(94, 106, 210, 0.5);
+  }
+  .writebar .commit:hover { background: var(--row-hover); border-color: var(--indigo); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="framecap"><b>/ontology/edit FINAL</b> — 팔레트 240 + 블루프린트 캔버스 + 인스펙터 340 + 쓰기 확인 바 · 1920×945</div>
+<section class="frame">
+  <div class="page">
+    <nav class="crumbs">
+      <a href="#">← 온톨로지</a>
+      <span class="sep">/</span>
+      <span>빌더</span>
+      <span class="census">296 CONCEPTS · 508 RELATIONS</span>
+    </nav>
+
+    <header class="phead">
+      <h1>빌더</h1>
+      <span class="sub">캔버스에서 잇고, vault 마크다운으로 쓴다 — 진실원은 언제나 md</span>
+      <span class="dirty"><span class="power"></span>미저장 변경 <b>+1</b> 노드 · <b>+2</b> 관계</span>
+    </header>
+
+    <div class="panes">
+      <!-- left: kind palette -->
+      <aside class="pane" aria-label="노드 팔레트">
+        <div class="plabel">Node Kinds</div>
+        <div id="kinds"></div>
+        <p class="khint">글리프를 캔버스로 드래그하면 새 노드 초안이 생깁니다.
+        노드 포트를 끌어 다른 노드에 놓으면 관계 초안 — 쓰기 확인 전에는 vault 를 건드리지 않습니다.</p>
+      </aside>
+
+      <!-- center: blueprint canvas -->
+      <section class="pane canvas" aria-label="캔버스">
+        <svg class="edges" id="edges" aria-hidden="true"></svg>
+        <div class="cnode" style="left:330px; top:52px;" data-glyph="domain" data-size="16">
+          <span class="ct"><span class="cname">Onboarding &amp; UX</span><span class="ckind">domain</span></span>
+          <span class="port"></span>
+        </div>
+        <div class="cnode" style="left:110px; top:236px;" data-glyph="capability" data-size="16">
+          <span class="ct"><span class="cname">CLI Developer Entry</span><span class="ckind">capability</span></span>
+          <span class="port"></span>
+        </div>
+        <div class="cnode sel" style="left:420px; top:262px;" data-glyph="capability" data-size="16">
+          <span class="ct"><span class="cname">PO Operating System</span><span class="ckind">capability · 선택</span></span>
+          <span class="port"></span>
+        </div>
+        <div class="cnode ghost" style="left:730px; top:150px;" data-glyph="capability" data-size="16">
+          <span class="ct"><span class="cname">Agent Brief</span><span class="ckind">capability · 관계 대상</span></span>
+          <span class="port"></span>
+        </div>
+        <div class="cnode" style="left:96px; top:430px;" data-glyph="element" data-size="16">
+          <span class="ct"><span class="cname">Landing First Impression</span><span class="ckind">element</span></span>
+          <span class="port"></span>
+        </div>
+        <div class="cnode" style="left:452px; top:452px;" data-glyph="element" data-size="16">
+          <span class="ct"><span class="cname">PO OS Doc</span><span class="ckind">element</span></span>
+          <span class="port"></span>
+        </div>
+        <span class="edgetip" style="left:648px; top:196px;">depends_on 초안</span>
+        <div class="zoombar">
+          <button type="button" aria-label="확대">+</button>
+          <button type="button" aria-label="축소">−</button>
+          <button type="button" aria-label="맞춤" style="font-size:10px">fit</button>
+        </div>
+        <span class="legend">contains ─ · depends ╌ · evidence ┄</span>
+      </section>
+
+      <!-- right: inspector -->
+      <aside class="pane inspector" aria-label="인스펙터">
+        <div class="plabel">Inspector</div>
+        <div class="ihead">
+          <span data-glyph="capability" data-size="16"></span>
+          <span class="iname">PO Operating System</span>
+        </div>
+        <div class="ikind">역량 · onboarding-ux · capabilities/product-owner-operating-system.md</div>
+
+        <div class="ilabel">관계 타입</div>
+        <div id="relpick"></div>
+
+        <div class="ilabel">대상</div>
+        <div class="target" id="target"></div>
+
+        <div class="ilabel">이 세션의 파일 변경</div>
+        <div class="difflist">
+          <div><span class="add">+ 신규</span> <span class="path">capabilities/</span>agent-brief.md</div>
+          <div><span class="mod">~ 관계</span> <span class="path">capabilities/</span>product-owner-operating-system.md</div>
+          <div><span class="mod">~ 포함</span> <span class="path">domains/</span>onboarding-ux.md</div>
+        </div>
+
+        <div class="spacer"></div>
+        <p class="guard">쓰기 확인 전에는 어떤 파일도 변경되지 않습니다.
+        blast radius 가 2개 파일을 넘으면 확인 단계가 diff 를 먼저 보여줍니다.</p>
+      </aside>
+    </div>
+
+    <!-- bottom: write-confirm bar -->
+    <section class="writebar">
+      <span class="wlabel">쓰기 확인</span>
+      <span class="payload">노드 <b>+1</b> · 관계 <b>+2</b> · 파일 <b>3</b> — add_concept("agent-brief") → add_relation(po-operating-system → agent-brief, depends_on)</span>
+      <button class="dry" type="button">dry-run 미리보기</button>
+      <button class="commit" type="button">vault 에 쓰기</button>
+    </section>
+  </div>
+</section>
+
+<script>
+(function () {
+  "use strict";
+  var GLYPH_COLORS = {
+    project:    { fill: "#1c1c22", stroke: "#57575f" },
+    domain:     { fill: "#191920", stroke: "#48484f" },
+    capability: { fill: "#17171d", stroke: "#3c3c44" },
+    element:    { fill: "#15151a", stroke: "#34343b" },
+    document:   { fill: "#15151a", stroke: "#3c3c44" }
+  };
+  function hexPts(c, r) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = (i * 60 - 90) * Math.PI / 180;
+      pts.push((c + r * Math.cos(a)).toFixed(2) + "," + (c + r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(" ");
+  }
+  function glyphSVG(kind, s) {
+    s = s || 15;
+    var col = GLYPH_COLORS[kind] || GLYPH_COLORS.element;
+    var c = s / 2;
+    var common = 'fill="' + col.fill + '" stroke="' + col.stroke + '" stroke-width="1.25"';
+    var body;
+    if (kind === "project") body = '<polygon points="' + hexPts(c, c - 1.2) + '" ' + common + '/>';
+    else if (kind === "domain") body = '<rect x="' + (s * 0.067) + '" y="' + (s * 0.227) + '" width="' + (s * 0.867) + '" height="' + (s * 0.547) + '" rx="1.6" ' + common + '/>';
+    else if (kind === "capability") body = '<circle cx="' + c + '" cy="' + c + '" r="' + (c - 1.6) + '" ' + common + '/>';
+    else if (kind === "document") body = '<rect x="' + (s * 0.18) + '" y="' + (s * 0.1) + '" width="' + (s * 0.64) + '" height="' + (s * 0.8) + '" rx="1.4" ' + common + '/><line x1="' + (s * 0.32) + '" y1="' + (s * 0.38) + '" x2="' + (s * 0.68) + '" y2="' + (s * 0.38) + '" stroke="' + col.stroke + '" stroke-width="1"/><line x1="' + (s * 0.32) + '" y1="' + (s * 0.58) + '" x2="' + (s * 0.68) + '" y2="' + (s * 0.58) + '" stroke="' + col.stroke + '" stroke-width="1"/>';
+    else body = '<rect x="' + (s * 0.16) + '" y="' + (s * 0.16) + '" width="' + (s * 0.68) + '" height="' + (s * 0.68) + '" rx="1.4" ' + common + '/><circle cx="' + c + '" cy="' + c + '" r="' + (s * 0.1) + '" fill="#0c0c10"/>';
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + " " + s + '" aria-hidden="true" style="flex:none">' + body + "</svg>";
+  }
+  document.querySelectorAll(".cnode[data-glyph], .ihead [data-glyph]").forEach(function (el) {
+    var span = document.createElement("span");
+    span.innerHTML = glyphSVG(el.getAttribute("data-glyph"), parseInt(el.getAttribute("data-size") || "15", 10));
+    if (el.classList.contains("cnode")) el.insertBefore(span.firstChild, el.firstChild);
+    else el.innerHTML = glyphSVG(el.getAttribute("data-glyph"), 16);
+  });
+
+  // left palette
+  var KINDS = [
+    { k: "domain",     n: "도메인",   d: "기능 그룹 — 역량의 부모" },
+    { k: "capability", n: "역량",     d: "행동의 단위 — 요소가 실현" },
+    { k: "element",    n: "요소",     d: "구체 조각 — 파일·API·스키마" },
+    { k: "document",   n: "문서",     d: "그래프에 걸린 서사 문서" }
+  ];
+  document.getElementById("kinds").innerHTML = KINDS.map(function (x) {
+    return '<div class="kcard" draggable="true">' + glyphSVG(x.k, 18) +
+      '<span class="kt"><span class="kname">' + x.n + '</span><div class="kdesc">' + x.d + "</div></span>" +
+      '<span class="grip">⋮⋮</span></div>';
+  }).join("");
+
+  // relation picker — trace-mark grammar
+  function markSVG(style, w) {
+    w = w || 22;
+    var stroke = style === "contains" ? "var(--mark-contains)" : "var(--mark-depends)";
+    var dash = style === "contains" ? "" : style === "evidence" ? ' stroke-dasharray="1.4 3.2"' : ' stroke-dasharray="3.2 3.2"';
+    return '<svg width="' + w + '" height="6" viewBox="0 0 ' + w + ' 6" aria-hidden="true" style="flex:none">' +
+      '<line x1="1" y1="3" x2="' + (w - 1) + '" y2="3" stroke="' + stroke + '" stroke-width="1.5"' + dash + ' stroke-linecap="round"/></svg>';
+  }
+  var RELS = [
+    { t: "contains",   d: "포함 계층",      s: "contains" },
+    { t: "depends_on", d: "의존 — 영향 경로", s: "relates", on: true },
+    { t: "relates",    d: "느슨한 연관",    s: "relates" },
+    { t: "evidences",  d: "코드 근거",      s: "evidence" }
+  ];
+  document.getElementById("relpick").innerHTML = RELS.map(function (r) {
+    return '<div class="relrow' + (r.on ? " on" : "") + '">' + markSVG(r.s) +
+      '<span class="rname">' + r.t + '</span><span class="rdesc">' + r.d + "</span></div>";
+  }).join("");
+  document.getElementById("target").innerHTML =
+    glyphSVG("capability", 14) + "Agent Brief <span class='q'>capabilities/agent-brief.md · 신규</span>";
+
+  // canvas edges — drawn between node card anchor points (static mock coords)
+  (function edges() {
+    var svg = document.getElementById("edges");
+    function line(x1, y1, x2, y2, opts) {
+      opts = opts || {};
+      return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
+        '" stroke="' + (opts.stroke || "#33333c") + '" stroke-width="' + (opts.w || 1.3) + '"' +
+        (opts.dash ? ' stroke-dasharray="' + opts.dash + '"' : "") + ' stroke-linecap="round"/>';
+    }
+    var h = "";
+    // contains: domain → capabilities, capability → elements (solid)
+    h += line(428, 116, 208, 236);                    // domain → CLI cap
+    h += line(428, 116, 518, 262);                    // domain → PO cap
+    h += line(208, 300, 194, 430);                    // CLI cap → landing el
+    h += line(518, 326, 550, 452);                    // PO cap → PO OS doc el
+    // ephemeral depends_on draft: PO cap port → Agent Brief ghost (indigo dashed)
+    h += line(622, 292, 730, 182, { stroke: "#8890e0", dash: "4 5", w: 1.6 });
+    svg.innerHTML = h;
+  })();
+})();
+</script>
+</body>
+</html>
