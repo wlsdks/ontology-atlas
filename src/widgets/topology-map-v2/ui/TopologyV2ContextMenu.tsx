@@ -41,6 +41,29 @@ export interface TopologyV2ContextMenuProps {
   onClose: () => void;
 }
 
+/** Static estimate of the menu's own footprint (5 items + 1 divider, `p-1` padding) — good enough for the edge clamp below without a measure-then-reposition double-render. */
+const MENU_WIDTH = 200;
+const MENU_HEIGHT_ESTIMATE = 210;
+const VIEWPORT_MARGIN = 8;
+
+/**
+ * Design Guardian nice-to-have (W2-B review) — a right-click near the
+ * viewport's right/bottom edge used to position the menu off-screen (raw
+ * `clientX`/`clientY`, no clamp). Pulls the anchor back in by the menu's own
+ * footprint + a small margin; never pushes it past the top/left edge either.
+ */
+export function clampContextMenuPosition(
+  position: { x: number; y: number },
+  viewport: { width: number; height: number },
+): { x: number; y: number } {
+  const maxX = Math.max(VIEWPORT_MARGIN, viewport.width - MENU_WIDTH - VIEWPORT_MARGIN);
+  const maxY = Math.max(VIEWPORT_MARGIN, viewport.height - MENU_HEIGHT_ESTIMATE - VIEWPORT_MARGIN);
+  return {
+    x: Math.min(Math.max(position.x, VIEWPORT_MARGIN), maxX),
+    y: Math.min(Math.max(position.y, VIEWPORT_MARGIN), maxY),
+  };
+}
+
 const MENU_ITEM_CLASS =
   "flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-2.5 py-1.5 text-left text-[12.5px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]";
 const MENU_ITEM_DISABLED_CLASS = "pointer-events-none opacity-40";
@@ -74,12 +97,20 @@ export function TopologyV2ContextMenu({
     return () => document.removeEventListener("pointerdown", handlePointerDown, true);
   }, [onClose]);
 
+  const anchor =
+    typeof window === "undefined"
+      ? position
+      : clampContextMenuPosition(position, {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+
   return (
     <div
       ref={menuRef}
       role="menu"
       data-testid="topology-v2-context-menu"
-      style={{ position: "fixed", left: position.x, top: position.y, zIndex: 50 }}
+      style={{ position: "fixed", left: anchor.x, top: anchor.y, zIndex: 50 }}
       className="flex w-[200px] flex-col gap-0.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-1 shadow-[var(--topology-v2-panel-shadow)]"
     >
       {documentHref ? (

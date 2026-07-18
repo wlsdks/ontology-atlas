@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { TopologyV2ContextMenu } from "./TopologyV2ContextMenu";
+import { clampContextMenuPosition, TopologyV2ContextMenu } from "./TopologyV2ContextMenu";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
@@ -93,5 +93,34 @@ describe("TopologyV2ContextMenu", () => {
     renderMenu();
     const menu = screen.getByTestId("topology-v2-context-menu");
     expect(menu).toHaveStyle({ left: "100px", top: "200px" });
+  });
+});
+
+// Design Guardian nice-to-have (W2-B review) — a right-click near the
+// viewport edge used to position the menu off-screen (raw clientX/clientY,
+// no clamp).
+describe("clampContextMenuPosition", () => {
+  const viewport = { width: 1920, height: 1080 };
+
+  it("leaves an interior position unchanged", () => {
+    expect(clampContextMenuPosition({ x: 500, y: 300 }, viewport)).toEqual({
+      x: 500,
+      y: 300,
+    });
+  });
+
+  it("pulls the anchor back in when it would overflow the right/bottom edge", () => {
+    const clamped = clampContextMenuPosition({ x: 1919, y: 1079 }, viewport);
+    expect(clamped.x).toBeLessThan(1919);
+    expect(clamped.y).toBeLessThan(1079);
+    expect(clamped.x).toBeGreaterThan(0);
+    expect(clamped.y).toBeGreaterThan(0);
+  });
+
+  it("never clamps past the top/left edge for a near-zero position", () => {
+    expect(clampContextMenuPosition({ x: 0, y: 0 }, viewport)).toEqual({
+      x: 8,
+      y: 8,
+    });
   });
 });
