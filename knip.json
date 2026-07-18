@@ -20,5 +20,8 @@
   "ignore": [
     "scripts/**"
   ],
+  "ignoreDependencies": [
+    "tailwindcss"
+  ],
   "ignoreExportsUsedInFile": true
 }
