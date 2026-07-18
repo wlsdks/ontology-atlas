@@ -44,12 +44,6 @@ export function FirstRunStarterModule({
       data-testid="first-run-starter"
       className="relative border-b border-[color:var(--topology-v2-panel-divider)] bg-gradient-to-b from-[color:rgba(94,106,210,0.08)] via-[color:rgba(94,106,210,0.015)] to-transparent px-4 pb-3.5 pt-4"
     >
-      {/* 가공 베젤 코너 틱 4개 — 장식이 아니라 "계기 패널" 재질 신호(시안 §모듈 구성). */}
-      <BezelTick position="top-[7px] left-[7px] border-l border-t" />
-      <BezelTick position="top-[7px] right-[7px] border-r border-t" />
-      <BezelTick position="bottom-[7px] left-[7px] border-b border-l" />
-      <BezelTick position="bottom-[7px] right-[7px] border-b border-r" />
-
       <p className="mb-3 flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.22em] text-[color:var(--topology-v2-panel-text-secondary)]">
         <span className="relative h-2 w-2 shrink-0" aria-hidden>
           <span className="absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
@@ -79,22 +73,22 @@ export function FirstRunStarterModule({
         onClick={() => void openFolder()}
         disabled={busy}
         data-testid="first-run-starter-open"
-        className="relative flex w-full items-center justify-center gap-2 rounded-[9px] border border-[color:rgba(139,151,255,0.45)] bg-[color:var(--color-indigo-brand)] py-3 text-[13.5px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.35)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
+        className="relative flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[color:rgba(139,151,255,0.45)] bg-[color:var(--color-indigo-brand)] text-[13px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
       >
         <FolderOpen size={14} aria-hidden />
         {busy && !scaffolding ? t("openBusy") : t("openLabel")}
-        <span className="rounded border border-b-2 border-white/35 px-1.5 py-px font-mono text-[9.5px] font-medium opacity-80">
+        <span className="rounded border border-b-2 border-white/35 px-1.5 py-px font-mono text-[9px] font-medium opacity-80">
           ⌘O
         </span>
       </button>
 
-      <p className="mb-1 mt-3 flex items-center justify-between text-[11.5px]">
+      <p className="mb-1 mt-3 flex items-center justify-between gap-4 text-[11.5px]">
         <button
           type="button"
           onClick={() => void createVault()}
           disabled={busy}
           data-testid="first-run-starter-create"
-          className="border-b border-[color:var(--topology-v2-panel-divider)] pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="border-b border-transparent pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           {scaffolding ? t("createBusy") : t("createLabel")}
         </button>
@@ -102,7 +96,7 @@ export function FirstRunStarterModule({
           type="button"
           onClick={dismiss}
           data-testid="first-run-starter-dismiss"
-          className="border-b border-[color:var(--topology-v2-panel-divider)] pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="border-b border-transparent pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           {t("dismissLabel")}
         </button>
@@ -117,15 +111,6 @@ export function FirstRunStarterModule({
         </p>
       ) : null}
     </div>
-  );
-}
-
-function BezelTick({ position }: { position: string }) {
-  return (
-    <span
-      aria-hidden
-      className={`pointer-events-none absolute h-[9px] w-[9px] border-[color:rgba(139,151,255,0.5)] ${position}`}
-    />
   );
 }
 
