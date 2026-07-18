@@ -2720,7 +2720,8 @@
       "label": "Agent handoff",
       "copy": "Copy next action",
       "copied": "Copied the agent handoff call",
-      "openDocument": "Open document →"
+      "openDocument": "Open document →",
+      "openBuilder": "Edit in builder →"
     },
     "body": {
       "title": "Body",

@@ -2720,7 +2720,8 @@
       "label": "에이전트 핸드오프",
       "copy": "다음 액션 복사",
       "copied": "에이전트 핸드오프 호출을 복사했어요",
-      "openDocument": "문서 열기 →"
+      "openDocument": "문서 열기 →",
+      "openBuilder": "빌더에서 수정 →"
     },
     "body": {
       "title": "본문",
