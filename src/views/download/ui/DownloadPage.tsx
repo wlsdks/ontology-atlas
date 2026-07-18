@@ -135,7 +135,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
           </p>
 
           {showFirstReleaseChecklist ? (
-            <div className="mt-4 grid gap-2 rounded-lg border border-[color:rgba(244,183,49,0.34)] bg-[color:rgba(244,183,49,0.08)] p-3">
+            <div className="mt-4 grid min-w-0 gap-2 rounded-lg border border-[color:rgba(244,183,49,0.34)] bg-[color:rgba(244,183,49,0.08)] p-3">
               <p className="font-mono text-[10px] uppercase text-[color:var(--color-status-warning)]">
                 {t('releaseStatusTitle')}
               </p>
@@ -146,9 +146,9 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
                 <ReleaseStatusItem label={t('releaseStatusRelease')} />
                 <ReleaseStatusItem label={t('releaseStatusHosted')} />
               </ul>
-              <div className="mt-1 rounded-md border border-[color:rgba(244,183,49,0.24)] bg-[color:rgba(0,0,0,0.12)] p-2">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
+              <div className="mt-1 min-w-0 rounded-md border border-[color:rgba(244,183,49,0.24)] bg-[color:rgba(0,0,0,0.12)] p-2">
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 flex-1">
                     <p className="font-mono text-[10px] uppercase text-[color:var(--color-status-warning)]">
                       {t('releaseStatusAuditLabel')}
                     </p>
