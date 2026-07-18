@@ -117,11 +117,11 @@ export function AtlasNode({ data, selected }: NodeProps) {
   const showDomainTint = !isEphemeral && nodeData.domainSlug;
   // 선택 / hover / 기본 시각 위계 — interaction chrome 은 shadow elevation 으로만
   // 차별. scale / translate 금지.
-  //  - selected: indigo halo + ring (또는 ephemeral 의 amber halo)
+  //  - selected: 2px ring + elevation (glow 금지 — design.md의 glow-like boxShadow 목록)
   //  - hovered: 그림자 한 단계 강화 (rest 보다 또렷, selected 보단 약함)
   //  - rest: 살짝 떠있는 default shadow
   const selectedShadow = selected
-    ? `0 0 0 2px ${isEphemeral ? "rgba(255, 179, 71, 0.62)" : tone.accent}, 0 0 22px ${isEphemeral ? "rgba(255, 179, 71, 0.32)" : "rgba(139, 151, 255, 0.32)"}, 0 12px 28px rgba(0, 0, 0, 0.42)`
+    ? `0 0 0 2px ${isEphemeral ? "rgba(255, 179, 71, 0.62)" : tone.accent}, 0 12px 28px rgba(0, 0, 0, 0.42)`
     : null;
   const hoveredShadow = hovered
     ? "0 8px 22px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(139, 151, 255, 0.22)"
