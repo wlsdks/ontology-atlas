@@ -52,6 +52,15 @@ input (humans + AI agents)     parse           store              output
 
 **Single source of truth (R8)**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. All 8 consumers (`useLocalVault()` callsites: RootEntryPage / OperationsNav / OntologyEditPage / DocsVaultPage / useDataSourceMode / useProjects / useProjectMutations / useVaultOntology) share one state instance, one IDB rehydrate, one filesystem walk.
 
+**Desktop first-run (2026-07-18)**: in the installed app (Tauri — detected via
+`isDesktopShell()`, `src/shared/lib/desktop-shell.ts`), `/` with no vault
+renders an Obsidian-style **FirstRunPage** (`src/views/first-run/`) instead of
+the marketing landing: three machined cards — open vault folder / create new
+vault (existing `scaffoldOntology()` when the picked folder is empty — 5
+markdown seeds + agent configs) / browse the built-in demo vault — plus a
+local-first trust line. No download CTA inside the installed app. On the web,
+`/` with no vault keeps showing the landing (acquisition surface), unchanged.
+
 ---
 
 ## 2. Routes (12 `[locale]`-prefixed routes)
