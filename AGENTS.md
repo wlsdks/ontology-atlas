@@ -17,6 +17,16 @@ business/product and the codebase that realizes it: `project`, `domain`,
 `capability`, and `element` nodes plus typed relations that explain intent,
 ownership, dependencies, evidence, and impact for humans and AI agents.
 
+**Identity (2026-07): agent-native, human-sovereign.** Not "memory for agents"
+(machine-only stores lose to automation scale) and not another wiki (human-only
+docs rot instantly). One meaning layer both audiences read and write: agents
+are first-class users who keep it fresh through MCP/CLI; humans stay the
+arbiters of meaning through plain markdown, git diffs, and their own disk as
+the source of truth. The marketing hook opens with the agent pain; the product
+substance is the shared layer. Every surface must pass both tests: can an
+agent consume it (typed facts, handoff) and can a human read and judge it
+(plain language, visual hierarchy)?
+
 Before product, UX, graph, MCP, CLI, workflow, or macOS-shell changes, apply
 the mandatory PO gate in `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`. Write the
 compact PO pass before editing files unless the work is a clearly mechanical
