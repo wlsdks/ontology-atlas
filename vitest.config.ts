@@ -14,6 +14,15 @@ export default defineConfig({
       'tests/contract/**/*.test.ts',
     ],
     exclude: ['tests/e2e/**'],
+    // next-intl 을 Node ESM 으로 externalize 하면 `next/navigation` 서브패스가
+    // pnpm 가상 스토어 realpath 기준으로 resolve 되지 못해 테스트 파일 로드
+    // 자체가 깨진다 (2026-07 재구성 중 15개 파일 동시 실패로 표면화). vite
+    // 인라인 처리로 vite 리졸버가 서브패스를 해석하게 한다.
+    server: {
+      deps: {
+        inline: ['next-intl'],
+      },
+    },
   },
   resolve: {
     // @rollup/plugin-alias 는 등록 순서대로 prefix 매칭해 첫 매칭을 채택한다.
