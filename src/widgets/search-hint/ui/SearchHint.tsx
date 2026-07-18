@@ -95,8 +95,10 @@ export function SearchHint({
           title={t('relayoutTitle')}
         >
           <RefreshCcw
-            size={14}
-            className={arranging ? 'motion-safe:animate-spin' : undefined}
+            className={cn(
+              'size-[var(--topology-chrome-icon-size-sm)]',
+              arranging && 'motion-safe:animate-spin',
+            )}
           />
           <span className={compact ? 'sr-only' : 'hidden md:inline'}>
             {arranging ? t('relayoutActiveLabel') : t('relayoutLabel')}
@@ -124,8 +126,7 @@ export function SearchHint({
           title={t('searchTitle')}
         >
           <Search
-            size={14}
-            className="text-[color:var(--color-text-secondary)] md:text-[color:var(--color-text-tertiary)] md:group-hover:text-[color:var(--color-text-secondary)]"
+            className="size-[var(--topology-chrome-icon-size-sm)] text-[color:var(--color-text-secondary)] md:text-[color:var(--color-text-tertiary)] md:group-hover:text-[color:var(--color-text-secondary)]"
           />
           <span className={compact ? 'sr-only' : 'hidden md:inline md:group-hover:text-[color:var(--color-text-primary)]'}>
             {t('searchLabel')}

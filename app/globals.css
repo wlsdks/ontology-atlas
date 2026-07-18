@@ -634,10 +634,34 @@
     --topology-floating-control-desktop-top: 140px;
     --topology-floating-panel-desktop-top: 184px;
     --topology-floating-panel-desktop-max-height: calc(100vh - 260px);
-    --topology-utility-lane-height: clamp(40px, 2.8vw, 44px);
-    --topology-utility-lane-gap: clamp(6px, 0.5vw, 8px);
-    --topology-utility-lane-radius: 999px;
-    --topology-utility-lane-compact-width: clamp(40px, 2.8vw, 44px);
+    /*
+     * Relief/Topology chrome DENSITY tokens (feat/topology-chrome-density).
+     * The brand pill (HeroCollapsed), the top-center search/refresh HUD lane,
+     * and the right-side action lane are one machined control cluster. They
+     * share these density values so the topology chrome reads as a
+     * desktop-precision instrument at 1920, not a touch surface. Reduce here to
+     * tighten every engine's chrome at once — the cluster is rendered by
+     * HomePage outside the render engine, so map-v2 / map-canvas / sigma all
+     * inherit it equally. The canvas keeps its own --topology-ui-scale-factor
+     * and is untouched by these. Control heights stay ≥ ~32px so hit targets
+     * stay comfortable; only the touch-sized inflation is removed. Type steps
+     * down one notch (title 13→12) while the engraved census stays legible (9px).
+     */
+    --topology-chrome-control-height: clamp(32px, 2vw, 36px);
+    --topology-chrome-control-height-compact: clamp(30px, 1.9vw, 34px);
+    --topology-chrome-badge-size: 26px;
+    --topology-chrome-badge-size-compact: 22px;
+    --topology-chrome-icon-size: 12px;
+    --topology-chrome-icon-size-sm: 11px;
+    --topology-chrome-gap: clamp(5px, 0.4vw, 6px);
+    --topology-chrome-radius: 999px;
+    --topology-chrome-title-size: 12px;
+    --topology-chrome-eyebrow-size: 9px;
+    --topology-chrome-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+    --topology-utility-lane-height: var(--topology-chrome-control-height);
+    --topology-utility-lane-gap: var(--topology-chrome-gap);
+    --topology-utility-lane-radius: var(--topology-chrome-radius);
+    --topology-utility-lane-compact-width: var(--topology-chrome-control-height);
     --topology-utility-lane-surface: rgba(15, 16, 17, 0.92);
     --topology-utility-lane-border: rgba(255, 255, 255, 0.07);
     --topology-utility-lane-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
