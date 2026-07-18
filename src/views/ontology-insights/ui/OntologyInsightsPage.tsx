@@ -10,7 +10,13 @@ import {
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
+import {
+  LiveActivityIndicator,
+  useOntologyInsight,
+  useVaultDocFreshnessIndex,
+} from "@/features/vault-ontology";
+import { useDataSourceMode } from "@/features/data-source-mode";
+import { useLocalVault } from "@/features/docs-vault-local";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   buildOntologyTree,
@@ -19,7 +25,8 @@ import {
   rankAllByDegree,
 } from "@/shared/lib/ontology-tree";
 import { MountedGlobalSearch } from "@/widgets/global-search";
-import { OperationsNav } from "@/widgets/operations-nav";
+import { AppNavRail } from "@/widgets/app-nav-rail";
+import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { EmptyState, TabBar } from "@/shared/ui";
 import {
   DEFAULT_INSIGHTS_TAB,
@@ -71,6 +78,8 @@ export function OntologyInsightsPage() {
 
   const { insight, error } = useOntologyInsight();
   const docFreshnessIndex = useVaultDocFreshnessIndex();
+  const vault = useLocalVault();
+  const dataSourceMode = useDataSourceMode();
 
   const nodes = insight?.nodes ?? EMPTY_NODES;
   const edges = insight?.edges ?? EMPTY_EDGES;
@@ -175,9 +184,14 @@ export function OntologyInsightsPage() {
   };
 
   return (
-    <div>
-      <OperationsNav />
-      <main id="main" className="mx-auto w-full max-w-[var(--page-max)] px-6 py-8 md:px-10">
+    <div className="flex min-h-screen w-full">
+      <AppNavRail />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6">
+          <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
+          <AppSettingsMenu mode={dataSourceMode} />
+        </div>
+        <main id="main" className="mx-auto w-full max-w-[var(--page-max)] px-6 py-8 md:px-10">
         <MountedGlobalSearch />
 
         <header className="flex flex-wrap items-end gap-4">
@@ -291,7 +305,8 @@ export function OntologyInsightsPage() {
           copyLabel={t("handoffCopy")}
           copiedLabel={t("agentCopied")}
         />
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

@@ -6,6 +6,26 @@
 
 ---
 
+## 2026-07-19 — 내비 3체계 → 1체계 통합 (rail-rollout)
+
+`AppNavRail`(#375 지형도 전용 구현·#376 대형화면 스케일)을 지형도 외 전
+페이지(`/docs`, `/ontology/edit`, `/ontology/insights`, `/projects`,
+`/project/[slug]`(+`/edit`, `/new`), `/download`)로 확장하고, 구 상단 탭바
+`OperationsNav` 와 그 인라인 서브탭 `OntologySubNav` 를 완전히 삭제했다.
+표시 breakpoint 를 `md` → `lg` 로 올려 `BottomTabBar`(모바일)와의 경계를
+분명히 하고, 둘이 공유하는 활성-항목 판정 로직을 `src/shared/lib/
+nav-destination.ts` 하나로 합쳤다(레일-바텀탭 불일치 가능성 자체를 제거).
+
+- `LiveActivityIndicator`·`AppSettingsMenu`(구 `OperationsNav` 설정 기어) —
+  좁은 레일이 못 품는 넓은 popover 라 별도 위젯(`src/widgets/
+  app-settings-menu`)으로 분리해 필요한 세 페이지(프로젝트 목록·빌더·
+  인사이트) 헤더에 그대로 유지 — 기능 손실 0.
+- `BottomTabBar` 도 레일과 동일한 5 목적지(지도·문서함·빌더·인사이트·
+  프로젝트)로 정합.
+- `pnpm design:ontology`(대상 디렉터리) · i18n 메시지 카탈로그(`nav.*`
+  잔여 키·`ontologySubNav`·`modeBadge` 네임스페이스 전체) · `test:desktop:
+  runtime` 스크립트 매핑을 새 위젯 기준으로 갱신.
+
 ## 2026-07-19 — 토폴로지 캔버스 강조 위계 (canvas-emphasis)
 
 "중앙(프로젝트 노드)이 뭔가 다르게 빛나야, 클릭한 노드는 특별한 색/이펙트

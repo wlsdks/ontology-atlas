@@ -34,11 +34,19 @@ interface RailDestination {
 /**
  * 좌측 64px 내비 레일 (feat/chrome-system, `docs/prototypes/chrome-rail-combined.html`
  * 소유자 최종 승인) — 전역 목적지(지도·문서함·빌더·인사이트·프로젝트) +
- * 하단 에이전트 상태·설정을 전담하는 상시 chrome. 이 슬라이스의 마운트
- * 범위는 지형도(HomePage)만 — 다른 페이지 롤아웃은 별도 슬라이스.
+ * 하단 에이전트 상태·설정을 전담하는 상시 chrome. #375 는 지형도(HomePage)만
+ * 마운트했고, feat/rail-rollout (#377) 이 지형도 외 전 페이지(문서함·빌더·
+ * 인사이트·프로젝트 목록/상세/편집·다운로드)로 확장해 3-체계(OperationsNav
+ * 상단 탭 + BottomTabBar + 이 레일) 내비를 1-체계로 통합했다 — 구 상단 탭
+ * (`OperationsNav`)·서브탭(`OntologySubNav`)은 은퇴.
  *
  * book/network 유틸 타일과 우측 레일의 설정 기어가 여기로 흡수됐다
- * (HeroCollapsed 는 필만 남고, 우측 세로 레일은 지도 전용 3타일만).
+ * (HeroCollapsed 는 필만 남고, 우측 세로 레일은 지도 전용 3타일만). 폭이
+ * 좁아(`--app-nav-rail-width`) `AppSettingsMenu`/`LiveActivityIndicator` 같은
+ * 넓은 popover 위젯은 품지 못한다 — 그 둘은 레일이 상주하는 각 페이지
+ * 헤더에 개별 마운트한다(기능 손실 0 원칙, `src/widgets/app-settings-menu`).
+ *
+ * 표시 breakpoint 는 `lg` (≥1024px) — 그 아래는 `BottomTabBar` 가 담당한다.
  */
 export function AppNavRail({ settingsSlot, className }: AppNavRailProps) {
   const t = useTranslations("navRail");
@@ -81,7 +89,7 @@ export function AppNavRail({ settingsSlot, className }: AppNavRailProps) {
       aria-label={t("ariaLabel")}
       data-testid="app-nav-rail"
       className={cn(
-        "hidden w-[var(--app-nav-rail-width)] shrink-0 flex-col items-center border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-3 md:flex",
+        "hidden w-[var(--app-nav-rail-width)] shrink-0 flex-col items-center border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-3 lg:flex",
         className,
       )}
     >

@@ -3,7 +3,7 @@ slug: capabilities/project-ontology-indexing
 kind: capability
 title: Project Ontology Indexing
 domain: ai-agent-partner
-elements: [cli/src/commands/index.mjs, cli/src/integration.test.mjs, elements/operations-nav, mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/integration.test.mjs]
+elements: [cli/src/commands/index.mjs, cli/src/integration.test.mjs, elements/app-settings-menu, mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/integration.test.mjs]
 relates: [capabilities/cli-developer-entry, capabilities/mcp-server]
 ---
 

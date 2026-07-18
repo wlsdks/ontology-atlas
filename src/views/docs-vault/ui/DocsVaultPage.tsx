@@ -39,6 +39,7 @@ import {
   useLocalVault,
 } from '@/features/docs-vault-local';
 import { VaultToolsMenu } from '@/widgets/docs-vault';
+import { AppNavRail } from '@/widgets/app-nav-rail';
 import { copyText } from '@/shared/lib/copy-text';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
@@ -1637,7 +1638,9 @@ function DocsVaultContent() {
   }, [source, isDesktopRuntime, handleSourceChange, setAdvancedOpen]);
 
   return (
-    <div className="topology-ui-scale relative flex h-screen flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+    <div className="flex h-screen w-full">
+      <AppNavRail />
+      <div className="topology-ui-scale relative flex h-full min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
       {/* Crumbs row — engraved vault census (docs-vault-final spec §상단 헤더). */}
       <nav
         aria-label={t('header.breadcrumbAriaLabel')}
@@ -1721,16 +1724,6 @@ function DocsVaultContent() {
               className={`transition-transform ${contractOpen ? 'rotate-180' : ''}`}
             />
           </button>
-          <Tooltip content={t('header.topologyTooltip')} withProvider={false}>
-            <Link
-              href="/topology/"
-              aria-label={t('header.topologyAriaLabel')}
-              className="ml-auto inline-flex h-8 w-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(94,106,210,0.08)] text-[12px] text-[color:rgba(200,210,255,0.92)] transition-colors hover:border-[color:rgba(139,151,255,0.5)] hover:bg-[color:rgba(94,106,210,0.14)] hover:text-[color:var(--color-text-primary)] md:ml-0 lg:w-auto lg:px-2.5"
-            >
-              <Network size={13} aria-hidden />
-              <span className="hidden lg:inline">{t('header.topology')}</span>
-            </Link>
-          </Tooltip>
         </div>
         <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 lg:ml-auto lg:w-auto">
           {/* Source 토글 — 이전엔 advanced dropdown 안 깊숙이 묻혀 있던 가장
@@ -2289,6 +2282,7 @@ function DocsVaultContent() {
           />
         ) : null}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

@@ -2,39 +2,42 @@
 
 import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { Network, FolderKanban, FileText, Route } from 'lucide-react';
+import { BarChart3, BookOpen, FolderKanban, GitBranch, Map as MapIcon } from 'lucide-react';
 import { useLocalVault } from '@/features/docs-vault-local';
-import { isBottomTabActive, shouldHideBottomTabBar } from '../lib/is-tab-active';
+import { resolveActiveNavDestination, type AppNavDestinationId } from '@/shared/lib/nav-destination';
+import { shouldHideBottomTabBar } from '../lib/is-tab-active';
 
 interface TabItem {
+  id: AppNavDestinationId;
   href: string;
-  /** Translation key under `nav.*` for the visible tab label. */
-  labelKey: 'ontology' | 'topology' | 'projects' | 'docs';
-  icon: typeof Network;
-  /** pathname 이 이 prefix 들 중 하나로 시작하면 활성 탭. 빈 배열이면 정확히 href 와 일치할 때만. */
-  matchPrefixes: ReadonlyArray<string>;
+  /** Translation key under `navRail.*` — same copy as the desktop rail so
+   *  mobile and desktop read as one nav system, not two. */
+  labelKey: AppNavDestinationId;
+  icon: typeof MapIcon;
 }
 
-// 모바일 한정 하단 탭바. 반복 작업자가 바로 오가는 4 개 destination 노출:
-// ontology · topology · projects · docs. Topology 는 숨겨진 sub-link 로 두면
-// 실제 폴더 선택 후 그래프 이동을 놓치기 쉬워 별도 탭으로 승격.
+// 모바일 한정 하단 탭바 — 데스크톱 `AppNavRail` (lg+) 과 정확히 같은 5
+// destination (feat/rail-rollout, 3-체계 → 1-체계 통합). active 판정도
+// `resolveActiveNavDestination` 을 공유해 두 위젯이 절대 갈라지지 않는다.
 const TABS: ReadonlyArray<TabItem> = [
-  { href: '/ontology/', labelKey: 'ontology', icon: Network, matchPrefixes: ['/ontology'] },
-  { href: '/topology/', labelKey: 'topology', icon: Route, matchPrefixes: ['/topology'] },
-  { href: '/projects/', labelKey: 'projects', icon: FolderKanban, matchPrefixes: ['/projects', '/project'] },
-  // "문서" tab — vault picker / 편집기. mission v2 후 모든 모드에서 docs
-  // vault 가 진입점.
-  { href: '/docs/', labelKey: 'docs', icon: FileText, matchPrefixes: ['/docs'] },
+  { id: 'map', href: '/topology/', labelKey: 'map', icon: MapIcon },
+  { id: 'docs', href: '/docs/', labelKey: 'docs', icon: BookOpen },
+  { id: 'builder', href: '/ontology/edit/', labelKey: 'builder', icon: GitBranch },
+  { id: 'insights', href: '/ontology/insights/', labelKey: 'insights', icon: BarChart3 },
+  { id: 'projects', href: '/projects/', labelKey: 'projects', icon: FolderKanban },
 ];
 
 export function BottomTabBar() {
   const pathname = usePathname() ?? '/';
   const t = useTranslations('nav');
+  const tRail = useTranslations('navRail');
   const vault = useLocalVault();
 
   if (shouldHideBottomTabBar(pathname, vault.status === 'loaded')) {
     return null;
   }
+
+  const activeId = resolveActiveNavDestination(pathname);
 
   return (
     <nav
@@ -44,11 +47,11 @@ export function BottomTabBar() {
       data-tabbar-surface-token="--topology-bottom-tab-surface"
       data-tabbar-border-token="--topology-bottom-tab-border"
       aria-label={t('primaryAriaLabel')}
-      className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-[color:var(--topology-bottom-tab-border)] bg-[color:var(--topology-bottom-tab-surface)] pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_36px_rgba(0,0,0,0.34)] md:hidden"
+      className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-[color:var(--topology-bottom-tab-border)] bg-[color:var(--topology-bottom-tab-surface)] pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_36px_rgba(0,0,0,0.34)] lg:hidden"
     >
       {TABS.map((tab) => {
         const Icon = tab.icon;
-        const active = isTabActive(pathname, tab);
+        const active = activeId === tab.id;
         return (
           <Link
             key={tab.href}
@@ -78,14 +81,10 @@ export function BottomTabBar() {
             >
               <Icon size={17} aria-hidden />
             </span>
-            <span className="text-[10px] font-[var(--font-weight-signature)] leading-none">{t(tab.labelKey)}</span>
+            <span className="text-[10px] font-[var(--font-weight-signature)] leading-none">{tRail(tab.labelKey)}</span>
           </Link>
         );
       })}
     </nav>
   );
-}
-
-function isTabActive(pathname: string, tab: TabItem): boolean {
-  return isBottomTabActive(pathname, tab.href, tab.matchPrefixes);
 }

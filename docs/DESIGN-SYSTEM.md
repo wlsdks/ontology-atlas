@@ -1331,9 +1331,15 @@ Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌
   (좌표 재계산 불필요). 캔버스 2D 엔진의 safe-inset 토큰은 뷰포트가 아니라
   이 relative 컨테이너를 기준으로 재측정하므로 별도 보정이 필요 없다 —
   라이브 화면에서 겹침 없음을 실측 확인.
-- 이번 슬라이스 마운트 범위는 지형도(HomePage)뿐 — `/docs`, `/ontology/*`,
-  `/projects` 롤아웃(및 그 페이지들의 `OperationsNav` 와의 관계 정리)은
-  별도 슬라이스.
+- [완료, feat/rail-rollout] 위 슬라이스(#375)는 마운트 범위를 지형도
+  (HomePage) 로 한정하고 `/docs`, `/ontology/*`, `/projects`, `/project/*`,
+  `/download` 롤아웃과 `OperationsNav`/`OntologySubNav` 와의 관계 정리를
+  별도 슬라이스로 미뤘다 — feat/rail-rollout 이 그 슬라이스로, 레일을 전
+  페이지에 상주시키고 `OperationsNav`/`OntologySubNav` 를 완전히 삭제했다.
+  표시 breakpoint 도 `md` → `lg` 로 올려 `BottomTabBar` 와의 경계를
+  명확히 했다. 레일이 못 품는 `AppSettingsMenu`(구 `OperationsNav` 설정
+  기어)·`LiveActivityIndicator` 는 별도 위젯으로 분리해 필요한 페이지
+  헤더에 개별 마운트한다 (기능 손실 0 원칙, `docs/ARCHITECTURE.md` 참고).
 
 ### 토큰
 

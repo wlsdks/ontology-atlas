@@ -23,17 +23,6 @@
   },
   "nav": {
     "skipToContent": "Skip to main content",
-    "ontology": "Ontology",
-    "topology": "Relief",
-    "docs": "Workspace",
-    "projects": "Projects",
-    "back": "Home",
-    "ariaLabel": "Operations menu",
-    "ariaLabelMobile": "Operations menu (mobile)",
-    "backToWorkspace": "Home",
-    "tooltipDocs": "Workspace — separate guide docs from ontology concepts",
-    "tooltipOntology": "Ontology — review concepts, relations, changes, and saves",
-    "tooltipTopology": "Relief — inspect the project map and return to changes",
     "settingsMenu": {
       "triggerAria": "Open app settings",
       "triggerTitle": "Open display, language, ontology workspace, and MCP connection settings",
@@ -142,16 +131,6 @@
     "insights": "Insights",
     "projects": "Projects"
   },
-  "ontologySubNav": {
-    "ariaLabel": "Ontology submenu",
-    "caption": "Ontology",
-    "tree": "Concept map",
-    "builder": "Edit relations",
-    "insights": "Verify graph",
-    "treeTooltip": "Concept map — choose a domain, capability, or element and inspect meaning plus evidence",
-    "builderTooltip": "Edit relations — change nodes and relations on canvas, then save frontmatter",
-    "insightsTooltip": "Verify graph — query hubs, paths, and graph health with MCP/CLI"
-  },
   "liveActivity": {
     "live": "Live",
     "triggerTitle": "Live: changed ontology nodes and agent heartbeat",
@@ -206,18 +185,6 @@
     "stateVerifying": "verifying",
     "stateBlocked": "blocked",
     "stateComplete": "complete"
-  },
-  "modeBadge": {
-    "vaultLabel": "Workspace",
-    "vaultDocs": "{count} documents",
-    "vaultTooltip": "Workspace mode — {name} ({count} documents). Every change is saved to your local disk.",
-    "demoLabel": "demo",
-    "demoAriaLabel": "Demo mode",
-    "demoAriaLabelDownload": "Demo mode — install the macOS app to start local vault work",
-    "demoAriaLabelPicker": "Demo mode — open a local vault folder",
-    "demoTooltip": "Demo mode — no vault picked. Build-time demo manifest only; changes are not saved.",
-    "demoTooltipDownload": "Demo mode — install the macOS app to start writable local vault work",
-    "demoTooltipPicker": "Demo mode — open a local vault folder to start saving changes"
   },
   "locale": {
     "switcher": "Language",
