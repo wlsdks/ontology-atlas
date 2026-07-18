@@ -28,7 +28,7 @@ interface RailDestination {
   id: AppNavRailItemId;
   href: string;
   label: string;
-  Icon: ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
+  Icon: ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean }>;
 }
 
 /**
@@ -81,7 +81,7 @@ export function AppNavRail({ settingsSlot, className }: AppNavRailProps) {
       aria-label={t("ariaLabel")}
       data-testid="app-nav-rail"
       className={cn(
-        "hidden w-16 shrink-0 flex-col items-center border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-3 md:flex",
+        "hidden w-[var(--app-nav-rail-width)] shrink-0 flex-col items-center border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-3 md:flex",
         className,
       )}
     >
@@ -90,9 +90,13 @@ export function AppNavRail({ settingsSlot, className }: AppNavRailProps) {
         title="Ontology Atlas"
         aria-label="Ontology Atlas"
         translate="no"
-        className="mb-3.5 flex h-[34px] w-[34px] shrink-0 items-center justify-center text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-indigo-hover)]"
+        className="mb-3.5 flex h-[var(--app-nav-rail-logo-size)] w-[var(--app-nav-rail-logo-size)] shrink-0 items-center justify-center text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-indigo-hover)]"
       >
-        <BrandMark size={20} detail="compact" />
+        <BrandMark
+          size={20}
+          detail="compact"
+          className="h-[var(--app-nav-rail-logo-icon-size)] w-[var(--app-nav-rail-logo-icon-size)]"
+        />
       </Link>
 
       <nav aria-label={t("ariaLabel")} className="flex w-full flex-1 flex-col gap-0.5">
@@ -117,17 +121,21 @@ export function AppNavRail({ settingsSlot, className }: AppNavRailProps) {
                   ) : null}
                   <span
                     className={cn(
-                      "flex h-8 w-[38px] items-center justify-center rounded-[8px] transition-colors",
+                      "flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-[8px] transition-colors",
                       isActive
                         ? "bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-indigo-accent)] shadow-[inset_0_0_0_1px_rgba(139,151,255,0.22)]"
                         : "text-[color:var(--color-text-tertiary)] group-hover:bg-[color:var(--color-overlay-2)] group-hover:text-[color:var(--color-text-primary)]",
                     )}
                   >
-                    <Icon size={18} aria-hidden />
+                    <Icon
+                      size={18}
+                      aria-hidden
+                      className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
+                    />
                   </span>
                   <span
                     className={cn(
-                      "text-[9.5px]",
+                      "text-[length:var(--app-nav-rail-label-size)]",
                       isActive
                         ? "font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
                         : "text-[color:var(--color-text-quaternary)]",
@@ -147,9 +155,13 @@ export function AppNavRail({ settingsSlot, className }: AppNavRailProps) {
           title={agentTitle}
           aria-label={agentTitle}
           data-testid="app-nav-rail-agent-status"
-          className="relative flex h-8 w-[38px] items-center justify-center rounded-[8px] text-[color:var(--color-text-tertiary)]"
+          className="relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-[8px] text-[color:var(--color-text-tertiary)]"
         >
-          <Activity size={18} aria-hidden />
+          <Activity
+            size={18}
+            aria-hidden
+            className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
+          />
           {hasFreshHeartbeat ? (
             <span
               aria-hidden="true"
