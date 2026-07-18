@@ -120,7 +120,6 @@ export { snapshotOntology, computeOntologyChangeset, acknowledgeNodeChange } fro
 export {
   markChangeBaseline,
   clearChangeBaseline,
-  acknowledgeChangeNode,
   restorePersistedBaseline,
   getChangeBaseline,
   useChangeBaseline,
@@ -137,4 +136,3 @@ export {
   buildProjectOntologyCounts,
   pickDominantOntologyKind,
 } from "./project-ontology-counts";
-export { UNKNOWN_TONE } from "./tones";

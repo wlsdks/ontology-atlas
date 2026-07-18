@@ -6,7 +6,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const HEATSTRIP_WEEKS = 12;
 export const FRESHNESS_WINDOW_WEEKS = HEATSTRIP_WEEKS;
 const STALE_DAYS = 90;
-export const FRESHNESS_STALE_DAYS = STALE_DAYS;
 
 /** 한 주의 갱신 강도 — 0(없음)~3(3건 이상). 실제 카운트에서 유도, 장식용 난수 없음. */
 export type FreshnessLevel = 0 | 1 | 2 | 3;
