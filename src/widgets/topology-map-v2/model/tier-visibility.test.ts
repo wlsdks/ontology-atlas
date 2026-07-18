@@ -4,6 +4,7 @@ import {
   computeZoomRatio,
   DEFAULT_TIER_REVEAL,
   edgeTierAlpha,
+  isSpineOnlyZoom,
   nodeTierAlpha,
 } from "./tier-visibility";
 
@@ -81,5 +82,28 @@ describe("edgeTierAlpha", () => {
     expect(edgeTierAlpha(1, 0)).toBe(0);
     expect(edgeTierAlpha(0.8, 0.4)).toBe(0.4);
     expect(edgeTierAlpha(1, 1)).toBe(1);
+  });
+});
+
+describe("isSpineOnlyZoom (QA 소실 A — clamp-bounds source)", () => {
+  it("is true at the overview entry and while zoomed out (only the spine draws)", () => {
+    expect(isSpineOnlyZoom(ENTRY, DEFAULT_TIER_REVEAL)).toBe(true);
+    expect(isSpineOnlyZoom(0.5, DEFAULT_TIER_REVEAL)).toBe(true);
+    // Just below the capability enter ratio: still spine-only.
+    expect(isSpineOnlyZoom(DEFAULT_TIER_REVEAL.capability.enterRatio - 1e-6, DEFAULT_TIER_REVEAL)).toBe(true);
+  });
+
+  it("flips false exactly when the capability tier begins revealing (full bounds become honest)", () => {
+    expect(isSpineOnlyZoom(DEFAULT_TIER_REVEAL.capability.enterRatio, DEFAULT_TIER_REVEAL)).toBe(false);
+    expect(isSpineOnlyZoom(ZOOMED_IN, DEFAULT_TIER_REVEAL)).toBe(false);
+  });
+
+  it("agrees with nodeTierAlpha: spine-only zoom ⇔ capabilities are fully hidden", () => {
+    for (let ratio = 0.4; ratio <= 4.0001; ratio += 0.05) {
+      const spineOnly = isSpineOnlyZoom(ratio, DEFAULT_TIER_REVEAL);
+      const capAlpha = nodeTierAlpha("capability", false, ratio, DEFAULT_TIER_REVEAL);
+      if (spineOnly) expect(capAlpha).toBe(0);
+      else expect(capAlpha).toBeGreaterThanOrEqual(0);
+    }
   });
 });
