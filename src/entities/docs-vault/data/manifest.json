@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T15:21:50.017Z",
+  "generatedAt": "2026-07-18T16:40:33.002Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -203,8 +203,8 @@
         }
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
-      "wordCount": 1287,
-      "updatedAt": "2026-07-18T13:18:59.873Z",
+      "wordCount": 1425,
+      "updatedAt": "2026-07-18T16:34:16.616Z",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-19 — 내비 3체계 → 1체계 통합 (rail-rollout)",
+          "slug": "2026-07-19-내비-3체계-1체계-통합-rail-rollout"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-19 — 토폴로지 캔버스 강조 위계 (canvas-emphasis)",
           "slug": "2026-07-19-토폴로지-캔버스-강조-위계-canvas-emphasis"
         },
@@ -3881,9 +3886,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. \"중앙(프로젝트 노드)이 뭔가 다르게 빛나야, 클릭한 노드는 특별한 색/이펙트 필요\" — 발광(glow/halo) 대신 재질(材質)과 1회성 모션 피드백으",
-      "wordCount": 20757,
-      "updatedAt": "2026-07-18T15:21:39.023Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. AppNavRail(375 지형도 전용 구현·376 대형화면 스케일)을 지형도 외 전 페이지(/docs, /ontology/edit, /ontology/i",
+      "wordCount": 20879,
+      "updatedAt": "2026-07-18T16:35:15.465Z",
       "linksOut": [
         "slug"
       ]
@@ -4395,8 +4400,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 10593,
-      "updatedAt": "2026-07-18T15:12:07.642Z",
+      "wordCount": 10646,
+      "updatedAt": "2026-07-18T16:34:47.985Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -4894,13 +4899,18 @@
         },
         {
           "depth": 3,
-          "text": "`OperationsNav` (top, always visible)",
-          "slug": "operationsnav-top-always-visible"
+          "text": "`AppNavRail` (desktop, `lg:` and up — left side, on every page)",
+          "slug": "appnavrail-desktop-lg-and-up-left-side-on-every-page"
         },
         {
           "depth": 3,
-          "text": "`BottomTabBar` (mobile only, `md:` hidden)",
-          "slug": "bottomtabbar-mobile-only-md-hidden"
+          "text": "`AppSettingsMenu` (per-page header — Projects list, Builder, Insights)",
+          "slug": "appsettingsmenu-per-page-header-projects-list-builder-insights"
+        },
+        {
+          "depth": 3,
+          "text": "`BottomTabBar` (mobile only, `lg:` hidden)",
+          "slug": "bottomtabbar-mobile-only-lg-hidden"
         },
         {
           "depth": 3,
@@ -4944,8 +4954,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 9829,
-      "updatedAt": "2026-07-18T13:20:50.905Z",
+      "wordCount": 9970,
+      "updatedAt": "2026-07-18T16:33:50.121Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5446,7 +5456,7 @@
           "capabilities/vault-live-updates"
         ],
         "elements": [
-          "elements/operations-nav",
+          "elements/app-settings-menu",
           "src/features/docs-vault-local/lib/ontology-starter.ts",
           "src/features/docs-vault-local/model/use-local-vault.ts",
           "src/features/docs-vault-local/ui/OntologyStarterCta.tsx",
@@ -5461,7 +5471,7 @@
       "headings": [],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agent-root guidance, an",
       "wordCount": 1213,
-      "updatedAt": "2026-06-06T10:21:58.513Z",
+      "updatedAt": "2026-07-18T16:38:55.445Z",
       "linksOut": []
     },
     {
@@ -5478,7 +5488,7 @@
           "capabilities/ontology-hub-mode-aware"
         ],
         "elements": [
-          "elements/operations-nav",
+          "elements/app-settings-menu",
           "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
           "src/shared/lib/ontology-tree/agent-query-recipes.ts",
           "src/shared/lib/ontology-tree/agent-readiness.ts",
@@ -5496,7 +5506,7 @@
       "headings": [],
       "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Overview / Relations / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Ins",
       "wordCount": 331,
-      "updatedAt": "2026-07-18T12:04:34.284Z",
+      "updatedAt": "2026-07-18T16:38:48.931Z",
       "linksOut": []
     },
     {
@@ -6208,8 +6218,8 @@
           "capabilities/mode-aware-adapter"
         ],
         "elements": [
+          "elements/app-nav-rail",
           "elements/ontology-concept-detail-workbench",
-          "elements/ontology-sub-nav",
           "src/features/vault-ontology/model/use-ontology-insight.ts",
           "src/shared/lib/ontology-tree/reachability.test.ts",
           "src/shared/lib/ontology-tree/reachability.ts",
@@ -6230,7 +6240,7 @@
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (module-load 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), l",
       "wordCount": 632,
-      "updatedAt": "2026-07-18T12:04:02.917Z",
+      "updatedAt": "2026-07-18T16:39:05.404Z",
       "linksOut": []
     },
     {
@@ -6310,7 +6320,7 @@
         "elements": [
           "cli/src/commands/index.mjs",
           "cli/src/integration.test.mjs",
-          "elements/operations-nav",
+          "elements/app-settings-menu",
           "mcp/src/analyze.mjs",
           "mcp/src/index.js",
           "mcp/src/integration.test.mjs"
@@ -6329,7 +6339,7 @@
       ],
       "excerpt": "Long-running project ontology indexing entrypoint. indexproject gives AI agents one read-only checkpoint that combines repo structure analysis, import-edge indexing, and vault validation before any write. The CLI pair is ontology-atlas index: default mode prints a side-effect-free plan, and --apply delegates to the exi",
       "wordCount": 649,
-      "updatedAt": "2026-06-06T18:00:41.786Z",
+      "updatedAt": "2026-07-18T16:39:00.331Z",
       "linksOut": []
     },
     {
@@ -7029,10 +7039,11 @@
         ],
         "elements": [
           "cli/src/commands/agent-activity.mjs",
+          "elements/app-nav-rail",
+          "elements/app-settings-menu",
           "elements/first-run-page",
           "elements/landing-first-impression",
           "elements/locale-switch",
-          "elements/operations-nav",
           "elements/product-owner-operating-system-doc",
           "elements/root-locale-redirect",
           "src/features/theme-toggle",
@@ -7054,7 +7065,7 @@
       ],
       "excerpt": "cross-cutting. 라이트/다크 토글 (html[data-theme=\"light\"]), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curs",
       "wordCount": 345,
-      "updatedAt": "2026-07-18T11:42:54.451Z",
+      "updatedAt": "2026-07-18T16:39:14.058Z",
       "linksOut": []
     },
     {
@@ -7189,7 +7200,6 @@
           "elements/ontology-node-detail-modal",
           "elements/ontology-reader-intent-contract",
           "elements/ontology-review-brief",
-          "elements/ontology-sub-nav",
           "elements/ontology-tree-view",
           "elements/topology-kind-classification-contract",
           "elements/topology-kind-color-legend",
@@ -7232,7 +7242,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-07-18T12:04:00.338Z",
+      "updatedAt": "2026-07-18T16:39:21.830Z",
       "linksOut": []
     },
     {
@@ -7253,6 +7263,46 @@
       "excerpt": "ontology-atlas agent-activity is the explicit CLI contract for publishing Atlas live agent activity into .ontology-atlas/agent-activity.json. The repo-local automatic heartbeat hooks were removed from .claude/settings.json and .codex/hooks.json during the 2026-06 token-budget pass. They updated the sidecar on every she",
       "wordCount": 102,
       "updatedAt": "2026-06-11T15:32:31.497Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/app-nav-rail",
+      "path": "docs/ontology/elements/app-nav-rail.md",
+      "title": "App Nav Rail",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/app-nav-rail",
+        "kind": "element",
+        "title": "App Nav Rail",
+        "domain": "onboarding-ux"
+      },
+      "headings": [],
+      "excerpt": "src/widgets/app-nav-rail/ui/AppNavRail.tsx renders the persistent left navigation rail shown on every Ontology Atlas route at desktop widths (lg: and up, ≥1024px). Below lg it renders nothing — src/widgets/bottom-tab-bar (Mobile Bottom Tab Bar) owns navigation instead. The rail exposes exactly 5 destinations: Map (/, /",
+      "wordCount": 209,
+      "updatedAt": "2026-07-18T16:39:48.695Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/app-settings-menu",
+      "path": "docs/ontology/elements/app-settings-menu.md",
+      "title": "App Settings Menu",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/app-settings-menu",
+        "kind": "element",
+        "title": "App Settings Menu",
+        "domain": "onboarding-ux",
+        "relates": [
+          "capabilities/agent-config-onboarding",
+          "capabilities/project-ontology-indexing",
+          "elements/app-nav-rail",
+          "elements/locale-switch"
+        ]
+      },
+      "headings": [],
+      "excerpt": "src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx renders the app-wide settings panel: display mode, language, ontology workspace access, and AI agent connection verification, grouped as five tabs (General / MCP+Agents / Vault / Appearance / Verification) behind one gear trigger. Before feat/rail-rollout (2026-07) t",
+      "wordCount": 551,
+      "updatedAt": "2026-07-18T16:40:22.975Z",
       "linksOut": []
     },
     {
@@ -7838,23 +7888,6 @@
       "linksOut": []
     },
     {
-      "slug": "ontology/elements/ontology-sub-nav",
-      "path": "docs/ontology/elements/ontology-sub-nav.md",
-      "title": "Ontology Sub Nav",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/ontology-sub-nav",
-        "kind": "element",
-        "title": "Ontology Sub Nav",
-        "domain": "views"
-      },
-      "headings": [],
-      "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Concept map, Edit relations, and Verify graph. The sub-nav no longer repeats source-concept or relation counts. Those graph-size facts already appear in the page header and footer, so repeating them in the always-visibl",
-      "wordCount": 125,
-      "updatedAt": "2026-06-07T07:58:47.369Z",
-      "linksOut": []
-    },
-    {
       "slug": "ontology/elements/ontology-tree-view",
       "path": "docs/ontology/elements/ontology-tree-view.md",
       "title": "Ontology Tree View",
@@ -7875,29 +7908,6 @@
       "excerpt": "src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx renders the browse tree used by /ontology to inspect the local frontmatter graph as a readable project - domain - capability - element hierarchy. The tree keeps the ontology model actionable for both humans and AI coding agents: rows use concise titles and a short ",
       "wordCount": 409,
       "updatedAt": "2026-07-18T12:04:01.038Z",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/elements/operations-nav",
-      "path": "docs/ontology/elements/operations-nav.md",
-      "title": "Operations Nav",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/operations-nav",
-        "kind": "element",
-        "title": "Operations Nav",
-        "domain": "onboarding-ux",
-        "relates": [
-          "capabilities/agent-config-onboarding",
-          "capabilities/project-ontology-indexing",
-          "elements/locale-switch",
-          "elements/ontology-sub-nav"
-        ]
-      },
-      "headings": [],
-      "excerpt": "src/widgets/operations-nav/ui/OperationsNav.tsx renders the shared top navigation for Ontology Atlas work surfaces: Source Vault, Ontology, and Topology. The nav keeps workspace return, primary work-surface switching, source-mode status, language switching, app settings, and the ontology sub-nav in one compact chrome l",
-      "wordCount": 993,
-      "updatedAt": "2026-06-06T21:05:03.430Z",
       "linksOut": []
     },
     {
@@ -8434,7 +8444,7 @@
         "domain": "onboarding-ux",
         "path": "src/widgets/bottom-tab-bar",
         "relates": [
-          "elements/ontology-sub-nav",
+          "elements/app-nav-rail",
           "elements/root-locale-redirect"
         ]
       },
@@ -8445,9 +8455,9 @@
           "slug": "mobile-bottom-tab-bar"
         }
       ],
-      "excerpt": "src/widgets/bottom-tab-bar renders the mobile primary navigation for Ontology Atlas. It keeps Ontology, Topology, Projects, and Source Vault reachable as persistent thumb targets while desktop uses the shared OperationsNav chrome. The active tab now uses an icon capsule, indigo border, and color feedback so the current",
-      "wordCount": 84,
-      "updatedAt": "2026-06-05T17:11:08.307Z",
+      "excerpt": "src/widgets/bottom-tab-bar renders the mobile primary navigation for Ontology Atlas — visible only below the lg breakpoint (desktop uses elements/app-nav-rail instead). feat/rail-rollout (2026-07) re-aligned this bar from its previous 4 tabs (Ontology / Topology / Projects / Source Vault) to the SAME 5 destinations as ",
+      "wordCount": 131,
+      "updatedAt": "2026-07-18T16:39:33.930Z",
       "linksOut": []
     },
     {
@@ -10967,6 +10977,20 @@
                 "title": "Agent Activity CLI Contract"
               },
               {
+                "name": "app-nav-rail",
+                "path": "ontology/elements/app-nav-rail",
+                "type": "doc",
+                "slug": "ontology/elements/app-nav-rail",
+                "title": "App Nav Rail"
+              },
+              {
+                "name": "app-settings-menu",
+                "path": "ontology/elements/app-settings-menu",
+                "type": "doc",
+                "slug": "ontology/elements/app-settings-menu",
+                "title": "App Settings Menu"
+              },
+              {
                 "name": "builder-command-strip",
                 "path": "ontology/elements/builder-command-strip",
                 "type": "doc",
@@ -11156,25 +11180,11 @@
                 "title": "Ontology Review Brief"
               },
               {
-                "name": "ontology-sub-nav",
-                "path": "ontology/elements/ontology-sub-nav",
-                "type": "doc",
-                "slug": "ontology/elements/ontology-sub-nav",
-                "title": "Ontology Sub Nav"
-              },
-              {
                 "name": "ontology-tree-view",
                 "path": "ontology/elements/ontology-tree-view",
                 "type": "doc",
                 "slug": "ontology/elements/ontology-tree-view",
                 "title": "Ontology Tree View"
-              },
-              {
-                "name": "operations-nav",
-                "path": "ontology/elements/operations-nav",
-                "type": "doc",
-                "slug": "ontology/elements/operations-nav",
-                "title": "Operations Nav"
               },
               {
                 "name": "product-owner-operating-system-doc",

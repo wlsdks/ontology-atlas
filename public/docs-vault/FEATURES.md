@@ -55,7 +55,7 @@ input (humans + AI agents)     parse           store              output
 
 **Effect**: when a user opens a vault folder in the installed app, `/`, `/topology`, `/projects`, `/project/[slug]`, `/ontology`, `/ontology/insights`, and `/ontology/edit` all switch to vault data instantly. Mutations (create / edit / delete / connect) are mode-aware: local → write to vault `.md`; static → rejected with toast (read-only) and routed toward the macOS app download on hosted web.
 
-**Single source of truth (R8)**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. All 8 consumers (`useLocalVault()` callsites: RootEntryPage / OperationsNav / OntologyEditPage / DocsVaultPage / useDataSourceMode / useProjects / useProjectMutations / useVaultOntology) share one state instance, one IDB rehydrate, one filesystem walk.
+**Single source of truth (R8)**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `OntologyEditPage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and more since feat/rail-rollout mounted the rail everywhere) share one state instance, one IDB rehydrate, one filesystem walk.
 
 **Desktop first-run (2026-07-18)**: in the installed app (Tauri — detected via
 `isDesktopShell()`, `src/shared/lib/desktop-shell.ts`), `/` with no vault
@@ -574,16 +574,43 @@ without extra node lookups.
 
 ## 4. Cross-cutting UI
 
-### `OperationsNav` (top, always visible)
-- Sticky header: 3 nav items — labels are Workspace (`/docs`) / Ontology (`/ontology`) / Relief (`/topology`; the nav's visible label for the topology tab is "Relief", not "Topology")
-- Right: `LiveActivityIndicator` (agent activity heartbeat status) · `ModeBadge` (vault folder name + doc count chip OR demo chip with picker link) · `LocaleSwitch` · `AppSettingsMenu` (gear-triggered modal, 5 tabs: General / MCP+Agents / Vault / Appearance / Verification — `ThemeToggle` now lives inside the Appearance tab rather than sitting directly in the nav bar; Verification surfaces the same MCP connection-state ladder and proof-decision order used elsewhere; MCP+Agents exposes a copyable first-contact MCP proof prompt)
-- Active detection by pathname prefix
-- Sub-nav row appears on `/ontology/*` (R3 always visible)
+**feat/rail-rollout** collapsed the old 3-tier nav (`OperationsNav` top tabs +
+`OntologySubNav` inline sub-tabs + `BottomTabBar`) into one system: a
+persistent left rail on desktop, `BottomTabBar` on mobile, both agreeing on
+the exact same 5 destinations and active-item rule. `OperationsNav` and
+`OntologySubNav` are retired (deleted, not just unmounted).
 
-### `BottomTabBar` (mobile only, `md:` hidden)
-- 4 tabs: Ontology (`/`, `/ontology`) · Topology (`/topology`) · Projects (`/projects` or `/project`) · Workspace (`/docs`)
+### `AppNavRail` (desktop, `lg:` and up — left side, on every page)
+- 5 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Builder
+  (`/ontology/edit`) · Insights (`/ontology/insights`) · Projects (`/projects`
+  or `/project/*`)
+- Bottom of rail: agent-activity status dot + an optional `settingsSlot`
+  (only `HomePage` passes one — `TopologyV2SettingsGear`)
+- Active-item detection: shared `resolveActiveNavDestination`
+  (`src/shared/lib/nav-destination.ts`) — the SAME function `BottomTabBar`
+  uses, so desktop and mobile can never disagree on which destination is lit
+
+### `AppSettingsMenu` (per-page header — Projects list, Builder, Insights)
+- The old `OperationsNav` gear-triggered settings modal, extracted into its
+  own widget (`src/widgets/app-settings-menu`) because the rail is too narrow
+  (`--app-nav-rail-width`) to host its popover. Same 5 tabs as before:
+  General / MCP+Agents / Vault / Appearance / Verification — `ThemeToggle`
+  and `LocaleSwitch` live inside the Appearance tab; Verification surfaces the
+  MCP connection-state ladder and proof-decision order; MCP+Agents exposes a
+  copyable first-contact MCP proof prompt
+- `LiveActivityIndicator` (agent activity heartbeat status, unchanged) mounts
+  next to it on the same three pages — this pairing is the "zero feature
+  loss" replacement for what `OperationsNav`'s right-hand cluster used to show
+- Pages the rail reaches directly with no prior top nav (Docs, Project
+  detail/editor, Download) never had this cluster and still don't — only the
+  three pages that used to mount `OperationsNav` keep it
+
+### `BottomTabBar` (mobile only, `lg:` hidden)
+- Same 5 destinations/labels/icons as `AppNavRail`: Map · Docs · Builder ·
+  Insights · Projects
 - Min height 56 px (safe-area)
-- Hidden on public marketing/download surfaces: `/` while no local vault is loaded, and `/download/`
+- Hidden on public marketing/download surfaces: `/` while no local vault is
+  loaded, and `/download/`
 
 ### Search palettes (separate by design — R5 skip merge)
 - **`⌘K` `SearchPalette`** — projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)

@@ -9,6 +9,7 @@ import { ArrowLeft, BookOpen } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTranslations } from "next-intl";
+import { AppNavRail } from "@/widgets/app-nav-rail";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { formatDate } from "@/shared/lib/format-date";
@@ -60,16 +61,19 @@ interface Props {
 
 function ProjectDetailShell({ children }: { children: ReactNode }) {
   return (
-    <main id="main" className="topology-ui-scale min-h-screen bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] py-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] md:px-10 md:py-14 xl:px-12">
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={MOTION.slow}
-        className="mx-auto w-full max-w-[var(--page-max)]"
-      >
-        {children}
-      </motion.div>
-    </main>
+    <div className="flex min-h-screen w-full">
+      <AppNavRail />
+      <main id="main" className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] py-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] md:px-10 md:py-14 xl:px-12">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={MOTION.slow}
+          className="mx-auto w-full max-w-[var(--page-max)]"
+        >
+          {children}
+        </motion.div>
+      </main>
+    </div>
   );
 }
 

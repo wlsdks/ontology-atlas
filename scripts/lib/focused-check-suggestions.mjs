@@ -70,7 +70,7 @@ const RULES = [
     matches: [
       /^src\/views\/docs-vault\/lib\/persistence(?:\.test)?\.ts$/,
       /^src\/views\/root-entry\/ui\/RootEntryPage(?:\.test)?\.tsx$/,
-      /^src\/widgets\/operations-nav\/ui\/OperationsNav(?:\.test)?\.tsx$/,
+      /^src\/widgets\/app-settings-menu\/ui\/AppSettingsMenu(?:\.test)?\.tsx$/,
     ],
   },
   {
@@ -105,7 +105,7 @@ const RULES = [
       /^src\/shared\/lib\/tauri-vault-fs(?:\.test)?\.ts$/,
       /^src\/views\/root-entry\/ui\/RootEntryPage(?:\.test)?\.tsx$/,
       /^src\/views\/docs-vault\/ui\/DocsVaultPage\.tsx$/,
-      /^src\/widgets\/operations-nav\/ui\/OperationsNav(?:\.test)?\.tsx$/,
+      /^src\/widgets\/app-settings-menu\/ui\/AppSettingsMenu(?:\.test)?\.tsx$/,
       /^\.github\/workflows\/deploy-hosting\.yml$/,
       /^src-tauri\//,
       /^package\.json$/,

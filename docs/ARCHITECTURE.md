@@ -171,6 +171,21 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 > `/knowledge/*`. Removed in Round 10: `/login`, `/signup`, `/account`,
 > `/reset-password`, `/settings/*`.
 
+**One nav system, not three (feat/rail-rollout).** Every route above (plus
+`/download`) mounts `src/widgets/app-nav-rail` as a persistent left sidebar on
+desktop (`lg:` and up) and `src/widgets/bottom-tab-bar` on mobile — both read
+the same 5 destinations and the same active-item ladder
+(`src/shared/lib/nav-destination.ts`), so there is exactly one answer to
+"where am I / where can I go" regardless of viewport. The former top tab bar
+(`OperationsNav`) and its inline ontology sub-tabs (`OntologySubNav`) are
+deleted, not just unmounted. Where that old top bar's settings gear and agent
+heartbeat indicator were the only way to reach settings/theme/locale/MCP
+status, `src/widgets/app-settings-menu` (`AppSettingsMenu`) plus
+`LiveActivityIndicator` now mount directly in the header of the handful of
+pages that need them (Projects list, Builder, Insights) — the narrow rail
+can't host their wide popovers, so this is a "same feature, different
+mount point" move, not a removal.
+
 ## Build pipeline
 
 ```bash

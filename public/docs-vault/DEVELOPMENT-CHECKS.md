@@ -381,7 +381,7 @@ marketing page, and `DocsVaultPage` shows a vault setup welcome that opens the
 native picker only after an explicit user action. Hosted browser sessions must not treat `/docs/?intent=local` as a vault
 opening path; they keep local vault work disabled and leave installation as the
 path to writable local work. Runtime split changes in `RootEntryPage`,
-`DocsVaultPage` persistence, or `OperationsNav` route to
+`DocsVaultPage` persistence, or `AppSettingsMenu` route to
 `pnpm test:desktop:runtime` before the broader readiness gate. A loaded empty local vault must surface the
 ontology starter in the main workspace pane and select the generated `README.md`
 after creation, so the desktop first-run path does not dead-end behind a generic

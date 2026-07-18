@@ -59,6 +59,23 @@ vi.mock("@/features/vault-ontology", () => ({
       ],
     },
   }),
+  LiveActivityIndicator: () => <div data-testid="live-activity-indicator-stub" />,
+}));
+
+vi.mock("@/features/docs-vault-local", () => ({
+  useLocalVault: () => ({ agentActivityStatus: undefined }),
+}));
+
+vi.mock("@/features/data-source-mode", () => ({
+  useDataSourceMode: () => "static",
+}));
+
+vi.mock("@/widgets/app-nav-rail", () => ({
+  AppNavRail: () => <nav aria-label="App navigation" data-testid="app-nav-rail-stub" />,
+}));
+
+vi.mock("@/widgets/app-settings-menu", () => ({
+  AppSettingsMenu: () => <button type="button" data-testid="app-settings-trigger-stub" />,
 }));
 
 vi.mock("../lib/use-vault-docs", () => ({
@@ -77,10 +94,6 @@ vi.mock("../lib/use-vault-docs", () => ({
       linksOut: [],
     },
   ],
-}));
-
-vi.mock("@/widgets/operations-nav", () => ({
-  OperationsNav: () => <nav aria-label="Operations menu" />,
 }));
 
 function node(id: string, kind: string, projectIds: string[], title?: string) {
@@ -108,6 +121,13 @@ function renderPage() {
 }
 
 describe("ProjectSelectorPage", () => {
+  it("mounts the persistent nav rail and settings/agent-status cluster instead of OperationsNav", () => {
+    renderPage();
+    expect(screen.getByTestId("app-nav-rail-stub")).toBeInTheDocument();
+    expect(screen.getByTestId("app-settings-trigger-stub")).toBeInTheDocument();
+    expect(screen.getByTestId("live-activity-indicator-stub")).toBeInTheDocument();
+  });
+
   it("renders the workspace census (concepts/relations) from the unified formula", () => {
     renderPage();
     // domain+capability+element = 3 concepts, 2 edges.

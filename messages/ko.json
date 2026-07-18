@@ -23,17 +23,6 @@
   },
   "nav": {
     "skipToContent": "메인 콘텐츠로 건너뛰기",
-    "ontology": "온톨로지",
-    "topology": "지형도",
-    "docs": "저장소",
-    "projects": "프로젝트",
-    "back": "홈",
-    "ariaLabel": "운영 메뉴",
-    "ariaLabelMobile": "운영 메뉴 (모바일)",
-    "backToWorkspace": "홈으로",
-    "tooltipDocs": "저장소 — 로컬 마크다운을 가이드와 온톨로지 개념으로 나눠 봅니다",
-    "tooltipOntology": "온톨로지 — 개념·관계·변경점을 한 곳에서 확인합니다",
-    "tooltipTopology": "지형도 — 개념 사이 연결을 공간에서 확인하고 선택 노드로 돌아갑니다",
     "settingsMenu": {
       "triggerAria": "앱 설정 열기",
       "triggerTitle": "화면, 언어, 온톨로지 작업공간, MCP 연결 설정을 엽니다",
@@ -142,16 +131,6 @@
     "insights": "인사이트",
     "projects": "프로젝트"
   },
-  "ontologySubNav": {
-    "ariaLabel": "온톨로지 서브메뉴",
-    "caption": "온톨로지",
-    "tree": "개념 지도",
-    "builder": "관계 편집",
-    "insights": "그래프 검증",
-    "treeTooltip": "개념 지도 — 도메인, 역량, 요소를 고르고 의미와 근거를 봅니다",
-    "builderTooltip": "관계 편집 — 캔버스에서 개념과 관계를 고친 뒤 로컬 문서에 저장합니다",
-    "insightsTooltip": "그래프 검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다"
-  },
   "liveActivity": {
     "live": "실시간",
     "triggerTitle": "실시간: 변경된 온톨로지 개념과 AI 작업 상태 보기",
@@ -206,18 +185,6 @@
     "stateVerifying": "검증",
     "stateBlocked": "막힘",
     "stateComplete": "완료"
-  },
-  "modeBadge": {
-    "vaultLabel": "문서함",
-    "vaultDocs": "개념 문서 {count}개",
-    "vaultTooltip": "로컬 온톨로지 문서함 — {name} (개념 문서 {count}개). 모든 변경이 이 Mac의 폴더에 저장됩니다.",
-    "demoLabel": "데모",
-    "demoAriaLabel": "데모 모드",
-    "demoAriaLabelDownload": "데모 모드 — 로컬 온톨로지 문서함 작업을 시작하려면 macOS 앱 설치",
-    "demoAriaLabelPicker": "데모 모드 — 로컬 온톨로지 문서함 폴더 열기",
-    "demoTooltip": "데모 모드 — 저장소 미선택. 샘플 데이터만 보여주며 변경은 저장되지 않습니다.",
-    "demoTooltipDownload": "데모 모드 — 저장 가능한 로컬 온톨로지 문서함 작업은 macOS 앱 설치 후 시작",
-    "demoTooltipPicker": "데모 모드 — 로컬 온톨로지 문서함 폴더를 열면 변경 사항을 저장할 수 있습니다"
   },
   "locale": {
     "switcher": "언어",

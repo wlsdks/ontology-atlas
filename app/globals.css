@@ -754,16 +754,20 @@
        datasheet, and the collapsed INDEX tab all start below it, matching
        `--topology-index-top` below. Keep the two in sync.
 
-       72px, not the spec's literal 64px: `topology-top-left-chrome-group`
-       (the brand pill) is measured at bottom=64px at 1x — the mockup's
-       slimmed single-line pill (no census subtitle) would clear 56+8, but
-       today's pill is still the two-line `HeroCollapsed` (title + census
-       subtitle) this pass didn't slim. 76px keeps ≥6px clearance even at the ≥1920 zoom breakpoints (pill grows 32→36px there — Guardian B3 followup 1) instead of
-       an exact flush touch. Both this token and the consumer element MUST
+       84px, not the earlier 76px: live-QA measurement (getBoundingClientRect,
+       starter-polish pass 2026-07-19) found the previous 76px assumed the
+       brand pill (`topology-top-left-chrome-group`, two-line `HeroCollapsed`
+       — title + census subtitle) bottoms out at 64px at 1x, but it actually
+       renders at ~75.5px — leaving only ~0.5px clearance, i.e. already
+       visually flush at 1x and *not* a zoom-only regression. 84px restores
+       a real ~8.5px gap at 1x. Both this token and the consumer element MUST
        carry the `topology-ui-scale` class so the gap holds at the ≥1920px/
-       ≥2400px `zoom` breakpoints too (zoom scales the pill's rendered
-       bottom edge — a flat px value alone would drift into it again). */
-    --topology-node-popover-top: 76px;
+       ≥2400px `zoom` breakpoints too (measured gap scales with the same
+       factor as the pill — 0.5px→1.3px across 1x→1.3x — so a flat px value
+       here is correct; do NOT also multiply by
+       `--topology-ui-scale-factor`, that would double-apply the scale
+       since this element already carries `topology-ui-scale` itself). */
+    --topology-node-popover-top: 84px;
     --topology-node-popover-right-inset: clamp(24px, 2.1vw, 44px);
     --topology-motion-focus-duration: 180ms;
     --topology-motion-panel-duration: 180ms;
@@ -1067,19 +1071,22 @@
        레인 아래에서 시작 — 구조적으로 겹칠 수 없게. 두 토큰은 항상 같이
        바뀌어야 한다.
 
-       72px (스펙의 64px 아님) — 실측 brand pill(`topology-top-left-chrome-
-       group`) bottom 이 1x 에서 이미 64px 다 (오늘의 pill 은 mockup 이
-       가정한 슬림 1줄 pill 이 아니라 title+census subtitle 2줄
-       `HeroCollapsed` 라 그대로 두면 8px gap 이 아니라 딱 맞닿기만 한다).
-       zoom breakpoint(1920/2400px, .topology-ui-scale) 에서도 gap 이
-       유지되려면 이 값을 쓰는 컴포넌트도 반드시 `topology-ui-scale`
-       클래스를 같이 달아야 한다 — 그래야 pill 과 같은 비율로 커진다. */
+       84px (starter-polish 실측 수정, 2026-07-19) — 실측 brand pill
+       (`topology-top-left-chrome-group`) bottom 이 1x 에서 75.5px 로,
+       이전 76px 값은 gap 0.5px 만 남겨 이미 맞닿아 있었다(오늘의 pill 은
+       mockup 이 가정한 슬림 1줄 pill 이 아니라 title+census subtitle 2줄
+       `HeroCollapsed` 라 이전 "64px" 가정 자체가 stale 했다). 84px 가
+       1x 에서 실제 ~8.5px gap 을 만든다. getBoundingClientRect 실측상 이
+       gap 은 zoom breakpoint(1920px 1.15x → 0.9px, 2560px 1.3x → 1.3px)
+       에서도 같은 비율로 커진다 — `--topology-ui-scale-factor` 로 이중
+       계산하지 말 것, 이 값을 쓰는 요소가 이미 `topology-ui-scale` 을
+       달고 있어 zoom 이 자기 자신의 top 오프셋에도 적용된다. */
     --topology-index-width: 300px;
     --topology-index-tab-width: 26px;
     /* 18→24px (feat/chrome-system §4) — 크롬 시스템의 24px 정렬 레일에
        수렴. --chrome-inset 참조로 단일 출처 유지. */
     --topology-index-inset: var(--chrome-inset);
-    --topology-index-top: 76px;
+    --topology-index-top: 84px;
   }
 
   html[data-topology-index="collapsed"] {
