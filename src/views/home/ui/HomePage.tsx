@@ -1544,10 +1544,23 @@ export function HomePage() {
               // growth 는 별도 prop(censusGrowthText)으로 넘겨 HeroCollapsed 가
               // 인디고로 강조 표시(feat/chrome-system §5 census 각인)할 수
               // 있게 한다 — 여기서 한 문자열로 합치면 세그먼트별 스타일이 안 됨.
-              const workspaceSubtitle = t('workspace.subtitle', {
+              // 개념/관계 숫자 두 세그먼트는 t.rich 의 <b> 태그(messages/*.json
+              // — feat/chrome-finish 세그먼트 각인)로 감싸 engraved-numeral
+              // 토큰(다른 census 표면 — ProjectDetailPage/DocsVaultPage — 와
+              // 동일 문법)으로 볼드 처리한다. subtitle prop 이 문자열이 아니라
+              // ReactNode 를 받아야 해서 HeroCollapsed 타입도 함께 넓혔다.
+              const workspaceSubtitle = t.rich('workspace.subtitle', {
                 concepts: topologyTotalNodes,
                 relations: topologyTotalRelations,
                 growth: '',
+                b: (chunks) => (
+                  <b
+                    data-token="engraved-numeral"
+                    className="font-semibold not-italic text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+                  >
+                    {chunks}
+                  </b>
+                ),
               });
               const workspaceEyebrow = t('workspace.eyebrow', {
                 concepts: topologyTotalNodes,
