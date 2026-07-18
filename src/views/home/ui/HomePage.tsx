@@ -1769,9 +1769,13 @@ export function HomePage() {
                           data-utility-action-border-token="--topology-utility-lane-accent-border"
                           data-utility-action-shadow-token="--topology-utility-lane-shadow"
                           data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
-                          className={`inline-flex h-[var(--topology-utility-lane-height)] items-center justify-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none ${
+                          // 높이/radius/compact 폭은 ChromeChip 기준(44px·10px)으로
+                          // 수렴 — 같은 열의 "작업공간" 칩과 나란히 있어
+                          // --topology-utility-lane-height(32~36px clamp) 를
+                          // 쓰면 과도기 높이 불일치가 났다(feat/chrome-finish).
+                          className={`inline-flex h-[var(--chrome-tile-size)] items-center justify-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none ${
                             topologyUtilityChromeCompact
-                              ? "w-[var(--topology-utility-lane-compact-width)] px-0"
+                              ? "w-[var(--chrome-tile-size)] px-0"
                               : "px-3.5"
                           }`}
                         >
