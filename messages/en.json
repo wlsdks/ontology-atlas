@@ -2380,7 +2380,26 @@
       "vaultToolsAriaLabel": "Open workspace tools menu",
       "contractToggleLabel": "Workspace checks",
       "contractToggleHide": "Close workspace checks",
-      "contractToggleShow": "Show workspace checks"
+      "contractToggleShow": "Show workspace checks",
+      "breadcrumbAriaLabel": "Breadcrumb",
+      "crumbBack": "Workspace",
+      "vaultPillFolders": "{count} folders",
+      "vaultPillSwap": "Switch vault",
+      "vaultPillSwapAriaLabel": "Switch vault source",
+      "censusSummary": "{concepts} concepts · {relations} relations"
+    },
+    "editorHeader": {
+      "previewTab": "Preview",
+      "editTab": "Edit",
+      "localSynced": "Synced · local",
+      "readOnlySample": "Read-only sample"
+    },
+    "frontmatterBlock": {
+      "note": "Frontmatter is the graph — this block becomes the topology's nodes and edges.",
+      "ariaLabel": "Frontmatter graph fields"
+    },
+    "backlinksStrip": {
+      "openInOntology": "Open in ontology →"
     },
     "vaultStatus": {
       "localTooltip": "Pick a folder on your disk as the workspace",

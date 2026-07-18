@@ -3,7 +3,11 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, ChevronRight, FileText, Folder } from 'lucide-react';
-import type { VaultTreeNode } from '@/entities/docs-vault';
+import type { VaultDoc, VaultTreeNode } from '@/entities/docs-vault';
+import {
+  TopologyV2KindGlyph,
+  isTopologyV2RenderableKind,
+} from '@/shared/ui/topology-v2-kind-glyph';
 
 interface Props {
   tree: VaultTreeNode;
@@ -16,6 +20,39 @@ interface Props {
   activeTagSlugs?: Set<string>;
   /** 현재 문서 범위에 포함되는 slug 집합. 없으면 전체 tree 를 렌더한다. */
   visibleDocSlugs?: Set<string>;
+  /**
+   * slug → VaultDoc 조회. frontmatter.kind 로 machined kind glyph (project
+   * hex · domain chip · capability circle · element via-pad) 를 고른다.
+   * 없으면 일반 FileText 아이콘으로 fallback (기존 동작 그대로).
+   */
+  docsBySlug?: Map<string, VaultDoc>;
+}
+
+/** 디렉터리 노드 아래 실제 문서(leaf) 개수 — 음각 count 로 노출. */
+function countDocs(node: VaultTreeNode): number {
+  if (node.type === 'doc') return node.slug ? 1 : 0;
+  return (node.children ?? []).reduce((sum, child) => sum + countDocs(child), 0);
+}
+
+function DocKindGlyph({
+  slug,
+  docsBySlug,
+}: {
+  slug: string;
+  docsBySlug?: Map<string, VaultDoc>;
+}) {
+  const kind = docsBySlug?.get(slug)?.frontmatter?.kind;
+  const kindStr = typeof kind === 'string' ? kind : '';
+  if (kindStr && isTopologyV2RenderableKind(kindStr)) {
+    return <TopologyV2KindGlyph kind={kindStr} size={12} className="shrink-0" />;
+  }
+  return (
+    <FileText
+      size={12}
+      className="text-[color:var(--color-text-quaternary)]"
+      aria-hidden
+    />
+  );
 }
 
 function matchesVisibleDoc(node: VaultTreeNode, visibleDocSlugs?: Set<string>): boolean {
@@ -69,6 +106,7 @@ function TreeNode({
   query,
   activeTagSlugs,
   visibleDocSlugs,
+  docsBySlug,
 }: {
   node: VaultTreeNode;
   depth: number;
@@ -77,6 +115,7 @@ function TreeNode({
   query: string;
   activeTagSlugs?: Set<string>;
   visibleDocSlugs?: Set<string>;
+  docsBySlug?: Map<string, VaultDoc>;
 }) {
   // 태그/검색 필터 활성 시에는 매치 경로를 자동으로 펼침 — 걸러진 문서가
   // 접힌 폴더 안에 숨어 있으면 source list 의 역할을 못 한다.
@@ -108,21 +147,14 @@ function TreeNode({
             className="pointer-events-none absolute inset-y-1 left-0 w-[2px] rounded-full bg-[color:var(--color-indigo-accent)]"
           />
         ) : null}
-        <FileText
-          size={12}
-          className={
-            active
-              ? 'text-[color:rgba(139,151,255,0.9)]'
-              : 'text-[color:var(--color-text-quaternary)]'
-          }
-          aria-hidden
-        />
+        <DocKindGlyph slug={node.slug} docsBySlug={docsBySlug} />
         <span className="min-w-0 flex-1 truncate">{node.title ?? node.name}</span>
       </button>
     );
   }
 
   // directory
+  const docCount = countDocs(node);
   return (
     <div>
       <button
@@ -138,7 +170,15 @@ function TreeNode({
           <ChevronRight size={12} aria-hidden />
         )}
         <Folder size={12} aria-hidden />
-        <span className="truncate">{node.name}</span>
+        <span className="min-w-0 flex-1 truncate">{node.name}</span>
+        {docCount > 0 ? (
+          <span
+            data-token="engraved-numeral"
+            className="flex-none font-mono text-[10.5px] tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+          >
+            {docCount}
+          </span>
+        ) : null}
       </button>
       {(open || activeTagSlugs || query) && node.children ? (
         <div>
@@ -156,6 +196,7 @@ function TreeNode({
                 query={query}
                 activeTagSlugs={activeTagSlugs}
                 visibleDocSlugs={visibleDocSlugs}
+                docsBySlug={docsBySlug}
               />
             ))}
         </div>
@@ -175,6 +216,7 @@ export function DocsVaultTree({
   activeTag,
   activeTagSlugs,
   visibleDocSlugs,
+  docsBySlug,
 }: Props) {
   const t = useTranslations('vaultWidgets.tree');
   const children = useMemo(() => tree.children ?? [], [tree]);
@@ -199,6 +241,7 @@ export function DocsVaultTree({
             query={normalizedQuery}
             activeTagSlugs={tagSlugs}
             visibleDocSlugs={visibleDocSlugs}
+            docsBySlug={docsBySlug}
           />
         ))}
     </nav>
