@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { cn } from "@/shared/lib/cn";
+import { BrandMarkFallback } from "@/shared/ui";
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
 
 export interface AppNavRailProps {
@@ -28,29 +29,6 @@ interface RailDestination {
   href: string;
   label: string;
   Icon: ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
-}
-
-const BRAND_STROKE = "rgba(139,151,255,.75)";
-
-/**
- * 후보 A "헥사 별자리" compact 형(20px, `docs/prototypes/app-icon-concepts.html`
- * 소유자 최종 승인) — 임시 인라인 구현. `@/shared/ui/brand-mark` 가 배선되면
- * 레일 로고(20px)와 브랜드 필 pip(15px) 둘 다 그걸로 교체해야 한다(리드
- * follow-up). 구 단순 헥사곤(외곽선만)은 후보에서 탈락 — 반드시 중심
- * 앰버 도트를 포함한 이 형태만 쓴다.
- */
-function BrandMarkFallback({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
-      <path
-        d="M24 7 L38.7 15.5 L38.7 32.5 L24 41 L9.3 32.5 L9.3 15.5 Z"
-        fill="none"
-        stroke={BRAND_STROKE}
-        strokeWidth={2.6}
-      />
-      <circle cx={24} cy={24} r={5.5} fill="var(--topology-v2-amber-hub)" />
-    </svg>
-  );
 }
 
 /**

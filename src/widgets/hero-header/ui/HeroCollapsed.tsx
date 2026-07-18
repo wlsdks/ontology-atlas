@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { ArrowLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { MOTION } from "@/shared/motion";
+import { BrandMarkFallback } from "@/shared/ui";
 
 interface Props {
   className?: string;
@@ -109,29 +110,22 @@ export function HeroCollapsed({
           {icon}
         </span>
       ) : (
-        // pip — 브랜드 마크(시안의 hexagon path, Lucide 아님). 인디고 틴트
-        // 정사각(8px radius) 안에 헥사곤 윤곽만 — 로고 이미지 대신 크롬
-        // 문법 자체가 브랜드를 표현한다.
+        // pip — 브랜드 마크. 후보 A "헥사 별자리" compact 형(헥사곤 스트로크 +
+        // 중심 앰버 도트, `docs/prototypes/app-icon-concepts.html` 소유자
+        // 최종 승인) — 좌측 내비 레일 로고(`AppNavRail`의 `BrandMarkFallback`)
+        // 와 같은 recipe 를 15px 로 축소해 쓴다. `@/shared/ui/brand-mark` 가
+        // 배선되면 둘 다 그걸로 교체(리드 follow-up) — 구 단순 헥사곤
+        // 윤곽만(중심 도트 없음)은 후보 탈락이라 쓰지 않는다.
         <span
           aria-hidden="true"
           className={cn(
-            "inline-flex shrink-0 items-center justify-center rounded-[8px] border border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-indigo-accent)]",
+            "inline-flex shrink-0 items-center justify-center rounded-[8px] border border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.14)]",
             compact
               ? "size-[var(--topology-chrome-badge-size-compact)]"
               : "size-[var(--topology-chrome-badge-size)]",
           )}
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.75}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="size-[15px]"
-          >
-            <path d="M12 2l8.66 5v10L12 22l-8.66-5V7z" />
-          </svg>
+          <BrandMarkFallback size={15} />
         </span>
       )}
       <span className="flex min-w-0 flex-col items-start">
