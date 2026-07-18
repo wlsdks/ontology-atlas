@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>토폴로지 크롬 재구성 — 크롬 로우 분리 + 우측 기어 (B3 폴리시 스펙)</title>
+<!-- 시안 표준: 1920×1080 primary · 1440 fluid min -->
 <!--
   CHROME RECOMPOSITION (visual-richness round, item E + D):
   the B3 immersive hub, corrected for the owner-reported chrome collision.
@@ -15,9 +16,9 @@
     내부 pcensus 중복 행은 삭제, 동기화 도트만 INDEX 헤더에 남는다.
 
     frame 1 "기본 상태"   — 크롬 로우 + INDEX(펼침) + 데이터시트 + 우측 레일
-                            (fit-view + 기어). 1512×945.
+                            (fit-view + 기어). 1920×945 primary.
     frame 2 "접힘 + 설정" — INDEX 는 크롬 로우 아래 세로 탭, 기어 팝오버 열림
-                            (언어 EN/KO · 테마 · INDEX 기본 상태). 1512×945.
+                            (언어 EN/KO · 테마 · INDEX 기본 상태). 1920×945 primary.
 
   근거 문서: docs/prototypes/visual-richness-review.md §D §E.
 -->
@@ -52,7 +53,7 @@
     background: var(--canvas-bg);
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Pretendard", sans-serif;
-    min-width: 1512px;
+    min-width: 1440px;
   }
   .num {
     font-family: var(--mono); font-weight: 600;
@@ -60,13 +61,14 @@
     font-variant-numeric: tabular-nums;
   }
   .framecap {
-    width: 1512px; padding: 14px 20px 9px;
+    width: 100%; max-width: 1920px; margin: 0 auto; padding: 14px 20px 9px;
     font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--text-quaternary);
   }
   .framecap b { color: var(--text-tertiary); font-weight: 600; }
   .frame {
-    position: relative; width: 1512px; height: 945px; overflow: hidden;
+    position: relative; width: 100%; max-width: 1920px; margin: 0 auto;
+    height: 945px; overflow: hidden;
     border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
   }
   .frame canvas.stage { position: absolute; inset: 0; }
@@ -349,7 +351,7 @@
 </head>
 <body>
 
-<div class="framecap"><b>기본 상태</b> — 크롬 로우(브랜드 필 · 각인 CENSUS · 유틸리티 레일 + 기어) 아래 INDEX·데이터시트 · 1512×945</div>
+<div class="framecap"><b>기본 상태</b> — 크롬 로우(브랜드 필 · 각인 CENSUS · 유틸리티 레일 + 기어) 아래 INDEX·데이터시트 · 1920×945</div>
 <section class="frame" data-state="expanded">
   <canvas class="stage" id="stage-main"></canvas>
 
@@ -421,7 +423,7 @@
   </aside>
 </section>
 
-<div class="framecap"><b>접힘 + 설정</b> — INDEX 세로 탭도 크롬 로우 아래 · 기어 팝오버(언어 EN/KO · 테마 · INDEX 기본 상태) 열림 · 1512×945</div>
+<div class="framecap"><b>접힘 + 설정</b> — INDEX 세로 탭도 크롬 로우 아래 · 기어 팝오버(언어 EN/KO · 테마 · INDEX 기본 상태) 열림 · 1920×945</div>
 <section class="frame" data-state="collapsed">
   <canvas class="stage" id="stage-collapsed"></canvas>
 
@@ -477,7 +479,9 @@
 <script>
 (function () {
   "use strict";
-  var FRAME_W = 1512, FRAME_H = 945;
+  var frameEl = document.querySelector(".frame");
+  var FRAME_W = Math.round(frameEl ? frameEl.getBoundingClientRect().width : 1920) || 1920;
+  var FRAME_H = 945;
   var GLYPH_COLORS = {
     project:    { fill: "#1c1c22", stroke: "#57575f" },
     domain:     { fill: "#191920", stroke: "#48484f" },
