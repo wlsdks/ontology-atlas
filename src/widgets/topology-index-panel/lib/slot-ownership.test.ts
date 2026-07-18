@@ -2,23 +2,13 @@ import { describe, expect, it } from "vitest";
 import { resolveLeftSlotOwner, resolveRenderedIndexPanelState } from "./slot-ownership";
 
 describe("resolveLeftSlotOwner", () => {
-  it("gives INDEX the slot in overview mode by default", () => {
-    expect(
-      resolveLeftSlotOwner({ analysisMode: "overview", overviewChromeRevealed: false }),
-    ).toBe("index");
-  });
-
-  it("gives the analysis rail the slot when overview chrome is revealed", () => {
-    expect(
-      resolveLeftSlotOwner({ analysisMode: "overview", overviewChromeRevealed: true }),
-    ).toBe("analysis-rail");
+  it("gives INDEX the slot in overview mode", () => {
+    expect(resolveLeftSlotOwner({ analysisMode: "overview" })).toBe("index");
   });
 
   it("gives the analysis rail the slot for every non-overview mode", () => {
     for (const mode of ["graph", "focus", "path", "health"] as const) {
-      expect(
-        resolveLeftSlotOwner({ analysisMode: mode, overviewChromeRevealed: false }),
-      ).toBe("analysis-rail");
+      expect(resolveLeftSlotOwner({ analysisMode: mode })).toBe("analysis-rail");
     }
   });
 });

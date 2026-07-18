@@ -59,17 +59,26 @@ child-card landing point. This gives non-developer readers a direction cue for
 parent → child containment without adding arrowheads, extra labels, or another
 legend row.
 
-The overview reader lens now includes a compact map-layer legend that consumes
-the same `ONTOLOGY_KIND_TONE` project/domain/capability/element colors as the
-graph cards. This keeps non-developer readers from treating color as decoration:
-the left panel explains the ontology layer, while the map stays quiet enough to
-scan.
+(W3 분석 보기 은퇴, 2026-07) The left analysis rail's overview-mode "reader
+lens" — the colored kind-ring legend that used to sit inside
+`TopologyAnalysisBar` — was retired: a per-kind colored ring duplicated the
+card fill it was explaining and read as decoration rather than structure. The
+relation-line key it also carried (containment spine/terminal vs. quality
+stroke) is the one piece of that legend readers actually needed to decode the
+map's line encoding, so it moved to `TopologyRelationLegend`
+(`src/views/home/ui/TopologyRelationLegend.tsx`) — a small, always-on readout
+next to `FirstRunReadout` at the map's bottom-right. Unlike the old reader
+lens, it is not gated by overview mode or first-run/sample state: the
+containment backbone (spine/terminal tokens) and quality-check relations
+(strong-to-weak relation stroke tokens) need explaining any time the map is on
+screen, so the key stays visible in every mode.
 
-The same reader lens also explains relation-line marks without adding labels on
-top of the map: the containment backbone uses the overview spine/terminal tokens,
-and quality-check relations use the strong-to-weak relation stroke tokens. This
-lets non-developer readers distinguish hierarchy from review paths before they
-switch into focus or path mode.
+The overview analysis-rail body itself no longer carries this legend, a
+handoff-copy stack, or a relation-provenance/quality/readiness disclosure —
+those moved to the INDEX panel footer's "인계"/Handoff menu (brief/reanalysis/
+sync-gate copy) and to `/ontology/insights`' relations tab (agent readiness
+gauge), respectively, so overview mode's floating panel stopped duplicating
+what the map, INDEX, and insights already show.
 
 선택된 relation label 은 36px hit target 안에 더 작은 visual badge 를 두어 클릭은
 쉽고 지도 표식은 작게 유지한다. selected relation inspector 는

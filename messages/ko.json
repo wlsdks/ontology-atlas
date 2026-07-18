@@ -1723,6 +1723,10 @@
       "connectionsUnit": "연결",
       "hubTruncated": "상위 {shown} / 전체 {total}",
       "hubThumbnailCaption": "썸네일 = 실이웃에서 유도한 미니 ego 지도. 연결수 = in + out. 파선 스포크 = depends 비중.",
+      "agentReadinessTitle": "에이전트 준비도",
+      "agentReadinessReady": "준비됨",
+      "agentReadinessPreflight": "확인 필요",
+      "agentReadinessReview": "검토 필요",
       "domainFreshnessTitle": "도메인 신선도",
       "windowCaption": "최근 {weeks}주 · 문서 갱신일",
       "stale": "정체",
@@ -2647,7 +2651,8 @@
       "elementsShort": "요소",
       "freshTitle": "최근 갱신",
       "emptyHint": "일치하는 개념이 없습니다",
-      "revealAnalysis": "분석 보기"
+      "agentHandoff": "인계",
+      "agentHandoffAria": "에이전트 인계 텍스트 복사 (요약 · 재분석 지시 · 동기화 게이트)"
     },
     "deeplinkNotFound": "노드를 찾을 수 없습니다: {query}"
   },

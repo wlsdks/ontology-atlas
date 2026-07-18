@@ -6,6 +6,8 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
   buildEdgeTypeRows,
+  classifyRelationQuality,
+  summarizeAgentReadiness,
   useEdgeTypeLabel,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
@@ -102,6 +104,13 @@ export function OntologyInsightsPage() {
 
   const edgeTypeDist = useMemo(() => computeEdgeTypeDistribution(edges), [edges]);
   const edgeTypeRows = useMemo(() => buildEdgeTypeRows(edgeTypeDist), [edgeTypeDist]);
+  const agentReadiness = useMemo(() => {
+    const counts = { strong: 0, supported: 0, weak: 0, review: 0 };
+    for (const edge of edges) {
+      counts[classifyRelationQuality(edge)] += 1;
+    }
+    return summarizeAgentReadiness(counts);
+  }, [edges]);
   const edgeTypeSummary = useMemo(
     () => edgeTypeRows.slice(0, 4).map((r) => ({ key: r.type, label: edgeTypeLabel(r.type), count: r.count })),
     [edgeTypeRows, edgeTypeLabel],
@@ -162,6 +171,10 @@ export function OntologyInsightsPage() {
     connectionsUnit: t("connectionsUnit"),
     hubTruncated: (shown: number, total: number) => t("hubTruncated", { shown, total }),
     hubThumbnailCaption: t("hubThumbnailCaption"),
+    agentReadinessTitle: t("agentReadinessTitle"),
+    agentReadinessReady: t("agentReadinessReady"),
+    agentReadinessPreflight: t("agentReadinessPreflight"),
+    agentReadinessReview: t("agentReadinessReview"),
   };
   const formatDaysAgo = (days: number) => {
     if (days <= 0) return t("daysAgoToday");
@@ -284,6 +297,7 @@ export function OntologyInsightsPage() {
                 hubs={hubs}
                 hubTotalCount={hubRanking.length}
                 kindLabel={kindLabel}
+                agentReadiness={agentReadiness}
                 labels={relationsLabels}
               />
             ) : null}

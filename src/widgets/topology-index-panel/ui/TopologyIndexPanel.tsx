@@ -9,6 +9,10 @@ import {
 import { FirstRunStarterModule } from "@/features/first-run-starter";
 import { computeMaxDomainDescendantCount } from "../lib/domain-subcounts";
 import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
+import {
+  TopologyIndexAgentHandoff,
+  type TopologyIndexAgentHandoffLabels,
+} from "./TopologyIndexAgentHandoff";
 
 export interface TopologyIndexPanelLabels {
   label: string;
@@ -40,6 +44,17 @@ export interface TopologyIndexPanelProps {
    *  이미 해석된 문자열을 그대로 받는다(HomePage 의 growthLabel 과 같은
    *  출처, feat/chrome-system §9 헤더→푸터 이관). */
   footerGrowthText?: string;
+  /** 푸터 "인계" 메뉴 — brief/재분석 지시/동기화 게이트 3종 복사 (W3 분석
+   *  보기 은퇴, `TopologyAnalysisBar` overview 모드에서 이관). 텍스트는
+   *  HomePage 가 `views/home/lib/topology-analysis.ts` 포맷터로 미리
+   *  조립해 전달 — 이 위젯은 복사 UI만 소유한다. 생략하면 메뉴 자체를
+   *  렌더하지 않는다. */
+  agentHandoff?: {
+    briefText: string;
+    reanalyzeText: string;
+    syncText: string;
+    labels: TopologyIndexAgentHandoffLabels;
+  };
 }
 
 /**
@@ -71,6 +86,7 @@ export function TopologyIndexPanel({
   labels,
   className,
   footerGrowthText,
+  agentHandoff,
 }: TopologyIndexPanelProps) {
   const [query, setQuery] = useState("");
   const [openIds, setOpenIds] = useState<Set<string>>(
@@ -203,12 +219,22 @@ export function TopologyIndexPanel({
           {labels.agentSync}
         </span>
         {footerGrowthText ? <span>{footerGrowthText}</span> : null}
-        <span
-          aria-hidden="true"
-          className="ml-auto shrink-0 rounded border border-[color:var(--topology-v2-panel-border)] px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--topology-v2-panel-text-quaternary)]"
-        >
-          ⇧⌘K
-        </span>
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {agentHandoff ? (
+            <TopologyIndexAgentHandoff
+              briefText={agentHandoff.briefText}
+              reanalyzeText={agentHandoff.reanalyzeText}
+              syncText={agentHandoff.syncText}
+              labels={agentHandoff.labels}
+            />
+          ) : null}
+          <span
+            aria-hidden="true"
+            className="shrink-0 rounded border border-[color:var(--topology-v2-panel-border)] px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--topology-v2-panel-text-quaternary)]"
+          >
+            ⇧⌘K
+          </span>
+        </div>
       </div>
     </aside>
   );

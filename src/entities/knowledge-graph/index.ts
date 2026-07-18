@@ -25,3 +25,9 @@ export {
   type OntologyHealthSignalCandidate,
   type OntologyHealthSignals,
 } from "./lib/ontology-health-signals";
+export {
+  classifyRelationQuality,
+  summarizeAgentReadiness,
+  type RelationQuality,
+  type RelationQualityBreakdown,
+} from "./lib/relation-quality";

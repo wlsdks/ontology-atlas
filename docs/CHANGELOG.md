@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-07-19 — "분석 보기" 은퇴 — overview 패널 내용 3곳으로 이관 (analysis-retire)
+
+`TopologyAnalysisBar`(3049줄) 의 overview 모드 전용 콘텐츠 — 색 원형 리더
+렌즈, 관계선 범례, 핸드오프 복사 3종(brief/재분석/동기화), 관계
+provenance/quality/agent-readiness 계기 — 를 은퇴했다. 리더 렌즈는 kind=형태
+원칙 위반이라 순삭제, 나머지는 지도·INDEX·insights 세 곳이 이미 보여주는
+정보를 overview 패널이 네 번째로 중복 노출하고 있어 단일 출처로 이관했다.
+
+- **관계선 범례** → `TopologyRelationLegend`(`src/views/home/ui/`) — 지도
+  우하단에 `FirstRunReadout` 과 같은 계기 판독 문법으로 상시 노출(이전엔
+  overview 모드 + first-run 상태에서만 보였다).
+- **핸드오프 복사 3종** → INDEX 패널 푸터의 "Handoff" 메뉴
+  (`TopologyIndexAgentHandoff`, `src/widgets/topology-index-panel/ui/`) —
+  복사 UI 만 위젯이 소유, 텍스트 조립은 여전히 `views/home/lib/
+  topology-analysis.ts` (+ `shared/lib/ontology-tree`) 가 단일 출처.
+- **agent readiness 계기** → `/ontology/insights` 관계 탭 상단
+  (`RelationsTab`) — 분류 로직을 `entities/knowledge-graph/lib/
+  relation-quality.ts` 로 끌어내려 지도의 핸드오프 브리프 텍스트와 insights
+  게이지가 같은 공식을 공유한다. relation provenance/quality 계기는
+  insights 에 중복 생성하지 않고 그대로 은퇴.
+- overview 의 "View analysis" 리빌 칩과 `overviewChromeRevealed` 상태를
+  제거 — 남길 overview 전용 크롬이 더 없어졌다(`resolveLeftSlotOwner` 단순화).
+- focus/path/health 모드 패널은 이번 라운드에서 변경 없음 — 소유자가 이후
+  세션에서 플로팅 패널 전체 은퇴(경로=미니멀 상태 칩, health=insights 이관)
+  범위를 추가 지시했으나, 어중간한 중간 상태를 남기지 않기 위해 이번
+  커밋에서는 손대지 않고 다음 슬라이스로 넘긴다.
+
 ## 2026-07-19 — 내비 3체계 → 1체계 통합 (rail-rollout)
 
 `AppNavRail`(#375 지형도 전용 구현·#376 대형화면 스케일)을 지형도 외 전
