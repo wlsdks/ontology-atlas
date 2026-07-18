@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-07-18 — 구엔진 물리 삭제 + Esc 단계적 닫기
+
+`topology-map-v2` 가 기본 엔진이 된 뒤 (#330) 남아있던 옛 캔버스 코드를
+물리 삭제 (소유자 지시: "예전 캔버스 코드는 싹 다 지워줘"): 레거시 Sigma
+전체화면 엔진 렌더 분기 · `topology-map-canvas` (skeleton-card DOM 지도) ·
+`?mapEngine=` 탈출구 · `topology-map-v2` feature flag/hook 자체 · 관련 골격
+계산 lib 6개 · `TopologyNodePopover` (datasheet 전용 전환). `topology-map-sigma`
+위젯은 물리적으로 남는다 — `/project/[slug]` 이웃 지도와 홈 화면의 공용 컨트롤
+칩(SigmaControls/SigmaHubRail/TopologyEmptyState)이 여전히 그 위에서 동작.
+같은 패스에서 Esc 가 "드로어·오버레이 단계적 닫기" 약속(단축키 시트)을
+실제로 지키도록 staged-close 사다리 구현 — 이전엔 선택된 노드의
+datasheet/relation lens 에 Esc 바인딩 자체가 없었고, local-graph ego 되돌리기만
+다른 오버레이 상태와 무관하게 무조건 발동했다.
+
 ## 2026-07-18 — 설치형 앱 first-run 온보딩 (진입 표면 2원화)
 
 설치형 앱(Tauri)에서 볼트 미선택 시 마케팅 랜딩(자기 자신 다운로드 CTA 모순)
