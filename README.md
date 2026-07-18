@@ -25,6 +25,14 @@ developer and their AI coding agent. The graph is not stored in a hosted
 database. It is plain markdown frontmatter inside your repo, so every change is
 reviewable as a normal git diff.
 
+**Identity — agent-native, human-sovereign.** This is not "memory for agents"
+(machine-only vector stores) and not another wiki (human-only, instantly
+stale). It is one meaning layer both audiences read and write: agents are
+first-class users — they query it before touching code and keep it fresh
+through MCP after real changes — while humans stay the arbiters of meaning,
+because every node is plain markdown they can read, approve, and diff. Agents
+supply the freshness; humans supply the judgment. One graph, both audiences.
+
 ```bash
 npx ontology-atlas init ./ontology
 ontology-atlas analyze . --vault ./ontology
