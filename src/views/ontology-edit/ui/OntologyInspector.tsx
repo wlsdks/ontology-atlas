@@ -11,6 +11,11 @@ import { slugify } from "@/shared/lib/slugify";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 import type { VaultBacklinkMatch } from "../lib/find-vault-backlinks";
+import {
+  resolveRelationTraceMark,
+  type RelationTraceMarkStyle,
+} from "../lib/relation-trace-mark";
+import type { BuilderSessionDiffLine } from "../lib/builder-write-confirm-bar";
 
 // 헌장 §11 + a11y — motion-reduce 사용자 보호. 짧은 fade 만 (transform 없음).
 const FADE_MOTION = {
@@ -96,6 +101,9 @@ export interface OntologyInspectorProps {
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
   surface?: "sidebar" | "sheet";
+  /** 이 세션에서 아직 vault 에 쓰지 않은 변경 미리보기 — 고정 사이드바에서만
+   *  노출 (파일 diff 프리뷰). 빌더-final 스펙 §우측 인스펙터. */
+  sessionDiffLines?: BuilderSessionDiffLine[];
 }
 
 type InspectorTranslator = ReturnType<typeof useTranslations>;
@@ -123,6 +131,7 @@ export function OntologyInspector({
   collapsed = false,
   onToggleCollapsed,
   surface = "sidebar",
+  sessionDiffLines = [],
 }: OntologyInspectorProps) {
   const t = useTranslations("ontologyPages.edit.inspector");
   // canonical kind 라벨 — kinds.* i18n namespace 기반. 이전엔 inspector 자체
@@ -164,7 +173,7 @@ export function OntologyInspector({
       className={
         surface === "sheet"
           ? "flex max-h-[min(78dvh,760px)] w-full flex-col gap-3 overflow-y-auto bg-[color:var(--color-panel)] p-3"
-          : "flex h-full w-[320px] shrink-0 flex-col gap-3 overflow-y-auto border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 xl:w-[360px]"
+          : "flex h-full w-[340px] shrink-0 flex-col gap-3 overflow-y-auto border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5"
       }
     >
       <header className="flex items-center justify-between gap-2 px-1">
@@ -188,6 +197,45 @@ export function OntologyInspector({
           </button>
         ) : null}
       </header>
+      {surface === "sidebar" ? (
+        <section
+          aria-label={t("sessionDiffAriaLabel")}
+          className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5"
+        >
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {t("sessionDiffTitle")}
+          </p>
+          {sessionDiffLines.length > 0 ? (
+            <ul className="mt-1.5 flex flex-col gap-1 font-mono text-[11px] leading-5">
+              {sessionDiffLines.map((line) => (
+                <li
+                  key={`${line.changeType}-${line.path}`}
+                  className="flex min-w-0 items-center gap-1.5"
+                >
+                  <span
+                    className={
+                      line.changeType === "add"
+                        ? "shrink-0 text-[color:var(--color-indigo-accent)]"
+                        : "shrink-0 text-[color:var(--color-text-secondary)]"
+                    }
+                  >
+                    {line.changeType === "add"
+                      ? t("sessionDiffAdd")
+                      : t("sessionDiffRelation")}
+                  </span>
+                  <span className="min-w-0 truncate text-[color:var(--color-text-quaternary)]">
+                    {line.path}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+              {t("sessionDiffEmpty")}
+            </p>
+          )}
+        </section>
+      ) : null}
       <AnimatePresence mode="wait">
         {!selected ? (
           <motion.div
@@ -913,6 +961,41 @@ function literalLabel(t: InspectorTranslator, key: VaultLiteralKey): string {
   return key === "description" ? t("literalDescription") : t("literalDomain");
 }
 
+const TRACE_MARK_DASH: Record<RelationTraceMarkStyle, string | undefined> = {
+  solid: undefined,
+  dashed: "3.2 3.2",
+  dotted: "1.4 3.2",
+};
+
+/**
+ * trace-마크 문법 — 지도(Topology) 범례와 같은 언어를 관계 타입 라벨
+ * 앞에 반복한다. 실선=포함 계층 · 파선=의존/느슨한 연관 · 점선=근거.
+ * 새 채색 시스템을 만들지 않도록 항상 `currentColor` 로 그린다.
+ */
+function RelationTraceMarkIcon({ mark }: { mark: RelationTraceMarkStyle }) {
+  const dash = TRACE_MARK_DASH[mark];
+  return (
+    <svg
+      width="18"
+      height="6"
+      viewBox="0 0 18 6"
+      aria-hidden="true"
+      className="shrink-0 text-[color:var(--color-text-quaternary)]"
+    >
+      <line
+        x1="1"
+        y1="3"
+        x2="17"
+        y2="3"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeDasharray={dash}
+      />
+    </svg>
+  );
+}
+
 function arrayLabel(t: InspectorTranslator, key: VaultArrayKey): string {
   switch (key) {
     case "domains":
@@ -1136,8 +1219,9 @@ function ArrayKeyEditor({
     <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
       <label
         htmlFor={`array-${fieldKey}`}
-        className="block font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+        className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
       >
+        <RelationTraceMarkIcon mark={resolveRelationTraceMark(fieldKey)} />
         {arrayLabel(t, fieldKey)}
       </label>
       {values.length > 0 ? (
@@ -1230,7 +1314,8 @@ function ReadOnlyArraySummary({
           key={key}
           className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5"
         >
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <RelationTraceMarkIcon mark={resolveRelationTraceMark(key)} />
             {arrayLabel(t, key)}
           </p>
           <ul className="mt-2 flex flex-wrap gap-1">
