@@ -1787,7 +1787,7 @@ export function HomePage() {
                           : "px-3.5"
                       }`}
                     >
-                      <BookOpen size={15} className="text-[color:var(--color-indigo-accent)]" />
+                      <BookOpen className="size-[var(--topology-chrome-icon-size)] text-[color:var(--color-indigo-accent)]" />
                       <span className={topologyUtilityChromeCompact ? "sr-only" : undefined}>
                         {t('controls.docsLabel')}
                       </span>
@@ -1839,7 +1839,7 @@ export function HomePage() {
                               : "px-3.5"
                           }`}
                         >
-                          <Plus size={15} aria-hidden />
+                          <Plus className="size-[var(--topology-chrome-icon-size)]" aria-hidden />
                           <span className={topologyUtilityChromeCompact ? "sr-only" : undefined}>
                             {t('createNode.toggleLabel')}
                           </span>

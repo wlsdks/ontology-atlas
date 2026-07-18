@@ -148,6 +148,18 @@ names in component data markers and tests whenever a surface depends on
   폭을 물려받지 않는다.
 - `--topology-panel-compact-reserved-width`: compact fallback with reserved
   right-side inspector space.
+- `--topology-chrome-control-height` (+ `-compact`) / `--topology-chrome-badge-size`
+  (+ `-compact`) / `--topology-chrome-icon-size` (+ `-sm`) / `--topology-chrome-gap` /
+  `--topology-chrome-radius` / `--topology-chrome-title-size` /
+  `--topology-chrome-eyebrow-size` / `--topology-chrome-shadow`: 지도 chrome 밀도
+  토큰. 브랜드 pill(HeroCollapsed) · 상단 검색/정렬 HUD lane · 우측 액션 lane 이
+  하나의 machined 컨트롤 클러스터로 이 값을 공유한다. 1920 데스크톱에서 chrome 이
+  터치 크기가 아니라 정밀 도구로 읽히도록 컨트롤 높이/아이콘/타입을 한 단계
+  좁혔다(높이 48→36, 아이콘 15→12/14→11, 타이틀 13→12, census 는 legible 9px 유지).
+  chrome 클러스터는 render 엔진 밖 HomePage 에서 그려지므로 map-v2 / map-canvas /
+  sigma 가 동일하게 물려받고, 캔버스는 별도 `--topology-ui-scale-factor` 를 써서
+  이 토큰에 영향받지 않는다. `--topology-utility-lane-height/-gap/-radius/-compact-width`
+  는 이 chrome 토큰을 참조해 HUD/액션 lane 밀도를 단일 기준으로 맞춘다.
 - `--topology-card-selected-focus-max-width`: selected focus map card width;
   keeps the current node title readable before secondary subtree count metadata
   while the direct relation facts chip stays visible.

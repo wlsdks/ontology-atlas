@@ -38,9 +38,9 @@ export function TopologyReviewLink({
       data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
       aria-label={ariaLabel(count)}
       title={ariaLabel(count)}
-      className="inline-flex h-[var(--topology-utility-lane-height)] items-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none"
+      className="inline-flex h-[var(--topology-utility-lane-height)] items-center gap-2 rounded-[var(--topology-utility-lane-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] px-3.5 text-[length:var(--topology-chrome-title-size)] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none"
     >
-      <GitCompare size={15} aria-hidden />
+      <GitCompare className="size-[var(--topology-chrome-icon-size)]" aria-hidden />
       <span>{label(count)}</span>
     </Link>
   );

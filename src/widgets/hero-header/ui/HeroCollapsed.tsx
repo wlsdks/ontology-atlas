@@ -59,9 +59,9 @@ export function HeroCollapsed({
           onClick={onWorkspaceMapClick}
           aria-label={t("backToWorkspace")}
           title={t("backToWorkspace")}
-          className="group inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-quaternary)] shadow-[0_8px_24px_rgba(0,0,0,0.22)] transition-colors hover:border-[color:rgba(224,196,140,0.35)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(224,196,140,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
+          className="group inline-flex size-[var(--topology-chrome-control-height)] shrink-0 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-quaternary)] shadow-[var(--topology-chrome-shadow)] transition-colors hover:border-[color:rgba(224,196,140,0.35)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(224,196,140,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
         >
-          <ArrowLeft size={15} />
+          <ArrowLeft className="size-[var(--topology-chrome-icon-size)]" />
         </Link>
       ) : null}
     <motion.button
@@ -74,8 +74,10 @@ export function HeroCollapsed({
       animate={{ opacity: 1, x: 0 }}
       transition={MOTION.fast}
       className={cn(
-        "group inline-flex items-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_8px_24px_rgba(0,0,0,0.22)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
-        compact ? "h-9 gap-1.5 pl-1.5 pr-2.5 opacity-80" : "h-12 gap-2 pl-1.5 pr-3",
+        "group inline-flex items-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--topology-chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
+        compact
+          ? "h-[var(--topology-chrome-control-height-compact)] gap-1.5 pl-1.5 pr-2.5 opacity-80"
+          : "h-[var(--topology-chrome-control-height)] gap-[var(--topology-chrome-gap)] pl-1.5 pr-3",
         className,
       )}
     >
@@ -84,7 +86,9 @@ export function HeroCollapsed({
           aria-hidden="true"
           className={cn(
             "inline-flex shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]",
-            compact ? "h-6 w-6 text-xs" : "h-8 w-8 text-base",
+            compact
+              ? "size-[var(--topology-chrome-badge-size-compact)] text-xs"
+              : "size-[var(--topology-chrome-badge-size)] text-base",
           )}
         >
           {icon}
@@ -99,7 +103,9 @@ export function HeroCollapsed({
           priority
           className={cn(
             "shrink-0 rounded-full border border-[color:var(--color-border-soft)] object-cover",
-            compact ? "h-6 w-6" : "h-8 w-8",
+            compact
+              ? "size-[var(--topology-chrome-badge-size-compact)]"
+              : "size-[var(--topology-chrome-badge-size)]",
           )}
         />
       )}
@@ -108,7 +114,9 @@ export function HeroCollapsed({
           translate="no"
           className={cn(
             "truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]",
-            compact ? "max-w-[92px] text-[12px]" : "max-w-[110px] text-[13px]",
+            compact
+              ? "max-w-[92px] text-[12px]"
+              : "max-w-[110px] text-[length:var(--topology-chrome-title-size)]",
           )}
         >
           {resolvedTitle}
@@ -116,7 +124,7 @@ export function HeroCollapsed({
         <span
           className={cn(
             "font-mono uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]",
-            compact ? "sr-only" : "text-[9px]",
+            compact ? "sr-only" : "text-[length:var(--topology-chrome-eyebrow-size)]",
           )}
         >
           {resolvedSubtitle}
@@ -124,8 +132,7 @@ export function HeroCollapsed({
       </span>
       {onExpand && !compact ? (
         <ChevronsRight
-          size={14}
-          className="text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-secondary)]"
+          className="size-[var(--topology-chrome-icon-size-sm)] text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-secondary)]"
         />
       ) : null}
     </motion.button>
@@ -134,9 +141,9 @@ export function HeroCollapsed({
         href={docsVaultHref}
         aria-label={t("openDocsVault")}
         title={t("docsVault")}
-        className="group inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-indigo-accent)] shadow-[0_8px_24px_rgba(0,0,0,0.22)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
+        className="group inline-flex size-[var(--topology-chrome-control-height)] shrink-0 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-chrome-shadow)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
       >
-        <BookOpen size={15} />
+        <BookOpen className="size-[var(--topology-chrome-icon-size)]" />
       </Link>
     ) : null}
     {ontologyHref && !compact ? (
@@ -144,9 +151,9 @@ export function HeroCollapsed({
         href={ontologyHref}
         aria-label={t("openOntologyTree")}
         title={t("ontology")}
-        className="group inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-indigo-accent)] shadow-[0_8px_24px_rgba(0,0,0,0.22)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
+        className="group inline-flex size-[var(--topology-chrome-control-height)] shrink-0 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-chrome-shadow)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
       >
-        <Network size={15} />
+        <Network className="size-[var(--topology-chrome-icon-size)]" />
       </Link>
     ) : null}
     </div>
