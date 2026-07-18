@@ -219,7 +219,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -247,328 +246,6 @@ describe("TopologyAnalysisBar", () => {
     // (`RelationsTab.test.tsx`), provenance/quality are not duplicated there.
   });
 
-  it("promotes the panel to focus support when a node is selected from overview", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="overview"
-        summary={{
-          mode: "overview",
-          primaryMetric: 294,
-          secondaryMetric: 504,
-          needsSelection: false,
-          relationProvenance: {
-            sourceBacked: 504,
-            authored: 0,
-            needsReview: 0,
-          },
-          relationQuality: {
-            strong: 387,
-            supported: 0,
-            weak: 117,
-            review: 0,
-          },
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedSlug="domain:views"
-        selectedTitle="Views (Topology · Browse · Builder)"
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    const panel = screen.getByTestId("topology-analysis-panel");
-    expect(panel).toHaveAttribute("data-requested-analysis-mode", "overview");
-    expect(panel).toHaveAttribute("data-analysis-mode", "focus");
-    expect(panel).toHaveAttribute("data-selected-context", "true");
-    expect(panel).toHaveAttribute("data-attention-role", "support");
-    expect(screen.getByText("Focused on Views.")).toBeInTheDocument();
-    const selectedContextReviewOrder = screen.getByTestId(
-      "topology-focus-review-order",
-    );
-    expect(selectedContextReviewOrder).toBeVisible();
-    expect(selectedContextReviewOrder).toHaveAttribute(
-      "data-review-order-density",
-      "selected-detail",
-    );
-  });
-
-  it("clears the selected focus context when returning to overview from the mode rail", () => {
-    const onModeChange = vi.fn();
-    const onClearSelection = vi.fn();
-
-    render(
-      <TopologyAnalysisBar
-        mode="overview"
-        summary={{
-          mode: "overview",
-          primaryMetric: 294,
-          secondaryMetric: 504,
-          needsSelection: false,
-          relationProvenance: {
-            sourceBacked: 504,
-            authored: 0,
-            needsReview: 0,
-          },
-          relationQuality: {
-            strong: 387,
-            supported: 0,
-            weak: 117,
-            review: 0,
-          },
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedSlug="domain:views"
-        selectedTitle="Views (Topology · Browse · Builder)"
-        labels={labels}
-        onModeChange={onModeChange}
-        onClearSelection={onClearSelection}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Overview" }));
-
-    expect(onClearSelection).toHaveBeenCalledTimes(1);
-    expect(onModeChange).toHaveBeenCalledWith("overview");
-  });
-
-  it("keeps selected focus support compact enough to align with the top chrome group", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="overview"
-        summary={{
-          mode: "overview",
-          primaryMetric: 294,
-          secondaryMetric: 504,
-          needsSelection: false,
-          relationProvenance: {
-            sourceBacked: 504,
-            authored: 0,
-            needsReview: 0,
-          },
-          relationQuality: {
-            strong: 387,
-            supported: 0,
-            weak: 117,
-            review: 0,
-          },
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedSlug="domain:views"
-        selectedTitle="Views (Topology · Browse · Builder)"
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    const panel = screen.getByTestId("topology-analysis-panel");
-    expect(panel).toHaveAttribute("data-panel-width-policy", "mode-compact");
-    expect(panel).toHaveAttribute("data-panel-width-target", "selected-focus-rail");
-    expect(panel).toHaveAttribute(
-      "data-panel-width-contract",
-      "selected-focus-rail-max-320",
-    );
-    expect(panel).toHaveAttribute(
-      "data-command-spine-padding-token",
-      "--topology-command-spine-padding",
-    );
-    expect(panel).toHaveAttribute(
-      "data-command-primary-height-token",
-      "--topology-command-primary-min-height",
-    );
-    expect(panel).toHaveAttribute(
-      "data-panel-surface-token",
-      "--topology-panel-support-surface",
-    );
-    expect(panel).toHaveAttribute(
-      "data-command-spine-surface-token",
-      "--topology-command-spine-surface",
-    );
-    expect(panel).toHaveAttribute(
-      "data-command-spine-border-token",
-      "--topology-command-spine-border",
-    );
-    const commandSpine = screen.getByTestId("topology-focus-command-spine");
-    expect(commandSpine).toHaveAttribute(
-      "data-command-hierarchy",
-      "brief-primary-review-agent-proof",
-    );
-    expect(commandSpine).toHaveAttribute(
-      "data-tokenized-surface",
-      "topology-command-spine",
-    );
-    expect(commandSpine).toHaveAttribute(
-      "data-command-spine-surface-token",
-      "--topology-command-spine-surface",
-    );
-    expect(commandSpine).toHaveAttribute(
-      "data-command-spine-border-token",
-      "--topology-command-spine-border",
-    );
-    expect(commandSpine.className).toContain(
-      "p-[var(--topology-command-spine-padding)]",
-    );
-    const primaryAction = screen.getByTestId("topology-focus-primary-action");
-    expect(primaryAction).toHaveTextContent("Copy focus brief");
-    expect(primaryAction).toHaveAttribute(
-      "data-command-primary-surface-token",
-      "--topology-command-primary-surface",
-    );
-    expect(primaryAction).toHaveAttribute(
-      "data-command-primary-border-token",
-      "--topology-command-primary-border",
-    );
-    expect(primaryAction.className).toContain(
-      "min-h-[var(--topology-command-primary-min-height)]",
-    );
-    expect(screen.getByTestId("topology-focus-review-order")).toHaveClass("grid");
-    expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
-      "data-review-order-contract",
-      "flat-numbered-rail",
-    );
-    expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
-      "data-review-order-density",
-      "selected-detail",
-    );
-    expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
-      "data-command-step-surface-token",
-      "--topology-command-step-surface",
-    );
-    expect(screen.getByTestId("topology-focus-review-order")).toHaveAttribute(
-      "data-command-step-border-token",
-      "--topology-command-step-border",
-    );
-    expect(screen.getByText("Read concept brief").closest("li")).toHaveAttribute(
-      "data-command-step-contract",
-      "flat-numbered-row",
-    );
-    expect(screen.getByText("Read concept brief").closest("li")).toHaveAttribute(
-      "data-command-step-density",
-      "detail-row",
-    );
-    expect(screen.getByTestId("topology-focus-secondary-actions")).toBeVisible();
-    expect(screen.getByTestId("topology-focus-secondary-actions")).toHaveAttribute(
-      "data-focus-secondary-action-contract",
-      "ontology-builder-exits",
-    );
-    expect(screen.getByTestId("topology-focus-secondary-actions")).toHaveAttribute(
-      "data-command-secondary-surface-token",
-      "--topology-command-secondary-surface",
-    );
-    expect(screen.getByTestId("topology-focus-secondary-actions")).toHaveAttribute(
-      "data-command-secondary-border-token",
-      "--topology-command-secondary-border",
-    );
-    const ontologyExit = screen.getByRole("link", { name: "Open ontology" });
-    expect(ontologyExit).toHaveAttribute("data-focus-secondary-action", "ontology");
-    expect(ontologyExit).toHaveAttribute(
-      "data-command-secondary-surface-token",
-      "--topology-command-secondary-surface",
-    );
-    const builderExit = screen.getByRole("link", { name: "Open builder" });
-    expect(builderExit).toHaveAttribute("data-focus-secondary-action", "builder");
-    expect(builderExit).toHaveAttribute(
-      "data-command-secondary-border-token",
-      "--topology-command-secondary-border",
-    );
-    expect(screen.getByTestId("topology-focus-agent-handoff")).toHaveAttribute(
-      "data-handoff-contract",
-      "mcp-cli-proof-disclosed",
-    );
-    const focusProofActions = [
-      ["Copy focus concept check", "mcp-profile"],
-      ["Copy focus impact check", "mcp-impact"],
-      ["Copy focus post-change sync gate", "sync-gate"],
-      ["Copy selected concept strengthening command", "strengthen-command"],
-    ] as const;
-    for (const [name, proofAction] of focusProofActions) {
-      const button = screen.getByRole("button", { name });
-      expect(button).toHaveAttribute("data-focus-proof-action", proofAction);
-      expect(button).toHaveAttribute(
-        "data-command-secondary-surface-token",
-        "--topology-command-secondary-surface",
-      );
-      expect(button).toHaveAttribute(
-        "data-command-secondary-border-token",
-        "--topology-command-secondary-border",
-      );
-    }
-  });
-
-  it("keeps the unselected focus guidance as a compact map support rail", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="focus"
-        summary={{
-          mode: "focus",
-          primaryMetric: 22,
-          secondaryMetric: 504,
-          needsSelection: true,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedTitle={null}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    const panel = screen.getByTestId("topology-analysis-panel");
-    expect(panel).toHaveAttribute("data-analysis-mode", "focus");
-    expect(panel).toHaveAttribute("data-attention-role", "support");
-    expect(panel).toHaveAttribute("data-panel-width-policy", "mode-compact");
-    expect(panel).toHaveAttribute("data-panel-width-target", "focus-support-rail");
-    expect(panel).toHaveAttribute(
-      "data-panel-width-contract",
-      "focus-support-rail-max-300-map-centered",
-    );
-    expect(panel).toHaveAttribute(
-      "data-panel-padding-token",
-      "--topology-panel-focus-rail-padding",
-    );
-    expect(panel).toHaveAttribute(
-      "data-panel-width-css",
-      "var(--topology-panel-focus-rail-width)",
-    );
-    expect(panel).toHaveAttribute(
-      "data-panel-width-token",
-      "--topology-panel-focus-rail-width",
-    );
-    const reviewOrder = screen.getByTestId("topology-focus-review-order");
-    expect(reviewOrder).toBeVisible();
-    expect(reviewOrder).toHaveClass("grid-cols-2");
-    expect(reviewOrder).toHaveAttribute(
-      "data-review-order-density",
-      "unselected-compact",
-    );
-    expect(screen.getByText("Read concept brief").closest("li")).toHaveAttribute(
-      "data-command-step-density",
-      "compact-two-column",
-    );
-  });
-
   it("keeps analysis modes reachable on mobile while preserving the desktop breakpoint", () => {
     render(
       <TopologyAnalysisBar
@@ -585,7 +262,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -685,7 +361,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -717,7 +392,6 @@ describe("TopologyAnalysisBar", () => {
           healthBreakdown: { stale: 0, orphan: 0, promotion: 0 },
         }}
         healthAction={null}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -741,7 +415,6 @@ describe("TopologyAnalysisBar", () => {
           healthBreakdown: { stale: 0, orphan: 1, promotion: 22 },
         }}
         healthAction={null}
-        selectedTitle={null}
         labels={labels}
         onModeChange={onModeChange}
         onHealthAction={vi.fn()}
@@ -769,7 +442,6 @@ describe("TopologyAnalysisBar", () => {
           healthBreakdown: { stale: 0, orphan: 0, promotion: 22 },
         }}
         healthAction={null}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -790,7 +462,6 @@ describe("TopologyAnalysisBar", () => {
           healthBreakdown: { stale: 0, orphan: 0, promotion: 0 },
         }}
         healthAction={null}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -815,7 +486,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         labels={{
           ...labels,
           overviewPrompt:
@@ -853,183 +523,6 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.queryByText("498")).toBeNull();
   });
 
-  it("reserves space for the selected-node drawer on desktop", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="focus"
-        summary={{
-          mode: "focus",
-          primaryMetric: 4,
-          secondaryMetric: 3,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedSlug="capability:topology-analysis-modes"
-        selectedTitle="Topology Analysis Modes"
-        rightPanelReserved
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    const bar = screen.getByRole("region", {
-      name: "Topology analysis mode",
-    });
-    // shares the same responsive left gutter as the topology header pill +
-    // legend (lg:left-6 → xl:left-[var(--chrome-inset)], 24px —
-    // feat/chrome-system §4) so all left-anchored overlays align.
-    expect(bar.className).toContain("lg:left-6");
-    expect(bar.className).toContain("xl:left-[var(--chrome-inset)]");
-    expect(bar).toHaveAttribute("data-right-panel-reserved", "true");
-    expect(bar).toHaveAttribute("data-selected-focus-rail", "true");
-    expect(bar).toHaveAttribute("data-panel-width-target", "selected-focus-rail");
-    expect(bar).toHaveAttribute(
-      "data-compact-focus-collapse-contract",
-      "selected-focus-support-hidden-under-md",
-    );
-    expect(bar).toHaveAttribute(
-      "data-panel-width-css",
-      "var(--topology-panel-selected-rail-width)",
-    );
-    expect(bar).toHaveAttribute(
-      "data-panel-width-token",
-      "--topology-panel-selected-rail-width",
-    );
-    expect(bar.className).toContain("max-md:hidden");
-    expect(bar).toHaveAttribute("data-attention-role", "support");
-  });
-
-  it("offers a selected-node strengthening command in focus actions", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="focus"
-        summary={{
-          mode: "focus",
-          primaryMetric: 5,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedSlug="capabilities/topology-sigma-render"
-        selectedTitle="Topology Sigma Render"
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText("Copy strengthen command")).toBeInTheDocument();
-  });
-
-  it("keeps the focus strengthening copy label stable after copy feedback", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText },
-    });
-
-    render(
-      <TopologyAnalysisBar
-        mode="focus"
-        summary={{
-          mode: "focus",
-          primaryMetric: 5,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedSlug="capabilities/topology-sigma-render"
-        selectedTitle="Topology Sigma Render"
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Copy selected concept strengthening command",
-      }),
-    );
-
-    const copiedButton = await screen.findByRole("button", {
-      name: "Selected concept strengthening command copied",
-    });
-    expect(copiedButton).toHaveTextContent("Copy strengthen command");
-    expect(copiedButton).not.toHaveTextContent("Strengthen command copied");
-  });
-
-  it("keeps the focus brief copy label stable after copy feedback", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText },
-    });
-
-    render(
-      <TopologyAnalysisBar
-        mode="focus"
-        summary={{
-          mode: "focus",
-          primaryMetric: 5,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedSlug="capabilities/topology-sigma-render"
-        selectedTitle="Topology Sigma Render"
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Copy focus review brief",
-      }),
-    );
-
-    const copiedButton = await screen.findByRole("button", {
-      name: "Focus review brief copied",
-    });
-    expect(copiedButton).toHaveTextContent("Copy focus brief");
-    expect(screen.getByTestId("topology-focus-primary-summary")).toHaveTextContent(
-      "Brief + impact packet",
-    );
-    expect(copiedButton).not.toHaveTextContent("Focus brief copied");
-    expect(copiedButton.className).toContain("active:translate-y-[1px]");
-    expect(copiedButton.className).toContain("motion-reduce:transition-none");
-    expect(copiedButton.className).toContain("motion-reduce:transform-none");
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("# Topology focus review"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "- Node: Topology Sigma Render (capabilities/topology-sigma-render)",
-      ),
-    );
-  });
-
   it("moves below the expanded left panel on desktop", () => {
     render(
       <TopologyAnalysisBar
@@ -1046,7 +539,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         leftPanelExpanded
         labels={labels}
         onModeChange={vi.fn()}
@@ -1087,7 +579,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -1169,7 +660,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         createPanelReserved
         labels={labels}
         onModeChange={vi.fn()}
@@ -1200,7 +690,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -1266,7 +755,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle="Views"
         rightPanelReserved
         labels={labels}
         onModeChange={vi.fn()}
@@ -1314,7 +802,6 @@ describe("TopologyAnalysisBar", () => {
           title: "ontology-atlas",
           kind: "promotion",
         }}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -1361,7 +848,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         pathCandidateVisibility={{ visible: 10, total: 21 }}
         labels={labels}
         onModeChange={vi.fn()}
@@ -1422,7 +908,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         pathCandidateVisibility={{ visible: 10, total: 21 }}
         labels={labels}
         onModeChange={vi.fn()}
@@ -1540,7 +1025,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         pathSourceSlug="domain:views"
         pathTargetSlug="capability:topology-analysis-modes"
         pathSourceTitle="Views (Topology · Browse · Builder)"
@@ -1626,289 +1110,6 @@ describe("TopologyAnalysisBar", () => {
     expect(route.querySelector('[data-route-endpoint-marker="target"]')).toHaveTextContent("B");
   });
 
-  it("copies concept and impact checks for the focused node", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText },
-    });
-
-    render(
-      <TopologyAnalysisBar
-        mode="focus"
-        summary={{
-          mode: "focus",
-          primaryMetric: 4,
-          secondaryMetric: 3,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedSlug="capability:topology-analysis-modes"
-        selectedTitle="Topology Analysis Modes"
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Copy focus concept check" }));
-    expect(writeText).toHaveBeenCalledWith(
-      'query_ontology({"operation":"node_profile","slug":"capability:topology-analysis-modes","depth":2,"limit":12})',
-    );
-    expect(screen.getByRole("link", { name: "Open ontology" })).toHaveAttribute(
-      "href",
-      expect.stringContaining(
-        "/ontology/?node=capability%3Atopology-analysis-modes",
-      ),
-    );
-    expect(screen.getByRole("link", { name: "Open builder" })).toHaveAttribute(
-      "href",
-      expect.stringContaining(
-        "/ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
-      ),
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Copy focus impact check" }));
-    expect(writeText).toHaveBeenCalledWith(
-      'query_ontology({"operation":"blast_radius","slug":"capability:topology-analysis-modes","depth":2,"direction":"incoming"})',
-    );
-  });
-
-  it("shows the focus review order before advanced copy tools", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="focus"
-        summary={{
-          mode: "focus",
-          primaryMetric: 4,
-          secondaryMetric: 3,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedSlug="capability:topology-analysis-modes"
-        selectedTitle="Topology Analysis Modes"
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText("Focus review order")).toBeInTheDocument();
-    const selectedReviewOrder = screen.getByTestId("topology-focus-review-order");
-    expect(selectedReviewOrder).toBeVisible();
-    expect(selectedReviewOrder).toHaveAttribute(
-      "data-review-order-density",
-      "selected-detail",
-    );
-    expect(screen.getByText("Read concept brief")).toBeInTheDocument();
-    expect(screen.getByText("Trace incoming impact")).toBeInTheDocument();
-    expect(screen.getByText("Edit or confirm meaning")).toBeInTheDocument();
-    expect(screen.getByText("Run sync gate")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Copy focus review brief" }),
-    ).toBeInTheDocument();
-    const primarySummary = screen.getByTestId("topology-focus-primary-summary");
-    expect(primarySummary).toHaveTextContent("Brief + impact packet");
-    expect(primarySummary.className).toContain("text-[10px]");
-    expect(primarySummary).toHaveAttribute(
-      "data-command-primary-summary-token",
-      "--topology-command-primary-summary-text",
-    );
-    expect(screen.getByRole("link", { name: "Open ontology" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open builder" })).toBeInTheDocument();
-    const summary = screen.getByTestId("topology-focus-proof-summary");
-    expect(summary).toHaveTextContent("Focus proof");
-    expect(summary.className).toContain("min-h-8");
-    expect(screen.getByTestId("topology-focus-proof-chevron")).toHaveClass(
-      "group-open:rotate-180",
-    );
-    expect(screen.queryByText("Copy tools")).not.toBeInTheDocument();
-  });
-
-  it("previews the focus review order before a node is selected", () => {
-    render(
-      <TopologyAnalysisBar
-        mode="focus"
-        summary={{
-          mode: "focus",
-          primaryMetric: 0,
-          secondaryMetric: 8,
-          needsSelection: true,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedSlug={null}
-        selectedTitle={null}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText("Select a node.")).toBeInTheDocument();
-    const reviewOrder = screen.getByTestId("topology-focus-review-order");
-    expect(reviewOrder).toHaveClass("grid-cols-2");
-    expect(reviewOrder).toHaveAttribute(
-      "data-review-order-density",
-      "unselected-compact",
-    );
-    expect(reviewOrder).toHaveTextContent("Read concept brief");
-    expect(reviewOrder).toHaveTextContent("Trace incoming impact");
-    expect(reviewOrder).toHaveTextContent("Edit or confirm meaning");
-    expect(reviewOrder).toHaveTextContent("Run sync gate");
-    expect(
-      screen.queryByRole("button", { name: "Copy focus review brief" }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText("Open ontology")).not.toBeInTheDocument();
-    expect(screen.queryByText("Open builder")).not.toBeInTheDocument();
-  });
-
-  it("copies a focused node review brief for collaborators and agents", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText },
-    });
-
-    render(
-      <TopologyAnalysisBar
-        mode="focus"
-        summary={{
-          mode: "focus",
-          primaryMetric: 4,
-          secondaryMetric: 3,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedSlug="capability:topology-analysis-modes"
-        selectedTitle="Topology Analysis Modes"
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Copy focus review brief" }));
-
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("# Topology focus review"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "- Node: Topology Analysis Modes (capability:topology-analysis-modes)",
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("mode=focus"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("p=capability%3Atopology-analysis-modes"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "- Ontology URL: /ontology/?node=capability%3Atopology-analysis-modes",
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "- Builder URL: /ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "- Agent check: ontology-atlas node capability:topology-analysis-modes [vault] --limit 12",
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        '- MCP check: query_ontology({"operation":"node_profile","slug":"capability:topology-analysis-modes","depth":2,"limit":12})',
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "- Impact check: ontology-atlas blast-radius capability:topology-analysis-modes [vault] --depth 2 --direction incoming",
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining(
-        '- MCP impact check: query_ontology({"operation":"blast_radius","slug":"capability:topology-analysis-modes","depth":2,"direction":"incoming"})',
-      ),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("- Post-change sync gate:"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("  # Post-change ontology sync gate"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining('"operation": "health"'),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("ontology-atlas validate [vault]"),
-    );
-  });
-
-  it("copies the post-change sync gate for a focused node", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText },
-    });
-
-    render(
-      <TopologyAnalysisBar
-        mode="focus"
-        summary={{
-          mode: "focus",
-          primaryMetric: 4,
-          secondaryMetric: 3,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={null}
-        selectedSlug="capability:topology-analysis-modes"
-        selectedTitle="Topology Analysis Modes"
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Copy focus post-change sync gate" }),
-    );
-
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("# Post-change ontology sync gate"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining('"operation": "health"'),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("ontology-atlas validate [vault]"),
-    );
-  });
-
   it("keeps the selected path source visible before the target is picked", () => {
     render(
       <TopologyAnalysisBar
@@ -1925,7 +1126,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle="Topology Analysis Modes"
         pathSourceTitle="Topology Analysis Modes"
         labels={labels}
         onModeChange={vi.fn()}
@@ -1956,7 +1156,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         pathSourceSlug="domains/views"
         pathTargetSlug="capability:topology-analysis-modes"
         pathSourceTitle="Views"
@@ -2153,7 +1352,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         pathSourceSlug="domains/views"
         pathTargetSlug="capability:topology-analysis-modes"
         pathSourceTitle="Views"
@@ -2338,7 +1536,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         pathSourceSlug="domains/views"
         pathTargetSlug="capability:topology-analysis-modes"
         pathSourceTitle="Views"
@@ -2460,7 +1657,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         pathSourceSlug="domains/views"
         pathTargetSlug="capability:topology-analysis-modes"
         pathSourceTitle="Views"
@@ -2499,7 +1695,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         pathSourceSlug="domains/views"
         pathTargetSlug="capability:topology-analysis-modes"
         pathSourceTitle="Views"
@@ -2546,7 +1741,6 @@ describe("TopologyAnalysisBar", () => {
           },
         }}
         healthAction={null}
-        selectedTitle={null}
         pathSourceSlug="domains/views"
         pathTargetSlug="capability:topology-analysis-modes"
         pathSourceTitle="Views"
@@ -2616,7 +1810,6 @@ describe("TopologyAnalysisBar", () => {
           title: "Legacy Project",
           kind: "stale",
         }}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={onHealthAction}
@@ -2652,7 +1845,6 @@ describe("TopologyAnalysisBar", () => {
           title: "Topology Analysis Modes",
           kind: "promotion",
         }}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -2689,7 +1881,6 @@ describe("TopologyAnalysisBar", () => {
           title: "Views",
           kind: "orphan",
         }}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -2845,7 +2036,6 @@ describe("TopologyAnalysisBar", () => {
           title: "Views",
           kind: "orphan",
         }}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -2886,7 +2076,6 @@ describe("TopologyAnalysisBar", () => {
           title: "Views",
           kind: "orphan",
         }}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -2991,7 +2180,6 @@ describe("TopologyAnalysisBar", () => {
           title: "Views",
           kind: "orphan",
         }}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
@@ -3039,7 +2227,6 @@ describe("TopologyAnalysisBar", () => {
           title: "Views",
           kind: "orphan",
         }}
-        selectedTitle={null}
         labels={labels}
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}

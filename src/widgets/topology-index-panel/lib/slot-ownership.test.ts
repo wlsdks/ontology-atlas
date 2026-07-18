@@ -6,8 +6,12 @@ describe("resolveLeftSlotOwner", () => {
     expect(resolveLeftSlotOwner({ analysisMode: "overview" })).toBe("index");
   });
 
-  it("gives the analysis rail the slot for every non-overview mode", () => {
-    for (const mode of ["graph", "focus", "path", "health"] as const) {
+  it("gives INDEX the slot in focus mode too (분석 패널 완전 소멸 2단계 §a — no more auto-collapse on node expand)", () => {
+    expect(resolveLeftSlotOwner({ analysisMode: "focus" })).toBe("index");
+  });
+
+  it("gives the analysis rail the slot for path/health/graph", () => {
+    for (const mode of ["graph", "path", "health"] as const) {
       expect(resolveLeftSlotOwner({ analysisMode: mode })).toBe("analysis-rail");
     }
   });

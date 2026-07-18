@@ -2025,8 +2025,6 @@ export function HomePage() {
                 mode={analysisMode}
                 summary={analysisSummary}
                 healthAction={topologyHealthSummary.actionTarget}
-                selectedSlug={selectedSlug}
-                selectedTitle={analysisSelectedTitle}
                 pathSourceSlug={pathSourceSlug}
                 pathTargetSlug={pathTargetSlug}
                 pathSourceTitle={pathSourceTitle}
@@ -2036,14 +2034,12 @@ export function HomePage() {
                 leftPanelExpanded={false}
                 createPanelReserved={createNodeOpen}
                 onModeChange={handleSelectAnalysisMode}
-                onClearSelection={handleClose}
                 onHealthAction={(slug) => handleSelect(slug)}
                 labels={{
                 title: t("analysis.title"),
                 overview: t("analysis.overview"),
                 graph: t("analysis.graph"),
                 graphPrompt: t("analysis.graphPrompt"),
-                focus: t("analysis.focus"),
                 path: t("analysis.path"),
                 health: t("analysis.health"),
                 metricNodes: t("analysis.metricNodes"),
@@ -2071,60 +2067,6 @@ export function HomePage() {
                 healthRepairOrderRepair: t("analysis.healthRepairOrderRepair"),
                 healthRepairOrderSync: t("analysis.healthRepairOrderSync"),
                 healthRepairTargetLabel: t("analysis.healthRepairTargetLabel"),
-                focusBriefCopy: t("analysis.focusBriefCopy"),
-                focusBriefCopySummary: t("analysis.focusBriefCopySummary"),
-                focusBriefCopied: t("analysis.focusBriefCopied"),
-                focusMcpCopy: t("analysis.focusMcpCopy"),
-                focusMcpCopied: t("analysis.focusMcpCopied"),
-                focusMcpImpactCopy: t("analysis.focusMcpImpactCopy"),
-                focusMcpImpactCopied: t("analysis.focusMcpImpactCopied"),
-                focusSyncGateCopy: t("analysis.focusSyncGateCopy"),
-                focusSyncGateCopied: t("analysis.focusSyncGateCopied"),
-                focusEnhanceCopy: t("analysis.focusEnhanceCopy"),
-                focusEnhanceCopied: t("analysis.focusEnhanceCopied"),
-                focusOpenOntology: t("analysis.focusOpenOntology"),
-                focusOpenBuilder: t("analysis.focusOpenBuilder"),
-                focusHandoffSummary: t("analysis.focusHandoffSummary"),
-                focusReviewOrderTitle: t("analysis.focusReviewOrderTitle"),
-                focusReviewOrderProfile: t("analysis.focusReviewOrderProfile"),
-                focusReviewOrderImpact: t("analysis.focusReviewOrderImpact"),
-                focusReviewOrderRepair: t("analysis.focusReviewOrderRepair"),
-                focusReviewOrderSync: t("analysis.focusReviewOrderSync"),
-                focusBriefCopyAriaLabel: t("analysis.focusBriefCopyAriaLabel"),
-                focusBriefCopiedAriaLabel: t(
-                  "analysis.focusBriefCopiedAriaLabel",
-                ),
-                focusMcpCopyAriaLabel: t("analysis.focusMcpCopyAriaLabel"),
-                focusMcpCopiedAriaLabel: t("analysis.focusMcpCopiedAriaLabel"),
-                focusMcpImpactCopyAriaLabel: t(
-                  "analysis.focusMcpImpactCopyAriaLabel",
-                ),
-                focusMcpImpactCopiedAriaLabel: t(
-                  "analysis.focusMcpImpactCopiedAriaLabel",
-                ),
-                focusSyncGateCopyAriaLabel: t(
-                  "analysis.focusSyncGateCopyAriaLabel",
-                ),
-                focusSyncGateCopiedAriaLabel: t(
-                  "analysis.focusSyncGateCopiedAriaLabel",
-                ),
-                focusEnhanceCopyAriaLabel: t(
-                  "analysis.focusEnhanceCopyAriaLabel",
-                ),
-                focusEnhanceCopiedAriaLabel: t(
-                  "analysis.focusEnhanceCopiedAriaLabel",
-                ),
-                focusBriefTitle: t("analysis.focusBriefTitle"),
-                focusBriefNode: t("analysis.focusBriefNode"),
-                focusBriefUrl: t("analysis.focusBriefUrl"),
-                focusBriefOntologyUrl: t("analysis.focusBriefOntologyUrl"),
-                focusBriefBuilderUrl: t("analysis.focusBriefBuilderUrl"),
-                focusBriefReviewFocus: t("analysis.focusBriefReviewFocus"),
-                focusBriefAgentCheck: t("analysis.focusBriefAgentCheck"),
-                focusBriefMcpCheck: t("analysis.focusBriefMcpCheck"),
-                focusBriefImpactCheck: t("analysis.focusBriefImpactCheck"),
-                focusBriefMcpImpactCheck: t("analysis.focusBriefMcpImpactCheck"),
-                focusBriefSyncGate: t("analysis.focusBriefSyncGate"),
                 healthMcpCopyAriaLabel: t("analysis.healthMcpCopyAriaLabel"),
                 healthMcpCopiedAriaLabel: t(
                   "analysis.healthMcpCopiedAriaLabel",
@@ -2180,10 +2122,6 @@ export function HomePage() {
                 ),
                 healthEvidenceNone: t("analysis.healthEvidenceNone"),
                 healthEvidenceUrl: t("analysis.healthEvidenceUrl"),
-                focusPrompt: t("analysis.focusPrompt"),
-                focusSelected: t("analysis.focusSelected", {
-                  title: analysisSelectedTitle ?? "",
-                }),
                 pathPrompt: t("analysis.pathPrompt"),
                 pathSelected: t("analysis.pathSelected", {
                   title: pathSourceTitle ?? analysisSelectedTitle ?? "",

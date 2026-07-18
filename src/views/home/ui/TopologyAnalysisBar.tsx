@@ -21,7 +21,6 @@ import type {
 } from "../lib/topology-analysis";
 import {
   buildTopologyHealthRepairHref,
-  formatTopologyFocusBrief,
   formatTopologyHealthBrief,
   formatTopologyHealthImpactMcpCheck,
   formatTopologyHealthMcpCheck,
@@ -40,7 +39,6 @@ interface TopologyAnalysisBarLabels {
   overview: string;
   graph: string;
   graphPrompt: string;
-  focus: string;
   path: string;
   health: string;
   metricNodes: string;
@@ -68,46 +66,6 @@ interface TopologyAnalysisBarLabels {
   healthRepairOrderRepair: string;
   healthRepairOrderSync: string;
   healthRepairTargetLabel: string;
-  focusBriefCopy: string;
-  focusBriefCopySummary: string;
-  focusBriefCopied: string;
-  focusMcpCopy: string;
-  focusMcpCopied: string;
-  focusMcpImpactCopy: string;
-  focusMcpImpactCopied: string;
-  focusSyncGateCopy: string;
-  focusSyncGateCopied: string;
-  focusEnhanceCopy: string;
-  focusEnhanceCopied: string;
-  focusOpenOntology: string;
-  focusOpenBuilder: string;
-  focusHandoffSummary: string;
-  focusReviewOrderTitle: string;
-  focusReviewOrderProfile: string;
-  focusReviewOrderImpact: string;
-  focusReviewOrderRepair: string;
-  focusReviewOrderSync: string;
-  focusBriefCopyAriaLabel: string;
-  focusBriefCopiedAriaLabel: string;
-  focusMcpCopyAriaLabel: string;
-  focusMcpCopiedAriaLabel: string;
-  focusMcpImpactCopyAriaLabel: string;
-  focusMcpImpactCopiedAriaLabel: string;
-  focusSyncGateCopyAriaLabel: string;
-  focusSyncGateCopiedAriaLabel: string;
-  focusEnhanceCopyAriaLabel: string;
-  focusEnhanceCopiedAriaLabel: string;
-  focusBriefTitle: string;
-  focusBriefNode: string;
-  focusBriefUrl: string;
-  focusBriefOntologyUrl: string;
-  focusBriefBuilderUrl: string;
-  focusBriefReviewFocus: string;
-  focusBriefAgentCheck: string;
-  focusBriefMcpCheck: string;
-  focusBriefImpactCheck: string;
-  focusBriefMcpImpactCheck: string;
-  focusBriefSyncGate: string;
   healthMcpCopyAriaLabel: string;
   healthMcpCopiedAriaLabel: string;
   healthMcpImpactCopyAriaLabel: string;
@@ -137,8 +95,6 @@ interface TopologyAnalysisBarLabels {
   healthEvidenceActionPromotion: string;
   healthEvidenceNone: string;
   healthEvidenceUrl: string;
-  focusPrompt: string;
-  focusSelected: string;
   pathPrompt: string;
   pathSelected: string;
   pathResolved: string;
@@ -212,8 +168,6 @@ interface TopologyAnalysisBarProps {
   mode: TopologyAnalysisMode;
   summary: TopologyAnalysisSummary;
   healthAction: TopologyHealthActionTarget | null;
-  selectedSlug?: string | null;
-  selectedTitle: string | null;
   pathSourceSlug?: string | null;
   pathTargetSlug?: string | null;
   pathSourceTitle?: string | null;
@@ -227,7 +181,6 @@ interface TopologyAnalysisBarProps {
   createPanelReserved?: boolean;
   labels: TopologyAnalysisBarLabels;
   onModeChange: (mode: TopologyAnalysisMode) => void;
-  onClearSelection?: () => void;
   onHealthAction: (slug: string) => void;
 }
 
@@ -240,33 +193,10 @@ const MODES = [
   { value: "graph", icon: Waypoints, labelKey: "graph" },
 ] as const;
 
-function formatFocusedOntologyEnhancementAgentCommand(slug: string): string {
-  return [
-    `Ontology Atlas agent task: strengthen the ontology around ${slug}.`,
-    "",
-    "If Atlas MCP is connected, run these read-first calls:",
-    `1. get_concept({ "slug": ${JSON.stringify(slug)} })`,
-    `2. query_ontology({ "operation": "node_profile", "slug": ${JSON.stringify(slug)}, "depth": 2, "limit": 12 })`,
-    `3. query_ontology({ "operation": "blast_radius", "slug": ${JSON.stringify(slug)}, "depth": 2, "direction": "incoming" })`,
-    `4. query_ontology({ "operation": "similar_nodes", "slug": ${JSON.stringify(slug)}, "limit": 8 })`,
-    '5. validate_vault({ "repoRoot": "[repo-root]" })',
-    "",
-    "Then propose narrowly scoped description, owner, evidence, or relation updates for this node only.",
-    "Use patch_concept/add_relation only after confirming the proposed graph change.",
-    "",
-    "CLI fallback:",
-    `node cli/src/index.mjs node ${slug} docs/ontology --neighbors`,
-    `node cli/src/index.mjs blast-radius ${slug} docs/ontology --depth 2 --direction incoming`,
-    `node cli/src/index.mjs similar ${slug} docs/ontology --limit 8`,
-  ].join("\n");
-}
-
 export function TopologyAnalysisBar({
   mode,
   summary,
   healthAction,
-  selectedSlug = null,
-  selectedTitle,
   pathSourceSlug,
   pathTargetSlug,
   pathSourceTitle,
@@ -277,18 +207,12 @@ export function TopologyAnalysisBar({
   createPanelReserved = false,
   labels,
   onModeChange,
-  onClearSelection,
   onHealthAction,
 }: TopologyAnalysisBarProps) {
   const [healthCopied, setHealthCopied] = useState(false);
   const [healthMcpCopied, setHealthMcpCopied] = useState(false);
   const [healthMcpImpactCopied, setHealthMcpImpactCopied] = useState(false);
   const [healthSyncGateCopied, setHealthSyncGateCopied] = useState(false);
-  const [focusBriefCopied, setFocusBriefCopied] = useState(false);
-  const [focusMcpCopied, setFocusMcpCopied] = useState(false);
-  const [focusMcpImpactCopied, setFocusMcpImpactCopied] = useState(false);
-  const [focusSyncGateCopied, setFocusSyncGateCopied] = useState(false);
-  const [focusEnhanceCopied, setFocusEnhanceCopied] = useState(false);
   const [pathEvidenceCopied, setPathEvidenceCopied] = useState(false);
   const [pathMcpCopied, setPathMcpCopied] = useState(false);
   const [pathRelationPreflightCopied, setPathRelationPreflightCopied] =
@@ -297,18 +221,19 @@ export function TopologyAnalysisBar({
     useState(false);
   const [pathAllPathsPlanCopied, setPathAllPathsPlanCopied] = useState(false);
   const [pathAllPathsCopied, setPathAllPathsCopied] = useState(false);
-  const displaySelectedTitle = selectedTitle ? compactAnalysisTitle(selectedTitle) : null;
   const displayPathSourceTitle = pathSourceTitle
     ? compactAnalysisTitle(pathSourceTitle)
     : null;
   const displayPathTargetTitle = pathTargetTitle
     ? compactAnalysisTitle(pathTargetTitle)
     : null;
-  const selectedContextActive =
-    mode === "overview" && Boolean(selectedSlug && displaySelectedTitle);
-  const panelMode = selectedContextActive ? "focus" : mode;
-  const selectedFocusRailActive =
-    panelMode === "focus" && Boolean(selectedSlug && displaySelectedTitle);
+  // 분석 패널 완전 소멸 2단계 §a — focus 는 더 이상 이 레일이 별도로 그리는
+  // 모드가 아니다(레일은 mode 를 그대로 panelMode 로 쓴다). HomePage 의
+  // `resolveLeftSlotOwner`가 focus 를 overview 와 동일하게 취급해 이 컴포넌트
+  // 자체가 focus 상태에서는 좌측 슬롯을 갖지 않으므로, 여기 남아 있던
+  // "overview 인데 노드가 선택되면 focus 로 승격" 트릭은 죽은 코드였다
+  // (당시에도 leftSlotOwner 가 이미 그 케이스를 걸러 렌더 자체가 안 됐다).
+  const panelMode = mode;
   // 칩 숫자 = 진짜 결함(오래된 근거 + 소속 미정)만. 허브 승격 후보는
   // 통계적 *제안*이라 카운트에 넣으면 첫 클릭에 "고칠 게 없는 빨간 숫자"
   // 가 되어 칩 신뢰가 무너진다 (기획자 감사 ⑦-b). 제안은 상태 패널 안에서.
@@ -316,12 +241,9 @@ export function TopologyAnalysisBar({
     summary.healthBreakdown.stale + summary.healthBreakdown.orphan;
   const handleModeRailChange = useCallback(
     (nextMode: TopologyAnalysisMode) => {
-      if (selectedContextActive && nextMode === "overview") {
-        onClearSelection?.();
-      }
       onModeChange(nextMode);
     },
-    [onClearSelection, onModeChange, selectedContextActive],
+    [onModeChange],
   );
   const headerAlignedPanel = panelMode === "overview" || panelMode === "path";
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
@@ -332,24 +254,17 @@ export function TopologyAnalysisBar({
           .replace("{target}", displayPathTargetTitle)
       : null;
   const prompt =
-    panelMode === "focus"
-      ? displaySelectedTitle
-        ? labels.focusSelected.replace("{title}", displaySelectedTitle)
-        : labels.focusPrompt
-      : panelMode === "path"
+    panelMode === "path"
+      ? resolvedPathTitle
         ? resolvedPathTitle
-          ? resolvedPathTitle
-          : displayPathSourceTitle || displaySelectedTitle
-          ? labels.pathSelected.replace(
-              "{title}",
-              displayPathSourceTitle ?? displaySelectedTitle ?? "",
-            )
+        : displayPathSourceTitle
+          ? labels.pathSelected.replace("{title}", displayPathSourceTitle)
           : labels.pathPrompt
-        : panelMode === "health"
-          ? labels.healthPrompt
-          : panelMode === "graph"
-            ? labels.graphPrompt
-            : labels.overviewPrompt;
+      : panelMode === "health"
+        ? labels.healthPrompt
+        : panelMode === "graph"
+          ? labels.graphPrompt
+          : labels.overviewPrompt;
   const pathCandidateVisibilityText =
     panelMode === "path" && pathCandidateVisibility && pathCandidateVisibility.total > 0
       ? labels.pathCandidateVisibility
@@ -444,75 +359,6 @@ export function TopologyAnalysisBar({
     setHealthSyncGateCopied(true);
     window.setTimeout(() => setHealthSyncGateCopied(false), 1600);
   }, [postChangeSyncPacket]);
-
-  const copyFocusMcpCheck = useCallback(async () => {
-    if (!selectedSlug) return;
-    const ok = await copyText(formatTopologyHealthMcpCheck(selectedSlug));
-    if (!ok) return;
-    setFocusMcpCopied(true);
-    window.setTimeout(() => setFocusMcpCopied(false), 1600);
-  }, [selectedSlug]);
-
-  const copyFocusBrief = useCallback(async () => {
-    if (!selectedSlug || !selectedTitle) return;
-    const currentUrl =
-      typeof window === "undefined" ? null : window.location.href;
-    const focusUrl =
-      typeof window === "undefined"
-        ? null
-        : buildFocusInspectUrl(window.location.href, selectedSlug);
-    const ok = await copyText(
-      formatTopologyFocusBrief({
-        slug: selectedSlug,
-        title: selectedTitle,
-        labels: {
-          title: labels.focusBriefTitle,
-          node: labels.focusBriefNode,
-          url: labels.focusBriefUrl,
-          ontologyUrl: labels.focusBriefOntologyUrl,
-          builderUrl: labels.focusBriefBuilderUrl,
-          reviewFocus: labels.focusBriefReviewFocus,
-          agentCheck: labels.focusBriefAgentCheck,
-          mcpCheck: labels.focusBriefMcpCheck,
-          impactCheck: labels.focusBriefImpactCheck,
-          mcpImpactCheck: labels.focusBriefMcpImpactCheck,
-          syncGate: labels.focusBriefSyncGate,
-        },
-        url: currentUrl,
-        focusUrl,
-        ontologyUrl: buildOntologyNodeHref(selectedSlug),
-        builderUrl: buildTopologyHealthRepairHref(selectedSlug),
-        syncGatePacket: postChangeSyncPacket,
-      }),
-    );
-    if (!ok) return;
-    setFocusBriefCopied(true);
-    window.setTimeout(() => setFocusBriefCopied(false), 1600);
-  }, [labels, postChangeSyncPacket, selectedSlug, selectedTitle]);
-
-  const copyFocusMcpImpactCheck = useCallback(async () => {
-    if (!selectedSlug) return;
-    const ok = await copyText(formatTopologyHealthImpactMcpCheck(selectedSlug));
-    if (!ok) return;
-    setFocusMcpImpactCopied(true);
-    window.setTimeout(() => setFocusMcpImpactCopied(false), 1600);
-  }, [selectedSlug]);
-
-  const copyFocusSyncGate = useCallback(async () => {
-    if (!selectedSlug) return;
-    const ok = await copyText(postChangeSyncPacket);
-    if (!ok) return;
-    setFocusSyncGateCopied(true);
-    window.setTimeout(() => setFocusSyncGateCopied(false), 1600);
-  }, [postChangeSyncPacket, selectedSlug]);
-
-  const copyFocusEnhancementCommand = useCallback(async () => {
-    if (!selectedSlug) return;
-    const ok = await copyText(formatFocusedOntologyEnhancementAgentCommand(selectedSlug));
-    if (!ok) return;
-    setFocusEnhanceCopied(true);
-    window.setTimeout(() => setFocusEnhanceCopied(false), 1600);
-  }, [selectedSlug]);
 
   const copyPathEvidence = useCallback(async () => {
     if (!pathSourceSlug || !pathTargetSlug || !pathSourceTitle || !pathTargetTitle) {
@@ -620,9 +466,7 @@ export function TopologyAnalysisBar({
   }, [pathSourceSlug, pathTargetSlug]);
 
   const attentionRole =
-    panelMode === "focus" || panelMode === "overview" || panelMode === "path"
-      ? "support"
-      : "primary";
+    panelMode === "overview" || panelMode === "path" ? "support" : "primary";
   const panelSurfaceToken =
     attentionRole === "support"
       ? "--topology-panel-support-surface"
@@ -631,18 +475,11 @@ export function TopologyAnalysisBar({
     attentionRole === "support"
       ? "--topology-panel-support-shadow"
       : "--topology-panel-primary-shadow";
-  const panelPaddingToken =
-    panelMode === "focus" && !selectedFocusRailActive
-      ? "--topology-panel-focus-rail-padding"
-      : "--topology-panel-padding";
+  const panelPaddingToken = "--topology-panel-padding";
   const panelStyle: CSSProperties = {
     width:
-      selectedFocusRailActive
-        ? "var(--topology-panel-selected-rail-width)"
-        : panelMode === "focus"
-          ? "var(--topology-panel-focus-rail-width)"
-        : panelMode === "health"
-          ? "var(--topology-panel-overview-responsive-width)"
+      panelMode === "health"
+        ? "var(--topology-panel-overview-responsive-width)"
         : panelMode === "graph"
           ? "var(--topology-panel-graph-width)"
         : panelMode === "path"
@@ -668,11 +505,7 @@ export function TopologyAnalysisBar({
       "background var(--topology-motion-panel-duration) var(--topology-motion-ease-standard), box-shadow var(--topology-motion-panel-duration) var(--topology-motion-ease-standard)",
   };
   const panelWidthTarget =
-    selectedFocusRailActive
-      ? "selected-focus-rail"
-      : panelMode === "focus"
-        ? "focus-support-rail"
-      : panelMode === "overview"
+    panelMode === "overview"
       ? "overview-14-inch-compact"
       : panelMode === "health"
         ? "health-phone-primary-rail"
@@ -696,8 +529,6 @@ export function TopologyAnalysisBar({
       data-testid="topology-analysis-panel"
       data-requested-analysis-mode={mode}
       data-analysis-mode={panelMode}
-      data-selected-context={selectedContextActive ? "true" : "false"}
-      data-selected-focus-rail={selectedFocusRailActive ? "true" : "false"}
       data-attention-role={attentionRole}
       data-panel-width-policy={
         headerAlignedPanel
@@ -717,33 +548,14 @@ export function TopologyAnalysisBar({
       data-panel-radius-token="--topology-panel-radius"
       data-panel-padding-token={panelPaddingToken}
       data-panel-motion-token="--topology-motion-panel-duration"
-      data-command-spine-padding-token={
-        panelMode === "focus" ? "--topology-command-spine-padding" : undefined
-      }
-      data-command-spine-gap-token={
-        panelMode === "focus" ? "--topology-command-spine-gap" : undefined
-      }
-      data-command-primary-height-token={
-        panelMode === "focus" ? "--topology-command-primary-min-height" : undefined
-      }
-      data-command-spine-surface-token={
-        panelMode === "focus" ? "--topology-command-spine-surface" : undefined
-      }
-      data-command-spine-border-token={
-        panelMode === "focus" ? "--topology-command-spine-border" : undefined
-      }
       data-panel-width-contract={
-        selectedFocusRailActive
-          ? "selected-focus-rail-max-320"
-          : panelMode === "focus"
-            ? "focus-support-rail-max-300-map-centered"
-          : panelMode === "overview"
-            ? "overview-support-max-360-phone-utility-reserve"
-            : panelMode === "health"
-              ? "health-primary-max-360-phone-full-width"
-            : panelMode === "path" && headerAlignedPanel
-              ? "path-support-rail-max-360-phone-utility-reserve"
-            : "standard"
+        panelMode === "overview"
+          ? "overview-support-max-360-phone-utility-reserve"
+          : panelMode === "health"
+            ? "health-primary-max-360-phone-full-width"
+          : panelMode === "path" && headerAlignedPanel
+            ? "path-support-rail-max-360-phone-utility-reserve"
+          : "standard"
       }
       data-panel-phone-utility-reserve-token={
         panelMode === "overview" || panelMode === "path" || panelMode === "health"
@@ -779,9 +591,6 @@ export function TopologyAnalysisBar({
           ? "inspect-repair-sync"
           : undefined
       }
-      data-compact-focus-collapse-contract={
-        selectedFocusRailActive ? "selected-focus-support-hidden-under-md" : undefined
-      }
       data-path-guidance-owner={panelMode === "path" ? "analysis-rail" : undefined}
       data-path-prompt-policy={
         panelMode === "path" ? "panel-owned-when-card-mode" : undefined
@@ -798,13 +607,13 @@ export function TopologyAnalysisBar({
             "top-[5.5rem] max-h-[calc(100dvh-7rem)]"
       // xl:left-8(32px) → xl:left-[var(--chrome-inset)](24px) —
       // feat/chrome-system §4, 브랜드 필/INDEX 패널과 같은 24px 정렬 레일.
-      } lg:left-6 xl:left-[var(--chrome-inset)] ${selectedFocusRailActive ? "max-md:hidden" : ""} ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
+      } lg:left-6 xl:left-[var(--chrome-inset)] ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
     >
       <div
         data-testid="topology-analysis-panel-body"
         data-panel-body-scroll-contract="compact-scrolls-above-bottom-tab"
         data-panel-body-scroll-end-reserve-token={panelBodyScrollEndReserveToken}
-        className="flex flex-col gap-3 data-[analysis-body-mode=focus]:gap-[var(--topology-analysis-focus-body-gap)] data-[analysis-body-mode=overview]:gap-[var(--topology-overview-panel-compact-gap)] data-[analysis-body-mode=path]:gap-[var(--topology-path-panel-compact-gap)] max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-path-collapsed-scroll-end-reserve)] data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=focus]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=health]:max-md:pb-[var(--topology-health-panel-scroll-end-reserve)] max-md:pr-1"
+        className="flex flex-col gap-3 data-[analysis-body-mode=overview]:gap-[var(--topology-overview-panel-compact-gap)] data-[analysis-body-mode=path]:gap-[var(--topology-path-panel-compact-gap)] max-md:max-h-[calc(100dvh-7rem-var(--topology-analysis-panel-compact-scroll-end-reserve))] max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-[var(--topology-analysis-panel-path-collapsed-scroll-end-reserve)] data-[analysis-body-mode=overview]:max-md:pb-[var(--topology-analysis-panel-compact-scroll-end-reserve)] data-[analysis-body-mode=health]:max-md:pb-[var(--topology-health-panel-scroll-end-reserve)] max-md:pr-1"
         data-analysis-body-mode={panelMode}
       >
         <div
@@ -887,11 +696,7 @@ export function TopologyAnalysisBar({
             data-testid="topology-analysis-panel-prompt"
             data-prompt-text-token="--topology-analysis-panel-prompt-text"
             className={`break-keep text-[13.5px] text-[color:var(--topology-analysis-panel-prompt-text)] ${
-              panelMode === "overview"
-                ? "line-clamp-1 leading-5"
-                : panelMode === "focus"
-                  ? "line-clamp-2 leading-5"
-                  : "line-clamp-3 leading-6"
+              panelMode === "overview" ? "line-clamp-1 leading-5" : "line-clamp-3 leading-6"
             }`}
           >
             {prompt}
@@ -899,15 +704,13 @@ export function TopologyAnalysisBar({
           {/* overview 는 census(concepts/relations) 를 상단 워크스페이스 HUD
               (HeroCollapsed subtitle) 가 이미 보여준다 — 같은 숫자를 패널에서
               또 반복하면 "295·505 중복" 이 된다(디자인 가디언 verdict a6).
-              다른 모드(health/focus/path)는 그 모드 고유 지표라 유지한다. */}
+              다른 모드(health/path)는 그 모드 고유 지표라 유지한다. */}
           {panelMode !== "overview" ? (
             <div
               data-testid="topology-analysis-panel-metrics"
               data-metric-label-text-token="--topology-analysis-panel-metric-label-text"
               data-metric-value-text-token="--topology-analysis-panel-metric-value-text"
-              className={`grid grid-cols-2 gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--topology-analysis-panel-metric-label-text)] ${
-                panelMode === "focus" ? "mt-2" : "mt-3"
-              }`}
+              className="grid grid-cols-2 gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--topology-analysis-panel-metric-label-text)] mt-3"
             >
               <span>
                 <span className="text-[color:var(--topology-analysis-panel-metric-value-text)]">
@@ -1534,206 +1337,6 @@ export function TopologyAnalysisBar({
               </div>
             </details>
           ) : null}
-          {panelMode === "focus" ? (
-            <div
-              data-testid="topology-focus-command-spine"
-              data-command-hierarchy="brief-primary-review-agent-proof"
-              data-attention-layer="support-command-spine"
-              data-tokenized-surface="topology-command-spine"
-              data-command-spine-surface-token="--topology-command-spine-surface"
-              data-command-spine-border-token="--topology-command-spine-border"
-              className="mt-3 rounded-[var(--topology-command-spine-radius)] border border-[color:var(--topology-command-spine-border)] bg-[image:var(--topology-command-spine-surface)] p-[var(--topology-command-spine-padding)] shadow-[inset_0_1px_0_var(--topology-command-spine-inset-highlight)]"
-            >
-              {selectedSlug ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={copyFocusBrief}
-                    data-testid="topology-focus-primary-action"
-                    data-command-primary-surface-token="--topology-command-primary-surface"
-                    data-command-primary-border-token="--topology-command-primary-border"
-                    className="group/focus-action flex min-h-[var(--topology-command-primary-min-height)] w-full min-w-0 items-center justify-between gap-[var(--topology-command-spine-gap)] rounded-lg border border-[color:var(--topology-command-primary-border)] bg-[color:var(--topology-command-primary-surface)] px-3 py-2 text-left text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform,box-shadow] duration-180 ease-out hover:border-[color:var(--topology-command-primary-hover-border)] hover:bg-[color:var(--topology-command-primary-hover-surface)] hover:text-[color:var(--color-text-primary)] hover:shadow-[var(--topology-command-primary-hover-shadow)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
-                    aria-label={
-                      focusBriefCopied
-                        ? labels.focusBriefCopiedAriaLabel
-                        : labels.focusBriefCopyAriaLabel
-                    }
-                  >
-                    <span className="flex min-w-0 items-center gap-2">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[color:var(--topology-command-icon-surface)] text-[color:var(--topology-command-icon-text)]">
-                        {focusBriefCopied ? (
-                          <Check size={13} aria-hidden />
-                        ) : (
-                          <Clipboard size={13} aria-hidden />
-                        )}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-[12px] font-medium leading-4">
-                          {labels.focusBriefCopy}
-                        </span>
-                        <span
-                          data-testid="topology-focus-primary-summary"
-                          data-command-primary-summary-token="--topology-command-primary-summary-text"
-                          className="block truncate text-[10px] leading-4 text-[color:var(--topology-command-primary-summary-text)]"
-                        >
-                          {labels.focusBriefCopySummary}
-                        </span>
-                      </span>
-                    </span>
-                    <ArrowRight
-                      size={14}
-                      aria-hidden
-                      className="shrink-0 text-[color:var(--topology-command-arrow-text)] transition-transform duration-180 group-hover/focus-action:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none"
-                    />
-                  </button>
-                </>
-              ) : null}
-              <div className={selectedSlug ? "mt-[var(--topology-command-spine-gap)]" : ""}>
-                <p className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {labels.focusReviewOrderTitle}
-                </p>
-                <ol
-                  data-testid="topology-focus-review-order"
-                  data-review-order-contract="flat-numbered-rail"
-                  data-review-order-density={
-                    selectedSlug ? "selected-detail" : "unselected-compact"
-                  }
-                  data-command-step-surface-token="--topology-command-step-surface"
-                  data-command-step-border-token="--topology-command-step-border"
-                  className={`mt-1.5 grid min-w-0 overflow-hidden rounded-md border border-[color:var(--topology-command-step-border)] bg-[color:var(--topology-command-step-surface)] ${
-                    selectedSlug ? "" : "grid-cols-2"
-                  }`}
-                >
-                  <FocusReviewStep
-                    compact={!selectedSlug}
-                    index={1}
-                    label={labels.focusReviewOrderProfile}
-                  />
-                  <FocusReviewStep
-                    compact={!selectedSlug}
-                    index={2}
-                    label={labels.focusReviewOrderImpact}
-                  />
-                  <FocusReviewStep
-                    compact={!selectedSlug}
-                    index={3}
-                    label={labels.focusReviewOrderRepair}
-                  />
-                  <FocusReviewStep
-                    compact={!selectedSlug}
-                    index={4}
-                    label={labels.focusReviewOrderSync}
-                  />
-                </ol>
-              </div>
-              {selectedSlug ? (
-                <>
-                  <div
-                    data-testid="topology-focus-secondary-actions"
-                    data-focus-secondary-action-contract="ontology-builder-exits"
-                    data-command-secondary-surface-token="--topology-command-secondary-surface"
-                    data-command-secondary-border-token="--topology-command-secondary-border"
-                    className="mt-[var(--topology-command-spine-gap)] grid grid-cols-2 gap-1"
-                  >
-                    <Link
-                      href={buildOntologyNodeHref(selectedSlug)}
-                      data-focus-secondary-action="ontology"
-                      data-command-secondary-surface-token="--topology-command-secondary-surface"
-                      data-command-secondary-border-token="--topology-command-secondary-border"
-                      className="inline-flex min-h-8 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--topology-command-secondary-hover-border)] hover:text-[color:var(--color-text-primary)]"
-                    >
-                      <span className="truncate">{labels.focusOpenOntology}</span>
-                    </Link>
-                    <Link
-                      href={buildTopologyHealthRepairHref(selectedSlug)}
-                      data-focus-secondary-action="builder"
-                      data-command-secondary-surface-token="--topology-command-secondary-surface"
-                      data-command-secondary-border-token="--topology-command-secondary-border"
-                      className="inline-flex min-h-8 min-w-0 items-center justify-center rounded-md border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--topology-command-secondary-hover-border)] hover:text-[color:var(--color-text-primary)]"
-                    >
-                      <span className="truncate">{labels.focusOpenBuilder}</span>
-                    </Link>
-                  </div>
-                  <details
-                    className="group mt-[var(--topology-command-spine-gap)]"
-                    data-testid="topology-focus-agent-handoff"
-                    data-handoff-contract="mcp-cli-proof-disclosed"
-                  >
-                    <summary
-                      data-testid="topology-focus-proof-summary"
-                      className="inline-flex min-h-8 w-full cursor-pointer list-none items-center justify-between gap-2 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
-                    >
-                      <span>{labels.focusHandoffSummary}</span>
-                      <ChevronDown
-                        size={12}
-                        aria-hidden
-                        className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
-                        data-testid="topology-focus-proof-chevron"
-                      />
-                    </summary>
-                    <div className="mt-1 grid gap-1">
-                      <CompactCopyButton
-                        data-focus-proof-action="mcp-profile"
-                        data-command-secondary-surface-token="--topology-command-secondary-surface"
-                        data-command-secondary-border-token="--topology-command-secondary-border"
-                        copied={focusMcpCopied}
-                        label={labels.focusMcpCopy}
-                        ariaLabel={
-                          focusMcpCopied
-                            ? labels.focusMcpCopiedAriaLabel
-                            : labels.focusMcpCopyAriaLabel
-                        }
-                        onClick={copyFocusMcpCheck}
-                        className="border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] hover:border-[color:var(--topology-command-secondary-hover-border)]"
-                      />
-                      <CompactCopyButton
-                        data-focus-proof-action="mcp-impact"
-                        data-command-secondary-surface-token="--topology-command-secondary-surface"
-                        data-command-secondary-border-token="--topology-command-secondary-border"
-                        copied={focusMcpImpactCopied}
-                        label={labels.focusMcpImpactCopy}
-                        ariaLabel={
-                          focusMcpImpactCopied
-                            ? labels.focusMcpImpactCopiedAriaLabel
-                            : labels.focusMcpImpactCopyAriaLabel
-                        }
-                        onClick={copyFocusMcpImpactCheck}
-                        className="border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] hover:border-[color:var(--topology-command-secondary-hover-border)]"
-                      />
-                      <CompactCopyButton
-                        data-focus-proof-action="sync-gate"
-                        data-command-secondary-surface-token="--topology-command-secondary-surface"
-                        data-command-secondary-border-token="--topology-command-secondary-border"
-                        copied={focusSyncGateCopied}
-                        label={labels.focusSyncGateCopy}
-                        ariaLabel={
-                          focusSyncGateCopied
-                            ? labels.focusSyncGateCopiedAriaLabel
-                            : labels.focusSyncGateCopyAriaLabel
-                        }
-                        onClick={copyFocusSyncGate}
-                        className="border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] hover:border-[color:var(--topology-command-secondary-hover-border)]"
-                      />
-                      <CompactCopyButton
-                        data-focus-proof-action="strengthen-command"
-                        data-command-secondary-surface-token="--topology-command-secondary-surface"
-                        data-command-secondary-border-token="--topology-command-secondary-border"
-                        copied={focusEnhanceCopied}
-                        label={labels.focusEnhanceCopy}
-                        ariaLabel={
-                          focusEnhanceCopied
-                            ? labels.focusEnhanceCopiedAriaLabel
-                            : labels.focusEnhanceCopyAriaLabel
-                        }
-                        onClick={copyFocusEnhancementCommand}
-                        className="border border-[color:var(--topology-command-secondary-border)] bg-[color:var(--topology-command-secondary-surface)] hover:border-[color:var(--topology-command-secondary-hover-border)]"
-                      />
-                    </div>
-                  </details>
-                </>
-              ) : null}
-            </div>
-          ) : null}
         </div>
       </div>
     </section>
@@ -1748,13 +1351,6 @@ function compactAnalysisTitle(title: string): string {
 function buildHealthInspectUrl(currentUrl: string, slug: string): string {
   const url = new URL(currentUrl);
   url.searchParams.set("mode", "health");
-  url.searchParams.set("p", slug);
-  return url.toString();
-}
-
-function buildFocusInspectUrl(currentUrl: string, slug: string): string {
-  const url = new URL(currentUrl);
-  url.searchParams.set("mode", "focus");
   url.searchParams.set("p", slug);
   return url.toString();
 }
@@ -1783,37 +1379,6 @@ function OverviewWorkStep({
     <li className="inline-flex min-w-0 list-none items-center gap-1.5">
       <span className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--color-overlay-3)]" aria-hidden />
       <span className="block whitespace-nowrap text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
-        {label}
-      </span>
-    </li>
-  );
-}
-
-function FocusReviewStep({
-  compact,
-  index,
-  label,
-}: {
-  compact?: boolean;
-  index: number;
-  label: string;
-}) {
-  return (
-    <li
-      data-focus-review-step={index}
-      data-command-step-contract="flat-numbered-row"
-      data-command-step-density={compact ? "compact-two-column" : "detail-row"}
-      className={`grid min-h-[var(--topology-command-step-min-height)] grid-cols-[var(--topology-command-step-index-size)_minmax(0,1fr)] items-center border-b border-[color:var(--topology-command-step-border)] py-1 last:border-b-0 ${
-        compact ? "gap-1.5 px-1.5 even:border-l" : "gap-2 px-2"
-      }`}
-    >
-      <span
-        aria-hidden
-        className="flex h-[var(--topology-command-step-index-size)] w-[var(--topology-command-step-index-size)] items-center justify-center rounded-full border border-[color:var(--topology-command-step-index-border)] bg-[color:var(--topology-command-step-index-surface)] font-mono text-[8.5px] text-[color:var(--topology-command-step-index-text)]"
-      >
-        {index}
-      </span>
-      <span className="min-w-0 truncate text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
         {label}
       </span>
     </li>
