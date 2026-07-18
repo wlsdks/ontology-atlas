@@ -1,7 +1,12 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-05-31 (real-time **adaptive** vault polling, `/docs` editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, `find_evidence` relevance ranking, `validate_vault` vault→code `pathDrift`, `infer_imports` edge reconciliation). Earlier (2026-05-28): graph DB health gate, `/ontology` Browse / Write / Query loop, Builder proof handoff role, desktop route smoke.
+> Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR #355~#366 —
+> `docs/prototypes/` 승인 시안 기반으로 `/`·`/topology`·`/project/[slug]`·
+> `/ontology/edit`·`/ontology/insights`·`/docs`·`/projects`·`/download`·project
+> 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census
+> 헤더가 모두 이 라운드에서 나옴 — 세부는 §2 각 라우트 절 참고). Earlier
+> (2026-05-31): real-time **adaptive** vault polling, `/docs` editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, `find_evidence` relevance ranking, `validate_vault` vault→code `pathDrift`, `infer_imports` edge reconciliation. Earlier still (2026-05-28): graph DB health gate, `/ontology` Browse / Write / Query loop, Builder proof handoff role, desktop route smoke.
 > Routes section UI detail remains a maintained product snapshot. When route
 > behavior changes, update this file alongside the PR body and CHANGELOG.
 > Update trigger: reflect immediately when surfaces are added or removed. Update alongside the PR body and CHANGELOG.
@@ -97,7 +102,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
   - **상태 (health)** — enters via the 정리 queue count chip on the view rail; `mode=health` deep links preserved
 
 #### Canvas (`topology-map-v2` — custom canvas-2D engine + Graphology ForceAtlas2 physics)
-- **Click node** → right-side `ProjectDrawer` opens
+- **Click node** → right-side panel opens (`ProjectDrawer` for project nodes, the 352px node datasheet for domain/capability/element nodes — see "Node datasheet" below)
 - **Drag node** → reposition (releases back to physics)
 - **Double-click node** → "local graph" mode (2-hop neighbors only, breadcrumb: `Local · Root · slugA · slugB`, click to backtrack, Esc to exit)
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
@@ -119,19 +124,16 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 #### Top-right buttons
 - **Source button** (`D`) → `DocsQuickDrawer` overlay with pinned/recent markdown source preview
 - **Shortcuts button** (`?`) → `ShortcutSheet`
+- **Settings gear** (`TopologyV2SettingsGear`, 2026-07-18) → compact anchored popover (228px), no scrim: 언어 (`LocaleSwitch`) · 테마 (`ThemeToggle`) · INDEX 기본 상태 (expanded/collapsed default, writes the same localStorage key the INDEX panel reads). Self-closes; owns its own Escape so the global topology Esc ladder doesn't double-fire. Desktop-only (1512/1920 scope)
 
-#### Left workspace info panel
-- Expanded: workspace title + project/hub counts + 3 nav links (Projects / Source / Ontology) + collapse button
-- Collapsed: pill with selected project name or workspace summary
+#### Top-left brand pill (`HeroCollapsed`, compact-only since 2026-06-11)
+- One pill, no expanded hero state (removed — it competed with the map for attention): selected project name, or workspace subtitle (concept/relation counts + weekly growth signal when > 0)
+- Source Vault (`/docs`) and Ontology (`/ontology`) quick links inline
+- Chevron toggles the selected-node inspector support rail when a node is focused, or closes the drawer/datasheet otherwise
 
-#### Right-side `ProjectDrawer` (when a node is selected)
-- Project name + icon + category badge · description · tags · stack
-- "View project" → `/project/[slug]/`
-- "Open workspace" → `/docs/?slug=...`
-- Connections summary (dependencies / referencedBy)
-- Impact mode toggle (Default · Upstream · Downstream · Network)
-- Integrity checks · screenshots (lazy top 2) · timeline · links
-- Footer: "slug · updated DATE"
+#### Node datasheet — two variants by node kind
+- **Project node click** → right-side `ProjectDrawer`: name + icon + category badge · description · tags · stack · "View project" (`/project/[slug]/`) · "Open workspace" (`/docs/?slug=...`) · connections summary (dependencies / referencedBy) · impact mode toggle (Default · Upstream · Downstream · Network) · integrity checks · screenshots (lazy top 2) · timeline · links · footer "slug · updated DATE"
+- **Domain / capability / element node click** → `TopologyV2DetailPanel`, the 352px datasheet (scaled up from 288px, 2026-07-18): single engraved metric line ("쓰는 곳 N · 기대는 곳 N · 근거 N"), two direction groups — **쓰는 곳** (direct incoming — places that use this node) and **기대는 곳** (direct outgoing — places this node leans on), each capped with a "+N more" overflow; a promoted **근거** (evidence) group listing `evidenceIds` rows; a copyable agent handoff row (MCP/CLI-style payload); "전체 상세 →" opt-in to the full detail panel. Direction, not relation type, is the single grouping axis (R+ — avoids double-counting the same edge under both a type split and a direction split)
 
 #### Mobile-only
 - `BottomTabBar` (4 tabs: Ontology / Topology / Projects / Source) at safe-area bottom
@@ -150,9 +152,11 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 
 ### `/docs` — Ontology workspace (reader + editor + palette)
 
+#### Crumbs row (2026-07-18, engraved vault census — always visible, above header)
+- Back-to-workspace link · `Workspace` label · right-aligned engraved census (`concepts · relations`, mono numerals, sm+)
+
 #### Header (always visible)
-- Back button · title + doc count · `Local` badge (when source=local)
-- Pinned `Files` / `Graph` / `Agent` execution strip: source markdown count, compiled ontology node/relation counts, and the same 14-check graph DB proof gate used by the local dogfood runtime pack, with a direct graph-gate copy action on the Agent cell
+- Mobile tree-open button (<lg) · title · **vault pill**: vault path (md+) + doc count + top-level folder count (sm+) + swap/re-pick action · `Local` badge (when source=local)
 - **Source toggle** (R3 cut C — radio: Sample / Local). Round 4 J: clicking Local auto-opens vault tools dropdown if no vault loaded yet
 - **Palette button** (`⌘K`)
 - **Inspector button**: opens the document outline, share/print actions, file actions, and backlinks only when requested, keeping the reading canvas quiet by default
@@ -167,15 +171,18 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - Shows error message · "Open picker" button to reauth/re-pick
 - Stops the silent server-fallback that was confusing users
 
-#### Sidebar (md+)
-- **Source tree** (`DocsVaultTree`): primary navigation; folder hierarchy, click to select, local search, tag-filter auto-expands folders
-- **Filter & saved** disclosure: pinned records, recent records, and top tag filters stay collapsed until requested; active tag keeps the disclosure open
+#### Sidebar (`DocsSidebarBody`, persistent 280px pane on lg+, docs-vault-final spec)
+- Three sections always visible (2026-07-18 — previously Pinned/Recent were tucked inside a collapsible "filter & saved" disclosure; an Obsidian-style vault workspace uses pinned/recent as often as the tree itself):
+  - **Pinned** — pinned docs, unpin action
+  - **Vault** (`DocsVaultTree`) — full folder hierarchy, kind glyphs + per-folder engraved counts, click to select, local search, tag-filter auto-expands folders
+  - **Recent** — recently opened docs
+- Tag filter stays its own collapsible disclosure (not this screen's primary purpose); active tag keeps it open
 
-#### Mobile drawer (<md)
-- Hamburger button → overlay drawer with sidebar contents
+#### Mobile drawer (<lg)
+- Hamburger button → overlay drawer with the same `DocsSidebarBody` contents
 
 #### Content area
-- **view=doc** (default): editor (when editing) or viewer + `DocMetaBar` (word count, reading minutes, tags, updated date) + optional inspector (`DocsVaultDocOutlinePanel`) + `DocsVaultProjectDepsBar` (in `projects/*` + local)
+- **view=doc** (default): editor (when editing) or viewer + `DocMetaBar` (word count, reading minutes, tags, updated date) + `DocFrontmatterBlock` (2026-07-18 — renders `kind`/`slug`/`domain`/`depends_on`/`evidence` directly on the page, only when the doc has a `kind:`; the visible proof that "frontmatter is the graph") + optional inspector (`DocsVaultDocOutlinePanel`) + `DocsVaultProjectDepsBar` (in `projects/*` + local) + bottom **backlinks strip** (2026-07-18, full pane width, dedup'd single source — replaces the earlier duplicate backlinks surfaces)
 - **view=folder-topology** (local only): mini Sigma over `projects/*.md`, drag positions saved to frontmatter, `+ Project` button (canEdit)
 
 #### Unified palette (`⌘K`, `DocsVaultUnifiedPalette`)
@@ -231,37 +238,46 @@ only the Browse leg of the old Browse/Write/Query loop moved.
 
 ---
 
-### `/ontology/insights` — Insights
+### `/ontology/insights` — Insights (3-tab dashboard, rebuilt 2026-07-18)
 
-Core panels (R3 cut E reordered + folded cross-project):
+Full rebuild against the approved `docs/prototypes/insights-final.html` mockup.
+The previous round's 4-tab reader-persona system (proof / collaboration /
+agent / census presets, session proof strip, collaborator brief, query-recipe
+cockpit — ~6,200 lines) is gone; every number on this page now derives from
+the same data source the page already used (`useOntologyInsight`,
+`shared/lib/ontology-tree`) instead of a separate persona layer.
 
-1. **Kind distribution** (kind → count bars)
-2. **Edge type distribution** (canonical order — contains, belongs_to, depends_on, …) + inline caption with cross-project edge count + ratio (folded from removed Cross-project Panel)
-3. **Per-project distribution** (top 12 by total nodes)
-4. **Hub nodes** (top 10 by degree, click → `/ontology/?node=…`)
-5. **Recent nodes** (vault sentinel preview, click → deeplink)
-6. **Orphans** (R3 cut E made clickable Links, amber accent, top 10 + "+N more")
+#### Header (always visible)
+- Title + subtitle + right-aligned engraved census (`N concepts · N relations · N domains`)
+- `TabBar` (개요 Overview / 관계 Relations / 신선도 Freshness), tab state in `?tab=`, each tab shows a live count badge (total nodes / total edges / freshness window in weeks)
 
-Collaborator reader lane:
+#### Tab 1 — 개요 Overview
+- **Hero census** (`InsightsHeroCensus`) — concepts / relations / health facts (orphan count, cycle count, domain-membership rate, evidence-linked rate)
+- **Kind census** card — kind → glyph + bar + count, tallest bar highlighted
+- **Domain capacity** card — domain → bar (capability/element sub-counts), hidden when there are no domains
 
-- **Collaborator insight brief** — copyable workspace overview for planning, marketing, and domain review. It includes metrics, shared vocabulary hubs, review vocabulary rows, focus-specific review questions, a `Decision lane`, a `Decision record` checkpoint, graph handoff links, impact handoffs, open-question handoffs, workspace CLI/MCP checks, and a compact vocabulary-only copy action when reviewers do not need agent commands.
+#### Tab 2 — 관계 Relations
+- **Relation breakdown** — every edge type as a bar row with a `TopologyV2TraceMark` (solid=containment, dashed=depends/relates) + count + percent of total
+- **Top depends_on pairs** — from → to rows with counts, capped list
+- **Hubs** — top nodes by degree, each with a 52px mini ego-thumbnail SVG (real spokes/degree from `buildHubEgoThumbnail`, not decorative) + degree count; "+N more" note when truncated
 
-Agent panels:
+#### Tab 3 — 신선도 Freshness
+- **Domain freshness heatstrip** — one row per domain, a week-by-week heat strip (neutral ramp, current week in indigo) built from real vault `updatedAt` values (`FRESHNESS_WINDOW_WEEKS`); domains with no dated docs are excluded from the stale count rather than counted as stale ("unknown" ≠ "old"); stale domains get a dashed "stale" tag
+- **Recent updates** — most recently touched nodes with kind glyph, domain, and ISO date; footer shows total stale-domain count
 
-- **Agent graph readiness** — score, graph facts, blockers, next actions, a copyable MCP repair prompt, and local terminal fallback checks (`agent-brief`, `agent-brief --graph-db-pack`, `agent-brief --verify-fallbacks --json`, `workspace-brief`, `health`, `cycles`, `growth`, `maintenance`, `pnpm dogfood:graph-db`, `validate`, plus action-specific commands) for connector-less Claude Code/Codex sessions. The copied CLI packet now includes the same setup automation gate plus dashboard facet/schema scans, dependency-cycle, growth-candidate, maintenance-queue, and 14-check runtime graph DB gates as the starter flow, so agents can parse `ok` vs `performanceOk` before trusting local graph fallback speed or proposing writes.
-- **Focused node proof** — `/ontology/insights?node=…` accepts either `kind:slug` graph ids or canonical vault slugs such as `capabilities/agent-graph-readiness`. The focused proof panel now copies `node_profile`, incoming `blast_radius`, planned incoming/outgoing `match_edges`, planned public `depends_on` relation parity scans, `query_plan(all_paths)`, bounded `all_paths`, `relation_check`, `health`, shell-safe CLI fallbacks, scan/path evidence rules, and the shared post-change sync gate, starting with the 14-check runtime graph DB gate, for that exact vault slug.
-- **Agent query recipes** — first-contact run order with a one-click copyable runbook, a graph DB query pack (`MATCH`-style node scan / edge scan / graph facets / domain coupling / bounded path evidence / business questions) with visible MCP and CLI fallback counts, concrete high-degree slug entrypoints, investigation playbooks with evidence checklists and stop conditions plus CLI fallbacks for graph scans such as `match-nodes`, `match-edges`, `domain-matrix`, disconnected islands via the dedicated `components` command, prerequisite ordering via the dedicated `topological-order` command, duplicate checks via `similar`, and relationship explanation via `explain_relation`, a one-click graph traversal packet (`query_plan` → bounded `all_paths` → `pattern_walk` / `project_map`) with visible MCP/CLI fallback counts and embedded execution gates, exact `query_ontology` JSON payloads, copyable CLI commands such as `ontology-atlas all-paths ... --plan`, `ontology-atlas similar ...`, and `ontology-atlas explain ...`, MCP handoff prompts that include the same graph DB query pack plus CLI fallback commands for connector-less Codex/Claude Code sessions, and an inline mode guide in the graph DB pack panel that explains CLI-only, MCP-connected, Graph DB pack, and setup gate choices before users copy commands. The business questions pack adds executable outcome facets, domain-boundary scans, domain coupling, and capability-to-element evidence scans so agents answer the business outcome, business/product boundary, human capability claim, and implementation proof questions before citing paths or APIs; the UI now shows those four questions as compact choices, opens only the selected question by default, hides the answer criterion behind an answer-criteria disclosure, and copies the selected outcome/boundary/claim/evidence question as a focused agent handoff with only the bounded MCP/CLI payloads and acceptance criteria needed for that question. It also copies the same pack as a decision brief with the `outcome -> domain -> capability -> element` read order, evidence contracts, required answer shape, and `pnpm dogfood:graph-db` gate for planners, marketers, leaders, developers, or agents. The required answer shape makes agents name the business outcome, boundary, human capability claim, and capability-to-element proof verdict before mentioning implementation paths, APIs, routes, or commands. UI `Copy terminal check pack` starts with the same mode guide plus the machine-readable setup/performance self-check (`agent-brief --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`), immediately adds the repo runtime gate (`pnpm dogfood:graph-db`), names the runtime replay (`health --json`, `focused_blast_radius`, scan follow-ups, `relation_name_parity`, `pattern_walk` / `project_map` containment, bounded `all_paths` evidence, `relation_check`, and relation explanation), then prints the graph DB scan queue as shell comments plus executable commands, intent comments, an evidence rule that scan rows are candidates until follow-up detail is cited, and a proof checklist covering `totalMatches`/`limited`/row count, `relationType`/`via` parity for public relation names, node detail or blast-radius inspection, `health.status`, edge explain/path/relation-check inspection, and `evidence.pathsComplete`, plus write safety gates for `add_relation`, rename/merge, and post-change sync. Terminal-only `agent-brief --graph-db-pack` keeps the selected-vault self-check and scan queue portable for arbitrary vault paths.
-- **Agent graph workflow guide** — `docs/AGENT-GRAPH-WORKFLOW.md` explains the CLI-only path, MCP-connected path, graph DB differences, graph-DB-style query pack, and current dogfood verification evidence so non-developers can understand what works before and after Claude Code/Codex MCP registration. Normal `agent-brief` terminal output and `agent-brief --graph-db-pack` now print the same mode guide before graph commands, while `agent-brief --json` and MCP `query_ontology(agent_brief)` expose the guide as `docs.workflowGuide`, the mode chooser as `docs.modeComparison`, and the scan-to-proof rules as `docs.graphScanProofChecklist`, so humans and agents read the same mode and proof contracts.
+#### Bottom handoff row (`InsightsHandoffRow`, always visible)
+- One copyable `query_ontology(...)` chain per active tab (e.g. Relations tab copies `match_edges(type:"depends_on")` → `blast_radius`) — a single focused agent handoff instead of the old multi-panel query-recipe cockpit
 
-Empty state: blue link to `/docs` (open vault).
+Empty state (0 nodes): link to `/docs` (open vault).
 
 ---
 
 ### `/ontology/edit` — Builder (xyflow ERD canvas)
 
-#### Layout (md+)
-- Left palette (280 px, collapsible) · Center canvas (flex-1) · Right inspector (360 px, collapsible)
-- Mobile (<md): fallback alert + links to `/ontology` and `/topology`
+#### Layout (3-pane, resident only on xl+ — rebuilt 2026-07-18)
+- Left palette (`OntologyKindPalette`, 240 px, collapsible to 44 px icon-only) · Center canvas (flex-1) · Right inspector (340 px, collapsible) — all three resident together only at `xl+`
+- Below `xl` (but `md+`): the inspector becomes a centered modal sheet (scrim, `xl:hidden`) instead of a resident pane; a compact "open inspector" chip takes its place inline
+- Mobile (<md): fallback card (eyebrow + title + body) with links to `/ontology` and `/topology` — layouts collide below `md`, so the builder doesn't try to render
 
 #### Left palette (`OntologyKindPalette`)
 - 4 kind buttons: Project / Domain / Capability / Element
@@ -281,6 +297,8 @@ Empty state: blue link to `/docs` (open vault).
   - ephemeral endpoint drag → amber dashed `EphemeralEdge` with center "Save" chip (R4 cut I, R5 cut N validates title before persist to prevent `untitled.md` pollution)
   - relation write confirm and post-save handoff keep the graph proof path visible: Topology Path, endpoint focus, `/ontology/insights/` query cockpit, copyable CLI/MCP preflight, bounded `all_paths` contract, the `14 checks` runtime gate, and post-change sync gate.
 - **Proof packet**: the header `Proof` cell shows the same `14 graph checks` runtime gate used by Source Vault and Insights, names `runtime replay` plus `relation_name_parity` and `pattern_walk` / `project_map` in the visible cell copy, then copies a graph DB-style runbook. The packet starts with the portable setup gate (`agent-brief --verify-fallbacks --json`), `agent-brief --graph-db-pack`, and the direct `pnpm dogfood:graph-db` runtime replay, so Builder verification begins from the same local graph DB pack contract as Insights. Overview mode then runs `workspace_brief`, `query_plan(match_nodes)`, `match_nodes`, planned generic `match_edges`, planned `depends_on` public relation scans, planned frontmatter-key `elements` scans, `facets`, `schema`, and `health`; CLI fallbacks include the matching `--plan` scans before raw `match-nodes` / `match-edges`. Selected-node mode prefers the canonical vault slug for the visible Insights link, card copy, and MCP/CLI proof commands, then adds `node_profile`, incoming `blast_radius`, planned incoming/outgoing edge scans, planned `depends_on` relation-name parity scans, `query_plan(all_paths)`, bounded `all_paths`, `relation_check` target/type placeholders, shell-safe CLI fallbacks, the scan-to-proof checklist, and the shared post-change sync gate. The cell also exposes a direct sync-gate copy action for users who already have enough query evidence.
+- **`BuilderWriteConfirmBar`** (2026-07-18, bottom of canvas, md+) — a single status/action bar with a status line (`relationPending` / `draftReady` / `draftNeedsName` / clean) and two actions: "dry-run" and "vault 에 쓰기" (routes to whichever existing handler applies — confirm pending relation / save ephemeral node / open detail)
+- **Relation trace-mark** (`relation-trace-mark.ts`) — the same solid/dashed/dotted convention used in the topology datasheet and `/project/[slug]`: containment keys (`domains`/`capabilities`/`elements`/`contains`) solid, `dependencies`/`relates` dashed, `describes` (evidence) dotted
 
 #### Right inspector
 - **Ephemeral node**: name input (auto-focus + select) · slug preview · coordinate display · Save button (`Enter`, disabled if title empty/placeholder)
@@ -316,58 +334,64 @@ Empty state: blue link to `/docs` (open vault).
 
 ---
 
-### `/projects` — Project list
+### `/projects` — Project list (rebuilt 2026-07-18)
+
+Rebuilt against RATIO-SYSTEM (1600px shared container). The previous
+search/filter/CSV list UI (full-text search, phase/status chips, paginated
+grid cards) is gone — replaced with an engraved census header and full-width
+project cards; there is currently no in-page filtering.
 
 #### Header
-- Eyebrow + H1 with dynamic count badge `{filtered}/{total}`
+- Crumb row (Home → Projects) + right-aligned engraved census (`concepts · relations`)
+- H1 + census line (`N projects · N domains · N concepts`) + "new project" CTA
 
-#### Filters (URL-synced: `?q`, `?cat`, `?st`, `?limit`)
-- Full-text search (name / slug / description / tags / stack), Esc clears
-- Phase chips (category, with live counts) — toggle
-- Status chips (with live counts) — toggle
-- "Clear all filters" button
+#### Recent activity strip (when any docs exist)
+- Up to 4 rows of the most recently updated vault docs: kind glyph · slug · one-line "what" summary · domain (or "no domain") · relative time ("today" / "yesterday" / "N days ago")
 
-#### Cards (3 col lg / 2 col md / 1 col sm, sorted by `updatedAt` desc, 60-page paginated)
-- Title + 2-line description clamp · 3 quick facts (Phase / Status / Dependency count) · slug · ontology count badge (when > 0)
-- "See details" + "View topology" buttons (overlay over stretched card link)
+#### Cards (one full-width `<article>` per project, stacked, sorted by `updatedAt` desc)
+- Hex kind-glyph + name + relative-time-updated dot + description · slug
+- **Fact strip** — 5 engraved facts: domain / capability / element / document / relation counts (single-project vaults without `projectIds` stamping fall back to counting every node as this project's own)
+- **Domain composition rows** (when the project has domains) — domain glyph + title + proportional meter bar (indigo for the largest) + `total (capability N · element N)` summary
+- Footer: "See details" · "View topology" links + right-aligned `updated DATE · path`
 
-#### Empty states
-- No projects at all → `ProjectQuickCreatePanel` inline + fallback buttons
-- No results after filter → "Clear search" + "View full topology" link
-- Static mode (no vault) → "To workspace map" instead of create
+#### Dashed "next project" slot (always shown, bottom)
+- Project kind glyph + title + subtitle
+- Two rows: CLI command to add a project + caption, and MCP/agent command to add one + caption — the empty-state affordance is now "ask the CLI or your agent," not a create form
+
+#### Empty state
+- No projects at all → lede text pointing at the same CLI/MCP next-slot row (no separate quick-create panel on this page anymore)
 
 ---
 
-### `/project/[slug]` — Project detail (with inline edit)
+### `/project/[slug]` — Project detail (3-zone rebuild, 2026-07-18)
 
-#### Header
-- Breadcrumb: Home → Projects → `{Name|Slug}`
-- Right actions: source vault link · copy link · quick-edit menu (mobile)
+Rebuilt as a single-container 3-zone layout (`docs/prototypes` chrome), one
+level below `/projects`.
 
-#### Inline-editable fields (when `canManageProject`)
-- name · description · dependencies (picker with cycle check) · tags · stack · links (label|URL multiline)
+#### Top bar
+- Breadcrumb: Home → Projects → `{Name|Slug}` · Source Vault link · copy-link button · global census (concepts/relations, md+)
 
-#### Read-only display
-- nameEn · status (with dot color) · category · owner (fallback "Shared internal system") · progress % · slug · updatedAt
-- "uncategorized" / "active" fallback labels via taxonomy
+#### Zone 1 — hero band
+- Project kind glyph + inline-editable name (`InlineEditable`, when `canManageProject`) + hero meta (Hub label or plain label · status) + updated date + inline-editable description
+- "View topology" link + `ProjectQuickEditPanel` (quick-edit: name / description / owner / tags — the fast path; stack/links/dependencies/dates stay in the full editor)
+- **Engraved metric strip** — domains / capabilities / elements / documents / relations, derived from this project's own ontology nodes/edges (not the whole vault)
+- **Mini domain map** (`MiniDomainMap`, lg+, only when the project has domains) — real proportional SVG by domain node count, "open in topology" link
 
-#### Featured sections
-- **Project info card** (when `project.detail` markdown exists)
-- **Integrity issues** card (yellow border, only when issues > 0)
-- **Screenshots** collapsible (only when count > 0)
-- **Linked projects** card (dependency + referenced-by, dedup'd) — the single
-  source for this project's connections; the connection-map mini-graph that
-  used to sit above it was retired (2026-07, demo-unreachable — dogfood's
-  single-project vault always showed the map's empty state, and the same
-  typed fact already lived in this card)
-- **Ontology overview** card (client-only fetch)
+#### Zone 2 — domain composition
+- Grid of domain cards (1 col / 2 col sm / 3 col lg), only rendered when the project has domains (hidden entirely on 0 domains — "match 0 → hide" principle), each linking into topology focus for that domain
 
-#### "More info" collapsible
-- Links · Tags · Stack · Basic info (category / slug / updatedAt)
+#### Zone 3 — body + summary rail
+- **Body card** (left, flexible width) — `project.detail` markdown, or an empty-state hint when absent
+- **Summary rail** (right, 400px on lg+):
+  - **Connected projects** card — dependency + `relates`-graph projects, dedup'd, first shown + "+N more" note; the connection-map mini-graph that used to sit above this card was retired (2026-07, demo-unreachable — dogfood's single-project vault always showed the map's empty state, and the same typed fact already lived here)
+  - **Agent handoff** card — copyable MCP/CLI snippet for this exact project slug
 
-#### Mobile
-- Quick-edit panel (`ProjectQuickEditPanel`, hamburger menu)
-- Copy link + topology view buttons in bottom bar
+#### Footer
+- Slug + updated date, engraved mono caption
+
+#### Mobile / narrow
+- `ProjectQuickEditPanel` doubles as the mobile quick-edit entry (hamburger menu context)
+- Search palette (`⌘K`) and shortcut sheet (`?`) open as page-local overlays (not a route change) so context isn't lost
 
 #### Empty / not-found
 - Invalid slug → "Project not found" panel + back-to-workspace button
@@ -377,12 +401,14 @@ Empty state: blue link to `/docs` (open vault).
 
 ### `/project/[slug]/edit` and `/project/new` — Full editor
 
-`ProjectForm` (4 collapsible sections + sticky save bar):
+`ProjectForm` (2026-07-18 — 640px centered form column + 260px companion column, `docs/prototypes/project-forms-final.html` + RATIO-SYSTEM; 4 collapsible sections + sticky save bar):
 
 1. **Basics** (always open) — slug (disabled in edit, auto-slugify in create) · name · nameEn · category (taxonomy select) · status (taxonomy select)
 2. **Story** (collapsible) — description (required) · detail (markdown) · tags CSV · stack CSV · linksText (multiline `label|URL`)
 3. **Network** (collapsible, collapsed in create) — dependencies picker with cycle check (suggestions from description/detail text)
 4. **Operations** (collapsible, collapsed in create) — startedAt · launchedAt (date order validated) · owner · icon · progress · `isHub` checkbox
+
+Section labels are engraved (mono uppercase caption + hairline), matching the census styling used elsewhere in this wave.
 
 #### Validation (`schema.ts`)
 - slug: `/^[\p{L}\p{N}-]+$/u` (Unicode letters/numbers/hyphen)
@@ -392,11 +418,11 @@ Empty state: blue link to `/docs` (open vault).
 
 #### Actions
 - Save & continue · Save & return · Cancel (with dirty-state guard via `beforeunload` + router intercept)
-- Delete (edit-only, bottom-left)
+- **Delete** (edit-only) — isolated in a single dashed-border danger row at the bottom of the form (2026-07-18; dashed border is the destructive-action category signal, matching the design system rule); no other delete affordance on this page
 - Form nav pills jump to sections
 - Top + bottom sticky save bar
 
-#### Mobile preview panel (sidebar, collapsible <lg)
+#### Companion column (260px, sidebar, collapsible <lg)
 - Live preview `ProjectCard` · completeness % · public status · change summary (max 4 items)
 
 #### Note
@@ -410,11 +436,41 @@ Empty state: blue link to `/docs` (open vault).
 Same `ProjectForm` minus existing-project context.
 - Submit buttons: "Create & continue" / "Create & return"
 - Tips panel (easiest path: name → category/status → description, then save)
-- Quick-create modal also available in `/projects` list (`ProjectQuickCreatePanel`, reused)
+- `ProjectQuickCreatePanel` still exists as a component but is no longer surfaced from `/projects` (2026-07-18 — that list's empty state now points at the CLI/MCP next-slot row instead); this full form remains the canonical create path
 
 ### `/project/fallback` — Static-export fallback
 
 Used when a non-existent slug is hit in static export. Redirects or shows "not found" panel.
+
+---
+
+### `/download` — macOS app download (rebuilt 2026-07-18)
+
+RATIO-SYSTEM 1600px container / 960px centered utility column.
+
+#### Header
+- Back link · eyebrow · right-aligned "macOS · DMG · GitHub Release" caption · `LocaleSwitch`
+- Title + subtitle · primary CTA (download DMG) + secondary CTA (view source on GitHub)
+
+#### Engraved fact strip (real repo facts only — no DMG has shipped yet)
+- Version (`RELEASE_VERSION`, from `package.json`/`tauri.conf.json`) · format (DMG) · architecture · **size: "게시 시 기록" placeholder** (honest — no built artifact to measure yet) · min macOS (`RELEASE_MIN_MACOS`) · channel
+- SHA-256 row below it: a placeholder all-zero hash + "게시 시 기록" note + copy button — same honesty contract as size
+
+#### First-release checklist (shown until a real release ships; `showFirstReleaseChecklist` prop)
+- PR review / tag+version alignment / secrets / release / hosted-surface checklist items
+- Copyable `pnpm desktop:release-status ...` audit command
+
+#### "Includes" cards (3, sm+)
+- Topology map · MCP server (tool count) · CLI (command count)
+
+#### Install steps (4, numbered 01–04, sm+ 2-col grid)
+
+#### Trust panel + changelog preview (2-col on lg+)
+- **Trust panel** — signed / notarized / checksum rows + a real `spctl --assess --type open --context context:primary-signature ...` verify command + a trust note ("security claims only made when re-verifiable")
+- **Changelog preview** (`CHANGELOG_PREVIEW_ENTRIES`, sourced from `docs/CHANGELOG.md`) — version + a handful of recent entry titles + "as of DATE" caption
+
+#### GitHub row + release-gate note + footer
+- GitHub repo link row · a note that the release gate must pass before this page's CTA is "real" · footer (license / GitHub / stack)
 
 ---
 
@@ -504,8 +560,8 @@ without extra node lookups.
 ## 4. Cross-cutting UI
 
 ### `OperationsNav` (top, always visible)
-- Sticky header: 3 nav items (Workspace / Ontology / Topology)
-- Right: `ModeBadge` (vault folder name + doc count chip OR demo chip with picker link) · `LocaleSwitch` · `ThemeToggle`
+- Sticky header: 3 nav items — labels are Workspace (`/docs`) / Ontology (`/ontology`) / Relief (`/topology`; the nav's visible label for the topology tab is "Relief", not "Topology")
+- Right: `LiveActivityIndicator` (agent activity heartbeat status) · `ModeBadge` (vault folder name + doc count chip OR demo chip with picker link) · `LocaleSwitch` · `AppSettingsMenu` (gear-triggered modal, 5 tabs: General / MCP+Agents / Vault / Appearance / Verification — `ThemeToggle` now lives inside the Appearance tab rather than sitting directly in the nav bar; Verification surfaces the same MCP connection-state ladder and proof-decision order used elsewhere; MCP+Agents exposes a copyable first-contact MCP proof prompt)
 - Active detection by pathname prefix
 - Sub-nav row appears on `/ontology/*` (R3 always visible)
 
@@ -576,6 +632,7 @@ For full reasoning see `docs/CHANGELOG.md`. High-level:
 - **Round 16** — fresh repo bootstrap path. `analyze_repo_structure` / CLI `analyze` propose project/domain/capability/element candidates from package metadata, README headings, and source layout with side effect 0.
 - **Round 17** — import-derived dependency evidence. `infer_imports` / CLI `infer-imports` parse TS/JS imports, resolve relative and tsconfig alias paths, and propose `depends_on` edges without mutating the vault.
 - **Round 18+** — workbench loop consolidation. `/ontology` now frames Tree as Browse and immediately hands selected slugs to Builder (Write), Topology (visual focus), and Insights (Query). `/ontology/edit` is kept as a constrained relation write-review surface with source-file patch preview, preflight, post-save proof packets, and focused Insights handoff. `/ontology/insights` exposes the graph DB query pack as an executable local markdown graph cockpit, and `pnpm dogfood:graph-db` now fail-closes on setup self-check, `health --json`, graph scan follow-ups, public relation-name parity, structural `pattern-walk` / `project-map` traversal, bounded path completeness, relation preflight, and relation explanation contracts.
+- **전 페이지 시안-우선 재구성 웨이브 (2026-07-18, PR #355~#366)** — `docs/prototypes/` 승인 시안 기반 전면 현행화. Removed: `/ontology/insights`의 구 4탭 reader-persona 시스템(proof/collaboration/agent/census 프리셋, 세션 증빙 스트립, collaborator brief, query-recipe cockpit, ~6,200줄) — 개요/관계/신선도 3탭으로 대체; `/projects`의 검색·필터·페이지네이션 카드 리스트 — engraved census 헤더 + 최근 활동 스트립 + 풀폭 카드 + dashed 다음 프로젝트 슬롯으로 대체(`ProjectQuickCreatePanel`은 컴포넌트로는 남지만 이 페이지에서 더 이상 노출 안 됨); `/project/[slug]`의 "More info" 접이식 섹션과 태그/스택/링크 인라인 노출 — quick-edit/전체 편집으로 이동. Added: topology 데이터시트 288→352px 스케일업 + 근거(evidence) 그룹 승격, `TopologyV2SettingsGear`(우측 유틸리티 레일), `/ontology/edit` 3-pane(240·캔버스·340, xl+ 상주) + `BuilderWriteConfirmBar`, `/docs`의 상시 Pinned/Vault/Recent 사이드바(280px, lg+) + `DocFrontmatterBlock` + 하단 backlinks 스트립, `/download`의 정직한 fact strip(size/checksum "게시 시 기록" placeholder) + spctl 신뢰 패널 + changelog 프리뷰.
 
 ---
 
