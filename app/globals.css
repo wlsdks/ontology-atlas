@@ -774,13 +774,33 @@
        금속 표면을 만든다. far-field(farT>=0.98)/소형(r<=3) 에서는 dissolve. */
     --topology-v2-node-sheen-tint: #232329;
     --topology-v2-node-sheen-blend: 0.6;
+    /* canvas-emphasis 슬라이스 (소유자: "중앙(프로젝트 노드)이 뭔가 다르게
+       빛나야") — 발광 대신 재질(design.md "발광 대신 재질"). 프로젝트 헥사곤
+       전용 이중 헤어라인 + 핀틱 색. 외곽 스트로크 자체는 --topology-v2-amber-hub
+       재사용(topology-frame-draw.ts#resolveNodeVisual), 이 둘은 안쪽 오프셋
+       헤어라인 + 4방향 핀틱 전용. rgb(212,180,120) = amber-hub 와 동일 hue,
+       알파만 다름(첫 런 v3 flagship 시안, docs/prototypes/first-run-v3-flagship.html
+       §"프로젝트 헥사곤" 1:1 추출). */
+    --topology-v2-project-hairline-inner: rgba(212, 180, 120, 0.35);
+    --topology-v2-project-pin-tick: rgba(212, 180, 120, 0.5);
+    /* 선택 노드의 정적 이중 링(글로우 아님, 기계식 링) + 호버 미리보기 링.
+       rgb(94,106,210) = --color-indigo-brand(#5e6ad2) 와 동일 hue, 알파만
+       다름 — "둘 이상의 채색 시스템 금지" 위반 아님(단일 인디고 유지). */
+    --topology-v2-selection-ring-indigo: var(--topology-v2-indigo-bright);
+    --topology-v2-selection-ring-hairline: rgba(94, 106, 210, 0.45);
+    --topology-v2-hover-ring: rgba(94, 106, 210, 0.55);
 
     /* 2.2 엣지 · 라벨 · 배경 */
     --topology-v2-edge-contains: #28282e;
     --topology-v2-edge-depends: #39394a;
     --topology-v2-edge-dim: #1e1e22;
     --topology-v2-hull-stroke: #3a3a42;
-    --topology-v2-label-project: #ececf0;
+    /* canvas-emphasis 슬라이스: 프로젝트 라벨은 Layer-0 컨테이너 앰버 정체성을
+       유지한다(design.md "Hub 노드와 Layer 0 컨테이너에만 보조 톤 허용") —
+       이전 값(#ececf0, 중립 화이트)은 도메인/캐퍼빌리티와 시각적으로 구분이
+       안 됐다. amber-hub 와 동일 hex(첫 런 v3 flagship 시안의 프로젝트 텍스트
+       fill 과 1:1). */
+    --topology-v2-label-project: #d4b478;
     --topology-v2-label-domain: #b8b8c1;
     --topology-v2-label-capability: #84848c;
     --topology-v2-label-element: #6a6a73; /* Guardian follow-up B: 2.76:1 → 3.16:1 (AA-large) — element 라벨은 최심 줌에서만 뜨지만 대비 하한은 지킨다 */
@@ -796,7 +816,12 @@
     --topology-v2-vignette-far-alpha: 0.18;
 
     /* 2.3 지오메트리 (world unit — canvas 2D 가 getComputedStyle 로 소비) */
-    --topology-v2-radius-project: 25;
+    /* canvas-emphasis 슬라이스: 25→30 — 주변 도메인 칩(17) 대비 시각 무게가
+       확실히 위가 되도록(비율 1.47→1.76×). 첫 런 v3 flagship 시안의 프로젝트
+       헥사곤은 도메인 칩보다 훨씬 크게 그려져 있었다(그 시안 자체의 절대
+       스케일은 이 world-unit 체계와 다른 별도 목업이라 1:1 이식은 아니고,
+       "확실히 위" 라는 관계만 이식). */
+    --topology-v2-radius-project: 30;
     --topology-v2-radius-domain: 17;
     --topology-v2-radius-capability: 11;
     --topology-v2-radius-element: 7;
@@ -880,6 +905,11 @@
     --topology-v2-breathe-amplitude: 0.04;
     --topology-v2-breathe-freq-rad: 1.15;
     --topology-v2-pulse-duration-ms: 420;
+    /* canvas-emphasis 슬라이스 — 클릭 순간의 1회성 커밋 펄스(정적 선택 링과는
+       별개, 링이 1.0→1.15× 확장하며 알파 페이드아웃). 소유자 상한 ≤200ms.
+       420 인 --topology-v2-pulse-duration-ms 와 별개 토큰 — 그건 미사용
+       예약 토큰이라 이 슬라이스가 손대지 않는다(`model/selection-pulse.ts`). */
+    --topology-v2-select-pulse-duration-ms: 180;
     --topology-v2-tip-fade-ms: 120;
     /* depends 엣지 comet-tail 진행 속도(t += dt × speed). 기본은 ambient
        흐름, ego(선택 노드에 물린 엣지)는 "전류가 더 흐른다"는 회로 은유로
