@@ -129,6 +129,17 @@
     --shadow-card: none;
     --shadow-card-elevated: none;
 
+    /* RATIO-SYSTEM (docs/prototypes/RATIO-SYSTEM.md) §5 — page-level ratio
+       tokens promoted from the final mockup round. First consumer:
+       `/ontology/insights` (탭 3장). Generic/app-wide, not topology-scoped —
+       any page adopting the same 1600-centered container + tab-bar rhythm
+       reuses these instead of hardcoding new clamp()/px literals. */
+    --page-max: 1600px;
+    --section-gap: 28px;
+    --card-gap: 20px;
+    --card-pad: 16px;
+    --tabbar-underline: 2px;
+
     /* [삭제, 2026-07-18] 구 SigmaTopology graph 모드 전용 잉크
        (--topology-edge-hairline/-spoke, --topology-graph-edge-hairline/-spoke,
        --topology-graph-node-dim, --topology-connector) 는 #344
