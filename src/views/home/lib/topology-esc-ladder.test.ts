@@ -5,6 +5,7 @@ import {
 } from "./topology-esc-ladder";
 
 const BASE: TopologyEscLadderInput = {
+  contextMenuOpen: false,
   createNodeOpen: false,
   searchOpen: false,
   fullDetailOpen: false,
@@ -18,7 +19,21 @@ describe("resolveTopologyEscLadderAction", () => {
     expect(resolveTopologyEscLadderAction(BASE)).toBe("none");
   });
 
-  it("closes the create-node composer first, above every other tier", () => {
+  it("closes the W2-B context menu first, above every other tier including the create-node composer", () => {
+    expect(
+      resolveTopologyEscLadderAction({
+        ...BASE,
+        contextMenuOpen: true,
+        createNodeOpen: true,
+        fullDetailOpen: true,
+        selectedRelationActive: true,
+        hasSelection: true,
+        hasLocalGraphRoot: true,
+      }),
+    ).toBe("close-context-menu");
+  });
+
+  it("closes the create-node composer above every other tier once the context menu is closed", () => {
     expect(
       resolveTopologyEscLadderAction({
         ...BASE,

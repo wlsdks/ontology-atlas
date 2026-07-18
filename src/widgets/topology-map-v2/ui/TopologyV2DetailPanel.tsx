@@ -1,7 +1,9 @@
 "use client";
 
 import { type KeyboardEvent as ReactKeyboardEvent, useCallback } from "react";
-import { X } from "lucide-react";
+import { Copy, FileText, GitBranch, Route, X } from "lucide-react";
+import { Link } from "@/i18n/navigation";
+import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { isContainmentRelation } from "@/shared/lib/ontology-tree";
 import {
   formatV2MetricLine,
@@ -61,6 +63,12 @@ export interface TopologyV2DetailPanelLabels {
    * (`full-detail-a1` widget) — the design gate's details-on-demand step
    * beyond this compact ego popover. */
   openFullDetail: string;
+  /** W2-A action row (4-up tile grid below the metric line). */
+  actionsGroupLabel: string;
+  actionDocument: string;
+  actionEditRelations: string;
+  actionCopyHandoff: string;
+  actionPath: string;
 }
 
 export interface TopologyV2DetailPanelProps {
@@ -81,16 +89,39 @@ export interface TopologyV2DetailPanelProps {
   evidence: { rows: readonly V2EvidenceRow[]; total: number };
   /** Pre-built agent handoff payload; the view owns clipboard + toast. */
   handoffText: string;
+  /**
+   * W2-A "문서" action tile target — `buildDocsVaultHref` result for this
+   * node's backing vault doc, or `null` when the node has no `sourceSlug`
+   * (the tile renders disabled rather than linking to a guessed URL).
+   */
+  documentHref: string | null;
+  /** W2-A "관계 편집" action tile target — the ERD builder deep link
+   * (`/ontology/edit/?node=<slug>`, existing receiver in `OntologyEditPage`
+   * via `resolveBuilderQueryNodeSlug`). Always available (any slug resolves
+   * or falls back to the builder's own selection UI). */
+  builderEditHref: string;
   labels: TopologyV2DetailPanelLabels;
   onSelectConnection: (id: string) => void;
   onCopyHandoff: (text: string) => void;
   onClose: () => void;
+  /**
+   * W2-A "경로" action tile — sets this node as the path-analysis source and
+   * enters path mode. Reuses the existing (previously unwired)
+   * `selectTopologyPathRouteState` route-state transition — no new path-mode
+   * entry logic.
+   */
+  onSetPathSource: () => void;
   /** Opens the A1 full-detail datasheet for this node — details-on-demand
    * opt-in (`.claude/rules/design.md` "풀스크린 드로어는 opt-in"). Omitted
    * hides the link (e.g. read-only embeds). */
   onOpenFullDetail?: () => void;
   className?: string;
 }
+
+const ACTION_TILE_CLASS =
+  "flex flex-col items-center justify-center gap-1 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-1 py-1.5 text-center text-[10.5px] font-medium text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]";
+const ACTION_TILE_DISABLED_CLASS =
+  "pointer-events-none opacity-40";
 
 export function TopologyV2DetailPanel({
   slug,
@@ -101,10 +132,13 @@ export function TopologyV2DetailPanel({
   groups,
   evidence,
   handoffText,
+  documentHref,
+  builderEditHref,
   labels,
   onSelectConnection,
   onCopyHandoff,
   onClose,
+  onSetPathSource,
   onOpenFullDetail,
   className,
 }: TopologyV2DetailPanelProps) {
@@ -184,8 +218,13 @@ export function TopologyV2DetailPanel({
     );
   };
 
-  // 근거(evidence) group — read-only doc-link rows (no TraceMark: these
-  // aren't canvas edges), same header/list shape as usedBy/dependsOn.
+  // 근거(evidence) group — CLICKABLE doc-link rows (W2-A promotion: these
+  // used to be display-only). `row.id` is a vault slug (see
+  // `buildV2EvidenceRows`'s own doc comment), the exact input
+  // `buildDocsVaultHref` expects — no separate id-namespace mapping needed
+  // (unlike `onSelectConnection`'s canvas-node ids, which are a different
+  // namespace). No TraceMark here: these aren't canvas edges. Same header/
+  // list shape as usedBy/dependsOn.
   const renderEvidenceGroup = () => {
     if (evidence.total === 0) return null;
     return (
@@ -204,7 +243,11 @@ export function TopologyV2DetailPanel({
         <ul className="flex flex-col">
           {evidence.rows.map((row) => (
             <li key={`evidence:${row.id}`}>
-              <div className="flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-1.5">
+              <Link
+                href={buildDocsVaultHref({ slug: row.id })}
+                data-datasheet-evidence={row.id}
+                className="flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-1.5 transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+              >
                 <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--topology-v2-panel-text-secondary)]">
                   {row.title}
                 </span>
@@ -213,7 +256,7 @@ export function TopologyV2DetailPanel({
                     {row.path}
                   </span>
                 ) : null}
-              </div>
+              </Link>
             </li>
           ))}
         </ul>
@@ -288,6 +331,63 @@ export function TopologyV2DetailPanel({
         </span>
       </div>
 
+      {/* W2-A action row — 4-up tile grid (문서/관계 편집/인계 복사/경로).
+          Same construction for every tile (border + hover surface tokens) so
+          the row reads as one instrument, not four unrelated buttons. */}
+      <div
+        role="group"
+        aria-label={labels.actionsGroupLabel}
+        data-testid="topology-v2-detail-panel-actions"
+        className="grid grid-cols-4 gap-1"
+      >
+        {documentHref ? (
+          <Link
+            href={documentHref}
+            data-testid="topology-v2-detail-panel-action-document"
+            className={ACTION_TILE_CLASS}
+          >
+            <FileText size={15} aria-hidden="true" />
+            <span>{labels.actionDocument}</span>
+          </Link>
+        ) : (
+          <span
+            aria-disabled="true"
+            data-testid="topology-v2-detail-panel-action-document"
+            className={[ACTION_TILE_CLASS, ACTION_TILE_DISABLED_CLASS].join(" ")}
+          >
+            <FileText size={15} aria-hidden="true" />
+            <span>{labels.actionDocument}</span>
+          </span>
+        )}
+        <Link
+          href={builderEditHref}
+          data-testid="topology-v2-detail-panel-action-edit"
+          className={ACTION_TILE_CLASS}
+        >
+          <GitBranch size={15} aria-hidden="true" />
+          <span>{labels.actionEditRelations}</span>
+        </Link>
+        <button
+          type="button"
+          onClick={() => onCopyHandoff(handoffText)}
+          aria-label={labels.handoff}
+          data-testid="topology-v2-detail-panel-action-handoff"
+          className={ACTION_TILE_CLASS}
+        >
+          <Copy size={15} aria-hidden="true" />
+          <span>{labels.actionCopyHandoff}</span>
+        </button>
+        <button
+          type="button"
+          onClick={onSetPathSource}
+          data-testid="topology-v2-detail-panel-action-path"
+          className={ACTION_TILE_CLASS}
+        >
+          <Route size={15} aria-hidden="true" />
+          <span>{labels.actionPath}</span>
+        </button>
+      </div>
+
       {/* Connections grouped by relation type */}
       <div className="flex flex-col gap-2.5">
         {hasConnections ? (
@@ -303,16 +403,10 @@ export function TopologyV2DetailPanel({
         )}
       </div>
 
-      {/* Agent-handoff row */}
+      {/* Footer — slug + opt-in full-detail link. The agent-handoff button
+          moved up into the W2-A action row (`data-testid=".../action-handoff"`)
+          — this row no longer duplicates it. */}
       <div className="flex items-center gap-2 border-t border-[color:var(--topology-v2-panel-divider)] pt-2">
-        <button
-          type="button"
-          onClick={() => onCopyHandoff(handoffText)}
-          data-testid="topology-v2-detail-panel-handoff"
-          className="flex items-center gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2 py-1 text-[11px] font-medium text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
-        >
-          {labels.handoff}
-        </button>
         <span className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]">
           {slug}
         </span>

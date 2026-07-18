@@ -21,6 +21,11 @@
  * dispatch.
  */
 export interface TopologyEscLadderInput {
+  /** W2-B node right-click context menu open — the newest, most transient
+   *  overlay, so it closes first (above even the create-node composer): a
+   *  context menu that outlives the keypress meant to dismiss whatever else
+   *  is open would read as stuck chrome. */
+  contextMenuOpen: boolean;
   /** Create-node composer open (defense in depth — the composer already
    *  closes itself on Escape while it holds focus; this covers the case
    *  where focus has moved outside it while it's still blocking the page). */
@@ -44,6 +49,7 @@ export interface TopologyEscLadderInput {
 }
 
 export type TopologyEscLadderAction =
+  | "close-context-menu"
   | "close-create-node"
   | "close-full-detail"
   | "close-relation-lens"
@@ -53,15 +59,16 @@ export type TopologyEscLadderAction =
 
 /**
  * Resolves what a single Escape keypress should do, in priority order:
- * create-node composer → search palette (deferred to its own handler) →
- * full-detail drawer → relation lens → deselect the current node → pop one
- * level of the local-graph breadcrumb → nothing. Each tier closes exactly
- * one thing; the caller re-evaluates on the next keypress, which is what
- * makes this "one step at a time" rather than "close everything".
+ * context menu → create-node composer → search palette (deferred to its own
+ * handler) → full-detail drawer → relation lens → deselect the current node
+ * → pop one level of the local-graph breadcrumb → nothing. Each tier closes
+ * exactly one thing; the caller re-evaluates on the next keypress, which is
+ * what makes this "one step at a time" rather than "close everything".
  */
 export function resolveTopologyEscLadderAction(
   input: TopologyEscLadderInput,
 ): TopologyEscLadderAction {
+  if (input.contextMenuOpen) return "close-context-menu";
   if (input.createNodeOpen) return "close-create-node";
   // The palette (Radix Dialog) already closes itself on Escape — returning
   // "none" here means the window ladder does nothing this keypress, so only

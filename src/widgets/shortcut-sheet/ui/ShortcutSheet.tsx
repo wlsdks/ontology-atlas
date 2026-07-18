@@ -38,16 +38,21 @@ const SECTIONS: ShortcutSection[] = [
     ],
   },
   {
+    // W2-C — rewritten against ACTUAL topology-map-v2 canvas behavior
+    // (`use-topology-loop.ts` / `topology-pointer-handlers.ts`). The previous
+    // rows (더블클릭 로컬 · Shift+클릭 경로 · Tab 이웃 · / 검색 · 0 깊이)
+    // described interactions the v2 canvas never implemented — stale
+    // carryover from an earlier design that never shipped. Kept: 클릭 선택 ·
+    // 드래그(팬/노드 이동) · 휠 줌 · ⌘K 검색 · Esc 사다리 · 우클릭 메뉴(W2-B,
+    // now real).
     titleKey: "topology",
     rows: [
-      { keys: [k("drag")], labelKey: "dragNode" },
-      { keys: [k("doubleClick")], labelKey: "doubleClickLocal" },
+      { keys: [k("click")], labelKey: "clickSelect" },
+      { keys: [k("drag")], labelKey: "dragPan" },
+      { keys: [k("scroll")], labelKey: "wheelZoom" },
+      { keys: ["⌘", "K"], labelKey: "openProjectPalette" },
+      { keys: ["Esc"], labelKey: "stepCloseOverlays" },
       { keys: [k("rightClick")], labelKey: "rightClickContext" },
-      { keys: [k("shift"), k("click")], labelKey: "shiftClickPath" },
-      { keys: ["Tab"], labelKey: "tabNeighbor" },
-      { keys: ["/"], labelKey: "focusGraphSearch" },
-      { keys: ["0"], labelKey: "depthClear" },
-      { keys: [k("depthRange")], labelKey: "depthLimit" },
     ],
   },
   {

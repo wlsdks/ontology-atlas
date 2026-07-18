@@ -73,6 +73,8 @@ export interface UseTopologyLoopArgs {
   onPaneClick?: () => void;
   onVisibleCountChange?: (visible: number) => void;
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
+  /** W2-B node right-click context menu — see `topology-pointer-handlers.ts#createTopologyPointerHandlers`'s `onContextMenuNode` doc. */
+  onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
 }
 
 export type UseTopologyLoopResult = TopologyPointerHandlers & {
@@ -81,7 +83,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onContextMenuNode } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -581,6 +583,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     overviewScaleRef,
     onSelect,
     onPaneClick,
+    onContextMenuNode,
   });
   /* eslint-enable react-hooks/refs */
 

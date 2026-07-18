@@ -91,16 +91,22 @@ export interface TopologyMapV2Props {
   onPaneClick?: () => void;
   onVisibleCountChange?: (visible: number) => void;
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
+  /**
+   * W2-B node right-click context menu — called with the hit node's id and
+   * viewport-space cursor position. Omitted keeps right-click behavior
+   * unchanged (browser default menu everywhere, same as before this slice).
+   */
+  onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
   /** Embed mode (project detail neighbor map) — reduced physics/chrome. */
   minimal?: boolean;
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onContextMenuNode } = props;
 
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.
-  const { canvasRef, containerRef, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel } =
+  const { canvasRef, containerRef, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleContextMenu } =
     useTopologyLoop({
       nodes,
       edges,
@@ -112,6 +118,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       onPaneClick,
       onVisibleCountChange,
       onGraphStatsChange,
+      onContextMenuNode,
     });
 
   return (
@@ -130,6 +137,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
+        onContextMenu={handleContextMenu}
       />
     </div>
   );
