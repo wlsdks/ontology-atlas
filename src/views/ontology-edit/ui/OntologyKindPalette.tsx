@@ -92,7 +92,7 @@ export function OntologyKindPalette({
   return (
     <aside
       aria-label={t("ariaLabel")}
-      className="flex h-full w-[248px] shrink-0 flex-col gap-2 overflow-y-auto border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5"
+      className="flex h-full w-[240px] shrink-0 flex-col gap-2 overflow-y-auto border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5"
     >
       <header className="flex items-center justify-between gap-2 px-1">
         <div className="flex-1">

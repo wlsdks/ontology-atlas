@@ -112,6 +112,44 @@ export function formatV2MetricLine(
   ].join(" · ");
 }
 
+/** One row in the promoted 근거(evidence) group — RATIO-SYSTEM §4 scale-up
+ * ("정보는 좋은데 너무 작고 그래"). Built from `KnowledgeGraphNode.evidenceIds`
+ * (a vault slug like "capabilities/product-owner-operating-system" — the
+ * node's own backing `.md`, see `derivationToInsight`'s doc comment), split
+ * into a readable `title` (the last path segment) and a `path` prefix
+ * (everything before it, trailing slash kept) so the row reads like the
+ * mockup's doc-link ("PRODUCT-OWNER-OPERATING-SYSTEM.md" / "docs/"). Rows
+ * are read-only/informational — evidenceIds are vault slugs, a different
+ * namespace than the canvas's graph node ids, so they are not wired to
+ * `onSelectConnection`. */
+export interface V2EvidenceRow {
+  id: string;
+  title: string;
+  path: string | null;
+}
+
+/**
+ * Formats raw `evidenceIds` into display rows, one per non-blank id,
+ * preserving input order. Pure/no dedup beyond blank-skipping — a node's
+ * evidenceIds are already a short, mostly-single-entry list.
+ */
+export function buildV2EvidenceRows(
+  evidenceIds: readonly string[],
+): V2EvidenceRow[] {
+  const rows: V2EvidenceRow[] = [];
+  for (const raw of evidenceIds) {
+    const id = raw.trim();
+    if (!id) continue;
+    const lastSlash = id.lastIndexOf("/");
+    if (lastSlash === -1) {
+      rows.push({ id, title: id, path: null });
+    } else {
+      rows.push({ id, title: id.slice(lastSlash + 1), path: id.slice(0, lastSlash + 1) });
+    }
+  }
+  return rows;
+}
+
 export interface V2HandoffInput {
   slug: string;
   kind: string;

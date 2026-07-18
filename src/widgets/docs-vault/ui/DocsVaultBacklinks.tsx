@@ -7,12 +7,19 @@ import type {
   VaultBacklinkEntry,
   VaultDoc,
 } from '@/entities/docs-vault';
+import { TopologyV2KindGlyph, isTopologyV2RenderableKind } from '@/shared/ui/topology-v2-kind-glyph';
 
 interface Props {
   entries: VaultBacklinkEntry[];
   docsBySlug: Map<string, VaultDoc>;
   onNavigate: (slug: string) => void;
   hideHeading?: boolean;
+  /**
+   * 'list' (기본) — 옵시디언식 세로 리스트, 항목별 컨텍스트 expand/collapse.
+   * 'strip' — pane 하단 앵커 스트립 (docs-vault-final spec). 가로 chip,
+   * 클릭 시 바로 navigate (컨텍스트 expand 없음 — 한눈에 훑는 용도).
+   */
+  layout?: 'list' | 'strip';
 }
 
 /**
@@ -25,9 +32,42 @@ export function DocsVaultBacklinks({
   docsBySlug,
   onNavigate,
   hideHeading = false,
+  layout = 'list',
 }: Props) {
   const t = useTranslations('vaultWidgets.backlinks');
   if (entries.length === 0) return null;
+  if (layout === 'strip') {
+    return (
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+        {hideHeading ? null : (
+          <span className="flex-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {t('heading', { count: entries.length })}
+          </span>
+        )}
+        {entries.map((entry) => {
+          const doc = docsBySlug.get(entry.fromSlug);
+          if (!doc) return null;
+          const kind = doc.frontmatter?.kind;
+          const kindStr = typeof kind === 'string' ? kind : '';
+          return (
+            <button
+              key={entry.fromSlug}
+              type="button"
+              onClick={() => onNavigate(doc.slug)}
+              className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-1 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.4)] hover:text-[color:var(--color-text-primary)]"
+            >
+              {kindStr && isTopologyV2RenderableKind(kindStr) ? (
+                <TopologyV2KindGlyph kind={kindStr} size={11} />
+              ) : (
+                <FileText size={11} className="opacity-60" aria-hidden />
+              )}
+              <span className="max-w-[160px] truncate">{doc.title}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <section>
       {hideHeading ? null : (

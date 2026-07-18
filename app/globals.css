@@ -97,6 +97,19 @@
   --tracking-display: -0.022em;
   --tracking-section: -0.020em;
   --tracking-card: -0.015em;
+
+  /*
+   * RATIO-SYSTEM (docs/prototypes/RATIO-SYSTEM.md) — "비율이 생명" 목업
+   * 라운드에서 승격된 페이지 레이아웃 리듬 토큰. 1920 기준 페이지 컨테이너
+   * 1600px 중앙 정렬(좌우 거터 160) + 섹션/카드 간격 리듬. 처음 소비자는
+   * project-detail 리빌드(zone 1 히어로 · zone 2 도메인 3×2 · zone 3
+   * 본문+레일) — 다른 페이지도 점진 채택.
+   */
+  --page-max: 1600px;
+  --section-gap: 28px;
+  --card-gap: 20px;
+  --card-pad: 16px;
+  --page-bottom-breath: 40px;
 }
 
 @layer base {
@@ -128,6 +141,10 @@
     --color-tap-highlight: rgba(255, 255, 255, 0.04);
     --shadow-card: none;
     --shadow-card-elevated: none;
+
+    /* RATIO-SYSTEM §3 탭 패턴 — active 탭의 2px 인디고 underline 두께.
+       page-level ratio 토큰 본체(--page-max 등)는 위 :root 블록이 단일 출처. */
+    --tabbar-underline: 2px;
 
     /* [삭제, 2026-07-18] 구 SigmaTopology graph 모드 전용 잉크
        (--topology-edge-hairline/-spoke, --topology-graph-edge-hairline/-spoke,
@@ -680,6 +697,15 @@
     --topology-shortcuts-help-phone-top: 188px;
     --topology-shortcuts-help-focus-phone-top: 208px;
     --topology-shortcuts-help-desktop-top: 228px;
+    /* 설정 기어 (`TopologyV2SettingsGear`, chrome-datasheet-final.html 시안) —
+       우측 유틸리티 레일의 "?" 버튼 바로 아래 한 칸. fit/필터 스택과 같은
+       hide 조건(createNodeOpen/selectedRelationActive/blocking-overlay/
+       selectedNodeFocusActive)을 공유해 데이터시트가 뜨는 동안은 숨는다 —
+       그 순간엔 우측 레일 전체가 데이터시트로 교체되는 기존 관례와 동일.
+       데스크톱 전용(1차 스코프: 1512/1920 라이브 검증) — 폰 top 은 "?" 의
+       복잡한 상태별 분기(phone-help-position-contract)에 맞물려 별도
+       패스가 필요해 이번 스코프에서 제외. */
+    --topology-settings-gear-desktop-top: 276px;
     /* Owner chrome-recomposition spec (2026-07-18, docs/prototypes/
        chrome-recomposition.html): the top chrome is a reserved lane
        (brand pill · single engraved census · utility rail) — INDEX, this
@@ -871,7 +897,16 @@
        하단 힌트가 캔버스 위를 덮는 폭. 라벨 컬링과 카메라 fit 이 이 값을
        읽어 "보이는 영역"에 그래프를 센터링한다 (Design Guardian 가독성 +
        카메라 반려). 구 TopologyMapCanvas 의 px 문자열 버전(삭제됨)의 v2
-       등가물 — 여기선 단위 없는 숫자다 (canvas 2D getComputedStyle). */
+       등가물 — 여기선 단위 없는 숫자다 (canvas 2D getComputedStyle).
+
+       RATIO-SYSTEM §4 데이터시트 352px 스케일업 감사: safeInsetRight 는
+       `computeOverviewFitScale`/`computeOverviewCameraTarget` (노드 미선택
+       상태의 fit) 에서만 읽힌다 — 노드가 선택된 상태(데이터시트가 실제로
+       보이는 유일한 시점)의 `computeFocusCameraTarget` 은 safeInset 을 전혀
+       참조하지 않는다(`topology-camera-math.ts`). 즉 데이터시트 폭이 커져도
+       "보이지 않을 때의 안전 영역" 수치는 변할 이유가 없어 120 유지 —
+       패널이 넓어졌다고 기계적으로 좌우 맞춰 키우지 않았다. 1512/1920
+       라이브 검증(`.qa-scratch/datasheet-gear/`)으로 실제 충돌 없음 확인. */
     --topology-v2-safe-inset-left: 344;
     --topology-v2-safe-inset-right: 120;
     --topology-v2-safe-inset-top: 96;
@@ -882,12 +917,22 @@
        구 `TopologyNodePopover` 보다 촘촘하다(소유자 "아이콘 너무 큼" +
        "정보가 세 번 나온다" 반려). 색은 중립 5단계 + 인디고 신호만,
        kind 미니어처는 캔버스와 공유하는 `--topology-v2-node-*` 토큰 재사용.
-       P6 에서 구엔진 삭제 시 `--topology-v2-` grep 으로 함께 제거된다. */
-    --topology-v2-panel-width: 288px;
+       P6 에서 구엔진 삭제 시 `--topology-v2-` grep 으로 함께 제거된다.
+
+       RATIO-SYSTEM §4 FINAL 스케일업 (owner: "정보 좋은데 너무 작음",
+       `docs/prototypes/chrome-datasheet-final.html`): 288→352px, 패딩
+       11→14px, 그룹/섹션 갭 10→14px. 폭이 넓어진 만큼 근거(evidence)
+       그룹을 세 번째 그룹으로 승격해 여백이 아니라 정보로 채운다
+       (`topology-v2-datasheet.ts#buildV2EvidenceRows`,
+       `TopologyV2DetailPanel.tsx`의 `renderEvidenceGroup`). 타입 크기는
+       각 요소 옆(§2.6 아래 개별 JSX 클래스)에서 title 13.5→15px, 행
+       12→13px, metric 11.5→12.5px 로 한 단계씩 올랐다 — 이 파일은 구조
+       토큰만, 타입 크기는 컴포넌트가 소유. */
+    --topology-v2-panel-width: 352px;
     --topology-v2-panel-radius: 9px;
     --topology-v2-panel-row-radius: 5px;
-    --topology-v2-panel-pad: 11px;
-    --topology-v2-panel-gap: 10px;
+    --topology-v2-panel-pad: 14px;
+    --topology-v2-panel-gap: 14px;
     --topology-v2-panel-surface: #17171c;
     --topology-v2-panel-border: #2a2a30;
     --topology-v2-panel-divider: #23232a;

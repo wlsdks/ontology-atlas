@@ -29,3 +29,4 @@ export {
   NodeExplanationEdit,
   type NodeExplanationEditLabels,
 } from './node-explanation-edit';
+export { TabBar, type TabBarItem } from './tab-bar';
