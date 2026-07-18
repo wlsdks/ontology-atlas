@@ -273,6 +273,26 @@
     "errorFallback": "Could not open the folder. Try again.",
     "trustLine": "Local-first · markdown is the source of truth · 0 backend"
   },
+  "firstRunStarter": {
+    "caption": "First run",
+    "sampleLabel": "Sample for now",
+    "contextBold": "Markdown frontmatter is the graph.",
+    "contextRest": "This map is this project's own ontology (read-only) — pick a folder and the same map lights up with your data.",
+    "meterConcepts": "concepts",
+    "meterRelations": "relations",
+    "meterDomains": "domains",
+    "openLabel": "Open my markdown folder",
+    "openBusy": "Opening folder…",
+    "createLabel": "✚ Create a new vault",
+    "createBusy": "Writing starter structure…",
+    "dismissLabel": "Just looking around →",
+    "errorFallback": "Could not open the folder. Try again.",
+    "readout": {
+      "projectUnit": "project",
+      "domainUnit": "domains",
+      "hint": "Spine view · zoom in to reveal elements"
+    }
+  },
   "rootEntry": {
     "openingLocalVaultPicker": "Opening the local ontology store setup",
     "redirectEyebrow": "Local-first workspace",
@@ -284,6 +304,26 @@
   },
   "download": {
     "back": "Back to overview",
+    "downloadSectionLabel": "Download",
+    "intro": {
+      "eyebrow": "Ontology workbench · humans + AI agents",
+      "titleLine1": "Codebase ontology",
+      "titleEmphasis": "that grows with AI",
+      "subtitle": "The map at ontology-atlas.dev already shows this project's own ontology — pick a local folder there and the same map lights up with your data. Install the app for the full local workbench: recent vaults, agent config, and desktop packaging.",
+      "step1Title": "Write a markdown file per piece",
+      "step1Body": "One file per project / feature / module. Add a name and a few links in the header — that's a node, those are relations. AI agents (Claude Code, etc.) read and edit the same files.",
+      "step2Title": "See who uses what, instantly",
+      "step2Body": "\"Who depends on this feature?\" \"What breaks if I change it?\" — the answer is one click away instead of a search across files.",
+      "step3Title": "One folder, three views",
+      "step3Body": "Browse as a tree, navigate as a graph, edit on a canvas. Distribution charts, dependency chains, hub nodes — all from the same folder.",
+      "instrument": {
+        "eyebrow": "Dogfood vault",
+        "svgLabel": "Topology miniature of this project's own ontology vault — {concepts} concepts and {relations} relations.",
+        "conceptsUnit": "concepts",
+        "relationsUnit": "relations",
+        "caption": "This project's own ontology, rendered from real markdown frontmatter at build time. No mockup data."
+      }
+    },
     "eyebrow": "macOS app download",
     "title": "Install once. Work from your local vault.",
     "subtitle": "The desktop app opens your markdown vault directly, remembers recent vaults, and keeps the hosted site out of your daily ontology workflow.",
@@ -761,7 +801,8 @@
       "collapsedTitleText": "Expand left panel",
       "backToWorkspace": "Back to the workspace map",
       "openDocsVault": "Open workspace",
-      "openOntologyTree": "Open ontology tree"
+      "openOntologyTree": "Open ontology tree",
+      "sampleBadge": "Sample"
     },
     "workspaceStrip": {
       "openOntologyAriaLabel": "Open ontology tree",
@@ -2610,7 +2651,9 @@
       "settingsGearTheme": "Theme",
       "settingsGearIndexDefault": "INDEX default state",
       "settingsGearIndexDefaultExpanded": "Expanded",
-      "settingsGearIndexDefaultCollapsed": "Collapsed"
+      "settingsGearIndexDefaultCollapsed": "Collapsed",
+      "settingsGearChangeVault": "Switch vault",
+      "settingsGearChangeVaultAriaLabel": "Open the workspace to pick a different local vault folder"
     },
     "empty": {
       "noMatchesTitle": "No matching items",

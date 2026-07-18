@@ -1,21 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { Compass, FolderOpen, Orbit, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useLocalVault } from "@/features/docs-vault-local";
+import { useLocalVault, useVaultCreateFlow } from "@/features/docs-vault-local";
 import { Link } from "@/i18n/navigation";
-import {
-  shouldClearCreateIntent,
-  shouldScaffoldAfterOpen,
-} from "../model/first-run-create";
 
 /**
  * 설치 앱 (데스크톱 셸) 첫 실행 — vault 미선택 상태의 `/`.
  *
  * 정체성 결함 교정: 설치된 앱이 자기 자신을 다운로드하라는 마케팅 랜딩을
  * 보여주던 것을, Obsidian 계열 도구처럼 "폴더 선택 → 바로 작업" 진입으로
- * 바꾼다. 웹 `/` 의 LandingPage 는 그대로 — 분기는 RootEntryPage 의
+ * 바꾼다. 웹 `/` 는 root-first-open(2026-07) 이후 지도(HomePage) 자체가
+ * 첫 화면이라 이 페이지와 다른 문제를 푼다 — 분기는 RootEntryPage 의
  * isDesktopShell() 하나.
  *
  * 세 액션 모두 기존 흐름 재사용 (새 파이프라인 0):
@@ -32,56 +29,23 @@ import {
 export function FirstRunPage() {
   const t = useTranslations("firstRun");
   const vault = useLocalVault();
-  const [createArmed, setCreateArmed] = useState(false);
-  const [scaffolding, setScaffolding] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const { handleCreate, scaffolding, actionError, setActionError } =
+    useVaultCreateFlow(vault);
 
   const busy =
     vault.status === "opening" || vault.status === "loading" || scaffolding;
 
   const handleOpen = useCallback(async () => {
     setActionError(null);
-    setCreateArmed(false);
     await vault.open();
-  }, [vault]);
-
-  const handleCreate = useCallback(async () => {
-    setActionError(null);
-    await vault.open();
-    // open() resolves after the picker + manifest build settled (or the
-    // user cancelled) — arming here avoids racing the status flip.
-    setCreateArmed(true);
-  }, [vault]);
-
-  useEffect(() => {
-    if (!createArmed) return;
-    const status = vault.status;
-    const docCount = vault.manifest ? vault.manifest.docs.length : null;
-    // 렌더 직후 동기 setState 를 피하려고 microtask 로 미룬다 — 판정 입력은
-    // 이 effect 실행 시점 값으로 고정.
-    queueMicrotask(() => {
-      if (shouldScaffoldAfterOpen({ createIntent: true, status, docCount })) {
-        setCreateArmed(false);
-        setScaffolding(true);
-        vault
-          .scaffoldOntology()
-          .catch((err: unknown) => {
-            setActionError(
-              err instanceof Error ? err.message : t("errorFallback"),
-            );
-          })
-          .finally(() => setScaffolding(false));
-        return;
-      }
-      if (shouldClearCreateIntent(status)) {
-        setCreateArmed(false);
-      }
-    });
-  }, [createArmed, t, vault, vault.manifest, vault.status]);
+  }, [vault, setActionError]);
 
   const errorText =
-    actionError ??
-    (vault.status === "error" ? vault.errorMessage ?? t("errorFallback") : null);
+    actionError !== null
+      ? actionError || t("errorFallback")
+      : vault.status === "error"
+        ? vault.errorMessage ?? t("errorFallback")
+        : null;
 
   const cardBase =
     "grid w-full grid-cols-[32px_1fr] items-start gap-3 rounded-md border bg-[color:var(--color-panel)] px-4 py-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset disabled:opacity-60";

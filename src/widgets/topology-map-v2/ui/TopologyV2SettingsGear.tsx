@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Settings } from "lucide-react";
+import { FolderCog, Settings } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { LocaleSwitch } from "@/features/locale-switch";
 import { ThemeToggle } from "@/features/theme-toggle";
 
@@ -37,12 +38,18 @@ export interface TopologyV2SettingsGearLabels {
   indexDefault: string;
   indexDefaultExpanded: string;
   indexDefaultCollapsed: string;
+  /** "Switch vault" row label — a revisit-friendly path back to `/docs` to
+   *  open a different local folder without leaving the map to hunt for it. */
+  changeVault: string;
+  changeVaultAriaLabel: string;
 }
 
 export interface TopologyV2SettingsGearProps {
   /** Current INDEX-panel-collapsed-by-default preference. */
   indexDefaultCollapsed: boolean;
   onChangeIndexDefaultCollapsed: (next: boolean) => void;
+  /** `/docs` href that lets the user pick a different vault folder. */
+  changeVaultHref: string;
   labels: TopologyV2SettingsGearLabels;
   className?: string;
 }
@@ -50,6 +57,7 @@ export interface TopologyV2SettingsGearProps {
 export function TopologyV2SettingsGear({
   indexDefaultCollapsed,
   onChangeIndexDefaultCollapsed,
+  changeVaultHref,
   labels,
   className,
 }: TopologyV2SettingsGearProps) {
@@ -153,6 +161,15 @@ export function TopologyV2SettingsGear({
                 })}
               </div>
             </SettingsRow>
+            <Link
+              href={changeVaultHref}
+              data-testid="topology-v2-settings-gear-change-vault"
+              aria-label={labels.changeVaultAriaLabel}
+              className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] px-2.5 py-2 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <FolderCog size={13} aria-hidden />
+              {labels.changeVault}
+            </Link>
           </div>
         </div>
       ) : null}

@@ -6,6 +6,7 @@ import {
   filterTreeByQuery,
   type OntologyTreeBuildResult,
 } from "@/shared/lib/ontology-tree";
+import { FirstRunStarterModule } from "@/features/first-run-starter";
 import { computeMaxDomainDescendantCount } from "../lib/domain-subcounts";
 import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
 
@@ -96,6 +97,16 @@ export function TopologyIndexPanel({
       className={`flex h-full flex-col rounded-[11px] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-3 shadow-[var(--topology-v2-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-width)" }}
     >
+      {/* "시작하기" 모듈 (root-first-open v3, `first-run-v3-flagship.html`) —
+          vault 미선택 + 정적 모드 + 세션 내 미dismiss 일 때만 자체 렌더,
+          그 외엔 null. INDEX 패널 자체의 prop 표면은 안 늘어난다 — 이미
+          받는 census(totalConcepts/totalRelations/domainCount)를 그대로
+          넘길 뿐, 표시 여부/액션은 모듈이 스스로 결정한다. */}
+      <FirstRunStarterModule
+        concepts={totalConcepts}
+        relations={totalRelations}
+        domains={domainCount}
+      />
       {/* Owner chrome-recomposition spec — the top chrome lane's engraved
           census is the single source; this header keeps only the label,
           agent-sync dot, and fold (no duplicate concepts/relations/domains

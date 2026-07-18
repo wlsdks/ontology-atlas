@@ -9,6 +9,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
 }));
 
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({
+    href,
+    children,
+    ...rest
+  }: { href: string; children: React.ReactNode } & Record<string, unknown>) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
 const labels = {
   trigger: "Settings",
   heading: "Map settings",
@@ -17,6 +29,8 @@ const labels = {
   indexDefault: "INDEX default state",
   indexDefaultExpanded: "Expanded",
   indexDefaultCollapsed: "Collapsed",
+  changeVault: "Switch vault",
+  changeVaultAriaLabel: "Open the workspace to pick a different local vault folder",
 };
 
 function renderGear(
@@ -28,6 +42,7 @@ function renderGear(
       <TopologyV2SettingsGear
         indexDefaultCollapsed={indexDefaultCollapsed}
         onChangeIndexDefaultCollapsed={onChangeIndexDefaultCollapsed}
+        changeVaultHref="/docs/?intent=local"
         labels={labels}
       />
     </NextIntlClientProvider>,
@@ -81,6 +96,15 @@ describe("TopologyV2SettingsGear — utility-rail settings popover", () => {
 
     expect(screen.queryByTestId("topology-v2-settings-gear-popover")).not.toBeInTheDocument();
     expect(windowHandler).not.toHaveBeenCalled();
+  });
+
+  it("shows a 'switch vault' row that links back to /docs so a revisiting user can change folders from the map", () => {
+    renderGear();
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+
+    const changeVault = screen.getByTestId("topology-v2-settings-gear-change-vault");
+    expect(changeVault).toHaveAttribute("href", "/docs/?intent=local");
+    expect(changeVault).toHaveTextContent(labels.changeVault);
   });
 
   it("closes on outside click", () => {
