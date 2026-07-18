@@ -6,6 +6,16 @@
 
 ---
 
+## 2026-07-18 — 설치형 앱 first-run 온보딩 (진입 표면 2원화)
+
+설치형 앱(Tauri)에서 볼트 미선택 시 마케팅 랜딩(자기 자신 다운로드 CTA 모순)
+또는 `/docs` 리다이렉트 인터스티셜 대신 **옵시디언식 FirstRunPage** 를 제자리
+렌더: 볼트 폴더 열기 · 새 볼트 만들기(빈 폴더면 기존 scaffold — 마크다운 시드
+5개 + 에이전트 설정) · 데모 볼트 둘러보기 + local-first 신뢰 라인. 감지는
+`isDesktopShell()`(Tauri 런타임 1:1, dev 전용 시뮬 시임). 웹 `/` 랜딩은
+바이트-동일 유지. 릴리스 프리플라이트(check-desktop-readiness)도 새 계약으로
+갱신. 다음 DMG 전 `desktop:verify-app` 실기기 증명 필수.
+
 ## 2026-07-18 — 정체성 공식 문서화 (v10): agent-native, human-sovereign
 
 "에이전트를 *위한* 시스템"이 아니라 "에이전트가 1급 사용자인, 사람과

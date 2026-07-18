@@ -1748,15 +1748,15 @@ if (
 }
 
 if (
-  rootEntryPage.includes("isTauriVaultRuntime()") &&
+  rootEntryPage.includes("isDesktopShell()") &&
   rootEntryPage.includes("restoreAttempted") &&
   rootEntryPage.includes("vault.manifest") &&
   rootEntryPage.includes("DesktopVaultRedirect") &&
-  rootEntryPage.includes("'/docs/?intent=local'")
+  rootEntryPage.includes("<FirstRunPage />")
 ) {
-  pass("desktop root entry routes first launch and stale restored vaults into the local picker flow without rendering marketing");
+  pass("desktop root entry renders the first-run surface for first launch and stale restored vaults without rendering marketing");
 } else {
-  fail("src/views/root-entry/ui/RootEntryPage.tsx must route Tauri first launch or stale restored handles to /docs/?intent=local unless a manifest loaded, without rendering the hosted landing page");
+  fail("src/views/root-entry/ui/RootEntryPage.tsx must render FirstRunPage in the desktop shell when no manifest loaded (first launch or stale restored handle), without rendering the hosted landing page");
 }
 
 if (

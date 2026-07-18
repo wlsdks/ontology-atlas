@@ -1,11 +1,10 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RootEntryPage } from './RootEntryPage';
 
 const mocks = vi.hoisted(() => ({
-  replace: vi.fn(),
-  isDesktopRuntime: false,
+  isDesktopShell: false,
   vaultState: {
     handle: null as unknown,
     manifest: null as unknown,
@@ -15,10 +14,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/features/docs-vault-local', () => ({
   useLocalVault: () => mocks.vaultState,
-}));
-
-vi.mock('@/i18n/navigation', () => ({
-  useRouter: () => ({ replace: mocks.replace }),
 }));
 
 vi.mock('next-intl', () => ({
@@ -34,12 +29,16 @@ vi.mock('next-intl', () => ({
   },
 }));
 
-vi.mock('@/shared/lib/tauri-vault-fs', () => ({
-  isTauriVaultRuntime: () => mocks.isDesktopRuntime,
+vi.mock('@/shared/lib/desktop-shell', () => ({
+  isDesktopShell: () => mocks.isDesktopShell,
 }));
 
 vi.mock('@/views/landing', () => ({
   LandingPage: () => <div data-testid="landing">landing</div>,
+}));
+
+vi.mock('@/views/first-run', () => ({
+  FirstRunPage: () => <div data-testid="first-run">first run</div>,
 }));
 
 vi.mock('@/views/ontology-view', () => ({
@@ -48,8 +47,7 @@ vi.mock('@/views/ontology-view', () => ({
 
 describe('RootEntryPage', () => {
   beforeEach(() => {
-    mocks.replace.mockReset();
-    mocks.isDesktopRuntime = false;
+    mocks.isDesktopShell = false;
     mocks.vaultState = { handle: null, manifest: null, restoreAttempted: true };
   });
 
@@ -57,7 +55,7 @@ describe('RootEntryPage', () => {
     render(<RootEntryPage />);
 
     expect(screen.getByTestId('landing')).toBeInTheDocument();
-    expect(mocks.replace).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
   });
 
   it('keeps landing copy out of the server-rendered root shell', () => {
@@ -68,37 +66,28 @@ describe('RootEntryPage', () => {
     expect(html).not.toContain('landing');
   });
 
-  it('routes the desktop app without a restored vault into the local picker flow', async () => {
-    mocks.isDesktopRuntime = true;
+  it('shows the first-run surface in the desktop shell when no vault is loaded', () => {
+    mocks.isDesktopShell = true;
 
     render(<RootEntryPage />);
 
     expect(screen.queryByTestId('landing')).not.toBeInTheDocument();
-    expect(screen.getByText('Opening local vault picker')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Preparing your local ontology workbench' })).toBeInTheDocument();
-    expect(screen.getByText('Markdown files stay local')).toBeInTheDocument();
-    expect(screen.getByText('Frontmatter becomes the graph')).toBeInTheDocument();
-    expect(screen.getByText('Agent gate uses MCP and CLI fallback')).toBeInTheDocument();
-    await waitFor(() => {
-      expect(mocks.replace).toHaveBeenCalledWith('/docs/?intent=local');
-    });
+    expect(screen.getByTestId('first-run')).toBeInTheDocument();
   });
 
-  it('waits for the local vault restore attempt before desktop picker routing', async () => {
-    mocks.isDesktopRuntime = true;
+  it('holds the neutral boot frame until the vault restore attempt settles', () => {
+    mocks.isDesktopShell = true;
     mocks.vaultState = { handle: null, manifest: null, restoreAttempted: false };
 
     render(<RootEntryPage />);
 
     expect(screen.queryByTestId('landing')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
     expect(screen.getByText('Opening local vault picker')).toBeInTheDocument();
-    await waitFor(() => {
-      expect(mocks.replace).not.toHaveBeenCalled();
-    });
   });
 
   it('opens the ontology workspace when a vault is already loaded', () => {
-    mocks.isDesktopRuntime = true;
+    mocks.isDesktopShell = true;
     mocks.vaultState = {
       handle: { name: 'vault' },
       manifest: { docs: [] },
@@ -108,11 +97,10 @@ describe('RootEntryPage', () => {
     render(<RootEntryPage />);
 
     expect(screen.getByTestId('ontology')).toBeInTheDocument();
-    expect(mocks.replace).not.toHaveBeenCalled();
   });
 
-  it('routes stale restored desktop handles back to the picker instead of the workspace', async () => {
-    mocks.isDesktopRuntime = true;
+  it('drops stale restored desktop handles into first-run instead of the workspace', () => {
+    mocks.isDesktopShell = true;
     mocks.vaultState = {
       handle: { name: 'missing-vault' },
       manifest: null,
@@ -122,9 +110,6 @@ describe('RootEntryPage', () => {
     render(<RootEntryPage />);
 
     expect(screen.queryByTestId('ontology')).not.toBeInTheDocument();
-    expect(screen.getByText('Opening local vault picker')).toBeInTheDocument();
-    await waitFor(() => {
-      expect(mocks.replace).toHaveBeenCalledWith('/docs/?intent=local');
-    });
+    expect(screen.getByTestId('first-run')).toBeInTheDocument();
   });
 });

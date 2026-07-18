@@ -258,6 +258,21 @@
       "caption": "이 프로젝트 자신의 온톨로지 — 빌드 시점의 실제 마크다운 frontmatter 를 그대로 그립니다. 목업 데이터 없음."
     }
   },
+  "firstRun": {
+    "eyebrow": "Local-first workbench",
+    "title": "볼트를 열고 바로 시작하세요",
+    "subtitle": "이 Mac 의 마크다운 폴더를 가리키면 그 파일들이 곧 그래프가 됩니다. 디스크 밖으로 나가는 데이터는 없습니다.",
+    "openTitle": "볼트 폴더 열기",
+    "openBody": "기존 마크다운 폴더를 선택해 워크스페이스로 들어갑니다.",
+    "createTitle": "새 볼트 만들기",
+    "createBody": "빈 폴더를 고르면 시작 구조를 만들어 드려요 — 마크다운 시드 5개 + 에이전트 설정.",
+    "demoTitle": "데모 볼트 둘러보기",
+    "demoBody": "내 폴더를 열기 전에 내장된 Ontology Atlas 볼트를 살펴봅니다.",
+    "busy": "폴더 여는 중…",
+    "scaffolding": "시작 구조 작성 중…",
+    "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
+    "trustLine": "Local-first · 마크다운이 진실원 · 백엔드 0"
+  },
   "rootEntry": {
     "openingLocalVaultPicker": "로컬 온톨로지 저장소 선택 화면으로 이동 중",
     "redirectEyebrow": "로컬 우선 작업공간",
