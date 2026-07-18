@@ -21,6 +21,7 @@ import {
 import {
   ellipsizeToWidth,
   greedyPlaceLabels,
+  clampAnchorIntoSafeRect,
   isWithinSafeRect,
   resolveLabelPriority,
   type LabelCandidate,
@@ -339,13 +340,26 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const screen = project(node.x, node.y);
     const screenRadius = radiusForKind(node.kind, tokens) * camera.scale.value;
     const anchorY = screen.y + screenRadius + LABEL_OFFSET[node.kind];
-    if (!isWithinSafeRect(screen.x, anchorY, safeRect)) return;
-
     const text = ellipsizeToWidth(node.label, tokens.labelMaxWidth, (candidate) =>
       measureLabelWidth(ctx, node.kind, candidate),
     );
     const width = measureLabelWidth(ctx, node.kind, text);
     const fontSize = LABEL_FONT_SIZE[node.kind];
+    // Safe-rect gate — but selected/hovered/ego labels are PROTECTED: instead
+    // of dropping (which defeated the "selected → alpha 1" guarantee under the
+    // left chrome inset, Guardian follow-up A) their anchor clamps to the
+    // nearest safe edge. Everything else culls as before.
+    let anchorX = screen.x;
+    let clampedAnchorY = anchorY;
+    if (!isWithinSafeRect(anchorX, anchorY, safeRect)) {
+      const isProtected = egoState !== "none" || isHovered;
+      if (!isProtected) return;
+      const clamped = clampAnchorIntoSafeRect(anchorX, anchorY, safeRect, width / 2 + 4, fontSize + 4);
+      anchorX = clamped.x;
+      clampedAnchorY = clamped.y;
+    }
+    const shiftX = anchorX - screen.x;
+    const shiftY = clampedAnchorY - anchorY;
     labelCandidates.push({
       priority: resolveLabelPriority({
         kind: node.kind,
@@ -354,8 +368,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         isHub: node.isHub,
       }),
       order: index,
-      bbox: { minX: screen.x - width / 2, maxX: screen.x + width / 2, minY: anchorY - fontSize, maxY: anchorY + 2 },
-      payload: { kind: node.kind, text, screenX: screen.x, screenY: screen.y, screenRadius, egoState, isHovered, revealAlpha },
+      bbox: { minX: anchorX - width / 2, maxX: anchorX + width / 2, minY: clampedAnchorY - fontSize, maxY: clampedAnchorY + 2 },
+      payload: {
+        kind: node.kind,
+        text,
+        screenX: screen.x + shiftX,
+        screenY: screen.y + shiftY,
+        screenRadius,
+        egoState,
+        isHovered,
+        revealAlpha,
+      },
     });
   });
 

@@ -39,7 +39,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-label-project": "#ececf0",
   "--topology-v2-label-domain": "#b8b8c1",
   "--topology-v2-label-capability": "#84848c",
-  "--topology-v2-label-element": "#57575f",
+  "--topology-v2-label-element": "#6a6a73",
   "--topology-v2-label-max-width": "168",
   "--topology-v2-canvas-bg-near": "#0a0a0d",
   "--topology-v2-canvas-bg-far": "#050507",

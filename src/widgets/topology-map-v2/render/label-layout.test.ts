@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clampAnchorIntoSafeRect,
   bboxesOverlap,
   ellipsizeToWidth,
   greedyPlaceLabels,
@@ -143,5 +144,26 @@ describe("resolveLabelPriority", () => {
     expect(project).toBeLessThan(domain);
     expect(domain).toBeLessThan(capability);
     expect(capability).toBeLessThan(element);
+  });
+});
+
+describe("clampAnchorIntoSafeRect (Guardian follow-up A)", () => {
+  const rect = { left: 344, right: 1500, top: 0, bottom: 900 };
+
+  it("clamps an anchor under the left chrome inset to the inset edge (+margins)", () => {
+    const c = clampAnchorIntoSafeRect(200, 450, rect, 40, 12);
+    expect(c).toEqual({ x: 344 + 40, y: 450 });
+  });
+
+  it("leaves an in-rect anchor untouched", () => {
+    expect(clampAnchorIntoSafeRect(800, 450, rect, 40, 12)).toEqual({ x: 800, y: 450 });
+  });
+
+  it("clamps both axes at a corner and never inverts on degenerate rects", () => {
+    expect(clampAnchorIntoSafeRect(0, 2000, rect, 40, 12)).toEqual({ x: 384, y: 888 });
+    const tiny = { left: 0, right: 10, top: 0, bottom: 10 };
+    const c = clampAnchorIntoSafeRect(-5, -5, tiny, 40, 12);
+    expect(Number.isFinite(c.x)).toBe(true);
+    expect(Number.isFinite(c.y)).toBe(true);
   });
 });

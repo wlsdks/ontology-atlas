@@ -38,6 +38,30 @@ export function isWithinSafeRect(x: number, y: number, rect: SafeRect): boolean 
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
 
+/**
+ * Clamp a label anchor INTO the safe rect instead of dropping it — for
+ * ego-protected labels (selected/hovered/ego member) whose node sits under a
+ * chrome inset. Guardian follow-up A (label-clarity): the safe-rect cull ran
+ * BEFORE the selected/hovered alpha floor, so a focused domain's fan children
+ * under the left panel lost their labels — recreating the "이름 없는 도형"
+ * symptom the slice existed to fix. A clamped label sits at the inset edge
+ * nearest its node ("이 패널 밑에 이 노드가 있다"), which beats silence.
+ * `marginX`/`marginY` keep the text box itself inside the rect (width/2, font).
+ */
+export function clampAnchorIntoSafeRect(
+  x: number,
+  y: number,
+  rect: SafeRect,
+  marginX: number,
+  marginY: number,
+): { x: number; y: number } {
+  const lo = Math.min(rect.left + marginX, rect.right - marginX);
+  const hi = Math.max(rect.left + marginX, rect.right - marginX);
+  const top = Math.min(rect.top + marginY, rect.bottom - marginY);
+  const bottom = Math.max(rect.top + marginY, rect.bottom - marginY);
+  return { x: Math.min(hi, Math.max(lo, x)), y: Math.min(bottom, Math.max(top, y)) };
+}
+
 /** Standard AABB overlap (touching edges do NOT count as overlap). */
 export function bboxesOverlap(a: LabelBBox, b: LabelBBox): boolean {
   return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
