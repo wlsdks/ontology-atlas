@@ -6,6 +6,36 @@
 
 ---
 
+## 2026-07-20 — e2e 스위트 부패 정리 + CI 연결 (no product change)
+
+Playwright e2e 139개 중 108개가 실패하고 있었다 — 전부 이미 삭제된 화면을
+기다리다 타임아웃난 것으로, 제품 결함은 0건. `topology-map-v2` 캔버스 엔진
+전환(c84ecb25e)으로 Sigma WebGL 렌더러(`sigma-*` testid)가 물리적으로
+삭제됐고, `/ontology` 구 트리 페이지가 `/topology?index=expanded` 로의
+얇은 리다이렉트로 수렴(B3)했는데 두 표면을 겨냥한 spec 은 그대로 남아
+있었다 — Playwright 가 CI 에 안 물려 있어 조용히 썩었다.
+
+- 주제가 통째로 사라진 spec 5개 삭제 — `topology-overlap` / `topology-drag`
+  / `topology-analysis-workflow`(은퇴한 분석 패널) / `topology-visual-
+  regression` / `topology-loading`.
+- `ontology-ui.spec.ts` 23개 중 구 `/ontology` 페이지를 겨냥한 17개 삭제,
+  현행 표면(`/`, `/download`, `/projects`, 리다이렉트 후 `/topology`)을
+  겨냥해 지금도 유효한 5개만 보존 — green 이었던 "데이터가 없으면 detail
+  패널은 노출되지 않음" 테스트는 예외적으로 함께 삭제했다 (겨냥하던
+  `ontology-node-detail` testid 의 프로듀서가 더 이상 없어 항상 공허하게
+  통과할 뿐이었다).
+- `user-journey-a.spec.ts` 의 `getByText("Ontology Atlas", exact)` 가 구
+  마케팅 랜딩 히어로 카피를 겨냥해 실패 — root-first-open 이후 남은 유일한
+  마크는 `AppNavRail` 의 아이콘 전용 브랜드 링크라 접근성 이름 기반
+  셀렉터로 교체(삭제 아님).
+- 현행 캔버스 엔진 계약을 덮는 `topology-v2-smoke.spec.ts` 신설(5개) —
+  캔버스 렌더, 유효/미존재 딥링크, Esc 선택 해제, 문서함 왕복.
+- `.github/workflows/e2e.yml` 신설 — PR/push 마다 정리된 스위트 전체를
+  chromium 하나로 돌려 같은 부패가 재발하지 않게 CI 게이트를 건다.
+- `.claude/rules/testing.md` 에 규율 한 줄 추가: UI 표면/렌더러를 삭제하면
+  같은 PR 에서 e2e spec 도 함께 스윕한다.
+
+
 ## 2026-07-19 — 문서함 상단 그래프 census 제거 (docs-chrome-round 마감)
 
 문서함(`/docs`) 브레드크럼 행의 `개념 N개 · 관계 N개` 각인 수치를 삭제했다.

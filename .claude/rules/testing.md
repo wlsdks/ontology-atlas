@@ -59,6 +59,7 @@ pnpm exec playwright test --update-snapshots        # baseline 재생성
 
 - 회귀 fix 한 commit 에는 **그 회귀를 잡는 단위 test** 를 같이 추가한다.
 - E2E 는 시각 회귀 (visual regression) 까지 다룰 때만 baseline 갱신 — 운영 환경에서 한 번 캡처 후 commit.
+- **UI 표면/렌더러를 삭제하면 같은 PR 에서 e2e spec 도 함께 스윕한다.** Playwright 가 CI 에 안 물려 있으면 삭제된 testid/heading 을 기다리는 spec 이 조용히 썩는다 (2026-07 e2e 정리 — 139개 중 108개가 이미 삭제된 Sigma 렌더러/구 `/ontology` 트리 페이지를 겨냥해 실패, 제품 결함 0건).
 
 ## Cross-package contract test (R11 패턴)
 
