@@ -20,8 +20,14 @@ import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-
 export interface AppNavRailProps {
   /** 설정 트리거(`TopologyV2SettingsGear` 등) — 레일 하단에 꽂는 슬롯. 완성된
    *  엘리먼트를 HomePage 가 넘긴다 — widget↔widget import 를 피하고, INDEX
-   *  기본 상태 같은 HomePage 소유 state 를 그대로 재사용하기 위함. */
+   *  기본 상태 같은 HomePage 소유 state 를 그대로 재사용하기 위함. perf/
+   *  persistent-shell 이후엔 레일이 layout 에 상주하므로 `AppShell`이
+   *  `useNavRailShellValue()`로 읽은 값을 그대로 넘긴다. */
   settingsSlot?: ReactNode;
+  /** true 면 레일을 언마운트하지 않고 CSS 로만 숨긴다(빌더 fullscreen).
+   *  레일이 layout 에 상주해 DOM identity 를 유지하는 게 perf/persistent-shell
+   *  승격의 핵심이라 조건부 렌더링 대신 이 prop 을 쓴다. */
+  hidden?: boolean;
   className?: string;
 }
 
@@ -49,7 +55,7 @@ interface RailDestination {
  *
  * 표시 breakpoint 는 `lg` (≥1024px) — 그 아래는 `BottomTabBar` 가 담당한다.
  */
-export function AppNavRail({ settingsSlot, className }: AppNavRailProps) {
+export function AppNavRail({ settingsSlot, hidden, className }: AppNavRailProps) {
   const t = useTranslations("navRail");
   const tLive = useTranslations("liveActivity");
   const pathname = usePathname() ?? "/";
@@ -103,8 +109,10 @@ export function AppNavRail({ settingsSlot, className }: AppNavRailProps) {
     <aside
       aria-label={t("ariaLabel")}
       data-testid="app-nav-rail"
+      data-hidden={hidden ? "true" : "false"}
       className={cn(
         "hidden w-[var(--app-nav-rail-width)] shrink-0 flex-col items-center border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-3 lg:flex",
+        hidden && "lg:hidden",
         className,
       )}
     >

@@ -9,7 +9,6 @@ import { buttonVariants, StaggeredFadeIn } from '@/shared/ui';
 import { TopologyV2KindGlyph } from '@/shared/ui/topology-v2-kind-glyph';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { GITHUB_RELEASES_URL, MacosDownloadLink } from '@/features/macos-download-link';
-import { AppNavRail } from '@/widgets/app-nav-rail';
 import { RELEASE_MIN_MACOS, RELEASE_VERSION } from '../lib/release-facts';
 import { CHANGELOG_PREVIEW_AS_OF, CHANGELOG_PREVIEW_ENTRIES } from '../lib/changelog-preview';
 import { DOGFOOD_CENSUS } from '../model/dogfood-census.generated';
@@ -53,7 +52,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
 
   return (
     <div className="flex min-h-screen w-full">
-      <AppNavRail />
+      {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       <main
         id="main"
         className="min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] py-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(56px+env(safe-area-inset-bottom)+1rem)] md:px-10 md:py-10 md:pb-10"

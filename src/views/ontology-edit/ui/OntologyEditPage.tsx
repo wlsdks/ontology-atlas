@@ -29,7 +29,7 @@ import { useDataSourceMode } from "@/features/data-source-mode";
 import { LiveActivityIndicator } from "@/features/vault-ontology";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { slugify } from "@/shared/lib/slugify";
-import { AppNavRail } from "@/widgets/app-nav-rail";
+import { useNavRailHidden } from "@/widgets/app-nav-rail";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { ChromeTile, Tooltip, useToast } from "@/shared/ui";
@@ -203,6 +203,9 @@ export function OntologyEditPage() {
   const [selectedId, setSelectedId] = useState<string | null>(() => initialBuilderFocusId);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  // perf/persistent-shell — 레일은 layout(AppShell) 상주라 언마운트하지 않고
+  // CSS 로만 숨긴다(레일 DOM identity 유지가 이 승격의 핵심).
+  useNavRailHidden(fullscreen);
   // 자동 정렬 토큰 — increment 마다 캔버스가 frontmatter.canvasPosition
   // 무시하고 자동 layout 으로 노드 위치 reset (in-memory only). frontmatter
   // 자체는 그대로라 다음 mount 부터 다시 사용자 좌표 복원 (선호 보존). 사용자가
@@ -1099,10 +1102,11 @@ export function OntologyEditPage() {
 
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
-      {/* 좌측 내비 레일 — fullscreen 모드에선 캔버스 공간을 최대화하려고
-          숨긴다(구 OperationsNav 가 fullscreen 에서 숨던 것과 동일 원칙).
-          레일은 desktop(lg+) 전용이라 모바일 영향 없음(BottomTabBar 담당). */}
-      {fullscreen ? null : <AppNavRail />}
+      {/* 좌측 내비 레일 — perf/persistent-shell 이후 layout(AppShell) 상주.
+          fullscreen 모드에선 캔버스 공간을 최대화하려고 CSS 로만 숨긴다
+          (위 `useNavRailHidden(fullscreen)` — 구 OperationsNav 가 fullscreen
+          에서 숨던 것과 동일 원칙, 레일 DOM identity 는 유지). 레일은
+          desktop(lg+) 전용이라 모바일 영향 없음(BottomTabBar 담당). */}
       <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
         {/* ⇧⌘K — 큰 ontology 에서 노드 빠른 점프. 선택 시 인스펙터에서 즉시
             편집 가능. fullscreen 모드에선 hotkey 도 작동 (캔버스에 mount). */}

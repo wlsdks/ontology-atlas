@@ -70,10 +70,6 @@ vi.mock("@/features/data-source-mode", () => ({
   useDataSourceMode: () => "static",
 }));
 
-vi.mock("@/widgets/app-nav-rail", () => ({
-  AppNavRail: () => <nav aria-label="App navigation" data-testid="app-nav-rail-stub" />,
-}));
-
 vi.mock("@/widgets/app-settings-menu", () => ({
   AppSettingsMenu: () => <button type="button" data-testid="app-settings-trigger-stub" />,
 }));
@@ -121,9 +117,14 @@ function renderPage() {
 }
 
 describe("ProjectSelectorPage", () => {
-  it("mounts the persistent nav rail and settings/agent-status cluster instead of OperationsNav", () => {
+  // perf/persistent-shell — AppNavRail은 이제 app/[locale]/layout.tsx
+  // (AppShell)에 상주하고 이 페이지는 직접 마운트하지 않는다(레일 DOM
+  // identity를 라우트 이동 전반에서 유지하기 위함). 그래서 이 unit 테스트는
+  // 레일 자체가 아니라, 페이지가 여전히 소유하는 settings/agent-status
+  // 클러스터만 단언한다 — 레일 persistence 자체는 Playwright(프로덕션 정적
+  // 서빙에서 rail DOM identity 유지)로 검증한다.
+  it("mounts the settings/agent-status cluster instead of OperationsNav", () => {
     renderPage();
-    expect(screen.getByTestId("app-nav-rail-stub")).toBeInTheDocument();
     expect(screen.getByTestId("app-settings-trigger-stub")).toBeInTheDocument();
     expect(screen.getByTestId("live-activity-indicator-stub")).toBeInTheDocument();
   });
