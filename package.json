@@ -136,6 +136,8 @@
     "lint": "eslint",
     "knip": "knip",
     "bundle:check": "node scripts/check-bundle.mjs",
+    "check:tokens": "node scripts/check-no-raw-indigo.mjs",
+    "test:check:tokens": "node --test scripts/check-no-raw-indigo.test.mjs",
     "test": "vitest",
     "test:run": "vitest run",
     "e2e": "playwright test"

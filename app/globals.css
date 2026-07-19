@@ -56,15 +56,21 @@
   --color-indigo-a16: rgba(94, 106, 210, 0.16);
   --color-indigo-a18: rgba(94, 106, 210, 0.18);
   --color-indigo-a22: rgba(94, 106, 210, 0.22);
+  /* B안 색 토큰화 (2026-07-20) — 색상 인벤토리 고빈도 orphan alpha 추가.
+     기존 사다리와 같은 hue(94,106,210), 무시프트 정확 알파. */
+  --color-indigo-a26: rgba(94, 106, 210, 0.26);
   --color-indigo-a28: rgba(94, 106, 210, 0.28);
   --color-indigo-a32: rgba(94, 106, 210, 0.32);
   --color-indigo-a36: rgba(94, 106, 210, 0.36);
   --color-indigo-a38: rgba(94, 106, 210, 0.38);
+  --color-indigo-a40: rgba(94, 106, 210, 0.4);
   --color-indigo-a42: rgba(94, 106, 210, 0.42);
+  --color-indigo-a46: rgba(94, 106, 210, 0.46);
   /* border/hover:border 전용. */
   --color-indigo-border-a46: rgba(94, 106, 210, 0.46);
   /* focus-visible:ring 전용 utility. */
   --color-indigo-ring-a46: rgba(94, 106, 210, 0.46);
+  --color-indigo-a50: rgba(94, 106, 210, 0.5);
   --color-indigo-a55: rgba(94, 106, 210, 0.55);
   --color-indigo-a58: rgba(94, 106, 210, 0.58);
   --color-indigo-a62: rgba(94, 106, 210, 0.62);
@@ -127,8 +133,13 @@
   --color-indigo-line-a20: rgba(139, 151, 255, 0.2);
   --color-indigo-line-a22: rgba(139, 151, 255, 0.22);
   --color-indigo-line-a32: rgba(139, 151, 255, 0.32);
+  /* B안 색 토큰화 (2026-07-20) — 고빈도 orphan alpha 추가, 같은 hue 무시프트. */
+  --color-indigo-line-a35: rgba(139, 151, 255, 0.35);
+  --color-indigo-line-a40: rgba(139, 151, 255, 0.4);
   --color-indigo-line-a42: rgba(139, 151, 255, 0.42);
+  --color-indigo-line-a45: rgba(139, 151, 255, 0.45);
   --color-indigo-line-a54: rgba(139, 151, 255, 0.54);
+  --color-indigo-line-a90: rgba(139, 151, 255, 0.9);
 
   --color-danger-a12: rgba(229, 72, 77, 0.12);
   --color-danger-a42: rgba(229, 72, 77, 0.42);
@@ -264,13 +275,17 @@
     --color-indigo-a16: rgba(94, 106, 210, 0.16);
     --color-indigo-a18: rgba(94, 106, 210, 0.18);
     --color-indigo-a22: rgba(94, 106, 210, 0.22);
+    --color-indigo-a26: rgba(94, 106, 210, 0.26);
     --color-indigo-a28: rgba(94, 106, 210, 0.28);
     --color-indigo-a32: rgba(94, 106, 210, 0.32);
     --color-indigo-a36: rgba(94, 106, 210, 0.36);
     --color-indigo-a38: rgba(94, 106, 210, 0.38);
+    --color-indigo-a40: rgba(94, 106, 210, 0.4);
     --color-indigo-a42: rgba(94, 106, 210, 0.42);
+    --color-indigo-a46: rgba(94, 106, 210, 0.46);
     --color-indigo-border-a46: rgba(94, 106, 210, 0.46);
     --color-indigo-ring-a46: rgba(94, 106, 210, 0.46);
+    --color-indigo-a50: rgba(94, 106, 210, 0.5);
     --color-indigo-a55: rgba(94, 106, 210, 0.55);
     --color-indigo-a58: rgba(94, 106, 210, 0.58);
     --color-indigo-a62: rgba(94, 106, 210, 0.62);
@@ -312,8 +327,12 @@
     --color-indigo-line-a20: rgba(139, 151, 255, 0.2);
     --color-indigo-line-a22: rgba(139, 151, 255, 0.22);
     --color-indigo-line-a32: rgba(139, 151, 255, 0.32);
+    --color-indigo-line-a35: rgba(139, 151, 255, 0.35);
+    --color-indigo-line-a40: rgba(139, 151, 255, 0.4);
     --color-indigo-line-a42: rgba(139, 151, 255, 0.42);
+    --color-indigo-line-a45: rgba(139, 151, 255, 0.45);
     --color-indigo-line-a54: rgba(139, 151, 255, 0.54);
+    --color-indigo-line-a90: rgba(139, 151, 255, 0.9);
     --color-danger-a12: rgba(229, 72, 77, 0.12);
     --color-danger-a42: rgba(229, 72, 77, 0.42);
     --color-danger-text-strong: rgba(236, 116, 116, 0.95);

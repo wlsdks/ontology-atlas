@@ -76,6 +76,7 @@ jobs:
         run: |
           pnpm test:mcp:docs
           pnpm exec tsc --noEmit
+          pnpm check:tokens
 
       - name: Build static site
         run: |
