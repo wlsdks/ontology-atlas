@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T08:11:16.784Z",
+  "generatedAt": "2026-07-19T08:40:40.002Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-19 — 빌더 소형 UX 개선 — 빈 캔버스 안내·팔레트 추가 배지·줌 표시·버튼 위계·탭 툴팁 (builder-ux-polish)",
+          "slug": "2026-07-19-빌더-소형-ux-개선-빈-캔버스-안내팔레트-추가-배지줌-표시버튼-위계탭-툴팁-builder-ux-polish"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-19 — UX 부대 1차 — 인사이트 허브 딥링크·신선도 시간축·평문 카피 (ux-wave-1)",
           "slug": "2026-07-19-ux-부대-1차-인사이트-허브-딥링크신선도-시간축평문-카피-ux-wave-1"
         },
@@ -3911,9 +3916,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. haiku UX 부대(8명)가 모든 LNB 탭을 처음 사용자 관점으로 실조작한 조사에서 교차 검증으로 살아남은 항목의 1차 수정. 오탐(문서함 탭/버튼 이",
-      "wordCount": 21800,
-      "updatedAt": "2026-07-19T08:11:09.147Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. haiku UX 부대 조사에서 검증된 /ontology/edit 빌더 소형 개선 큐. 전부 기존 토큰/컴포넌트 재사용 — 새 색·새 모션 없음. 빈 캔버스",
+      "wordCount": 21973,
+      "updatedAt": "2026-07-19T08:40:32.515Z",
       "linksOut": [
         "slug"
       ]

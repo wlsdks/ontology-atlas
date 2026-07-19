@@ -66,4 +66,21 @@ describe("OntologyKindPalette", () => {
     const tile = screen.getByRole("button", { name: /^프로젝트 개념 추가/ });
     expect(tile.className).toContain("size-[var(--chrome-tile-size)]");
   });
+
+  it("collapsed 모드는 kind 타일마다 '추가' 진입점을 시각적으로 드러내는 배지를 그린다", () => {
+    renderPalette(true);
+
+    const badges = document.querySelectorAll("[data-palette-add-badge]");
+    expect(badges.length).toBe(4);
+    const kinds = Array.from(badges).map((el) =>
+      el.getAttribute("data-palette-add-badge"),
+    );
+    expect(kinds).toEqual(["project", "domain", "capability", "element"]);
+  });
+
+  it("expanded 모드는 레이블이 이미 보이므로 별도 추가 배지를 그리지 않는다", () => {
+    renderPalette(false);
+
+    expect(document.querySelectorAll("[data-palette-add-badge]").length).toBe(0);
+  });
 });

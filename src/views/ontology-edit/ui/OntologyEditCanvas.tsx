@@ -13,6 +13,7 @@ import {
   ReactFlow,
   useNodesInitialized,
   useReactFlow,
+  useViewport,
   type Connection,
   type Edge,
   type FinalConnectionState,
@@ -194,6 +195,25 @@ function FitViewOnGraphReady({
   }, [anchorNodeId, graphKey, nodeCount, nodesInitialized, reactFlow]);
 
   return null;
+}
+
+/**
+ * 캔버스 줌 % 인디케이터 — 좌하단, 헤더의 census 숫자와 같은 각인 모노
+ * 스타일(`--engraved-numeral-*`) 재사용. `useViewport` 는 ReactFlow 내부
+ * store 구독이라 pan/zoom 마다 재계산되지만 텍스트 노드 하나뿐이라 가볍다.
+ * MiniMap · trace 범례(우하단) 와 안 겹치도록 반대편(좌하단)에 둔다.
+ */
+function ZoomLevelIndicator() {
+  const { zoom } = useViewport();
+  const percent = Math.round(zoom * 100);
+  return (
+    <div
+      data-token="engraved-numeral"
+      className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-[10.5px] tabular-nums tracking-[0.04em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+    >
+      {percent}%
+    </div>
+  );
 }
 
 function buildGraphKey(args: {
@@ -769,6 +789,7 @@ export function OntologyEditCanvas({
           anchorNodeId={graphAnchorNodeId}
         />
         <FocusNodeOnDemand token={focusToken} nodeId={focusNodeId} />
+        <ZoomLevelIndicator />
         {/* MiniMap — 노드 많아질 때 빠른 navigation. 헌장 §11 호환:
             인디고 alpha + 무채색 alpha mask. ephemeral 은 vault 와 같은
             인디고 계열이되 더 밝은 톤으로 차별(builder-core, amber 폐지).

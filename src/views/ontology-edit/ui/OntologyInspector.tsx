@@ -3,13 +3,22 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronLeft, ChevronRight, Clipboard, X } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clipboard,
+  FileText,
+  LayoutGrid,
+  Waypoints,
+  X,
+} from "lucide-react";
 import { vaultFolderForKind } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { Link } from "@/i18n/navigation";
 import { slugify } from "@/shared/lib/slugify";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
-import { TopologyV2KindGlyph } from "@/shared/ui";
+import { Tooltip, TopologyV2KindGlyph } from "@/shared/ui";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 import type { VaultBacklinkMatch } from "../lib/find-vault-backlinks";
 import {
@@ -636,10 +645,18 @@ function VaultDetail({
   const dirty = trimmed !== "" && trimmed !== node.title;
   const canSave = !readOnly && dirty && Boolean(onSaveRename) && !saving;
   const [activeTab, setActiveTab] = useState<VaultDetailTab>("overview");
-  const tabs: Array<{ id: VaultDetailTab; label: string }> = [
-    { id: "overview", label: t("tabOverview") },
-    { id: "relations", label: t("tabRelations") },
-    { id: "document", label: t("tabDocument") },
+  // 탭 아이콘 + 툴팁 — 레이블("개요"/"관계"/"문서")은 그대로 평문 유지하고,
+  // 아이콘은 스캔 속도만 돕는 보조 신호. 툴팁은 짧은 레이블만으론 처음
+  // 보는 사용자에게 모호할 수 있는 탭 의미를 hover 로 한 번 더 풀어준다.
+  const tabs: Array<{
+    id: VaultDetailTab;
+    label: string;
+    hint: string;
+    Icon: typeof LayoutGrid;
+  }> = [
+    { id: "overview", label: t("tabOverview"), hint: t("tabOverviewHint"), Icon: LayoutGrid },
+    { id: "relations", label: t("tabRelations"), hint: t("tabRelationsHint"), Icon: Waypoints },
+    { id: "document", label: t("tabDocument"), hint: t("tabDocumentHint"), Icon: FileText },
   ];
   const sourceDocHref = `/docs/?slug=${encodeURIComponent(node.slug)}`;
   const hierarchyCount =
@@ -684,23 +701,26 @@ function VaultDetail({
       >
         {tabs.map((tab) => {
           const active = activeTab === tab.id;
+          const Icon = tab.Icon;
           return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              aria-controls={`vault-detail-${tab.id}`}
-              id={`vault-detail-tab-${tab.id}`}
-              onClick={() => setActiveTab(tab.id)}
-              className={
-                active
-                  ? "h-7 rounded-sm bg-[color:var(--color-indigo-a22)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
-                  : "h-7 rounded-sm px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
-              }
-            >
-              {tab.label}
-            </button>
+            <Tooltip key={tab.id} content={tab.hint} side="bottom">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={active}
+                aria-controls={`vault-detail-${tab.id}`}
+                id={`vault-detail-tab-${tab.id}`}
+                onClick={() => setActiveTab(tab.id)}
+                className={
+                  active
+                    ? "flex h-7 items-center justify-center gap-1 rounded-sm bg-[color:var(--color-indigo-a22)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+                    : "flex h-7 items-center justify-center gap-1 rounded-sm px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+                }
+              >
+                <Icon size={12} aria-hidden="true" className="shrink-0" />
+                <span className="min-w-0 truncate">{tab.label}</span>
+              </button>
+            </Tooltip>
           );
         })}
       </div>

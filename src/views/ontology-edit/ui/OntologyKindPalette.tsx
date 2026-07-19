@@ -67,13 +67,25 @@ export function OntologyKindPalette({
             const label = kindLabel(entry.kind);
             const hint = t(entry.hintKey);
             return (
-              <li key={entry.kind}>
+              <li key={entry.kind} className="relative">
                 <ChromeTile
                   icon={<TopologyV2KindGlyph kind={entry.kind} size={16} />}
                   title={`${label} (${entry.shortcut})`}
                   aria-label={t("addAriaLabel", { label, hint })}
                   onClick={() => onAddNode(entry.kind)}
                 />
+                {/* "+" 배지 — 접힌 팔레트에선 kind 글리프만 보여 클릭하면 새
+                    개념 카드가 추가된다는 게 한눈에 안 드러났다(레이블 없이
+                    아이콘만이라 필터 칩처럼 보일 위험). 새 색 없이 기존
+                    인디고 배지 관례(`--color-indigo-brand` 채움 + 무채색
+                    보더로 표면 분리)를 재사용해 "추가" 행동을 시각화. */}
+                <span
+                  aria-hidden="true"
+                  data-palette-add-badge={entry.kind}
+                  className="pointer-events-none absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[color:var(--color-panel)] bg-[color:var(--color-indigo-brand)] text-[9px] font-bold leading-none text-[color:var(--color-text-primary)]"
+                >
+                  +
+                </span>
               </li>
             );
           })}
