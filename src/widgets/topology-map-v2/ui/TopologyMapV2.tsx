@@ -99,10 +99,17 @@ export interface TopologyMapV2Props {
   onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
   /** Embed mode (project detail neighbor map) — reduced physics/chrome. */
   minimal?: boolean;
+  /**
+   * W6 agent visibility — the graph node id matching the agent heartbeat's
+   * current focus (already resolved to `kind:slug` form by `HomePage`), or
+   * `null`/omitted when there's no fresh heartbeat focus. Draws a static
+   * amber ring + label activity mark on that one node; never fabricated.
+   */
+  agentFocusNodeId?: string | null;
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onContextMenuNode } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onContextMenuNode, agentFocusNodeId } = props;
 
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.
@@ -119,6 +126,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       onVisibleCountChange,
       onGraphStatsChange,
       onContextMenuNode,
+      agentFocusNodeId,
     });
 
   return (

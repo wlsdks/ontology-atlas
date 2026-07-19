@@ -75,6 +75,13 @@ export interface UseTopologyLoopArgs {
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
   /** W2-B node right-click context menu — see `topology-pointer-handlers.ts#createTopologyPointerHandlers`'s `onContextMenuNode` doc. */
   onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
+  /**
+   * W6 agent visibility — the graph node id matching the agent heartbeat's
+   * current focus (already resolved to `kind:slug` form upstream, or `null`
+   * when there's no fresh focus). Drives the amber agent-focus ring + label
+   * activity mark; `null`/omitted draws neither (fabrication 0).
+   */
+  agentFocusNodeId?: string | null;
 }
 
 export type UseTopologyLoopResult = TopologyPointerHandlers & {
@@ -83,7 +90,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onContextMenuNode } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onContextMenuNode, agentFocusNodeId = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -173,10 +180,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * just draws nothing).
    */
   const selectionPulseRef = useRef<{ nodeId: string; startAtMs: number } | null>(null);
+  /** W6 agent visibility — mirrors `agentFocusNodeId` prop into a ref for the rAF closure, same pattern as `focusedSlugRef`. */
+  const agentFocusNodeIdRef = useRef<string | null>(agentFocusNodeId);
 
   useEffect(() => {
     focusedSlugRef.current = focusedSlug;
   }, [focusedSlug]);
+
+  useEffect(() => {
+    agentFocusNodeIdRef.current = agentFocusNodeId;
+  }, [agentFocusNodeId]);
 
   useEffect(() => {
     panelEmphasisNodeIdRef.current = emphasizedNeighborSlug;
@@ -543,6 +556,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         egoRevealById: egoRevealRef.current,
         reducedMotion: reducedMotionRef.current,
         selectionPulse: selectionPulseRef.current,
+        agentFocusNodeId: agentFocusNodeIdRef.current,
       });
 
       handle = requestAnimationFrame(frame);
