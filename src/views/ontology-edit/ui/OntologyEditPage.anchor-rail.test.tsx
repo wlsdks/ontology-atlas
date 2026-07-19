@@ -13,7 +13,10 @@ import {
   formatBuilderAnchorDegreeBadge,
 } from "../lib/format-builder-anchor-labels";
 import { resolveBuilderHeaderActionLabel } from "../lib/builder-header-action-label";
-import { resolveBuilderCommandStripState } from "../lib/builder-command-strip-state";
+import {
+  resolveBuilderCommandStripState,
+  shouldShowBuilderOpenDetailsMenuItem,
+} from "../lib/builder-command-strip-state";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
@@ -288,6 +291,31 @@ describe("BuilderCommandStrip", () => {
       "href",
       "/ontology/insights/?node=capabilities%2Fbuilder-canvas-polish",
     );
+  });
+});
+
+describe("shouldShowBuilderOpenDetailsMenuItem", () => {
+  // persona QA (fix/persona-findings ①): draft 를 만들고 상세를 닫은 뒤
+  // 다시 이름을 채우려 할 때, 헤더 ⋯ 메뉴의 "상세 열기" 항목이 캔버스
+  // 상태 조합(state)에 따라 숨어버려 진입로가 막힌 사례가 있었다 — 이제
+  // 선택 여부 + 상세 열림 여부만으로 판정해 상태 조합과 무관하게 항상
+  // 안전망으로 노출한다.
+  it("선택된 개념이 있고 상세가 닫혀 있으면 항상 노출한다", () => {
+    expect(
+      shouldShowBuilderOpenDetailsMenuItem({ hasSelection: true, detailsOpen: false }),
+    ).toBe(true);
+  });
+
+  it("이미 상세가 열려 있으면 중복 진입점을 숨긴다", () => {
+    expect(
+      shouldShowBuilderOpenDetailsMenuItem({ hasSelection: true, detailsOpen: true }),
+    ).toBe(false);
+  });
+
+  it("선택된 개념이 없으면 숨긴다", () => {
+    expect(
+      shouldShowBuilderOpenDetailsMenuItem({ hasSelection: false, detailsOpen: false }),
+    ).toBe(false);
   });
 });
 

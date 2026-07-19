@@ -68,6 +68,7 @@ import {
 import {
   resolveBuilderCommandStripState,
   isSelectedBuilderCommandState,
+  shouldShowBuilderOpenDetailsMenuItem,
 } from "../lib/builder-command-strip-state";
 import { resolveBuilderHeaderActionLabel } from "../lib/builder-header-action-label";
 import { formatBuilderAnchorDegreeBadge } from "../lib/format-builder-anchor-labels";
@@ -1241,7 +1242,10 @@ export function OntologyEditPage() {
                   <ShieldCheck size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
                   <span className="min-w-0 flex-1 truncate">{t("writeSummaryCollapsedLabel")}</span>
                 </button>
-                {(ephemeralSelected || vaultSelected) && commandStripState !== "selected" ? (
+                {shouldShowBuilderOpenDetailsMenuItem({
+                  hasSelection: Boolean(ephemeralSelected || vaultSelected),
+                  detailsOpen,
+                }) ? (
                   <button
                     type="button"
                     role="menuitem"

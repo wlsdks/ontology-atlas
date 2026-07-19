@@ -1819,7 +1819,8 @@
       "ariaLabel": "Frontmatter graph fields"
     },
     "backlinksStrip": {
-      "openInOntology": "Open in ontology →"
+      "openInOntology": "Open in ontology →",
+      "empty": "No documents link here yet"
     },
     "vaultStatus": {
       "localTooltip": "Pick a folder on your disk as the workspace",

@@ -85,6 +85,7 @@ import { useHomeRouteState } from "../model/use-home-route-state";
 import {
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
+  resolveTopologyNodeClickRouteState,
   type TopologyAnalysisMode,
 } from "../model/url-state";
 import {
@@ -975,8 +976,11 @@ export function HomePage() {
       setFullDetailSlug(null);
       setSelectedRelationActive(false);
       const project = projectBySlug.get(slug);
+      // path 모드/일반 선택 분기는 `resolveTopologyNodeClickRouteState` 가
+      // 담당 — persona QA fix/persona-findings ②, 자세한 배경은 그 함수의
+      // 주석 참고 (`../model/url-state.ts`).
       setRouteState((current) =>
-        selectTopologyNodeRouteState(current, slug, {
+        resolveTopologyNodeClickRouteState(current, slug, {
           isHub: Boolean(project?.isHub),
           preserveImpact: options?.preserveImpact,
         }),

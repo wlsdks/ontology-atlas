@@ -1819,7 +1819,8 @@
       "ariaLabel": "프론트매터 그래프 필드"
     },
     "backlinksStrip": {
-      "openInOntology": "온톨로지에서 열기 →"
+      "openInOntology": "온톨로지에서 열기 →",
+      "empty": "아직 이 문서를 참조한 문서가 없습니다"
     },
     "vaultStatus": {
       "localTooltip": "내 디스크의 폴더를 vault 로 선택",
