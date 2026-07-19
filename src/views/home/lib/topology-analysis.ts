@@ -8,7 +8,6 @@ import {
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
   type OntologyHealthActionTarget,
-  type OntologyHealthSignalCandidate,
 } from "@/entities/knowledge-graph";
 import { buildOntologyReachability } from "@/shared/lib/ontology-tree";
 
@@ -63,7 +62,6 @@ export interface TopologyAnalysisSummary {
  * same-layer cross-import" guidance). Both surfaces' "next repair target"
  * can't drift because they call the one entities-level function.
  */
-export type TopologyHealthActionCandidate = OntologyHealthSignalCandidate;
 export type TopologyHealthActionTarget = OntologyHealthActionTarget;
 
 export interface TopologyHealthBriefLabels {
