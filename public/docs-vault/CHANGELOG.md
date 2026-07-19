@@ -6,6 +6,19 @@
 
 ---
 
+## 2026-07-20 — 인디고/오버레이 색 토큰화 B안 (indigo · indigo-line · white-overlay · danger 잔여)
+
+색 인벤토리 감사(568건)에서 나온 후속 조치 — indigo(94,106,210) 203건 ·
+indigo-line(139,151,255) 98건 · white-overlay(255,255,255) 45건 · danger
+잔여 15건, 총 361건의 rgba() 리터럴을 `app/globals.css` 토큰
+(`--color-indigo-a*` / `--color-indigo-line-a*` / `--color-overlay-1/2/3` /
+`--color-danger-a*`)으로 치환. 고빈도 orphan alpha 8개
+(`indigo-a26/a40/a46/a50`, `indigo-line-a35/a40/a45/a90`) 신설, 정확 토큰이
+없는 값은 최근접 스냅(예: `0.48→a50`, `0.44→a46`). `scripts/check-no-raw-indigo.mjs`
+회귀 가드(`pnpm check:tokens`)를 CI(`deploy-hosting.yml` docs/type 게이트)
+에 연결해 이후 raw indigo 리터럴 재유입을 차단. 앰버·kind 데이터마크·
+composite shadow 색은 이번 범위 밖(별도 패스).
+
 ## 2026-07-20 — 헌장 danger 색 토큰화 + 빌더 인스펙터 중복 DOM 렌더 제거
 
 전 페이지 육안 감사에서 나온 실수정 2건.
