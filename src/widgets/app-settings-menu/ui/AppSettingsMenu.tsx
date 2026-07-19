@@ -137,16 +137,14 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           {t('settingsLabel')}
         </span>
       </summary>
-      {/* details 의 UA 기본 "닫힘 시 non-summary 자식 display:none" 규칙은
-          author stylesheet(Tailwind 의 `flex` 유틸 등)가 더 높은 cascade
-          우선순위로 덮어써 무력화될 수 있다 — 그 경우 닫힌 상태에서도 이
-          오버레이가 실제 레이아웃 박스를 차지해 `document.body.scrollWidth`
-          를 부풀린다(모바일에서 `body{overflow-x:hidden}` 가 시각적으로만
-          가려줌, tests/e2e/overflow-sweep.spec.ts 회귀 발견). `open` 상태로
-          직접 마운트를 걷어내 브라우저 구현에 기대지 않는다. */}
-      {open ? (
       <div
-        className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden p-3 sm:p-6"
+        // 닫힌 native <details> 콘텐츠는 스펙상 렌더링만 스킵할 뿐 항상
+        // display:none 이 되는 건 아니다(content-visibility 계열 구현) — 그
+        // 결과 desktop 폭의 내부 tab strip 이 실제 layout box 를 유지해 모바일
+        // 뷰포트에서 document.body.scrollWidth 를 밀어 올렸다(overflow-sweep
+        // mobile-390/360 회귀). `hidden` + `group-open:flex` 로 열림 상태를
+        // 명시적 display 값에 묶어 확정적으로 닫는다.
+        className="fixed inset-0 z-40 hidden items-center justify-center overflow-hidden p-3 group-open:flex sm:p-6"
         data-testid="app-settings-overlay"
         onMouseDown={(event) => {
           if (event.target !== event.currentTarget) return;
@@ -655,7 +653,6 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
         </div>
       </div>
       </div>
-      ) : null}
     </details>
   );
 }

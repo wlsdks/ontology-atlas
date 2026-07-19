@@ -166,10 +166,10 @@ export function ProjectSelectorPage() {
                   ) : (
                     <span className="min-w-0 flex-1" />
                   )}
-                  <span className="whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  <span className="max-w-[150px] shrink truncate font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] sm:max-w-[220px]">
                     {row.domainTitle ?? t("activityNoDomain")}
                   </span>
-                  <span className={`whitespace-nowrap text-[11px] ${numeralClass}`}>
+                  <span className={`shrink-0 whitespace-nowrap text-[11px] ${numeralClass}`}>
                     {formatAgo(resolveRecentActivityAgo(row.updatedAt, new Date()), t)}
                   </span>
                 </div>
@@ -215,10 +215,10 @@ export function ProjectSelectorPage() {
             <span className="w-[108px] shrink-0 font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("nextSlotCliLabel")}
             </span>
-            <code className="font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
+            <code className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
               {t("nextSlotCliCommand")}
             </code>
-            <span className="ml-auto hidden whitespace-nowrap font-mono text-[10.5px] text-[color:var(--color-text-quaternary)] sm:inline">
+            <span className="ml-auto hidden shrink-0 whitespace-nowrap font-mono text-[10.5px] text-[color:var(--color-text-quaternary)] sm:inline">
               {t("nextSlotCliCaption")}
             </span>
           </div>
@@ -226,10 +226,10 @@ export function ProjectSelectorPage() {
             <span className="w-[108px] shrink-0 font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("nextSlotAgentLabel")}
             </span>
-            <code className="font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
+            <code className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
               {t("nextSlotAgentCommand")}
             </code>
-            <span className="ml-auto hidden whitespace-nowrap font-mono text-[10.5px] text-[color:var(--color-text-quaternary)] sm:inline">
+            <span className="ml-auto hidden shrink-0 whitespace-nowrap font-mono text-[10.5px] text-[color:var(--color-text-quaternary)] sm:inline">
               {t("nextSlotAgentCaption")}
             </span>
           </div>
@@ -288,12 +288,12 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
       {domainRows.length > 0 ? (
         <div className="mt-4 flex flex-col gap-2">
           {domainRows.map((row, index) => (
-            <div key={row.domainId} className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <span className="flex w-full shrink-0 items-center gap-2 truncate text-[12.5px] text-[color:var(--color-text-secondary)] sm:w-[280px]">
+            <div key={row.domainId} className="flex items-center gap-3 sm:gap-4">
+              <span className="flex w-[84px] min-w-0 shrink-0 items-center gap-2 truncate text-[12.5px] text-[color:var(--color-text-secondary)] sm:w-[200px] md:w-[280px]">
                 <TopologyV2KindGlyph kind="domain" size={14} />
                 {row.title}
               </span>
-              <span className="h-1 max-w-[640px] min-w-[64px] flex-1 overflow-hidden rounded-full bg-[color:var(--color-border-soft)]">
+              <span className="h-1 min-w-0 max-w-[640px] flex-1 overflow-hidden rounded-full bg-[color:var(--color-border-soft)]">
                 <span
                   className="block h-full rounded-full"
                   style={{
@@ -302,7 +302,7 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
                   }}
                 />
               </span>
-              <span className={`whitespace-nowrap text-[10.5px] ${numeralClass}`}>
+              <span className={`max-w-[120px] shrink text-right text-[10.5px] sm:max-w-none sm:shrink-0 sm:whitespace-nowrap ${numeralClass}`}>
                 {t("domainRowSummary", {
                   total: row.total,
                   cap: row.capabilityCount,
