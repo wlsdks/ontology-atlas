@@ -162,7 +162,7 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
   };
 }
 
-export function deriveOntologyFromVault(
+function deriveOntologyFromVaultUncached(
   manifest: VaultManifest,
 ): VaultOntologyDerivation {
   const nodes = new Map<string, OntologyStubNode>();
@@ -412,4 +412,29 @@ export function deriveOntologyFromVault(
     sourceKindCounts,
     warnings,
   };
+}
+
+// Module-level memoization keyed by `manifest` object identity (perf sweep,
+// 2026-07). `useVaultOntology`/`useOntologyInsight` used to wrap this call in
+// a component-scoped `useMemo` only — every route that mounts a fresh
+// component tree (`/`, `/topology`, `/projects`, `/ontology/insights`, …)
+// lost that cache on unmount and re-ran the full doc scan/BFS from scratch
+// even when navigating back to the SAME loaded vault (`vault.manifest`
+// reference unchanged). A `WeakMap` keyed by the manifest reference survives
+// across mounts while staying leak-free (entry drops once the manifest
+// itself is GC'd) and preserves the freshness contract for free — a new
+// vault load / file edit produces a NEW manifest object, so the cache misses
+// and recomputes exactly when the data actually changed. Static dogfood mode
+// keeps its own already-eager `STATIC_DERIVATION` (see
+// `use-ontology-insight.ts`) which naturally hits this same cache too.
+const derivationCache = new WeakMap<VaultManifest, VaultOntologyDerivation>();
+
+export function deriveOntologyFromVault(
+  manifest: VaultManifest,
+): VaultOntologyDerivation {
+  const cached = derivationCache.get(manifest);
+  if (cached) return cached;
+  const derivation = deriveOntologyFromVaultUncached(manifest);
+  derivationCache.set(manifest, derivation);
+  return derivation;
 }
