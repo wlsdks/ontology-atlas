@@ -152,6 +152,35 @@ export function OntologyEditPage() {
     ? "toastVaultEdgeDemoPicker"
     : "toastVaultEdgeDemoDownload";
 
+  // 빌더 진실원 우선순위: live vault.manifest > 빌드타임 dogfood 매니페스트.
+  // (perf/builder-mount) 이 계산 + builderEntryAnchors + resolvedQueryNodeId 를
+  // 원래 위치(더 아래)에서 여기로 끌어올렸다 — 아래 selectedId/focusNodeId
+  // 최초 state 를 "정답" 앵커로 바로 초기화하기 위해서다. 이전엔 두 state 가
+  // null 로 시작해 첫 렌더가 임의의(배열 순서상 첫) ego 서브그래프로 dagre
+  // 레이아웃을 한 번 계산했고, 마운트 직후 auto-focus effect(아래)가 진짜
+  // entry anchor 로 selectedId/focusNodeId 를 바꿔 dagre 를 다시 계산했다
+  // (마운트당 2 회, ~123ms). 첫 렌더부터 같은 anchor 로 시작하면 auto-focus
+  // effect 는 focusToken/autoLayoutToken 만 증가시켜 카메라 reveal pan
+  // 애니메이션은 그대로 재생하면서 memo 입력(selectedId/focusNodeId)은
+  // 안 바뀌어 두 번째 dagre 계산이 생략된다.
+  const effectiveManifest = vault.manifest ?? (staticVaultManifestRaw as VaultManifest);
+  const builderEntryAnchors = useMemo(
+    () => buildBuilderEntryAnchors(effectiveManifest),
+    [effectiveManifest],
+  );
+  const queryNodeId = searchParams.get("node");
+  const resolvedQueryNodeId = useMemo(
+    () => resolveBuilderQueryNodeSlug(queryNodeId, effectiveManifest.docs),
+    [effectiveManifest.docs, queryNodeId],
+  );
+  // `?node=` 딥링크가 있으면 기존과 동일하게 null 로 시작 — 그 경로는 아래
+  // resolvedQueryNodeId effect 가 selectedId 변화를 감지해 setDetailsOpen(true)
+  // 까지 수행해야 하므로(첫 렌더부터 같은 값이면 그 effect 가 no-op 돼 상세
+  // 패널이 안 열림) 그대로 둔다. 딥링크가 없을 때만 entry anchor 로 직행.
+  const initialBuilderFocusId = resolvedQueryNodeId
+    ? null
+    : (builderEntryAnchors[0]?.id ?? null);
+
   const { nodes: ephemeralNodes, addNode: addNodeRaw, clearAll, updateNode, findById, removeNode } =
     useEphemeralNodes();
   // ephemeral 노드의 kindLabel / placeholder 도 locale 별로 caller 가
@@ -171,7 +200,7 @@ export function OntologyEditPage() {
     clearAll: clearEphemeralEdges,
     removeEdge: removeEphemeralEdge,
   } = useEphemeralEdges();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => initialBuilderFocusId);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   // 자동 정렬 토큰 — increment 마다 캔버스가 frontmatter.canvasPosition
@@ -182,7 +211,7 @@ export function OntologyEditPage() {
   // focusToken — 외부 (검색 등) 가 noticed 변화 트리거. 매 increment 시
   // canvas 가 focusNodeId 노드로 viewport pan.
   const [focusToken, setFocusToken] = useState(0);
-  const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
+  const [focusNodeId, setFocusNodeId] = useState<string | null>(() => initialBuilderFocusId);
   // layout 알고리즘 — dagre (default, kind 계층 LR) 또는 force (organic).
   // 정렬 방식 disclosure 안에서 선택. 변경 시 in-memory layout 만 재계산 (frontmatter 그대로).
   const [layoutMode, setLayoutMode] = useState<"dagre" | "force">("dagre");
@@ -248,8 +277,7 @@ export function OntologyEditPage() {
   const hasLiveVault = vault.manifest !== null;
   const vaultUnavailable =
     !hasLiveVault && (vault.status === "permission-needed" || vault.status === "error");
-  // 빌더 진실원 우선순위: live vault.manifest > 빌드타임 dogfood 매니페스트.
-  const effectiveManifest = vault.manifest ?? (staticVaultManifestRaw as VaultManifest);
+  // effectiveManifest 는 위(초기 selectedId/focusNodeId state 근처)로 이동.
   // slug → doc Map 한 번 — vaultSelected 재계산 외에도 저장 전 중복 경로
   // 판정에서 재사용. 이전엔 매 render 마다 manifest.docs.find 로 O(N) 스캔.
   const docsBySlug = useMemo(
@@ -398,10 +426,7 @@ export function OntologyEditPage() {
     }
     return { persistedNodes, persistedRelations };
   }, [effectiveManifest]);
-  const builderEntryAnchors = useMemo(
-    () => buildBuilderEntryAnchors(effectiveManifest),
-    [effectiveManifest],
-  );
+  // builderEntryAnchors 는 위(초기 selectedId/focusNodeId state 근처)로 이동.
   const focusBuilderAnchor = useCallback((id: string) => {
     setSelectedId(id);
     setFocusNodeId(id);
@@ -495,11 +520,8 @@ export function OntologyEditPage() {
   const selectedProofNodeId = selectedProofTarget?.graphNodeId ?? null;
   const selectedProofSlug = selectedProofTarget?.vaultSlug ?? null;
 
-  const queryNodeId = searchParams.get("node");
-  const resolvedQueryNodeId = useMemo(
-    () => resolveBuilderQueryNodeSlug(queryNodeId, effectiveManifest.docs),
-    [effectiveManifest.docs, queryNodeId],
-  );
+  // queryNodeId / resolvedQueryNodeId 는 위(초기 selectedId/focusNodeId state
+  // 근처)로 이동 — 초기 state 를 계산할 때도 필요해서.
   useEffect(() => {
     if (!resolvedQueryNodeId) return;
     if (selectedId === resolvedQueryNodeId) return;
