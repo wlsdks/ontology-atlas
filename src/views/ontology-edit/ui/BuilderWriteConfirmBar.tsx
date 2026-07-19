@@ -54,24 +54,26 @@ export function BuilderWriteConfirmBar({
       {/* 쓰기(주 액션)/미리보기(보조) 위계 — 로컬 alpha 톤을 손으로 반복하는
           대신 공유 `Button` variant(primary=인디고 solid · outline=중립)를
           재사용해 앱 전역 버튼 문법과 맞춘다. 밀도(h-8/text-[11px]/rounded-md)
-          는 이 바의 기존 컴팩트 크롬에 맞춰 override. */}
+          는 size="sm" 사다리 + 이 바의 기존 컴팩트 크롬에 맞춘 최소 override. */}
       <div className="flex shrink-0 items-center gap-1.5">
         <Button
           type="button"
           variant="outline"
+          size="sm"
           onClick={onDryRun}
           aria-label={t("dryRunAriaLabel")}
-          className="h-8 rounded-md px-2.5 text-[11px] font-normal focus-visible:ring-offset-[color:var(--color-panel)]"
+          className="rounded-md px-2.5 text-[11px] font-normal focus-visible:ring-offset-[color:var(--color-panel)]"
         >
           {t("dryRunButton")}
         </Button>
         <Button
           type="button"
           variant="primary"
+          size="sm"
           onClick={onWrite}
           disabled={writeDisabled}
           aria-label={writeAriaLabel}
-          className="h-8 rounded-md px-2.5 text-[11px] focus-visible:ring-offset-[color:var(--color-panel)]"
+          className="rounded-md px-2.5 text-[11px] focus-visible:ring-offset-[color:var(--color-panel)]"
         >
           {t("writeButton")}
         </Button>
