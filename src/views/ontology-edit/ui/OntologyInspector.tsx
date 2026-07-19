@@ -9,6 +9,7 @@ import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { Link } from "@/i18n/navigation";
 import { slugify } from "@/shared/lib/slugify";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { TopologyV2KindGlyph } from "@/shared/ui";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 import type { VaultBacklinkMatch } from "../lib/find-vault-backlinks";
 import {
@@ -17,7 +18,7 @@ import {
 } from "../lib/relation-trace-mark";
 import type { BuilderSessionDiffLine } from "../lib/builder-write-confirm-bar";
 
-// 헌장 §11 + a11y — motion-reduce 사용자 보호. 짧은 fade 만 (transform 없음).
+// 디자인 헌장 + a11y — motion-reduce 사용자 보호. 짧은 fade 만 (transform 없음).
 const FADE_MOTION = {
   initial: { opacity: 0 },
   animate: { opacity: 1 },
@@ -150,7 +151,7 @@ export function OntologyInspector({
             onClick={onToggleCollapsed}
             aria-label={t("expandAriaLabel")}
             title={t("expandAriaLabel")}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
           >
             <ChevronLeft size={14} />
           </button>
@@ -158,7 +159,7 @@ export function OntologyInspector({
         {selected ? (
           <span
             aria-hidden
-            className="rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.18)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-primary)]"
+            className="rounded-full border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-primary)]"
             title={selected.title}
           >
             ●
@@ -191,7 +192,7 @@ export function OntologyInspector({
             onClick={onToggleCollapsed}
             aria-label={t("collapseAriaLabel")}
             title={t("collapseAriaLabel")}
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
           >
             <ChevronRight size={13} />
           </button>
@@ -384,7 +385,7 @@ function EphemeralDetail({
     saveState === "ready"
       ? "bg-[color:var(--color-indigo-brand)]"
       : saveState === "conflict"
-        ? "bg-[color:rgba(197,122,43,0.9)]"
+        ? "bg-[color:var(--color-amber-muted-a90)]"
         : "bg-[color:var(--color-text-quaternary)]";
   const saveStateLabel =
     saveState === "ready"
@@ -440,17 +441,20 @@ function EphemeralDetail({
     input.select();
   }, [node.id]);
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.06)] p-3">
+    <div className="flex flex-col gap-3 rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a06)] p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.18)] px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">
-          {t("ephemeralBadge")} · {kindLabel(node.kind)}
+        <span className="inline-flex items-center gap-1.5">
+          <TopologyV2KindGlyph kind={node.kind} size={15} />
+          <span className="inline-flex items-center rounded-full border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">
+            {t("ephemeralBadge")} · {kindLabel(node.kind)}
+          </span>
         </span>
         <button
           type="button"
           onClick={onDeselect}
           aria-label={t("deselectAriaLabel")}
           title={t("deselectAriaLabel")}
-          className="rounded-md p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+          className="rounded-md p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
         >
           ×
         </button>
@@ -493,7 +497,7 @@ function EphemeralDetail({
               }}
               aria-label={t("copySavePathAriaLabel", { path: savePath })}
               title={t("copySavePathAriaLabel", { path: savePath })}
-              className="inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.035)] px-1.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+              className="inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
             >
               {copyPathIcon}
               <span>{copyPathLabel}</span>
@@ -512,14 +516,14 @@ function EphemeralDetail({
       {saveConflict ? (
         <div
           role="status"
-          className="rounded-md border border-[color:rgba(197,122,43,0.34)] bg-[color:rgba(197,122,43,0.1)] px-2.5 py-2 text-[11px] leading-4 text-[color:var(--color-text-secondary)]"
+          className="rounded-md border border-[color:var(--color-amber-muted-a34)] bg-[color:var(--color-amber-muted-a10)] px-2.5 py-2 text-[11px] leading-4 text-[color:var(--color-text-secondary)]"
         >
           <p>{t("ephemeralSaveConflict", { path: savePath })}</p>
           {saveSuggestion ? (
             <button
               type="button"
               onClick={() => onRename(node.id, saveSuggestion.title)}
-              className="mt-2 inline-flex h-7 items-center rounded-md border border-[color:rgba(197,122,43,0.42)] bg-[color:rgba(197,122,43,0.12)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(197,122,43,0.62)] hover:bg-[color:rgba(197,122,43,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(197,122,43,0.42)] focus-visible:ring-inset"
+              className="mt-2 inline-flex h-7 items-center rounded-md border border-[color:var(--color-amber-muted-a42)] bg-[color:var(--color-amber-muted-a12)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-amber-muted-a62)] hover:bg-[color:var(--color-amber-muted-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-amber-muted-a42)] focus-visible:ring-inset"
             >
               {t("ephemeralUseSuggestedName", {
                 title: saveSuggestion.title,
@@ -535,7 +539,7 @@ function EphemeralDetail({
           onClick={() => onSave(node.id)}
           disabled={!canSave}
           aria-label={t("saveButtonAriaLabel")}
-          className="inline-flex h-9 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.18)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
         >
           {saving ? t("savingButton") : t("saveButton")}
         </button>
@@ -554,13 +558,13 @@ function EphemeralDetail({
           }}
           aria-label={t("copyDraftAgentPacketAriaLabel", { path: savePath })}
           title={t("copyDraftAgentPacketAriaLabel", { path: savePath })}
-          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.03)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.08)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:bg-[color:var(--color-indigo-a08)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
         >
           {agentPacketIcon}
           <span>{agentPacketLabel}</span>
         </button>
       ) : null}
-      <div className="flex items-start gap-2 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2">
+      <div className="flex items-start gap-2 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
         <span
           aria-hidden
           className={`mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full ${saveStateDotClass}`}
@@ -646,22 +650,33 @@ function VaultDetail({
     node.describes.length +
     node.relates.length;
   const outgoingCount = hierarchyCount + relationCount;
+  // 인스펙터 헤더 mono 서브타이틀 — 지도(Topology) 시안의 "kind · domain ·
+  // path" 문법 그대로. domain 이 빈 프로젝트/도메인 노드는 가운데 segment 생략.
+  const kindPathLine = [kindLabel(node.kind), node.domain || null, node.slug]
+    .filter((part): part is string => Boolean(part))
+    .join(" · ");
   return (
     <div className="flex flex-col gap-3 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
-          {readOnly ? t("dogfoodBadge") : t("vaultBadge")} · {kindLabel(node.kind)}
+        <span className="inline-flex items-center gap-1.5">
+          <TopologyV2KindGlyph kind={node.kind} size={15} />
+          <span className="inline-flex items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+            {readOnly ? t("dogfoodBadge") : t("vaultBadge")} · {kindLabel(node.kind)}
+          </span>
         </span>
         <button
           type="button"
           onClick={onDeselect}
           aria-label={t("deselectAriaLabel")}
           title={t("deselectAriaLabel")}
-          className="rounded-md p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+          className="rounded-md p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
         >
           ×
         </button>
       </div>
+      <p className="-mt-2 truncate pl-[22px] font-mono text-[10.5px] tracking-[0.02em] text-[color:var(--color-text-quaternary)]">
+        {kindPathLine}
+      </p>
       <div
         role="tablist"
         aria-label={t("tabsAriaLabel")}
@@ -680,8 +695,8 @@ function VaultDetail({
               onClick={() => setActiveTab(tab.id)}
               className={
                 active
-                  ? "h-7 rounded-sm bg-[color:rgba(94,106,210,0.22)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
-                  : "h-7 rounded-sm px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+                  ? "h-7 rounded-sm bg-[color:var(--color-indigo-a22)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+                  : "h-7 rounded-sm px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
               }
             >
               {tab.label}
@@ -696,10 +711,10 @@ function VaultDetail({
           aria-labelledby="vault-detail-tab-overview"
           className="flex flex-col gap-3"
         >
-          <div className="rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] p-2.5">
+          <div className="rounded-md border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] p-2.5">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(188,195,255,0.92)]">
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-text-soft)]">
                   {t("objectProofLabel")}
                 </p>
                 <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
@@ -709,12 +724,12 @@ function VaultDetail({
                   })}
                 </p>
               </div>
-              <span className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-primary)]">
+              <span className="shrink-0 rounded-full border border-[color:var(--color-indigo-a36)] bg-[color:var(--color-indigo-a14)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-primary)]">
                 {t("objectProofChip")}
               </span>
             </div>
             <div className="mt-2 grid grid-cols-3 gap-1.5">
-              <div className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5">
+              <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
                 <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("objectProofOutgoing")}
                 </p>
@@ -722,7 +737,7 @@ function VaultDetail({
                   {outgoingCount}
                 </p>
               </div>
-              <div className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5">
+              <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
                 <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("objectProofIncoming")}
                 </p>
@@ -730,7 +745,7 @@ function VaultDetail({
                   {backlinks.length}
                 </p>
               </div>
-              <div className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5">
+              <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
                 <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("objectProofSource")}
                 </p>
@@ -743,14 +758,14 @@ function VaultDetail({
               <button
                 type="button"
                 onClick={() => setActiveTab("relations")}
-                className="inline-flex h-8 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.12)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.58)] hover:bg-[color:rgba(94,106,210,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+                className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a58)] hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
               >
                 {t("objectProofRelationsAction")}
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("document")}
-                className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.035)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+                className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
               >
                 {t("objectProofDocumentAction")}
               </button>
@@ -789,7 +804,7 @@ function VaultDetail({
               onClick={() => onSaveRename(node.slug, draft)}
               disabled={!canSave}
               aria-label={t("vaultSaveAriaLabel")}
-              className="inline-flex h-9 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.18)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+              className="inline-flex h-9 items-center justify-center rounded-md border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
             >
               {saving
                 ? t("vaultSavingButton")
@@ -862,7 +877,7 @@ function VaultDetail({
             </p>
             <Link
               href={sourceDocHref}
-              className="mt-2 inline-flex h-8 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.42)] bg-[color:rgba(94,106,210,0.12)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.62)] hover:bg-[color:rgba(94,106,210,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+              className="mt-2 inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a12)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a62)] hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
             >
               {t("sourceDocumentAction")}
             </Link>
@@ -904,7 +919,7 @@ function VaultDetail({
               onClick={() => onDelete(node.slug)}
               disabled={saving}
               aria-label={t("deleteAriaLabel")}
-              className="inline-flex h-8 items-center justify-center rounded-md border border-[color:rgba(229,72,77,0.32)] bg-transparent px-3 text-[11px] text-[color:rgba(236,116,116,0.92)] transition-colors hover:border-[color:rgba(229,72,77,0.5)] hover:bg-[color:rgba(229,72,77,0.08)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(229,72,77,0.5)] focus-visible:ring-inset"
+              className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-danger-a32)] bg-transparent px-3 text-[11px] text-[color:var(--color-danger-text)] transition-colors hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a08)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-danger-a50)] focus-visible:ring-inset"
             >
               {t("deleteButton")}
             </button>
@@ -940,12 +955,12 @@ function BacklinksSummary({
                 title: bl.title,
                 keys: bl.matchedKeys.join(", "),
               })}
-              className="inline-flex items-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.08)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.55)] hover:bg-[color:rgba(94,106,210,0.16)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+              className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a55)] hover:bg-[color:var(--color-indigo-a16)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
             >
               <span className="break-keep">{bl.title}</span>
               <span
                 aria-hidden
-                className="rounded-sm bg-[color:rgba(94,106,210,0.22)] px-1 font-mono text-[9px] uppercase tracking-[0.06em] text-[color:rgba(159,170,235,0.95)]"
+                className="rounded-sm bg-[color:var(--color-indigo-a22)] px-1 font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-indigo-text-strong)]"
               >
                 {bl.matchedKeys[0]}
               </span>
@@ -1129,7 +1144,7 @@ function ArrayEditorGroup({
       open={defaultOpen}
       className="group rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
     >
-      <summary className="flex cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset">
+      <summary className="flex cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset">
         <span className="flex items-center gap-2">
           <ChevronRight
             size={12}
@@ -1237,8 +1252,8 @@ function ArrayKeyEditor({
                   aria-label={t("arrayRemoveAriaLabel", { slug })}
                   className={
                     isNew
-                      ? "inline-flex items-center gap-1 rounded-full border border-[color:rgba(255,179,71,0.6)] bg-[color:rgba(255,179,71,0.16)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-[background,border] duration-1000 ease-out"
-                      : "inline-flex items-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-[background,border] duration-1000 ease-out hover:border-[color:rgba(229,72,77,0.46)] hover:bg-[color:rgba(229,72,77,0.10)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(229,72,77,0.46)] focus-visible:ring-inset"
+                      ? "inline-flex items-center gap-1 rounded-full border border-[color:var(--color-amber-signal-a60)] bg-[color:var(--color-amber-signal-a16)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-[background,border] duration-1000 ease-out"
+                      : "inline-flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-[background,border] duration-1000 ease-out hover:border-[color:var(--color-danger-a46)] hover:bg-[color:var(--color-danger-a10)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-danger-a46)] focus-visible:ring-inset"
                   }
                 >
                   <span className="font-mono break-all">{slug}</span>
@@ -1273,7 +1288,7 @@ function ArrayKeyEditor({
           onClick={submit}
           disabled={disabled || !input.trim() || values.includes(input.trim())}
           aria-label={t("arrayAddAriaLabel")}
-          className="inline-flex h-7 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.18)] px-2 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+          className="inline-flex h-7 items-center justify-center rounded-md border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-2 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
         >
           +
         </button>
