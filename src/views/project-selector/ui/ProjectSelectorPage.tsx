@@ -156,7 +156,7 @@ export function ProjectSelectorPage() {
                   }`}
                 >
                   <TopologyV2KindGlyph kind={row.kind} size={14} />
-                  <span className="font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
+                  <span className="min-w-0 shrink truncate font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
                     {row.slug}
                   </span>
                   {row.what ? (
@@ -218,7 +218,7 @@ export function ProjectSelectorPage() {
             <code className="font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
               {t("nextSlotCliCommand")}
             </code>
-            <span className="ml-auto whitespace-nowrap font-mono text-[10.5px] text-[color:var(--color-text-quaternary)]">
+            <span className="ml-auto hidden whitespace-nowrap font-mono text-[10.5px] text-[color:var(--color-text-quaternary)] sm:inline">
               {t("nextSlotCliCaption")}
             </span>
           </div>
@@ -229,7 +229,7 @@ export function ProjectSelectorPage() {
             <code className="font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
               {t("nextSlotAgentCommand")}
             </code>
-            <span className="ml-auto whitespace-nowrap font-mono text-[10.5px] text-[color:var(--color-text-quaternary)]">
+            <span className="ml-auto hidden whitespace-nowrap font-mono text-[10.5px] text-[color:var(--color-text-quaternary)] sm:inline">
               {t("nextSlotAgentCaption")}
             </span>
           </div>
@@ -288,12 +288,12 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
       {domainRows.length > 0 ? (
         <div className="mt-4 flex flex-col gap-2">
           {domainRows.map((row, index) => (
-            <div key={row.domainId} className="flex items-center gap-4">
-              <span className="flex w-[280px] shrink-0 items-center gap-2 truncate text-[12.5px] text-[color:var(--color-text-secondary)]">
+            <div key={row.domainId} className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="flex w-full shrink-0 items-center gap-2 truncate text-[12.5px] text-[color:var(--color-text-secondary)] sm:w-[280px]">
                 <TopologyV2KindGlyph kind="domain" size={14} />
                 {row.title}
               </span>
-              <span className="h-1 max-w-[640px] flex-1 overflow-hidden rounded-full bg-[color:var(--color-border-soft)]">
+              <span className="h-1 max-w-[640px] min-w-[64px] flex-1 overflow-hidden rounded-full bg-[color:var(--color-border-soft)]">
                 <span
                   className="block h-full rounded-full"
                   style={{

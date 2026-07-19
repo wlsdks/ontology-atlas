@@ -103,7 +103,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
                 {t('subtitle')}
               </p>
             </div>
-            <div className="ml-auto flex shrink-0 flex-wrap items-center gap-3">
+            <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center gap-3">
               <MacosDownloadLink
                 className={cn(buttonVariants({ size: 'lg' }), 'rounded-full min-w-[13rem]')}
               >

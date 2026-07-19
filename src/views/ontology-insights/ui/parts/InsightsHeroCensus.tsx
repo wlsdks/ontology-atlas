@@ -34,7 +34,7 @@ export function InsightsHeroCensus({
   labels: InsightsHeroCensusLabels;
 }) {
   return (
-    <div className="flex items-stretch gap-0 rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-4">
+    <div className="flex flex-col items-stretch gap-3 rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-4 sm:flex-row sm:gap-0">
       <HeroSegment label={labels.concepts} gcap="concepts">
         <BigNum value={totalNodes} />
         <SubStrip items={kindsSummary} />
@@ -58,7 +58,7 @@ export function InsightsHeroCensus({
 
 function HeroSegment({ label, gcap, children }: { label: string; gcap: string; children: ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-2.5 border-l border-[color:var(--color-divider)] px-6 py-0.5 first:border-l-0">
+    <div className="flex min-w-0 flex-1 flex-col gap-2.5 border-t border-[color:var(--color-divider)] px-6 py-0.5 pt-3 first:border-t-0 first:pt-0.5 sm:border-t-0 sm:border-l sm:pt-0.5 sm:first:border-l-0">
       <div className="flex items-baseline gap-2 text-[13px] font-medium text-[color:var(--color-text-secondary)]">
         {label}
         <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">

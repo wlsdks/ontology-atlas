@@ -103,12 +103,12 @@ export function OverviewTab({
                 const width = domainMax > 0 ? Math.max(2, Math.round((row.total / domainMax) * 100)) : 0;
                 const hot = row.total === domainMax && domainMax > 0;
                 return (
-                  <div key={row.id} className="flex items-center gap-3 py-0.5">
-                    <span className="flex w-[220px] flex-none items-center gap-2 truncate text-[14px] text-[color:var(--color-text-secondary)]">
+                  <div key={row.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-0.5">
+                    <span className="flex w-full shrink-0 items-center gap-2 truncate text-[14px] text-[color:var(--color-text-secondary)] sm:w-[220px]">
                       <TopologyV2KindGlyph kind="domain" size={15} />
                       <span className="truncate">{row.title}</span>
                     </span>
-                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
+                    <span className="h-2 min-w-[48px] flex-1 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
                       <span
                         className="block h-full rounded-full"
                         style={{
