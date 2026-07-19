@@ -1630,14 +1630,23 @@ export function HomePage() {
                   priority
                   className="h-[26px] w-[26px] shrink-0 rounded-[7px] border border-[color:var(--color-border-soft)] object-cover"
                 />
-                <div>
+                <div
+                  className="min-w-0 overflow-hidden"
+                  // 우측 topology-utility-action-lane(Graph/Workspace pill,
+                  // absolute right-4 + 콘텐츠 폭 ~236px)과 이 브랜드 라벨은
+                  // 서로 다른 absolute 오버레이라 flex-wrap 으로 자연스럽게
+                  // 밀어낼 수 없다 — 뷰포트가 좁을수록(<390px) 레인의 왼쪽
+                  // 시작점도 함께 왼쪽으로 밀리므로 고정 px 대신 vw 기반
+                  // calc 로 항상 여유 간격을 확보한다(criterion ② 겹침 0).
+                  style={{ maxWidth: "max(0px, calc(100vw - 310px))" }}
+                >
                   <span
                     translate="no"
-                    className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]"
+                    className="block truncate text-[11px] text-[color:var(--color-text-quaternary)]"
                   >
                     ontology-atlas
                   </span>
-                  <p className="mt-0.5 max-w-[180px] text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  <p className="mt-0.5 truncate text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
                     {t('mobileTagline')}
                   </p>
                 </div>
