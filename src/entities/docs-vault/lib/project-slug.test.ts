@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { VaultDoc } from "../model/types";
-import { computeProjectSlug } from "./project-slug";
+import type { VaultDoc, VaultManifest } from "../model/types";
+import {
+  computeProjectSlug,
+  findProjectVaultDoc,
+  isProjectVaultDoc,
+} from "./project-slug";
 
 function makeDoc(partial: Partial<VaultDoc>): VaultDoc {
   return {
@@ -15,6 +19,17 @@ function makeDoc(partial: Partial<VaultDoc>): VaultDoc {
     wordCount: partial.wordCount ?? 0,
     updatedAt: partial.updatedAt ?? new Date(0).toISOString(),
     linksOut: partial.linksOut ?? [],
+  };
+}
+
+function makeManifest(docs: VaultDoc[]): VaultManifest {
+  return {
+    version: "1",
+    generatedAt: new Date(0).toISOString(),
+    docs,
+    backlinksDetail: {},
+    tags: {},
+    tree: { name: "vault", path: "", type: "dir" },
   };
 }
 
@@ -58,5 +73,58 @@ describe("computeProjectSlug", () => {
         makeDoc({ slug: "projects/foo", frontmatter: { slug: 42 } }),
       ),
     ).toBe("foo");
+  });
+});
+
+describe("isProjectVaultDoc", () => {
+  it("frontmatter.kind === 'project' 는 path 무관하게 인식", () => {
+    expect(
+      isProjectVaultDoc(
+        makeDoc({ slug: "ontology/project", frontmatter: { kind: "project" } }),
+      ),
+    ).toBe(true);
+  });
+
+  it("legacy 'projects/' prefix 는 frontmatter 없어도 인식", () => {
+    expect(isProjectVaultDoc(makeDoc({ slug: "projects/legacy-app" }))).toBe(true);
+  });
+
+  it("kind 도 'projects/' prefix 도 없으면 false", () => {
+    expect(
+      isProjectVaultDoc(makeDoc({ slug: "domains/foo", frontmatter: { kind: "domain" } })),
+    ).toBe(false);
+  });
+});
+
+describe("findProjectVaultDoc", () => {
+  it("Project.slug (fm.slug 산정값) 으로 원본 VaultDoc 을 역참조한다", () => {
+    const doc = makeDoc({
+      slug: "ontology/project",
+      frontmatter: { kind: "project", slug: "ontology-atlas" },
+    });
+    const manifest = makeManifest([
+      doc,
+      makeDoc({ slug: "domains/foo", frontmatter: { kind: "domain" } }),
+    ]);
+
+    expect(findProjectVaultDoc(manifest, "ontology-atlas")).toBe(doc);
+  });
+
+  it("일치하는 project doc 이 없으면 null", () => {
+    const manifest = makeManifest([
+      makeDoc({ slug: "domains/foo", frontmatter: { kind: "domain" } }),
+    ]);
+
+    expect(findProjectVaultDoc(manifest, "missing")).toBeNull();
+  });
+
+  it("project 가 아닌 doc 의 slug 우연 일치는 무시한다", () => {
+    // frontmatter.slug 가 우연히 같아도 kind !== project / projects/ path
+    // 아니면 project doc 으로 취급하지 않는다.
+    const manifest = makeManifest([
+      makeDoc({ slug: "domains/foo", frontmatter: { kind: "domain", slug: "foo" } }),
+    ]);
+
+    expect(findProjectVaultDoc(manifest, "foo")).toBeNull();
   });
 });

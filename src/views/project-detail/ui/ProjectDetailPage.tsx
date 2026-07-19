@@ -28,7 +28,7 @@ import {
   resolveFallbackProjects,
   type Project,
 } from "@/entities/project";
-import { useProjects, useProjectMutations } from "@/features/project-data-source";
+import { useProjects, useProjectMutations, useProjectBody } from "@/features/project-data-source";
 import { VaultConflictError } from "@/features/docs-vault-local";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { CopyProjectLinkButton } from "@/features/project-share";
@@ -243,6 +243,12 @@ export function ProjectDetailPage({
   // 단일 hook 이 항상 최신 snapshot 을 들고 있어 list/subscribe race 없음.
   const projectsQuery = useProjects();
   const projectMutations = useProjectMutations();
+  // 본문(project.md) lazy load — R+ "본문이 절대 표시되지 않음" 정정.
+  // project.detail 은 에디터 폼의 별도 frontmatter `detail:` 필드라 대부분의
+  // 실제 vault 문서엔 없다 — 진짜 본문은 vault 파일에서 별도로 읽어야 한다.
+  // fallback 순서: 명시적 detail 필드 > 실제 project.md 본문.
+  const { body: vaultBody } = useProjectBody(project?.slug ?? null);
+  const bodyContent = project?.detail ?? vaultBody ?? null;
   useEffect(() => {
     if (!slug) return;
     let cancelled = false;
@@ -521,12 +527,15 @@ export function ProjectDetailPage({
               {t("bodyCardGcap")}
             </span>
           </div>
-          {project.detail ? (
-            <div className={storyMarkdownClassName}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{project.detail}</ReactMarkdown>
+          {bodyContent ? (
+            <div className={storyMarkdownClassName} data-testid="project-detail-body-content">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{bodyContent}</ReactMarkdown>
             </div>
           ) : (
-            <p className="text-[13.5px] leading-[1.75] text-[color:var(--color-text-tertiary)]">
+            <p
+              data-testid="project-detail-body-empty"
+              className="text-[13.5px] leading-[1.75] text-[color:var(--color-text-tertiary)]"
+            >
               {t("bodyEmptyHint")}
             </p>
           )}
