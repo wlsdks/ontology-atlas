@@ -831,17 +831,14 @@
             "count": "{count}"
           }
         },
-        "filtersHeader": "Filter & saved",
         "pinnedHeader": "Pinned · {count}",
         "recentHeader": "Recent · {count}",
         "tagsHeader": "Tags · {count}",
-        "tagsSummary": "Tags · {count}",
         "activeTagSummary": "#{tag}",
         "tagTitle": "#{tag} · {count} items",
         "unpinTooltip": "Unpin"
       },
       "empty": {
-        "selectPrompt": "Pick a document from the document list",
         "eyebrow": "{count} documents",
         "title": "Start from one source record",
         "body": "Keep the document canvas quiet. Open the tree only when you need to choose a record, or jump to the agent workflow and topology views when you need graph evidence.",
@@ -854,8 +851,6 @@
         "unpinTooltip": "Unpin",
         "inspectorLabel": "Document info",
         "closeTooltip": "Close document info",
-        "pinned": "Pinned",
-        "pin": "Pin",
         "editTooltip": "Edit this file (saves directly to the local vault)",
         "edit": "Edit",
         "shareSection": "Share · Print",
@@ -867,15 +862,9 @@
         "fileSection": "File",
         "deleteTooltip": "Delete this document from the local vault",
         "deleteAction": "Delete",
-        "currentSection": "Current section",
         "tableOfContents": "Outline",
-        "duplicateAria": "{text}, occurrence {n}",
-        "referencesHeader": "References · {count}"
+        "duplicateAria": "{text}, occurrence {n}"
       }
-    },
-    "tags": {
-      "sectionLabel": "Tags",
-      "rowTitle": "{tag} · {count} items"
     },
     "tree": {
       "navAria": "Document list"
@@ -888,7 +877,6 @@
         "untitledPlaceholder": "(enter a name)",
         "eyebrow": "Save/edit canvas",
         "title": "Concept Save/edit",
-        "statusSummary": "{nodes} draft changes · {edges} links",
         "helpAriaLabel": "Save/edit canvas help",
         "helpIntro": "A workspace where you draw your knowledge graph by hand.",
         "helpStepPalette": "Click a kind from the palette on the left to add a new concept.",
@@ -925,7 +913,6 @@
         "writeSummary": {
           "ariaLabel": "Save/edit status",
           "summaryTitle": "Save status",
-          "summarySubtitle": "Open only when you need save connection, draft safety, relation guard, or graph proof.",
           "nextStepLabel": "Next",
           "nextStepDraftNeedsName": "Name the draft, then review {nodes} concepts · {edges} relations before saving.",
           "nextStepDraftReady": "Save paths are ready. Save {nodes} concepts · {edges} relations or hand them to an agent.",
@@ -1147,7 +1134,6 @@
         "layoutDagreTitle": "Place project → domain → capability → element in a readable order",
         "layoutForce": "Relationship layout",
         "layoutForceTitle": "Place connected nodes closer together in an organic map",
-        "autoLayoutTooltip": "Reset every concept's position to the auto-layout result (frontmatter canvasPosition is preserved — your coordinates return on next visit)",
         "autoLayoutButton": "Re-arrange",
         "autoLayoutDescription": "Reposition the canvas using the current arrangement mode.",
         "autoLayoutAriaLabel": "Auto-arrange canvas concepts",
@@ -1738,9 +1724,6 @@
       "title": "Ontology workspace",
       "docCount": "{count} documents",
       "localBadge": "Local",
-      "topology": "Relief",
-      "topologyTooltip": "Open the graph view for this workspace",
-      "topologyAriaLabel": "Open topology graph",
       "paletteTooltip": "Search · commands · tags",
       "paletteAriaLabel": "Open palette (search · commands · tags)",
       "inspector": "Document info",
@@ -2084,66 +2067,22 @@
     }
   },
   "topology": {
-    "loadingEngine": "Loading topology engine",
-    "loadingFlowProductSystem": "Product/system",
-    "loadingFlowDomains": "Domains",
-    "loadingFlowCapabilities": "Capabilities",
-    "loadingFlowEvidence": "Evidence",
-    "loadingFlowAgentHandoff": "Agent handoff",
-    "loadingConceptCount": "{count, plural, one {# concept} other {# concepts}}",
-    "loadingRelationCount": "{count, plural, one {# relation} other {# relations}}",
     "documentTitle": "Relief",
     "srHeading": "Ontology relief map",
     "selectionAnnouncement": "{name} selected. {deps, plural, one {# dependency} other {# dependencies}}, {referenced, plural, one {# reference} other {# references}}.",
     "mobileTagline": "Ontology concept map.",
-    "errorFallback": {
-      "title": "Topology failed to render",
-      "body": "WebGL context may have been lost or there's a GPU resource issue. Try again or switch to the tree view.",
-      "retry": "Try again",
-      "switchToTree": "Switch to tree view"
-    },
     "workspace": {
       "growthThisWeek": " · +{count} this week",
       "subtitle": "<b>{concepts}</b> concepts · <b>{relations}</b> relations{growth}",
       "eyebrow": "{concepts} concepts",
       "fallbackTitle": "Relief",
       "selectedEyebrow": "Selected concept",
-      "expandHint": "Expand workspace map",
-      "mapEyebrow": "Ontology map",
-      "description": "{relations} relations connect {concepts} ontology concepts. Click a node to open its details."
+      "expandHint": "Expand workspace map"
     },
     "hero": {
       "closeSelected": "Close selected project",
       "expandLeftPanel": "Expand the left panel",
       "collapseLeftPanel": "Collapse the left panel"
-    },
-    "nodePopover": {
-      "connections": "Connections",
-      "usedBy": "Used by",
-      "dependsOn": "Depends on",
-      "noConnections": "No direct connections",
-      "openFullDetail": "Full detail",
-      "collapse": "Map view",
-      "expand": "Show detail",
-      "moreSuffix": "more",
-      "actionRailTitle": "Agent handoff",
-      "actionRailHint": "Copy",
-      "expandedNote": "{count} direct connections are already on the map; inspect them there without panel overlap.",
-      "relationLensTitle": "Direct meaning",
-      "relationLensDirectFactOne": "{count} direct fact",
-      "relationLensDirectFactOther": "{count} direct facts",
-      "relationLensTypeOne": "{count} relation type",
-      "relationLensTypeOther": "{count} relation types",
-      "relationLensCompactFacts": "facts",
-      "relationLensCompactTypes": "types",
-      "relationLensNoScores": "Typed ontology facts, not inferred similarity scores.",
-      "agentGateHandoffReadyShort": "ready",
-      "agentGatePreflightFirstShort": "check",
-      "agentGateReviewFirstShort": "review",
-      "relationCopyExplainShort": "explain",
-      "relationCopyCheckShort": "check",
-      "relationPayloadCopyShort": "copy",
-      "relationEvidenceShort": "proof"
     },
     "nodeDatasheet": {
       "poweredOn": "fresh",
@@ -2263,7 +2202,6 @@
       "close": "Close",
       "shortcutsTooltip": "Keyboard shortcuts (?)",
       "shortcutsAriaLabel": "View keyboard shortcuts",
-      "settingsGearTooltip": "Map settings",
       "settingsGearAriaLabel": "Open map settings",
       "settingsGearHeading": "Map settings",
       "settingsGearLocale": "Language",
@@ -2294,17 +2232,6 @@
       "ctaBuilderNoDeps": "Create relation",
       "ctaOpenVaultDownload": "Download macOS app",
       "ctaOpenVaultPicker": "Open local vault"
-    },
-    "hint": {
-      "title": "Ontology terrain map",
-      "dismissAriaLabel": "Close hint",
-      "body": "Nodes are projects · domains · capabilities · elements. Lines are depends-on / related / contains. Click to open details, search to narrow.",
-      "click": "Click",
-      "clickDescription": " · open the detail panel",
-      "drag": "Drag",
-      "dragDescription": " · move a node",
-      "searchDescription": " search · ",
-      "shortcutsDescription": " shortcuts"
     },
     "errorBanner": {
       "retry": "Retry"
@@ -2507,7 +2434,6 @@
         "stackCsv": "Stack (CSV)",
         "linksText": "Links (one label|url per line)",
         "dependencies": "Dependencies",
-        "screenshots": "Screenshots",
         "startedAt": "Start date",
         "launchedAt": "Launch date",
         "owner": "Owner",

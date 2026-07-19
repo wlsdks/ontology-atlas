@@ -831,17 +831,14 @@
             "count": "{count}개"
           }
         },
-        "filtersHeader": "필터와 저장 보기",
         "pinnedHeader": "고정 · {count}",
         "recentHeader": "최근 · {count}",
         "tagsHeader": "태그 · {count}",
-        "tagsSummary": "태그 · {count}",
         "activeTagSummary": "#{tag}",
         "tagTitle": "#{tag} · {count}건",
         "unpinTooltip": "고정 해제"
       },
       "empty": {
-        "selectPrompt": "문서 목록에서 항목을 선택하세요",
         "eyebrow": "문서 {count}개",
         "title": "하나의 문서에서 시작",
         "body": "문서 캔버스는 조용하게 둡니다. 항목을 고를 때만 트리를 열고, 그래프 근거가 필요하면 에이전트 작업 흐름이나 지형도로 이동합니다.",
@@ -854,8 +851,6 @@
         "unpinTooltip": "고정 해제",
         "inspectorLabel": "문서 정보",
         "closeTooltip": "문서 정보 닫기",
-        "pinned": "고정됨",
-        "pin": "고정",
         "editTooltip": "이 파일 편집 (로컬 볼트에 직접 저장)",
         "edit": "편집",
         "shareSection": "공유 · 출력",
@@ -867,15 +862,9 @@
         "fileSection": "파일 관리",
         "deleteTooltip": "이 문서를 로컬 볼트에서 삭제",
         "deleteAction": "삭제",
-        "currentSection": "현재 섹션",
         "tableOfContents": "목차",
-        "duplicateAria": "{text}, {n}번째 섹션",
-        "referencesHeader": "참조 · {count}"
+        "duplicateAria": "{text}, {n}번째 섹션"
       }
-    },
-    "tags": {
-      "sectionLabel": "태그",
-      "rowTitle": "{tag} · {count}건"
     },
     "tree": {
       "navAria": "문서 목록"
@@ -888,7 +877,6 @@
         "untitledPlaceholder": "(이름 입력)",
         "eyebrow": "개념 캔버스",
         "title": "개념 저장·편집",
-        "statusSummary": "임시 변경 {nodes} · 관계 {edges}",
         "helpAriaLabel": "저장·편집 캔버스 안내",
         "helpIntro": "지식 그래프를 끌어다 그려서 만드는 워크스페이스.",
         "helpStepPalette": "왼쪽 종류 선택에서 개념 종류를 고르면 새 개념이 추가됩니다.",
@@ -925,7 +913,6 @@
         "writeSummary": {
           "ariaLabel": "저장·편집 상태",
           "summaryTitle": "저장 상태",
-          "summarySubtitle": "저장 연결, 임시 변경, 관계 저장 점검, 그래프 검증이 필요할 때만 엽니다.",
           "nextStepLabel": "다음",
           "nextStepDraftNeedsName": "먼저 이름을 정하고 저장할 개념 {nodes}개 · 관계 {edges}개를 확인하세요.",
           "nextStepDraftReady": "저장 경로가 준비됐습니다. 개념 {nodes}개 · 관계 {edges}개를 저장하거나 에이전트에 넘기세요.",
@@ -1147,7 +1134,6 @@
         "layoutDagreTitle": "project → domain → capability → element 순서로 읽기 쉽게 배치",
         "layoutForce": "관계 중심 정렬",
         "layoutForceTitle": "서로 연결된 노드가 가까워지도록 유기적으로 배치",
-        "autoLayoutTooltip": "모든 개념 위치를 자동 레이아웃 결과로 초기화 (frontmatter 의 canvasPosition 은 그대로 — 다음 진입 시 사용자 좌표 복원)",
         "autoLayoutButton": "다시 정렬",
         "autoLayoutDescription": "현재 정렬 방식으로 캔버스 위치만 다시 맞춥니다.",
         "autoLayoutAriaLabel": "캔버스 개념 자동 정렬",
@@ -1738,9 +1724,6 @@
       "title": "문서함",
       "docCount": "문서 {count}개",
       "localBadge": "로컬",
-      "topology": "지형도",
-      "topologyTooltip": "이 문서함을 그래프 화면으로 보기",
-      "topologyAriaLabel": "지형도 열기",
       "paletteTooltip": "검색 · 명령 · 태그",
       "paletteAriaLabel": "팔레트 열기 (검색 · 명령 · 태그)",
       "inspector": "문서 정보",
@@ -2084,66 +2067,22 @@
     }
   },
   "topology": {
-    "loadingEngine": "지형도 불러오는 중",
-    "loadingFlowProductSystem": "제품/시스템",
-    "loadingFlowDomains": "영역",
-    "loadingFlowCapabilities": "기능",
-    "loadingFlowEvidence": "구현 근거",
-    "loadingFlowAgentHandoff": "에이전트 인계",
-    "loadingConceptCount": "개념 {count}개",
-    "loadingRelationCount": "관계 {count}개",
     "documentTitle": "지형도",
     "srHeading": "온톨로지 지형도",
     "selectionAnnouncement": "{name} 선택됨. 의존 {deps}개, 연결 {referenced}개.",
     "mobileTagline": "온톨로지 개념 지도.",
-    "errorFallback": {
-      "title": "지형도를 불러오지 못했습니다",
-      "body": "WebGL context 가 손실되었거나 GPU 자원 문제일 수 있어요. 다시 시도하거나 트리 뷰로 전환해보세요.",
-      "retry": "다시 시도",
-      "switchToTree": "트리 뷰로 전환"
-    },
     "workspace": {
       "growthThisWeek": " · 이번 주 +{count}",
       "subtitle": "개념 <b>{concepts}</b>개 · 관계 <b>{relations}</b>개{growth}",
       "eyebrow": "개념 {concepts}개",
       "fallbackTitle": "지형도",
       "selectedEyebrow": "선택한 개념",
-      "expandHint": "워크스페이스 지도 펼치기",
-      "mapEyebrow": "온톨로지 지도",
-      "description": "관계 {relations}개가 온톨로지 개념 {concepts}개를 연결합니다. 노드를 클릭해 상세를 열어 볼 수 있어요."
+      "expandHint": "워크스페이스 지도 펼치기"
     },
     "hero": {
       "closeSelected": "선택한 프로젝트 닫기",
       "expandLeftPanel": "좌측 패널 펼치기",
       "collapseLeftPanel": "좌측 패널 접기"
-    },
-    "nodePopover": {
-      "connections": "연결된 노드",
-      "usedBy": "이 노드를 쓰는 곳",
-      "dependsOn": "이 노드가 기대는 곳",
-      "noConnections": "직접 연결 없음",
-      "openFullDetail": "전체 상세",
-      "collapse": "지도 보기",
-      "expand": "상세 보기",
-      "moreSuffix": "더",
-      "actionRailTitle": "에이전트 인계",
-      "actionRailHint": "복사",
-      "expandedNote": "{count}개 직접 연결은 이미 지도에 펼쳐져 있어요. 패널 겹침 없이 지도에서 확인할 수 있어요.",
-      "relationLensTitle": "직접 의미",
-      "relationLensDirectFactOne": "직접 의미 관계 {count}개",
-      "relationLensDirectFactOther": "직접 의미 관계 {count}개",
-      "relationLensTypeOne": "관계 유형 {count}종",
-      "relationLensTypeOther": "관계 유형 {count}종",
-      "relationLensCompactFacts": "관계",
-      "relationLensCompactTypes": "유형",
-      "relationLensNoScores": "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
-      "agentGateHandoffReadyShort": "전달",
-      "agentGatePreflightFirstShort": "점검",
-      "agentGateReviewFirstShort": "검토",
-      "relationCopyExplainShort": "설명",
-      "relationCopyCheckShort": "점검",
-      "relationPayloadCopyShort": "복사",
-      "relationEvidenceShort": "근거"
     },
     "nodeDatasheet": {
       "poweredOn": "최근 갱신",
@@ -2263,7 +2202,6 @@
       "close": "닫기",
       "shortcutsTooltip": "키보드 단축키 (?)",
       "shortcutsAriaLabel": "키보드 단축키 보기",
-      "settingsGearTooltip": "지도 설정",
       "settingsGearAriaLabel": "지도 설정 열기",
       "settingsGearHeading": "지도 설정",
       "settingsGearLocale": "언어",
@@ -2294,17 +2232,6 @@
       "ctaBuilderNoDeps": "관계 만들기",
       "ctaOpenVaultDownload": "macOS 앱 다운로드",
       "ctaOpenVaultPicker": "로컬 vault 열기"
-    },
-    "hint": {
-      "title": "온톨로지 지형도",
-      "dismissAriaLabel": "안내 닫기",
-      "body": "노드는 프로젝트 · 도메인 · 역량 · 요소. 선은 의존 · 관련 · 포함 관계입니다. 클릭해서 상세를 열고 검색으로 좁혀보세요.",
-      "click": "클릭",
-      "clickDescription": " · 상세 패널 열기",
-      "drag": "드래그",
-      "dragDescription": " · 노드 위치 이동",
-      "searchDescription": " 검색 · ",
-      "shortcutsDescription": " 단축키"
     },
     "errorBanner": {
       "retry": "다시 시도"
@@ -2507,7 +2434,6 @@
         "stackCsv": "스택 (CSV)",
         "linksText": "링크 (줄별 label|url)",
         "dependencies": "의존 프로젝트",
-        "screenshots": "스크린샷",
         "startedAt": "시작일",
         "launchedAt": "출시일",
         "owner": "담당자",
