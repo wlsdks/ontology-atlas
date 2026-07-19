@@ -75,8 +75,8 @@ export function DocsVaultDocOutlinePanel({
             onClick={() => onTogglePin(selectedDoc.slug)}
             className={`inline-flex h-7 w-7 items-center justify-center rounded-sm border transition-colors ${
               isPinned
-                ? "border-[color:rgba(224,196,140,0.45)] bg-[color:rgba(224,196,140,0.08)] text-[color:rgba(232,200,148,0.95)]"
-                : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(224,196,140,0.35)] hover:text-[color:rgba(232,200,148,0.9)]"
+                ? "border-[color:var(--color-amber-docs-a45)] bg-[color:var(--color-amber-docs-a08)] text-[color:var(--color-amber-docs-a95)]"
+                : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-amber-docs-a35)] hover:text-[color:var(--color-amber-docs-a90)]"
             }`}
             aria-pressed={isPinned}
             aria-label={isPinned ? t("unpinTooltip") : t("pinTooltip")}
@@ -93,7 +93,7 @@ export function DocsVaultDocOutlinePanel({
               <button
                 type="button"
                 onClick={onStartEditing}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] text-[color:rgba(200,210,255,0.9)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] text-[color:var(--color-indigo-pale-a90)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
                 aria-label={t("edit")}
               >
                 <Pencil size={13} aria-hidden />
@@ -192,8 +192,8 @@ export function DocsVaultDocOutlinePanel({
               onClick={() => onCopyUrl(selectedDoc.slug)}
               className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[11px] transition-colors ${
                 copiedSlug === selectedDoc.slug
-                  ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-line-a06)] text-[color:rgba(200,210,255,0.95)]"
-                  : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:rgba(200,210,255,0.9)]"
+                  ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-line-a06)] text-[color:var(--color-indigo-pale-a95)]"
+                  : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-indigo-pale-a90)]"
               }`}
             >
               {copiedSlug === selectedDoc.slug ? (

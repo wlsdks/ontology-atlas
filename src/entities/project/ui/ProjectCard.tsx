@@ -129,7 +129,7 @@ export function ProjectCard({
       >
         <div
           className={cn(
-            'relative flex items-center justify-center rounded-full border shadow-[0_10px_24px_rgba(0,0,0,0.24)] transition-[transform,background-color,border-color,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_14px_30px_rgba(0,0,0,0.3)]',
+            'relative flex items-center justify-center rounded-full border shadow-[0_10px_24px_var(--color-shadow-a25)] transition-[transform,background-color,border-color,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_14px_30px_var(--color-shadow-a25)]',
             isHub
               ? 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] text-[color:var(--color-indigo-accent)]'
               : 'border-[color:var(--color-border-strong)] bg-[color:rgba(20,21,23,0.96)] text-[color:var(--color-text-primary)] group-hover:border-[color:var(--color-indigo-a26)] group-hover:bg-[color:var(--color-indigo-a08)]',
@@ -192,7 +192,7 @@ export function ProjectCard({
             }
       }
       className={cn(
-        'group relative flex flex-col rounded-[16px] border bg-[color:var(--color-panel)] shadow-[0_18px_36px_rgba(0,0,0,0.24)] md:rounded-[18px]',
+        'group relative flex flex-col rounded-[16px] border bg-[color:var(--color-panel)] shadow-[0_18px_36px_var(--color-shadow-a25)] md:rounded-[18px]',
         dense
           ? 'h-[84px] w-[156px] px-3 py-2 md:h-[92px] md:w-[168px] md:px-3 md:py-2.5'
           : 'h-[120px] w-[192px] px-3.5 py-3 md:h-[140px] md:w-[220px] md:px-4 md:py-3.5',

@@ -822,7 +822,7 @@ export function OntologyEditCanvas({
               }
               return "var(--color-indigo-brand)";
             }}
-            nodeStrokeColor="rgba(14, 16, 22, 0.85)"
+            nodeStrokeColor="var(--color-surface-deep-a85)"
             nodeStrokeWidth={2}
           />
         ) : null}

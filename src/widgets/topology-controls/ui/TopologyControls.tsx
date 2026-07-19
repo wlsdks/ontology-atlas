@@ -460,7 +460,7 @@ export function TopologyControls({
           height: 12px;
           border-radius: 50%;
           background: var(--color-indigo-accent);
-          border: 2px solid rgba(14, 16, 22, 1);
+          border: 2px solid var(--color-surface-deep-a100);
           cursor: pointer;
         }
         .topology-controls-range::-moz-range-thumb {
@@ -575,7 +575,7 @@ function HelpOverlay({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="pointer-events-auto fixed inset-0 z-40 flex items-center justify-center bg-[color:rgba(0,0,0,0.5)]"
+      className="pointer-events-auto fixed inset-0 z-40 flex items-center justify-center bg-[color:var(--color-scrim-a50)]"
       onClick={onClose}
     >
       <div
@@ -585,7 +585,7 @@ function HelpOverlay({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
         data-control-surface-token="--topology-floating-control-surface"
         data-control-border-token="--topology-floating-control-border"
-        className="w-[320px] rounded-lg border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] p-5 shadow-[0_20px_48px_rgba(0,0,0,0.6)]"
+        className="w-[320px] rounded-lg border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] p-5 shadow-[0_20px_48px_var(--color-shadow-a58)]"
       >
         <div className="flex items-center justify-between">
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">

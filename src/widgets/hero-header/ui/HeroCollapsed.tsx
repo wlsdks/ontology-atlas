@@ -76,7 +76,7 @@ export function HeroCollapsed({
           onClick={onWorkspaceMapClick}
           aria-label={t("backToWorkspace")}
           title={t("backToWorkspace")}
-          className="group inline-flex size-[var(--topology-chrome-control-height)] shrink-0 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-quaternary)] shadow-[var(--topology-chrome-shadow)] transition-colors hover:border-[color:rgba(224,196,140,0.35)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(224,196,140,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
+          className="group inline-flex size-[var(--topology-chrome-control-height)] shrink-0 items-center justify-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-quaternary)] shadow-[var(--topology-chrome-shadow)] transition-colors hover:border-[color:var(--color-amber-docs-a35)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-amber-docs-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
         >
           <ArrowLeft className="size-[var(--topology-chrome-icon-size)]" />
         </Link>
@@ -161,7 +161,7 @@ export function HeroCollapsed({
       {sampleBadge && !compact ? (
         <span
           data-testid="hero-sample-badge"
-          className="shrink-0 rounded-[4px] border border-[color:rgba(212,180,120,0.4)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-status-warning)]"
+          className="shrink-0 rounded-[4px] border border-[color:var(--color-amber-source-a40)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-status-warning)]"
         >
           {t("sampleBadge")}
         </span>

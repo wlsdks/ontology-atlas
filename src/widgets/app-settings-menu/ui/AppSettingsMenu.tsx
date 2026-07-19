@@ -73,10 +73,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
     'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
   ].join('\n');
   const mcpStateRows = [
-    ['connected', 'mcpStateConnectedLabel', 'mcpStateConnectedBody', Check, 'rgba(151,230,198,0.95)'],
+    ['connected', 'mcpStateConnectedLabel', 'mcpStateConnectedBody', Check, 'var(--color-success-text-a95)'],
     ['setup', 'mcpStateSetupOnlyLabel', 'mcpStateSetupOnlyBody', Terminal, 'var(--color-indigo-accent)'],
-    ['restart', 'mcpStateRestartLabel', 'mcpStateRestartBody', Terminal, 'rgba(238,198,128,0.95)'],
-    ['fallback', 'mcpStateCliFallbackLabel', 'mcpStateCliFallbackBody', Terminal, 'rgba(238,198,128,0.95)'],
+    ['restart', 'mcpStateRestartLabel', 'mcpStateRestartBody', Terminal, 'var(--color-amber-docs-a95)'],
+    ['fallback', 'mcpStateCliFallbackLabel', 'mcpStateCliFallbackBody', Terminal, 'var(--color-amber-docs-a95)'],
     ['disconnected', 'mcpStateDisconnectedLabel', 'mcpStateDisconnectedBody', X, 'var(--color-text-tertiary)'],
   ] as const;
 
@@ -155,7 +155,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           role="dialog"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="flex h-[calc(100dvh-1.5rem)] max-h-[48rem] w-full max-w-[64rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-[13px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:h-[calc(100dvh-3rem)]"
+          className="flex h-[calc(100dvh-1.5rem)] max-h-[48rem] w-full max-w-[64rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-[13px] shadow-[0_28px_90px_var(--color-shadow-a58)] sm:h-[calc(100dvh-3rem)]"
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] p-4 pb-3">
@@ -236,11 +236,11 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   {t('connectionStatusTitle')}
                 </h3>
                 <div
-                  className="mt-2 grid gap-1.5 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:rgba(0,0,0,0.14)] p-2.5 sm:grid-cols-3"
+                  className="mt-2 grid gap-1.5 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-overlay-recessed-a14)] p-2.5 sm:grid-cols-3"
                   data-testid="mcp-live-verdict-strip"
                 >
-                  <div className="min-w-0 rounded-md border border-[color:rgba(73,190,146,0.2)] bg-[color:rgba(73,190,146,0.06)] p-2">
-                    <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
+                  <div className="min-w-0 rounded-md border border-[color:var(--color-success-a20)] bg-[color:var(--color-success-a06)] p-2">
+                    <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-success-text-a95)]">
                       <Check size={11} aria-hidden />
                       {t('liveVerdictSetup')}
                     </p>
@@ -248,8 +248,8 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                       {t('liveVerdictSetupMeta')}
                     </p>
                   </div>
-                  <div className="min-w-0 rounded-md border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.07)] p-2">
-                    <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
+                  <div className="min-w-0 rounded-md border border-[color:var(--color-amber-signal-a24)] bg-[color:var(--color-amber-signal-a07)] p-2">
+                    <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
                       <Terminal size={11} aria-hidden />
                       {t('liveVerdictSession')}
                     </p>
@@ -281,7 +281,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     {mcpStateRows.map(([id, labelKey, bodyKey, Icon, iconColor]) => (
                       <div
                         key={id}
-                        className="flex min-w-0 items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
+                        className="flex min-w-0 items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)] p-2"
                       >
                         <Icon
                           size={12}
@@ -302,11 +302,11 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   </div>
                 </div>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="mcp-connection-status-summary">
-                <div className="rounded-lg border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.07)] p-2.5">
+                <div className="rounded-lg border border-[color:var(--color-success-a24)] bg-[color:var(--color-success-a07)] p-2.5">
                   <div className="flex items-start gap-2">
-                    <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(151,230,198,0.95)]" />
+                    <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-success-text-a95)]" />
                     <div className="min-w-0">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-success-text-a95)]">
                         {t('setupReadyTitle')}
                       </p>
                       <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
@@ -315,11 +315,11 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     </div>
                   </div>
                 </div>
-                <div className="rounded-lg border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] p-2.5">
+                <div className="rounded-lg border border-[color:var(--color-amber-signal-a28)] bg-[color:var(--color-amber-signal-a07)] p-2.5">
                   <div className="flex items-start gap-2">
-                    <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
+                    <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-amber-docs-a95)]" />
                     <div className="min-w-0">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
                         {t('directProofTitle')}
                       </p>
                       <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
@@ -341,11 +341,11 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     </div>
                   </div>
                 </div>
-                <div className="rounded-lg border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] p-2.5">
+                <div className="rounded-lg border border-[color:var(--color-amber-signal-a28)] bg-[color:var(--color-amber-signal-a07)] p-2.5">
                   <div className="flex items-start gap-2">
-                    <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
+                    <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-amber-docs-a95)]" />
                     <div className="min-w-0">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
                         {t('staleCacheTitle')}
                       </p>
                       <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
@@ -364,7 +364,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 </p>
                 <ol className="mt-2 grid gap-1.5 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
                   <li className="flex gap-2">
-                    <span className="font-mono text-[color:rgba(151,230,198,0.95)]">1</span>
+                    <span className="font-mono text-[color:var(--color-success-text-a95)]">1</span>
                     <span>{t('proofDecisionSetup')}</span>
                   </li>
                   <li className="flex gap-2">
@@ -372,11 +372,11 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     <span>{t('proofDecisionInventory')}</span>
                   </li>
                   <li className="flex gap-2">
-                    <span className="font-mono text-[color:rgba(238,198,128,0.95)]">3</span>
+                    <span className="font-mono text-[color:var(--color-amber-docs-a95)]">3</span>
                     <span>{t('proofDecisionSession')}</span>
                   </li>
                   <li className="flex gap-2">
-                    <span className="font-mono text-[color:rgba(238,198,128,0.95)]">4</span>
+                    <span className="font-mono text-[color:var(--color-amber-docs-a95)]">4</span>
                     <span>{t('proofDecisionFallback')}</span>
                   </li>
                 </ol>
@@ -501,7 +501,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               </button>
             </div>
             <div
-              className="mt-3 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:rgba(0,0,0,0.14)] p-2.5"
+              className="mt-3 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-overlay-recessed-a14)] p-2.5"
               data-testid="mcp-state-decision-table"
             >
               <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
@@ -534,12 +534,12 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             <div className="mt-3 grid gap-2 text-[10px] leading-4 text-[color:var(--color-text-secondary)] sm:grid-cols-2">
               <div
                 data-testid="direct-mcp-proof"
-                className="rounded-lg border border-[color:rgba(73,190,146,0.26)] bg-[color:rgba(73,190,146,0.06)] p-2.5"
+                className="rounded-lg border border-[color:var(--color-success-a26)] bg-[color:var(--color-success-a06)] p-2.5"
               >
                 <div className="flex items-start gap-2">
-                  <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(151,230,198,0.95)]" />
+                  <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-success-text-a95)]" />
                   <div className="min-w-0">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-success-text-a95)]">
                       {t('mcpProofDirectLabel')}
                     </p>
                     <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
@@ -547,7 +547,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     </p>
                   </div>
                 </div>
-                <div className="mt-2 grid gap-1.5 rounded-md bg-[color:rgba(0,0,0,0.16)] p-2 font-mono">
+                <div className="mt-2 grid gap-1.5 rounded-md bg-[color:var(--color-overlay-recessed)] p-2 font-mono">
                   <span>{t('mcpProofCallCodex')}</span>
                   <span>{t('mcpProofCallTools')}</span>
                   <span>{t('mcpProofCallAgent')}</span>
@@ -557,12 +557,12 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               </div>
               <div
                 data-testid="cli-fallback-proof"
-                className="rounded-lg border border-[color:rgba(255,179,71,0.3)] bg-[color:rgba(255,179,71,0.07)] p-2.5"
+                className="rounded-lg border border-[color:var(--color-amber-signal-a30)] bg-[color:var(--color-amber-signal-a07)] p-2.5"
               >
                 <div className="flex items-start gap-2">
-                  <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
+                  <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-amber-docs-a95)]" />
                   <div className="min-w-0">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
                       {t('mcpProofFallbackLabel')}
                     </p>
                     <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
@@ -570,9 +570,9 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     </p>
                   </div>
                 </div>
-                <div className="mt-2 grid gap-1.5 rounded-md bg-[color:rgba(0,0,0,0.16)] p-2 font-mono">
+                <div className="mt-2 grid gap-1.5 rounded-md bg-[color:var(--color-overlay-recessed)] p-2 font-mono">
                   <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallback')}</span>
-                  <span className="text-[color:rgba(238,198,128,0.95)]">{t('mcpProofStaleCache')}</span>
+                  <span className="text-[color:var(--color-amber-docs-a95)]">{t('mcpProofStaleCache')}</span>
                 </div>
               </div>
               <div
@@ -585,7 +585,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 <span>{t('projectIndexMeaningGate')}</span>
                 <span>{t('projectIndexEvidence')}</span>
                 <span>{t('projectIndexReview')}</span>
-                <span className="text-[color:rgba(238,198,128,0.95)]">{t('projectIndexApply')}</span>
+                <span className="text-[color:var(--color-amber-docs-a95)]">{t('projectIndexApply')}</span>
               </div>
             </div>
             <div

@@ -143,7 +143,7 @@ export function TopologyIndexTreeRow({
               </span>
               {/* 인셋 capacity meter — 라벨 아래 리세스드 트랙(기존 basis-full
                   회색 미터 폐기). 인디고 잉크: 미선택 .45 / 선택 .8. */}
-              <span className="h-[2px] max-w-[76px] flex-1 overflow-hidden rounded-[1px] bg-[rgba(0,0,0,0.45)] shadow-[inset_0_1px_1px_rgba(0,0,0,0.5)]">
+              <span className="h-[2px] max-w-[76px] flex-1 overflow-hidden rounded-[1px] bg-[var(--color-overlay-recessed-a45)] shadow-[inset_0_1px_1px_var(--color-shadow-a50)]">
                 <span
                   className="block h-full rounded-[1px] bg-[var(--color-indigo-line-a45)] data-[selected=true]:bg-[var(--color-indigo-line-a90)]"
                   data-selected={selected}

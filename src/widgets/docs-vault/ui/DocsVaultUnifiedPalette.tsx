@@ -163,7 +163,7 @@ export function DocsVaultUnifiedPalette({
           icon: (
             <Pin
               size={11}
-              className="text-[color:rgba(224,196,140,0.85)]"
+              className="text-[color:var(--color-amber-docs-a85)]"
               aria-hidden
               fill="currentColor"
             />
@@ -442,7 +442,7 @@ export function DocsVaultUnifiedPalette({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.12 }}
-      className="fixed inset-0 z-50 flex items-start justify-center bg-[color:rgba(0,0,0,0.5)] p-4 pt-[12vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-[color:var(--color-scrim-a50)] p-4 pt-[12vh]"
       onClick={onClose}
     >
       <motion.div
@@ -455,7 +455,7 @@ export function DocsVaultUnifiedPalette({
         role="dialog"
         aria-modal="true"
         aria-label={t('dialogAriaLabel')}
-        className="w-full max-w-[560px] overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[color:rgba(12,14,20,0.98)] shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
+        className="w-full max-w-[560px] overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-surface-deep-a98)] shadow-[0_20px_60px_var(--color-shadow-a35)]"
       >
         <div className="flex items-center gap-2 border-b border-[color:var(--color-overlay-2)] px-3 py-2">
           <Search

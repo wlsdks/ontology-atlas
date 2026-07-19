@@ -183,7 +183,7 @@ export function DocsVaultAuditModal({
             className="h-fit max-h-[calc(100vh-2*max(96px,18vh))] max-w-full overflow-auto rounded-[var(--chrome-radius)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
           >
             <div className="flex items-start gap-3 px-4 py-3.5">
-              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] bg-[color:var(--chrome-active-surface)] text-[color:rgba(205,212,255,0.9)]">
+              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] bg-[color:var(--chrome-active-surface)] text-[color:var(--color-indigo-pale-a90)]">
                 <HardDrive size={14} aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
@@ -218,12 +218,12 @@ export function DocsVaultAuditModal({
                   key={cell.key}
                   className="grid grid-cols-[36px_1fr] items-start gap-3 border-t border-[color:var(--color-divider)] px-4 py-3.5 sm:grid-cols-[36px_1fr_auto]"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] text-[color:rgba(205,212,255,0.9)]">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] text-[color:var(--color-indigo-pale-a90)]">
                     <Icon size={14} aria-hidden />
                   </span>
                   <div className="min-w-0">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(200,210,255,0.82)]">
+                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-pale-a82)]">
                         {cell.label}
                       </span>
                       <span className="rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">

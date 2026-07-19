@@ -73,14 +73,14 @@ export function BlastRadiusConfirm({ open, slug, title, backlinks, onCancel, onC
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="w-full max-w-lg rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
+      <div className="w-full max-w-lg rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_24px_64px_var(--color-shadow-a50)]">
         <header className="flex items-start justify-between gap-3 border-b border-[color:var(--color-divider)] px-6 py-4">
           <div className="flex items-start gap-3">
             <span
               className={
                 hasBacklinks
                   ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] text-[color:rgba(255,141,138,0.95)]'
-                  : 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[color:rgba(244,183,49,0.4)] bg-[color:rgba(244,183,49,0.14)] text-[color:rgba(238,198,128,0.95)]'
+                  : 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-amber-source-a40)] bg-[color:var(--color-amber-source-a14)] text-[color:var(--color-amber-docs-a95)]'
               }
               aria-hidden
             >

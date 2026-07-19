@@ -151,6 +151,6 @@ function formatContext(raw: string): string {
   return escaped.replace(
     /\*\*\[([^\]]+)\]\*\*/g,
     (_, text) =>
-      `<span class="rounded-sm bg-[color:var(--color-indigo-line-a15)] px-1 text-[color:rgba(200,210,255,0.92)]">${text}</span>`,
+      `<span class="rounded-sm bg-[color:var(--color-indigo-line-a15)] px-1 text-[color:var(--color-indigo-pale-a92)]">${text}</span>`,
   );
 }

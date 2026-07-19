@@ -29,10 +29,9 @@ export function CopyAgentTextButton({
 
   const statusLabel = copyState === "copied" ? copiedLabel : copyState === "failed" ? t("agentCopyFailed") : "";
   const ariaLabel = statusLabel ? `${label} · ${statusLabel}` : label;
-  // 텍스트 색은 mode-aware 토큰(indigo-accent / status-danger)으로 — 라이트
-  // 모드에서 하드코딩 light-on-dark rgba(예 rgba(211,215,255,*))는 흰 배경에
-  // 묻혀 버튼이 안 보이던 회귀. border/bg 의 인디고·레드 alpha 는 양 모드에서
-  // 충분히 은은해 유지.
+  // 텍스트 색은 indigo-accent / status-danger 토큰으로 — 앱은 다크 단일이라
+  // (design.md, 2026-07-19) light-on-dark 회귀 우려 없음. border/bg 의
+  // 인디고·레드 alpha 는 은은하게 유지.
   const toneClass =
     copyState === "failed"
       ? "border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-status-danger)] hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)]"

@@ -187,7 +187,7 @@ export function DocsSidebarBody({
         ) : null}
       </label>
       {(activeTag || normalizedTreeQuery) ? (
-        <div className="mx-3 mt-2 flex flex-none items-center justify-between gap-2 rounded-sm border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] px-2 py-1 text-[10.5px] text-[color:rgba(200,210,255,0.9)]">
+        <div className="mx-3 mt-2 flex flex-none items-center justify-between gap-2 rounded-sm border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] px-2 py-1 text-[10.5px] text-[color:var(--color-indigo-pale-a90)]">
           <span className="truncate">
             {activeTag ? t("activeTagSummary", { tag: activeTag }) : t("treeSearchCount", { count: queryMatchCount })}
           </span>
@@ -230,7 +230,7 @@ export function DocsSidebarBody({
                       >
                         <Star
                           size={11}
-                          className="flex-none text-[color:rgba(224,196,140,0.82)]"
+                          className="flex-none text-[color:var(--color-amber-docs-a82)]"
                           aria-hidden
                           fill="currentColor"
                         />
@@ -330,7 +330,7 @@ export function DocsSidebarBody({
                     aria-pressed={active}
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] transition-colors ${
                       active
-                        ? "bg-[color:var(--color-indigo-a16)] text-[color:rgba(200,210,255,0.95)]"
+                        ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-pale-a95)]"
                         : "bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)]"
                     }`}
                     title={t("tagTitle", { tag, count: slugs.length })}

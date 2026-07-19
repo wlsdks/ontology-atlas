@@ -389,7 +389,7 @@ export function ProjectDrawer({
                   </span>
                 ) : null}
                 {isContainerNode ? (
-                  <span className="rounded-full border border-[color:rgba(224,196,140,0.45)] bg-[color:rgba(224,196,140,0.12)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(224,196,140,0.95)]">
+                  <span className="rounded-full border border-[color:var(--color-amber-docs-a45)] bg-[color:var(--color-amber-docs-a12)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
                     {t("containerBadge")}
                   </span>
                 ) : project.isHub ? (
@@ -471,7 +471,7 @@ export function ProjectDrawer({
                       className={cn(
                         "mt-2 text-[30px] leading-[1.04] tracking-[var(--tracking-section)] font-[var(--font-weight-signature)]",
                         isContainerNode
-                          ? "text-[color:rgba(224,196,140,0.95)]"
+                          ? "text-[color:var(--color-amber-docs-a95)]"
                           : project.isHub
                             ? "text-[color:var(--color-indigo-accent)]"
                             : "text-[color:var(--color-text-primary)]",
@@ -507,7 +507,7 @@ export function ProjectDrawer({
                         onEnterContainer?.(project.slug);
                         onClose();
                       }}
-                      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(224,196,140,0.45)] bg-[color:rgba(224,196,140,0.1)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(224,196,140,0.65)] hover:bg-[color:rgba(224,196,140,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(224,196,140,0.5)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-amber-docs-a45)] bg-[color:var(--color-amber-docs-a10)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-amber-docs-a65)] hover:bg-[color:var(--color-amber-docs-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-amber-docs-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                     >
                       {t("openContainerTopology")} <ArrowUpRight size={14} />
                     </button>
@@ -641,7 +641,7 @@ export function ProjectDrawer({
                   {integrityIssueLabels.length > 0 && (
                     <section
                       data-testid="project-drawer-integrity"
-                      className="rounded-2xl border border-[color:rgba(244,183,49,0.25)] bg-[color:rgba(244,183,49,0.08)] px-4 py-3.5"
+                      className="rounded-2xl border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-4 py-3.5"
                     >
                       <h3 className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-status-warning)]">
                         {t("integrityTitle")}
@@ -818,7 +818,7 @@ export function ProjectDrawer({
                                 <li key={`missing-${issue.dependencySlug}`}>
                                   <span
                                     data-testid={`project-drawer-missing-dependency-${issue.dependencySlug}`}
-                                    className="rounded-md border border-[color:rgba(244,183,49,0.25)] bg-[color:rgba(244,183,49,0.08)] px-2.5 py-1 text-xs text-[color:var(--color-status-warning)]"
+                                    className="rounded-md border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-2.5 py-1 text-xs text-[color:var(--color-status-warning)]"
                                   >
                                     {t("missingPrefix", { slug: issue.dependencySlug })}
                                   </span>

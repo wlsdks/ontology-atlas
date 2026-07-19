@@ -28,24 +28,24 @@ function renderCompactButton() {
 }
 
 /**
- * 라이트 모드 가독성 회귀 가드.
+ * 토큰 사용 회귀 가드.
  *
- * 이 버튼은 인사이트 페이지 전반에 쓰이는데, idle 텍스트 색이 하드코딩
- * light-on-dark rgba(예: rgba(211,215,255,0.96)) 였을 때 라이트 모드 흰 배경에
- * 묻혀 "Copy CLI pack" 등이 안 보였다(브라우저 육안 확인). 텍스트 색은 양
- * 모드에서 모두 읽히는 mode-aware 토큰을 써야 한다.
+ * 과거 idle 텍스트 색이 하드코딩 rgba(예: rgba(211,215,255,0.96)) 였던 적이
+ * 있다 — 지금은 앱이 다크 단일이라(design.md, 2026-07-19) 그 hue 는
+ * `--color-indigo-pale-*` 로 토큰화됐다. 이 버튼은 별도 raw 리터럴 없이
+ * indigo-accent 토큰만 써야 한다.
  */
-describe("CopyAgentTextButton — mode-aware 텍스트 색 (라이트 모드 가독성)", () => {
+describe("CopyAgentTextButton — 텍스트 색 토큰 사용", () => {
   beforeEach(() => {
     copyTextMock.mockClear();
     copyTextMock.mockResolvedValue(true);
   });
 
-  it("idle 텍스트는 하드코딩 light rgba 가 아니라 indigo-accent 토큰을 쓴다", () => {
+  it("idle 텍스트는 하드코딩 rgba 가 아니라 indigo-accent 토큰을 쓴다", () => {
     renderButton();
     const button = screen.getByRole("button");
     expect(button.className).toContain("text-[color:var(--color-indigo-accent)]");
-    // 라이트 모드에서 흰 배경에 묻히던 light-on-dark 리터럴 금지.
+    // 과거 회귀 원인이었던 raw 리터럴 재등장 금지.
     expect(button.className).not.toContain("rgba(211,215,255");
     expect(button.className).not.toContain("rgba(211, 215, 255");
   });

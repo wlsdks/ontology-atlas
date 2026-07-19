@@ -210,7 +210,7 @@ export function DependencyPicker({
       {missingSelected.length > 0 && (
         <div
           data-testid="dependency-missing-group"
-          className="flex flex-col gap-2 rounded-lg border border-[color:rgba(244,183,49,0.25)] bg-[color:rgba(244,183,49,0.08)] p-3"
+          className="flex flex-col gap-2 rounded-lg border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] p-3"
         >
           <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--color-status-warning)]">
             {t('missingHeading')}
@@ -222,7 +222,7 @@ export function DependencyPicker({
                 data-testid={`dependency-missing-${slug}`}
                 type="button"
                 onClick={() => removeOne(slug)}
-                className="group flex items-center gap-1.5 rounded-full border border-[color:rgba(244,183,49,0.35)] bg-[color:rgba(244,183,49,0.12)] px-2.5 py-1 text-xs text-[color:var(--color-status-warning)]"
+                className="group flex items-center gap-1.5 rounded-full border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-2.5 py-1 text-xs text-[color:var(--color-status-warning)]"
               >
                 <span>{slug}</span>
                 <X

@@ -339,7 +339,7 @@ export function DocsVaultFolderTopology({
         {t('hudCount', { count: build.projects.length })}
       </div>
       {build.danglingRefs.length > 0 ? (
-        <div className="pointer-events-none absolute right-3 top-3 max-w-[280px] rounded-md border border-[color:rgba(239,180,120,0.35)] bg-[color:rgba(239,180,120,0.06)] px-3 py-2 text-[11px] text-[color:rgba(239,200,150,0.95)]">
+        <div className="pointer-events-none absolute right-3 top-3 max-w-[280px] rounded-md border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a06)] px-3 py-2 text-[11px] text-[color:var(--color-amber-source-text-a95)]">
           <div className="font-mono text-[9.5px] uppercase tracking-[0.14em]">
             {t('danglingHeading', { count: build.danglingRefs.length })}
           </div>
@@ -358,7 +358,7 @@ export function DocsVaultFolderTopology({
         </div>
       ) : null}
       {hoveredProject ? (
-        <div className="pointer-events-none absolute bottom-3 left-3 max-w-[320px] rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 shadow-[0_10px_26px_rgba(0,0,0,0.45)]">
+        <div className="pointer-events-none absolute bottom-3 left-3 max-w-[320px] rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 shadow-[0_10px_26px_var(--color-shadow-a45)]">
           <div className="flex items-center gap-2 text-[13px] font-medium text-[color:var(--color-text-primary)]">
             {hoveredProject.name}
           </div>

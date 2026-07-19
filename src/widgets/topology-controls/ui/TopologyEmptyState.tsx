@@ -38,7 +38,7 @@ export function TopologyEmptyState({
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4">
       <div
-        className="pointer-events-auto w-[min(380px,calc(100vw-2rem))] rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 text-center shadow-[0_10px_28px_rgba(0,0,0,0.28)]"
+        className="pointer-events-auto w-[min(380px,calc(100vw-2rem))] rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 text-center shadow-[0_10px_28px_var(--color-shadow-a25)]"
         role="status"
         aria-label={isNoProjects ? t('titleNoProjects') : t('titleNoDeps')}
         aria-live="polite"

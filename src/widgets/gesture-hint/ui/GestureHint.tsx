@@ -52,7 +52,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 12 }}
           transition={MOTION.medium}
-          className="pointer-events-auto fixed left-1/2 top-[calc(max(0.85rem,env(safe-area-inset-top))+4rem)] z-30 flex w-[min(320px,calc(100vw-2rem))] -translate-x-1/2 items-start gap-3 rounded-[18px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3.5 py-3 shadow-[0_16px_40px_rgba(0,0,0,0.28)] md:hidden"
+          className="pointer-events-auto fixed left-1/2 top-[calc(max(0.85rem,env(safe-area-inset-top))+4rem)] z-30 flex w-[min(320px,calc(100vw-2rem))] -translate-x-1/2 items-start gap-3 rounded-[18px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3.5 py-3 shadow-[0_16px_40px_var(--color-shadow-a25)] md:hidden"
           role="status"
           aria-live="polite"
         >

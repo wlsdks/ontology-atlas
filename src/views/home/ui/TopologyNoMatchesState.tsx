@@ -15,7 +15,7 @@ export function TopologyNoMatchesState({
 
   return (
     <div
-      className="pointer-events-auto absolute left-1/2 top-1/2 z-20 flex w-[min(360px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-6 py-5 text-center shadow-[0_12px_32px_rgba(0,0,0,0.55)]"
+      className="pointer-events-auto absolute left-1/2 top-1/2 z-20 flex w-[min(360px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-6 py-5 text-center shadow-[0_12px_32px_var(--color-shadow-a58)]"
       role="status"
       aria-live="polite"
     >

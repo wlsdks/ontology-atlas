@@ -54,7 +54,7 @@ export function PublicQuickActions({
     <section
       aria-label={label ?? t("sectionAriaDefault")}
       className={cn(
-        "rounded-[18px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-3 shadow-[0_22px_44px_rgba(0,0,0,0.22)]",
+        "rounded-[18px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-3 shadow-[0_22px_44px_var(--color-shadow-a22)]",
         className,
       )}
     >
