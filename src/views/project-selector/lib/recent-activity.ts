@@ -51,7 +51,11 @@ export function buildRecentActivityRows(
     const updatedAt = new Date(doc.updatedAt);
     if (Number.isNaN(updatedAt.getTime())) continue;
 
-    const node = nodeById.get(`${kind}:${doc.slug}`);
+    // Node id 는 file tail slug 로 형성된다 (deriveDocNode 참고) — doc.slug 는
+    // vault-relative 전체 경로("ontology/capabilities/x")라 tail 없이 그대로
+    // 조회하면 항상 miss 해서 domainTitle 이 늘 fallback 이었다 (mockup 감사 회귀).
+    const tailSlug = doc.slug.split("/").pop() || doc.slug;
+    const node = nodeById.get(`${kind}:${tailSlug}`);
     const domainId = node ? nearestDomainId(node, parentOf, nodeById) : null;
     const domainTitle = domainId ? (nodeById.get(domainId)?.title ?? null) : null;
     const what = doc.description || node?.summary || doc.excerpt || "";

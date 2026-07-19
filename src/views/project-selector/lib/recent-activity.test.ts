@@ -55,15 +55,18 @@ describe("resolveRecentActivityAgo", () => {
 
 describe("buildRecentActivityRows", () => {
   it("sorts vault docs by real mtime desc, resolves kind + nearest domain title, skips project/readme noise", () => {
+    // doc.slug 는 vault-relative 전체 경로(deriveDocNode 의 doc.slug 규약과 동일하게
+    // "ontology/" 루트 접두를 포함) — 실제 node id 는 file tail 만 쓴다는 점이
+    // 이 테스트의 핵심 회귀 포인트다.
     const docs: VaultDoc[] = [
       doc({
-        slug: "elements/topology-map-canvas",
+        slug: "ontology/elements/topology-map-canvas",
         updatedAt: "2026-07-18T09:00:00.000Z",
         description: "지도 뷰 단일 컨테이너 변환 엔진",
         frontmatter: { kind: "element" },
       }),
       doc({
-        slug: "capabilities/mcp-server",
+        slug: "ontology/capabilities/mcp-server",
         updatedAt: "2026-07-17T09:00:00.000Z",
         description: "write 도구 9종으로 확장",
         frontmatter: { kind: "capability" },
@@ -80,14 +83,14 @@ describe("buildRecentActivityRows", () => {
       }),
     ];
     const nodes = [
-      node("element:elements/topology-map-canvas", "element", "topology-map-canvas"),
-      node("capability:capabilities/mcp-server", "capability", "MCP Server"),
-      node("domain:domains/views", "domain", "Views"),
-      node("domain:domains/ai-agent-partner", "domain", "AI Agent Partner"),
+      node("element:topology-map-canvas", "element", "topology-map-canvas"),
+      node("capability:mcp-server", "capability", "MCP Server"),
+      node("domain:views", "domain", "Views"),
+      node("domain:ai-agent-partner", "domain", "AI Agent Partner"),
     ];
     const parentOf = new Map<string, string>([
-      ["element:elements/topology-map-canvas", "domain:domains/views"],
-      ["capability:capabilities/mcp-server", "domain:domains/ai-agent-partner"],
+      ["element:topology-map-canvas", "domain:views"],
+      ["capability:mcp-server", "domain:ai-agent-partner"],
     ]);
     const nodeById = new Map(nodes.map((n) => [n.id, n]));
 
@@ -95,14 +98,14 @@ describe("buildRecentActivityRows", () => {
 
     expect(rows).toEqual([
       {
-        slug: "elements/topology-map-canvas",
+        slug: "ontology/elements/topology-map-canvas",
         kind: "element",
         domainTitle: "Views",
         what: "지도 뷰 단일 컨테이너 변환 엔진",
         updatedAt: new Date("2026-07-18T09:00:00.000Z"),
       },
       {
-        slug: "capabilities/mcp-server",
+        slug: "ontology/capabilities/mcp-server",
         kind: "capability",
         domainTitle: "AI Agent Partner",
         what: "write 도구 9종으로 확장",
@@ -114,13 +117,13 @@ describe("buildRecentActivityRows", () => {
   it("falls back to the node summary, then the doc excerpt, when description is missing", () => {
     const docs: VaultDoc[] = [
       doc({
-        slug: "elements/a",
+        slug: "ontology/elements/a",
         updatedAt: "2026-07-18T09:00:00.000Z",
         excerpt: "excerpt text",
         frontmatter: { kind: "element" },
       }),
     ];
-    const nodes = [node("element:elements/a", "element", "a", "summary text")];
+    const nodes = [node("element:a", "element", "a", "summary text")];
     const nodeById = new Map(nodes.map((n) => [n.id, n]));
 
     const rows = buildRecentActivityRows(docs, nodeById, new Map(), 4);
