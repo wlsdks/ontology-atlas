@@ -73,15 +73,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} h-full overflow-x-hidden`}
-      suppressHydrationWarning
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('demo:theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}`,
-          }}
-        />
-      </head>
       <body className="flex min-h-full flex-col overflow-x-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0">
         <script
           type="application/ld+json"

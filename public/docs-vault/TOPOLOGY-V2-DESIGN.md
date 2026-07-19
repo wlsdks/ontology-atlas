@@ -188,10 +188,8 @@ Design Guardian verdict 가 지적한 토큰 과잉 통폐합 대상에 새 부�
 | `--topology-v2-vignette-base-alpha` | `0.32` | `render()` vignette 계산식 상수항 |
 | `--topology-v2-vignette-far-alpha` | `0.18` | 같은 식의 `farT` 계수 |
 
-라이트 모드 변주는 P3 구현 시 Design Guardian 리뷰로 확정(프로토타입은 다크
-전용) — 토큰 이름만 여기서 고정하고 라이트 값은 `:root[data-theme="light"]`
-오버라이드로 별도 채운다. 신뢰선(§2.1 verdict a5, cyan 제2채색 결함)과 같은
-실수를 반복하지 않도록 라이트 대비는 P3 게이트에서 스크린샷 필수.
+[2026-07-19 갱신] 라이트 모드는 전면 폐기됐다(소유자 전략 결정) — 이 패밀리는
+다크 전용으로 확정되며, 더 이상 라이트 변주 P3 게이트가 존재하지 않는다.
 
 ### 2.3 지오메트리 (반지름·레이아웃·모서리)
 
@@ -354,7 +352,7 @@ emphasis 상승 예약)만, 커밋(포커스 전환)은 pointerup 에서, 드래
 |---|---|
 | 파일(신규) | `lib/shapes.ts`(hex/square/via `roundedPolygonPath`, 모서리 반경 `farT` 보간) · `lib/edges.ts`(bow 라우팅, contains/depends dash, 신호 펄스+코멧 테일) · `lib/tokens.ts`(§2 토큰 해석-캐시) · `ui/TopologyMapV2.tsx` 도형 드로우 연결 |
 | 테스트 | `shapes.test.ts`(헥스/사각 꼭짓점 생성, 모서리 반경이 `[min,r]` 범위 내 보간) · `edges.test.ts`(bow 가 `maxBow` 를 넘지 않음, `blend` 계수 반영) · `tokens.test.ts`(§2 토큰 전부 해석 성공, 누락 시 명시적 실패 — 토큰 drift 가드) |
-| 게이트 | overview/전환/working 세 scale 스크린샷에서 형태가 원↔다각형으로 연속 수렴(이산 점프 없음), 다크+라이트 대비 확인(verdict a5 재발 방지 — 신뢰선 같은 제2채색 도입 여부 스크린샷 리뷰) |
+| 게이트 | overview/전환/working 세 scale 스크린샷에서 형태가 원↔다각형으로 연속 수렴(이산 점프 없음), 다크 대비 확인(verdict a5 재발 방지 — 신뢰선 같은 제2채색 도입 여부 스크린샷 리뷰) |
 
 ### P4 — 포커스/팝오버 + 신선도 오버레이
 
@@ -368,7 +366,7 @@ emphasis 상승 예약)만, 커밋(포커스 전환)은 pointerup 에서, 드래
 
 | 항목 | 내용 |
 |---|---|
-| 작업 | Phase 0 시나리오 a/a′/b/b′/c 를 **프로덕션 빌드**(`pnpm build`)로 v2 엔진에서 재측정, TopologyMapCanvas/SigmaTopology 베이스라인과 비교 표 작성 · Design Guardian 스크린샷 리뷰(다크/라이트 × compact 1100×800/14인치 1512×917/1920×1080/2560×1440) · 설치된 macOS 앱 증거 |
+| 작업 | Phase 0 시나리오 a/a′/b/b′/c 를 **프로덕션 빌드**(`pnpm build`)로 v2 엔진에서 재측정, TopologyMapCanvas/SigmaTopology 베이스라인과 비교 표 작성 · Design Guardian 스크린샷 리뷰(다크 × compact 1100×800/14인치 1512×917/1920×1080/2560×1440) · 설치된 macOS 앱 증거 |
 | 게이트 | main-thread busy·INP 가 SigmaTopology 베이스라인(1412ms/194ms+73ms reflow) 대비 명확히 개선, TopologyMapCanvas 베이스라인(700ms/201ms) 대비 회귀 없음(canvas-2D 는 유사하거나 더 가벼워야 함 — 즉시-모드라 React commit 비용 자체가 없음) · Guardian verdict = Build and verify · 14인치 No-Gos 전항목 통과 |
 
 ### P6 — 전환 + 구엔진 삭제
@@ -422,9 +420,8 @@ emphasis 상승 예약)만, 커밋(포커스 전환)은 pointerup 에서, 드래
 
 1. **지도/그래프 탭 UI 존치 여부**(§1.2) — 엔진 통합 후 탭 자체가 필요한지는
    별도 PO 패스 필요. Phase 1 은 답하지 않는다.
-2. **라이트 모드 B2+ 값** — 프로토타입은 다크 전용. P3 구현 시 Design
-   Guardian 과 함께 라이트 대비를 확정(§2.2 토큰 이름은 이미 고정, 값만
-   미정).
+2. ~~**라이트 모드 B2+ 값**~~ — [2026-07-19 종결] 라이트 모드 전면 폐기
+   결정으로 더 이상 열린 질문이 아니다. §2.2 토큰은 다크 전용으로 확정.
 3. **노드 드래그(재배치)** — B2+ 프로토타입 범위 밖(팬만 드래그). 기존
    TopologyMapCanvas 의 카드 드래그 재배치 기능을 v2 에 승계할지는 P6 이후
    별도 슬라이스로 남긴다(Phase 0 §5 S6 잔여 항목과 연결).

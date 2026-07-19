@@ -98,9 +98,8 @@ Insights whenever the next action is writing or graph-level verification.
 - `--topology-chrome-*` 는 이미 전역이다(HomePage 가 렌더 엔진 밖에서 그려
   map-v2 가 상속; 구 map-canvas/sigma-graph 엔진은 #344 로 삭제됨). 페이지
   롤아웃의 chrome 밀도는 이 패밀리를 바로 쓴다.
-- 라이트 모드 값은 **의도적으로 아직 없다** — 라이트 테마도 다크 값을 그대로
-  상속한다. "v2 canvas light-mode" 패스는 Design Guardian 리뷰로 확정 전까지
-  보류 상태다 (아래 가드 참조).
+- 다크 단일 — 2026-07-19 라이트 모드 전면 폐기 결정 이후 이 패밀리는
+  다크 값만 정의한다 (아래 가드 참조).
 
 ### 페이지 롤아웃 적용 규칙
 
@@ -132,14 +131,13 @@ download(`/download`).
 **전역 승격 완료 토큰** (랜딩 롤아웃, 2026-07-18 — `app/globals.css`):
 
 - `--engraved-numeral-face` / `--engraved-numeral-text-shadow` — 음각 mono
-  숫자. 다크 값은 v2 numeral 값 복사, 라이트 값은 레터프레스(어두운 면 +
-  밝은 아래 그림자)로 신규 정의.
+  숫자. v2 numeral 값을 그대로 복사한 다크 전용 값.
 - `--kind-glyph-stroke-{project,domain,capability,element}` /
   `--kind-glyph-fill-{project,domain,capability,element}` /
   `--kind-glyph-edge-contains` / `--kind-glyph-edge-relates` — kind 글리프
-  미니어처(hex/칩/원/pad)와 trace 잉크. 다크 값은 v2 node/edge-mark 값
-  **복사** (var() 참조 아님 — P6 `--topology-v2-` grep 계약 유지), 라이트
-  값 신규. 소비처: `src/views/download/ui/DownloadPage.tsx` 의 소개 섹션
+  미니어처(hex/칩/원/pad)와 trace 잉크. v2 node/edge-mark 값을 **복사**
+  (var() 참조 아님 — P6 `--topology-v2-` grep 계약 유지). 소비처:
+  `src/views/download/ui/DownloadPage.tsx` 의 소개 섹션
   (구 LandingPage, root-first-open Slice 2 로 이관 — 마커
   `data-token="engraved-numeral"` / `data-token="kind-glyph"`).
 - 소개 섹션 evidence 미니어처 census 숫자의 진실원:
@@ -179,11 +177,8 @@ v1 의 [Absolute rules](#absolute-rules-donts) 전부 그대로 유효하다. �
 - **페이지 PR 마다 Design Guardian verdict 필수.** 최소 verdict 는 attention
   winner · typed fact · token contract · motion state · 스크린샷/WebView
   증거 · installed-app proof 필요 여부를 포함한다 (`.claude/rules/design.md`).
-- **before/after 스크린샷은 다크+라이트 양쪽** 첨부 (git.md PR 규칙).
-- **라이트 모드 작업은 한 사이클에 한 번에** — 부분 마이그레이션이 alpha 토큰
-  회귀를 만들어왔다. 특히 **"v2 canvas light-mode" 패스는 아직 미실행**
-  (v2 토큰은 다크 전용, 라이트가 다크 값 상속 중) — 페이지 롤아웃 중 라이트
-  변주가 필요해지면 부분 수정하지 말고 해당 패스를 통째로 계획하라.
+- **before/after 스크린샷은 다크** 첨부 (git.md PR 규칙 — 앱은 다크 단일,
+  2026-07-19 라이트 모드 전면 폐기).
 - 새 토큰은 v1 Tokenization Contract 그대로: product reason · state/layer ·
   responsive fallback · WebView/test marker 4종 명시.
 - v2 위젯 회귀 게이트: `pnpm exec vitest run src/widgets/topology-map-v2`.
@@ -1187,8 +1182,8 @@ Apply these checks before shipping ontology surfaces:
   scrim, or blocked interaction state. If the background still appears equally
   actionable, the modal/composer fails.
 - **No elevation noise.** More shadow does not mean more hierarchy. Elevation
-  must describe map/support/focus/transient/blocking layer order and be
-  consistent across dark/light themes.
+  must describe map/support/focus/transient/blocking layer order consistently
+  (dark theme only — light mode was retired 2026-07-19).
 
 Reference anchors:
 
@@ -1348,7 +1343,7 @@ Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌
   클래스가 강제, 별도 토큰 없음 — 칩은 타일보다 조밀한 밀도라 이 폭이 시안
   실측값).
 - `--chrome-surface` · `--chrome-border`(=`--color-border-soft` 참조) ·
-  `--chrome-shadow` · `--chrome-engrave` — 다크/라이트 모드 양쪽 값 존재.
+  `--chrome-shadow` · `--chrome-engrave` — 다크 전용 값.
 - `--chrome-inset: 24px` — 좌우 정렬 기준선. `--topology-index-inset` 이 이
   값을 참조(단일 출처) — 새 크롬 표면의 좌우 여백은 항상 이 토큰만 쓴다.
 - 기존 `--topology-chrome-*`(원형 pill 전용, 999px radius)와는 형태가 달라

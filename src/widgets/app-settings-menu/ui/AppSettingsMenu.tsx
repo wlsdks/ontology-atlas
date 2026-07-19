@@ -2,9 +2,8 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Bot, Check, Copy, FolderOpen, Languages, Palette, Settings, Terminal, X } from 'lucide-react';
+import { Bot, Check, Copy, FolderOpen, Languages, Settings, Terminal, X } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import { ThemeToggle } from '@/features/theme-toggle';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
@@ -18,7 +17,7 @@ type SettingsMenuTab = 'general' | 'mcpAgents' | 'vault' | 'appearance' | 'verif
  * 위젯으로 분리해 레일이 상주하는 각 페이지 헤더에 얹는다 — 기능 손실 0
  * 원칙(LiveActivityIndicator 는 같은 방식으로 `@/features/vault-ontology` 에서
  * 개별 마운트). general / mcpAgents / vault / appearance / verification 5
- * 탭 — 언어·테마 전환(appearance)도 여기 흡수돼 있어 AppNavRail 자체에는
+ * 탭 — 언어 전환(appearance)도 여기 흡수돼 있어 AppNavRail 자체에는
  * 별도 설정 트리거가 없어도 기능 손실이 없다.
  */
 export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
@@ -455,20 +454,6 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             aria-label={t('tabAppearance')}
             className="grid min-h-0 gap-2 overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
           >
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5">
-              <div className="flex min-w-0 items-start gap-2">
-                <Palette size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-                <div className="min-w-0">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                    {t('appearanceTitle')}
-                  </p>
-                  <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-                    {t('appearanceBody')}
-                  </p>
-                </div>
-              </div>
-              <ThemeToggle />
-            </div>
             <div className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5">
               <div className="flex min-w-0 items-start gap-2">
                 <Languages size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />

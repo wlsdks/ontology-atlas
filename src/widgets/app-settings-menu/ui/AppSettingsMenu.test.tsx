@@ -19,10 +19,6 @@ vi.mock('@/features/locale-switch', () => ({
   LocaleSwitch: () => <div data-testid="locale-switch" />,
 }));
 
-vi.mock('@/features/theme-toggle', () => ({
-  ThemeToggle: () => <button type="button">theme</button>,
-}));
-
 vi.mock('@/i18n/navigation', () => ({
   Link: ({
     href,
