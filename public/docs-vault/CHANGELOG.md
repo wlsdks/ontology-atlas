@@ -6,6 +6,31 @@
 
 ---
 
+## 2026-07-20 — 잔여 색 완전 토큰화 Phase 2 (success emerald · amber · indigo-pale · surface-deep · shadow)
+
+B안(인디고/오버레이/danger) 이후 남은 ~330건의 raw rgba() 리터럴을
+Design Guardian 헌장 판정(`.qa-scratch/audit-2026-07/guardian-color-verdict.md`)
+에 따라 토큰화. **success 를 warning/error 와 대칭인 3번째 신호 톤으로
+승격** — 기존 dot-only `--color-status-success` (`#27a644`) 를 신설
+`--color-success-a*`/`--color-success-text-a*` 알파 사다리와 같은
+hue(`#32b97d`)로 재지정, 5개 드리프트된 mint/emerald 리터럴을 단일 hue 로
+수렴 (`docs/DESIGN-SYSTEM.md` "Signal tones" 절 + `.claude/rules/design.md`
+명문화). amber 는 3갈래로 분리 처리 — ① `amber-source`/`amber-signal`
+경고 사다리 확장(정확 hue, 무시프트) ② 허브 링과 무관한 샘플/경고 배지
+2곳(FirstRunStarterModule·HeroCollapsed)을 `amber-hub` 확장 대신 경고
+계열로 재지정 ③ docs 표면의 장식적 gold 4개 드리프트 hue를 **quarantine
+전용** `--color-amber-docs-*` 로 수렴(헌장 미승인, DESIGN-SYSTEM.md
+비등재, 후속 강등 검토 대기) — amber-docs-warm ⚠️ 경고 텍스트는 경고
+계열로 fold. `indigo-pale`(200~211,210~215,255) 은 다크 단일로만 신설(앱이
+2026-07-19 라이트 모드를 전면 폐기해 theme-aware 불필요 — `CopyAgentTextButton.tsx`
+의 stale 라이트모드 주석도 함께 정리). `surface-deep`(12,14,20 계열)·
+`--color-shadow-a*` 8스텝 캐논 알파 스케일·`--color-overlay-recessed-a*`·
+`--color-scrim-a*`(풀뷰포트 백드롭 4곳 신규 분리) 도 함께 확장. kind-tone
+(`tone.ts`)은 이미 단일 진실원이라 그대로 두고 가드 allowlist 에만 등록,
+CSS 미러 변수 5개만 신설. `scripts/check-no-raw-indigo.mjs` 를
+`scripts/check-no-raw-color.mjs` 로 대체 — indigo/indigo-line 외 success·
+amber·kind-tone hue 까지 감시 범위 확장(`pnpm check:tokens`).
+
 ## 2026-07-20 — 인디고/오버레이 색 토큰화 B안 (indigo · indigo-line · white-overlay · danger 잔여)
 
 색 인벤토리 감사(568건)에서 나온 후속 조치 — indigo(94,106,210) 203건 ·
