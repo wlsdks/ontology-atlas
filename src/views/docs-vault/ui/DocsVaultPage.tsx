@@ -1612,15 +1612,12 @@ function DocsVaultContent() {
           /
         </span>
         <span className="truncate text-[color:var(--color-text-secondary)]">{t('header.title')}</span>
-        <span
-          data-token="engraved-numeral"
-          className="ml-auto hidden flex-none font-mono text-[11px] tracking-[0.06em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] sm:inline"
-        >
-          {t('header.censusSummary', {
-            concepts: ontologyDerivation.nodes.length,
-            relations: ontologyDerivation.edges.length,
-          })}
-        </span>
+        {/* 그래프 census(개념/관계 총계)는 이 행에서 삭제됐다 — 문서를 읽는
+            표면에서 총계는 어떤 읽기 판단도 바꾸지 못하는 비행동 잉크였고,
+            같은 수치가 문서함 점검 모달의 그래프 행에 맥락(둘러보기 CTA)과
+            함께 이미 있다(zone-r 점검 타일 1클릭). 한 화면에 문서 155개 /
+            목록 53개 / 개념·관계 총계 3종 계수 체계가 겹치던 것도 함께 해소.
+            census 는 그래프가 주인공인 지도(/topology) 크롬이 계속 소유한다. */}
       </nav>
       {/* 헤더 3존 [zone-l identity] [zone-c 탭 예약, 슬라이스 B] [zone-r
           tools] — implementation-contract.md §1. macOS 다운로드 버튼은

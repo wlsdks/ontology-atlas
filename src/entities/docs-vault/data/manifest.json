@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T12:37:00.993Z",
+  "generatedAt": "2026-07-19T14:15:26.745Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-19 — 문서함 상단 그래프 census 제거 (docs-chrome-round 마감)",
+          "slug": "2026-07-19-문서함-상단-그래프-census-제거-docs-chrome-round-마감"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-19 — 문서함 크롬 재구성 슬라이스 A — 헤더 3존·목록 완전 접힘·점검 중앙 모달 (docs-chrome-round)",
           "slug": "2026-07-19-문서함-크롬-재구성-슬라이스-a-헤더-3존목록-완전-접힘점검-중앙-모달-docs-chrome-round"
         },
@@ -3941,9 +3946,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. .qa-scratch/docs-chrome-round/design-prescription.md 확정 처방 반영. 2차 시안이 방향은 옳았지만 잔여 중복 3",
-      "wordCount": 23218,
-      "updatedAt": "2026-07-19T12:35:07.809Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 문서함(/docs) 브레드크럼 행의 개념 N개 · 관계 N개 각인 수치를 삭제했다. 문서를 읽는 표면에서 그래프 총계는 어떤 읽기 판단도 바꾸지 못하는 비",
+      "wordCount": 23324,
+      "updatedAt": "2026-07-19T14:15:13.746Z",
       "linksOut": [
         "slug"
       ]

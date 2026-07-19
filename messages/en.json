@@ -1749,7 +1749,6 @@
       "vaultPillFolders": "{count} folders",
       "vaultPillSwap": "Switch vault",
       "vaultPillSwapAriaLabel": "Switch vault source",
-      "censusSummary": "{concepts} concepts · {relations} relations",
       "docListCollapse": "Collapse document list",
       "docListExpand": "Expand document list"
     },
