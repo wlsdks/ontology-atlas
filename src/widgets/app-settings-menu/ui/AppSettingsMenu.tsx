@@ -138,7 +138,13 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
         </span>
       </summary>
       <div
-        className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden p-3 sm:p-6"
+        // 닫힌 native <details> 콘텐츠는 스펙상 렌더링만 스킵할 뿐 항상
+        // display:none 이 되는 건 아니다(content-visibility 계열 구현) — 그
+        // 결과 desktop 폭의 내부 tab strip 이 실제 layout box 를 유지해 모바일
+        // 뷰포트에서 document.body.scrollWidth 를 밀어 올렸다(overflow-sweep
+        // mobile-390/360 회귀). `hidden` + `group-open:flex` 로 열림 상태를
+        // 명시적 display 값에 묶어 확정적으로 닫는다.
+        className="fixed inset-0 z-40 hidden items-center justify-center overflow-hidden p-3 group-open:flex sm:p-6"
         data-testid="app-settings-overlay"
         onMouseDown={(event) => {
           if (event.target !== event.currentTarget) return;
