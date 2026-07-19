@@ -2218,15 +2218,26 @@ function DocsVaultContent() {
               </div>
 
               {/* 하단 backlinks 스트립 — pane 전체 폭에 앵커, 항상 보임
-                  (docs-vault-final spec §하단 백링크 스트립). */}
-              {!editing && backlinksDetail.length > 0 ? (
+                  (docs-vault-final spec §하단 백링크 스트립). persona QA
+                  (fix/persona-findings ③): "항상 보임" 스펙과 달리
+                  backlinksDetail.length > 0 조건으로 실제 역참조가 없는
+                  문서에서는 스트립 자체가 사라져 기능 발견성이 없었다 —
+                  역참조 0 개도 빈 상태 문구로 보여 "여긴 아직 없다" 를
+                  알 수 있게 한다. */}
+              {!editing ? (
                 <div className="flex flex-none items-center gap-2 border-t border-[color:var(--color-border-soft)] px-4 py-2.5">
-                  <DocsVaultBacklinks
-                    entries={backlinksDetail}
-                    docsBySlug={docsBySlug}
-                    onNavigate={handleSelect}
-                    layout="strip"
-                  />
+                  {backlinksDetail.length > 0 ? (
+                    <DocsVaultBacklinks
+                      entries={backlinksDetail}
+                      docsBySlug={docsBySlug}
+                      onNavigate={handleSelect}
+                      layout="strip"
+                    />
+                  ) : (
+                    <p className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--color-text-quaternary)]">
+                      {t('backlinksStrip.empty')}
+                    </p>
+                  )}
                   <Link
                     href={buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/'}
                     className="flex-none text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"

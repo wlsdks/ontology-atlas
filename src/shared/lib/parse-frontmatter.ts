@@ -201,6 +201,28 @@ export interface LinkContext {
 }
 
 /**
+ * 위키링크 `[[slug]]` 의 target 을 문서가 속한 vault 기준으로 정규화한다.
+ *
+ * `docs/ontology/` 는 이 프로젝트가 dogfood 하는 **중첩 MCP vault** —
+ * 그 안의 위키링크는 MCP 툴/사람이 쓰는 `capabilities/x`, `domains/y` 같은
+ * ontology-vault-루트 기준 slug 를 그대로 쓴다(예:
+ * `docs/ontology/elements/sigma-graphology.md` 의
+ * `[[capabilities/topology-canvas-render]]`). 하지만 `/docs` 페이지가
+ * 만드는 통합 트리에서 그 문서의 실제 slug 는 `ontology/` 접두사가 붙은
+ * `ontology/capabilities/topology-canvas-render` 라, 접두사 보정 없이는
+ * `backlinksDetail` 키가 서로 어긋나 실제 역참조가 있어도 조회에서
+ * 누락된다 (persona QA fix/persona-findings ③). `ontology/` 바깥의
+ * 최상위 문서가 쓰는 위키링크(예: `docs/CHANGELOG.md` 의 `[[FEATURES]]`)
+ * 는 이미 루트 기준이라 그대로 둔다.
+ */
+function resolveWikilinkTargetSlug(targetSlug: string, fromSlug: string): string {
+  if (fromSlug.startsWith('ontology/') && !targetSlug.startsWith('ontology/')) {
+    return `ontology/${targetSlug}`;
+  }
+  return targetSlug;
+}
+
+/**
  * 마크다운 본문에서 상대 경로 md 참조를 추출해 target slug + 주변 context
  * 로 반환. http(s)/앵커/이미지는 무시. fromSlug 는 현재 문서의 vault slug
  * (디렉터리 포함, 확장자 제외).
@@ -247,14 +269,18 @@ export function extractOutLinksWithContext(
     const context = raw.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
     contexts.push({ target: targetSlug, context, linkText });
   }
-  // Wikilinks [[slug]] / [[slug|text]] / [[slug#anchor]] — vault 루트 기준 slug.
+  // Wikilinks [[slug]] / [[slug|text]] / [[slug#anchor]] — vault 루트 기준 slug
+  // (중첩된 ontology/ vault 안에서는 그 vault 의 루트 기준 — 위
+  // resolveWikilinkTargetSlug 참고).
   const wre = /\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g;
   while ((m = wre.exec(body)) !== null) {
     const targetSpec = m[1].trim();
-    const [targetSlug] = targetSpec.split('#');
+    const [rawTargetSlug] = targetSpec.split('#');
+    if (!rawTargetSlug) continue;
+    const targetSlug = resolveWikilinkTargetSlug(rawTargetSlug, fromSlug);
     if (!targetSlug || targetSlug === fromSlug) continue;
     slugs.add(targetSlug);
-    const linkText = (m[2] ?? targetSlug).trim();
+    const linkText = (m[2] ?? rawTargetSlug).trim();
     const matchStart = m.index;
     const matchEnd = m.index + m[0].length;
     const before = body.slice(Math.max(0, matchStart - 120), matchStart);

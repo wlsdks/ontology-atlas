@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildExcerpt, parseFrontmatter } from './parse-frontmatter';
+import { buildExcerpt, extractOutLinksWithContext, parseFrontmatter } from './parse-frontmatter';
 
 describe('parseFrontmatter — basics', () => {
   it('returns empty frontmatter when no leading ---', () => {
@@ -153,5 +153,49 @@ describe('buildExcerpt — markdown is flattened to readable prose', () => {
   it('respects the max length', () => {
     expect(buildExcerpt('x'.repeat(500)).length).toBe(320);
     expect(buildExcerpt('x'.repeat(500), 50).length).toBe(50);
+  });
+});
+
+describe('extractOutLinksWithContext — wikilinks inside the nested ontology/ vault', () => {
+  // persona QA (fix/persona-findings ③): docs/ontology/ 는 이 프로젝트가
+  // dogfood 하는 중첩 MCP vault — 그 안의 위키링크(`[[capabilities/x]]`)는
+  // ontology-vault-루트 기준 slug 를 쓰지만, 실제 문서 slug 는
+  // `ontology/` 접두사가 붙는다. 접두사 보정 없이는 실제 역참조가 있어도
+  // backlinksDetail 조회가 항상 빗나가 `/docs` 하단 backlinks strip 이
+  // 절대 렌더되지 않았다 (예: docs/ontology/elements/sigma-graphology.md
+  // 의 `[[capabilities/topology-canvas-render]]`).
+  it('ontology/ 문서 안의 위키링크는 ontology/ 접두사를 붙여 정규화한다', () => {
+    const body = '같은 캔버스 엔진 얘기는 [[capabilities/topology-canvas-render]] 참고.';
+    const { contexts } = extractOutLinksWithContext(
+      body,
+      'ontology/elements/sigma-graphology',
+    );
+    expect(contexts).toHaveLength(1);
+    expect(contexts[0].target).toBe('ontology/capabilities/topology-canvas-render');
+    expect(contexts[0].linkText).toBe('capabilities/topology-canvas-render');
+  });
+
+  it('이미 ontology/ 접두사가 붙은 위키링크는 이중으로 접두사를 붙이지 않는다', () => {
+    const body = '전체 문맥은 [[ontology/project]] 문서 참고.';
+    const { contexts } = extractOutLinksWithContext(
+      body,
+      'ontology/domains/views',
+    );
+    expect(contexts[0].target).toBe('ontology/project');
+  });
+
+  it('ontology/ 바깥(최상위) 문서의 위키링크는 그대로 vault 루트 기준을 유지한다', () => {
+    const body = '자세한 기능은 [[FEATURES]] 참고.';
+    const { contexts } = extractOutLinksWithContext(body, 'CHANGELOG');
+    expect(contexts[0].target).toBe('FEATURES');
+  });
+
+  it('표준 markdown 상대경로 링크는 (이미 정확했던) fromDir 기준 정규화를 그대로 유지한다', () => {
+    const body = '관련 element 는 [여기](../domains/ai-agent-partner.md) 참고.';
+    const { contexts } = extractOutLinksWithContext(
+      body,
+      'ontology/capabilities/mcp-server',
+    );
+    expect(contexts[0].target).toBe('ontology/domains/ai-agent-partner');
   });
 });
