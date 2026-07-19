@@ -13,6 +13,7 @@ import {
   Info,
   Maximize2,
   Minimize2,
+  MoreHorizontal,
   Network,
   PencilLine,
   ShieldCheck,
@@ -39,7 +40,7 @@ import { AppNavRail } from "@/widgets/app-nav-rail";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { copyText } from "@/shared/lib/copy-text";
-import { Tooltip, useToast } from "@/shared/ui";
+import { ChromeTile, Tooltip, useToast } from "@/shared/ui";
 import {
   parseOntologyReaderIntent,
   type OntologyReaderIntent,
@@ -1206,6 +1207,10 @@ export function OntologyEditPage() {
   const [anchorRailOpen, setAnchorRailOpen] = useState(false);
   const [writeSummaryOpen, setWriteSummaryOpen] = useState(false);
   const [layoutSettingsOpen, setLayoutSettingsOpen] = useState(false);
+  // 헤더 단일화(A3) — fullscreen·배치 보기·저장 상태·상세 열기·내보내기
+  // (JSON-LD/GraphML)·지우기 7개 버튼을 "⋯" 오버플로 팝오버 하나로 축약.
+  // 기능은 무손실 — 각 항목이 기존 핸들러/상태를 그대로 재사용한다.
+  const [headerOverflowOpen, setHeaderOverflowOpen] = useState(false);
   // Blast-radius modal state — driven by deleteVaultDoc requesting a
   // confirmation. Stays null when the user is not actively confirming a
   // delete; opens when delete is clicked and resolves on cancel/confirm.
@@ -2070,15 +2075,6 @@ export function OntologyEditPage() {
           레일은 desktop(lg+) 전용이라 모바일 영향 없음(BottomTabBar 담당). */}
       {fullscreen ? null : <AppNavRail />}
       <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-        {/* 구 OperationsNav 우측 클러스터(LiveActivityIndicator·AppSettingsMenu)
-            — 레일 폭(64~88px)에는 못 들어가 페이지 헤더에 그대로 보존
-            (기능 손실 0 원칙). fullscreen 에선 나머지 chrome 과 함께 숨김. */}
-        {fullscreen ? null : (
-          <div className="flex flex-none items-center justify-end gap-2 px-3 pt-2 md:px-4">
-            <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
-            <AppSettingsMenu mode={dataSourceMode} />
-          </div>
-        )}
         {/* ⇧⌘K — 큰 ontology 에서 노드 빠른 점프. 선택 시 인스펙터에서 즉시
             편집 가능. fullscreen 모드에선 hotkey 도 작동 (캔버스에 mount). */}
         <MountedGlobalSearch
@@ -2095,174 +2091,256 @@ export function OntologyEditPage() {
               : "mx-auto flex h-full min-h-0 w-full max-w-[1800px] flex-1 flex-col px-3 py-3 md:px-5 md:py-4"
           }
         >
-        <header className="mb-1 flex flex-wrap items-center justify-between gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1.5">
-          <div className="flex min-w-0 items-center gap-2">
-            <h1 className="sr-only">{t("title")}</h1>
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-              {t("statusSummary", {
-                nodes: ephemeralNodes.length,
-                edges: ephemeralEdges.length,
+        {/* 헤더 1행(A3, builder-v2 시안 §topbar) — 좌: 브레드크럼+census(engraved)
+            · 중: dirty 상태 · 우: 유틸 클러스터(LiveActivity·설정·⋯ 오버플로)
+            +내보내기. 과거엔 (1) LiveActivity/설정 행 + (2) census+CommandStrip+
+            버튼 7개 헤더가 세로로 쌓였다 — 시안 문법대로 한 행으로 합쳤다.
+            fullscreen·배치 보기·저장 상태·상세 열기·JSON-LD/GraphML 내보내기·
+            지우기 7개는 기능 손실 없이 "⋯" 메뉴 항목으로 옮겼다. CommandStrip
+            은 헤더 바로 아래 컨텍스트 줄로 이동(기능 그대로). */}
+        <header
+          aria-label={t("headerAriaLabel")}
+          className="mb-1 flex min-h-11 flex-none flex-wrap items-center gap-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-1"
+        >
+          <h1 className="sr-only">{t("title")}</h1>
+          <nav
+            aria-label={t("headerBreadcrumbAriaLabel")}
+            className="flex min-w-0 shrink-0 items-center gap-2 text-[12px] text-[color:var(--color-text-tertiary)]"
+          >
+            <Link
+              href="/ontology/"
+              aria-label={t("headerBreadcrumbBackAriaLabel")}
+              className="inline-flex items-center gap-1.5 transition-colors hover:text-[color:var(--color-text-primary)]"
+            >
+              <span aria-hidden="true">←</span>
+              {t("headerBreadcrumbBack")}
+            </Link>
+            <span className="text-[color:var(--color-text-quaternary)]" aria-hidden="true">
+              /
+            </span>
+            <span className="text-[color:var(--color-text-secondary)]">
+              {t("headerCurrentLabel")}
+            </span>
+            <span
+              data-token="engraved-numeral"
+              className="hidden font-mono text-[10.5px] tracking-[0.06em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] sm:inline"
+            >
+              {t("headerCensus", {
+                nodes: builderGraphStats.persistedNodes,
+                relations: builderGraphStats.persistedRelations,
               })}
             </span>
             <Tooltip content={helpTooltip} withProvider={false}>
               <span
                 role="img"
                 aria-label={t("helpAriaLabel")}
-                className="inline-flex h-5 w-5 cursor-help items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-indigo-accent)]"
+                className="inline-flex h-5 w-5 shrink-0 cursor-help items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-indigo-accent)]"
               >
                 <Info size={13} />
               </span>
             </Tooltip>
-          </div>
-          <BuilderCommandStrip
-            state={commandStripState}
-            draftNodes={ephemeralNodes.length}
-            draftEdges={ephemeralEdges.length}
-            selectedTitle={commandStripSelectedTitle}
-            onPrimaryAction={runCommandStripPrimary}
-            onSecondaryAction={runCommandStripSecondary}
-            secondaryHref={commandStripSecondaryHref}
-          />
-          <div className="relative flex flex-wrap items-center justify-end gap-1.5">
-            {ephemeralNodes.length > 0 || ephemeralEdges.length > 0 ? (
+          </nav>
+          <p
+            role="status"
+            aria-live="polite"
+            className="mx-auto hidden min-w-0 truncate font-mono text-[11px] text-[color:var(--color-text-tertiary)] md:block"
+          >
+            <span
+              aria-hidden="true"
+              className={
+                ephemeralNodes.length > 0 || ephemeralEdges.length > 0
+                  ? "mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-accent)]"
+                  : "mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-text-quaternary)]"
+              }
+            />
+            {ephemeralNodes.length > 0 || ephemeralEdges.length > 0
+              ? t("headerDirtyStatus", {
+                  nodes: ephemeralNodes.length,
+                  edges: ephemeralEdges.length,
+                })
+              : t("headerDirtyClean")}
+          </p>
+          <div className="relative ml-auto flex shrink-0 items-center gap-1.5">
+            {fullscreen ? null : (
               <>
+                <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
+                <AppSettingsMenu mode={dataSourceMode} />
+              </>
+            )}
+            <ChromeTile
+              icon={<MoreHorizontal size={16} />}
+              title={t("headerOverflowLabel")}
+              aria-label={t("headerOverflowAriaLabel")}
+              aria-expanded={headerOverflowOpen}
+              aria-controls="builder-header-overflow"
+              active={headerOverflowOpen}
+              onClick={() => {
+                // 오버플로/배치 보기/저장 상태 팝오버는 헤더의 같은 위치
+                // (absolute right-0)에 앵커되므로 상호 배타적으로 연다 —
+                // 그렇지 않으면 이미 열린 팝오버가 새로 연 메뉴 위에 겹쳐
+                // 클릭을 가로챈다.
+                setHeaderOverflowOpen((open) => !open);
+                setLayoutSettingsOpen(false);
+                setWriteSummaryOpen(false);
+              }}
+            />
+            {ephemeralNodes.length > 0 || ephemeralEdges.length > 0 ? (
+              <button
+                type="button"
+                onClick={() =>
+                  downloadAtlasFrontmatter({
+                    ephemeralNodes,
+                    ephemeralEdges,
+                  })
+                }
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.16)]"
+                aria-label={t("exportAriaLabel")}
+              >
+                <Download size={12} />
+                <span className="hidden lg:inline">{t("exportButton")}</span>
+              </button>
+            ) : null}
+            {headerOverflowOpen ? (
+              <div
+                id="builder-header-overflow"
+                role="menu"
+                aria-label={t("headerOverflowAriaLabel")}
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_24px_72px_rgba(0,0,0,0.42)]"
+              >
                 <button
                   type="button"
-                  onClick={() =>
-                    downloadAtlasFrontmatter({
-                      ephemeralNodes,
-                      ephemeralEdges,
-                    })
-                  }
-                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.16)]"
-                  aria-label={t("exportAriaLabel")}
-                >
-                  <Download size={12} />
-                  <span className="hidden lg:inline">{t("exportButton")}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    downloadJsonLd({
-                      ephemeralNodes,
-                      ephemeralEdges,
-                    })
-                  }
-                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={t("exportJsonLdAriaLabel")}
-                >
-                  <FileJson size={12} />
-                  <span className="hidden xl:inline">{t("exportJsonLdButton")}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    downloadGraphML({
-                      ephemeralNodes,
-                      ephemeralEdges,
-                    })
-                  }
-                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={t("exportGraphMlAriaLabel")}
-                >
-                  <Network size={12} />
-                  <span className="hidden xl:inline">{t("exportGraphMlButton")}</span>
-                </button>
-                <button
-                  type="button"
+                  role="menuitem"
                   onClick={() => {
-                    if (clearConfirming) {
-                      clearAll();
-                      clearEphemeralEdges();
-                      setClearConfirming(false);
-                    } else {
-                      setClearConfirming(true);
-                    }
+                    setHeaderOverflowOpen(false);
+                    setWriteSummaryOpen(false);
+                    setLayoutSettingsOpen((open) => !open);
                   }}
-                  className={
-                    clearConfirming
-                      ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(229,72,77,0.55)] bg-[color:rgba(229,72,77,0.18)] px-2.5 text-[11px] text-[color:rgba(236,116,116,0.95)] transition-colors hover:bg-[color:rgba(229,72,77,0.28)]"
-                      : "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(229,72,77,0.32)] hover:text-[color:var(--color-text-primary)]"
-                  }
-                  aria-label={t("clearAriaLabel", {
-                    nodes: ephemeralNodes.length,
-                    edges: ephemeralEdges.length,
-                  })}
+                  aria-label={layoutSettingsActionLabel.ariaLabel}
+                  className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                 >
-                  <Trash2 size={12} />
-                  {clearConfirming
-                    ? t("clearButtonConfirm", {
-                        nodes: ephemeralNodes.length,
-                        edges: ephemeralEdges.length,
-                      })
-                    : t("clearButton", {
+                  <SlidersHorizontal size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+                  <span className="min-w-0 flex-1 truncate">{t("layoutSettingsButton")}</span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setHeaderOverflowOpen(false);
+                    setLayoutSettingsOpen(false);
+                    setWriteSummaryOpen((open) => !open);
+                  }}
+                  aria-label={writeSummaryActionLabel.ariaLabel}
+                  className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  <ShieldCheck size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+                  <span className="min-w-0 flex-1 truncate">{t("writeSummaryCollapsedLabel")}</span>
+                </button>
+                {(ephemeralSelected || vaultSelected) && commandStripState !== "selected" ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setHeaderOverflowOpen(false);
+                      setDetailsOpen(true);
+                    }}
+                    aria-label={t("openDetailsAriaLabel", {
+                      title: ephemeralSelected?.title ?? vaultSelected?.title ?? "",
+                    })}
+                    className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  >
+                    <Info size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+                    <span className="min-w-0 flex-1 truncate">{t("openDetailsButton")}</span>
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setHeaderOverflowOpen(false);
+                    setFullscreen((current) => !current);
+                  }}
+                  aria-label={fullscreen ? t("fullscreenExit") : t("fullscreenEnter")}
+                  className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  {fullscreen ? (
+                    <Minimize2 size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+                  ) : (
+                    <Maximize2 size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+                  )}
+                  <span className="min-w-0 flex-1 truncate">
+                    {fullscreen ? t("fullscreenExit") : t("fullscreenEnter")}
+                  </span>
+                </button>
+                {ephemeralNodes.length > 0 || ephemeralEdges.length > 0 ? (
+                  <>
+                    <div className="my-1 border-t border-[color:var(--color-divider)]" />
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setHeaderOverflowOpen(false);
+                        downloadJsonLd({ ephemeralNodes, ephemeralEdges });
+                      }}
+                      aria-label={t("exportJsonLdAriaLabel")}
+                      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      <FileJson size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+                      <span className="min-w-0 flex-1 truncate">{t("exportJsonLdButton")}</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setHeaderOverflowOpen(false);
+                        downloadGraphML({ ephemeralNodes, ephemeralEdges });
+                      }}
+                      aria-label={t("exportGraphMlAriaLabel")}
+                      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      <Network size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+                      <span className="min-w-0 flex-1 truncate">{t("exportGraphMlButton")}</span>
+                    </button>
+                    <div className="my-1 border-t border-[color:var(--color-divider)]" />
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        if (clearConfirming) {
+                          clearAll();
+                          clearEphemeralEdges();
+                          setClearConfirming(false);
+                          setHeaderOverflowOpen(false);
+                        } else {
+                          setClearConfirming(true);
+                        }
+                      }}
+                      aria-label={t("clearAriaLabel", {
                         nodes: ephemeralNodes.length,
                         edges: ephemeralEdges.length,
                       })}
-                </button>
-              </>
+                      className={
+                        clearConfirming
+                          ? "flex w-full items-center gap-2.5 rounded-md border border-[color:rgba(229,72,77,0.42)] bg-[color:rgba(229,72,77,0.12)] px-2.5 py-2 text-left text-[11px] text-[color:rgba(236,116,116,0.95)] transition-colors"
+                          : "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:rgba(236,116,116,0.95)]"
+                      }
+                    >
+                      <Trash2 size={13} className="shrink-0" />
+                      <span className="min-w-0 flex-1 truncate">
+                        {clearConfirming
+                          ? t("clearButtonConfirm", {
+                              nodes: ephemeralNodes.length,
+                              edges: ephemeralEdges.length,
+                            })
+                          : t("clearButton", {
+                              nodes: ephemeralNodes.length,
+                              edges: ephemeralEdges.length,
+                            })}
+                      </span>
+                    </button>
+                  </>
+                ) : null}
+              </div>
             ) : null}
-            <button
-              type="button"
-              aria-expanded={layoutSettingsOpen}
-              aria-controls="builder-layout-settings"
-              onClick={() => setLayoutSettingsOpen((open) => !open)}
-              aria-label={layoutSettingsActionLabel.ariaLabel}
-              title={layoutSettingsActionLabel.title}
-              className={
-                layoutSettingsOpen
-                  ? "hidden h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] md:inline-flex"
-                  : "hidden h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] md:inline-flex"
-              }
-            >
-              <SlidersHorizontal size={12} />
-              <span className="font-[var(--font-weight-signature)]">
-                {t("layoutSettingsButton")}
-              </span>
-            </button>
-            {(ephemeralSelected || vaultSelected) && commandStripState !== "selected" ? (
-              <button
-                type="button"
-                onClick={() => setDetailsOpen(true)}
-                aria-label={t("openDetailsAriaLabel", {
-                  title: ephemeralSelected?.title ?? vaultSelected?.title ?? "",
-                })}
-                className="hidden h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.16)] md:inline-flex xl:hidden"
-              >
-                <Info size={12} />
-                {t("openDetailsButton")}
-              </button>
-            ) : null}
-            <button
-              type="button"
-              aria-expanded={writeSummaryOpen}
-              aria-controls="builder-write-summary"
-              onClick={() => setWriteSummaryOpen((open) => !open)}
-              aria-label={writeSummaryActionLabel.ariaLabel}
-              title={writeSummaryActionLabel.title}
-              className={
-                writeSummaryOpen
-                  ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)]"
-                  : "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-              }
-            >
-              <ShieldCheck size={12} />
-              <span className="font-[var(--font-weight-signature)]">
-                {t("writeSummaryCollapsedLabel")}
-              </span>
-            </button>
-            {/* 헤더 '트리로 보기 ↗' link 는 OntologySubNav 의 [트리] 탭과
-                중복이라 제거. 모바일 fallback CTA 는 별도 — SubNav 가 mount
-                안 되는 풀폭 안내 화면에서만 노출. */}
-            <button
-              type="button"
-              onClick={() => setFullscreen((current) => !current)}
-              aria-label={fullscreen ? t("fullscreenExit") : t("fullscreenEnter")}
-              title={fullscreen ? t("fullscreenExit") : t("fullscreenEnter")}
-              className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] md:inline-flex"
-            >
-              {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-            </button>
             {writeSummaryOpen ? (
               <div
                 id="builder-write-summary"
@@ -2375,6 +2453,20 @@ export function OntologyEditPage() {
             ) : null}
           </div>
         </header>
+        {/* CommandStrip — 예전엔 헤더 1행 안에 있었다. 헤더가 시안 문법(브레드
+            크럼+census / dirty / 유틸+내보내기)대로 단일 행이 되면서 컨텍스트
+            액션 줄로 내려왔다 — 기능(선택 상태별 primary/secondary 액션) 무변. */}
+        <div className="mb-2 px-2">
+          <BuilderCommandStrip
+            state={commandStripState}
+            draftNodes={ephemeralNodes.length}
+            draftEdges={ephemeralEdges.length}
+            selectedTitle={commandStripSelectedTitle}
+            onPrimaryAction={runCommandStripPrimary}
+            onSecondaryAction={runCommandStripSecondary}
+            secondaryHref={commandStripSecondaryHref}
+          />
+        </div>
         {readerIntentStrip ? (
           <div className="mb-2 px-2">
             <BuilderReaderIntentStrip {...readerIntentStrip} />
