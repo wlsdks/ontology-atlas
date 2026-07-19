@@ -1,0 +1,196 @@
+import path from "node:path";
+import { appBundleName } from "./context.mjs";
+
+export function parseVerifyAppLaunchArgs(argv, {
+  defaultAppPath,
+  defaultHoldMs = 5000,
+} = {}) {
+  const positional = argv.filter((arg) => !arg.startsWith("-"));
+  const holdMsArg = argv.find((arg) => arg.startsWith("--hold-ms="));
+  const ownerNameArg = argv.find((arg) => arg.startsWith("--require-owner-name="));
+  const minWindowSizeArg = argv.find((arg) => arg.startsWith("--min-window-size="));
+  const minWebviewSizeArg = argv.find((arg) => arg.startsWith("--min-webview-size="));
+  const maxWebviewSizeArg = argv.find((arg) => arg.startsWith("--max-webview-size="));
+  const webviewWindowSizeArg = argv.find((arg) => arg.startsWith("--webview-window-size="));
+  const windowScreenshotArg = argv.find((arg) => arg.startsWith("--window-screenshot="));
+  const tryWindowScreenshotArg = argv.find((arg) => arg.startsWith("--try-window-screenshot="));
+  const webviewEvidenceArg = argv.find((arg) => arg.startsWith("--webview-evidence="));
+  const webviewRouteArg = argv.find((arg) => arg.startsWith("--require-webview-route="));
+  const requireAccessibilityText = argv
+    .filter((arg) => arg.startsWith("--require-accessibility-text="))
+    .map((arg) => arg.slice("--require-accessibility-text=".length).trim())
+    .filter(Boolean);
+
+  return {
+    appPath: positional[0] ?? defaultAppPath,
+    holdMs: holdMsArg ? Number(holdMsArg.slice("--hold-ms=".length)) : defaultHoldMs,
+    killExisting: argv.includes("--kill-existing"),
+    leaveRunning: argv.includes("--leave-running"),
+    openApp: argv.includes("--open-app"),
+    requireWindow: argv.includes("--require-window"),
+    requireCapturableWindow: argv.includes("--require-capturable-window"),
+    requireAccessibilityWindow: argv.includes("--require-accessibility-window"),
+    requireFrontmost: argv.includes("--require-frontmost"),
+    requireWebviewContent: argv.includes("--require-webview-content") || !argv.includes("--open-app"),
+    requireWebviewRoute: webviewRouteArg
+      ? webviewRouteArg.slice("--require-webview-route=".length).trim() || null
+      : null,
+    printWindowDiagnostics: argv.includes("--print-window-diagnostics"),
+    verifyTopologyDrag: argv.includes("--verify-topology-drag"),
+    verifyTopologySelectedRelation: argv.includes("--verify-topology-selected-relation"),
+    verifyTopologyNodePopover: argv.includes("--verify-topology-node-popover"),
+    verifyTopologyCreateNode: argv.includes("--verify-topology-create-node"),
+    verifyTopologyFocusNoop: argv.includes("--verify-topology-focus-noop"),
+    verifyTopologyFocusZoom: argv.includes("--verify-topology-focus-zoom"),
+    verifyTopologyFrameProfile: argv.includes("--verify-topology-frame-profile"),
+    requireOwnerName: ownerNameArg
+      ? ownerNameArg.slice("--require-owner-name=".length)
+      : null,
+    minWindowSize: minWindowSizeArg
+      ? parseMinWindowSize(minWindowSizeArg.slice("--min-window-size=".length))
+      : null,
+    minWebviewSize: minWebviewSizeArg
+      ? parseMinWindowSize(minWebviewSizeArg.slice("--min-webview-size=".length))
+      : null,
+    maxWebviewSize: maxWebviewSizeArg
+      ? parseMinWindowSize(maxWebviewSizeArg.slice("--max-webview-size=".length))
+      : null,
+    webviewWindowSize: webviewWindowSizeArg
+      ? parseMinWindowSize(webviewWindowSizeArg.slice("--webview-window-size=".length))
+      : null,
+    windowScreenshotPath: windowScreenshotArg
+      ? windowScreenshotArg.slice("--window-screenshot=".length).trim() || null
+      : null,
+    tryWindowScreenshotPath: tryWindowScreenshotArg
+      ? tryWindowScreenshotArg.slice("--try-window-screenshot=".length).trim() || null
+      : null,
+    webviewEvidencePath: webviewEvidenceArg
+      ? webviewEvidenceArg.slice("--webview-evidence=".length).trim() || null
+      : null,
+    requireAccessibilityText,
+  };
+}
+
+
+export function printHelp() {
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--verify-topology-selected-relation] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--verify-topology-frame-profile] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
+
+Launches the packaged macOS .app executable, waits long enough to catch early
+startup crashes, then terminates it. This is an unsigned local runtime smoke;
+release artifacts still need pnpm desktop:verify-release-dmg.
+
+Options:
+  --kill-existing   Terminate already-running copies of this app bundle executable before launch,
+                    including installed .app copies with the same executable name.
+  --leave-running   Keep the verified app running after verification so Computer Use or a human can
+                    inspect the same installed app window. Direct WebView route checks can use this
+                    without --open-app so the verifier returns instead of holding the process open.
+  --open-app        Launch through macOS LaunchServices (open -n) instead of spawning the executable directly.
+  --verify-topology-create-node
+                    On a /topology route, click the Concept action before WebView marker capture and
+                    require the Add Concept composer backdrop proof.
+  --verify-topology-focus-noop
+                    On a selected /topology route, re-run the selected-focus camera fit after initial
+                    settle and require an already-safe no-op motion proof.
+  --verify-topology-focus-zoom
+                    On a selected /topology route, trigger zoom-in and require focus rail compaction proof.
+  --verify-topology-frame-profile
+                    On a /topology route, run a synthetic zoom/pan/hover/card-drag pass and capture rAF frame timings into the WebView evidence markers.
+  --require-window  Require an on-screen macOS window owned by the launched app process.
+  --require-capturable-window
+                    Require at least one matching CoreGraphics window to produce a local screenshot
+                    artifact, first by window id and then by the current-desktop bounds region.
+                    This adds capture proof; Computer Use is still the final desktop-control check.
+  --window-screenshot=PATH
+                    Save the first successful matching window capture to PATH for human review.
+                    Requires --require-capturable-window.
+  --try-window-screenshot=PATH
+                    Best-effort visual evidence. If an on-screen window is available and macOS
+                    allows capture, save a screenshot to PATH; capture failure does not fail the
+                    verifier. Use --window-screenshot with --require-capturable-window for a hard gate.
+  --webview-evidence=PATH
+                    Save the validated WebView marker payload to PATH. Direct executable launch only.
+                    This gives deterministic installed-app route evidence when macOS screen capture
+                    or Computer Use observation is unavailable.
+  --require-accessibility-window
+                    Require System Events to see at least one Accessibility window for the launched
+                    process. This fails when macOS only exposes an app/menu tree with zero AX windows.
+  --require-frontmost
+                    Require System Events to report the launched process as frontmost. Use this when
+                    diagnosing whether LaunchServices opened a foreground app for Computer Use.
+  --require-accessibility-text=TEXT
+                    Require the Swift Accessibility probe to find TEXT in the launched app's AX tree.
+                    Repeat this option to require several screen phrases. Useful with --open-app,
+                    where stdout WebView markers are not available.
+  --require-webview-content
+                    Require the Tauri WebView to report a loaded DOM with non-empty body text.
+                    This uses stdout from direct executable launch and is not compatible with --open-app.
+  --require-webview-route=PATH
+                    Direct executable launch only. Navigate the packaged WebView to PATH before
+                    reading the DOM and require the reported tauri:// pathname to match. Useful
+                    for proving installed-app routes such as /en/topology/ without UI clicks.
+  --verify-topology-drag
+                    Direct executable launch only. On /topology routes, select the Views card,
+                    perform a short WebView-level card drag, and require the dragged card plus a
+                    companion card to settle visible, aligned, unclipped, and non-overlapping.
+  --print-window-diagnostics
+                    Print one JSON line with launched process ids, CoreGraphics windows, and
+                    System Events accessibility rows. Use when Computer Use cannot observe
+                    a window that macOS itself reports as visible.
+  --require-owner-name=NAME
+                    Require the visible app window's macOS owner name to match NAME.
+  --min-window-size=WIDTHxHEIGHT
+                    Require the visible app window to be at least WIDTH by HEIGHT points.
+  --min-webview-size=WIDTHxHEIGHT
+                    Require the direct-launch WebView DOM viewport to be at least WIDTH by
+                    HEIGHT CSS pixels. Use this for deterministic fullscreen/large-screen
+                    Relief checks even when macOS screen capture is unavailable.
+  --max-webview-size=WIDTHxHEIGHT
+                    Require the direct-launch WebView DOM viewport to be no larger than
+                    WIDTH by HEIGHT CSS pixels. Use this to prove a compact Relief smoke is
+                    actually exercising a compact installed-app viewport instead of the
+                    default desktop window.
+  --webview-window-size=WIDTHxHEIGHT
+                    Request a verification-only Tauri main-window size before the WebView
+                    evidence probe runs. This is direct executable launch only; pair it with
+                    --max-webview-size to prove compact Relief behavior in the installed app.
+`);
+}
+
+
+export function fail(message) {
+  console.error(`[desktop-app-verify] ${message}`);
+  process.exit(1);
+}
+
+
+export function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+
+export function parseMinWindowSize(value) {
+  const match = /^(\d+)x(\d+)$/.exec(value);
+  if (!match) return null;
+  return {
+    width: Number(match[1]),
+    height: Number(match[2]),
+  };
+}
+
+
+export function normalizeWebviewRoute(value) {
+  if (typeof value !== "string" || value.trim().length === 0) return null;
+  const route = value.trim();
+  if (!route.startsWith("/") || route.startsWith("//") || route.includes("://")) {
+    return null;
+  }
+  if (/[\s"'<>\\]/.test(route)) return null;
+  return route;
+}
+
+
+export function normalizeAppPath(value) {
+  return path.resolve(value).replace(/\/+$/, "");
+}
+
