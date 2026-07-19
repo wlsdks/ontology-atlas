@@ -26,6 +26,19 @@ export interface DocsVaultTabStripProps {
  * 헤더 쪽 baseline 은 `DocsVaultPage` 가 절대배치 1px 라인(z-0)으로 그리고
  * 이 스트립은 그보다 위(z-10)에서 h-full 로 렌더되므로 활성 탭 칼럼에서는
  * baseline 이 전혀 보이지 않는다(이중선 금지).
+ *
+ * 표면(활성 canvas / 비활성 hover)은 **탭 칼럼 전체**인 wrapper 가 소유한다.
+ * 라벨 버튼에만 배경을 주면 닫기 버튼 폭(20px)+여백(6px) 만큼 헤더 panel 색이
+ * 남아 활성 탭 오른쪽에 노치가 생기고, 전폭으로 그려지는 2px 언더라인이 그
+ * 26px 만큼 배경 밖으로 튀어나온다(승인 시안 frame1 은 × 까지 canvas).
+ *
+ * a11y: `role="tablist"/"tab"` 을 쓰지 않는다. 이 스트립은 같은 화면의
+ * `tabpanel` 을 토글하는 WAI-ARIA tab 위젯이 아니라 **문서 내비게이션**이다
+ * (활성 진실원 = URL `?slug=`). role 만 빌려 쓰면 AT 가 "탭 n/N" 과 화살표키
+ * 이동을 약속하지만 roving tabindex·`aria-controls`·`tabpanel` 이 없어 아무
+ * 일도 일어나지 않는다. 정직한 계약은 `nav` + `aria-current="page"` 이며,
+ * "탭 = 워킹셋이지 상위 모드가 아니다" 라는 소유자 계약도 AT 쪽에서 함께
+ * 지켜진다(role=tab 은 모드 전환으로 announce 된다).
  */
 export function DocsVaultTabStrip({
   tabs,
@@ -37,8 +50,13 @@ export function DocsVaultTabStrip({
   const activeTabRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
+    // JS 스크롤 애니메이션은 globals.css 의 reduced-motion base layer 가
+    // 끌 수 없다(CSS transition 이 아니라 behavior 인자) — 여기서 직접 존중.
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     activeTabRef.current?.scrollIntoView({
-      behavior: "smooth",
+      behavior: reduced ? "auto" : "smooth",
       inline: "nearest",
       block: "nearest",
     });
@@ -47,8 +65,7 @@ export function DocsVaultTabStrip({
   if (tabs.length === 0) return null;
 
   return (
-    <div
-      role="tablist"
+    <nav
       aria-label={t("tabs.stripAriaLabel")}
       className="docs-vault-tab-strip flex h-full min-w-0 flex-1 items-stretch overflow-x-auto"
     >
@@ -58,7 +75,13 @@ export function DocsVaultTabStrip({
           <div
             key={tab.slug}
             data-token="docs-tab"
-            className="group relative flex h-full flex-none items-stretch"
+            data-active={active ? "true" : undefined}
+            className={cn(
+              "group relative flex h-full flex-none items-stretch transition-colors",
+              active
+                ? "bg-[color:var(--color-canvas)]"
+                : "hover:bg-[color:var(--color-overlay-2)]",
+            )}
             style={{
               minWidth: "var(--docs-tab-min)",
               maxWidth: "var(--docs-tab-max)",
@@ -67,15 +90,21 @@ export function DocsVaultTabStrip({
             <button
               ref={active ? activeTabRef : undefined}
               type="button"
-              role="tab"
-              aria-selected={active}
+              aria-current={active ? "page" : undefined}
               title={tab.title}
               onClick={() => onActivate(tab.slug)}
+              // 가운데 버튼으로 닫기 — 에디터 탭의 보편 관용(계약 §③-3).
+              // auxclick 이 기본 붙여넣기/자동스크롤로 새지 않게 막는다.
+              onAuxClick={(event) => {
+                if (event.button !== 1) return;
+                event.preventDefault();
+                onClose(tab.slug);
+              }}
               className={cn(
                 "flex min-w-0 flex-1 items-center gap-1.5 pl-3 pr-1 text-[12px] transition-colors",
                 active
-                  ? "bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]"
-                  : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-secondary)]",
+                  ? "text-[color:var(--color-text-primary)]"
+                  : "text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-secondary)]",
               )}
             >
               <FileText size={14} aria-hidden className="flex-none" />
@@ -106,6 +135,6 @@ export function DocsVaultTabStrip({
           </div>
         );
       })}
-    </div>
+    </nav>
   );
 }

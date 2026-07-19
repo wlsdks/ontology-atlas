@@ -37,6 +37,7 @@ import { VaultToolsMenu } from '@/widgets/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
+import { cn } from '@/shared/lib/cn';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import {
   createTauriVaultHandle,
@@ -1639,8 +1640,23 @@ function DocsVaultContent() {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-px bg-[color:var(--color-border-soft)]"
         />
-        {/* zone-l — 목록 토글 + VaultChip. */}
-        <div className="flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:gap-3 lg:w-auto lg:max-w-[300px] lg:flex-nowrap lg:flex-1">
+        {/* zone-l — 목록 토글 + VaultChip.
+            폭 계약: 목록이 펼쳐져 있으면 zone-l 오른쪽 끝이 **문서 pane 의
+            왼쪽 모서리**와 정확히 맞물린다 → 탭 스트립이 자기가 여는 문서
+            pane 위에 정렬된다(VS Code/옵시디언의 탭=pane 규칙). 계산:
+            list-width − header padding(1rem) − zone gap(0.5rem). 이전에는
+            내용(≈197px)보다 큰 max-w-300 캡까지 flex-1 로 늘어나 탭이 pane
+            모서리보다 50px 오른쪽에서 시작했다(소유자 신고).
+            목록이 접히면 정렬할 pane 경계가 없으므로 내용 폭으로 되돌린다. */}
+        <div
+          data-docs-header-zone="identity"
+          className={cn(
+            "flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:gap-3 lg:flex-nowrap",
+            docListCollapsed
+              ? "lg:w-auto"
+              : "lg:w-[calc(var(--docs-list-width)-1.5rem)]",
+          )}
+        >
           <button
             type="button"
             onClick={() => setSourceTreeOpen(true)}
