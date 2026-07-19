@@ -135,25 +135,36 @@ export function TopologyIndexPanel({
       />
       {/* v2.1 헤더 — 라벨 + 실측 총수 + 접기만. 에이전트 동기화 상태는
           푸터로 이관(아래) — 헤더는 "이 패널이 무엇인지", 푸터는 "언제
-          마지막으로 살아있었는지"를 말한다. */}
-      <div className="mb-2.5 flex items-center gap-1.5 border-b border-[color:var(--topology-v2-panel-divider)] px-0.5 pb-2.5">
+          마지막으로 살아있었는지"를 말한다.
+
+          헤더 행 전체가 접기 토글이다 (소유자 피드백 — 셰브론만 히트 영역이라
+          불편했다). INDEX 트리 행과 같은 hover 문법
+          (`--topology-v2-panel-row-hover` 배경, `transition-colors`) 을 그대로
+          재사용해 "이것도 클릭 가능한 행이다" 를 같은 언어로 말한다. 셰브론은
+          더 이상 별도 버튼이 아니라 상태 표시자(`aria-hidden`)로만 남는다 —
+          중첩 인터랙티브 엘리먼트를 피하기 위해 바깥 `<button>` 하나로 접는다. */}
+      <button
+        type="button"
+        onClick={onCollapse}
+        aria-expanded={true}
+        aria-label={labels.foldAria}
+        title={labels.fold}
+        data-testid="topology-index-fold"
+        className="group mb-2.5 flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--chrome-radius-inner)] border-b border-[color:var(--topology-v2-panel-divider)] px-0.5 pb-2.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+      >
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
           {labels.label}
         </span>
         <span className="font-mono text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">
           · {totalConcepts}
         </span>
-        <button
-          type="button"
-          onClick={onCollapse}
-          aria-label={labels.foldAria}
-          title={labels.fold}
-          data-testid="topology-index-fold"
-          className="ml-auto inline-flex size-[26px] shrink-0 items-center justify-center rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:border-[color:var(--topology-v2-panel-action-border)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+        <span
+          aria-hidden="true"
+          className="ml-auto inline-flex size-[26px] shrink-0 items-center justify-center rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors group-hover:border-[color:var(--topology-v2-panel-action-border)] group-hover:text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           <ChevronUp size={13} aria-hidden="true" />
-        </button>
-      </div>
+        </span>
+      </button>
       <p data-testid="topology-index-census" className="sr-only">
         {totalConcepts} {labels.censusConcepts} · {totalRelations} {labels.censusRelations} ·{" "}
         {domainCount} {labels.censusDomains}
