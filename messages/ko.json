@@ -3116,23 +3116,6 @@
       "footer": "Markdown · GFM",
       "previewEmpty": "미리볼 내용 없음"
     },
-    "quickCreate": {
-      "newProjectEyebrow": "새 프로젝트",
-      "openLabel": "빠른 만들기",
-      "closeLabel": "닫기",
-      "leadEyebrow": "빠르게 시작",
-      "leadBody": "이름과 설명만 넣으면 됩니다.",
-      "fieldName": "프로젝트 이름",
-      "fieldNamePlaceholder": "예: 인증 허브",
-      "fieldDescription": "한 줄 설명",
-      "fieldDescriptionPlaceholder": "이 프로젝트가 무엇을 하는지 한 줄로 적습니다.",
-      "fieldOwner": "담당 · 선택",
-      "fieldOwnerPlaceholder": "예: 민혁",
-      "submitting": "생성 중...",
-      "defaultSubmit": "만들고 바로 보기",
-      "errorRequired": "프로젝트 이름과 한 줄 설명을 먼저 입력해주세요.",
-      "errorGeneric": "프로젝트를 만들지 못했습니다."
-    },
     "quickEdit": {
       "openLabel": "프로젝트 정보 수정",
       "closeLabel": "정보 수정 닫기",

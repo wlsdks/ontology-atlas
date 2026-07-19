@@ -3116,23 +3116,6 @@
       "footer": "Markdown · GFM",
       "previewEmpty": "Nothing to preview"
     },
-    "quickCreate": {
-      "newProjectEyebrow": "New project",
-      "openLabel": "Quick create",
-      "closeLabel": "Close",
-      "leadEyebrow": "Quick start",
-      "leadBody": "Just name and description.",
-      "fieldName": "Project name",
-      "fieldNamePlaceholder": "e.g. Auth Hub",
-      "fieldDescription": "Short description",
-      "fieldDescriptionPlaceholder": "Describe what this project does in one line.",
-      "fieldOwner": "Owner · optional",
-      "fieldOwnerPlaceholder": "e.g. Min-hyuk",
-      "submitting": "Creating...",
-      "defaultSubmit": "Create and view",
-      "errorRequired": "Please enter a project name and one-line description first.",
-      "errorGeneric": "Could not create the project."
-    },
     "quickEdit": {
       "openLabel": "Edit project info",
       "closeLabel": "Close edit",
