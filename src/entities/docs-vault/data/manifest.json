@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T09:22:25.608Z",
+  "generatedAt": "2026-07-19T09:45:23.935Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-19 — 라이트 모드 전면 폐기 (dark-only)",
+          "slug": "2026-07-19-라이트-모드-전면-폐기-dark-only"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-19 — 문서함 읽기 경험 — 목차 레일·맨 위로·frontmatter 접힘·샘플 안내 평문화 (docs-reading-round)",
           "slug": "2026-07-19-문서함-읽기-경험-목차-레일맨-위로frontmatter-접힘샘플-안내-평문화-docs-reading-round"
         },
@@ -3926,9 +3931,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. .qa-scratch/docs-reading-round/po-pass.md PO 패스 — 66분짜리 긴 온톨로지 문서(capabilities/cli-dev",
-      "wordCount": 22514,
-      "updatedAt": "2026-07-19T09:22:18.369Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 전략 결정: 앱은 다크 단일이 된다. 관리 부담 대비 사용 신호가 낮았던 라이트 테마를 코드/토큰/설정 UI에서 전부 걷어낸다 — 다크 렌더 결과는",
+      "wordCount": 22672,
+      "updatedAt": "2026-07-19T09:45:19.049Z",
       "linksOut": [
         "slug"
       ]
@@ -4440,8 +4445,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 10646,
-      "updatedAt": "2026-07-18T16:34:47.985Z",
+      "wordCount": 10589,
+      "updatedAt": "2026-07-19T09:44:55.448Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -9806,8 +9811,8 @@
         }
       ],
       "excerpt": "입력: docs/prototypes/topology-b2plus.html(승인된 B2+ \"Circuit × Constellation\" 프로토타입) · docs/TOPOLOGY-V2-PHASE0.md(실측 병목 + 어댑터 계약 초안) · docs/archive/SIGMA-PLAYBOOK.md(Sigma v3 내장 기능 계약 — 조사됐으나 v2는 Sigma 미채택, archived) · docs/INTERACTION-DESIGN.md (유체 인터페이스 원칙) · .claude/rules/design.md · docs/PRODUCT-DESIGN-OPERATING-SYSTE",
-      "wordCount": 3680,
-      "updatedAt": "2026-07-18T08:19:41.732Z",
+      "wordCount": 3661,
+      "updatedAt": "2026-07-19T09:44:55.449Z",
       "linksOut": [
         "owner-topology-taste"
       ]
