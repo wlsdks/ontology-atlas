@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T06:11:32.715Z",
+  "generatedAt": "2026-07-19T07:58:15.990Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-19 — 빌더 엣지 2차 — 커스텀 접선 곡률·관계선 호 라우팅 (builder-edges-2)",
+          "slug": "2026-07-19-빌더-엣지-2차-커스텀-접선-곡률관계선-호-라우팅-builder-edges-2"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-19 — 빌더 캔버스 엣지·연결 UX 재설계 (builder-edges)",
+          "slug": "2026-07-19-빌더-캔버스-엣지연결-ux-재설계-builder-edges"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-19 — 에이전트 활동 가시화 — 지도 위 앰버 포커스 링 (agent-visibility)",
           "slug": "2026-07-19-에이전트-활동-가시화-지도-위-앰버-포커스-링-agent-visibility"
         },
@@ -3896,9 +3906,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. LiveActivityIndicator(레일 하단 점)만으로는 \"에이전트가 지금 어느 노드를 만지고 있는지\" 를 지도 위에서 볼 수 없었다 — agent-",
-      "wordCount": 21307,
-      "updatedAt": "2026-07-19T05:48:31.551Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 1차 개편 후에도 곡선이 뻣뻣하고 세로로 쌓인 도메인 사이를 관계선이 직선으로 관통해 보였다. 원인은 (1) xyflow getBezierPath 가 마주",
+      "wordCount": 21645,
+      "updatedAt": "2026-07-19T07:58:05.484Z",
       "linksOut": [
         "slug"
       ]
@@ -4964,8 +4974,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 9970,
-      "updatedAt": "2026-07-18T16:33:50.121Z",
+      "wordCount": 9989,
+      "updatedAt": "2026-07-19T07:13:15.862Z",
       "linksOut": [
         "slug",
         "project:slug",
