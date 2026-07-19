@@ -203,12 +203,6 @@
   /* 카드 elevation — 다크에선 none (토큰 대비만으로 충분), 라이트에선
      [data-theme="light"] 블록이 override. */
   --shadow-card: none;
-  --shadow-card-elevated: none;
-
-  /* Sigma 뷰포트 모서리 vignette — 다크에선 visible 한 dark fade, 라이트에선
-     거의 invisible (흰 캔버스에 까만 vignette 가 grey smudge 로 보이던 회귀
-     fix). 라이트 모드 블록에서 override. */
-  --color-vignette: rgba(0, 0, 0, 0.28);
 
   /*
    * 다크 톤 surface — modal backdrop / sticky nav 배경 / 강한 패널 처럼
@@ -217,8 +211,6 @@
    */
   --color-backdrop-strong: rgba(8, 9, 10, 0.85);
   --color-backdrop-medium: rgba(8, 9, 10, 0.6);
-  --color-backdrop-soft: rgba(8, 9, 10, 0.22);
-  --color-nav-surface: rgba(10, 11, 13, 0.96);
 
   /* 폰트 패밀리 */
   --font-sans: var(--font-inter), system-ui, sans-serif;
@@ -275,7 +267,6 @@
     --color-divider: rgba(255, 255, 255, 0.08);
     --color-tap-highlight: rgba(255, 255, 255, 0.04);
     --shadow-card: none;
-    --shadow-card-elevated: none;
 
     /* 빌더 v2 (A2) 알파 스케일 — 위 @theme 블록과 동일한 Tailwind v4 emit
        회귀를 겪으므로 여기서도 다크 디폴트를 명시. */
@@ -370,24 +361,12 @@
     --topology-card-border-selected: rgba(139, 151, 255, 0.8);
     --topology-card-selected-quiet-border: rgba(139, 151, 255, 0.42);
     --topology-card-selected-quiet-wash: rgba(139, 151, 255, 0.055);
-    --topology-card-drag-wash: rgba(139, 151, 255, 0.08);
-    --topology-card-drag-active-wash: rgba(139, 151, 255, 0.12);
     --topology-card-count-surface: rgba(255, 255, 255, 0.045);
     --topology-card-count-border: rgba(255, 255, 255, 0.085);
     --topology-card-count-text: var(--color-text-secondary);
     --topology-path-endpoint-surface: rgba(139, 151, 255, 0.16);
     --topology-path-endpoint-border: rgba(139, 151, 255, 0.42);
     --topology-path-endpoint-text: var(--color-indigo-accent);
-    --topology-focus-hull-border: rgba(139, 151, 255, 0.42);
-    --topology-focus-hull-surface: rgba(139, 151, 255, 0.08);
-    --topology-focus-hull-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 18px 50px rgba(0, 0, 0, 0.22);
-    --topology-focus-hull-quiet-border: rgba(139, 151, 255, 0.26);
-    --topology-focus-hull-quiet-surface: rgba(139, 151, 255, 0.026);
-    --topology-focus-hull-quiet-shadow: 0 0 0 1px rgba(139, 151, 255, 0.08), 0 10px 28px rgba(0, 0, 0, 0.10);
-    --topology-focus-hull-quiet-opacity: 0.52;
-    --topology-focus-hull-drag-border: rgba(139, 151, 255, 0.70);
-    --topology-focus-hull-drag-surface: rgba(139, 151, 255, 0.12);
-    --topology-focus-hull-drag-shadow: 0 0 0 1px rgba(139, 151, 255, 0.24), 0 22px 60px rgba(0, 0, 0, 0.28), 0 0 36px rgba(139, 151, 255, 0.14);
     --topology-health-repair-primary-surface: var(--color-overlay-3);
     --topology-health-repair-primary-border: var(--color-border-strong);
     --topology-health-repair-primary-hover-surface: var(--color-overlay-2);
@@ -415,50 +394,22 @@
     --topology-relation-label-selected-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
     --topology-relation-label-focus-ring: rgba(139, 151, 255, 0.58);
     --topology-relation-label-segment-gap: 0.375rem;
-    --topology-relation-stroke-selected: rgba(139, 151, 255, 0.95);
-    --topology-relation-stroke-selected-width: 2.35;
-    --topology-relation-stroke-selected-halo-width: 7.6;
     --topology-relation-spine-halo: rgba(139, 151, 255, 0.34);
     --topology-relation-spine-terminal: rgba(205, 210, 255, 0.86);
     /* R+ 기획자 감사 ①: 1.1~1.6px × 실효알파 ~0.25 는 다크 캔버스에서
        비가시 — 카드가 "허공에 뜬 라벨" 로 읽혔다. 소속/신뢰 구조가 지도의
        존재 이유이므로 잉크를 한 단계 상향 (3:1 대비 목표). */
     --topology-relation-stroke-strong: rgba(139, 151, 255, 0.82);
-    --topology-relation-stroke-strong-width: 2.2;
     /* R+ 디자인 가디언 verdict a5: cyan(72,184,203) 은 인디고 외 제2 채색
        시스템이었다(헌장 위반 — "카테고리 구분은 색이 아닌 보더 스타일"). 같은
        인디고 잉크로 통일하고 dash 로 spine(실선/strong)과 구분한다. */
-    --topology-relation-stroke-supported: rgba(139, 151, 255, 0.5);
-    --topology-relation-stroke-supported-width: 1.8;
-    --topology-relation-stroke-supported-dasharray: 5 3;
     --topology-relation-stroke-weak: rgba(217, 161, 65, 0.62);
-    --topology-relation-stroke-weak-width: 1.5;
-    --topology-relation-stroke-review: rgba(226, 105, 105, 0.66);
-    --topology-relation-stroke-review-width: 1.6;
     --topology-relation-evidence-chip-surface: rgba(255, 255, 255, 0.055);
     --topology-relation-evidence-chip-border: rgba(255, 255, 255, 0.10);
     --topology-relation-evidence-chip-text: var(--color-text-secondary);
-    --topology-relation-quality-strong-dot: rgb(129, 140, 248);
-    --topology-relation-quality-strong-glow: 0 0 8px rgba(129, 140, 248, 0.50);
-    --topology-relation-quality-supported-dot: rgb(103, 232, 249);
-    --topology-relation-quality-supported-glow: 0 0 8px rgba(103, 232, 249, 0.36);
-    --topology-relation-quality-weak-dot: rgb(252, 211, 77);
-    --topology-relation-quality-weak-glow: 0 0 8px rgba(252, 211, 77, 0.32);
-    --topology-relation-quality-review-dot: rgb(253, 164, 175);
-    --topology-relation-quality-review-glow: 0 0 8px rgba(253, 164, 175, 0.38);
-    --topology-relation-gate-ready-surface: rgba(139, 151, 255, 0.14);
-    --topology-relation-gate-ready-border: rgba(139, 151, 255, 0.36);
-    --topology-relation-gate-ready-text: rgba(222, 225, 255, 0.94);
-    --topology-relation-gate-preflight-surface: rgba(217, 161, 65, 0.13);
-    --topology-relation-gate-preflight-border: rgba(217, 161, 65, 0.36);
-    --topology-relation-gate-preflight-text: rgba(247, 212, 150, 0.92);
-    --topology-relation-gate-review-surface: rgba(226, 105, 105, 0.13);
-    --topology-relation-gate-review-border: rgba(226, 105, 105, 0.38);
-    --topology-relation-gate-review-text: rgba(255, 190, 190, 0.92);
     --topology-edge-tooltip-surface: rgba(12, 14, 20, 0.96);
     --topology-edge-tooltip-border: rgba(139, 151, 255, 0.26);
     --topology-edge-tooltip-shadow: 0 10px 24px rgba(0, 0, 0, 0.36);
-    --topology-edge-tooltip-arrow: rgba(139, 151, 255, 0.86);
 
     /*
      * Relief/Topology layout + motion tokens.
@@ -522,14 +473,8 @@
     /* [삭제, 2026-07-18] 구 TopologyMapCanvas(px 문자열) fit 안전영역 4토큰 —
        TopologyMapCanvas.tsx 자체가 #344 이후 삭제되어 consumer 0. v2 등가물은
        아래 §2.5 --topology-v2-safe-inset-* (단위 없는 숫자, canvas 2D 소비). */
-    --topology-panel-radius: 12px;
-    --topology-panel-padding: 16px;
-    --topology-panel-border: rgba(255, 255, 255, 0.07);
-    --topology-panel-primary-surface: rgba(15, 16, 17, 0.96);
     --topology-panel-support-surface: rgba(15, 16, 17, 0.99);
     --topology-panel-read-layer-z-index: 30;
-    --topology-panel-primary-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
-    --topology-panel-support-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
     --topology-selected-relation-card-width: clamp(256px, 17vw, 352px);
     --topology-selected-relation-card-max-height: min(328px, calc(100dvh - 7rem));
     --topology-selected-relation-card-inset: clamp(16px, 2vw, 32px);
@@ -546,71 +491,12 @@
     --topology-selected-relation-accent-muted: rgba(139, 151, 255, 0.84);
     --topology-selected-relation-focus-ring: rgba(94, 106, 210, 0.50);
     --topology-selected-relation-copy-primary-shadow: 0 0 0 1px rgba(139, 151, 255, 0.16), 0 6px 18px rgba(0, 0, 0, 0.20);
-    --topology-selected-relation-claim-strong-surface: rgba(139, 151, 255, 0.10);
-    --topology-selected-relation-claim-strong-border: rgba(139, 151, 255, 0.30);
-    --topology-selected-relation-claim-strong-text: rgba(222, 225, 255, 0.94);
-    --topology-selected-relation-claim-strong-dot: rgba(139, 151, 255, 0.96);
-    --topology-selected-relation-claim-supported-surface: rgba(72, 184, 203, 0.08);
-    --topology-selected-relation-claim-supported-border: rgba(72, 184, 203, 0.22);
-    --topology-selected-relation-claim-supported-text: rgba(187, 237, 244, 0.92);
-    --topology-selected-relation-claim-supported-dot: rgba(72, 184, 203, 0.95);
-    --topology-selected-relation-claim-weak-surface: rgba(217, 161, 65, 0.08);
-    --topology-selected-relation-claim-weak-border: rgba(217, 161, 65, 0.24);
-    --topology-selected-relation-claim-weak-text: rgba(247, 212, 150, 0.88);
-    --topology-selected-relation-claim-weak-dot: rgba(217, 161, 65, 0.94);
-    --topology-selected-relation-claim-review-surface: rgba(226, 105, 105, 0.09);
-    --topology-selected-relation-claim-review-border: rgba(226, 105, 105, 0.26);
-    --topology-selected-relation-claim-review-text: rgba(255, 190, 190, 0.90);
-    --topology-selected-relation-claim-review-dot: rgba(226, 105, 105, 0.94);
-    --topology-selected-relation-quality-strong-surface: rgba(139, 151, 255, 0.15);
-    --topology-selected-relation-quality-strong-border: rgba(139, 151, 255, 0.44);
-    --topology-selected-relation-quality-strong-text: rgba(222, 225, 255, 0.96);
-    --topology-selected-relation-quality-supported-surface: rgba(72, 184, 203, 0.11);
-    --topology-selected-relation-quality-supported-border: rgba(72, 184, 203, 0.30);
-    --topology-selected-relation-quality-supported-text: rgba(187, 237, 244, 0.92);
-    --topology-selected-relation-quality-weak-surface: rgba(217, 161, 65, 0.12);
-    --topology-selected-relation-quality-weak-border: rgba(217, 161, 65, 0.34);
-    --topology-selected-relation-quality-weak-text: rgba(247, 212, 150, 0.92);
-    --topology-selected-relation-quality-review-surface: rgba(226, 105, 105, 0.12);
-    --topology-selected-relation-quality-review-border: rgba(226, 105, 105, 0.34);
-    --topology-selected-relation-quality-review-text: rgba(255, 190, 190, 0.92);
-    --topology-selected-relation-gate-handoff-surface: rgba(139, 151, 255, 0.075);
-    --topology-selected-relation-gate-handoff-border: rgba(139, 151, 255, 0.20);
-    --topology-selected-relation-gate-handoff-text: rgba(139, 151, 255, 0.88);
-    --topology-selected-relation-gate-preflight-surface: rgba(217, 161, 65, 0.08);
-    --topology-selected-relation-gate-preflight-border: rgba(217, 161, 65, 0.24);
-    --topology-selected-relation-gate-preflight-text: rgba(247, 212, 150, 0.88);
-    --topology-selected-relation-gate-review-surface: rgba(226, 105, 105, 0.09);
-    --topology-selected-relation-gate-review-border: rgba(226, 105, 105, 0.26);
-    --topology-selected-relation-gate-review-text: rgba(255, 190, 190, 0.90);
     --topology-selected-relation-copy-secondary-surface: rgba(255, 255, 255, 0.035);
-    --topology-selected-relation-copy-secondary-border: rgba(255, 255, 255, 0.10);
-    --topology-selected-relation-copy-secondary-text: var(--color-text-tertiary);
-    --topology-selected-relation-copy-secondary-hover-surface: rgba(255, 255, 255, 0.06);
-    --topology-selected-relation-copy-secondary-hover-text: var(--color-text-secondary);
-    --topology-selected-relation-copy-handoff-surface: rgba(139, 151, 255, 0.12);
-    --topology-selected-relation-copy-handoff-border: rgba(139, 151, 255, 0.34);
-    --topology-selected-relation-copy-handoff-text: rgba(222, 225, 255, 0.94);
-    --topology-selected-relation-copy-handoff-hover-surface: rgba(139, 151, 255, 0.18);
-    --topology-selected-relation-copy-handoff-hover-text: var(--color-text-primary);
-    --topology-selected-relation-copy-preflight-surface: rgba(217, 161, 65, 0.12);
-    --topology-selected-relation-copy-preflight-border: rgba(217, 161, 65, 0.34);
-    --topology-selected-relation-copy-preflight-text: rgba(247, 212, 150, 0.92);
-    --topology-selected-relation-copy-preflight-hover-surface: rgba(217, 161, 65, 0.18);
-    --topology-selected-relation-copy-preflight-hover-text: var(--color-text-primary);
-    --topology-selected-relation-copy-review-surface: rgba(226, 105, 105, 0.12);
-    --topology-selected-relation-copy-review-border: rgba(226, 105, 105, 0.34);
-    --topology-selected-relation-copy-review-text: rgba(255, 190, 190, 0.92);
-    --topology-selected-relation-copy-review-hover-surface: rgba(226, 105, 105, 0.18);
-    --topology-selected-relation-copy-review-hover-text: var(--color-text-primary);
     --topology-selected-relation-kicker-font-size: 9px;
     --topology-selected-relation-chip-font-size: 9px;
     --topology-selected-relation-route-label-font-size: 8px;
     --topology-selected-relation-route-value-font-size: 10px;
     --topology-selected-relation-payload-font-size: 10px;
-    --topology-drawer-relation-list-max-height: min(18rem, 44vh);
-    --topology-drawer-relation-row-min-height: 58px;
-    --topology-drawer-relation-chip-max-width: 8.5rem;
     --topology-analysis-mode-rail-surface: var(--color-overlay-1);
     --topology-analysis-mode-active-surface: var(--color-overlay-2);
     --topology-analysis-mode-active-border: rgba(139, 151, 255, 0.24);
@@ -622,11 +508,8 @@
     --topology-analysis-panel-metric-label-text: rgba(222, 225, 255, 0.44);
     --topology-analysis-panel-metric-value-text: rgba(222, 225, 255, 0.72);
     --topology-analysis-panel-notice-text: rgba(222, 225, 255, 0.56);
-    --topology-analysis-focus-body-gap: 8px;
-    --topology-analysis-mode-tab-height: clamp(28px, 1.7vw, 30px);
     --topology-command-spine-padding: clamp(8px, 0.56vw, 10px);
     --topology-command-spine-gap: clamp(6px, 0.48vw, 8px);
-    --topology-command-spine-radius: 12px;
     --topology-command-spine-surface: linear-gradient(
       180deg,
       rgba(139, 151, 255, 0.085),
@@ -634,27 +517,14 @@
       rgba(255, 255, 255, 0.012)
     );
     --topology-command-spine-border: rgba(139, 151, 255, 0.16);
-    --topology-command-spine-inset-highlight: rgba(255, 255, 255, 0.04);
     --topology-command-primary-surface: rgba(139, 151, 255, 0.105);
     --topology-command-primary-border: rgba(139, 151, 255, 0.24);
-    --topology-command-primary-hover-surface: rgba(139, 151, 255, 0.15);
-    --topology-command-primary-hover-border: rgba(139, 151, 255, 0.44);
-    --topology-command-primary-hover-shadow: 0 12px 28px rgba(20, 24, 54, 0.24);
-    --topology-command-primary-summary-text: rgba(222, 225, 255, 0.56);
-    --topology-command-icon-surface: rgba(139, 151, 255, 0.16);
-    --topology-command-icon-text: rgba(179, 186, 255, 0.96);
-    --topology-command-arrow-text: rgba(179, 186, 255, 0.78);
     --topology-command-secondary-surface: rgba(255, 255, 255, 0.024);
     --topology-command-secondary-border: rgba(255, 255, 255, 0.07);
     --topology-command-secondary-hover-border: rgba(139, 151, 255, 0.28);
     --topology-command-step-surface: rgba(0, 0, 0, 0.12);
     --topology-command-step-border: rgba(255, 255, 255, 0.055);
-    --topology-command-step-index-surface: rgba(139, 151, 255, 0.07);
-    --topology-command-step-index-border: rgba(139, 151, 255, 0.18);
-    --topology-command-step-index-text: rgba(179, 186, 255, 0.82);
     --topology-command-primary-min-height: clamp(40px, 2.6vw, 44px);
-    --topology-command-step-min-height: clamp(22px, 1.35vw, 24px);
-    --topology-command-step-index-size: clamp(17px, 1.05vw, 19px);
     --topology-overview-signal-grid-surface: rgba(255, 255, 255, 0.025);
     --topology-overview-signal-grid-border: rgba(255, 255, 255, 0.065);
     --topology-overview-panel-compact-gap: 8px;
@@ -670,12 +540,6 @@
     --topology-overview-signal-indigo-border: rgba(139, 151, 255, 0.24);
     --topology-overview-signal-cyan-surface: rgba(94, 234, 212, 0.045);
     --topology-overview-signal-cyan-border: rgba(94, 234, 212, 0.22);
-    --topology-overview-reader-lens-surface: rgba(139, 151, 255, 0.055);
-    --topology-overview-reader-lens-border: rgba(139, 151, 255, 0.18);
-    --topology-overview-reader-lens-title-text: rgba(179, 186, 255, 0.86);
-    --topology-overview-reader-lens-item-text: rgba(222, 225, 255, 0.70);
-    --topology-overview-reader-lens-marker-surface: rgba(139, 151, 255, 0.11);
-    --topology-overview-reader-lens-marker-border: rgba(139, 151, 255, 0.24);
     --topology-overview-notice-surface: rgba(255, 255, 255, 0.02);
     --topology-overview-notice-border: rgba(255, 255, 255, 0.055);
     --topology-overview-notice-compact-padding-y: 6px;
@@ -687,22 +551,12 @@
     --topology-overview-handoff-compact-padding-top: 4px;
     --topology-overview-handoff-primary-min-height: 34px;
     --topology-overview-handoff-summary-min-height: 28px;
-    --topology-overview-secondary-disclosure-min-height: 22px;
-    --topology-overview-secondary-disclosure-text: rgba(222, 225, 255, 0.46);
-    --topology-overview-secondary-disclosure-hover-text: rgba(222, 225, 255, 0.72);
     --topology-overview-quality-surface: rgba(94, 234, 212, 0.032);
     --topology-overview-quality-border: rgba(94, 234, 212, 0.18);
     --topology-overview-quality-meter-surface: rgba(255, 255, 255, 0.045);
     --topology-overview-quality-meter-border: rgba(255, 255, 255, 0.08);
     --topology-overview-quality-strong-meter: rgba(94, 234, 212, 0.84);
-    --topology-overview-quality-supported-meter: rgba(139, 151, 255, 0.72);
     --topology-overview-quality-weak-meter: rgba(217, 161, 65, 0.74);
-    --topology-overview-quality-review-meter: rgba(226, 105, 105, 0.76);
-    --topology-overview-proof-row-divider: rgba(255, 255, 255, 0.048);
-    --topology-overview-proof-row-padding-y: 7px;
-    --topology-overview-proof-row-gap: 3px;
-    --topology-overview-proof-title-text: rgba(222, 225, 255, 0.40);
-    --topology-overview-proof-summary-text: rgba(222, 225, 255, 0.58);
     --topology-overview-proof-cell-divider: rgba(255, 255, 255, 0.055);
     --topology-overview-proof-strong-text: rgba(94, 234, 212, 0.92);
     --topology-overview-proof-supported-text: rgba(139, 151, 255, 0.92);
@@ -865,12 +719,10 @@
     --topology-chrome-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
     --topology-utility-lane-height: var(--topology-chrome-control-height);
     --topology-utility-lane-gap: var(--topology-chrome-gap);
-    --topology-utility-lane-radius: var(--topology-chrome-radius);
     --topology-utility-lane-compact-width: var(--topology-chrome-control-height);
     --topology-utility-lane-surface: rgba(15, 16, 17, 0.92);
     --topology-utility-lane-border: rgba(255, 255, 255, 0.07);
     --topology-utility-lane-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
-    --topology-utility-lane-hover-surface: rgba(255, 255, 255, 0.045);
     --topology-utility-lane-accent-surface: rgba(94, 106, 210, 0.12);
     --topology-utility-lane-accent-border: rgba(94, 106, 210, 0.38);
     --topology-utility-lane-accent-hover-surface: rgba(94, 106, 210, 0.18);
@@ -973,7 +825,6 @@
        데스크톱 전용(1차 스코프: 1512/1920 라이브 검증) — 폰 top 은 "?" 의
        복잡한 상태별 분기(phone-help-position-contract)에 맞물려 별도
        패스가 필요해 이번 스코프에서 제외. */
-    --topology-settings-gear-desktop-top: 276px;
     /* Owner chrome-recomposition spec (2026-07-18, docs/prototypes/
        chrome-recomposition.html): the top chrome is a reserved lane
        (brand pill · single engraved census · utility rail) — INDEX, this
@@ -1506,35 +1357,19 @@
 
     --topology-card-selected-quiet-border: rgba(94, 106, 210, 0.36);
     --topology-card-selected-quiet-wash: rgba(94, 106, 210, 0.05);
-    --topology-card-drag-wash: rgba(94, 106, 210, 0.07);
-    --topology-card-drag-active-wash: rgba(94, 106, 210, 0.10);
     --topology-card-count-surface: rgba(15, 23, 42, 0.045);
     --topology-card-count-border: rgba(15, 23, 42, 0.10);
     --topology-card-count-text: var(--color-text-secondary);
     --topology-path-endpoint-surface: rgba(77, 86, 200, 0.11);
     --topology-path-endpoint-border: rgba(77, 86, 200, 0.30);
     --topology-path-endpoint-text: rgba(40, 50, 175, 0.96);
-    --topology-focus-hull-border: rgba(94, 106, 210, 0.34);
-    --topology-focus-hull-surface: rgba(94, 106, 210, 0.06);
-    --topology-focus-hull-shadow: 0 0 0 1px rgba(15, 23, 42, 0.05), 0 18px 46px rgba(15, 23, 42, 0.12);
-    --topology-focus-hull-quiet-border: rgba(94, 106, 210, 0.20);
-    --topology-focus-hull-quiet-surface: rgba(94, 106, 210, 0.022);
-    --topology-focus-hull-quiet-shadow: 0 0 0 1px rgba(94, 106, 210, 0.07), 0 10px 24px rgba(15, 23, 42, 0.08);
-    --topology-focus-hull-quiet-opacity: 0.52;
-    --topology-focus-hull-drag-border: rgba(94, 106, 210, 0.56);
-    --topology-focus-hull-drag-surface: rgba(94, 106, 210, 0.09);
-    --topology-focus-hull-drag-shadow: 0 0 0 1px rgba(94, 106, 210, 0.18), 0 20px 44px rgba(15, 23, 42, 0.16), 0 0 30px rgba(94, 106, 210, 0.12);
     --topology-health-repair-primary-surface: var(--color-overlay-3);
     --topology-health-repair-primary-border: var(--color-border-strong);
     --topology-health-repair-primary-hover-surface: var(--color-overlay-2);
     --topology-health-repair-secondary-surface: transparent;
     --topology-health-repair-secondary-border: transparent;
     --topology-health-repair-secondary-hover-surface: var(--color-overlay-1);
-    --topology-panel-border: rgba(15, 23, 42, 0.12);
-    --topology-panel-primary-surface: rgba(255, 255, 255, 0.96);
     --topology-panel-support-surface: rgba(255, 255, 255, 0.99);
-    --topology-panel-primary-shadow: 0 18px 44px rgba(15, 23, 42, 0.10);
-    --topology-panel-support-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
     --topology-relation-summary-surface: rgba(77, 86, 200, 0.12);
     --topology-relation-summary-border: rgba(77, 86, 200, 0.32);
     --topology-relation-summary-text: rgba(40, 50, 175, 0.96);
@@ -1556,33 +1391,14 @@
     --topology-relation-label-focus-ring: rgba(77, 86, 200, 0.46);
     /* verdict a5: cyan(72,184,203) 이 라이트 배경(#f3f5f9)에서 소멸했던
        실측 대비 결함 — 인디고로 통일(다크와 동일 원칙, 라이트 팔레트 톤). */
-    --topology-relation-stroke-supported: rgba(77, 86, 200, 0.44);
     --topology-relation-spine-halo: rgba(77, 86, 200, 0.24);
     --topology-relation-spine-terminal: rgba(77, 86, 200, 0.70);
     --topology-relation-evidence-chip-surface: rgba(15, 23, 42, 0.055);
     --topology-relation-evidence-chip-border: rgba(15, 23, 42, 0.12);
     --topology-relation-evidence-chip-text: var(--color-text-secondary);
-    --topology-relation-quality-strong-dot: rgb(77, 86, 200);
-    --topology-relation-quality-strong-glow: 0 0 8px rgba(77, 86, 200, 0.26);
-    --topology-relation-quality-supported-dot: rgb(20, 148, 128);
-    --topology-relation-quality-supported-glow: 0 0 8px rgba(20, 148, 128, 0.22);
-    --topology-relation-quality-weak-dot: rgb(184, 124, 24);
-    --topology-relation-quality-weak-glow: 0 0 8px rgba(184, 124, 24, 0.22);
-    --topology-relation-quality-review-dot: rgb(190, 72, 72);
-    --topology-relation-quality-review-glow: 0 0 8px rgba(190, 72, 72, 0.24);
-    --topology-relation-gate-ready-surface: rgba(77, 86, 200, 0.10);
-    --topology-relation-gate-ready-border: rgba(77, 86, 200, 0.26);
-    --topology-relation-gate-ready-text: rgba(40, 50, 175, 0.96);
-    --topology-relation-gate-preflight-surface: rgba(184, 124, 24, 0.10);
-    --topology-relation-gate-preflight-border: rgba(184, 124, 24, 0.26);
-    --topology-relation-gate-preflight-text: rgba(126, 82, 0, 0.96);
-    --topology-relation-gate-review-surface: rgba(190, 72, 72, 0.10);
-    --topology-relation-gate-review-border: rgba(190, 72, 72, 0.26);
-    --topology-relation-gate-review-text: rgba(150, 52, 52, 0.96);
     --topology-edge-tooltip-surface: rgba(255, 255, 255, 0.96);
     --topology-edge-tooltip-border: rgba(77, 86, 200, 0.24);
     --topology-edge-tooltip-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
-    --topology-edge-tooltip-arrow: rgba(77, 86, 200, 0.84);
     --topology-command-spine-surface: linear-gradient(
       180deg,
       rgba(77, 86, 200, 0.075),
@@ -1590,24 +1406,13 @@
       rgba(255, 255, 255, 0.72)
     );
     --topology-command-spine-border: rgba(77, 86, 200, 0.18);
-    --topology-command-spine-inset-highlight: rgba(255, 255, 255, 0.88);
     --topology-command-primary-surface: rgba(77, 86, 200, 0.10);
     --topology-command-primary-border: rgba(77, 86, 200, 0.26);
-    --topology-command-primary-hover-surface: rgba(77, 86, 200, 0.14);
-    --topology-command-primary-hover-border: rgba(77, 86, 200, 0.40);
-    --topology-command-primary-hover-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
-    --topology-command-primary-summary-text: rgba(55, 65, 120, 0.68);
-    --topology-command-icon-surface: rgba(77, 86, 200, 0.14);
-    --topology-command-icon-text: rgba(40, 50, 175, 0.96);
-    --topology-command-arrow-text: rgba(40, 50, 175, 0.78);
     --topology-command-secondary-surface: rgba(15, 23, 42, 0.035);
     --topology-command-secondary-border: rgba(15, 23, 42, 0.11);
     --topology-command-secondary-hover-border: rgba(77, 86, 200, 0.30);
     --topology-command-step-surface: rgba(255, 255, 255, 0.66);
     --topology-command-step-border: rgba(15, 23, 42, 0.10);
-    --topology-command-step-index-surface: rgba(77, 86, 200, 0.10);
-    --topology-command-step-index-border: rgba(77, 86, 200, 0.22);
-    --topology-command-step-index-text: rgba(40, 50, 175, 0.88);
     --topology-overview-signal-grid-surface: rgba(255, 255, 255, 0.72);
     --topology-overview-signal-grid-border: rgba(15, 23, 42, 0.10);
     --topology-overview-signal-neutral-surface: rgba(15, 23, 42, 0.035);
@@ -1616,12 +1421,6 @@
     --topology-overview-signal-indigo-border: rgba(77, 86, 200, 0.22);
     --topology-overview-signal-cyan-surface: rgba(20, 148, 128, 0.055);
     --topology-overview-signal-cyan-border: rgba(20, 148, 128, 0.22);
-    --topology-overview-reader-lens-surface: rgba(77, 86, 200, 0.065);
-    --topology-overview-reader-lens-border: rgba(77, 86, 200, 0.18);
-    --topology-overview-reader-lens-title-text: rgba(40, 50, 175, 0.88);
-    --topology-overview-reader-lens-item-text: rgba(51, 65, 85, 0.76);
-    --topology-overview-reader-lens-marker-surface: rgba(77, 86, 200, 0.10);
-    --topology-overview-reader-lens-marker-border: rgba(77, 86, 200, 0.22);
     --topology-overview-notice-surface: rgba(15, 23, 42, 0.025);
     --topology-overview-notice-border: rgba(15, 23, 42, 0.10);
     --topology-overview-handoff-divider: rgba(15, 23, 42, 0.12);
@@ -1631,21 +1430,12 @@
     --topology-overview-handoff-secondary-border: rgba(15, 23, 42, 0.10);
     /* verdict a5: 다크 전용 rgba(222,225,255,*) 라이트 오버라이드가 아예
        없어 접힘 섹션("다음 단계") 헤더가 유령 텍스트 수준으로 소멸했다. */
-    --topology-overview-secondary-disclosure-text: rgba(15, 23, 42, 0.42);
-    --topology-overview-secondary-disclosure-hover-text: rgba(15, 23, 42, 0.68);
     --topology-overview-quality-surface: rgba(20, 148, 128, 0.055);
     --topology-overview-quality-border: rgba(20, 148, 128, 0.22);
     --topology-overview-quality-meter-surface: rgba(15, 23, 42, 0.045);
     --topology-overview-quality-meter-border: rgba(15, 23, 42, 0.10);
     --topology-overview-quality-strong-meter: rgba(18, 122, 106, 0.82);
-    --topology-overview-quality-supported-meter: rgba(77, 86, 200, 0.72);
     --topology-overview-quality-weak-meter: rgba(181, 118, 0, 0.72);
-    --topology-overview-quality-review-meter: rgba(192, 53, 58, 0.74);
-    --topology-overview-proof-row-divider: rgba(15, 23, 42, 0.085);
-    --topology-overview-proof-row-padding-y: 7px;
-    --topology-overview-proof-row-gap: 3px;
-    --topology-overview-proof-title-text: rgba(51, 65, 85, 0.58);
-    --topology-overview-proof-summary-text: rgba(51, 65, 85, 0.72);
     --topology-overview-proof-cell-divider: rgba(15, 23, 42, 0.10);
     --topology-overview-proof-strong-text: rgba(18, 122, 106, 0.96);
     --topology-overview-proof-supported-text: rgba(40, 50, 175, 0.96);
@@ -1675,63 +1465,7 @@
     --topology-selected-relation-accent-muted: rgba(77, 86, 200, 0.84);
     --topology-selected-relation-focus-ring: rgba(77, 86, 200, 0.46);
     --topology-selected-relation-copy-primary-shadow: 0 0 0 1px rgba(77, 86, 200, 0.14), 0 6px 18px rgba(15, 23, 42, 0.12);
-    --topology-selected-relation-claim-strong-surface: rgba(77, 86, 200, 0.08);
-    --topology-selected-relation-claim-strong-border: rgba(77, 86, 200, 0.22);
-    --topology-selected-relation-claim-strong-text: rgba(40, 50, 175, 0.96);
-    --topology-selected-relation-claim-strong-dot: rgba(77, 86, 200, 0.94);
-    --topology-selected-relation-claim-supported-surface: rgba(20, 148, 128, 0.055);
-    --topology-selected-relation-claim-supported-border: rgba(20, 148, 128, 0.20);
-    --topology-selected-relation-claim-supported-text: rgba(18, 122, 106, 0.94);
-    --topology-selected-relation-claim-supported-dot: rgba(20, 148, 128, 0.92);
-    --topology-selected-relation-claim-weak-surface: rgba(184, 124, 24, 0.08);
-    --topology-selected-relation-claim-weak-border: rgba(184, 124, 24, 0.22);
-    --topology-selected-relation-claim-weak-text: rgba(126, 82, 0, 0.94);
-    --topology-selected-relation-claim-weak-dot: rgba(184, 124, 24, 0.92);
-    --topology-selected-relation-claim-review-surface: rgba(190, 72, 72, 0.08);
-    --topology-selected-relation-claim-review-border: rgba(190, 72, 72, 0.22);
-    --topology-selected-relation-claim-review-text: rgba(150, 52, 52, 0.94);
-    --topology-selected-relation-claim-review-dot: rgba(190, 72, 72, 0.92);
-    --topology-selected-relation-quality-strong-surface: rgba(77, 86, 200, 0.10);
-    --topology-selected-relation-quality-strong-border: rgba(77, 86, 200, 0.30);
-    --topology-selected-relation-quality-strong-text: rgba(40, 50, 175, 0.96);
-    --topology-selected-relation-quality-supported-surface: rgba(20, 148, 128, 0.075);
-    --topology-selected-relation-quality-supported-border: rgba(20, 148, 128, 0.24);
-    --topology-selected-relation-quality-supported-text: rgba(18, 122, 106, 0.96);
-    --topology-selected-relation-quality-weak-surface: rgba(184, 124, 24, 0.10);
-    --topology-selected-relation-quality-weak-border: rgba(184, 124, 24, 0.26);
-    --topology-selected-relation-quality-weak-text: rgba(126, 82, 0, 0.96);
-    --topology-selected-relation-quality-review-surface: rgba(190, 72, 72, 0.10);
-    --topology-selected-relation-quality-review-border: rgba(190, 72, 72, 0.26);
-    --topology-selected-relation-quality-review-text: rgba(150, 52, 52, 0.96);
-    --topology-selected-relation-gate-handoff-surface: rgba(77, 86, 200, 0.075);
-    --topology-selected-relation-gate-handoff-border: rgba(77, 86, 200, 0.20);
-    --topology-selected-relation-gate-handoff-text: rgba(40, 50, 175, 0.88);
-    --topology-selected-relation-gate-preflight-surface: rgba(184, 124, 24, 0.08);
-    --topology-selected-relation-gate-preflight-border: rgba(184, 124, 24, 0.22);
-    --topology-selected-relation-gate-preflight-text: rgba(126, 82, 0, 0.88);
-    --topology-selected-relation-gate-review-surface: rgba(190, 72, 72, 0.08);
-    --topology-selected-relation-gate-review-border: rgba(190, 72, 72, 0.22);
-    --topology-selected-relation-gate-review-text: rgba(150, 52, 52, 0.90);
     --topology-selected-relation-copy-secondary-surface: rgba(15, 23, 42, 0.035);
-    --topology-selected-relation-copy-secondary-border: rgba(15, 23, 42, 0.10);
-    --topology-selected-relation-copy-secondary-text: var(--color-text-tertiary);
-    --topology-selected-relation-copy-secondary-hover-surface: rgba(15, 23, 42, 0.06);
-    --topology-selected-relation-copy-secondary-hover-text: var(--color-text-secondary);
-    --topology-selected-relation-copy-handoff-surface: rgba(77, 86, 200, 0.10);
-    --topology-selected-relation-copy-handoff-border: rgba(77, 86, 200, 0.30);
-    --topology-selected-relation-copy-handoff-text: rgba(40, 50, 175, 0.96);
-    --topology-selected-relation-copy-handoff-hover-surface: rgba(77, 86, 200, 0.14);
-    --topology-selected-relation-copy-handoff-hover-text: var(--color-text-primary);
-    --topology-selected-relation-copy-preflight-surface: rgba(184, 124, 24, 0.10);
-    --topology-selected-relation-copy-preflight-border: rgba(184, 124, 24, 0.28);
-    --topology-selected-relation-copy-preflight-text: rgba(126, 82, 0, 0.96);
-    --topology-selected-relation-copy-preflight-hover-surface: rgba(184, 124, 24, 0.14);
-    --topology-selected-relation-copy-preflight-hover-text: var(--color-text-primary);
-    --topology-selected-relation-copy-review-surface: rgba(190, 72, 72, 0.10);
-    --topology-selected-relation-copy-review-border: rgba(190, 72, 72, 0.28);
-    --topology-selected-relation-copy-review-text: rgba(150, 52, 52, 0.96);
-    --topology-selected-relation-copy-review-hover-surface: rgba(190, 72, 72, 0.14);
-    --topology-selected-relation-copy-review-hover-text: var(--color-text-primary);
     --topology-selected-relation-kicker-font-size: 9px;
     --topology-selected-relation-chip-font-size: 9px;
     --topology-selected-relation-route-label-font-size: 8px;
@@ -1752,7 +1486,6 @@
     --topology-utility-lane-surface: rgba(255, 255, 255, 0.92);
     --topology-utility-lane-border: rgba(15, 23, 42, 0.12);
     --topology-utility-lane-shadow: 0 10px 22px rgba(15, 23, 42, 0.10);
-    --topology-utility-lane-hover-surface: rgba(77, 86, 200, 0.08);
     --topology-utility-lane-accent-surface: rgba(77, 86, 200, 0.10);
     --topology-utility-lane-accent-border: rgba(77, 86, 200, 0.30);
     --topology-utility-lane-accent-hover-surface: rgba(77, 86, 200, 0.14);
@@ -1844,18 +1577,10 @@
        라이트는 panel(#fff) 위 panel(#fff) 가 잦아 subtle drop shadow 로
        depth 부여. Linear / Notion / GitHub 의 light card 패턴. */
     --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 0 rgba(15, 23, 42, 0.04);
-    --shadow-card-elevated: 0 6px 16px rgba(15, 23, 42, 0.06),
-      0 1px 3px rgba(15, 23, 42, 0.06);
 
     /* 다크 backdrop 들은 라이트에선 흐릿한 흰색 + 살짝 검정 톤으로. */
     --color-backdrop-strong: rgba(243, 245, 249, 0.92);
     --color-backdrop-medium: rgba(243, 245, 249, 0.78);
-    --color-backdrop-soft: rgba(0, 0, 0, 0.05);
-    --color-nav-surface: rgba(255, 255, 255, 0.96);
-
-    /* Vignette 라이트 — 검정 알파 0.28 이 흰 캔버스 위에선 grey smudge.
-       매우 약한 alpha 로 시각적 vignette 효과만 살짝. */
-    --color-vignette: rgba(15, 23, 42, 0.05);
 
     /* 신호색 mode-aware tone-down — 다크 캔버스(#08090a) 용으로 밝게 튜닝된
        status hex 는 라이트 캔버스(#f3f5f9) 위에서 text 로 쓰면 대비가 무너진다
