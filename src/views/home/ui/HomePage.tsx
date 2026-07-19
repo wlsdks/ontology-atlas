@@ -167,22 +167,6 @@ export function HomePage() {
     nodes: number;
     relations: number;
   } | null>(null);
-  const [, setTopologyHintDismissed] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    try {
-      return window.localStorage.getItem('demo:sigma-hint-dismissed:v1') === '1';
-    } catch {
-      return true;
-    }
-  });
-  const dismissTopologyHint = useCallback(() => {
-    setTopologyHintDismissed(true);
-    try {
-      window.localStorage.setItem('demo:sigma-hint-dismissed:v1', '1');
-    } catch {
-      /* private mode — skip */
-    }
-  }, []);
   const router = useRouter();
   // mode-aware projects read — local 모드는 vault 매니페스트 sync, static 은
   // 빌드타임 dogfood 매니페스트. mission T7 — vault 의 .md 가 즉시 list/topology 에 반영.
@@ -985,9 +969,8 @@ export function HomePage() {
           preserveImpact: options?.preserveImpact,
         }),
       );
-      dismissTopologyHint();
     },
-    [projectBySlug, setRouteState, dismissTopologyHint],
+    [projectBySlug, setRouteState],
   );
 
   const handleClose = useCallback(() => {
