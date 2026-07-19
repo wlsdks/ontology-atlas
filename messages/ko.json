@@ -1535,7 +1535,7 @@
       "domainCapacityTitle": "도메인 용량",
       "noDomains": "도메인 노드가 아직 없습니다.",
       "kindGlyphCaption": "글리프 = 지도의 노드 셰이프 그대로 — 패널과 캔버스는 같은 세계.",
-      "domainCapacityCaption": "용량 = containment 그래프에서 유도한 역량 + 요소 수. 인디고 = 최대 도메인.",
+      "domainCapacityCaption": "용량 = containment 그래프에서 유도한 역량 + 요소 수. 막대 구간: 역량(앰버) · 요소(세이지).",
       "relationTypesTitle": "관계 타입",
       "topDependsOnTitle": "가장 많이 기대는 곳",
       "noDependsOn": "depends_on 관계가 아직 없습니다.",
@@ -1571,7 +1571,9 @@
       "older": "오래됨",
       "recentUpdatesTitle": "최근 갱신",
       "noRecentUpdates": "알려진 갱신일이 없습니다.",
-      "staleCountLabel": "90일 이상 미갱신"
+      "staleCountLabel": "90일 이상 미갱신",
+      "trendTitle": "주간 추이",
+      "trendCaption": "전 도메인 합산 주간 갱신 건수 — 히트스트립과 같은 {weeks}주 창."
     }
   },
   "projectPages": {
