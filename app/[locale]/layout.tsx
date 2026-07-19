@@ -2,7 +2,7 @@ import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { MotionProvider } from '@/app-providers/providers';
+import { MotionProvider, RouteChunkWarmup } from '@/app-providers/providers';
 import { TaxonomyProvider } from '@/features/taxonomy';
 import { LocalVaultProvider } from '@/features/docs-vault-local';
 import { OntologyLiveBaselineInit } from '@/features/vault-ontology';
@@ -85,6 +85,7 @@ export default async function LocaleLayout({
                     이후 에이전트 편집이 클릭 없이 토폴로지에 pulse. 헤드리스. */}
                 <OntologyLiveBaselineInit />
                 <RouteMemory />
+                <RouteChunkWarmup />
                 {children}
                 <BottomTabBar />
               </TooltipProvider>
