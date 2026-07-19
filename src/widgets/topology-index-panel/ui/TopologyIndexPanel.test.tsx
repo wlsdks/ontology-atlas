@@ -103,6 +103,39 @@ describe("TopologyIndexPanel", () => {
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
   });
 
+  it("collapses when any part of the header row is clicked, not just the chevron", () => {
+    // Regression: the chevron used to be the only hit area for collapsing
+    // INDEX. The whole header row is now the toggle (role=button via a real
+    // <button>), so a click anywhere in it — including the label text far
+    // from the chevron — must fire onCollapse.
+    const onCollapse = vi.fn();
+    const treeResult = buildFixtureTree();
+    render(
+      <TopologyIndexPanel
+        treeResult={treeResult}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={onCollapse}
+        labels={labels}
+      />,
+    );
+
+    const header = screen.getByTestId("topology-index-fold");
+    expect(header.tagName).toBe("BUTTON");
+    expect(header).toHaveAttribute("aria-expanded", "true");
+
+    // Click the label span, not the chevron — proves the whole row is live.
+    fireEvent.click(screen.getByText(labels.label));
+    expect(onCollapse).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(header);
+    expect(onCollapse).toHaveBeenCalledTimes(2);
+  });
+
   it("calls onSelect with the node id when a row is clicked", () => {
     const onSelect = vi.fn();
     const treeResult = buildFixtureTree();
