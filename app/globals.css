@@ -44,6 +44,69 @@
   --color-status-danger: #e5484d;
 
   /*
+   * 빌더 v2 (A2) — 인스펙터/팔레트 알파 스케일. `OntologyInspector.tsx` /
+   * `OntologyKindPalette.tsx` 에 인라인 hardcode 로 흩어져 있던 rgba(...) 값을
+   * 그대로 1:1 추출한 토큰 — 시각 결과는 무변, 참조만 CSS 변수로 바뀐다.
+   * 인디고 bg 0.14/0.16/0.18 · border/hover:border 0.46 · pale text
+   * (159,170,235) 는 위 "라이트 모드 인디고 알파" 시프트가 이미 커버하는
+   * 값이라 `[data-theme="light"]` 블록에서 동일 시프트를 토큰 자체에 준다
+   * (그 attribute-selector 룰은 다른 파일의 리터럴 클래스를 위해 그대로 둔다).
+   * 나머지 알파는 그 시프트 패스의 "알려진 미커버 gap" 과 값이 겹치므로
+   * 다크 값 그대로 — 오늘의 라이트 모드 렌더링과 동일하다.
+   */
+  --color-indigo-a06: rgba(94, 106, 210, 0.06);
+  --color-indigo-a08: rgba(94, 106, 210, 0.08);
+  --color-indigo-a10: rgba(94, 106, 210, 0.1);
+  --color-indigo-a12: rgba(94, 106, 210, 0.12);
+  --color-indigo-a14: rgba(94, 106, 210, 0.14);
+  --color-indigo-a16: rgba(94, 106, 210, 0.16);
+  --color-indigo-a18: rgba(94, 106, 210, 0.18);
+  --color-indigo-a22: rgba(94, 106, 210, 0.22);
+  --color-indigo-a28: rgba(94, 106, 210, 0.28);
+  --color-indigo-a32: rgba(94, 106, 210, 0.32);
+  --color-indigo-a36: rgba(94, 106, 210, 0.36);
+  --color-indigo-a38: rgba(94, 106, 210, 0.38);
+  --color-indigo-a42: rgba(94, 106, 210, 0.42);
+  /* border/hover:border 전용 — 라이트 시프트 대상 (위 "border 0.4/0.46" 커버). */
+  --color-indigo-border-a46: rgba(94, 106, 210, 0.46);
+  /* focus-visible:ring 전용 — 그 시프트가 커버하지 않는 utility 라 다크 값 유지. */
+  --color-indigo-ring-a46: rgba(94, 106, 210, 0.46);
+  --color-indigo-a55: rgba(94, 106, 210, 0.55);
+  --color-indigo-a58: rgba(94, 106, 210, 0.58);
+  --color-indigo-a62: rgba(94, 106, 210, 0.62);
+  --color-indigo-a66: rgba(94, 106, 210, 0.66);
+  /* pale indigo text — 라이트 시프트 대상("pale indigo active text" 커버). */
+  --color-indigo-text-strong: rgba(159, 170, 235, 0.95);
+  /* pale indigo text — 위 목록의 정확한 rgb 3종과 다른 tuple 이라 미커버. */
+  --color-indigo-text-soft: rgba(188, 195, 255, 0.92);
+
+  --color-danger-a08: rgba(229, 72, 77, 0.08);
+  --color-danger-a10: rgba(229, 72, 77, 0.1);
+  --color-danger-a32: rgba(229, 72, 77, 0.32);
+  --color-danger-a46: rgba(229, 72, 77, 0.46);
+  --color-danger-a50: rgba(229, 72, 77, 0.5);
+  --color-danger-text: rgba(236, 116, 116, 0.92);
+
+  /* "경로 충돌" 같은 muted amber 경고 서피스 — 신호 amber(below)와는 다른
+     hue 로, 인스펙터의 기존 conflict 상태에 이미 쓰이던 값. */
+  --color-amber-muted-a10: rgba(197, 122, 43, 0.1);
+  --color-amber-muted-a12: rgba(197, 122, 43, 0.12);
+  --color-amber-muted-a18: rgba(197, 122, 43, 0.18);
+  --color-amber-muted-a34: rgba(197, 122, 43, 0.34);
+  --color-amber-muted-a42: rgba(197, 122, 43, 0.42);
+  --color-amber-muted-a62: rgba(197, 122, 43, 0.62);
+  --color-amber-muted-a90: rgba(197, 122, 43, 0.9);
+
+  /* forbidden.md 가 문서화한 "경고 amber rgba(255,179,71,*)" — 배열 항목
+     "방금 추가됨" 1.2s 펄스 전용. */
+  --color-amber-signal-a16: rgba(255, 179, 71, 0.16);
+  --color-amber-signal-a60: rgba(255, 179, 71, 0.6);
+
+  /* 인디고/앰버 콜아웃 안의 recessed stat chip — 밝히는 대신 어둡히는
+     surface 라 기존 white-overlay 스케일과 반대 방향. */
+  --color-overlay-recessed: rgba(0, 0, 0, 0.16);
+
+  /*
    * 라이트/다크 양쪽 호환 semantic tokens.
    * 다크 (default): rgba(255,255,255,*) — surface 위 밝은 톤 가장자리/오버레이.
    * 라이트 ([data-theme="light"]): rgba(0,0,0,*) — surface 위 어두운 톤 가장자리/오버레이.
@@ -141,6 +204,46 @@
     --color-tap-highlight: rgba(255, 255, 255, 0.04);
     --shadow-card: none;
     --shadow-card-elevated: none;
+
+    /* 빌더 v2 (A2) 알파 스케일 — 위 @theme 블록과 동일한 Tailwind v4 emit
+       회귀를 겪으므로 여기서도 다크 디폴트를 명시. */
+    --color-indigo-a06: rgba(94, 106, 210, 0.06);
+    --color-indigo-a08: rgba(94, 106, 210, 0.08);
+    --color-indigo-a10: rgba(94, 106, 210, 0.1);
+    --color-indigo-a12: rgba(94, 106, 210, 0.12);
+    --color-indigo-a14: rgba(94, 106, 210, 0.14);
+    --color-indigo-a16: rgba(94, 106, 210, 0.16);
+    --color-indigo-a18: rgba(94, 106, 210, 0.18);
+    --color-indigo-a22: rgba(94, 106, 210, 0.22);
+    --color-indigo-a28: rgba(94, 106, 210, 0.28);
+    --color-indigo-a32: rgba(94, 106, 210, 0.32);
+    --color-indigo-a36: rgba(94, 106, 210, 0.36);
+    --color-indigo-a38: rgba(94, 106, 210, 0.38);
+    --color-indigo-a42: rgba(94, 106, 210, 0.42);
+    --color-indigo-border-a46: rgba(94, 106, 210, 0.46);
+    --color-indigo-ring-a46: rgba(94, 106, 210, 0.46);
+    --color-indigo-a55: rgba(94, 106, 210, 0.55);
+    --color-indigo-a58: rgba(94, 106, 210, 0.58);
+    --color-indigo-a62: rgba(94, 106, 210, 0.62);
+    --color-indigo-a66: rgba(94, 106, 210, 0.66);
+    --color-indigo-text-strong: rgba(159, 170, 235, 0.95);
+    --color-indigo-text-soft: rgba(188, 195, 255, 0.92);
+    --color-danger-a08: rgba(229, 72, 77, 0.08);
+    --color-danger-a10: rgba(229, 72, 77, 0.1);
+    --color-danger-a32: rgba(229, 72, 77, 0.32);
+    --color-danger-a46: rgba(229, 72, 77, 0.46);
+    --color-danger-a50: rgba(229, 72, 77, 0.5);
+    --color-danger-text: rgba(236, 116, 116, 0.92);
+    --color-amber-muted-a10: rgba(197, 122, 43, 0.1);
+    --color-amber-muted-a12: rgba(197, 122, 43, 0.12);
+    --color-amber-muted-a18: rgba(197, 122, 43, 0.18);
+    --color-amber-muted-a34: rgba(197, 122, 43, 0.34);
+    --color-amber-muted-a42: rgba(197, 122, 43, 0.42);
+    --color-amber-muted-a62: rgba(197, 122, 43, 0.62);
+    --color-amber-muted-a90: rgba(197, 122, 43, 0.9);
+    --color-amber-signal-a16: rgba(255, 179, 71, 0.16);
+    --color-amber-signal-a60: rgba(255, 179, 71, 0.6);
+    --color-overlay-recessed: rgba(0, 0, 0, 0.16);
 
     /* RATIO-SYSTEM §3 탭 패턴 — active 탭의 2px 인디고 underline 두께.
        page-level ratio 토큰 본체(--page-max 등)는 위 :root 블록이 단일 출처. */
@@ -1249,6 +1352,18 @@
     --color-indigo-brand: #4d56c8;
     --color-indigo-accent: #5e6ad2;
     --color-indigo-hover: #424bb6;
+
+    /* 빌더 v2 (A2) 알파 스케일 라이트 오버라이드 — 위 "라이트 모드 인디고
+       알파" 시프트 패스가 이미 커버하는 세 값(bg 0.14/0.16/0.18 · border
+       0.46 · pale text 159,170,235)만 시프트한다. 그 패스가 아직 커버하지
+       않는 나머지 알파(및 danger/amber)는 다크 값 그대로 두어 오늘의
+       라이트 모드 렌더링과 동일하게 유지 — 부분 시프트로 새 회귀를 만들지
+       않는다. */
+    --color-indigo-a14: rgba(77, 86, 200, 0.12);
+    --color-indigo-a16: rgba(77, 86, 200, 0.12);
+    --color-indigo-a18: rgba(77, 86, 200, 0.12);
+    --color-indigo-border-a46: rgba(77, 86, 200, 0.32);
+    --color-indigo-text-strong: rgba(40, 50, 175, 0.96);
 
     --color-border-soft: rgba(0, 0, 0, 0.14);
     --color-border-strong: rgba(0, 0, 0, 0.26);
