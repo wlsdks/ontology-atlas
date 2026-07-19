@@ -194,7 +194,7 @@ export function DocsVaultViewer({
             return (
               <a
                 href={getProjectHref(projectSlug)}
-                className="text-[color:rgba(224,196,140,0.95)] underline underline-offset-2 decoration-[color:rgba(224,196,140,0.35)] hover:decoration-[color:rgba(232,200,148,1)]"
+                className="text-[color:var(--color-amber-docs-a95)] underline underline-offset-2 decoration-[color:var(--color-amber-docs-a35)] hover:decoration-[color:var(--color-amber-docs-a100)]"
                 title={t('projectLinkTitle', { slug: projectSlug })}
               >
                 {children}
@@ -225,7 +225,7 @@ export function DocsVaultViewer({
           // slug 가 vault 에 없으면 점선 표시 (unresolved wikilink)
           return (
             <span
-              className="border-b border-dashed border-[color:rgba(239,180,120,0.5)] text-[color:rgba(239,200,150,0.85)]"
+              className="border-b border-dashed border-[color:var(--color-amber-source-a50)] text-[color:var(--color-amber-source-text-a85)]"
               title={t('wikilinkMissing', { slug: wikiSlug })}
               {...rest}
             >
@@ -359,7 +359,7 @@ export function DocsVaultViewer({
         if (!isBlock) {
           return (
             <code
-              className="rounded-sm bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-[11px] text-[color:rgba(200,210,255,0.95)] md:text-[12px]"
+              className="rounded-sm bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-[11px] text-[color:var(--color-indigo-pale-a95)] md:text-[12px]"
               {...rest}
             >
               {children}
@@ -375,7 +375,7 @@ export function DocsVaultViewer({
       pre(props) {
         return (
           <pre
-            className="my-4 overflow-x-auto rounded-md border border-[color:var(--color-overlay-2)] bg-[color:rgba(12,14,20,0.8)] p-3 font-mono text-[10.5px] leading-[1.55] text-[color:rgba(200,210,255,0.92)] md:text-[12.5px]"
+            className="my-4 overflow-x-auto rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-3 font-mono text-[10.5px] leading-[1.55] text-[color:var(--color-indigo-pale-a92)] md:text-[12.5px]"
             {...props}
           />
         );
@@ -518,25 +518,25 @@ const CALLOUT_STYLES: Record<
   note: {
     border: 'var(--color-indigo-line-a40)',
     bg: 'var(--color-indigo-a06)',
-    title: 'rgba(200,210,255,0.95)',
+    title: 'var(--color-indigo-pale-a95)',
     icon: '📝',
   },
   tip: {
-    border: 'rgba(139,200,180,0.4)',
-    bg: 'rgba(94,180,160,0.06)',
-    title: 'rgba(180,230,210,0.95)',
+    border: 'var(--color-success-a40)',
+    bg: 'var(--color-success-a06)',
+    title: 'var(--color-success-text-a95)',
     icon: '💡',
   },
   info: {
     border: 'var(--color-indigo-line-a40)',
     bg: 'var(--color-indigo-a06)',
-    title: 'rgba(200,210,255,0.95)',
+    title: 'var(--color-indigo-pale-a95)',
     icon: 'ℹ️',
   },
   warning: {
-    border: 'rgba(239,180,120,0.45)',
-    bg: 'rgba(239,180,120,0.06)',
-    title: 'rgba(239,200,150,0.95)',
+    border: 'var(--color-amber-source-a45)',
+    bg: 'var(--color-amber-source-a06)',
+    title: 'var(--color-amber-source-text-a95)',
     icon: '⚠️',
   },
   danger: {
@@ -546,9 +546,9 @@ const CALLOUT_STYLES: Record<
     icon: '🚫',
   },
   success: {
-    border: 'rgba(139,200,180,0.45)',
-    bg: 'rgba(94,180,160,0.07)',
-    title: 'rgba(180,230,210,0.95)',
+    border: 'var(--color-success-a45)',
+    bg: 'var(--color-success-a07)',
+    title: 'var(--color-success-text-a95)',
     icon: '✓',
   },
 };
@@ -695,7 +695,7 @@ function VaultImage({
   if (error) {
     return (
       <span
-        className="my-3 inline-block rounded-sm border border-dashed border-[color:rgba(239,180,120,0.5)] px-2 py-1 font-mono text-[10px] text-[color:rgba(239,200,150,0.8)]"
+        className="my-3 inline-block rounded-sm border border-dashed border-[color:var(--color-amber-source-a50)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-amber-source-text-a80)]"
         title={t('imageMissing', { src })}
       >
         🖼 {alt || src}

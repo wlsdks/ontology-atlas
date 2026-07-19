@@ -1919,11 +1919,11 @@ function DocsVaultContent() {
         {sourceTreeOpen ? (
           <div className="fixed inset-0 z-40 flex">
             <div
-              className="absolute inset-0 bg-[color:rgba(0,0,0,0.5)]"
+              className="absolute inset-0 bg-[color:var(--color-scrim-a50)]"
               onClick={() => setSourceTreeOpen(false)}
               aria-hidden
             />
-            <aside className="relative flex w-[300px] max-w-[84vw] flex-col overflow-auto border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_0_24px_rgba(0,0,0,0.5)] md:w-[340px]">
+            <aside className="relative flex w-[300px] max-w-[84vw] flex-col overflow-auto border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_0_24px_var(--color-shadow-a50)] md:w-[340px]">
               <div className="flex h-12 flex-none items-center justify-between border-b border-[color:var(--color-border-soft)] px-3">
                 <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                   {t('mobileDrawer.title')}
@@ -1974,7 +1974,7 @@ function DocsVaultContent() {
                 <button
                   type="button"
                   onClick={() => void handleCreateProject()}
-                  className="pointer-events-auto absolute left-3 top-[46px] z-10 inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] px-2.5 py-1.5 text-[11.5px] text-[color:rgba(200,210,255,0.92)] shadow-[0_4px_14px_rgba(0,0,0,0.25)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]"
+                  className="pointer-events-auto absolute left-3 top-[46px] z-10 inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] px-2.5 py-1.5 text-[11.5px] text-[color:var(--color-indigo-pale-a92)] shadow-[0_4px_14px_var(--color-shadow-a25)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]"
                   title={t('topology.addProjectTitle', { slug: '{slug}' })}
                 >
                   <FilePlus size={12} aria-hidden />
@@ -2015,7 +2015,7 @@ function DocsVaultContent() {
                     {t('topology.emptyBody')}
                   </p>
                   {folderTopoError ? (
-                    <p className="font-mono text-[11px] text-[color:rgba(239,180,120,0.9)]">
+                    <p className="font-mono text-[11px] text-[color:var(--color-amber-source-a90)]">
                       {folderTopoError}
                     </p>
                   ) : null}
@@ -2023,7 +2023,7 @@ function DocsVaultContent() {
                     <button
                       type="button"
                       onClick={() => void handleScaffoldTopology()}
-                      className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a40)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 text-[12px] text-[color:rgba(200,210,255,0.95)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a40)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 text-[12px] text-[color:var(--color-indigo-pale-a95)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
                     >
                       <FolderCog size={12} aria-hidden />
                       {t('topology.scaffoldCta')}
@@ -2051,7 +2051,7 @@ function DocsVaultContent() {
                   <div
                     role="tablist"
                     aria-label={`${t('editorHeader.previewTab')} / ${t('editorHeader.editTab')}`}
-                    className="inline-flex flex-none items-stretch gap-0.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-0.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]"
+                    className="inline-flex flex-none items-stretch gap-0.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-0.5 shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
                   >
                     <button
                       type="button"

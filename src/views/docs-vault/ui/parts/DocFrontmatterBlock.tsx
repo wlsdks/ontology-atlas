@@ -73,7 +73,7 @@ export function DocFrontmatterBlock({ doc }: { doc: VaultDoc }) {
       <details
         open={open}
         onToggle={(event) => setOpen(event.currentTarget.open)}
-        className="group rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-3 font-mono text-[12px] leading-[1.85] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]"
+        className="group rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-3 font-mono text-[12px] leading-[1.85] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
       >
         <summary
           data-testid="doc-frontmatter-summary"

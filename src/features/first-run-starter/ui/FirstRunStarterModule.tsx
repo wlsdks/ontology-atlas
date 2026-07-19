@@ -47,7 +47,7 @@ export function FirstRunStarterModule({
       <p className="mb-3 flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.22em] text-[color:var(--topology-v2-panel-text-secondary)]">
         <span className="relative h-2 w-2 shrink-0" aria-hidden>
           <span className="absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
-          <span className="absolute -inset-[3px] rounded-full border border-[color:rgba(212,180,120,0.42)]" />
+          <span className="absolute -inset-[3px] rounded-full border border-[color:var(--color-amber-source-a42)]" />
         </span>
         {t("caption")}
         <span className="ml-auto text-[8.5px] tracking-[0.16em] text-[color:var(--color-status-warning)]">
@@ -62,7 +62,7 @@ export function FirstRunStarterModule({
         {t("contextRest")}
       </p>
 
-      <div className="mb-4 grid grid-cols-3 divide-x divide-[color:var(--topology-v2-panel-divider)] rounded-[9px] border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.55)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]">
+      <div className="mb-4 grid grid-cols-3 divide-x divide-[color:var(--topology-v2-panel-divider)] rounded-[9px] border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.55)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
         <MeterCell value={concepts} label={t("meterConcepts")} />
         <MeterCell value={relations} label={t("meterRelations")} />
         <MeterCell value={domains} label={t("meterDomains")} />

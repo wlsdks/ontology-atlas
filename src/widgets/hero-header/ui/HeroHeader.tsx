@@ -64,7 +64,7 @@ export function HeroHeader({
       transition={MOTION.medium}
       className={cn("pointer-events-none w-full", className)}
     >
-      <div className="pointer-events-auto overflow-hidden rounded-[26px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_14px_38px_rgba(0,0,0,0.18)]">
+      <div className="pointer-events-auto overflow-hidden rounded-[26px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_14px_38px_var(--color-shadow-a16)]">
         <div className="px-4 pb-4 pt-4 lg:px-5 lg:pb-4 lg:pt-4">
           <div className="flex items-start justify-between gap-3">
             {icon ? (
@@ -119,7 +119,7 @@ export function HeroHeader({
               <Link
                 href={workspaceMapHref}
                 onClick={onWorkspaceMapClick}
-                className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:rgba(224,196,140,0.4)] bg-[color:rgba(224,196,140,0.08)] px-4 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(224,196,140,0.6)] hover:bg-[color:rgba(224,196,140,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(224,196,140,0.5)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--color-amber-docs-a40)] bg-[color:var(--color-amber-docs-a08)] px-4 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-amber-docs-a60)] hover:bg-[color:var(--color-amber-docs-a14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-amber-docs-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
               >
                 <ArrowLeft size={14} />
                 {t("workspaceMap")}

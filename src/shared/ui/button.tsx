@@ -23,11 +23,11 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-border-strong),0_10px_24px_var(--color-indigo-a22)] hover:border-[color:rgba(205,212,255,0.28)] hover:bg-[color:var(--color-indigo-hover)] active:shadow-[inset_0_1px_0_var(--color-divider),0_6px_14px_var(--color-indigo-a20)]',
+          'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-border-strong),0_10px_24px_var(--color-indigo-a22)] hover:border-[color:var(--color-indigo-pale-a28)] hover:bg-[color:var(--color-indigo-hover)] active:shadow-[inset_0_1px_0_var(--color-divider),0_6px_14px_var(--color-indigo-a20)]',
         ghost:
-          'bg-transparent text-[color:var(--color-text-primary)] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-border-soft)] active:shadow-[0_4px_10px_rgba(0,0,0,0.1)]',
+          'bg-transparent text-[color:var(--color-text-primary)] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-border-soft)] active:shadow-[0_4px_10px_var(--color-shadow-a08)]',
         outline:
-          'border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-overlay-2)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-overlay-2)] active:shadow-[inset_0_1px_0_var(--color-overlay-2),0_5px_12px_rgba(0,0,0,0.12)]',
+          'border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-overlay-2)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-overlay-2)] active:shadow-[inset_0_1px_0_var(--color-overlay-2),0_5px_12px_var(--color-shadow-a12)]',
       },
       size: {
         sm: 'h-8 px-3.5',

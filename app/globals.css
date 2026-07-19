@@ -37,8 +37,13 @@
   --color-indigo-accent: #7170ff;
   --color-indigo-hover: #828fff;
 
-  /* 상태 (status dot + 경고·에러 서피스) */
-  --color-status-success: #27a644;
+  /* 상태 (status dot + 경고·에러·성공 서피스) — 신호 톤 3종:
+     warning(amber) · error(red) · success(emerald). 각 신호는 solid dot +
+     surface/border/text 알파 사다리를 대칭으로 갖는다 (Design Guardian
+     verdict, .qa-scratch/audit-2026-07/guardian-color-verdict.md §①,
+     2026-07-20). success 는 "쓰기 확인 / 연결됨 / 완료" 같은 긍정 상태
+     신호에만 쓴다 — 장식적 green, 성공과 무관한 green 은 금지. */
+  --color-status-success: #32b97d;
   --color-status-warning: #f4b731;
   --color-status-paused: #8a8f98;
   --color-status-danger: #e5484d;
@@ -234,6 +239,162 @@
   --card-gap: 20px;
   --card-pad: 16px;
   --page-bottom-breath: 40px;
+
+  /*
+   * ── Phase 2 색 완전 토큰화 (2026-07-20) ─────────────────────────────
+   * Design Guardian verdict: .qa-scratch/audit-2026-07/guardian-color-verdict.md
+   * 원 매핑: .qa-scratch/audit-2026-07/remaining-color-map.md
+   * 아래 모든 신규 토큰은 다크 단일 값이다 — 라이트 모드는 2026-07-19
+   * 전면 폐기됐다(design.md). theme-aware 분기 금지.
+   */
+
+  /* success surface — ONE hue(50,185,125) 알파 사다리. danger 패턴과 대칭.
+     73,190,146 / 130,230,180 드리프트를 이 hue 로 수렴(SHIFT-RISK, 승인됨). */
+  --color-success-a06: rgba(50, 185, 125, 0.06);
+  --color-success-a07: rgba(50, 185, 125, 0.07);
+  --color-success-a035: rgba(50, 185, 125, 0.035);
+  --color-success-a045: rgba(50, 185, 125, 0.045);
+  --color-success-a055: rgba(50, 185, 125, 0.055);
+  --color-success-a10: rgba(50, 185, 125, 0.1);
+  --color-success-a11: rgba(50, 185, 125, 0.11);
+  --color-success-a12: rgba(50, 185, 125, 0.12);
+  --color-success-a18: rgba(50, 185, 125, 0.18);
+  --color-success-a20: rgba(50, 185, 125, 0.2);
+  --color-success-a24: rgba(50, 185, 125, 0.24);
+  --color-success-a26: rgba(50, 185, 125, 0.26);
+  --color-success-a28: rgba(50, 185, 125, 0.28);
+  --color-success-a35: rgba(50, 185, 125, 0.35);
+  --color-success-a40: rgba(50, 185, 125, 0.4);
+  --color-success-a42: rgba(50, 185, 125, 0.42);
+  --color-success-a45: rgba(50, 185, 125, 0.45);
+  /* success text — danger-text 와 대칭인 밝은 emerald 텍스트 형제.
+     151,230,198 / 180,235,205 / 130,230,180(text 용례) 를 이 hue 로 수렴. */
+  --color-success-text-a78: rgba(165, 232, 200, 0.78);
+  --color-success-text-a90: rgba(165, 232, 200, 0.9);
+  --color-success-text-a92: rgba(165, 232, 200, 0.92);
+  --color-success-text-a94: rgba(165, 232, 200, 0.94);
+  --color-success-text-a95: rgba(165, 232, 200, 0.95);
+
+  /* amber-source(244,183,49 == --color-status-warning) 알파 사다리 확장 —
+     기존 a07/a30 형제. amber-docs-warm(239,180,120) fold(hue 보정, 경고
+     의미 유지) 도 이 사다리로 흡수한다. */
+  --color-amber-source-a06: rgba(244, 183, 49, 0.06);
+  --color-amber-source-a08: rgba(244, 183, 49, 0.08);
+  --color-amber-source-a10: rgba(244, 183, 49, 0.1);
+  --color-amber-source-a11: rgba(244, 183, 49, 0.11);
+  --color-amber-source-a12: rgba(244, 183, 49, 0.12);
+  --color-amber-source-a13: rgba(244, 183, 49, 0.13);
+  --color-amber-source-a14: rgba(244, 183, 49, 0.14);
+  --color-amber-source-a18: rgba(244, 183, 49, 0.18);
+  --color-amber-source-a24: rgba(244, 183, 49, 0.24);
+  --color-amber-source-a25: rgba(244, 183, 49, 0.25);
+  --color-amber-source-a32: rgba(244, 183, 49, 0.32);
+  --color-amber-source-a34: rgba(244, 183, 49, 0.34);
+  --color-amber-source-a35: rgba(244, 183, 49, 0.35);
+  --color-amber-source-a40: rgba(244, 183, 49, 0.4);
+  --color-amber-source-a42: rgba(244, 183, 49, 0.42);
+  --color-amber-source-a45: rgba(244, 183, 49, 0.45);
+  --color-amber-source-a50: rgba(244, 183, 49, 0.5);
+  --color-amber-source-a90: rgba(244, 183, 49, 0.9);
+  /* amber-docs-warm(239,200,150) fold — 경고 계열 pale text 형제. 값은
+     원 리터럴 그대로(faithful, no hue shift). */
+  --color-amber-source-text-a80: rgba(239, 200, 150, 0.8);
+  --color-amber-source-text-a85: rgba(239, 200, 150, 0.85);
+  --color-amber-source-text-a95: rgba(239, 200, 150, 0.95);
+
+  /* amber-signal(255,179,71, forbidden.md 문서화) 알파 사다리 확장 —
+     기존 a16/a60 형제. */
+  --color-amber-signal-a07: rgba(255, 179, 71, 0.07);
+  --color-amber-signal-a24: rgba(255, 179, 71, 0.24);
+  --color-amber-signal-a28: rgba(255, 179, 71, 0.28);
+  --color-amber-signal-a30: rgba(255, 179, 71, 0.3);
+
+  /* @provisional — QUARANTINE: 미승인 장식 gold. docs/DESIGN-SYSTEM.md 헌장
+     예외로 등재하지 않는다. Design Guardian verdict §③ disposition —
+     docs/vault/agent 표면의 장식적 금색 악센트(링크·아웃라인·MCP 상태·
+     import 플로우·blast-radius 텍스트)를 4개 드리프트 hue(224,196,140 /
+     232,200,148 / 238,198,128 / 244,196,130)에서 단일 anchor 로 수렴만
+     한다 — 헌장 신규 승인이 아니다. 후속 티켓: neutral/indigo 로 강등
+     검토(소유자 결정 대기). 확장 금지 — 기존 리터럴 토큰화까지만. */
+  --color-amber-docs-a08: rgba(234, 198, 138, 0.08);
+  --color-amber-docs-a10: rgba(234, 198, 138, 0.1);
+  --color-amber-docs-a12: rgba(234, 198, 138, 0.12);
+  --color-amber-docs-a14: rgba(234, 198, 138, 0.14);
+  --color-amber-docs-a16: rgba(234, 198, 138, 0.16);
+  --color-amber-docs-a18: rgba(234, 198, 138, 0.18);
+  --color-amber-docs-a22: rgba(234, 198, 138, 0.22);
+  --color-amber-docs-a25: rgba(234, 198, 138, 0.25);
+  --color-amber-docs-a28: rgba(234, 198, 138, 0.28);
+  --color-amber-docs-a34: rgba(234, 198, 138, 0.34);
+  --color-amber-docs-a35: rgba(234, 198, 138, 0.35);
+  --color-amber-docs-a40: rgba(234, 198, 138, 0.4);
+  --color-amber-docs-a42: rgba(234, 198, 138, 0.42);
+  --color-amber-docs-a45: rgba(234, 198, 138, 0.45);
+  --color-amber-docs-a46: rgba(234, 198, 138, 0.46);
+  --color-amber-docs-a50: rgba(234, 198, 138, 0.5);
+  --color-amber-docs-a54: rgba(234, 198, 138, 0.54);
+  --color-amber-docs-a60: rgba(234, 198, 138, 0.6);
+  --color-amber-docs-a65: rgba(234, 198, 138, 0.65);
+  --color-amber-docs-a82: rgba(234, 198, 138, 0.82);
+  --color-amber-docs-a85: rgba(234, 198, 138, 0.85);
+  --color-amber-docs-a90: rgba(234, 198, 138, 0.9);
+  --color-amber-docs-a92: rgba(234, 198, 138, 0.92);
+  --color-amber-docs-a94: rgba(234, 198, 138, 0.94);
+  --color-amber-docs-a95: rgba(234, 198, 138, 0.95);
+  --color-amber-docs-a100: rgba(234, 198, 138, 1);
+
+  /* pale indigo text — dark-single 전용(라이트 모드 2026-07-19 전면 폐기
+     이후 theme-aware 금지). 205,212,255 / 211,215,255 를 200,210,255 로
+     수렴 — 기존 --color-indigo-text-strong/-soft 와는 다른 role(더 옅은
+     surface-on-surface 텍스트)이라 별도 사다리를 둔다. */
+  --color-indigo-pale-a28: rgba(200, 210, 255, 0.28);
+  --color-indigo-pale-a82: rgba(200, 210, 255, 0.82);
+  --color-indigo-pale-a86: rgba(200, 210, 255, 0.86);
+  --color-indigo-pale-a90: rgba(200, 210, 255, 0.9);
+  --color-indigo-pale-a92: rgba(200, 210, 255, 0.92);
+  --color-indigo-pale-a94: rgba(200, 210, 255, 0.94);
+  --color-indigo-pale-a95: rgba(200, 210, 255, 0.95);
+
+  /* 딥 서피스 — --color-panel(15,16,17) 보다 짙은 코드블록/모달/드롭다운
+     패널/ERD stroke 표면. 14,16,22 를 12,14,20 으로 수렴(ΔRGB=2, 무시). */
+  --color-surface-deep-a18: rgba(12, 14, 20, 0.18);
+  --color-surface-deep-a20: rgba(12, 14, 20, 0.2);
+  --color-surface-deep-a40: rgba(12, 14, 20, 0.4);
+  --color-surface-deep-a80: rgba(12, 14, 20, 0.8);
+  --color-surface-deep-a85: rgba(12, 14, 20, 0.85);
+  --color-surface-deep-a98: rgba(12, 14, 20, 0.98);
+  --color-surface-deep-a100: rgba(12, 14, 20, 1);
+
+  /* 드롭 섀도 알파 — 기존 a22/a42/a46 형제. 8스텝 캐논 스케일로 신규
+     리터럴을 스냅(지각 불가) — Guardian verdict §⑥. */
+  --color-shadow-a08: rgba(0, 0, 0, 0.08);
+  --color-shadow-a12: rgba(0, 0, 0, 0.12);
+  --color-shadow-a16: rgba(0, 0, 0, 0.16);
+  --color-shadow-a25: rgba(0, 0, 0, 0.25);
+  --color-shadow-a35: rgba(0, 0, 0, 0.35);
+  --color-shadow-a45: rgba(0, 0, 0, 0.45);
+  --color-shadow-a50: rgba(0, 0, 0, 0.5);
+  --color-shadow-a58: rgba(0, 0, 0, 0.58);
+
+  /* overlay-recessed(어둡히는 inset surface) 알파 확장 — 기존
+     base(0.16)/a12/a14/a20 형제. */
+  --color-overlay-recessed-a08: rgba(0, 0, 0, 0.08);
+  --color-overlay-recessed-a45: rgba(0, 0, 0, 0.45);
+
+  /* 모달/시트 배경 scrim — 기존 a54/a56 형제. */
+  --color-scrim-a50: rgba(0, 0, 0, 0.5);
+  --color-scrim-a58: rgba(0, 0, 0, 0.58);
+
+  /* kind-tone mirror — 단일 진실원은 entities/ontology-class/model/tone.ts
+     (canvas fillStyle 이 소비하는 계산된 rgba 문자열이라 tone.ts 리터럴은
+     그대로 유지, check-no-raw-color.mjs allowlist 로 등록). 아래는
+     `rgba(var(--kind-tone-domain), 0.11)` 형태로 CSS/JSX 에서 쓸 수 있는
+     r,g,b 미러 — tone.ts 와 항상 동기 유지. */
+  --kind-tone-project: 126, 134, 216;
+  --kind-tone-domain: 74, 177, 196;
+  --kind-tone-capability: 211, 159, 73;
+  --kind-tone-element: 105, 177, 121;
+  --kind-tone-unknown: 196, 92, 92;
 }
 
 @layer base {
@@ -353,6 +514,116 @@
     --color-scrim-a56: rgba(0, 0, 0, 0.56);
     --color-panel-overlay-a88: rgba(15, 16, 17, 0.88);
     --color-panel-overlay-a94: rgba(15, 16, 17, 0.94);
+
+    /* Phase 2 색 완전 토큰화 (2026-07-20) — 위 @theme 블록과 동일한
+       Tailwind v4 alpha emit 회귀를 겪으므로 여기서도 다크 디폴트를
+       명시. 값/주석은 위 @theme 정의를 참고. */
+    --color-success-a06: rgba(50, 185, 125, 0.06);
+    --color-success-a07: rgba(50, 185, 125, 0.07);
+    --color-success-a035: rgba(50, 185, 125, 0.035);
+    --color-success-a045: rgba(50, 185, 125, 0.045);
+    --color-success-a055: rgba(50, 185, 125, 0.055);
+    --color-success-a10: rgba(50, 185, 125, 0.1);
+    --color-success-a11: rgba(50, 185, 125, 0.11);
+    --color-success-a12: rgba(50, 185, 125, 0.12);
+    --color-success-a18: rgba(50, 185, 125, 0.18);
+    --color-success-a20: rgba(50, 185, 125, 0.2);
+    --color-success-a24: rgba(50, 185, 125, 0.24);
+    --color-success-a26: rgba(50, 185, 125, 0.26);
+    --color-success-a28: rgba(50, 185, 125, 0.28);
+    --color-success-a35: rgba(50, 185, 125, 0.35);
+    --color-success-a40: rgba(50, 185, 125, 0.4);
+    --color-success-a42: rgba(50, 185, 125, 0.42);
+    --color-success-a45: rgba(50, 185, 125, 0.45);
+    --color-success-text-a78: rgba(165, 232, 200, 0.78);
+    --color-success-text-a90: rgba(165, 232, 200, 0.9);
+    --color-success-text-a92: rgba(165, 232, 200, 0.92);
+    --color-success-text-a94: rgba(165, 232, 200, 0.94);
+    --color-success-text-a95: rgba(165, 232, 200, 0.95);
+    --color-amber-source-a06: rgba(244, 183, 49, 0.06);
+    --color-amber-source-a08: rgba(244, 183, 49, 0.08);
+    --color-amber-source-a10: rgba(244, 183, 49, 0.1);
+    --color-amber-source-a11: rgba(244, 183, 49, 0.11);
+    --color-amber-source-a12: rgba(244, 183, 49, 0.12);
+    --color-amber-source-a13: rgba(244, 183, 49, 0.13);
+    --color-amber-source-a14: rgba(244, 183, 49, 0.14);
+    --color-amber-source-a18: rgba(244, 183, 49, 0.18);
+    --color-amber-source-a24: rgba(244, 183, 49, 0.24);
+    --color-amber-source-a25: rgba(244, 183, 49, 0.25);
+    --color-amber-source-a32: rgba(244, 183, 49, 0.32);
+    --color-amber-source-a34: rgba(244, 183, 49, 0.34);
+    --color-amber-source-a35: rgba(244, 183, 49, 0.35);
+    --color-amber-source-a40: rgba(244, 183, 49, 0.4);
+    --color-amber-source-a42: rgba(244, 183, 49, 0.42);
+    --color-amber-source-a45: rgba(244, 183, 49, 0.45);
+    --color-amber-source-a50: rgba(244, 183, 49, 0.5);
+    --color-amber-source-a90: rgba(244, 183, 49, 0.9);
+    --color-amber-source-text-a80: rgba(239, 200, 150, 0.8);
+    --color-amber-source-text-a85: rgba(239, 200, 150, 0.85);
+    --color-amber-source-text-a95: rgba(239, 200, 150, 0.95);
+    --color-amber-signal-a07: rgba(255, 179, 71, 0.07);
+    --color-amber-signal-a24: rgba(255, 179, 71, 0.24);
+    --color-amber-signal-a28: rgba(255, 179, 71, 0.28);
+    --color-amber-signal-a30: rgba(255, 179, 71, 0.3);
+    /* @provisional — QUARANTINE, docs/DESIGN-SYSTEM.md 헌장 미등재.
+       위 @theme 블록 주석 참고. */
+    --color-amber-docs-a08: rgba(234, 198, 138, 0.08);
+    --color-amber-docs-a10: rgba(234, 198, 138, 0.1);
+    --color-amber-docs-a12: rgba(234, 198, 138, 0.12);
+    --color-amber-docs-a14: rgba(234, 198, 138, 0.14);
+    --color-amber-docs-a16: rgba(234, 198, 138, 0.16);
+    --color-amber-docs-a18: rgba(234, 198, 138, 0.18);
+    --color-amber-docs-a22: rgba(234, 198, 138, 0.22);
+    --color-amber-docs-a25: rgba(234, 198, 138, 0.25);
+    --color-amber-docs-a28: rgba(234, 198, 138, 0.28);
+    --color-amber-docs-a34: rgba(234, 198, 138, 0.34);
+    --color-amber-docs-a35: rgba(234, 198, 138, 0.35);
+    --color-amber-docs-a40: rgba(234, 198, 138, 0.4);
+    --color-amber-docs-a42: rgba(234, 198, 138, 0.42);
+    --color-amber-docs-a45: rgba(234, 198, 138, 0.45);
+    --color-amber-docs-a46: rgba(234, 198, 138, 0.46);
+    --color-amber-docs-a50: rgba(234, 198, 138, 0.5);
+    --color-amber-docs-a54: rgba(234, 198, 138, 0.54);
+    --color-amber-docs-a60: rgba(234, 198, 138, 0.6);
+    --color-amber-docs-a65: rgba(234, 198, 138, 0.65);
+    --color-amber-docs-a82: rgba(234, 198, 138, 0.82);
+    --color-amber-docs-a85: rgba(234, 198, 138, 0.85);
+    --color-amber-docs-a90: rgba(234, 198, 138, 0.9);
+    --color-amber-docs-a92: rgba(234, 198, 138, 0.92);
+    --color-amber-docs-a94: rgba(234, 198, 138, 0.94);
+    --color-amber-docs-a95: rgba(234, 198, 138, 0.95);
+    --color-amber-docs-a100: rgba(234, 198, 138, 1);
+    --color-indigo-pale-a28: rgba(200, 210, 255, 0.28);
+    --color-indigo-pale-a82: rgba(200, 210, 255, 0.82);
+    --color-indigo-pale-a86: rgba(200, 210, 255, 0.86);
+    --color-indigo-pale-a90: rgba(200, 210, 255, 0.9);
+    --color-indigo-pale-a92: rgba(200, 210, 255, 0.92);
+    --color-indigo-pale-a94: rgba(200, 210, 255, 0.94);
+    --color-indigo-pale-a95: rgba(200, 210, 255, 0.95);
+    --color-surface-deep-a18: rgba(12, 14, 20, 0.18);
+    --color-surface-deep-a20: rgba(12, 14, 20, 0.2);
+    --color-surface-deep-a40: rgba(12, 14, 20, 0.4);
+    --color-surface-deep-a80: rgba(12, 14, 20, 0.8);
+    --color-surface-deep-a85: rgba(12, 14, 20, 0.85);
+    --color-surface-deep-a98: rgba(12, 14, 20, 0.98);
+    --color-surface-deep-a100: rgba(12, 14, 20, 1);
+    --color-shadow-a08: rgba(0, 0, 0, 0.08);
+    --color-shadow-a12: rgba(0, 0, 0, 0.12);
+    --color-shadow-a16: rgba(0, 0, 0, 0.16);
+    --color-shadow-a25: rgba(0, 0, 0, 0.25);
+    --color-shadow-a35: rgba(0, 0, 0, 0.35);
+    --color-shadow-a45: rgba(0, 0, 0, 0.45);
+    --color-shadow-a50: rgba(0, 0, 0, 0.5);
+    --color-shadow-a58: rgba(0, 0, 0, 0.58);
+    --color-overlay-recessed-a08: rgba(0, 0, 0, 0.08);
+    --color-overlay-recessed-a45: rgba(0, 0, 0, 0.45);
+    --color-scrim-a50: rgba(0, 0, 0, 0.5);
+    --color-scrim-a58: rgba(0, 0, 0, 0.58);
+    --kind-tone-project: 126, 134, 216;
+    --kind-tone-domain: 74, 177, 196;
+    --kind-tone-capability: 211, 159, 73;
+    --kind-tone-element: 105, 177, 121;
+    --kind-tone-unknown: 196, 92, 92;
 
     /* RATIO-SYSTEM §3 탭 패턴 — active 탭의 2px 인디고 underline 두께.
        page-level ratio 토큰 본체(--page-max 등)는 위 :root 블록이 단일 출처. */

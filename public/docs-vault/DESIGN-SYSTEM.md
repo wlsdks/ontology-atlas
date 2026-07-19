@@ -370,6 +370,37 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
 - `--color-indigo-accent`: `#7170ff`
 - `--color-indigo-hover`: `#828fff`
 
+### Signal tones (3, symmetric ladders)
+
+Design Guardian verdict, `.qa-scratch/audit-2026-07/guardian-color-verdict.md`
+§① (2026-07-20): **신호 톤은 3종이다 — warning(amber) · error(red) ·
+success(emerald).** Each is a solid status dot plus a symmetric
+surface/border/text alpha ladder built on ONE hue. These are the only
+chroma exceptions to the neutrals + single-indigo charter; they explain
+*state*, never decoration. Do not add a 4th signal tone without an
+explicit charter update backed by the same reasoning (a status primitive
+with dot + surface + text siblings, not a one-off accent).
+
+- **warning** — `--color-status-warning` (`#f4b731`) · `--color-amber-source-a*`
+  surface ladder · `--color-amber-signal-a*` (forbidden.md-documented "방금
+  추가됨" pulse variant) · `--color-amber-source-text-a*` pale text.
+- **error** — `--color-status-danger` (`#e5484d`) · `--color-danger-a*` surface
+  ladder · `--color-danger-text` / `--color-danger-text-strong`.
+- **success** — `--color-status-success` (`#32b97d`, re-pointed 2026-07-20 from
+  the dot-only `#27a644` to the same hue as the surface ladder below) ·
+  `--color-success-a*` surface ladder · `--color-success-text-a*` pale text.
+  Use only for positive/confirm signals — "연결됨 / 쓰기 확인 / 완료" (MCP
+  connected, relation-write confirm, agent-setup success, starter CTA,
+  success toast). Tokenize-existing-only — do not add new success surfaces
+  without a PO/design pass; a 4th free-floating green is the exact drift
+  this ladder was created to close.
+
+kind-tone (`entities/ontology-class/model/tone.ts`) and the amber-docs
+quarantine family (`--color-amber-docs-*`, provisional — see
+`app/globals.css` comment, not a sanctioned signal tone) are documented
+separately below; they are data marks / an unresolved charter-tension
+family, not signal tones.
+
 ### Borders
 
 - `rgba(255,255,255,0.05)` — subtle

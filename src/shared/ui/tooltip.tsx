@@ -35,7 +35,7 @@ export const TooltipContent = forwardRef<
     sideOffset={sideOffset}
     className={
       className ??
-      "z-[80] rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-panel)] px-2 py-1 text-[11px] text-[color:var(--color-text-primary)] shadow-[0_8px_22px_rgba(0,0,0,0.48)] data-[state=delayed-open]:animate-in data-[state=closed]:animate-out"
+      "z-[80] rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-panel)] px-2 py-1 text-[11px] text-[color:var(--color-text-primary)] shadow-[0_8px_22px_var(--color-shadow-a50)] data-[state=delayed-open]:animate-in data-[state=closed]:animate-out"
     }
     {...props}
   />

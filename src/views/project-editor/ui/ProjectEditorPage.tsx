@@ -264,7 +264,7 @@ function EditorContent({
               <span
                 role="status"
                 aria-live="polite"
-                className="inline-flex items-center gap-1.5 rounded-full border border-[color:rgba(244,183,49,0.45)] bg-[color:rgba(244,183,49,0.12)] px-3 py-1 text-[color:var(--color-status-warning)]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-amber-source-a45)] bg-[color:var(--color-amber-source-a12)] px-3 py-1 text-[color:var(--color-status-warning)]"
               >
                 <span
                   aria-hidden

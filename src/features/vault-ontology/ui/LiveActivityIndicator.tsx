@@ -339,7 +339,7 @@ export function LiveActivityBadge({
         id={popoverId}
         role="dialog"
         aria-label={labels.summaryTitle}
-        className="absolute right-0 top-9 z-50 w-64 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-left shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
+        className="absolute right-0 top-9 z-50 w-64 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-left shadow-[0_18px_48px_var(--color-shadow-a42)]"
       >
         <div className="flex items-start justify-between gap-3">
           <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
@@ -385,22 +385,22 @@ export function LiveActivityBadge({
             </p>
           ) : heartbeat ? (
             <div className="mt-2 grid gap-2 text-[11px] leading-4">
-              <p className={agentActivityStatus.stale ? "text-[color:rgba(238,198,128,0.95)]" : "text-[color:var(--color-text-primary)]"}>
+              <p className={agentActivityStatus.stale ? "text-[color:var(--color-amber-docs-a95)]" : "text-[color:var(--color-text-primary)]"}>
                 {agentActivityStatus.stale ? labels.agentStale : labels.agentCurrent}
                 <span className="ml-1 font-mono uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
                   {heartbeat.agent} · {stateLabel}
                 </span>
               </p>
               {agentActivityStatus.stale ? (
-                <div className="grid gap-1.5 rounded-md border border-[color:rgba(238,198,128,0.28)] bg-[color:rgba(238,198,128,0.08)] px-2 py-1.5">
-                  <p className="break-keep text-[10px] leading-4 text-[color:rgba(238,198,128,0.95)]">
+                <div className="grid gap-1.5 rounded-md border border-[color:var(--color-amber-docs-a28)] bg-[color:var(--color-amber-docs-a08)] px-2 py-1.5">
+                  <p className="break-keep text-[10px] leading-4 text-[color:var(--color-amber-docs-a95)]">
                     {labels.agentStaleAudit}
                   </p>
                   {staleRefreshPacket ? (
                     <button
                       type="button"
                       onClick={() => void copyFocusCheck(staleRefreshPacket)}
-                      className="inline-flex w-fit items-center gap-1 rounded border border-[color:rgba(238,198,128,0.34)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(238,198,128,0.54)] hover:bg-[color:rgba(238,198,128,0.10)]"
+                      className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-amber-docs-a34)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-amber-docs-a95)] transition-colors hover:border-[color:var(--color-amber-docs-a54)] hover:bg-[color:var(--color-amber-docs-a10)]"
                     >
                       <Clipboard size={10} aria-hidden />
                       {staleRefreshCopyLabel}

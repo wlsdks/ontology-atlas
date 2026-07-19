@@ -33,7 +33,7 @@ export function InfoHint({
         id={tooltipId}
         role="tooltip"
         className={cn(
-          "pointer-events-none absolute right-0 top-full z-30 mt-2 w-72 max-w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-3 text-left opacity-0 shadow-[0_20px_40px_rgba(0,0,0,0.28)] transition-all duration-150 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100",
+          "pointer-events-none absolute right-0 top-full z-30 mt-2 w-72 max-w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-3 text-left opacity-0 shadow-[0_20px_40px_var(--color-shadow-a25)] transition-all duration-150 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100",
           panelClassName,
         )}
       >

@@ -219,7 +219,7 @@ export function ProjectSelectorPage() {
               {t("nextSlotSub")}
             </span>
           </div>
-          <div className="mt-3 flex items-center gap-3 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-[12px] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]">
+          <div className="mt-3 flex items-center gap-3 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-[12px] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
             <span className="w-[108px] shrink-0 font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("nextSlotCliLabel")}
             </span>
@@ -230,7 +230,7 @@ export function ProjectSelectorPage() {
               {t("nextSlotCliCaption")}
             </span>
           </div>
-          <div className="mt-2 flex items-center gap-3 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-[12px] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]">
+          <div className="mt-2 flex items-center gap-3 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-[12px] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
             <span className="w-[108px] shrink-0 font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("nextSlotAgentLabel")}
             </span>
@@ -263,7 +263,7 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
   return (
     <article
       data-testid="project-selector-card"
-      className="rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-6 py-5 shadow-[inset_0_1px_0_var(--color-overlay-2),0_14px_34px_rgba(0,0,0,0.2)] transition-colors hover:border-[color:var(--color-border-strong)]"
+      className="rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-6 py-5 shadow-[inset_0_1px_0_var(--color-overlay-2),0_14px_34px_var(--color-shadow-a16)] transition-colors hover:border-[color:var(--color-border-strong)]"
     >
       <div className="flex items-start gap-3.5">
         <TopologyV2KindGlyph kind="project" size={26} className="mt-1 shrink-0" />

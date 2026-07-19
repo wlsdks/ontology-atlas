@@ -171,14 +171,14 @@ export function ProjectQuickEditPanel({
           <button
             type="button"
             aria-label={t("ariaCloseOverlay")}
-            className="absolute inset-0 bg-[rgba(0,0,0,0.58)]"
+            className="absolute inset-0 bg-[var(--color-scrim-a58)]"
             onClick={() => setOpen(false)}
           />
           <section
             role="dialog"
             aria-modal="true"
             aria-label={t("ariaDialog")}
-            className="absolute right-0 top-0 flex h-full w-full max-w-[30rem] flex-col border-l border-[color:var(--color-divider)] bg-[color:rgba(11,12,14,0.98)] shadow-[-24px_0_60px_rgba(0,0,0,0.34)]"
+            className="absolute right-0 top-0 flex h-full w-full max-w-[30rem] flex-col border-l border-[color:var(--color-divider)] bg-[color:rgba(11,12,14,0.98)] shadow-[-24px_0_60px_var(--color-shadow-a35)]"
           >
             <div className="flex items-start justify-between gap-4 border-b border-[color:var(--color-border-soft)] px-5 py-5">
               <div>

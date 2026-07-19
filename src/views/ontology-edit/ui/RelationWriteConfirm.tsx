@@ -346,7 +346,7 @@ export function RelationWriteConfirm({
       aria-modal="true"
       aria-label={labels.title}
       data-testid="builder-relation-write-confirm"
-      className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(680px,calc(100%-2rem))] -translate-x-1/2 flex-col gap-3 overflow-y-auto rounded-lg border border-[color:var(--color-indigo-a34)] bg-[color:var(--color-panel)] p-4 shadow-[0_22px_54px_rgba(0,0,0,0.32)]"
+      className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(680px,calc(100%-2rem))] -translate-x-1/2 flex-col gap-3 overflow-y-auto rounded-lg border border-[color:var(--color-indigo-a34)] bg-[color:var(--color-panel)] p-4 shadow-[0_22px_54px_var(--color-shadow-a35)]"
     >
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
@@ -451,7 +451,7 @@ export function RelationWriteConfirm({
         <p className="mt-2 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
           {labels.decisionHints[preflight.decision]}
         </p>
-        <div className="mt-3 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:rgba(0,0,0,0.08)] p-2">
+        <div className="mt-3 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-overlay-recessed-a08)] p-2">
           <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
             {labels.preflightEvidence}
           </p>
@@ -476,7 +476,7 @@ export function RelationWriteConfirm({
             />
           </dl>
         </div>
-        <details className="mt-2 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:rgba(0,0,0,0.08)] p-2">
+        <details className="mt-2 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-overlay-recessed-a08)] p-2">
           <summary className="cursor-pointer select-none font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] marker:text-[color:var(--color-indigo-accent)]">
             {labels.traversalCheck}
           </summary>
@@ -551,8 +551,8 @@ export function RelationWriteConfirm({
         </details>
       </div>
 
-      <div className="rounded-md border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] p-3">
-        <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:rgba(151,230,198,0.92)]">
+      <div className="rounded-md border border-[color:var(--color-success-a18)] bg-[color:var(--color-success-a045)] p-3">
+        <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-success-text-a92)]">
           {labels.graphEffect}
         </p>
         <dl className="mt-2 grid gap-x-3 gap-y-1 font-mono text-[10px] text-[color:var(--color-text-tertiary)] sm:grid-cols-[auto_1fr]">
@@ -574,7 +574,7 @@ export function RelationWriteConfirm({
             {labels.graphAlternativeWarning}
           </p>
         ) : null}
-        <details className="mt-3 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:rgba(0,0,0,0.08)] p-2">
+        <details className="mt-3 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-overlay-recessed-a08)] p-2">
           <summary className="cursor-pointer select-none font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] marker:text-[color:var(--color-indigo-accent)]">
             {labels.endpointReview}
           </summary>
@@ -610,7 +610,7 @@ export function RelationWriteConfirm({
             </div>
           </div>
         </details>
-        <details className="mt-2 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:rgba(0,0,0,0.08)] p-2">
+        <details className="mt-2 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-overlay-recessed-a08)] p-2">
           <summary className="cursor-pointer select-none font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] marker:text-[color:var(--color-indigo-accent)]">
             {labels.postSaveGraphHandoff}
           </summary>
@@ -656,7 +656,7 @@ export function RelationWriteConfirm({
           {saveChecklistRows.map((row) => (
             <div
               key={row.key}
-              className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-sm border border-[color:var(--color-indigo-a14)] bg-[color:rgba(0,0,0,0.08)] px-2 py-1.5"
+              className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-sm border border-[color:var(--color-indigo-a14)] bg-[color:var(--color-overlay-recessed-a08)] px-2 py-1.5"
             >
               <dt className="min-w-0 truncate text-[11px] text-[color:var(--color-text-secondary)]">
                 {row.label}
@@ -664,7 +664,7 @@ export function RelationWriteConfirm({
               <dd
                 className={`rounded-sm border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] ${
                   row.status === "ready"
-                    ? "border-[color:rgba(73,190,146,0.28)] text-[color:rgba(151,230,198,0.92)]"
+                    ? "border-[color:var(--color-success-a28)] text-[color:var(--color-success-text-a92)]"
                     : row.status === "blocked"
                       ? "border-[color:rgba(255,120,120,0.28)] text-[color:rgba(255,160,160,0.92)]"
                       : "border-[color:rgba(232,196,162,0.26)] text-[color:rgba(232,196,162,0.92)]"
@@ -677,7 +677,7 @@ export function RelationWriteConfirm({
         </dl>
         <div
           aria-label={labels.agentDecisionLens}
-          className="mt-2 rounded-sm border border-[color:var(--color-indigo-line-a14)] bg-[color:rgba(0,0,0,0.08)] p-2"
+          className="mt-2 rounded-sm border border-[color:var(--color-indigo-line-a14)] bg-[color:var(--color-overlay-recessed-a08)] p-2"
         >
           <p className="truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {labels.agentDecisionLens}
@@ -747,7 +747,7 @@ export function RelationWriteConfirm({
               <dt className="text-[color:var(--color-text-quaternary)]">
                 {labels.writeFrontmatterPatch}
               </dt>
-              <dd className="min-w-0 whitespace-pre-wrap break-all rounded-sm border border-[color:var(--color-indigo-a14)] bg-[color:rgba(14,16,22,0.18)] px-2 py-1 text-[color:var(--color-text-secondary)]">
+              <dd className="min-w-0 whitespace-pre-wrap break-all rounded-sm border border-[color:var(--color-indigo-a14)] bg-[color:var(--color-surface-deep-a18)] px-2 py-1 text-[color:var(--color-text-secondary)]">
                 {frontmatterPatch}
               </dd>
               <dt className="text-[color:var(--color-text-quaternary)]">

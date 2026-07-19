@@ -132,7 +132,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
             <FactItem label={t('factMinOsLabel')} value={RELEASE_MIN_MACOS} />
             <FactItem label={t('factChannelLabel')} value={t('factChannelValue')} />
           </div>
-          <div className="mt-2 flex items-baseline gap-3 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-2.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]">
+          <div className="mt-2 flex items-baseline gap-3 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-2.5 shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
             <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t('checksumLabel')}
             </span>
@@ -157,7 +157,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
           </p>
 
           {showFirstReleaseChecklist ? (
-            <div className="mt-4 grid min-w-0 gap-2 rounded-lg border border-[color:rgba(244,183,49,0.34)] bg-[color:rgba(244,183,49,0.08)] p-3">
+            <div className="mt-4 grid min-w-0 gap-2 rounded-lg border border-[color:var(--color-amber-source-a34)] bg-[color:var(--color-amber-source-a08)] p-3">
               <p className="font-mono text-[10px] uppercase text-[color:var(--color-status-warning)]">
                 {t('releaseStatusTitle')}
               </p>
@@ -168,20 +168,20 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
                 <ReleaseStatusItem label={t('releaseStatusRelease')} />
                 <ReleaseStatusItem label={t('releaseStatusHosted')} />
               </ul>
-              <div className="mt-1 min-w-0 rounded-md border border-[color:rgba(244,183,49,0.24)] bg-[color:rgba(0,0,0,0.12)] p-2">
+              <div className="mt-1 min-w-0 rounded-md border border-[color:var(--color-amber-source-a24)] bg-[color:var(--color-overlay-recessed-a12)] p-2">
                 <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="font-mono text-[10px] uppercase text-[color:var(--color-status-warning)]">
                       {t('releaseStatusAuditLabel')}
                     </p>
-                    <code className="mt-1 block overflow-x-auto whitespace-nowrap rounded-sm bg-[color:rgba(0,0,0,0.16)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
+                    <code className="mt-1 block overflow-x-auto whitespace-nowrap rounded-sm bg-[color:var(--color-overlay-recessed)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
                       {RELEASE_STATUS_COMMAND}
                     </code>
                   </div>
                   <button
                     type="button"
                     onClick={() => void copyReleaseStatus(RELEASE_STATUS_COMMAND)}
-                    className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(244,183,49,0.30)] bg-[color:rgba(244,183,49,0.08)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-status-warning)] transition-colors hover:bg-[color:rgba(244,183,49,0.13)]"
+                    className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a08)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-status-warning)] transition-colors hover:bg-[color:var(--color-amber-source-a13)]"
                     aria-label={releaseStatusCopyLabel}
                   >
                     {releaseStatusCopyState === 'copied' ? (
@@ -246,7 +246,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
               <TrustRow label={t('proofSigned')} note={t('trustSignedNote')} />
               <TrustRow label={t('proofNotarized')} note={t('trustNotarizedNote')} />
               <TrustRow label={t('proofChecksum')} note="" />
-              <div className="mt-2 overflow-x-auto whitespace-nowrap rounded-[6px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 font-mono text-[11px] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]">
+              <div className="mt-2 overflow-x-auto whitespace-nowrap rounded-[6px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 font-mono text-[11px] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
                 {t('trustVerifyCommand')}
               </div>
               <p className="mt-2 text-[11.5px] leading-6 text-[color:var(--color-text-quaternary)]">

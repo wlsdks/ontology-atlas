@@ -66,7 +66,7 @@ export function AlignToolbar({
     <div
       role="toolbar"
       aria-label={t("ariaLabel")}
-      className="pointer-events-auto absolute top-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-lg border border-[var(--color-overlay-3)] bg-[var(--color-elevated)] px-2.5 py-1.5 shadow-[0_6px_16px_rgba(0,0,0,0.32)]"
+      className="pointer-events-auto absolute top-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-lg border border-[var(--color-overlay-3)] bg-[var(--color-elevated)] px-2.5 py-1.5 shadow-[0_6px_16px_var(--color-shadow-a35)]"
     >
       <span className="px-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[var(--color-text-quaternary)]">
         {t("selectedCount", { count: selected.length })}

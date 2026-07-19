@@ -103,7 +103,7 @@ export function LocalVaultPicker({
   }, [status, lastLoadedAt, recentVaults.length]);
   if (status === 'unsupported') {
     return (
-      <div className="flex flex-1 items-center gap-2 rounded-md border border-[color:rgba(244,183,49,0.35)] bg-[color:rgba(244,183,49,0.12)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-warning)]">
+      <div className="flex flex-1 items-center gap-2 rounded-md border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-warning)]">
         <Shield size={12} aria-hidden />
         {t('unsupported')}
       </div>
@@ -112,13 +112,13 @@ export function LocalVaultPicker({
   if (status === 'permission-needed') {
     return (
       <div className="grid flex-1 gap-2">
-        <div className="flex items-center gap-2 rounded-md border border-[color:rgba(244,183,49,0.35)] bg-[color:rgba(244,183,49,0.12)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-warning)]">
+        <div className="flex items-center gap-2 rounded-md border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-warning)]">
           <Shield size={12} aria-hidden />
           <span className="flex-1">{t('permissionNeeded')}</span>
           <button
             type="button"
             onClick={onRequestPermission}
-            className="rounded-sm border border-[color:rgba(244,183,49,0.35)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:rgba(244,183,49,0.18)]"
+            className="rounded-sm border border-[color:var(--color-amber-source-a35)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:var(--color-amber-source-a18)]"
           >
             {t('permissionReauth')}
           </button>
@@ -256,7 +256,7 @@ export function LocalVaultPicker({
               className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] ${
                 validationSummary.errorCount > 0
                   ? 'border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-status-danger)]'
-                  : 'border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.10)] text-[color:var(--color-status-warning)]'
+                  : 'border-[color:var(--color-amber-source-a32)] bg-[color:var(--color-amber-source-a10)] text-[color:var(--color-status-warning)]'
               }`}
             >
               {validationSummary.errorCount > 0 ? (

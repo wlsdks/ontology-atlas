@@ -724,7 +724,7 @@ export function VaultToolsMenu({
   return (
     <div
       role="menu"
-      className="fixed inset-x-3 top-24 z-30 max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(14,15,18,0.98)] p-2 shadow-[0_18px_48px_rgba(0,0,0,0.38)] md:absolute md:inset-x-auto md:right-0 md:top-10 md:max-h-[calc(100dvh-5rem)] md:w-[300px]"
+      className="fixed inset-x-3 top-24 z-30 max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(14,15,18,0.98)] p-2 shadow-[0_18px_48px_var(--color-shadow-a35)] md:absolute md:inset-x-auto md:right-0 md:top-10 md:max-h-[calc(100dvh-5rem)] md:w-[300px]"
     >
       <button
         type="button"
@@ -791,8 +791,8 @@ export function VaultToolsMenu({
                   <span
                     className={`rounded-sm px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] ${
                       agentSetupReady
-                        ? 'bg-[color:rgba(50,185,125,0.12)] text-[color:rgba(130,230,180,0.92)]'
-                        : 'bg-[color:rgba(239,180,120,0.12)] text-[color:rgba(244,196,130,0.92)]'
+                        ? 'bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a92)]'
+                        : 'bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-docs-a92)]'
                     }`}
                   >
                     {agentSetupReady
@@ -806,7 +806,7 @@ export function VaultToolsMenu({
                     total: agentSetupFiles.length,
                   })}
                   {nextMissingAgentConfig ? (
-                    <span className="block font-mono text-[10px] text-[color:rgba(244,196,130,0.92)]">
+                    <span className="block font-mono text-[10px] text-[color:var(--color-amber-docs-a92)]">
                       {agentStatus[nextMissingAgentConfig.key]
                         ? t('agentSetup.nextInvalid', {
                             path: nextMissingAgentConfig.path,
@@ -817,7 +817,7 @@ export function VaultToolsMenu({
                     </span>
                   ) : null}
                 </p>
-                <p className="mt-1 text-[10.5px] leading-4 text-[color:rgba(200,210,255,0.82)]">
+                <p className="mt-1 text-[10.5px] leading-4 text-[color:var(--color-indigo-pale-a82)]">
                   {agentSetupReady
                     ? t('agentSetup.rootSummaryReady')
                     : t('agentSetup.rootSummaryMissing')}
@@ -833,19 +833,19 @@ export function VaultToolsMenu({
                     return (
                       <li
                         key={key}
-                        className="grid grid-cols-[14px_1fr] gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a13)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
+                        className="grid grid-cols-[14px_1fr] gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-overlay-recessed-a12)] px-1.5 py-1"
                       >
                         {ready ? (
                           <CheckCircle2
                             size={12}
                             aria-hidden
-                            className="mt-0.5 text-[color:rgba(130,230,180,0.9)]"
+                            className="mt-0.5 text-[color:var(--color-success-text-a90)]"
                           />
                         ) : (
                           <CircleAlert
                             size={12}
                             aria-hidden
-                            className="mt-0.5 text-[color:rgba(244,196,130,0.92)]"
+                            className="mt-0.5 text-[color:var(--color-amber-docs-a92)]"
                           />
                         )}
                         <span className="min-w-0">
@@ -856,8 +856,8 @@ export function VaultToolsMenu({
                             <span
                               className={`shrink-0 rounded-sm px-1.5 py-0.5 text-[9.5px] ${
                                 ready
-                                  ? 'bg-[color:rgba(50,185,125,0.1)] text-[color:rgba(130,230,180,0.92)]'
-                                  : 'bg-[color:rgba(239,180,120,0.1)] text-[color:rgba(244,196,130,0.92)]'
+                                  ? 'bg-[color:var(--color-success-a10)] text-[color:var(--color-success-text-a92)]'
+                                  : 'bg-[color:var(--color-amber-source-a10)] text-[color:var(--color-amber-docs-a92)]'
                               }`}
                             >
                               {ready
@@ -876,7 +876,7 @@ export function VaultToolsMenu({
                 <p className="mt-1.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
                   {t('agentSetup.connectionHint')}
                 </p>
-                <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-indigo-line-a14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-indigo-line-a14)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
                   <span className="font-medium text-[color:var(--color-text-secondary)]">
                     {t('agentSetup.boundaryTitle')}
                   </span>{' '}
@@ -887,17 +887,17 @@ export function VaultToolsMenu({
                   aria-label={t('agentSetup.validationGateAriaLabel')}
                   className={`mt-2 grid grid-cols-[14px_1fr] gap-1.5 rounded-sm border px-2 py-1.5 ${
                     validationGateTone === 'ready'
-                      ? 'border-[color:rgba(50,185,125,0.2)] bg-[color:rgba(50,185,125,0.055)]'
+                      ? 'border-[color:var(--color-success-a20)] bg-[color:var(--color-success-a055)]'
                       : validationGateTone === 'blocked'
                         ? 'border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)]'
-                        : 'border-[color:rgba(244,196,130,0.22)] bg-[color:rgba(239,180,120,0.07)]'
+                        : 'border-[color:var(--color-amber-docs-a22)] bg-[color:var(--color-amber-source-a07)]'
                   }`}
                 >
                   {validationGateTone === 'ready' ? (
                     <CheckCircle2
                       size={12}
                       aria-hidden
-                      className="mt-0.5 text-[color:rgba(130,230,180,0.9)]"
+                      className="mt-0.5 text-[color:var(--color-success-text-a90)]"
                     />
                   ) : (
                     <CircleAlert
@@ -906,7 +906,7 @@ export function VaultToolsMenu({
                       className={`mt-0.5 ${
                         validationGateTone === 'blocked'
                           ? 'text-[color:var(--color-status-danger)]'
-                          : 'text-[color:rgba(244,196,130,0.92)]'
+                          : 'text-[color:var(--color-amber-docs-a92)]'
                       }`}
                     />
                   )}
@@ -918,10 +918,10 @@ export function VaultToolsMenu({
                       <span
                         className={`shrink-0 rounded-sm px-1.5 py-0.5 font-mono text-[9.5px] uppercase ${
                           validationGateTone === 'ready'
-                            ? 'bg-[color:rgba(50,185,125,0.1)] text-[color:rgba(130,230,180,0.92)]'
+                            ? 'bg-[color:var(--color-success-a10)] text-[color:var(--color-success-text-a92)]'
                             : validationGateTone === 'blocked'
                               ? 'bg-[color:var(--color-danger-a12)] text-[color:var(--color-status-danger)]'
-                              : 'bg-[color:rgba(239,180,120,0.1)] text-[color:rgba(244,196,130,0.92)]'
+                              : 'bg-[color:var(--color-amber-source-a10)] text-[color:var(--color-amber-docs-a92)]'
                         }`}
                       >
                         {validationGateStatus}
@@ -935,7 +935,7 @@ export function VaultToolsMenu({
                     </span>
                   </span>
                 </div>
-                <details className="mt-2 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5">
+                <details className="mt-2 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5">
                   <summary className="cursor-pointer select-none text-[10.5px] font-medium text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
                     {t('agentSetup.nextStepsSummary')}
                   </summary>
@@ -951,8 +951,8 @@ export function VaultToolsMenu({
                         <span
                           className={`inline-flex h-4 w-4 items-center justify-center rounded-sm font-mono text-[9px] ${
                             step.complete
-                              ? 'bg-[color:rgba(50,185,125,0.12)] text-[color:rgba(130,230,180,0.9)]'
-                              : 'bg-[color:var(--color-indigo-a14)] text-[color:rgba(200,210,255,0.9)]'
+                              ? 'bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]'
+                              : 'bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-pale-a90)]'
                           }`}
                         >
                           {step.complete ? '✓' : index + 1}
@@ -971,13 +971,13 @@ export function VaultToolsMenu({
                   {agentSetupProofRows.map((row) => (
                     <div
                       key={row.key}
-                      className="grid grid-cols-[14px_76px_1fr] items-start gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
+                      className="grid grid-cols-[14px_76px_1fr] items-start gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-1.5 py-1"
                     >
                       {row.state === 'ready' ? (
                         <CheckCircle2
                           size={12}
                           aria-hidden
-                          className="mt-0.5 text-[color:rgba(130,230,180,0.9)]"
+                          className="mt-0.5 text-[color:var(--color-success-text-a90)]"
                         />
                       ) : row.state === 'blocked' ? (
                         <CircleAlert
@@ -989,13 +989,13 @@ export function VaultToolsMenu({
                         <Terminal
                           size={12}
                           aria-hidden
-                          className="mt-0.5 text-[color:rgba(180,235,205,0.9)]"
+                          className="mt-0.5 text-[color:var(--color-success-text-a90)]"
                         />
                       ) : (
                         <CircleAlert
                           size={12}
                           aria-hidden
-                          className="mt-0.5 text-[color:rgba(244,196,130,0.92)]"
+                          className="mt-0.5 text-[color:var(--color-amber-docs-a92)]"
                         />
                       )}
                       <dt className="truncate font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
@@ -1016,10 +1016,10 @@ export function VaultToolsMenu({
                       key={row.key}
                       className="grid grid-cols-[18px_88px_1fr] items-start gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-indigo-a06)] px-1.5 py-1"
                     >
-                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:var(--color-indigo-a14)] font-mono text-[9px] text-[color:rgba(200,210,255,0.9)]">
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:var(--color-indigo-a14)] font-mono text-[9px] text-[color:var(--color-indigo-pale-a90)]">
                         {index + 1}
                       </span>
-                      <dt className="truncate font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:rgba(200,210,255,0.82)]">
+                      <dt className="truncate font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-pale-a82)]">
                         {row.label}
                       </dt>
                       <dd className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
@@ -1041,13 +1041,13 @@ export function VaultToolsMenu({
                           <CheckCircle2
                             size={12}
                             aria-hidden
-                            className="mt-0.5 text-[color:rgba(130,230,180,0.9)]"
+                            className="mt-0.5 text-[color:var(--color-success-text-a90)]"
                           />
                         ) : (
                           <CircleAlert
                             size={12}
                             aria-hidden
-                            className="mt-0.5 text-[color:rgba(244,196,130,0.92)]"
+                            className="mt-0.5 text-[color:var(--color-amber-docs-a92)]"
                           />
                         )}
                         <span>
@@ -1058,7 +1058,7 @@ export function VaultToolsMenu({
                             {label}
                           </span>
                           {present && !valid ? (
-                            <span className="ml-1 text-[color:rgba(244,196,130,0.92)]">
+                            <span className="ml-1 text-[color:var(--color-amber-docs-a92)]">
                               {t('agentSetup.needsReview')}
                             </span>
                           ) : null}
@@ -1073,7 +1073,7 @@ export function VaultToolsMenu({
                     onClick={() => void handleEnsureAgentConfigs()}
                     disabled={agentSetupBusy}
                     title={t('agentSetup.repairTitle')}
-                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-[11.5px] text-[color:rgba(200,210,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)] disabled:opacity-60"
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-indigo-pale-a94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)] disabled:opacity-60"
                   >
                     <Bot size={12} aria-hidden />
                     {agentSetupBusy
@@ -1082,7 +1082,7 @@ export function VaultToolsMenu({
                   </button>
                 ) : null}
                 {hasInvalidAgentConfig ? (
-                  <p className="mt-2 break-keep rounded-sm border border-[color:rgba(244,196,130,0.18)] bg-[color:rgba(239,180,120,0.08)] px-2 py-1.5 text-[10.5px] leading-4 text-[color:rgba(244,196,130,0.92)]">
+                  <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-[10.5px] leading-4 text-[color:var(--color-amber-docs-a92)]">
                     {t('agentSetup.invalidRepairHint')}
                   </p>
                 ) : null}
@@ -1113,7 +1113,7 @@ export function VaultToolsMenu({
                   ].map((mode) => (
                     <div
                       key={mode.term}
-                      className="rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1"
+                      className="rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1"
                     >
                       <dt className="text-[10.5px] font-medium text-[color:var(--color-text-secondary)]">
                         {mode.term}
@@ -1173,14 +1173,14 @@ export function VaultToolsMenu({
                   type="button"
                   onClick={() => void handleCopyAgentJsonGate()}
                   title={t('agentSetup.copyJsonGateTitle')}
-                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(130,230,180,0.28)] bg-[color:rgba(50,185,125,0.07)] px-2 py-1.5 text-[11.5px] text-[color:rgba(180,235,205,0.94)] transition-colors hover:border-[color:rgba(130,230,180,0.42)] hover:bg-[color:rgba(50,185,125,0.11)]"
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
                 >
                   <Terminal size={12} aria-hidden />
                   {copyJsonGateLabel}
                 </button>
                 <div
                   aria-label={t('agentSetup.mcpVerifyPreviewAriaLabel')}
-                  className="mt-1.5 rounded-sm border border-[color:var(--color-indigo-a20)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5"
+                  className="mt-1.5 rounded-sm border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5"
                 >
                   <div className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:rgba(165,170,245,0.82)]">
                     {t('agentSetup.mcpVerifyLabel')}
@@ -1189,8 +1189,8 @@ export function VaultToolsMenu({
                     {agentMcpVerifyPreview}
                   </code>
                 </div>
-                <div className="mt-1.5 rounded-sm border border-[color:rgba(130,230,180,0.18)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5">
-                  <div className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:rgba(130,230,180,0.78)]">
+                <div className="mt-1.5 rounded-sm border border-[color:var(--color-success-a18)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
+                  <div className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-success-text-a78)]">
                     {t('agentSetup.jsonGateLabel')}
                   </div>
                   <code className="mt-1 block truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
@@ -1217,9 +1217,9 @@ export function VaultToolsMenu({
                   ].map((rule) => (
                     <div
                       key={rule.term}
-                      className="grid grid-cols-[92px_1fr] gap-2 rounded-sm border border-[color:rgba(130,230,180,0.12)] bg-[color:rgba(50,185,125,0.035)] px-2 py-1"
+                      className="grid grid-cols-[92px_1fr] gap-2 rounded-sm border border-[color:var(--color-success-a12)] bg-[color:var(--color-success-a035)] px-2 py-1"
                     >
-                      <dt className="truncate font-mono text-[9.5px] text-[color:rgba(180,235,205,0.94)]">
+                      <dt className="truncate font-mono text-[9.5px] text-[color:var(--color-success-text-a94)]">
                         {rule.term}
                       </dt>
                       <dd className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
@@ -1229,7 +1229,7 @@ export function VaultToolsMenu({
                   ))}
                 </dl>
                 <div className="mt-1.5 rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-2 py-1.5">
-                  <p className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:rgba(200,210,255,0.82)]">
+                  <p className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-indigo-pale-a82)]">
                     {t('agentSetup.syncAfterChangeTitle')}
                   </p>
                   <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
@@ -1249,9 +1249,9 @@ export function VaultToolsMenu({
                   {AGENT_VERIFY_CLI_PREVIEW.map((command, index) => (
                     <li
                       key={command}
-                      className="grid grid-cols-[18px_1fr] items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:rgba(0,0,0,0.14)] px-1.5 py-1"
+                      className="grid grid-cols-[18px_1fr] items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a14)] px-1.5 py-1"
                     >
-                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:var(--color-indigo-a14)] font-mono text-[9px] text-[color:rgba(200,210,255,0.9)]">
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:var(--color-indigo-a14)] font-mono text-[9px] text-[color:var(--color-indigo-pale-a90)]">
                         {index + 1}
                       </span>
                       <code className="truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
@@ -1281,7 +1281,7 @@ export function VaultToolsMenu({
                       key={rootMode.term}
                       className="rounded-sm border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-indigo-a06)] px-2 py-1"
                     >
-                      <dt className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:rgba(200,210,255,0.82)]">
+                      <dt className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-pale-a82)]">
                         {rootMode.term}
                       </dt>
                       <dd className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
@@ -1294,7 +1294,7 @@ export function VaultToolsMenu({
                   type="button"
                   onClick={() => void handleCopyAgentSetupCheckCliCommand()}
                   title={t('agentSetup.copySetupCheckCliTitle')}
-                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(130,230,180,0.28)] bg-[color:rgba(50,185,125,0.07)] px-2 py-1.5 text-[11.5px] text-[color:rgba(180,235,205,0.94)] transition-colors hover:border-[color:rgba(130,230,180,0.42)] hover:bg-[color:rgba(50,185,125,0.11)]"
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
                 >
                   <Terminal size={12} aria-hidden />
                   {copySetupCheckCliLabel}
@@ -1303,7 +1303,7 @@ export function VaultToolsMenu({
                   type="button"
                   onClick={() => void handleCopyAgentSetupCliCommand()}
                   title={t('agentSetup.copySetupCliTitle')}
-                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(244,196,130,0.28)] bg-[color:rgba(239,180,120,0.07)] px-2 py-1.5 text-[11.5px] text-[color:rgba(244,196,130,0.94)] transition-colors hover:border-[color:rgba(244,196,130,0.42)] hover:bg-[color:rgba(239,180,120,0.11)]"
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-amber-docs-a28)] bg-[color:var(--color-amber-source-a07)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-amber-docs-a94)] transition-colors hover:border-[color:var(--color-amber-docs-a42)] hover:bg-[color:var(--color-amber-source-a11)]"
                 >
                   <Terminal size={12} aria-hidden />
                   {copySetupCliLabel}
@@ -1371,7 +1371,7 @@ export function VaultToolsMenu({
           <button
             type="button"
             onClick={onCreateNewDoc}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] px-2.5 py-1.5 text-[11.5px] text-[color:rgba(200,210,255,0.92)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] px-2.5 py-1.5 text-[11.5px] text-[color:var(--color-indigo-pale-a92)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
           >
             <FilePlus size={12} aria-hidden />
             {t('advanced.newDoc')}

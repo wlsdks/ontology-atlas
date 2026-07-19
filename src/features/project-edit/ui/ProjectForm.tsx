@@ -662,7 +662,7 @@ export function ProjectForm({
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div
           className={cn(
-            "rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 shadow-[inset_0_1px_0_var(--color-overlay-2),0_18px_36px_rgba(0,0,0,0.22)]",
+            "rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 shadow-[inset_0_1px_0_var(--color-overlay-2),0_18px_36px_var(--color-shadow-a22)]",
             mode === "edit" && "sticky top-4 z-10",
           )}
         >
@@ -1537,7 +1537,7 @@ function Input({
       disabled={disabled}
       className={cn(
         "h-9 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-sm text-[color:var(--color-text-primary)]",
-        "shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]",
+        "shadow-[inset_0_1px_2px_var(--color-shadow-a35)]",
         "placeholder:text-[color:var(--color-text-quaternary)]",
         "hover:border-[color:var(--color-border-strong)]",
         "focus:border-[color:var(--color-indigo-accent)] focus:outline-none",
@@ -1574,7 +1574,7 @@ function Textarea({
       rows={rows}
       className={cn(
         "rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-sm text-[color:var(--color-text-primary)]",
-        "shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]",
+        "shadow-[inset_0_1px_2px_var(--color-shadow-a35)]",
         "placeholder:text-[color:var(--color-text-quaternary)]",
         "hover:border-[color:var(--color-border-strong)]",
         "focus:border-[color:var(--color-indigo-accent)] focus:outline-none",
@@ -1602,7 +1602,7 @@ function Select<T extends string>({
       onChange={(e) => onChange(e.target.value as T)}
       className={cn(
         "h-9 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-sm text-[color:var(--color-text-primary)]",
-        "shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]",
+        "shadow-[inset_0_1px_2px_var(--color-shadow-a35)]",
         "hover:border-[color:var(--color-border-strong)]",
         "focus:border-[color:var(--color-indigo-accent)] focus:outline-none",
       )}

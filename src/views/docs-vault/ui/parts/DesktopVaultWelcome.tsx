@@ -173,7 +173,7 @@ export function DesktopVaultWelcome({
               disabled={busy}
               className="flex w-full items-start gap-3 bg-[color:var(--color-indigo-a08)] px-4 py-4 text-left transition-colors hover:bg-[color:var(--color-indigo-a14)] disabled:opacity-60"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-line-a32)] text-[color:rgba(205,212,255,0.94)]">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-line-a32)] text-[color:var(--color-indigo-pale-a94)]">
                 <FolderOpen size={17} aria-hidden />
               </span>
               <span className="min-w-0">

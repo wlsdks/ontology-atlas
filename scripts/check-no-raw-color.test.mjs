@@ -3,10 +3,10 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { findRawIndigoLiterals, ALLOWLIST } from "./check-no-raw-indigo.mjs";
+import { findRawColorLiterals, ALLOWLIST } from "./check-no-raw-color.mjs";
 
 function withTempSrc(files, run) {
-  const dir = mkdtempSync(join(tmpdir(), "check-no-raw-indigo-"));
+  const dir = mkdtempSync(join(tmpdir(), "check-no-raw-color-"));
   try {
     for (const [name, content] of Object.entries(files)) {
       writeFileSync(join(dir, name), content, "utf8");
@@ -26,10 +26,11 @@ test("flags a raw indigo rgba() literal in a className string", () => {
 `,
     },
     (dir) => {
-      const violations = findRawIndigoLiterals(dir);
+      const violations = findRawColorLiterals(dir);
       assert.equal(violations.length, 1);
       assert.equal(violations[0].file, "src/Widget.tsx");
       assert.equal(violations[0].line, 2);
+      assert.equal(violations[0].family, "indigo");
     },
   );
 });
@@ -43,8 +44,57 @@ test("flags a raw indigo-line rgba() literal", () => {
 `,
     },
     (dir) => {
-      const violations = findRawIndigoLiterals(dir);
+      const violations = findRawColorLiterals(dir);
       assert.equal(violations.length, 1);
+      assert.equal(violations[0].family, "indigo-line");
+    },
+  );
+});
+
+test("flags a raw success-emerald rgba() literal (converged and pre-convergence hues)", () => {
+  withTempSrc(
+    {
+      "Widget.tsx": `export const Widget = () => (
+  <div className="bg-[color:rgba(50,185,125,0.12)] text-[color:rgba(73,190,146,0.9)]" />
+);
+`,
+    },
+    (dir) => {
+      const violations = findRawColorLiterals(dir);
+      assert.equal(violations.length, 1); // one violation per line, first match wins
+      assert.equal(violations[0].family, "success");
+    },
+  );
+});
+
+test("flags a raw amber warning/source rgba() literal", () => {
+  withTempSrc(
+    {
+      "Widget.tsx": `export const Widget = () => (
+  <div className="border-[color:rgba(244,183,49,0.25)]" />
+);
+`,
+    },
+    (dir) => {
+      const violations = findRawColorLiterals(dir);
+      assert.equal(violations.length, 1);
+      assert.equal(violations[0].family, "amber-source-warning");
+    },
+  );
+});
+
+test("flags a raw kind-tone hue rgba() literal outside tone.ts", () => {
+  withTempSrc(
+    {
+      "Widget.tsx": `export const Widget = () => (
+  <div className="text-[color:rgba(74,177,196,0.94)]" />
+);
+`,
+    },
+    (dir) => {
+      const violations = findRawColorLiterals(dir);
+      assert.equal(violations.length, 1);
+      assert.equal(violations[0].family, "kind-tone");
     },
   );
 });
@@ -53,12 +103,12 @@ test("passes when the literal is already a var() token reference", () => {
   withTempSrc(
     {
       "Widget.tsx": `export const Widget = () => (
-  <div className="bg-[color:var(--color-indigo-a24)]" />
+  <div className="bg-[color:var(--color-indigo-a24)] text-[color:var(--color-success-a12)]" />
 );
 `,
     },
     (dir) => {
-      assert.deepEqual(findRawIndigoLiterals(dir), []);
+      assert.deepEqual(findRawColorLiterals(dir), []);
     },
   );
 });
@@ -69,7 +119,7 @@ test("skips .test. files", () => {
       "Widget.test.tsx": `const c = "rgba(94,106,210,0.24)";\n`,
     },
     (dir) => {
-      assert.deepEqual(findRawIndigoLiterals(dir), []);
+      assert.deepEqual(findRawColorLiterals(dir), []);
     },
   );
 });
@@ -79,11 +129,12 @@ test("skips the topology-map-v2 canvas engine directory", () => {
     const nested = join(dir, "widgets", "topology-map-v2", "lib");
     mkdirSync(nested, { recursive: true });
     writeFileSync(join(nested, "colors.ts"), `const c = "rgba(94,106,210,0.24)";\n`, "utf8");
-    assert.deepEqual(findRawIndigoLiterals(dir), []);
+    assert.deepEqual(findRawColorLiterals(dir), []);
   });
 });
 
 test("documented ALLOWLIST entries stay clean of raw literals so future edits don't silently re-introduce drift", () => {
   assert.ok(ALLOWLIST.has("shared/config/indigo-tokens.ts"));
   assert.ok(ALLOWLIST.has("views/docs-vault/lib/popout-template.ts"));
+  assert.ok(ALLOWLIST.has("entities/ontology-class/model/tone.ts"));
 });

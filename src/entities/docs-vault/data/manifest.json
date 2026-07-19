@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T22:42:51.753Z",
+  "generatedAt": "2026-07-19T23:40:51.836Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-20 — 잔여 색 완전 토큰화 Phase 2 (success emerald · amber · indigo-pale · surface-deep · shadow)",
+          "slug": "2026-07-20-잔여-색-완전-토큰화-phase-2-success-emerald-amber-indigo-pale-surface-deep-shadow"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-20 — 인디고/오버레이 색 토큰화 B안 (indigo · indigo-line · white-overlay · danger 잔여)",
           "slug": "2026-07-20-인디고오버레이-색-토큰화-b안-indigo-indigo-line-white-overlay-danger-잔여"
         },
@@ -3961,9 +3966,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 색 인벤토리 감사(568건)에서 나온 후속 조치 — indigo(94,106,210) 203건 · indigo-line(139,151,255) 98건 · ",
-      "wordCount": 23908,
-      "updatedAt": "2026-07-19T22:42:05.512Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. B안(인디고/오버레이/danger) 이후 남은 ~330건의 raw rgba() 리터럴을 Design Guardian 헌장 판정(.qa-scratch/aud",
+      "wordCount": 24099,
+      "updatedAt": "2026-07-19T23:40:49.047Z",
       "linksOut": [
         "slug"
       ]
@@ -4345,6 +4350,11 @@
         },
         {
           "depth": 3,
+          "text": "Signal tones (3, symmetric ladders)",
+          "slug": "signal-tones-3-symmetric-ladders"
+        },
+        {
+          "depth": 3,
           "text": "Borders",
           "slug": "borders"
         },
@@ -4475,8 +4485,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 10589,
-      "updatedAt": "2026-07-19T09:44:55.448Z",
+      "wordCount": 10817,
+      "updatedAt": "2026-07-19T23:40:49.048Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

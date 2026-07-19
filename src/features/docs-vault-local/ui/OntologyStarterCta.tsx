@@ -186,7 +186,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           <br />
           {t('emptyBodyLine2')}
         </p>
-        <div className="mx-auto mt-4 max-w-[560px] rounded-md border border-[color:var(--color-indigo-a24)] bg-[color:rgba(14,16,22,0.18)] px-3 py-2 text-left">
+        <div className="mx-auto mt-4 max-w-[560px] rounded-md border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-surface-deep-a18)] px-3 py-2 text-left">
           <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
             {t('definitionLabel')}
           </p>
@@ -252,7 +252,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           <button
             type="button"
             onClick={handleCopyJsonGate}
-            className="inline-flex items-center gap-2 rounded-md border border-[color:rgba(130,230,180,0.28)] bg-[color:rgba(50,185,125,0.07)] px-3 py-1.5 text-[11.5px] text-[color:rgba(180,235,205,0.94)] transition-colors hover:border-[color:rgba(130,230,180,0.42)] hover:bg-[color:rgba(50,185,125,0.11)]"
+            className="inline-flex items-center gap-2 rounded-md border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyJsonGateLabel}
@@ -314,7 +314,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         type="button"
         onClick={handleCopyJsonGate}
         title={t('secondaryJsonGateTitle')}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(130,230,180,0.28)] bg-[color:rgba(50,185,125,0.07)] px-3 py-1.5 text-[11.5px] text-[color:rgba(180,235,205,0.94)] transition-colors hover:border-[color:rgba(130,230,180,0.42)] hover:bg-[color:rgba(50,185,125,0.11)]"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
       >
         <ClipboardCopy size={12} aria-hidden />
         {copyJsonGateLabel}

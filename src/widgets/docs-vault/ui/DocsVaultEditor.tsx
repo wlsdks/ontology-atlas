@@ -456,7 +456,7 @@ export function DocsVaultEditor({
         <span
           className={
             saveState.tone === 'dirty'
-              ? "inline-flex items-center gap-1.5 rounded-sm border border-[color:rgba(232,200,148,0.25)] bg-[color:rgba(232,200,148,0.08)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:rgba(232,200,148,0.95)]"
+              ? "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-amber-docs-a25)] bg-[color:var(--color-amber-docs-a08)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-amber-docs-a95)]"
               : saveState.tone === 'saved'
                 ? "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-line-a90)]"
                 : "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
@@ -491,7 +491,7 @@ export function DocsVaultEditor({
             size={11}
             className={
               dirty
-                ? 'text-[color:rgba(232,200,148,0.95)]'
+                ? 'text-[color:var(--color-amber-docs-a95)]'
                 : 'text-[color:var(--color-text-quaternary)]'
             }
             aria-hidden
@@ -502,7 +502,7 @@ export function DocsVaultEditor({
           <span
             className={`truncate ${
               dirty
-                ? 'font-medium text-[color:rgba(232,200,148,0.95)]'
+                ? 'font-medium text-[color:var(--color-amber-docs-a95)]'
                 : 'text-[color:var(--color-text-tertiary)]'
             }`}
           >
@@ -517,7 +517,7 @@ export function DocsVaultEditor({
             size={11}
             className={
               dirty
-                ? 'text-[color:rgba(232,200,148,0.95)]'
+                ? 'text-[color:var(--color-amber-docs-a95)]'
                 : 'text-[color:var(--color-text-quaternary)]'
             }
             aria-hidden
@@ -528,7 +528,7 @@ export function DocsVaultEditor({
           <span
             className={`truncate ${
               dirty
-                ? 'font-medium text-[color:rgba(232,200,148,0.95)]'
+                ? 'font-medium text-[color:var(--color-amber-docs-a95)]'
                 : 'text-[color:var(--color-text-tertiary)]'
             }`}
           >
@@ -541,7 +541,7 @@ export function DocsVaultEditor({
             size={11}
             className={
               dirty
-                ? 'text-[color:rgba(232,200,148,0.95)]'
+                ? 'text-[color:var(--color-amber-docs-a95)]'
                 : 'text-[color:var(--color-text-quaternary)]'
             }
             aria-hidden
@@ -559,7 +559,7 @@ export function DocsVaultEditor({
             onClick={() => setPreview((v) => !v)}
             className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[11px] transition-colors ${
               preview
-                ? 'border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a08)] text-[color:rgba(200,210,255,0.92)]'
+                ? 'border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a08)] text-[color:var(--color-indigo-pale-a92)]'
                 : 'border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]'
             }`}
             aria-pressed={preview}
@@ -576,7 +576,7 @@ export function DocsVaultEditor({
             type="button"
             onClick={() => void doSave()}
             disabled={saving || !dirty}
-            className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a14)] px-2 py-1 text-[11px] text-[color:rgba(200,210,255,0.95)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a14)] px-2 py-1 text-[11px] text-[color:var(--color-indigo-pale-a95)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] disabled:cursor-not-allowed disabled:opacity-50"
             title={t('saveTooltip')}
           >
             {saving ? (
@@ -738,10 +738,10 @@ export function DocsVaultEditor({
               });
             }}
             spellCheck={false}
-            className="absolute inset-0 resize-none bg-[color:rgba(12,14,20,0.4)] px-6 py-6 font-mono text-[13px] leading-[1.7] text-[color:rgba(220,226,240,0.92)] outline-none md:px-10"
+            className="absolute inset-0 resize-none bg-[color:var(--color-surface-deep-a40)] px-6 py-6 font-mono text-[13px] leading-[1.7] text-[color:rgba(220,226,240,0.92)] outline-none md:px-10"
           />
           {autocomplete && acMatches.length > 0 ? (
-            <div className="pointer-events-auto absolute bottom-3 left-3 z-10 w-[320px] overflow-hidden rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:rgba(12,14,20,0.98)] shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+            <div className="pointer-events-auto absolute bottom-3 left-3 z-10 w-[320px] overflow-hidden rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-surface-deep-a98)] shadow-[0_10px_30px_var(--color-shadow-a50)]">
               <div className="border-b border-[color:var(--color-overlay-2)] px-2 py-1 font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                 {t('wikilinkLabel', { query: autocomplete.query })}
               </div>
@@ -779,7 +779,7 @@ export function DocsVaultEditor({
           ) : null}
         </div>
         {preview ? (
-          <div className="min-h-0 w-1/2 overflow-auto bg-[color:rgba(12,14,20,0.2)]">
+          <div className="min-h-0 w-1/2 overflow-auto bg-[color:var(--color-surface-deep-a20)]">
             <article className="mx-auto max-w-[720px] px-6 py-6 md:px-8">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -825,7 +825,7 @@ export function DocsVaultEditor({
                     if (!isBlock) {
                       return (
                         <code
-                          className="rounded-sm bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-[11.5px] text-[color:rgba(200,210,255,0.95)]"
+                          className="rounded-sm bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-[11.5px] text-[color:var(--color-indigo-pale-a95)]"
                           {...rest}
                         >
                           {children}
@@ -840,7 +840,7 @@ export function DocsVaultEditor({
                   },
                   pre: (props) => (
                     <pre
-                      className="my-3 overflow-x-auto rounded-md border border-[color:var(--color-overlay-2)] bg-[color:rgba(12,14,20,0.8)] p-3 font-mono text-[12px] text-[color:rgba(200,210,255,0.92)]"
+                      className="my-3 overflow-x-auto rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-3 font-mono text-[12px] text-[color:var(--color-indigo-pale-a92)]"
                       {...props}
                     />
                   ),
