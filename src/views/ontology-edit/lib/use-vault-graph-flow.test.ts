@@ -282,10 +282,12 @@ describe("buildVaultGraphFlow", () => {
     const xA = result.nodes.find((n) => n.id === "capabilities/a")?.position.x;
     const xB = result.nodes.find((n) => n.id === "capabilities/b")?.position.x;
     expect(xA).toBe(xB);
+    // 같은 rank(같은 x)에 세로로 쌓인 두 노드 → 마주보는 상/하 포트. 예전
+    // same-side(right→right)는 헤어핀을 만들어 제거됐다.
     expect(result.edges[0]).toMatchObject({
       type: "vault",
-      sourceHandle: "source-right",
-      targetHandle: "target-right",
+      sourceHandle: "source-bottom",
+      targetHandle: "target-top",
     });
   });
 

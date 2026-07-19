@@ -7,6 +7,7 @@ import Graph from "graphology";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { resolveBuilderEdgeEndpointHandles } from "./builder-edge-handles";
+import { unorderedPairKey } from "./builder-edge-route";
 
 /** 자동 레이아웃 알고리즘 — 빌더 헤더 dropdown 으로 사용자가 토글. */
 export type VaultGraphLayoutMode = "dagre" | "force";
@@ -331,23 +332,35 @@ export function buildVaultGraphFlow(
   });
 
   // edge 렌더 — 위에서 모은 edgeRecords 를 xyflow Edge[] 로 변환. n8n 스타일:
-  //  - containment → smoothstep + 둥근 모서리 (borderRadius 12) + 화살표 marker
-  //  - dependencies → bezier 곡선 + 화살표 marker (방향성 의존 강조)
-  //  - relates / describes → 양방향 약한 overlay, marker 없음
+  //  - 전 엣지 → cubic bezier (VaultEdge 컴포넌트), 포트는 마주보게 선택.
+  //  - dependencies → 화살표 marker (방향성 의존 강조), 그 외 marker 생략.
+  //  - trace 문법(실선/파선/점선) 은 stroke style 로만 표현.
   // **라벨은 기본 비표시** — 시각 노이즈 주범, hover/inspector 가 담당.
   // 라벨 텍스트는 data.frontmatterKey 로만 노출, edgeLabelOf 는 향후 hover
   // 단계에서 호출. 지금은 미사용 분기 회피용으로 호출하지 않음.
   void resolveEdgeLabel;
+  // 평행 엣지 분리용 — 같은 두 노드(방향 무시)를 잇는 엣지들을 unordered
+  // pair 로 묶어 각 엣지에 순번/총개수를 부여. VaultEdge 가 이 값으로 겹치는
+  // 선을 법선 방향으로 갈라놓는다(A→B 와 B→A 가 정확히 겹치던 케이스 해소).
+  const pairCounts = new Map<string, number>();
+  for (const rec of edgeRecords) {
+    const key = unorderedPairKey(rec.source, rec.target);
+    pairCounts.set(key, (pairCounts.get(key) ?? 0) + 1);
+  }
+  const pairSeen = new Map<string, number>();
   const edges: Edge[] = edgeRecords.map((rec) => {
     const id = `${rec.source}--${rec.key}-->${rec.target}`;
     const sourceNode = nodes.find((node) => node.id === rec.source);
     const targetNode = nodes.find((node) => node.id === rec.target);
-    const isContainment = rec.semanticType === "containment";
     // builder-core trace 계약(docs/prototypes/builder-v2-0{2,3}.html): 화살표는
     // depends 계열에만 — contains 는 위계선일 뿐 "당김/의존" 방향성을 표시할
     // 필요가 없다(이전엔 containment 도 화살표를 그렸다).
     const isDirectional = rec.key === "dependencies";
     const stroke = edgeStrokeStyleByKey(rec.key);
+    const pairKey = unorderedPairKey(rec.source, rec.target);
+    const parallelCount = pairCounts.get(pairKey) ?? 1;
+    const parallelIndex = pairSeen.get(pairKey) ?? 0;
+    pairSeen.set(pairKey, parallelIndex + 1);
     return {
       id,
       source: rec.source,
@@ -356,15 +369,10 @@ export function buildVaultGraphFlow(
       ...(sourceNode && targetNode
         ? resolveBuilderEdgeEndpointHandles(sourceNode, targetNode, rec.semanticType)
         : {}),
-      pathOptions: {
-        borderRadius: isContainment ? 16 : 22,
-        offset: isContainment ? 28 : 36,
-      },
       style: stroke,
       animated: false,
-      // 방향성 있는 엣지 (containment / depends_on) 에 화살표 marker. 색은
-      // stroke 와 매칭해서 시각 일관성. relates / describes 는 대칭 관계라
-      // marker 생략.
+      // 방향성 있는 엣지 (dependencies) 에 화살표 marker. 색은 stroke 와
+      // 매칭해서 시각 일관성. relates / describes / contains 는 marker 생략.
       ...(isDirectional
         ? {
             markerEnd: {
@@ -378,10 +386,12 @@ export function buildVaultGraphFlow(
           }
         : {}),
       // Inspector / 디버그 / 향후 hover UI 에서 의미를 알 수 있게 metadata
-      // 노출. semanticType 으로 스타일/필터 분기.
+      // 노출. semanticType 으로 스타일/필터 분기, parallel* 로 겹침 분리.
       data: {
         semanticType: rec.semanticType,
         frontmatterKey: rec.key,
+        parallelIndex,
+        parallelCount,
       },
       // vault edge 는 frontmatter 진실원이라 캔버스 Del 로 삭제 금지.
       // 인스펙터의 array editor (-) 버튼만 patch 권한.
