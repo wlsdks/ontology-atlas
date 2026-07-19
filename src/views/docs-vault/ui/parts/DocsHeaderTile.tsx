@@ -22,6 +22,9 @@ export interface DocsHeaderTileProps
  * 밀도 요구(34px)에 맞지 않는다(implementation-contract.md §1 각주). 같은
  * chrome 시각 문법(라운드·보더·호버·active 토큰)만 공유하는 문서함 헤더
  * 로컬 variant.
+ *
+ * 크기는 `--docs-header-tile-size`(34px) 토큰 참조 — 이전엔 `h-[34px]
+ * w-[34px]` 리터럴이었다(Guardian 이월 P3, 슬라이스 B 에서 토큰 승격).
  */
 export const DocsHeaderTile = forwardRef<HTMLButtonElement, DocsHeaderTileProps>(
   function DocsHeaderTile(
@@ -35,7 +38,7 @@ export const DocsHeaderTile = forwardRef<HTMLButtonElement, DocsHeaderTileProps>
         title={title}
         aria-label={ariaLabelProp ?? title}
         className={cn(
-          "inline-flex h-[34px] w-[34px] flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] border text-[color:var(--color-text-tertiary)] transition-colors disabled:cursor-not-allowed disabled:opacity-45",
+          "inline-flex h-[var(--docs-header-tile-size)] w-[var(--docs-header-tile-size)] flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] border text-[color:var(--color-text-tertiary)] transition-colors disabled:cursor-not-allowed disabled:opacity-45",
           active
             ? "border-[color:var(--chrome-active-border)] bg-[color:var(--chrome-active-surface)] text-[color:var(--color-text-primary)]"
             : "border-[color:var(--color-border-soft)] hover:border-[color:rgba(139,151,255,0.28)] hover:text-[color:var(--color-text-primary)]",

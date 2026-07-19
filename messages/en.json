@@ -1732,7 +1732,7 @@
       "title": "Ontology workspace",
       "docCount": "{count} documents",
       "localBadge": "Local",
-      "paletteTooltip": "Search · commands · tags",
+      "paletteTooltip": "Search · commands · tags (⌘K)",
       "paletteAriaLabel": "Open palette (search · commands · tags)",
       "inspector": "Document info",
       "inspectorTooltip": "Show outline · share · references",
@@ -1752,6 +1752,10 @@
       "censusSummary": "{concepts} concepts · {relations} relations",
       "docListCollapse": "Collapse document list",
       "docListExpand": "Expand document list"
+    },
+    "tabs": {
+      "stripAriaLabel": "Open documents",
+      "closeAria": "Close {title} tab"
     },
     "vaultChip": {
       "menuAriaLabel": "Workspace info menu"
