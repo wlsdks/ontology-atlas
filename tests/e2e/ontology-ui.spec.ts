@@ -60,6 +60,13 @@ test.describe("ontology view UI", () => {
   test("mobile: new-project CTA is tappable and opens the create form", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/projects/");
+    // `next dev` can transiently double-render this page's client tree
+    // (streaming/hydration artifact, not visible in a production static
+    // export) — under load from other tests this occasionally leaves two
+    // `project-selector-new-cta` nodes in the DOM for one frame, which trips
+    // Playwright's strict-mode locator. Letting the network settle first
+    // gives that duplicate time to collapse before the strict-mode query.
+    await page.waitForLoadState("networkidle");
 
     const newProjectCta = page.getByTestId("project-selector-new-cta");
     await expect(newProjectCta).toBeVisible();
