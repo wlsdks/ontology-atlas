@@ -24,7 +24,7 @@ import {
   type TopologyControlsState,
 } from "@/widgets/topology-controls/model/controls-state";
 import { HeroCollapsed } from "@/widgets/hero-header";
-import { AppNavRail } from "@/widgets/app-nav-rail";
+import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
@@ -302,6 +302,35 @@ export function HomePage() {
     (next: boolean) => setIndexPreference(next ? "collapsed" : "expanded"),
     [setIndexPreference],
   );
+  // perf/persistent-shell — AppNavRail 은 이제 layout 에 상주해 지형도가 직접
+  // 마운트하지 않는다. 레일 하단 설정 게어는 이 페이지 소유 state
+  // (indexPanelCollapsedStored 등)에 의존하므로, 레일이 렌더할 노드를
+  // Context 로 등록한다(`useNavRailSettingsSlot`) — 다른 라우트로 이동하면
+  // effect cleanup 이 자동으로 비운다.
+  const navRailSettingsSlot = useMemo(
+    () => (
+      <TopologyV2SettingsGear
+        indexDefaultCollapsed={indexPanelCollapsedStored}
+        onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
+        changeVaultHref="/docs/?intent=local"
+        popoverAlign="left"
+        popoverSide="top"
+        labels={{
+          trigger: t('controls.settingsGearAriaLabel'),
+          heading: t('controls.settingsGearHeading'),
+          locale: t('controls.settingsGearLocale'),
+          theme: t('controls.settingsGearTheme'),
+          indexDefault: t('controls.settingsGearIndexDefault'),
+          indexDefaultExpanded: t('controls.settingsGearIndexDefaultExpanded'),
+          indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
+          changeVault: t('controls.settingsGearChangeVault'),
+          changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
+        }}
+      />
+    ),
+    [indexPanelCollapsedStored, handleChangeIndexDefaultCollapsed, t],
+  );
+  useNavRailSettingsSlot(navRailSettingsSlot);
   // Clicking the collapsed edge tab always means "give the slot back to
   // INDEX" — the analysis rail owns the slot only because of a non-overview
   // mode (focus/path/health), so returning to overview is always enough.
@@ -1568,34 +1597,11 @@ export function HomePage() {
   }, [hubs, preloadProjectAsset, selectedSlug]);
 
   return (
-    <main id="main" className="relative flex h-screen w-screen overflow-hidden bg-[color:var(--color-canvas)]">
-      {/* 좌측 64px 내비 레일 (feat/chrome-system) — 전역 목적지 + 하단
-          에이전트 상태·설정. 캔버스 밖 flex 형제라 아래 wrapper 의
-          `absolute left-4/top-4 …` 류 값은 그대로 두어도 이 wrapper 의
-          로컬 (0,0) 기준으로 재계산돼 자동으로 64px 밀린다 — 개별 인셋 값을
-          손대지 않아도 되는 이유. 이번 슬라이스 마운트 범위는 지형도만. */}
-      <AppNavRail
-        settingsSlot={
-          <TopologyV2SettingsGear
-            indexDefaultCollapsed={indexPanelCollapsedStored}
-            onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
-            changeVaultHref="/docs/?intent=local"
-            popoverAlign="left"
-            popoverSide="top"
-            labels={{
-              trigger: t('controls.settingsGearAriaLabel'),
-              heading: t('controls.settingsGearHeading'),
-              locale: t('controls.settingsGearLocale'),
-              theme: t('controls.settingsGearTheme'),
-              indexDefault: t('controls.settingsGearIndexDefault'),
-              indexDefaultExpanded: t('controls.settingsGearIndexDefaultExpanded'),
-              indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
-              changeVault: t('controls.settingsGearChangeVault'),
-              changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
-            }}
-          />
-        }
-      />
+    <main id="main" className="relative flex h-screen w-full overflow-hidden bg-[color:var(--color-canvas)]">
+      {/* 좌측 64px 내비 레일은 perf/persistent-shell 이후 `app/[locale]/layout.tsx`
+          (AppShell) 상주 — 이 페이지는 더 이상 직접 마운트하지 않는다. 레일
+          하단 설정 게어는 위 `useNavRailSettingsSlot(navRailSettingsSlot)`로
+          Context 등록. */}
       <div className="relative h-full flex-1 overflow-hidden">
       {/*
         스크린리더 랜드마크 명시 + SEO h1. 시각 디자인은 canvas 중심이라

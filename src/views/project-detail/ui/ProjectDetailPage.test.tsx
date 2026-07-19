@@ -29,10 +29,6 @@ vi.mock("@/widgets/search-palette", () => ({
 vi.mock("@/widgets/shortcut-sheet", () => ({
   ShortcutSheet: () => null,
 }));
-vi.mock("@/widgets/app-nav-rail", () => ({
-  AppNavRail: () => null,
-}));
-
 function ontologyNode(
   id: string,
   kind: string,

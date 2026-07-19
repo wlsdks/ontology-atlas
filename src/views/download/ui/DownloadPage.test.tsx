@@ -10,10 +10,6 @@ vi.mock('@/features/locale-switch', () => ({
   LocaleSwitch: () => <div data-testid="locale-switch" />,
 }));
 
-vi.mock('@/widgets/app-nav-rail', () => ({
-  AppNavRail: () => null,
-}));
-
 vi.mock('@/i18n/navigation', () => ({
   Link: ({
     href,

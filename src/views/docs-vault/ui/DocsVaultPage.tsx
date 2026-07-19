@@ -39,7 +39,6 @@ import {
   useLocalVault,
 } from '@/features/docs-vault-local';
 import { VaultToolsMenu } from '@/widgets/docs-vault';
-import { AppNavRail } from '@/widgets/app-nav-rail';
 import { copyText } from '@/shared/lib/copy-text';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
@@ -1639,7 +1638,7 @@ function DocsVaultContent() {
 
   return (
     <div className="flex h-screen w-full">
-      <AppNavRail />
+      {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       <div className="topology-ui-scale relative flex h-full min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
       {/* Crumbs row — engraved vault census (docs-vault-final spec §상단 헤더). */}
       <nav

@@ -31,7 +31,6 @@ import {
   rankAllByDegree,
 } from "@/shared/lib/ontology-tree";
 import { MountedGlobalSearch } from "@/widgets/global-search";
-import { AppNavRail } from "@/widgets/app-nav-rail";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { EmptyState, TabBar } from "@/shared/ui";
 import {
@@ -232,7 +231,7 @@ export function OntologyInsightsPage() {
 
   return (
     <div className="flex min-h-screen w-full">
-      <AppNavRail />
+      {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6">
           <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
