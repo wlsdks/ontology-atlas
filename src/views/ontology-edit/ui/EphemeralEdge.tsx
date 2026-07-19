@@ -4,10 +4,12 @@ import { useTranslations } from "next-intl";
 import {
   BaseEdge,
   EdgeLabelRenderer,
-  getBezierPath,
   type EdgeProps,
 } from "@xyflow/react";
-import { edgeCurvatureForSemanticType } from "../lib/builder-edge-route";
+import {
+  buildBuilderBezierPath,
+  edgeTangentStrength,
+} from "../lib/builder-edge-route";
 
 interface EphemeralEdgeData {
   onPersist?: (edgeId: string) => void;
@@ -42,15 +44,16 @@ export function EphemeralEdge({
   data,
 }: EdgeProps) {
   const t = useTranslations("ontologyPages.edit.canvas");
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    curvature: edgeCurvatureForSemanticType("relation"),
-  });
+  // vault edge 와 같은 커스텀 접선 bezier — 캔버스 안 모든 선이 한 곡선 언어.
+  const tangent = edgeTangentStrength(
+    targetX - sourceX,
+    targetY - sourceY,
+    "relation",
+  );
+  const { path: edgePath, labelX, labelY } = buildBuilderBezierPath(
+    { sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition },
+    tangent,
+  );
   const onPersist = (data as EphemeralEdgeData | undefined)?.onPersist;
   return (
     <>
