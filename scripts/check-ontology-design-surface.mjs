@@ -87,7 +87,14 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   },
   {
     id: "builder-write-verify-loop",
-    files: ["src/views/ontology-edit/ui/OntologyEditPage.tsx"],
+    // A4 파일 분해(2026-07-19)로 마커들이 개별 컴포넌트/lib 로 이동 —
+    // 체크는 파일 묶음 전체에서 마커 존재를 본다.
+    files: [
+      "src/views/ontology-edit/ui/OntologyEditPage.tsx",
+      "src/views/ontology-edit/ui/BuilderWriteSummary.tsx",
+      "src/views/ontology-edit/ui/BuilderCanvasEntryRail.tsx",
+      "src/views/ontology-edit/lib/builder-proof-packet.ts",
+    ],
     markers: [
       "function BuilderWriteSummary",
       "function BuilderCanvasEntryRail",
