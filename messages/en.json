@@ -222,7 +222,7 @@
     "openBusy": "Opening folder…",
     "createLabel": "✚ Create a new vault",
     "createBusy": "Writing starter structure…",
-    "dismissLabel": "Just looking around →",
+    "dismissLabel": "Just looking around here",
     "errorFallback": "Could not open the folder. Try again.",
     "readout": {
       "projectUnit": "project",
@@ -861,7 +861,9 @@
         "deleteTooltip": "Delete this document from the local vault",
         "deleteAction": "Delete",
         "tableOfContents": "Outline",
-        "duplicateAria": "{text}, occurrence {n}"
+        "duplicateAria": "{text}, occurrence {n}",
+        "railLabel": "Contents",
+        "railAria": "Sections in this document"
       }
     },
     "tree": {
@@ -1757,7 +1759,19 @@
     },
     "frontmatterBlock": {
       "note": "Frontmatter is the graph — this block becomes the topology's nodes and edges.",
-      "ariaLabel": "Frontmatter graph fields"
+      "ariaLabel": "Frontmatter graph fields",
+      "collapsedSummary": "{count} fields",
+      "expandAria": "Expand document properties",
+      "collapseAria": "Collapse document properties"
+    },
+    "readingAids": {
+      "backToTop": "Back to top",
+      "backToTopAria": "Scroll to top of document"
+    },
+    "sampleNotice": {
+      "title": "This is a read-only sample",
+      "body": "This doc is Atlas's own example, so editing is locked.",
+      "openFolderCta": "Open my folder"
     },
     "backlinksStrip": {
       "openInOntology": "Open in ontology →",

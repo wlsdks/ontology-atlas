@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T08:40:40.002Z",
+  "generatedAt": "2026-07-19T09:22:25.608Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-19 — 문서함 읽기 경험 — 목차 레일·맨 위로·frontmatter 접힘·샘플 안내 평문화 (docs-reading-round)",
+          "slug": "2026-07-19-문서함-읽기-경험-목차-레일맨-위로frontmatter-접힘샘플-안내-평문화-docs-reading-round"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-19 — UX 전문가 라운드 교차검증 — 소형 결함 5건 (ux-expert-fixes)",
+          "slug": "2026-07-19-ux-전문가-라운드-교차검증-소형-결함-5건-ux-expert-fixes"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-19 — 빌더 소형 UX 개선 — 빈 캔버스 안내·팔레트 추가 배지·줌 표시·버튼 위계·탭 툴팁 (builder-ux-polish)",
           "slug": "2026-07-19-빌더-소형-ux-개선-빈-캔버스-안내팔레트-추가-배지줌-표시버튼-위계탭-툴팁-builder-ux-polish"
         },
@@ -3916,9 +3926,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. haiku UX 부대 조사에서 검증된 /ontology/edit 빌더 소형 개선 큐. 전부 기존 토큰/컴포넌트 재사용 — 새 색·새 모션 없음. 빈 캔버스",
-      "wordCount": 21973,
-      "updatedAt": "2026-07-19T08:40:32.515Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. .qa-scratch/docs-reading-round/po-pass.md PO 패스 — 66분짜리 긴 온톨로지 문서(capabilities/cli-dev",
+      "wordCount": 22514,
+      "updatedAt": "2026-07-19T09:22:18.369Z",
       "linksOut": [
         "slug"
       ]
@@ -6077,12 +6087,12 @@
     {
       "slug": "ontology/capabilities/mcp-server",
       "path": "docs/ontology/capabilities/mcp-server.md",
-      "title": "MCP Server (24 tools)",
+      "title": "MCP Server (25 tools)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/mcp-server",
         "kind": "capability",
-        "title": "MCP Server (24 tools)",
+        "title": "MCP Server (25 tools)",
         "domain": "ai-agent-partner",
         "dependencies": [
           "capabilities/frontmatter-to-ontology"
@@ -6117,13 +6127,13 @@
       "headings": [
         {
           "depth": 1,
-          "text": "MCP Server (24 tools)",
-          "slug": "mcp-server-24-tools"
+          "text": "MCP Server (25 tools)",
+          "slug": "mcp-server-25-tools"
         }
       ],
-      "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSON-RPC 서버. 24 도구 노출 (read 16 + write 8): · 도구 · 동작 · listconcepts · vault 의 모든 노드 (enum-validated kind 필터, limit default 100 / max 500) · getconcept · 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] · getconcepts · R+ 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서",
-      "wordCount": 13104,
-      "updatedAt": "2026-06-07T01:14:53.921Z",
+      "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSON-RPC 서버. 25 도구 노출 (read 16 + write 9): · 도구 · 동작 · listconcepts · vault 의 모든 노드 (enum-validated kind 필터, limit default 100 / max 500) · getconcept · 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] · getconcepts · R+ 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서",
+      "wordCount": 13210,
+      "updatedAt": "2026-07-19T09:13:12.548Z",
       "linksOut": []
     },
     {
@@ -10798,7 +10808,7 @@
                 "path": "ontology/capabilities/mcp-server",
                 "type": "doc",
                 "slug": "ontology/capabilities/mcp-server",
-                "title": "MCP Server (24 tools)"
+                "title": "MCP Server (25 tools)"
               },
               {
                 "name": "mode-aware-adapter",

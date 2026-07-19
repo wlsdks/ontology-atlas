@@ -211,7 +211,7 @@
     "trustLine": "Local-first · 마크다운이 진실원 · 백엔드 0"
   },
   "firstRunStarter": {
-    "caption": "First run",
+    "caption": "첫 실행",
     "sampleLabel": "지금은 샘플",
     "contextBold": "마크다운 frontmatter 가 곧 그래프입니다.",
     "contextRest": "지금 지도는 이 프로젝트 자신의 온톨로지(읽기 전용) — 폴더를 고르면 같은 지도가 내 데이터로 켜집니다.",
@@ -222,7 +222,7 @@
     "openBusy": "폴더 여는 중…",
     "createLabel": "✚ 새 vault 만들기",
     "createBusy": "시작 구조 작성 중…",
-    "dismissLabel": "그냥 둘러볼게요 →",
+    "dismissLabel": "여기서 둘러볼게요",
     "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
     "readout": {
       "projectUnit": "project",
@@ -861,7 +861,9 @@
         "deleteTooltip": "이 문서를 로컬 볼트에서 삭제",
         "deleteAction": "삭제",
         "tableOfContents": "목차",
-        "duplicateAria": "{text}, {n}번째 섹션"
+        "duplicateAria": "{text}, {n}번째 섹션",
+        "railLabel": "목차",
+        "railAria": "이 문서의 섹션 목록"
       }
     },
     "tree": {
@@ -1757,7 +1759,19 @@
     },
     "frontmatterBlock": {
       "note": "frontmatter 가 곧 그래프 — 이 블록이 topology 의 노드와 엣지가 됩니다.",
-      "ariaLabel": "프론트매터 그래프 필드"
+      "ariaLabel": "프론트매터 그래프 필드",
+      "collapsedSummary": "속성 {count}개",
+      "expandAria": "문서 속성 펼치기",
+      "collapseAria": "문서 속성 접기"
+    },
+    "readingAids": {
+      "backToTop": "맨 위로",
+      "backToTopAria": "문서 맨 위로 이동"
+    },
+    "sampleNotice": {
+      "title": "읽기 전용 샘플이에요",
+      "body": "이 문서는 Atlas 자체 예시라 편집이 잠겨 있어요.",
+      "openFolderCta": "내 폴더 열기"
     },
     "backlinksStrip": {
       "openInOntology": "온톨로지에서 열기 →",
