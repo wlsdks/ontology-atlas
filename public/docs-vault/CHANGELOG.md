@@ -46,6 +46,34 @@
 - 문서 탭 스트립(열린 문서 워킹셋)은 별도 슬라이스로 미룸 — 이번 슬라이스는
   중앙 zone-c 를 구조로만 비워둔다.
 
+## 2026-07-19 — 문서함 크롬 재구성 슬라이스 B — 열린 문서 탭 스트립 (docs-chrome-round)
+
+슬라이스 A 가 예약해 둔 헤더 zone-c(`data-docs-header-zone="tabs"`)를 채운다.
+탭은 열린 문서의 **워킹셋**이지 상위 모드가 아니다 — `view==='doc'` 일 때만
+렌더하고 `folder-topology` 뷰에선 구조적으로 비운다.
+
+- **`DocsVaultTabStrip`** — 파일 글리프 + 문서 타이틀(frontmatter title 우선,
+  `VaultDoc.title` 재사용) + `×` 닫기. 탭 폭은 `--docs-tab-min`(132px)~
+  `--docs-tab-max`(208px), `data-token="docs-tab"` 마커. overflow 는 스트립
+  내부 가로 스크롤(스크롤바 숨김, 활성 탭 `scrollIntoView`).
+- **"한 끗"** — 활성 탭 배경 = `--color-canvas`(본문과 동일), 헤더의 1px
+  baseline(`--color-border-soft`, 이제 `border-b` 대신 절대배치 + 음수
+  z-index 로 분리, 헤더에 `isolate` 스코프)이 활성 탭 아래에서만 2px
+  `--color-indigo-brand` 언더라인으로 완전히 치환된다 — 이중선 0(스크린샷
+  검증: baseline z -10 · 언더라인 z 2 · 활성 탭 bg 가 canvas 로 baseline 을
+  덮음).
+- **상태 계약** — `src/views/docs-vault/lib/doc-tabs.ts`(순수 로직, TDD
+  18 case) + `use-open-doc-tabs.ts`(React 연결). **localStorage 영구**
+  (`docsVault:openTabs:<sourceKey>`, sourceKey 는 `useDocsVaultPersistence`
+  의 `recentKey` 재사용 — vault 별 키 분리, 초안 계약의 sessionStorage 안을
+  소유자가 override: "macOS 앱을 다시 켜도 그대로"). 상한 8개 + LRU 축출.
+  활성 탭의 진실원은 URL `?slug=`(탭 훅은 워킹셋 목록만 소유, `selectedSlug`
+  변화를 관찰해 부수효과로 open). 존재하지 않는 slug 복원 시 조용히 제거
+  (`pruneMissingDocTabs`). `×` 닫기 — 활성 탭을 닫으면 왼쪽 인접 탭(없으면
+  오른쪽)으로 이동, 마지막 탭을 닫으면 README(없으면 목록 첫 문서)로 폴백.
+- Guardian 이월 P3 2건 동반 — `DocsHeaderTile` 의 `h-[34px]` 리터럴을
+  `--docs-header-tile-size` 토큰으로 승격, 검색 타일 tooltip 에 `⌘K` 병기.
+
 ## 2026-07-19 — 라이트 모드 전면 폐기 (dark-only)
 
 소유자 전략 결정: 앱은 **다크 단일**이 된다. 관리 부담 대비 사용 신호가
