@@ -523,6 +523,12 @@ function computeForceLayout(
  * 토큰) 와 `--topology-v2-indigo-bright` (인디고 — depends 와 evidence 가
  * 공유, dash 패턴으로만 구분). 화살표는 caller(`buildVaultGraphFlow`)가
  * `dependencies` 키에만 붙인다.
+ *
+ * 위계(2차 owner 피드백 #4): 포함선(계층)이 주, 관계선(파선/점선)이 보조다.
+ * 관계선 기본 opacity 를 한 단계 낮춰(0.55) 위계를 만든다 — 포함 골격이
+ * 먼저 읽히고 관계는 배경 신호로 물러난다. hover/선택 시 CSS 가 opacity 1 로
+ * 승격(OntologyEditCanvas 의 `.react-flow__edge:hover` 규칙) — 지형도의 dim
+ * 문법과 같은 정신(평소 물러나고, 주목 시 전면).
  */
 function edgeStrokeStyleByKey(key: string): CSSProperties {
   if (
@@ -540,13 +546,15 @@ function edgeStrokeStyleByKey(key: string): CSSProperties {
       stroke: "var(--topology-v2-indigo-bright)",
       strokeWidth: 1.4,
       strokeDasharray: "6 4",
+      opacity: 0.55,
     };
   }
   // describes — 근거(evidence) 관계, 점선. depends 와 같은 잉크색을 촘촘한
-  // dot 패턴으로 눌러 "가장 옅은 신호"로 읽히게 한다.
+  // dot 패턴으로 눌러 "가장 옅은 신호"로 읽히게 한다. 가장 보조라 opacity 최하.
   return {
     stroke: "var(--topology-v2-indigo-bright)",
     strokeWidth: 1.2,
     strokeDasharray: "1.4 3.2",
+    opacity: 0.5,
   };
 }

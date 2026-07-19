@@ -12,13 +12,17 @@ const source = readFileSync(join(here, "VaultEdge.tsx"), "utf8");
  * 직교 라우팅으로 되돌아가면(=owner 헤어핀 재발) 이 테스트가 즉시 깨진다.
  */
 describe("VaultEdge routing contract", () => {
-  it("routes with cubic bezier, not smoothstep (owner hairpin regression)", () => {
-    expect(source).toContain("getBezierPath");
-    expect(source).not.toContain("getSmoothStepPath");
+  it("routes with the custom tangent bezier, not smoothstep (owner hairpin regression)", () => {
+    // 2차: xyflow 의 getBezierPath 는 마주보는 포트에서 곡률을 무시해 뻣뻣했다 →
+    // 커스텀 접선 경로(buildBuilderBezierPath)로 교체. smoothstep 회귀도 차단.
+    expect(source).toContain("buildBuilderBezierPath");
+    // 호출(call) 부재를 본다 — 설명 주석에 이름이 남아도 무방하도록 "(" 까지.
+    expect(source).not.toContain("getSmoothStepPath(");
+    expect(source).not.toContain("getBezierPath(");
   });
 
-  it("separates parallel edges and curves per semantic type", () => {
+  it("separates parallel edges and scales the tangent per semantic type", () => {
     expect(source).toContain("parallelEndpointShift");
-    expect(source).toContain("edgeCurvatureForSemanticType");
+    expect(source).toContain("edgeTangentStrength");
   });
 });

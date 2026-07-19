@@ -908,16 +908,21 @@ export function OntologyEditCanvas({
           z-index: 3 !important;
         }
         .react-flow__edge-path {
-          transition: stroke-width 180ms ease-out, filter 180ms ease-out;
+          transition: stroke-width 180ms ease-out, opacity 180ms ease-out,
+                      filter 180ms ease-out;
         }
         .react-flow__edge {
           animation: rfEdgeAppear 240ms ease-out;
         }
-        /* hover 강조 — 굵기만 증가. 이전엔 drop-shadow glow(halo) 를 같이
-           썼지만 design.md 가 금지하는 "glow-like boxShadow/filter" 패턴이라
-           제거 — stroke-width 만으로 '이 선이 강조됐다' 를 충분히 전달한다. */
+        /* hover 강조 — 굵기 증가 + 관계선 opacity 승격. 관계선은 평소 opacity
+           0.55/0.5 로 물러나 있고(use-vault-graph-flow 의 edgeStrokeStyleByKey),
+           hover 시 전면으로 복귀해 지형도의 dim→focus 문법과 일치한다. BaseEdge
+           가 stroke-width·opacity 를 path 인라인 style 로 넣으므로 !important
+           로 승격해야 인라인을 이긴다. glow/halo 는 design.md 금지라 굵기·투명도
+           만으로 '이 선이 강조됐다' 를 전달한다. */
         .react-flow__edge:hover .react-flow__edge-path {
-          stroke-width: 2.6px;
+          stroke-width: 2.6px !important;
+          opacity: 1 !important;
         }
         /* 새 노드 / edge mount 시 부드러운 fade-in — 역동성 + 사용자가
            '추가됐다' 인지 빠름. id 새로 생긴 노드만 적용 (layout

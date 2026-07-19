@@ -25,17 +25,33 @@ describe("resolveBuilderEdgeEndpointHandles", () => {
     });
   });
 
-  it("routes vertically stacked relation edges through facing top/bottom ports", () => {
-    // 같은 세로줄(작은 Δx)에 아래로 쌓인 노드 → source 하단에서 나가 target
-    // 상단으로 곧게 들어간다. 예전 same-side(right→right) 대신 마주보는 상/하.
+  it("arcs vertically stacked RELATION edges out one side instead of skewering", () => {
+    // 2차 owner 피드백: 같은 컬럼에 쌓인 도메인끼리의 relates 를 상/하 포트로
+    // 이으면 제어점이 끝점과 같은 x 라 곡률 0 인 직선 세로선이 되어 그 사이
+    // 카드들을 관통하는 스큐어가 됐다. 관계선은 같은 쪽(오른쪽) 포트로 카드
+    // 옆을 호로 감아 나간다. default semanticType = relation.
     expect(resolveBuilderEdgeEndpointHandles(node("a", 0, 0), node("b", 20, 240))).toEqual({
-      sourceHandle: "source-bottom",
-      targetHandle: "target-top",
+      sourceHandle: "source-right",
+      targetHandle: "target-right",
+    });
+    // 위로 쌓인 경우도 방향 무관하게 같은 쪽으로 감는다.
+    expect(resolveBuilderEdgeEndpointHandles(node("a", 0, 240), node("b", 20, 0))).toEqual({
+      sourceHandle: "source-right",
+      targetHandle: "target-right",
     });
   });
 
-  it("routes upward vertically stacked edges through source-top/target-bottom", () => {
-    expect(resolveBuilderEdgeEndpointHandles(node("a", 0, 240), node("b", 20, 0))).toEqual({
+  it("routes vertically stacked CONTAINMENT edges through facing top/bottom ports", () => {
+    // 포함선은 계층이라 곧은 세로 연결이 자연스럽다 — 상/하 마주보기.
+    expect(
+      resolveBuilderEdgeEndpointHandles(node("a", 0, 0), node("b", 20, 240), "containment"),
+    ).toEqual({
+      sourceHandle: "source-bottom",
+      targetHandle: "target-top",
+    });
+    expect(
+      resolveBuilderEdgeEndpointHandles(node("a", 0, 240), node("b", 20, 0), "containment"),
+    ).toEqual({
       sourceHandle: "source-top",
       targetHandle: "target-bottom",
     });

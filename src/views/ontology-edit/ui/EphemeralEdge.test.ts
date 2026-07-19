@@ -12,9 +12,10 @@ const source = readFileSync(join(here, "EphemeralEdge.tsx"), "utf8");
  * 되돌아가면 깨진다.
  */
 describe("EphemeralEdge routing contract", () => {
-  it("uses the shared relation curvature bezier", () => {
-    expect(source).toContain("getBezierPath");
-    expect(source).toContain('edgeCurvatureForSemanticType("relation")');
+  it("uses the shared custom tangent bezier at relation strength", () => {
+    expect(source).toContain("buildBuilderBezierPath");
+    expect(source).toContain('edgeTangentStrength(');
+    expect(source).toContain('"relation"');
   });
 
   it("keeps the indigo dashed draft ink and Save chip", () => {
