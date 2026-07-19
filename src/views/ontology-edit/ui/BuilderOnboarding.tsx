@@ -64,7 +64,7 @@ export function BuilderOnboarding({
           transition={{ duration: 0.22, ease: [0.42, 0, 0.58, 1] }}
           role="dialog"
           aria-label={t("dialogAriaLabel")}
-          className="pointer-events-auto absolute left-4 top-4 z-20 w-[min(430px,calc(100%-2rem))] rounded-xl border border-[color:rgba(94,106,210,0.28)] bg-[color:var(--color-panel)] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.34)]"
+          className="pointer-events-auto absolute left-4 top-4 z-20 w-[min(430px,calc(100%-2rem))] rounded-xl border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-panel)] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.34)]"
         >
           <header className="mb-3 flex items-start justify-between gap-3">
             <div>
@@ -89,7 +89,7 @@ export function BuilderOnboarding({
           </header>
           <ol className="space-y-2.5 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
             <li className="flex gap-2.5">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] text-[color:var(--color-indigo-accent)]">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] text-[color:var(--color-indigo-accent)]">
                 <MousePointerClick size={12} />
               </span>
               <p>
@@ -100,7 +100,7 @@ export function BuilderOnboarding({
               </p>
             </li>
             <li className="flex gap-2.5">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] text-[color:var(--color-indigo-accent)]">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] text-[color:var(--color-indigo-accent)]">
                 <Plug size={12} />
               </span>
               <p>
@@ -111,7 +111,7 @@ export function BuilderOnboarding({
               </p>
             </li>
             <li className="flex gap-2.5">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] text-[color:var(--color-indigo-accent)]">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] text-[color:var(--color-indigo-accent)]">
                 <Save size={12} />
               </span>
               <p>
@@ -141,7 +141,7 @@ export function BuilderOnboarding({
               <button
                 type="button"
                 onClick={() => dismiss(false)}
-                className="whitespace-nowrap break-keep rounded-md border border-[color:var(--color-indigo-brand)] bg-[color:rgba(94,106,210,0.18)] px-3 py-1.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:rgba(94,106,210,0.26)]"
+                className="whitespace-nowrap break-keep rounded-md border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] px-3 py-1.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a26)]"
               >
                 {t("getStarted")}
               </button>

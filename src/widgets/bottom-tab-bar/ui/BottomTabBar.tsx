@@ -60,21 +60,21 @@ export function BottomTabBar() {
             data-active={active ? 'true' : 'false'}
             className={
               active
-                ? 'relative flex min-h-[var(--topology-bottom-tab-min-height)] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-indigo-accent)] transition-colors duration-150 active:bg-[color:rgba(94,106,210,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset'
-                : 'relative flex min-h-[var(--topology-bottom-tab-min-height)] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors duration-150 active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset'
+                ? 'relative flex min-h-[var(--topology-bottom-tab-min-height)] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-indigo-accent)] transition-colors duration-150 active:bg-[color:var(--color-indigo-a08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset'
+                : 'relative flex min-h-[var(--topology-bottom-tab-min-height)] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors duration-150 active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset'
             }
           >
             {active ? (
               <span
                 aria-hidden
-                className="absolute top-1 h-0.5 w-6 rounded-full bg-[color:rgba(139,151,255,0.90)] shadow-[0_0_12px_rgba(94,106,210,0.42)]"
+                className="absolute top-1 h-0.5 w-6 rounded-full bg-[color:var(--color-indigo-line-a90)] shadow-[0_0_12px_var(--color-indigo-a42)]"
                 data-active-indicator="true"
               />
             ) : null}
             <span
               className={
                 active
-                  ? 'inline-flex h-6 w-6 items-center justify-center rounded-lg border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.10)] shadow-[0_0_0_1px_rgba(139,151,255,0.06)_inset]'
+                  ? 'inline-flex h-6 w-6 items-center justify-center rounded-lg border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a10)] shadow-[0_0_0_1px_var(--color-indigo-line-a06)_inset]'
                   : 'inline-flex h-6 w-6 items-center justify-center rounded-lg border border-transparent transition-colors duration-150'
               }
               data-tab-icon-shell={active ? 'active' : 'idle'}

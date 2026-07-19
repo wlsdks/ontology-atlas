@@ -54,7 +54,7 @@ export function DocsVaultBacklinks({
               key={entry.fromSlug}
               type="button"
               onClick={() => onNavigate(doc.slug)}
-              className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-1 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.4)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
             >
               {kindStr && isTopologyV2RenderableKind(kindStr) ? (
                 <TopologyV2KindGlyph kind={kindStr} size={11} />
@@ -151,6 +151,6 @@ function formatContext(raw: string): string {
   return escaped.replace(
     /\*\*\[([^\]]+)\]\*\*/g,
     (_, text) =>
-      `<span class="rounded-sm bg-[color:rgba(139,151,255,0.16)] px-1 text-[color:rgba(200,210,255,0.92)]">${text}</span>`,
+      `<span class="rounded-sm bg-[color:var(--color-indigo-line-a15)] px-1 text-[color:rgba(200,210,255,0.92)]">${text}</span>`,
   );
 }

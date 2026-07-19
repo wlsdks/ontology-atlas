@@ -42,7 +42,7 @@ export function FirstRunStarterModule({
   return (
     <div
       data-testid="first-run-starter"
-      className="relative border-b border-[color:var(--topology-v2-panel-divider)] bg-gradient-to-b from-[color:rgba(94,106,210,0.08)] via-[color:rgba(94,106,210,0.015)] to-transparent px-4 pb-3.5 pt-4"
+      className="relative border-b border-[color:var(--topology-v2-panel-divider)] bg-gradient-to-b from-[color:var(--color-indigo-a08)] via-[color:var(--color-indigo-a06)] to-transparent px-4 pb-3.5 pt-4"
     >
       <p className="mb-3 flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.22em] text-[color:var(--topology-v2-panel-text-secondary)]">
         <span className="relative h-2 w-2 shrink-0" aria-hidden>
@@ -73,7 +73,7 @@ export function FirstRunStarterModule({
         onClick={() => void openFolder()}
         disabled={busy}
         data-testid="first-run-starter-open"
-        className="relative flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[color:rgba(139,151,255,0.45)] bg-[color:var(--color-indigo-brand)] text-[13px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
+        className="relative flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-[13px] font-semibold text-white shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
       >
         <FolderOpen size={14} aria-hidden />
         {busy && !scaffolding ? t("openBusy") : t("openLabel")}

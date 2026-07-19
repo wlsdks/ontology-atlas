@@ -150,7 +150,7 @@ export function TopologyIndexPanel({
         aria-label={labels.foldAria}
         title={labels.fold}
         data-testid="topology-index-fold"
-        className="group mb-2.5 flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--chrome-radius-inner)] border-b border-[color:var(--topology-v2-panel-divider)] px-0.5 pb-2.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+        className="group mb-2.5 flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--chrome-radius-inner)] border-b border-[color:var(--topology-v2-panel-divider)] px-0.5 pb-2.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
       >
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
           {labels.label}

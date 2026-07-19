@@ -78,7 +78,7 @@ export function DocFrontmatterBlock({ doc }: { doc: VaultDoc }) {
         <summary
           data-testid="doc-frontmatter-summary"
           aria-label={open ? t("collapseAria") : t("expandAria")}
-          className="flex cursor-pointer list-none items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.45)]"
+          className="flex cursor-pointer list-none items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-line-a45)]"
         >
           <ChevronRight
             size={11}

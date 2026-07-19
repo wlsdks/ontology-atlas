@@ -20,7 +20,7 @@ const badgeVariants = cva(
         default:
           'border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-secondary)]',
         indigo:
-          'border-[color:var(--color-indigo-brand)] bg-[color:rgba(94,106,210,0.1)] text-[color:var(--color-indigo-accent)]',
+          'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a10)] text-[color:var(--color-indigo-accent)]',
         subtle:
           'border-transparent bg-transparent text-[color:var(--color-text-tertiary)]',
       },

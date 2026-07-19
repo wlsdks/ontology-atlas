@@ -104,7 +104,7 @@ function highlightMatch(text: string, needle: string) {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="rounded bg-[color:rgba(94,106,210,0.28)] px-0.5 text-[color:var(--color-text-primary)]">
+      <mark className="rounded bg-[color:var(--color-indigo-a28)] px-0.5 text-[color:var(--color-text-primary)]">
         {text.slice(idx, idx + needle.length)}
       </mark>
       {text.slice(idx + needle.length)}
@@ -149,9 +149,9 @@ function TreeBranch({
         href={getDocHref(node.slug)}
         onClick={onPick}
         className={cn(
-          "group flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.1)] hover:text-[color:var(--color-text-primary)]",
+          "group flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-indigo-a10)] hover:text-[color:var(--color-text-primary)]",
           isFocused &&
-            "bg-[color:rgba(94,106,210,0.18)] text-[color:var(--color-text-primary)] ring-1 ring-[color:rgba(94,106,210,0.4)]",
+            "bg-[color:var(--color-indigo-a18)] text-[color:var(--color-text-primary)] ring-1 ring-[color:var(--color-indigo-a40)]",
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
@@ -223,7 +223,7 @@ function DocRow({
   const t = useTranslations("vaultWidgets.docsDrawer");
   const hasExcerpt = doc.excerpt.trim().length > 0;
   return (
-    <div className="group flex flex-col rounded-[8px] transition-colors hover:bg-[color:rgba(94,106,210,0.1)]">
+    <div className="group flex flex-col rounded-[8px] transition-colors hover:bg-[color:var(--color-indigo-a10)]">
       <div className="flex items-center gap-1">
         <Link
           href={getDocHref(doc.slug)}
@@ -502,7 +502,7 @@ export function DocsQuickDrawer({
                   <Link
                     href={getDocHref()}
                     onClick={onClose}
-                    className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 py-1 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.4)] hover:text-[color:var(--color-text-primary)]"
+                    className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 py-1 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a40)] hover:text-[color:var(--color-text-primary)]"
                     aria-label={t("openAllAriaLabel")}
                   >
                     <BookOpen size={11} />
@@ -543,7 +543,7 @@ export function DocsQuickDrawer({
                     flatTreeSlugs.length;
                   setFocusedSlug(flatTreeSlugs[nextIdx]);
                 }}
-                className="mt-3 flex items-center gap-2 rounded-[10px] border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 transition-[border-color,box-shadow] focus-within:border-[color:rgba(94,106,210,0.5)] focus-within:ring-2 focus-within:ring-[color:rgba(94,106,210,0.24)]"
+                className="mt-3 flex items-center gap-2 rounded-[10px] border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 transition-[border-color,box-shadow] focus-within:border-[color:var(--color-indigo-a50)] focus-within:ring-2 focus-within:ring-[color:var(--color-indigo-a24)]"
               >
                 <Search size={13} className="text-[color:var(--color-text-quaternary)]" />
                 <input
@@ -599,8 +599,8 @@ export function DocsQuickDrawer({
                         className={cn(
                           "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[10px] transition-colors",
                           selected
-                            ? "border-[color:rgba(94,106,210,0.55)] bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]"
-                            : "border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(94,106,210,0.35)] hover:text-[color:var(--color-text-primary)]",
+                            ? "border-[color:var(--color-indigo-a55)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]"
+                            : "border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-a34)] hover:text-[color:var(--color-text-primary)]",
                         )}
                       >
                         <Hash size={9} />
@@ -619,7 +619,7 @@ export function DocsQuickDrawer({
               {trimmedQuery || activeTag ? null : (
                 <>
                   {contextProject && relatedDocs.length > 0 && (
-                    <section className="mb-4 rounded-[12px] border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.06)] p-2">
+                    <section className="mb-4 rounded-[12px] border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a06)] p-2">
                       <p className="mb-1.5 flex items-center gap-1 px-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
                         <Link2 size={10} />
                         {t("relatedSection", { name: contextProject.name, count: relatedDocs.length })}
@@ -630,7 +630,7 @@ export function DocsQuickDrawer({
                             key={`rel-${m.doc.slug}`}
                             href={getDocHref(m.doc.slug)}
                             onClick={onClose}
-                            className="group flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.14)] hover:text-[color:var(--color-text-primary)]"
+                            className="group flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-indigo-a14)] hover:text-[color:var(--color-text-primary)]"
                           >
                             <FileText size={13} className="shrink-0 text-[color:var(--color-text-quaternary)] group-hover:text-[color:var(--color-indigo-accent)]" />
                             <span className="truncate">{m.doc.title}</span>
@@ -746,7 +746,7 @@ export function DocsQuickDrawer({
                             setActiveTag(null);
                             searchRef.current?.focus();
                           }}
-                          className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-overlay-3)] px-2.5 py-1 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.4)] hover:text-[color:var(--color-text-primary)]"
+                          className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-overlay-3)] px-2.5 py-1 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a40)] hover:text-[color:var(--color-text-primary)]"
                         >
                           {t("clearFilters")}
                         </button>
@@ -754,7 +754,7 @@ export function DocsQuickDrawer({
                       <Link
                         href={getDocHref()}
                         onClick={onClose}
-                        className="inline-flex items-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.1)] px-2.5 py-1 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.5)]"
+                        className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2.5 py-1 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a50)]"
                       >
                         <BookOpen size={11} />
                         {t("openVault")}

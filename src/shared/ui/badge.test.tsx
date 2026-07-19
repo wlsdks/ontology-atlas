@@ -21,7 +21,7 @@ describe('Badge', () => {
     const el = container.firstElementChild as HTMLElement;
     // 헌장 §11 — indigo 는 단일 인디고 alpha (보라핑크 X)
     expect(el.className).toContain('color-indigo-brand');
-    expect(el.className).toContain('rgba(94,106,210,0.1)');
+    expect(el.className).toContain('color-indigo-a10');
     expect(el.className).toContain('color-indigo-accent');
   });
 

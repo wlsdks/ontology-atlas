@@ -64,7 +64,7 @@ function Highlight({
   return (
     <>
       {text.slice(0, hit.start)}
-      <mark className="rounded-sm bg-[color:rgba(139,151,255,0.22)] px-0.5 text-[color:rgba(210,218,255,0.98)]">
+      <mark className="rounded-sm bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:rgba(210,218,255,0.98)]">
         {text.slice(hit.start, hit.end)}
       </mark>
       {text.slice(hit.end)}
@@ -582,7 +582,7 @@ function ResultRow({
 }) {
   const base = `group relative flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors ${
     active
-      ? 'bg-[color:rgba(94,106,210,0.14)]'
+      ? 'bg-[color:var(--color-indigo-a14)]'
       : 'hover:bg-[color:var(--color-overlay-1)]'
   }`;
   const inner = (

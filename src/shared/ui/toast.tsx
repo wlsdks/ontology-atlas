@@ -47,7 +47,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               'rounded-full border bg-[color:var(--color-panel)] px-3.5 py-2 text-[12px] shadow-[0_10px_28px_rgba(0,0,0,0.42)]',
             success:
               'border-[color:rgba(120,190,150,0.35)] text-[color:var(--color-text-primary)]',
-            info: 'border-[color:rgba(139,151,255,0.35)] text-[color:var(--color-text-primary)]',
+            info: 'border-[color:var(--color-indigo-line-a35)] text-[color:var(--color-text-primary)]',
             error:
               'border-[color:var(--color-danger-a32)] text-[color:var(--color-text-primary)]',
           },

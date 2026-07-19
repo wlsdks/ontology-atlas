@@ -94,7 +94,7 @@ function TabButton({
       className={cn(
         'rounded-md px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors',
         active
-          ? 'bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-indigo-accent)]'
+          ? 'bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-accent)]'
           : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]',
       )}
     >

@@ -106,7 +106,7 @@ export function DesktopVaultWelcome({
                   type="button"
                   onClick={() => void copyDogfoodPath(DOGFOOD_VAULT_PATH)}
                   aria-label={dogfoodPathCopyAriaLabel}
-                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.42)] hover:bg-[color:rgba(139,151,255,0.13)]"
+                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]"
                 >
                   {dogfoodPathCopied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
                   {t("desktopWelcome.copyDogfoodPath")}
@@ -115,7 +115,7 @@ export function DesktopVaultWelcome({
                   type="button"
                   onClick={() => void copyDogfoodLoop(DOGFOOD_VERIFICATION_LOOP)}
                   aria-label={dogfoodLoopCopyAriaLabel}
-                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {dogfoodLoopCopied ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
                   {t("desktopWelcome.copyDogfoodLoop")}
@@ -171,9 +171,9 @@ export function DesktopVaultWelcome({
               type="button"
               onClick={showDogfoodHint && onOpenDogfoodPath ? onOpenDogfoodPath : onOpen}
               disabled={busy}
-              className="flex w-full items-start gap-3 bg-[color:rgba(94,106,210,0.09)] px-4 py-4 text-left transition-colors hover:bg-[color:rgba(94,106,210,0.14)] disabled:opacity-60"
+              className="flex w-full items-start gap-3 bg-[color:var(--color-indigo-a08)] px-4 py-4 text-left transition-colors hover:bg-[color:var(--color-indigo-a14)] disabled:opacity-60"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.28)] text-[color:rgba(205,212,255,0.94)]">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-line-a32)] text-[color:rgba(205,212,255,0.94)]">
                 <FolderOpen size={17} aria-hidden />
               </span>
               <span className="min-w-0">
@@ -199,9 +199,9 @@ export function DesktopVaultWelcome({
                 type="button"
                 onClick={onOpenDogfoodPath}
                 disabled={busy}
-                className="flex w-full items-start gap-3 border-t border-[color:rgba(139,151,255,0.2)] bg-[color:rgba(139,151,255,0.045)] px-4 py-3.5 text-left transition-colors hover:bg-[color:rgba(139,151,255,0.08)] disabled:opacity-60"
+                className="flex w-full items-start gap-3 border-t border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-line-a06)] px-4 py-3.5 text-left transition-colors hover:bg-[color:var(--color-indigo-line-a06)] disabled:opacity-60"
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.24)] text-[color:var(--color-indigo-accent)]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-line-a22)] text-[color:var(--color-indigo-accent)]">
                   <Bot size={15} aria-hidden />
                 </span>
                 <span className="min-w-0">

@@ -97,7 +97,7 @@ export function HeroCollapsed({
         // 소유자 라이브 피드백 — 2줄(타이틀+census) 리듬이 고정 height 에서
         // 갑갑해 보임. min-h + 소폭 py 로 전환해 내용이 눌리지 않게(내용이
         // 더 필요하면 자연히 커짐 — 매직 px 추측 대신 콘텐츠 기준 안전).
-        "group inline-flex items-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
+        "group inline-flex items-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
         compact
           ? "min-h-[var(--topology-chrome-control-height-compact)] gap-1.5 py-0.5 pl-1.5 pr-2.5 opacity-80"
           : "min-h-[var(--topology-chrome-control-height)] gap-[var(--topology-chrome-gap)] py-1 pl-1.5 pr-3",
@@ -124,7 +124,7 @@ export function HeroCollapsed({
         <span
           aria-hidden="true"
           className={cn(
-            "inline-flex shrink-0 items-center justify-center rounded-[8px] border border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-indigo-accent)]",
+            "inline-flex shrink-0 items-center justify-center rounded-[8px] border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-accent)]",
             compact
               ? "size-[var(--topology-chrome-badge-size-compact)]"
               : "size-[var(--topology-chrome-badge-size)]",

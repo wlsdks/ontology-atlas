@@ -693,7 +693,7 @@ export function OntologyEditCanvas({
           "--xy-node-background-color-default": "var(--color-panel)",
           "--xy-node-color-default": "var(--color-text-primary)",
           "--xy-node-border-default": "1px solid var(--color-overlay-3)",
-          "--xy-edge-stroke-default": "rgba(94, 106, 210, 0.46)",
+          "--xy-edge-stroke-default": "var(--color-indigo-a46)",
           "--xy-handle-background-color-default": "var(--color-indigo-brand)",
           "--xy-handle-border-color-default": "var(--color-overlay-3)",
           "--xy-background-color-default": "var(--color-canvas)",
@@ -908,8 +908,8 @@ export function OntologyEditCanvas({
         }
         /* 무효 종료 포트(자기 자신 등) — 즉시 시각 거부(red 신호 톤). */
         .react-flow__handle.atlas-port.connectingto:not(.valid) {
-          border-color: rgba(229, 72, 77, 0.9) !important;
-          outline: 2px solid rgba(229, 72, 77, 0.5);
+          border-color: var(--color-status-danger) !important;
+          outline: 2px solid var(--color-danger-a50);
           outline-offset: 2px;
         }
         /* 관계선은 노드 카드 뒤 레이어에 고정한다. React Flow 기본 z-index 는

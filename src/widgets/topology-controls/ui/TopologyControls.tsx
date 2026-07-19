@@ -234,7 +234,7 @@ export function TopologyControls({
             <button
               type="button"
               onClick={() => onChange({ ...value, searchQuery: '' })}
-              className="rounded-sm font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+              className="rounded-sm font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
               aria-label={t('clearSearchAriaLabel')}
             >
               Esc
@@ -246,7 +246,7 @@ export function TopologyControls({
                 setExpanded(false);
                 closeSecondaryPanels();
               }}
-              className="rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+              className="rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
               aria-label={t('closeAriaLabel')}
             >
               <X className="h-3.5 w-3.5" />
@@ -293,7 +293,7 @@ export function TopologyControls({
           <button
             type="button"
             onClick={toggleAdvanced}
-            className="flex w-full items-center justify-between rounded-sm text-left transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            className="flex w-full items-center justify-between rounded-sm text-left transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
             aria-expanded={advancedOpen}
           >
             <span className="flex items-center gap-2">
@@ -359,7 +359,7 @@ export function TopologyControls({
                 <button
                   type="button"
                   onClick={toggleForces}
-                  className="flex w-full items-center justify-between rounded-sm px-3 py-2.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+                  className="flex w-full items-center justify-between rounded-sm px-3 py-2.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                 >
                   <span className="flex items-center gap-2">
                     <Sliders className="h-3 w-3 text-[color:var(--color-text-quaternary)]" />
@@ -418,7 +418,7 @@ export function TopologyControls({
                   }
                   window.location.reload();
                 }}
-                className="rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+                className="rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                 aria-label={t('resetLayoutAriaLabel')}
               >
                 {t('resetLayoutButton')}
@@ -434,7 +434,7 @@ export function TopologyControls({
             data-testid="topology-shortcuts-help-button"
             data-control-surface-token="--topology-floating-control-surface"
             data-control-border-token="--topology-floating-control-border"
-            className="rounded-md border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] shadow-[var(--topology-floating-control-shadow)] transition-colors hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            className="rounded-md border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] shadow-[var(--topology-floating-control-shadow)] transition-colors hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
             aria-label={t('shortcutsAriaLabel')}
           >
             {t('shortcutsButton')}
@@ -594,7 +594,7 @@ function HelpOverlay({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            className="rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
             aria-label={t('helpCloseAriaLabel')}
           >
             <X className="h-3.5 w-3.5" />

@@ -1657,7 +1657,7 @@ function DocsVaultContent() {
           <button
             type="button"
             onClick={() => setSourceTreeOpen(true)}
-            className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
+            className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
             aria-label={t('header.openTreeAriaLabel')}
             title={t('header.openTreeTitle')}
           >
@@ -1735,7 +1735,7 @@ function DocsVaultContent() {
               onClick={() => handleSourceChange('server')}
               className={`inline-flex min-h-8 items-center gap-1 rounded-md px-3 transition-colors ${
                 source === 'server'
-                  ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]'
+                  ? 'bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
                   : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
               }`}
             >
@@ -1765,7 +1765,7 @@ function DocsVaultContent() {
                 onClick={() => handleSourceChange('local')}
                 className={`inline-flex min-h-8 items-center gap-1 rounded-md px-3 transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
                   source === 'local'
-                    ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]'
+                    ? 'bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
                     : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
                 }`}
               >
@@ -1880,7 +1880,7 @@ function DocsVaultContent() {
       (localVault.status === 'error' ||
         localVault.status === 'permission-needed') ? (
         <div
-          className="flex flex-none items-center gap-2 border-b border-[color:rgba(229,72,77,0.32)] bg-[color:rgba(229,72,77,0.08)] px-4 py-2 text-[12px] text-[color:var(--color-status-danger)]"
+          className="flex flex-none items-center gap-2 border-b border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-4 py-2 text-[12px] text-[color:var(--color-status-danger)]"
           role="status"
         >
           <span className="flex-1">
@@ -1893,7 +1893,7 @@ function DocsVaultContent() {
           <button
             type="button"
             onClick={() => setAdvancedOpen(true)}
-            className="rounded-sm border border-[color:rgba(229,72,77,0.32)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:rgba(229,72,77,0.14)]"
+            className="rounded-sm border border-[color:var(--color-danger-a32)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:var(--color-danger-a12)]"
           >
             {t('vaultStatus.openPicker')}
           </button>
@@ -1974,7 +1974,7 @@ function DocsVaultContent() {
                 <button
                   type="button"
                   onClick={() => void handleCreateProject()}
-                  className="pointer-events-auto absolute left-3 top-[46px] z-10 inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2.5 py-1.5 text-[11.5px] text-[color:rgba(200,210,255,0.92)] shadow-[0_4px_14px_rgba(0,0,0,0.25)] transition-colors hover:border-[color:rgba(139,151,255,0.55)] hover:bg-[color:rgba(94,106,210,0.18)]"
+                  className="pointer-events-auto absolute left-3 top-[46px] z-10 inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] px-2.5 py-1.5 text-[11.5px] text-[color:rgba(200,210,255,0.92)] shadow-[0_4px_14px_rgba(0,0,0,0.25)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]"
                   title={t('topology.addProjectTitle', { slug: '{slug}' })}
                 >
                   <FilePlus size={12} aria-hidden />
@@ -2023,7 +2023,7 @@ function DocsVaultContent() {
                     <button
                       type="button"
                       onClick={() => void handleScaffoldTopology()}
-                      className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.4)] bg-[color:rgba(94,106,210,0.08)] px-3 py-1.5 text-[12px] text-[color:rgba(200,210,255,0.95)] transition-colors hover:border-[color:rgba(139,151,255,0.6)] hover:bg-[color:rgba(94,106,210,0.14)]"
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a40)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 text-[12px] text-[color:rgba(200,210,255,0.95)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
                     >
                       <FolderCog size={12} aria-hidden />
                       {t('topology.scaffoldCta')}
@@ -2060,7 +2060,7 @@ function DocsVaultContent() {
                       onClick={() => setEditing(false)}
                       className={`rounded-sm px-2.5 py-1 font-mono text-[10.5px] transition-colors ${
                         !editing
-                          ? 'border border-[color:rgba(94,106,210,0.55)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]'
+                          ? 'border border-[color:var(--color-indigo-a55)] bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]'
                           : 'border border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]'
                       }`}
                     >
@@ -2073,7 +2073,7 @@ function DocsVaultContent() {
                       onClick={() => setEditing(true)}
                       className={`rounded-sm px-2.5 py-1 font-mono text-[10.5px] transition-colors ${
                         editing
-                          ? 'border border-[color:rgba(94,106,210,0.55)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]'
+                          ? 'border border-[color:var(--color-indigo-a55)] bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]'
                           : 'border border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]'
                       }`}
                     >

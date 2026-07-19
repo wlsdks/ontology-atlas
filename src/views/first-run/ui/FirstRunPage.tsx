@@ -48,7 +48,7 @@ export function FirstRunPage() {
         : null;
 
   const cardBase =
-    "grid w-full grid-cols-[32px_1fr] items-start gap-3 rounded-md border bg-[color:var(--color-panel)] px-4 py-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset disabled:opacity-60";
+    "grid w-full grid-cols-[32px_1fr] items-start gap-3 rounded-md border bg-[color:var(--color-panel)] px-4 py-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60";
   const iconChip =
     "flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)]";
 
@@ -86,7 +86,7 @@ export function FirstRunPage() {
             onClick={() => void handleOpen()}
             disabled={busy}
             data-testid="first-run-open"
-            className={`${cardBase} border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.08)]`}
+            className={`${cardBase} border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]`}
           >
             <span className={`${iconChip} text-[color:var(--color-indigo-accent)]`}>
               <FolderOpen size={14} aria-hidden />

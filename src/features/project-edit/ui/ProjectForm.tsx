@@ -662,7 +662,7 @@ export function ProjectForm({
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div
           className={cn(
-            "rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_18px_36px_rgba(0,0,0,0.22)]",
+            "rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 shadow-[inset_0_1px_0_var(--color-overlay-2),0_18px_36px_rgba(0,0,0,0.22)]",
             mode === "edit" && "sticky top-4 z-10",
           )}
         >
@@ -681,7 +681,7 @@ export function ProjectForm({
                 className={cn(
                   "mt-2 inline-flex rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.08em] md:hidden",
                   isDirty
-                    ? "border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-text-primary)]"
+                    ? "border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]"
                     : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]",
                 )}
               >
@@ -692,7 +692,7 @@ export function ProjectForm({
                 className={cn(
                   "hidden rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.08em] md:inline-flex",
                   isDirty
-                    ? "border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-text-primary)]"
+                    ? "border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]"
                     : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]",
                 )}
               >
@@ -770,7 +770,7 @@ export function ProjectForm({
         ) : null}
 
         {mode === "create" && (
-          <details className="rounded-xl border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.06)] px-4 py-4 md:px-5">
+          <details className="rounded-xl border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-indigo-a06)] px-4 py-4 md:px-5">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
               <div>
                 <p className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
@@ -1258,7 +1258,7 @@ export function ProjectForm({
               variant="outline"
               onClick={handleDelete}
               disabled={deleting || submitting}
-              className="ml-auto shrink-0 border-[color:var(--color-border-soft)] text-[color:var(--color-status-danger)] hover:border-[color:rgba(229,72,77,0.5)]"
+              className="ml-auto shrink-0 border-[color:var(--color-border-soft)] text-[color:var(--color-status-danger)] hover:border-[color:var(--color-danger-a50)]"
             >
               {deleting ? t("actions.deleting") : t("actions.delete")}
             </Button>
@@ -1299,7 +1299,7 @@ export function ProjectForm({
             {saveNotice ? (
               <div
                 role="status"
-                className="mt-3 rounded-lg border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.1)] px-4 py-3 text-sm text-[color:var(--color-indigo-accent)]"
+                className="mt-3 rounded-lg border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a10)] px-4 py-3 text-sm text-[color:var(--color-indigo-accent)]"
               >
                 {saveNotice}
               </div>
@@ -1442,7 +1442,7 @@ function FormSection({
   return (
     <section
       id={id}
-      className="scroll-mt-28 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] md:px-5"
+      className="scroll-mt-28 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-5 shadow-[inset_0_1px_0_var(--color-overlay-2)] md:px-5"
     >
       <div className="mb-5">
         {/* engraved section label — mono uppercase caption + hairline
@@ -1474,7 +1474,7 @@ function FormSection({
                 onClick={onToggle}
                 aria-expanded={isOpen}
                 aria-controls={contentId}
-                className="inline-flex h-8 items-center gap-2 rounded-full border border-[color:var(--color-divider)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.34)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                className="inline-flex h-8 items-center gap-2 rounded-full border border-[color:var(--color-divider)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a34)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
               >
                 {isOpen ? (collapseLabel ?? "Collapse") : (expandLabel ?? "Expand")}
                 <ChevronDown

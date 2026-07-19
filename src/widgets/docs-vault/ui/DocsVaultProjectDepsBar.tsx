@@ -141,7 +141,7 @@ export function DocsVaultProjectDepsBar({
               setError(null);
             }}
             disabled={addable.length === 0}
-            className="inline-flex items-center gap-1 rounded-sm border border-[color:rgba(139,151,255,0.35)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[color:rgba(200,210,255,0.92)] transition-colors hover:border-[color:rgba(139,151,255,0.55)] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center gap-1 rounded-sm border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[color:rgba(200,210,255,0.92)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] disabled:cursor-not-allowed disabled:opacity-40"
             title={addable.length === 0 ? t('addNoneTitle') : t('addTooltip')}
           >
             <Plus size={10} aria-hidden />

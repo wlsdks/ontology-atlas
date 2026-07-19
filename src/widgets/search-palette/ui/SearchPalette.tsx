@@ -95,7 +95,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="rounded bg-[color:rgba(139,151,255,0.22)] px-0.5 text-[color:var(--color-text-primary)]">
+      <mark className="rounded bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:var(--color-text-primary)]">
         {text.slice(idx, idx + q.length)}
       </mark>
       {text.slice(idx + q.length)}
@@ -366,7 +366,7 @@ function SearchPaletteDialog({
             type="button"
             onClick={onClose}
             aria-label={t('closeAriaLabel')}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
             <X size={15} />
           </button>
@@ -381,7 +381,7 @@ function SearchPaletteDialog({
               {query.trim() ? t('headingResults') : t('headingRecent')}
             </p>
             {containerLabel ? (
-              <span className="rounded-full border border-[color:rgba(139,151,255,0.32)] bg-[color:rgba(94,106,210,0.12)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(139,151,255,0.95)]">
+              <span className="rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-line-a90)]">
                 {t('containerBadge', { name: containerLabel })}
               </span>
             ) : null}
@@ -412,9 +412,9 @@ function SearchPaletteDialog({
                   setLayerFilter(option.value);
                   setActiveIndex(0);
                 }}
-                className={`rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${
+                className={`rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] ${
                   active
-                    ? 'border-[color:rgba(94,106,210,0.45)] bg-[color:rgba(94,106,210,0.16)] text-[color:rgba(139,151,255,0.95)]'
+                    ? 'border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-line-a90)]'
                     : 'border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]'
                 }`}
               >
@@ -438,7 +438,7 @@ function SearchPaletteDialog({
                     onSelect(p.slug);
                     onClose();
                   }}
-                  className="rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(94,106,210,0.08)] px-2.5 py-1 text-[11px] text-[color:rgba(139,151,255,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.16)]"
+                  className="rounded-full border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] px-2.5 py-1 text-[11px] text-[color:var(--color-indigo-line-a90)] transition-colors hover:bg-[color:var(--color-indigo-a16)]"
                 >
                   {p.name}
                 </button>
@@ -488,9 +488,9 @@ function SearchPaletteDialog({
                         onClick={onClose}
                         onMouseEnter={() => setActiveIndex(idx)}
                         className={cn(
-                          "flex items-center gap-2 rounded-sm px-2 py-1 text-left text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset",
+                          "flex items-center gap-2 rounded-sm px-2 py-1 text-left text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
                           isActive
-                            ? "bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
+                            ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
                             : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]",
                         )}
                       >
@@ -522,7 +522,7 @@ function SearchPaletteDialog({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="mt-4 rounded-full border border-[color:var(--color-overlay-3)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                  className="mt-4 rounded-full border border-[color:var(--color-overlay-3)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                 >
                   {t('emptyClose')}
                 </button>
@@ -546,7 +546,7 @@ function SearchPaletteDialog({
                     setLayerFilter('all');
                     setActiveIndex(0);
                   }}
-                  className="mt-4 rounded-full border border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.08)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                  className="mt-4 rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-line-a90)] transition-colors hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                 >
                   {t('emptyLayerReset')}
                 </button>
@@ -560,7 +560,7 @@ function SearchPaletteDialog({
                 <button
                   type="button"
                   onClick={() => setQuery('')}
-                  className="mt-4 rounded-full border border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.08)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                  className="mt-4 rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-line-a90)] transition-colors hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                 >
                   {t('emptyNoMatchClear')}
                 </button>
@@ -586,9 +586,9 @@ function SearchPaletteDialog({
                       }}
                       onMouseEnter={() => setActiveIndex(rowIndex)}
                       className={cn(
-                        'relative flex w-full items-start gap-3 px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset sm:py-3',
+                        'relative flex w-full items-start gap-3 px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset sm:py-3',
                         isActive
-                          ? 'bg-[color:rgba(94,106,210,0.14)]'
+                          ? 'bg-[color:var(--color-indigo-a14)]'
                           : 'hover:bg-[color:var(--color-overlay-1)]',
                       )}
                     >
@@ -628,7 +628,7 @@ function SearchPaletteDialog({
                             {statusLabel(r.project.status)}
                           </span>
                           {query.trim() && (
-                            <span className="rounded-full border border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.08)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+                            <span className="rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
                               {t(MATCH_FIELD_KEYS[r.matchedField])}
                             </span>
                           )}

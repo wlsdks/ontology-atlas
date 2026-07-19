@@ -345,7 +345,7 @@ export function RelationsTab({
                   >
                     <span
                       className="block h-full rounded-full"
-                      style={{ width: `${meterPct}%`, backgroundColor: "rgba(94, 106, 210, 0.7)" }}
+                      style={{ width: `${meterPct}%`, backgroundColor: "var(--color-indigo-a66)" }}
                     />
                   </span>
                 </span>

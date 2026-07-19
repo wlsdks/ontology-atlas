@@ -126,7 +126,7 @@ export function ProjectSelectorPage() {
           <Link
             href={newProjectHref}
             data-testid="project-selector-new-cta"
-            className="ml-auto inline-flex h-9 items-center rounded-md border border-[color:rgba(94,106,210,0.5)] bg-[color:var(--topology-v2-panel-action-surface,rgba(94,106,210,0.06))] px-4 text-[12.5px] font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]"
+            className="ml-auto inline-flex h-9 items-center rounded-md border border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 text-[12.5px] font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]"
           >
             {t("ctaNewProject")}
           </Link>
@@ -145,7 +145,7 @@ export function ProjectSelectorPage() {
                 {t("activityCaption")}
               </span>
             </div>
-            <div className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <div className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-2 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
               {recentActivityRows.map((row, index) => (
                 <div
                   key={row.slug}
@@ -263,7 +263,7 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
   return (
     <article
       data-testid="project-selector-card"
-      className="rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-6 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_14px_34px_rgba(0,0,0,0.2)] transition-colors hover:border-[color:var(--color-border-strong)]"
+      className="rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-6 py-5 shadow-[inset_0_1px_0_var(--color-overlay-2),0_14px_34px_rgba(0,0,0,0.2)] transition-colors hover:border-[color:var(--color-border-strong)]"
     >
       <div className="flex items-start gap-3.5">
         <TopologyV2KindGlyph kind="project" size={26} className="mt-1 shrink-0" />
@@ -285,7 +285,7 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
         </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-baseline gap-5 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-panel-metric-surface,rgba(255,255,255,0.028))] px-4 py-2.5 text-[12.5px]">
+      <div className="mt-4 flex flex-wrap items-baseline gap-5 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-panel-metric-surface,var(--color-overlay-1))] px-4 py-2.5 text-[12.5px]">
         <FactItem label={t("factDomain")} value={facts.domain} />
         <FactItem label={t("factCapability")} value={facts.capability} />
         <FactItem label={t("factElement")} value={facts.element} />

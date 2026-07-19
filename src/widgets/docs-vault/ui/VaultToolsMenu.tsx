@@ -735,7 +735,7 @@ export function VaultToolsMenu({
         }
         className={`inline-flex w-full items-center justify-center gap-1 rounded-sm px-2 py-1.5 text-[11px] transition-colors ${
           view === 'folder-topology'
-            ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]'
+            ? 'bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
             : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
         }`}
       >
@@ -768,14 +768,14 @@ export function VaultToolsMenu({
           onReveal={handleRevealVaultPath}
         />
         {vaultRevealError ? (
-          <p className="rounded-sm border border-[color:rgba(229,72,77,0.24)] bg-[color:rgba(229,72,77,0.08)] px-2 py-1 text-[10.5px] leading-4 text-[color:var(--color-status-danger)]">
+          <p className="rounded-sm border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-2 py-1 text-[10.5px] leading-4 text-[color:var(--color-status-danger)]">
             {t('vaultReveal.error', { message: vaultRevealError })}
           </p>
         ) : null}
         {localVault.status === 'loaded' && agentStatus ? (
           <section
             aria-label={t('agentSetup.ariaLabel')}
-            className="rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.06)] p-2.5"
+            className="rounded-md border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] p-2.5"
           >
             <div className="flex items-start gap-2">
               <Bot
@@ -833,7 +833,7 @@ export function VaultToolsMenu({
                     return (
                       <li
                         key={key}
-                        className="grid grid-cols-[14px_1fr] gap-1.5 rounded-sm border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
+                        className="grid grid-cols-[14px_1fr] gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a13)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
                       >
                         {ready ? (
                           <CheckCircle2
@@ -876,7 +876,7 @@ export function VaultToolsMenu({
                 <p className="mt-1.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
                   {t('agentSetup.connectionHint')}
                 </p>
-                <p className="mt-2 break-keep rounded-sm border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-indigo-line-a14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
                   <span className="font-medium text-[color:var(--color-text-secondary)]">
                     {t('agentSetup.boundaryTitle')}
                   </span>{' '}
@@ -889,7 +889,7 @@ export function VaultToolsMenu({
                     validationGateTone === 'ready'
                       ? 'border-[color:rgba(50,185,125,0.2)] bg-[color:rgba(50,185,125,0.055)]'
                       : validationGateTone === 'blocked'
-                        ? 'border-[color:rgba(229,72,77,0.3)] bg-[color:rgba(229,72,77,0.08)]'
+                        ? 'border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)]'
                         : 'border-[color:rgba(244,196,130,0.22)] bg-[color:rgba(239,180,120,0.07)]'
                   }`}
                 >
@@ -920,7 +920,7 @@ export function VaultToolsMenu({
                           validationGateTone === 'ready'
                             ? 'bg-[color:rgba(50,185,125,0.1)] text-[color:rgba(130,230,180,0.92)]'
                             : validationGateTone === 'blocked'
-                              ? 'bg-[color:rgba(229,72,77,0.14)] text-[color:var(--color-status-danger)]'
+                              ? 'bg-[color:var(--color-danger-a12)] text-[color:var(--color-status-danger)]'
                               : 'bg-[color:rgba(239,180,120,0.1)] text-[color:rgba(244,196,130,0.92)]'
                         }`}
                       >
@@ -935,7 +935,7 @@ export function VaultToolsMenu({
                     </span>
                   </span>
                 </div>
-                <details className="mt-2 rounded-sm border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5">
+                <details className="mt-2 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5">
                   <summary className="cursor-pointer select-none text-[10.5px] font-medium text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
                     {t('agentSetup.nextStepsSummary')}
                   </summary>
@@ -946,13 +946,13 @@ export function VaultToolsMenu({
                     {agentSetupSteps.map((step, index) => (
                       <li
                         key={step.key}
-                        className="grid grid-cols-[18px_1fr] items-start gap-1.5 rounded-sm border border-[color:rgba(255,255,255,0.045)] bg-[color:rgba(255,255,255,0.018)] px-1.5 py-1"
+                        className="grid grid-cols-[18px_1fr] items-start gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-1.5 py-1"
                       >
                         <span
                           className={`inline-flex h-4 w-4 items-center justify-center rounded-sm font-mono text-[9px] ${
                             step.complete
                               ? 'bg-[color:rgba(50,185,125,0.12)] text-[color:rgba(130,230,180,0.9)]'
-                              : 'bg-[color:rgba(94,106,210,0.14)] text-[color:rgba(200,210,255,0.9)]'
+                              : 'bg-[color:var(--color-indigo-a14)] text-[color:rgba(200,210,255,0.9)]'
                           }`}
                         >
                           {step.complete ? '✓' : index + 1}
@@ -971,7 +971,7 @@ export function VaultToolsMenu({
                   {agentSetupProofRows.map((row) => (
                     <div
                       key={row.key}
-                      className="grid grid-cols-[14px_76px_1fr] items-start gap-1.5 rounded-sm border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
+                      className="grid grid-cols-[14px_76px_1fr] items-start gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
                     >
                       {row.state === 'ready' ? (
                         <CheckCircle2
@@ -1014,9 +1014,9 @@ export function VaultToolsMenu({
                   {agentFirstContactProofRows.map((row, index) => (
                     <div
                       key={row.key}
-                      className="grid grid-cols-[18px_88px_1fr] items-start gap-1.5 rounded-sm border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(94,106,210,0.045)] px-1.5 py-1"
+                      className="grid grid-cols-[18px_88px_1fr] items-start gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-indigo-a06)] px-1.5 py-1"
                     >
-                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:rgba(94,106,210,0.14)] font-mono text-[9px] text-[color:rgba(200,210,255,0.9)]">
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:var(--color-indigo-a14)] font-mono text-[9px] text-[color:rgba(200,210,255,0.9)]">
                         {index + 1}
                       </span>
                       <dt className="truncate font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:rgba(200,210,255,0.82)]">
@@ -1073,7 +1073,7 @@ export function VaultToolsMenu({
                     onClick={() => void handleEnsureAgentConfigs()}
                     disabled={agentSetupBusy}
                     title={t('agentSetup.repairTitle')}
-                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2 py-1.5 text-[11.5px] text-[color:rgba(200,210,255,0.94)] transition-colors hover:border-[color:rgba(139,151,255,0.55)] hover:bg-[color:rgba(94,106,210,0.16)] disabled:opacity-60"
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-[11.5px] text-[color:rgba(200,210,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)] disabled:opacity-60"
                   >
                     <Bot size={12} aria-hidden />
                     {agentSetupBusy
@@ -1113,7 +1113,7 @@ export function VaultToolsMenu({
                   ].map((mode) => (
                     <div
                       key={mode.term}
-                      className="rounded-sm border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1"
+                      className="rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1"
                     >
                       <dt className="text-[10.5px] font-medium text-[color:var(--color-text-secondary)]">
                         {mode.term}
@@ -1128,7 +1128,7 @@ export function VaultToolsMenu({
                   type="button"
                   onClick={onOpenWorkflowGuide}
                   title={t('agentSetup.openWorkflowGuideTitle')}
-                  className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.35)] bg-[color:rgba(94,106,210,0.09)] px-2 py-1.5 text-[11.5px] text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:rgba(139,151,255,0.52)] hover:bg-[color:rgba(94,106,210,0.14)]"
+                  className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] px-2 py-1.5 text-[11.5px] text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
                 >
                   <BookOpen size={12} aria-hidden />
                   {t('agentSetup.openWorkflowGuide')}
@@ -1137,7 +1137,7 @@ export function VaultToolsMenu({
                   type="button"
                   onClick={() => void handleCopyAgentSetupPacket()}
                   title={t('agentSetup.copyPacketTitle')}
-                  className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.42)] bg-[color:rgba(94,106,210,0.10)] px-2 py-1.5 text-[11.5px] text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:rgba(94,106,210,0.62)] hover:bg-[color:rgba(94,106,210,0.15)]"
+                  className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-[11.5px] text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-a62)] hover:bg-[color:var(--color-indigo-a16)]"
                 >
                   <ClipboardCopy size={12} aria-hidden />
                   {copyPacketLabel}
@@ -1146,7 +1146,7 @@ export function VaultToolsMenu({
                   type="button"
                   onClick={() => void handleCopyAgentVerifyPrompt()}
                   title={t('agentSetup.copyPromptTitle')}
-                  className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                  className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
                 >
                   <ClipboardCopy size={12} aria-hidden />
                   {copyPromptLabel}
@@ -1155,7 +1155,7 @@ export function VaultToolsMenu({
                   type="button"
                   onClick={() => void handleCopyAgentVerifyCli()}
                   title={t('agentSetup.copyCliTitle')}
-                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
                 >
                   <Terminal size={12} aria-hidden />
                   {copyCliLabel}
@@ -1164,7 +1164,7 @@ export function VaultToolsMenu({
                   type="button"
                   onClick={() => void handleCopyAgentFirstContactProof()}
                   title={t('agentSetup.copyFirstContactProofTitle')}
-                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
                 >
                   <Terminal size={12} aria-hidden />
                   {copyFirstContactProofLabel}
@@ -1180,7 +1180,7 @@ export function VaultToolsMenu({
                 </button>
                 <div
                   aria-label={t('agentSetup.mcpVerifyPreviewAriaLabel')}
-                  className="mt-1.5 rounded-sm border border-[color:rgba(94,106,210,0.2)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5"
+                  className="mt-1.5 rounded-sm border border-[color:var(--color-indigo-a20)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5"
                 >
                   <div className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:rgba(165,170,245,0.82)]">
                     {t('agentSetup.mcpVerifyLabel')}
@@ -1228,7 +1228,7 @@ export function VaultToolsMenu({
                     </div>
                   ))}
                 </dl>
-                <div className="mt-1.5 rounded-sm border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(94,106,210,0.045)] px-2 py-1.5">
+                <div className="mt-1.5 rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-2 py-1.5">
                   <p className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:rgba(200,210,255,0.82)]">
                     {t('agentSetup.syncAfterChangeTitle')}
                   </p>
@@ -1239,7 +1239,7 @@ export function VaultToolsMenu({
                     type="button"
                     onClick={() => void handleCopyAgentPostChangeSyncGate()}
                     title={t('agentSetup.copyPostChangeSyncTitle')}
-                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1.5 text-[11px] text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:rgba(139,151,255,0.46)] hover:bg-[color:rgba(94,106,210,0.13)]"
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a08)] px-2 py-1.5 text-[11px] text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a13)]"
                   >
                     <ClipboardCopy size={12} aria-hidden />
                     {copyPostChangeSyncLabel}
@@ -1249,9 +1249,9 @@ export function VaultToolsMenu({
                   {AGENT_VERIFY_CLI_PREVIEW.map((command, index) => (
                     <li
                       key={command}
-                      className="grid grid-cols-[18px_1fr] items-center gap-1.5 rounded-sm border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(0,0,0,0.14)] px-1.5 py-1"
+                      className="grid grid-cols-[18px_1fr] items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:rgba(0,0,0,0.14)] px-1.5 py-1"
                     >
-                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:rgba(94,106,210,0.14)] font-mono text-[9px] text-[color:rgba(200,210,255,0.9)]">
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:var(--color-indigo-a14)] font-mono text-[9px] text-[color:rgba(200,210,255,0.9)]">
                         {index + 1}
                       </span>
                       <code className="truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
@@ -1279,7 +1279,7 @@ export function VaultToolsMenu({
                   ].map((rootMode) => (
                     <div
                       key={rootMode.term}
-                      className="rounded-sm border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(94,106,210,0.045)] px-2 py-1"
+                      className="rounded-sm border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-indigo-a06)] px-2 py-1"
                     >
                       <dt className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:rgba(200,210,255,0.82)]">
                         {rootMode.term}
@@ -1312,7 +1312,7 @@ export function VaultToolsMenu({
                   type="button"
                   onClick={() => void handleCopyAgentConfigTemplate()}
                   title={t('agentSetup.copyTemplateTitle')}
-                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
                 >
                   <ClipboardCopy size={12} aria-hidden />
                   {copyTemplateLabel}
@@ -1321,7 +1321,7 @@ export function VaultToolsMenu({
                   type="button"
                   onClick={() => void handleCopyCodexConfigTemplate()}
                   title={t('agentSetup.copyCodexTemplateTitle')}
-                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
                 >
                   <ClipboardCopy size={12} aria-hidden />
                   {copyCodexTemplateLabel}
@@ -1330,7 +1330,7 @@ export function VaultToolsMenu({
                   type="button"
                   onClick={() => void handleCopyCodexMcpAddCommand()}
                   title={t('agentSetup.copyCodexCliTitle')}
-                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
                 >
                   <Terminal size={12} aria-hidden />
                   {copyCodexCliLabel}
@@ -1371,7 +1371,7 @@ export function VaultToolsMenu({
           <button
             type="button"
             onClick={onCreateNewDoc}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.35)] bg-[color:rgba(94,106,210,0.08)] px-2.5 py-1.5 text-[11.5px] text-[color:rgba(200,210,255,0.92)] transition-colors hover:border-[color:rgba(139,151,255,0.55)] hover:bg-[color:rgba(94,106,210,0.14)]"
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] px-2.5 py-1.5 text-[11.5px] text-[color:rgba(200,210,255,0.92)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
           >
             <FilePlus size={12} aria-hidden />
             {t('advanced.newDoc')}

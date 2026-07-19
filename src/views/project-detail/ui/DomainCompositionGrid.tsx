@@ -27,7 +27,7 @@ export function DomainCompositionGrid({ domains, maxTotal, capabilityLabel, elem
             key={domain.id}
             href={getTopologyFocusHref(domain.id)}
             data-testid="project-detail-domain-card"
-            className="group flex flex-col rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+            className="group flex flex-col rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
           >
             <div className="flex items-center gap-2">
               <TopologyV2KindGlyph kind="domain" size={16} />

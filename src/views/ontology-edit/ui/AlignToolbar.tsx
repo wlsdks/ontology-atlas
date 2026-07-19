@@ -35,7 +35,7 @@ function AlignBtn({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--color-overlay-3)] bg-[var(--color-panel)] text-[var(--color-text-secondary)] transition-colors hover:border-[rgba(139,151,255,0.6)] hover:text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[rgba(139,151,255,0.55)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--color-overlay-3)] disabled:hover:text-[var(--color-text-secondary)]"
+      className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--color-overlay-3)] bg-[var(--color-panel)] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-indigo-line-a54)] hover:text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-indigo-line-a54)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--color-overlay-3)] disabled:hover:text-[var(--color-text-secondary)]"
     >
       <Icon className="h-4 w-4" strokeWidth={1.8} />
     </button>

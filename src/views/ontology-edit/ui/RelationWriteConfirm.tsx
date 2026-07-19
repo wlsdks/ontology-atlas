@@ -346,11 +346,11 @@ export function RelationWriteConfirm({
       aria-modal="true"
       aria-label={labels.title}
       data-testid="builder-relation-write-confirm"
-      className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(680px,calc(100%-2rem))] -translate-x-1/2 flex-col gap-3 overflow-y-auto rounded-lg border border-[color:rgba(94,106,210,0.34)] bg-[color:var(--color-panel)] p-4 shadow-[0_22px_54px_rgba(0,0,0,0.32)]"
+      className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(680px,calc(100%-2rem))] -translate-x-1/2 flex-col gap-3 overflow-y-auto rounded-lg border border-[color:var(--color-indigo-a34)] bg-[color:var(--color-panel)] p-4 shadow-[0_22px_54px_rgba(0,0,0,0.32)]"
     >
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-indigo-accent)]">
+          <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-indigo-accent)]">
             <GitBranch size={15} />
           </span>
           <div className="min-w-0">
@@ -367,7 +367,7 @@ export function RelationWriteConfirm({
           type="button"
           onClick={onCancel}
           aria-label={labels.closeAriaLabel}
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
         >
           <X size={15} />
         </button>
@@ -417,8 +417,8 @@ export function RelationWriteConfirm({
                   title={labels.relationKeyHints[key]}
                   className={`rounded-md border px-2 py-1.5 text-left transition-colors ${
                     active
-                      ? "border-[color:rgba(94,106,210,0.48)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
-                      : "border-[color:var(--color-overlay-3)] text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(94,106,210,0.3)] hover:text-[color:var(--color-text-primary)]"
+                      ? "border-[color:var(--color-indigo-a50)] bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
+                      : "border-[color:var(--color-overlay-3)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-a30)] hover:text-[color:var(--color-text-primary)]"
                   }`}
                 >
                   <span className="block font-mono text-[10px]">
@@ -434,7 +434,7 @@ export function RelationWriteConfirm({
         </div>
       </div>
 
-      <div className="rounded-md border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.08)] p-3">
+      <div className="rounded-md border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a08)] p-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
@@ -444,14 +444,14 @@ export function RelationWriteConfirm({
               {labels.decisionLabels[preflight.decision]}
             </p>
           </div>
-          <span className="rounded-sm border border-[color:rgba(94,106,210,0.28)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(139,151,255,0.95)]">
+          <span className="rounded-sm border border-[color:var(--color-indigo-a28)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-line-a90)]">
             {preflight.decision}
           </span>
         </div>
         <p className="mt-2 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
           {labels.decisionHints[preflight.decision]}
         </p>
-        <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.08)] p-2">
+        <div className="mt-3 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:rgba(0,0,0,0.08)] p-2">
           <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
             {labels.preflightEvidence}
           </p>
@@ -476,7 +476,7 @@ export function RelationWriteConfirm({
             />
           </dl>
         </div>
-        <details className="mt-2 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.08)] p-2">
+        <details className="mt-2 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:rgba(0,0,0,0.08)] p-2">
           <summary className="cursor-pointer select-none font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] marker:text-[color:var(--color-indigo-accent)]">
             {labels.traversalCheck}
           </summary>
@@ -487,7 +487,7 @@ export function RelationWriteConfirm({
             <p className="mt-1 break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
               {buildAllPathsCheckCommand({ proposal })}
             </p>
-            <div className="mt-2 border-t border-[color:rgba(94,106,210,0.14)] pt-2">
+            <div className="mt-2 border-t border-[color:var(--color-indigo-a14)] pt-2">
               <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                 {labels.traversalContract}
               </p>
@@ -525,7 +525,7 @@ export function RelationWriteConfirm({
               <button
                 type="button"
                 onClick={() => void handleCopyCliPreflight()}
-                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a26)] bg-[color:var(--color-indigo-a08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
               >
                 <Clipboard size={12} aria-hidden />
                 {copyCliPreflightLabel}
@@ -533,7 +533,7 @@ export function RelationWriteConfirm({
               <button
                 type="button"
                 onClick={() => void handleCopyMcpPreflight()}
-                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a26)] bg-[color:var(--color-indigo-a08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
               >
                 <Clipboard size={12} aria-hidden />
                 {copyMcpPreflightLabel}
@@ -541,7 +541,7 @@ export function RelationWriteConfirm({
               <button
                 type="button"
                 onClick={() => void handleCopyPostSaveSyncGate()}
-                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a26)] bg-[color:var(--color-indigo-a08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
               >
                 <Clipboard size={12} aria-hidden />
                 {copyPostSaveSyncGateLabel}
@@ -574,7 +574,7 @@ export function RelationWriteConfirm({
             {labels.graphAlternativeWarning}
           </p>
         ) : null}
-        <details className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.08)] p-2">
+        <details className="mt-3 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:rgba(0,0,0,0.08)] p-2">
           <summary className="cursor-pointer select-none font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] marker:text-[color:var(--color-indigo-accent)]">
             {labels.endpointReview}
           </summary>
@@ -585,32 +585,32 @@ export function RelationWriteConfirm({
             <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
             <Link
               href={sourceOntologyHref}
-              className="inline-flex h-7 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-center text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+              className="inline-flex h-7 items-center justify-center rounded-md border border-[color:var(--color-indigo-a26)] bg-[color:var(--color-indigo-a08)] px-2 text-center text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
             >
               {labels.sourceOntology}
             </Link>
             <Link
               href={targetOntologyHref}
-              className="inline-flex h-7 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-center text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+              className="inline-flex h-7 items-center justify-center rounded-md border border-[color:var(--color-indigo-a26)] bg-[color:var(--color-indigo-a08)] px-2 text-center text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
             >
               {labels.targetOntology}
             </Link>
             <Link
               href={sourceBuilderHref}
-              className="inline-flex h-7 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-center text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+              className="inline-flex h-7 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-center text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
             >
               {labels.sourceBuilder}
             </Link>
             <Link
               href={targetBuilderHref}
-              className="inline-flex h-7 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-center text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+              className="inline-flex h-7 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-center text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
             >
               {labels.targetBuilder}
             </Link>
             </div>
           </div>
         </details>
-        <details className="mt-2 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.08)] p-2">
+        <details className="mt-2 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:rgba(0,0,0,0.08)] p-2">
           <summary className="cursor-pointer select-none font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] marker:text-[color:var(--color-indigo-accent)]">
             {labels.postSaveGraphHandoff}
           </summary>
@@ -621,25 +621,25 @@ export function RelationWriteConfirm({
             <div className="mt-2 flex flex-wrap gap-1.5">
             <Link
               href={topologyPathHref}
-              className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+              className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-indigo-a26)] bg-[color:var(--color-indigo-a08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
             >
               {labels.postSavePathHandoff}
             </Link>
             <Link
               href={sourceTopologyFocusHref}
-              className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+              className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
             >
               {labels.postSaveSourceFocus}
             </Link>
             <Link
               href={targetTopologyFocusHref}
-              className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+              className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
             >
               {labels.postSaveTargetFocus}
             </Link>
             <Link
               href={queryCockpitHref}
-              className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+              className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-indigo-a26)] bg-[color:var(--color-indigo-a08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
             >
               {labels.postSaveQueryCockpit}
             </Link>
@@ -656,7 +656,7 @@ export function RelationWriteConfirm({
           {saveChecklistRows.map((row) => (
             <div
               key={row.key}
-              className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-sm border border-[color:rgba(94,106,210,0.14)] bg-[color:rgba(0,0,0,0.08)] px-2 py-1.5"
+              className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-sm border border-[color:var(--color-indigo-a14)] bg-[color:rgba(0,0,0,0.08)] px-2 py-1.5"
             >
               <dt className="min-w-0 truncate text-[11px] text-[color:var(--color-text-secondary)]">
                 {row.label}
@@ -677,7 +677,7 @@ export function RelationWriteConfirm({
         </dl>
         <div
           aria-label={labels.agentDecisionLens}
-          className="mt-2 rounded-sm border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.08)] p-2"
+          className="mt-2 rounded-sm border border-[color:var(--color-indigo-line-a14)] bg-[color:rgba(0,0,0,0.08)] p-2"
         >
           <p className="truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {labels.agentDecisionLens}
@@ -688,7 +688,7 @@ export function RelationWriteConfirm({
                 key={row.id}
                 data-agent-concern-id={row.id}
                 title={row.body}
-                className="min-w-0 rounded-sm border border-[color:rgba(94,106,210,0.12)] bg-[color:rgba(255,255,255,0.018)] px-1.5 py-1"
+                className="min-w-0 rounded-sm border border-[color:var(--color-indigo-a12)] bg-[color:var(--color-overlay-1)] px-1.5 py-1"
               >
                 <p className="truncate font-mono text-[8.5px] text-[color:var(--color-text-secondary)]">
                   {row.title}
@@ -747,7 +747,7 @@ export function RelationWriteConfirm({
               <dt className="text-[color:var(--color-text-quaternary)]">
                 {labels.writeFrontmatterPatch}
               </dt>
-              <dd className="min-w-0 whitespace-pre-wrap break-all rounded-sm border border-[color:rgba(94,106,210,0.14)] bg-[color:rgba(14,16,22,0.18)] px-2 py-1 text-[color:var(--color-text-secondary)]">
+              <dd className="min-w-0 whitespace-pre-wrap break-all rounded-sm border border-[color:var(--color-indigo-a14)] bg-[color:rgba(14,16,22,0.18)] px-2 py-1 text-[color:var(--color-text-secondary)]">
                 {frontmatterPatch}
               </dd>
               <dt className="text-[color:var(--color-text-quaternary)]">
@@ -784,7 +784,7 @@ export function RelationWriteConfirm({
             type="button"
             onClick={() => void handleCopyMcpWrite()}
             disabled={directMcpWriteBlocked}
-            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:border-[color:var(--color-overlay-3)] disabled:bg-[color:var(--color-overlay-1)] disabled:text-[color:var(--color-text-quaternary)]"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a26)] bg-[color:var(--color-indigo-a08)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:border-[color:var(--color-overlay-3)] disabled:bg-[color:var(--color-overlay-1)] disabled:text-[color:var(--color-text-quaternary)]"
           >
             <Clipboard size={12} aria-hidden />
             {copyMcpWriteLabel}
@@ -800,7 +800,7 @@ export function RelationWriteConfirm({
             type="button"
             onClick={onConfirm}
             disabled={confirmDisabled}
-            className="inline-flex h-8 items-center rounded-md border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-3 text-xs font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:rgba(94,106,210,0.2)] disabled:cursor-not-allowed disabled:border-[color:var(--color-overlay-3)] disabled:bg-[color:var(--color-overlay-1)] disabled:text-[color:var(--color-text-quaternary)]"
+            className="inline-flex h-8 items-center rounded-md border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a14)] px-3 text-xs font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a20)] disabled:cursor-not-allowed disabled:border-[color:var(--color-overlay-3)] disabled:bg-[color:var(--color-overlay-1)] disabled:text-[color:var(--color-text-quaternary)]"
           >
             {labels.confirm}
           </button>

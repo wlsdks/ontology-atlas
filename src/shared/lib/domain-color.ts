@@ -118,7 +118,7 @@ function hashSlug(slug: string): number {
 export function resolveDomainTint(slug: string | null | undefined): DomainTint {
   if (!slug) {
     return {
-      accent: "rgba(94, 106, 210, 0.32)",
+      accent: "var(--color-indigo-a32)",
       bg: "transparent",
       hueName: "neutral",
     };

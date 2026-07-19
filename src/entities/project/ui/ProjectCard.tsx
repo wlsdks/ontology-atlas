@@ -63,7 +63,7 @@ function statusDotClass(color: CardStatusDotColor): string {
 
 function borderClass(borderStyle: CardCategoryMeta['borderStyle'], isHub: boolean): string {
   if (isHub) {
-    return 'border-[color:var(--color-indigo-brand)] bg-[color:rgba(94,106,210,0.12)]';
+    return 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a12)]';
   }
   switch (borderStyle) {
     case 'underline':
@@ -131,12 +131,12 @@ export function ProjectCard({
           className={cn(
             'relative flex items-center justify-center rounded-full border shadow-[0_10px_24px_rgba(0,0,0,0.24)] transition-[transform,background-color,border-color,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_14px_30px_rgba(0,0,0,0.3)]',
             isHub
-              ? 'border-[color:var(--color-indigo-brand)] bg-[color:rgba(94,106,210,0.18)] text-[color:var(--color-indigo-accent)]'
-              : 'border-[color:var(--color-border-strong)] bg-[color:rgba(20,21,23,0.96)] text-[color:var(--color-text-primary)] group-hover:border-[color:rgba(94,106,210,0.26)] group-hover:bg-[color:rgba(94,106,210,0.08)]',
+              ? 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] text-[color:var(--color-indigo-accent)]'
+              : 'border-[color:var(--color-border-strong)] bg-[color:rgba(20,21,23,0.96)] text-[color:var(--color-text-primary)] group-hover:border-[color:var(--color-indigo-a26)] group-hover:bg-[color:var(--color-indigo-a08)]',
             selected
-              ? 'h-11 w-11 text-[14px] ring-2 ring-[color:rgba(94,106,210,0.5)] ring-offset-2 ring-offset-[color:var(--color-canvas)] shadow-[0_16px_34px_rgba(20,24,44,0.46)]'
+              ? 'h-11 w-11 text-[14px] ring-2 ring-[color:var(--color-indigo-a50)] ring-offset-2 ring-offset-[color:var(--color-canvas)] shadow-[0_16px_34px_rgba(20,24,44,0.46)]'
               : related
-                ? 'h-9 w-9 text-[13px] border-[color:rgba(94,106,210,0.32)] shadow-[0_12px_28px_rgba(20,24,44,0.28)]'
+                ? 'h-9 w-9 text-[13px] border-[color:var(--color-indigo-a32)] shadow-[0_12px_28px_rgba(20,24,44,0.28)]'
                 : dense
                   ? 'h-7 w-7 text-[11px]'
                   : 'h-8.5 w-8.5 text-[12px]',
@@ -198,7 +198,7 @@ export function ProjectCard({
           : 'h-[120px] w-[192px] px-3.5 py-3 md:h-[140px] md:w-[220px] md:px-4 md:py-3.5',
         preview ? '' : 'cursor-pointer active:cursor-grabbing',
         borderClass(borderStyle, isHub),
-        related && !selected ? 'border-[color:rgba(94,106,210,0.22)]' : '',
+        related && !selected ? 'border-[color:var(--color-indigo-a22)]' : '',
       )}
       style={{
         backgroundImage:
@@ -218,7 +218,7 @@ export function ProjectCard({
       )}
 
       {!isHub && shared && (
-        <span className="absolute -top-2 left-3 rounded-full border border-[color:rgba(113,112,255,0.5)] bg-[color:rgba(94,106,210,0.25)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-[color:var(--color-indigo-accent)] md:left-4 md:text-[9px]">
+        <span className="absolute -top-2 left-3 rounded-full border border-[color:rgba(113,112,255,0.5)] bg-[color:var(--color-indigo-a26)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-[color:var(--color-indigo-accent)] md:left-4 md:text-[9px]">
           공유
         </span>
       )}

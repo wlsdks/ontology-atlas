@@ -124,7 +124,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
           {/* engraved fact strip — real repo facts only (package.json /
               tauri.conf.json). Size is deliberately absent: no DMG has been
               built yet, see release-facts.ts. */}
-          <div className="mt-6 flex flex-wrap items-baseline gap-5 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-panel-metric-surface,rgba(255,255,255,0.028))] px-4 py-2.5 text-[12.5px]">
+          <div className="mt-6 flex flex-wrap items-baseline gap-5 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-panel-metric-surface,var(--color-overlay-1))] px-4 py-2.5 text-[12.5px]">
             <FactItem label={t('factVersionLabel')} value={`v${RELEASE_VERSION}`} />
             <FactItem label={t('factFormatLabel')} value="DMG" />
             <FactItem label={t('factArchLabel')} value={t('factArchValue')} />
@@ -236,7 +236,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
           </ol>
 
           <div className="mt-7 grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <div className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
               <div className="flex items-center gap-2 pb-2">
                 <ShieldCheck size={15} className="text-[color:var(--color-indigo-accent)]" />
                 <h2 className="text-[13px] font-semibold text-[color:var(--color-text-primary)]">
@@ -254,7 +254,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
               </p>
             </div>
 
-            <div className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <div className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
               <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] pb-2">
                 <span className={`text-[12px] ${numeralClass}`}>v{RELEASE_VERSION}</span>
                 <span className="ml-auto whitespace-nowrap font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
@@ -284,13 +284,13 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
               href={GITHUB_RELEASES_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:rgba(94,106,210,0.5)] px-3 text-[12px] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+              className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-a50)] px-3 text-[12px] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
             >
               {t('githubOpen')}
             </a>
           </section>
 
-          <p className="mt-6 rounded-md border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] p-3 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+          <p className="mt-6 rounded-md border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a07)] p-3 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
             {t('releaseGateNote')}
           </p>
 
@@ -719,7 +719,7 @@ function IncludeCard({
   body: string;
 }) {
   return (
-    <article className="flex items-start gap-2.5 rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+    <article className="flex items-start gap-2.5 rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3.5 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
       <TopologyV2KindGlyph kind={glyph} size={16} className="mt-0.5 shrink-0" />
       <div className="min-w-0">
         <h3 className="text-[12.5px] font-semibold text-[color:var(--color-text-primary)]">
@@ -734,7 +734,7 @@ function IncludeCard({
 
 function InstallStep({ index, title, body }: { index: string; title: string; body: string }) {
   return (
-    <li className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+    <li className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3.5 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
       <span className={`text-[11px] tracking-[0.1em] ${numeralClass}`}>{index}</span>
       <h3 className="mt-1.5 text-[13px] font-semibold text-[color:var(--color-text-primary)]">{title}</h3>
       <p className="mt-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">{body}</p>

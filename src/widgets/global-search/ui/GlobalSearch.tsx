@@ -206,7 +206,7 @@ export function GlobalSearch({
             data-testid="global-search-close"
             data-global-search-close-contract="touch-visible"
             data-global-search-close-size-token="--topology-search-sheet-close-size"
-            className="flex h-[var(--topology-search-sheet-close-size)] w-[var(--topology-search-sheet-close-size)] shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            className="flex h-[var(--topology-search-sheet-close-size)] w-[var(--topology-search-sheet-close-size)] shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
             <X size={15} aria-hidden />
           </button>
@@ -236,7 +236,7 @@ export function GlobalSearch({
                   aria-pressed={active}
                   className={
                     active
-                      ? "shrink-0 rounded-full border border-[color:rgba(94,106,210,0.5)] bg-[color:rgba(94,106,210,0.16)] px-2 py-0.5 text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]"
+                      ? "shrink-0 rounded-full border border-[color:var(--color-indigo-a50)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]"
                       : "shrink-0 rounded-full border border-[color:var(--color-divider)] bg-transparent px-2 py-0.5 text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
                   }
                 >
@@ -302,7 +302,7 @@ export function GlobalSearch({
                         }}
                         className={
                           active
-                            ? "rounded-full border border-[color:rgba(94,106,210,0.5)] bg-[color:rgba(94,106,210,0.16)] px-2 py-0.5 text-[10px] text-[color:var(--color-indigo-accent)] mr-1.5 whitespace-nowrap"
+                            ? "rounded-full border border-[color:var(--color-indigo-a50)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 text-[10px] text-[color:var(--color-indigo-accent)] mr-1.5 whitespace-nowrap"
                             : "rounded-full border border-[color:var(--color-divider)] bg-transparent px-2 py-0.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] mr-1.5 whitespace-nowrap"
                         }
                       >
@@ -349,7 +349,7 @@ export function GlobalSearch({
                     onSelectNode(node);
                     closeAndClear();
                   }}
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-[color:var(--color-text-secondary)] aria-selected:bg-[color:rgba(94,106,210,0.14)] aria-selected:text-[color:var(--color-text-primary)]"
+                  className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                 >
                   <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
                     {kindLabel(node.kind)}
@@ -384,9 +384,9 @@ export function GlobalSearch({
                     onSelectProject(project);
                     closeAndClear();
                   }}
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-[color:var(--color-text-secondary)] aria-selected:bg-[color:rgba(94,106,210,0.14)] aria-selected:text-[color:var(--color-text-primary)]"
+                  className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                 >
-                  <span className="inline-flex shrink-0 items-center rounded-full border border-[color:rgba(94,106,210,0.20)] bg-[color:rgba(94,106,210,0.06)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(159,170,235,0.95)]">
+                  <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(159,170,235,0.95)]">
                     {project.isHub ? t('hub') : t('project')}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">

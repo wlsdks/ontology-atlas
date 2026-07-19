@@ -122,8 +122,8 @@ export function DependencyPicker({
               className={cn(
                 'group flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors',
                 p.isHub
-                  ? 'border-[color:var(--color-indigo-brand)] bg-[color:rgba(94,106,210,0.2)] text-[color:var(--color-indigo-accent)]'
-                  : 'border-[color:var(--color-indigo-brand)] bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-text-primary)]',
+                  ? 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a20)] text-[color:var(--color-indigo-accent)]'
+                  : 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]',
               )}
             >
               <span>{p.name}</span>
@@ -143,7 +143,7 @@ export function DependencyPicker({
       {visibleSuggestions.length > 0 && (
         <div
           data-testid="dependency-suggestions-group"
-          className="flex flex-col gap-2 rounded-lg border border-dashed border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.06)] p-3"
+          className="flex flex-col gap-2 rounded-lg border border-dashed border-[color:var(--color-indigo-a34)] bg-[color:var(--color-indigo-a06)] p-3"
         >
           <div className="flex items-center gap-1.5">
             <Sparkles
@@ -160,7 +160,7 @@ export function DependencyPicker({
               <div
                 key={suggestion.slug}
                 data-testid={`dependency-suggestion-${suggestion.slug}`}
-                className="flex items-center justify-between gap-2 rounded-md border border-dashed border-[color:rgba(94,106,210,0.3)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5"
+                className="flex items-center justify-between gap-2 rounded-md border border-dashed border-[color:var(--color-indigo-a30)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5"
               >
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-xs text-[color:var(--color-text-primary)]">
@@ -179,7 +179,7 @@ export function DependencyPicker({
                         onChange([...value, suggestion.slug]);
                       }
                     }}
-                    className="flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-brand)] bg-[color:rgba(94,106,210,0.14)] px-2 py-0.5 text-[10px] text-[color:var(--color-indigo-accent)] hover:bg-[color:rgba(94,106,210,0.24)]"
+                    className="flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a14)] px-2 py-0.5 text-[10px] text-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a24)]"
                     aria-label={t('suggestionAcceptLabel', { name: suggestion.name })}
                   >
                     <Check size={10} />
