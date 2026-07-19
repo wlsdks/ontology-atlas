@@ -41,23 +41,30 @@ export interface AtlasNodeData {
 }
 
 /**
- * 4방향 target + 4방향 source handle — 기능은 이전과 동일하게 전부 유지
- * (`builder-edge-handles.ts` 가 노드 상대 위치에 따라 이 8개 중 최적 id 를
- * 골라 라우팅한다). 시각적으로는 카드당 "주" 포트(좌측 target · 우측
- * source)만 10px 원으로 보이고 나머지는 투명 — 새 시안의 "우측 port 원"
- * 하나만 있는 것처럼 읽히되, 실제 연결 가능한 4면은 그대로 살아있다.
+ * 4방향 target + 4방향 source handle — 라우팅(`builder-edge-handles.ts`)이
+ * 노드 상대 위치에 따라 이 8개 중 마주보는 포트를 골라 엣지를 앵커한다.
+ *
+ * 시각/인터랙션 위계(계약):
+ *  - **primary** (좌측 target · 우측 source): 10px 원으로 보이고 연결 가능.
+ *    히트존은 CSS `::before` 로 22px 까지 넓혀(≥16px) 정밀 조준 부담을 없앤다.
+ *  - **secondary** (상/하 + 반대편): 평소 투명·비활성. 노드 hover 시에만 아주
+ *    옅게(0.3) 표출돼 "여기에도 포트가 있다"는 절제된 affordance 만 준다.
+ *    연결 시작/종료 타깃은 아니다(예측 가능한 좌-입력/우-출력 유지).
+ *
+ * opacity/pointer-events/히트존/hover 표출은 전부 CSS(OntologyEditCanvas 의
+ * styled-jsx global) 가 `atlas-port` / `atlas-port-primary|secondary` 클래스로
+ * 소유한다 — 그래야 node-hover 로 secondary 를 드러낼 수 있다(inline opacity 는
+ * CSS 로 못 덮음). 여기 inline 은 dot 색(선택 시 인디고)만 남긴다.
  */
-function portStyle(
-  selected: boolean,
-  side: "primary" | "secondary" = "primary",
-): React.CSSProperties {
+function portStyle(selected: boolean): React.CSSProperties {
   return {
     background: "var(--color-canvas)",
     border: `1.5px solid ${selected ? "var(--color-indigo-brand)" : "var(--color-border-strong)"}`,
-    opacity: side === "primary" ? 1 : 0,
-    pointerEvents: side === "primary" ? "auto" : "none",
   };
 }
+
+const PORT_PRIMARY = "atlas-port atlas-port-primary";
+const PORT_SECONDARY = "atlas-port atlas-port-secondary";
 
 export function AtlasNode({ data, selected }: NodeProps) {
   const t = useTranslations("ontologyPages.edit.atlasNode");
@@ -110,11 +117,12 @@ export function AtlasNode({ data, selected }: NodeProps) {
         id="target-left"
         type="target"
         position={Position.Left}
+        className={PORT_PRIMARY}
         style={portStyle(isSelected)}
       />
-      <Handle id="target-top" type="target" position={Position.Top} style={portStyle(isSelected, "secondary")} />
-      <Handle id="target-right" type="target" position={Position.Right} style={portStyle(isSelected, "secondary")} />
-      <Handle id="target-bottom" type="target" position={Position.Bottom} style={portStyle(isSelected, "secondary")} />
+      <Handle id="target-top" type="target" position={Position.Top} className={PORT_SECONDARY} style={portStyle(isSelected)} />
+      <Handle id="target-right" type="target" position={Position.Right} className={PORT_SECONDARY} style={portStyle(isSelected)} />
+      <Handle id="target-bottom" type="target" position={Position.Bottom} className={PORT_SECONDARY} style={portStyle(isSelected)} />
 
       <TopologyV2KindGlyph kind={nodeData.kind} size={16} />
       <span style={{ minWidth: 0, flex: 1 }}>
@@ -150,11 +158,12 @@ export function AtlasNode({ data, selected }: NodeProps) {
         id="source-right"
         type="source"
         position={Position.Right}
+        className={PORT_PRIMARY}
         style={portStyle(isSelected)}
       />
-      <Handle id="source-left" type="source" position={Position.Left} style={portStyle(isSelected, "secondary")} />
-      <Handle id="source-top" type="source" position={Position.Top} style={portStyle(isSelected, "secondary")} />
-      <Handle id="source-bottom" type="source" position={Position.Bottom} style={portStyle(isSelected, "secondary")} />
+      <Handle id="source-left" type="source" position={Position.Left} className={PORT_SECONDARY} style={portStyle(isSelected)} />
+      <Handle id="source-top" type="source" position={Position.Top} className={PORT_SECONDARY} style={portStyle(isSelected)} />
+      <Handle id="source-bottom" type="source" position={Position.Bottom} className={PORT_SECONDARY} style={portStyle(isSelected)} />
     </div>
   );
 }

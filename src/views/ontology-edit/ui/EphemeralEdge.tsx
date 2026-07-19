@@ -7,39 +7,10 @@ import {
   getBezierPath,
   type EdgeProps,
 } from "@xyflow/react";
-import {
-  edgeRouteOptionsForSemanticType,
-  offsetEndpointAwayFromNode,
-} from "./VaultEdge";
+import { edgeCurvatureForSemanticType } from "../lib/builder-edge-route";
 
 interface EphemeralEdgeData {
   onPersist?: (edgeId: string) => void;
-}
-
-export function resolveEphemeralEdgeRoutePoints({
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
-}: Pick<
-  EdgeProps,
-  "sourceX" | "sourceY" | "targetX" | "targetY" | "sourcePosition" | "targetPosition"
->) {
-  const clearance = edgeRouteOptionsForSemanticType("relation").clearance;
-  return {
-    source: offsetEndpointAwayFromNode(
-      { x: sourceX, y: sourceY },
-      sourcePosition,
-      clearance,
-    ),
-    target: offsetEndpointAwayFromNode(
-      { x: targetX, y: targetY },
-      targetPosition,
-      clearance,
-    ),
-  };
 }
 
 /**
@@ -48,19 +19,17 @@ export function resolveEphemeralEdgeRoutePoints({
  * 의 handleConnect 가 자동으로 frontmatter array 에 patch 하지만, 한쪽이라도
  * ephemeral 인 경우엔 in-memory 로 남았다가 새로고침 시 사라진다.
  *
- * 본 custom edge 는 인디고 dashed 경로(`--topology-v2-indigo-bright`, 시안
- * builder-v2-02-draft.html 의 초안 depends_on 색 `#8890e0` 과 동일 토큰) +
- * 가운데 "Save" 칩을 그려 사용자가 명시적으로 영구화할 수 있게 한다.
- * feat/builder-core 이전엔 amber 로 ephemeral 을 표시했지만, 새 계약은
- * ephemeral 상태 전체(노드 dashed 카드 + 이 edge)를 단일 인디고 신호로
+ * 라우팅은 VaultEdge 와 같은 cubic bezier(관계선 곡률) — 캔버스 안 모든 선이
+ * 같은 곡선 언어를 쓴다. 인디고 dashed 경로(`--topology-v2-indigo-bright`) +
+ * 가운데 "Save" 칩으로 명시적 영구화. feat/builder-core 이전엔 amber 로
+ * ephemeral 을 표시했지만, 새 계약은 ephemeral 상태 전체를 단일 인디고 신호로
  * 통일한다 — "둘 이상의 채색 시스템 금지" 원칙을 ephemeral 에도 적용.
- * 칩 클릭 → ephemeral endpoint 들이 vault 에 createDoc 으로 저장되고,
- * 그 slug 들로 connectVaultEdge 가 호출돼 frontmatter array 까지 채워진다.
+ * 칩 클릭 → ephemeral endpoint 들이 vault 에 createDoc 으로 저장되고, 그
+ * slug 들로 connectVaultEdge 가 호출돼 frontmatter array 까지 채워진다.
  *
- * 자동-저장 (drop 즉시 영구화) 을 채택 안 한 이유: ephemeral 노드에
- * title 이 비었을 때 `untitled.md` 가 vault 에 생기는 silent pollution
- * 위험. AGENTS.md 의 self-approving frontmatter 원칙 위반. 명시적 chip
- * intent + title 검증 (toastEdgePersistNeedsTitle) 으로 안전.
+ * 자동-저장 (drop 즉시 영구화) 을 채택 안 한 이유: ephemeral 노드에 title 이
+ * 비었을 때 `untitled.md` 가 vault 에 생기는 silent pollution 위험. 명시적
+ * 칩 intent + title 검증 (toastEdgePersistNeedsTitle) 으로 안전.
  */
 export function EphemeralEdge({
   id,
@@ -73,21 +42,14 @@ export function EphemeralEdge({
   data,
 }: EdgeProps) {
   const t = useTranslations("ontologyPages.edit.canvas");
-  const routed = resolveEphemeralEdgeRoutePoints({
+  const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
+    sourcePosition,
     targetX,
     targetY,
-    sourcePosition,
     targetPosition,
-  });
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX: routed.source.x,
-    sourceY: routed.source.y,
-    sourcePosition,
-    targetX: routed.target.x,
-    targetY: routed.target.y,
-    targetPosition,
+    curvature: edgeCurvatureForSemanticType("relation"),
   });
   const onPersist = (data as EphemeralEdgeData | undefined)?.onPersist;
   return (
@@ -95,6 +57,7 @@ export function EphemeralEdge({
       <BaseEdge
         id={id}
         path={edgePath}
+        interactionWidth={22}
         style={{
           stroke: "var(--topology-v2-indigo-bright)",
           strokeWidth: 1.5,

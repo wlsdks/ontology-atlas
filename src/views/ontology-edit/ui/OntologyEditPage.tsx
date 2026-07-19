@@ -36,6 +36,7 @@ import { ChromeTile, Tooltip, useToast } from "@/shared/ui";
 import { parseOntologyReaderIntent } from "@/shared/lib/ontology-reader-intent";
 import { useEphemeralNodes } from "../lib/use-ephemeral-nodes";
 import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
+import { childKindForParent } from "../lib/builder-drop-to-add";
 import { isUntitledTitle } from "../lib/is-untitled-title";
 import { downloadAtlasFrontmatter } from "../lib/export-frontmatter";
 import { downloadGraphML, downloadJsonLd } from "../lib/export-graph";
@@ -110,6 +111,11 @@ const OntologyEditCanvas = dynamic<{
     targetSlug: string,
     sourceKind: string,
     targetKind: string,
+  ) => void;
+  onConnectToEmpty?: (
+    fromNodeId: string,
+    fromKind: string,
+    position: { x: number; y: number },
   ) => void;
   onPersistEphemeralEdge?: (edgeId: string) => void;
   onRemoveEphemeralEdge?: (edgeId: string) => void;
@@ -802,6 +808,28 @@ export function OntologyEditPage() {
       setLastSavedRelation(null);
     },
     [demoEdgeToastKey, docsBySlug, hasLiveVault, t, toast],
+  );
+
+  // "drop to add" — 노드 포트에서 선을 끌어 빈 캔버스에 놓으면 그 자리에 새
+  // 개념 초안 노드를 만들고(자식 kind 추론) source 와 ephemeral edge 로 잇는다.
+  // 새 노드를 select 하면 인스펙터가 이름 입력에 자동 포커스(기존 초안 생성
+  // 플로우 재사용) — 사용자는 바로 타이핑해 이름을 넣고 저장하면 vault 로 승격.
+  const handleConnectToEmpty = useCallback(
+    (fromNodeId: string, fromKind: string, position: { x: number; y: number }) => {
+      const kind = childKindForParent(fromKind);
+      // 드롭 지점이 카드 중심에 오도록 좌상단 좌표로 보정(카드 196×56).
+      const newId = addNodeRaw(kind, {
+        kindLabel: tKinds(kind),
+        defaultTitle: t("untitledPlaceholder"),
+        position: { x: position.x - 98, y: position.y - 28 },
+      });
+      addEphemeralEdgeByIds(fromNodeId, newId);
+      // 선택은 다음 tick 으로 미룬다 — 연결 드래그 종료 직후 캔버스 pane 이
+      // onPaneClick 으로 selection 을 null 로 지우기 때문. 미뤄야 새 초안이
+      // 선택된 채 남아 인스펙터 이름 입력이 자동 포커스된다.
+      window.setTimeout(() => setSelectedId(newId), 0);
+    },
+    [addNodeRaw, addEphemeralEdgeByIds, tKinds, t],
   );
   /**
    * Round 4 cut I — ephemeral edge "Save" 칩 클릭 orchestrator.
@@ -1541,6 +1569,7 @@ export function OntologyEditPage() {
               onSelectionChange={handleCanvasSelectionChange}
               onConnect={addEphemeralEdge}
               onVaultConnect={connectVaultEdge}
+              onConnectToEmpty={handleConnectToEmpty}
               onPersistEphemeralEdge={persistEphemeralEdge}
               onRemoveEphemeralEdge={removeEphemeralEdge}
               onVaultNodeDragStop={persistVaultPosition}

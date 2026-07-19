@@ -15,6 +15,7 @@ import {
   useReactFlow,
   type Connection,
   type Edge,
+  type FinalConnectionState,
   type Node,
   type NodeChange,
   type OnSelectionChangeParams,
@@ -265,6 +266,7 @@ export function OntologyEditCanvas({
   onNodeOpen,
   onConnect,
   onVaultConnect,
+  onConnectToEmpty,
   onPersistEphemeralEdge,
   onRemoveEphemeralEdge,
   onVaultNodeDragStop,
@@ -286,6 +288,16 @@ export function OntologyEditCanvas({
     targetSlug: string,
     sourceKind: string,
     targetKind: string,
+  ) => void;
+  /**
+   * "drop to add" — 한 노드의 포트에서 선을 끌어 빈 캔버스에 놓았을 때 호출.
+   * 드롭 지점(flow 좌표)에 새 개념 초안을 만들고 source 와 잇도록 부모에 위임.
+   * fromKind 로 자식 kind 를 추론(project→domain…)한다.
+   */
+  onConnectToEmpty?: (
+    fromNodeId: string,
+    fromKind: string,
+    position: { x: number; y: number },
   ) => void;
   /** ephemeral edge "Save" 칩 클릭 시 — endpoint ephemeral 노드 (있으면)
    *  먼저 vault 에 createDoc 으로 저장한 뒤 source frontmatter array 에
@@ -562,6 +574,37 @@ export function OntologyEditCanvas({
     [allNodes, onConnect, onVaultConnect],
   );
 
+  // 자기 자신으로의 연결(self-loop)만 즉시 거부 — 포트 위에서 red 신호로
+  // 표시된다(styled-jsx 의 `.connectingto:not(.valid)`). 그 외 노드쌍은 유효로
+  // 두어 자석 스냅(`.connectingto.valid` 인디고 점등)이 걸리게 한다.
+  const isValidConnection = useCallback(
+    (edgeOrConnection: Edge | Connection) => {
+      return edgeOrConnection.source !== edgeOrConnection.target;
+    },
+    [],
+  );
+
+  // "drop to add" — 포트에서 끌어 빈 캔버스(핸들 밖)에 놓으면 그 자리에 새
+  // 개념 초안을 만든다. 노드에 정상 연결되면 toNode 가 채워져 있고 onConnect
+  // 가 이미 처리하므로 여기선 무시. connectionState.to 는 flow 좌표라 별도
+  // 변환 없이 그대로 드롭 지점으로 쓴다.
+  const handleConnectEnd = useCallback(
+    (
+      _event: MouseEvent | TouchEvent,
+      connectionState: FinalConnectionState,
+    ) => {
+      if (!onConnectToEmpty) return;
+      if (connectionState.toNode) return; // 노드에 연결됨 → handleConnect 담당
+      const fromNode = connectionState.fromNode;
+      const to = connectionState.to;
+      if (!fromNode || !to) return;
+      const fromKind =
+        (fromNode.data as { kind?: string } | undefined)?.kind ?? "capability";
+      onConnectToEmpty(fromNode.id, fromKind, { x: to.x, y: to.y });
+    },
+    [onConnectToEmpty],
+  );
+
   const handleNodeDragStop = useCallback(
     (_event: unknown, node: Node) => {
       // vault 노드만 patch — ephemeral 은 in-memory 가 진실원이라 무관.
@@ -662,6 +705,12 @@ export function OntologyEditCanvas({
         }}
         onNodesChange={onNodesChange}
         onConnect={handleConnect}
+        onConnectEnd={handleConnectEnd}
+        isValidConnection={isValidConnection}
+        // 자석 스냅 반경 — 기본(20)보다 넉넉히 키워 포트를 정확히 못 맞춰도
+        // 근처에서 흡착. n8n 급 "끌어다 대면 붙는" 감각. 너무 크면 옆 노드로
+        // 튀므로 카드 폭(220)의 1/6 남짓으로 절제.
+        connectionRadius={38}
         onSelectionChange={handleSelectionChange}
         onPaneClick={() => onSelectionChange?.(null)}
         onNodeClick={(_, node) => onNodeOpen?.(node.id)}
@@ -789,29 +838,58 @@ export function OntologyEditCanvas({
         .react-flow__node-atlas:hover {
           filter: brightness(1.06);
         }
-        /* Handle (connection point) — builder-core 시안 §2: "우측 port 원" 10px,
-           중립 보더 → selected 인디고(AtlasNode 의 inline portStyle 이 그
-           border-color 를 결정). 여기서는 glow-like box-shadow ring 대신
-           plain outline 만 hover/connecting 시 추가 — enlarge 는 width/height
-           속성 변화(transform scale 아님, design.md 의 scale-hover 금지와 무관)로
-           '여기서 끌어서 연결' affordance 를 남긴다. */
-        .react-flow__handle {
+        /* Handle (연결 포트) — builder-core 시안 §2: primary port 원 10px, 중립
+           보더 → selected 인디고(AtlasNode inline portStyle). 여기 CSS 가 히트존·
+           표출·스냅 하이라이트를 소유한다. enlarge 는 width/height 속성 변화
+           (transform scale 아님 → design.md scale-hover 금지와 무관), 링은
+           glow 아닌 plain outline. */
+        .react-flow__handle.atlas-port {
           width: 10px;
           height: 10px;
           cursor: crosshair;
           transition: width 160ms ease-out, height 160ms ease-out,
-                      outline-color 160ms ease-out;
+                      opacity 160ms ease-out, outline-color 160ms ease-out,
+                      border-color 160ms ease-out;
         }
-        .react-flow__node-atlas:hover .react-flow__handle {
+        /* 히트존 ≥16px — 보이는 dot 은 10px 로 두고 투명 ::before 로 클릭 영역만
+           24px 로 넓혀 조준 부담을 없앤다(n8n 큰 히트존 원칙). */
+        .react-flow__handle.atlas-port::before {
+          content: "";
+          position: absolute;
+          inset: -7px;
+          border-radius: 50%;
+        }
+        .atlas-port-primary {
+          opacity: 1;
+        }
+        /* secondary — 평소 숨김·비활성. node hover 때만 아주 옅게 표출해
+           "여기에도 포트가 있다"는 절제된 affordance 만 준다(헌장의 침착함). */
+        .atlas-port-secondary {
+          opacity: 0;
+          pointer-events: none;
+        }
+        .react-flow__node-atlas:hover .atlas-port-secondary {
+          opacity: 0.3;
+        }
+        .react-flow__node-atlas:hover .atlas-port-primary {
           width: 12px;
           height: 12px;
         }
-        .react-flow__handle.connectingto,
-        .react-flow__handle:hover {
-          width: 14px;
-          height: 14px;
+        /* 유효 종료 포트(자석 스냅 대상) hover / 연결 중 — 인디고 점등 + 확대. */
+        .react-flow__handle.atlas-port:hover,
+        .react-flow__handle.atlas-port.connectingto.valid {
+          width: 15px;
+          height: 15px;
+          opacity: 1;
+          border-color: var(--color-indigo-brand) !important;
           outline: 2px solid var(--color-indigo-brand);
-          outline-offset: 1px;
+          outline-offset: 2px;
+        }
+        /* 무효 종료 포트(자기 자신 등) — 즉시 시각 거부(red 신호 톤). */
+        .react-flow__handle.atlas-port.connectingto:not(.valid) {
+          border-color: rgba(229, 72, 77, 0.9) !important;
+          outline: 2px solid rgba(229, 72, 77, 0.5);
+          outline-offset: 2px;
         }
         /* 관계선은 노드 카드 뒤 레이어에 고정한다. React Flow 기본 z-index 는
            선택/hover 상태에 따라 edge 가 위로 올라올 수 있어, 카드 내부를

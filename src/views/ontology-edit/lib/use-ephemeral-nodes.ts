@@ -28,6 +28,11 @@ export interface AddNodeOptions {
   kindLabel?: string;
   /** 새 노드 placeholder 제목 — `(이름 입력)` / `(Untitled)` 등. */
   defaultTitle?: string;
+  /**
+   * 캔버스 좌표 명시 — "drop to add"(빈 캔버스에 선 놓기) 가 드롭 지점에
+   * 노드를 앉힐 때 사용. 미주입 시 기존처럼 중앙 근처 + stack offset.
+   */
+  position?: { x: number; y: number };
 }
 
 export function useEphemeralNodes() {
@@ -47,9 +52,10 @@ export function useEphemeralNodes() {
         kind,
         kindLabel: options?.kindLabel ?? kind,
         title: options?.defaultTitle ?? "",
+        // drop-to-add 는 드롭 지점 좌표를 그대로 사용. 그 외(palette 클릭)는
         // 캔버스 중앙 (대략) + offset 으로 stack 회피.
-        x: 240 + offset * 24,
-        y: 160 + offset * 24,
+        x: options?.position?.x ?? 240 + offset * 24,
+        y: options?.position?.y ?? 160 + offset * 24,
       };
       setNodes((prev) => [...prev, next]);
       return next.id;

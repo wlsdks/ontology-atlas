@@ -288,6 +288,7 @@ Empty state (0 nodes): link to `/docs` (open vault).
 ---
 
 ### `/ontology/edit` — Builder (xyflow ERD canvas)
+- **Drop-to-add**: 포트에서 빈 캔버스로 드래그를 놓으면 그 자리에 자식 kind 초안이 생기고 연결까지 이어진다(인스펙터 이름 입력 자동 포커스).
 
 #### Layout (3-pane, resident only on xl+ — rebuilt 2026-07-18)
 - Left palette (`OntologyKindPalette`, 240 px, collapsible to 44 px icon-only) · Center canvas (flex-1) · Right inspector (340 px, collapsible) — all three resident together only at `xl+`

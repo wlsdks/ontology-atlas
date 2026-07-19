@@ -1,33 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { Position } from "@xyflow/react";
-import { resolveEphemeralEdgeRoutePoints } from "./EphemeralEdge";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
-describe("EphemeralEdge route points", () => {
-  it("keeps draft relation endpoints outside concept cards", () => {
-    const routed = resolveEphemeralEdgeRoutePoints({
-      sourceX: 220,
-      sourceY: 40,
-      targetX: 440,
-      targetY: 40,
-      sourcePosition: Position.Right,
-      targetPosition: Position.Left,
-    });
+const here = dirname(fileURLToPath(import.meta.url));
+const source = readFileSync(join(here, "EphemeralEdge.tsx"), "utf8");
 
-    expect(routed.source).toEqual({ x: 262, y: 40 });
-    expect(routed.target).toEqual({ x: 398, y: 40 });
+/**
+ * ephemeral(초안) edge 도 vault edge 와 같은 cubic bezier 곡선 언어를 쓴다 —
+ * 캔버스 안의 모든 선이 한 목소리여야 한다는 계약. offset 스텁 라우팅으로
+ * 되돌아가면 깨진다.
+ */
+describe("EphemeralEdge routing contract", () => {
+  it("uses the shared relation curvature bezier", () => {
+    expect(source).toContain("getBezierPath");
+    expect(source).toContain('edgeCurvatureForSemanticType("relation")');
   });
 
-  it("routes vertical draft relations away from top and bottom handles", () => {
-    const routed = resolveEphemeralEdgeRoutePoints({
-      sourceX: 100,
-      sourceY: 80,
-      targetX: 100,
-      targetY: 220,
-      sourcePosition: Position.Bottom,
-      targetPosition: Position.Top,
-    });
-
-    expect(routed.source).toEqual({ x: 100, y: 122 });
-    expect(routed.target).toEqual({ x: 100, y: 178 });
+  it("keeps the indigo dashed draft ink and Save chip", () => {
+    expect(source).toContain("--topology-v2-indigo-bright");
+    expect(source).toContain("ephemeralEdgeSaveLabel");
   });
 });
