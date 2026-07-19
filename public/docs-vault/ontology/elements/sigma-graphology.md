@@ -4,16 +4,18 @@ kind: element
 title: Sigma + Graphology + ForceAtlas2
 domain: views
 path: package.json
-relates:
-  - capabilities/topology-sigma-render
+relates: [capabilities/topology-canvas-render]
 ---
 
 # Sigma + Graphology + ForceAtlas2
 
-WebGL spatial network 라이브러리 스택. Sigma 가 render, Graphology 가 그래프 자료구조,
-ForceAtlas2 가 layout 알고리즘. `/` (홈 hub) 와 `/topology` (alias) 의 토폴로지
-view 가 의존.
+WebGL 스택 중 Graphology(그래프 자료구조) + ForceAtlas2(layout 알고리즘)는
+`/`, `/topology` 의 canvas-2D 엔진(`topology-map-v2`)과 `/ontology/edit` ERD
+빌더가 공유하는 물리 레이아웃이다. Sigma.js 자체(WebGL 렌더러)는 `/`,
+`/topology` 에서는 은퇴했고, 현재는 `/docs` 폴더-토폴로지 미니맵
+(`src/widgets/docs-vault/ui/DocsVaultFolderTopology.tsx`, `@sigma/node-border`
+포함)만 직접 의존한다.
 
-Path analysis mode now changes Sigma node clicks into source / target path picks while the mode is active, with Shift+click kept as the fallback gesture outside Path mode.
-
-Dense ontology overview keeps relationship edges collapsed until the user zooms in close enough to inspect them. Ontology node kind is visible in the default map through stronger domain / capability / element fill colors and a clearer size hierarchy, so the first screen reads as grouped concepts before it reads as a mesh of links.
+Path analysis mode 등 Sigma 전용 상호작용(노드 클릭 → source/target path pick,
+Shift+click fallback)은 `/docs` 미니맵 범위에서만 유효하다. `/`, `/topology`
+의 동일한 사용자 경험은 [[capabilities/topology-canvas-render]] 가 다룬다.

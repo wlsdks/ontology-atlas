@@ -367,56 +367,12 @@ describe('i18n message catalog', () => {
     );
   });
 
-  it('keeps Korean sigma path overlay copy readable', async () => {
+  it('keeps topologyWidgets free of the retired sigma/contextMenu/edgeTooltip namespaces (chore/copy-plainlang W5 — SigmaTopology.tsx + SigmaContextMenu were physically deleted in c84ecb25e; only `controls`/`hubRail` still have consumers under `src/widgets/topology-controls`)', async () => {
+    const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
-    const pathCopy = ko.topologyWidgets.sigma;
 
-    assert.equal(pathCopy.pathCopy, '경로 근거');
-    assert.equal(pathCopy.pathMcpCopy, 'MCP 경로');
-    assert.equal(pathCopy.pathRelationPreflightCopy, '관계 사전 점검');
-    assert.equal(pathCopy.pathExplainRelationCopy, '관계 설명');
-    assert.equal(pathCopy.pathAllPathsPlanCopy, '전체 경로 계획');
-    assert.equal(pathCopy.pathAllPathsCopy, '전체 경로 실행');
-    assert.equal(pathCopy.pathRelationPreflightCopyAriaLabel, '경로 관계 사전 점검 복사');
-    assert.equal(pathCopy.pathExplainRelationCopyAriaLabel, '경로 관계 설명 점검 복사');
-    assert.equal(pathCopy.pathAllPathsPlanCopyAriaLabel, '전체 경로 계획 복사');
-    assert.equal(pathCopy.pathAllPathsCopyAriaLabel, '전체 경로 실행 점검 복사');
-    assert.equal(pathCopy.pathEvidenceTitle, '지형도 경로 근거');
-    assert.equal(pathCopy.pathEvidenceSourceOntologyUrl, '시작점 개념 문서 URL');
-    assert.equal(pathCopy.pathEvidenceTargetOntologyUrl, '대상 개념 문서 URL');
-    assert.equal(pathCopy.pathEvidenceRelationPreflightReason, '관계 사전 점검 이유');
-    assert.equal(pathCopy.pathEvidenceRelationPreflightMcpCheck, 'MCP 관계 사전 점검');
-    assert.equal(pathCopy.pathEvidenceExplainRelationMcpCheck, 'MCP 관계 설명 점검');
-    assert.equal(pathCopy.pathEvidenceAllPathsPlanMcpCheck, 'MCP 전체 경로 계획');
-    assert.equal(pathCopy.pathEvidenceAllPathsMcpCheck, 'MCP 전체 경로 점검');
-    assert.equal(pathCopy.pathEvidenceAllPathsCopyInstruction, '전체 경로 근거 계약');
-    assert.equal(pathCopy.pathEvidencePostWriteSyncGate, '수정 후 동기화 점검');
-
-    assert.doesNotMatch(
-      [
-        pathCopy.pathCopy,
-        pathCopy.pathMcpCopy,
-        pathCopy.pathRelationPreflightCopy,
-        pathCopy.pathExplainRelationCopy,
-        pathCopy.pathAllPathsPlanCopy,
-        pathCopy.pathAllPathsCopy,
-        pathCopy.pathRelationPreflightCopyAriaLabel,
-        pathCopy.pathExplainRelationCopyAriaLabel,
-        pathCopy.pathAllPathsPlanCopyAriaLabel,
-        pathCopy.pathAllPathsCopyAriaLabel,
-        pathCopy.pathEvidenceTitle,
-        pathCopy.pathEvidenceSourceOntologyUrl,
-        pathCopy.pathEvidenceTargetOntologyUrl,
-        pathCopy.pathEvidenceRelationPreflightReason,
-        pathCopy.pathEvidenceRelationPreflightMcpCheck,
-        pathCopy.pathEvidenceExplainRelationMcpCheck,
-        pathCopy.pathEvidenceAllPathsPlanMcpCheck,
-        pathCopy.pathEvidenceAllPathsMcpCheck,
-        pathCopy.pathEvidenceAllPathsCopyInstruction,
-        pathCopy.pathEvidencePostWriteSyncGate,
-      ].join('\n'),
-      /Path mode|Preflight|Explain|Plan|Node ID|all_paths|explain_relation|preflight|evidence|sync gate|bounded|Traversal completeness|ontology URL|Ontology URL|graph /,
-    );
+    assert.deepEqual(Object.keys(ko.topologyWidgets).sort(), ['controls', 'hubRail']);
+    assert.deepEqual(Object.keys(en.topologyWidgets).sort(), ['controls', 'hubRail']);
   });
 
   it('keeps Korean docs vault commands understandable without source/topology jargon', async () => {
@@ -702,6 +658,63 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(
       startCopy,
       /ontology\s*가|다음 \d+ 단계|첫 트리|ontology starter|starter|frontmatter|codebase ontology|typed relation|graph proof|agent loop|AI agent|agent 검증|CLI proof|JSON gate|fallback self-check|read-first/,
+    );
+  });
+
+  it('keeps the INDEX footer agent-sync status plain (chore/copy-plainlang W5 — "에이전트 동기화"/"Agent sync" told users a mode name, not what keeps the vault fresh)', async () => {
+    const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+
+    assert.equal(ko.topology.index.agentSync, 'AI가 함께 갱신 중');
+    assert.equal(en.topology.index.agentSync, 'Updated with AI');
+    assert.doesNotMatch(ko.topology.index.agentSync, /동기화|Agent|sync/i);
+    assert.doesNotMatch(en.topology.index.agentSync, /\bsync\b/i);
+
+    assert.equal(
+      ko.topology.index.agentHandoffAria,
+      'AI에게 넘길 메모 복사 (요약 · 다시 분석 요청 · 최신 상태 확인)',
+    );
+    assert.equal(
+      en.topology.index.agentHandoffAria,
+      'Copy notes for your AI agent (summary, re-check request, update check)',
+    );
+    assert.doesNotMatch(ko.topology.index.agentHandoffAria, /동기화 게이트|재분석 지시/);
+  });
+
+  it('keeps download/settings copy free of untranslated English nouns mixed into Korean sentences (chore/copy-plainlang W5 — "domain"/"capability"/"handoff"/"batch" left un-Koreanized inside otherwise-Korean sentences)', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const settings = ko.nav.settingsMenu;
+    const mixedLanguageCopy = [
+      ko.download.includeCliBody,
+      settings.mcpStateDisconnectedBody,
+      settings.projectIndexMeaningGate,
+      settings.projectIndexEvidence,
+      settings.projectIndexApply,
+    ].join('\n');
+
+    assert.equal(ko.download.includeCliBody, '그래프 컴파일 · 에이전트 핸드오프 · 성장 큐 — 터미널이 일상 진입점.');
+    assert.equal(
+      settings.mcpStateDisconnectedBody,
+      '서버 설정이 없거나 호출 가능한 도구가 없습니다. 핸드오프를 신뢰하기 전에 설정을 고치세요.',
+    );
+    assert.equal(
+      settings.projectIndexMeaningGate,
+      '의미 게이트: 비즈니스/제품 도메인과 역량을 먼저 보고한 뒤, 코드 행은 구현 근거로 인용합니다.',
+    );
+    assert.equal(
+      settings.projectIndexEvidence,
+      '비즈니스 근거: 소스 폴더를 역량으로 보기 전에 README와 docs/ontology에서 온 meaningGate.businessOntology.evidence 행을 보고합니다.',
+    );
+    assert.equal(
+      settings.projectIndexApply,
+      '쓰기 전 사람 검토: 후보 묶음을 승인한 뒤에만 --apply를 붙입니다.',
+    );
+    // literal JSON field paths (meaningGate.*) and CLI flags (--apply) stay as
+    // exact machine-verifiable text — only bare English *nouns* standing in
+    // for untranslated Korean words are forbidden here.
+    assert.doesNotMatch(
+      mixedLanguageCopy.replace(/meaningGate\.[a-zA-Z.]+|--apply/g, ''),
+      /\bdomain\b|\bcapability\b|\bhandoff\b|\bbatch\b|\bgrowth queue\b|\bgraph compile\b/,
     );
   });
 });

@@ -3,18 +3,28 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { resolveDomainTint } from "@/shared/lib/domain-color";
-import { getOntologyKindIcon } from "@/entities/ontology-class";
+import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 
 /**
- * Atlas custom node — kind 별 디자인 폴리시.
+ * Atlas node — the builder canvas's editable sibling of the topology-v2 map
+ * language (feat/builder-core, owner-approved contract:
+ * `docs/prototypes/builder-v2-02-draft.html` / `builder-v2-03-selected.html`).
+ * "빌더 = 지형도 캔버스의 편집 가능한 형제. 새 언어 발명 금지" — so the kind
+ * glyph reuses `TopologyV2KindGlyph` verbatim (same hex/chip/circle/pad-via
+ * silhouette + fill/stroke the map and INDEX draw), instead of a second icon
+ * system.
  *
- * 디자인 헌장 §11 호환:
- * - categorical kind tones plus a separate domain ownership tint
- * - glow / 보라핑크 / scale hover X
- * - rounded + soft shadow (정적, 무채색 alpha)
- * - vault (실선 border) vs ephemeral (dashed border) 시각 구분
- * - 같은 도메인 노드는 같은 hue 좌측 accent bar (4px) — 그룹 시각화
+ * Card shell (surface/border/shadow) stays on the app's adaptive
+ * `--color-*` tokens — unlike the topology-v2 canvas world (fixed dark,
+ * P3-deferred light values), this builder page still honors the light/dark
+ * toggle, so only the glyph's identity colors are shared+fixed.
+ *
+ * States (owner-approved, no exceptions):
+ *  - selected: indigo border only — no shadow ring, no glow.
+ *  - hover: border-strong only.
+ *  - ephemeral (draft, unsaved): dashed border + opacity .85. No amber, no
+ *    badge chip, no domain-tint rail — the mono kind line spells out
+ *    "<kind> · <draft label>" instead, and that is the only draft signal.
  */
 export interface AtlasNodeData {
   label: string;
@@ -24,82 +34,38 @@ export interface AtlasNodeData {
   description?: string;
   /** 원본 title (트레일링 괄호 strip 전) — tooltip / inspector 가 풀 텍스트 노출. */
   fullTitle?: string;
-  /** 도메인 grouping 키. capability/element 의 frontmatter.domain, domain 자기 tail. */
+  /** 도메인 grouping 키 — 카드 자체는 더 이상 시각적으로 안 씀 (배지/레일 삭제),
+   *  인스펙터 등 다른 소비자를 위해 데이터는 유지. */
   domainSlug?: string | null;
   [key: string]: unknown;
 }
 
-const KIND_TONE: Record<
-  AtlasNodeData["kind"],
-  { border: string; accent: string }
-> = {
-  project: {
-    border: "rgba(94, 106, 210, 0.46)",
-    accent: "rgba(139, 151, 255, 0.96)",
-  },
-  domain: {
-    border: "rgba(94, 106, 210, 0.32)",
-    accent: "rgba(120, 132, 230, 0.96)",
-  },
-  capability: {
-    border: "rgba(94, 106, 210, 0.24)",
-    accent: "rgba(110, 122, 220, 0.96)",
-  },
-  element: {
-    border: "var(--color-overlay-3)",
-    accent: "rgba(180, 188, 220, 0.84)",
-  },
-  ephemeral: {
-    border: "rgba(94, 106, 210, 0.66)",
-    accent: "rgba(139, 151, 255, 0.96)",
-  },
-};
-
+/**
+ * 4방향 target + 4방향 source handle — 기능은 이전과 동일하게 전부 유지
+ * (`builder-edge-handles.ts` 가 노드 상대 위치에 따라 이 8개 중 최적 id 를
+ * 골라 라우팅한다). 시각적으로는 카드당 "주" 포트(좌측 target · 우측
+ * source)만 10px 원으로 보이고 나머지는 투명 — 새 시안의 "우측 port 원"
+ * 하나만 있는 것처럼 읽히되, 실제 연결 가능한 4면은 그대로 살아있다.
+ */
 function portStyle(
-  tone: { accent: string },
+  selected: boolean,
   side: "primary" | "secondary" = "primary",
 ): React.CSSProperties {
   return {
-    background: tone.accent,
-    border: "2px solid rgba(14, 16, 22, 0.9)",
+    background: "var(--color-canvas)",
+    border: `1.5px solid ${selected ? "var(--color-indigo-brand)" : "var(--color-border-strong)"}`,
     opacity: side === "primary" ? 1 : 0,
     pointerEvents: side === "primary" ? "auto" : "none",
   };
 }
 
-/**
- * kind 글리프 — machined 카드의 좌측 아이콘. 색은 새 hue 를 안 만들고 호출부가
- * (indigo 계열 또는 ephemeral amber) currentColor 로 물려준다 — "둘 이상의
- * 채색 시스템 금지" 헌장 §11 준수.
- *
- * 소문자 헬퍼 함수로 둔 이유: 컴포넌트(대문자) 렌더 본문 안에서
- * `getOntologyKindIcon(...)` 결과를 변수에 담아 바로 JSX 태그로 쓰면 "렌더 중
- * 컴포넌트 생성" 린트 경고가 뜬다 (참조 자체는 안정적 lookup 이라 실제 버그는
- * 아니지만, `OntologyKindPalette` 의 palette 카드 렌더와 같은 방식으로 피한다).
- */
-function renderAtlasNodeKindGlyph(kind: AtlasNodeData["kind"]) {
-  const Icon = getOntologyKindIcon(kind === "ephemeral" ? "element" : kind);
-  return <Icon size={12} />;
-}
-
 export function AtlasNode({ data, selected }: NodeProps) {
   const t = useTranslations("ontologyPages.edit.atlasNode");
   const nodeData = data as AtlasNodeData;
-  // 호버 elevation — 디자인 헌장 §11 의 'scale hover 금지' 약속 안에서 box-shadow
-  // 만 강화 (translateY 도 안 씀). React state 로 hover 분기 — 인라인 스타일이
-  // CSS hover 보다 우선이라 state 가 가장 깔끔.
   const [hovered, setHovered] = useState(false);
-  const tone = KIND_TONE[nodeData.kind] ?? KIND_TONE.element;
   const isEphemeral = Boolean(nodeData.ephemeral);
-  // ephemeral 은 *저장 필요* 신호 — 디자인 헌장 §11 의 warning amber
-  // (rgba(255,179,71,*)) 사용 (hub amber #d4b478 와 구분되는 신호 톤).
-  // border 두께도 2px 로 강조 — vault 의 1px solid 와 한눈에 차별.
-  const borderStyle = isEphemeral ? "dashed" : "solid";
-  const borderWidth = isEphemeral ? 2 : 1;
-  const borderColor = isEphemeral ? "rgba(255, 179, 71, 0.55)" : tone.border;
-  const ephemeralBadgeColor = "rgba(255, 179, 71, 0.95)";
+  const isSelected = Boolean(selected);
   // hover 시 native browser tooltip — description / fullTitle 노출.
-  // fullTitle 이 있으면 카드 짧은 라벨 대신 풀 텍스트 + description.
   const hoverHeader =
     typeof nodeData.fullTitle === "string" && nodeData.fullTitle
       ? nodeData.fullTitle
@@ -107,137 +73,88 @@ export function AtlasNode({ data, selected }: NodeProps) {
   const hoverTitle = nodeData.description
     ? `${hoverHeader}\n\n${nodeData.description}`
     : hoverHeader;
-  // 도메인 tint — 같은 도메인 노드끼리 시각 그룹화. domain 자체 노드 + capability /
-  // element 가 도메인 일치하면 같은 hue. project / vault-readme 는 null tint.
-  const domainTint = resolveDomainTint(
-    typeof nodeData.domainSlug === "string" ? nodeData.domainSlug : null,
-  );
-  // ephemeral 은 amber 신호색이 강해서 도메인 tint 적용 안 함 (혼동 방지).
-  // domain 노드 자기 카드도 자기 색으로 hue 진하게 (좌측 4px bar, bg tint).
-  const showDomainTint = !isEphemeral && nodeData.domainSlug;
-  // 선택 / hover / 기본 시각 위계 — interaction chrome 은 shadow elevation 으로만
-  // 차별. scale / translate 금지.
-  //  - selected: 2px ring + elevation (glow 금지 — design.md의 glow-like boxShadow 목록)
-  //  - hovered: 그림자 한 단계 강화 (rest 보다 또렷, selected 보단 약함)
-  //  - rest: 살짝 떠있는 default shadow
-  const selectedShadow = selected
-    ? `0 0 0 2px ${isEphemeral ? "rgba(255, 179, 71, 0.62)" : tone.accent}, 0 12px 28px rgba(0, 0, 0, 0.42)`
-    : null;
-  const hoveredShadow = hovered
-    ? "0 8px 22px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(139, 151, 255, 0.22)"
-    : null;
-  const restShadow = "0 4px 12px rgba(0, 0, 0, 0.22)";
-  const cardBackground = isEphemeral
-    ? "rgba(31, 24, 17, 0.96)"
-    : "rgba(14, 16, 22, 0.96)";
+  // 선택 > 호버 > 기본 — 오직 border color 하나로만 위계 표현. 그림자 증강 /
+  // glow 링 없음 (design.md "glow-like boxShadow" 금지 항목).
+  const borderColor = isSelected
+    ? "var(--color-indigo-brand)"
+    : hovered
+      ? "var(--color-border-strong)"
+      : "var(--color-border-soft)";
+
   return (
     <div
       title={hoverTitle}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        minWidth: 220,
-        minHeight: 60,
-        padding: "12px 16px",
-        paddingLeft: showDomainTint ? 18 : 16,
-        borderRadius: 12,
-        border: `${borderWidth}px ${borderStyle} ${borderColor}`,
-        // 좌측 4px accent bar 가 domain 시각 그룹의 anchor. ephemeral 은
-        // amber 강조라 적용 X (잘못된 신호 혼합 회피).
-        borderLeft: showDomainTint
-          ? `4px solid ${domainTint.accent}`
-          : `${borderWidth}px ${borderStyle} ${borderColor}`,
-        // Edge 는 노드 뒤 레이어에 그려지지만 반투명 카드면 박스 안에서
-        // 선이 비쳐 보인다. Solid surface 로 카드 내부를 확실히 가려
-        // 관계선은 박스 사이에서만 읽히게 한다.
-        background: cardBackground,
-        color: "var(--color-text-primary)",
-        boxShadow: selectedShadow ?? hoveredShadow ?? restShadow,
+        width: 196,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        background: "var(--color-panel)",
+        border: `1px ${isEphemeral ? "dashed" : "solid"} ${borderColor}`,
+        borderRadius: 8,
+        // machined edge (hairline top-inset highlight) + 정적 soft shadow.
+        // 둘 다 hover/selected 로 증강 안 됨 — border color 하나가 유일한
+        // interaction 신호.
+        boxShadow: "var(--topology-v2-builder-node-sheen), var(--chrome-shadow)",
+        opacity: isEphemeral ? 0.85 : 1,
+        padding: "10px 12px",
         position: "relative",
-        transition:
-          "box-shadow 200ms ease-out, border-color 200ms ease-out",
-        fontSize: 13,
-        lineHeight: 1.4,
-        wordBreak: "keep-all",
+        color: "var(--color-text-primary)",
+        cursor: "pointer",
+        transition: "border-color 160ms ease-out",
       }}
     >
       <Handle
         id="target-left"
         type="target"
         position={Position.Left}
-        style={portStyle(tone)}
+        style={portStyle(isSelected)}
       />
-      <Handle id="target-top" type="target" position={Position.Top} style={portStyle(tone, "secondary")} />
-      <Handle id="target-right" type="target" position={Position.Right} style={portStyle(tone, "secondary")} />
-      <Handle id="target-bottom" type="target" position={Position.Bottom} style={portStyle(tone, "secondary")} />
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
+      <Handle id="target-top" type="target" position={Position.Top} style={portStyle(isSelected, "secondary")} />
+      <Handle id="target-right" type="target" position={Position.Right} style={portStyle(isSelected, "secondary")} />
+      <Handle id="target-bottom" type="target" position={Position.Bottom} style={portStyle(isSelected, "secondary")} />
+
+      <TopologyV2KindGlyph kind={nodeData.kind} size={16} />
+      <span style={{ minWidth: 0, flex: 1 }}>
         <span
-          aria-hidden
           style={{
-            display: "flex",
-            flex: "none",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 20,
-            height: 20,
-            borderRadius: 5,
-            border: `1px solid ${isEphemeral ? "rgba(255, 179, 71, 0.38)" : "rgba(255, 255, 255, 0.08)"}`,
-            background: isEphemeral
-              ? "rgba(255, 179, 71, 0.08)"
-              : "rgba(255, 255, 255, 0.03)",
-            color: isEphemeral ? ephemeralBadgeColor : tone.accent,
+            display: "block",
+            fontSize: 13,
+            fontWeight: 560,
+            color: "var(--color-text-primary)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
-          {renderAtlasNodeKindGlyph(nodeData.kind)}
+          {nodeData.label}
         </span>
-        {isEphemeral ? (
-          <span
-            aria-hidden
-            style={{
-              fontSize: 9,
-              fontFamily: "var(--font-mono)",
-              letterSpacing: "0.10em",
-              textTransform: "uppercase",
-              color: ephemeralBadgeColor,
-              padding: "2px 6px",
-              borderRadius: 4,
-              border: `1px solid ${ephemeralBadgeColor}`,
-              background: "rgba(255, 179, 71, 0.10)",
-            }}
-          >
-            {t("ephemeralBadge")}
-          </span>
-        ) : null}
-        <span style={{ flex: 1, minWidth: 0 }}>{nodeData.label}</span>
-      </div>
-      {isEphemeral ? (
-        <p
+        <span
           style={{
-            marginTop: 6,
-            fontSize: 10,
-            color: "rgba(255, 179, 71, 0.78)",
+            display: "block",
+            marginTop: 3,
             fontFamily: "var(--font-mono)",
-            letterSpacing: "0.04em",
+            fontSize: 9,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "var(--color-text-quaternary)",
           }}
         >
-          {t("ephemeralUnsavedHint")}
-        </p>
-      ) : null}
+          {isEphemeral ? `${nodeData.kind} · ${t("ephemeralBadge")}` : nodeData.kind}
+        </span>
+      </span>
+
       <Handle
         id="source-right"
         type="source"
         position={Position.Right}
-        style={portStyle(tone)}
+        style={portStyle(isSelected)}
       />
-      <Handle id="source-left" type="source" position={Position.Left} style={portStyle(tone, "secondary")} />
-      <Handle id="source-top" type="source" position={Position.Top} style={portStyle(tone, "secondary")} />
-      <Handle id="source-bottom" type="source" position={Position.Bottom} style={portStyle(tone, "secondary")} />
+      <Handle id="source-left" type="source" position={Position.Left} style={portStyle(isSelected, "secondary")} />
+      <Handle id="source-top" type="source" position={Position.Top} style={portStyle(isSelected, "secondary")} />
+      <Handle id="source-bottom" type="source" position={Position.Bottom} style={portStyle(isSelected, "secondary")} />
     </div>
   );
 }

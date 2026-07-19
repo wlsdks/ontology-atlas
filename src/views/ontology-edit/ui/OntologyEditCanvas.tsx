@@ -41,6 +41,28 @@ import { resolveDomainTint } from "@/shared/lib/domain-color";
 
 const EDGE_TYPES = { ephemeral: EphemeralEdgeComponent, vault: VaultEdge };
 
+/**
+ * 캔버스 우하단 trace 범례의 한 획 — `use-vault-graph-flow.ts` 의
+ * `edgeStrokeStyleByKey` 와 같은 두 톤(contains=중립, 그 외=인디고 잉크)을
+ * dash 값만 바꿔 재사용. `dash=""` 면 실선(contains).
+ */
+function TraceLegendMark({ dash }: { dash: string }) {
+  return (
+    <svg width={16} height={6} viewBox="0 0 16 6" aria-hidden="true" className="shrink-0">
+      <line
+        x1={1}
+        y1={3}
+        x2={15}
+        y2={3}
+        stroke={dash ? "var(--topology-v2-indigo-bright)" : "var(--topology-v2-edge-contains-mark)"}
+        strokeWidth={1.4}
+        strokeDasharray={dash || undefined}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
 const BUILDER_OVERVIEW_MIN_ZOOM = 0.05;
 const BUILDER_OVERVIEW_MAX_ZOOM = 1.2;
@@ -219,9 +241,12 @@ function FocusNodeOnDemand({
 }
 
 /**
- * ERD canvas — vault frontmatter 가 진실원.
+ * ERD canvas — vault frontmatter 가 진실원. builder-core (feat/builder-core)
+ * 재작성: 캔버스 안은 지형도 v2 언어(kind 글리프 · trace 엣지 · 블루프린트
+ * 그리드), 캔버스 밖(팔레트/인스펙터/헤더)은 크롬 시스템 — 계약은
+ * `docs/prototypes/builder-v2-02-draft.html` / `builder-v2-03-selected.html`.
  *
- * 디자인 헌장 §11 호환:
+ * `.claude/rules/design.md` 호환:
  * - scale hover 없음 (xyflow 기본 X)
  * - glow / 보라핑크 / glassmorphism 없음
  * - 색상은 inline CSS variable override 로 인디고 계열만
@@ -382,12 +407,14 @@ export function OntologyEditCanvas({
       type: "atlas",
       position: { x: n.x, y: n.y },
       data: {
-        label: `${n.kindLabel} · ${n.title}`,
+        // AtlasNode 가 kind 를 글리프 + mono 줄로 직접 그리므로 label 은
+        // 제목만 — n.kindLabel 은 더 이상 문자열 조립에 안 쓴다.
+        label: n.title,
         kind: n.kind,
         ephemeral: true,
       },
-      width: 220,
-      height: 64,
+      width: 196,
+      height: 56,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       draggable: true,
@@ -629,7 +656,7 @@ export function OntologyEditCanvas({
         // alpha bezier 로 테마 일관 + 곡선이라 부드러움.
         connectionLineType={ConnectionLineType.Bezier}
         connectionLineStyle={{
-          stroke: "rgba(139, 151, 255, 0.78)",
+          stroke: "var(--topology-v2-indigo-bright)",
           strokeWidth: 1.5,
           strokeDasharray: "6 4",
         }}
@@ -668,19 +695,15 @@ export function OntologyEditCanvas({
         minZoom={BUILDER_OVERVIEW_MIN_ZOOM}
         maxZoom={2}
       >
-        {/* R+ canvas spacing: gap 24 → 36 (dot 간격 50% ↑). 24 는 NODE_WIDTH
-            (220) 안에 9 줄 의 dot 가 깔려 시각 노이즈 강함. 36 은 ~6 줄로
-            여유 — 노드와 dot 의 시각 위계가 더 자연 (캔버스 = 빈 종이,
-            dot = 약한 그리드 hint). */}
-        {/* gap 36 + size 1.2 + 인디고 hint 색 — 너무 강하면 캔버스가 종이 →
-            방안지 느낌으로 변해 노드를 가린다. 약하게 깔린 'snap-able' 시각
-            힌트가 목표. snapGrid (16px) 의 배수 (gap 32) 와 정확히 일치시키면
-            점 밀도 1.5× → 시각 노이즈. 36 이 그래픽적으로 더 자연. */}
+        {/* builder-core (docs/prototypes/builder-v2-0{2,3}.html §4): 캔버스 안 =
+            지형도 v2 언어 — 도트 그리드 대신 24px 블루프린트 라인 그리드,
+            토폴로지 맵의 --topology-v2-grid-* 토큰 재사용(새 색 발명 없음).
+            snapGrid (16px) 과 다른 배수라 점 대신 선이라도 리듬이 겹치지 않는다. */}
         <Background
-          variant={BackgroundVariant.Dots}
-          gap={36}
-          size={1.2}
-          color="rgba(139, 151, 255, 0.22)"
+          variant={BackgroundVariant.Lines}
+          gap={24}
+          lineWidth={1}
+          color="var(--topology-v2-grid-minor)"
         />
         {/* xyflow Controls (zoom +/- / fitView) 는 우하단 MiniMap 과 겹침 +
             기본 스타일이 light theme 이라 dark canvas 와 어색 (Fit View
@@ -694,8 +717,9 @@ export function OntologyEditCanvas({
         />
         <FocusNodeOnDemand token={focusToken} nodeId={focusNodeId} />
         {/* MiniMap — 노드 많아질 때 빠른 navigation. 헌장 §11 호환:
-            인디고 alpha + 무채색 alpha mask. ephemeral 은 amber 로 vault
-            와 차별. 좌하단 — Controls (우하단) 와 분리. */}
+            인디고 alpha + 무채색 alpha mask. ephemeral 은 vault 와 같은
+            인디고 계열이되 더 밝은 톤으로 차별(builder-core, amber 폐지).
+            우하단 — 아래 trace 범례와 같은 코너, marginBottom 으로 겹침 회피. */}
         {showMiniMap && allNodes.length > 0 && miniMapReady ? (
           <MiniMap
             position="bottom-right"
@@ -714,13 +738,15 @@ export function OntologyEditCanvas({
               const data = node.data as
                 | { ephemeral?: boolean; domainSlug?: string | null }
                 | undefined;
-              if (data?.ephemeral) return "rgba(255, 179, 71, 0.78)";
+              // builder-core: ephemeral 신호가 amber → indigo 로 통일됐다
+              // (AtlasNode/EphemeralEdge 와 같은 톤).
+              if (data?.ephemeral) return "var(--topology-v2-indigo-bright)";
               // 도메인 tint 가 미니맵 노드에도 반영되어, 같은 hue 끼리 모여
               // 있는 게 미니맵 한눈 navigation 의 단서가 됨.
               if (typeof data?.domainSlug === "string" && data.domainSlug) {
                 return resolveDomainTint(data.domainSlug).accent;
               }
-              return "rgba(139, 151, 255, 0.78)";
+              return "var(--color-indigo-brand)";
             }}
             nodeStrokeColor="rgba(14, 16, 22, 0.85)"
             nodeStrokeWidth={2}
@@ -734,10 +760,23 @@ export function OntologyEditCanvas({
           </p>
         </div>
       ) : null}
+      {/* trace 범례 (builder-core §3, docs/prototypes/builder-v2-02-draft.html) —
+          "contains ─ · depends ╌ · evidence ┄". VaultEdge 문법을 그대로
+          설명하는 기술 어휘라 kind mono 라벨과 같은 취급으로 raw 영단어
+          유지(비-지역화) — frontmatter 키 이름을 그대로 읽는 인스펙터의
+          다른 mono 라벨들과 같은 관례. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-3 font-mono text-[10.5px] tracking-[0.03em] text-[color:var(--color-text-quaternary)]"
+      >
+        <TraceLegendMark dash="" /> contains
+        <TraceLegendMark dash="6 4" /> depends
+        <TraceLegendMark dash="1.4 3.2" /> evidence
+      </div>
       {/* hover affordance — 노드 위에 마우스 올렸을 때 subtle 인디고 outline.
           xyflow 기본은 selected 만 표시하고 hover 는 시각 신호 0 → '클릭
           가능' affordance 약함. outline 1px + offset 으로 inner border 와
-          중복 안 돼 두께 늘어 보이지 않음. 헌장 §11: scale / glow 없음. */}
+          중복 안 돼 두께 늘어 보이지 않음. design.md: scale hover / glow 금지. */}
       <style jsx global>{`
         .react-flow__node-atlas {
           transition: filter 180ms ease-out;
@@ -746,27 +785,29 @@ export function OntologyEditCanvas({
         .react-flow__node-atlas:hover {
           filter: brightness(1.06);
         }
-        /* Handle (connection point) — n8n 스타일 항상 visible port. 기본 10x10
-           + 옅은 인디고 ring 으로 '여기서 끌어서 연결' 항상 인지 가능. 노드/
-           핸들 hover 시 단계적 enlarge + 짙은 ring. crosshair 커서가 'drag' 신호. */
+        /* Handle (connection point) — builder-core 시안 §2: "우측 port 원" 10px,
+           중립 보더 → selected 인디고(AtlasNode 의 inline portStyle 이 그
+           border-color 를 결정). 여기서는 glow-like box-shadow ring 대신
+           plain outline 만 hover/connecting 시 추가 — enlarge 는 width/height
+           속성 변화(transform scale 아님, design.md 의 scale-hover 금지와 무관)로
+           '여기서 끌어서 연결' affordance 를 남긴다. */
         .react-flow__handle {
           width: 10px;
           height: 10px;
           cursor: crosshair;
-          box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.14);
           transition: width 160ms ease-out, height 160ms ease-out,
-                      box-shadow 160ms ease-out, opacity 160ms ease-out;
+                      outline-color 160ms ease-out;
         }
         .react-flow__node-atlas:hover .react-flow__handle {
           width: 12px;
           height: 12px;
-          box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.24);
         }
         .react-flow__handle.connectingto,
         .react-flow__handle:hover {
           width: 14px;
           height: 14px;
-          box-shadow: 0 0 0 4px rgba(94, 106, 210, 0.36);
+          outline: 2px solid var(--color-indigo-brand);
+          outline-offset: 1px;
         }
         /* 관계선은 노드 카드 뒤 레이어에 고정한다. React Flow 기본 z-index 는
            선택/hover 상태에 따라 edge 가 위로 올라올 수 있어, 카드 내부를
@@ -790,15 +831,11 @@ export function OntologyEditCanvas({
         .react-flow__edge {
           animation: rfEdgeAppear 240ms ease-out;
         }
-        /* n8n 스타일 hover — 굵기 + soft indigo halo. drop-shadow 가 SVG
-           stroke 둘레로 부드러운 후광. relation overlay 도 hover 시엔 강조. */
+        /* hover 강조 — 굵기만 증가. 이전엔 drop-shadow glow(halo) 를 같이
+           썼지만 design.md 가 금지하는 "glow-like boxShadow/filter" 패턴이라
+           제거 — stroke-width 만으로 '이 선이 강조됐다' 를 충분히 전달한다. */
         .react-flow__edge:hover .react-flow__edge-path {
           stroke-width: 2.6px;
-          filter: drop-shadow(0 0 4px rgba(139, 151, 255, 0.55));
-        }
-        /* 화살표 marker 도 hover 시 같이 또렷하게. */
-        .react-flow__edge:hover .react-flow__arrowhead {
-          filter: drop-shadow(0 0 3px rgba(139, 151, 255, 0.55));
         }
         /* 새 노드 / edge mount 시 부드러운 fade-in — 역동성 + 사용자가
            '추가됐다' 인지 빠름. id 새로 생긴 노드만 적용 (layout
