@@ -714,14 +714,11 @@ function VaultDetail({
           <div className="rounded-md border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] p-2.5">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-text-soft)]">
+                <p className="text-[11px] font-[var(--font-weight-signature)] leading-4 text-[color:var(--color-text-secondary)]">
                   {t("objectProofLabel")}
                 </p>
-                <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
-                  {t("objectProofBody", {
-                    kind: kindLabel(node.kind),
-                    path: node.slug,
-                  })}
+                <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+                  {t("objectProofBody")}
                 </p>
               </div>
               <span className="shrink-0 rounded-full border border-[color:var(--color-indigo-a36)] bg-[color:var(--color-indigo-a14)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-primary)]">
@@ -729,7 +726,7 @@ function VaultDetail({
               </span>
             </div>
             <div className="mt-2 grid grid-cols-3 gap-1.5">
-              <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
+              <div className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
                 <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("objectProofOutgoing")}
                 </p>
@@ -737,7 +734,7 @@ function VaultDetail({
                   {outgoingCount}
                 </p>
               </div>
-              <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
+              <div className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
                 <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("objectProofIncoming")}
                 </p>
@@ -745,12 +742,15 @@ function VaultDetail({
                   {backlinks.length}
                 </p>
               </div>
-              <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
+              <div className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
                 <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("objectProofSource")}
                 </p>
-                <p className="mt-0.5 font-mono text-[15px] text-[color:var(--color-text-primary)]">
-                  .md
+                <p
+                  className="mt-0.5 truncate font-mono text-[11px] text-[color:var(--color-text-primary)]"
+                  title={`${node.slug}.md`}
+                >
+                  {node.slug}.md
                 </p>
               </div>
             </div>

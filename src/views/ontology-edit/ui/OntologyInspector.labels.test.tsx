@@ -171,12 +171,21 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
       "aria-selected",
       "true",
     );
-    expect(screen.getByText("온톨로지 객체 근거")).toBeInTheDocument();
-    expect(screen.getByText("graph object")).toBeInTheDocument();
-    expect(screen.getByText(/역량 · ontology\/capabilities\/sample/)).toBeInTheDocument();
-    expect(screen.getByText("out")).toBeInTheDocument();
+    expect(screen.getByText("이 항목은 마크다운 파일 하나예요")).toBeInTheDocument();
+    expect(
+      screen.getByText("AI가 이 파일을 읽고 고치고 검사할 수 있어요."),
+    ).toBeInTheDocument();
+    expect(screen.getByText(".md")).toBeInTheDocument();
+    expect(
+      screen.getByText(/역량 · sample-domain · ontology\/capabilities\/sample/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("나가는 연결")).toBeInTheDocument();
     expect(screen.getByText("4")).toBeInTheDocument();
-    expect(screen.getByText("source")).toBeInTheDocument();
+    expect(screen.getByText("들어오는 연결")).toBeInTheDocument();
+    expect(screen.getByText("원본")).toBeInTheDocument();
+    expect(
+      screen.getByText("ontology/capabilities/sample.md"),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("이름")).toBeInTheDocument();
     expect(screen.queryByLabelText("한 줄 설명")).toBeNull();
     expect(screen.queryByLabelText("포함된 도메인")).toBeNull();
