@@ -842,13 +842,12 @@
 
     /*
      * 문서함 크롬 재구성 (docs-chrome-round, design-prescription.md §③-7).
-     * 헤더 3존·목록 접기·점검 모달이 공유하는 신규 토큰 4종. 신규 채색 0 —
+     * 헤더 3존·목록 접기·점검 모달이 공유하는 신규 토큰. 신규 채색 0 —
      * 표면/보더/그림자는 위 --chrome-* · --color-overlay-2 · --color-indigo-brand
      * 재사용. 각 값의 product reason 은 옆 주석 참조.
      */
     /* 탭 스트립(zone-c, 슬라이스 B) 가독 최소폭 · 과점 최대폭. 마커
-       data-token="docs-tab". 슬라이스 A 는 아직 탭을 렌더하지 않지만 헤더
-       zone-c 예약 폭 계산이 이 값을 참조. */
+       data-token="docs-tab". */
     --docs-tab-min: 132px;
     --docs-tab-max: 208px;
     /* 문서함 점검 모달 — 세로 3행 스택 단일 폭. 브레이크포인트 0 계약(3-across
@@ -860,6 +859,10 @@
     /* drawer/점검 모달 공용 scrim 단일 출처 — 기존 sourceTreeOpen drawer 와
        동일 값. 다크 단일(라이트 분기 없음). */
     --docs-scrim: rgba(0, 0, 0, 0.5);
+    /* 문서함 헤더 아이콘 타일 규격(DocsHeaderTile) — Guardian 이월 P3:
+       h-[34px]/w-[34px] 하드코드 리터럴을 토큰으로 승격(슬라이스 B). 값은
+       기존 밀도 그대로 유지(회귀 아님, 리팩터만). */
+    --docs-header-tile-size: 34px;
   }
 
   /*
@@ -1349,5 +1352,18 @@
  * 번역되므로 selector 로 쓰면 en locale 에서 매치 실패 (회귀).
  */
 body[data-no-tabbar] [data-tabbar="primary"] {
+  display: none;
+}
+
+/*
+ * 문서함 헤더 탭 스트립(docs-chrome-round 슬라이스 B) — 오버플로 시 스트립
+ * 내부 가로 스크롤은 허용하되 스크롤바 자체는 숨긴다(design-prescription.md
+ * ③-3 "overflow = 스트립 내부 가로 스크롤, 스크롤바 은닉"). 스크롤 동작은
+ * 유지되므로 접근성 회귀 없음 — 키보드/트랙패드 스크롤 모두 정상 동작.
+ */
+.docs-vault-tab-strip {
+  scrollbar-width: none;
+}
+.docs-vault-tab-strip::-webkit-scrollbar {
   display: none;
 }

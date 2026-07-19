@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T12:07:11.312Z",
+  "generatedAt": "2026-07-19T12:37:00.993Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2747,6 +2747,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-19 — 문서함 크롬 재구성 슬라이스 B — 열린 문서 탭 스트립 (docs-chrome-round)",
+          "slug": "2026-07-19-문서함-크롬-재구성-슬라이스-b-열린-문서-탭-스트립-docs-chrome-round"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-19 — 라이트 모드 전면 폐기 (dark-only)",
           "slug": "2026-07-19-라이트-모드-전면-폐기-dark-only"
         },
@@ -3937,8 +3942,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. .qa-scratch/docs-chrome-round/design-prescription.md 확정 처방 반영. 2차 시안이 방향은 옳았지만 잔여 중복 3",
-      "wordCount": 22992,
-      "updatedAt": "2026-07-19T12:02:29.878Z",
+      "wordCount": 23218,
+      "updatedAt": "2026-07-19T12:35:07.809Z",
       "linksOut": [
         "slug"
       ]

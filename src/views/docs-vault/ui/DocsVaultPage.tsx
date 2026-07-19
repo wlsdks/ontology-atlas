@@ -37,6 +37,7 @@ import { VaultToolsMenu } from '@/widgets/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
+import { cn } from '@/shared/lib/cn';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import {
   createTauriVaultHandle,
@@ -124,6 +125,8 @@ import { EmptyState } from "./parts/EmptyState";
 import { DocsHeaderTile } from "./parts/DocsHeaderTile";
 import { DocsVaultVaultChip } from "./parts/DocsVaultVaultChip";
 import { DocsVaultAuditModal } from "./parts/DocsVaultAuditModal";
+import { DocsVaultTabStrip } from "./parts/DocsVaultTabStrip";
+import { useOpenDocTabs } from "../lib/use-open-doc-tabs";
 import {
   DOGFOOD_VAULT_PATH,
   DOGFOOD_VAULT_PATH_CANDIDATES,
@@ -1057,6 +1060,24 @@ function DocsVaultContent() {
     () => new Set(manifest.docs.map((d) => d.slug)),
     [manifest],
   );
+  // 열린 문서 탭 워킹셋 — docs-chrome-round 슬라이스 B. sourceKey 는
+  // useDocsVaultPersistence 의 recentKey 를 그대로 재사용해 vault 별 분리
+  // 규약을 새로 만들지 않는다('server' | `local:<handle.name>`). 활성
+  // 진실원은 여전히 selectedSlug/URL — 이 훅은 열린 목록만 소유한다.
+  const {
+    tabs: openDocTabs,
+    openTab: openDocTab,
+    closeTab: closeDocTabInWorkingSet,
+  } = useOpenDocTabs({ sourceKey: recentKey, validSlugs: vaultSlugs });
+  // 문서 선택 부수효과로 탭을 연다 — sidebar/검색/딥링크/folder-topology 등
+  // selectedSlug 를 바꾸는 모든 경로가 여기 한 곳으로 수렴해 각 호출부를
+  // 개별 계측할 필요가 없다(handleSelect 자체도 결국 selectedSlug 를 바꾼다).
+  useEffect(() => {
+    if (!selectedSlug) return;
+    const doc = docsBySlug.get(selectedSlug);
+    if (!doc) return;
+    openDocTab(selectedSlug, doc.title);
+  }, [selectedSlug, docsBySlug, openDocTab]);
   const selectedDoc = selectedSlug ? (docsBySlug.get(selectedSlug) ?? null) : null;
   // 클라이언트 사이드 동적 타이틀 — 정적 export metadata 는 slug 단위로 미리
   // 빌드할 수 없으므로(vault 는 사용자 로컬 폴더) 선택된 문서 타이틀을 여기서
@@ -1197,6 +1218,37 @@ function DocsVaultContent() {
       replaceUrlState({ slug });
     },
     [recentKey, replaceUrlState, setRecentSlugs],
+  );
+
+  // 탭 × 닫기 — implementation-contract.md §3 "close 규칙": 활성 탭을 닫으면
+  // 인접 탭(왼쪽 우선, 없으면 오른쪽)으로 이동. 마지막 남은 탭을 닫으면 목록
+  // 첫 문서 또는 README 로 폴백(기존 default-selection 후보 우선순위와
+  // 동형 — README 를 첫 문서보다 우선한다).
+  const handleCloseDocTab = useCallback(
+    (slug: string) => {
+      const nextActiveSlug = closeDocTabInWorkingSet(slug, selectedSlug);
+      if (nextActiveSlug) {
+        handleSelect(nextActiveSlug);
+        return;
+      }
+      const fallbackSlug = collectionDocSlugs.has('README')
+        ? 'README'
+        : collectionDocs[0]?.slug;
+      if (fallbackSlug) {
+        handleSelect(fallbackSlug);
+      } else {
+        setSelectedSlug(null);
+        replaceUrlState({ slug: null });
+      }
+    },
+    [
+      closeDocTabInWorkingSet,
+      selectedSlug,
+      handleSelect,
+      collectionDocSlugs,
+      collectionDocs,
+      replaceUrlState,
+    ],
   );
 
   useTypingShortcuts([
@@ -1575,10 +1627,36 @@ function DocsVaultContent() {
           여기서 완전히 삭제(읽기 전용 샘플 배너 1곳 + /download 만 소유,
           design-prescription.md ②). "문서함" h1 은 sr-only 로만 유지
           (내비 레일 + 브레드크럼과의 3중 라벨 해소). */}
-      <header className="flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 md:px-4 lg:h-11 lg:min-h-0 lg:flex-nowrap lg:gap-2 lg:py-0">
+      <header className="relative isolate flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 bg-[color:var(--color-panel)] px-3 py-2 md:px-4 lg:h-11 lg:min-h-0 lg:flex-nowrap lg:gap-2 lg:py-0">
         <h1 className="sr-only">{t('header.title')}</h1>
-        {/* zone-l — 목록 토글 + VaultChip. */}
-        <div className="flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:gap-3 lg:w-auto lg:max-w-[300px] lg:flex-nowrap lg:flex-1">
+        {/* 헤더 baseline — 탭 스트립의 "한 끗"(design-prescription.md §10.2
+            ⑥): 활성 탭 아래에서만 이 1px 라인이 2px 인디고 언더라인으로
+            치환돼야 하므로 header 자체의 border-b 대신 절대배치 라인으로
+            분리했다. 음수 z-index(header 의 `isolate` 로 스코프)라 일반
+            흐름 콘텐츠(zone-l/zone-c/zone-r) 가 항상 이 라인 위에 그려진다
+            — 활성 탭의 불투명 --color-canvas 배경이 자연스럽게 이 라인을
+            덮고, 그 위에 자체 2px bar 를 그리므로 이중선이 생기지 않는다. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-px bg-[color:var(--color-border-soft)]"
+        />
+        {/* zone-l — 목록 토글 + VaultChip.
+            폭 계약: 목록이 펼쳐져 있으면 zone-l 오른쪽 끝이 **문서 pane 의
+            왼쪽 모서리**와 정확히 맞물린다 → 탭 스트립이 자기가 여는 문서
+            pane 위에 정렬된다(VS Code/옵시디언의 탭=pane 규칙). 계산:
+            list-width − header padding(1rem) − zone gap(0.5rem). 이전에는
+            내용(≈197px)보다 큰 max-w-300 캡까지 flex-1 로 늘어나 탭이 pane
+            모서리보다 50px 오른쪽에서 시작했다(소유자 신고).
+            목록이 접히면 정렬할 pane 경계가 없으므로 내용 폭으로 되돌린다. */}
+        <div
+          data-docs-header-zone="identity"
+          className={cn(
+            "flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:gap-3 lg:flex-nowrap",
+            docListCollapsed
+              ? "lg:w-auto"
+              : "lg:w-[calc(var(--docs-list-width)-1.5rem)]",
+          )}
+        >
           <button
             type="button"
             onClick={() => setSourceTreeOpen(true)}
@@ -1623,14 +1701,26 @@ function DocsVaultContent() {
             t={t}
           />
         </div>
-        {/* zone-c — 문서 탭 스트립 예약 자리(슬라이스 B). 이번 슬라이스는
-            탭을 렌더하지 않지만 구조는 미리 비워둔다 — zone-l/zone-r 을
-            양 끝으로 미는 flex-1 spacer. */}
+        {/* zone-c — 열린 문서 탭 스트립(슬라이스 B). `view==='doc'` 일 때만
+            렌더 — folder-topology 뷰에선 비워 "탭 = 문서 워킹셋이지 상위
+            모드가 아니다" 를 구조로 증명한다(design-prescription.md §1
+            프레임1). 탭이 0개면 EmptyState 없이 그냥 빈 채로 둔다(지시 ④
+            "플레이스홀더 금지"). `self-stretch` 로 헤더 전체 높이를 채워야
+            활성 탭 배경이 baseline 을 완전히 덮는다. */}
         <div
           data-docs-header-zone="tabs"
-          aria-hidden
-          className="hidden min-w-0 flex-1 lg:block"
-        />
+          className="hidden min-w-0 flex-1 self-stretch lg:flex"
+        >
+          {view === 'doc' ? (
+            <DocsVaultTabStrip
+              tabs={openDocTabs}
+              activeSlug={selectedSlug}
+              onActivate={handleSelect}
+              onClose={handleCloseDocTab}
+              t={t}
+            />
+          ) : null}
+        </div>
         {/* zone-r — 소스 pill → ⌘K → 점검 → 문서정보 → gear(local). 순서
             고정, 숨김/겹침 금지(implementation-contract.md §10.2 ①). */}
         <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 lg:w-auto lg:max-w-[340px] lg:flex-nowrap">
