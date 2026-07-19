@@ -9,7 +9,7 @@ relates: [domains/views]
 
 # Onboarding & UX
 
-cross-cutting. 라이트/다크 토글 (`html[data-theme="light"]`), Sonner-기반 toast, aria-live
+cross-cutting. 다크 단일 테마 (라이트 모드는 2026-07-19 전략 폐기), Sonner-기반 toast, aria-live
 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키,
 `prefers-reduced-motion` 자동 존중. fresh vault onboarding 도 이 domain 의 일부:
 CLI `init` 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고,
