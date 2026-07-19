@@ -1749,7 +1749,6 @@
       "vaultPillFolders": "{count}개 폴더",
       "vaultPillSwap": "vault 바꾸기",
       "vaultPillSwapAriaLabel": "vault 소스 전환",
-      "censusSummary": "개념 {concepts}개 · 관계 {relations}개",
       "docListCollapse": "문서 목록 접기",
       "docListExpand": "문서 목록 펼치기"
     },
