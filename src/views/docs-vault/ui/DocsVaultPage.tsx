@@ -1866,6 +1866,11 @@ function DocsVaultContent() {
         <aside
           aria-label={t('mobileDrawer.title')}
           aria-hidden={docListCollapsed}
+          // aria-hidden 만으로는 width 0 뒤에 숨은 검색 input·트리 버튼이
+          // 여전히 Tab 순서에 남는다(보이지 않는 곳으로 포커스가 사라지는
+          // WCAG 결함 + aria-hidden 내부 포커스 모순). inert 로 포커스·포인터
+          // 를 함께 차단한다 (React 19 boolean inert).
+          inert={docListCollapsed}
           style={{ width: docListCollapsed ? 0 : 'var(--docs-list-width)' }}
           className={`hidden flex-none flex-col overflow-hidden bg-[color:var(--color-panel)] transition-[width] duration-[180ms] ease-out lg:flex ${
             docListCollapsed ? '' : 'border-r border-[color:var(--color-border-soft)]'
