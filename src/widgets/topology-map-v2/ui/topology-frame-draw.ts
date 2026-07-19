@@ -38,6 +38,10 @@ import { worldToScreen } from "./topology-camera-math";
 import { radiusForKind, type TopologyWorld, type WorldNode } from "./topology-world";
 
 const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
+// perf sweep 2026-07 — reused frame-scratch Maps, see their `.clear()` call
+// site in `drawTopologyFrame` below for why this is safe.
+const tierAlphaByIdReused = new Map<string, number>();
+const effectiveAlphaByIdReused = new Map<string, number>();
 // Project bumped 2 → 1.5 (canvas-emphasis slice §A1) to match the owner spec's
 // "외곽 스트로크 1.5px 앰버" exactly — the outer stroke itself now hardcodes
 // amber for project (see `resolveNodeVisual` below), so its width is spec'd
@@ -63,11 +67,24 @@ function tierStroke(kind: WorldNode["kind"], tokens: TopologyV2Tokens): string {
   return tokens.nodeStrokeElement;
 }
 
+// perf sweep 2026-07 — `id` never changes for a node's lifetime (graph
+// rebuild replaces the whole `TopologyWorld`, never mutates an id in place),
+// so the hash below is a pure function of a value that's constant across
+// every single frame it's called from. Memoizing it removes one string-hash
+// loop per breathing node per frame from the paint hot path — a small win on
+// its own, but free (no invalidation to get wrong: a new id simply misses
+// once and gets cached).
+const phaseCache = new Map<string, number>();
+
 /** Deterministic per-node breathe-phase offset — a stable hash stands in for the prototype's seeded-RNG phase (layout has no PRNG in this contract, `model/layout.ts` JSDoc). */
 function phaseForId(id: string): number {
+  const cached = phaseCache.get(id);
+  if (cached !== undefined) return cached;
   let hash = 0;
   for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) | 0;
-  return ((Math.abs(hash) % 1000) / 1000) * Math.PI * 2;
+  const phase = ((Math.abs(hash) % 1000) / 1000) * Math.PI * 2;
+  phaseCache.set(id, phase);
+  return phase;
 }
 
 interface NodeVisual {
@@ -224,8 +241,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // gate's own alpha and the ego-reveal ramp). `effectiveAlphaById` is what
   // edges/nodes/labels actually draw with; `tierAlphaById` stays the raw gate
   // value (still needed as `effectiveNodeAlpha`'s first argument).
-  const tierAlphaById = new Map<string, number>();
-  const effectiveAlphaById = new Map<string, number>();
+  // perf sweep 2026-07 — reused across frames (`.clear()` instead of `new
+  // Map()`) to cut two allocations + hashtable growth per frame off the
+  // paint hot path. Safe because `drawTopologyFrame` only ever runs
+  // synchronously from the single active rAF loop (`use-topology-loop.ts`) —
+  // there is no concurrent/re-entrant call that could see stale entries from
+  // a previous frame between the `.clear()` below and this frame's own fill.
+  tierAlphaByIdReused.clear();
+  effectiveAlphaByIdReused.clear();
+  const tierAlphaById = tierAlphaByIdReused;
+  const effectiveAlphaById = effectiveAlphaByIdReused;
   for (const node of world.nodes) {
     const tierAlpha = nodeTierAlpha(node.kind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL);
     tierAlphaById.set(node.id, tierAlpha);
