@@ -1,21 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
-  Clipboard,
   Download,
-  Database,
   FileJson,
   Info,
   Maximize2,
   Minimize2,
   MoreHorizontal,
   Network,
-  PencilLine,
   ShieldCheck,
   SlidersHorizontal,
   Trash2,
@@ -31,20 +28,12 @@ import { VaultConflictError, useLocalVault } from "@/features/docs-vault-local";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { LiveActivityIndicator } from "@/features/vault-ontology";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
-import {
-  AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
-  formatAgentPostChangeSyncPacket,
-} from "@/shared/lib/ontology-tree";
 import { slugify } from "@/shared/lib/slugify";
 import { AppNavRail } from "@/widgets/app-nav-rail";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { MountedGlobalSearch } from "@/widgets/global-search";
-import { copyText } from "@/shared/lib/copy-text";
 import { ChromeTile, Tooltip, useToast } from "@/shared/ui";
-import {
-  parseOntologyReaderIntent,
-  type OntologyReaderIntent,
-} from "@/shared/lib/ontology-reader-intent";
+import { parseOntologyReaderIntent } from "@/shared/lib/ontology-reader-intent";
 import { useEphemeralNodes } from "../lib/use-ephemeral-nodes";
 import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
 import { isUntitledTitle } from "../lib/is-untitled-title";
@@ -70,18 +59,28 @@ import {
 import { buildSavedRelationHandoff } from "../lib/saved-relation-handoff";
 import { RelationWriteConfirm } from "./RelationWriteConfirm";
 import { RelationPostSaveHandoff } from "./RelationPostSaveHandoff";
-import {
-  buildBuilderEntryAnchors,
-  type BuilderEntryAnchor,
-} from "../lib/builder-entry-anchors";
-import { formatBuilderGuardPacket, formatBuilderProofPacket } from "../lib/builder-proof-packet";
-import { getBuilderSourceStatus } from "../lib/builder-source-status";
+import { buildBuilderEntryAnchors } from "../lib/builder-entry-anchors";
 import {
   buildBuilderSessionDiffLines,
   resolveBuilderWriteConfirmAction,
   resolveBuilderWriteConfirmStatus,
-  type BuilderWriteConfirmStatus,
 } from "../lib/builder-write-confirm-bar";
+import {
+  resolveBuilderCommandStripState,
+  isSelectedBuilderCommandState,
+} from "../lib/builder-command-strip-state";
+import { resolveBuilderHeaderActionLabel } from "../lib/builder-header-action-label";
+import { formatBuilderAnchorDegreeBadge } from "../lib/format-builder-anchor-labels";
+import { isOntologyKind } from "../lib/is-ontology-kind";
+import { buildBuilderReaderActionHref } from "../lib/build-builder-reader-action-href";
+import type { BuilderDraftPreview } from "../lib/builder-draft-agent-packet";
+import { CanvasSkeleton } from "./CanvasSkeleton";
+import { BuilderCommandStrip } from "./BuilderCommandStrip";
+import { BuilderWriteConfirmBar } from "./BuilderWriteConfirmBar";
+import { BuilderReaderIntentStrip } from "./BuilderReaderIntentStrip";
+import { BuilderDetailsDraftCallout } from "./BuilderDetailsDraftCallout";
+import { BuilderCanvasEntryRail } from "./BuilderCanvasEntryRail";
+import { BuilderWriteSummary } from "./BuilderWriteSummary";
 
 /**
  * 빌더 ephemeral 노드 → `${kind}s/${slug}.md` 로 vault 직접 작성.
@@ -125,999 +124,6 @@ const OntologyEditCanvas = dynamic<{
 );
 
 const BUILDER_PALETTE_COLLAPSED_KEY = "demo:builder-palette:collapsed:v1";
-
-export type BuilderCommandStripState =
-  | "empty"
-  | "draft"
-  | "selectedProject"
-  | "selectedDomain"
-  | "selectedCapability"
-  | "selected"
-  | "relationReview";
-
-export interface BuilderDraftPreview {
-  id: string;
-  kind: string;
-  title: string;
-  kindLabel: string;
-  path: string;
-  needsName: boolean;
-}
-
-export function formatBuilderDraftAgentPacket(drafts: BuilderDraftPreview[]): string {
-  const readyDrafts = drafts.filter((draft) => !draft.needsName);
-  const addConceptArgs = readyDrafts.map((draft) => ({
-    slug: draft.path.endsWith(".md") ? draft.path.slice(0, -3) : draft.path,
-    kind: draft.kind,
-    title: draft.title,
-  }));
-  return [
-    "Ontology Atlas draft ontology concepts",
-    "",
-    "Drafts:",
-    ...readyDrafts.map(
-      (draft) => `- ${draft.kind}: ${draft.title} -> ${draft.path}`,
-    ),
-    "",
-    "MCP add_concepts args:",
-    JSON.stringify({ concepts: addConceptArgs }, null, 2),
-    "",
-    "After saving, verify:",
-    "- validate_vault({ repoRoot })",
-    "- compile_ontology({ summary: true })",
-  ].join("\n");
-}
-
-export function formatBuilderVerificationPacket(): string {
-  return [
-    "Ontology Atlas save/verify/revert checklist",
-    "",
-    "What is saved:",
-    "- Saved concepts and relations are markdown files in the selected local vault.",
-    "- Draft canvas changes stay in memory until their Save action writes vault markdown.",
-    "",
-    "Review before you revert:",
-    "git status --short",
-    "git diff -- docs/ontology public/docs-vault src/entities/docs-vault/data",
-    "",
-    "Verify the ontology:",
-    "pnpm docs-vault:build && pnpm docs-vault:check",
-    "node cli/src/index.mjs validate docs/ontology --json",
-    "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
-    "",
-    "Agent MCP follow-up:",
-    "validate_vault({})",
-    'query_ontology({"operation":"health"})',
-    'query_ontology({"operation":"maintenance_plan","nodeLimit":8})',
-    "",
-    "Revert only after reviewing the diff:",
-    "git restore -- docs/ontology public/docs-vault src/entities/docs-vault/data",
-  ].join("\n");
-}
-
-export function resolveBuilderCommandStripState({
-  draftNodes,
-  draftEdges,
-  hasSelection,
-  hasPendingRelation,
-  selectedKind,
-  selectedEphemeral,
-}: {
-  draftNodes: number;
-  draftEdges: number;
-  hasSelection: boolean;
-  hasPendingRelation: boolean;
-  selectedKind?: string | null;
-  selectedEphemeral?: boolean;
-}): BuilderCommandStripState {
-  if (hasPendingRelation) return "relationReview";
-  if (selectedEphemeral) return "draft";
-  if (hasSelection) {
-    if (selectedKind === "project") return "selectedProject";
-    if (selectedKind === "domain") return "selectedDomain";
-    if (selectedKind === "capability") return "selectedCapability";
-    return "selected";
-  }
-  if (draftNodes > 0 || draftEdges > 0) return "draft";
-  return "empty";
-}
-
-function isSelectedBuilderCommandState(state: BuilderCommandStripState): boolean {
-  return (
-    state === "selected" ||
-    state === "selectedProject" ||
-    state === "selectedDomain" ||
-    state === "selectedCapability"
-  );
-}
-
-export function resolveBuilderHeaderActionLabel({
-  label,
-  hint,
-}: {
-  label: string;
-  hint: string;
-}): { ariaLabel: string; title: string } {
-  return {
-    ariaLabel: `${label} · ${hint}`,
-    title: hint,
-  };
-}
-
-export function formatBuilderAnchorDegreeBadge(label: string, degree: number): string {
-  return `${label} ${degree}`;
-}
-
-export function formatBuilderActiveFocusLabel(label: string, slug: string): string {
-  return `${label} ${slug}`;
-}
-
-function isOntologyKind(kind: string): kind is "project" | "domain" | "capability" | "element" {
-  return kind === "project" || kind === "domain" || kind === "capability" || kind === "element";
-}
-
-function CanvasSkeleton() {
-  const t = useTranslations("ontologyPages.edit.page");
-  return (
-    <div className="topology-ui-scale flex h-full items-center justify-center">
-      <p className="text-xs text-[color:var(--color-text-quaternary)]">{t("canvasLoading")}</p>
-    </div>
-  );
-}
-
-export function BuilderCommandStrip({
-  state,
-  draftNodes,
-  draftEdges,
-  selectedTitle,
-  onPrimaryAction,
-  onSecondaryAction,
-  secondaryHref,
-}: {
-  state: BuilderCommandStripState;
-  draftNodes: number;
-  draftEdges: number;
-  selectedTitle?: string | null;
-  onPrimaryAction: () => void;
-  onSecondaryAction: () => void;
-  secondaryHref?: "/ontology/insights/" | `/ontology/insights/?node=${string}`;
-}) {
-  const t = useTranslations("ontologyPages.edit.page.commandStrip");
-  const primaryLabel = t(`${state}.primary`);
-  const secondaryLabel = t(`${state}.secondary`);
-  const contextualSecondaryLabel = selectedTitle
-    ? `${selectedTitle} ${secondaryLabel}`
-    : secondaryLabel;
-  const hasStagedDraft = draftNodes > 0 || draftEdges > 0;
-  const primaryIcon =
-    state === "empty" ||
-    state === "selectedProject" ||
-    state === "selectedDomain" ||
-    state === "selectedCapability"
-      ? PencilLine
-      : state === "relationReview"
-        ? ShieldCheck
-        : Info;
-  const PrimaryIcon = primaryIcon;
-  return (
-    <section
-      aria-label={t("ariaLabel")}
-      className="flex min-w-[min(100%,280px)] max-w-full flex-1 flex-col items-stretch gap-2 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.06)] px-2 py-1 sm:flex-row sm:items-center"
-    >
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-          {t(`${state}.title`, {
-            nodes: draftNodes,
-            edges: draftEdges,
-            title: selectedTitle ?? t("selectedFallback"),
-          })}
-        </p>
-        <p className="hidden truncate text-[10px] leading-4 text-[color:var(--color-text-quaternary)] xl:block">
-          {t(`${state}.body`, {
-            nodes: draftNodes,
-            edges: draftEdges,
-            title: selectedTitle ?? t("selectedFallback"),
-          })}
-        </p>
-        {hasStagedDraft ? (
-          <p
-            role="status"
-            aria-live="polite"
-            className="mt-1 inline-flex max-w-full items-center gap-1 rounded-sm border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 text-[10px] leading-3 text-[color:var(--color-text-secondary)] motion-safe:animate-[atlasStatusIn_180ms_ease-out]"
-          >
-            <span
-              aria-hidden="true"
-              className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--color-indigo-accent)]"
-            />
-            <span className="truncate">
-              {t("stagedStatus", { nodes: draftNodes, edges: draftEdges })}
-            </span>
-          </p>
-        ) : null}
-      </div>
-      <div className="grid shrink-0 grid-cols-2 items-center gap-1 sm:flex">
-        <button
-          type="button"
-          onClick={onPrimaryAction}
-          aria-label={primaryLabel}
-          title={primaryLabel}
-          className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
-        >
-          <PrimaryIcon size={12} />
-          <span>{primaryLabel}</span>
-        </button>
-        {secondaryHref ? (
-          <Link
-            href={secondaryHref}
-            aria-label={contextualSecondaryLabel}
-            title={contextualSecondaryLabel}
-            className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] transition-[border-color,background-color,transform] hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.16)] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transition-colors motion-reduce:active:translate-y-0"
-          >
-            <ShieldCheck size={12} />
-            <span>{secondaryLabel}</span>
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={onSecondaryAction}
-            aria-label={contextualSecondaryLabel}
-            title={contextualSecondaryLabel}
-            className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.03)] px-2.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
-          >
-            <ShieldCheck size={12} />
-            <span>{secondaryLabel}</span>
-          </button>
-        )}
-      </div>
-    </section>
-  );
-}
-
-/**
- * 하단 앵커 쓰기-확인 바 — `docs/prototypes/builder-final.html` 스펙의
- * "쓰기 확인" 바. 여기서 새로 쓰기 로직을 만들지 않는다 — dry-run 버튼은
- * 기존 저장 상태 팝오버(BuilderWriteSummary)를 열고, "vault 에 쓰기" 는
- * `resolveBuilderWriteConfirmAction` 이 고른 기존 핸들러
- * (confirmPendingRelation / saveEphemeral / 상세 열기) 를 그대로 호출한다.
- */
-export function BuilderWriteConfirmBar({
-  status,
-  draftNodes,
-  draftEdges,
-  pendingRelationSummary,
-  writeAriaLabel,
-  writeDisabled,
-  onDryRun,
-  onWrite,
-}: {
-  status: BuilderWriteConfirmStatus;
-  draftNodes: number;
-  draftEdges: number;
-  pendingRelationSummary?: { source: string; target: string; key: string } | null;
-  writeAriaLabel: string;
-  writeDisabled: boolean;
-  onDryRun: () => void;
-  onWrite: () => void;
-}) {
-  const t = useTranslations("ontologyPages.edit.page.writeConfirmBar");
-  const payload =
-    status === "relationPending" && pendingRelationSummary
-      ? t("relationPending", pendingRelationSummary)
-      : status === "draftReady"
-        ? t("draftReady", { nodes: draftNodes, edges: draftEdges })
-        : status === "draftNeedsName"
-          ? t("draftNeedsName", { nodes: draftNodes, edges: draftEdges })
-          : t("clean");
-  return (
-    <section
-      aria-label={t("ariaLabel")}
-      className="mt-2 hidden shrink-0 flex-wrap items-center gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2.5 md:flex"
-    >
-      <span className="shrink-0 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-        {t("label")}
-      </span>
-      <p className="min-w-0 flex-1 truncate font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
-        {payload}
-      </p>
-      <div className="flex shrink-0 items-center gap-1.5">
-        <button
-          type="button"
-          onClick={onDryRun}
-          aria-label={t("dryRunAriaLabel")}
-          className="inline-flex h-8 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)]"
-        >
-          {t("dryRunButton")}
-        </button>
-        <button
-          type="button"
-          onClick={onWrite}
-          disabled={writeDisabled}
-          aria-label={writeAriaLabel}
-          className="inline-flex h-8 items-center rounded-md border border-[color:rgba(94,106,210,0.42)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.6)] hover:bg-[color:rgba(94,106,210,0.2)] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {t("writeButton")}
-        </button>
-      </div>
-    </section>
-  );
-}
-
-export function BuilderReaderIntentStrip({
-  label,
-  title,
-  body,
-  actionLabel,
-  actionHref,
-}: {
-  label: string;
-  title: string;
-  body: string;
-  actionLabel: string;
-  actionHref: string;
-}) {
-  return (
-    <section
-      aria-label={label}
-      className="border-y border-[color:var(--color-border-soft)] py-2"
-      data-testid="builder-reader-intent"
-    >
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {label}
-          </p>
-          <p className="mt-1 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            {title}
-          </p>
-          <p className="mt-1 max-w-3xl break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-            {body}
-          </p>
-        </div>
-        <Link
-          href={actionHref}
-          className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
-        >
-          {actionLabel}
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-function buildBuilderReaderActionHref(intent: OntologyReaderIntent): string {
-  if (intent === "agent" || intent === "marketing" || intent === "leadership") {
-    return `/ontology/insights/?reader=${intent}`;
-  }
-  return "/ontology/";
-}
-
-export function BuilderDetailsDraftCallout({
-  draftNodes,
-  draftEdges,
-  onOpenWriteSummary,
-}: {
-  draftNodes: number;
-  draftEdges: number;
-  onOpenWriteSummary: () => void;
-}) {
-  const t = useTranslations("ontologyPages.edit.page");
-  if (draftNodes === 0 && draftEdges === 0) return null;
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.07)] px-4 py-2.5 motion-safe:animate-[atlasStatusIn_180ms_ease-out]">
-      <div className="flex min-w-0 items-start gap-2">
-        <span
-          aria-hidden="true"
-          className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-indigo-accent)]"
-        />
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            {t("detailsDraftStatusTitle", {
-              nodes: draftNodes,
-              edges: draftEdges,
-            })}
-          </p>
-          <p className="mt-0.5 hidden truncate text-[10px] leading-4 text-[color:var(--color-text-tertiary)] sm:block">
-            {t("detailsDraftStatusBody")}
-          </p>
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={onOpenWriteSummary}
-        className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.13)] px-2.5 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
-      >
-        {t("detailsDraftStatusAction")}
-      </button>
-    </div>
-  );
-}
-
-export function BuilderCanvasEntryRail({
-  anchors,
-  nodeCount,
-  relationCount,
-  selectedAnchorId,
-  expanded,
-  onToggleExpanded,
-  onFocusAnchor,
-  onOpenAnchors,
-}: {
-  anchors: BuilderEntryAnchor[];
-  nodeCount: number;
-  relationCount: number;
-  selectedAnchorId?: string | null;
-  expanded: boolean;
-  onToggleExpanded: () => void;
-  onFocusAnchor: (id: string) => void;
-  onOpenAnchors?: () => void;
-}) {
-  const t = useTranslations("ontologyPages.edit.page.canvasEntryRail");
-  const tKinds = useTranslations("kinds");
-  if (anchors.length === 0) return null;
-  const selectedAnchor = anchors.find((anchor) => anchor.id === selectedAnchorId);
-  const primaryAnchor = selectedAnchor ?? anchors[0];
-  const primaryAnchorKindLabel =
-    isOntologyKind(primaryAnchor.kind)
-      ? tKinds(primaryAnchor.kind)
-      : primaryAnchor.kind;
-  const hiddenAnchorCount = Math.max(0, anchors.length - 1);
-  const selectedAnchorSlug = selectedAnchor?.id ?? selectedAnchorId ?? null;
-  const selectedAnchorLabel = selectedAnchor?.label ?? selectedAnchorSlug ?? null;
-  const collapsedRailLabel = selectedAnchorSlug
-    ? `${t("collapsedAriaLabel", {
-        nodes: nodeCount,
-        relations: relationCount,
-      })} · ${t("activeFocusAriaLabel", { slug: selectedAnchorSlug })}`
-    : t("collapsedAriaLabel", {
-        nodes: nodeCount,
-        relations: relationCount,
-      });
-  const flow = [
-    {
-      step: "01",
-      label: t("flowFocus"),
-      icon: Network,
-    },
-    {
-      step: "02",
-      label: t("flowWrite"),
-      icon: PencilLine,
-    },
-    {
-      step: "03",
-      label: t("flowProof"),
-      icon: Database,
-    },
-  ] as const;
-
-  if (!expanded) {
-    return (
-      <div
-        id="builder-canvas-entry-rail"
-        role="region"
-        aria-label={t("collapsedAriaLabel", {
-          nodes: nodeCount,
-          relations: relationCount,
-        })}
-        className="pointer-events-none absolute left-3 top-3 z-10 max-w-[min(420px,calc(100%-1.5rem))]"
-      >
-        <button
-          type="button"
-          aria-expanded={false}
-          aria-controls="builder-canvas-entry-rail"
-          aria-label={collapsedRailLabel}
-          title={t("hint")}
-          onClick={onToggleExpanded}
-          className="pointer-events-auto flex h-8 max-w-full items-center gap-1.5 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(15,16,17,0.88)] px-2.5 text-left text-[11px] text-[color:var(--color-text-secondary)] shadow-[0_10px_32px_rgba(0,0,0,0.22)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
-        >
-          <Network size={12} className="shrink-0 text-[color:var(--color-indigo-accent)]" />
-          <span className="shrink-0 font-[var(--font-weight-signature)]">
-            {t("collapsedLabel")}
-          </span>
-          {selectedAnchorSlug ? (
-            <span
-              aria-label={t("activeFocusAriaLabel", { slug: selectedAnchorSlug })}
-              className="min-w-0 truncate text-[10px] text-[color:var(--color-text-quaternary)]"
-              title={selectedAnchorLabel ?? undefined}
-            >
-              {formatBuilderActiveFocusLabel(t("activeFocusVisibleLabel"), selectedAnchorSlug)}
-            </span>
-          ) : (
-            <span className="min-w-0 truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-              {t("collapsedStats", { nodes: nodeCount, relations: relationCount })}
-            </span>
-          )}
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      id="builder-canvas-entry-rail"
-      role="region"
-      aria-label={t("ariaLabel", { nodes: nodeCount, relations: relationCount })}
-      className="pointer-events-none absolute left-3 right-3 top-3 z-10 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.94)] px-2 py-1.5"
-    >
-      <p className="sr-only">
-        {t("hint")} {flow.map((item) => `${item.step} ${item.label}`).join(" · ")}
-      </p>
-      <div className="flex items-center gap-1.5">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <Network size={12} className="text-[color:var(--color-indigo-accent)]" />
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            {t("label")}
-          </p>
-        </div>
-        <p className="hidden font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] lg:block">
-          {t("stats", { nodes: nodeCount, relations: relationCount })}
-        </p>
-        <button
-          type="button"
-          aria-expanded={true}
-          aria-controls="builder-canvas-entry-rail"
-          onClick={onToggleExpanded}
-          className="pointer-events-auto hidden h-6 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-1.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] sm:inline-flex"
-        >
-          {t("collapseAction")}
-        </button>
-        <span
-          className="hidden rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] sm:inline-flex"
-          title={t("hint")}
-        >
-          {t("focusChip")}
-        </span>
-        {selectedAnchorSlug ? (
-          <span
-            aria-label={t("activeFocusAriaLabel", { slug: selectedAnchorSlug })}
-            className="max-w-[230px] truncate rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
-            title={selectedAnchorLabel ?? undefined}
-          >
-            {t("activeFocus", { slug: selectedAnchorSlug })}
-          </span>
-        ) : null}
-        <div className="ml-auto flex min-w-0 items-center gap-1.5">
-          <button
-            type="button"
-            aria-pressed={selectedAnchorId === primaryAnchor.id}
-            aria-label={t("anchorAriaLabel", {
-              kind: primaryAnchorKindLabel,
-              label: primaryAnchor.label,
-              slug: primaryAnchor.id,
-              degree: primaryAnchor.degree,
-            })}
-            onClick={() => onFocusAnchor(primaryAnchor.id)}
-            data-anchor-slug={primaryAnchor.id}
-            className={
-              selectedAnchorId === primaryAnchor.id
-                ? "pointer-events-auto flex h-7 min-w-0 max-w-[250px] shrink items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.15)] px-2 text-left text-[10px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(139,151,255,0.54)]"
-                : "pointer-events-auto flex h-7 min-w-0 max-w-[250px] shrink items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.13)] hover:text-[color:var(--color-text-primary)]"
-            }
-            title={t("anchorTitle", {
-              kind: primaryAnchorKindLabel,
-              label: primaryAnchor.label,
-              slug: primaryAnchor.id,
-              degree: primaryAnchor.degree,
-            })}
-          >
-            <span className="shrink-0 font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {primaryAnchor.kind.slice(0, 1)}
-            </span>
-            <span className="min-w-0 flex-1 truncate">
-              {primaryAnchor.label}
-            </span>
-            <span className="sr-only">
-              {t("anchorSlugLabel", { slug: primaryAnchor.id })}
-            </span>
-            <span
-              aria-label={t("degreeAriaLabel", { degree: primaryAnchor.degree })}
-              className={
-                selectedAnchorId === primaryAnchor.id
-                  ? "ml-auto shrink-0 rounded border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(0,0,0,0.20)] px-1 font-mono text-[9px] tabular-nums text-[color:var(--color-text-secondary)]"
-                  : "ml-auto shrink-0 rounded border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(0,0,0,0.16)] px-1 font-mono text-[9px] tabular-nums text-[color:var(--color-text-quaternary)]"
-              }
-            >
-              {primaryAnchor.degree}
-            </span>
-          </button>
-          {hiddenAnchorCount > 0 && onOpenAnchors ? (
-            <button
-              type="button"
-              onClick={onOpenAnchors}
-              aria-label={t("openAnchorDialogAriaLabel", { count: hiddenAnchorCount })}
-              className="pointer-events-auto flex h-7 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.03)] px-2 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
-            >
-              {t("openAnchorDialog", { count: hiddenAnchorCount })}
-            </button>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function BuilderWriteSummary({
-  writable,
-  restoringVault,
-  vaultUnavailable,
-  isDesktopRuntime,
-  persistedNodes,
-  persistedRelations,
-  draftNodes,
-  draftEdges,
-  draftPreviews = [],
-  selectedProofNodeId,
-  selectedProofSlug,
-  pendingRelation,
-  onOpenDraft,
-}: {
-  writable: boolean;
-  restoringVault: boolean;
-  vaultUnavailable: boolean;
-  isDesktopRuntime: boolean;
-  persistedNodes: number;
-  persistedRelations: number;
-  draftNodes: number;
-  draftEdges: number;
-  draftPreviews?: BuilderDraftPreview[];
-  selectedProofNodeId?: string | null;
-  selectedProofSlug?: string | null;
-  pendingRelation?: VaultRelationProposal | null;
-  onOpenDraft?: () => void;
-}) {
-  const t = useTranslations("ontologyPages.edit.page.writeSummary");
-  const toast = useToast();
-  type SummaryHref =
-    | "/docs/?intent=local"
-    | "/download/"
-    | "/ontology/insights/"
-    | `/ontology/insights/?node=${string}`;
-  const sourceHref: SummaryHref = isDesktopRuntime ? "/docs/?intent=local" : "/download/";
-  const selectedProofDisplaySlug = selectedProofSlug ?? selectedProofNodeId ?? null;
-  const proofHref: SummaryHref = buildBuilderProofHref(
-    selectedProofSlug || selectedProofNodeId
-      ? {
-          graphNodeId: selectedProofNodeId ?? selectedProofSlug ?? "",
-          vaultSlug: selectedProofSlug ?? selectedProofNodeId ?? "",
-        }
-      : null,
-  );
-  const proofPacketSlug = selectedProofSlug ?? selectedProofNodeId;
-  const sourceStatus = getBuilderSourceStatus({
-    writable,
-    restoringVault,
-    vaultUnavailable,
-  });
-  const hasDraft = draftNodes > 0 || draftEdges > 0;
-  const visibleDraftPreviews = draftPreviews.slice(0, 3);
-  const hiddenDraftPreviewCount = Math.max(0, draftNodes - visibleDraftPreviews.length);
-  const hasUnnamedDraft =
-    draftNodes > 0 &&
-    (draftPreviews.length < draftNodes || draftPreviews.some((draft) => draft.needsName));
-  const readyDraftPreviews = draftPreviews.filter((draft) => !draft.needsName);
-  const nextStep = pendingRelation
-    ? t("nextStepRelation", {
-        source: pendingRelation.sourceSlug,
-        target: pendingRelation.targetSlug,
-      })
-    : hasDraft
-      ? hasUnnamedDraft
-        ? t("nextStepDraftNeedsName", { nodes: draftNodes, edges: draftEdges })
-        : t("nextStepDraftReady", { nodes: draftNodes, edges: draftEdges })
-      : sourceStatus.status !== "writable"
-        ? t(`nextStepSource.${sourceStatus.status}`)
-        : selectedProofDisplaySlug
-          ? t("nextStepProof", { slug: selectedProofDisplaySlug })
-          : t("nextStepClean");
-  const sourceAction = sourceStatus.showSourceAction
-    ? {
-        href: sourceHref,
-        actionLabel: isDesktopRuntime
-          ? t("sourceActionLocal")
-          : t("sourceActionDownload"),
-      }
-    : {};
-  const items: Array<{
-    icon: ReactNode;
-    label: string;
-    value: string;
-    body: string;
-    chip: string;
-    flow: string;
-    accent: "indigo" | "amber" | "neutral";
-    status?: string;
-    statusTone?: "indigo" | "neutral";
-    href?: SummaryHref;
-    actionLabel?: string;
-    actionAriaLabel?: string;
-    onAction?: () => void;
-    copyLabel?: string;
-    copyAriaLabel?: string;
-    copyText?: string;
-    copySuccess?: string;
-    syncCopyLabel?: string;
-    syncCopyAriaLabel?: string;
-    syncCopyText?: string;
-    syncCopySuccess?: string;
-    agentCopyLabel?: string;
-    agentCopyAriaLabel?: string;
-    agentCopyText?: string;
-    agentCopySuccess?: string;
-    draftPreviews?: BuilderDraftPreview[];
-    draftPreviewMore?: string;
-  }> = [
-    {
-      icon: <Database size={12} />,
-      label: t("sourceLabel"),
-      value: t(`source.${sourceStatus.status}.value`),
-      body:
-        sourceStatus.status === "writable"
-          ? t("source.writable.body", { nodes: persistedNodes, relations: persistedRelations })
-          : sourceStatus.status === "readonly"
-            ? t("source.readonly.body", { nodes: persistedNodes, relations: persistedRelations })
-            : t(`source.${sourceStatus.status}.body`),
-      chip: t(`source.${sourceStatus.status}.chip`),
-      flow: t(`source.${sourceStatus.status}.flow`),
-      accent: sourceStatus.accent,
-      ...sourceAction,
-    },
-    {
-      icon: <PencilLine size={12} />,
-      label: t("draftLabel"),
-      value: t("draftValue", { nodes: draftNodes, edges: draftEdges }),
-      body: t("draftBody"),
-      chip: t("draftChip"),
-      flow: t("draftFlow"),
-      accent: draftNodes > 0 || draftEdges > 0 ? "indigo" : "neutral",
-      status: draftNodes > 0 || draftEdges > 0 ? t("draftStatusDirty") : t("draftStatusClean"),
-      statusTone: draftNodes > 0 || draftEdges > 0 ? "indigo" : "neutral",
-      actionLabel: hasDraft ? t("draftAction") : undefined,
-      actionAriaLabel: hasDraft ? t("draftActionAria") : undefined,
-      onAction: hasDraft ? onOpenDraft : undefined,
-      draftPreviews: visibleDraftPreviews,
-      draftPreviewMore:
-        hiddenDraftPreviewCount > 0
-          ? t("draftPreviewMore", { count: hiddenDraftPreviewCount })
-          : undefined,
-      agentCopyLabel:
-        readyDraftPreviews.length > 0 ? t("draftAgentCopy") : undefined,
-      agentCopyAriaLabel:
-        readyDraftPreviews.length > 0
-          ? t("draftAgentCopyAria", { count: readyDraftPreviews.length })
-          : undefined,
-      agentCopyText:
-        readyDraftPreviews.length > 0
-          ? formatBuilderDraftAgentPacket(readyDraftPreviews)
-          : undefined,
-      agentCopySuccess:
-        readyDraftPreviews.length > 0 ? t("draftAgentCopyCopied") : undefined,
-    },
-    {
-      icon: <ShieldCheck size={12} />,
-      label: t("guardLabel"),
-      value: pendingRelation ? t("guardValueReview") : t("guardValue"),
-      body: pendingRelation
-        ? t("guardBodyReview", {
-            source: pendingRelation.sourceSlug,
-            key: pendingRelation.inferredKey,
-            target: pendingRelation.targetSlug,
-          })
-        : t("guardBody"),
-      chip: pendingRelation ? t("guardChipReview") : t("guardChip"),
-      flow: pendingRelation ? t("guardFlowReview") : t("guardFlow"),
-      accent: pendingRelation ? "indigo" : "neutral",
-      copyLabel: pendingRelation ? t("guardCopyReview") : t("guardCopy"),
-      copyAriaLabel: pendingRelation
-        ? t("guardCopyAriaReview", {
-            source: pendingRelation.sourceSlug,
-            target: pendingRelation.targetSlug,
-          })
-        : t("guardCopyAria"),
-      copyText: formatBuilderGuardPacket(pendingRelation),
-      copySuccess: t("guardCopyCopied"),
-    },
-    {
-      icon: <Network size={12} />,
-      label: t("proofLabel"),
-      value: selectedProofDisplaySlug
-        ? t("proofValueSelected", { count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT })
-        : t("proofValue", { count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT }),
-      body: selectedProofDisplaySlug
-        ? t("proofBodySelected", { slug: selectedProofDisplaySlug })
-        : t("proofBody"),
-      chip: selectedProofDisplaySlug ? t("proofChipSelected") : t("proofChip"),
-      flow: selectedProofDisplaySlug ? t("proofFlowSelected") : t("proofFlow"),
-      accent: "neutral",
-      href: proofHref,
-      actionLabel: selectedProofDisplaySlug ? t("proofActionSelected") : t("proofAction"),
-      copyLabel: selectedProofDisplaySlug ? t("proofCopySelected") : t("proofCopy"),
-      copyAriaLabel: selectedProofDisplaySlug
-        ? t("proofCopyAriaSelected", { slug: selectedProofDisplaySlug })
-        : t("proofCopyAria"),
-      copyText: formatBuilderProofPacket(proofPacketSlug),
-      copySuccess: t("proofCopyCopied"),
-      syncCopyLabel: t("proofSyncCopy"),
-      syncCopyAriaLabel: t("proofSyncCopyAria"),
-      syncCopyText: formatAgentPostChangeSyncPacket(),
-      syncCopySuccess: t("proofSyncCopyCopied"),
-    },
-    {
-      icon: <FileJson size={12} />,
-      label: t("verifyLabel"),
-      value: t("verifyValue"),
-      body: t("verifyBody"),
-      chip: t("verifyChip"),
-      flow: t("verifyFlow"),
-      accent: "neutral",
-      copyLabel: t("verifyCopy"),
-      copyAriaLabel: t("verifyCopyAria"),
-      copyText: formatBuilderVerificationPacket(),
-      copySuccess: t("verifyCopyCopied"),
-    },
-  ];
-  const copyProof = async (text: string, successMessage: string) => {
-    if (await copyText(text)) {
-      toast.show(successMessage, "success");
-      return;
-    }
-    toast.show(t("proofCopyFailed"), "error");
-  };
-
-  return (
-    <section
-      aria-label={t("ariaLabel")}
-      role="list"
-      className="grid min-w-0 max-w-full gap-1.5 p-1.5 lg:grid-cols-2"
-    >
-      <header className="flex min-w-0 max-w-full items-center justify-between gap-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 lg:col-span-2">
-        <div className="min-w-0">
-          <h2 className="text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            {t("summaryTitle")}
-          </h2>
-          <p className="mt-0.5 truncate text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-            <span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-              {t("nextStepLabel")}
-            </span>{" "}
-            {nextStep}
-          </p>
-        </div>
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(94,106,210,0.08)] text-[color:var(--color-indigo-accent)]">
-          <ShieldCheck size={13} aria-hidden />
-        </span>
-      </header>
-      {items.map((item) => {
-        const accentClass =
-          item.accent === "indigo"
-            ? "border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)]"
-            : item.accent === "amber"
-              ? "border-[color:rgba(244,183,49,0.30)] bg-[color:rgba(244,183,49,0.07)]"
-              : "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]";
-        return (
-          <article
-            key={item.label}
-            role="listitem"
-            aria-label={`${item.label}: ${item.value}. ${item.chip}. ${item.body}. ${item.flow}`}
-            className={`flex min-w-0 max-w-full flex-wrap items-center gap-2 rounded-md border px-2.5 py-2 ${accentClass}`}
-          >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] text-[color:var(--color-indigo-accent)]">
-              {item.icon}
-            </span>
-            <div className="min-w-0 flex-1 basis-[12rem]">
-              <p className="min-w-0 truncate text-[11px] font-medium text-[color:var(--color-text-tertiary)]">
-                {item.label}
-              </p>
-              <p className="mt-0.5 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                {item.value}
-              </p>
-              <p className="mt-0.5 truncate text-[10px] text-[color:var(--color-text-quaternary)]">
-                {item.chip} · {item.flow}
-              </p>
-              {item.draftPreviews && item.draftPreviews.length > 0 ? (
-                <div
-                  role="list"
-                  aria-label={t("draftPreviewAriaLabel")}
-                  className="mt-1.5 grid gap-1"
-                >
-                  {item.draftPreviews.map((draft) => (
-                    <div
-                      key={draft.id}
-                      role="listitem"
-                      className="min-w-0 rounded border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
-                    >
-                      <p className="truncate text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-                        {draft.kindLabel} · {draft.title}
-                      </p>
-                      <p className="mt-0.5 truncate font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
-                        {draft.path}
-                      </p>
-                    </div>
-                  ))}
-                  {item.draftPreviewMore ? (
-                    <p className="truncate text-[9px] text-[color:var(--color-text-quaternary)]">
-                      {item.draftPreviewMore}
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-              <span className="sr-only">{item.body}</span>
-            </div>
-            {item.status ? (
-              <p
-                className={
-                  item.statusTone === "indigo"
-                    ? "hidden rounded border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)] xl:block"
-                    : "hidden rounded border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.02)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] xl:block"
-                }
-              >
-                {item.status}
-              </p>
-            ) : null}
-            {item.href ||
-            item.onAction ||
-            item.copyText ||
-            item.syncCopyText ||
-            item.agentCopyText ? (
-              <div className="flex w-full max-w-full flex-wrap items-center justify-start gap-1 pl-10 sm:ml-auto sm:w-auto sm:shrink-0 sm:justify-end sm:pl-0">
-                {item.href && item.actionLabel ? (
-                  <Link
-                    href={item.href}
-                    className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.24)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
-                  >
-                    {item.actionLabel}
-                  </Link>
-                ) : null}
-                {item.onAction && item.actionLabel ? (
-                  <button
-                    type="button"
-                    onClick={item.onAction}
-                    aria-label={item.actionAriaLabel ?? item.actionLabel}
-                    className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.24)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
-                  >
-                    {item.actionLabel}
-                  </button>
-                ) : null}
-                {item.copyText && item.copyLabel && item.copyAriaLabel && item.copySuccess ? (
-                  <button
-                    type="button"
-                    onClick={() => void copyProof(item.copyText!, item.copySuccess!)}
-                    aria-label={item.copyAriaLabel}
-                    title={item.copyLabel}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-                  >
-                    <Clipboard size={11} aria-hidden />
-                  </button>
-                ) : null}
-                {item.syncCopyText && item.syncCopyLabel && item.syncCopyAriaLabel && item.syncCopySuccess ? (
-                  <button
-                    type="button"
-                    onClick={() => void copyProof(item.syncCopyText!, item.syncCopySuccess!)}
-                    aria-label={item.syncCopyAriaLabel}
-                    title={item.syncCopyLabel}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-                  >
-                    <Clipboard size={11} aria-hidden />
-                  </button>
-                ) : null}
-                {item.agentCopyText && item.agentCopyLabel && item.agentCopyAriaLabel && item.agentCopySuccess ? (
-                  <button
-                    type="button"
-                    onClick={() => void copyProof(item.agentCopyText!, item.agentCopySuccess!)}
-                    aria-label={item.agentCopyAriaLabel}
-                    title={item.agentCopyLabel}
-                    className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:rgba(94,106,210,0.24)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
-                  >
-                    <Clipboard size={11} aria-hidden />
-                    <span>{item.agentCopyLabel}</span>
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-          </article>
-        );
-      })}
-    </section>
-  );
-}
 
 export function OntologyEditPage() {
   const t = useTranslations("ontologyPages.edit.page");
@@ -2193,7 +1199,7 @@ export function OntologyEditPage() {
                     ephemeralEdges,
                   })
                 }
-                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.16)]"
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:bg-[color:var(--color-indigo-a16)]"
                 aria-label={t("exportAriaLabel")}
               >
                 <Download size={12} />
@@ -2205,7 +1211,7 @@ export function OntologyEditPage() {
                 id="builder-header-overflow"
                 role="menu"
                 aria-label={t("headerOverflowAriaLabel")}
-                className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_24px_72px_rgba(0,0,0,0.42)]"
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_24px_72px_var(--color-shadow-a42)]"
               >
                 <button
                   type="button"
@@ -2320,8 +1326,8 @@ export function OntologyEditPage() {
                       })}
                       className={
                         clearConfirming
-                          ? "flex w-full items-center gap-2.5 rounded-md border border-[color:rgba(229,72,77,0.42)] bg-[color:rgba(229,72,77,0.12)] px-2.5 py-2 text-left text-[11px] text-[color:rgba(236,116,116,0.95)] transition-colors"
-                          : "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:rgba(236,116,116,0.95)]"
+                          ? "flex w-full items-center gap-2.5 rounded-md border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-2.5 py-2 text-left text-[11px] text-[color:var(--color-danger-text-strong)] transition-colors"
+                          : "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-danger-text-strong)]"
                       }
                     >
                       <Trash2 size={13} className="shrink-0" />
@@ -2344,7 +1350,7 @@ export function OntologyEditPage() {
             {writeSummaryOpen ? (
               <div
                 id="builder-write-summary"
-                className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[min(980px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_72px_rgba(0,0,0,0.42)]"
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[min(980px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_72px_var(--color-shadow-a42)]"
               >
                 <BuilderWriteSummary
                   writable={hasLiveVault}
@@ -2376,7 +1382,7 @@ export function OntologyEditPage() {
               <div
                 id="builder-layout-settings"
                 aria-label={t("layoutGroupAriaLabel")}
-                className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-72 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_24px_72px_rgba(0,0,0,0.42)]"
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-72 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_24px_72px_var(--color-shadow-a42)]"
               >
                 <div role="radiogroup" aria-label={t("layoutModeAriaLabel")}>
                   <button
@@ -2389,11 +1395,11 @@ export function OntologyEditPage() {
                     }}
                     className={`flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors ${
                       layoutMode === "dagre"
-                        ? "bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]"
+                        ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]"
                         : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                     }`}
                   >
-                    <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:rgba(159,170,235,0.9)] opacity-80" />
+                    <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:var(--color-indigo-text-dot)] opacity-80" />
                     <span>
                       <span className="block text-[11px] font-[var(--font-weight-signature)]">
                         {t("layoutDagre")}
@@ -2413,11 +1419,11 @@ export function OntologyEditPage() {
                     }}
                     className={`mt-1 flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors ${
                       layoutMode === "force"
-                        ? "bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]"
+                        ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]"
                         : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                     }`}
                   >
-                    <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:rgba(159,170,235,0.9)] opacity-80" />
+                    <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:var(--color-indigo-text-dot)] opacity-80" />
                     <span>
                       <span className="block text-[11px] font-[var(--font-weight-signature)]">
                         {t("layoutForce")}
@@ -2803,14 +1809,14 @@ export function OntologyEditPage() {
               // xl+ 는 우측 고정 인스펙터가 상시 선택 상세를 보여주므로 이
               // 모달은 그 아래 화면 폭에서만 뜬다 (동일 데이터, 중복 표면 방지).
               ephemeralSelected
-                ? "fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.56)] px-4 py-6 xl:hidden"
-                : "fixed inset-0 z-50 hidden items-center justify-center bg-[color:rgba(0,0,0,0.56)] px-4 py-6 md:flex xl:hidden"
+                ? "fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-scrim-a56)] px-4 py-6 xl:hidden"
+                : "fixed inset-0 z-50 hidden items-center justify-center bg-[color:var(--color-scrim-a56)] px-4 py-6 md:flex xl:hidden"
             }
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) setDetailsOpen(false);
             }}
           >
-            <div className="w-full max-w-[720px] overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.46)]">
+            <div className="w-full max-w-[720px] overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_var(--color-shadow-a46)]">
               <header className="flex items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
                 <div className="min-w-0">
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
@@ -2870,12 +1876,12 @@ export function OntologyEditPage() {
             role="dialog"
             aria-modal="true"
             aria-label={t("anchorDialogAriaLabel")}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.54)] px-4 py-6"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-scrim-a54)] px-4 py-6"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) setAnchorsOpen(false);
             }}
           >
-            <div className="w-full max-w-[680px] overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.46)]">
+            <div className="w-full max-w-[680px] overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_var(--color-shadow-a46)]">
               <header className="flex items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
@@ -2912,8 +1918,8 @@ export function OntologyEditPage() {
                       }}
                       className={
                         selectedId === anchor.id
-                          ? "rounded-lg border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.13)] px-3 py-2 text-left"
-                          : "rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-left transition-colors hover:border-[color:rgba(94,106,210,0.36)]"
+                          ? "rounded-lg border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-line-a13)] px-3 py-2 text-left"
+                          : "rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-left transition-colors hover:border-[color:var(--color-indigo-a36)]"
                       }
                     >
                       <span className="block truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -2952,7 +1958,7 @@ export function OntologyEditPage() {
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Link
               href={treeHref}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-3 text-[12px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)]"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a14)] px-3 text-[12px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)]"
             >
               {t("mobileTreeCta")}
             </Link>
@@ -2964,7 +1970,7 @@ export function OntologyEditPage() {
             </Link>
             <Link
               href="/ontology/insights/"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:rgba(73,190,146,0.28)] bg-[color:rgba(73,190,146,0.08)] px-3 text-[12px] text-[color:rgba(190,245,222,0.92)] transition-colors hover:border-[color:rgba(73,190,146,0.44)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-green-a28)] bg-[color:var(--color-green-a08)] px-3 text-[12px] text-[color:var(--color-green-text)] transition-colors hover:border-[color:var(--color-green-a44)] hover:text-[color:var(--color-text-primary)]"
             >
               <ShieldCheck size={13} aria-hidden />
               {t("mobileValidateCta")}

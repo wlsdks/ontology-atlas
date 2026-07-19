@@ -107,6 +107,78 @@
   --color-overlay-recessed: rgba(0, 0, 0, 0.16);
 
   /*
+   * 빌더 A4 — OntologyEditPage.tsx 분해 후 잔여 인라인 rgba(...) 토큰화.
+   * 위 A2 스케일에 없는 opacity/hue 만 추가한다 — 시각 결과 무변, 참조만
+   * CSS 변수로 치환. 새 값 대부분은 아래 라이트 모드 인디고 시프트가 아직
+   * 커버하지 않는 "알려진 gap"(위 A2 주석 참고)과 겹쳐 다크 값 그대로 쓴다.
+   */
+  --color-indigo-a07: rgba(94, 106, 210, 0.07);
+  --color-indigo-a13: rgba(94, 106, 210, 0.13);
+  --color-indigo-a20: rgba(94, 106, 210, 0.2);
+  --color-indigo-a24: rgba(94, 106, 210, 0.24);
+  --color-indigo-a30: rgba(94, 106, 210, 0.3);
+  --color-indigo-a34: rgba(94, 106, 210, 0.34);
+  --color-indigo-a52: rgba(94, 106, 210, 0.52);
+  --color-indigo-a60: rgba(94, 106, 210, 0.6);
+  /* pale indigo text — text-strong(0.95) 형제, 배치 보기 라디오 점 전용. */
+  --color-indigo-text-dot: rgba(159, 170, 235, 0.9);
+
+  /*
+   * 시안(mockup) `--indigo-line` 계열(139,151,255) — 위 A2 인디고 스케일
+   * (94,106,210) 과 다른 hue. 이 파일 하단 라이트 모드 pale-text 일괄 시프트
+   * 룰이 "의도적 제외" 로 문서화한 계열과 같은 톤이라 다크/라이트 동일 값
+   * 유지(오늘 렌더링과 무변).
+   */
+  --color-indigo-line-a06: rgba(139, 151, 255, 0.06);
+  --color-indigo-line-a13: rgba(139, 151, 255, 0.13);
+  --color-indigo-line-a14: rgba(139, 151, 255, 0.14);
+  --color-indigo-line-a15: rgba(139, 151, 255, 0.15);
+  --color-indigo-line-a20: rgba(139, 151, 255, 0.2);
+  --color-indigo-line-a22: rgba(139, 151, 255, 0.22);
+  --color-indigo-line-a32: rgba(139, 151, 255, 0.32);
+  --color-indigo-line-a42: rgba(139, 151, 255, 0.42);
+  --color-indigo-line-a54: rgba(139, 151, 255, 0.54);
+
+  --color-danger-a12: rgba(229, 72, 77, 0.12);
+  --color-danger-a42: rgba(229, 72, 77, 0.42);
+  --color-danger-text-strong: rgba(236, 116, 116, 0.95);
+
+  /* 저장 연결 상태(getBuilderSourceStatus) amber — 위 amber-muted(197,122,43)
+     / amber-signal(255,179,71) 과 다른 hue, "저장 연결 필요/복원 중" 전용. */
+  --color-amber-source-a07: rgba(244, 183, 49, 0.07);
+  --color-amber-source-a30: rgba(244, 183, 49, 0.3);
+
+  /* 모바일 fallback "검증 열기" pill — 인디고 단일 채색 원칙의 기존 예외
+     (green pill, A4 이전부터 존재). 오늘 렌더링 그대로 토큰화만 한다. */
+  --color-green-a08: rgba(73, 190, 146, 0.08);
+  --color-green-a28: rgba(73, 190, 146, 0.28);
+  --color-green-a44: rgba(73, 190, 146, 0.44);
+  --color-green-text: rgba(190, 245, 222, 0.92);
+
+  --color-overlay-a03: rgba(255, 255, 255, 0.03);
+
+  /* overlay-recessed(0.16) 형제 — 같은 "밝히는 대신 어둡히는" recessed
+     surface, 다른 opacity. */
+  --color-overlay-recessed-a12: rgba(0, 0, 0, 0.12);
+  --color-overlay-recessed-a14: rgba(0, 0, 0, 0.14);
+  --color-overlay-recessed-a20: rgba(0, 0, 0, 0.2);
+
+  /* 팝오버/다이얼로그 드롭 섀도 알파 — box-shadow 값 안에 삽입. */
+  --color-shadow-a22: rgba(0, 0, 0, 0.22);
+  --color-shadow-a42: rgba(0, 0, 0, 0.42);
+  --color-shadow-a46: rgba(0, 0, 0, 0.46);
+
+  /* 모달/시트 배경 scrim. */
+  --color-scrim-a54: rgba(0, 0, 0, 0.54);
+  --color-scrim-a56: rgba(0, 0, 0, 0.56);
+
+  /* 캔버스 좌상단 저장 개념 앵커 레일 — --color-panel(#0f1011 = 15,16,17)
+     위에 얹는 반투명 플로팅 표면. 다크/라이트 동일(캔버스 오버레이 칩은
+     테마 무관하게 짙게 유지 — Sigma 툴팁과 같은 원칙). */
+  --color-panel-overlay-a88: rgba(15, 16, 17, 0.88);
+  --color-panel-overlay-a94: rgba(15, 16, 17, 0.94);
+
+  /*
    * 라이트/다크 양쪽 호환 semantic tokens.
    * 다크 (default): rgba(255,255,255,*) — surface 위 밝은 톤 가장자리/오버레이.
    * 라이트 ([data-theme="light"]): rgba(0,0,0,*) — surface 위 어두운 톤 가장자리/오버레이.
@@ -244,6 +316,47 @@
     --color-amber-signal-a16: rgba(255, 179, 71, 0.16);
     --color-amber-signal-a60: rgba(255, 179, 71, 0.6);
     --color-overlay-recessed: rgba(0, 0, 0, 0.16);
+
+    /* 빌더 A4 알파 스케일 — 위 @theme 블록과 동일한 Tailwind v4 emit
+       회귀를 겪으므로 여기서도 다크 디폴트를 명시. */
+    --color-indigo-a07: rgba(94, 106, 210, 0.07);
+    --color-indigo-a13: rgba(94, 106, 210, 0.13);
+    --color-indigo-a20: rgba(94, 106, 210, 0.2);
+    --color-indigo-a24: rgba(94, 106, 210, 0.24);
+    --color-indigo-a30: rgba(94, 106, 210, 0.3);
+    --color-indigo-a34: rgba(94, 106, 210, 0.34);
+    --color-indigo-a52: rgba(94, 106, 210, 0.52);
+    --color-indigo-a60: rgba(94, 106, 210, 0.6);
+    --color-indigo-text-dot: rgba(159, 170, 235, 0.9);
+    --color-indigo-line-a06: rgba(139, 151, 255, 0.06);
+    --color-indigo-line-a13: rgba(139, 151, 255, 0.13);
+    --color-indigo-line-a14: rgba(139, 151, 255, 0.14);
+    --color-indigo-line-a15: rgba(139, 151, 255, 0.15);
+    --color-indigo-line-a20: rgba(139, 151, 255, 0.2);
+    --color-indigo-line-a22: rgba(139, 151, 255, 0.22);
+    --color-indigo-line-a32: rgba(139, 151, 255, 0.32);
+    --color-indigo-line-a42: rgba(139, 151, 255, 0.42);
+    --color-indigo-line-a54: rgba(139, 151, 255, 0.54);
+    --color-danger-a12: rgba(229, 72, 77, 0.12);
+    --color-danger-a42: rgba(229, 72, 77, 0.42);
+    --color-danger-text-strong: rgba(236, 116, 116, 0.95);
+    --color-amber-source-a07: rgba(244, 183, 49, 0.07);
+    --color-amber-source-a30: rgba(244, 183, 49, 0.3);
+    --color-green-a08: rgba(73, 190, 146, 0.08);
+    --color-green-a28: rgba(73, 190, 146, 0.28);
+    --color-green-a44: rgba(73, 190, 146, 0.44);
+    --color-green-text: rgba(190, 245, 222, 0.92);
+    --color-overlay-a03: rgba(255, 255, 255, 0.03);
+    --color-overlay-recessed-a12: rgba(0, 0, 0, 0.12);
+    --color-overlay-recessed-a14: rgba(0, 0, 0, 0.14);
+    --color-overlay-recessed-a20: rgba(0, 0, 0, 0.2);
+    --color-shadow-a22: rgba(0, 0, 0, 0.22);
+    --color-shadow-a42: rgba(0, 0, 0, 0.42);
+    --color-shadow-a46: rgba(0, 0, 0, 0.46);
+    --color-scrim-a54: rgba(0, 0, 0, 0.54);
+    --color-scrim-a56: rgba(0, 0, 0, 0.56);
+    --color-panel-overlay-a88: rgba(15, 16, 17, 0.88);
+    --color-panel-overlay-a94: rgba(15, 16, 17, 0.94);
 
     /* RATIO-SYSTEM §3 탭 패턴 — active 탭의 2px 인디고 underline 두께.
        page-level ratio 토큰 본체(--page-max 등)는 위 :root 블록이 단일 출처. */

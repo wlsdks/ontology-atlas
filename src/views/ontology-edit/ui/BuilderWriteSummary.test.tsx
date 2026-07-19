@@ -3,11 +3,9 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
-import {
-  BuilderWriteSummary,
-  formatBuilderDraftAgentPacket,
-  formatBuilderVerificationPacket,
-} from "./OntologyEditPage";
+import { BuilderWriteSummary } from "./BuilderWriteSummary";
+import { formatBuilderDraftAgentPacket } from "../lib/builder-draft-agent-packet";
+import { formatBuilderVerificationPacket } from "../lib/builder-verification-packet";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
