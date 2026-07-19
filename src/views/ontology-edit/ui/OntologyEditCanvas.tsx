@@ -665,6 +665,10 @@ export function OntologyEditCanvas({
         onSelectionChange={handleSelectionChange}
         onPaneClick={() => onSelectionChange?.(null)}
         onNodeClick={(_, node) => onNodeOpen?.(node.id)}
+        // 단일 클릭과 동일한 의도 — ReactFlow 는 더블클릭을 별도로 처리하지
+        // 않으므로 명시적으로 같은 핸들러를 연결해 "더블클릭도 상세를 연다"는
+        // 계약을 코드로 보장한다 (persona QA: 더블클릭 무반응 신고 방어).
+        onNodeDoubleClick={(_, node) => onNodeOpen?.(node.id)}
         onNodeDragStop={handleNodeDragStop}
         onEdgesDelete={(deleted) => {
           // 위 ephemeral edge 의 deletable: true / vault edge 의 deletable: false
