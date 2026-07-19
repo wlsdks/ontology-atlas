@@ -1,4 +1,4 @@
-import type { BuilderDraftPreview } from "../ui/OntologyEditPage";
+import type { BuilderDraftPreview } from "./builder-draft-agent-packet";
 
 /**
  * 하단 쓰기-확인 바의 상태 문구 선택 — dry-run 미리보기가 무엇을 보여줄지,

@@ -4,16 +4,16 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
+import { BuilderCanvasEntryRail } from "./BuilderCanvasEntryRail";
+import { BuilderCommandStrip } from "./BuilderCommandStrip";
+import { BuilderDetailsDraftCallout } from "./BuilderDetailsDraftCallout";
+import { BuilderReaderIntentStrip } from "./BuilderReaderIntentStrip";
 import {
-  BuilderCanvasEntryRail,
-  BuilderCommandStrip,
-  BuilderDetailsDraftCallout,
-  BuilderReaderIntentStrip,
   formatBuilderActiveFocusLabel,
   formatBuilderAnchorDegreeBadge,
-  resolveBuilderHeaderActionLabel,
-  resolveBuilderCommandStripState,
-} from "./OntologyEditPage";
+} from "../lib/format-builder-anchor-labels";
+import { resolveBuilderHeaderActionLabel } from "../lib/builder-header-action-label";
+import { resolveBuilderCommandStripState } from "../lib/builder-command-strip-state";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
@@ -239,7 +239,7 @@ describe("BuilderCommandStrip", () => {
     );
     expect(screen.getByRole("link", { name: /검증 열기/ }).className).toContain("h-8");
     expect(screen.getByRole("link", { name: /검증 열기/ }).className).toContain(
-      "rgba(94,106,210,0.10)",
+      "var(--color-indigo-a10)",
     );
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
