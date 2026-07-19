@@ -4,6 +4,10 @@
 >
 > Your AI coding agent forgets your codebase between sessions. Give it a
 > local, git-backed mental model it can read, query, and maintain through MCP.
+>
+> And agents now ship faster than humans can read. The same graph pays down
+> that cognitive debt — you keep understanding what is being built, and stay
+> the arbiter of what it means.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
