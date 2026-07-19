@@ -91,9 +91,9 @@ describe('i18n message catalog', () => {
     assert.match(ko.download.step1Body, /Intel Mac 은 x64 DMG/);
     // `modeBadge.*` retired with `OperationsNav`/`ModeBadge` (feat/rail-rollout
     // — the vault/demo chip that lived in the old top nav's right cluster has
-    // no rail-era replacement; `AppSettingsMenu`'s vault tab + the builder/
-    // ontologyView demo-mode copy below cover the same "install the macOS
-    // app" / "pick a local vault folder" guidance).
+    // no rail-era replacement; `AppSettingsMenu`'s vault tab + the builder
+    // demo-mode copy below cover the same "install the macOS app" / "pick a
+    // local vault folder" guidance).
     assert.doesNotMatch(en.ontologyPages.edit.page.toastDemoModeDownload, /\/docs|open a markdown folder/i);
     assert.doesNotMatch(en.ontologyPages.edit.page.toastVaultEdgeDemoDownload, /\/docs|open a vault folder/i);
     assert.match(en.ontologyPages.edit.page.toastDemoModeDownload, /install the macOS app/i);
@@ -110,13 +110,8 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(ko.ontologyPages.edit.onboarding.stepConnectBody, /자동 저장/);
     assert.match(ko.ontologyPages.edit.onboarding.stepConnectBody, /미리보기와 사전 점검/);
     assert.match(ko.ontologyPages.edit.onboarding.stepConnectBody, /관계 종류를 고른 뒤 저장/);
-    assert.match(en.ontologyView.getStarted.stepStaticVaultDescDownload, /hosted browser is read-only/i);
-    assert.match(en.ontologyView.getStarted.stepStaticVaultDescDownload, /install the macOS app/i);
-    assert.match(en.ontologyView.getStarted.stepStaticVaultDescPicker, /local vault folder/i);
-    assert.match(en.ontologyView.getStarted.ctaVaultOpenDownload, /Download macOS app/i);
     assert.match(en.topology.empty.bodyNoProjectsDownload, /Install the macOS app/i);
     assert.match(en.topology.empty.ctaOpenVaultDownload, /Download macOS app/i);
-    assert.match(ko.ontologyView.getStarted.stepStaticVaultDescDownload, /macOS 앱/);
     assert.match(ko.topology.empty.ctaOpenVaultDownload, /macOS 앱 다운로드/);
   });
 
@@ -412,16 +407,6 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(commands.scaffoldTopology, /Topology|토폴로지/);
   });
 
-  it('keeps Korean ontology concept link copy states explicit', async () => {
-    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
-    const copyLink = ko.ontologyView.copyLink;
-
-    assert.equal(copyLink.ariaCopy, '개념 링크 복사');
-    assert.equal(copyLink.ariaCopied, '개념 링크 복사됨');
-    assert.equal(copyLink.badge, '복사됨');
-    assert.notEqual(copyLink.ariaCopy, copyLink.badge);
-  });
-
   it('keeps Korean builder relation write confirmation readable before graph writes', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const relationConfirm = ko.ontologyPages.edit.page.relationConfirm;
@@ -612,11 +597,6 @@ describe('i18n message catalog', () => {
   it('keeps Korean empty ontology start state concrete and low-jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const startCopy = [
-      ko.ontologyView.emptyHint,
-      ko.ontologyView.getStarted.headingLocal,
-      ko.ontologyView.getStarted.headingDefault,
-      ko.ontologyView.getStarted.bodyLocal,
-      ko.ontologyView.getStarted.bodyDefault,
       ko.featuresMisc.starterCta.emptyAriaLabel,
       ko.featuresMisc.starterCta.emptyTitle,
       ko.featuresMisc.starterCta.emptyBodyLine1,
@@ -646,9 +626,6 @@ describe('i18n message catalog', () => {
       ko.featuresMisc.starterCta.secondaryLabel,
     ].join('\n');
 
-    assert.match(ko.ontologyView.emptyHint, /kind 가 있는 \.md/);
-    assert.match(ko.ontologyView.getStarted.bodyLocal, /활성 문서함/);
-    assert.match(ko.ontologyView.getStarted.bodyDefault, /로컬 문서함/);
     assert.equal(ko.featuresMisc.starterCta.emptyAriaLabel, '온톨로지 시작 시드');
     assert.equal(ko.featuresMisc.starterCta.proofLocalLabel, '로컬');
     assert.equal(ko.featuresMisc.starterCta.proofGraphLabel, '그래프 근거');
