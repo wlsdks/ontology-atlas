@@ -1535,7 +1535,7 @@
       "domainCapacityTitle": "Domain capacity",
       "noDomains": "No domain nodes yet.",
       "kindGlyphCaption": "Glyphs match the map's node shapes exactly — panel and canvas share one world.",
-      "domainCapacityCaption": "Capacity = capability + element count derived from the containment graph. Indigo = largest domain.",
+      "domainCapacityCaption": "Capacity = capability + element count derived from the containment graph. Bar segments: capability (amber) · element (sage).",
       "relationTypesTitle": "Relation types",
       "topDependsOnTitle": "Leans on the most",
       "noDependsOn": "No depends_on relations yet.",
@@ -1571,7 +1571,9 @@
       "older": "Older",
       "recentUpdatesTitle": "Recent updates",
       "noRecentUpdates": "No known update dates yet.",
-      "staleCountLabel": "Not updated in 90+ days"
+      "staleCountLabel": "Not updated in 90+ days",
+      "trendTitle": "Weekly trend",
+      "trendCaption": "Total updates per week, summed across every domain — same {weeks}w window as the heatstrip."
     }
   },
   "projectPages": {
