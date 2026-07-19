@@ -33,7 +33,11 @@ export function TabBar({
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className="flex gap-7 border-b border-[color:var(--color-divider)]"
+      // overflow-x-auto — 좁은 폰(<=360px)에서 3-tab(개요·관계·신선도) 라벨+
+      // 카운트 합이 뷰포트를 근소하게 넘을 수 있다. 탭을 줄바꿈하면 언더라인
+      // 탭바 자체 정체성이 깨지므로 AppSettingsMenu 의 tablist 와 같은
+      // 패턴(내부 가로 스크롤)으로 페이지 레벨 overflow 를 막는다.
+      className="flex gap-7 overflow-x-auto border-b border-[color:var(--color-divider)]"
     >
       {items.map((item) => {
         const active = item.key === activeKey;

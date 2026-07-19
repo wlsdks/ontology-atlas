@@ -156,7 +156,7 @@ export function ProjectSelectorPage() {
                   }`}
                 >
                   <TopologyV2KindGlyph kind={row.kind} size={14} />
-                  <span className="font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
+                  <span className="min-w-0 shrink truncate font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
                     {row.slug}
                   </span>
                   {row.what ? (
