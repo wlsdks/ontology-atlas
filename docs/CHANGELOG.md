@@ -6,6 +6,36 @@
 
 ---
 
+## 2026-07-19 — 에이전트 활동 가시화 — 지도 위 앰버 포커스 링 (agent-visibility)
+
+`LiveActivityIndicator`(레일 하단 점)만으로는 "에이전트가 지금 어느 노드를
+만지고 있는지" 를 지도 위에서 볼 수 없었다 — agent-native 정체성의 핵심
+약속(사람과 에이전트가 같은 지도를 본다)이 지도 자체에는 아직 없었다.
+
+- **에이전트 focus 노드 링** — heartbeat 의 `focus.ontologySlug` 가 가리키는
+  노드에 정적 앰버 헤어라인 링(1px, r+8 — 허브 링과 같은 `amberHub` 신호톤,
+  glow 없음)과 라벨 옆 소형 activity 마크를 그린다
+  (`render/node-shapes.ts#agentFocus`, `render/labels.ts#drawActivityMark`).
+  heartbeat 가 fresh 할 때만(`hasFreshHeartbeat` 와 동일 기준) — 실데이터
+  없으면 아무것도 그리지 않는다. 슬러그→노드 id 해석은 `/ontology` 딥링크가
+  이미 쓰던 `translateOntologyDeeplinkToTopologyParam` +
+  `resolveTopologySelectedOntologyNode` 를 그대로 재사용
+  (`views/home/lib/resolve-agent-focus-node.ts`) — 새 매핑 로직 0.
+- **변경 감지 배너** — vault manifest 갱신으로 touched-node 수가 늘어나면
+  지도 상단 중앙에 "N개 개념이 갱신됨 — 반영됨" 칩이 4초 떠 있다 자동
+  소멸(`views/home/ui/TopologyChangeAnnouncement.tsx`). 상시 노출되는
+  `TopologyReviewLink`("Self-Drawing Diff #5" — 미리뷰 누적 카운트)와는
+  다른 순간을 담당 — 이 칩은 "방금 반영됐다" 는 일회성 확인이고, 리뷰 링크는
+  "아직 볼 게 N개 남았다" 는 상시 CTA. 같은 `changedSlugs` 카운트를 재사용,
+  새 스토어 없음.
+- **레일 에이전트 타일 title 강화** — `AppNavRail` 의 에이전트 상태 타일
+  hover title 에 "마지막 활동: {슬러그} · {시간}" 를 덧붙인다. `formatActivityAge`
+  를 `LiveActivityIndicator` 에서 `features/vault-ontology/lib/` 로 끌어내려
+  두 표면이 같은 시간 포맷을 공유.
+- `translateOntologyDeeplinkToTopologyParam` 을 `views/ontology-redirect` 에서
+  `entities/knowledge-graph` 로 이동 — `views/home` 도 같은 함수가 필요해졌고
+  FSD 가 view→view import 를 막기 때문(둘 다 entities 는 참조 가능).
+
 ## 2026-07-19 — "분석 보기" 은퇴 — overview 패널 내용 3곳으로 이관 (analysis-retire)
 
 `TopologyAnalysisBar`(3049줄) 의 overview 모드 전용 콘텐츠 — 색 원형 리더

@@ -13,6 +13,7 @@ import {
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { formatActivityAge } from "../lib/format-activity-age";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
 type LiveAgentActivityState =
@@ -560,17 +561,6 @@ function visibleAgentReviewTarget(
     return { kind: "source", label: `source · ${suffix}` };
   }
   return null;
-}
-
-function formatActivityAge(ageMs: number): string {
-  const safeAge = Math.max(0, ageMs);
-  const seconds = Math.floor(safeAge / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 48) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
 }
 
 function formatLiveAgentRefreshRequestPacket({

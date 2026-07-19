@@ -103,6 +103,7 @@ import {
   resolveTopologyRenderState,
 } from "../lib/topology-render-state";
 import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-selected-node";
+import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
@@ -140,6 +141,7 @@ import {
 import { TopologyPathChip } from "./TopologyPathChip";
 import { TopologyRelationLegend } from "./TopologyRelationLegend";
 import { TopologyReviewLink } from "./TopologyReviewLink";
+import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";
 
@@ -398,6 +400,23 @@ export function HomePage() {
         : null,
     [selectedOntologyNode, vault.manifest],
   );
+  // W6 agent visibility — "the agent's last-touched node, shown on the map
+  // itself" (the product's own agent-native identity, not just a rail dot).
+  // Only while the heartbeat is FRESH (same `hasFreshHeartbeat` bar the rail
+  // dot/popover already use) — a stale heartbeat's stale focus would mislead
+  // more than help. Real heartbeat data only: no slug, no match, or no fresh
+  // heartbeat all resolve to `null`, which draws nothing extra on the map.
+  const agentActivityStatus = vault.agentActivityStatus;
+  const hasFreshAgentHeartbeat = Boolean(
+    agentActivityStatus?.heartbeat && agentActivityStatus.valid && !agentActivityStatus.stale,
+  );
+  const agentFocusNodeId = useMemo(() => {
+    if (!hasFreshAgentHeartbeat) return null;
+    return resolveAgentFocusNodeId(
+      agentActivityStatus?.heartbeat?.focus.ontologySlug ?? null,
+      ontologyInsight?.nodes,
+    );
+  }, [hasFreshAgentHeartbeat, agentActivityStatus, ontologyInsight]);
   // S2 — 토폴로지에서 새 노드를 직접 생성. writable 로컬 vault 일 때만.
   const [createNodeOpen, setCreateNodeOpen] = useState(false);
   const createNodeToggleRef = useRef<HTMLButtonElement | null>(null);
@@ -2213,6 +2232,13 @@ export function HomePage() {
                     onGraphStatsChange={handleTopologyGraphStatsChange}
                     onContextMenuNode={handleContextMenuNode}
                     minimal={localGraphRoot !== null}
+                    agentFocusNodeId={agentFocusNodeId}
+                  />
+                ) : null}
+                {topologyRenderState.renderCanvas ? (
+                  <TopologyChangeAnnouncement
+                    touchedCount={changedSlugs.size}
+                    message={(count) => t('controls.changeAnnouncement', { count })}
                   />
                 ) : null}
               </div>
