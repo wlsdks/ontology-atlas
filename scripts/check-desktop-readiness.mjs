@@ -8,6 +8,23 @@ function readText(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), "utf8");
 }
 
+// scripts/verify-macos-app-launch.mjs was decomposed (refactor: cohesive-seam
+// module split) into a thin orchestrator plus scripts/lib/verify-macos/*.mjs
+// helper modules. The content-based `.includes(...)` gates below still check
+// the combined "verify app launch" surface, so read the orchestrator plus
+// every extracted module and concatenate them for those checks.
+function readVerifyMacosAppLaunchScript() {
+  const entry = readText("scripts/verify-macos-app-launch.mjs");
+  const libDir = path.join(root, "scripts/lib/verify-macos");
+  const libFiles = fs.existsSync(libDir)
+    ? fs.readdirSync(libDir).filter((name) => name.endsWith(".mjs")).sort()
+    : [];
+  const libText = libFiles
+    .map((name) => readText(path.join("scripts/lib/verify-macos", name)))
+    .join("\n");
+  return `${entry}\n${libText}`;
+}
+
 function fail(message) {
   console.error(`[desktop-check] ${message}`);
   process.exitCode = 1;
@@ -63,7 +80,7 @@ const cleanTauriMacosAppsScript = readText("scripts/clean-tauri-macos-apps.mjs")
 const bundleCheckScript = readText("scripts/check-bundle.mjs");
 const desktopPerformanceScript = readText("scripts/check-desktop-performance.mjs");
 const verifyDmgScript = readText("scripts/verify-macos-dmg.mjs");
-const verifyAppScript = readText("scripts/verify-macos-app-launch.mjs");
+const verifyAppScript = readVerifyMacosAppLaunchScript();
 const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
 const deployMacosAppLocalScript = readText("scripts/deploy-macos-app-local.mjs");
 const codexBuildRunScript = readText("script/build_and_run.sh");
