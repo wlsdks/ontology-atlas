@@ -932,6 +932,16 @@
        금속 표면을 만든다. far-field(farT>=0.98)/소형(r<=3) 에서는 dissolve. */
     --topology-v2-node-sheen-tint: #232329;
     --topology-v2-node-sheen-blend: 0.6;
+    /* builder-core (feat/builder-core, docs/prototypes/builder-v2-0{2,3}.html):
+       the ONE DOM surface that draws a real topology-v2 node as an HTML card
+       (`AtlasNode`, the `/ontology/edit` builder canvas) instead of canvas-2D
+       draw calls. It borrows this section's kind fill/stroke tokens for its
+       glyph and needs one extra: a hairline top-inset highlight ("machined
+       edge") the canvas-2D sheen has no DOM equivalent for. Dark-only, same
+       precedent as `--topology-v2-node-sheen-*` above — a Design Guardian
+       light-mode pass can add an override later if the near-invisible result
+       on a light card needs a deliberate value. */
+    --topology-v2-builder-node-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     /* canvas-emphasis 슬라이스 (소유자: "중앙(프로젝트 노드)이 뭔가 다르게
        빛나야") — 발광 대신 재질(design.md "발광 대신 재질"). 프로젝트 헥사곤
        전용 이중 헤어라인 + 핀틱 색. 외곽 스트로크 자체는 --topology-v2-amber-hub

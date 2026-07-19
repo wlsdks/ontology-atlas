@@ -111,7 +111,7 @@ describe("buildVaultGraphFlow", () => {
     expect(result.edges).toEqual([]);
   });
 
-  it("노드 카드 라벨은 트레일링 괄호 메타 strip (fullTitle 은 원본 유지)", () => {
+  it("노드 카드 라벨은 트레일링 괄호 메타 strip (fullTitle 은 원본 유지, kind 는 AtlasNode 가 별도 mono 줄로 그려서 label 에 안 섞인다)", () => {
     const result = buildVaultGraphFlow(
       makeManifest([
         makeDoc({
@@ -132,11 +132,11 @@ describe("buildVaultGraphFlow", () => {
     );
     const cli = result.nodes.find((n) => n.id === "capabilities/cli");
     const plain = result.nodes.find((n) => n.id === "capabilities/no-parens");
-    expect(cli?.data.label).toBe("역량 · CLI Developer Entry");
+    expect(cli?.data.label).toBe("CLI Developer Entry");
     expect(cli?.data.fullTitle).toBe(
       "CLI Developer Entry (16 commands incl. bootstrap)",
     );
-    expect(plain?.data.label).toBe("역량 · Plain Title");
+    expect(plain?.data.label).toBe("Plain Title");
   });
 
   it("노드 data 에 domainSlug 가 들어간다 (capability/element=frontmatter.domain, domain=자기 tail)", () => {

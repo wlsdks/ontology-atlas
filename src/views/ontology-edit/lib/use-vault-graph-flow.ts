@@ -183,6 +183,10 @@ export function buildVaultGraphFlow(
   const layoutMode = options?.layoutMode ?? "dagre";
   const resolveKindLabel = options?.kindLabelOf ?? ((kind: string) => kind);
   const resolveEdgeLabel = options?.edgeLabelOf ?? ((key: string) => key);
+  // builder-core: AtlasNode 가 이제 kind 를 글리프 + raw mono 줄로 직접
+  // 그려서, 노드 label 조립에 더 이상 kindLabelOf 를 안 쓴다(위 resolveEdgeLabel
+  // 과 같은 이유/패턴 — 옵션 시그니처는 다른 향후 소비자를 위해 보존).
+  void resolveKindLabel;
   const ontologyDocs = manifest.docs.filter(
     (doc) => typeof doc.frontmatter.kind === "string" && doc.frontmatter.kind,
   );
@@ -278,6 +282,13 @@ export function buildVaultGraphFlow(
     const title = doc.title || doc.slug;
     // 카드 라벨은 짧게 (트레일링 괄호 strip), inspector / hover tooltip 은
     // 원본 title 그대로 (description 으로 노출).
+    //
+    // builder-core (feat/builder-core) 이전엔 이 label 자체가
+    // "역량 · 제목" 처럼 kind 를 문자열로 이어붙인 한 줄이었다. 새 AtlasNode
+    // 카드는 kind 를 글리프 + 별도 mono 줄로 그리므로, label 은 순수 제목만
+    // 담아야 두 줄(제목 13px / kind 9px mono)이 겹치지 않는다. 그래서 이제
+    // kindLabelOf 는 이 조립에 안 쓴다 — 시그니처/옵션은 다른 소비자를 위해
+    // 그대로 보존.
     const labelTitle = stripTrailingParenthetical(title);
     const description =
       typeof doc.frontmatter.description === "string"
@@ -292,7 +303,7 @@ export function buildVaultGraphFlow(
       type: "atlas",
       position: pos,
       data: {
-        label: `${resolveKindLabel(kind)} · ${labelTitle}`,
+        label: labelTitle,
         // 원본 title — inspector / tooltip 이 짧은 라벨 아닌 풀 텍스트 필요할 때.
         fullTitle: title,
         kind,
@@ -332,8 +343,10 @@ export function buildVaultGraphFlow(
     const sourceNode = nodes.find((node) => node.id === rec.source);
     const targetNode = nodes.find((node) => node.id === rec.target);
     const isContainment = rec.semanticType === "containment";
-    const isDirectional =
-      isContainment || rec.key === "dependencies";
+    // builder-core trace 계약(docs/prototypes/builder-v2-0{2,3}.html): 화살표는
+    // depends 계열에만 — contains 는 위계선일 뿐 "당김/의존" 방향성을 표시할
+    // 필요가 없다(이전엔 containment 도 화살표를 그렸다).
+    const isDirectional = rec.key === "dependencies";
     const stroke = edgeStrokeStyleByKey(rec.key);
     return {
       id,
@@ -492,36 +505,38 @@ function computeForceLayout(
   return map;
 }
 
+/**
+ * trace 문법 (builder-core, docs/prototypes/builder-v2-0{2,3}.html 범례
+ * "contains ─ · depends ╌ · evidence ┄" 1:1): 실선 = 포함 계층, 파선 =
+ * 의존/느슨한 연관 (인디고 잉크), 점선 = 근거. 색은 두 톤뿐 —
+ * `--topology-v2-edge-contains-mark` (중립, INDEX/데이터시트 범례와 동일
+ * 토큰) 와 `--topology-v2-indigo-bright` (인디고 — depends 와 evidence 가
+ * 공유, dash 패턴으로만 구분). 화살표는 caller(`buildVaultGraphFlow`)가
+ * `dependencies` 키에만 붙인다.
+ */
 function edgeStrokeStyleByKey(key: string): CSSProperties {
-  // n8n 스타일 — 굵은 indigo cable 이 골격. solid 선 + 화살표 marker (caller).
   if (
     key === "contains" ||
     key === "capabilities" ||
     key === "elements" ||
     key === "domains"
   ) {
-    return { stroke: "rgba(139, 151, 255, 0.85)", strokeWidth: 1.9 };
+    return { stroke: "var(--topology-v2-edge-contains-mark)", strokeWidth: 1.6 };
   }
-  // Dependencies — 방향성 있는 의존, dashed indigo + 화살표 marker (caller).
-  if (key === "dependencies") {
+  // dependencies / relates — 둘 다 "파선 인디고 잉크"(spec §3). 방향성 화살표
+  // 유무만 다르고(caller 가 dependencies 에만 marker 부여), 선 자체 스타일은 동일.
+  if (key === "dependencies" || key === "relates") {
     return {
-      stroke: "rgba(139, 151, 255, 0.62)",
-      strokeWidth: 1.45,
+      stroke: "var(--topology-v2-indigo-bright)",
+      strokeWidth: 1.4,
       strokeDasharray: "6 4",
     };
   }
-  // relates / describes — 양방향 overlay, marker 없음. 골격을 가리지 않으면서
-  // *읽힐 만큼* 가시 (이전 0.18 회귀 후 0.5 로).
-  if (key === "describes") {
-    return {
-      stroke: "rgba(180, 188, 220, 0.5)",
-      strokeWidth: 1.1,
-      strokeDasharray: "2 3",
-    };
-  }
+  // describes — 근거(evidence) 관계, 점선. depends 와 같은 잉크색을 촘촘한
+  // dot 패턴으로 눌러 "가장 옅은 신호"로 읽히게 한다.
   return {
-    stroke: "rgba(180, 188, 220, 0.5)",
-    strokeWidth: 1.1,
-    strokeDasharray: "4 4",
+    stroke: "var(--topology-v2-indigo-bright)",
+    strokeWidth: 1.2,
+    strokeDasharray: "1.4 3.2",
   };
 }
