@@ -1652,8 +1652,8 @@ describe('package contract helpers', () => {
     assert.match(agentSetupRow, /`docs\.modeComparison`/);
     assert.match(agentSetupRow, /`docs\.postChangeSync`/);
     assert.match(agentSetupRow, /CLI-only \/ MCP-connected \/ graph DB pack \/ setup gate choices/);
-    assert.match(tableRow, /24-tool inventory with missing\/extra\/duplicate\/invalid name checks/);
-    assert.match(tableRow, /24-tool inventory with missing\/extra\/duplicate\/invalid name checks plus tools\/list schema strictness and annotation coverage/);
+    assert.match(tableRow, /25-tool inventory with missing\/extra\/duplicate\/invalid name checks/);
+    assert.match(tableRow, /25-tool inventory with missing\/extra\/duplicate\/invalid name checks plus tools\/list schema strictness and annotation coverage/);
     assert.match(tableRow, /relation filter \/ `relation_check` closest-value rejection/);
     assert.match(tableRow, /destructive dry-run smoke for `rename_concept` \/ `merge_concepts` \/ `delete_concept`/);
     assert.match(tableRow, /write-tool `postWriteMaintenance` `byPhase`\/`bySeverity`\/`byKind` buckets \+ `score`\/`proposedAction`\/next-action guidance/);
@@ -2398,7 +2398,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`allowedValues` 는\s+일부 대표값이 아니라 해당 입력의 전체 enum 순서와 정확히 일치/);
     assert.match(doc, /설치 verify 의 strict unknown-tool \/ multi-argument smoke 도 전체 `allowedTools` \/ `allowedArguments` 를\s+정확히 비교/);
     assert.match(doc, /JSON-RPC integration test 도 unknown tool 의 전체 `allowedTools` 와 invalid enum \/ filter repair 의\s+전체 `allowedValues` 를 직접 비교/);
-    assert.match(doc, /dogfood fixture 도 strict enum \/ unknown-tool repair summary 에 전체 operation enum 과 24-tool inventory 를 사용/);
+    assert.match(doc, /dogfood fixture 도 strict enum \/ unknown-tool repair summary 에 전체 operation enum 과 25-tool inventory 를 사용/);
     assert.match(doc, /`concepts\[n\] duplicate slug in input batch; first seen at concepts\[m\]`/);
     assert.match(doc, /strict relation filter \/ `relation_check` row/);
     assert.match(doc, /`dependencyTypes items depend_on->depends_on; allowed 9`/);
@@ -2452,7 +2452,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`rename_concept` \/ `merge_concepts` \/ `delete_concept` 도 destructive writer\s+dry-run\/confirm `outputSchema`/);
     assert.match(doc, /`validate_vault` 도 `outputSchema` 와 동일한 `structuredContent` health payload/);
     assert.match(doc, /issue-code enum\/key set/);
-    assert.match(doc, /16 read \/ 8 write split/);
+    assert.match(doc, /16 read \/ 9 write split/);
     assert.match(doc, /annotation drift/);
     assert.match(doc, /`query_ontology` tool 설명과\s+`afterActionId` schema description 도 `maintenance_plan` cursor 의 `nextAfterActionId` \/\s+`hasMore` pagination metadata 를 안내/);
     assert.match(doc, /MCP `initialize\.instructions` 의 `query_ontology\.operation`\s+안내와 `query_plan\.targetOperation` 안내도 같은 allow-list 에서 생성/);
