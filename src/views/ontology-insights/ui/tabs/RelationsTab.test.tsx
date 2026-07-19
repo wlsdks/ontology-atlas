@@ -37,6 +37,11 @@ const labels: RelationsTabLabels = {
   repairQueueOpenOntology: "Concept doc",
 };
 
+const hubLink = {
+  href: (nodeId: string) => `/ontology/?node=${encodeURIComponent(nodeId)}`,
+  ariaLabel: (title: string) => `${title} — view on the map`,
+};
+
 const emptyHealthQueue = {
   staleCount: 0,
   orphanCount: 0,
@@ -59,6 +64,7 @@ describe("RelationsTab", () => {
         kindLabel={(kind) => kind}
         agentReadiness={{ ready: 82, preflight: 4, review: 2 }}
         healthQueue={emptyHealthQueue}
+        hubLink={hubLink}
         labels={labels}
       />,
     );
@@ -89,6 +95,7 @@ describe("RelationsTab", () => {
         kindLabel={(kind) => kind}
         agentReadiness={{ ready: 0, preflight: 0, review: 0 }}
         healthQueue={emptyHealthQueue}
+        hubLink={hubLink}
         labels={labels}
       />,
     );
@@ -108,6 +115,7 @@ describe("RelationsTab", () => {
         kindLabel={(kind) => kind}
         agentReadiness={{ ready: 0, preflight: 0, review: 0 }}
         healthQueue={emptyHealthQueue}
+        hubLink={hubLink}
         labels={labels}
       />,
     );
@@ -129,6 +137,7 @@ describe("RelationsTab", () => {
         hubTotalCount={0}
         kindLabel={(kind) => kind}
         agentReadiness={{ ready: 0, preflight: 0, review: 0 }}
+        hubLink={hubLink}
         healthQueue={{
           staleCount: 2,
           orphanCount: 1,
@@ -148,5 +157,35 @@ describe("RelationsTab", () => {
       "href",
       "/ontology/edit/?node=capability%3Afoo",
     );
+  });
+
+  it("renders each hub row as a map-focus deeplink (UX 부대 — 허브 행 비클릭 해소)", () => {
+    render(
+      <RelationsTab
+        edgeTypeRows={[]}
+        totalEdges={0}
+        edgeTypeLabel={(type) => type}
+        dependsOnRows={[]}
+        hubs={[
+          {
+            id: "domain:auth",
+            title: "Auth",
+            kind: "domain",
+            degree: 12,
+            thumbnail: { degree: 12, spokes: [] },
+          },
+        ]}
+        hubTotalCount={1}
+        kindLabel={(kind) => kind}
+        agentReadiness={{ ready: 0, preflight: 0, review: 0 }}
+        hubLink={hubLink}
+        healthQueue={emptyHealthQueue}
+        labels={labels}
+      />,
+    );
+
+    const link = screen.getByTestId("insights-hub-row-link");
+    expect(link).toHaveAttribute("href", "/ontology/?node=domain%3Aauth");
+    expect(link).toHaveAttribute("aria-label", "Auth — view on the map");
   });
 });

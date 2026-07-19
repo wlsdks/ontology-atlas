@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T07:58:15.990Z",
+  "generatedAt": "2026-07-19T08:11:16.784Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-19 — UX 부대 1차 — 인사이트 허브 딥링크·신선도 시간축·평문 카피 (ux-wave-1)",
+          "slug": "2026-07-19-ux-부대-1차-인사이트-허브-딥링크신선도-시간축평문-카피-ux-wave-1"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-19 — 빌더 엣지 2차 — 커스텀 접선 곡률·관계선 호 라우팅 (builder-edges-2)",
           "slug": "2026-07-19-빌더-엣지-2차-커스텀-접선-곡률관계선-호-라우팅-builder-edges-2"
         },
@@ -3906,9 +3911,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 1차 개편 후에도 곡선이 뻣뻣하고 세로로 쌓인 도메인 사이를 관계선이 직선으로 관통해 보였다. 원인은 (1) xyflow getBezierPath 가 마주",
-      "wordCount": 21645,
-      "updatedAt": "2026-07-19T07:58:05.484Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. haiku UX 부대(8명)가 모든 LNB 탭을 처음 사용자 관점으로 실조작한 조사에서 교차 검증으로 살아남은 항목의 1차 수정. 오탐(문서함 탭/버튼 이",
+      "wordCount": 21800,
+      "updatedAt": "2026-07-19T08:11:09.147Z",
       "linksOut": [
         "slug"
       ]

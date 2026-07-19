@@ -224,6 +224,8 @@ export function OntologyInsightsPage() {
     unknownDate: t("unknownDate"),
     daysAgo: formatDaysAgo,
     older: t("older"),
+    axisStart: t("axisStart", { weeks: FRESHNESS_WINDOW_WEEKS }),
+    axisEnd: t("axisEnd"),
     recentUpdatesTitle: t("recentUpdatesTitle"),
     noRecentUpdates: t("noRecentUpdates"),
     staleCountLabel: t("staleCountLabel"),
@@ -334,6 +336,10 @@ export function OntologyInsightsPage() {
                 kindLabel={kindLabel}
                 agentReadiness={agentReadiness}
                 healthQueue={healthQueue}
+                hubLink={{
+                  href: buildOntologyNodeHref,
+                  ariaLabel: (title) => t("hubRowAriaLabel", { title }),
+                }}
                 labels={relationsLabels}
               />
             ) : null}
