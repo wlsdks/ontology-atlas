@@ -54,13 +54,15 @@ test.describe("local ontology workspace browser gate", () => {
     await expect(
       page.getByRole("banner").getByText(/documents/),
     ).toBeVisible();
+    // docs-chrome-round 슬라이스 A 계약: 데스크톱(lg+)에서 문서 목록은 기본
+    // 펼침, 헤더 PanelLeft 타일로 0px 접기/펼치기 왕복 (localStorage persist).
+    await expect(page.getByRole("navigation", { name: "Document list" }))
+      .toBeVisible();
+    await page.getByRole("button", { name: "Collapse document list" }).click();
     await expect(
       page.getByRole("navigation", { name: "Document list" }),
     ).toBeHidden();
-    await expect(
-      page.getByRole("button", { name: "Open document list" }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: "Open document list" }).click();
+    await page.getByRole("button", { name: "Expand document list" }).click();
     await expect(page.getByRole("navigation", { name: "Document list" }))
       .toBeVisible();
     await expect(
@@ -68,8 +70,14 @@ test.describe("local ontology workspace browser gate", () => {
     ).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Agent Graph Workflow" }))
       .toBeVisible();
-    await expect(page.getByRole("link", { name: "Open topology graph" }))
-      .toHaveAttribute("href", "/en/topology/");
+    // 그래프 둘러보기 링크는 이제 문서함 점검 모달 안에 있다 (슬라이스 A —
+    // 상시 밴드 → 중앙 모달, 항상 닫힌 채 시작).
+    await page.getByRole("button", { name: "Show workspace checks" }).click();
+    await expect(
+      page.getByRole("dialog").getByRole("link", { name: "Browse" }),
+    ).toHaveAttribute("href", /\/en\/(ontology|topology)\/?/);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
   });
 
   test("source status stays tucked away and avoids numbered flow labels", async ({

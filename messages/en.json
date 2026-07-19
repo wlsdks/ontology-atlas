@@ -1749,7 +1749,12 @@
       "vaultPillFolders": "{count} folders",
       "vaultPillSwap": "Switch vault",
       "vaultPillSwapAriaLabel": "Switch vault source",
-      "censusSummary": "{concepts} concepts · {relations} relations"
+      "censusSummary": "{concepts} concepts · {relations} relations",
+      "docListCollapse": "Collapse document list",
+      "docListExpand": "Expand document list"
+    },
+    "vaultChip": {
+      "menuAriaLabel": "Workspace info menu"
     },
     "editorHeader": {
       "previewTab": "Preview",
@@ -1845,7 +1850,9 @@
       "agentCopyGate": "Copy graph check",
       "agentCopyGateAriaLabel": "Copy the workspace graph check",
       "agentCopyGateSuccess": "Workspace graph check copied.",
-      "copyFailed": "Copy failed"
+      "copyFailed": "Copy failed",
+      "modalSubtitle": "See this vault's files, graph, and AI check gate at a glance",
+      "closeTitle": "Close (Esc)"
     },
     "advanced": {
       "viewTopology": "Topology",

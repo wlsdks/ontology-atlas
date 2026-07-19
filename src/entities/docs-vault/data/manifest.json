@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T09:51:00.648Z",
+  "generatedAt": "2026-07-19T12:07:11.312Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-19 — 문서함 크롬 재구성 슬라이스 A — 헤더 3존·목록 완전 접힘·점검 중앙 모달 (docs-chrome-round)",
+          "slug": "2026-07-19-문서함-크롬-재구성-슬라이스-a-헤더-3존목록-완전-접힘점검-중앙-모달-docs-chrome-round"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-19 — 라이트 모드 전면 폐기 (dark-only)",
           "slug": "2026-07-19-라이트-모드-전면-폐기-dark-only"
         },
@@ -3931,9 +3936,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 전략 결정: 앱은 다크 단일이 된다. 관리 부담 대비 사용 신호가 낮았던 라이트 테마를 코드/토큰/설정 UI에서 전부 걷어낸다 — 다크 렌더 결과는",
-      "wordCount": 22672,
-      "updatedAt": "2026-07-19T09:45:19.049Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. .qa-scratch/docs-chrome-round/design-prescription.md 확정 처방 반영. 2차 시안이 방향은 옳았지만 잔여 중복 3",
+      "wordCount": 22992,
+      "updatedAt": "2026-07-19T12:02:29.878Z",
       "linksOut": [
         "slug"
       ]

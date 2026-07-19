@@ -7,6 +7,13 @@
  *
  * 본 모듈은 순수 함수 + window 가드. `typeof window === 'undefined'` 체크로
  * SSR / 정적 export 시 안전.
+ *
+ * [docs-chrome-round, 2026-07] 문서함 점검 패널이 밴드→중앙 모달로 바뀌며
+ * `readStoredContractOpen`/`storeContractOpen`(옛 `DOCS_VAULT_CONTRACT_OPEN_KEY`)
+ * 를 의도적으로 제거했다 — 모달은 페이지 로드마다 열려 있으면 modality 위반이라
+ * open 상태를 persist 하지 않고 항상 닫힌 채 시작한다(design-prescription.md
+ * ③-5). 토글 자체는 `DocsVaultContent` 의 순수 컴포넌트 state 로 세션 내에서만
+ * 유지된다.
  */
 
 import { VaultConflictError } from "@/features/docs-vault-local";
@@ -15,30 +22,32 @@ export type DocsVaultSource = "server" | "local";
 export type DocsVaultView = "doc" | "folder-topology";
 
 export const DOCS_VAULT_SOURCE_KEY = "demo:docs-vault:source";
-export const DOCS_VAULT_CONTRACT_OPEN_KEY = "demo:docs-vault:contract-open";
+export const DOCS_VAULT_LIST_COLLAPSED_KEY = "demo:docs-vault:list-collapsed";
 
 /**
- * 상단 소스 상태 팝오버(Files · Graph · Agent)의 펼침 여부.
- * 기본 false — Source Vault 는 문서/검색/로컬 vault 행동이 먼저 보여야 한다.
- * 필요할 때만 Source status 버튼으로 Files · Graph · Agent 계약을 확인한다.
+ * 문서 목록 aside 접힘 여부 — docs-chrome-round design-prescription.md ③-4.
+ * 작업공간 취향이라 세션·새로고침 넘어 유지(localStorage). 기본 false(펼침).
  * SSR/정적 export 안전 가드.
  */
-export function readStoredContractOpen(): boolean {
+export function readStoredListCollapsed(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    const v = window.localStorage.getItem(DOCS_VAULT_CONTRACT_OPEN_KEY);
-    if (v === "0") return false;
+    const v = window.localStorage.getItem(DOCS_VAULT_LIST_COLLAPSED_KEY);
     if (v === "1") return true;
+    if (v === "0") return false;
   } catch {
     /* private mode — skip */
   }
   return false;
 }
 
-export function storeContractOpen(open: boolean) {
+export function storeListCollapsed(collapsed: boolean) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(DOCS_VAULT_CONTRACT_OPEN_KEY, open ? "1" : "0");
+    window.localStorage.setItem(
+      DOCS_VAULT_LIST_COLLAPSED_KEY,
+      collapsed ? "1" : "0",
+    );
   } catch {
     /* private mode — skip */
   }
